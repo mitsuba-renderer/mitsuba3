@@ -1,0 +1,30 @@
+[submodule "ext/openexr"]
+	path = ext/openexr
+	url = https://github.com/mitsuba-renderer/openexr
+[submodule "ext/pcg32"]
+	path = ext/pcg32
+	url = https://github.com/wjakob/pcg32
+[submodule "ext/tbb"]
+	path = ext/tbb
+	url = https://github.com/wjakob/tbb
+[submodule "ext/pybind11"]
+	path = ext/pybind11
+	url = https://github.com/wjakob/pybind11
+[submodule "ext/zlib"]
+	path = ext/zlib
+	url = https://github.com/mitsuba-renderer/zlib
+[submodule "ext/pugixml"]
+	path = ext/pugixml
+	url = http://github.com/zeux/pugixml
+[submodule "ext/libpng"]
+	path = ext/libpng
+	url = https://github.com/mitsuba-renderer/libpng.git
+[submodule "ext/nanogui"]
+	path = ext/nanogui
+	url = https://github.com/wjakob/nanogui
+[submodule "ext/libjpeg"]
+	path = ext/libjpeg
+	url = https://github.com/mitsuba-renderer/libjpeg
+[submodule "ext/zeromq"]
+	path = ext/zeromq
+	url = https://github.com/mitsuba-renderer/zeromq
