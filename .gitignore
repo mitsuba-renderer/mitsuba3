@@ -1,21 +1,39 @@
+# CMake
 /CMakeCache.txt
-/ext_build
-/Debug
-/Release
-/x64
-/build
-/dist
+/Testing
 CMakeFiles
 Makefile
 *.cmake
+
+# Ninja
 .ninja_deps
 .ninja_log
 *.ninja
-*.filters
-*.vcxproj
+
+# Miscellaneous;
+/ext_build
+/build
+/dist
 *.dir
+*~
+
+# Visual studio
+*.vcxproj
 mitsuba.sdf
 mitsuba.sln
 mitsuba.opensdf
-*~
+/Debug
+/Release
+*.filters
 /.vs
+/x64
+
+# Python
+__pycache__
+*.pyc
+
+# Binaries
+*.dylib
+*.so
+*.dll
+/src/mitsuba/mitsuba
