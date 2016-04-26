@@ -7,7 +7,7 @@ add_definitions(
 )
 
 add_library(mitsuba-core SHARED 
-  # bitmap.cpp
+   object.cpp
    path.cpp
 )
 target_link_libraries(mitsuba-core ${PNG_LIBRARIES})

@@ -7,6 +7,9 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include "docstr.h"
+#include <mitsuba/mitsuba.h>
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 
 #define D(...) DOC(__VA_ARGS__)
 
