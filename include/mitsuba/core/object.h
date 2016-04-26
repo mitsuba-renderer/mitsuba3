@@ -51,8 +51,8 @@ private:
  */
 template <typename T> class ref {
 public:
-    /// Create a nullptr reference
-    ref() : m_ptr(nullptr) { }
+    /// Create a <tt>nullptr</tt>-valued reference
+    ref() { }
 
     /// Construct a reference from a pointer
     ref(T *ptr) : m_ptr(ptr) {
@@ -68,7 +68,7 @@ public:
 
     /// Move constructor
     ref(ref &&r) noexcept : m_ptr(r.m_ptr) {
-        r.m_ptr = nullptr; 
+        r.m_ptr = nullptr;
     }
 
     /// Destroy this reference
@@ -79,7 +79,7 @@ public:
 
     /// Move another reference into the current one
     ref& operator=(ref&& r) noexcept {
-        if (&r != &this) {
+        if (&r != this) {
             if (m_ptr)
                 ((Object *) m_ptr)->decRef();
             m_ptr = r.m_ptr;

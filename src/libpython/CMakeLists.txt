@@ -13,7 +13,10 @@ include_directories(${PYBIND11_INCLUDE_DIRS} ${PCG32_INCLUDE_DIR})
 add_library(mitsuba-python SHARED
   main.cpp
   pcg32.cpp
+  object.cpp
 )
+
+target_link_libraries(mitsuba-python mitsuba-core)
 
 # Don't add a 'lib' prefix to the shared library
 set_target_properties(mitsuba-python PROPERTIES PREFIX "")
@@ -66,11 +69,16 @@ elseif (UNIX)
   endif()
 endif()
 
-string(REPLACE " " ";" CMAKE_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
+string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
+get_property(MKDOC_INCLUDE_DIRECTORIES DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+
+foreach (dir ${MKDOC_INCLUDE_DIRECTORIES})
+  list(APPEND MKDOC_CXX_FLAGS_LIST -I${dir})
+endforeach()
 
 add_custom_target(mkdoc COMMAND
   python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py 
-  ${CMAKE_CXX_FLAGS_LIST}
-  #  ${CMAKE_PROJECT_SOURCE_DIR}/include/layer/*.h
+  ${MKDOC_CXX_FLAGS_LIST}
+  ${PROJECT_SOURCE_DIR}/include/mitsuba/core/*.h
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)

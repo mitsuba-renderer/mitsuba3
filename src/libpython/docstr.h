@@ -21,9 +21,157 @@
 #endif
 
 
+static const char *__doc_Bitmap = R"doc()doc";
+
+static const char *__doc_Bitmap_Bitmap = R"doc()doc";
+
+static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
+
+static const char *__doc_mitsuba_Object_Object = R"doc(Default constructor)doc";
+
+static const char *__doc_mitsuba_Object_Object_2 = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_Object_decRef =
+R"doc(Decrease the reference count of the object and possibly deallocate it.
+
+The object will automatically be deallocated once the reference count
+reaches zero.)doc";
+
+static const char *__doc_mitsuba_Object_getRefCount = R"doc(Return the current reference count)doc";
+
+static const char *__doc_mitsuba_Object_incRef = R"doc(Increase the object's reference count by one)doc";
+
+static const char *__doc_mitsuba_Object_m_refCount = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_variant_helper = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_variant_helper_copy = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_variant_helper_destruct = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path =
+R"doc(Simple class for manipulating paths on Linux/Windows/Mac OS
+
+This class is just a temporary workaround to avoid the heavy boost
+dependency until the filesystem TS is integrated into C++17 and the latter
+has become widely adopted.)doc";
+
+static const char *__doc_mitsuba_filesystem_path_empty = R"doc(Return whether or not this path is completely empty)doc";
+
+static const char *__doc_mitsuba_filesystem_path_extension = R"doc(Returns the extension of the filename component of the path)doc";
+
+static const char *__doc_mitsuba_filesystem_path_filename = R"doc(Returns the filename component of the path)doc";
+
+static const char *__doc_mitsuba_filesystem_path_is_relative = R"doc(Return whether or not this path is relative)doc";
+
+static const char *__doc_mitsuba_filesystem_path_length =
+R"doc(Returns the number of path components (*not* the length of the string
+representation))doc";
+
+static const char *__doc_mitsuba_filesystem_path_m_absolute = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_m_path = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_m_platform = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_operator_idiv = R"doc(Append a path component)doc";
+
+static const char *__doc_mitsuba_filesystem_path_path = R"doc(Create an empty path)doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_2 = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_3 = R"doc(Move constructor)doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_4 = R"doc(Construct a path from a provided string)doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_5 = R"doc(Construct a path from a provided string)doc";
+
+static const char *__doc_mitsuba_filesystem_path_set = R"doc(Replace the path with the given string (the platform))doc";
+
+static const char *__doc_mitsuba_filesystem_path_tokenize = R"doc()doc";
+
+static const char *__doc_mitsuba_ref =
+R"doc(Reference counting helper
+
+The *ref* template is a simple wrapper to store a pointer to an object. It
+takes care of increasing and decreasing the object's reference count as
+needed. When the last reference goes out of scope, the associated object
+will be deallocated.
+
+The advantage over C++ solutions such as ``std::shared_ptr`` is that the
+reference count is very compactly integrated into the base object itself.)doc";
+
+static const char *__doc_mitsuba_ref_get = R"doc(Return a const pointer to the referenced object)doc";
+
+static const char *__doc_mitsuba_ref_get_2 = R"doc(Return a pointer to the referenced object)doc";
+
+static const char *__doc_mitsuba_ref_m_ptr = R"doc()doc";
+
+static const char *__doc_mitsuba_ref_operator_assign = R"doc(Move another reference into the current one)doc";
+
+static const char *__doc_mitsuba_ref_operator_assign_2 = R"doc(Overwrite this reference with another reference)doc";
+
+static const char *__doc_mitsuba_ref_operator_assign_3 = R"doc(Overwrite this reference with a pointer to another object)doc";
+
+static const char *__doc_mitsuba_ref_operator_eq = R"doc(Compare this reference with another reference)doc";
+
+static const char *__doc_mitsuba_ref_operator_eq_2 = R"doc(Compare this reference with a pointer)doc";
+
+static const char *__doc_mitsuba_ref_operator_mul = R"doc(Return a C++ reference to the referenced object)doc";
+
+static const char *__doc_mitsuba_ref_operator_mul_2 = R"doc(Return a const C++ reference to the referenced object)doc";
+
+static const char *__doc_mitsuba_ref_operator_ne = R"doc(Compare this reference with another reference)doc";
+
+static const char *__doc_mitsuba_ref_operator_ne_2 = R"doc(Compare this reference with a pointer)doc";
+
+static const char *__doc_mitsuba_ref_operator_sub = R"doc(Access the object referenced by this reference)doc";
+
+static const char *__doc_mitsuba_ref_operator_sub_2 = R"doc(Access the object referenced by this reference)doc";
+
+static const char *__doc_mitsuba_ref_ref = R"doc(Create a nullptr reference)doc";
+
+static const char *__doc_mitsuba_ref_ref_2 = R"doc(Construct a reference from a pointer)doc";
+
+static const char *__doc_mitsuba_ref_ref_3 = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
+
+static const char *__doc_mitsuba_variant = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_data = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_empty = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_is = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_operator_assign_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_operator_assign_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_operator_const_type_parameter_1_0 = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_operator_type_parameter_1_0 = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_type = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_type_info = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_variant = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_variant_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
+
 static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
-static const char *__doc_pcg32_advance = 
+static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)
 
 The method used here is based on Brown, "Random Number Generation with
@@ -32,7 +180,7 @@ Arbitrary Stride", Transactions of the American Nuclear Society (Nov.
 
 static const char *__doc_pcg32_inc = R"doc()doc";
 
-static const char *__doc_pcg32_nextDouble = 
+static const char *__doc_pcg32_nextDouble =
 R"doc(Generate a double precision floating point value on the interval [0, 1)
 
 Remark:
@@ -52,13 +200,13 @@ static const char *__doc_pcg32_pcg32 = R"doc(Initialize the pseudorandom number 
 
 static const char *__doc_pcg32_pcg32_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
 
-static const char *__doc_pcg32_seed = 
+static const char *__doc_pcg32_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
 
-static const char *__doc_pcg32_shuffle = 
+static const char *__doc_pcg32_shuffle =
 R"doc(Draw uniformly distributed permutation and permute the given STL container
 
 From: Knuth, TAoCP Vol. 2 (3rd 3d), Section 3.4.2)doc";
