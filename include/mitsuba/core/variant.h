@@ -29,7 +29,9 @@ template <size_t Arg1, size_t Arg2, size_t... Args> struct static_max<Arg1, Arg2
 template<typename... Args> struct variant_helper;
 
 template<typename T, typename... Args> struct variant_helper<T, Args...> {
-    static bool copy(const std::type_info *type_info, const void *source, void *target) {
+    static bool copy(const std::type_info *type_info, const void *source, void *target)
+        noexcept(std::is_nothrow_copy_constructible<T>::value() &&
+            noexcept(variant_helper<Args...>::copy(type_info, source, target))) {
         if (type_info == &typeid(T)) {
             new (target) T(*reinterpret_cast<const T *>(source));
             return true;
@@ -38,7 +40,9 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
         }
     }
 
-    static bool move(const std::type_info *type_info, void *source, void *target) {
+    static bool move(const std::type_info *type_info, void *source, void *target)
+        noexcept(std::is_nothrow_move_constructible<T>::value() &&
+            noexcept(variant_helper<Args...>::move(type_info, source, target))) {
         if (type_info == &typeid(T)) {
             new (target) T(std::move(*reinterpret_cast<T *>(source)));
             return true;
@@ -47,7 +51,9 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
         }
     }
 
-    static void destruct(const std::type_info *type_info, void *ptr) {
+    static void destruct(const std::type_info *type_info, void *ptr)
+        noexcept(std::is_nothrow_destructible<T>::value() &&
+            noexcept(variant_helper<Args...>::destruct(type_info, ptr))) {
         if (type_info == &typeid(T))
             reinterpret_cast<T*>(ptr)->~T();
         else
@@ -56,65 +62,77 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
 };
 
 template<> struct variant_helper<>  {
-    static bool copy(const std::type_info *type_info, const void *source, void *target) {
-        return false;
-    }
-    static bool move(const std::type_info *type_info, void *source, void *target) {
-        return false;
-    }
-    static void destruct(const std::type_info *type_info, void *ptr) { }
+    static bool copy(const std::type_info *, const void *, void *) noexcept { return false; }
+    static bool move(const std::type_info *, void *, void *) noexcept { return false; }
+    static void destruct(const std::type_info *, void *) noexcept { }
 };
 
 NAMESPACE_END(detail)
 
 template <typename... Args> struct variant {
 private:
-	static const size_t data_size = detail::static_max<sizeof(Args)...>::value;
-	static const size_t data_align = detail::static_max<alignof(Args)...>::value;
+    static const size_t data_size = detail::static_max<sizeof(Args)...>::value;
+    static const size_t data_align = detail::static_max<alignof(Args)...>::value;
 
-	using storage_type = typename std::aligned_storage<data_size, data_align>::type;
-	using helper_type = detail::variant_helper<Args...>;
+    using storage_type = typename std::aligned_storage<data_size, data_align>::type;
+    using helper_type = detail::variant_helper<Args...>;
 
-	storage_type data;
-    const std::type_info *type_info;
 public:
-	variant() : type_info(nullptr) { }
+    variant() { }
 
-	variant(const variant<Args...> &v) : type_info(v.type_info) {
+    variant(const variant<Args...> &v)
+        noexcept(helper_type::copy(type_info, &v.data, &data))
+        : type_info(v.type_info) {
         helper_type::copy(type_info, &v.data, &data);
-	}
+    }
 
-	variant(variant<Args...>&& v) : type_info(v.type_info) {
+    variant(variant<Args...>&& v)
+        noexcept(helper_type::move(type_info, &v.data, &data))
+        : type_info(v.type_info) {
         helper_type::move(type_info, &v.data, &data);
         helper_type::destruct(type_info, &v.data);
         v.type_info = nullptr;
-	}
+    }
 
-	~variant() {
+    ~variant() noexcept(helper_type::destruct(type_info, &data)) {
         helper_type::destruct(type_info, &data);
-	}
-	
-	variant<Args...>& operator=(variant<Args...> &v) {
-	    return operator=((const variant<Args...> &) v);
-	}
+    }
 
-	variant<Args...>& operator=(const variant<Args...> &v) {
+    variant<Args...>& operator=(variant<Args...> &v)
+        noexcept(operator=((const variant<Args...> &) v)) {
+        return operator=((const variant<Args...> &) v);
+    }
+
+    variant<Args...>& operator=(const variant<Args...> &v)
+        noexcept(
+            noexcept(helper_type::copy(type_info, &v.data, &data)) &&
+            noexcept(helper_type::destruct(type_info, &data))
+        ) {
         helper_type::destruct(type_info, &data);
         type_info = v.type_info;
         helper_type::copy(type_info, &v.data, &data);
-		return *this;
-	}
+        return *this;
+    }
 
-	variant<Args...>& operator=(variant<Args...> &&v) {
+    variant<Args...>& operator=(variant<Args...> &&v)
+        noexcept(
+            noexcept(helper_type::move(type_info, &v.data, &data)) &&
+            noexcept(helper_type::destruct(type_info, &data))
+        ) {
         helper_type::destruct(type_info, &data);
         type_info = v.type_info;
         helper_type::move(type_info, &v.data, &data);
         helper_type::destruct(type_info, &v.data);
         v.type_info = nullptr;
-		return *this;
-	}
+        return *this;
+    }
 
-    template <typename T> variant<Args...>& operator=(T &&value) {
+    template <typename T> variant<Args...>& operator=(T &&value)
+        noexcept(
+            noexcept(helper_type::copy(type_info, &value, &data)) &&
+            noexcept(helper_type::move(type_info, &value, &data)) &&
+            noexcept(helper_type::destruct(type_info, &data))
+        ) {
         helper_type::destruct(type_info, &data);
         type_info = &typeid(T);
         bool success;
@@ -123,19 +141,19 @@ public:
         else
             success = helper_type::copy(type_info, &value, &data);
         if (!success)
-			throw std::bad_cast();
-		return *this;
-	}
+            throw std::bad_cast();
+        return *this;
+    }
 
-	const std::type_info &type() const { 
-	    return *type_info;
-	}
+    const std::type_info &type() const {
+        return *type_info;
+    }
 
-	template <typename T> bool is() const {
-		return type_info == &typeid(T);
-	}
+    template <typename T> bool is() const {
+        return type_info == &typeid(T);
+    }
 
-	bool empty() const { return type_info == nullptr; }
+    bool empty() const { return type_info == nullptr; }
 
     template <typename T> operator T&() {
         if (!is<T>())
@@ -148,6 +166,10 @@ public:
             throw std::bad_cast();
         return *reinterpret_cast<const T *>(&data);
     }
+
+private:
+    storage_type data;
+    const std::type_info *type_info = nullptr;
 };
 
 NAMESPACE_END(mitsuba)
