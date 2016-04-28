@@ -43,3 +43,17 @@
 #else
 #  define MTS_EXPORT_BIDIR MTS_IMPORT
 #endif
+
+NAMESPACE_BEGIN(mitsuba)
+
+/* Define a 'Float' data type with customizable precision */
+
+#if defined(DOUBLE_PRECISION)
+typedef double Float;
+#elif defined(SINGLE_PRECISION)
+typedef float Float;
+#else
+#error No precision flag was defined!
+#endif
+
+NAMESPACE_END(mitsuba)

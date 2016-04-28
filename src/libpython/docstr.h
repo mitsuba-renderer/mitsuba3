@@ -21,10 +21,6 @@
 #endif
 
 
-static const char *__doc_Bitmap = R"doc()doc";
-
-static const char *__doc_Bitmap_Bitmap = R"doc()doc";
-
 static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
 
 static const char *__doc_mitsuba_Object_Object = R"doc(Default constructor)doc";
@@ -43,6 +39,19 @@ static const char *__doc_mitsuba_Object_incRef = R"doc(Increase the object's ref
 
 static const char *__doc_mitsuba_Object_m_refCount = R"doc()doc";
 
+static const char *__doc_mitsuba_Object_toString =
+R"doc(Return a human-readable string representation of the object's contents.
+
+This function is mainly useful for debugging purposes and should ideally be
+implemented by all subclasses. The default implementation simply returns
+``MyObject[unknown]``, where ``MyObject`` is the name of the subclass.)doc";
+
+static const char *__doc_mitsuba_Properties = R"doc(Reference counted object base class)doc";
+
+static const char *__doc_mitsuba_Properties_Properties = R"doc(Default constructor)doc";
+
+static const char *__doc_mitsuba_Properties_Properties_2 = R"doc(Copy constructor)doc";
+
 static const char *__doc_mitsuba_detail_variant_helper = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_copy = R"doc()doc";
@@ -50,47 +59,6 @@ static const char *__doc_mitsuba_detail_variant_helper_copy = R"doc()doc";
 static const char *__doc_mitsuba_detail_variant_helper_destruct = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
-
-static const char *__doc_mitsuba_filesystem_path =
-R"doc(Simple class for manipulating paths on Linux/Windows/Mac OS
-
-This class is just a temporary workaround to avoid the heavy boost
-dependency until the filesystem TS is integrated into C++17 and the latter
-has become widely adopted.)doc";
-
-static const char *__doc_mitsuba_filesystem_path_empty = R"doc(Return whether or not this path is completely empty)doc";
-
-static const char *__doc_mitsuba_filesystem_path_extension = R"doc(Returns the extension of the filename component of the path)doc";
-
-static const char *__doc_mitsuba_filesystem_path_filename = R"doc(Returns the filename component of the path)doc";
-
-static const char *__doc_mitsuba_filesystem_path_is_relative = R"doc(Return whether or not this path is relative)doc";
-
-static const char *__doc_mitsuba_filesystem_path_length =
-R"doc(Returns the number of path components (*not* the length of the string
-representation))doc";
-
-static const char *__doc_mitsuba_filesystem_path_m_absolute = R"doc()doc";
-
-static const char *__doc_mitsuba_filesystem_path_m_path = R"doc()doc";
-
-static const char *__doc_mitsuba_filesystem_path_m_platform = R"doc()doc";
-
-static const char *__doc_mitsuba_filesystem_path_operator_idiv = R"doc(Append a path component)doc";
-
-static const char *__doc_mitsuba_filesystem_path_path = R"doc(Create an empty path)doc";
-
-static const char *__doc_mitsuba_filesystem_path_path_2 = R"doc(Copy constructor)doc";
-
-static const char *__doc_mitsuba_filesystem_path_path_3 = R"doc(Move constructor)doc";
-
-static const char *__doc_mitsuba_filesystem_path_path_4 = R"doc(Construct a path from a provided string)doc";
-
-static const char *__doc_mitsuba_filesystem_path_path_5 = R"doc(Construct a path from a provided string)doc";
-
-static const char *__doc_mitsuba_filesystem_path_set = R"doc(Replace the path with the given string (the platform))doc";
-
-static const char *__doc_mitsuba_filesystem_path_tokenize = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -131,7 +99,7 @@ static const char *__doc_mitsuba_ref_operator_sub = R"doc(Access the object refe
 
 static const char *__doc_mitsuba_ref_operator_sub_2 = R"doc(Access the object referenced by this reference)doc";
 
-static const char *__doc_mitsuba_ref_ref = R"doc(Create a nullptr reference)doc";
+static const char *__doc_mitsuba_ref_ref = R"doc(Create a ``nullptr``-valued reference)doc";
 
 static const char *__doc_mitsuba_ref_ref_2 = R"doc(Construct a reference from a pointer)doc";
 

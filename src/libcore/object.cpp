@@ -14,6 +14,10 @@ void Object::decRef(bool dealloc) const noexcept {
     }
 }
 
+std::string Object::toString() const { 
+    return "Object[unknown]";
+}
+
 Object::~Object() { }
 
 #if 0

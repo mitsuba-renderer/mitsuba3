@@ -3,6 +3,7 @@
 #include <mitsuba/core/platform.h>
 #include <atomic>
 #include <stdexcept>
+#include <string>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -28,11 +29,24 @@ public:
      * the reference count reaches zero.
      */
     void decRef(bool dealloc = true) const noexcept;
+
+	/**
+	 * \brief Return a human-readable string representation
+	 * of the object's contents.
+	 *
+	 * This function is mainly useful for debugging purposes
+	 * and should ideally be implemented by all subclasses.
+	 * The default implementation simply returns <tt>MyObject[unknown]</tt>,
+	 * where <tt>MyObject</tt> is the name of the subclass.
+	 */
+	virtual std::string toString() const;
+
 protected:
     /** \brief Virtual protected deconstructor.
      * (Will only be called by \ref ref)
      */
     virtual ~Object();
+
 private:
     mutable std::atomic<int> m_refCount { 0 };
 };

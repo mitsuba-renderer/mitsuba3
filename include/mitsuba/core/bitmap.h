@@ -1,11 +1,21 @@
-#if !defined(__BITMAP_H)
-#define __BITMAP_H
+#pragma once
 
 #include <mitsuba/core/platform.h>
 
-class MTS_EXPORT_CORE Bitmap {
+NAMESPACE_BEGIN(mitsuba)
+
+
+
+/// Reference counted object base class
+class MTS_EXPORT_CORE Properties {
 public:
-    Bitmap();
+    /// Default constructor
+    Properties() { }
+
+    /// Copy constructor
+    Properties(const Properties &) { }
+
+private:
 };
 
-#endif /* __BITMAP_H */
+NAMESPACE_END(mitsuba)

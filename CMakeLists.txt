@@ -2,7 +2,8 @@
 cmake_minimum_required (VERSION 2.8)
 project(mitsuba)
 
-option(MTS_HAVE_AVX "Enable AVX optimizations" TRUE)
+option(MTS_HAVE_AVX         "Enable AVX optimizations" TRUE)
+option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
 
 include(CheckCXXCompilerFlag)
 
@@ -77,6 +78,12 @@ elseif(UNIX)
   else()
     add_definitions("-D__LINUX__")
   endif()
+endif()
+
+if (MTS_DOUBLE_PRECISION)
+  add_definitions("-DDOUBLE_PRECISION")
+else()
+  add_definitions("-DSINGLE_PRECISION")
 endif()
 
 add_subdirectory(src)

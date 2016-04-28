@@ -6,5 +6,6 @@ MTS_PY_EXPORT(object) {
         .def(py::init<const Object &>(), DM(Object, Object, 2))
         .def("getRefCount", &Object::getRefCount, DM(Object, getRefCount))
         .def("incRef", &Object::incRef, DM(Object, incRef))
-        .def("decRef", &Object::decRef, py::arg("dealloc") = true, DM(Object, decRef));
+        .def("decRef", &Object::decRef, py::arg("dealloc") = true, DM(Object, decRef))
+        .def("__repr__", &Object::toString, DM(Object, toString));
 }
