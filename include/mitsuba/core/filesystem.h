@@ -57,23 +57,23 @@ typedef std::basic_string<value_type> string_type;
 
 
 /// Returns the current working directory (equivalent to getcwd)
-// TODO: overload taking a path as parameter
-path current_path();
+extern MTS_EXPORT_CORE path current_path();
+// TODO: overload taking a base path as parameter
 
 // TODO: take `filesystem::path base` parameter
-path make_absolute(const path& p);
+extern MTS_EXPORT_CORE path make_absolute(const path& p);
 
-bool is_regular_file(const path& p) noexcept;
-bool is_directory(const path& p) noexcept;
-bool exists(const path& p) noexcept;
+extern MTS_EXPORT_CORE bool is_regular_file(const path& p) noexcept;
+extern MTS_EXPORT_CORE bool is_directory(const path& p) noexcept;
+extern MTS_EXPORT_CORE bool exists(const path& p) noexcept;
 
-size_t file_size(const path& p);
-inline bool create_directory(const path& p) noexcept;
-bool resize_file(const path& p, size_t target_length) noexcept;
+extern MTS_EXPORT_CORE size_t file_size(const path& p);
+extern MTS_EXPORT_CORE inline bool create_directory(const path& p) noexcept;
+extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
 // TODO: remove_all to remove recursively
-bool remove(const path& p);
+extern MTS_EXPORT_CORE bool remove(const path& p);
 
-class path {
+class MTS_EXPORT_CORE path {
 public:
     enum path_type {
         windows_path = 0,
