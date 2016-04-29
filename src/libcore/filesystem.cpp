@@ -12,9 +12,9 @@ path current_path() {
   return path(temp);
 #else
   std::wstring temp(MAX_PATH, '\0');
-        if (!_wgetcwd(&temp[0], MAX_PATH))
-            throw std::runtime_error("Internal error in filesystem::current_path(): " + std::to_string(GetLastError()));
-        return path(temp.c_str());
+  if (!_wgetcwd(&temp[0], MAX_PATH))
+      throw std::runtime_error("Internal error in filesystem::current_path(): " + std::to_string(GetLastError()));
+  return path(temp.c_str());
 #endif
 }
 
@@ -26,17 +26,17 @@ path make_absolute(const path& p) {
   return path(temp);
 #else
   std::wstring value = p.native(), out(MAX_PATH, '\0');
-        DWORD length = GetFullPathNameW(value.c_str(), MAX_PATH, &out[0], NULL);
-        if (length == 0)
-            throw std::runtime_error("Internal error in realpath(): " + std::to_string(GetLastError()));
-        return path(out.substr(0, length));
+  DWORD length = GetFullPathNameW(value.c_str(), MAX_PATH, &out[0], NULL);
+  if (length == 0)
+      throw std::runtime_error("Internal error in realpath(): " + std::to_string(GetLastError()));
+  return path(out.substr(0, length));
 #endif
 }
 
 bool is_regular_file(const path& p) noexcept {
 #if defined(_WIN32)
   DWORD attr = GetFileAttributesW(p.native().c_str());
-        return (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0);
+  return (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0);
 #else
   struct stat sb;
   if (stat(p.native().c_str(), &sb))
@@ -48,9 +48,9 @@ bool is_regular_file(const path& p) noexcept {
 bool is_directory(const path& p) noexcept {
 #if defined(_WIN32)
   DWORD result = GetFileAttributesW(p.native().c_str());
-        if (result == INVALID_FILE_ATTRIBUTES)
-            return false;
-        return (result & FILE_ATTRIBUTE_DIRECTORY) != 0;
+  if (result == INVALID_FILE_ATTRIBUTES)
+      return false;
+  return (result & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #else
   struct stat sb;
   if (stat(p.native().c_str(), &sb))
@@ -71,8 +71,8 @@ bool exists(const path& p) noexcept {
 size_t file_size(const path& p) {
 #if defined(_WIN32)
   struct _stati64 sb;
-        if (_wstati64(p.native().c_str(), &sb) != 0)
-            throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
+  if (_wstati64(p.native().c_str(), &sb) != 0)
+      throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
 #else
   struct stat sb;
   if (stat(p.native().c_str(), &sb) != 0)
@@ -160,7 +160,7 @@ path path::operator/(const path &other) const {
 
   path result(*this);
 
-  for (size_t i=0; i<other.m_path.size(); ++i)
+  for (size_t i=0; i < other.m_path.size(); ++i)
     result.m_path.push_back(other.m_path[i]);
 
   return result;
@@ -211,31 +211,6 @@ void path::set(const string_type &str, path_type type) {
     m_absolute = !str.empty() && str[0] == '/';
   }
 }
-
-//#if defined(_WIN32)
-// TODO: double-check that str(string_type) does the same thing
-//std::wstring path::wstr(path_type type = native_path) const {
-//  std::string temp = str(type);
-//  int size = MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), NULL, 0);
-//  std::wstring result(size, 0);
-//  MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), &result[0], size);
-//  return result;
-//}
-//
-//
-// TODO: double-check that str(string_type) does the same thing
-//void path::set(const std::wstring &wstring, path_type type = native_path) {
-//  std::string string;
-//  if (!wstring.empty()) {
-//    int size = WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
-//                                   NULL, 0, NULL, NULL);
-//    string.resize(size, 0);
-//    WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
-//                        &string[0], size, NULL, NULL);
-//  }
-//  set(string, type);
-//}
-//#endif
 
 std::vector<string_type> path::tokenize(const string_type &string,
                                          const string_type &delim) {
