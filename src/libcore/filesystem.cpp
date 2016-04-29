@@ -21,7 +21,7 @@ path current_path() {
 path make_absolute(const path& p) {
 #if !defined(_WIN32)
   char temp[PATH_MAX];
-  if (realpath(p.str().c_str(), temp) == NULL)
+  if (realpath(p.native().c_str(), temp) == NULL)
     throw std::runtime_error("Internal error in realpath(): " + std::string(strerror(errno)));
   return path(temp);
 #else
@@ -35,11 +35,11 @@ path make_absolute(const path& p) {
 
 bool is_regular_file(const path& p) noexcept {
 #if defined(_WIN32)
-  DWORD attr = GetFileAttributesW(p.wstr().c_str());
+  DWORD attr = GetFileAttributesW(p.native().c_str());
         return (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0);
 #else
   struct stat sb;
-  if (stat(p.str().c_str(), &sb))
+  if (stat(p.native().c_str(), &sb))
     return false;
   return S_ISREG(sb.st_mode);
 #endif
@@ -47,13 +47,13 @@ bool is_regular_file(const path& p) noexcept {
 
 bool is_directory(const path& p) noexcept {
 #if defined(_WIN32)
-  DWORD result = GetFileAttributesW(p.wstr().c_str());
+  DWORD result = GetFileAttributesW(p.native().c_str());
         if (result == INVALID_FILE_ATTRIBUTES)
             return false;
         return (result & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #else
   struct stat sb;
-  if (stat(p.str().c_str(), &sb))
+  if (stat(p.native().c_str(), &sb))
     return false;
   return S_ISDIR(sb.st_mode);
 #endif
@@ -61,39 +61,39 @@ bool is_directory(const path& p) noexcept {
 
 bool exists(const path& p) noexcept {
 #if defined(_WIN32)
-  return GetFileAttributesW(p.wstr().c_str()) != INVALID_FILE_ATTRIBUTES;
+  return GetFileAttributesW(p.native().c_str()) != INVALID_FILE_ATTRIBUTES;
 #else
   struct stat sb;
-  return stat(p.str().c_str(), &sb) == 0;
+  return stat(p.native().c_str(), &sb) == 0;
 #endif
 }
 
 size_t file_size(const path& p) {
 #if defined(_WIN32)
   struct _stati64 sb;
-        if (_wstati64(p.wstr().c_str(), &sb) != 0)
-            throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.str() + "\"!");
+        if (_wstati64(p.native().c_str(), &sb) != 0)
+            throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
 #else
   struct stat sb;
-  if (stat(p.str().c_str(), &sb) != 0)
-    throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.str() + "\"!");
+  if (stat(p.native().c_str(), &sb) != 0)
+    throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
 #endif
   return (size_t) sb.st_size;
 }
 
 inline bool create_directory(const path& p) noexcept {
 #if defined(_WIN32)
-  return CreateDirectoryW(p.wstr().c_str(), NULL) != 0;
+  return CreateDirectoryW(p.native().c_str(), NULL) != 0;
 #else
-  return mkdir(p.str().c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == 0;
+  return mkdir(p.native().c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == 0;
 #endif
 }
 
 bool resize_file(const path& p, size_t target_length) noexcept {
 #if !defined(_WIN32)
-  return ::truncate(p.str().c_str(), (off_t) target_length) == 0;
+  return ::truncate(p.native().c_str(), (off_t) target_length) == 0;
 #else
-  HANDLE handle = CreateFileW(p.wstr().c_str(), GENERIC_WRITE, 0, nullptr, 0, FILE_ATTRIBUTE_NORMAL, nullptr);
+  HANDLE handle = CreateFileW(p.native().c_str(), GENERIC_WRITE, 0, nullptr, 0, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (handle == INVALID_HANDLE_VALUE)
       return false;
   LARGE_INTEGER size;
@@ -113,27 +113,27 @@ bool resize_file(const path& p, size_t target_length) noexcept {
 
 bool remove(const path& p) {
 #if !defined(_WIN32)
-  return std::remove(p.str().c_str()) == 0;
+  return std::remove(p.native().c_str()) == 0;
 #else
-  return DeleteFileW(p.wstr().c_str()) != 0;
+  return DeleteFileW(p.native().c_str()) != 0;
 #endif
 }
 
 
 // -----------------------------------------------------------------------------
 
-std::string path::extension() const {
-  const std::string &name = filename();
+string_type path::extension() const {
+  const string_type &name = filename();
   size_t pos = name.find_last_of(".");
-  if (pos == std::string::npos)
+  if (pos == string_type::npos)
     return "";
   return name.substr(pos+1);
 }
 
-std::string path::filename() const {
+string_type path::filename() const {
   if (empty())
     return "";
-  const std::string &last = m_path[m_path.size()-1];
+  const string_type &last = m_path[m_path.size()-1];
   return last;
 }
 
@@ -182,7 +182,7 @@ path & path::operator=(path &&path) {
   return *this;
 }
 
-std::string path::str(path_type type) const {
+string_type path::str(path_type type) const {
   std::ostringstream oss;
 
   if (m_type == posix_path && m_absolute)
@@ -201,7 +201,7 @@ std::string path::str(path_type type) const {
   return oss.str();
 }
 
-void path::set(const std::string &str, path_type type) {
+void path::set(const string_type &str, path_type type) {
   m_type = type;
   if (type == windows_path) {
     m_path = tokenize(str, "/\\");
@@ -212,16 +212,41 @@ void path::set(const std::string &str, path_type type) {
   }
 }
 
-std::vector<std::string> path::tokenize(const std::string &string,
-                                               const std::string &delim) {
-  std::string::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
-  std::vector<std::string> tokens;
+//#if defined(_WIN32)
+// TODO: double-check that str(string_type) does the same thing
+//std::wstring path::wstr(path_type type = native_path) const {
+//  std::string temp = str(type);
+//  int size = MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), NULL, 0);
+//  std::wstring result(size, 0);
+//  MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), &result[0], size);
+//  return result;
+//}
+//
+//
+// TODO: double-check that str(string_type) does the same thing
+//void path::set(const std::wstring &wstring, path_type type = native_path) {
+//  std::string string;
+//  if (!wstring.empty()) {
+//    int size = WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
+//                                   NULL, 0, NULL, NULL);
+//    string.resize(size, 0);
+//    WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
+//                        &string[0], size, NULL, NULL);
+//  }
+//  set(string, type);
+//}
+//#endif
 
-  while (lastPos != std::string::npos) {
+std::vector<string_type> path::tokenize(const string_type &string,
+                                         const string_type &delim) {
+  string_type::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
+  std::vector<string_type> tokens;
+
+  while (lastPos != string_type::npos) {
     if (pos != lastPos)
       tokens.push_back(string.substr(lastPos, pos - lastPos));
     lastPos = pos;
-    if (lastPos == std::string::npos || lastPos + 1 == string.length())
+    if (lastPos == string_type::npos || lastPos + 1 == string.length())
       break;
     pos = string.find_first_of(delim, ++lastPos);
   }

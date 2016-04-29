@@ -17,6 +17,7 @@
 
 #include <mitsuba/core/fwd.h>
 
+// TODO: move most of these includes out to the .cpp file
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -44,6 +45,15 @@ NAMESPACE_BEGIN(filesystem)
 
 // TODO: all interfaces matching the C++17 reference
 class path;  // TODO: remove this
+
+/// Type of character used on the system
+#if defined(_WIN32)
+typedef wchar_t value_type;
+#else
+typedef char value_type;
+#endif
+/// Type of strings (built from system-specific characters)
+typedef std::basic_string<value_type> string_type;
 
 
 /// Returns the current working directory (equivalent to getcwd)
@@ -75,8 +85,6 @@ public:
 #endif
     };
 
-    // TODO: value_type and string_type typedefs?
-
     path() : m_type(native_path), m_absolute(false) { }
 
     path(const path &path)
@@ -88,12 +96,7 @@ public:
 
     path(const char *string) { set(string); }
 
-    path(const std::string &string) { set(string); }
-
-#if defined(_WIN32)
-    path(const std::wstring &wstring) { set(wstring); }
-    path(const wchar_t *wstring) { set(wstring); }
-#endif
+    path(const string_type &string) { set(string); }
 
     // Not part of the std::filesystem::path specification
     //size_t length() const { return m_path.size(); }
@@ -104,66 +107,46 @@ public:
     bool is_relative() const { return !m_absolute; }
 
     path parent_path() const;
-    std::string extension() const;
-    std::string filename() const;
+    string_type extension() const;
+    string_type filename() const;
 
 
     // TODO: should be able to return a reference
-    const std::string native() const noexcept {
+    const string_type native() const noexcept {
       return str(native_path);
     }
-    operator std::string() const noexcept {
+    operator string_type() const noexcept {
       return str(native_path);
     }
 
     path operator/(const path &other) const;
     path & operator=(const path &path);
     path & operator=(path &&path);
+    path & operator=(const string_type &str) { set(str); return *this; }
     friend std::ostream &operator<<(std::ostream &os, const path &path) {
       os << path.str();
       return os;
     }
 
-    // TODO
-#if defined(_WIN32)
-    std::wstring wstr(path_type type = native_path) const {
-        std::string temp = str(type);
-        int size = MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), NULL, 0);
-        std::wstring result(size, 0);
-        MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), &result[0], size);
-        return result;
-    }
-
-
-    void set(const std::wstring &wstring, path_type type = native_path) {
-        std::string string;
-        if (!wstring.empty()) {
-            int size = WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
-                            NULL, 0, NULL, NULL);
-            string.resize(size, 0);
-            WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
-                                &string[0], size, NULL, NULL);
-        }
-        set(string, type);
-    }
-
-    path &operator=(const std::wstring &str) { set(str); return *this; }
-#endif
-
     bool operator==(const path &p) const { return p.m_path == m_path; }
     bool operator!=(const path &p) const { return p.m_path != m_path; }
 
-    std::string str(path_type type = native_path) const;
 protected:
+    string_type str(path_type type = native_path) const;
 
-    void set(const std::string &str, path_type type = native_path);
+    void set(const string_type &str, path_type type = native_path);
 
-    static std::vector<std::string> tokenize(const std::string &string,
-                                             const std::string &delim);
+//#if defined(_WIN32)
+//    std::wstring wstr(path_type type = native_path) const;
+//    void set(const std::wstring &wstring, path_type type = native_path);
+//#endif
+
+    static std::vector<std::string> tokenize(const string_type &string,
+                                             const string_type &delim);
 
 protected:
     path_type m_type;
-    std::vector<std::string> m_path;
+    std::vector<string_type> m_path;
     bool m_absolute;
 };
 
