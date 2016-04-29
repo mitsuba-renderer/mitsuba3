@@ -60,24 +60,14 @@ constexpr value_type preferred_separator = '/';
 
 class MTS_EXPORT_CORE path {
  public:
-    enum path_type {
-        windows_path = 0,
-        posix_path = 1,
-#if defined(_WIN32)
-        native_path = windows_path
-#else
-        native_path = posix_path
-#endif
-    };
 
-    path() : m_type(native_path), m_absolute(false) { }
+    path() : m_absolute(false) { }
 
     path(const path &path)
-        : m_type(path.m_type), m_path(path.m_path), m_absolute(path.m_absolute) {}
+        : m_path(path.m_path), m_absolute(path.m_absolute) {}
 
     path(path &&path)
-        : m_type(path.m_type), m_path(std::move(path.m_path)),
-          m_absolute(path.m_absolute) {}
+        : m_path(std::move(path.m_path)), m_absolute(path.m_absolute) {}
 
     path(const char *string) { set(string); }
 
@@ -125,13 +115,12 @@ class MTS_EXPORT_CORE path {
  protected:
     string_type str() const;
 
-    void set(const string_type &str, path_type type = native_path);
+    void set(const string_type &str);
 
     static std::vector<std::string> tokenize(const string_type &string,
                                              const string_type &delim);
 
  protected:
-    path_type m_type;
     std::vector<string_type> m_path;
     bool m_absolute;
 };

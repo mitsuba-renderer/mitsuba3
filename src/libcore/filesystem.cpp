@@ -155,8 +155,6 @@ path path::parent_path() const {
 path path::operator/(const path &other) const {
   if (other.m_absolute)
     throw std::runtime_error("path::operator/(): expected a relative path!");
-  if (m_type != other.m_type)
-    throw std::runtime_error("path::operator/(): expected a path of the same type!");
 
   path result(*this);
 
@@ -167,7 +165,6 @@ path path::operator/(const path &other) const {
 }
 
 path & path::operator=(const path &path) {
-  m_type = path.m_type;
   m_path = path.m_path;
   m_absolute = path.m_absolute;
   return *this;
@@ -175,7 +172,6 @@ path & path::operator=(const path &path) {
 
 path & path::operator=(path &&path) {
   if (this != &path) {
-    m_type = path.m_type;
     m_path = std::move(path.m_path);
     m_absolute = path.m_absolute;
   }
@@ -185,8 +181,10 @@ path & path::operator=(path &&path) {
 string_type path::str() const {
   std::ostringstream oss;
 
-  if (m_type == posix_path && m_absolute)
+#if !defined(_WIN32)
+  if (m_absolute)
     oss << preferred_separator;
+#endif
 
   for (size_t i = 0; i < m_path.size(); ++i) {
     oss << m_path[i];
@@ -198,15 +196,16 @@ string_type path::str() const {
   return oss.str();
 }
 
-void path::set(const string_type &str, path_type type) {
-  m_type = type;
-  if (type == windows_path) {
-    m_path = tokenize(str, "/\\");
-    m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
-  } else {
-    m_path = tokenize(str, "/");
-    m_absolute = !str.empty() && str[0] == '/';
-  }
+void path::set(const string_type &str) {
+  // TODO: is this  "/\\" correct for windows?
+  // TODO: express just in terms of `preferred_path`
+#if defined(_WIN32)
+  m_path = tokenize(str, "/\\");
+  m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
+#else
+  m_path = tokenize(str, "/");
+  m_absolute = !str.empty() && str[0] == '/';
+#endif
 }
 
 std::vector<string_type> path::tokenize(const string_type &string,
