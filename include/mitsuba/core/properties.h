@@ -6,8 +6,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-struct PropertiesPrivate;
-
 /** \brief Associative parameter map for constructing
  * subclasses of \ref ConfigurableObject.
  *
@@ -37,7 +35,8 @@ public:
 	bool getBoolean(const std::string &name, const bool &defVal) const;
 
 private:
-    PropertiesPrivate *m_private;
+    struct PropertiesPrivate;
+    std::unique_ptr<PropertiesPrivate> d;
 };
 
 NAMESPACE_END(mitsuba)

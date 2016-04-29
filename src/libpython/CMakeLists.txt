@@ -14,6 +14,10 @@ add_library(mitsuba-python SHARED
   main.cpp
   pcg32.cpp
   object.cpp
+  thread.cpp
+  logger.cpp
+  appender.cpp
+  formatter.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)

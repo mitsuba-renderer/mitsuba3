@@ -8,25 +8,25 @@ struct Entry {
     bool queried;
 };
 
-struct PropertiesPrivate {
+struct Properties::PropertiesPrivate {
     std::map<std::string, Entry> entries;
 };
 
 bool Properties::hasProperty(const std::string &name) const {
-	return m_private->entries.find(name) != m_private->entries.end();
+	return d->entries.find(name) != d->entries.end();
 }
 
 #define DEFINE_PROPERTY_ACCESSOR(Type, BaseType, TypeName, ReadableName) \
 	void Properties::set##TypeName(const std::string &name, const Type &value, bool warnDuplicates) { \
 		if (hasProperty(name) && warnDuplicates) \
 			SLog(EWarn, "Property \"%s\" was specified multiple times!", name.c_str()); \
-		m_private->entries[name].data = (BaseType) value; \
-		m_private->entries[name].queried = false; \
+		d->entries[name].data = (BaseType) value; \
+		d->entries[name].queried = false; \
 	} \
 	\
 	Type Properties::get##TypeName(const std::string &name) const { \
-		std::map<std::string, PropertyElement>::const_iterator it = m_private->elements.find(name); \
-		if (it == m_private->elements.end()) \
+		std::map<std::string, PropertyElement>::const_iterator it = d->elements.find(name); \
+		if (it == d->elements.end()) \
 			SLog(EError, "Property \"%s\" has not been specified!", name.c_str()); \
 		try { \
 		    auto &result = (const BaseType &) it->second.data; \
@@ -39,8 +39,8 @@ bool Properties::hasProperty(const std::string &name) const {
 	} \
 	\
 	Type Properties::get##TypeName(const std::string &name, const Type &defVal) const { \
-		std::map<std::string, PropertyElement>::const_iterator it = m_private->elements.find(name); \
-		if (it == m_private->elements.end()) \
+		std::map<std::string, PropertyElement>::const_iterator it = d->elements.find(name); \
+		if (it == d->elements.end()) \
 			return defVal; \
 		try { \
 		    auto &result = (const BaseType &) it->second.data; \

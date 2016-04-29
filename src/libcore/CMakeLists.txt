@@ -8,10 +8,16 @@ add_definitions(
 
 add_library(mitsuba-core SHARED 
    object.cpp
+   class.cpp
+   thread.cpp
+   tls.cpp
    properties.cpp
-   #path.cpp
+   logger.cpp
+   appender.cpp
+   formatter.cpp
 )
-target_link_libraries(mitsuba-core ${PNG_LIBRARIES})
+
+target_link_libraries(mitsuba-core ${PNG_LIBRARIES} tbb)
 
 add_custom_command(
   TARGET mitsuba-core

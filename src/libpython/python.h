@@ -23,6 +23,12 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 #define MTS_PY_EXPORT(name) \
     void python_export_##name(py::module &m)
 
+#define MTS_PY_CLASS(Name, ...) \
+    py::class_<Name, ref<Name>>(m, #Name, DM(Name), ##__VA_ARGS__)
+
+#define qdef(Class, Function, ...) \
+    def(#Function, &Class::Function, DM(Class, Function), ##__VA_ARGS__)
+
 using namespace mitsuba;
 
 namespace py = pybind11;

@@ -1,13 +1,15 @@
 #pragma once
 
-#include <mitsuba/core/platform.h>
+#include <mitsuba/core/class.h>
 #include <atomic>
 #include <stdexcept>
-#include <string>
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Reference counted object base class
+/**
+ * \brief Reference counted object base class
+ * \ingroup libcore
+ */
 class MTS_EXPORT_CORE Object {
 public:
     /// Default constructor
@@ -34,13 +36,14 @@ public:
 	 * \brief Return a human-readable string representation
 	 * of the object's contents.
 	 *
-	 * This function is mainly useful for debugging purposes
-	 * and should ideally be implemented by all subclasses.
-	 * The default implementation simply returns <tt>MyObject[unknown]</tt>,
-	 * where <tt>MyObject</tt> is the name of the subclass.
+     * This function is mainly useful for debugging purposes and should ideally
+     * be implemented by all subclasses. The default implementation simply
+     * returns <tt>MyObject[<address of 'this' pointer>]</tt>, where
+     * <tt>MyObject</tt> is the name of the class.
 	 */
 	virtual std::string toString() const;
 
+    MTS_DECLARE_CLASS()
 protected:
     /** \brief Virtual protected deconstructor.
      * (Will only be called by \ref ref)
@@ -62,6 +65,8 @@ private:
  * The advantage over C++ solutions such as <tt>std::shared_ptr</tt> is that
  * the reference count is very compactly integrated into the base object
  * itself.
+ *
+ * \ingroup libcore
  */
 template <typename T> class ref {
 public:
@@ -126,16 +131,16 @@ public:
         return *this;
     }
 
-    /// Compare this reference with another reference
+    /// Compare this reference to another reference
     bool operator==(const ref &r) const { return m_ptr == r.m_ptr; }
 
-    /// Compare this reference with another reference
+    /// Compare this reference to another reference
     bool operator!=(const ref &r) const { return m_ptr != r.m_ptr; }
 
-    /// Compare this reference with a pointer
+    /// Compare this reference to a pointer
     bool operator==(const T* ptr) const { return m_ptr == ptr; }
 
-    /// Compare this reference with a pointer
+    /// Compare this reference to a pointer
     bool operator!=(const T* ptr) const { return m_ptr != ptr; }
 
     /// Access the object referenced by this reference

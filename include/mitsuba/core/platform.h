@@ -44,6 +44,13 @@
 #  define MTS_EXPORT_BIDIR MTS_IMPORT
 #endif
 
+/* A few macro helpers to enable overloading macros based on the number of parameters */
+#define MTS_EXPAND(x)                              x
+#define MTS_COUNT(_1, _2, _3, _4, _5, COUNT, ...)  COUNT
+#define MTS_VA_SIZE(...)                           MTS_EXPAND(MTS_COUNT(__VA_ARGS__, 5, 4, 3, 2, 1))
+#define MTS_CAT_HELPER(a, b)                       a ## b
+#define MTS_CAT(a, b)                              MTS_CAT_HELPER(a, b)
+
 NAMESPACE_BEGIN(mitsuba)
 
 /* Define a 'Float' data type with customizable precision */

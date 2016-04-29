@@ -21,6 +21,213 @@
 #endif
 
 
+static const char *__doc_mitsuba_Appender =
+R"doc(This class defines an abstract destination for logging-relevant information
+
+\ingroup libcore \ingroup libpython)doc";
+
+static const char *__doc_mitsuba_Appender_append = R"doc(Append a line of text with the given log level)doc";
+
+static const char *__doc_mitsuba_Appender_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_Appender_logProgress =
+R"doc(Process a progress message
+
+Parameter ``progress``:
+    Percentage value in [0, 100]
+
+Parameter ``name``:
+    Title of the progress message
+
+Parameter ``formatted``:
+    Formatted string representation of the message
+
+Parameter ``eta``:
+    Estimated time until 100% is reached.
+
+Parameter ``ptr``:
+    Custom pointer payload. This is used to express the context of a
+    progress message. When rendering a scene, it will usually contain a
+    pointer to the associated ``RenderJob``.
+
+Remark:
+    The ``ptr`` argument is missing in the Python bindings)doc";
+
+static const char *__doc_mitsuba_Class =
+R"doc(\headerfile mitsuba/core/class.h mitsuba/mitsuba.h Stores meta-information
+about Object instances.
+
+This class provides a thin layer of RTTI (run-time type information), which
+is useful for doing things like:
+
+<ul> <li> Checking if an object derives from a certain class </li> <li>
+Determining the parent of a class at runtime </li> <li> Instantiating a
+class by name </li> <li> Unserializing a class from a binary data stream
+</li> </ul>
+
+See also:
+    ref, Object)doc";
+
+static const char *__doc_mitsuba_Class_Class =
+R"doc(Construct a new class descriptor
+
+This method should never be called manually. Instead, use one of the
+MTS_IMPLEMENT_CLASS, MTS_IMPLEMENT_CLASS_S, MTS_IMPLEMENT_CLASS_I or
+MTS_IMPLEMENT_CLASS_IS macros to automatically do this for you.
+
+Parameter ``name``:
+    Name of the class
+
+Parameter ``parent``:
+    Name of the parent class
+
+Parameter ``abstract``:
+    ``True`` if the class contains pure virtual methods
+
+Parameter ``constr``:
+    Pointer to a default construction function
+
+Parameter ``unser``:
+    Pointer to a unserialization construction function)doc";
+
+static const char *__doc_mitsuba_Class_construct = R"doc(Generate an instance of this class (if this is supported))doc";
+
+static const char *__doc_mitsuba_Class_derivesFrom = R"doc(Check whether this class derives from *theClass*)doc";
+
+static const char *__doc_mitsuba_Class_forName = R"doc(Look up a class by its name)doc";
+
+static const char *__doc_mitsuba_Class_getName = R"doc(Return the name of the represented class)doc";
+
+static const char *__doc_mitsuba_Class_getParent =
+R"doc(Return the Class object associated with the parent class of nullptr if it
+does not have one.)doc";
+
+static const char *__doc_mitsuba_Class_initializeOnce = R"doc(Initialize a class - called by staticInitialization())doc";
+
+static const char *__doc_mitsuba_Class_isAbstract =
+R"doc(Return whether or not the class represented by this Class object contains
+pure virtual methods)doc";
+
+static const char *__doc_mitsuba_Class_isConstructible = R"doc(Does the class support instantiation over RTTI?)doc";
+
+static const char *__doc_mitsuba_Class_isSerializable = R"doc(Does the class support serialization?)doc";
+
+static const char *__doc_mitsuba_Class_m_abstract = R"doc()doc";
+
+static const char *__doc_mitsuba_Class_m_constr = R"doc()doc";
+
+static const char *__doc_mitsuba_Class_m_name = R"doc()doc";
+
+static const char *__doc_mitsuba_Class_m_parent = R"doc()doc";
+
+static const char *__doc_mitsuba_Class_m_parentName = R"doc()doc";
+
+static const char *__doc_mitsuba_Class_m_unser = R"doc()doc";
+
+static const char *__doc_mitsuba_Class_rttiIsInitialized = R"doc(Check if the RTTI layer has been initialized)doc";
+
+static const char *__doc_mitsuba_Class_staticInitialization = R"doc(Initializes the built-in RTTI and creates a list of all compiled classes)doc";
+
+static const char *__doc_mitsuba_Class_staticShutdown = R"doc(Free the memory taken by staticInitialization())doc";
+
+static const char *__doc_mitsuba_Class_unserialize = R"doc(Unserialize an instance of the class (if this is supported).)doc";
+
+static const char *__doc_mitsuba_Logger =
+R"doc(Responsible for processing log messages
+
+Upon receiving a log message, the Logger class invokes a Formatter to
+convert it into a human-readable form. Following that, it sends this
+information to every registered Appender.)doc";
+
+static const char *__doc_mitsuba_Logger_Logger = R"doc(Construct a new logger with the given minimum log level)doc";
+
+static const char *__doc_mitsuba_Logger_addAppender = R"doc(Add an appender to this logger)doc";
+
+static const char *__doc_mitsuba_Logger_clearAppenders = R"doc(Remove all appenders from this logger)doc";
+
+static const char *__doc_mitsuba_Logger_d = R"doc()doc";
+
+static const char *__doc_mitsuba_Logger_getAppender = R"doc(Return one of the appenders)doc";
+
+static const char *__doc_mitsuba_Logger_getAppenderCount = R"doc(Return the number of registered appenders)doc";
+
+static const char *__doc_mitsuba_Logger_getAppender_2 = R"doc(Return one of the appenders)doc";
+
+static const char *__doc_mitsuba_Logger_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_Logger_getErrorLevel = R"doc(Return the current error level)doc";
+
+static const char *__doc_mitsuba_Logger_getFormatter = R"doc(Return the logger's formatter implementation)doc";
+
+static const char *__doc_mitsuba_Logger_getFormatter_2 = R"doc(Return the logger's formatter implementation (const))doc";
+
+static const char *__doc_mitsuba_Logger_getLogLevel = R"doc(Return the current log level)doc";
+
+static const char *__doc_mitsuba_Logger_log =
+R"doc(Process a log message
+
+Parameter ``level``:
+    Log level of the message
+
+Parameter ``theClass``:
+    Class descriptor of the message creator
+
+Parameter ``filename``:
+    Source file of the message creator
+
+Parameter ``line``:
+    Source line number of the message creator
+
+Parameter ``fmt``:
+    printf-style string formatter \note This function is not exposed in the
+    Python bindings. Instead, please use \cc mitsuba.core.Log)doc";
+
+static const char *__doc_mitsuba_Logger_logProgress =
+R"doc(Process a progress message
+
+Parameter ``progress``:
+    Percentage value in [0, 100]
+
+Parameter ``name``:
+    Title of the progress message
+
+Parameter ``formatted``:
+    Formatted string representation of the message
+
+Parameter ``eta``:
+    Estimated time until 100% is reached.
+
+Parameter ``ptr``:
+    Custom pointer payload. This is used to express the context of a
+    progress message. When rendering a scene, it will usually contain a
+    pointer to the associated ``RenderJob``.)doc";
+
+static const char *__doc_mitsuba_Logger_m_logLevel = R"doc()doc";
+
+static const char *__doc_mitsuba_Logger_readLog =
+R"doc(Return the contents of the log file as a string (if it exists)
+
+Returns:
+    ``True`` upon success)doc";
+
+static const char *__doc_mitsuba_Logger_removeAppender = R"doc(Remove an appender from this logger)doc";
+
+static const char *__doc_mitsuba_Logger_setErrorLevel =
+R"doc(Set the error log level (this level and anything above will throw
+exceptions).
+
+The value provided here can be used for instance to turn warnings into
+errors. But *level* must always be less than EError, i.e. it isn't possible
+to cause errors not to throw an exception.)doc";
+
+static const char *__doc_mitsuba_Logger_setFormatter = R"doc(Set the logger's formatter implementation)doc";
+
+static const char *__doc_mitsuba_Logger_setLogLevel = R"doc(Set the log level (everything below will be ignored))doc";
+
+static const char *__doc_mitsuba_Logger_staticInitialization = R"doc(Initialize logging)doc";
+
+static const char *__doc_mitsuba_Logger_staticShutdown = R"doc(Shutdown logging)doc";
+
 static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
 
 static const char *__doc_mitsuba_Object_Object = R"doc(Default constructor)doc";
@@ -32,6 +239,8 @@ R"doc(Decrease the reference count of the object and possibly deallocate it.
 
 The object will automatically be deallocated once the reference count
 reaches zero.)doc";
+
+static const char *__doc_mitsuba_Object_getClass = R"doc()doc";
 
 static const char *__doc_mitsuba_Object_getRefCount = R"doc(Return the current reference count)doc";
 
@@ -48,9 +257,166 @@ implemented by all subclasses. The default implementation simply returns
 
 static const char *__doc_mitsuba_Properties = R"doc(Reference counted object base class)doc";
 
+static const char *__doc_mitsuba_Properties_2 =
+R"doc(Associative parameter map for constructing subclasses of
+ConfigurableObject.
+
+Note that the Python bindings for this class do not implement the various
+type-dependent getters and setters. Instead, they are accessed just like a
+normal Python map, e.g:
+
+\code myProps = mitsuba.core.Properties("pluginName")
+myProps["stringProperty"] = "hello" myProps["spectrumProperty"] =
+mitsuba.core.Spectrum(1.0) \endcode)doc";
+
 static const char *__doc_mitsuba_Properties_Properties = R"doc(Default constructor)doc";
 
 static const char *__doc_mitsuba_Properties_Properties_2 = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_Properties_Properties_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_Properties_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_d = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_getBoolean = R"doc(Retrieve a boolean value)doc";
+
+static const char *__doc_mitsuba_Properties_getBoolean_2 = R"doc(Retrieve a boolean value (use default value if no entry exists))doc";
+
+static const char *__doc_mitsuba_Properties_hasProperty = R"doc(Verify if a value with the specified name exists)doc";
+
+static const char *__doc_mitsuba_Properties_setBoolean = R"doc(Set a boolean value)doc";
+
+static const char *__doc_mitsuba_StreamAppender =
+R"doc(%Appender implementation, which writes to an arbitrary C++ output stream
+
+\ingroup libcore \ingroup libpython)doc";
+
+static const char *__doc_mitsuba_StreamAppender_StreamAppender =
+R"doc(Create a new stream appender
+
+Remark:
+    This constructor is not exposed in the Python bindings)doc";
+
+static const char *__doc_mitsuba_StreamAppender_StreamAppender_2 = R"doc(Create a new stream appender logging to a file)doc";
+
+static const char *__doc_mitsuba_StreamAppender_append = R"doc(Append a line of text)doc";
+
+static const char *__doc_mitsuba_StreamAppender_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_StreamAppender_logProgress = R"doc(Process a progress message)doc";
+
+static const char *__doc_mitsuba_StreamAppender_logsToFile = R"doc(Does this appender log to a file)doc";
+
+static const char *__doc_mitsuba_StreamAppender_m_fileName = R"doc()doc";
+
+static const char *__doc_mitsuba_StreamAppender_m_isFile = R"doc()doc";
+
+static const char *__doc_mitsuba_StreamAppender_m_lastMessageWasProgress = R"doc()doc";
+
+static const char *__doc_mitsuba_StreamAppender_m_stream = R"doc()doc";
+
+static const char *__doc_mitsuba_StreamAppender_readLog = R"doc(Return the contents of the log file as a string)doc";
+
+static const char *__doc_mitsuba_StreamAppender_toString = R"doc(Return a string representation)doc";
+
+static const char *__doc_mitsuba_Thread =
+R"doc(Cross-platform thread implementation
+
+Mitsuba threads are internally implemented via the ``std::thread`` class
+defined in C++11. This wrapper class is needed to attach additional state
+(Loggers, Path resolvers, etc.) that is inherited when a thread launches
+another thread.)doc";
+
+static const char *__doc_mitsuba_Thread_Thread =
+R"doc(Create a new thread object
+
+Parameter ``name``:
+    An identifying name of this thread (will be shown in debug messages))doc";
+
+static const char *__doc_mitsuba_Thread_d = R"doc()doc";
+
+static const char *__doc_mitsuba_Thread_detach =
+R"doc(Detach the thread and release resources
+
+After a call to this function, join() cannot be used anymore. This releases
+resources, which would otherwise be held until a call to join().)doc";
+
+static const char *__doc_mitsuba_Thread_dispatch = R"doc(Thread dispatch function)doc";
+
+static const char *__doc_mitsuba_Thread_exit = R"doc(Exit the thread, should be called from inside the thread)doc";
+
+static const char *__doc_mitsuba_Thread_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_Thread_getCoreAffinity = R"doc(Return the core affinity)doc";
+
+static const char *__doc_mitsuba_Thread_getCritical = R"doc(Return the value of the critical flag)doc";
+
+static const char *__doc_mitsuba_Thread_getID = R"doc(Return a unique ID that is associated with this thread)doc";
+
+static const char *__doc_mitsuba_Thread_getLogger = R"doc(Return the thread's logger instance)doc";
+
+static const char *__doc_mitsuba_Thread_getName = R"doc(Return the name of this thread)doc";
+
+static const char *__doc_mitsuba_Thread_getParent = R"doc(Return the parent thread)doc";
+
+static const char *__doc_mitsuba_Thread_getParent_2 = R"doc(Return the parent thread (const version))doc";
+
+static const char *__doc_mitsuba_Thread_getPriority = R"doc(Return the thread priority)doc";
+
+static const char *__doc_mitsuba_Thread_getThread = R"doc(Return the current thread)doc";
+
+static const char *__doc_mitsuba_Thread_isRunning = R"doc(Is this thread still running?)doc";
+
+static const char *__doc_mitsuba_Thread_join = R"doc(Wait until the thread finishes)doc";
+
+static const char *__doc_mitsuba_Thread_run = R"doc(The thread's run method)doc";
+
+static const char *__doc_mitsuba_Thread_setCoreAffinity =
+R"doc(Set the core affinity
+
+This function provides a hint to the operating system scheduler that the
+thread should preferably run on the specified processor core. By default,
+the parameter is set to -1, which means that there is no affinity.)doc";
+
+static const char *__doc_mitsuba_Thread_setCritical =
+R"doc(Specify whether or not this thread is critical
+
+When an thread marked critical crashes from an uncaught exception, the
+whole process is brought down. The default is ``False``.)doc";
+
+static const char *__doc_mitsuba_Thread_setLogger = R"doc(Set the logger instance used to process log messages from this thread)doc";
+
+static const char *__doc_mitsuba_Thread_setName = R"doc(Set the name of this thread)doc";
+
+static const char *__doc_mitsuba_Thread_setPriority =
+R"doc(Set the thread priority
+
+This does not always work -- for instance, Linux requires root privileges
+for this operation.
+
+Returns:
+    ``True`` upon success.)doc";
+
+static const char *__doc_mitsuba_Thread_sleep = R"doc(Sleep for a certain amount of time)doc";
+
+static const char *__doc_mitsuba_Thread_start = R"doc(Start the thread)doc";
+
+static const char *__doc_mitsuba_Thread_staticInitialization = R"doc(Initialize the threading system)doc";
+
+static const char *__doc_mitsuba_Thread_staticShutdown = R"doc(Shut down the threading system)doc";
+
+static const char *__doc_mitsuba_Thread_toString = R"doc(Return a string representation)doc";
+
+static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
+
+static const char *__doc_mitsuba_detail_get_default_constructor = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_get_default_constructor_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_get_unserialization_constructor = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_get_unserialization_constructor_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper = R"doc()doc";
 
@@ -83,17 +449,17 @@ static const char *__doc_mitsuba_ref_operator_assign_2 = R"doc(Overwrite this re
 
 static const char *__doc_mitsuba_ref_operator_assign_3 = R"doc(Overwrite this reference with a pointer to another object)doc";
 
-static const char *__doc_mitsuba_ref_operator_eq = R"doc(Compare this reference with another reference)doc";
+static const char *__doc_mitsuba_ref_operator_eq = R"doc(Compare this reference to another reference)doc";
 
-static const char *__doc_mitsuba_ref_operator_eq_2 = R"doc(Compare this reference with a pointer)doc";
+static const char *__doc_mitsuba_ref_operator_eq_2 = R"doc(Compare this reference to a pointer)doc";
 
 static const char *__doc_mitsuba_ref_operator_mul = R"doc(Return a C++ reference to the referenced object)doc";
 
 static const char *__doc_mitsuba_ref_operator_mul_2 = R"doc(Return a const C++ reference to the referenced object)doc";
 
-static const char *__doc_mitsuba_ref_operator_ne = R"doc(Compare this reference with another reference)doc";
+static const char *__doc_mitsuba_ref_operator_ne = R"doc(Compare this reference to another reference)doc";
 
-static const char *__doc_mitsuba_ref_operator_ne_2 = R"doc(Compare this reference with a pointer)doc";
+static const char *__doc_mitsuba_ref_operator_ne_2 = R"doc(Compare this reference to a pointer)doc";
 
 static const char *__doc_mitsuba_ref_operator_sub = R"doc(Access the object referenced by this reference)doc";
 
@@ -161,6 +527,10 @@ static const char *__doc_pcg32_nextFloat = R"doc(Generate a single precision flo
 static const char *__doc_pcg32_nextUInt = R"doc(Generate a uniformly distributed unsigned 32-bit random number)doc";
 
 static const char *__doc_pcg32_nextUInt_2 = R"doc(Generate a uniformly distributed number, r, where 0 <= r < bound)doc";
+
+static const char *__doc_pcg32_operator_eq = R"doc(Equality operator)doc";
+
+static const char *__doc_pcg32_operator_ne = R"doc(Inequality operator)doc";
 
 static const char *__doc_pcg32_operator_sub = R"doc(Compute the distance between two PCG32 pseudorandom number generators)doc";
 
