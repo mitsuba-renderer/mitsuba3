@@ -25,7 +25,8 @@ MTS_PY_EXPORT(filesystem) {
       // Note: python doesn't allow for overload of assignment operator
       .def(py::self == py::self, DM(filesystem, path, operator_eq))
       .def(py::self != py::self, DM(filesystem, path, operator_ne))
-      .def("__str__", &path::native, DM(filesystem, path, native));
+      .def("__str__", &path::native, DM(filesystem, path, native))
+      .def("__repr__", &path::native, DM(filesystem, path, native));
       // TODO: protected methods?
 
   m2.def("current_path", &current_path, DM(filesystem, current_path));
