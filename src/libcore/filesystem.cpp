@@ -81,7 +81,7 @@ size_t file_size(const path& p) {
   return (size_t) sb.st_size;
 }
 
-inline bool create_directory(const path& p) noexcept {
+bool create_directory(const path& p) noexcept {
 #if defined(_WIN32)
   return CreateDirectoryW(p.native().c_str(), NULL) != 0;
 #else
