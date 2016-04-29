@@ -123,11 +123,14 @@ bool remove(const path& p) {
 // -----------------------------------------------------------------------------
 
 string_type path::extension() const {
+  if (empty() || m_path.back() == "." || m_path.back() == "..")
+    return "";
+
   const string_type &name = filename();
   size_t pos = name.find_last_of(".");
   if (pos == string_type::npos)
     return "";
-  return name.substr(pos+1);
+  return name.substr(pos);  // Including the . character!
 }
 
 string_type path::filename() const {
