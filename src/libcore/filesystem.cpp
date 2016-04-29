@@ -182,19 +182,16 @@ path & path::operator=(path &&path) {
   return *this;
 }
 
-string_type path::str(path_type type) const {
+string_type path::str() const {
   std::ostringstream oss;
 
   if (m_type == posix_path && m_absolute)
-    oss << "/";
+    oss << preferred_separator;
 
   for (size_t i = 0; i < m_path.size(); ++i) {
     oss << m_path[i];
     if (i + 1 < m_path.size()) {
-      if (type == posix_path)
-        oss << '/';
-      else
-        oss << '\\';
+      oss << preferred_separator;
     }
   }
 

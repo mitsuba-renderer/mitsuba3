@@ -52,6 +52,11 @@ typedef char value_type;
 /// Type of strings (built from system-specific characters)
 typedef std::basic_string<value_type> string_type;
 
+#if defined(_WIN32)
+constexpr value_type preferred_separator = '\\';
+#else
+constexpr value_type preferred_separator = '/';
+#endif
 
 class MTS_EXPORT_CORE path {
  public:
@@ -96,13 +101,13 @@ class MTS_EXPORT_CORE path {
     string_type extension() const;
     string_type filename() const;
 
-
+    // TODO: c_str (equivalent to p.native.c_str())
     // TODO: should be able to return a reference
     const string_type native() const noexcept {
-      return str(native_path);
+      return str();
     }
     operator string_type() const noexcept {
-      return str(native_path);
+      return str();
     }
 
     path operator/(const path &other) const;
@@ -118,7 +123,7 @@ class MTS_EXPORT_CORE path {
     bool operator!=(const path &p) const { return p.m_path != m_path; }
 
  protected:
-    string_type str(path_type type = native_path) const;
+    string_type str() const;
 
     void set(const string_type &str, path_type type = native_path);
 
@@ -145,8 +150,9 @@ extern MTS_EXPORT_CORE bool exists(const path& p) noexcept;
 extern MTS_EXPORT_CORE size_t file_size(const path& p);
 extern MTS_EXPORT_CORE bool create_directory(const path& p) noexcept;
 extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
-// TODO: remove_all to remove recursively
+/// Removes the file at the passed path
 extern MTS_EXPORT_CORE bool remove(const path& p);
+// TODO: remove_all to remove recursively
 
 NAMESPACE_END(filesystem)
 

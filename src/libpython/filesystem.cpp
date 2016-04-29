@@ -6,8 +6,6 @@ using namespace mitsuba::filesystem;
 MTS_PY_EXPORT(filesystem) {
   auto m2 = m.def_submodule("filesystem", "Lightweight cross-platform filesystem utilities");
 
-  // TODO: python bindings
-
   py::class_<path>(m2, "path", DM(filesystem, path))
       .def(py::init<>(), DM(filesystem, path, path))
       .def(py::init<const path &>(), DM(filesystem, path, path, 2))
@@ -29,6 +27,8 @@ MTS_PY_EXPORT(filesystem) {
       .def("__str__", &path::native, DM(filesystem, path, native))
       .def("__repr__", &path::native, DM(filesystem, path, native));
       // TODO: protected methods?
+
+  m2.attr("PREFERRED_SEPARATOR") = py::cast(preferred_separator);
 
   m2.def("current_path", &current_path, DM(filesystem, current_path));
   m2.def("make_absolute", &make_absolute, DM(filesystem, make_absolute));
