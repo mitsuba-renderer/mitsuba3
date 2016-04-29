@@ -576,6 +576,81 @@ static const char *__doc_mitsuba_detail_variant_helper_destruct = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
 
+static const char *__doc_mitsuba_filesystem_create_directory = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_current_path = R"doc(Returns the current working directory (equivalent to getcwd))doc";
+
+static const char *__doc_mitsuba_filesystem_exists = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_file_size = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_is_directory = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_is_regular_file = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_make_absolute = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_clear = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_empty = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_extension =
+R"doc(Returns the extension of the filename component of the path (the substring
+starting at the rightmost period, including the period). Special paths '.'
+and '..' have an empty extension.)doc";
+
+static const char *__doc_mitsuba_filesystem_path_filename = R"doc(Returns the filename component of the path, including the extension.)doc";
+
+static const char *__doc_mitsuba_filesystem_path_is_absolute = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_is_relative = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_m_absolute = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_m_path = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_native = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_operator_assign_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_operator_basic_string = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_operator_div = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_parent_path =
+R"doc(Returns the path to the parent directory. Returns the empty path if it
+already empty or if it has only one element.)doc";
+
+static const char *__doc_mitsuba_filesystem_path_path = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_set = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_str = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_path_tokenize = R"doc()doc";
+
+static const char *__doc_mitsuba_filesystem_remove = R"doc(Removes the file at the passed path)doc";
+
+static const char *__doc_mitsuba_filesystem_resize_file = R"doc()doc";
+
 static const char *__doc_mitsuba_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
 static const char *__doc_mitsuba_math_clamp = R"doc(Generic range clamping function)doc";
