@@ -81,11 +81,17 @@ class MTS_EXPORT_CORE path {
     // Not part of the std::filesystem::path specification
     //size_t length() const { return m_path.size(); }
 
+    void clear() {
+      m_absolute = false;
+      m_path.clear();
+    }
     bool empty() const { return m_path.empty(); }
 
     bool is_absolute() const { return m_absolute; }
     bool is_relative() const { return !m_absolute; }
 
+    /// Returns the path to the parent directory. Returns the empty path if it
+    /// already empty or if it has only one element.
     path parent_path() const;
     string_type extension() const;
     string_type filename() const;

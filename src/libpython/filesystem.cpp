@@ -14,6 +14,7 @@ MTS_PY_EXPORT(filesystem) {
       .def(py::init<const char *>(), DM(filesystem, path, path, 4))
       .def(py::init<const string_type &>(), DM(filesystem, path, path, 5))
 
+      .def("clear", &path::clear, DM(filesystem, path, clear))
       .def("empty", &path::empty, DM(filesystem, path, empty))
       .def("is_absolute", &path::is_absolute, DM(filesystem, path, is_absolute))
       .def("is_relative", &path::is_relative, DM(filesystem, path, is_relative))
