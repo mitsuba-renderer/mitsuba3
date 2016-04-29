@@ -25,7 +25,7 @@ path make_absolute(const path& p) {
     throw std::runtime_error("Internal error in realpath(): " + std::string(strerror(errno)));
   return path(temp);
 #else
-  std::wstring value = wstr(), out(MAX_PATH, '\0');
+  std::wstring value = p.native(), out(MAX_PATH, '\0');
         DWORD length = GetFullPathNameW(value.c_str(), MAX_PATH, &out[0], NULL);
         if (length == 0)
             throw std::runtime_error("Internal error in realpath(): " + std::to_string(GetLastError()));
