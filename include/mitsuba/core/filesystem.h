@@ -43,9 +43,6 @@ NAMESPACE_BEGIN(mitsuba)
 
 NAMESPACE_BEGIN(filesystem)
 
-// TODO: all interfaces matching the C++17 reference
-class path;  // TODO: remove this
-
 /// Type of character used on the system
 #if defined(_WIN32)
 typedef wchar_t value_type;
@@ -56,25 +53,8 @@ typedef char value_type;
 typedef std::basic_string<value_type> string_type;
 
 
-/// Returns the current working directory (equivalent to getcwd)
-extern MTS_EXPORT_CORE path current_path();
-// TODO: overload taking a base path as parameter
-
-// TODO: take `filesystem::path base` parameter
-extern MTS_EXPORT_CORE path make_absolute(const path& p);
-
-extern MTS_EXPORT_CORE bool is_regular_file(const path& p) noexcept;
-extern MTS_EXPORT_CORE bool is_directory(const path& p) noexcept;
-extern MTS_EXPORT_CORE bool exists(const path& p) noexcept;
-
-extern MTS_EXPORT_CORE size_t file_size(const path& p);
-extern MTS_EXPORT_CORE inline bool create_directory(const path& p) noexcept;
-extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
-// TODO: remove_all to remove recursively
-extern MTS_EXPORT_CORE bool remove(const path& p);
-
 class MTS_EXPORT_CORE path {
-public:
+ public:
     enum path_type {
         windows_path = 0,
         posix_path = 1,
@@ -131,24 +111,36 @@ public:
     bool operator==(const path &p) const { return p.m_path == m_path; }
     bool operator!=(const path &p) const { return p.m_path != m_path; }
 
-protected:
+ protected:
     string_type str(path_type type = native_path) const;
 
     void set(const string_type &str, path_type type = native_path);
 
-//#if defined(_WIN32)
-//    std::wstring wstr(path_type type = native_path) const;
-//    void set(const std::wstring &wstring, path_type type = native_path);
-//#endif
-
     static std::vector<std::string> tokenize(const string_type &string,
                                              const string_type &delim);
 
-protected:
+ protected:
     path_type m_type;
     std::vector<string_type> m_path;
     bool m_absolute;
 };
+
+/// Returns the current working directory (equivalent to getcwd)
+extern MTS_EXPORT_CORE path current_path();
+// TODO: overload taking a base path as parameter
+
+// TODO: take `filesystem::path base` parameter
+extern MTS_EXPORT_CORE path make_absolute(const path& p);
+
+extern MTS_EXPORT_CORE bool is_regular_file(const path& p) noexcept;
+extern MTS_EXPORT_CORE bool is_directory(const path& p) noexcept;
+extern MTS_EXPORT_CORE bool exists(const path& p) noexcept;
+
+extern MTS_EXPORT_CORE size_t file_size(const path& p);
+extern MTS_EXPORT_CORE bool create_directory(const path& p) noexcept;
+extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
+// TODO: remove_all to remove recursively
+extern MTS_EXPORT_CORE bool remove(const path& p);
 
 NAMESPACE_END(filesystem)
 
