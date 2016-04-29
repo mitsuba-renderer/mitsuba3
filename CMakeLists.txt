@@ -86,10 +86,5 @@ else()
   add_definitions(-DSINGLE_PRECISION)
 endif()
 
-add_subdirectory(src)
 enable_testing()
-
-add_test(NAME mitsuba_test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover ${CMAKE_BINARY_DIR}/src/libpython -v)
-
-add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
-        ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_subdirectory(src)

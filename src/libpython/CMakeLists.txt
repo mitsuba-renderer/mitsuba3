@@ -91,3 +91,29 @@ add_custom_target(mkdoc COMMAND
   ${PROJECT_SOURCE_DIR}/include/mitsuba/core/*.h
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
+
+# Copy over the test files to the build directory (detecting changes)
+# TODO: should be done more prettily
+file(GLOB PYTHON_TEST_FILES "test_*.py")
+set(PYTHON_TEST_FILES_IN_BUILD "")
+foreach (test_file ${PYTHON_TEST_FILES})
+  get_filename_component(filename ${test_file} NAME)
+  set(output_dir ${CMAKE_BINARY_DIR}/src/libpython/${filename})
+  list(APPEND PYTHON_TEST_FILES_IN_BUILD ${output_dir})
+  message(${PYTHON_TEST_FILES_IN_BUILD})
+  add_custom_command(
+    OUTPUT ${output_dir}
+    COMMAND ${CMAKE_COMMAND} -E copy ${test_file} ${output_dir}
+    MAIN_DEPENDENCY ${test_file})
+endforeach()
+
+add_custom_target(mitsuba-python-test-files
+  DEPENDS ${PYTHON_TEST_FILES_IN_BUILD} ${PYTHON_TEST_FILES}
+)
+add_dependencies(mitsuba-python mitsuba-python-test-files)
+
+# Test targets: rely on the auto-discovery feature of python's `unittest`
+add_test(NAME mitsuba_libpython_test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover ${CMAKE_BINARY_DIR}/src/libpython -v)
+add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
+        ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DEPENDS mitsuba-python)
