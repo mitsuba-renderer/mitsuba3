@@ -88,7 +88,11 @@ class MTS_EXPORT_CORE path {
     /// Returns the path to the parent directory. Returns the empty path if it
     /// already empty or if it has only one element.
     path parent_path() const;
+    /// Returns the extension of the filename component of the path (the
+    /// substring starting at the rightmost period, including the period).
+    /// Special paths '.' and '..' have an empty extension.
     string_type extension() const;
+    /// Returns the filename component of the path, including the extension.
     string_type filename() const;
 
     // TODO: c_str (equivalent to p.native.c_str())
