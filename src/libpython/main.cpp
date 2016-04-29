@@ -2,6 +2,7 @@
 #include <mitsuba/core/logger.h>
 #include "python.h"
 
+MTS_PY_DECLARE(filesystem);
 MTS_PY_DECLARE(pcg32);
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(Thread);
@@ -18,6 +19,7 @@ PYBIND11_PLUGIN(mitsuba) {
 
     py::module m("mitsuba", "Mitsuba Python extension library");
 
+    MTS_PY_IMPORT(filesystem);
     MTS_PY_IMPORT(pcg32);
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Thread);

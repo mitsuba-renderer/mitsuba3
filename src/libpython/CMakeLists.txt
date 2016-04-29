@@ -14,16 +14,17 @@ include_directories(
 
 # Create the binding library
 add_library(mitsuba-python SHARED
-  python.h
-  main.cpp
-  pcg32.cpp
-  object.cpp
-  thread.cpp
-  logger.cpp
   appender.cpp
-  formatter.cpp
   atomic.cpp
+  filesystem.cpp
+  formatter.cpp
+  logger.cpp
+  main.cpp
   math.cpp
+  object.cpp
+  pcg32.cpp
+  python.h
+  thread.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)
@@ -105,7 +106,7 @@ foreach (value ${MKDOC_COMPILE_DEFINITIONS})
 endforeach()
 
 add_custom_target(mkdoc COMMAND
-  python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py 
+  python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py
   ${MKDOC_CXX_FLAGS_LIST}
   `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
