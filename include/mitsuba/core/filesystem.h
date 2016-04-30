@@ -42,7 +42,7 @@ constexpr value_type preferred_separator = '/';
 #endif
 
 class MTS_EXPORT_CORE path {
- public:
+public:
 
     path() : m_absolute(false) { }
 
@@ -60,8 +60,8 @@ class MTS_EXPORT_CORE path {
     //size_t length() const { return m_path.size(); }
 
     void clear() {
-      m_absolute = false;
-      m_path.clear();
+        m_absolute = false;
+        m_path.clear();
     }
     bool empty() const { return m_path.empty(); }
 
@@ -81,10 +81,10 @@ class MTS_EXPORT_CORE path {
     // TODO: c_str (equivalent to p.native.c_str())
     // TODO: should be able to return a reference
     const string_type native() const noexcept {
-      return str();
+        return str();
     }
     operator string_type() const noexcept {
-      return str();
+        return str();
     }
 
     path operator/(const path &other) const;
@@ -92,14 +92,14 @@ class MTS_EXPORT_CORE path {
     path & operator=(path &&path);
     path & operator=(const string_type &str) { set(str); return *this; }
     friend std::ostream &operator<<(std::ostream &os, const path &path) {
-      os << path.str();
-      return os;
+        os << path.str();
+        return os;
     }
 
     bool operator==(const path &p) const { return p.m_path == m_path; }
     bool operator!=(const path &p) const { return p.m_path != m_path; }
 
- protected:
+protected:
     string_type str() const;
 
     void set(const string_type &str);
@@ -107,16 +107,15 @@ class MTS_EXPORT_CORE path {
     static std::vector<std::string> tokenize(const string_type &string,
                                              const string_type &delim);
 
- protected:
+protected:
     std::vector<string_type> m_path;
     bool m_absolute;
 };
 
 /// Returns the current working directory (equivalent to getcwd)
 extern MTS_EXPORT_CORE path current_path();
-// TODO: overload taking a base path as parameter
 
-// TODO: take `filesystem::path base` parameter
+// TODO: should also take a `filesystem::path base` argument
 extern MTS_EXPORT_CORE path make_absolute(const path& p);
 
 extern MTS_EXPORT_CORE bool is_regular_file(const path& p) noexcept;
@@ -128,7 +127,7 @@ extern MTS_EXPORT_CORE bool create_directory(const path& p) noexcept;
 extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
 /// Removes the file at the passed path
 extern MTS_EXPORT_CORE bool remove(const path& p);
-// TODO: remove_all to remove recursively
+// TODO: remove_all function to remove recursively
 
 NAMESPACE_END(filesystem)
 
