@@ -7,7 +7,10 @@ if ((CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU
   endif()
 endif()
 
-include_directories(${PYBIND11_INCLUDE_DIRS} ${PCG32_INCLUDE_DIR})
+include_directories(
+  ${PYBIND11_INCLUDE_DIRS}
+  ${PCG32_INCLUDE_DIRS}
+)
 
 # Create the binding library
 add_library(mitsuba-python SHARED
@@ -56,10 +59,10 @@ elseif (UNIX)
   # missing symbols, but that's perfectly fine -- they will be resolved at
   # import time.
 
-  # .SO file extension on Linux/Mac OS
+  # Use .so file extension on Linux/Mac OS
   set_target_properties(mitsuba-python PROPERTIES SUFFIX ".so")
 
-  # Strip unnecessary sections of the binary on Linux/Mac OS
+  # Strip unnecessary sections from the binary on Linux/Mac OS
   if(APPLE)
     set_target_properties(mitsuba-python PROPERTIES MACOSX_RPATH ".")
     set_target_properties(mitsuba-python PROPERTIES LINK_FLAGS "-undefined dynamic_lookup ")
@@ -73,6 +76,7 @@ elseif (UNIX)
   endif()
 endif()
 
+# Compute compilation flags for 'mkdoc' target, which extracts docstrings from the C++ header files
 string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
 get_property(MKDOC_INCLUDE_DIRECTORIES DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 get_property(MKDOC_COMPILE_DEFINITIONS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_DEFINITIONS)
@@ -93,24 +97,12 @@ add_custom_target(mkdoc COMMAND
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
 
 # Copy over the test files to the build directory (detecting changes)
-# TODO: should be done more prettily
 file(GLOB PYTHON_TEST_FILES "test_*.py")
-set(PYTHON_TEST_FILES_IN_BUILD "")
-foreach (test_file ${PYTHON_TEST_FILES})
-  get_filename_component(filename ${test_file} NAME)
-  set(output_dir ${CMAKE_BINARY_DIR}/src/libpython/${filename})
-  list(APPEND PYTHON_TEST_FILES_IN_BUILD ${output_dir})
-  message(${PYTHON_TEST_FILES_IN_BUILD})
+foreach(test ${PYTHON_TEST_FILES})
   add_custom_command(
-    OUTPUT ${output_dir}
-    COMMAND ${CMAKE_COMMAND} -E copy ${test_file} ${output_dir}
-    MAIN_DEPENDENCY ${test_file})
-endforeach()
-
-add_custom_target(mitsuba-python-test-files
-  DEPENDS ${PYTHON_TEST_FILES_IN_BUILD} ${PYTHON_TEST_FILES}
-)
-add_dependencies(mitsuba-python mitsuba-python-test-files)
+    TARGET mitsuba-python POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${test} ${CMAKE_BINARY_DIR}/src/libpython)
+endforeach(test)
 
 # Test targets: rely on the auto-discovery feature of python's `unittest`
 add_test(NAME mitsuba_libpython_test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover ${CMAKE_BINARY_DIR}/src/libpython -v)

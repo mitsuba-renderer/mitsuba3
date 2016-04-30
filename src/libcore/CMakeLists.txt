@@ -1,6 +1,9 @@
 include_directories(
   ${PNG_INCLUDE_DIRS}
+  ${TBB_INCLUDE_DIRS}
+  ${PCG32_INCLUDE_DIRS}
 )
+
 add_definitions(
   ${PNG_DEFINES}
   -DMTS_BUILD_MODULE=MTS_MODULE_CORE

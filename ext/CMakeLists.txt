@@ -81,6 +81,7 @@ set(TBB_BUILD_TBBMALLOC       OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
 add_subdirectory(tbb)
 set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
+set(TBB_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/tbb/include PARENT_SCOPE)
 
 # Build NanoGUI
 set(NANOGUI_BUILD_EXAMPLE OFF CACHE BOOL " " FORCE)
@@ -106,4 +107,4 @@ add_subdirectory(zeromq)
 set_property(TARGET libzmq PROPERTY FOLDER "dependencies")
 
 # pcg32 include path
-set(PCG32_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/ext/pcg32 PARENT_SCOPE)
+set(PCG32_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pcg32 PARENT_SCOPE)
