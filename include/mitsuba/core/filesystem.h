@@ -17,27 +17,10 @@
 
 #include <mitsuba/core/fwd.h>
 
-// TODO: move most of these includes out to the .cpp file
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <sstream>
-#include <cctype>
-#include <cstdlib>
-#include <cerrno>
-#include <cstring>
-
-#if defined(_WIN32)
-# include <windows.h>
-#else
-# include <unistd.h>
-#endif
-#include <sys/stat.h>
-
-#if defined(__linux)
-# include <linux/limits.h>
-#endif
-
 
 NAMESPACE_BEGIN(mitsuba)
 

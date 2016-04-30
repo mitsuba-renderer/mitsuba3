@@ -1,5 +1,21 @@
 #include <mitsuba/core/filesystem.h>
 
+#include <cctype>
+#include <cstdlib>
+#include <cerrno>
+#include <cstring>
+
+#if defined(_WIN32)
+# include <windows.h>
+#else
+# include <unistd.h>
+#endif
+#include <sys/stat.h>
+
+#if defined(__linux)
+# include <linux/limits.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 NAMESPACE_BEGIN(filesystem)
@@ -212,7 +228,7 @@ void path::set(const string_type &str) {
 }
 
 std::vector<string_type> path::tokenize(const string_type &string,
-                                         const string_type &delim) {
+                                        const string_type &delim) {
   string_type::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
   std::vector<string_type> tokens;
 
