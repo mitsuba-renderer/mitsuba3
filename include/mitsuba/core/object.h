@@ -32,16 +32,16 @@ public:
      */
     void decRef(bool dealloc = true) const noexcept;
 
-	/**
-	 * \brief Return a human-readable string representation
-	 * of the object's contents.
-	 *
+    /**
+     * \brief Return a human-readable string representation
+     * of the object's contents.
+     *
      * This function is mainly useful for debugging purposes and should ideally
      * be implemented by all subclasses. The default implementation simply
      * returns <tt>MyObject[<address of 'this' pointer>]</tt>, where
      * <tt>MyObject</tt> is the name of the class.
-	 */
-	virtual std::string toString() const;
+     */
+    virtual std::string toString() const;
 
     MTS_DECLARE_CLASS()
 protected:

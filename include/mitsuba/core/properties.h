@@ -24,15 +24,15 @@ public:
     Properties();
     Properties(const Properties &);
 
-	/// Verify if a value with the specified name exists
-	bool hasProperty(const std::string &name) const;
+    /// Verify if a value with the specified name exists
+    bool hasProperty(const std::string &name) const;
 
-	/// Set a boolean value
-	void setBoolean(const std::string &name, const bool &value, bool warnDuplicates = true);
-	/// Retrieve a boolean value
-	bool getBoolean(const std::string &name) const;
-	/// Retrieve a boolean value (use default value if no entry exists)
-	bool getBoolean(const std::string &name, const bool &defVal) const;
+    /// Set a boolean value
+    void setBoolean(const std::string &name, const bool &value, bool warnDuplicates = true);
+    /// Retrieve a boolean value
+    bool getBoolean(const std::string &name) const;
+    /// Retrieve a boolean value (use default value if no entry exists)
+    bool getBoolean(const std::string &name, const bool &defVal) const;
 
 private:
     struct PropertiesPrivate;

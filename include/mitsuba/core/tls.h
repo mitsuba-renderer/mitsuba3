@@ -79,30 +79,30 @@ private:
  */
 template <typename Type, typename SFINAE = void> class ThreadLocal : ThreadLocalBase {
 public:
-	/// Construct a new thread local storage object
-	ThreadLocal() : ThreadLocalBase(
-	        []() -> void * { return new Type(); },
-	        [](void *data) { delete static_cast<Type *>(data); }
-	    ) { }
+    /// Construct a new thread local storage object
+    ThreadLocal() : ThreadLocalBase(
+            []() -> void * { return new Type(); },
+            [](void *data) { delete static_cast<Type *>(data); }
+        ) { }
 
-	/// Update the data associated with the current thread
-	ThreadLocal& operator=(const Type &value) {
-	    operator Type &() = value;
-		return *this;
-	}
+    /// Update the data associated with the current thread
+    ThreadLocal& operator=(const Type &value) {
+        operator Type &() = value;
+        return *this;
+    }
 
-	/// Return a reference to the data associated with the current thread
-	operator Type &() {
-		return *((Type *) ThreadLocalBase::get());
-	}
+    /// Return a reference to the data associated with the current thread
+    operator Type &() {
+        return *((Type *) ThreadLocalBase::get());
+    }
 
-	/**
-	 * \brief Return a reference to the data associated with the
-	 * current thread (const version)
-	 */
-	operator const Type &() const {
-		return *((const Type *) ThreadLocalBase::get());
-	}
+    /**
+     * \brief Return a reference to the data associated with the
+     * current thread (const version)
+     */
+    operator const Type &() const {
+        return *((const Type *) ThreadLocalBase::get());
+    }
 };
 
 /**
@@ -118,24 +118,24 @@ template <typename Type> class ThreadLocal<
         Type, typename std::enable_if<std::is_base_of<Object, Type>::value>::type>
     : ThreadLocal<ref<Type>> {
 public:
-	/// Update the data associated with the current thread
-	ThreadLocal& operator=(Type *value) {
-	    ThreadLocal<ref<Type>>::operator ref<Type> &() = value;
-		return *this;
-	}
+    /// Update the data associated with the current thread
+    ThreadLocal& operator=(Type *value) {
+        ThreadLocal<ref<Type>>::operator ref<Type> &() = value;
+        return *this;
+    }
 
-	/// Return a reference to the data associated with the current thread
-	operator Type *() {
-	    return ThreadLocal<ref<Type>>::operator ref<Type> &();
-	}
+    /// Return a reference to the data associated with the current thread
+    operator Type *() {
+        return ThreadLocal<ref<Type>>::operator ref<Type> &();
+    }
 
-	/**
-	 * \brief Return a reference to the data associated with the
-	 * current thread (const version)
-	 */
-	operator const Type &() const {
-	    return ThreadLocal<ref<Type>>::operator ref<Type> &();
-	}
+    /**
+     * \brief Return a reference to the data associated with the
+     * current thread (const version)
+     */
+    operator const Type &() const {
+        return ThreadLocal<ref<Type>>::operator ref<Type> &();
+    }
 };
 
 NAMESPACE_END(mitsuba)

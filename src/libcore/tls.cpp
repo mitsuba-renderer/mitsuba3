@@ -100,31 +100,31 @@ void *ThreadLocalBase::get() {
 
 void ThreadLocalBase::staticInitialization() {
 #if defined(__OSX__)
-	pthread_key_create(&ptdLocal, nullptr);
+    pthread_key_create(&ptdLocal, nullptr);
 #endif
 }
 
 void ThreadLocalBase::staticShutdown() {
 #if defined(__OSX__)
-	pthread_key_delete(ptdLocal);
-	memset(&ptdLocal, 0, sizeof(pthread_key_t));
+    pthread_key_delete(ptdLocal);
+    memset(&ptdLocal, 0, sizeof(pthread_key_t));
 #endif
 }
 
 void ThreadLocalBase::registerThread() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
 #if defined(__OSX__)
-	PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptdLocal);
-	if (!ptd) {
-		ptd = new PerThreadData();
-		ptdGlobal.insert(ptd);
-		pthread_setspecific(ptdLocal, ptd);
-	}
+    PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptdLocal);
+    if (!ptd) {
+        ptd = new PerThreadData();
+        ptdGlobal.insert(ptd);
+        pthread_setspecific(ptdLocal, ptd);
+    }
 #else
-	if (!ptdLocal) {
-		ptdLocal = new PerThreadData();
-		ptdGlobal.insert(ptdLocal);
-	}
+    if (!ptdLocal) {
+        ptdLocal = new PerThreadData();
+        ptdGlobal.insert(ptdLocal);
+    }
 #endif
 }
 
@@ -133,9 +133,9 @@ void ThreadLocalBase::unregisterThread() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
 
     #if defined(__OSX__)
-	    PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptdLocal);
+        PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptdLocal);
     #else
-	    PerThreadData *ptd = ptdLocal;
+        PerThreadData *ptd = ptdLocal;
     #endif
 
     tbb::spin_mutex::scoped_lock local_guard(ptd->mutex);
@@ -143,9 +143,9 @@ void ThreadLocalBase::unregisterThread() {
          it != ptd->entries_ordered.rend(); ++it)
         (*it)->destruct((*it)->data);
 
-	local_guard.release();
-	ptdGlobal.erase(ptd);
-	delete ptd;
+    local_guard.release();
+    ptdGlobal.erase(ptd);
+    delete ptd;
 
     #if defined(__OSX__)
         pthread_setspecific(ptdLocal, nullptr);
