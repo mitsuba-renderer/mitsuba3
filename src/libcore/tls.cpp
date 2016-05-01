@@ -47,7 +47,7 @@ ThreadLocalBase::~ThreadLocalBase() {
 
     /* For every thread */
     for (auto ptd : ptdGlobal) {
-        tbb::spin_mutex::scoped_lock guard(ptd->mutex);
+        tbb::spin_mutex::scoped_lock guard2(ptd->mutex);
 
         /* If the current TLS object is referenced, destroy the contents */
         auto it2 = ptd->entries.find(this);
@@ -57,7 +57,7 @@ ThreadLocalBase::~ThreadLocalBase() {
         auto entry = it2->second;
         ptd->entries_ordered.erase(entry.iterator);
         ptd->entries.erase(it2);
-        guard.release();
+        guard2.release();
         m_destructFunctor(entry.data);
     }
 }

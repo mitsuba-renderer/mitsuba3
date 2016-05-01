@@ -143,14 +143,14 @@ public: \
 
 NAMESPACE_BEGIN(detail)
 template <typename T, typename std::enable_if<std::is_constructible<T>::value, int>::type = 0>
-Class::ConstructFunctor get_construct_functor() { return []() { new T(); }; }
+Class::ConstructFunctor get_construct_functor() { return []() -> Object * { return new T(); }; }
 template <typename T, typename std::enable_if<!std::is_constructible<T>::value, int>::type = 0>
 Class::ConstructFunctor get_construct_functor() { return nullptr; }
 template <typename T, typename std::enable_if<std::is_constructible<T, Stream *>::value, int>::type = 0>
-Class::UnserializeFunctor get_unserialize_functor() { return [](Stream *s) { new T(s); }; }
+Class::UnserializeFunctor get_unserialize_functor() { return [](Stream *s) -> Object * { return new T(s); }; }
 template <typename T, typename std::enable_if<!std::is_constructible<T, Stream *>::value, int>::type = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
-NAMESPACE_END()
+NAMESPACE_END(detail)
 
 /**
  * \brief Creates basic RTTI support for a class

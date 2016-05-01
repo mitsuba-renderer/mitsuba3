@@ -9,15 +9,19 @@ add_definitions(
   -DMTS_BUILD_MODULE=MTS_MODULE_CORE
 )
 
+set(INC_DIR "../../include/mitsuba/core")
+
 add_library(mitsuba-core SHARED 
-   object.cpp
-   class.cpp
-   thread.cpp
-   tls.cpp
-   properties.cpp
-   logger.cpp
-   appender.cpp
-   formatter.cpp
+  ${INC_DIR}/../mitsuba.h
+  ${INC_DIR}/platform.h
+  object.cpp  ${INC_DIR}/object.h
+  class.cpp ${INC_DIR}/class.h
+  thread.cpp ${INC_DIR}/thread.h
+  tls.cpp ${INC_DIR}/tls.h
+  properties.cpp ${INC_DIR}/properties.h
+  logger.cpp ${INC_DIR}/logger.h
+  appender.cpp ${INC_DIR}/appender.h
+  formatter.cpp ${INC_DIR}/formatter.h
 )
 
 target_link_libraries(mitsuba-core ${PNG_LIBRARIES} tbb)

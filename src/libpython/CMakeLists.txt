@@ -14,6 +14,7 @@ include_directories(
 
 # Create the binding library
 add_library(mitsuba-python SHARED
+  python.h
   main.cpp
   pcg32.cpp
   object.cpp

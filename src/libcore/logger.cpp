@@ -6,6 +6,8 @@
 #include <thread>
 #include <vector>
 #include <iostream>
+#include <algorithm>
+#include <mutex>
 #include <stdarg.h>
 
 #if defined(__OSX__)
@@ -139,10 +141,10 @@ void Logger::log(ELogLevel level, const Class *theClass,
             __debugbreak();
 #endif
 
-        DefaultFormatter fmt;
-        fmt.setHaveDate(false);
-        fmt.setHaveLogLevel(false);
-        text = fmt.format(level, theClass,
+        DefaultFormatter formatter;
+        formatter.setHaveDate(false);
+        formatter.setHaveLogLevel(false);
+        text = formatter.format(level, theClass,
             Thread::getThread(), msg, file, line);
         throw std::runtime_error(text);
     }

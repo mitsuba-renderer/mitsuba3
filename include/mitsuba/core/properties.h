@@ -3,6 +3,7 @@
 #include <mitsuba/core/platform.h>
 #include <string>
 #include <map>
+#include <memory>
 
 NAMESPACE_BEGIN(mitsuba)
 

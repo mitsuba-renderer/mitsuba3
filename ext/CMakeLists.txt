@@ -20,6 +20,8 @@ endif()
 
 # Find a matching Python interpreter
 if (PythonLibs_FOUND)
+  # The above sometimes returns version numbers like "3.4.3+"; the "+" must be removed for the next line to work
+  string(REPLACE "+" "" PYTHONLIBS_VERSION_STRING "+${PYTHONLIBS_VERSION_STRING}")
   find_package(PythonInterp ${PYTHONLIBS_VERSION_STRING} EXACT REQUIRED)
   set(PYBIND11_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pybind11/include ${PYTHON_INCLUDE_DIR} PARENT_SCOPE)
 endif()
@@ -43,6 +45,7 @@ if (WIN32)
   set(PNG_SKIP_INSTALL_ALL TRUE)
   add_subdirectory(libpng)
   set_property(TARGET png16 PROPERTY FOLDER "dependencies")
+  add_dependencies(png16 zlib)
 
   set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
   set(PNG_LIBRARIES    "$<TARGET_LINKER_FILE:png16>" PARENT_SCOPE)
@@ -68,11 +71,14 @@ else()
   endif()
 endif()
 
-# Build OpenER
+# Build OpenEXR
 set(ILMBASE_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
 set(OPENEXR_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
 add_subdirectory(openexr)
 set_property(TARGET IexMath eLut toFloat b44ExpLogTable dwaLookups CopyIlmBaseLibs IlmThread Half Iex Imath IlmImf PROPERTY FOLDER "dependencies")
+if (WIN32)
+  add_dependencies(IlmImf zlib)
+endif()
 
 # Build Thread Building Blocks (main shared libraries only)
 set(TBB_BUILD_SHARED          ON  CACHE BOOL " " FORCE)
