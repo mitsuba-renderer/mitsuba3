@@ -7,7 +7,7 @@
 #  define NAMESPACE_END(name) }
 #endif
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__)
 #  define MTS_EXPORT __declspec(dllexport)
 #  define MTS_IMPORT __declspec(dllimport)
 #else
@@ -54,13 +54,22 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /* Define a 'Float' data type with customizable precision */
-
 #if defined(DOUBLE_PRECISION)
 typedef double Float;
 #elif defined(SINGLE_PRECISION)
 typedef float Float;
 #else
 #error No precision flag was defined!
+#endif
+
+/* Reduce namespace pollution from windows.h */
+#if defined(__WINDOWS__)
+#  if !defined(WIN32_LEAN_AND_MEAN)
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  if !defined(NOMINMAX)
+#    define NOMINMAX
+#  endif
 #endif
 
 NAMESPACE_END(mitsuba)

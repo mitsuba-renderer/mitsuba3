@@ -4,6 +4,12 @@
 #include <typeinfo>
 #include <type_traits>
 
+#if defined(_MSC_VER)
+  #pragma warning(push)
+  #pragma warning(disable : 4522) /* warning C4522: multiple assignment operators specified */
+  #define noexcept(arg)
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**
@@ -30,7 +36,7 @@ template<typename... Args> struct variant_helper;
 
 template<typename T, typename... Args> struct variant_helper<T, Args...> {
     static bool copy(const std::type_info *type_info, const void *source, void *target)
-        noexcept(std::is_nothrow_copy_constructible<T>::value() &&
+        noexcept(std::is_nothrow_copy_constructible<T>::value &&
             noexcept(variant_helper<Args...>::copy(type_info, source, target))) {
         if (type_info == &typeid(T)) {
             new (target) T(*reinterpret_cast<const T *>(source));
@@ -41,7 +47,7 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
     }
 
     static bool move(const std::type_info *type_info, void *source, void *target)
-        noexcept(std::is_nothrow_move_constructible<T>::value() &&
+        noexcept(std::is_nothrow_move_constructible<T>::value &&
             noexcept(variant_helper<Args...>::move(type_info, source, target))) {
         if (type_info == &typeid(T)) {
             new (target) T(std::move(*reinterpret_cast<T *>(source)));
@@ -52,7 +58,7 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
     }
 
     static void destruct(const std::type_info *type_info, void *ptr)
-        noexcept(std::is_nothrow_destructible<T>::value() &&
+        noexcept(std::is_nothrow_destructible<T>::value &&
             noexcept(variant_helper<Args...>::destruct(type_info, ptr))) {
         if (type_info == &typeid(T))
             reinterpret_cast<T*>(ptr)->~T();
@@ -62,9 +68,9 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
 };
 
 template<> struct variant_helper<>  {
-    static bool copy(const std::type_info *, const void *, void *) noexcept { return false; }
-    static bool move(const std::type_info *, void *, void *) noexcept { return false; }
-    static void destruct(const std::type_info *, void *) noexcept { }
+    static bool copy(const std::type_info *, const void *, void *) noexcept(true) { return false; }
+    static bool move(const std::type_info *, void *, void *) noexcept(true) { return false; }
+    static void destruct(const std::type_info *, void *) noexcept(true) { }
 };
 
 NAMESPACE_END(detail)
@@ -81,25 +87,25 @@ public:
     variant() { }
 
     variant(const variant<Args...> &v)
-        noexcept(helper_type::copy(type_info, &v.data, &data))
+        noexcept(noexcept(helper_type::copy(type_info, &v.data, &data)))
         : type_info(v.type_info) {
         helper_type::copy(type_info, &v.data, &data);
     }
 
     variant(variant<Args...>&& v)
-        noexcept(helper_type::move(type_info, &v.data, &data))
+        noexcept(noexcept(helper_type::move(type_info, &v.data, &data)))
         : type_info(v.type_info) {
         helper_type::move(type_info, &v.data, &data);
         helper_type::destruct(type_info, &v.data);
         v.type_info = nullptr;
     }
 
-    ~variant() noexcept(helper_type::destruct(type_info, &data)) {
+    ~variant() noexcept(noexcept(helper_type::destruct(type_info, &data))) {
         helper_type::destruct(type_info, &data);
     }
 
     variant<Args...>& operator=(variant<Args...> &v)
-        noexcept(operator=((const variant<Args...> &) v)) {
+        noexcept(noexcept(operator=((const variant<Args...> &) v))) {
         return operator=((const variant<Args...> &) v);
     }
 
@@ -173,3 +179,8 @@ private:
 };
 
 NAMESPACE_END(mitsuba)
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#  undef noexcept
+#endif

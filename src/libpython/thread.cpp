@@ -17,13 +17,13 @@ MTS_PY_EXPORT(Thread) {
         .mdef(Thread, getLogger)
         .mdef(Thread, getLogger)
         .sdef(Thread, getThread)
-        //.mdef(Thread, start)
+        .mdef(Thread, start)
         .mdef(Thread, isRunning)
         .mdef(Thread, detach)
-        //.mdef(Thread, join)
+        .mdef(Thread, join)
         .sdef(Thread, sleep);
 
-	py::enum_<Thread::EPriority>(m.attr("Thread"), "EPriority")
+    py::enum_<Thread::EPriority>(m.attr("Thread"), "EPriority")
         .value("EIdlePriority,", Thread::EIdlePriority)
         .value("ELowestPriority,", Thread::ELowestPriority)
         .value("ELowPriority,", Thread::ELowPriority)

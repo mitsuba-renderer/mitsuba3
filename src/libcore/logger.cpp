@@ -45,7 +45,7 @@ const Formatter *Logger::getFormatter() const {
 }
 
 void Logger::setLogLevel(ELogLevel level) {
-    Assert(level <= EError && level <= m_errorLevel);
+    Assert(level <= d->errorLevel);
     m_logLevel = level;
 }
 

@@ -22,8 +22,10 @@ Makefile
 mitsuba.sdf
 mitsuba.sln
 mitsuba.opensdf
-/Debug
-/Release
+mitsuba.VC.VC.opendb
+mitsuba.VC.db
+Debug
+Release
 *.filters
 /.vs
 /x64

@@ -3,6 +3,8 @@
 
 #if defined(__OSX__)
 #  include <sys/sysctl.h>
+#elif defined(__WINDOWS__)
+#  include <windows.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)

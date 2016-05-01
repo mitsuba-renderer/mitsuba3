@@ -16,14 +16,14 @@ static void PyLog(ELogLevel level, const std::string &msg) {
     if (!name.empty() && name[0] != '<')
         fmt.insert(2, "()");
 
-	Thread::getThread()->getLogger()->log(
-		level,
-		nullptr, /* theClass */
-		filename.c_str(),
-		lineno,
-		fmt.c_str(),
-		name.c_str(),
-		msg.c_str());
+    Thread::getThread()->getLogger()->log(
+        level,
+        nullptr, /* theClass */
+        filename.c_str(),
+        lineno,
+        fmt.c_str(),
+        name.c_str(),
+        msg.c_str());
 }
 
 MTS_PY_EXPORT(Logger) {
@@ -44,13 +44,13 @@ MTS_PY_EXPORT(Logger) {
         .mdef(Logger, setFormatter, py::keep_alive<1, 2>())
         .mdef(Logger, readLog);
 
-	py::enum_<ELogLevel>(m, "ELogLevel", DM(ELogLevel))
-		.value("ETrace", ETrace)
-		.value("EDebug", EDebug)
-		.value("EInfo", EInfo)
-		.value("EWarn", EWarn)
-		.value("EError", EError)
-		.export_values();
+    py::enum_<ELogLevel>(m, "ELogLevel", DM(ELogLevel))
+        .value("ETrace", ETrace)
+        .value("EDebug", EDebug)
+        .value("EInfo", EInfo)
+        .value("EWarn", EWarn)
+        .value("EError", EError)
+        .export_values();
 
-	m.def("Log", &PyLog, py::arg("level"), py::arg("msg"));
+    m.def("Log", &PyLog, py::arg("level"), py::arg("msg"));
 }

@@ -4,7 +4,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 struct Entry {
-    //variant<bool, int64_t, Float, std::string> data;
+    variant<bool, int64_t, Float, std::string> data;
     bool queried;
 };
 

@@ -32,12 +32,18 @@ set_target_properties(mitsuba-python PROPERTIES OUTPUT_NAME "mitsuba")
 
 if (WIN32)
   if (MSVC)
-    # Enforce size-based optimization and link time code generation
-    # on MSVC (~30% smaller binaries in experiments). /bigobj is needed
-    # for bigger binding projects due to the limit to 64k addressable sections
-    # /MP enables multithreaded builds (relevant when there are many files).
-    set_target_properties(mitsuba-python PROPERTIES COMPILE_FLAGS "/Os /GL /MP /bigobj")
-    set_target_properties(mitsuba-python PROPERTIES LINK_FLAGS "/LTCG")
+    # /MP enables multithreaded builds (relevant when there are many files), /bigobj is
+    # needed for bigger binding projects due to the limit to 64k addressable sections
+    set_property(TARGET mitsuba-python APPEND PROPERTY COMPILE_OPTIONS /MP /bigobj)
+    # Enforce size-based optimization and link time code generation on MSVC
+    # (~30% smaller binaries in experiments); do nothing in debug mode.
+    set_property(TARGET mitsuba-python APPEND PROPERTY COMPILE_OPTIONS
+      "$<$<CONFIG:Release>:/Os>" "$<$<CONFIG:Release>:/GL>"
+      "$<$<CONFIG:MinSizeRel>:/Os>" "$<$<CONFIG:MinSizeRel>:/GL>"
+      "$<$<CONFIG:RelWithDebInfo>:/Os>" "$<$<CONFIG:RelWithDebInfo>:/GL>")
+    set_property(TARGET mitsuba-python APPEND_STRING PROPERTY LINK_FLAGS_RELEASE "/LTCG ")
+    set_property(TARGET mitsuba-python APPEND_STRING PROPERTY LINK_FLAGS_MINSIZEREL "/LTCG ")
+    set_property(TARGET mitsuba-python APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO "/LTCG ")
   endif()
 
   # .PYD file extension on Windows
@@ -77,6 +83,12 @@ elseif (UNIX)
   endif()
 endif()
 
+# Copy binary to the 'dist' directory
+add_custom_command(
+  TARGET mitsuba-python
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mitsuba-python> ${CMAKE_BINARY_DIR}/dist)
+
 # Compute compilation flags for 'mkdoc' target, which extracts docstrings from the C++ header files
 string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
 get_property(MKDOC_INCLUDE_DIRECTORIES DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
@@ -107,9 +119,10 @@ if (NOT "${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
   endforeach(test)
 endif()
 
-
 # Test targets: rely on the auto-discovery feature of python's `unittest`
-add_test(NAME mitsuba_libpython_test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -v ${CMAKE_BINARY_DIR}/src/libpython)
+add_test(NAME mitsuba-python-test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -v ${CMAKE_BINARY_DIR}/src/libpython)
+set_tests_properties(mitsuba-python-test PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/dist")
+
 add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
         ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DEPENDS mitsuba-python)

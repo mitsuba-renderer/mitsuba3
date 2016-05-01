@@ -90,6 +90,9 @@ if (MSVC)
   # Disable annoying MSVC warnings (all targets)
   add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
 
+  # Don't issue implicit linking pragmas for TBB
+  add_definitions(/D "__TBB_NO_IMPLICIT_LINKAGE")
+
   # Don't complain about not DLL-exporting STL classes
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
 

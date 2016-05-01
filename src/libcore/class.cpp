@@ -1,4 +1,5 @@
 #include <mitsuba/core/class.h>
+#include <mitsuba/core/logger.h>
 #include <map>
 #include <iostream>
 
@@ -56,18 +57,18 @@ void Class::initializeOnce(Class *theClass) {
 
 Object *Class::construct() const {
     if (!m_constr) {
-        //SLog(EError, "RTTI error: Attempted to construct a "
-            //"class lacking a default constructor (%s)!",
-            //getName().c_str());
+        Log(EError, "RTTI error: Attempted to construct a "
+            "class lacking a default constructor (%s)!",
+            getName().c_str());
     }
     return m_constr();
 }
 
 Object *Class::unserialize(Stream *stream) const {
     if (!m_unser) {
-        //SLog(EError, "RTTI error: Attempted to construct a "
-            //"class lacking a unserialization constructor (%s)!",
-            //getName().c_str());
+        Log(EError, "RTTI error: Attempted to construct a "
+            "class lacking a unserialization constructor (%s)!",
+            getName().c_str());
     }
     return m_unser(stream);
 }
