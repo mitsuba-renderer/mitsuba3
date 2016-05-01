@@ -23,6 +23,8 @@
 #endif
 
 
+static const char *__doc_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
+
 static const char *__doc_mitsuba_Appender = R"doc(This class defines an abstract destination for logging-relevant information)doc";
 
 static const char *__doc_mitsuba_Appender_append = R"doc(Append a line of text with the given log level)doc";
@@ -48,6 +50,34 @@ Parameter ``ptr``:
     Custom pointer payload. This is used to express the context of a
     progress message. When rendering a scene, it will usually contain a
     pointer to the associated ``RenderJob``.)doc";
+
+static const char *__doc_mitsuba_AtomicFloat =
+R"doc(Atomic floating point data type
+
+The class implements an an atomic floating point data type (which is not
+possible with the existing overloads provided by ``std::atomic``). It
+internally casts floating point values to an integer storage format and
+uses integer compare and exchange operations to perform changes atomically.)doc";
+
+static const char *__doc_mitsuba_AtomicFloat_AtomicFloat = R"doc(Initialize the AtomicFloat with a given floating point value)doc";
+
+static const char *__doc_mitsuba_AtomicFloat_do_atomic =
+R"doc(Apply a FP operation atomically (verified that this will be nicely inlined
+in the above iterators))doc";
+
+static const char *__doc_mitsuba_AtomicFloat_m_bits = R"doc()doc";
+
+static const char *__doc_mitsuba_AtomicFloat_operator_T0 = R"doc(Convert the AtomicFloat into a normal floating point value)doc";
+
+static const char *__doc_mitsuba_AtomicFloat_operator_assign = R"doc(Overwrite the AtomicFloat with a floating point value)doc";
+
+static const char *__doc_mitsuba_AtomicFloat_operator_iadd = R"doc(Atomically add a floating point value)doc";
+
+static const char *__doc_mitsuba_AtomicFloat_operator_idiv = R"doc(Atomically divide by a floating point value)doc";
+
+static const char *__doc_mitsuba_AtomicFloat_operator_imul = R"doc(Atomically multiply by a floating point value)doc";
+
+static const char *__doc_mitsuba_AtomicFloat_operator_isub = R"doc(Atomically subtract a floating point value)doc";
 
 static const char *__doc_mitsuba_Class =
 R"doc(\headerfile mitsuba/core/class.h mitsuba/mitsuba.h Stores meta-information
@@ -137,27 +167,19 @@ static const char *__doc_mitsuba_DefaultFormatter_format = R"doc()doc";
 static const char *__doc_mitsuba_DefaultFormatter_getClass = R"doc()doc";
 
 static const char *__doc_mitsuba_DefaultFormatter_getHaveClass =
-R"doc(
-
-See also:
+R"doc(See also:
     setHaveClass)doc";
 
 static const char *__doc_mitsuba_DefaultFormatter_getHaveDate =
-R"doc(
-
-See also:
+R"doc(See also:
     setHaveDate)doc";
 
 static const char *__doc_mitsuba_DefaultFormatter_getHaveLogLevel =
-R"doc(
-
-See also:
+R"doc(See also:
     setHaveLogLevel)doc";
 
 static const char *__doc_mitsuba_DefaultFormatter_getHaveThread =
-R"doc(
-
-See also:
+R"doc(See also:
     setHaveThread)doc";
 
 static const char *__doc_mitsuba_DefaultFormatter_m_haveClass = R"doc()doc";
@@ -406,9 +428,6 @@ refer to its base class, ThreadLocalBase.)doc";
 static const char *__doc_mitsuba_ThreadLocalBase =
 R"doc(Flexible platform-independent thread local storage class
 
-See also:
-    ThreadLocal
-
 This class implements a generic thread local storage object that can be
 used in situations where the new ``thread_local`` keyword is not available
 (e.g. on Mac OS, as of 2016), or when TLS object are created dynamically
@@ -426,7 +445,10 @@ the ``ThreadLocal`` instance is freed (whichever occurs first).
 The implementation is designed to make the ``get``() operation as fast as
 as possible at the cost of more involved locking when creating or
 destroying threads and TLS objects. To actually instantiate a TLS object
-with a specific type, use to the ThreadLocal class.)doc";
+with a specific type, use to the ThreadLocal class.
+
+See also:
+    ThreadLocal)doc";
 
 static const char *__doc_mitsuba_ThreadLocalBase_ThreadLocalBase = R"doc(Construct a new thread local storage object)doc";
 
@@ -448,7 +470,13 @@ static const char *__doc_mitsuba_ThreadLocalBase_unregisterThread = R"doc(A thre
 
 static const char *__doc_mitsuba_ThreadLocal_ThreadLocal = R"doc(Construct a new thread local storage object)doc";
 
+static const char *__doc_mitsuba_ThreadLocal_operator_T0 = R"doc(Return a reference to the data associated with the current thread)doc";
+
 static const char *__doc_mitsuba_ThreadLocal_operator_assign = R"doc(Update the data associated with the current thread)doc";
+
+static const char *__doc_mitsuba_ThreadLocal_operator_const_T0 =
+R"doc(Return a reference to the data associated with the current thread (const
+version))doc";
 
 static const char *__doc_mitsuba_Thread_EPriority = R"doc(Possible priority values for Thread::setPriority())doc";
 
@@ -550,6 +578,8 @@ static const char *__doc_mitsuba_detail_variant_helper_destruct = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
 
+static const char *__doc_mitsuba_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
+
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
 
@@ -567,11 +597,15 @@ static const char *__doc_mitsuba_ref_get_2 = R"doc(Return a pointer to the refer
 
 static const char *__doc_mitsuba_ref_m_ptr = R"doc()doc";
 
+static const char *__doc_mitsuba_ref_operator_T0 = R"doc(Return a pointer to the referenced object)doc";
+
 static const char *__doc_mitsuba_ref_operator_assign = R"doc(Move another reference into the current one)doc";
 
 static const char *__doc_mitsuba_ref_operator_assign_2 = R"doc(Overwrite this reference with another reference)doc";
 
 static const char *__doc_mitsuba_ref_operator_assign_3 = R"doc(Overwrite this reference with a pointer to another object)doc";
+
+static const char *__doc_mitsuba_ref_operator_bool = R"doc(Check if the object is defined)doc";
 
 static const char *__doc_mitsuba_ref_operator_eq = R"doc(Compare this reference to another reference)doc";
 

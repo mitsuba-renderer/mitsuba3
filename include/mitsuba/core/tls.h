@@ -8,8 +8,6 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**
  * \brief Flexible platform-independent thread local storage class
- * \ingroup libcore
- * \sa ThreadLocal
  *
  * This class implements a generic thread local storage object that can be used
  * in situations where the new \c thread_local keyword is not available (e.g.
@@ -29,6 +27,9 @@ NAMESPACE_BEGIN(mitsuba)
  * possible at the cost of more involved locking when creating or destroying
  * threads and TLS objects. To actually instantiate a TLS object with a
  * specific type, use to the \ref ThreadLocal class.
+ *
+ * \ingroup libcore
+ * \sa ThreadLocal
  */
 
 class MTS_EXPORT_CORE ThreadLocalBase {

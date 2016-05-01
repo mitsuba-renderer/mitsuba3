@@ -8,6 +8,7 @@ MTS_PY_DECLARE(Thread);
 MTS_PY_DECLARE(Logger);
 MTS_PY_DECLARE(Appender);
 MTS_PY_DECLARE(Formatter);
+MTS_PY_DECLARE(atomic);
 
 PYBIND11_PLUGIN(mitsuba) {
     Class::staticInitialization();
@@ -22,6 +23,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(Logger);
     MTS_PY_IMPORT(Appender);
     MTS_PY_IMPORT(Formatter);
+    MTS_PY_IMPORT(atomic);
 
     atexit([](){
         Logger::staticShutdown();

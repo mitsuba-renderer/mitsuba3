@@ -22,6 +22,7 @@ add_library(mitsuba-python SHARED
   logger.cpp
   appender.cpp
   formatter.cpp
+  atomic.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)

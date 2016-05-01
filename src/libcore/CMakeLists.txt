@@ -14,6 +14,10 @@ set(INC_DIR "../../include/mitsuba/core")
 add_library(mitsuba-core SHARED 
   ${INC_DIR}/../mitsuba.h
   ${INC_DIR}/platform.h
+  ${INC_DIR}/fwd.h
+  ${INC_DIR}/variant.h
+  ${INC_DIR}/atomic.h
+
   object.cpp       ${INC_DIR}/object.h
   class.cpp        ${INC_DIR}/class.h
   thread.cpp       ${INC_DIR}/thread.h
@@ -27,6 +31,7 @@ add_library(mitsuba-core SHARED
 
 target_link_libraries(mitsuba-core ${PNG_LIBRARIES} tbb)
 
+# Copy libcore binary to the 'dist' directory
 add_custom_command(
   TARGET mitsuba-core
   POST_BUILD
@@ -38,7 +43,7 @@ if (WIN32)
   list(APPEND DEPENDENCIES png16 zlib jpeg)
 endif()
 
-# Copy binaries into the 'dist' directory
+# Copy dependencies into the 'dist' directory
 foreach(dep ${DEPENDENCIES})
   add_custom_command(
     TARGET mitsuba-core
