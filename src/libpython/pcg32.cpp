@@ -1,5 +1,5 @@
-#include "python.h"
 #include <pcg32.h>
+#include "python.h"
 
 MTS_PY_EXPORT(pcg32) {
     py::class_<pcg32>(m, "pcg32", D(pcg32))

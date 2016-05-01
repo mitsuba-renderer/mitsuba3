@@ -71,7 +71,7 @@ public:
     bool getCritical() const;
 
     /// Return a unique ID that is associated with this thread
-    static int getID();
+    static uint32_t getID();
 
     /// Return the name of this thread
     const std::string &getName() const;
@@ -121,10 +121,10 @@ public:
     void join();
 
     /// Return a string representation
-    virtual std::string toString() const;
+    virtual std::string toString() const override;
 
-    /// Sleep for a certain amount of time
-    static void sleep(unsigned int ms);
+    /// Sleep for a certain amount of time (in milliseconds)
+    static void sleep(uint32_t ms);
 
     /// Initialize the threading system
     static void staticInitialization();
@@ -137,8 +137,8 @@ protected:
     /// Virtual destructor
     virtual ~Thread();
 
-    /// Thread dispatch function
-    static void dispatch(Thread *thread);
+    /// Initialize thread execution environment and then call \ref run()
+    void dispatch();
 
     /**
      * Exit the thread, should be called from

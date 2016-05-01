@@ -88,7 +88,7 @@ void Logger::log(ELogLevel level, const Class *theClass,
     }
 #endif
 
-    if (d->formatter) {
+    if (!d->formatter) {
         std::cerr << "PANIC: Logging has not been properly initialized!" << std::endl;
         abort();
     }
@@ -166,21 +166,17 @@ void Logger::removeAppender(Appender *appender) {
         d->appenders.end(), ref<Appender>(appender)), d->appenders.end());
 }
 
-bool Logger::readLog(std::string &target) {
+std::string Logger::readLog() {
     std::lock_guard<std::mutex> guard(d->mutex);
-    bool success = false;
     for (auto appender: d->appenders) {
         if (appender->getClass()->derivesFrom(MTS_CLASS(StreamAppender))) {
-            StreamAppender *streamAppender =
-                static_cast<StreamAppender *>(appender.get());
-            if (streamAppender->logsToFile()) {
-                streamAppender->readLog(target);
-                success = true;
-                break;
-            }
+            auto sa = static_cast<StreamAppender *>(appender.get());
+            if (sa->logsToFile())
+                return sa->readLog();
         }
     }
-    return success;
+    Log(EError, "No stream appender with a file attachment could be found");
+    return std::string(); /* Don't warn */
 }
 
 void Logger::clearAppenders() {

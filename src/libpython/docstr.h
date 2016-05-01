@@ -3,17 +3,19 @@
   Do not edit! These were automatically extracted by mkdoc.py
  */
 
-#define __EXPAND(x)                              x
-#define __COUNT(_1, _2, _3, _4, _5, COUNT, ...)  COUNT
-#define __VA_SIZE(...)                           __EXPAND(__COUNT(__VA_ARGS__, 5, 4, 3, 2, 1))
-#define __CAT1(a, b)                             a ## b
-#define __CAT2(a, b)                             __CAT1(a, b)
-#define __DOC1(n1)                               __doc_##n1
-#define __DOC2(n1, n2)                           __doc_##n1##_##n2
-#define __DOC3(n1, n2, n3)                       __doc_##n1##_##n2##_##n3
-#define __DOC4(n1, n2, n3, n4)                   __doc_##n1##_##n2##_##n3##_##n4
-#define __DOC5(n1, n2, n3, n4, n5)               __doc_##n1##_##n2##_##n3##_##n4_##n5
-#define DOC(...)                                 __EXPAND(__EXPAND(__CAT2(__DOC, __VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
+#define __EXPAND(x)                                      x
+#define __COUNT(_1, _2, _3, _4, _5, _6, _7, COUNT, ...)  COUNT
+#define __VA_SIZE(...)                                   __EXPAND(__COUNT(__VA_ARGS__, 7, 6, 5, 4, 3, 2, 1))
+#define __CAT1(a, b)                                     a ## b
+#define __CAT2(a, b)                                     __CAT1(a, b)
+#define __DOC1(n1)                                       __doc_##n1
+#define __DOC2(n1, n2)                                   __doc_##n1##_##n2
+#define __DOC3(n1, n2, n3)                               __doc_##n1##_##n2##_##n3
+#define __DOC4(n1, n2, n3, n4)                           __doc_##n1##_##n2##_##n3##_##n4
+#define __DOC5(n1, n2, n3, n4, n5)                       __doc_##n1##_##n2##_##n3##_##n4##_##n5
+#define __DOC6(n1, n2, n3, n4, n5, n6)                   __doc_##n1##_##n2##_##n3##_##n4##_##n5##_##n6
+#define __DOC7(n1, n2, n3, n4, n5, n6, n7)               __doc_##n1##_##n2##_##n3##_##n4##_##n5##_##n6##_##n7
+#define DOC(...)                                         __EXPAND(__EXPAND(__CAT2(__DOC, __VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic push
@@ -21,10 +23,7 @@
 #endif
 
 
-static const char *__doc_mitsuba_Appender =
-R"doc(This class defines an abstract destination for logging-relevant information
-
-\ingroup libcore \ingroup libpython)doc";
+static const char *__doc_mitsuba_Appender = R"doc(This class defines an abstract destination for logging-relevant information)doc";
 
 static const char *__doc_mitsuba_Appender_append = R"doc(Append a line of text with the given log level)doc";
 
@@ -48,10 +47,7 @@ Parameter ``eta``:
 Parameter ``ptr``:
     Custom pointer payload. This is used to express the context of a
     progress message. When rendering a scene, it will usually contain a
-    pointer to the associated ``RenderJob``.
-
-Remark:
-    The ``ptr`` argument is missing in the Python bindings)doc";
+    pointer to the associated ``RenderJob``.)doc";
 
 static const char *__doc_mitsuba_Class =
 R"doc(\headerfile mitsuba/core/class.h mitsuba/mitsuba.h Stores meta-information
@@ -132,6 +128,83 @@ static const char *__doc_mitsuba_Class_staticShutdown = R"doc(Free the memory ta
 
 static const char *__doc_mitsuba_Class_unserialize = R"doc(Unserialize an instance of the class (if this is supported).)doc";
 
+static const char *__doc_mitsuba_DefaultFormatter = R"doc(The default formatter used to turn log messages into a human-readable form)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_DefaultFormatter = R"doc(Create a new default formatter)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_format = R"doc()doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_getHaveClass =
+R"doc(
+
+See also:
+    setHaveClass)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_getHaveDate =
+R"doc(
+
+See also:
+    setHaveDate)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_getHaveLogLevel =
+R"doc(
+
+See also:
+    setHaveLogLevel)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_getHaveThread =
+R"doc(
+
+See also:
+    setHaveThread)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_m_haveClass = R"doc()doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_m_haveDate = R"doc()doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_m_haveLogLevel = R"doc()doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_m_haveThread = R"doc()doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_setHaveClass = R"doc(Should class information be included? The default is yes.)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_setHaveDate = R"doc(Should date information be included? The default is yes.)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_setHaveLogLevel = R"doc(Should log level information be included? The default is yes.)doc";
+
+static const char *__doc_mitsuba_DefaultFormatter_setHaveThread = R"doc(Should thread information be included? The default is yes.)doc";
+
+static const char *__doc_mitsuba_ELogLevel = R"doc(Available Log message types)doc";
+
+static const char *__doc_mitsuba_Formatter =
+R"doc(Abstract interface for converting log information into a human-readable
+format)doc";
+
+static const char *__doc_mitsuba_Formatter_format =
+R"doc(Turn a log message into a human-readable format
+
+Parameter ``level``:
+    The importance of the debug message
+
+Parameter ``theClass``:
+    Originating class or nullptr
+
+Parameter ``thread``:
+    Thread, which is reponsible for creating the message
+
+Parameter ``text``:
+    Text content associated with the log message
+
+Parameter ``file``:
+    File, which is responsible for creating the message
+
+Parameter ``line``:
+    Associated line within the source file)doc";
+
+static const char *__doc_mitsuba_Formatter_getClass = R"doc()doc";
+
 static const char *__doc_mitsuba_Logger =
 R"doc(Responsible for processing log messages
 
@@ -205,10 +278,9 @@ Parameter ``ptr``:
 static const char *__doc_mitsuba_Logger_m_logLevel = R"doc()doc";
 
 static const char *__doc_mitsuba_Logger_readLog =
-R"doc(Return the contents of the log file as a string (if it exists)
+R"doc(Return the contents of the log file as a string
 
-Returns:
-    ``True`` upon success)doc";
+Throws a runtime exception upon failure)doc";
 
 static const char *__doc_mitsuba_Logger_removeAppender = R"doc(Remove an appender from this logger)doc";
 
@@ -240,7 +312,12 @@ R"doc(Decrease the reference count of the object and possibly deallocate it.
 The object will automatically be deallocated once the reference count
 reaches zero.)doc";
 
-static const char *__doc_mitsuba_Object_getClass = R"doc()doc";
+static const char *__doc_mitsuba_Object_getClass =
+R"doc(Return a Class instance containing run-time type information about this
+Object
+
+See also:
+    Class)doc";
 
 static const char *__doc_mitsuba_Object_getRefCount = R"doc(Return the current reference count)doc";
 
@@ -253,11 +330,10 @@ R"doc(Return a human-readable string representation of the object's contents.
 
 This function is mainly useful for debugging purposes and should ideally be
 implemented by all subclasses. The default implementation simply returns
-``MyObject[unknown]``, where ``MyObject`` is the name of the subclass.)doc";
+<tt>MyObject[<address of 'this' pointer>]</tt>, where ``MyObject`` is the
+name of the class.)doc";
 
-static const char *__doc_mitsuba_Properties = R"doc(Reference counted object base class)doc";
-
-static const char *__doc_mitsuba_Properties_2 =
+static const char *__doc_mitsuba_Properties =
 R"doc(Associative parameter map for constructing subclasses of
 ConfigurableObject.
 
@@ -269,13 +345,9 @@ normal Python map, e.g:
 myProps["stringProperty"] = "hello" myProps["spectrumProperty"] =
 mitsuba.core.Spectrum(1.0) \endcode)doc";
 
-static const char *__doc_mitsuba_Properties_Properties = R"doc(Default constructor)doc";
+static const char *__doc_mitsuba_Properties_Properties = R"doc()doc";
 
-static const char *__doc_mitsuba_Properties_Properties_2 = R"doc(Copy constructor)doc";
-
-static const char *__doc_mitsuba_Properties_Properties_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Properties_Properties_4 = R"doc()doc";
+static const char *__doc_mitsuba_Properties_Properties_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_d = R"doc()doc";
 
@@ -287,10 +359,7 @@ static const char *__doc_mitsuba_Properties_hasProperty = R"doc(Verify if a valu
 
 static const char *__doc_mitsuba_Properties_setBoolean = R"doc(Set a boolean value)doc";
 
-static const char *__doc_mitsuba_StreamAppender =
-R"doc(%Appender implementation, which writes to an arbitrary C++ output stream
-
-\ingroup libcore \ingroup libpython)doc";
+static const char *__doc_mitsuba_StreamAppender = R"doc(%Appender implementation, which writes to an arbitrary C++ output stream)doc";
 
 static const char *__doc_mitsuba_StreamAppender_StreamAppender =
 R"doc(Create a new stream appender
@@ -328,6 +397,61 @@ defined in C++11. This wrapper class is needed to attach additional state
 (Loggers, Path resolvers, etc.) that is inherited when a thread launches
 another thread.)doc";
 
+static const char *__doc_mitsuba_ThreadLocal =
+R"doc(Flexible platform-independent thread local storage class
+
+This class implements a generic thread local storage object. For details,
+refer to its base class, ThreadLocalBase.)doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase =
+R"doc(Flexible platform-independent thread local storage class
+
+See also:
+    ThreadLocal
+
+This class implements a generic thread local storage object that can be
+used in situations where the new ``thread_local`` keyword is not available
+(e.g. on Mac OS, as of 2016), or when TLS object are created dynamically
+(which ``thread_local`` does not allow).
+
+The native TLS classes on Linux/MacOS/Windows only support a limited number
+of dynamically allocated entries (usually 1024 or 1088). Furthermore, they
+do not provide appropriate cleanup semantics when the TLS object or one of
+the assocated threads dies. The custom TLS code provided by this class has
+no such limits (caching in various subsystems of Mitsuba may create a huge
+amount, so this is a big deal), and it also has the desired cleanup
+semantics: TLS entries are destroyed when the owning thread dies *or* when
+the ``ThreadLocal`` instance is freed (whichever occurs first).
+
+The implementation is designed to make the ``get``() operation as fast as
+as possible at the cost of more involved locking when creating or
+destroying threads and TLS objects. To actually instantiate a TLS object
+with a specific type, use to the ThreadLocal class.)doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_ThreadLocalBase = R"doc(Construct a new thread local storage object)doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_get = R"doc(Return the data value associated with the current thread)doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_get_2 = R"doc(Return the data value associated with the current thread (const version))doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_m_constructFunctor = R"doc()doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_m_destructFunctor = R"doc()doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_registerThread = R"doc(A new thread was started -- set up local TLS data structures)doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_staticInitialization = R"doc(Set up core data structures for TLS management)doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_staticShutdown = R"doc(Destruct core data structures for TLS management)doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_unregisterThread = R"doc(A thread has died -- destroy any remaining TLS entries associated with it)doc";
+
+static const char *__doc_mitsuba_ThreadLocal_ThreadLocal = R"doc(Construct a new thread local storage object)doc";
+
+static const char *__doc_mitsuba_ThreadLocal_operator_assign = R"doc(Update the data associated with the current thread)doc";
+
+static const char *__doc_mitsuba_Thread_EPriority = R"doc(Possible priority values for Thread::setPriority())doc";
+
 static const char *__doc_mitsuba_Thread_Thread =
 R"doc(Create a new thread object
 
@@ -342,7 +466,7 @@ R"doc(Detach the thread and release resources
 After a call to this function, join() cannot be used anymore. This releases
 resources, which would otherwise be held until a call to join().)doc";
 
-static const char *__doc_mitsuba_Thread_dispatch = R"doc(Thread dispatch function)doc";
+static const char *__doc_mitsuba_Thread_dispatch = R"doc(Initialize thread execution environment and then call run())doc";
 
 static const char *__doc_mitsuba_Thread_exit = R"doc(Exit the thread, should be called from inside the thread)doc";
 
@@ -398,7 +522,7 @@ for this operation.
 Returns:
     ``True`` upon success.)doc";
 
-static const char *__doc_mitsuba_Thread_sleep = R"doc(Sleep for a certain amount of time)doc";
+static const char *__doc_mitsuba_Thread_sleep = R"doc(Sleep for a certain amount of time (in milliseconds))doc";
 
 static const char *__doc_mitsuba_Thread_start = R"doc(Start the thread)doc";
 
@@ -410,13 +534,13 @@ static const char *__doc_mitsuba_Thread_toString = R"doc(Return a string represe
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
 
-static const char *__doc_mitsuba_detail_get_default_constructor = R"doc()doc";
+static const char *__doc_mitsuba_detail_get_construct_functor = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_get_default_constructor_2 = R"doc()doc";
+static const char *__doc_mitsuba_detail_get_construct_functor_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_get_unserialization_constructor = R"doc()doc";
+static const char *__doc_mitsuba_detail_get_unserialize_functor = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_get_unserialization_constructor_2 = R"doc()doc";
+static const char *__doc_mitsuba_detail_get_unserialize_functor_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper = R"doc()doc";
 

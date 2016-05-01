@@ -9,7 +9,7 @@ DefaultFormatter::DefaultFormatter()
     : m_haveDate(true), m_haveLogLevel(true), m_haveThread(true),
       m_haveClass(true) { }
 
-std::string DefaultFormatter::format(ELogLevel logLevel, const Class *theClass,
+std::string DefaultFormatter::format(ELogLevel level, const Class *theClass,
         const Thread *thread, const std::string &text, const char *, int ) {
     std::ostringstream oss;
     char buffer[128];
@@ -23,7 +23,7 @@ std::string DefaultFormatter::format(ELogLevel logLevel, const Class *theClass,
 
     /* Log level */
     if (m_haveLogLevel) {
-        switch (logLevel) {
+        switch (level) {
             case ETrace: oss << "TRACE "; break;
             case EDebug: oss << "DEBUG "; break;
             case EInfo:  oss << "INFO  "; break;

@@ -136,11 +136,11 @@ public:
     const Formatter *getFormatter() const;
 
     /**
-     * \brief Return the contents of the log file as a string (if it exists)
+     * \brief Return the contents of the log file as a string
      *
-     * \return \c true upon success
+     * Throws a runtime exception upon failure
      */
-    bool readLog(std::string &target);
+    std::string readLog();
 
     /// Initialize logging
     static void staticInitialization();

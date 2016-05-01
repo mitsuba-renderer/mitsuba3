@@ -19,29 +19,28 @@ StreamAppender::StreamAppender(const std::string &filename)
     m_lastMessageWasProgress = false;
 }
 
-void StreamAppender::readLog(std::string &target) {
+std::string StreamAppender::readLog() {
+    std::string result;
+
     Assert(m_isFile);
     std::fstream &stream = * ((std::fstream *) m_stream);
-    if (!stream.good()) {
-        target = "";
-        return;
-    }
+    if (!stream.good())
+        return result;
+
     stream.flush();
     stream.seekg(0, std::ios::end);
     std::streamoff size = stream.tellg();
-    if (stream.fail() || size == 0) {
-        target = "";
-        return;
-    }
-    target.resize((size_t) size);
+    if (stream.fail() || size == 0)
+        return result;
+    result.resize((size_t) size);
     stream.seekg(0, std::ios::beg);
 
     std::istreambuf_iterator<std::string::value_type> it(stream);
     std::istreambuf_iterator<std::string::value_type> it_eof;
-    target.insert(target.begin(), it, it_eof);
-
+    result.insert(result.begin(), it, it_eof);
     stream.seekg(0, std::ios::end);
     Assert(!stream.fail());
+    return result;
 }
 
 void StreamAppender::append(ELogLevel, const std::string &text) {

@@ -1,6 +1,6 @@
-#include "python.h"
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
+#include "python.h"
 
 MTS_PY_DECLARE(pcg32);
 MTS_PY_DECLARE(Object);
@@ -22,6 +22,12 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(Logger);
     MTS_PY_IMPORT(Appender);
     MTS_PY_IMPORT(Formatter);
+
+    atexit([](){
+        Logger::staticShutdown();
+        Thread::staticShutdown();
+        Class::staticShutdown();
+    });
 
     return m.ptr();
 }

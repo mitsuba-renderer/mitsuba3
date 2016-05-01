@@ -23,11 +23,23 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 #define MTS_PY_EXPORT(name) \
     void python_export_##name(py::module &m)
 
-#define MTS_PY_CLASS(Name, ...) \
-    py::class_<Name, ref<Name>>(m, #Name, DM(Name), ##__VA_ARGS__)
+#define MTS_PY_CLASS(Name, Base, ...) \
+    py::class_<Name, ref<Name>>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__)
 
-#define qdef(Class, Function, ...) \
+#define MTS_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
+    py::class_<Trampoline, ref<Trampoline>>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__) \
+       .alias<Name>()
+
+#define MTS_PY_STRUCT(Name, ...) \
+    py::class_<Name>(m, #Name, DM(Name), ##__VA_ARGS__)
+
+/// Shorthand notation for defining most kinds of methods
+#define mdef(Class, Function, ...) \
     def(#Function, &Class::Function, DM(Class, Function), ##__VA_ARGS__)
+
+/// Shorthand notation for defining most kinds of static methods
+#define sdef(Class, Function, ...) \
+    def_static(#Function, &Class::Function, DM(Class, Function), ##__VA_ARGS__)
 
 using namespace mitsuba;
 

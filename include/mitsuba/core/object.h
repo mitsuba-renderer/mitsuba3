@@ -24,17 +24,17 @@ public:
     /// Increase the object's reference count by one
     void incRef() const { ++m_refCount; }
 
-    /** \brief Decrease the reference count of
-     * the object and possibly deallocate it.
+    /** \brief Decrease the reference count of the object and possibly
+     * deallocate it.
      *
-     * The object will automatically be deallocated once
-     * the reference count reaches zero.
+     * The object will automatically be deallocated once the reference count
+     * reaches zero.
      */
     void decRef(bool dealloc = true) const noexcept;
 
     /**
-     * \brief Return a human-readable string representation
-     * of the object's contents.
+     * \brief Return a human-readable string representation of the object's
+     * contents.
      *
      * This function is mainly useful for debugging purposes and should ideally
      * be implemented by all subclasses. The default implementation simply
@@ -43,7 +43,12 @@ public:
      */
     virtual std::string toString() const;
 
-    MTS_DECLARE_CLASS()
+    /**
+     * \brief Return a \ref Class instance containing run-time type information
+     * about this Object
+     * \sa Class
+     */
+    virtual const Class *getClass() const;
 protected:
     /** \brief Virtual protected deconstructor.
      * (Will only be called by \ref ref)
@@ -52,6 +57,7 @@ protected:
 
 private:
     mutable std::atomic<int> m_refCount { 0 };
+    static Class *m_theClass;
 };
 
 /**

@@ -92,7 +92,7 @@ endforeach()
 add_custom_target(mkdoc COMMAND
   python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py 
   ${MKDOC_CXX_FLAGS_LIST}
-  ${PROJECT_SOURCE_DIR}/include/mitsuba/core/*.h
+  `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
 
@@ -105,7 +105,7 @@ foreach(test ${PYTHON_TEST_FILES})
 endforeach(test)
 
 # Test targets: rely on the auto-discovery feature of python's `unittest`
-add_test(NAME mitsuba_libpython_test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover ${CMAKE_BINARY_DIR}/src/libpython -v)
+add_test(NAME mitsuba_libpython_test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -v ${CMAKE_BINARY_DIR}/src/libpython)
 add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
         ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DEPENDS mitsuba-python)

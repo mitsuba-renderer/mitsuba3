@@ -1,15 +1,29 @@
-#include "python.h"
 #include <mitsuba/core/thread.h>
+#include <mitsuba/core/logger.h>
+#include "python.h"
 
 MTS_PY_EXPORT(Thread) {
-    py::class_<Thread, ref<Thread>> thrd(m, "Thread", DM(Thread));
+    MTS_PY_CLASS(Thread, Object)
+        .mdef(Thread, setPriority)
+        .mdef(Thread, getPriority)
+        .mdef(Thread, setCoreAffinity)
+        .mdef(Thread, getCoreAffinity)
+        .mdef(Thread, setCritical)
+        .mdef(Thread, getCritical)
+        .mdef(Thread, setName)
+        .mdef(Thread, getName)
+        .def("getParent", (Thread *(Thread::*)()) &Thread::getParent, DM(Thread, getParent))
+        .mdef(Thread, getID)
+        .mdef(Thread, getLogger)
+        .mdef(Thread, getLogger)
+        .sdef(Thread, getThread)
+        //.mdef(Thread, start)
+        .mdef(Thread, isRunning)
+        .mdef(Thread, detach)
+        //.mdef(Thread, join)
+        .sdef(Thread, sleep);
 
-    thrd.def("setPriority", &Thread::setPriority, DM(Thread, getPriority))
-        .def("getPriority", &Thread::getPriority, DM(Thread, setPriority))
-        .def("setCoreAffinity", &Thread::setCoreAffinity, DM(Thread, getCoreAffinity))
-        .def("getCoreAffinity", &Thread::getCoreAffinity, DM(Thread, setCoreAffinity));
-
-	py::enum_<Thread::EPriority>(thrd, "EPriority")
+	py::enum_<Thread::EPriority>(m.attr("Thread"), "EPriority")
         .value("EIdlePriority,", Thread::EIdlePriority)
         .value("ELowestPriority,", Thread::ELowestPriority)
         .value("ELowPriority,", Thread::ELowPriority)

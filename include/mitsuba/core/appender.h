@@ -52,21 +52,21 @@ public:
     StreamAppender(const std::string &filename);
 
     /// Append a line of text
-    void append(ELogLevel level, const std::string &pText);
+    void append(ELogLevel level, const std::string &pText) override;
 
     /// Process a progress message
     void logProgress(Float progress, const std::string &name,
         const std::string &formatted, const std::string &eta,
-        const void *ptr);
+        const void *ptr) override;
 
     /// Does this appender log to a file
     bool logsToFile() const { return m_isFile; }
 
     /// Return the contents of the log file as a string
-    void readLog(std::string &target);
+    std::string readLog();
 
     /// Return a string representation
-    std::string toString() const;
+    std::string toString() const override;
 
     MTS_DECLARE_CLASS()
 protected:

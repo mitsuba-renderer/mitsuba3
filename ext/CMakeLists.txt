@@ -21,7 +21,7 @@ endif()
 # Find a matching Python interpreter
 if (PythonLibs_FOUND)
   find_package(PythonInterp ${PYTHONLIBS_VERSION_STRING} EXACT REQUIRED)
-  set(PYBIND11_INCLUDE_DIRS ${PYTHON_INCLUDE_DIR} ${PROJECT_SOURCE_DIR}/ext/pybind11/include PARENT_SCOPE)
+  set(PYBIND11_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pybind11/include ${PYTHON_INCLUDE_DIR} PARENT_SCOPE)
 endif()
 
 if (WIN32)

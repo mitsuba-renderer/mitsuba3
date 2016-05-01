@@ -3,6 +3,7 @@
 #include <mitsuba/core/tls.h>
 #include <thread>
 #include <sstream>
+#include <chrono>
 
 // Required for native thread functions
 #if defined(__LINUX__)
@@ -16,6 +17,13 @@
 NAMESPACE_BEGIN(mitsuba)
 
 static ThreadLocal<Thread> *self = nullptr;
+static std::atomic<uint32_t> thread_id { 0 };
+#if defined(__LINUX__) || defined(__OSX__)
+static pthread_key_t this_thread_id;
+#elif defined(__WINDOWS__)
+static __declspec(thread) int this_thread_id;
+#endif
+
 
 #if defined(_MSC_VER)
 namespace {
@@ -49,7 +57,7 @@ namespace {
 class MainThread : public Thread {
 public:
     MainThread() : Thread("main") { }
-    virtual void run() { Log(EError, "The main thread is already running!"); }
+    virtual void run() override { Log(EError, "The main thread is already running!"); }
     MTS_DECLARE_CLASS()
 protected:
     virtual ~MainThread() { }
@@ -59,11 +67,11 @@ struct Thread::ThreadPrivate {
     std::thread thread;
     std::string name;
     bool running = false;
-    bool joined = false;
     bool critical = false;
     int coreAffinity = -1;
     Thread::EPriority priority;
     ref<Logger> logger;
+    ref<Thread> parent;
 
     ThreadPrivate(const std::string &name) : name(name) { }
 };
@@ -88,12 +96,51 @@ const std::string &Thread::getName() const {
     return d->name;
 }
 
+void Thread::setName(const std::string &name) {
+    d->name = name;
+}
+
+void Thread::setLogger(Logger *logger) {
+    d->logger = logger;
+}
+
+Logger* Thread::getLogger() {
+    return d->logger;
+}
+
+Thread* Thread::getThread() {
+    return *self;
+}
+
+bool Thread::isRunning() const {
+    return d->running;
+}
+
+Thread* Thread::getParent() {
+    return d->parent;
+}
+
+const Thread* Thread::getParent() const {
+    return d->parent.get();
+}
+
 Thread::EPriority Thread::getPriority() const {
     return d->priority;
 }
 
 int Thread::getCoreAffinity() const {
     return d->coreAffinity;
+}
+
+uint32_t Thread::getID() {
+#if defined(__WINDOWS__)
+    return thi_thread_id;
+#elif defined(__OSX__) || defined(__LINUX__)
+    /* pthread_self() doesn't provide nice increasing IDs, and syscall(SYS_gettid)
+       causes a context switch. Thus, this function uses a thread-local variable
+       to provide a nice linearly increasing sequence of thread IDs */
+    return static_cast<uint32_t>(reinterpret_cast<uintptr_t>(pthread_getspecific(this_thread_id)));
+#endif
 }
 
 bool Thread::setPriority(EPriority priority) {
@@ -253,32 +300,106 @@ void Thread::setCoreAffinity(int coreID) {
 #endif
 }
 
+void Thread::start() {
+    if (d->running)
+        Log(EError, "Thread is already running!");
+    if (!self)
+        Log(EError, "Threading has not been initialized!");
+
+    Log(EDebug, "Spawning thread \"%s\"", d->name.c_str());
+
+    d->parent = Thread::getThread();
+
+    /* Inherit the parent thread's logger if none was set */
+    if (!d->logger)
+        d->logger = d->parent->getLogger();
+
+    /* Inherit the parent thread's file resolver if none was set */
+    //if (!d->fresolver) XXX
+        //d->fresolver = d->parent->getFileResolver();
+
+    d->running = true;
+
+    incRef();
+    d->thread = std::thread(&Thread::dispatch, this);
+}
+
+void Thread::dispatch() {
+    ThreadLocalBase::registerThread();
+
+    uint32_t id = thread_id++;
+    #if defined(__LINUX__) || defined(__OSX__)
+        pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
+    #elif defined(__WINDOWS__)
+        this_thread_id = id;
+    #endif
+
+    *self = this;
+
+    if (d->priority != ENormalPriority)
+        setPriority(d->priority);
+
+    if (!d->name.empty()) {
+        const std::string threadName = "Mitsuba: " + getName();
+        #if defined(__LINUX__)
+            pthread_setname_np(pthread_self(), threadName.c_str());
+            // prctl(PR_SET_NAME, threadName.c_str());
+        #elif defined(__OSX__)
+            pthread_setname_np(threadName.c_str());
+        #elif defined(__WINDOWS__)
+            SetThreadName(threadName.c_str());
+        #endif
+    }
+
+    if (d->coreAffinity != -1)
+        setCoreAffinity(d->coreAffinity);
+
+    try {
+        run();
+    } catch (std::exception &e) {
+        ELogLevel warnLogLevel = getLogger()->getErrorLevel() == EError ? EWarn : EInfo;
+        Log(warnLogLevel, "Fatal error: uncaught exception: \"%s\"", e.what());
+        if (d->critical)
+            abort();
+    }
+
+    exit();
+
+}
+
+void Thread::exit() {
+    Log(EDebug, "Thread \"%s\" has finished", d->name.c_str());
+    d->running = false;
+    Assert(*self == this);
+    ThreadLocalBase::unregisterThread();
+    decRef();
+}
+
+void Thread::join() {
+    d->thread.join();
+}
+
+void Thread::detach() {
+    d->thread.detach();
+}
+
+void Thread::sleep(uint32_t ms) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
+
+void Thread::yield() {
+    std::this_thread::yield();
+}
+
 std::string Thread::toString() const {
     std::ostringstream oss;
     oss << "Thread[" << std::endl
         << "  name = \"" << d->name << "\"," << std::endl
         << "  running = " << d->running << "," << std::endl
-        << "  joined = " << d->joined << "," << std::endl
         << "  priority = " << d->priority << "," << std::endl
         << "  critical = " << d->critical << std::endl
         << "]";
     return oss.str();
-}
-
-void Thread::setLogger(Logger *logger) {
-    d->logger = logger;
-}
-
-Logger* Thread::getLogger() {
-    return d->logger;
-}
-
-Thread* Thread::getThread() {
-    return *self;
-}
-
-bool Thread::isRunning() const {
-    return d->running;
 }
 
 void Thread::staticInitialization() {
@@ -286,7 +407,7 @@ void Thread::staticInitialization() {
         //__mts_autorelease_init(); XXX
     #endif
     #if defined(__LINUX__) || defined(__OSX__)
-        //pthread_key_create(&__thread_id, nullptr); //XXX
+        pthread_key_create(&this_thread_id, nullptr);
     #endif
     ThreadLocalBase::staticInitialization();
     ThreadLocalBase::registerThread();
@@ -294,7 +415,6 @@ void Thread::staticInitialization() {
     self = new ThreadLocal<Thread>();
     Thread *mainThread = new MainThread();
     mainThread->d->running = true;
-    mainThread->d->joined = false;
     //mainThread->d->fresolver = new FileResolver();
     *self = mainThread;
 }
@@ -307,7 +427,7 @@ void Thread::staticShutdown() {
     ThreadLocalBase::staticShutdown();
 
     #if defined(__LINUX__) || defined(__OSX__)
-        // pthread_key_delete(__thread_id); XXX
+        pthread_key_delete(this_thread_id);
     #endif
     #if defined(__OSX__)
     //  __mts_autorelease_shutdown(); // XXX
