@@ -97,13 +97,16 @@ add_custom_target(mkdoc COMMAND
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
 
-# Copy over the test files to the build directory (detecting changes)
-file(GLOB PYTHON_TEST_FILES "test_*.py")
-foreach(test ${PYTHON_TEST_FILES})
-  add_custom_command(
-    TARGET mitsuba-python POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${test} ${CMAKE_BINARY_DIR}/src/libpython)
-endforeach(test)
+if (NOT "${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+  # Copy over the test files to the build directory (detecting changes)
+  file(GLOB PYTHON_TEST_FILES "test_*.py")
+  foreach(test ${PYTHON_TEST_FILES})
+    add_custom_command(
+      TARGET mitsuba-python POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy ${test} ${CMAKE_BINARY_DIR}/src/libpython)
+  endforeach(test)
+endif()
+
 
 # Test targets: rely on the auto-discovery feature of python's `unittest`
 add_test(NAME mitsuba_libpython_test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -v ${CMAKE_BINARY_DIR}/src/libpython)
