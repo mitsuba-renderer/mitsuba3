@@ -1,6 +1,7 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/tls.h>
+#include <mitsuba/core/util.h>
 #include <thread>
 #include <sstream>
 #include <chrono>
@@ -16,44 +17,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if defined(__WINDOWS__)
-std::string lastErrorText() {
-    DWORD errCode = GetLastError();
-    char *errorText = NULL;
-    if (!FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER
-        | FORMAT_MESSAGE_FROM_SYSTEM
-        | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        errCode,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR)&errorText,
-        0,
-        NULL)) {
-        return "Internal error while looking up an error code";
-    }
-    std::string result(errorText);
-    LocalFree(errorText);
-    return result;
-}
-#endif
-
-int getCoreCount() {
-#if defined(__WINDOWS__)
-    SYSTEM_INFO sys_info;
-    GetSystemInfo(&sys_info);
-    return sys_info.dwNumberOfProcessors;
-#elif defined(__OSX__)
-    int nprocs;
-    size_t nprocsSize = sizeof(int);
-    if (sysctlbyname("hw.activecpu", &nprocs, &nprocsSize, NULL, 0))
-        SLog(EError, "Could not detect the number of processors!");
-    return (int)nprocs;
-#else
-    return sysconf(_SC_NPROCESSORS_CONF);
-#endif
-}
-
-
 static ThreadLocal<Thread> *self = nullptr;
 static std::atomic<uint32_t> thread_id { 0 };
 #if defined(__LINUX__) || defined(__OSX__)
@@ -61,7 +24,6 @@ static pthread_key_t this_thread_id;
 #elif defined(__WINDOWS__)
 static __declspec(thread) int this_thread_id;
 #endif
-
 
 #if defined(_MSC_VER)
 namespace {
