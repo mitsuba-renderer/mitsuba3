@@ -120,16 +120,16 @@ bool Properties::removeProperty(const std::string &name) {
     return true;
 }
 
-inline const std::string &Properties::getPluginName() const {
+const std::string &Properties::getPluginName() const {
     return d->pluginName;
 }
-inline void Properties::setPluginName(const std::string &name) {
+void Properties::setPluginName(const std::string &name) {
     d->pluginName = name;
 }
-inline const std::string &Properties::getID() const {
+const std::string &Properties::getID() const {
     return d->id;
 }
-inline void Properties::setID(const std::string &id) {
+void Properties::setID(const std::string &id) {
     d->id = id;
 }
 

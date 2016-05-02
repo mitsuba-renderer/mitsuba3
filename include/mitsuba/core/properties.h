@@ -94,7 +94,8 @@ public:
         return !operator==(props);
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Properties &p);
+    MTS_EXPORT_CORE friend
+    std::ostream &operator<<(std::ostream &os, const Properties &p);
 
 public:  // Type-specific getters and setters ----------------------------------
 
