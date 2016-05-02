@@ -55,14 +55,14 @@ public:
     bool wasQueried(const std::string &name) const;
 
     /// Get the associated plugin name
-    inline const std::string &getPluginName() const;
+    const std::string &getPluginName() const;
     /// Set the associated plugin name
-    inline void setPluginName(const std::string &name);
+    void setPluginName(const std::string &name);
 
     /// Returns the associated identifier (or the string "unnamed")
-    inline const std::string &getID() const;
+    const std::string &getID() const;
     /// Set the associated identifier
-    inline void setID(const std::string &id);
+    void setID(const std::string &id);
 
     /// Copy an attribute from another Properties object and potentially rename it
     void copyAttribute(const Properties &properties,
