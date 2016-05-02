@@ -69,6 +69,7 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
     static bool equals(const std::type_info *type_info_1, const void *v1,
                        const std::type_info *type_info_2, const void *v2)
         noexcept(true) {
+
         if (*type_info_1 != *type_info_2)
             return false;
 
@@ -79,14 +80,25 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
         }
     }
 
-    template <typename Visitor> static auto
-    visit(const std::type_info *type_info, void* ptr, Visitor &v) -> decltype(v(std::declval<T>())) {
+    template <typename Visitor>
+    static auto visit(const std::type_info *type_info, void* ptr, Visitor &v)
+        -> decltype(v(std::declval<T>())) {
+
         if (type_info == &typeid(T))
             return v(*reinterpret_cast<T*>(ptr));
         else
-            return variant_helper<Args...>:: visit(type_info, ptr, v);
+            return variant_helper<Args...>::visit(type_info, ptr, v);
     }
 
+    static std::ostream &write_to_stream(std::ostream &os,
+                                         const std::type_info *type_info, const void *ptr) {
+        if (type_info == &typeid(T)) {
+            os << (*reinterpret_cast<const T *>(ptr));
+            return os;
+        } else {
+            return variant_helper<Args...>::write_to_stream(os, type_info, ptr);
+        }
+    }
 };
 
 template<> struct variant_helper<>  {
@@ -95,6 +107,8 @@ template<> struct variant_helper<>  {
     static void destruct(const std::type_info *, void *) noexcept(true) { }
     static bool equals(const std::type_info *, const void *,
                        const std::type_info *, const void *) noexcept(true) { return false; }
+    static std::ostream &write_to_stream(std::ostream & os,
+                                         const std::type_info *, const void *) { return os; }
 };
 
 NAMESPACE_END(detail)
@@ -210,8 +224,13 @@ public:
     bool operator==(const variant<Args...> &other) const {
         return helper_type::equals(type_info, &data, other.type_info, &(other.data));
     }
+
     bool operator!=(const variant<Args...> &other) const {
         return !operator==(other);
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const variant<Args...> &v) {
+        return helper_type::write_to_stream(os, v.type_info, &v.data);
     }
 };
 
