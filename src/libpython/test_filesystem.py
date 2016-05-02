@@ -1,6 +1,6 @@
 import unittest
 from mitsuba import filesystem as fs
-from mitsuba.filesystem import PREFERRED_SEPARATOR as sep
+from mitsuba.filesystem import preferred_separator as sep
 
 # TODO: double-check that all of this is cross-platform
 # TODO: write platform-specific tests (use python's own fs lib?), e.g. "C:\" is an absolute path
