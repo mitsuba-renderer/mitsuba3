@@ -178,4 +178,24 @@ bool Properties::operator==(const Properties &p) const {
 // TODO: serialization capabilities (?)
 // TODO: "networked object" capabilities (?)
 
+std::ostream &operator<<(std::ostream &os, const Properties &p) {
+    auto it = p.d->entries.begin();
+
+    os << "Properties[" << std::endl
+       << "  pluginName = \"" << (p.d->pluginName) << "\"," << std::endl
+       << "  id = \"" << p.d->id << "\"," << std::endl
+       << "  elements = {" << std::endl;
+    while (it != p.d->entries.end()) {
+        os << "    \"" << it->first
+           << "\" -> " << it->second.data;  // Rely on the variant's operator<<
+        if (++it != p.d->entries.end())
+            os << ",";
+        os << std::endl;
+    }
+    os << "  }" << std::endl
+       << "]" << std::endl;
+
+    return os;
+}
+
 NAMESPACE_END(mitsuba)
