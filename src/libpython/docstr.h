@@ -23,8 +23,6 @@
 #endif
 
 
-static const char *__doc_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
-
 static const char *__doc_mitsuba_Appender = R"doc(This class defines an abstract destination for logging-relevant information)doc";
 
 static const char *__doc_mitsuba_Appender_append = R"doc(Append a line of text with the given log level)doc";
@@ -579,6 +577,120 @@ static const char *__doc_mitsuba_detail_variant_helper_destruct = R"doc()doc";
 static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
 
 static const char *__doc_mitsuba_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
+
+static const char *__doc_mitsuba_math_clamp = R"doc(Generic range clamping function)doc";
+
+static const char *__doc_mitsuba_math_comp_ellint_1 = R"doc(Complete elliptic integral of the first kind (double precision))doc";
+
+static const char *__doc_mitsuba_math_comp_ellint_1_2 = R"doc(Complete elliptic integral of the first kind (single precision))doc";
+
+static const char *__doc_mitsuba_math_comp_ellint_2 = R"doc(Complete elliptic integral of the second kind (double precision))doc";
+
+static const char *__doc_mitsuba_math_comp_ellint_2_2 = R"doc(Complete elliptic integral of the second kind (single precision))doc";
+
+static const char *__doc_mitsuba_math_comp_ellint_3 = R"doc(Complete elliptic integral of the third kind (double precision))doc";
+
+static const char *__doc_mitsuba_math_comp_ellint_3_2 = R"doc(Complete elliptic integral of the third kind (single precision))doc";
+
+static const char *__doc_mitsuba_math_ellint_1 = R"doc(Incomplete elliptic integral of the first kind (double precision))doc";
+
+static const char *__doc_mitsuba_math_ellint_1_2 = R"doc(Incomplete elliptic integral of the first kind (single precision))doc";
+
+static const char *__doc_mitsuba_math_ellint_2 = R"doc(Incomplete elliptic integral of the second kind (double precision))doc";
+
+static const char *__doc_mitsuba_math_ellint_2_2 = R"doc(Incomplete elliptic integral of the second kind (single precision))doc";
+
+static const char *__doc_mitsuba_math_ellint_3 = R"doc(Incomplete elliptic integral of the third kind (double precision))doc";
+
+static const char *__doc_mitsuba_math_ellint_3_2 = R"doc(Incomplete elliptic integral of the first kind (single precision))doc";
+
+static const char *__doc_mitsuba_math_erf = R"doc(Error function (double precision))doc";
+
+static const char *__doc_mitsuba_math_erf_2 = R"doc(Error function (single precision))doc";
+
+static const char *__doc_mitsuba_math_erfinv = R"doc(Inverse error function (double precision))doc";
+
+static const char *__doc_mitsuba_math_erfinv_2 = R"doc(Inverse error function (single precision))doc";
+
+static const char *__doc_mitsuba_math_findInterval =
+R"doc(Find an interval in an ordered set
+
+This function is very similar to ``std::upper_bound``, but it uses a
+functor rather than an actual array to permit working with procedurally
+defined data. It returns the index ``i`` such that pred(i) is ``True`` and
+pred(i+1) is ``False``.
+
+This function is primarily used to locate an interval (i, i+1) for linear
+interpolation, hence its name. To avoid issues out of bounds accesses, and
+to deal with predicates that evaluate to ``True`` or ``False`` on the
+entire domain, the returned left interval index is clamped to the range
+``[0, size-2]``.)doc";
+
+static const char *__doc_mitsuba_math_i0e =
+R"doc(Exponentially scaled modified Bessel function of the first kind (order 0),
+double precision)doc";
+
+static const char *__doc_mitsuba_math_i0e_2 =
+R"doc(Exponentially scaled modified Bessel function of the first kind (order 0),
+single precision)doc";
+
+static const char *__doc_mitsuba_math_legendre_p = R"doc(Evaluate the l-th Legendre polynomial using recurrence, single precision)doc";
+
+static const char *__doc_mitsuba_math_legendre_p_2 = R"doc(Evaluate the l-th Legendre polynomial using recurrence, double precision)doc";
+
+static const char *__doc_mitsuba_math_legendre_p_3 =
+R"doc(Evaluate the an associated Legendre polynomial using recurrence, single
+precision)doc";
+
+static const char *__doc_mitsuba_math_legendre_p_4 =
+R"doc(Evaluate the an associated Legendre polynomial using recurrence, double
+precision)doc";
+
+static const char *__doc_mitsuba_math_legendre_pd =
+R"doc(Evaluate the l-th Legendre polynomial and its derivative using recurrence,
+single precision)doc";
+
+static const char *__doc_mitsuba_math_legendre_pd_2 =
+R"doc(Evaluate the l-th Legendre polynomial and its derivative using recurrence,
+double precision)doc";
+
+static const char *__doc_mitsuba_math_legendre_pd_diff =
+R"doc(Evaluate the function ``legendre_pd(l+1, x) - legendre_pd(l-1, x)``, single
+precision)doc";
+
+static const char *__doc_mitsuba_math_legendre_pd_diff_2 =
+R"doc(Evaluate the function ``legendre_pd(l+1, x) - legendre_pd(l-1, x)``, double
+precision)doc";
+
+static const char *__doc_mitsuba_math_normal_cdf =
+R"doc(Cumulative distribution function of the standard normal distribution
+(double precision))doc";
+
+static const char *__doc_mitsuba_math_normal_cdf_2 =
+R"doc(Cumulative distribution function of the standard normal distribution
+(single precision))doc";
+
+static const char *__doc_mitsuba_math_normal_quantile = R"doc(Quantile function of the standard normal distribution (double precision))doc";
+
+static const char *__doc_mitsuba_math_normal_quantile_2 = R"doc(Quantile function of the standard normal distribution (single precision))doc";
+
+static const char *__doc_mitsuba_math_safe_acos =
+R"doc(Arccosine variant that gracefully handles arguments > 1 due to roundoff
+errors)doc";
+
+static const char *__doc_mitsuba_math_safe_asin =
+R"doc(Arcsine variant that gracefully handles arguments > 1 due to roundoff
+errors)doc";
+
+static const char *__doc_mitsuba_math_safe_sqrt =
+R"doc(Square root variant that gracefully handles arguments < 0 due to roundoff
+errors)doc";
+
+static const char *__doc_mitsuba_math_signum =
+R"doc(Simple signum function -- note that it returns the FP sign of the input
+(and never zero))doc";
+
+static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

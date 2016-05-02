@@ -23,6 +23,7 @@ add_library(mitsuba-python SHARED
   appender.cpp
   formatter.cpp
   atomic.cpp
+  math.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)

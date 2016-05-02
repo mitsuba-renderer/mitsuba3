@@ -9,13 +9,14 @@ MTS_PY_DECLARE(Logger);
 MTS_PY_DECLARE(Appender);
 MTS_PY_DECLARE(Formatter);
 MTS_PY_DECLARE(atomic);
+MTS_PY_DECLARE(math);
 
 PYBIND11_PLUGIN(mitsuba) {
     Class::staticInitialization();
     Thread::staticInitialization();
     Logger::staticInitialization();
 
-    py::module m("mitsuba", "Mitsuba Python plugin");
+    py::module m("mitsuba", "Mitsuba Python extension library");
 
     MTS_PY_IMPORT(pcg32);
     MTS_PY_IMPORT(Object);
@@ -24,6 +25,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(Appender);
     MTS_PY_IMPORT(Formatter);
     MTS_PY_IMPORT(atomic);
+    MTS_PY_IMPORT(math);
 
     atexit([](){
         Logger::staticShutdown();

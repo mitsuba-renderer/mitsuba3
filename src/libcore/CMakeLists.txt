@@ -27,6 +27,7 @@ add_library(mitsuba-core SHARED
   appender.cpp     ${INC_DIR}/appender.h
   formatter.cpp    ${INC_DIR}/formatter.h
   util.cpp         ${INC_DIR}/util.h
+  math.cpp         ${INC_DIR}/math.h
 )
 
 target_link_libraries(mitsuba-core ${PNG_LIBRARIES} tbb)

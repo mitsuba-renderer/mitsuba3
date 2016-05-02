@@ -31,7 +31,7 @@ following command installs a git alias named ``pullall`` that automates
 these two steps.
 
 ```bash
-git config —global alias.pullall '!f(){ git pull "$@" && git submodule update --init --recursive; }; f'
+git config --global alias.pullall '!f(){ git pull "$@" && git submodule update --init --recursive; }; f'
 ```
 
 Afterwards, simply write

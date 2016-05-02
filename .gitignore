@@ -16,6 +16,7 @@ Makefile
 /dist
 *.dir
 *~
+\.DS_Store
 
 # Visual studio
 *.vcxproj
