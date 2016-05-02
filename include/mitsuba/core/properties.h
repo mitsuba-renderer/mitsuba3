@@ -81,6 +81,12 @@ public:
     /// Return the list of un-queried attributed
     std::vector<std::string> getUnqueried() const;
 
+    /**
+     * Merge another properties record into the current one.
+     * Existing properties will be overwritten if they have the same name.
+     */
+    void merge(const Properties &props);
+
     /// Equality comparison operator
     bool operator==(const Properties &props) const;
 
@@ -88,12 +94,6 @@ public:
     inline bool operator!=(const Properties &props) const {
         return !operator==(props);
     }
-
-    /**
-     * Merge another properties record into the current one.
-     * Existing properties will be overwritten if they have the same name.
-     */
-    void merge(const Properties &props);
 
     /// Return a string representation of all set properties
     std::string toString() const;

@@ -1,15 +1,20 @@
+#include <sstream>
+
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/variant.h>
 
+
 NAMESPACE_BEGIN(mitsuba)
+
+using VariantType = variant<bool, int64_t, Float, std::string>;
 
 struct Entry {
     // TODO: support for more types (?)
     // Originally supported types: bool, int64_t, Float, Point, Vector,
     //                             Transform, AnimatedTransform *,
     //                             Spectrum, std::string, Properties::Data
-    variant<bool, int64_t, Float, std::string> data;
+    VariantType data;
     bool queried;
 };
 
@@ -61,7 +66,55 @@ DEFINE_PROPERTY_ACCESSOR(Float, Float, Float, float)
 DEFINE_PROPERTY_ACCESSOR(std::string, std::string, String, string)
 // TODO: support other types, type-specific getters & setters
 
-// TODO: "visitor" helpers for getType, equality & asString
+
+// TODO: supertype for visitors
+//class TypeVisitor : public boost::static_visitor<Properties::EPropertyType> {
+//public:
+//    Properties::EPropertyType operator()(const bool &) const              { return Properties::EBoolean; }
+//    Properties::EPropertyType operator()(const int64_t &) const           { return Properties::EInteger; }
+//    Properties::EPropertyType operator()(const Float &) const             { return Properties::EFloat; }
+//    Properties::EPropertyType operator()(const Point &) const             { return Properties::EPoint; }
+//    Properties::EPropertyType operator()(const Vector &) const            { return Properties::EVector; }
+//    Properties::EPropertyType operator()(const Transform &) const         { return Properties::ETransform; }
+//    Properties::EPropertyType operator()(const AnimatedTransform *) const { return Properties::EAnimatedTransform; }
+//    Properties::EPropertyType operator()(const Spectrum &) const          { return Properties::ESpectrum; }
+//    Properties::EPropertyType operator()(const std::string &) const       { return Properties::EString; }
+//    Properties::EPropertyType operator()(const Properties::Data &) const  { return Properties::EData; }
+//};
+
+class EqualityVisitor {  //  : public boost::static_visitor<bool>
+
+public:
+    EqualityVisitor(const VariantType *ref) : ref(ref) { }
+
+#define EQUALITY_VISITOR_METHOD(Type) \
+    bool operator()(const Type &v) const { \
+        const Type &v2 = *ref;  \
+        return (v == v2); \
+    }
+
+    EQUALITY_VISITOR_METHOD(bool)
+    EQUALITY_VISITOR_METHOD(int64_t)
+    EQUALITY_VISITOR_METHOD(Float)
+    EQUALITY_VISITOR_METHOD(std::string)
+
+private:
+    const VariantType *ref;
+
+};
+
+class StringVisitor {  //  : public boost::static_visitor<void>
+public:
+    StringVisitor(std::ostringstream &oss, bool quote) : oss(oss), quote(quote) { }
+
+    void operator()(const bool &v) const              { oss << (v ? "true" : "false"); }
+    void operator()(const int64_t &v) const           { oss << v; }
+    void operator()(const Float &v) const             { oss << v; }
+    void operator()(const std::string &v) const       { oss << (quote ? "\"" : "") << v << (quote ? "\"" : ""); }
+private:
+    std::ostringstream &oss;
+    bool quote;
+};
 
 Properties::Properties()
     : d(new PropertiesPrivate()) {
@@ -155,8 +208,11 @@ std::vector<std::string> Properties::getUnqueried() const {
     return result;
 }
 
-// TODO: serialization capabilities (?)
-// TODO: "networked object" capabilities (?)
+void Properties::merge(const Properties &p) {
+    for (const auto e : p.d->entries) {
+        d->entries[e.first] = e.second;
+    }
+}
 
 bool Properties::operator==(const Properties &p) const {
     if (d->pluginName != p.d->pluginName || d->id != p.d->id
@@ -167,23 +223,40 @@ bool Properties::operator==(const Properties &p) const {
         const Entry &first = e.second;
         const Entry &second = p.d->entries[e.first];
 
-        // TODO: need equality visitor
-        if (true)
+        const EqualityVisitor visitor(&first.data);
+        // TODO: need visitor concept to make sure the right overload is called
+        if (visitor(second.data))
             return false;
     }
 
     return true;
 }
 
-void Properties::merge(const Properties &p) {
-    for (const auto e : p.d->entries) {
-        d->entries[e.first] = e.second;
+std::string Properties::toString() const {
+    using std::endl;
+    auto it = d->entries.begin();
+    std::ostringstream oss;
+    StringVisitor strVisitor(oss, true);
+
+    oss << "Properties[" << endl
+        << "  pluginName = \"" << (d->pluginName) << "\"," << endl
+        << "  id = \"" << d->id << "\"," << endl
+        << "  elements = {" << endl;
+    while (it != d->entries.end()) {
+        oss << "    \"" << it->first << "\" -> ";
+        const auto &data = it->second.data;
+        // TODO: need visitor concept to make sure the right overload is called
+        strVisitor(data);
+        if (++it != d->entries.end())
+            oss << ",";
+        oss << endl;
     }
+    oss << "  }" << endl
+    << "]" << endl;
+    return oss.str();
 }
 
-std::string Properties::toString() const {
-    // TODO: need toString visitor
-    return "toString() operation not implemented!";
-}
+// TODO: serialization capabilities (?)
+// TODO: "networked object" capabilities (?)
 
 NAMESPACE_END(mitsuba)
