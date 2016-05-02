@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/platform.h>
+#include <mitsuba/core/variant.h>
 #include <string>
 #include <map>
 #include <memory>
@@ -34,6 +35,30 @@ public:
     bool getBoolean(const std::string &name) const;
     /// Retrieve a boolean value (use default value if no entry exists)
     bool getBoolean(const std::string &name, const bool &defVal) const;
+
+    /// Set an integer value
+    void setLong(const std::string &name, const int64_t &value, bool warnDuplicates = true);
+    /// Retrieve an integer value
+    int64_t getLong(const std::string &name) const;
+    /// Retrieve an integer value (use default value if no entry exists)
+    int64_t getLong(const std::string &name, const int64_t &defVal) const;
+
+    /// Set a single precision floating point value
+    void setFloat(const std::string &name, const Float &value, bool warnDuplicates = true);
+    /// Get a single precision floating point value
+    Float getFloat(const std::string &name) const;
+    /// Get a single precision floating point value (with default)
+    Float getFloat(const std::string &name, const Float &defVal) const;
+
+    /// Set a string
+    void setString(const std::string &name, const std::string &value, bool warnDuplicates = true);
+    /// Get a string
+    std::string getString(const std::string &name) const;
+    /// Get a string (with default)
+    std::string getString(const std::string &name, const std::string &defVal) const;
+
+    /// Return a string representation of all set properties
+    std::string toString() const;
 
 private:
     struct PropertiesPrivate;
