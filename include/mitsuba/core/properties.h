@@ -25,8 +25,11 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Properties {
 public:
+    /// Construct with the default id and an empty plugin name
     Properties();
+    /// Construct with the default id a specific plugin name
     Properties(const std::string &pluginName);
+    /// Copy constructor
     Properties(const Properties &);
 
     /// Assignment operator
@@ -37,10 +40,6 @@ public:
 
     /// Verify if a value with the specified name exists
     bool hasProperty(const std::string &name) const;
-
-    /// Return the property of a type
-    // TODO: could get type trait directly from `variant`
-    //EPropertyType getType(const std::string &name) const;
 
     /**
      * \brief Remove a property with the specified name

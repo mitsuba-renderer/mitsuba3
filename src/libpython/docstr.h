@@ -377,11 +377,11 @@ normal Python map, e.g:
 myProps["stringProperty"] = "hello" myProps["spectrumProperty"] =
 mitsuba.core.Spectrum(1.0) \endcode)doc";
 
-static const char *__doc_mitsuba_Properties_Properties = R"doc()doc";
+static const char *__doc_mitsuba_Properties_Properties = R"doc(Construct with the default id and an empty plugin name)doc";
 
-static const char *__doc_mitsuba_Properties_Properties_2 = R"doc()doc";
+static const char *__doc_mitsuba_Properties_Properties_2 = R"doc(Construct with the default id a specific plugin name)doc";
 
-static const char *__doc_mitsuba_Properties_Properties_3 = R"doc()doc";
+static const char *__doc_mitsuba_Properties_Properties_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_Properties_copyAttribute = R"doc(Copy an attribute from another Properties object and potentially rename it)doc";
 
