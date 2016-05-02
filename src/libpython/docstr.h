@@ -381,15 +381,71 @@ static const char *__doc_mitsuba_Properties_Properties = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_Properties_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Properties_Properties_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_copyAttribute = R"doc(Copy an attribute from another Properties object and potentially rename it)doc";
+
 static const char *__doc_mitsuba_Properties_d = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_getBoolean = R"doc(Retrieve a boolean value)doc";
 
 static const char *__doc_mitsuba_Properties_getBoolean_2 = R"doc(Retrieve a boolean value (use default value if no entry exists))doc";
 
+static const char *__doc_mitsuba_Properties_getFloat = R"doc(Get a single precision floating point value)doc";
+
+static const char *__doc_mitsuba_Properties_getFloat_2 = R"doc(Get a single precision floating point value (with default))doc";
+
+static const char *__doc_mitsuba_Properties_getID = R"doc(Returns the associated identifier (or the string "unnamed"))doc";
+
+static const char *__doc_mitsuba_Properties_getLong = R"doc(Retrieve an integer value)doc";
+
+static const char *__doc_mitsuba_Properties_getLong_2 = R"doc(Retrieve an integer value (use default value if no entry exists))doc";
+
+static const char *__doc_mitsuba_Properties_getPluginName = R"doc(Get the associated plugin name)doc";
+
+static const char *__doc_mitsuba_Properties_getPropertyNames = R"doc(Return an array containing the names of all stored properties)doc";
+
+static const char *__doc_mitsuba_Properties_getString = R"doc(Get a string)doc";
+
+static const char *__doc_mitsuba_Properties_getString_2 = R"doc(Get a string (with default))doc";
+
+static const char *__doc_mitsuba_Properties_getUnqueried = R"doc(Return the list of un-queried attributed)doc";
+
 static const char *__doc_mitsuba_Properties_hasProperty = R"doc(Verify if a value with the specified name exists)doc";
 
+static const char *__doc_mitsuba_Properties_markQueried = R"doc(Manually mark a certain property as queried)doc";
+
+static const char *__doc_mitsuba_Properties_merge =
+R"doc(Merge another properties record into the current one. Existing properties
+will be overwritten if they have the same name.)doc";
+
+static const char *__doc_mitsuba_Properties_operator_assign = R"doc(Assignment operator)doc";
+
+static const char *__doc_mitsuba_Properties_operator_eq = R"doc(Equality comparison operator)doc";
+
+static const char *__doc_mitsuba_Properties_operator_ne = R"doc(Inequality comparison operator)doc";
+
+static const char *__doc_mitsuba_Properties_putPropertyNames = R"doc(Store an array containing the names of all stored properties)doc";
+
+static const char *__doc_mitsuba_Properties_removeProperty =
+R"doc(Remove a property with the specified name
+
+Returns:
+    ``True`` upon success)doc";
+
 static const char *__doc_mitsuba_Properties_setBoolean = R"doc(Set a boolean value)doc";
+
+static const char *__doc_mitsuba_Properties_setFloat = R"doc(Set a single precision floating point value)doc";
+
+static const char *__doc_mitsuba_Properties_setID = R"doc(Set the associated identifier)doc";
+
+static const char *__doc_mitsuba_Properties_setLong = R"doc(Set an integer value)doc";
+
+static const char *__doc_mitsuba_Properties_setPluginName = R"doc(Set the associated plugin name)doc";
+
+static const char *__doc_mitsuba_Properties_setString = R"doc(Set a string)doc";
+
+static const char *__doc_mitsuba_Properties_wasQueried = R"doc(Check if a certain property was queried)doc";
 
 static const char *__doc_mitsuba_StreamAppender = R"doc(%Appender implementation, which writes to an arbitrary C++ output stream)doc";
 
@@ -620,7 +676,11 @@ static const char *__doc_mitsuba_detail_variant_helper_copy = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_destruct = R"doc()doc";
 
+static const char *__doc_mitsuba_detail_variant_helper_equals = R"doc()doc";
+
 static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_variant_helper_write_to_stream = R"doc()doc";
 
 static const char *__doc_mitsuba_filesystem_absolute =
 R"doc(Returns an absolute path to the same location pointed by ``p``, relative to
@@ -942,6 +1002,10 @@ static const char *__doc_mitsuba_variant_operator_assign_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_operator_const_type_parameter_1_0 = R"doc()doc";
 
+static const char *__doc_mitsuba_variant_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_operator_ne = R"doc()doc";
+
 static const char *__doc_mitsuba_variant_operator_type_parameter_1_0 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_type = R"doc()doc";
@@ -953,6 +1017,8 @@ static const char *__doc_mitsuba_variant_variant = R"doc()doc";
 static const char *__doc_mitsuba_variant_variant_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
 static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
