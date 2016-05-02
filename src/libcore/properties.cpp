@@ -15,6 +15,7 @@ struct Entry {
 
 struct Properties::PropertiesPrivate {
     std::map<std::string, Entry> entries;
+    std::string id, pluginName;
 };
 
 bool Properties::hasProperty(const std::string &name) const {
@@ -65,11 +66,38 @@ DEFINE_PROPERTY_ACCESSOR(std::string, std::string, String, string)
 
 // TODO: "visitor" helpers for getType, equality & asString
 
-// TODO: constructors & destructor
+Properties::Properties()
+    : d(new PropertiesPrivate()) {
+    d->id = "unnamed";
+}
 
-// TODO: assignment operator
+Properties::Properties(const std::string &pluginName)
+    : d(new PropertiesPrivate()) {
+    d->id = "unnamed";
+    d->pluginName = pluginName;
+}
 
-// TODO: other management methods
+Properties::Properties(const Properties &props)
+    : d(new PropertiesPrivate()) {
+    // TODO: only valid if PropertiesPrivate doesn't have pointers
+    (*d) = *props.d;
+
+    // TODO: special treatment to bump reference counts for managed types
+}
+
+Properties::~Properties() {
+    // TODO: special treatment to decrease reference counts for managed types
+}
+
+void Properties::operator=(const Properties &props) {
+    // TODO: only valid if PropertiesPrivate doesn't have pointers
+    (*d) = *props.d;
+
+    // TODO: special treatment to bump reference counts for managed types
+}
+
+
+// TODO: other properties' management methods
 
 // TODO: merge operator
 

@@ -24,7 +24,14 @@ NAMESPACE_BEGIN(mitsuba)
 class MTS_EXPORT_CORE Properties {
 public:
     Properties();
+    Properties(const std::string &pluginName);
     Properties(const Properties &);
+
+    /// Assignment operator
+    void operator=(const Properties &props);
+
+    /// Release all memory
+    ~Properties();
 
     /// Verify if a value with the specified name exists
     bool hasProperty(const std::string &name) const;
