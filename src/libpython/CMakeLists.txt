@@ -27,6 +27,7 @@ add_library(mitsuba-python SHARED
   util.cpp
   object.cpp
   pcg32.cpp
+  properties.cpp
   python.h
   thread.cpp
   vector.cpp
