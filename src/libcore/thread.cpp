@@ -200,7 +200,7 @@ bool Thread::setPriority(EPriority priority) {
     const HANDLE handle = d->thread.native_handle();
     if (SetThreadPriority(handle, win32Priority) == 0) {
         Log(EWarn, "Could not adjust the thread priority to %i: %s!",
-            win32Priority, lastErrorText().c_str());
+            win32Priority, util::getLastError().c_str());
         return false;
     }
 #endif
@@ -285,7 +285,7 @@ void Thread::setCoreAffinity(int coreID) {
 
     CPU_FREE(cpuset);
 #elif defined(__WINDOWS__)
-    int nCores = getCoreCount();
+    int nCores = util::getCoreCount();
     const HANDLE handle = d->thread.native_handle();
 
     DWORD_PTR mask;

@@ -320,6 +320,16 @@ static const char *__doc_mitsuba_Logger_staticInitialization = R"doc(Initialize 
 
 static const char *__doc_mitsuba_Logger_staticShutdown = R"doc(Shutdown logging)doc";
 
+static const char *__doc_mitsuba_Normal3f = R"doc()doc";
+
+static const char *__doc_mitsuba_Normal3f_2 = R"doc(3-dimensional surface normal representation)doc";
+
+static const char *__doc_mitsuba_Normal3f_Normal3f = R"doc(Create a new normal with constant component vlaues)doc";
+
+static const char *__doc_mitsuba_Normal3f_Normal3f_2 = R"doc(Create a new 3D normal)doc";
+
+static const char *__doc_mitsuba_Normal3f_operator_assign = R"doc(Assign a normal from MatrixBase (needed to play nice with Eigen))doc";
+
 static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
 
 static const char *__doc_mitsuba_Object_Object = R"doc(Default constructor)doc";
@@ -408,6 +418,34 @@ static const char *__doc_mitsuba_StreamAppender_m_stream = R"doc()doc";
 static const char *__doc_mitsuba_StreamAppender_readLog = R"doc(Return the contents of the log file as a string)doc";
 
 static const char *__doc_mitsuba_StreamAppender_toString = R"doc(Return a string representation)doc";
+
+static const char *__doc_mitsuba_TPoint = R"doc()doc";
+
+static const char *__doc_mitsuba_TPoint_2 = R"doc(Generic N-dimensional point data structure based on Eigen::Matrix)doc";
+
+static const char *__doc_mitsuba_TPoint_TPoint = R"doc(Create a new point with constant component vlaues)doc";
+
+static const char *__doc_mitsuba_TPoint_TPoint_2 = R"doc(Create a new 2D point (type error if ``Dimension`` != 2))doc";
+
+static const char *__doc_mitsuba_TPoint_TPoint_3 = R"doc(Create a new 3D point (type error if ``Dimension`` != 3))doc";
+
+static const char *__doc_mitsuba_TPoint_TPoint_4 = R"doc(Create a new 4D point (type error if ``Dimension`` != 4))doc";
+
+static const char *__doc_mitsuba_TPoint_operator_assign = R"doc(Assign a point from MatrixBase (needed to play nice with Eigen))doc";
+
+static const char *__doc_mitsuba_TVector = R"doc()doc";
+
+static const char *__doc_mitsuba_TVector_2 = R"doc(Generic N-dimensional vector data structure based on Eigen::Matrix)doc";
+
+static const char *__doc_mitsuba_TVector_TVector = R"doc(Create a new vector with constant component vlaues)doc";
+
+static const char *__doc_mitsuba_TVector_TVector_2 = R"doc(Create a new 2D vector (type error if ``Dimension`` != 2))doc";
+
+static const char *__doc_mitsuba_TVector_TVector_3 = R"doc(Create a new 3D vector (type error if ``Dimension`` != 3))doc";
+
+static const char *__doc_mitsuba_TVector_TVector_4 = R"doc(Create a new 4D vector (type error if ``Dimension`` != 4))doc";
+
+static const char *__doc_mitsuba_TVector_operator_assign = R"doc(Assign a vector from MatrixBase (needed to play nice with Eigen))doc";
 
 static const char *__doc_mitsuba_Thread =
 R"doc(Cross-platform thread implementation
@@ -560,6 +598,8 @@ static const char *__doc_mitsuba_Thread_toString = R"doc(Return a string represe
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
 
+static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal base)doc";
+
 static const char *__doc_mitsuba_detail_get_construct_functor = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_get_construct_functor_2 = R"doc()doc";
@@ -575,8 +615,6 @@ static const char *__doc_mitsuba_detail_variant_helper_copy = R"doc()doc";
 static const char *__doc_mitsuba_detail_variant_helper_destruct = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
-
-static const char *__doc_mitsuba_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
 static const char *__doc_mitsuba_math_clamp = R"doc(Generic range clamping function)doc";
 
@@ -742,6 +780,20 @@ static const char *__doc_mitsuba_ref_ref_2 = R"doc(Construct a reference from a 
 static const char *__doc_mitsuba_ref_ref_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
+
+static const char *__doc_mitsuba_util_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
+
+static const char *__doc_mitsuba_util_memString = R"doc(Turn a memory size into a human-readable string)doc";
+
+static const char *__doc_mitsuba_util_timeString =
+R"doc(Convert a time difference (in seconds) to a string representation
+
+Parameter ``time``:
+    Time difference in (fractional) sections
+
+Parameter ``precise``:
+    When set to true, a higher-precision string representation is
+    generated.)doc";
 
 static const char *__doc_mitsuba_variant = R"doc()doc";
 

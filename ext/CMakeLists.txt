@@ -75,7 +75,11 @@ endif()
 set(ILMBASE_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
 set(OPENEXR_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
 add_subdirectory(openexr)
-set_property(TARGET IexMath eLut toFloat b44ExpLogTable dwaLookups CopyIlmBaseLibs IlmThread Half Iex Imath IlmImf PROPERTY FOLDER "dependencies")
+set_property(TARGET
+  IexMath eLut toFloat b44ExpLogTable dwaLookups
+  CopyIlmBaseLibs IlmThread Half Iex Imath IlmImf
+  PROPERTY FOLDER "dependencies")
+
 if (WIN32)
   add_dependencies(IlmImf zlib)
 endif()
@@ -95,6 +99,13 @@ set(NANOGUI_BUILD_SHARED  ON  CACHE BOOL " " FORCE)
 set(NANOGUI_BUILD_PYTHON  OFF CACHE BOOL " " FORCE)
 add_subdirectory(nanogui)
 set_property(TARGET glfw glfw_objects bin2c nanogui PROPERTY FOLDER "dependencies")
+set(EIGEN_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/eigen PARENT_SCOPE)
+set(NANOGUI_INCLUDE_DIRS
+   ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/eigen
+   ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/glfw/include
+   ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/glad/include
+   ${PROJECT_SOURCE_DIR}/ext/nanogui/include
+   PARENT_SCOPE)
 
 # Build the pugixml parser
 add_library(pugixml SHARED pugixml/src/pugixml.cpp)

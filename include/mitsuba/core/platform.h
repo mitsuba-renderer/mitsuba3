@@ -72,4 +72,11 @@ typedef float Float;
 #  endif
 #endif
 
+#define EIGEN_DEFAULT_IO_FORMAT IOFormat(4, ColsAtCompileTime == 1 ? 1 : 0, ", ", ";\n", "", "", "[", "]")
+
+#if !defined(NDEBUG)
+#  define EIGEN_INITIALIZE_MATRICES_BY_NAN 1
+#  define EIGEN_DONT_PARALLELIZE 1
+#endif
+
 NAMESPACE_END(mitsuba)

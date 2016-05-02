@@ -2,7 +2,6 @@
 #include "python.h"
 
 MTS_PY_EXPORT(math) {
-    /* math.h bindings */
     py::module math = m.def_submodule("math", "Mathematical routines, special functions, etc.");
 
     math.def("signum",          (double(*)(double))                           math::signum, DM(math, signum));
@@ -41,7 +40,7 @@ MTS_PY_EXPORT(math) {
     math.attr("MaxFloat")        = py::cast(math::MaxFloat);
     math.attr("MachineEpsilon")  = py::cast(math::MachineEpsilon);
 
-    math.def("findInterval", [](size_t size, py::function pred) {
-        return math::findInterval(size, [&](size_t i) { return pred.call(i).cast<bool>(); });
+    math.def("findInterval", [](size_t size, const std::function<bool(size_t)> &pred) {
+        return math::findInterval(size, pred);
     }, DM(math, findInterval));
 }
