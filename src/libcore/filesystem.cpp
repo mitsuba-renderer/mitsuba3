@@ -5,23 +5,22 @@
 #include <cerrno>
 #include <cstring>
 
-#if defined(_WIN32)
-# include <windows.h>
+#if defined(__WINDOWS__)
+#  include <windows.h>
 #else
-# include <unistd.h>
+#  include <unistd.h>
+#  include <sys/stat.h>
 #endif
-#include <sys/stat.h>
 
-#if defined(__linux)
-# include <linux/limits.h>
+#if defined(__LINUX__)
+#  include <linux/limits.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
-
 NAMESPACE_BEGIN(filesystem)
 
 path current_path() {
-#if !defined(_WIN32)
+#if !defined(__WINDOWS__)
     char temp[PATH_MAX];
     if (::getcwd(temp, PATH_MAX) == NULL)
         throw std::runtime_error("Internal error in filesystem::current_path(): " + std::string(strerror(errno)));
@@ -29,13 +28,13 @@ path current_path() {
 #else
     std::wstring temp(MAX_PATH, '\0');
     if (!_wgetcwd(&temp[0], MAX_PATH))
-      throw std::runtime_error("Internal error in filesystem::current_path(): " + std::to_string(GetLastError()));
+        throw std::runtime_error("Internal error in filesystem::current_path(): " + std::to_string(GetLastError()));
     return path(temp.c_str());
 #endif
 }
 
 path make_absolute(const path& p) {
-#if !defined(_WIN32)
+#if !defined(__WINDOWS__)
     char temp[PATH_MAX];
     if (realpath(p.native().c_str(), temp) == NULL)
         throw std::runtime_error("Internal error in realpath(): " + std::string(strerror(errno)));
@@ -50,7 +49,7 @@ path make_absolute(const path& p) {
 }
 
 bool is_regular_file(const path& p) noexcept {
-#if defined(_WIN32)
+#if defined(__WINDOWS__)
     DWORD attr = GetFileAttributesW(p.native().c_str());
     return (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0);
 #else
@@ -62,7 +61,7 @@ bool is_regular_file(const path& p) noexcept {
 }
 
 bool is_directory(const path& p) noexcept {
-#if defined(_WIN32)
+#if defined(__WINDOWS__)
     DWORD result = GetFileAttributesW(p.native().c_str());
     if (result == INVALID_FILE_ATTRIBUTES)
         return false;
@@ -76,7 +75,7 @@ bool is_directory(const path& p) noexcept {
 }
 
 bool exists(const path& p) noexcept {
-#if defined(_WIN32)
+#if defined(__WINDOWS__)
     return GetFileAttributesW(p.native().c_str()) != INVALID_FILE_ATTRIBUTES;
 #else
     struct stat sb;
@@ -85,7 +84,7 @@ bool exists(const path& p) noexcept {
 }
 
 size_t file_size(const path& p) {
-#if defined(_WIN32)
+#if defined(__WINDOWS__)
     struct _stati64 sb;
     if (_wstati64(p.native().c_str(), &sb) != 0)
         throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
@@ -98,7 +97,7 @@ size_t file_size(const path& p) {
 }
 
 bool create_directory(const path& p) noexcept {
-#if defined(_WIN32)
+#if defined(__WINDOWS__)
     return CreateDirectoryW(p.native().c_str(), NULL) != 0;
 #else
     return mkdir(p.native().c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == 0;
@@ -106,7 +105,7 @@ bool create_directory(const path& p) noexcept {
 }
 
 bool resize_file(const path& p, size_t target_length) noexcept {
-#if !defined(_WIN32)
+#if !defined(__WINDOWS__)
     return ::truncate(p.native().c_str(), (off_t) target_length) == 0;
 #else
     HANDLE handle = CreateFileW(p.native().c_str(), GENERIC_WRITE, 0, nullptr, 0, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -128,7 +127,7 @@ bool resize_file(const path& p, size_t target_length) noexcept {
 }
 
 bool remove(const path& p) {
-#if !defined(_WIN32)
+#if !defined(__WINDOWS__)
     return std::remove(p.native().c_str()) == 0;
 #else
     return DeleteFileW(p.native().c_str()) != 0;
@@ -200,7 +199,7 @@ path & path::operator=(path &&path) {
 string_type path::str() const {
     std::ostringstream oss;
 
-#if !defined(_WIN32)
+#if !defined(__WINDOWS__)
     if (m_absolute)
         oss << preferred_separator;
 #endif
@@ -218,7 +217,7 @@ string_type path::str() const {
 void path::set(const string_type &str) {
     // TODO: is this  "/\\" correct for windows?
     // TODO: express just in terms of `preferred_path`
-#if defined(_WIN32)
+#if defined(__WINDOWS__)
     m_path = tokenize(str, "/\\");
     m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
 #else
@@ -245,5 +244,4 @@ std::vector<string_type> path::tokenize(const string_type &string,
 }
 
 NAMESPACE_END(filesystem)
-
 NAMESPACE_END(mitsuba)

@@ -27,7 +27,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(filesystem)
 
 /// Type of character used on the system
-#if defined(_WIN32)
+#if defined(__WINDOWS__)
 typedef wchar_t value_type;
 #else
 typedef char value_type;
@@ -35,7 +35,7 @@ typedef char value_type;
 /// Type of strings (built from system-specific characters)
 typedef std::basic_string<value_type> string_type;
 
-#if defined(_WIN32)
+#if defined(__WINDOWS__)
 constexpr value_type preferred_separator = '\\';
 #else
 constexpr value_type preferred_separator = '/';
