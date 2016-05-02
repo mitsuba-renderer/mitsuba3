@@ -90,13 +90,10 @@ public:
     /// Equality comparison operator
     bool operator==(const Properties &props) const;
 
-    /// Inequality comparision operator
+    /// Inequality comparison operator
     inline bool operator!=(const Properties &props) const {
         return !operator==(props);
     }
-
-    /// Return a string representation of all set properties
-    std::string toString() const;
 
 public:  // Type-specific getters and setters ----------------------------------
 

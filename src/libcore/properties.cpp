@@ -3,8 +3,6 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/variant.h>
-#include <mitsuba/core/visitor.h>
-
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -24,6 +22,7 @@ struct Properties::PropertiesPrivate {
     std::string id, pluginName;
 };
 
+// TODO: add back useful "print full settings on error", requires Properties -> string
 #define DEFINE_PROPERTY_ACCESSOR(Type, BaseType, TypeName, ReadableName) \
     void Properties::set##TypeName(const std::string &name, const Type &value, bool warnDuplicates) { \
         if (hasProperty(name) && warnDuplicates) \
@@ -41,8 +40,7 @@ struct Properties::PropertiesPrivate {
             it->second.queried = true; \
             return result; \
         } catch (const std::bad_cast &) { \
-            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">). The " \
-                    "complete property record is :\n%s", name.c_str(), toString().c_str()); \
+            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">)."); \
         } \
     } \
     \
@@ -55,8 +53,7 @@ struct Properties::PropertiesPrivate {
             it->second.queried = true; \
             return result; \
         } catch (const std::bad_cast &) { \
-            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">). The " \
-                    "complete property record is :\n%s", name.c_str(), toString().c_str()); \
+            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">)."); \
         } \
     }
 
@@ -66,54 +63,6 @@ DEFINE_PROPERTY_ACCESSOR(int64_t, int64_t, Long, integer)
 DEFINE_PROPERTY_ACCESSOR(Float, Float, Float, float)
 DEFINE_PROPERTY_ACCESSOR(std::string, std::string, String, string)
 // TODO: support other types, type-specific getters & setters
-
-
-// TODO: supertype for visitors
-//class TypeVisitor : public boost::static_visitor<Properties::EPropertyType> {
-//public:
-//    Properties::EPropertyType operator()(const bool &) const              { return Properties::EBoolean; }
-//    Properties::EPropertyType operator()(const int64_t &) const           { return Properties::EInteger; }
-//    Properties::EPropertyType operator()(const Float &) const             { return Properties::EFloat; }
-//    Properties::EPropertyType operator()(const Point &) const             { return Properties::EPoint; }
-//    Properties::EPropertyType operator()(const Vector &) const            { return Properties::EVector; }
-//    Properties::EPropertyType operator()(const Transform &) const         { return Properties::ETransform; }
-//    Properties::EPropertyType operator()(const AnimatedTransform *) const { return Properties::EAnimatedTransform; }
-//    Properties::EPropertyType operator()(const Spectrum &) const          { return Properties::ESpectrum; }
-//    Properties::EPropertyType operator()(const std::string &) const       { return Properties::EString; }
-//    Properties::EPropertyType operator()(const Properties::Data &) const  { return Properties::EData; }
-//};
-
-class EqualityVisitor : public static_visitor<bool> {
-
-public:
-    EqualityVisitor(const VariantType *ref) : ref(ref) { }
-
-    #define EQUALITY_VISITOR_METHOD(Type) \
-        virtual bool EqualityVisitor::operator()(const Type &v) const override { \
-            const Type &v2 = *ref;  \
-            return (v == v2); \
-        }
-    EQUALITY_VISITOR_METHOD(bool)
-    EQUALITY_VISITOR_METHOD(int64_t)
-    EQUALITY_VISITOR_METHOD(Float)
-    EQUALITY_VISITOR_METHOD(std::string)
-private:
-    const VariantType *ref;
-};
-
-
-class StringVisitor : public static_visitor<void> {
-public:
-    StringVisitor(std::ostringstream &oss, bool quote) : oss(oss), quote(quote) { }
-
-    void operator()(const bool &v) const              { oss << (v ? "true" : "false"); }
-    void operator()(const int64_t &v) const           { oss << v; }
-    void operator()(const Float &v) const             { oss << v; }
-    void operator()(const std::string &v) const       { oss << (quote ? "\"" : "") << v << (quote ? "\"" : ""); }
-private:
-    std::ostringstream &oss;
-    bool quote;
-};
 
 Properties::Properties()
     : d(new PropertiesPrivate()) {
@@ -229,28 +178,6 @@ bool Properties::operator==(const Properties &p) const {
     }
 
     return true;
-}
-
-std::string Properties::toString() const {
-    using std::endl;
-    auto it = d->entries.begin();
-    std::ostringstream oss;
-    StringVisitor strVisitor(oss, true);
-
-    oss << "Properties[" << endl
-        << "  pluginName = \"" << (d->pluginName) << "\"," << endl
-        << "  id = \"" << d->id << "\"," << endl
-        << "  elements = {" << endl;
-    while (it != d->entries.end()) {
-        oss << "    \"" << it->first << "\" -> ";
-        it->second.data.apply_visitor(strVisitor);
-        if (++it != d->entries.end())
-            oss << ",";
-        oss << endl;
-    }
-    oss << "  }" << endl
-    << "]" << endl;
-    return oss.str();
 }
 
 // TODO: serialization capabilities (?)
