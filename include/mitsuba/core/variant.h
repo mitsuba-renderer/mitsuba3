@@ -65,12 +65,27 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
         else
             variant_helper<Args...>::destruct(type_info, ptr);
     }
+
+    static bool equals(const std::type_info *type_info_1, const void *v1,
+                       const std::type_info *type_info_2, const void *v2)
+    noexcept(true) {
+        if (*type_info_1 != *type_info_2)
+            return false;
+
+        if (type_info_1 == &typeid(T)) {
+            return (*reinterpret_cast<const T *>(v1)) == (*reinterpret_cast<const T *>(v2));
+        } else {
+            return variant_helper<Args...>::equals(type_info_1, v1, type_info_2, v2);
+        }
+    }
 };
 
 template<> struct variant_helper<>  {
     static bool copy(const std::type_info *, const void *, void *) noexcept(true) { return false; }
     static bool move(const std::type_info *, void *, void *) noexcept(true) { return false; }
     static void destruct(const std::type_info *, void *) noexcept(true) { }
+    static bool equals(const std::type_info *type_info_1, const void *v1,
+                       const std::type_info *type_info_2, const void *v2) noexcept(true) { return false; }
 };
 
 NAMESPACE_END(detail)
@@ -173,7 +188,13 @@ public:
         return *reinterpret_cast<const T *>(&data);
     }
 
+    bool operator==(const variant<Args...> &other) const {
+        return helper_type::equals(type_info, &data, other.type_info, &(other.data));
     }
+    bool operator!=(const variant<Args...> &other) const {
+        return !operator==(other);
+    }
+
 
 private:
     storage_type data;
