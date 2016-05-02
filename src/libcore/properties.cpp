@@ -18,10 +18,6 @@ struct Properties::PropertiesPrivate {
     std::string id, pluginName;
 };
 
-bool Properties::hasProperty(const std::string &name) const {
-    return d->entries.find(name) != d->entries.end();
-}
-
 #define DEFINE_PROPERTY_ACCESSOR(Type, BaseType, TypeName, ReadableName) \
     void Properties::set##TypeName(const std::string &name, const Type &value, bool warnDuplicates) { \
         if (hasProperty(name) && warnDuplicates) \
@@ -31,7 +27,7 @@ bool Properties::hasProperty(const std::string &name) const {
     } \
     \
     Type Properties::get##TypeName(const std::string &name) const { \
-        std::map<std::string, Entry>::const_iterator it = d->entries.find(name); \
+        const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
             Log(EError, "Property \"%s\" has not been specified!", name.c_str()); \
         try { \
@@ -45,7 +41,7 @@ bool Properties::hasProperty(const std::string &name) const {
     } \
     \
     Type Properties::get##TypeName(const std::string &name, const Type &defVal) const { \
-        std::map<std::string, Entry>::const_iterator it = d->entries.find(name); \
+        const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
             return defVal; \
         try { \
@@ -58,6 +54,7 @@ bool Properties::hasProperty(const std::string &name) const {
         } \
     }
 
+// TODO: what to return when the cast fails? (if we're aiming for an exception-free function)
 DEFINE_PROPERTY_ACCESSOR(bool, bool, Boolean, boolean)
 DEFINE_PROPERTY_ACCESSOR(int64_t, int64_t, Long, integer)
 DEFINE_PROPERTY_ACCESSOR(Float, Float, Float, float)
@@ -81,7 +78,6 @@ Properties::Properties(const Properties &props)
     : d(new PropertiesPrivate()) {
     // TODO: only valid if PropertiesPrivate doesn't have pointers
     (*d) = *props.d;
-
     // TODO: special treatment to bump reference counts for managed types
 }
 
@@ -92,16 +88,102 @@ Properties::~Properties() {
 void Properties::operator=(const Properties &props) {
     // TODO: only valid if PropertiesPrivate doesn't have pointers
     (*d) = *props.d;
-
     // TODO: special treatment to bump reference counts for managed types
 }
 
+bool Properties::hasProperty(const std::string &name) const {
+    return d->entries.find(name) != d->entries.end();
+}
 
-// TODO: other properties' management methods
+void Properties::markQueried(const std::string &name) const {
+    auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        return;
+    it->second.queried = true;
+}
 
-// TODO: merge operator
+bool Properties::wasQueried(const std::string &name) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        Log(EError, "Could not find parameter \"%s\"!", name.c_str());
+    return it->second.queried;
+}
+
+bool Properties::removeProperty(const std::string &name) {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        return false;
+
+    // TODO: special treatment to decrease reference counts for managed types
+    d->entries.erase(it);
+    return true;
+}
+
+inline const std::string &Properties::getPluginName() const {
+    return d->pluginName;
+}
+inline void Properties::setPluginName(const std::string &name) {
+    d->pluginName = name;
+}
+inline const std::string &Properties::getID() const {
+    return d->id;
+}
+inline void Properties::setID(const std::string &id) {
+    d->id = id;
+}
+
+void Properties::copyAttribute(const Properties &properties,
+                               const std::string &sourceName, const std::string &targetName) {
+    const auto it = properties.d->entries.find(sourceName);
+    if (it == properties.d->entries.end())
+        Log(EError, "copyAttribute(): Could not find parameter \"%s\"!", sourceName.c_str());
+    d->entries[targetName] = it->second;
+}
+
+void Properties::putPropertyNames(std::vector<std::string> &results) const {
+    for (const auto e : d->entries) {
+        results.push_back(e.first);
+    }
+}
+
+std::vector<std::string> Properties::getUnqueried() const {
+    std::vector<std::string> result;
+    for (auto e : d->entries) {
+        if (!e.second.queried)
+            result.push_back(e.first);
+    }
+    return result;
+}
 
 // TODO: serialization capabilities (?)
 // TODO: "networked object" capabilities (?)
+
+bool Properties::operator==(const Properties &p) const {
+    if (d->pluginName != p.d->pluginName || d->id != p.d->id
+        || d->entries.size() != p.d->entries.size())
+        return false;
+
+    for (const auto e : d->entries) {
+        const Entry &first = e.second;
+        const Entry &second = p.d->entries[e.first];
+
+        // TODO: need equality visitor
+        if (true)
+            return false;
+    }
+
+    return true;
+}
+
+void Properties::merge(const Properties &p) {
+    for (const auto e : p.d->entries) {
+        d->entries[e.first] = e.second;
+    }
+}
+
+std::string Properties::toString() const {
+    // TODO: need toString visitor
+    return "toString() operation not implemented!";
+}
 
 NAMESPACE_END(mitsuba)

@@ -2,9 +2,11 @@
 
 #include <mitsuba/core/platform.h>
 #include <mitsuba/core/variant.h>
-#include <string>
+
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -36,6 +38,68 @@ public:
     /// Verify if a value with the specified name exists
     bool hasProperty(const std::string &name) const;
 
+    /// Return the property of a type
+    // TODO: could get type trait directly from `variant`
+    //EPropertyType getType(const std::string &name) const;
+
+    /**
+     * \brief Remove a property with the specified name
+     * \return \c true upon success
+     */
+    bool removeProperty(const std::string &name);
+
+    /// Manually mark a certain property as queried
+    void markQueried(const std::string &name) const;
+
+    /// Check if a certain property was queried
+    bool wasQueried(const std::string &name) const;
+
+    /// Get the associated plugin name
+    inline const std::string &getPluginName() const;
+    /// Set the associated plugin name
+    inline void setPluginName(const std::string &name);
+
+    /// Returns the associated identifier (or the string "unnamed")
+    inline const std::string &getID() const;
+    /// Set the associated identifier
+    inline void setID(const std::string &id);
+
+    /// Copy an attribute from another Properties object and potentially rename it
+    void copyAttribute(const Properties &properties,
+                       const std::string &sourceName, const std::string &targetName);
+
+    /// Store an array containing the names of all stored properties
+    void putPropertyNames(std::vector<std::string> &results) const;
+
+    /// Return an array containing the names of all stored properties
+    inline std::vector<std::string> getPropertyNames() const {
+        std::vector<std::string> results;
+        putPropertyNames(results);
+        return results;
+    }
+
+    /// Return the list of un-queried attributed
+    std::vector<std::string> getUnqueried() const;
+
+    /// Equality comparison operator
+    bool operator==(const Properties &props) const;
+
+    /// Inequality comparision operator
+    inline bool operator!=(const Properties &props) const {
+        return !operator==(props);
+    }
+
+    /**
+     * Merge another properties record into the current one.
+     * Existing properties will be overwritten if they have the same name.
+     */
+    void merge(const Properties &props);
+
+    /// Return a string representation of all set properties
+    std::string toString() const;
+
+public:  // Type-specific getters and setters ----------------------------------
+
     /// Set a boolean value
     void setBoolean(const std::string &name, const bool &value, bool warnDuplicates = true);
     /// Retrieve a boolean value
@@ -63,9 +127,6 @@ public:
     std::string getString(const std::string &name) const;
     /// Get a string (with default)
     std::string getString(const std::string &name, const std::string &defVal) const;
-
-    /// Return a string representation of all set properties
-    std::string toString() const;
 
 private:
     struct PropertiesPrivate;
