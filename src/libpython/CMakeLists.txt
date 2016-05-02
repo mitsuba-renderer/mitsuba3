@@ -118,13 +118,25 @@ add_custom_target(mkdoc COMMAND
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
 
 if (NOT "${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-  # Copy over the test files to the build directory (detecting changes)
+  # For each test file, generate a rule that copies it over to the build directory.
+  # The rule includes a dependency on the original files so that changes are picked-up.
   file(GLOB PYTHON_TEST_FILES "test_*.py")
+  set(PYTHON_TEST_FILES_IN_BUILD "")
   foreach(test ${PYTHON_TEST_FILES})
+    get_filename_component(filename ${test} NAME)
+    set(output_path ${CMAKE_BINARY_DIR}/src/libpython/${filename})
+    list(APPEND PYTHON_TEST_FILES_IN_BUILD ${output_path})
+
     add_custom_command(
-      TARGET mitsuba-python POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy ${test} ${CMAKE_BINARY_DIR}/src/libpython)
+      OUTPUT ${output_path}
+      COMMAND ${CMAKE_COMMAND} -E copy ${test} ${CMAKE_BINARY_DIR}/src/libpython
+      MAIN_DEPENDENCY ${test})
   endforeach(test)
+
+  # The python library depends on the test files being present in the build
+  # directory, so that changes in the test files will trigger the copy.
+  add_custom_target(python-test-files DEPENDS ${PYTHON_TEST_FILES_IN_BUILD})
+  add_dependencies(mitsuba-python python-test-files)
 endif()
 
 # Test targets: rely on the auto-discovery feature of python's `unittest`
