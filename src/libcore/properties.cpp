@@ -3,6 +3,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/variant.h>
+#include <mitsuba/core/visitor.h>
 
 
 NAMESPACE_BEGIN(mitsuba)
@@ -82,28 +83,26 @@ DEFINE_PROPERTY_ACCESSOR(std::string, std::string, String, string)
 //    Properties::EPropertyType operator()(const Properties::Data &) const  { return Properties::EData; }
 //};
 
-class EqualityVisitor {  //  : public boost::static_visitor<bool>
+class EqualityVisitor : public static_visitor<bool> {
 
 public:
     EqualityVisitor(const VariantType *ref) : ref(ref) { }
 
-#define EQUALITY_VISITOR_METHOD(Type) \
-    bool operator()(const Type &v) const { \
-        const Type &v2 = *ref;  \
-        return (v == v2); \
-    }
-
+    #define EQUALITY_VISITOR_METHOD(Type) \
+        virtual bool EqualityVisitor::operator()(const Type &v) const override { \
+            const Type &v2 = *ref;  \
+            return (v == v2); \
+        }
     EQUALITY_VISITOR_METHOD(bool)
     EQUALITY_VISITOR_METHOD(int64_t)
     EQUALITY_VISITOR_METHOD(Float)
     EQUALITY_VISITOR_METHOD(std::string)
-
 private:
     const VariantType *ref;
-
 };
 
-class StringVisitor {  //  : public boost::static_visitor<void>
+
+class StringVisitor : public static_visitor<void> {
 public:
     StringVisitor(std::ostringstream &oss, bool quote) : oss(oss), quote(quote) { }
 
@@ -223,9 +222,9 @@ bool Properties::operator==(const Properties &p) const {
         const Entry &first = e.second;
         const Entry &second = p.d->entries[e.first];
 
-        const EqualityVisitor visitor(&first.data);
+        EqualityVisitor equality_visitor(&first.data);
         // TODO: need visitor concept to make sure the right overload is called
-        if (visitor(second.data))
+        if (second.data.apply_visitor(equality_visitor))
             return false;
     }
 
@@ -244,9 +243,7 @@ std::string Properties::toString() const {
         << "  elements = {" << endl;
     while (it != d->entries.end()) {
         oss << "    \"" << it->first << "\" -> ";
-        const auto &data = it->second.data;
-        // TODO: need visitor concept to make sure the right overload is called
-        strVisitor(data);
+        it->second.data.apply_visitor(strVisitor);
         if (++it != d->entries.end())
             oss << ",";
         oss << endl;

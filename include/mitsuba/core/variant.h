@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/platform.h>
+#include <mitsuba/core/visitor.h>
 #include <typeinfo>
 #include <type_traits>
 
@@ -171,6 +172,11 @@ public:
         if (!is<T>())
             throw std::bad_cast();
         return *reinterpret_cast<const T *>(&data);
+    }
+
+    template <typename ReturnType>
+    ReturnType apply_visitor(static_visitor<ReturnType> &visitor) const {
+        return visitor(*this);
     }
 
 private:

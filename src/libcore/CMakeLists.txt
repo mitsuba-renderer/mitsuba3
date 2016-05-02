@@ -13,10 +13,11 @@ set(INC_DIR "../../include/mitsuba/core")
 
 add_library(mitsuba-core SHARED
   ${INC_DIR}/../mitsuba.h
-  ${INC_DIR}/platform.h
-  ${INC_DIR}/fwd.h
-  ${INC_DIR}/variant.h
   ${INC_DIR}/atomic.h
+  ${INC_DIR}/fwd.h
+  ${INC_DIR}/platform.h
+  ${INC_DIR}/variant.h
+  ${INC_DIR}/visitor.h
 
   appender.cpp     ${INC_DIR}/appender.h
   class.cpp        ${INC_DIR}/class.h
