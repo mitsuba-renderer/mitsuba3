@@ -23,4 +23,27 @@ enum ELogLevel : int;
 template <typename, typename> class ThreadLocal;
 template <typename> class AtomicFloat;
 
+/* Forward declarations of various vector types */
+template <typename Scalar, int Dimension>  struct TVector;
+template <typename Scalar, int Dimension>  struct TPoint;
+template <typename Point, typename Vector> struct TRay;
+template <typename Point>                  struct TBoundingBox;
+
+typedef TVector<Float, 1>       Vector1f;
+typedef TVector<Float, 2>       Vector2f;
+typedef TVector<Float, 3>       Vector3f;
+typedef TVector<Float, 4>       Vector4f;
+typedef TPoint<Float, 1>        Point1f;
+typedef TPoint<Float, 2>        Point2f;
+typedef TPoint<Float, 3>        Point3f;
+typedef TPoint<Float, 4>        Point4f;
+
+typedef TBoundingBox<Point1f>   BoundingBox1f;
+typedef TBoundingBox<Point2f>   BoundingBox2f;
+typedef TBoundingBox<Point3f>   BoundingBox3f;
+typedef TBoundingBox<Point4f>   BoundingBox4f;
+
+typedef TRay<Point2f, Vector2f> Ray2f;
+typedef TRay<Point3f, Vector3f> Ray3f;
+
 NAMESPACE_END(mitsuba)

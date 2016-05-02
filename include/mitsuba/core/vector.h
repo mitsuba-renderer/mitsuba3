@@ -2,6 +2,11 @@
 
 #include <mitsuba/mitsuba.h>
 
+#if !defined(NDEBUG)
+#  define EIGEN_INITIALIZE_MATRICES_BY_NAN 1
+#  define EIGEN_DONT_PARALLELIZE 1
+#endif
+
 #include <Eigen/Dense>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -120,7 +125,21 @@ public:
     }
 };
 
-/// Complete the set {a} to an orthonormal base
+/// Complete the set {a} to an orthonormal base {a, b, c}
 extern MTS_EXPORT_CORE void coordinateSystem(const Vector3f &a, Vector3f &b, Vector3f &c);
+
+template <typename Derived> std::ostream& operator<<(std::ostream &os, const Eigen::MatrixBase<Derived>& m) {
+    constexpr bool isColVector = Eigen::MatrixBase<Derived>::ColsAtCompileTime;
+    if (isColVector)
+        os << m.transpose().format(Eigen::IOFormat(4, isColVector ? Eigen::DontAlignCols : 0, ", ", ";\n", "", "", "[", "]"));
+    else
+        os << m.format(Eigen::IOFormat(4, isColVector ? Eigen::DontAlignCols : 0, ", ", ";\n", "", "", "[", "]"));
+    return os;
+}
+
+template <typename Derived> std::ostream& operator<<(std::ostream &os, const Eigen::ArrayBase<Derived>& a) {
+    os << a.matrix();
+    return os;
+}
 
 NAMESPACE_END(mitsuba)

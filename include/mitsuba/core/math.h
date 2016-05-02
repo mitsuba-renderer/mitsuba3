@@ -110,30 +110,30 @@ template <typename Scalar> Scalar safe_sqrt(Scalar value) {
 // -----------------------------------------------------------------------
 
 /// Complete elliptic integral of the first kind (double precision)
-extern double comp_ellint_1(double k);
+extern MTS_EXPORT_CORE double comp_ellint_1(double k);
 /// Complete elliptic integral of the second kind (double precision)
-extern double comp_ellint_2(double k);
+extern MTS_EXPORT_CORE double comp_ellint_2(double k);
 /// Complete elliptic integral of the third kind (double precision)
-extern double comp_ellint_3(double k, double nu);
+extern MTS_EXPORT_CORE double comp_ellint_3(double k, double nu);
 /// Incomplete elliptic integral of the first kind (double precision)
-extern double ellint_1(double k, double phi);
+extern MTS_EXPORT_CORE double ellint_1(double k, double phi);
 /// Incomplete elliptic integral of the second kind (double precision)
-extern double ellint_2(double k, double phi);
+extern MTS_EXPORT_CORE double ellint_2(double k, double phi);
 /// Incomplete elliptic integral of the third kind (double precision)
-extern double ellint_3(double k, double nu, double phi);
+extern MTS_EXPORT_CORE double ellint_3(double k, double nu, double phi);
 
 /// Complete elliptic integral of the first kind (single precision)
-extern float comp_ellint_1(float k);
+extern MTS_EXPORT_CORE float comp_ellint_1(float k);
 /// Complete elliptic integral of the second kind (single precision)
-extern float comp_ellint_2(float k);
+extern MTS_EXPORT_CORE float comp_ellint_2(float k);
 /// Complete elliptic integral of the third kind (single precision)
-extern float comp_ellint_3(float k, float nu);
+extern MTS_EXPORT_CORE float comp_ellint_3(float k, float nu);
 /// Incomplete elliptic integral of the first kind (single precision)
-extern float ellint_1(float k, float phi);
+extern MTS_EXPORT_CORE float ellint_1(float k, float phi);
 /// Incomplete elliptic integral of the second kind (single precision)
-extern float ellint_2(float k, float phi);
+extern MTS_EXPORT_CORE float ellint_2(float k, float phi);
 /// Incomplete elliptic integral of the first kind (single precision)
-extern float ellint_3(float k, float nu, float phi);
+extern MTS_EXPORT_CORE float ellint_3(float k, float nu, float phi);
 
 //! @}
 // -----------------------------------------------------------------------
@@ -143,9 +143,9 @@ extern float ellint_3(float k, float nu, float phi);
 // -----------------------------------------------------------------------
     
 /// Exponentially scaled modified Bessel function of the first kind (order 0), double precision
-extern double i0e(double x);
+extern MTS_EXPORT_CORE double i0e(double x);
 /// Exponentially scaled modified Bessel function of the first kind (order 0), single precision
-extern float  i0e(float x);
+extern MTS_EXPORT_CORE float  i0e(float x);
 
 //! @}
 // -----------------------------------------------------------------------
@@ -155,28 +155,28 @@ extern float  i0e(float x);
 // -----------------------------------------------------------------------
 
 /// Evaluate the l-th Legendre polynomial using recurrence, single precision
-extern float legendre_p(int l, float x);
+extern MTS_EXPORT_CORE float legendre_p(int l, float x);
 
 /// Evaluate the l-th Legendre polynomial using recurrence, double precision
-extern double legendre_p(int l, double x);
+extern MTS_EXPORT_CORE double legendre_p(int l, double x);
 
 /// Evaluate the an associated Legendre polynomial using recurrence, single precision
-extern float legendre_p(int l, int m, float x);
+extern MTS_EXPORT_CORE float legendre_p(int l, int m, float x);
 
 /// Evaluate the an associated Legendre polynomial using recurrence, double precision
-extern double legendre_p(int l, int m, double x);
+extern MTS_EXPORT_CORE double legendre_p(int l, int m, double x);
 
 /// Evaluate the l-th Legendre polynomial and its derivative using recurrence, single precision
-extern std::pair<float, float> legendre_pd(int l, float x);
+extern MTS_EXPORT_CORE std::pair<float, float> legendre_pd(int l, float x);
 
 /// Evaluate the l-th Legendre polynomial and its derivative using recurrence, double precision
-extern std::pair<double, double> legendre_pd(int l, double x);
+extern MTS_EXPORT_CORE std::pair<double, double> legendre_pd(int l, double x);
 
 /// Evaluate the function <tt>legendre_pd(l+1, x) - legendre_pd(l-1, x)</tt>, single precision
-extern std::pair<float, float> legendre_pd_diff(int l, float x);
+extern MTS_EXPORT_CORE std::pair<float, float> legendre_pd_diff(int l, float x);
 
 /// Evaluate the function <tt>legendre_pd(l+1, x) - legendre_pd(l-1, x)</tt>, double precision
-extern std::pair<double, double> legendre_pd_diff(int l, double x);
+extern MTS_EXPORT_CORE std::pair<double, double> legendre_pd_diff(int l, double x);
 
 //! @}
 // -----------------------------------------------------------------------
@@ -226,28 +226,28 @@ size_t findInterval(size_t size, const Predicate &pred) {
 }
 
 /// Quantile function of the standard normal distribution (double precision)
-extern double normal_quantile(double p);
+extern MTS_EXPORT_CORE double normal_quantile(double p);
 
 /// Quantile function of the standard normal distribution (single precision)
-extern float normal_quantile(float p);
+extern MTS_EXPORT_CORE float normal_quantile(float p);
 
 /// Cumulative distribution function of the standard normal distribution (double precision)
-extern double normal_cdf(double p);
+extern MTS_EXPORT_CORE double normal_cdf(double p);
 
 /// Cumulative distribution function of the standard normal distribution (single precision)
-extern float normal_cdf(float p);
+extern MTS_EXPORT_CORE float normal_cdf(float p);
 
 /// Error function (double precision)
-extern double erf(double p);
+extern MTS_EXPORT_CORE double erf(double p);
 
 /// Error function (single precision)
-extern float erf(float p);
+extern MTS_EXPORT_CORE float erf(float p);
 
 /// Inverse error function (double precision)
-extern double erfinv(double p);
+extern MTS_EXPORT_CORE double erfinv(double p);
 
 /// Inverse error function (single precision)
-extern float erfinv(float p);
+extern MTS_EXPORT_CORE float erfinv(float p);
 
 //! @}
 // -----------------------------------------------------------------------

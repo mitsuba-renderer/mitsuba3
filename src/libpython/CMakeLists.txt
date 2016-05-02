@@ -2,30 +2,34 @@ if ((CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU
     AND NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG)
   # Check for Link Time Optimization support
   CHECK_CXX_COMPILER_FLAG("-flto" HAS_LTO_FLAG)
-  if (HAS_LTO_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
-  endif()
+
+  # Disabled for now for faster compile times
+  #if (HAS_LTO_FLAG)
+  #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
+  #endif()
 endif()
 
 include_directories(
   ${PYBIND11_INCLUDE_DIRS}
+  ${EIGEN_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
 )
 
 # Create the binding library
 add_library(mitsuba-python SHARED
-  main.cpp
   appender.cpp
   atomic.cpp
   filesystem.cpp
   formatter.cpp
   logger.cpp
+  main.cpp
   math.cpp
   util.cpp
   object.cpp
   pcg32.cpp
   python.h
   thread.cpp
+  vector.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)

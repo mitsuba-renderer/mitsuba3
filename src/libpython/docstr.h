@@ -328,6 +328,8 @@ static const char *__doc_mitsuba_Normal3f_Normal3f = R"doc(Create a new normal w
 
 static const char *__doc_mitsuba_Normal3f_Normal3f_2 = R"doc(Create a new 3D normal)doc";
 
+static const char *__doc_mitsuba_Normal3f_Normal3f_3 = R"doc(Construct a normal from MatrixBase (needed to play nice with Eigen))doc";
+
 static const char *__doc_mitsuba_Normal3f_operator_assign = R"doc(Assign a normal from MatrixBase (needed to play nice with Eigen))doc";
 
 static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
@@ -431,6 +433,8 @@ static const char *__doc_mitsuba_TPoint_TPoint_3 = R"doc(Create a new 3D point (
 
 static const char *__doc_mitsuba_TPoint_TPoint_4 = R"doc(Create a new 4D point (type error if ``Dimension`` != 4))doc";
 
+static const char *__doc_mitsuba_TPoint_TPoint_5 = R"doc(Construct a point from MatrixBase (needed to play nice with Eigen))doc";
+
 static const char *__doc_mitsuba_TPoint_operator_assign = R"doc(Assign a point from MatrixBase (needed to play nice with Eigen))doc";
 
 static const char *__doc_mitsuba_TVector = R"doc()doc";
@@ -444,6 +448,8 @@ static const char *__doc_mitsuba_TVector_TVector_2 = R"doc(Create a new 2D vecto
 static const char *__doc_mitsuba_TVector_TVector_3 = R"doc(Create a new 3D vector (type error if ``Dimension`` != 3))doc";
 
 static const char *__doc_mitsuba_TVector_TVector_4 = R"doc(Create a new 4D vector (type error if ``Dimension`` != 4))doc";
+
+static const char *__doc_mitsuba_TVector_TVector_5 = R"doc(Construct a vector from MatrixBase (needed to play nice with Eigen))doc";
 
 static const char *__doc_mitsuba_TVector_operator_assign = R"doc(Assign a vector from MatrixBase (needed to play nice with Eigen))doc";
 
