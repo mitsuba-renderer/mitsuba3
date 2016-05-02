@@ -168,12 +168,7 @@ bool Properties::operator==(const Properties &p) const {
         return false;
 
     for (const auto e : d->entries) {
-        const Entry &first = e.second;
-        const Entry &second = p.d->entries[e.first];
-
-        EqualityVisitor equality_visitor(&first.data);
-        // TODO: need visitor concept to make sure the right overload is called
-        if (second.data.apply_visitor(equality_visitor))
+        if (e.second.data != p.d->entries[e.first].data)
             return false;
     }
 
