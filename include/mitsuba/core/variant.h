@@ -68,7 +68,7 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
 
     static bool equals(const std::type_info *type_info_1, const void *v1,
                        const std::type_info *type_info_2, const void *v2)
-    noexcept(true) {
+        noexcept(true) {
         if (*type_info_1 != *type_info_2)
             return false;
 
@@ -78,14 +78,23 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
             return variant_helper<Args...>::equals(type_info_1, v1, type_info_2, v2);
         }
     }
+
+    template <typename Visitor> static auto
+    visit(const std::type_info *type_info, void* ptr, Visitor &v) -> decltype(v(std::declval<T>())) {
+        if (type_info == &typeid(T))
+            return v(*reinterpret_cast<T*>(ptr));
+        else
+            return variant_helper<Args...>:: visit(type_info, ptr, v);
+    }
+
 };
 
 template<> struct variant_helper<>  {
     static bool copy(const std::type_info *, const void *, void *) noexcept(true) { return false; }
     static bool move(const std::type_info *, void *, void *) noexcept(true) { return false; }
     static void destruct(const std::type_info *, void *) noexcept(true) { }
-    static bool equals(const std::type_info *type_info_1, const void *v1,
-                       const std::type_info *type_info_2, const void *v2) noexcept(true) { return false; }
+    static bool equals(const std::type_info *, const void *,
+                       const std::type_info *, const void *) noexcept(true) { return false; }
 };
 
 NAMESPACE_END(detail)
@@ -97,6 +106,11 @@ private:
 
     using storage_type = typename std::aligned_storage<data_size, data_align>::type;
     using helper_type = detail::variant_helper<Args...>;
+
+private:
+    // Need to declare these on top for usage in `decltype`
+    storage_type data;
+    const std::type_info *type_info = nullptr;
 
 public:
     variant() { }
@@ -182,6 +196,11 @@ public:
         return *reinterpret_cast<T *>(&data);
     }
 
+    template <typename Visitor>
+    auto visit(Visitor &v) -> decltype(helper_type::visit(this->type_info, &this->data, v)) {
+        return helper_type::visit(type_info, &data, v);
+    }
+
     template <typename T> operator const T&() const {
         if (!is<T>())
             throw std::bad_cast();
@@ -194,11 +213,6 @@ public:
     bool operator!=(const variant<Args...> &other) const {
         return !operator==(other);
     }
-
-
-private:
-    storage_type data;
-    const std::type_info *type_info = nullptr;
 };
 
 NAMESPACE_END(mitsuba)
