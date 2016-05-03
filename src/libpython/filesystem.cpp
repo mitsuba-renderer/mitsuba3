@@ -9,7 +9,7 @@ MTS_PY_EXPORT(filesystem) {
     py::class_<path>(m2, "path", DM(filesystem, path))
         .def(py::init<>(), DM(filesystem, path, path))
         .def(py::init<const path &>(), DM(filesystem, path, path, 2))
-        .def(py::init<const string_type &>(), DM(filesystem, path, path, 5))
+        .def(py::init<const string_type &>(), DM(filesystem, path, path, 4))
         .def("clear", &path::clear, DM(filesystem, path, clear))
         .def("empty", &path::empty, DM(filesystem, path, empty))
         .def("is_absolute", &path::is_absolute, DM(filesystem, path, is_absolute))
@@ -26,10 +26,12 @@ MTS_PY_EXPORT(filesystem) {
     m2.attr("preferred_separator") = py::cast(preferred_separator);
 
     m2.def("current_path", &current_path, DM(filesystem, current_path));
-    m2.def("make_absolute", &make_absolute, DM(filesystem, make_absolute));
+    m2.def("absolute", &absolute, DM(filesystem, absolute));
     m2.def("is_regular_file", &is_regular_file, DM(filesystem, is_regular_file));
     m2.def("is_directory", &is_directory, DM(filesystem, is_directory));
     m2.def("exists", &exists, DM(filesystem, exists));
+    m2.def("file_size", &file_size, DM(filesystem, file_size));
+    m2.def("equivalent", &equivalent, DM(filesystem, equivalent));
     m2.def("create_directory", &create_directory, DM(filesystem, create_directory));
     m2.def("resize_file", &resize_file, DM(filesystem, resize_file));
     m2.def("remove", &filesystem::remove, DM(filesystem, remove));

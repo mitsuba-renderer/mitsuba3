@@ -604,7 +604,7 @@ static const char *__doc_mitsuba_Thread_toString = R"doc(Return a string represe
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
 
-static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal base)doc";
+static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal base {a, b, c})doc";
 
 static const char *__doc_mitsuba_detail_get_construct_functor = R"doc()doc";
 
@@ -622,25 +622,48 @@ static const char *__doc_mitsuba_detail_variant_helper_destruct = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
 
-static const char *__doc_mitsuba_filesystem_create_directory = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_absolute =
+R"doc(Returns an absolute path to the same location pointed by ``p``, relative to
+``base``.
+
+See also:
+    http ://en.cppreference.com/w/cpp/experimental/fs/absolute))doc";
+
+static const char *__doc_mitsuba_filesystem_create_directory =
+R"doc(Creates a directory at ``p`` as if ``mkdir`` was used. Returns true if
+directory creation was successful, false otherwise. If ``p`` already exists
+and is already a directory, the function does nothing (this condition is
+not treated as an error).)doc";
 
 static const char *__doc_mitsuba_filesystem_current_path = R"doc(Returns the current working directory (equivalent to getcwd))doc";
 
-static const char *__doc_mitsuba_filesystem_exists = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_equivalent =
+R"doc(Checks whether two paths refer to the same file system object. Both must
+refer to an existing file or directory. Symlinks are followed to determine
+equivalence.)doc";
 
-static const char *__doc_mitsuba_filesystem_file_size = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_exists = R"doc(Checks if ``p`` points to an existing filesystem object.)doc";
 
-static const char *__doc_mitsuba_filesystem_is_directory = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_file_size =
+R"doc(Returns the size (in bytes) of a regular file at ``p``. Attempting to
+determine the size of a directory (as well as any other file that is not a
+regular file or a symlink) is treated as an error.)doc";
 
-static const char *__doc_mitsuba_filesystem_is_regular_file = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_is_directory = R"doc(Checks if ``p`` points to a directory.)doc";
 
-static const char *__doc_mitsuba_filesystem_make_absolute = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_is_regular_file =
+R"doc(Checks if ``p`` points to a regular file, as opposed to a directory or
+symlink.)doc";
 
-static const char *__doc_mitsuba_filesystem_path = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path =
+R"doc(Represents a path to a filesystem resource. On construction, the path is
+parsed and stored in a system-agnostic representation. The path can be
+converted back to the system-specific string using ``native()`` or
+``string()``.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_clear = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_clear = R"doc(Makes the path an empty path. An empty path is considered relative.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_empty = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_empty = R"doc(Checks if the path is empty)doc";
 
 static const char *__doc_mitsuba_filesystem_path_extension =
 R"doc(Returns the extension of the filename component of the path (the substring
@@ -649,53 +672,74 @@ and '..' have an empty extension.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_filename = R"doc(Returns the filename component of the path, including the extension.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_is_absolute = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_is_absolute = R"doc(Checks if the path is absolute.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_is_relative = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_is_relative = R"doc(Checks if the path is relative.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_m_absolute = R"doc()doc";
 
 static const char *__doc_mitsuba_filesystem_path_m_path = R"doc()doc";
 
-static const char *__doc_mitsuba_filesystem_path_native = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_native =
+R"doc(Returns the path in the form of a native string, so that it can be passed
+directly to system APIs. The path is constructed using the system's
+preferred separator and the native string type.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_operator_assign = R"doc(Assignment operator.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_operator_assign_2 = R"doc(Move assignment operator.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_operator_assign_3 = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_operator_assign_3 =
+R"doc(Assignment from the system's native string type. Acts similarly to the
+string constructor.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_operator_basic_string = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_operator_basic_string =
+R"doc(Implicit conversion operator to the basic_string corresponding to the
+system's character type. Equivalent to calling ``native()``.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_operator_div = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_operator_div = R"doc(Concatenates two paths with a directory separator.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_operator_eq = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_operator_eq =
+R"doc(Equality operator. Warning: this only checks for lexicographic equivalence.
+To check whether two paths point to the same filesystem resource, use
+``equivalent``.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_operator_ne = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_operator_ne = R"doc(Inequality operator.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_parent_path =
-R"doc(Returns the path to the parent directory. Returns the empty path if it
+R"doc(Returns the path to the parent directory. Returns an empty path if it is
 already empty or if it has only one element.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_path = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_path =
+R"doc(Default constructor. Constructs an empty path. An empty path is considered
+relative.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_path_2 = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_path_2 = R"doc(Copy constructor.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_path_3 = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_path_3 = R"doc(Move constructor.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_path_4 = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_path_4 =
+R"doc(Construct a path from a string with native type. On Windows, the path can
+use both '/' or '\\' as a delimiter.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_path_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_filesystem_path_set = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_set = R"doc(Builds a path from the passed string.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_str = R"doc()doc";
 
-static const char *__doc_mitsuba_filesystem_path_tokenize = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path_string = R"doc(Equivalent to native(), converted to the std::string type)doc";
 
-static const char *__doc_mitsuba_filesystem_remove = R"doc(Removes the file at the passed path)doc";
+static const char *__doc_mitsuba_filesystem_path_tokenize =
+R"doc(Splits a string into tokens delimited by any of the characters passed in
+``delim``.)doc";
 
-static const char *__doc_mitsuba_filesystem_resize_file = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_remove =
+R"doc(Removes a file or empty directory. Returns true if removal was successful,
+false if there was an error (e.g. the file did not exist).)doc";
+
+static const char *__doc_mitsuba_filesystem_resize_file =
+R"doc(Changes the size of the regular file named by ``p`` as if ``truncate`` was
+called. If the file was larger than ``target_length``, the remainder is
+discarded.)doc";
 
 static const char *__doc_mitsuba_math_clamp = R"doc(Generic range clamping function)doc";
 
@@ -810,6 +854,10 @@ R"doc(Simple signum function -- note that it returns the FP sign of the input
 (and never zero))doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
+
+static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

@@ -1,9 +1,12 @@
 #include <mitsuba/core/filesystem.h>
 
 #include <cctype>
-#include <cstdlib>
 #include <cerrno>
+#include <codecvt>
+#include <cstdlib>
 #include <cstring>
+#include <locale>
+#include <stdexcept>
 
 #if defined(__WINDOWS__)
 #  include <windows.h>
@@ -16,8 +19,24 @@
 #  include <linux/limits.h>
 #endif
 
+/** Macro allowing to type hardocded character sequences
+ * with the right type prefix (char_t: no prefix, wchar_t: 'L' prefix)
+ */
+#if defined(__WINDOWS__)
+#  define NSTR(str) L##str
+#else
+#  define NSTR(str) str
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(filesystem)
+
+#if defined(__WINDOWS__)
+path::path(const std::string &string) {
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    set(converter.from_bytes(string));
+}
+#endif
 
 path current_path() {
 #if !defined(__WINDOWS__)
@@ -33,7 +52,7 @@ path current_path() {
 #endif
 }
 
-path make_absolute(const path& p) {
+path absolute(const path& p) {
 #if !defined(__WINDOWS__)
     char temp[PATH_MAX];
     if (realpath(p.native().c_str(), temp) == NULL)
@@ -87,16 +106,37 @@ size_t file_size(const path& p) {
 #if defined(__WINDOWS__)
     struct _stati64 sb;
     if (_wstati64(p.native().c_str(), &sb) != 0)
-        throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
+        throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.string() + "\"!");
 #else
     struct stat sb;
     if (stat(p.native().c_str(), &sb) != 0)
-        throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
+        throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.string() + "\"!");
 #endif
     return (size_t) sb.st_size;
 }
 
+bool equivalent(const path& p1, const path& p2) {
+#if defined(__WINDOWS__)
+    struct _stati64 sb1, sb2;
+    if (_wstati64(p1.native().c_str(), &sb1) != 0)
+        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p1.string() + "\"!");
+    if (_wstati64(p2.native().c_str(), &sb2) != 0)
+        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p2.string() + "\"!");
+#else
+    struct stat sb1, sb2;
+    if (stat(p1.native().c_str(), &sb1) != 0)
+        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p1.string() + "\"!");
+    if (stat(p2.native().c_str(), &sb2) != 0)
+        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p2.string() + "\"!");
+#endif
+
+    return (sb1.st_dev == sb2.st_dev) && (sb1.st_ino == sb2.st_ino);
+}
+
 bool create_directory(const path& p) noexcept {
+    if (exists(p))
+        return is_directory(p);
+
 #if defined(__WINDOWS__)
     return CreateDirectoryW(p.native().c_str(), NULL) != 0;
 #else
@@ -130,27 +170,29 @@ bool remove(const path& p) {
 #if !defined(__WINDOWS__)
     return std::remove(p.native().c_str()) == 0;
 #else
-    return DeleteFileW(p.native().c_str()) != 0;
+    if (is_directory(p))
+        return RemoveDirectoryW(p.native().c_str()) != 0;
+    else
+        return DeleteFileW(p.native().c_str()) != 0;
 #endif
 }
-
 
 // -----------------------------------------------------------------------------
 
 string_type path::extension() const {
-    if (empty() || m_path.back() == "." || m_path.back() == "..")
-        return "";
+    if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR(".."))
+        return NSTR("");
 
     const string_type &name = filename();
-    size_t pos = name.find_last_of(".");
+    size_t pos = name.find_last_of(NSTR("."));
     if (pos == string_type::npos)
-        return "";
+        return NSTR("");
     return name.substr(pos);  // Including the . character!
 }
 
 string_type path::filename() const {
     if (empty())
-        return "";
+        return NSTR("");
     const string_type &last = m_path[m_path.size()-1];
     return last;
 }
@@ -161,7 +203,7 @@ path path::parent_path() const {
 
     if (m_path.empty()) {
         if (!m_absolute)
-            result.m_path.push_back("..");
+            result.m_path.push_back(NSTR(".."));
     } else {
         size_t until = m_path.size() - 1;
         for (size_t i = 0; i < until; ++i)
@@ -169,6 +211,20 @@ path path::parent_path() const {
     }
     return result;
 }
+
+// -----------------------------------------------------------------------------
+
+std::string path::string() const {
+#if !defined(__WINDOWS__)
+    return str();
+#else
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    string_type wstring = str();
+    return(converter.to_bytes(wstring));
+#endif
+}
+
+// -----------------------------------------------------------------------------
 
 path path::operator/(const path &other) const {
     if (other.m_absolute)
@@ -196,8 +252,16 @@ path & path::operator=(path &&path) {
     return *this;
 }
 
+#if defined(__WINDOWS__)
+path & path::operator=(const std::string &str) {
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    set(converter.from_bytes(str));
+    return *this;
+}
+#endif
+
 string_type path::str() const {
-    std::ostringstream oss;
+    std::basic_ostringstream<value_type> oss;
 
 #if !defined(__WINDOWS__)
     if (m_absolute)
@@ -215,20 +279,19 @@ string_type path::str() const {
 }
 
 void path::set(const string_type &str) {
-    // TODO: is this  "/\\" correct for windows?
-    // TODO: express just in terms of `preferred_path`
 #if defined(__WINDOWS__)
-    m_path = tokenize(str, "/\\");
-    m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
+    m_path = tokenize(str, NSTR("/\\"));
+    m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == NSTR(':');
 #else
-    m_path = tokenize(str, "/");
-    m_absolute = !str.empty() && str[0] == '/';
+    m_path = tokenize(str, NSTR("/"));
+    m_absolute = !str.empty() && str[0] == NSTR('/');
 #endif
 }
 
 std::vector<string_type> path::tokenize(const string_type &string,
                                         const string_type &delim) {
-    string_type::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
+    string_type::size_type lastPos = 0,
+                           pos = string.find_first_of(delim, lastPos);
     std::vector<string_type> tokens;
 
     while (lastPos != string_type::npos) {

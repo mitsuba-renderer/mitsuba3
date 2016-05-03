@@ -1,9 +1,10 @@
 import unittest
+import platform
+import re
+
 from mitsuba import filesystem as fs
 from mitsuba.filesystem import preferred_separator as sep
 
-# TODO: double-check that all of this is cross-platform
-# TODO: write platform-specific tests (use python's own fs lib?), e.g. "C:\" is an absolute path
 class FilesystemTest(unittest.TestCase):
     path_here_relative = fs.path("." + sep)
     path_here = fs.current_path()
@@ -33,21 +34,23 @@ class FilesystemTest(unittest.TestCase):
         self.assertFalse(fs.is_regular_file(FilesystemTest.path_here))
 
     def test02_path_to_string(self):
-        # TODO: this is not cross-platform
         self.assertEqual(FilesystemTest.path1.__str__(),
                          FilesystemTest.path_here.__str__() + sep + "dir 1" + sep + "dir 2")
 
     def test03_create_and_remove_directory(self):
-        # TODO: this is not cross-platform
         new_dir = FilesystemTest.path_here / fs.path("my_shiny_new_directory")
-        self.assertFalse(fs.exists(new_dir))
         self.assertTrue(fs.create_directory(new_dir))
         self.assertTrue(fs.exists(new_dir))
         self.assertTrue(fs.is_directory(new_dir))
+
+        # Asking to create a directory that already exists should not be treated
+        # as an error, and return true.
+        self.assertTrue(fs.create_directory(new_dir))
+
         self.assertTrue(fs.remove(new_dir))
+        self.assertFalse(fs.exists(new_dir))
 
     def test04_navigation(self):
-        # TODO: this is not cross-platform
         self.assertEqual(fs.path("dir 1" + sep + "dir 2") / FilesystemTest.path2,
                          fs.path("dir 1" + sep + "dir 2" + sep + "dir 3"))
         self.assertEqual((FilesystemTest.path1 / FilesystemTest.path2).parent_path(),
@@ -85,6 +88,37 @@ class FilesystemTest(unittest.TestCase):
         self.assertEqual(fs.path("..").extension(), u"")
         self.assertEqual(fs.path("foo" + sep + ".").extension(), u"")
         self.assertEqual(fs.path("foo" + sep + "..").extension(), u"")
+
+    def test08_make_absolute(self):
+        self.assertEqual(fs.absolute(FilesystemTest.path_here_relative), FilesystemTest.path_here)
+    
+    # Assumes either Windows or a POSIX system
+    def test09_system_specific_tests(self):
+        if (platform.system() == 'Windows'):
+            drive_letter_regexp = re.compile('^[A-Z]:');
+            self.assertTrue(drive_letter_regexp.match(str(FilesystemTest.path_here)))
+            self.assertTrue(drive_letter_regexp.match(str(fs.absolute(FilesystemTest.path_here_relative))))
+            self.assertTrue(fs.path('C:\hello').is_absolute())
+            self.assertTrue(fs.path('..\hello').is_relative())
+
+            # Both kinds of separators should be accepted
+            self.assertEqual(fs.path('../hello/world').native(), '..\\hello\\world')
+        else:
+            self.assertEqual(str(FilesystemTest.path_here)[0], '/')
+            self.assertEqual(str(fs.absolute(FilesystemTest.path_here_relative))[0], '/')
+
+            self.assertTrue(fs.path('/hello').is_absolute())
+            self.assertTrue(fs.path('./hello').is_relative())
+
+    def test10_equivalence(self):
+        p1 = fs.path('../my_directory')
+        self.assertTrue(fs.create_directory(p1))
+
+        p2 = fs.path('././../././my_directory')
+        self.assertFalse(p1 == p2)
+        self.assertTrue(fs.equivalent(p1, p2))
+
+        self.assertTrue(fs.remove(p1))
 
 if __name__ == '__main__':
     unittest.main()
