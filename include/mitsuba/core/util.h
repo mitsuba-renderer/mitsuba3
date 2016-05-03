@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(util)
 
 #if defined(__WINDOWS__)
     /// Return a std::string version of GetLastError()
-    extern std::string MTS_EXPORT_CORE getLasteError();
+    extern std::string MTS_EXPORT_CORE getLastError();
 #endif
 
 /// Determine the number of available CPU cores (including virtual cores)

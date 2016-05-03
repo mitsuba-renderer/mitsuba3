@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(util)
 
 #if defined(__WINDOWS__)
-std::string getLastErrorText() {
+std::string getLastError() {
     DWORD errCode = GetLastError();
     char *errorText = nullptr;
     if (!FormatMessageA(
