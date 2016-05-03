@@ -16,6 +16,15 @@
 #  include <linux/limits.h>
 #endif
 
+/** Macro allowing to type hardocded character sequences
+ * with the right type prefix (char_t: no prefix, wchar_t: 'L' prefix)
+ */
+#if defined(__WINDOWS__)
+#  define NSTR(str) L##str
+#else
+#  define NSTR(str) str
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(filesystem)
 
@@ -87,11 +96,11 @@ size_t file_size(const path& p) {
 #if defined(__WINDOWS__)
     struct _stati64 sb;
     if (_wstati64(p.native().c_str(), &sb) != 0)
-        throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
+        throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.string() + "\"!");
 #else
     struct stat sb;
     if (stat(p.native().c_str(), &sb) != 0)
-        throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.native() + "\"!");
+        throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.string() + "\"!");
 #endif
     return (size_t) sb.st_size;
 }
@@ -134,23 +143,22 @@ bool remove(const path& p) {
 #endif
 }
 
-
 // -----------------------------------------------------------------------------
 
 string_type path::extension() const {
-    if (empty() || m_path.back() == "." || m_path.back() == "..")
-        return "";
+    if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR(".."))
+        return NSTR("");
 
     const string_type &name = filename();
-    size_t pos = name.find_last_of(".");
+    size_t pos = name.find_last_of(NSTR("."));
     if (pos == string_type::npos)
-        return "";
+        return NSTR("");
     return name.substr(pos);  // Including the . character!
 }
 
 string_type path::filename() const {
     if (empty())
-        return "";
+        return NSTR("");
     const string_type &last = m_path[m_path.size()-1];
     return last;
 }
@@ -161,7 +169,7 @@ path path::parent_path() const {
 
     if (m_path.empty()) {
         if (!m_absolute)
-            result.m_path.push_back("..");
+            result.m_path.push_back(NSTR(".."));
     } else {
         size_t until = m_path.size() - 1;
         for (size_t i = 0; i < until; ++i)
@@ -169,6 +177,26 @@ path path::parent_path() const {
     }
     return result;
 }
+
+// -----------------------------------------------------------------------------
+
+std::string path::string() const {
+#if !defined(__WINDOWS__)
+    return str();
+#else
+    // Convert from wchar_t string to char_t string
+    string_type wstring = str();
+    std::string string;
+    int size = WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
+                                   NULL, 0, NULL, NULL);
+    string.resize(size, 0);
+    WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
+                        &string[0], size, NULL, NULL);
+    return string;
+#endif
+}
+
+// -----------------------------------------------------------------------------
 
 path path::operator/(const path &other) const {
     if (other.m_absolute)
@@ -197,7 +225,7 @@ path & path::operator=(path &&path) {
 }
 
 string_type path::str() const {
-    std::ostringstream oss;
+    std::basic_ostringstream<value_type> oss;
 
 #if !defined(__WINDOWS__)
     if (m_absolute)
@@ -218,11 +246,11 @@ void path::set(const string_type &str) {
     // TODO: is this  "/\\" correct for windows?
     // TODO: express just in terms of `preferred_path`
 #if defined(__WINDOWS__)
-    m_path = tokenize(str, "/\\");
-    m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
+    m_path = tokenize(str, NSTR("/\\"));
+    m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == NSTR(':');
 #else
-    m_path = tokenize(str, "/");
-    m_absolute = !str.empty() && str[0] == '/';
+    m_path = tokenize(str, NSTR("/"));
+    m_absolute = !str.empty() && str[0] == NSTR('/');
 #endif
 }
 

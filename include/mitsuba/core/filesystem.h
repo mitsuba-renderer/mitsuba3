@@ -36,7 +36,7 @@ typedef char value_type;
 typedef std::basic_string<value_type> string_type;
 
 #if defined(__WINDOWS__)
-constexpr value_type preferred_separator = '\\';
+constexpr value_type preferred_separator = L'\\';
 #else
 constexpr value_type preferred_separator = '/';
 #endif
@@ -46,15 +46,18 @@ public:
 
     path() : m_absolute(false) { }
 
+    // TODO: If the OS uses a native syntax that is different from
+    // the portable generic syntax described above, all library
+    // functions accept path names in both formats.
+
     path(const path &path)
         : m_path(path.m_path), m_absolute(path.m_absolute) {}
 
     path(path &&path)
         : m_path(std::move(path.m_path)), m_absolute(path.m_absolute) {}
 
-    path(const char *string) { set(string); }
-
     path(const string_type &string) { set(string); }
+    // TODO: on Windows, should be able to construct from an std::string and convert automatically
 
     // Not part of the std::filesystem::path specification
     //size_t length() const { return m_path.size(); }
@@ -83,16 +86,22 @@ public:
     const string_type native() const noexcept {
         return str();
     }
+    /**
+     * Paths are implicitly convertible to the basic_string corresponding to
+     * the system's character type.
+     */
     operator string_type() const noexcept {
         return str();
     }
+    /// Equivalent to native(), converted to the std::string type
+    std::string string() const;
 
     path operator/(const path &other) const;
     path & operator=(const path &path);
     path & operator=(path &&path);
     path & operator=(const string_type &str) { set(str); return *this; }
-    friend std::ostream &operator<<(std::ostream &os, const path &path) {
-        os << path.str();
+    friend std::ostream & operator<<(std::ostream &os, const path &path) {
+        os << path.string();
         return os;
     }
 
@@ -104,7 +113,7 @@ protected:
 
     void set(const string_type &str);
 
-    static std::vector<std::string> tokenize(const string_type &string,
+    static std::vector<string_type> tokenize(const string_type &string,
                                              const string_type &delim);
 
 protected:
