@@ -141,7 +141,7 @@ extern MTS_EXPORT_CORE float ellint_3(float k, float nu, float phi);
 // -----------------------------------------------------------------------
 //! @{ \name Bessel functions
 // -----------------------------------------------------------------------
-    
+
 /// Exponentially scaled modified Bessel function of the first kind (order 0), double precision
 extern MTS_EXPORT_CORE double i0e(double x);
 /// Exponentially scaled modified Bessel function of the first kind (order 0), single precision
@@ -192,7 +192,7 @@ template <typename Scalar> Scalar signum(Scalar value) {
 
 /// Generic range clamping function
 template <typename Scalar>  Scalar clamp(Scalar value, Scalar min, Scalar max) {
-    return (value < min) ? min : 
+    return (value < min) ? min :
            (value > max ? max : value);
 }
 

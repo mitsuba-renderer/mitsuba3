@@ -185,7 +185,7 @@ template <typename Scalar> Scalar normal_quantile(Scalar p) {
 /**
  *   @brief Return the Carlson elliptic function @f$ R_F(x,y,z) @f$
  *          of the first kind.
- * 
+ *
  *   The Carlson elliptic function of the first kind is defined by:
  *   @f[
  *       R_F(x,y,z) = \frac{1}{2} \int_0^\infty
@@ -261,16 +261,16 @@ __ellint_rf(const _Tp __x, const _Tp __y, const _Tp __z)
 /**
  *   @brief Return the complete elliptic integral of the first kind
  *          @f$ K(k) @f$ by series expansion.
- * 
+ *
  *   The complete elliptic integral of the first kind is defined as
  *   @f[
  *     K(k) = F(k,\pi/2) = \int_0^{\pi/2}\frac{d\theta}
  *                              {\sqrt{1 - k^2sin^2\theta}}
  *   @f]
- * 
+ *
  *   This routine is not bad as long as |k| is somewhat smaller than 1
  *   but is not is good as the Carlson elliptic integral formulation.
- * 
+ *
  *   @param  __k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the first kind.
  */
@@ -300,7 +300,7 @@ __comp_ellint_1_series(const _Tp __k)
 /**
  *   @brief  Return the complete elliptic integral of the first kind
  *           @f$ K(k) @f$ using the Carlson formulation.
- * 
+ *
  *   The complete elliptic integral of the first kind is defined as
  *   @f[
  *     K(k) = F(k,\pi/2) = \int_0^{\pi/2}\frac{d\theta}
@@ -308,7 +308,7 @@ __comp_ellint_1_series(const _Tp __k)
  *   @f]
  *   where @f$ F(k,\phi) @f$ is the incomplete elliptic integral of the
  *   first kind.
- * 
+ *
  *   @param  __k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the first kind.
  */
@@ -329,13 +329,13 @@ __comp_ellint_1(const _Tp __k)
 /**
  *   @brief  Return the incomplete elliptic integral of the first kind
  *           @f$ F(k,\phi) @f$ using the Carlson formulation.
- * 
+ *
  *   The incomplete elliptic integral of the first kind is defined as
  *   @f[
  *     F(k,\phi) = \int_0^{\phi}\frac{d\theta}
  *                                   {\sqrt{1 - k^2 sin^2\theta}}
  *   @f]
- * 
+ *
  *   @param  __k  The argument of the elliptic function.
  *   @param  __phi  The integral limit argument of the elliptic function.
  *   @return  The elliptic function of the first kind.
@@ -375,15 +375,15 @@ __ellint_1(const _Tp __k, const _Tp __phi)
 /**
  *   @brief Return the complete elliptic integral of the second kind
  *          @f$ E(k) @f$ by series expansion.
- * 
+ *
  *   The complete elliptic integral of the second kind is defined as
  *   @f[
  *     E(k,\pi/2) = \int_0^{\pi/2}\sqrt{1 - k^2 sin^2\theta}
  *   @f]
- * 
+ *
  *   This routine is not bad as long as |k| is somewhat smaller than 1
  *   but is not is good as the Carlson elliptic integral formulation.
- * 
+ *
  *   @param  __k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the second kind.
  */
@@ -417,7 +417,7 @@ __comp_ellint_2_series(const _Tp __k)
  *           @f$ R_D(x,y,z) = R_J(x,y,z,z) @f$ where
  *           @f$ R_J(x,y,z,p) @f$ is the Carlson elliptic function
  *           of the third kind.
- * 
+ *
  *   The Carlson elliptic function of the second kind is defined by:
  *   @f[
  *       R_D(x,y,z) = \frac{3}{2} \int_0^\infty
@@ -511,12 +511,12 @@ __ellint_rd(const _Tp __x, const _Tp __y, const _Tp __z)
 /**
  *   @brief  Return the complete elliptic integral of the second kind
  *           @f$ E(k) @f$ using the Carlson formulation.
- * 
+ *
  *   The complete elliptic integral of the second kind is defined as
  *   @f[
  *     E(k,\pi/2) = \int_0^{\pi/2}\sqrt{1 - k^2 sin^2\theta}
  *   @f]
- * 
+ *
  *   @param  __k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the second kind.
  */
@@ -544,12 +544,12 @@ __comp_ellint_2(const _Tp __k)
 /**
  *   @brief  Return the incomplete elliptic integral of the second kind
  *           @f$ E(k,\phi) @f$ using the Carlson formulation.
- * 
+ *
  *   The incomplete elliptic integral of the second kind is defined as
  *   @f[
  *     E(k,\phi) = \int_0^{\phi} \sqrt{1 - k^2 sin^2\theta}
  *   @f]
- * 
+ *
  *   @param  __k  The argument of the elliptic function.
  *   @param  __phi  The integral limit argument of the elliptic function.
  *   @return  The elliptic function of the second kind.
@@ -596,7 +596,7 @@ __ellint_2(const _Tp __k, const _Tp __phi)
  *   @brief  Return the Carlson elliptic function
  *           @f$ R_C(x,y) = R_F(x,y,y) @f$ where @f$ R_F(x,y,z) @f$
  *           is the Carlson elliptic function of the first kind.
- * 
+ *
  *   The Carlson elliptic function is defined by:
  *   @f[
  *       R_C(x,y) = \frac{1}{2} \int_0^\infty
@@ -663,7 +663,7 @@ __ellint_rc(const _Tp __x, const _Tp __y)
 /**
  *   @brief  Return the Carlson elliptic function @f$ R_J(x,y,z,p) @f$
  *           of the third kind.
- * 
+ *
  *   The Carlson elliptic function of the third kind is defined by:
  *   @f[
  *       R_J(x,y,z,p) = \frac{3}{2} \int_0^\infty
@@ -770,14 +770,14 @@ __ellint_rj(const _Tp __x, const _Tp __y, const _Tp __z, const _Tp __p)
  *   @brief Return the complete elliptic integral of the third kind
  *          @f$ \Pi(k,\nu) = \Pi(k,\nu,\pi/2) @f$ using the
  *          Carlson formulation.
- * 
+ *
  *   The complete elliptic integral of the third kind is defined as
  *   @f[
  *     \Pi(k,\nu) = \int_0^{\pi/2}
  *                   \frac{d\theta}
  *                 {(1 - \nu \sin^2\theta)\sqrt{1 - k^2 \sin^2\theta}}
  *   @f]
- * 
+ *
  *   @param  __k  The argument of the elliptic function.
  *   @param  __nu  The second argument of the elliptic function.
  *   @return  The complete elliptic function of the third kind.
@@ -808,7 +808,7 @@ __comp_ellint_3(const _Tp __k, const _Tp __nu)
 /**
  *   @brief Return the incomplete elliptic integral of the third kind
  *          @f$ \Pi(k,\nu,\phi) @f$ using the Carlson formulation.
- * 
+ *
  *   The incomplete elliptic integral of the third kind is defined as
  *   @f[
  *     \Pi(k,\nu,\phi) = \int_0^{\phi}
@@ -816,7 +816,7 @@ __comp_ellint_3(const _Tp __k, const _Tp __nu)
  *                            {(1 - \nu \sin^2\theta)
  *                             \sqrt{1 - k^2 \sin^2\theta}}
  *   @f]
- * 
+ *
  *   @param  __k  The argument of the elliptic function.
  *   @param  __nu  The second argument of the elliptic function.
  *   @param  __phi  The integral limit argument of the elliptic function.
