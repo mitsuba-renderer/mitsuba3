@@ -200,7 +200,7 @@ bool Thread::setPriority(EPriority priority) {
     const HANDLE handle = d->thread.native_handle();
     if (SetThreadPriority(handle, win32Priority) == 0) {
         Log(EWarn, "Could not adjust the thread priority to %i: %s!",
-            win32Priority, util::getLastError().c_str());
+            win32Priority, std::to_string(GetLastError()).c_str());
         return false;
     }
 #endif
