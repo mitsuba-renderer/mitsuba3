@@ -30,6 +30,8 @@ MTS_PY_EXPORT(filesystem) {
     m2.def("is_regular_file", &is_regular_file, DM(filesystem, is_regular_file));
     m2.def("is_directory", &is_directory, DM(filesystem, is_directory));
     m2.def("exists", &exists, DM(filesystem, exists));
+    m2.def("file_size", &file_size, DM(filesystem, file_size));
+    m2.def("equivalent", &equivalent, DM(filesystem, equivalent));
     m2.def("create_directory", &create_directory, DM(filesystem, create_directory));
     m2.def("resize_file", &resize_file, DM(filesystem, resize_file));
     m2.def("remove", &filesystem::remove, DM(filesystem, remove));

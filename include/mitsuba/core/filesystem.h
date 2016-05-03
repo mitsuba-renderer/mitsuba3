@@ -140,6 +140,10 @@ public:
         return os;
     }
 
+    /** Equality operator. Warning: this only checks for lexicographic equivalence.
+     * To check whether two paths point to the same filesystem resource,
+     * use <tt>equivalent</tt>.
+     */
     bool operator==(const path &p) const { return p.m_path == m_path; }
     /// Inequality operator.
     bool operator!=(const path &p) const { return p.m_path != m_path; }
@@ -181,6 +185,12 @@ extern MTS_EXPORT_CORE bool exists(const path& p) noexcept;
  * that is not a regular file or a symlink) is treated as an error.
  */
 extern MTS_EXPORT_CORE size_t file_size(const path& p);
+
+/** \brief Checks whether two paths refer to the same file system object.
+ * Both must refer to an existing file or directory.
+ * Symlinks are followed to determine equivalence.
+ */
+extern MTS_EXPORT_CORE bool equivalent(const path& p1, const path& p2);
 
 /** \brief Creates a directory at <tt>p</tt> as if <tt>mkdir</tt> was used.
  * Returns true if directory creation was successful, false otherwise.

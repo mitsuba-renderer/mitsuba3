@@ -110,6 +110,15 @@ class FilesystemTest(unittest.TestCase):
             self.assertTrue(fs.path('/hello').is_absolute())
             self.assertTrue(fs.path('./hello').is_relative())
 
+    def test10_equivalence(self):
+        p1 = fs.path('../my_directory')
+        self.assertTrue(fs.create_directory(p1))
+
+        p2 = fs.path('././../././my_directory')
+        self.assertFalse(p1 == p2)
+        self.assertTrue(fs.equivalent(p1, p2))
+
+        self.assertTrue(fs.remove(p1))
 
 if __name__ == '__main__':
     unittest.main()

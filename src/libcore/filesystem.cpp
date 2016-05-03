@@ -115,6 +115,24 @@ size_t file_size(const path& p) {
     return (size_t) sb.st_size;
 }
 
+bool equivalent(const path& p1, const path& p2) {
+#if defined(__WINDOWS__)
+    struct _stati64 sb1, sb2;
+    if (_wstati64(p1.native().c_str(), &sb1) != 0)
+        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p1.string() + "\"!");
+    if (_wstati64(p2.native().c_str(), &sb2) != 0)
+        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p2.string() + "\"!");
+#else
+    struct stat sb1, sb2;
+    if (stat(p1.native().c_str(), &sb1) != 0)
+        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p1.string() + "\"!");
+    if (stat(p2.native().c_str(), &sb2) != 0)
+        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p2.string() + "\"!");
+#endif
+
+    return (sb1.st_dev == sb2.st_dev) && (sb1.st_ino == sb2.st_ino);
+}
+
 bool create_directory(const path& p) noexcept {
     if (exists(p))
         return is_directory(p);

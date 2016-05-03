@@ -637,6 +637,11 @@ not treated as an error).)doc";
 
 static const char *__doc_mitsuba_filesystem_current_path = R"doc(Returns the current working directory (equivalent to getcwd))doc";
 
+static const char *__doc_mitsuba_filesystem_equivalent =
+R"doc(Checks whether two paths refer to the same file system object. Both must
+refer to an existing file or directory. Symlinks are followed to determine
+equivalence.)doc";
+
 static const char *__doc_mitsuba_filesystem_exists = R"doc(Checks if ``p`` points to an existing filesystem object.)doc";
 
 static const char *__doc_mitsuba_filesystem_file_size =
@@ -650,7 +655,11 @@ static const char *__doc_mitsuba_filesystem_is_regular_file =
 R"doc(Checks if ``p`` points to a regular file, as opposed to a directory or
 symlink.)doc";
 
-static const char *__doc_mitsuba_filesystem_path = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_path =
+R"doc(Represents a path to a filesystem resource. On construction, the path is
+parsed and stored in a system-agnostic representation. The path can be
+converted back to the system-specific string using ``native()`` or
+``string()``.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_clear = R"doc(Makes the path an empty path. An empty path is considered relative.)doc";
 
@@ -690,7 +699,10 @@ system's character type. Equivalent to calling ``native()``.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_operator_div = R"doc(Concatenates two paths with a directory separator.)doc";
 
-static const char *__doc_mitsuba_filesystem_path_operator_eq = R"doc(Equality operator.)doc";
+static const char *__doc_mitsuba_filesystem_path_operator_eq =
+R"doc(Equality operator. Warning: this only checks for lexicographic equivalence.
+To check whether two paths point to the same filesystem resource, use
+``equivalent``.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_operator_ne = R"doc(Inequality operator.)doc";
 
@@ -707,8 +719,8 @@ static const char *__doc_mitsuba_filesystem_path_path_2 = R"doc(Copy constructor
 static const char *__doc_mitsuba_filesystem_path_path_3 = R"doc(Move constructor.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_path_4 =
-R"doc(Construct a path from a string with native type. The given path can have
-Windows-style on Windows system and POSIX-style on all systems.)doc";
+R"doc(Construct a path from a string with native type. On Windows, the path can
+use both '/' or '\\' as a delimiter.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_set = R"doc(Builds a path from the passed string.)doc";
 
@@ -716,7 +728,9 @@ static const char *__doc_mitsuba_filesystem_path_str = R"doc()doc";
 
 static const char *__doc_mitsuba_filesystem_path_string = R"doc(Equivalent to native(), converted to the std::string type)doc";
 
-static const char *__doc_mitsuba_filesystem_path_tokenize = R"doc(Splits a string into tokens according to ``delim``.)doc";
+static const char *__doc_mitsuba_filesystem_path_tokenize =
+R"doc(Splits a string into tokens delimited by any of the characters passed in
+``delim``.)doc";
 
 static const char *__doc_mitsuba_filesystem_remove =
 R"doc(Removes a file or empty directory. Returns true if removal was successful,
