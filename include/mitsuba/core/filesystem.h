@@ -101,12 +101,9 @@ public:
      * be passed directly to system APIs. The path is constructed using the
      * system's preferred separator and the native string type.
      */
-    // TODO: the stdlib returns a reference instead of a copy here
     const string_type native() const noexcept {
         return str();
     }
-
-    // TODO: c_str (equivalent to p.native.c_str())
 
     /**
      * \brief Implicit conversion operator to the basic_string corresponding
@@ -171,7 +168,6 @@ extern MTS_EXPORT_CORE path current_path();
  * relative to <tt>base</tt>.
  * \see http ://en.cppreference.com/w/cpp/experimental/fs/absolute)
  */
-// TODO: should also take a `filesystem::path base` argument
 extern MTS_EXPORT_CORE path absolute(const path& p);
 
 /// Checks if <tt>p</tt> points to a regular file, as opposed to a directory or symlink.
