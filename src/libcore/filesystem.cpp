@@ -255,7 +255,7 @@ path & path::operator=(path &&path) {
 #if defined(__WINDOWS__)
 path & path::operator=(const std::string &str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    set(converter.from_bytes(string));
+    set(converter.from_bytes(str));
     return *this;
 }
 #endif
