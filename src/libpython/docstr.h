@@ -634,7 +634,7 @@ static const char *__doc_mitsuba_filesystem_is_directory = R"doc()doc";
 
 static const char *__doc_mitsuba_filesystem_is_regular_file = R"doc()doc";
 
-static const char *__doc_mitsuba_filesystem_make_absolute = R"doc()doc";
+static const char *__doc_mitsuba_filesystem_absolute = R"doc()doc";
 
 static const char *__doc_mitsuba_filesystem_path = R"doc()doc";
 

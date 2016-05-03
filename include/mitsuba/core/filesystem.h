@@ -131,8 +131,9 @@ protected:
 /// Returns the current working directory (equivalent to getcwd)
 extern MTS_EXPORT_CORE path current_path();
 
+/// Returns absolute path of p relative to base (see http ://en.cppreference.com/w/cpp/experimental/fs/absolute)
 // TODO: should also take a `filesystem::path base` argument
-extern MTS_EXPORT_CORE path make_absolute(const path& p);
+extern MTS_EXPORT_CORE path absolute(const path& p);
 
 extern MTS_EXPORT_CORE bool is_regular_file(const path& p) noexcept;
 extern MTS_EXPORT_CORE bool is_directory(const path& p) noexcept;
@@ -141,9 +142,8 @@ extern MTS_EXPORT_CORE bool exists(const path& p) noexcept;
 extern MTS_EXPORT_CORE size_t file_size(const path& p);
 extern MTS_EXPORT_CORE bool create_directory(const path& p) noexcept;
 extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
-/// Removes the file at the passed path
+/// Removes a file or empty directory
 extern MTS_EXPORT_CORE bool remove(const path& p);
-// TODO: remove_all function to remove recursively
 
 NAMESPACE_END(filesystem)
 

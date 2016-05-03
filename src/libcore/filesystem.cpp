@@ -51,7 +51,7 @@ path current_path() {
 #endif
 }
 
-path make_absolute(const path& p) {
+path absolute(const path& p) {
 #if !defined(__WINDOWS__)
     char temp[PATH_MAX];
     if (realpath(p.native().c_str(), temp) == NULL)
@@ -148,7 +148,10 @@ bool remove(const path& p) {
 #if !defined(__WINDOWS__)
     return std::remove(p.native().c_str()) == 0;
 #else
-    return DeleteFileW(p.native().c_str()) != 0;
+    if (is_directory(p))
+        return RemoveDirectoryW(p.native().c_str()) != 0;
+    else
+        return DeleteFileW(p.native().c_str()) != 0;
 #endif
 }
 

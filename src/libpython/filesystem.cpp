@@ -26,7 +26,7 @@ MTS_PY_EXPORT(filesystem) {
     m2.attr("preferred_separator") = py::cast(preferred_separator);
 
     m2.def("current_path", &current_path, DM(filesystem, current_path));
-    m2.def("make_absolute", &make_absolute, DM(filesystem, make_absolute));
+    m2.def("absolute", &absolute, DM(filesystem, absolute));
     m2.def("is_regular_file", &is_regular_file, DM(filesystem, is_regular_file));
     m2.def("is_directory", &is_directory, DM(filesystem, is_directory));
     m2.def("exists", &exists, DM(filesystem, exists));
