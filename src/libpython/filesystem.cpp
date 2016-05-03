@@ -9,7 +9,7 @@ MTS_PY_EXPORT(filesystem) {
     py::class_<path>(m2, "path", DM(filesystem, path))
         .def(py::init<>(), DM(filesystem, path, path))
         .def(py::init<const path &>(), DM(filesystem, path, path, 2))
-        .def(py::init<const string_type &>(), DM(filesystem, path, path, 5))
+        .def(py::init<const string_type &>(), DM(filesystem, path, path, 4))
         .def("clear", &path::clear, DM(filesystem, path, clear))
         .def("empty", &path::empty, DM(filesystem, path, empty))
         .def("is_absolute", &path::is_absolute, DM(filesystem, path, is_absolute))

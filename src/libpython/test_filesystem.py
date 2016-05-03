@@ -39,10 +39,14 @@ class FilesystemTest(unittest.TestCase):
 
     def test03_create_and_remove_directory(self):
         new_dir = FilesystemTest.path_here / fs.path("my_shiny_new_directory")
-        fs.remove(new_dir)  # In case of leftovers
         self.assertTrue(fs.create_directory(new_dir))
         self.assertTrue(fs.exists(new_dir))
         self.assertTrue(fs.is_directory(new_dir))
+
+        # Asking to create a directory that already exists should not be treated
+        # as an error, and return true.
+        self.assertTrue(fs.create_directory(new_dir))
+
         self.assertTrue(fs.remove(new_dir))
         self.assertFalse(fs.exists(new_dir))
 
@@ -96,6 +100,9 @@ class FilesystemTest(unittest.TestCase):
             self.assertTrue(drive_letter_regexp.match(str(fs.absolute(FilesystemTest.path_here_relative))))
             self.assertTrue(fs.path('C:\hello').is_absolute())
             self.assertTrue(fs.path('..\hello').is_relative())
+
+            # Both kinds of separators should be accepted
+            self.assertEqual(fs.path('../hello/world').native(), '..\\hello\\world')
         else:
             self.assertEqual(str(FilesystemTest.path_here)[0], '/')
             self.assertEqual(str(fs.absolute(FilesystemTest.path_here_relative))[0], '/')

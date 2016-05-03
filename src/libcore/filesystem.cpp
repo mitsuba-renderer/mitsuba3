@@ -1,11 +1,12 @@
 #include <mitsuba/core/filesystem.h>
 
-#include <locale>
 #include <cctype>
 #include <cerrno>
 #include <codecvt>
 #include <cstdlib>
 #include <cstring>
+#include <locale>
+#include <stdexcept>
 
 #if defined(__WINDOWS__)
 #  include <windows.h>
@@ -115,6 +116,9 @@ size_t file_size(const path& p) {
 }
 
 bool create_directory(const path& p) noexcept {
+    if (exists(p))
+        return is_directory(p);
+
 #if defined(__WINDOWS__)
     return CreateDirectoryW(p.native().c_str(), NULL) != 0;
 #else
@@ -230,6 +234,14 @@ path & path::operator=(path &&path) {
     return *this;
 }
 
+#if defined(__WINDOWS__)
+path & path::operator=(const std::string &str) {
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    set(converter.from_bytes(string));
+    return *this;
+}
+#endif
+
 string_type path::str() const {
     std::basic_ostringstream<value_type> oss;
 
@@ -249,8 +261,6 @@ string_type path::str() const {
 }
 
 void path::set(const string_type &str) {
-    // TODO: is this  "/\\" correct for windows?
-    // TODO: express just in terms of `preferred_path`
 #if defined(__WINDOWS__)
     m_path = tokenize(str, NSTR("/\\"));
     m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == NSTR(':');
@@ -262,7 +272,8 @@ void path::set(const string_type &str) {
 
 std::vector<string_type> path::tokenize(const string_type &string,
                                         const string_type &delim) {
-    string_type::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
+    string_type::size_type lastPos = 0,
+                           pos = string.find_first_of(delim, lastPos);
     std::vector<string_type> tokens;
 
     while (lastPos != string_type::npos) {
