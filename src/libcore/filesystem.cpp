@@ -1,8 +1,10 @@
 #include <mitsuba/core/filesystem.h>
 
+#include <locale>
 #include <cctype>
-#include <cstdlib>
 #include <cerrno>
+#include <codecvt>
+#include <cstdlib>
 #include <cstring>
 
 #if defined(__WINDOWS__)
@@ -27,6 +29,13 @@
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(filesystem)
+
+#if defined(__WINDOWS__)
+path::path(const std::string &string) {
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    set(converter.from_bytes(string));
+}
+#endif
 
 path current_path() {
 #if !defined(__WINDOWS__)
@@ -184,15 +193,9 @@ std::string path::string() const {
 #if !defined(__WINDOWS__)
     return str();
 #else
-    // Convert from wchar_t string to char_t string
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     string_type wstring = str();
-    std::string string;
-    int size = WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
-                                   NULL, 0, NULL, NULL);
-    string.resize(size, 0);
-    WideCharToMultiByte(CP_UTF8, 0, &wstring[0], (int)wstring.size(),
-                        &string[0], size, NULL, NULL);
-    return string;
+    return(converter.to_bytes(wstring));
 #endif
 }
 

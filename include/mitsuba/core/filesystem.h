@@ -56,8 +56,15 @@ public:
     path(path &&path)
         : m_path(std::move(path.m_path)), m_absolute(path.m_absolute) {}
 
+    /// Construct from a native string
     path(const string_type &string) { set(string); }
-    // TODO: on Windows, should be able to construct from an std::string and convert automatically
+#if defined(__WINDOWS__)
+    /**
+     * Construct from an std::string, even if it's not the native string type.
+     * Assume the string is UTF-8 encoded to carry conversion to native type.
+     */
+    path(const std::string &string);
+#endif
 
     // Not part of the std::filesystem::path specification
     //size_t length() const { return m_path.size(); }
