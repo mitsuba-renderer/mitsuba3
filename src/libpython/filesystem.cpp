@@ -33,4 +33,56 @@ MTS_PY_EXPORT(filesystem) {
     m2.def("create_directory", &create_directory, DM(filesystem, create_directory));
     m2.def("resize_file", &resize_file, DM(filesystem, resize_file));
     m2.def("remove", &filesystem::remove, DM(filesystem, remove));
+
+#if 0
+    py::class_<resolver>(fs_module, "resolver")
+        .def(py::init<>())
+        .def("__len__", &resolver::size)
+        .def("append", &resolver::append)
+        .def("prepend", &resolver::prepend)
+        .def("resolve", &resolver::resolve)
+        .def("__getitem__", [](const resolver &r, size_t i) {
+             if (i >= r.size())
+                 throw py::index_error();
+             return r[i];
+         })
+        .def("__setitem__", [](resolver &r, size_t i, path &v) {
+             if (i >= r.size())
+                 throw py::index_error();
+             r[i] = v;
+         })
+        .def("__delitem__", [](resolver &r, size_t i) {
+             if (i >= r.size())
+                 throw py::index_error();
+             r.erase(r.begin() + i);
+         })
+        .def("__repr__", [](const resolver &r) {
+            std::ostringstream oss;
+            oss << r;
+            return oss.str();
+        });
+
+    py::class_<MemoryMappedFile>(fs_module, "MemoryMappedFile")
+        .def(py::init<fs::path, size_t>())
+        .def(py::init<fs::path, bool>())
+        .def(py::init<fs::path>())
+        .def("resize", &MemoryMappedFile::resize)
+        .def("__repr__", &MemoryMappedFile::toString)
+        .def("size", &MemoryMappedFile::size)
+        .def("filename", &MemoryMappedFile::filename)
+        .def("readOnly", &MemoryMappedFile::readOnly)
+        .def_static("createTemporary", &MemoryMappedFile::createTemporary)
+        .def_buffer([](MemoryMappedFile &m) -> py::buffer_info {
+            return py::buffer_info(
+                m.data(),
+                sizeof(uint8_t),
+                py::format_descriptor<uint8_t>::value(),
+                1,
+                { (size_t) m.size() },
+                { sizeof(uint8_t) }
+            );
+        });
+
+    py::implicitly_convertible<std::string, path>();
+#endif
 }
