@@ -28,3 +28,6 @@
 [submodule "ext/zeromq"]
 	path = ext/zeromq
 	url = https://github.com/mitsuba-renderer/zeromq
+[submodule "ext/tinyformat"]
+	path = ext/tinyformat
+	url = https://github.com/mitsuba-renderer/tinyformat
