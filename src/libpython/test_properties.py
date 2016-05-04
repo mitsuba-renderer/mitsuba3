@@ -25,9 +25,16 @@ class PropertiesTest(unittest.TestCase):
         self.assertEqual(self.p.getPluginName(), p2.getPluginName())
 
     def test02_type_is_preserved(self):
-        # TODO: make sure, this is important but could go unnoticed in Python
-        # TODO: test updating a property but using a different type
-        pass
+        fillProperties(self.p)
+        self.assertEqual(self.p['prop_1'], 1)
+        self.assertEqual(self.p['prop_2'], 'two')
+        self.assertEqual(self.p['prop_3'], False)
+        # TODO: why such an extreme loss of precision?
+        self.assertAlmostEqual(self.p['prop_4'], 3.14, places=6)
+
+        # Updating an existing property but using a different type
+        self.p['prop_2'] = 2
+        self.assertEqual(self.p['prop_2'], 2)
 
     def test03_management_of_properties(self):
         fillProperties(self.p)

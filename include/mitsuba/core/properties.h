@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -40,6 +41,13 @@ public:
 
     /// Verify if a value with the specified name exists
     bool hasProperty(const std::string &name) const;
+
+    /** \brief Returns the type of an existing property.
+     * If no property exists under that name, an error is logged
+     * and type <tt>void</tt> is returned.
+     */
+    // TODO: is it bad design to "leak" std::type_info? (too low-level?)
+    const std::type_info &getPropertyType(const std::string &name) const;
 
     /**
      * \brief Remove a property with the specified name

@@ -96,6 +96,16 @@ bool Properties::hasProperty(const std::string &name) const {
     return d->entries.find(name) != d->entries.end();
 }
 
+const std::type_info &Properties::getPropertyType(const std::string &name) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end()) {
+        Log(EError, "getPropertyType(): Could not find property named \"%s\"!", name.c_str());
+        return typeid(void);
+    }
+
+    return it->second.data.type();
+}
+
 void Properties::markQueried(const std::string &name) const {
     auto it = d->entries.find(name);
     if (it == d->entries.end())
@@ -106,7 +116,7 @@ void Properties::markQueried(const std::string &name) const {
 bool Properties::wasQueried(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
-        Log(EError, "Could not find parameter \"%s\"!", name.c_str());
+        Log(EError, "Could not find property named \"%s\"!", name.c_str());
     return it->second.queried;
 }
 

@@ -40,18 +40,23 @@ MTS_PY_EXPORT(Properties) {
 
        .def("__getitem__", [](const Properties& p, const py::str &key) {
             // We need to ask for type information to return the right cast
-            // auto type_info = props.getPropertyType(key);
+            const auto &type_info = p.getPropertyType(key);
 
-            // switch(type_info) {
-            //     case Properties::EBoolean:
-            //       return py::cast(props.getBoolean(key))
-            //     default:
-            //       throw std::runtime_error("Unsupported property type");
-            //       return;
-            // }
-            return "TODO";
+            if (&type_info == &typeid(bool))
+                return py::cast(p.getBoolean(key));
+            else if (&type_info == &typeid(int64_t))
+                return py::cast(p.getLong(key));
+            else if (&type_info == &typeid(Float))
+                return py::cast(p.getFloat(key));
+            else if (&type_info == &typeid(std::string))
+                return py::cast(p.getString(key));
+            else {
+              throw std::runtime_error("Unsupported property type");
+              return py::cast(py::none());
+            }
        }, "Get back an existing property, in the fashion of a dict."
-          "Type is preserved.")
+          " Type is preserved. Unsupported types result in an exception"
+          " being thrown and None is returned.")
 
         // Operators
         // TODO: will python's assignment operator behave nicely?
