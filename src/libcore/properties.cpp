@@ -196,10 +196,12 @@ std::ostream &operator<<(std::ostream &os, const Properties &p) {
        << "  id = \"" << p.d->id << "\"," << std::endl
        << "  elements = {" << std::endl;
     while (it != p.d->entries.end()) {
-        os << "    \"" << it->first
-           << "\" -> " << it->second.data;  // Rely on the variant's operator<<
-        if (++it != p.d->entries.end())
-            os << ",";
+        os << "    \"" << it->first << "\" -> ";
+        if (it->second.data.is<std::string>()) os << "\"";
+        os << it->second.data;
+        if (it->second.data.is<std::string>()) os << "\"";
+
+        if (++it != p.d->entries.end()) os << ",";
         os << std::endl;
     }
     os << "  }" << std::endl

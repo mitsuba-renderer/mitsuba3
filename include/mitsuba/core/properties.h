@@ -90,7 +90,8 @@ public:
 
     /**
      * Merge another properties record into the current one.
-     * Existing properties will be overwritten if they have the same name.
+     * Existing properties will be overwritten with the values
+     * from <tt>props</tt> if they have the same name.
      */
     void merge(const Properties &props);
 
