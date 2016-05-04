@@ -6,13 +6,13 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+// TODO: support for more types
+// Originally supported types: bool, int64_t, Float, Point, Vector,
+//                             Transform, AnimatedTransform *,
+//                             Spectrum, std::string, Properties::Data
 using VariantType = variant<bool, int64_t, Float, std::string>;
 
 struct Entry {
-    // TODO: support for more types (?)
-    // Originally supported types: bool, int64_t, Float, Point, Vector,
-    //                             Transform, AnimatedTransform *,
-    //                             Spectrum, std::string, Properties::Data
     VariantType data;
     bool queried;
 };
@@ -22,7 +22,6 @@ struct Properties::PropertiesPrivate {
     std::string id, pluginName;
 };
 
-// TODO: add back useful "print full settings on error", requires Properties -> string
 #define DEFINE_PROPERTY_ACCESSOR(Type, BaseType, TypeName, ReadableName) \
     void Properties::set##TypeName(const std::string &name, const Type &value, bool warnDuplicates) { \
         if (hasProperty(name) && warnDuplicates) \
@@ -62,7 +61,6 @@ DEFINE_PROPERTY_ACCESSOR(bool, bool, Boolean, boolean)
 DEFINE_PROPERTY_ACCESSOR(int64_t, int64_t, Long, integer)
 DEFINE_PROPERTY_ACCESSOR(Float, Float, Float, float)
 DEFINE_PROPERTY_ACCESSOR(std::string, std::string, String, string)
-// TODO: support other types, type-specific getters & setters
 
 Properties::Properties()
     : d(new PropertiesPrivate()) {

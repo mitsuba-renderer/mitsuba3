@@ -29,10 +29,8 @@ MTS_PY_EXPORT(Properties) {
         .mdef(Properties, getUnqueried)
         .mdef(Properties, merge)
         // Getters & setters: used as if it were a simple map
-        // TODO: support all types and call the correct functions
-        // TODO: how about updates with different types?
         // TODO: how to allow disabling warnings about setting the same prop twice?
-        // TODO: how to get with default?
+        // TODO: how to get with default value?
        .SET_ITEM_BINDING(Boolean, py::bool_)
        .SET_ITEM_BINDING(Long, py::int_)
        .SET_ITEM_BINDING(Float, py::float_)
@@ -59,7 +57,6 @@ MTS_PY_EXPORT(Properties) {
           " being thrown and None is returned.")
 
         // Operators
-        // TODO: will python's assignment operator behave nicely?
         .def(py::self == py::self, DM(Properties, operator_eq))
         .def(py::self != py::self, DM(Properties, operator_ne))
         .def("__repr__", [](const Properties &p) {
