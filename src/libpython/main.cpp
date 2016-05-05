@@ -13,7 +13,6 @@ MTS_PY_DECLARE(Formatter);
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(Properties);
 MTS_PY_DECLARE(util);
-MTS_PY_DECLARE(vector);
 
 PYBIND11_PLUGIN(mitsuba) {
     Class::staticInitialization();
@@ -31,7 +30,6 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(Formatter);
     MTS_PY_IMPORT(atomic);
     MTS_PY_IMPORT(util);
-    MTS_PY_IMPORT(vector);
     MTS_PY_IMPORT(Properties);
 
     atexit([](){

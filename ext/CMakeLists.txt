@@ -11,7 +11,7 @@ endif()
 set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6 3.7)
 if (NOT ${MITSUBA_PYTHON_VERSION} STREQUAL "")
   find_package(PythonLibs ${MITSUBA_PYTHON_VERSION} EXACT)
-  if (NOT PythonLibs_FOUND)
+  if (NOT PYTHONLIBS_FOUND)
     find_package(PythonLibs ${MITSUBA_PYTHON_VERSION})
   endif()
 else()
@@ -19,12 +19,15 @@ else()
 endif()
 
 # Find a matching Python interpreter
-if (PythonLibs_FOUND)
+if (PYTHONLIBS_FOUND)
   # The above sometimes returns version numbers like "3.4.3+"; the "+" must be removed for the next line to work
   string(REPLACE "+" "" PYTHONLIBS_VERSION_STRING "+${PYTHONLIBS_VERSION_STRING}")
   find_package(PythonInterp ${PYTHONLIBS_VERSION_STRING} EXACT REQUIRED)
   set(PYBIND11_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pybind11/include ${PYTHON_INCLUDE_DIR} PARENT_SCOPE)
+else()
+  message(WARNING "Compiling without Python support")
 endif()
+set(PYTHONLIBS_FOUND ${PYTHONLIBS_FOUND} PARENT_SCOPE)
 
 if (WIN32)
   # Build zlib (only on Windows)
@@ -57,12 +60,15 @@ if (WIN32)
   add_subdirectory(libjpeg)
   set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
 else()
+  # Find system libpng
   find_package(PNG)
   if (PNG_FOUND)
     set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
     set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
     set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
   endif()
+
+  # Find system libjpeg
   find_package(JPEG)
   if (JPEG_FOUND)
     set(JPEG_LIBRARIES    ${JPEG_LIBRARIES} PARENT_SCOPE)
@@ -101,10 +107,8 @@ add_subdirectory(nanogui)
 set_property(TARGET glfw glfw_objects bin2c nanogui PROPERTY FOLDER "dependencies")
 set(EIGEN_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/eigen PARENT_SCOPE)
 set(NANOGUI_INCLUDE_DIRS
-   ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/eigen
-   ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/glfw/include
-   ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/glad/include
    ${PROJECT_SOURCE_DIR}/ext/nanogui/include
+   ${NANOGUI_EXTRA_INCS}
    PARENT_SCOPE)
 
 # Build the pugixml parser

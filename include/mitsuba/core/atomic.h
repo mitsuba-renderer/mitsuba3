@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  * The class implements an an atomic floating point data type (which is not
  * possible with the existing overloads provided by <tt>std::atomic</tt>). It
  * internally casts floating point values to an integer storage format and uses
- * integer compare and exchange operations to perform changes atomically.
+ * atomic integer compare and exchange operations to perform changes.
  */
 template <typename Type = Float> class AtomicFloat {
 private:
@@ -42,7 +42,7 @@ public:
     AtomicFloat &operator/=(Type arg) { return do_atomic([arg](Type value) { return value / arg; }); }
 
 protected:
-    /// Apply a FP operation atomically (verified that this will be nicely inlined in the above iterators)
+    /// Apply a FP operation atomically (verified that this will be nicely inlined in the above operators)
     template <typename Func> AtomicFloat& do_atomic(Func func) {
         Storage oldBits = m_bits, newBits;
         do {

@@ -30,7 +30,6 @@ add_library(mitsuba-python SHARED
   properties.cpp
   python.h
   thread.cpp
-  vector.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)
