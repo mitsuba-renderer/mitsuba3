@@ -1,6 +1,7 @@
 import unittest
 from mitsuba import Properties as Prop
 
+
 def fillProperties(p):
     """Sets up some properties with various types"""
     p['prop_1'] = 1
@@ -8,8 +9,8 @@ def fillProperties(p):
     p['prop_3'] = False
     p['prop_4'] = 3.14
 
-class PropertiesTest(unittest.TestCase):
 
+class PropertiesTest(unittest.TestCase):
     def setUp(self):
         # Provide a fresh Properties instance
         self.p = Prop()
@@ -28,7 +29,6 @@ class PropertiesTest(unittest.TestCase):
         self.assertEqual(self.p['prop_1'], 1)
         self.assertEqual(self.p['prop_2'], '1')
         self.assertEqual(self.p['prop_3'], False)
-        # TODO: why such an extreme loss of precision?
         self.assertAlmostEqual(self.p['prop_4'], 3.14, places=6)
 
         # Updating an existing property but using a different type
@@ -37,7 +37,7 @@ class PropertiesTest(unittest.TestCase):
 
     def test03_management_of_properties(self):
         fillProperties(self.p)
-        # Existance
+        # Existence
         self.assertTrue(self.p.hasProperty('prop_1'))
         self.assertFalse(self.p.hasProperty('random_unset_property'))
         # Removal
@@ -106,6 +106,7 @@ class PropertiesTest(unittest.TestCase):
         pass
 
     def test07_printing(self):
+        self.p.setPluginName('some_plugin')
         self.p.setID('some_id')
         self.p['prop_1'] = 1
         self.p['prop_2'] = 'hello'
@@ -113,7 +114,7 @@ class PropertiesTest(unittest.TestCase):
         string = str(self.p)
         self.assertEqual(string,
 """Properties[
-  pluginName = "",
+  pluginName = "some_plugin",
   id = "some_id",
   elements = {
     "prop_1" -> 1,

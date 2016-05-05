@@ -66,38 +66,20 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
             variant_helper<Args...>::destruct(type_info, ptr);
     }
 
-    static bool equals(const std::type_info *type_info_1, const void *v1,
-                       const std::type_info *type_info_2, const void *v2)
-        noexcept(true) {
-
-        if (*type_info_1 != *type_info_2)
-            return false;
-
-        if (type_info_1 == &typeid(T)) {
+    static bool equals(const std::type_info *type_info, const void *v1, const void *v2) {
+        if (type_info == &typeid(T))
             return (*reinterpret_cast<const T *>(v1)) == (*reinterpret_cast<const T *>(v2));
-        } else {
-            return variant_helper<Args...>::equals(type_info_1, v1, type_info_2, v2);
-        }
+        else
+            return variant_helper<Args...>::equals(type_info, v1, v2);
     }
 
     template <typename Visitor>
-    static auto visit(const std::type_info *type_info, void* ptr, Visitor &v)
+    static auto visit(const std::type_info *type_info, void *ptr, Visitor &v)
         -> decltype(v(std::declval<T>())) {
-
         if (type_info == &typeid(T))
             return v(*reinterpret_cast<T*>(ptr));
         else
             return variant_helper<Args...>::visit(type_info, ptr, v);
-    }
-
-    static std::ostream &write_to_stream(std::ostream &os,
-                                         const std::type_info *type_info, const void *ptr) {
-        if (type_info == &typeid(T)) {
-            os << (*reinterpret_cast<const T *>(ptr));
-            return os;
-        } else {
-            return variant_helper<Args...>::write_to_stream(os, type_info, ptr);
-        }
     }
 };
 
@@ -105,10 +87,11 @@ template<> struct variant_helper<>  {
     static bool copy(const std::type_info *, const void *, void *) noexcept(true) { return false; }
     static bool move(const std::type_info *, void *, void *) noexcept(true) { return false; }
     static void destruct(const std::type_info *, void *) noexcept(true) { }
-    static bool equals(const std::type_info *, const void *,
-                       const std::type_info *, const void *) noexcept(true) { return false; }
-    static std::ostream &write_to_stream(std::ostream & os,
-                                         const std::type_info *, const void *) { return os; }
+    static bool equals(const std::type_info *, const void *, const void *) { return false; }
+    template <typename Visitor>
+    static auto visit(const std::type_info *, void *, Visitor& v) -> decltype(v(nullptr)) {
+        return v(nullptr);
+    }
 };
 
 NAMESPACE_END(detail)
@@ -122,7 +105,6 @@ private:
     using helper_type = detail::variant_helper<Args...>;
 
 private:
-    // Need to declare these on top for usage in `decltype`
     storage_type data;
     const std::type_info *type_info = nullptr;
 
@@ -211,7 +193,7 @@ public:
     }
 
     template <typename Visitor>
-    auto visit(Visitor &v) -> decltype(helper_type::visit(this->type_info, &this->data, v)) {
+    auto visit(Visitor &&v) -> decltype(helper_type::visit(type_info, &data, v)) {
         return helper_type::visit(type_info, &data, v);
     }
 
@@ -222,15 +204,14 @@ public:
     }
 
     bool operator==(const variant<Args...> &other) const {
-        return helper_type::equals(type_info, &data, other.type_info, &(other.data));
+        if (type_info != other.type_info)
+            return false;
+        else
+            return helper_type::equals(type_info, &data, &other.data);
     }
 
     bool operator!=(const variant<Args...> &other) const {
         return !operator==(other);
-    }
-
-    friend std::ostream &operator<<(std::ostream &os, const variant<Args...> &v) {
-        return helper_type::write_to_stream(os, v.type_info, &v.data);
     }
 };
 
