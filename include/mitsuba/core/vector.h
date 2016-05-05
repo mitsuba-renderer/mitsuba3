@@ -4,10 +4,12 @@
 
 #if !defined(NDEBUG)
 #  define EIGEN_INITIALIZE_MATRICES_BY_NAN 1
-#  define EIGEN_DONT_PARALLELIZE 1
 #endif
 
-#include <Eigen/Dense>
+#define EIGEN_DONT_PARALLELIZE 1
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -129,7 +131,7 @@ public:
 extern MTS_EXPORT_CORE void coordinateSystem(const Vector3f &a, Vector3f &b, Vector3f &c);
 
 template <typename Derived> std::ostream& operator<<(std::ostream &os, const Eigen::MatrixBase<Derived>& m) {
-    constexpr bool isColVector = Eigen::MatrixBase<Derived>::ColsAtCompileTime;
+    constexpr bool isColVector = Eigen::MatrixBase<Derived>::ColsAtCompileTime == 1;
     if (isColVector)
         os << m.transpose().format(Eigen::IOFormat(4, isColVector ? Eigen::DontAlignCols : 0, ", ", ";\n", "", "", "[", "]"));
     else
@@ -142,4 +144,19 @@ template <typename Derived> std::ostream& operator<<(std::ostream &os, const Eig
     return os;
 }
 
+
 NAMESPACE_END(mitsuba)
+
+NAMESPACE_BEGIN(Eigen)
+NAMESPACE_BEGIN(internal)
+template <typename Scalar, int Dimension>
+struct traits<mitsuba::TVector<Scalar, Dimension>>
+    : public traits<typename mitsuba::TVector<Scalar, Dimension>::Base> { };
+
+template <typename Scalar, int Dimension>
+struct traits<mitsuba::TPoint<Scalar, Dimension>>
+    : public traits<typename mitsuba::TPoint<Scalar, Dimension>::Base> { };
+
+template <> struct traits<mitsuba::Normal3f> : public traits<mitsuba::Normal3f::Base> { };
+NAMESPACE_END(internal)
+NAMESPACE_END(Eigen)

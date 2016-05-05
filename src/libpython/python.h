@@ -4,7 +4,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
-#include <pybind11/numpy.h>
+#include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 #include "docstr.h"
 #include <mitsuba/core/object.h>

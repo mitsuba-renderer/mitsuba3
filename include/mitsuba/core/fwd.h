@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/platform.h>
+#include <cstddef>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -33,6 +34,12 @@ typedef TVector<Float, 1>       Vector1f;
 typedef TVector<Float, 2>       Vector2f;
 typedef TVector<Float, 3>       Vector3f;
 typedef TVector<Float, 4>       Vector4f;
+
+typedef TVector<size_t, 1>      Vector1s;
+typedef TVector<size_t, 2>      Vector2s;
+typedef TVector<size_t, 3>      Vector3s;
+typedef TVector<size_t, 4>      Vector4s;
+
 typedef TPoint<Float, 1>        Point1f;
 typedef TPoint<Float, 2>        Point2f;
 typedef TPoint<Float, 3>        Point3f;
