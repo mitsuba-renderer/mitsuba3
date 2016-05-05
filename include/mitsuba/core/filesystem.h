@@ -28,18 +28,19 @@ NAMESPACE_BEGIN(filesystem)
  * to use when calling system APIs).
  */
 #if defined(__WINDOWS__)
-typedef wchar_t value_type;
+    typedef wchar_t value_type;
 #else
-typedef char value_type;
+    typedef char value_type;
 #endif
+
 /// Type of strings (built from system-specific characters)
 typedef std::basic_string<value_type> string_type;
 
 /// System-specific separator used to write paths.
 #if defined(__WINDOWS__)
-constexpr value_type preferred_separator = L'\\';
+    constexpr value_type preferred_separator = L'\\';
 #else
-constexpr value_type preferred_separator = '/';
+    constexpr value_type preferred_separator = '/';
 #endif
 
 /** \brief Represents a path to a filesystem resource.
@@ -51,9 +52,11 @@ class MTS_EXPORT_CORE path {
 public:
     /// Default constructor. Constructs an empty path. An empty path is considered relative.
     path() : m_absolute(false) { }
+
     /// Copy constructor.
     path(const path &path)
         : m_path(path.m_path), m_absolute(path.m_absolute) {}
+
     /// Move constructor.
     path(path &&path)
         : m_path(std::move(path.m_path)), m_absolute(path.m_absolute) {}
@@ -82,18 +85,19 @@ public:
 
     /// Checks if the path is absolute.
     bool is_absolute() const { return m_absolute; }
+
     /// Checks if the path is relative.
     bool is_relative() const { return !m_absolute; }
 
     /** \brief Returns the path to the parent directory. Returns an empty path
-     * if it is already empty or if it has only one element.
-     */
+     * if it is already empty or if it has only one element. */
     path parent_path() const;
+
     /** \brief Returns the extension of the filename component of the path (the
      * substring starting at the rightmost period, including the period).
-     * Special paths '.' and '..' have an empty extension.
-     */
+     * Special paths '.' and '..' have an empty extension. */
     string_type extension() const;
+
     /// Returns the filename component of the path, including the extension.
     string_type filename() const;
 
@@ -101,28 +105,31 @@ public:
      * be passed directly to system APIs. The path is constructed using the
      * system's preferred separator and the native string type.
      */
-    const string_type native() const noexcept {
-        return str();
-    }
+    const string_type native() const noexcept { return str(); }
 
     /**
      * \brief Implicit conversion operator to the basic_string corresponding
      * to the system's character type. Equivalent to calling <tt>native()</tt>.
      */
     operator string_type() const noexcept { return native(); }
+
     /// Equivalent to native(), converted to the std::string type
     std::string string() const;
 
     /// Concatenates two paths with a directory separator.
     path operator/(const path &other) const;
+
     /// Assignment operator.
     path & operator=(const path &path);
+
     /// Move assignment operator.
     path & operator=(path &&path);
+
     /** \brief Assignment from the system's native string type. Acts similarly
      * to the string constructor.
      */
     path & operator=(const string_type &str) { set(str); return *this; }
+
 #if defined(__WINDOWS__)
     /** \brief Constructs a path from an std::string, even if it's not the
      * native string type. Assumes the string is UTF-8 encoded to carry
@@ -142,6 +149,7 @@ public:
      * use <tt>equivalent</tt>.
      */
     bool operator==(const path &p) const { return p.m_path == m_path; }
+
     /// Inequality operator.
     bool operator!=(const path &p) const { return p.m_path != m_path; }
 
@@ -150,9 +158,9 @@ protected:
 
     /// Builds a path from the passed string.
     void set(const string_type &str);
+
     /** \brief Splits a string into tokens delimited by any of the characters
-     * passed in <tt>delim</tt>.
-     */
+     * passed in <tt>delim</tt>. */
     static std::vector<string_type> tokenize(const string_type &string,
                                              const string_type &delim);
 
