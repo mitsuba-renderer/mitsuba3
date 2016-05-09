@@ -67,27 +67,27 @@ class FilesystemTest(unittest.TestCase):
         self.assertTrue(not (fs.path("file1.ext") == fs.path("another.ext")))
 
     def test06_filename(self):
-        self.assertEqual(fs.path("weird 'file'.ext").filename(), u"weird 'file'.ext")
-        self.assertEqual(fs.path("dir" + sep + "file.ext").filename(), u"file.ext")
-        self.assertEqual(fs.path("dir" + sep).filename(), u"dir")
-        self.assertEqual((FilesystemTest.path_here / fs.path("file")).filename(), u"file")
+        self.assertEqual(fs.path("weird 'file'.ext").filename(), "weird 'file'.ext")
+        self.assertEqual(fs.path("dir" + sep + "file.ext").filename(), "file.ext")
+        self.assertEqual(fs.path("dir" + sep).filename(), "dir")
+        self.assertEqual((FilesystemTest.path_here / fs.path("file")).filename(), "file")
 
-        self.assertEqual(FilesystemTest.path_empty.filename(), u"")
-        self.assertEqual(fs.path(".").filename(), u".")
-        self.assertEqual(fs.path("..").filename(), u"..")
-        self.assertEqual(fs.path("foo" + sep + ".").filename(), u".")
-        self.assertEqual(fs.path("foo" + sep + "..").filename(), u"..")
+        self.assertEqual(FilesystemTest.path_empty.filename(), "")
+        self.assertEqual(fs.path(".").filename(), ".")
+        self.assertEqual(fs.path("..").filename(), "..")
+        self.assertEqual(fs.path("foo" + sep + ".").filename(), ".")
+        self.assertEqual(fs.path("foo" + sep + "..").filename(), "..")
 
     def test07_extension(self):
-        self.assertEqual(fs.path("dir" + sep + "file.ext").extension(), u".ext")
-        self.assertEqual(fs.path("dir" + sep).extension(), u"")
-        self.assertEqual((FilesystemTest.path_here / fs.path(".hidden")).extension(), u".hidden")
+        self.assertEqual(fs.path("dir" + sep + "file.ext").extension(), ".ext")
+        self.assertEqual(fs.path("dir" + sep).extension(), "")
+        self.assertEqual((FilesystemTest.path_here / fs.path(".hidden")).extension(), ".hidden")
 
-        self.assertEqual(FilesystemTest.path_empty.extension(), u"")
-        self.assertEqual(fs.path(".").extension(), u"")
-        self.assertEqual(fs.path("..").extension(), u"")
-        self.assertEqual(fs.path("foo" + sep + ".").extension(), u"")
-        self.assertEqual(fs.path("foo" + sep + "..").extension(), u"")
+        self.assertEqual(FilesystemTest.path_empty.extension(), "")
+        self.assertEqual(fs.path(".").extension(), "")
+        self.assertEqual(fs.path("..").extension(), "")
+        self.assertEqual(fs.path("foo" + sep + ".").extension(), "")
+        self.assertEqual(fs.path("foo" + sep + "..").extension(), "")
 
     def test08_make_absolute(self):
         self.assertEqual(fs.absolute(FilesystemTest.path_here_relative), FilesystemTest.path_here)
