@@ -85,6 +85,6 @@ MTS_PY_EXPORT(filesystem) {
             );
         });
 
-    py::implicitly_convertible<std::string, path>();
 #endif
+    py::implicitly_convertible<py::str, path>();
 }

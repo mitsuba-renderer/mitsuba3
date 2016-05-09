@@ -120,5 +120,8 @@ class FilesystemTest(unittest.TestCase):
 
         self.assertTrue(fs.remove(p1))
 
+    def test11_implicit_string_cast(self):
+        self.assertFalse(fs.exists("some random" + sep + "path"))
+
 if __name__ == '__main__':
     unittest.main()
