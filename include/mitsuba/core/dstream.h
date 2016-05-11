@@ -14,7 +14,7 @@ class MTS_EXPORT_CORE DummyStream : public Stream {
 public:
 
     DummyStream()
-        : Stream(true, false) { }
+        : Stream(true, false), m_size(0), m_pos(0) { }
 
     /// Returns a string representation
     std::string toString() const override;
@@ -23,6 +23,12 @@ public:
     //! @{ \name Implementation of the Stream interface
     // =============================================================
 protected:
+    /// Always throws, since DummyStream is write-only.
+    // TODO: could we just not offer it from the interface? (e.g. write_only trait or such)
+    virtual void read(void *, size_t) override {
+        // TODO: use NotImplementedError macro
+        throw std::runtime_error("DummyStream does not support reading.");
+    }
 
     /// Does not actually write anything, only updates the stream's position and size.
     virtual void write(const void *, size_t size) override {
@@ -32,20 +38,37 @@ protected:
 
 public:
 
+    /** \brief Updates the current position in the stream.
+     * Even though the <tt>DummyStream</tt> doesn't write anywhere, position is
+     * taken into account to correctly maintain the size of the stream.
+     *
+     * Throws if attempting to seek beyond the size of the stream.
+     */
     virtual void seek(size_t pos) override;
 
+    /** \brief Simply sets the current size of the stream.
+     * The current position is set to min(pos, size - 1).
+     */
     virtual void truncate(size_t size) override {
         m_size = size;  // Nothing else to do
+        m_pos = std::min(m_pos, m_size - 1);
     }
 
+    /// Returns the current position in the stream.
     virtual size_t getPos() const override { return m_pos; }
 
+    /// Returns the size of the stream.
     virtual size_t getSize() const override { return m_size; }
 
+    /// No-op for <tt>DummyStream</tt>.
     virtual void flush() override { /* Nothing to do */ }
 
+    /// Always returns true.
     virtual bool canWrite() const override { return true; }
 
+    /** \brief Always returns false, as nothing written to a
+     * <tt>DummyStream</tt> is actually written.
+     */
     virtual bool canRead() const override { return false; }
 
     //! @}

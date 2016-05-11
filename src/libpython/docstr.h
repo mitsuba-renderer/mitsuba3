@@ -304,6 +304,53 @@ static const char *__doc_mitsuba_DefaultFormatter_setHaveLogLevel = R"doc(Should
 
 static const char *__doc_mitsuba_DefaultFormatter_setHaveThread = R"doc(Should thread information be included? The default is yes.)doc";
 
+static const char *__doc_mitsuba_DummyStream =
+R"doc(Stream implementation that never writes to disk, but keeps track of
+the size of the content being written. It can be used, for example, to
+measure the precise amount of memory needed to store serialized
+content.)doc";
+
+static const char *__doc_mitsuba_DummyStream_DummyStream = R"doc()doc";
+
+static const char *__doc_mitsuba_DummyStream_canRead =
+R"doc(Always returns false, as nothing written to a ``DummyStream`` is
+actually written.)doc";
+
+static const char *__doc_mitsuba_DummyStream_canWrite = R"doc(Always returns true.)doc";
+
+static const char *__doc_mitsuba_DummyStream_flush = R"doc(No-op for ``DummyStream``.)doc";
+
+static const char *__doc_mitsuba_DummyStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_DummyStream_getPos = R"doc(Returns the current position in the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_getSize = R"doc(Returns the size of the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_m_pos =
+R"doc(Current position in the "virtual" stream (even though nothing is ever
+written, we need to maintain consistent positioning).)doc";
+
+static const char *__doc_mitsuba_DummyStream_m_size = R"doc(Size of all data written to the stream)doc";
+
+static const char *__doc_mitsuba_DummyStream_read = R"doc(Always throws, since DummyStream is write-only.)doc";
+
+static const char *__doc_mitsuba_DummyStream_seek =
+R"doc(Updates the current position in the stream. Even though the
+``DummyStream`` doesn't write anywhere, position is taken into account
+to correctly maintain the size of the stream.
+
+Throws if attempting to seek beyond the size of the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_toString = R"doc(Returns a string representation)doc";
+
+static const char *__doc_mitsuba_DummyStream_truncate =
+R"doc(Simply sets the current size of the stream. The current position is
+set to min(pos, size - 1).)doc";
+
+static const char *__doc_mitsuba_DummyStream_write =
+R"doc(Does not actually write anything, only updates the stream's position
+and size.)doc";
+
 static const char *__doc_mitsuba_ELogLevel = R"doc(Available Log message types)doc";
 
 static const char *__doc_mitsuba_ELogLevel_EDebug = R"doc(< Debug message, usually turned off)doc";
@@ -362,6 +409,17 @@ path)doc";
 static const char *__doc_mitsuba_FileResolver_size = R"doc(Return the number of search paths)doc";
 
 static const char *__doc_mitsuba_FileResolver_toString = R"doc(Return a human-readable representation of this instance)doc";
+
+static const char *__doc_mitsuba_FileStream =
+R"doc(Simple Stream implementation for accessing files.
+
+TODO: explain which low-level tools are used for implementation.)doc";
+
+static const char *__doc_mitsuba_FileStream_FileStream = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_toString = R"doc(Returns a string representation)doc";
 
 static const char *__doc_mitsuba_Formatter =
 R"doc(Abstract interface for converting log information into a human-
@@ -484,6 +542,18 @@ static const char *__doc_mitsuba_Logger_setLogLevel = R"doc(Set the log level (e
 static const char *__doc_mitsuba_Logger_staticInitialization = R"doc(Initialize logging)doc";
 
 static const char *__doc_mitsuba_Logger_staticShutdown = R"doc(Shutdown logging)doc";
+
+static const char *__doc_mitsuba_MemoryStream =
+R"doc(Simple memory buffer-based stream with automatic memory management
+
+The underlying memory storage of this implementation dynamically
+expands as data is written to the stream.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_MemoryStream = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryStream_toString = R"doc(Returns a string representation)doc";
 
 static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
 
@@ -737,6 +807,9 @@ conversion based on the endianness of the underlying system and the
 value passed to setByteOrder(). Whenever getHostByteOrder() and
 getByteOrder() disagree, the endianness is swapped.
 
+TODO: explain Table of Contents feature. TODO: explain write-only /
+read-only modes.
+
 See also:
     FileStream, MemoryStream, DummyStream)doc";
 
@@ -772,9 +845,78 @@ static const char *__doc_mitsuba_StreamAppender_readLog = R"doc(Return the conte
 
 static const char *__doc_mitsuba_StreamAppender_toString = R"doc(Return a string representation)doc";
 
-static const char *__doc_mitsuba_Stream_Stream = R"doc()doc";
+static const char *__doc_mitsuba_Stream_EByteOrder = R"doc(Defines the byte order to use in this Stream)doc";
 
-static const char *__doc_mitsuba_Stream_Stream_2 = R"doc()doc";
+static const char *__doc_mitsuba_Stream_EByteOrder_EBigEndian = R"doc(< PowerPC, SPARC, Motorola 68K)doc";
+
+static const char *__doc_mitsuba_Stream_EByteOrder_ELittleEndian = R"doc(< x86, x86_64)doc";
+
+static const char *__doc_mitsuba_Stream_EByteOrder_ENetworkByteOrder = R"doc(< Network byte order (an alias for big endian))doc";
+
+static const char *__doc_mitsuba_Stream_Stream =
+R"doc(Creates a new stream. By default, it assumes the byte order of the
+underlying system, i.e. no endianness conversion is performed.
+
+Parameter ``writeEnabled``:
+    If true, the stream will be write-only, otherwise it will be read-
+    only.
+
+Parameter ``tableOfContents``:
+    If true, the stream will function by generating a "table of
+    contents" (TOC), using hierarchical prefixes for fields being
+    written. TODO: enable / disable some methods (use templates?))doc";
+
+static const char *__doc_mitsuba_Stream_Stream_2 = R"doc(Copy is disallowed.)doc";
+
+static const char *__doc_mitsuba_Stream_canRead = R"doc(Can we read from the stream?)doc";
+
+static const char *__doc_mitsuba_Stream_canWrite = R"doc(Can we write to the stream?)doc";
+
+static const char *__doc_mitsuba_Stream_flush = R"doc(Flushes the stream's buffers, if any)doc";
+
+static const char *__doc_mitsuba_Stream_get = R"doc(Retrieve a field from the serialized file (only valid in read mode))doc";
+
+static const char *__doc_mitsuba_Stream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_getPos = R"doc(Gets the current position inside the stream)doc";
+
+static const char *__doc_mitsuba_Stream_getSize = R"doc(Returns the size of the stream)doc";
+
+static const char *__doc_mitsuba_Stream_keys = R"doc(Return all field names under the current name prefix)doc";
+
+static const char *__doc_mitsuba_Stream_m_byteOrder = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_m_tocEnabled = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_m_writeMode = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_pop = R"doc(Pop a name prefix from the stack)doc";
+
+static const char *__doc_mitsuba_Stream_push =
+R"doc(Push a name prefix onto the stack (use this to isolate identically-
+named data fields))doc";
+
+static const char *__doc_mitsuba_Stream_read =
+R"doc(Reads a specified amount of data from the stream.
+
+Throws an exception when the stream ended prematurely. TODO: needs to
+handle endianness swap when required)doc";
+
+static const char *__doc_mitsuba_Stream_seek = R"doc(Seeks to a position inside the stream)doc";
+
+static const char *__doc_mitsuba_Stream_set = R"doc(Store a field in the serialized file (only valid in write mode))doc";
+
+static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a string representation of the stream)doc";
+
+static const char *__doc_mitsuba_Stream_truncate = R"doc(Truncates the stream to a given size)doc";
+
+static const char *__doc_mitsuba_Stream_write =
+R"doc(Writes a specified amount of data into the stream.
+
+Throws an exception when not all data could be written. TODO: needs to
+handle endianness swap when required)doc";
 
 static const char *__doc_mitsuba_TNormal = R"doc(3-dimensional surface normal representation)doc";
 
@@ -992,6 +1134,22 @@ static const char *__doc_mitsuba_detail_get_construct_functor_2 = R"doc()doc";
 static const char *__doc_mitsuba_detail_get_unserialize_functor = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_get_unserialize_functor_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_read = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_type_id = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_write = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_traits = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_traits_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_traits_type_id = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_traits_type_id_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper = R"doc()doc";
 
@@ -1279,6 +1437,8 @@ static const char *__doc_mitsuba_operator_Matrix_3 = R"doc(Convert to an Eigen v
 static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
+
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
