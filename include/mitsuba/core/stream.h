@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mitsuba/core/fwd.h>
 #include <mitsuba/core/object.h>
 #include <vector>
 
@@ -64,6 +63,7 @@ protected:
      * \brief Reads a specified amount of data from the stream.
      *
      * Throws an exception when the stream ended prematurely.
+     * TODO: needs to handle endianness swap when required
      */
     virtual void read(void *ptr, size_t size) = 0;
 
@@ -71,13 +71,39 @@ protected:
      * \brief Writes a specified amount of data into the stream.
      *
      * Throws an exception when not all data could be written.
+     * TODO: needs to handle endianness swap when required
      */
     virtual void write(const void *ptr, size_t size) = 0;
+
+public:
+    /// Seeks to a position inside the stream
+    virtual void seek(size_t pos) = 0;
+
+    /// Truncates the stream to a given size
+    virtual void truncate(size_t size) = 0;
+
+    /// Gets the current position inside the stream
+    virtual size_t getPos() const = 0;
+
+    /// Returns the size of the stream
+    virtual size_t getSize() const = 0;
+
+    /// Flushes the stream's buffers, if any
+    virtual void flush() = 0;
+
+    /// Can we write to the stream?
+    virtual bool canWrite() const {
+        return m_writeMode;
+    }
+
+    /// Can we read from the stream?
+    virtual bool canRead() const {
+        return !m_writeMode;
+    }
 
     /// @}
     // =========================================================================
 
-public:
     // =========================================================================
     //! @{ \name Endianness handling
     // =========================================================================
@@ -115,18 +141,21 @@ public:
     MTS_DECLARE_CLASS();
 
 protected:
-    // TODO: implementation helpers
     /// Destructor
     virtual ~Stream() { };
 
+    /// Copy is disallowed.
+    // TODO: refactor non-copyable feature to a mixin or macro (?)
+    Stream(const Stream&) = delete;
+    void operator=(const Stream&) = delete;
 
+    bool m_writeMode;
 
 private:
-    bool m_write_Mode;
     bool m_tocEnabled;
     static const EByteOrder m_hostByteOrder;
     EByteOrder m_byteOrder;
-    // TODO: data members (ToC, edianness, etc).
+    // TODO: data members (ToC, endianness, etc).
 };
 
 extern MTS_EXPORT_CORE std::ostream
