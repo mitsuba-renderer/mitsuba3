@@ -32,6 +32,7 @@ add_library(mitsuba-python SHARED
   pcg32.cpp
   properties.cpp
   python.h
+  stream.cpp
   thread.cpp
   argparser.cpp
   xml.cpp

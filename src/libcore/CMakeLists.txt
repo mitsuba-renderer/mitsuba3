@@ -31,6 +31,7 @@ add_library(mitsuba-core SHARED
   math.cpp         ${INC_DIR}/math.h
   object.cpp       ${INC_DIR}/object.h
   properties.cpp   ${INC_DIR}/properties.h
+  stream.cpp       ${INC_DIR}/stream.h
   thread.cpp       ${INC_DIR}/thread.h
   tls.cpp          ${INC_DIR}/tls.h
   util.cpp         ${INC_DIR}/util.h

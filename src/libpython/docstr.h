@@ -726,6 +726,20 @@ static const char *__doc_mitsuba_Properties_setVector3f = R"doc(Store a vector i
 
 static const char *__doc_mitsuba_Properties_wasQueried = R"doc(Check if a certain property was queried)doc";
 
+static const char *__doc_mitsuba_Stream =
+R"doc(Abstract seekable stream class
+
+Specifies all functions to be implemented by stream subclasses and
+provides various convenience functions layered on top of on them.
+
+All read**X**() and write**X**() methods support transparent
+conversion based on the endianness of the underlying system and the
+value passed to setByteOrder(). Whenever getHostByteOrder() and
+getByteOrder() disagree, the endianness is swapped.
+
+See also:
+    FileStream, MemoryStream, DummyStream)doc";
+
 static const char *__doc_mitsuba_StreamAppender =
 R"doc(%Appender implementation, which writes to an arbitrary C++ output
 stream)doc";
@@ -757,6 +771,10 @@ static const char *__doc_mitsuba_StreamAppender_m_stream = R"doc()doc";
 static const char *__doc_mitsuba_StreamAppender_readLog = R"doc(Return the contents of the log file as a string)doc";
 
 static const char *__doc_mitsuba_StreamAppender_toString = R"doc(Return a string representation)doc";
+
+static const char *__doc_mitsuba_Stream_Stream = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_Stream_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_TNormal = R"doc(3-dimensional surface normal representation)doc";
 

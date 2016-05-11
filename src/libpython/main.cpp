@@ -17,6 +17,7 @@ MTS_PY_DECLARE(Formatter);
 MTS_PY_DECLARE(Properties);
 MTS_PY_DECLARE(ArgParser);
 MTS_PY_DECLARE(FileResolver);
+MTS_PY_DECLARE(Stream);
 
 PYBIND11_PLUGIN(mitsuba) {
     Class::staticInitialization();
@@ -40,6 +41,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(Properties);
     MTS_PY_IMPORT(ArgParser);
     MTS_PY_IMPORT(FileResolver);
+    MTS_PY_IMPORT(Stream);
 
     atexit([](){
         Logger::staticShutdown();
