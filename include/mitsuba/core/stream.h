@@ -54,7 +54,7 @@ public:
     Stream(bool writeEnabled, bool tableOfContents = true);
 
     /// Returns a string representation of the stream
-    virtual std::string toString() const;
+    virtual std::string toString() const override;
 
     // =========================================================================
     //! @{ \name Abstract methods that need to be implemented by subclasses
