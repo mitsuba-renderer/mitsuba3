@@ -11,5 +11,10 @@ std::string MemoryStream::toString() const {
     return oss.str();
 }
 
+MemoryStream::~MemoryStream() {
+    // TODO: release resources
+}
+
+MTS_IMPLEMENT_CLASS(MemoryStream, Stream)
 
 NAMESPACE_END(mitsuba)

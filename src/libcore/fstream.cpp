@@ -11,4 +11,10 @@ std::string FileStream::toString() const {
     return oss.str();
 }
 
+FileStream::~FileStream() {
+    // TODO: release resources
+}
+
+MTS_IMPLEMENT_CLASS(FileStream, Stream)
+
 NAMESPACE_END(mitsuba)

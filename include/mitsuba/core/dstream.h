@@ -25,6 +25,12 @@ public:
     //! @}
     // =============================================================
 
+    MTS_DECLARE_CLASS()
+
+protected:
+
+    /// Trivial destructor.
+    virtual ~DummyStream() = default;
 };
 
 NAMESPACE_END(mitsuba)

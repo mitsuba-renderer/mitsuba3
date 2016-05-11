@@ -112,8 +112,13 @@ public:
     /// @}
     // =========================================================================
 
+    MTS_DECLARE_CLASS();
+
 protected:
     // TODO: implementation helpers
+    /// Destructor
+    virtual ~Stream() { };
+
 
 
 private:

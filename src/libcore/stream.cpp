@@ -50,4 +50,6 @@ std::ostream &operator<<(std::ostream &os, const Stream::EByteOrder &value) {
     return os;
 }
 
+MTS_IMPLEMENT_CLASS(Stream, Object)
+
 NAMESPACE_END(mitsuba)

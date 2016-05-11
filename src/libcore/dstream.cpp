@@ -11,4 +11,6 @@ std::string DummyStream::toString() const {
     return oss.str();
 }
 
+MTS_IMPLEMENT_CLASS(DummyStream, Stream)
+
 NAMESPACE_END(mitsuba)

@@ -3,5 +3,5 @@
 
 // TODO: export concrete Stream implementations
 MTS_PY_EXPORT(Stream) {
-    py::class_<Stream>(m, "Stream", DM(Stream));
+    MTS_PY_CLASS(Stream, Object);
 }

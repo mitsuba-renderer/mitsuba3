@@ -25,6 +25,13 @@ public:
     //! @}
     // =============================================================
 
+    MTS_DECLARE_CLASS()
+
+protected:
+
+    /// Destructor
+    virtual ~MemoryStream();
+
 };
 
 NAMESPACE_END(mitsuba)
