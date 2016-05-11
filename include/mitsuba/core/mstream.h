@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mitsuba/core/fwd.h>
 #include <mitsuba/core/stream.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -12,6 +11,10 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE MemoryStream : public Stream {
 public:
+
+    // TODO: what about read/write mode for MemoryStream?
+    MemoryStream(bool writeEnabled, bool tableOfContents = true)
+        : Stream(writeEnabled, tableOfContents) { }
 
     /// Returns a string representation
     std::string toString() const override;
