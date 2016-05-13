@@ -20,6 +20,7 @@ MTS_PY_DECLARE(FileResolver);
 MTS_PY_DECLARE(Stream);
 MTS_PY_DECLARE(AnnotatedStream);
 MTS_PY_DECLARE(DummyStream);
+MTS_PY_DECLARE(FileStream);
 
 PYBIND11_PLUGIN(mitsuba) {
     Class::staticInitialization();
@@ -46,6 +47,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(Stream);
     MTS_PY_IMPORT(AnnotatedStream);
     MTS_PY_IMPORT(DummyStream);
+    MTS_PY_IMPORT(FileStream);
 
     atexit([](){
         Logger::staticShutdown();

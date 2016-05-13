@@ -7,7 +7,7 @@ using path = fs::path;
 
 NAMESPACE_BEGIN(mitsuba)
 
-FileStream::FileStream(path p, bool writeEnabled)
+FileStream::FileStream(const path &p, bool writeEnabled)
 : Stream(writeEnabled), m_path(p) {
     const auto mode = std::ios_base::app | (m_writeMode ? std::ios_base::out
                                                         : std::ios_base::in);
@@ -26,9 +26,9 @@ FileStream::~FileStream() {
 std::string FileStream::toString() const {
     std::ostringstream oss;
     oss << "FileStream[" << Stream::toString()
-        << ",path=" << m_path.string()
-//        << ",size=" << getSize()
-//        << ",pos=" << getPos()
+        << ", path=" << m_path.string()
+//        << ", size=" << getSize()
+//        << ", pos=" << getPos()
         << "]";
     return oss.str();
 }

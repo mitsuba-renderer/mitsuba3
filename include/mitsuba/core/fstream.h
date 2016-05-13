@@ -23,7 +23,7 @@ public:
      *
      * Throws an exception if the file cannot be open.
      */
-    FileStream(fs::path p, bool writeEnabled);
+    FileStream(const fs::path &p, bool writeEnabled);
 
     /// Returns a string representation
     std::string toString() const override;

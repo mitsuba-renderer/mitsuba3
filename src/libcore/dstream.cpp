@@ -6,8 +6,8 @@ NAMESPACE_BEGIN(mitsuba)
 std::string DummyStream::toString() const {
     std::ostringstream oss;
     oss << "DummyStream[" << Stream::toString()
-        << "size=" << m_size
-        << ",pos=" << m_pos
+        << ", size=" << m_size
+        << ", pos=" << m_pos
         << "]";
     return oss.str();
 }

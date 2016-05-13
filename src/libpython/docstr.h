@@ -41,7 +41,11 @@ not be destructed before this.
 
 TODO: in order not to use unique_ptr, use move constructor or such?)doc";
 
+static const char *__doc_mitsuba_AnnotatedStream_get = R"doc(Retrieve a field from the serialized file (only valid in read mode))doc";
+
 static const char *__doc_mitsuba_AnnotatedStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_keys = R"doc(Return all field names under the current name prefix)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_m_prefixStack = R"doc(Stack of prefixes currently applied, constituting a path)doc";
 
@@ -50,6 +54,14 @@ static const char *__doc_mitsuba_AnnotatedStream_m_stream = R"doc(Underlying str
 static const char *__doc_mitsuba_AnnotatedStream_m_table =
 R"doc(Maintains the mapping: full field name -> (type, position in the
 stream))doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_pop = R"doc(Pop a name prefix from the stack)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_push =
+R"doc(Push a name prefix onto the stack (use this to isolate identically-
+named data fields).)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_set = R"doc(Store a field in the serialized file (only valid in write mode))doc";
 
 static const char *__doc_mitsuba_Appender =
 R"doc(This class defines an abstract destination for logging-relevant
@@ -439,15 +451,45 @@ static const char *__doc_mitsuba_FileResolver_size = R"doc(Return the number of 
 static const char *__doc_mitsuba_FileResolver_toString = R"doc(Return a human-readable representation of this instance)doc";
 
 static const char *__doc_mitsuba_FileStream =
-R"doc(Simple Stream implementation for accessing files.
+R"doc(Simple Stream implementation backed-up by a file.
 
 TODO: explain which low-level tools are used for implementation.)doc";
 
-static const char *__doc_mitsuba_FileStream_FileStream = R"doc()doc";
+static const char *__doc_mitsuba_FileStream_FileStream =
+R"doc(Constructs a new FileStream by opening the file pointed by ``p``. The
+file is opened in append mode, and read / write mode as specified by
+``writeEnabled``.
+
+Throws an exception if the file cannot be open.)doc";
+
+static const char *__doc_mitsuba_FileStream_flush = R"doc(Flushes any buffered operation to the underlying file.)doc";
 
 static const char *__doc_mitsuba_FileStream_getClass = R"doc()doc";
 
+static const char *__doc_mitsuba_FileStream_getPos = R"doc(Gets the current position inside the file)doc";
+
+static const char *__doc_mitsuba_FileStream_getSize = R"doc(Returns the size of the file)doc";
+
+static const char *__doc_mitsuba_FileStream_m_file = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_m_path = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_read =
+R"doc(Reads a specified amount of data from the stream. Throws an exception
+when the stream ended prematurely.)doc";
+
+static const char *__doc_mitsuba_FileStream_seek = R"doc(Seeks to a position inside the stream)doc";
+
 static const char *__doc_mitsuba_FileStream_toString = R"doc(Returns a string representation)doc";
+
+static const char *__doc_mitsuba_FileStream_truncate =
+R"doc(Truncates the file to a given size. The file's position is always
+updated to point to the new end. Throws an exception if in read-only
+mode.)doc";
+
+static const char *__doc_mitsuba_FileStream_write =
+R"doc(Writes a specified amount of data into the stream. Throws an exception
+when not all data could be written.)doc";
 
 static const char *__doc_mitsuba_Formatter =
 R"doc(Abstract interface for converting log information into a human-
@@ -887,12 +929,7 @@ underlying system, i.e. no endianness conversion is performed.
 
 Parameter ``writeEnabled``:
     If true, the stream will be write-only, otherwise it will be read-
-    only.
-
-Parameter ``tableOfContents``:
-    If true, the stream will function by generating a "table of
-    contents" (TOC), using hierarchical prefixes for fields being
-    written. TODO: enable / disable some methods (use templates?))doc";
+    only.)doc";
 
 static const char *__doc_mitsuba_Stream_Stream_2 = R"doc(Copy is disallowed.)doc";
 
@@ -902,49 +939,46 @@ static const char *__doc_mitsuba_Stream_canWrite = R"doc(Can we write to the str
 
 static const char *__doc_mitsuba_Stream_flush = R"doc(Flushes the stream's buffers, if any)doc";
 
-static const char *__doc_mitsuba_Stream_get = R"doc(Retrieve a field from the serialized file (only valid in read mode))doc";
-
 static const char *__doc_mitsuba_Stream_getClass = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream_getPos = R"doc(Gets the current position inside the stream)doc";
 
 static const char *__doc_mitsuba_Stream_getSize = R"doc(Returns the size of the stream)doc";
 
-static const char *__doc_mitsuba_Stream_keys = R"doc(Return all field names under the current name prefix)doc";
-
 static const char *__doc_mitsuba_Stream_m_byteOrder = R"doc()doc";
-
-static const char *__doc_mitsuba_Stream_m_tocEnabled = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream_m_writeMode = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_Stream_pop = R"doc(Pop a name prefix from the stack)doc";
-
-static const char *__doc_mitsuba_Stream_push =
-R"doc(Push a name prefix onto the stack (use this to isolate identically-
-named data fields))doc";
-
 static const char *__doc_mitsuba_Stream_read =
 R"doc(Reads a specified amount of data from the stream.
 
-Throws an exception when the stream ended prematurely. TODO: needs to
-handle endianness swap when required)doc";
+Throws an exception when the stream ended prematurely. Implementations
+need to handle endianness swap when appropriate.)doc";
+
+static const char *__doc_mitsuba_Stream_readValue =
+R"doc(Reads one object of type T from the stream at the current position by
+delegating to the appropriate ``serialization_helper``.)doc";
 
 static const char *__doc_mitsuba_Stream_seek = R"doc(Seeks to a position inside the stream)doc";
 
-static const char *__doc_mitsuba_Stream_set = R"doc(Store a field in the serialized file (only valid in write mode))doc";
-
 static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a string representation of the stream)doc";
 
-static const char *__doc_mitsuba_Stream_truncate = R"doc(Truncates the stream to a given size)doc";
+static const char *__doc_mitsuba_Stream_truncate =
+R"doc(Truncates the stream to a given size. The stream's position is always
+updated to point to the new end. Throws an exception if in read-only
+mode.)doc";
 
 static const char *__doc_mitsuba_Stream_write =
 R"doc(Writes a specified amount of data into the stream.
 
-Throws an exception when not all data could be written. TODO: needs to
-handle endianness swap when required)doc";
+Throws an exception when not all data could be written.
+Implementations need to handle endianness swap when appropriate.)doc";
+
+static const char *__doc_mitsuba_Stream_writeValue =
+R"doc(Reads one object of type T from the stream at the current position by
+delegating to the appropriate ``serialization_helper``.)doc";
 
 static const char *__doc_mitsuba_TNormal = R"doc(3-dimensional surface normal representation)doc";
 
@@ -1165,11 +1199,23 @@ static const char *__doc_mitsuba_detail_get_unserialize_functor_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_serialization_helper = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_serialization_helper_read = R"doc()doc";
+static const char *__doc_mitsuba_detail_serialization_helper_read =
+R"doc(Reads ``count`` values of type T from stream ``s``, starting at its
+current position. Note: ``count`` is the number of values, **not** a
+size in bytes.
+
+Support for additional types can be added in any header file by
+declaring a template specialization for your type.)doc";
 
 static const char *__doc_mitsuba_detail_serialization_helper_type_id = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_serialization_helper_write = R"doc()doc";
+static const char *__doc_mitsuba_detail_serialization_helper_write =
+R"doc(Writes ``count`` values of type T into stream ``s`` starting at its
+current position. Note: ``count`` is the number of values, **not** a
+size in bytes.
+
+Support for additional types can be added in any header file by
+declaring a template specialization for your type.)doc";
 
 static const char *__doc_mitsuba_detail_serialization_traits = R"doc()doc";
 
