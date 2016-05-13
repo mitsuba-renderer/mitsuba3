@@ -14,21 +14,27 @@ class DummyStreamTest(unittest.TestCase):
     def test02_size_and_pos(self):
         self.assertEqual(self.s.getSize(), 0)
         self.assertEqual(self.s.getPos(), 0)
-        # TODO: write some data, check size and pos
-        self.assertEqual("Not implemented yet", "")
+        self.s.writeValue("hello") # string length as a uint32_t (4) + string (5)
+        self.assertEqual(self.s.getSize(), 9)
+        self.assertEqual(self.s.getPos(), 9)
+        self.s.writeValue(42) # int (1)
+        self.assertEqual(self.s.getSize(), 9+1)
+        self.assertEqual(self.s.getPos(), 9+1)
 
     def test03_truncate(self):
         self.assertEqual(self.s.getSize(), 0)
         self.assertEqual(self.s.getPos(), 0)
         self.s.truncate(100)
         self.assertEqual(self.s.getSize(), 100)
-        self.assertEqual(self.s.getPos(), 0)
+        self.assertEqual(self.s.getPos(), 100)
         self.s.seek(99)
+        self.assertEqual(self.s.getPos(), 99)
         self.s.truncate(50)
         self.assertEqual(self.s.getSize(), 50)
-        self.assertEqual(self.s.getPos(), 49)
-        # TODO: write some data to increase the size
-        self.assertEqual("Not implemented yet", "")
+        self.assertEqual(self.s.getPos(), 50)
+        self.s.writeValue("hello")
+        self.assertEqual(self.s.getSize(), 50 + 9)
+        self.assertEqual(self.s.getPos(), 50 + 9)
 
     def test04_seek(self):
         self.s.truncate(5)
@@ -37,11 +43,12 @@ class DummyStreamTest(unittest.TestCase):
         self.s.seek(4)
 
     def test05_str(self):
-        self.s.writeValue("0123456789")
+        self.s.writeValue("hello world")
+        # string length as a uint32_t (4) + string (11)
         self.assertEqual(str(self.s),
                         "DummyStream[" +
                            "hostByteOrder=little-endian, byteOrder=little-endian" +
-                           ", size=10, pos=9]")
+                           ", size=15, pos=15]")
 
 class FileStreamTest(unittest.TestCase):
     def setUp(self):
@@ -54,6 +61,9 @@ class FileStreamTest(unittest.TestCase):
         self.assertFalse(self.ro.canWrite())
         self.assertFalse(self.wo.canRead())
         self.assertTrue(self.wo.canWrite())
+
+    def test02_todo(self):
+        self.assertEqual('Not implemented yet', '')
 
 if __name__ == '__main__':
     unittest.main()
