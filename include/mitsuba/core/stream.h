@@ -76,14 +76,17 @@ public:
     /// Seeks to a position inside the stream
     virtual void seek(size_t pos) = 0;
 
-    /// Truncates the stream to a given size
+    /** \brief Truncates the stream to a given size.
+     * The stream's position is always updated to point to the new end.
+     * Throws an exception if in read-only mode.
+     */
     virtual void truncate(size_t size) = 0;
 
     /// Gets the current position inside the stream
-    virtual size_t getPos() const = 0;
+    virtual size_t getPos() = 0;
 
     /// Returns the size of the stream
-    virtual size_t getSize() const = 0;
+    virtual size_t getSize() = 0;
 
     /// Flushes the stream's buffers, if any
     virtual void flush() = 0;

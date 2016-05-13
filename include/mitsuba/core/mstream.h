@@ -13,7 +13,7 @@ class MTS_EXPORT_CORE MemoryStream : public Stream {
 public:
 
     // TODO: what about read/write mode for MemoryStream?
-    MemoryStream(bool writeEnabled, bool tableOfContents = true)
+    MemoryStream(bool writeEnabled)
         : Stream(writeEnabled) { }
 
     /// Returns a string representation
