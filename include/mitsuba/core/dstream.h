@@ -48,11 +48,11 @@ public:
     virtual void seek(size_t pos) override;
 
     /** \brief Simply sets the current size of the stream.
-     * The current position is set to min(pos, size - 1).
+     * The position is always set to the end of the new stream.
      */
     virtual void truncate(size_t size) override {
-        m_size = size;  // Nothing else to do
-        m_pos = std::min(m_pos, m_size - 1);
+        m_size = size;  // No underlying data, so there's nothing else to do.
+        m_pos = size;
     }
 
     /// Returns the current position in the stream.
