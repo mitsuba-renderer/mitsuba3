@@ -31,6 +31,30 @@ public:
 
     MTS_DECLARE_CLASS();
 
+    // =========================================================================
+    //! @{ \name Table of Contents (TOC)
+    // =========================================================================
+
+    /** \brief Push a name prefix onto the stack (use this to isolate
+     * identically-named data fields).
+     */
+    void push(const std::string &name);
+
+    /// Pop a name prefix from the stack
+    void pop();
+
+    /// Return all field names under the current name prefix
+    std::vector<std::string> keys() const;
+
+    /// Retrieve a field from the serialized file (only valid in read mode)
+    template <typename T> bool get(const std::string &name, T &value);
+
+    /// Store a field in the serialized file (only valid in write mode)
+    template <typename T> void set(const std::string &name, const T &value);
+
+    /// @}
+    // =========================================================================
+
 protected:
     /// Destructor.
     ~AnnotatedStream() { }
