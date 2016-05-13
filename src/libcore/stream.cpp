@@ -21,9 +21,8 @@ const Stream::EByteOrder Stream::m_hostByteOrder = mitsuba::getByteOrder();
 
 // -----------------------------------------------------------------------------
 
-Stream::Stream(bool writeEnabled, bool tableOfContents)
+Stream::Stream(bool writeEnabled)
     : m_writeMode(writeEnabled)
-    , m_tocEnabled(tableOfContents)
     , m_byteOrder(m_hostByteOrder) {
 
 };

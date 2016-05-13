@@ -56,10 +56,12 @@ public:
     // =========================================================================
 
 protected:
+
     /// Destructor.
     ~AnnotatedStream() { }
 
 private:
+
     /// Underlying stream where the names and contents are written
     const ref<Stream> m_stream;
     /// Maintains the mapping: full field name -> (type, position in the stream)

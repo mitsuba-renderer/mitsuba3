@@ -14,19 +14,19 @@ public:
 
     // TODO: what about read/write mode for MemoryStream?
     MemoryStream(bool writeEnabled, bool tableOfContents = true)
-        : Stream(writeEnabled, tableOfContents) { }
+        : Stream(writeEnabled) { }
 
     /// Returns a string representation
     std::string toString() const override;
 
-    // =============================================================
+    // =========================================================================
     //! @{ \name Implementation of the Stream interface
-    // =============================================================
+    // =========================================================================
 
     // TODO
 
     //! @}
-    // =============================================================
+    // =========================================================================
 
     MTS_DECLARE_CLASS()
 

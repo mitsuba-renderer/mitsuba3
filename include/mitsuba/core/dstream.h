@@ -14,14 +14,14 @@ class MTS_EXPORT_CORE DummyStream : public Stream {
 public:
 
     DummyStream()
-        : Stream(true, false), m_size(0), m_pos(0) { }
+        : Stream(true), m_size(0), m_pos(0) { }
 
     /// Returns a string representation
     std::string toString() const override;
 
-    // =============================================================
+    // =========================================================================
     //! @{ \name Implementation of the Stream interface
-    // =============================================================
+    // =========================================================================
 protected:
 
     /// Always throws, since DummyStream is write-only.
@@ -73,7 +73,7 @@ public:
     virtual bool canRead() const override { return false; }
 
     //! @}
-    // =============================================================
+    // =========================================================================
 
     MTS_DECLARE_CLASS()
 

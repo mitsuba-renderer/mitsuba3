@@ -45,12 +45,8 @@ public:
      *
      * \param writeEnabled If true, the stream will be write-only, otherwise
      *                     it will be read-only.
-     * \param tableOfContents If true, the stream will function by generating
-     *                        a "table of contents" (TOC), using hierarchical
-     *                        prefixes for fields being written.
-     *                        TODO: enable / disable some methods (use templates?)
      */
-    Stream(bool writeEnabled, bool tableOfContents = true);
+    Stream(bool writeEnabled);
 
     /// Returns a string representation of the stream
     virtual std::string toString() const override;
@@ -155,7 +151,6 @@ protected:
     bool m_writeMode;
 
 private:
-    bool m_tocEnabled;
     static const EByteOrder m_hostByteOrder;
     EByteOrder m_byteOrder;
     // TODO: data members (ToC, endianness, etc).

@@ -1,5 +1,4 @@
 import unittest
-from mitsuba import Stream
 from mitsuba import DummyStream
 
 class StreamTest(unittest.TestCase):
