@@ -59,21 +59,22 @@ public:
     //! @{ \name Abstract methods that need to be implemented by subclasses
     // =========================================================================
 protected:
+
     /**
      * \brief Reads a specified amount of data from the stream.
      *
      * Throws an exception when the stream ended prematurely.
-     * TODO: needs to handle endianness swap when required
+     * Implementations need to handle endianness swap when appropriate.
      */
-    virtual void read(void *ptr, size_t size) = 0;
+    virtual void read(void *p, size_t size) = 0;
 
     /**
      * \brief Writes a specified amount of data into the stream.
      *
      * Throws an exception when not all data could be written.
-     * TODO: needs to handle endianness swap when required
+     * Implementations need to handle endianness swap when appropriate.
      */
-    virtual void write(const void *ptr, size_t size) = 0;
+    virtual void write(const void *p, size_t size) = 0;
 
 public:
     /// Seeks to a position inside the stream
@@ -105,35 +106,37 @@ public:
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Endianness handling
+    //! @{ \name Table of Contents (TOC)
     // =========================================================================
 
-    // TODO
+    /**
+     * \brief Reads one object of type T from the stream at the current position
+     * by delegating to the appropriate <tt>serialization_helper</tt>.
+     */
+    template <typename T>
+    void readValue(T &value) {
+        using helper = detail::serialization_helper<T>;
+        helper::read(*this, &value, 1);
+    }
+
+    /**
+     * \brief Reads one object of type T from the stream at the current position
+     * by delegating to the appropriate <tt>serialization_helper</tt>.
+     */
+    template <typename T>
+    void writeValue(const T &value) {
+        using helper = detail::serialization_helper<T>;
+        helper::write(*this, &value, 1);
+    }
 
     /// @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Table of Contents (TOC)
+    //! @{ \name Endianness handling
     // =========================================================================
 
-    /**
-     * Push a name prefix onto the stack (use this to isolate
-     * identically-named data fields)
-     */
-    void push(const std::string &name);
-
-    /// Pop a name prefix from the stack
-    void pop();
-
-    /// Return all field names under the current name prefix
-    std::vector<std::string> keys() const;
-
-    /// Retrieve a field from the serialized file (only valid in read mode)
-    template <typename T> bool get(const std::string &name, T &value);
-
-    /// Store a field in the serialized file (only valid in write mode)
-    template <typename T> void set(const std::string &name, const T &value);
+    // TODO
 
     /// @}
     // =========================================================================
@@ -179,10 +182,24 @@ template <typename T> struct serialization_traits<T> :
 template <typename T> struct serialization_helper {
     static std::string type_id() { return serialization_traits<T>().type_id; }
 
+    /** \brief Writes <tt>count</tt> values of type T into stream <tt>s</tt>
+     * starting at its current position.
+     * Note: <tt>count</tt> is the number of values, <b>not</b> a size in bytes.
+     *
+     * Support for additional types can be added in any header file by
+     * declaring a template specialization for your type.
+     */
     static void write(Stream &s, const T *value, size_t count) {
         s.write(value, sizeof(T) * count);
     }
 
+    /** \brief Reads <tt>count</tt> values of type T from stream <tt>s</tt>,
+     * starting at its current position.
+     * Note: <tt>count</tt> is the number of values, <b>not</b> a size in bytes.
+     *
+     * Support for additional types can be added in any header file by
+     * declaring a template specialization for your type.
+     */
     static void read(Stream &s, T *value, size_t count) {
         s.read(value, sizeof(T) * count);
     }

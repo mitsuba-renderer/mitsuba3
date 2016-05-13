@@ -23,8 +23,9 @@ public:
     //! @{ \name Implementation of the Stream interface
     // =============================================================
 protected:
+
     /// Always throws, since DummyStream is write-only.
-    // TODO: could we just not offer it from the interface? (e.g. write_only trait or such)
+    // TODO: could we just not offer it from the interface? (e.g. read/write trait or such)
     virtual void read(void *, size_t) override {
         // TODO: use NotImplementedError macro
         throw std::runtime_error("DummyStream does not support reading.");
