@@ -19,8 +19,9 @@ MTS_PY_EXPORT(Stream) {
     MTS_PY_CLASS(Stream, Object)
         .mdef(Stream, canWrite)
         .mdef(Stream, canRead)
+        // TODO: handle py <=> c++ casts explicitly?
         .READ_WRITE_TYPE(int8_t)
-        .READ_WRITE_TYPE(uint8_t)
+        .READ_WRITE_TYPE(std::string)
         // TODO: lots and lots of other types
         .def("__repr__", &Stream::toString);
 }

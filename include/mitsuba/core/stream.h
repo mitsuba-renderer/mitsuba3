@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/object.h>
 #include <vector>
+#include "logger.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -166,12 +167,22 @@ NAMESPACE_BEGIN(detail)
 
 /**
  * \brief The <tt>serialization_trait</tt> templated structure provides
- * type-specific information relevant to serialization.
+ * a unique type identifier for each supported type.
  * <tt>type_id</tt> is a unique, prefix-free code identifying the type.
  */
 template <typename T, typename SFINAE = void> struct serialization_traits { };
 template <> struct serialization_traits<int8_t>           { const char *type_id = "u8";  };
 template <> struct serialization_traits<uint8_t>          { const char *type_id = "s8";  };
+template <> struct serialization_traits<int16_t>          { const char *type_id = "u16"; };
+template <> struct serialization_traits<uint16_t>         { const char *type_id = "s16"; };
+template <> struct serialization_traits<int32_t>          { const char *type_id = "u32"; };
+template <> struct serialization_traits<uint32_t>         { const char *type_id = "s32"; };
+template <> struct serialization_traits<int64_t>          { const char *type_id = "u64"; };
+template <> struct serialization_traits<uint64_t>         { const char *type_id = "s64"; };
+template <> struct serialization_traits<float>            { const char *type_id = "f32"; };
+template <> struct serialization_traits<double>           { const char *type_id = "f64"; };
+template <> struct serialization_traits<bool>             { const char *type_id = "b8";  };
+template <> struct serialization_traits<char>             { const char *type_id = "c8";  };
 
 template <typename T> struct serialization_traits<T> :
     serialization_traits<typename std::underlying_type<T>::type,
@@ -200,6 +211,29 @@ template <typename T> struct serialization_helper {
      */
     static void read(Stream &s, T *value, size_t count) {
         s.read(value, sizeof(T) * count);
+    }
+};
+
+template <> struct serialization_helper<std::string> {
+    static std::string type_id() { return "Vc8"; }
+
+    static void write(Stream &s, const std::string *value, size_t count) {
+        for (size_t i = 0; i < count; ++i) {
+            uint32_t length = (uint32_t) value->length();
+            s.write(&length, sizeof(uint32_t));
+            s.write((char *) value->data(), sizeof(char) * value->length());
+            value++;
+        }
+    }
+
+    static void read(Stream &s, std::string *value, size_t count) {
+        for (size_t i = 0; i < count; ++i) {
+            uint32_t length;
+            s.read(&length, sizeof(uint32_t));
+            value->resize(length);
+            s.read((char *) value->data(), sizeof(char) * length);
+            value++;
+        }
     }
 };
 
