@@ -23,6 +23,34 @@
 #endif
 
 
+static const char *__doc_mitsuba_AnnotatedStream =
+R"doc(An AnnotatedStream adds Table of Contents capabilities to an
+underlying stream. A Stream instance must first be created and passed
+to to the constructor.
+
+Table of Contents: objects and variables written to the stream are
+prepended by a field name. Contents can then be queried by field name,
+as if using a map. A hierarchy can be created by ``push``ing and
+``pop``ing prefixes.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_AnnotatedStream =
+R"doc(Creates an AnnotatedStream based on the given Stream (decorator
+pattern). Anything written to the AnnotatedStream is ultimately passed
+down to the given Stream instance. The given Stream instance should
+not be destructed before this.
+
+TODO: in order not to use unique_ptr, use move constructor or such?)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_prefixStack = R"doc(Stack of prefixes currently applied, constituting a path)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_stream = R"doc(Underlying stream where the names and contents are written)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_table =
+R"doc(Maintains the mapping: full field name -> (type, position in the
+stream))doc";
+
 static const char *__doc_mitsuba_Appender =
 R"doc(This class defines an abstract destination for logging-relevant
 information)doc";

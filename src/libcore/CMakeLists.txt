@@ -40,6 +40,7 @@ add_library(mitsuba-core SHARED
   fresolver.cpp    ${INC_DIR}/fresolver.h
 
   stream.cpp       ${INC_DIR}/stream.h
+  astream.cpp      ${INC_DIR}/astream.h
   dstream.cpp      ${INC_DIR}/dstream.h
   fstream.cpp      ${INC_DIR}/fstream.h
   mstream.cpp      ${INC_DIR}/mstream.h
