@@ -13,7 +13,7 @@ std::string DummyStream::toString() const {
 }
 
 void DummyStream::seek(size_t pos) {
-    if (pos >= m_size) {
+    if (pos > m_size) {
         Log(EError, "Tried to seek beyond length of the file (%llu >= %llu)",
             pos, m_size);
     }
