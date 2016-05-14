@@ -26,7 +26,7 @@ class DummyStreamTest(unittest.TestCase):
         self.assertEqual(self.s.getPos(), 0)
         self.s.truncate(100)
         self.assertEqual(self.s.getSize(), 100)
-        self.assertEqual(self.s.getPos(), 100)
+        self.assertEqual(self.s.getPos(), 0)
         self.s.seek(99)
         self.assertEqual(self.s.getPos(), 99)
         self.s.truncate(50)

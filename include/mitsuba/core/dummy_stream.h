@@ -27,8 +27,7 @@ protected:
     /// Always throws, since DummyStream is write-only.
     // TODO: could we just not offer it from the interface? (e.g. read/write trait or such)
     virtual void read(void *, size_t) override {
-        // TODO: use NotImplementedError macro
-        throw std::runtime_error("DummyStream does not support reading.");
+        Log(EError, "DummyStream does not support reading.");
     }
 
     /// Does not actually write anything, only updates the stream's position and size.
@@ -48,11 +47,11 @@ public:
     virtual void seek(size_t pos) override;
 
     /** \brief Simply sets the current size of the stream.
-     * The position is always set to the end of the new stream.
+     * The position is updated to <tt>min(old_position, size)</tt>.
      */
     virtual void truncate(size_t size) override {
         m_size = size;  // No underlying data, so there's nothing else to do.
-        m_pos = size;
+        m_pos = std::min(m_pos, size);
     }
 
     /// Returns the current position in the stream.

@@ -384,8 +384,8 @@ Throws if attempting to seek beyond the size of the stream.)doc";
 static const char *__doc_mitsuba_DummyStream_toString = R"doc(Returns a string representation)doc";
 
 static const char *__doc_mitsuba_DummyStream_truncate =
-R"doc(Simply sets the current size of the stream. The current position is
-set to min(pos, size - 1).)doc";
+R"doc(Simply sets the current size of the stream. The position is updated to
+``min(old_position, size)``.)doc";
 
 static const char *__doc_mitsuba_DummyStream_write =
 R"doc(Does not actually write anything, only updates the stream's position
@@ -478,14 +478,18 @@ static const char *__doc_mitsuba_FileStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
 when the stream ended prematurely.)doc";
 
-static const char *__doc_mitsuba_FileStream_seek = R"doc(Seeks to a position inside the stream)doc";
+static const char *__doc_mitsuba_FileStream_seek =
+R"doc(Seeks to a position inside the stream. Throws an exception when trying
+to seek beyond the limits of the file.)doc";
 
 static const char *__doc_mitsuba_FileStream_toString = R"doc(Returns a string representation)doc";
 
 static const char *__doc_mitsuba_FileStream_truncate =
-R"doc(Truncates the file to a given size. The file's position is always
-updated to point to the new end. Throws an exception if in read-only
-mode.)doc";
+R"doc(Truncates the file to a given size. Automatically flushes the stream
+before truncating the file. The position is updated to
+``min(old_position, size)``.
+
+Throws an exception if in read-only mode.)doc";
 
 static const char *__doc_mitsuba_FileStream_write =
 R"doc(Writes a specified amount of data into the stream. Throws an exception
@@ -614,16 +618,72 @@ static const char *__doc_mitsuba_Logger_staticInitialization = R"doc(Initialize 
 static const char *__doc_mitsuba_Logger_staticShutdown = R"doc(Shutdown logging)doc";
 
 static const char *__doc_mitsuba_MemoryStream =
-R"doc(Simple memory buffer-based stream with automatic memory management
+R"doc(Simple memory buffer-based stream with automatic memory management. It
+always has read & write capabilities.
 
 The underlying memory storage of this implementation dynamically
 expands as data is written to the stream.)doc";
 
-static const char *__doc_mitsuba_MemoryStream_MemoryStream = R"doc()doc";
+static const char *__doc_mitsuba_MemoryStream_MemoryStream =
+R"doc(Creates a new memory stream, initializing the memory buffer at
+``initialSize``. For best performance, set this parameter to the
+estimated size of the content that will be written to the stream.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_MemoryStream_2 =
+R"doc(Creates a memory stream, which operates on a pre-allocated buffer.
+
+A memory stream created in this way will never resize the underlying
+buffer. An exception is thrown e.g. when attempting to extend its
+size.
+
+Remark:
+    This constructor is not available in the python bindings.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_canRead = R"doc(Always returns true.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_canWrite = R"doc(Always returns true.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_flush = R"doc(No-op since all writes are made directly to memory)doc";
 
 static const char *__doc_mitsuba_MemoryStream_getClass = R"doc()doc";
 
+static const char *__doc_mitsuba_MemoryStream_getPos = R"doc(Gets the current position inside the memory buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_getSize =
+R"doc(Returns the size of the contents written to the memory buffer. \note
+This is not equal to the size of the memory buffer in general.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_capacity = R"doc(Current size of the allocated memory buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_data = R"doc(Pointer to the memory buffer (might not be owned))doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_ownsBuffer = R"doc(False if the MemoryStream was created from a pre-allocated buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_pos = R"doc(Current position inside of the memory buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_size = R"doc(Current size of the contents written to the memory buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_read =
+R"doc(Reads a specified amount of data from the stream. Throws an exception
+if trying to read further than the current size of the contents.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_resize = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryStream_seek =
+R"doc(Seeks to a position inside the stream. If trying to seek beyond the
+size of the content, or even beyond the capacity buffer, it is simply
+adjusted accordingly. The contents of the memory that was skipped is
+undefined.)doc";
+
 static const char *__doc_mitsuba_MemoryStream_toString = R"doc(Returns a string representation)doc";
+
+static const char *__doc_mitsuba_MemoryStream_truncate =
+R"doc(Truncates the contents **and** the memory buffer's capacity to a given
+size. The position is updated to ``min(old_position, size)``.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_write =
+R"doc(Writes a specified amount of data into the memory buffer. The capacity
+of the memory buffer is extended if necessary.)doc";
 
 static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
 
@@ -961,14 +1021,17 @@ static const char *__doc_mitsuba_Stream_readValue =
 R"doc(Reads one object of type T from the stream at the current position by
 delegating to the appropriate ``serialization_helper``.)doc";
 
-static const char *__doc_mitsuba_Stream_seek = R"doc(Seeks to a position inside the stream)doc";
+static const char *__doc_mitsuba_Stream_seek =
+R"doc(Seeks to a position inside the stream. Throws an exception when trying
+to seek beyond the limits of the stream.)doc";
 
 static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a string representation of the stream)doc";
 
 static const char *__doc_mitsuba_Stream_truncate =
-R"doc(Truncates the stream to a given size. The stream's position is always
-updated to point to the new end. Throws an exception if in read-only
-mode.)doc";
+R"doc(Truncates the stream to a given size. The position is updated to
+``min(old_position, size)``.
+
+Throws an exception if in read-only mode.)doc";
 
 static const char *__doc_mitsuba_Stream_write =
 R"doc(Writes a specified amount of data into the stream.
@@ -1196,34 +1259,6 @@ static const char *__doc_mitsuba_detail_get_construct_functor_2 = R"doc()doc";
 static const char *__doc_mitsuba_detail_get_unserialize_functor = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_get_unserialize_functor_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_serialization_helper = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_serialization_helper_read =
-R"doc(Reads ``count`` values of type T from stream ``s``, starting at its
-current position. Note: ``count`` is the number of values, **not** a
-size in bytes.
-
-Support for additional types can be added in any header file by
-declaring a template specialization for your type.)doc";
-
-static const char *__doc_mitsuba_detail_serialization_helper_type_id = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_serialization_helper_write =
-R"doc(Writes ``count`` values of type T into stream ``s`` starting at its
-current position. Note: ``count`` is the number of values, **not** a
-size in bytes.
-
-Support for additional types can be added in any header file by
-declaring a template specialization for your type.)doc";
-
-static const char *__doc_mitsuba_detail_serialization_traits = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_serialization_traits_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_serialization_traits_type_id = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_serialization_traits_type_id_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper = R"doc()doc";
 

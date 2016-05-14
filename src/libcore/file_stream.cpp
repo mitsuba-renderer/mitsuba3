@@ -20,7 +20,9 @@ FileStream::FileStream(const path &p, bool writeEnabled)
 }
 
 FileStream::~FileStream() {
-    m_file.close();
+    if (m_file.is_open()) {
+        m_file.close();
+    }
 }
 
 std::string FileStream::toString() const {
@@ -71,12 +73,12 @@ void FileStream::truncate(size_t size) {
             m_path.string().c_str());
     }
 
-    // TODO: is it really necessary to close & reopen?
-    m_file.close();
+    flush();
+    const auto old_pos = getPos();
+    seek(0);
+    // TODO: is it safe to change the underlying file while the fstream is still open?
     fs::resize_file(m_path, size);
-    const auto mode = std::ios_base::app | (m_writeMode ? std::ios_base::out
-                                                        : std::ios_base::in);
-    m_file.open(m_path.string(), mode);
+    seek(std::min(old_pos, size));
 
     if (!m_file.good()) {
         Log(EError, "\"%s\": I/O error while attempting to truncate file to size %llu",

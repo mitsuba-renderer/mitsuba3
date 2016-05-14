@@ -49,11 +49,15 @@ protected:
 
 public:
 
-    /// Seeks to a position inside the stream
+    /** Seeks to a position inside the stream. Throws an exception when trying
+     * to seek beyond the limits of the file.
+     */
     virtual void seek(size_t pos) override;
 
     /** \brief Truncates the file to a given size.
-     * The file's position is always updated to point to the new end.
+     * Automatically flushes the stream before truncating the file.
+     * The position is updated to <tt>min(old_position, size)</tt>.
+     *
      * Throws an exception if in read-only mode.
      */
     virtual void truncate(size_t size) override;
