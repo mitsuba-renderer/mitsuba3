@@ -39,7 +39,7 @@ add_library(mitsuba-core SHARED
   plugin.cpp       ${INC_DIR}/plugin.h
   fresolver.cpp    ${INC_DIR}/fresolver.h
 
-  stream.cpp           ${INC_DIR}/stream.h
+  stream.cpp           ${INC_DIR}/stream.h ${INC_DIR}/impl/stream.hpp
   annotated_stream.cpp ${INC_DIR}/annotated_stream.h
   dummy_stream.cpp     ${INC_DIR}/dummy_stream.h
   file_stream.cpp      ${INC_DIR}/file_stream.h
