@@ -21,6 +21,7 @@ MTS_PY_EXPORT(Stream) {
         .mdef(Stream, canWrite)
         .mdef(Stream, canRead)
         // TODO: handle py <=> c++ casts explicitly?
+        // TODO: readValue method should be pythonic
         .READ_WRITE_TYPE(int8_t)
         .READ_WRITE_TYPE(std::string)
         // TODO: lots and lots of other types
