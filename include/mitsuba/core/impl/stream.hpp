@@ -1,5 +1,9 @@
 #pragma once
 
+#include <set>
+#include <vector>
+#include <Eigen/Core>
+
 /** \brief Basic Stream serialization capabilities can go here.
  * This header file contains template specializations to add support for
  * serialization of several basic files. Support for new types can be added
@@ -79,6 +83,124 @@ template <> struct serialization_helper<std::string> {
             value++;
         }
     }
+};
+
+
+template <typename T1, typename T2> struct serialization_helper<std::pair<T1, T2>> {
+    static std::string type_id() {
+        return "P" +
+               serialization_helper<T1>::type_id() +
+               serialization_helper<T2>::type_id();
+    }
+
+    static void write(Stream &s, const std::pair<T1, T1> *value, size_t count) {
+        std::unique_ptr<T1> first (new T1[count]);
+        std::unique_ptr<T2> second(new T2[count]);
+
+        for (size_t i = 0; i<count; ++i) {
+            first.get()[i]  = value[i].first;
+            second.get()[i] = value[i].second;
+        }
+
+        serialization_helper<T1>::write(s, first.get(), count);
+        serialization_helper<T2>::write(s, second.get(), count);
+    }
+
+    static void read(Stream &s, std::pair<T1, T1> *value, size_t count) {
+        std::unique_ptr<T1> first (new T1[count]);
+        std::unique_ptr<T2> second(new T2[count]);
+
+        serialization_helper<T1>::read(s, first.get(), count);
+        serialization_helper<T2>::read(s, second.get(), count);
+
+        for (size_t i = 0; i<count; ++i) {
+            value[i].first = first.get()[i];
+            value[i].second = second.get()[i];
+        }
+    }
+};
+
+template <typename T> struct serialization_helper<std::vector<T>> {
+    static std::string type_id() {
+        return "V" + serialization_helper<T>::type_id();
+    }
+
+    static void write(Stream &s, const std::vector<T> *value, size_t count) {
+        for (size_t i = 0; i<count; ++i) {
+            uint32_t size = (uint32_t) value->size();
+            s.write(&size, sizeof(uint32_t));
+            serialization_helper<T>::write(s, value->data(), size);
+            value++;
+        }
+    }
+
+    static void read(Stream &s, std::vector<T> *value, size_t count) {
+        for (size_t i = 0; i<count; ++i) {
+            uint32_t size = 0;
+            s.read(&size, sizeof(uint32_t));
+            value->resize(size);
+            serialization_helper<T>::read(s, value->data(), size);
+            value++;
+        }
+    }
+};
+
+template <typename T> struct serialization_helper<std::set<T>> {
+    static std::string type_id() {
+        return "S" + serialization_helper<T>::type_id();
+    }
+
+    static void write(Stream &s, const std::set<T> *value, size_t count) {
+        for (size_t i = 0; i<count; ++i) {
+            std::vector<T> temp(value->size());
+            uint32_t idx = 0;
+            for (auto it = value->begin(); it != value->end(); ++it)
+                temp[idx++] = *it;
+            serialization_helper<std::vector<T>>::write(s, &temp, 1);
+            value++;
+        }
+    }
+
+    static void read(Stream &s, std::set<T> *value, size_t count) {
+        for (size_t i = 0; i<count; ++i) {
+            std::vector<T> temp;
+            serialization_helper<std::vector<T>>::read(s, &temp, 1);
+            value->clear();
+            for (auto k: temp)
+                value->insert(k);
+            value++;
+        }
+    }
+};
+
+template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+struct serialization_helper<Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>> {
+typedef Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> Matrix;
+
+static std::string type_id() {
+    return "M" + serialization_helper<Scalar>::type_id();
+}
+
+static void write(Stream &s, const Matrix *value, size_t count) {
+    for (size_t i = 0; i<count; ++i) {
+        uint32_t rows = value->rows(), cols = value->cols();
+        s.write(&rows, sizeof(uint32_t));
+        s.write(&cols, sizeof(uint32_t));
+        serialization_helper<Scalar>::write(s, value->data(), rows*cols);
+        value++;
+    }
+}
+
+static void read(Stream &s, Matrix *value, size_t count) {
+    for (size_t i = 0; i<count; ++i) {
+        uint32_t rows = 0, cols = 0;
+        s.read(&rows, sizeof(uint32_t));
+        s.read(&cols, sizeof(uint32_t));
+        value->resize(rows, cols);
+        serialization_helper<Scalar>::read(s, value->data(), rows*cols);
+        value++;
+    }
+}
 };
 
 NAMESPACE_END(detail)
