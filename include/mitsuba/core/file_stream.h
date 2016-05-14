@@ -12,7 +12,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 /** \brief Simple \ref Stream implementation backed-up by a file.
  *
- * TODO: explain which low-level tools are used for implementation.
+ * TODO: explain which underlying abstraction is used.
+ * TODO: double check portability.
  */
 class MTS_EXPORT_CORE FileStream : public Stream {
 public:
@@ -66,7 +67,7 @@ public:
     virtual size_t getPos() override;
 
     /// Returns the size of the file
-    // TODO: would need to flush first to get accurate results?
+    // TODO: would need to flush first to get accurate results? (but that wouldn't be const)
     virtual size_t getSize() override {
         return fs::file_size(m_path);
     }

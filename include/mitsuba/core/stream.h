@@ -21,7 +21,6 @@ NAMESPACE_END(detail)
  * value passed to \ref setByteOrder(). Whenever \ref getHostByteOrder()
  * and \ref getByteOrder() disagree, the endianness is swapped.
  *
- * TODO: explain Table of Contents feature.
  * TODO: explain write-only / read-only modes.
  *
  * \sa FileStream, MemoryStream, DummyStream
@@ -138,7 +137,7 @@ public:
     //! @{ \name Endianness handling
     // =========================================================================
 
-    // TODO
+    // TODO: endianness handling
 
     /// @}
     // =========================================================================
@@ -159,7 +158,6 @@ protected:
 private:
     static const EByteOrder m_hostByteOrder;
     EByteOrder m_byteOrder;
-    // TODO: data members (ToC, endianness, etc).
 };
 
 extern MTS_EXPORT_CORE std::ostream

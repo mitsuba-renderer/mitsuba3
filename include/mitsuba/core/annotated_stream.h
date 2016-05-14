@@ -23,8 +23,6 @@ public:
      * Anything written to the AnnotatedStream is ultimately passed down to the
      * given Stream instance.
      * The given Stream instance should not be destructed before this.
-     *
-     * TODO: in order not to use unique_ptr, use move constructor or such?
      */
     AnnotatedStream(ref<Stream> &stream)
         : Object(), m_stream(stream) { }
