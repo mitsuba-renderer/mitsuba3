@@ -14,8 +14,9 @@ class MTS_EXPORT_CORE MemoryStream : public Stream {
 public:
 
     /** \brief Creates a new memory stream, initializing the memory buffer
-     * at <tt>initialSize</tt>. For best performance, set this parameter to
-     * the estimated size of the content that will be written to the stream.
+     * with a capacity of <tt>initialSize</tt> bytes. For best performance,
+     * set this argument to the estimated size of the content that
+     * will be written to the stream.
      */
     MemoryStream(size_t initialSize = 512);
 
@@ -63,6 +64,9 @@ public:
     /** \brief Truncates the contents <b>and</b> the memory buffer's capacity
      * to a given size.
      * The position is updated to <tt>min(old_position, size)</tt>.
+     *
+     * \note This will throw is the MemoryStream was initialized with a
+     * pre-allocated buffer.
      */
     virtual void truncate(size_t size) override;
 

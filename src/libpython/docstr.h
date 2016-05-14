@@ -625,9 +625,10 @@ The underlying memory storage of this implementation dynamically
 expands as data is written to the stream.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_MemoryStream =
-R"doc(Creates a new memory stream, initializing the memory buffer at
-``initialSize``. For best performance, set this parameter to the
-estimated size of the content that will be written to the stream.)doc";
+R"doc(Creates a new memory stream, initializing the memory buffer with a
+capacity of ``initialSize`` bytes. For best performance, set this
+argument to the estimated size of the content that will be written to
+the stream.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_MemoryStream_2 =
 R"doc(Creates a memory stream, which operates on a pre-allocated buffer.
@@ -679,7 +680,10 @@ static const char *__doc_mitsuba_MemoryStream_toString = R"doc(Returns a string 
 
 static const char *__doc_mitsuba_MemoryStream_truncate =
 R"doc(Truncates the contents **and** the memory buffer's capacity to a given
-size. The position is updated to ``min(old_position, size)``.)doc";
+size. The position is updated to ``min(old_position, size)``.
+
+\note This will throw is the MemoryStream was initialized with a pre-
+allocated buffer.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_write =
 R"doc(Writes a specified amount of data into the memory buffer. The capacity
