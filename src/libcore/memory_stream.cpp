@@ -3,16 +3,89 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-std::string MemoryStream::toString() const {
-    std::ostringstream oss;
-    oss << "MemoryStream[" << Stream::toString()
-        // TODO: complete with implementation-specific information
-        << "]";
-    return oss.str();
+MemoryStream::MemoryStream(size_t initialSize)
+    : Stream(true), m_capacity(0), m_size(0), m_pos(0),
+      m_ownsBuffer(true), m_data(nullptr) {
+    resize(initialSize);
+}
+
+MemoryStream::MemoryStream(void *ptr, size_t size)
+    : Stream(true), m_capacity(size), m_size(size), m_pos(0),
+      m_ownsBuffer(false), m_data(reinterpret_cast<uint8_t *>(ptr)) {
 }
 
 MemoryStream::~MemoryStream() {
-    // TODO: release resources
+    if (m_data != nullptr && m_ownsBuffer)
+        free(m_data);
+}
+
+void MemoryStream::read(void *p, size_t size) {
+    if (m_pos + size > m_size) {
+        size_t sizeRead = m_size - m_pos;
+        memcpy(p, m_data + m_pos, sizeRead);
+        m_pos += sizeRead;
+        Log(EError, "Reading over the end of a memory stream!"
+                    "(amount requested = %llu, amount actually read = %llu)",
+            size, sizeRead);
+    }
+    memcpy(p, m_data + m_pos, size);
+    m_pos += size;
+}
+
+void MemoryStream::write(const void *p, size_t size) {
+    size_t endPos = m_pos + size;
+    if (endPos > m_size) {
+        if (endPos > m_capacity) {
+            // TODO: rather, double the size à la std::vector?
+            resize(endPos);
+        }
+        m_size = endPos;
+    }
+    memcpy(m_data + m_pos, p, size);
+    m_pos += size;
+}
+
+void MemoryStream::resize(size_t size) {
+    if (!m_ownsBuffer)
+        Log(EError, "Tried to resize a buffer, which doesn't "
+                    "belong to this MemoryStream instance!");
+
+    if (m_data == nullptr)
+        m_data = reinterpret_cast<uint8_t *>(malloc(size));
+    else
+        m_data = reinterpret_cast<uint8_t *>(realloc(m_data, size));
+
+    if (size > m_capacity)
+        memset(m_data + m_capacity, 0, size - m_capacity);
+
+    m_capacity = size;
+}
+
+void MemoryStream::seek(size_t pos) {
+    m_pos = pos;
+    if (m_pos >= m_size) {
+        m_size = pos;
+        if (m_size > m_capacity)
+            resize(m_size);
+    }
+}
+
+void MemoryStream::truncate(size_t size) {
+    m_size = size;
+    resize(size);
+    if (m_pos > size)
+        m_pos = size;
+}
+
+std::string MemoryStream::toString() const {
+    std::ostringstream oss;
+    oss << "MemoryStream[" << Stream::toString()
+        << ", ownsBuffer=" << m_ownsBuffer
+        << ", capacity=" << m_capacity
+        << ", size=" << m_size
+        << ", pos=" << m_pos
+        << "]";
+    return oss.str();
 }
 
 MTS_IMPLEMENT_CLASS(MemoryStream, Stream)
