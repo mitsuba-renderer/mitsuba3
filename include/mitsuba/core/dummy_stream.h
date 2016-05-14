@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/stream.h>
-#include "logger.h"
+#include <mitsuba/core/logger.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

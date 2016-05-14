@@ -26,12 +26,18 @@
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds Table of Contents capabilities to an
 underlying stream. A Stream instance must first be created and passed
-to to the constructor.
+to to the constructor. The underlying stream should either be empty or
+a stream that was previously written with an AnnotatedStream, so that
+it contains a proper Table of Contents.
 
 Table of Contents: objects and variables written to the stream are
 prepended by a field name. Contents can then be queried by field name,
 as if using a map. A hierarchy can be created by ``push``ing and
-``pop``ing prefixes.)doc";
+``pop``ing prefixes. The root of this hierarchy is the empty prefix
+"".
+
+The table of contents is automatically read from the underlying stream
+on creation and written back on destruction.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_AnnotatedStream =
 R"doc(Creates an AnnotatedStream based on the given Stream (decorator
@@ -39,15 +45,36 @@ pattern). Anything written to the AnnotatedStream is ultimately passed
 down to the given Stream instance. The given Stream instance should
 not be destructed before this.
 
-TODO: in order not to use unique_ptr, use move constructor or such?)doc";
+Throws if the underlying stream has read capabilities and is not empty
+but does not correspond to a valid AnnotatedStream (i.e. it does not
+start with the kSerializedHeaderId sentry).)doc";
 
-static const char *__doc_mitsuba_AnnotatedStream_get = R"doc(Retrieve a field from the serialized file (only valid in read mode))doc";
+static const char *__doc_mitsuba_AnnotatedStream_canRead = R"doc(Whether the underlying stream has read capabilities)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_canWrite = R"doc(Whether the underlying stream has write capabilities)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_get =
+R"doc(Retrieve a field from the serialized file (only valid in read mode)
+
+Throws if the field exists but has the wrong type. Throws if the field
+is not found and ``throwOnMissing`` is true.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_getBase =
+R"doc(Attempts to seek to the position of the given field. The active prefix
+(from previous push operations) is prepended to the given ``name``.
+
+Throws if the field exists but has the wrong type. Throws if the field
+is not found and ``m_throwOnMissing`` is true.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_getClass = R"doc()doc";
 
+static const char *__doc_mitsuba_AnnotatedStream_getSize = R"doc(Returns the current size of the underlying stream)doc";
+
 static const char *__doc_mitsuba_AnnotatedStream_keys = R"doc(Return all field names under the current name prefix)doc";
 
-static const char *__doc_mitsuba_AnnotatedStream_m_prefixStack = R"doc(Stack of prefixes currently applied, constituting a path)doc";
+static const char *__doc_mitsuba_AnnotatedStream_m_prefixStack =
+R"doc(Stack of accumulated prefixes, i.e. ``m_prefixStack.back`` is the full
+prefix path currently applied.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_m_stream = R"doc(Underlying stream where the names and contents are written)doc";
 
@@ -55,13 +82,35 @@ static const char *__doc_mitsuba_AnnotatedStream_m_table =
 R"doc(Maintains the mapping: full field name -> (type, position in the
 stream))doc";
 
+static const char *__doc_mitsuba_AnnotatedStream_m_throwOnMissing = R"doc()doc";
+
 static const char *__doc_mitsuba_AnnotatedStream_pop = R"doc(Pop a name prefix from the stack)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_push =
 R"doc(Push a name prefix onto the stack (use this to isolate identically-
 named data fields).)doc";
 
+static const char *__doc_mitsuba_AnnotatedStream_readTOC =
+R"doc(Read back the table of contents from the underlying stream and update
+the in-memory ``m_table`` accordingly. Should be called on
+construction.
+
+Throws if the underlying stream does not have read capabilities.
+Throws if the underlying stream does not have start with the
+AnnotatedStream sentry (kSerializedHeaderId).)doc";
+
 static const char *__doc_mitsuba_AnnotatedStream_set = R"doc(Store a field in the serialized file (only valid in write mode))doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_setBase =
+R"doc(Attempts to associate the current position of the stream to the given
+field. The active prefix (from previous push operations) is prepended
+to the ``name`` of the field.
+
+Throws if a value was already set with that name (including prefix).)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_writeTOC =
+R"doc(Write back the table of contents to the underlying stream. Should be
+called on destruction.)doc";
 
 static const char *__doc_mitsuba_Appender =
 R"doc(This class defines an abstract destination for logging-relevant
@@ -451,7 +500,8 @@ static const char *__doc_mitsuba_FileResolver_toString = R"doc(Return a human-re
 static const char *__doc_mitsuba_FileStream =
 R"doc(Simple Stream implementation backed-up by a file.
 
-TODO: explain which low-level tools are used for implementation.)doc";
+TODO: explain which underlying abstraction is used. TODO: double check
+portability.)doc";
 
 static const char *__doc_mitsuba_FileStream_FileStream =
 R"doc(Constructs a new FileStream by opening the file pointed by ``p``. The
@@ -941,8 +991,7 @@ conversion based on the endianness of the underlying system and the
 value passed to setByteOrder(). Whenever getHostByteOrder() and
 getByteOrder() disagree, the endianness is swapped.
 
-TODO: explain Table of Contents feature. TODO: explain write-only /
-read-only modes.
+TODO: explain write-only / read-only modes.
 
 See also:
     FileStream, MemoryStream, DummyStream)doc";
