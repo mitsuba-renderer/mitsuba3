@@ -24,6 +24,7 @@ MTS_PY_EXPORT(Stream) {
         // TODO: readValue method should be pythonic
         .READ_WRITE_TYPE(int8_t)
         .READ_WRITE_TYPE(std::string)
+        .READ_WRITE_TYPE(Float)
         // TODO: lots and lots of other types
         .def("__repr__", &Stream::toString);
 }

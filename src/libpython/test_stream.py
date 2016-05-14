@@ -4,57 +4,116 @@ from os import path as PyPath
 from mitsuba import DummyStream, FileStream, MemoryStream
 from mitsuba.filesystem import path
 
+def touch(path):
+    # Equivalent of `touch` that is compatible with Python 2
+    open(str(path), 'a').close()
+
 class CommonStreamTest(unittest.TestCase):
+    roPath = path('./read_only_file_for_common_tests')
+    woPath = path('./write_only_file_for_common_tests')
+
+    # TODO: more contents, exercise lots of types
+    contents = ['some sentence', 42, 13.37]
+
+    def writeContents(self, stream):
+        for v in CommonStreamTest.contents:
+            stream.writeValue(v)
+        stream.flush()
+
     def setUp(self):
+        touch(CommonStreamTest.roPath)
         # Provide a fresh instances of each kind of Stream implementation
-        self.streams = [DummyStream(), MemoryStream(64)]
-        # TODO: add FileStream too, read & write
+        self.streams = {}
+        self.streams['DummyStream'] = DummyStream()
+        self.streams['MemoryStream'] = MemoryStream(64)
+        self.streams['FileStream (read only)'] = FileStream(CommonStreamTest.roPath, False)
+        self.streams['DummyStream (write only)'] = FileStream(CommonStreamTest.woPath, True)
+
+    def tearDown(self):
+        os.remove(str(CommonStreamTest.roPath))
+        os.remove(str(CommonStreamTest.woPath))
 
     def test01_size_and_pos(self):
-        for stream in self.streams:
-            self.assertEqual(stream.getSize(), 0)
-            self.assertEqual(stream.getPos(), 0)
-            stream.writeValue("hello") # string length as a uint32_t (4) + string (5)
-            self.assertEqual(stream.getSize(), 9)
-            self.assertEqual(stream.getPos(), 9)
-            stream.writeValue(42) # int (1)
-            self.assertEqual(stream.getSize(), 9+1)
-            self.assertEqual(stream.getPos(), 9+1)
+        for (name, stream) in self.streams.items():
+            with self.subTest(name):
+                self.assertEqual(stream.getSize(), 0)
+                self.assertEqual(stream.getPos(), 0)
+
+                if stream.canWrite():
+                    # string length as a uint32_t (4) + string (5)
+                    stream.writeValue("hello")
+                    stream.flush()
+                    self.assertEqual(stream.getSize(), 9)
+                    self.assertEqual(stream.getPos(), 9)
+                    stream.writeValue(42) # int (1)
+                    stream.flush()
+                    self.assertEqual(stream.getSize(), 9+1)
+                    self.assertEqual(stream.getPos(), 9+1)
 
     def test02_truncate(self):
-        for stream in self.streams:
-            self.assertEqual(stream.getSize(), 0)
-            self.assertEqual(stream.getPos(), 0)
-            stream.truncate(100)
-            self.assertEqual(stream.getSize(), 100)
-            self.assertEqual(stream.getPos(), 0)
-            stream.seek(99)
-            self.assertEqual(stream.getPos(), 99)
-            stream.truncate(50)
-            self.assertEqual(stream.getSize(), 50)
-            self.assertEqual(stream.getPos(), 50)
-            stream.writeValue("hello")
-            self.assertEqual(stream.getSize(), 50 + 9)
-            self.assertEqual(stream.getPos(), 50 + 9)
+        for (name, stream) in self.streams.items():
+            if not stream.canWrite():
+                continue
+            with self.subTest(name):
+                self.assertEqual(stream.getSize(), 0)
+                self.assertEqual(stream.getPos(), 0)
+                stream.truncate(100)
+                self.assertEqual(stream.getSize(), 100)
+                self.assertEqual(stream.getPos(), 0)
+                stream.seek(99)
+                self.assertEqual(stream.getPos(), 99)
+                stream.truncate(50)
+                self.assertEqual(stream.getSize(), 50)
+                self.assertEqual(stream.getPos(), 50)
+                stream.writeValue("hello")
+                stream.flush()
+                self.assertEqual(stream.getSize(), 50 + 9)
+                self.assertEqual(stream.getPos(), 50 + 9)
 
     def test03_seek(self):
-        for stream in self.streams:
-            self.assertEqual(stream.getSize(), 0)
-            self.assertEqual(stream.getPos(), 0)
-            stream.truncate(5)
-            self.assertEqual(stream.getSize(), 5)
-            self.assertEqual(stream.getPos(), 0)
-            stream.seek(5)
-            self.assertEqual(stream.getSize(), 5)
-            self.assertEqual(stream.getPos(), 5)
-            # Seeking beyond the end of the file is okay, but won't make it larger
-            # TODO: this behavior is inconsistent for MemoryStream
-            stream.seek(10)
-            self.assertEqual(stream.getSize(), 5)
-            self.assertEqual(stream.getPos(), 10)
+        for (name, stream) in self.streams.items():
+            with self.subTest(name):
+                size = 0
+
+                self.assertEqual(stream.getSize(), size)
+                self.assertEqual(stream.getPos(), 0)
+
+                if stream.canWrite():
+                    size = 5
+                    stream.truncate(size)
+                    self.assertEqual(stream.getSize(), size)
+                    self.assertEqual(stream.getPos(), 0)
+
+                stream.seek(5)
+                self.assertEqual(stream.getSize(), size)
+                self.assertEqual(stream.getPos(), 5)
+                # Seeking beyond the end of the file is okay, but won't make it larger
+                # TODO: this behavior is inconsistent for MemoryStream
+                stream.seek(10)
+                self.assertEqual(stream.getSize(), size)
+                self.assertEqual(stream.getPos(), 10)
+
+    def test04_read_back(self):
+        # Write some values to be read back
+        temporaryWriteStream = FileStream(CommonStreamTest.roPath, True)
+        self.writeContents(temporaryWriteStream)
+        del temporaryWriteStream
+        self.writeContents(self.streams['MemoryStream'])
+
+        for (name, stream) in self.streams.items():
+            if not stream.canRead():
+                continue
+
+            stream.seek(0)
+            with self.subTest(name):
+                for v in CommonStreamTest.contents:
+                    # TODO: should change when the `readValue` binding makes more sense
+                    r = None
+                    r = v + v
+                    stream.readValue(r)
+                    self.assertEqual(r, v)
 
     # TODO: more read / write tests
-    # TODO: tests where we read back from an existing file, exercising various types
 
 class DummyStreamTest(unittest.TestCase):
     def setUp(self):
@@ -78,11 +137,9 @@ class FileStreamTest(unittest.TestCase):
     woPath = path("./test_file_write")
     newPath = path("./path_that_did_not_exist")
 
-
     def setUp(self):
-        # Equivalent of `touch` that is compatible with Python 2
-        open(str(FileStreamTest.roPath), 'a').close()
-        open(str(FileStreamTest.woPath), 'a').close()
+        touch(FileStreamTest.roPath)
+        touch(FileStreamTest.woPath)
         if PyPath.exists(str(FileStreamTest.newPath)):
             os.remove(str(FileStreamTest.newPath))
 
@@ -148,11 +205,13 @@ class FileStreamTest(unittest.TestCase):
         self.assertEqual(self.wo.getPos(), 5)
         self.assertEqual(self.wo.getSize(), 5)
         self.wo.writeValue("hello world")
-        self.wo.seek(5)
-        self.assertEqual(self.wo.getPos(), 5)
+        self.wo.flush()
+        self.wo.seek(3)
+        self.assertEqual(self.wo.getPos(), 3)
         self.assertEqual(self.wo.getSize(), 5+4+11)
         self.wo.writeValue("dlrow olleh")
-        self.assertEqual(self.wo.getPos(), 5+4+11)
+        self.wo.flush()
+        self.assertEqual(self.wo.getPos(), 3+4+11)
         self.assertEqual(self.wo.getSize(), 5+4+11)
 
         # Seeking further that the limit of the file should be okay too

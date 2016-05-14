@@ -21,12 +21,14 @@ MemoryStream::~MemoryStream() {
 
 void MemoryStream::read(void *p, size_t size) {
     if (m_pos + size > m_size) {
+        const auto old_pos = m_pos;
         size_t sizeRead = m_size - m_pos;
         memcpy(p, m_data + m_pos, sizeRead);
         m_pos += sizeRead;
         Log(EError, "Reading over the end of a memory stream!"
-                    "(amount requested = %llu, amount actually read = %llu)",
-            size, sizeRead);
+                    " (amount requested = %llu, amount actually read = %llu,"
+                    " total size of the stream = %llu, previous position = %llu)",
+            size, sizeRead, m_size, old_pos);
     }
     memcpy(p, m_data + m_pos, size);
     m_pos += size;
