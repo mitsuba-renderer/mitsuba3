@@ -1,4 +1,4 @@
-#include <mitsuba/core/astream.h>
+#include <mitsuba/core/annotated_stream.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

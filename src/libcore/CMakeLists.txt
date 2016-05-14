@@ -39,11 +39,11 @@ add_library(mitsuba-core SHARED
   plugin.cpp       ${INC_DIR}/plugin.h
   fresolver.cpp    ${INC_DIR}/fresolver.h
 
-  stream.cpp       ${INC_DIR}/stream.h
-  astream.cpp      ${INC_DIR}/astream.h
-  dstream.cpp      ${INC_DIR}/dstream.h
-  fstream.cpp      ${INC_DIR}/fstream.h
-  mstream.cpp      ${INC_DIR}/mstream.h
+  stream.cpp           ${INC_DIR}/stream.h
+  annotated_stream.cpp ${INC_DIR}/annotated_stream.h
+  dummy_stream.cpp     ${INC_DIR}/dummy_stream.h
+  file_stream.cpp      ${INC_DIR}/file_stream.h
+  memory_stream.cpp    ${INC_DIR}/memory_stream.h
 )
 
 # Link to Intel's Thread Building Blocks & the pugixml parser

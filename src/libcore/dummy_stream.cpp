@@ -1,4 +1,4 @@
-#include <mitsuba/core/dstream.h>
+#include <mitsuba/core/dummy_stream.h>
 #include <sstream>
 
 NAMESPACE_BEGIN(mitsuba)
