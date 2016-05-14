@@ -16,6 +16,17 @@
         s.writeValue(value);                                \
     }, DM(Stream, writeValue))                              \
 
+#define ANNOATED_GET_SET_TYPE(Type)                         \
+    def("get", [](AnnotatedStream& s,                       \
+                  const std::string &name, Type &value) {   \
+        return s.get(name, value);                          \
+    }, DM(AnnotatedStream, get))                            \
+    .def("set", [](AnnotatedStream& s,                      \
+                   const std::string &name,                 \
+                   const Type &value) {                     \
+        s.set(name, value);                                 \
+    }, DM(AnnotatedStream, set))                            \
+
 MTS_PY_EXPORT(Stream) {
     MTS_PY_CLASS(Stream, Object)
         .mdef(Stream, canWrite)
@@ -70,6 +81,16 @@ MTS_PY_EXPORT(MemoryStream) {
 }
 
 MTS_PY_EXPORT(AnnotatedStream) {
-    MTS_PY_CLASS(AnnotatedStream, Object);
-    // TODO
+    MTS_PY_CLASS(AnnotatedStream, Object)
+        .def(py::init<ref<Stream>, bool>(), DM(AnnotatedStream, AnnotatedStream))
+        .mdef(AnnotatedStream, push)
+        .mdef(AnnotatedStream, pop)
+        .mdef(AnnotatedStream, keys)
+        // TODO: auto-declare the same getters & setters as in Stream
+        .ANNOATED_GET_SET_TYPE(int8_t)
+        .ANNOATED_GET_SET_TYPE(std::string)
+        .ANNOATED_GET_SET_TYPE(Float)
+        .mdef(AnnotatedStream, getSize)
+        .mdef(AnnotatedStream, canRead)
+        .mdef(AnnotatedStream, canWrite);
 }
