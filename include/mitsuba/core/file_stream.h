@@ -51,9 +51,7 @@ protected:
 
 public:
 
-    /** Seeks to a position inside the stream. Throws an exception when trying
-     * to seek beyond the limits of the file.
-     */
+    /// Seeks to a position inside the stream. May throw if the resulting state is invalid.
     virtual void seek(size_t pos) override;
 
     /** \brief Truncates the file to a given size.

@@ -40,11 +40,11 @@ public:
 
     /** \brief Updates the current position in the stream.
      * Even though the <tt>DummyStream</tt> doesn't write anywhere, position is
-     * taken into account to correctly maintain the size of the stream.
-     *
-     * Throws if attempting to seek beyond the size of the stream.
+     * taken into account to accurately compute the size of the stream.
      */
-    virtual void seek(size_t pos) override;
+    virtual void seek(size_t pos) override {
+        m_pos = pos;
+    }
 
     /** \brief Simply sets the current size of the stream.
      * The position is updated to <tt>min(old_position, size)</tt>.

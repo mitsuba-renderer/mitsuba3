@@ -74,9 +74,8 @@ protected:
     virtual void write(const void *p, size_t size) = 0;
 
 public:
-    /** Seeks to a position inside the stream. Throws an exception when trying
-     * to seek beyond the limits of the stream.
-     */
+    /// Seeks to a position inside the stream.
+    // TODO: consider throwing when seeking further than the end of the stream
     virtual void seek(size_t pos) = 0;
 
     /** \brief Truncates the stream to a given size.

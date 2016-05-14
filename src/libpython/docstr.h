@@ -377,9 +377,7 @@ static const char *__doc_mitsuba_DummyStream_read = R"doc(Always throws, since D
 static const char *__doc_mitsuba_DummyStream_seek =
 R"doc(Updates the current position in the stream. Even though the
 ``DummyStream`` doesn't write anywhere, position is taken into account
-to correctly maintain the size of the stream.
-
-Throws if attempting to seek beyond the size of the stream.)doc";
+to accurately compute the size of the stream.)doc";
 
 static const char *__doc_mitsuba_DummyStream_toString = R"doc(Returns a string representation)doc";
 
@@ -457,10 +455,12 @@ TODO: explain which low-level tools are used for implementation.)doc";
 
 static const char *__doc_mitsuba_FileStream_FileStream =
 R"doc(Constructs a new FileStream by opening the file pointed by ``p``. The
-file is opened in append mode, and read / write mode as specified by
-``writeEnabled``.
+file is opened in read / write mode as specified by ``writeEnabled``.
 
-Throws an exception if the file cannot be open.)doc";
+If ``writeEnabled`` and the file did not exist before, it is created.
+Trying to open a non-existing file in read-only mode results in an
+exception being thrown. Throws an exception if the file cannot be
+opened / created.)doc";
 
 static const char *__doc_mitsuba_FileStream_flush = R"doc(Flushes any buffered operation to the underlying file.)doc";
 
@@ -479,8 +479,8 @@ R"doc(Reads a specified amount of data from the stream. Throws an exception
 when the stream ended prematurely.)doc";
 
 static const char *__doc_mitsuba_FileStream_seek =
-R"doc(Seeks to a position inside the stream. Throws an exception when trying
-to seek beyond the limits of the file.)doc";
+R"doc(Seeks to a position inside the stream. May throw if the resulting
+state is invalid.)doc";
 
 static const char *__doc_mitsuba_FileStream_toString = R"doc(Returns a string representation)doc";
 
@@ -1025,9 +1025,7 @@ static const char *__doc_mitsuba_Stream_readValue =
 R"doc(Reads one object of type T from the stream at the current position by
 delegating to the appropriate ``serialization_helper``.)doc";
 
-static const char *__doc_mitsuba_Stream_seek =
-R"doc(Seeks to a position inside the stream. Throws an exception when trying
-to seek beyond the limits of the stream.)doc";
+static const char *__doc_mitsuba_Stream_seek = R"doc(Seeks to a position inside the stream.)doc";
 
 static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a string representation of the stream)doc";
 
