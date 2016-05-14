@@ -7,37 +7,69 @@
 #include <mitsuba/core/filesystem.h>
 #include "python.h"
 
-// TODO: do we really need to do that for templated functions?
-#define READ_WRITE_TYPE(Type)                               \
-    def("readValue", [](Stream& s, Type &value) {           \
-        s.readValue(value);                                 \
-    }, DM(Stream, readValue))                               \
-    .def("writeValue", [](Stream& s, const Type &value) {   \
-        s.writeValue(value);                                \
-    }, DM(Stream, writeValue))                              \
+NAMESPACE_BEGIN()
+/** \brief The following is used to ensure that the getters and setters
+ * for all the same types are available for both \ref Stream implementations
+ * and \AnnotatedStream.
+ *
+ * TODO: yes, it is way overkill and overcomplicated, this was mostly written
+ *       as an exercise to understand template metaprogramming better.
+ */
+template<typename... Args> struct template_methods_helper;
 
-#define ANNOATED_GET_SET_TYPE(Type)                         \
-    def("get", [](AnnotatedStream& s,                       \
-                  const std::string &name, Type &value) {   \
-        return s.get(name, value);                          \
-    }, DM(AnnotatedStream, get))                            \
-    .def("set", [](AnnotatedStream& s,                      \
-                   const std::string &name,                 \
-                   const Type &value) {                     \
-        s.set(name, value);                                 \
-    }, DM(AnnotatedStream, set))                            \
+template <typename T, typename... Args>
+struct template_methods_helper<T, Args...> {
+    template <typename PyClass>
+    static void declareGettersAndSetters(PyClass &c) {
+        c.def("get", [](AnnotatedStream& s,
+                        const std::string &name, T &value) {
+            return s.get(name, value);
+        }, DM(AnnotatedStream, get));
+        c.def("set", [](AnnotatedStream& s,
+                        const std::string &name, const T &value) {
+            s.set(name, value);
+        }, DM(AnnotatedStream, set));
+
+        template_methods_helper<Args...>::declareGettersAndSetters(c);
+    }
+
+    template <typename PyClass>
+    static void declareReadAndWriteMethods(PyClass &c) {
+        c.def("readValue", [](Stream& s, T &value) {
+            s.readValue(value);
+        }, DM(Stream, readValue));
+        c.def("writeValue", [](Stream& s, const T &value) {
+            s.writeValue(value);
+        }, DM(Stream, writeValue));
+
+        template_methods_helper<Args...>::declareReadAndWriteMethods(c);
+    }
+};
+
+template<>
+struct template_methods_helper<> {
+    template <typename PyClass>
+    static void declareGettersAndSetters(PyClass &) { /* End of recursion*/ }
+
+    template <typename PyClass>
+    static void declareReadAndWriteMethods(PyClass &) { /* End of recursion*/ }
+};
+
+/// Use this type alias to list the supported types.
+// TODO: support all type
+using methods_helper = template_methods_helper<int8_t, std::string, Float>;
+
+NAMESPACE_END()
 
 MTS_PY_EXPORT(Stream) {
-    MTS_PY_CLASS(Stream, Object)
+    auto c = MTS_PY_CLASS(Stream, Object)
         .mdef(Stream, canWrite)
         .mdef(Stream, canRead)
-        // TODO: handle py <=> c++ casts explicitly?
-        // TODO: readValue method should be pythonic
-        .READ_WRITE_TYPE(int8_t)
-        .READ_WRITE_TYPE(std::string)
-        .READ_WRITE_TYPE(Float)
-        // TODO: lots and lots of other types
         .def("__repr__", &Stream::toString);
+
+    // TODO: handle py <=> c++ casts explicitly?
+    // TODO: readValue method should be pythonic
+    methods_helper::declareReadAndWriteMethods(c);
 }
 
 MTS_PY_EXPORT(DummyStream) {
@@ -81,16 +113,14 @@ MTS_PY_EXPORT(MemoryStream) {
 }
 
 MTS_PY_EXPORT(AnnotatedStream) {
-    MTS_PY_CLASS(AnnotatedStream, Object)
+    auto c = MTS_PY_CLASS(AnnotatedStream, Object)
         .def(py::init<ref<Stream>, bool>(), DM(AnnotatedStream, AnnotatedStream))
         .mdef(AnnotatedStream, push)
         .mdef(AnnotatedStream, pop)
         .mdef(AnnotatedStream, keys)
-        // TODO: auto-declare the same getters & setters as in Stream
-        .ANNOATED_GET_SET_TYPE(int8_t)
-        .ANNOATED_GET_SET_TYPE(std::string)
-        .ANNOATED_GET_SET_TYPE(Float)
         .mdef(AnnotatedStream, getSize)
         .mdef(AnnotatedStream, canRead)
         .mdef(AnnotatedStream, canWrite);
+
+    methods_helper::declareGettersAndSetters(c);
 }
