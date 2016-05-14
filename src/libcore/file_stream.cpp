@@ -1,6 +1,7 @@
 #include <mitsuba/core/file_stream.h>
-#include <sstream>
+#include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/logger.h>
+#include <sstream>
 
 namespace fs = mitsuba::filesystem;
 using path = fs::path;
@@ -8,9 +9,14 @@ using path = fs::path;
 NAMESPACE_BEGIN(mitsuba)
 
 FileStream::FileStream(const path &p, bool writeEnabled)
-: Stream(writeEnabled), m_path(p) {
-    const auto mode = std::ios_base::app | (m_writeMode ? std::ios_base::out
-                                                        : std::ios_base::in);
+    : Stream(writeEnabled), m_path(p) {
+    if (!m_writeMode && !fs::exists(p)) {
+        Log(EError, "\"%s\": tried to open a read-only FileStream pointing to"
+                    " a file that cannot be opened.",
+            m_path.string().c_str());
+    }
+
+    const auto mode = (m_writeMode ? std::ios_base::out : std::ios_base::in);
     m_file.open(p.string(), mode);
 
     if (!m_file.good()) {
@@ -29,6 +35,7 @@ std::string FileStream::toString() const {
     std::ostringstream oss;
     oss << "FileStream[" << Stream::toString()
         << ", path=" << m_path.string()
+        << ", writeOnly=" << (m_writeMode ? "true" : "false")
 //        << ", size=" << getSize()
 //        << ", pos=" << getPos()
         << "]";
@@ -36,6 +43,11 @@ std::string FileStream::toString() const {
 }
 
 void FileStream::read(void *p, size_t size) {
+    if (!canRead()) {
+        Log(EError, "\"%s\": attempted to read from a write-only FileStream",
+            m_path.string().c_str());
+    }
+
     // TODO: handle endianness swap (?)
     m_file.read((char *)p, size);
 
@@ -46,6 +58,11 @@ void FileStream::read(void *p, size_t size) {
 }
 
 void FileStream::write(const void *p, size_t size) {
+    if (!canWrite()) {
+        Log(EError, "\"%s\": attempted to write to a read-only FileStream",
+            m_path.string().c_str());
+    }
+
     // TODO: handle endianness swap (?)
     m_file.write((char *)p, size);
 
