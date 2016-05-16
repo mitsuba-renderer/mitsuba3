@@ -13,6 +13,7 @@ include_directories(
   ${PYBIND11_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
+  ${TINYFORMAT_INCLUDE_DIRS}
 )
 
 # Create the binding library

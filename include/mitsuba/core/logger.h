@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/thread.h>
+#include <mitsuba/core/util.h>
 #include <memory>
 
 /// Write a log message to the console
@@ -33,7 +34,7 @@
 
 /// Throw an exception reporting that the given function is not implemented
 #define NotImplementedError(funcName) \
-    throw std::runtime_error(formatString("%s::" funcName "(): Not implemented!", \
+    throw std::runtime_error(util::formatString("%s::" funcName "(): Not implemented!", \
             getClass()->getName().c_str()));
 
 NAMESPACE_BEGIN(mitsuba)

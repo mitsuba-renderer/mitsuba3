@@ -111,7 +111,7 @@ void Logger::log(ELogLevel level, const Class *theClass,
 
         char exePath[PATH_MAX];
         memset(exePath, 0, PATH_MAX);
-        std::string procPath = formatString("/proc/%i/exe", getppid());
+        std::string procPath = util::formatString("/proc/%i/exe", getppid());
 
         if (readlink(procPath.c_str(), exePath, PATH_MAX) != -1) {
             if (strstr(exePath, "bin/gdb") || strstr(exePath "bin/lldb")) {

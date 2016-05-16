@@ -2,6 +2,7 @@ include_directories(
   ${PNG_INCLUDE_DIRS}
   ${TBB_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
+  ${TINYFORMAT_INCLUDE_DIRS}
 )
 
 add_definitions(

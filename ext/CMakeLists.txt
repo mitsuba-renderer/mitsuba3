@@ -129,3 +129,6 @@ set_property(TARGET libzmq PROPERTY FOLDER "dependencies")
 
 # pcg32 include path
 set(PCG32_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pcg32 PARENT_SCOPE)
+
+# tinyformat include path
+set(TINYFORMAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/tinyformat PARENT_SCOPE)
