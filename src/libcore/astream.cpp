@@ -128,6 +128,7 @@ void AnnotatedStream::writeTOC() {
     m_stream->writeValue(kSerializedHeaderId);
     m_stream->writeValue(trailer_offset);
     m_stream->writeValue(nItems);
+    m_stream->flush();
     // Write table of contents at the end of the stream
     m_stream->seek(static_cast<size_t>(trailer_offset));
     for (const auto &item : m_table) {
@@ -136,6 +137,7 @@ void AnnotatedStream::writeTOC() {
         m_stream->writeValue(item.second.first);
         m_stream->writeValue(item.second.second);
     }
+    m_stream->flush();
 }
 
 MTS_IMPLEMENT_CLASS(AnnotatedStream, Object)

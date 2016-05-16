@@ -48,7 +48,10 @@ public:
     /// Pop a name prefix from the stack
     void pop();
 
-    /// Return all field names under the current name prefix
+    /** \brief Return all field names under the current name prefix.
+     * Nested names are returned with the full path prepended, e.g.:
+     *   level_1.level_2.my_name
+     */
     std::vector<std::string> keys() const;
 
     /** \brief Retrieve a field from the serialized file (only valid in read mode)

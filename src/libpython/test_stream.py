@@ -27,7 +27,7 @@ class CommonStreamTest(unittest.TestCase):
         self.streams['DummyStream'] = DummyStream()
         self.streams['MemoryStream'] = MemoryStream(64)
         self.streams['FileStream (read only)'] = FileStream(CommonStreamTest.roPath, False)
-        self.streams['DummyStream (write only)'] = FileStream(CommonStreamTest.woPath, True)
+        self.streams['FileStream (write only)'] = FileStream(CommonStreamTest.woPath, True)
 
     def tearDown(self):
         os.remove(str(CommonStreamTest.roPath))
@@ -45,10 +45,10 @@ class CommonStreamTest(unittest.TestCase):
                     stream.flush()
                     self.assertEqual(stream.getSize(), 9)
                     self.assertEqual(stream.getPos(), 9)
-                    stream.writeValue(42) # int (1)
+                    stream.writeValue(42) # Long (4)
                     stream.flush()
-                    self.assertEqual(stream.getSize(), 9+1)
-                    self.assertEqual(stream.getPos(), 9+1)
+                    self.assertEqual(stream.getSize(), 9+4)
+                    self.assertEqual(stream.getPos(), 9+4)
 
     def test02_truncate(self):
         for (name, stream) in self.streams.items():
@@ -96,10 +96,11 @@ class CommonStreamTest(unittest.TestCase):
                 if stream.canWrite():
                     # A subsequent write should start at the correct position
                     # and update the size.
-                    stream.writeValue(13.37) # Float (1)
-                    self.assertEqual(stream.getPos(), 20 + 1)
-                    self.assertEqual(stream.getSize(), 20 + 1)
+                    stream.writeValue(13.37)
+                    self.assertEqual(stream.getPos(), 20 + 4)
+                    self.assertEqual(stream.getSize(), 20 + 4)
 
+    @unittest.skip("Not implemented yet")
     def test04_read_back(self):
         # Write some values to be read back
         temporaryWriteStream = FileStream(CommonStreamTest.roPath, True)
@@ -235,9 +236,9 @@ class FileStreamTest(unittest.TestCase):
         self.assertEqual(self.wo.getSize(), 5+4+11) # Actual size
 
         # A subsequent write should start at the correct position
-        self.wo.writeValue(13.37) # Float (1)
-        self.assertEqual(self.wo.getPos(), 40 + 1)
-        self.assertEqual(self.wo.getSize(), 40 + 1)
+        self.wo.writeValue(13.37)
+        self.assertEqual(self.wo.getPos(), 40 + 4)
+        self.assertEqual(self.wo.getSize(), 40 + 4)
 
     def test05_str(self):
         self.assertEqual(str(self.ro),

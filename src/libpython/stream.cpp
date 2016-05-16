@@ -56,8 +56,9 @@ struct template_methods_helper<> {
 };
 
 /// Use this type alias to list the supported types.
-// TODO: support all type
-using methods_helper = template_methods_helper<int8_t, std::string, Float>;
+// TODO: support all types that can occur in Python
+using methods_helper = template_methods_helper<int32_t, int64_t, Float,
+                                               bool, std::string, char>;
 
 NAMESPACE_END()
 
@@ -110,7 +111,8 @@ MTS_PY_EXPORT(FileStream) {
 
 MTS_PY_EXPORT(MemoryStream) {
     MTS_PY_CLASS(MemoryStream, Stream)
-        .def(py::init<size_t>(), DM(MemoryStream, MemoryStream))
+        .def(py::init<size_t>(), DM(MemoryStream, MemoryStream),
+             py::arg("initialSize") = 512)
         .mdef(MemoryStream, seek)
         .mdef(MemoryStream, truncate)
         .mdef(MemoryStream, getPos)
