@@ -55,6 +55,36 @@ struct template_methods_helper<> {
     static void declareReadAndWriteMethods(PyClass &) { /* End of recursion*/ }
 };
 
+template<typename... Args> struct for_each_type;
+
+// User provides a templated [T] function that takes arguments (which might
+// depend on T)
+struct my_behavior {
+    template <typename T>
+    static void hello() {
+        Log(EInfo, "Here we go again, with param: %s", typeid(T).name());
+    }
+};
+
+template <typename T, typename... Args>
+struct for_each_type<T, Args...> {
+    // TODO: improve syntax for the caller (e.g. operator() or something)
+    template <typename UserFunctionType>
+    static void perform() { // TODO: args
+        UserFunctionType::template hello<T>();
+        for_each_type<Args...>::template perform<UserFunctionType>();
+    }
+};
+
+template<>
+struct for_each_type<> {
+    template <typename UserFunctionType>
+    static void perform() {
+        // Done
+    }
+};
+
+
 /// Use this type alias to list the supported types.
 // TODO: support all types that can occur in Python
 using methods_helper = template_methods_helper<int32_t, int64_t, Float,
