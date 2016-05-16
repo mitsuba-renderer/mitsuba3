@@ -672,7 +672,7 @@ R"doc(Simple memory buffer-based stream with automatic memory management. It
 always has read & write capabilities.
 
 The underlying memory storage of this implementation dynamically
-expands as data is written to the stream.)doc";
+expands as data is written to the stream, à la ``std::vector``.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_MemoryStream =
 R"doc(Creates a new memory stream, initializing the memory buffer with a
@@ -698,11 +698,14 @@ static const char *__doc_mitsuba_MemoryStream_flush = R"doc(No-op since all writ
 
 static const char *__doc_mitsuba_MemoryStream_getClass = R"doc()doc";
 
-static const char *__doc_mitsuba_MemoryStream_getPos = R"doc(Gets the current position inside the memory buffer)doc";
+static const char *__doc_mitsuba_MemoryStream_getPos =
+R"doc(Gets the current position inside the memory buffer. Note that this
+might be further than the stream's size or even capacity.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_getSize =
 R"doc(Returns the size of the contents written to the memory buffer. \note
-This is not equal to the size of the memory buffer in general.)doc";
+This is not equal to the size of the memory buffer in general, since
+we allocate more capacity at once.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_m_capacity = R"doc(Current size of the allocated memory buffer)doc";
 
@@ -721,10 +724,11 @@ if trying to read further than the current size of the contents.)doc";
 static const char *__doc_mitsuba_MemoryStream_resize = R"doc()doc";
 
 static const char *__doc_mitsuba_MemoryStream_seek =
-R"doc(Seeks to a position inside the stream. If trying to seek beyond the
-size of the content, or even beyond the capacity buffer, it is simply
-adjusted accordingly. The contents of the memory that was skipped is
-undefined.)doc";
+R"doc(Seeks to a position inside the stream. You may seek beyond the size of
+the stream's contents, or even beyond the buffer's capacity. The size
+and capacity are **not** affected. A subsequent write would then
+expand the size and capacity accordingly. The contents of the memory
+that was skipped is undefined.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_toString = R"doc(Returns a string representation)doc";
 
@@ -1028,7 +1032,7 @@ static const char *__doc_mitsuba_StreamAppender_readLog = R"doc(Return the conte
 
 static const char *__doc_mitsuba_StreamAppender_toString = R"doc(Return a string representation)doc";
 
-static const char *__doc_mitsuba_Stream_EByteOrder = R"doc(Defines the byte order to use in this Stream)doc";
+static const char *__doc_mitsuba_Stream_EByteOrder = R"doc(Defines the byte order (endianness) to use in this Stream)doc";
 
 static const char *__doc_mitsuba_Stream_EByteOrder_EBigEndian = R"doc(< PowerPC, SPARC, Motorola 68K)doc";
 
@@ -1052,7 +1056,11 @@ static const char *__doc_mitsuba_Stream_canWrite = R"doc(Can we write to the str
 
 static const char *__doc_mitsuba_Stream_flush = R"doc(Flushes the stream's buffers, if any)doc";
 
+static const char *__doc_mitsuba_Stream_getByteOrder = R"doc(Returns the byte order of this stream.)doc";
+
 static const char *__doc_mitsuba_Stream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_getHostByteOrder = R"doc(Returns the byte order of the underlying machine.)doc";
 
 static const char *__doc_mitsuba_Stream_getPos = R"doc(Gets the current position inside the stream)doc";
 
@@ -1074,7 +1082,20 @@ static const char *__doc_mitsuba_Stream_readValue =
 R"doc(Reads one object of type T from the stream at the current position by
 delegating to the appropriate ``serialization_helper``.)doc";
 
-static const char *__doc_mitsuba_Stream_seek = R"doc(Seeks to a position inside the stream.)doc";
+static const char *__doc_mitsuba_Stream_seek =
+R"doc(Seeks to a position inside the stream. Seeking beyond the size of the
+buffer will not modify its contents' length. However, a subsequent
+write should start at the seeked position and update the size
+appropriately.)doc";
+
+static const char *__doc_mitsuba_Stream_setByteOrder =
+R"doc(Sets the byte order to use in this stream. Automatic conversion will
+be performed on read and write operations to match the system's native
+endianness.
+
+No consistency is guaranteed if this method is called after performing
+some read and write operations on the system using a different
+endianness.)doc";
 
 static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a string representation of the stream)doc";
 

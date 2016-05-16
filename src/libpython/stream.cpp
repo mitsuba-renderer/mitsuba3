@@ -65,11 +65,20 @@ MTS_PY_EXPORT(Stream) {
     auto c = MTS_PY_CLASS(Stream, Object)
         .mdef(Stream, canWrite)
         .mdef(Stream, canRead)
+        .mdef(Stream, setByteOrder)
+        .mdef(Stream, getByteOrder)
+        .mdef(Stream, getHostByteOrder)
         .def("__repr__", &Stream::toString);
 
     // TODO: handle py <=> c++ casts explicitly?
     // TODO: readValue method should be pythonic
     methods_helper::declareReadAndWriteMethods(c);
+
+    py::enum_<Stream::EByteOrder>(c, "EByteOrder", DM(Stream, EByteOrder))
+        .value("EBigEndian", Stream::EBigEndian)
+        .value("ELittleEndian", Stream::ELittleEndian)
+        .value("ENetworkByteOrder", Stream::ENetworkByteOrder)
+        .export_values();
 }
 
 MTS_PY_EXPORT(DummyStream) {

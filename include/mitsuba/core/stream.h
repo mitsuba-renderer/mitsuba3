@@ -122,7 +122,7 @@ public:
     void readValue(T &value) {
         if (m_byteOrder != m_hostByteOrder) {
             // TODO: handle endianness swap
-            NotImplementedError("writeValue");
+            NotImplementedError("writeValue [endianness swap]");
         }
         using helper = detail::serialization_helper<T>;
         helper::read(*this, &value, 1);
@@ -136,7 +136,7 @@ public:
     void writeValue(const T &value) {
         if (m_byteOrder != m_hostByteOrder) {
             // TODO: handle endianness swap
-            NotImplementedError("writeValue");
+            NotImplementedError("writeValue [endianness swap]");
         }
         using helper = detail::serialization_helper<T>;
         helper::write(*this, &value, 1);

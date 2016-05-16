@@ -1,7 +1,7 @@
 import unittest
 import os
 from os import path as PyPath
-from mitsuba import DummyStream, FileStream, MemoryStream
+from mitsuba import Stream, DummyStream, FileStream, MemoryStream
 from mitsuba.filesystem import path
 
 def touch(path):
@@ -120,7 +120,9 @@ class CommonStreamTest(unittest.TestCase):
                     stream.readValue(r)
                     self.assertEqual(r, v)
 
-    # TODO: more read / write tests
+    # TODO: more read / write tests (read back, check contents of written file, etc)
+    # TODO: check for compatibility with Mitsuba 1 serialized files
+    # TODO: test endianness swapping
 
 class DummyStreamTest(unittest.TestCase):
     def setUp(self):
@@ -131,11 +133,12 @@ class DummyStreamTest(unittest.TestCase):
         self.assertFalse(self.s.canRead())
 
     def test02_str(self):
-        self.s.writeValue("hello world")
         # string length as a uint32_t (4) + string (11)
+        self.s.writeValue("hello world")
+        self.s.setByteOrder(Stream.EBigEndian)
         self.assertEqual(str(self.s),
                         "DummyStream[" +
-                        "hostByteOrder=little-endian, byteOrder=little-endian" +
+                        "hostByteOrder=little-endian, byteOrder=big-endian" +
                         ", size=15, pos=15]")
 
 
@@ -244,9 +247,10 @@ class FileStreamTest(unittest.TestCase):
                          ", writeOnly=false]")
 
         self.wo.writeValue("hello world")
+        self.wo.setByteOrder(Stream.EBigEndian)
         self.assertEqual(str(self.wo),
                          "FileStream[" +
-                         "hostByteOrder=little-endian, byteOrder=little-endian" +
+                         "hostByteOrder=little-endian, byteOrder=big-endian" +
                          ", path=" + str(FileStreamTest.woPath) +
                          ", writeOnly=true]")
 
@@ -264,10 +268,10 @@ class MemoryStreamTest(unittest.TestCase):
 
     def test02_str(self):
         self.s.writeValue("hello world")
-        # string length as a uint32_t (4) + string (11)
+        self.s.setByteOrder(Stream.EBigEndian)
         self.assertEqual(str(self.s),
                          "MemoryStream[" +
-                         "hostByteOrder=little-endian, byteOrder=little-endian" +
+                         "hostByteOrder=little-endian, byteOrder=big-endian" +
                          ", ownsBuffer=1, capacity=" + str(MemoryStreamTest.defaultCapacity) +
                          ", size=15, pos=15]")
 
