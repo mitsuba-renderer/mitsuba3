@@ -15,8 +15,7 @@
  */
 
 #include <mitsuba/core/fwd.h>
-
-#include <sstream>
+#include <iosfwd>
 #include <string>
 #include <vector>
 
@@ -65,6 +64,11 @@ public:
      * On Windows, the path can use both '/' or '\\' as a delimiter.
      */
     path(const string_type &string) { set(string); }
+
+    /** \brief Construct a path from a string with native type.
+     * On Windows, the path can use both '/' or '\\' as a delimiter.
+     */
+    path(const value_type *string) { set(string); }
 
 #if defined(__WINDOWS__)
     /** \brief Constructs a path from an std::string, even if it's not the
@@ -120,29 +124,26 @@ public:
     path operator/(const path &other) const;
 
     /// Assignment operator.
-    path & operator=(const path &path);
+    path& operator=(const path &path);
 
     /// Move assignment operator.
-    path & operator=(path &&path);
+    path& operator=(path &&path);
 
     /** \brief Assignment from the system's native string type. Acts similarly
      * to the string constructor.
      */
-    path & operator=(const string_type &str) { set(str); return *this; }
+    path& operator=(const string_type &str) { set(str); return *this; }
 
 #if defined(__WINDOWS__)
     /** \brief Constructs a path from an std::string, even if it's not the
      * native string type. Assumes the string is UTF-8 encoded to carry
      * conversion to native type.
      */
-    path & operator=(const std::string &str);
+    path& operator=(const std::string &str);
 #endif
 
     /// Prints the path as it would be returned by <tt>native()</tt>.
-    friend std::ostream & operator<<(std::ostream &os, const path &path) {
-        os << path.string();
-        return os;
-    }
+    friend std::ostream& operator<<(std::ostream &os, const path &path);
 
     /** Equality operator. Warning: this only checks for lexicographic equivalence.
      * To check whether two paths point to the same filesystem resource,

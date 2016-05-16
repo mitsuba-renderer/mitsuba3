@@ -54,4 +54,10 @@ typedef TBoundingBox<Point4f>   BoundingBox4f;
 typedef TRay<Point2f, Vector2f> Ray2f;
 typedef TRay<Point3f, Vector3f> Ray3f;
 
+NAMESPACE_BEGIN(filesystem)
+class path;
+NAMESPACE_END(filesystem)
+
+namespace fs = filesystem;
+
 NAMESPACE_END(mitsuba)

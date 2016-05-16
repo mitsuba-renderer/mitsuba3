@@ -7,6 +7,7 @@
 #include <cstring>
 #include <locale>
 #include <stdexcept>
+#include <sstream>
 
 #if defined(__WINDOWS__)
 #  include <windows.h>
@@ -304,6 +305,11 @@ std::vector<string_type> path::tokenize(const string_type &string,
     }
 
     return tokens;
+}
+
+std::ostream& operator<<(std::ostream &os, const path &path) {
+    os << path.string();
+    return os;
 }
 
 NAMESPACE_END(filesystem)
