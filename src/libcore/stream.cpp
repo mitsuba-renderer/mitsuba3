@@ -3,6 +3,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+NAMESPACE_BEGIN(detail)
 static Stream::EByteOrder getByteOrder() {
     union {
         uint8_t  charValue[2];
@@ -16,8 +17,9 @@ static Stream::EByteOrder getByteOrder() {
     else
         return Stream::EBigEndian;
 }
+NAMESPACE_END(detail)
 
-const Stream::EByteOrder Stream::m_hostByteOrder = mitsuba::getByteOrder();
+const Stream::EByteOrder Stream::m_hostByteOrder = detail::getByteOrder();
 
 // -----------------------------------------------------------------------------
 
@@ -26,6 +28,10 @@ Stream::Stream(bool writeEnabled)
     , m_byteOrder(m_hostByteOrder) {
 
 };
+
+void Stream::setByteOrder(EByteOrder value) {
+    m_byteOrder = value;
+}
 
 // -----------------------------------------------------------------------------
 

@@ -31,7 +31,7 @@ protected:
     template <typename T> friend struct detail::serialization_helper;
 
 public:
-    /// Defines the byte order to use in this Stream
+    /// Defines the byte order (endianness) to use in this Stream
     enum EByteOrder {
         EBigEndian = 0,                ///< PowerPC, SPARC, Motorola 68K
         ELittleEndian = 1,             ///< x86, x86_64
@@ -120,6 +120,10 @@ public:
      */
     template <typename T>
     void readValue(T &value) {
+        if (m_byteOrder != m_hostByteOrder) {
+            // TODO: handle endianness swap
+            NotImplementedError("writeValue");
+        }
         using helper = detail::serialization_helper<T>;
         helper::read(*this, &value, 1);
     }
@@ -130,6 +134,10 @@ public:
      */
     template <typename T>
     void writeValue(const T &value) {
+        if (m_byteOrder != m_hostByteOrder) {
+            // TODO: handle endianness swap
+            NotImplementedError("writeValue");
+        }
         using helper = detail::serialization_helper<T>;
         helper::write(*this, &value, 1);
     }
@@ -141,7 +149,21 @@ public:
     //! @{ \name Endianness handling
     // =========================================================================
 
-    // TODO: endianness handling
+    /** \brief Sets the byte order to use in this stream. Automatic conversion
+     * will be performed on read and write operations to match the system's
+     * native endianness.
+     *
+     * No consistency is guaranteed if this method is called after performing
+     * some read and write operations on the system using a different endianness.
+     */
+    void setByteOrder(EByteOrder byteOrder);
+
+    /// Returns the byte order of this stream.
+    inline EByteOrder getByteOrder() const { return m_byteOrder; }
+
+    /// Returns the byte order of the underlying machine.
+    inline static EByteOrder getHostByteOrder() { return m_hostByteOrder; }
+
 
     /// @}
     // =========================================================================

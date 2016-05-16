@@ -50,7 +50,6 @@ void FileStream::read(void *p, size_t size) {
             m_path.string().c_str());
     }
 
-    // TODO: handle endianness swap (?)
     m_file.read((char *)p, size);
 
     if (!m_file.good()) {
@@ -65,7 +64,6 @@ void FileStream::write(const void *p, size_t size) {
             m_path.string().c_str());
     }
 
-    // TODO: handle endianness swap (?)
     m_file.write((char *)p, size);
 
     if (!m_file.good()) {
