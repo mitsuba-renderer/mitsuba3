@@ -32,7 +32,7 @@ protected:
 
     /// Does not actually write anything, only updates the stream's position and size.
     virtual void write(const void *, size_t size) override {
-        m_size += size - (m_size - m_pos);
+        m_size = std::max(m_size, m_pos + size);
         m_pos += size;
     }
 

@@ -22,9 +22,12 @@ MemoryStream::~MemoryStream() {
 void MemoryStream::read(void *p, size_t size) {
     if (m_pos + size > m_size) {
         const auto old_pos = m_pos;
-        size_t sizeRead = m_size - m_pos;
-        memcpy(p, m_data + m_pos, sizeRead);
-        m_pos += sizeRead;
+        // Use signed difference since `m_pos` might be beyond `m_size`
+        ssize_t sizeRead = m_size - m_pos;
+        if (sizeRead > 0) {
+            memcpy(p, m_data + m_pos, sizeRead);
+            m_pos += sizeRead;
+        }
         Log(EError, "Reading over the end of a memory stream!"
                     " (amount requested = %llu, amount actually read = %llu,"
                     " total size of the stream = %llu, previous position = %llu)",
@@ -38,19 +41,23 @@ void MemoryStream::write(const void *p, size_t size) {
     size_t endPos = m_pos + size;
     if (endPos > m_size) {
         if (endPos > m_capacity) {
-            // TODO: rather, double the size à la std::vector?
-            resize(endPos);
+            // Double capacity until it will fit `endPos`, à la `std::vector`
+            // TODO: do we want something more 'adjusted'? This may waste memory.
+            auto newSize = m_capacity;
+            do { newSize *= 2; } while (endPos > newSize);
+            resize(newSize);
         }
         m_size = endPos;
     }
     memcpy(m_data + m_pos, p, size);
-    m_pos += size;
+    m_pos = endPos;
 }
 
 void MemoryStream::resize(size_t size) {
-    if (!m_ownsBuffer)
+    if (!m_ownsBuffer) {
         Log(EError, "Tried to resize a buffer, which doesn't "
                     "belong to this MemoryStream instance!");
+    }
 
     if (m_data == nullptr)
         m_data = reinterpret_cast<uint8_t *>(malloc(size));
@@ -63,20 +70,11 @@ void MemoryStream::resize(size_t size) {
     m_capacity = size;
 }
 
-void MemoryStream::seek(size_t pos) {
-    m_pos = pos;
-    if (m_pos >= m_size) {
-        m_size = pos;
-        if (m_size > m_capacity)
-            resize(m_size);
-    }
-}
-
 void MemoryStream::truncate(size_t size) {
     m_size = size;
     resize(size);
-    if (m_pos > size)
-        m_pos = size;
+    if (m_pos > m_size)
+        m_pos = m_size;
 }
 
 std::string MemoryStream::toString() const {

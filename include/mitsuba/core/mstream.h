@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
  * It always has read & write capabilities.
  *
  * The underlying memory storage of this implementation dynamically expands
- * as data is written to the stream.
+ * as data is written to the stream, à la <tt>std::vector</tt>.
  */
 class MTS_EXPORT_CORE MemoryStream : public Stream {
 public:
@@ -55,11 +55,14 @@ protected:
 public:
 
     /** Seeks to a position inside the stream.
-     * If trying to seek beyond the size of the content, or even beyond the
-     * capacity buffer, it is simply adjusted accordingly. The contents of the
-     * memory that was skipped is undefined.
+     * You may seek beyond the size of the stream's contents, or even beyond the
+     * buffer's capacity. The size and capacity are <b>not</b> affected.
+     * A subsequent write would then expand the size and capacity
+     * accordingly. The contents of the memory that was skipped is undefined.
      */
-    virtual void seek(size_t pos) override;
+    virtual void seek(size_t pos) override {
+        m_pos = pos;
+    }
 
     /** \brief Truncates the contents <b>and</b> the memory buffer's capacity
      * to a given size.
@@ -70,11 +73,15 @@ public:
      */
     virtual void truncate(size_t size) override;
 
-    /// Gets the current position inside the memory buffer
+    /** \brief Gets the current position inside the memory buffer. Note that
+     * this might be further than the stream's size or even capacity.
+     */
+
     virtual size_t getPos() override { return m_pos; };
 
     /** \brief Returns the size of the contents written to the memory buffer.
-     * \note This is not equal to the size of the memory buffer in general.
+     * \note This is not equal to the size of the memory buffer in general,
+     * since we allocate more capacity at once.
      */
     virtual size_t getSize() override { return m_size; };
 

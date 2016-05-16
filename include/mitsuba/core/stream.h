@@ -73,7 +73,11 @@ protected:
     virtual void write(const void *p, size_t size) = 0;
 
 public:
-    /// Seeks to a position inside the stream.
+    /** Seeks to a position inside the stream.
+     * Seeking beyond the size of the buffer will not modify its contents'
+     * length. However, a subsequent write should start at the seeked position
+     * and update the size appropriately.
+     */
     // TODO: consider throwing when seeking further than the end of the stream
     virtual void seek(size_t pos) = 0;
 

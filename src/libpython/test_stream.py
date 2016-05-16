@@ -89,9 +89,16 @@ class CommonStreamTest(unittest.TestCase):
                 self.assertEqual(stream.getPos(), 5)
                 # Seeking beyond the end of the file is okay, but won't make it larger
                 # TODO: this behavior is inconsistent for MemoryStream
-                stream.seek(10)
+                stream.seek(20)
                 self.assertEqual(stream.getSize(), size)
-                self.assertEqual(stream.getPos(), 10)
+                self.assertEqual(stream.getPos(), 20)
+
+                if stream.canWrite():
+                    # A subsequent write should start at the correct position
+                    # and update the size.
+                    stream.writeValue(13.37) # Float (1)
+                    self.assertEqual(stream.getPos(), 20 + 1)
+                    self.assertEqual(stream.getSize(), 20 + 1)
 
     def test04_read_back(self):
         # Write some values to be read back
@@ -214,14 +221,20 @@ class FileStreamTest(unittest.TestCase):
         self.assertEqual(self.wo.getPos(), 3+4+11)
         self.assertEqual(self.wo.getSize(), 5+4+11)
 
-        # Seeking further that the limit of the file should be okay too
+        # Seeking further that the limit of the file should be okay too, but
+        # not update the size.
         self.ro.seek(10)
         self.assertEqual(self.ro.getPos(), 10)
         self.assertEqual(self.ro.getSize(), 0)
 
         self.wo.seek(40)
         self.assertEqual(self.wo.getPos(), 40)
-        self.assertEqual(self.wo.getSize(), 5+4+11) # Actual size not changed
+        self.assertEqual(self.wo.getSize(), 5+4+11) # Actual size
+
+        # A subsequent write should start at the correct position
+        self.wo.writeValue(13.37) # Float (1)
+        self.assertEqual(self.wo.getPos(), 40 + 1)
+        self.assertEqual(self.wo.getSize(), 40 + 1)
 
     def test05_str(self):
         self.assertEqual(str(self.ro),
