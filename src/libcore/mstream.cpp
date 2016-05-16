@@ -1,4 +1,4 @@
-#include <mitsuba/core/memory_stream.h>
+#include <mitsuba/core/mstream.h>
 #include <sstream>
 
 NAMESPACE_BEGIN(mitsuba)

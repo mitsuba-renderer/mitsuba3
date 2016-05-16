@@ -1,4 +1,4 @@
-#include <mitsuba/core/annotated_stream.h>
+#include <mitsuba/core/astream.h>
 #include <mitsuba/core/util.h>
 #include <string>
 

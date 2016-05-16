@@ -165,4 +165,4 @@ extern MTS_EXPORT_CORE std::ostream
 
 NAMESPACE_END(mitsuba)
 
-#include "impl/stream.hpp"
+#include "detail/stream.hpp"

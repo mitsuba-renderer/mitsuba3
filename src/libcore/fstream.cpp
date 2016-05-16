@@ -1,4 +1,4 @@
-#include <mitsuba/core/file_stream.h>
+#include <mitsuba/core/fstream.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/logger.h>
 #include <sstream>

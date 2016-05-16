@@ -1,8 +1,8 @@
 #include <mitsuba/core/stream.h>
-#include <mitsuba/core/annotated_stream.h>
-#include <mitsuba/core/dummy_stream.h>
-#include <mitsuba/core/file_stream.h>
-#include <mitsuba/core/memory_stream.h>
+#include <mitsuba/core/astream.h>
+#include <mitsuba/core/dstream.h>
+#include <mitsuba/core/fstream.h>
+#include <mitsuba/core/mstream.h>
 
 #include <mitsuba/core/filesystem.h>
 #include "python.h"
