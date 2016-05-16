@@ -49,6 +49,87 @@ Parameter ``ptr``:
     progress message. When rendering a scene, it will usually contain a
     pointer to the associated ``RenderJob``.)doc";
 
+static const char *__doc_mitsuba_ArgParser =
+R"doc(Minimal command line argument parser
+
+This class provides a minimal cross-platform command line argument parser
+in the spirit of to GNU getopt. Both short and long arguments that accept
+an optional extra value are supported.
+
+The typical usage is
+
+\code ArgParser p; auto arg0 = p.register("--myParameter"); auto arg1 =
+p.register("-f", true); p.parse(argc, argv); if (*arg0) std::cout << "Got
+--myParameter" << std::endl; if (*arg1) std::cout << "Got -f " <<
+arg1->value() << std::endl; \endcode)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg = R"doc()doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_Arg =
+R"doc(Construct a new argument with the given prefixes
+
+Parameter ``prefixes``:
+    A list of command prefixes (i.e. {"-f", "--fast"})
+
+Parameter ``extra``:
+    Indicates whether the argument accepts an extra argument value)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_Arg_2 = R"doc(Copy constructor (does not copy argument values))doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_append = R"doc(Append a argument value at the end)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_asFloat = R"doc(Return the extra argument associated with this argument)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_asInt = R"doc(Return the extra argument associated with this argument)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_asString = R"doc(Return the extra argument associated with this argument)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_count = R"doc(Specifies how many times the argument has been specified)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_extra = R"doc(Specifies whether the argument takes an extra value)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_m_extra = R"doc()doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_m_next = R"doc()doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_m_prefixes = R"doc()doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_m_present = R"doc()doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_m_value = R"doc()doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_next = R"doc(For arguments that are specified multiple times, advance to the next one.)doc";
+
+static const char *__doc_mitsuba_ArgParser_Arg_operator_bool = R"doc(Returns whether the argument has been specified)doc";
+
+static const char *__doc_mitsuba_ArgParser_add =
+R"doc(Register a new argument with the given prefix
+
+Parameter ``prefix``:
+    A single command prefix (i.e. "-f")
+
+Parameter ``extra``:
+    Indicates whether the argument accepts an extra argument value)doc";
+
+static const char *__doc_mitsuba_ArgParser_add_2 =
+R"doc(Register a new argument with the given list of prefixes
+
+Parameter ``prefixes``:
+    A list of command prefixes (i.e. {"-f", "--fast"})
+
+Parameter ``extra``:
+    Indicates whether the argument accepts an extra argument value)doc";
+
+static const char *__doc_mitsuba_ArgParser_executableName = R"doc(Return the name of the invoked application executable)doc";
+
+static const char *__doc_mitsuba_ArgParser_m_args = R"doc()doc";
+
+static const char *__doc_mitsuba_ArgParser_m_executableName = R"doc()doc";
+
+static const char *__doc_mitsuba_ArgParser_parse = R"doc(Parse the given set of command line arguments)doc";
+
+static const char *__doc_mitsuba_ArgParser_parse_2 = R"doc(Parse the given set of command line arguments)doc";
+
 static const char *__doc_mitsuba_AtomicFloat =
 R"doc(Atomic floating point data type
 
@@ -214,14 +295,14 @@ Parameter ``theClass``:
 Parameter ``thread``:
     Thread, which is reponsible for creating the message
 
-Parameter ``text``:
-    Text content associated with the log message
-
 Parameter ``file``:
     File, which is responsible for creating the message
 
 Parameter ``line``:
-    Associated line within the source file)doc";
+    Associated line within the source file
+
+Parameter ``msg``:
+    Text content associated with the log message)doc";
 
 static const char *__doc_mitsuba_Formatter_getClass = R"doc()doc";
 
@@ -690,6 +771,10 @@ static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor
 
 static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal base {a, b, c})doc";
 
+static const char *__doc_mitsuba_detail_Log = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_Throw = R"doc()doc";
+
 static const char *__doc_mitsuba_detail_get_construct_functor = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_get_construct_functor_2 = R"doc()doc";
@@ -807,6 +892,10 @@ static const char *__doc_mitsuba_filesystem_path_path_2 = R"doc(Copy constructor
 static const char *__doc_mitsuba_filesystem_path_path_3 = R"doc(Move constructor.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_path_4 =
+R"doc(Construct a path from a string with native type. On Windows, the path can
+use both '/' or '\\' as a delimiter.)doc";
+
+static const char *__doc_mitsuba_filesystem_path_path_5 =
 R"doc(Construct a path from a string with native type. On Windows, the path can
 use both '/' or '\\' as a delimiter.)doc";
 
@@ -998,6 +1087,8 @@ static const char *__doc_mitsuba_ref_ref_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
 
+static const char *__doc_mitsuba_string_starts_with = R"doc()doc";
+
 static const char *__doc_mitsuba_util_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
 static const char *__doc_mitsuba_util_memString = R"doc(Turn a memory size into a human-readable string)doc";
@@ -1011,6 +1102,8 @@ Parameter ``time``:
 Parameter ``precise``:
     When set to true, a higher-precision string representation is
     generated.)doc";
+
+static const char *__doc_mitsuba_util_trapDebugger = R"doc(Generate a trap instruction if running in a debugger; otherwise, return.)doc";
 
 static const char *__doc_mitsuba_variant = R"doc()doc";
 
@@ -1047,6 +1140,8 @@ static const char *__doc_mitsuba_variant_variant_2 = R"doc()doc";
 static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
+
+static const char *__doc_mitsuba_xml_load = R"doc()doc";
 
 static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 

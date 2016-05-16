@@ -81,7 +81,7 @@ Thread::Thread(const std::string &name)
 
 Thread::~Thread() {
     if (d->running)
-        Log(EWarn, "Destructor called while thread '%s' was still running", d->name.c_str());
+        Log(EWarn, "Destructor called while thread '%s' was still running", d->name);
 }
 
 void Thread::setCritical(bool critical) {
@@ -200,7 +200,7 @@ bool Thread::setPriority(EPriority priority) {
     const HANDLE handle = d->thread.native_handle();
     if (SetThreadPriority(handle, win32Priority) == 0) {
         Log(EWarn, "Could not adjust the thread priority to %i: %s!",
-            win32Priority, util::getLastError().c_str());
+            win32Priority, util::getLastError());
         return false;
     }
 #endif
@@ -306,7 +306,7 @@ void Thread::start() {
     if (!self)
         Log(EError, "Threading has not been initialized!");
 
-    Log(EDebug, "Spawning thread \"%s\"", d->name.c_str());
+    Log(EDebug, "Spawning thread \"%s\"", d->name);
 
     d->parent = Thread::getThread();
 
@@ -368,7 +368,7 @@ void Thread::dispatch() {
 }
 
 void Thread::exit() {
-    Log(EDebug, "Thread \"%s\" has finished", d->name.c_str());
+    Log(EDebug, "Thread \"%s\" has finished", d->name);
     d->running = false;
     Assert(*self == this);
     ThreadLocalBase::unregisterThread();

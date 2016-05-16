@@ -59,7 +59,7 @@ Object *Class::construct() const {
     if (!m_constr) {
         Log(EError, "RTTI error: Attempted to construct a "
             "class lacking a default constructor (%s)!",
-            getName().c_str());
+            getName());
     }
     return m_constr();
 }

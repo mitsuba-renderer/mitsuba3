@@ -28,13 +28,8 @@ extern MTS_EXPORT_CORE std::string timeString(Float time, bool precise = false);
 /// Turn a memory size into a human-readable string
 extern MTS_EXPORT_CORE std::string memString(size_t size, bool precise = false);
 
-/// Format list of arguments according to the given format string and return
-/// the result as a string.
-template<typename... Args>
-extern MTS_EXPORT_CORE std::string formatString(const char* fmt,
-                                                const Args&... args) {
-    return tfm::format(fmt, args...);
-}
+/// Generate a trap instruction if running in a debugger; otherwise, return.
+extern MTS_EXPORT_CORE void trapDebugger();
 
 /// Joins elements of <tt>v</tt> into a string, separated by an optional delimiter.
 template <typename T>

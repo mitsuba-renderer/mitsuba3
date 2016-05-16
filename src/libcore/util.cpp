@@ -5,6 +5,7 @@
 
 #if defined(__OSX__)
 #  include <sys/sysctl.h>
+#  include <unistd.h>
 #elif defined(__WINDOWS__)
 #  include <windows.h>
 #endif
@@ -47,6 +48,41 @@ int getCoreCount() {
     return (int)nprocs;
 #else
     return sysconf(_SC_NPROCESSORS_CONF);
+#endif
+}
+
+void trapDebugger() {
+#if defined(__LINUX__)
+    char exePath[PATH_MAX];
+    memset(exePath, 0, PATH_MAX);
+    std::string procPath = tfm::format("/proc/%i/exe", getppid());
+
+    if (readlink(procPath.c_str(), exePath, PATH_MAX) != -1) {
+        if (strstr(exePath, "bin/gdb") || strstr(exePath "bin/lldb")) {
+            #if defined(__i386__) || defined(__x86_64__)
+                __asm__ ("int $3");
+            #else
+                __builtin_trap();
+            #endif
+        }
+    }
+#elif defined(__OSX__)
+    int                 mib[4];
+    struct kinfo_proc   info;
+    size_t              size;
+    info.kp_proc.p_flag = 0;
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_PROC;
+    mib[2] = KERN_PROC_PID;
+    mib[3] = getpid();
+    size = sizeof(info);
+    sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, nullptr, 0);
+
+    if (info.kp_proc.p_flag & P_TRACED)
+        __asm__ ("int $3");
+#elif defined(__WINDOWS__)
+    if (IsDebuggerPresent())
+        __debugbreak();
 #endif
 }
 

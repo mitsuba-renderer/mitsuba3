@@ -23,9 +23,9 @@ class LoggerTest(unittest.TestCase):
 
         # Install a custom formatter and appender and process a log message
         class MyFormatter(Formatter):
-            def format(self, level, theClass, thread, text, filename, line):
+            def format(self, level, theClass, thread, filename, line, msg):
                 return "%i: class=%s, thread=%s, text=%s, filename=%s, ' \
-                    'line=%i" % (level, str(theClass), thread.getName(), text,
+                    'line=%i" % (level, str(theClass), thread.getName(), msg,
                                  filename, line)
 
         class MyAppender(Appender):

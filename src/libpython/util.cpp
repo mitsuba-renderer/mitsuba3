@@ -9,4 +9,5 @@ MTS_PY_EXPORT(util) {
           py::arg("precise") = false, DM(util, timeString));
     util.def("memString", &util::memString, py::arg("size"),
           py::arg("precise") = false, DM(util, memString));
+    util.def("trapDebugger", &util::trapDebugger, DM(util, trapDebugger));
 }

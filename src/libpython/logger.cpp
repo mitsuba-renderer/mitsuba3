@@ -17,13 +17,9 @@ static void PyLog(ELogLevel level, const std::string &msg) {
         fmt.insert(2, "()");
 
     Thread::getThread()->getLogger()->log(
-        level,
-        nullptr, /* theClass */
-        filename.c_str(),
-        lineno,
-        fmt.c_str(),
-        name.c_str(),
-        msg.c_str());
+        level, nullptr, /* theClass */
+        filename.c_str(), lineno,
+        tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
 }
 
 MTS_PY_EXPORT(Logger) {

@@ -10,9 +10,13 @@
 #if defined(__WINDOWS__)
 #  define MTS_EXPORT __declspec(dllexport)
 #  define MTS_IMPORT __declspec(dllimport)
+#  define MTS_NOINLINE __declspec(noinline)
+#  define MTS_FORCEINLINE inline __forceinline
 #else
 #  define MTS_EXPORT __attribute__ ((visibility("default")))
 #  define MTS_IMPORT
+#  define MTS_NOINLINE __attribute__ ((noinline))
+#  define MTS_FORCEINLINE inline __attribute__((always_inline))
 #endif
 
 #define MTS_MODULE_CORE 1

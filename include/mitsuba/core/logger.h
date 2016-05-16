@@ -1,41 +1,8 @@
 #pragma once
 
 #include <mitsuba/core/thread.h>
-#include <mitsuba/core/util.h>
 #include <memory>
-
-/// Write a log message to the console
-#define Log(level, fmt, ...) do { \
-        auto logger = mitsuba::Thread::getThread()->getLogger(); \
-        if (logger && level >= logger->getLogLevel()) \
-            logger->log(level, m_theClass, __FILE__, \
-                __LINE__, fmt, ## __VA_ARGS__); \
-    } while (0)
-
-#if !defined(NDEBUG)
-/// Assert that a condition is true
-#define MTS_ASSERT1(cond) do { \
-        if (!(cond)) Log(EError, "Assertion \"%s\" failed in " \
-            "%s:%i",  #cond, __FILE__, __LINE__); \
-    } while (0)
-
-/// Assertion with a customizable error explanation
-#define MTS_ASSERT2(cond, explanation) do { \
-        if (!(cond)) Log(EError, "Assertion \"%s\" failed in " \
-            "%s:%i (" explanation ")", #cond, __FILE__, __LINE__); \
-    } while (0)
-
-/// Expose both of the above macros using overloading, i.e. <tt>Assert(cond)</tt> or <tt>Assert(cond, explanation)</tt>
-#define Assert(...) MTS_EXPAND(MTS_EXPAND(MTS_CAT(MTS_ASSERT, \
-                MTS_VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
-#else
-#define Assert(...) ((void) 0)
-#endif
-
-/// Throw an exception reporting that the given function is not implemented
-#define NotImplementedError(funcName) \
-    throw std::runtime_error(util::formatString("%s::" funcName "(): Not implemented!", \
-            getClass()->getName().c_str()));
+#include <tinyformat.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -72,9 +39,8 @@ public:
      * \note This function is not exposed in the Python bindings.
      *       Instead, please use \cc mitsuba.core.Log
      */
-    void log(ELogLevel level, const Class *theClass,
-        const char *filename, int line,
-        const char *fmt, ...);
+    void log(ELogLevel level, const Class *theClass, const char *filename,
+             int line, const std::string &message);
 
     /**
      * \brief Process a progress message
@@ -160,5 +126,58 @@ private:
     ELogLevel m_logLevel;
     std::unique_ptr<LoggerPrivate> d;
 };
+
+NAMESPACE_BEGIN(detail)
+
+[[noreturn]] extern MTS_EXPORT_CORE
+void Throw(ELogLevel level, const Class *theClass, const char *file,
+           int line, const std::string &msg);
+
+template <typename... Args> MTS_FORCEINLINE
+static void Log(ELogLevel level, const Class *theClass,
+                         const char *filename, int line, Args &&... args) {
+    auto logger = mitsuba::Thread::getThread()->getLogger();
+    if (logger && level >= logger->getLogLevel())
+        logger->log(level, theClass, filename, line, tfm::format(std::forward<Args>(args)...));
+}
+
+NAMESPACE_END(detail)
+
+/// Write a log message to the console
+#define Log(level, ...)                                                        \
+    do {                                                                       \
+        detail::Log(level, m_theClass, __FILE__, __LINE__, ##__VA_ARGS__);     \
+    } while (0)
+
+/// Throw an exception
+#define Throw(...)                                                             \
+    do {                                                                       \
+        detail::Throw(EError, m_theClass, __FILE__, __LINE__,                  \
+                      tfm::format(__VA_ARGS__));                               \
+    } while (0)
+
+#if !defined(NDEBUG)
+/// Assert that a condition is true
+#define MTS_ASSERT1(cond) do { \
+        if (!(cond)) Throw("Assertion \"%s\" failed in " \
+            "%s:%i", #cond, __FILE__, __LINE__); \
+    } while (0)
+
+/// Assertion with a customizable error explanation
+#define MTS_ASSERT2(cond, explanation) do { \
+        if (!(cond)) Throw("Assertion \"%s\" failed in " \
+            "%s:%i (" explanation ")", #cond, __FILE__, __LINE__); \
+    } while (0)
+
+/// Expose both of the above macros using overloading, i.e. <tt>Assert(cond)</tt> or <tt>Assert(cond, explanation)</tt>
+#define Assert(...) MTS_EXPAND(MTS_EXPAND(MTS_CAT(MTS_ASSERT, \
+                MTS_VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
+#else
+#define Assert(...) ((void) 0)
+#endif
+
+/// Throw an exception reporting that the given function is not implemented
+#define NotImplementedError(funcName) \
+    Throw("%s::" funcName "(): Not implemented!", getClass()->getName());
 
 NAMESPACE_END(mitsuba)

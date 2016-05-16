@@ -21,6 +21,7 @@ class StreamAppender;
 class Thread;
 class ThreadLocalBase;
 enum ELogLevel : int;
+
 template <typename, typename> class ThreadLocal;
 template <typename> class AtomicFloat;
 

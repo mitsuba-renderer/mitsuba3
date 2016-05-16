@@ -16,14 +16,14 @@ public:
      * \param level     The importance of the debug message
      * \param theClass  Originating class or nullptr
      * \param thread    Thread, which is reponsible for creating the message
-     * \param text      Text content associated with the log message
      * \param file      File, which is responsible for creating the message
      * \param line      Associated line within the source file
+     * \param msg       Text content associated with the log message
      */
 
     virtual std::string format(ELogLevel level, const Class *theClass,
-            const Thread *thread, const std::string &text,
-            const char *file, int line) = 0;
+                               const Thread *thread, const char *file, int line,
+                               const std::string &msg) = 0;
 
     MTS_DECLARE_CLASS()
 protected:
@@ -43,8 +43,8 @@ public:
     DefaultFormatter();
 
     std::string format(ELogLevel level, const Class *theClass,
-            const Thread *thread, const std::string &text,
-            const char *file, int line) override;
+                       const Thread *thread, const char *file, int line,
+                       const std::string &msg) override;
 
     /// Should date information be included? The default is yes.
     void setHaveDate(bool value) { m_haveDate = value; }
@@ -67,10 +67,6 @@ public:
     bool getHaveClass() { return m_haveClass; }
 
     MTS_DECLARE_CLASS()
-
-protected:
-    /// Virtual destructor
-    virtual ~DefaultFormatter() { }
 
 protected:
     bool m_haveDate;

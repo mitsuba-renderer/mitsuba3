@@ -10,7 +10,8 @@ DefaultFormatter::DefaultFormatter()
       m_haveClass(true) { }
 
 std::string DefaultFormatter::format(ELogLevel level, const Class *theClass,
-        const Thread *thread, const std::string &text, const char *, int ) {
+                                     const Thread *thread, const char *, int,
+                                     const std::string &msg) {
     std::ostringstream oss;
     char buffer[128];
 
@@ -49,8 +50,8 @@ std::string DefaultFormatter::format(ELogLevel level, const Class *theClass,
             //oss << "[" << fs::path(file).filename().string() << ":" << line << "] ";
     }
 
-    /* Text */
-    oss << text;
+    /* Message */
+    oss << msg;
 
     return oss.str();
 }

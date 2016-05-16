@@ -31,6 +31,7 @@ add_library(mitsuba-python SHARED
   properties.cpp
   python.h
   thread.cpp
+  argparser.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)

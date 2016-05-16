@@ -31,7 +31,7 @@ struct Properties::PropertiesPrivate {
 #define DEFINE_PROPERTY_ACCESSOR(Type, TypeName, ReadableName) \
     void Properties::set##TypeName(const std::string &name, const Type &value, bool warnDuplicates) { \
         if (hasProperty(name) && warnDuplicates) \
-            Log(EWarn, "Property \"%s\" was specified multiple times!", name.c_str()); \
+            Log(EWarn, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
         d->entries[name].queried = false; \
     } \
@@ -39,9 +39,9 @@ struct Properties::PropertiesPrivate {
     const Type& Properties::get##TypeName(const std::string &name) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
-            Log(EError, "Property \"%s\" has not been specified!", name.c_str()); \
+            Log(EError, "Property \"%s\" has not been specified!", name); \
         if (!it->second.data.is<Type>()) \
-            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">).", name.c_str()); \
+            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">).", name); \
         it->second.queried = true; \
         return (const Type &) it->second.data; \
     } \
@@ -51,7 +51,7 @@ struct Properties::PropertiesPrivate {
         if (it == d->entries.end()) \
             return defVal; \
         if (!it->second.data.is<Type>()) \
-            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">).", name.c_str()); \
+            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">).", name); \
         it->second.queried = true; \
         return (const Type &) it->second.data; \
     }
@@ -112,7 +112,7 @@ namespace {
 Properties::EPropertyType Properties::getPropertyType(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
-        Log(EError, "getPropertyType(): Could not find property named \"%s\"!", name.c_str());
+        Log(EError, "getPropertyType(): Could not find property named \"%s\"!", name);
 
     return it->second.data.visit(PropertyTypeVisitor());
 }
@@ -128,7 +128,7 @@ bool Properties::markQueried(const std::string &name) const {
 bool Properties::wasQueried(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
-        Log(EError, "Could not find property named \"%s\"!", name.c_str());
+        Log(EError, "Could not find property named \"%s\"!", name);
     return it->second.queried;
 }
 
@@ -160,7 +160,7 @@ void Properties::copyAttribute(const Properties &properties,
                                const std::string &sourceName, const std::string &targetName) {
     const auto it = properties.d->entries.find(sourceName);
     if (it == properties.d->entries.end())
-        Log(EError, "copyAttribute(): Could not find parameter \"%s\"!", sourceName.c_str());
+        Log(EError, "copyAttribute(): Could not find parameter \"%s\"!", sourceName);
     d->entries[targetName] = it->second;
 }
 

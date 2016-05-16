@@ -26,7 +26,7 @@ if(APPLE)
 endif()
 
 add_subdirectory(ext ext_build)
-include_directories(include)
+include_directories(include ${TINYFORMAT_INCLUDE_DIRS})
 
 # Compile with compiler warnings turned on
 if(MSVC)

@@ -8,13 +8,13 @@ public:
     using Formatter::Formatter;
 
     virtual std::string format(ELogLevel level, const Class *theClass,
-            const Thread *thread, const std::string &text,
-            const char *file, int line) override {
+            const Thread *thread, const char *file, int line,
+            const std::string &msg) override {
         PYBIND11_OVERLOAD_PURE(
             std::string,   /* Return value */
             Formatter,     /* Parent class */
             format,        /* Function */
-            level, theClass, thread, text, file, line  /* Arguments */
+            level, theClass, thread, file, line, msg  /* Arguments */
         );
     }
 };
@@ -23,8 +23,8 @@ MTS_PY_EXPORT(Formatter) {
     MTS_PY_TRAMPOLINE_CLASS(PyFormatter, Formatter, Object)
         .def(py::init<>())
         .mdef(Formatter, format, py::arg("level"), py::arg("theClass"),
-              py::arg("thread"), py::arg("text"), py::arg("file"),
-              py::arg("line"));
+              py::arg("thread"), py::arg("file"), py::arg("line"),
+              py::arg("msg"));
 
     MTS_PY_CLASS(DefaultFormatter, Formatter)
         .def(py::init<>())
