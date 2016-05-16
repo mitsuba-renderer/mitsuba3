@@ -9,13 +9,13 @@
 	url = https://github.com/wjakob/tbb
 [submodule "ext/pybind11"]
 	path = ext/pybind11
-	url = https://github.com/wjakob/pybind11
+	url = https://github.com/pybind/pybind11
 [submodule "ext/zlib"]
 	path = ext/zlib
 	url = https://github.com/mitsuba-renderer/zlib
 [submodule "ext/pugixml"]
 	path = ext/pugixml
-	url = http://github.com/zeux/pugixml
+	url = http://github.com/mitsuba-renderer/pugixml
 [submodule "ext/libpng"]
 	path = ext/libpng
 	url = https://github.com/mitsuba-renderer/libpng.git

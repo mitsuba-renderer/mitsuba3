@@ -32,9 +32,8 @@ extern MTS_EXPORT_CORE std::string memString(size_t size, bool precise = false);
 extern MTS_EXPORT_CORE void trapDebugger();
 
 /// Joins elements of <tt>v</tt> into a string, separated by an optional delimiter.
-template <typename T>
-MTS_EXPORT_CORE std::string mkString(const std::vector<T> v,
-                                     const std::string &delimiter = ", ") {
+template <typename T> std::string mkString(const std::vector<T> v,
+                                           const std::string &delimiter = ", ") {
     std::ostringstream oss;
     auto it = v.begin();
     while (it != v.end()) {

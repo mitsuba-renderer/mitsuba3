@@ -114,9 +114,11 @@ set(NANOGUI_INCLUDE_DIRS
 # Build the pugixml parser
 add_library(pugixml SHARED pugixml/src/pugixml.cpp)
 set_property(TARGET pugixml PROPERTY
-   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/pugixml")
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/pugixml")
 set_property(TARGET pugixml PROPERTY FOLDER "dependencies")
 set(PUGIXML_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pugixml/src PARENT_SCOPE)
+set_property(SOURCE pugixml/src/pugixml.cpp
+  APPEND PROPERTY COMPILE_DEFINITIONS PUGIXML_BUILD_DLL)
 
 # Build ZeroMQ
 set(WITH_SODIUM OFF CACHE BOOL " " FORCE)

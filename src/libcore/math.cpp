@@ -2,6 +2,10 @@
 #include <stdexcept>
 #include <cassert>
 
+#ifdef _MSC_VER
+#  pragma warning(disable: 4305 4838 4244) // 8: conversion from 'double' to 'const float' requires a narrowing conversion, etc.
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(math)
 NAMESPACE_BEGIN(detail)
@@ -566,8 +570,8 @@ ellint_2(const Type k, const Type phi)
   else
     {
       //  Reduce phi to -pi/2 < phi < +pi/2.
-      const int n = std::floor(phi / Type(math::Pi_d)
-                               + Type(0.5L));
+      const int n = (int) std::floor(phi / Type(math::Pi_d)
+                                   + Type(0.5L));
       const Type phi_red = phi
                           - n * Type(math::Pi_d);
 
@@ -578,16 +582,16 @@ ellint_2(const Type k, const Type phi)
       const Type c = std::cos(phi_red);
       const Type cc = c * c;
 
-      const Type E = s
+      const Type E_ = s
                     * ellint_rf(cc, Type(1) - kk * ss, Type(1))
                     - kk * sss
                     * ellint_rd(cc, Type(1) - kk * ss, Type(1))
                     / Type(3);
 
       if (n == 0)
-        return E;
+        return E_;
       else
-        return E + Type(2) * n * comp_ellint_2(k);
+        return E_ + Type(2) * n * comp_ellint_2(k);
     }
 }
 
@@ -834,8 +838,8 @@ ellint_3(const Type k, const Type nu, const Type phi)
   else
     {
       //  Reduce phi to -pi/2 < phi < +pi/2.
-      const int n = std::floor(phi / Type(math::Pi_d)
-                               + Type(0.5L));
+      const int n = (int) std::floor(phi / Type(math::Pi_d)
+                                   + Type(0.5L));
       const Type phi_red = phi
                           - n * Type(math::Pi_d);
 
@@ -846,16 +850,16 @@ ellint_3(const Type k, const Type nu, const Type phi)
       const Type c = std::cos(phi_red);
       const Type cc = c * c;
 
-      const Type Pi = s
+      const Type Pi_ = s
                      * ellint_rf(cc, Type(1) - kk * ss, Type(1))
                      - nu * sss
                      * ellint_rj(cc, Type(1) - kk * ss, Type(1),
                                    Type(1) + nu * ss) / Type(3);
 
       if (n == 0)
-        return Pi;
+        return Pi_;
       else
-        return Pi + Type(2) * n * comp_ellint_3(k, nu);
+        return Pi_ + Type(2) * n * comp_ellint_3(k, nu);
     }
 }
 
@@ -1045,9 +1049,9 @@ std::pair<Scalar, Scalar> legendre_pd(int l, Scalar x) {
     assert(l >= 0);
 
     if (l == 0) {
-        return std::make_pair(1, 0);
+        return std::make_pair((Scalar) 1, (Scalar) 0);
     } else if (l == 1) {
-        return std::make_pair(x, 1);
+        return std::make_pair(x, (Scalar) 1);
     } else {
         Scalar Lppred = 1, Lpred = x, Lcur = 0,
                Dppred = 0, Dpred = 1, Dcur = 0;
