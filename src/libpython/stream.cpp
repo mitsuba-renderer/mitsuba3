@@ -123,13 +123,14 @@ MTS_PY_EXPORT(MemoryStream) {
 
 MTS_PY_EXPORT(AnnotatedStream) {
     auto c = MTS_PY_CLASS(AnnotatedStream, Object)
-        .def(py::init<ref<Stream>, bool>(), DM(AnnotatedStream, AnnotatedStream))
+        .def(py::init<ref<Stream>, bool>(), DM(AnnotatedStream, AnnotatedStream),
+             py::arg("stream"), py::arg("throwOnMissing") = true)
         .mdef(AnnotatedStream, push)
         .mdef(AnnotatedStream, pop)
         .mdef(AnnotatedStream, keys)
         .mdef(AnnotatedStream, getSize)
         .mdef(AnnotatedStream, canRead)
         .mdef(AnnotatedStream, canWrite);
-
+    // get & set declarations for many types
     methods_helper::declareGettersAndSetters(c);
 }

@@ -34,7 +34,7 @@ public:
      * but does not correspond to a valid AnnotatedStream (i.e. it does not
      * start with the \ref kSerializedHeaderId sentry).
      */
-    AnnotatedStream(ref<Stream> &stream, bool throwOnMissing = false);
+    AnnotatedStream(ref<Stream> &stream, bool throwOnMissing = true);
 
     // =========================================================================
     //! @{ \name Table of Contents (TOC)
