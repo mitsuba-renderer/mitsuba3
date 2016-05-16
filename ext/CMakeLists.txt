@@ -116,6 +116,7 @@ add_library(pugixml SHARED pugixml/src/pugixml.cpp)
 set_property(TARGET pugixml PROPERTY
    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/pugixml")
 set_property(TARGET pugixml PROPERTY FOLDER "dependencies")
+set(PUGIXML_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pugixml/src PARENT_SCOPE)
 
 # Build ZeroMQ
 set(WITH_SODIUM OFF CACHE BOOL " " FORCE)

@@ -2,7 +2,7 @@ include_directories(
   ${PNG_INCLUDE_DIRS}
   ${TBB_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
-  ${TINYFORMAT_INCLUDE_DIRS}
+  ${PUGIXML_INCLUDE_DIRS}
 )
 
 add_definitions(
@@ -14,7 +14,6 @@ set(INC_DIR "../../include/mitsuba/core")
 
 add_library(mitsuba-core SHARED
   ${INC_DIR}/../mitsuba.h
-  ${INC_DIR}/atomic.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/essentials.h
   ${INC_DIR}/platform.h
@@ -35,9 +34,10 @@ add_library(mitsuba-core SHARED
   tls.cpp          ${INC_DIR}/tls.h
   util.cpp         ${INC_DIR}/util.h
   argparser.cpp    ${INC_DIR}/argparser.h
+  xmlparser.cpp    ${INC_DIR}/xmlparser.h
 )
 
-target_link_libraries(mitsuba-core ${PNG_LIBRARIES} tbb)
+target_link_libraries(mitsuba-core ${PNG_LIBRARIES} tbb pugixml)
 
 # Copy libcore binary to the 'dist' directory
 add_custom_command(

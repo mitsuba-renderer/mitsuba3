@@ -52,13 +52,14 @@ void ArgParser::parse(int argc, const char **argv) {
     for (size_t i = 1; i < cmdline.size(); ++i) {
         bool found = false;
 
-        for (Arg *arg: m_args) { 
+        for (Arg *arg: m_args) {
             for (const std::string &prefix : arg->m_prefixes) {
                 const bool longForm = string::starts_with(prefix, "--");
                 const bool shortForm = string::starts_with(prefix, "-") && !longForm;
                 const bool other = prefix.empty() && arg->m_extra;
+                const bool prefixFound = string::starts_with(cmdline[i], prefix);
 
-                if (shortForm && string::starts_with(cmdline[i], prefix)) {
+                if (shortForm && prefixFound) {
                     std::string suffix = cmdline[i].substr(prefix.length());
                     if (!suffix.empty()) {
                         if (!arg->m_extra)
@@ -66,7 +67,7 @@ void ArgParser::parse(int argc, const char **argv) {
                         cmdline.insert(cmdline.begin() + i + 1, suffix);
                     }
                     found = true;
-                } else if (longForm) {
+                } else if (longForm && prefixFound) {
                     found = true;
                 } else if (other) {
                     cmdline.insert(cmdline.begin() + i + 1, cmdline[i]);

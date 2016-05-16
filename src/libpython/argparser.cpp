@@ -5,11 +5,11 @@ MTS_PY_EXPORT(ArgParser) {
     py::class_<ArgParser> argp(m, "ArgParser", DM(ArgParser));
 
     argp.def(py::init<>())
-        .def("add", (ArgParser::Arg * (ArgParser::*) (const std::vector<std::string> &, bool))
+        .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::vector<std::string> &, bool))
                     &ArgParser::add, py::arg("prefixes"), py::arg("extra") = false,
                     py::return_value_policy::reference_internal,
                     DM(ArgParser, add))
-        .def("add", (ArgParser::Arg * (ArgParser::*) (const std::string &, bool))
+        .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::string &, bool))
                     &ArgParser::add, py::arg("prefix"), py::arg("extra") = false,
                     py::return_value_policy::reference_internal,
                     DM(ArgParser, add, 2))
