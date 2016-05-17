@@ -18,10 +18,10 @@ struct declare_stream_accessors {
     static void apply(PyClass &c) {
         c.def("read", [](Stream& s, T &value) {
             s.read(value);
-        }, DM(Stream, readValue));
+        }, DM(Stream, read, 2));
         c.def("write", [](Stream& s, const T &value) {
             s.write(value);
-        }, DM(Stream, writeValue));
+        }, DM(Stream, write, 2));
     }
 };
 struct declare_astream_accessors {
@@ -110,6 +110,7 @@ MTS_PY_EXPORT(AnnotatedStream) {
     auto c = MTS_PY_CLASS(AnnotatedStream, Object)
         .def(py::init<ref<Stream>, bool>(), DM(AnnotatedStream, AnnotatedStream),
              py::arg("stream"), py::arg("throwOnMissing") = true)
+        .mdef(AnnotatedStream, close)
         .mdef(AnnotatedStream, push)
         .mdef(AnnotatedStream, pop)
         .mdef(AnnotatedStream, keys)

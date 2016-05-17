@@ -36,6 +36,13 @@ public:
      */
     AnnotatedStream(ref<Stream> &stream, bool throwOnMissing = true);
 
+    /** \brief Closes the annotated stream. No further read or write operations
+     * are permitted.
+     *
+     * This is called automatically by the destructor and is idempotent.
+     */
+    void close();
+
     // =========================================================================
     //! @{ \name Table of Contents (TOC)
     // =========================================================================
@@ -98,6 +105,9 @@ public:
     /// Whether the underlying stream has write capabilities
     bool canWrite() { return m_stream->canWrite(); }
 
+    /// Whether the annotated stream has been closed (no further read or writes permitted)
+    bool isClosed() { return m_isClosed; }
+
     /// @}
     // =========================================================================
 
@@ -134,6 +144,7 @@ protected:
      * AnnotatedStream sentry (\ref kSerializedHeaderId).
      */
     void readTOC();
+
     /** \brief Write back the table of contents to the underlying stream.
      * Should be called on destruction.
      */
@@ -150,6 +161,7 @@ private:
      */
     std::vector<std::string> m_prefixStack;
 
+    bool m_isClosed;
     bool m_throwOnMissing;
 };
 

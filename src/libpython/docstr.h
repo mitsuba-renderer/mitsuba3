@@ -53,6 +53,12 @@ static const char *__doc_mitsuba_AnnotatedStream_canRead = R"doc(Whether the und
 
 static const char *__doc_mitsuba_AnnotatedStream_canWrite = R"doc(Whether the underlying stream has write capabilities)doc";
 
+static const char *__doc_mitsuba_AnnotatedStream_close =
+R"doc(Closes the annotated stream. No further read or write operations are
+permitted.
+
+This is called automatically by the destructor and is idempotent.)doc";
+
 static const char *__doc_mitsuba_AnnotatedStream_get =
 R"doc(Retrieve a field from the serialized file (only valid in read mode)
 
@@ -70,7 +76,15 @@ static const char *__doc_mitsuba_AnnotatedStream_getClass = R"doc()doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_getSize = R"doc(Returns the current size of the underlying stream)doc";
 
-static const char *__doc_mitsuba_AnnotatedStream_keys = R"doc(Return all field names under the current name prefix)doc";
+static const char *__doc_mitsuba_AnnotatedStream_isClosed =
+R"doc(Whether the annotated stream has been closed (no further read or
+writes permitted))doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_keys =
+R"doc(Return all field names under the current name prefix. Nested names are
+returned with the full path prepended, e.g.: level_1.level_2.my_name)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_isClosed = R"doc()doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_m_prefixStack =
 R"doc(Stack of accumulated prefixes, i.e. ``m_prefixStack.back`` is the full
@@ -1078,7 +1092,7 @@ R"doc(Reads a specified amount of data from the stream.
 Throws an exception when the stream ended prematurely. Implementations
 need to handle endianness swap when appropriate.)doc";
 
-static const char *__doc_mitsuba_Stream_readValue =
+static const char *__doc_mitsuba_Stream_read_2 =
 R"doc(Reads one object of type T from the stream at the current position by
 delegating to the appropriate ``serialization_helper``.)doc";
 
@@ -1111,7 +1125,7 @@ R"doc(Writes a specified amount of data into the stream.
 Throws an exception when not all data could be written.
 Implementations need to handle endianness swap when appropriate.)doc";
 
-static const char *__doc_mitsuba_Stream_writeValue =
+static const char *__doc_mitsuba_Stream_write_2 =
 R"doc(Reads one object of type T from the stream at the current position by
 delegating to the appropriate ``serialization_helper``.)doc";
 
@@ -1479,6 +1493,10 @@ R"doc(Changes the size of the regular file named by ``p`` as if ``truncate``
 was called. If the file was larger than ``target_length``, the
 remainder is discarded.)doc";
 
+static const char *__doc_mitsuba_for_each_type = R"doc(Base case)doc";
+
+static const char *__doc_mitsuba_for_each_type_recurse = R"doc()doc";
+
 static const char *__doc_mitsuba_math_clamp = R"doc(Generic range clamping function)doc";
 
 static const char *__doc_mitsuba_math_comp_ellint_1 = R"doc(Complete elliptic integral of the first kind (double precision))doc";
@@ -1697,10 +1715,6 @@ static const char *__doc_mitsuba_util_getLibraryPath = R"doc(Return the absolute
 
 static const char *__doc_mitsuba_util_memString = R"doc(Turn a memory size into a human-readable string)doc";
 
-static const char *__doc_mitsuba_util_mkString =
-R"doc(Joins elements of ``v`` into a string, separated by an optional
-delimiter.)doc";
-
 static const char *__doc_mitsuba_util_timeString =
 R"doc(Convert a time difference (in seconds) to a string representation
 
@@ -1755,9 +1769,11 @@ static const char *__doc_mitsuba_xml_loadFile = R"doc(Load a Mitsuba scene from 
 
 static const char *__doc_mitsuba_xml_loadString = R"doc(Load a Mitsuba scene from an XML string)doc";
 
-static const char *__doc_operator_lshift = R"doc()doc";
+static const char *__doc_operator_lshift = R"doc(Turns an array into a human-readable representation)doc";
 
 static const char *__doc_operator_lshift_2 = R"doc()doc";
+
+static const char *__doc_operator_lshift_3 = R"doc()doc";
 
 static const char *__doc_operator_mul = R"doc()doc";
 

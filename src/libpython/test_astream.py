@@ -126,6 +126,14 @@ class AnnotatedStreamTest(unittest.TestCase):
                 self.assertEqual(astream.canWrite(), stream.canWrite())
                 self.assertEqual(astream.getSize(), 0)
 
+                # Cannot read or write to a closed astream
+                # TODO: these assertions could be refined (there are other reasons to throw)
+                astream.close()
+                with self.assertRaises(Exception):
+                    astream.get('some_field')
+                with self.assertRaises(Exception):
+                    astream.set('some_field', 42)
+
     @unittest.skip("disabled")
     def test02_construction(self):
         for (name, stream) in self.streams.items():
@@ -193,10 +201,7 @@ class AnnotatedStreamTest(unittest.TestCase):
             mstream = self.streams['MemoryStream']
             astream = AnnotatedStream(mstream)
             self.writeContents(astream)
-            # ToC is written on deletion.
-            # TODO: the `del` operator goes through GC, how to force deletion?
-            astream.writeTOC()
-            del astream
+            astream.close()  # Writes out the ToC
 
             # Will throw if the header is missing or corrupted
             astream = AnnotatedStream(mstream)
@@ -207,9 +212,7 @@ class AnnotatedStreamTest(unittest.TestCase):
             fstream1 = self.streams['FileStream (write only)']
             astream = AnnotatedStream(fstream1)
             self.writeContents(astream)
-            # ToC is written on deletion
-            astream.writeTOC()
-            del astream
+            astream.close()  # Writes out the ToC
 
             fstream2 = FileStream(AnnotatedStreamTest.woPath, False)
             astream = AnnotatedStream(fstream2)

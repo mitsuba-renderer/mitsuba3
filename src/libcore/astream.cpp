@@ -14,7 +14,7 @@ static constexpr auto kSerializedHeaderSize =
 NAMESPACE_END()
 
 AnnotatedStream::AnnotatedStream(ref<Stream> &stream, bool throwOnMissing)
-    : Object(), m_stream(stream), m_throwOnMissing(throwOnMissing) {
+    : Object(), m_stream(stream), m_isClosed(false), m_throwOnMissing(throwOnMissing) {
 
     m_prefixStack.push_back("");
 
@@ -25,8 +25,16 @@ AnnotatedStream::AnnotatedStream(ref<Stream> &stream, bool throwOnMissing)
 }
 
 AnnotatedStream::~AnnotatedStream() {
+    close();
+}
+
+void AnnotatedStream::close() {
+    if (m_isClosed)
+        return;
+
     if (canWrite())
         writeTOC();
+    m_isClosed = true;
 }
 
 std::vector<std::string> AnnotatedStream::keys() const {
@@ -50,6 +58,10 @@ void AnnotatedStream::pop() {
 bool AnnotatedStream::getBase(const std::string &name, const std::string &type_id) {
     if (!canRead()) {
         Log(EError, "Attempted to read from write-only stream: %s",
+            m_stream->toString());
+    }
+    if (m_isClosed) {
+        Log(EError, "Attempted to read from closed stream: %s",
             m_stream->toString());
     }
 
@@ -76,6 +88,10 @@ bool AnnotatedStream::getBase(const std::string &name, const std::string &type_i
 void AnnotatedStream::setBase(const std::string &name, const std::string &type_id) {
     if (!canWrite()) {
         Log(EError, "Attempted to write into read-only stream: %s",
+            m_stream->toString());
+    }
+    if (m_isClosed) {
+        Log(EError, "Attempted to write into a closed stream: %s",
             m_stream->toString());
     }
 
