@@ -4,6 +4,9 @@
 #include <iostream>
 
 NAMESPACE_BEGIN(mitsuba)
+NAMESPACE_BEGIN(xml)
+void registerClass(const Class *class_);
+NAMESPACE_END(xml)
 
 static std::map<std::string, Class *> *__classes;
 bool Class::m_isInitialized = false;
@@ -18,6 +21,10 @@ Class::Class(const std::string &name, const std::string &parent, bool abstract,
         __classes = new std::map<std::string, Class *>();
 
     (*__classes)[name] = this;
+
+    /* Also register new abstract classes with the XML parser */
+    if (abstract)
+        xml::registerClass(this);
 }
 
 const Class *Class::forName(const std::string &name) {

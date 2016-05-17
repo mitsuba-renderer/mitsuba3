@@ -145,6 +145,7 @@ void Throw(ELogLevel level, const Class *theClass, const char *file,
     DefaultFormatter formatter;
     formatter.setHaveDate(false);
     formatter.setHaveLogLevel(false);
+    formatter.setHaveThread(false);
     std::string text =
         formatter.format(level, theClass, Thread::getThread(), file, line, msg);
     throw std::runtime_error(text);

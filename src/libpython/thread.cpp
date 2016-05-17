@@ -1,9 +1,12 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
+#include <mitsuba/core/fresolver.h>
 #include "python.h"
 
 MTS_PY_EXPORT(Thread) {
     MTS_PY_CLASS(Thread, Object)
+        .def("getParent", (Thread *(Thread::*)()) &Thread::getParent, DM(Thread, getParent))
+        .def("getFileResolver", (FileResolver *(Thread::*)()) &Thread::getFileResolver, DM(Thread, getFileResolver))
         .mdef(Thread, setPriority)
         .mdef(Thread, getPriority)
         .mdef(Thread, setCoreAffinity)
@@ -12,10 +15,10 @@ MTS_PY_EXPORT(Thread) {
         .mdef(Thread, getCritical)
         .mdef(Thread, setName)
         .mdef(Thread, getName)
-        .def("getParent", (Thread *(Thread::*)()) &Thread::getParent, DM(Thread, getParent))
         .mdef(Thread, getID)
         .mdef(Thread, getLogger)
-        .mdef(Thread, getLogger)
+        .mdef(Thread, setLogger)
+        .mdef(Thread, setFileResolver)
         .sdef(Thread, getThread)
         .mdef(Thread, start)
         .mdef(Thread, isRunning)

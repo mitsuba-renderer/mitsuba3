@@ -1,11 +1,10 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
-#include <mitsuba/core/xmlparser.h>
+#include <mitsuba/core/xml.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/argparser.h>
 
 using namespace mitsuba;
-
 
 int main(int argc, char *argv[]) {
     Class::staticInitialization();
@@ -24,7 +23,7 @@ int main(int argc, char *argv[]) {
             std::cout << "Number of threads: "<< arg_threads->asInt() << std::endl;
 
         while (*arg_extra) {
-            xml::load(arg_extra->asString());
+            xml::loadFile(arg_extra->asString());
             arg_extra = arg_extra->next();
         }
 	} catch (const std::exception &e) {

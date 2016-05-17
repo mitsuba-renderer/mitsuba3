@@ -279,6 +279,45 @@ static const char *__doc_mitsuba_DefaultFormatter_setHaveThread = R"doc(Should t
 
 static const char *__doc_mitsuba_ELogLevel = R"doc(Available Log message types)doc";
 
+static const char *__doc_mitsuba_FileResolver =
+R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
+
+This convenience class looks for a file or directory given its name and a
+set of search paths. The implementation walks through the search paths in
+order and stops once the file is found.)doc";
+
+static const char *__doc_mitsuba_FileResolver_FileResolver = R"doc(Initialize a new file resolver with the current working directory)doc";
+
+static const char *__doc_mitsuba_FileResolver_append = R"doc(Append an entry to the end of the list of search paths)doc";
+
+static const char *__doc_mitsuba_FileResolver_begin = R"doc(Return an iterator at the beginning of the list of search paths)doc";
+
+static const char *__doc_mitsuba_FileResolver_begin_2 = R"doc(Return an iterator at the beginning of the list of search paths (const))doc";
+
+static const char *__doc_mitsuba_FileResolver_clear = R"doc(Clear the list of search paths)doc";
+
+static const char *__doc_mitsuba_FileResolver_end = R"doc(Return an iterator at the end of the list of search paths)doc";
+
+static const char *__doc_mitsuba_FileResolver_end_2 = R"doc(Return an iterator at the end of the list of search paths (const))doc";
+
+static const char *__doc_mitsuba_FileResolver_erase = R"doc(Erase the entry at the given iterator position)doc";
+
+static const char *__doc_mitsuba_FileResolver_erase_2 = R"doc(Erase the search path from the list)doc";
+
+static const char *__doc_mitsuba_FileResolver_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_FileResolver_m_paths = R"doc()doc";
+
+static const char *__doc_mitsuba_FileResolver_operator_array = R"doc(Return an entry from the list of search paths)doc";
+
+static const char *__doc_mitsuba_FileResolver_operator_array_2 = R"doc(Return an entry from the list of search paths (const))doc";
+
+static const char *__doc_mitsuba_FileResolver_prepend = R"doc(Prepend an entry at the beginning of the list of search paths)doc";
+
+static const char *__doc_mitsuba_FileResolver_resolve = R"doc(Walk through the list of search paths and try to resolve the input path)doc";
+
+static const char *__doc_mitsuba_FileResolver_size = R"doc(Return the number of search paths)doc";
+
 static const char *__doc_mitsuba_Formatter =
 R"doc(Abstract interface for converting log information into a human-readable
 format)doc";
@@ -445,6 +484,64 @@ This function is mainly useful for debugging purposes and should ideally be
 implemented by all subclasses. The default implementation simply returns
 <tt>MyObject[<address of 'this' pointer>]</tt>, where ``MyObject`` is the
 name of the class.)doc";
+
+static const char *__doc_mitsuba_PluginManager =
+R"doc(/// XXX update The object factory is responsible for loading plugin modules
+and instantiating object instances.
+
+Ordinarily, this class will be used by making repeated calls to the
+createObject() methods. The generated instances are then assembled into a
+final object graph, such as a scene. One such examples is the SceneHandler
+class, which parses an XML scene file by esentially translating the XML
+elements into calls to createObject().
+
+Since this kind of construction method can be tiresome when dynamically
+building scenes from Python, this class has an additional Python-only
+method ``create``(), which works as follows:
+
+\code from mitsuba.core import *
+
+pmgr = PluginManager.getInstance() camera = pmgr.create({ "type" :
+"perspective", "toWorld" : Transform.lookAt( Point(0, 0, -10), Point(0, 0,
+0), Vector(0, 1, 0) ), "film" : { "type" : "ldrfilm", "width" : 1920,
+"height" : 1080 } }) \endcode
+
+The above snippet constructs a Camera instance from a plugin named
+``perspective``.so/dll/dylib and adds a child object named ``film``, which
+is a Film instance loaded from the plugin ``ldrfilm``.so/dll/dylib. By the
+time the function returns, the object hierarchy has already been assembled,
+and the ConfigurableObject::configure() methods of every object has been
+called.)doc";
+
+static const char *__doc_mitsuba_PluginManager_PluginManager = R"doc()doc";
+
+static const char *__doc_mitsuba_PluginManager_createObject =
+R"doc(Instantiate a plugin, verify its type, and return the newly created object
+instance.
+
+Parameter ``classType``:
+    Expected type of the instance. An exception will be thrown if it turns
+    out not to derive from this class.
+
+Parameter ``props``:
+    A Properties instance containing all information required to find and
+    construct the plugin.)doc";
+
+static const char *__doc_mitsuba_PluginManager_createObject_2 =
+R"doc(Instantiate a plugin and return the new instance (without verifying its
+type).
+
+Parameter ``props``:
+    A Properties instance containing all information required to find and
+    construct the plugin.)doc";
+
+static const char *__doc_mitsuba_PluginManager_d = R"doc()doc";
+
+static const char *__doc_mitsuba_PluginManager_ensurePluginLoaded = R"doc(Ensure that a plugin is loaded and ready)doc";
+
+static const char *__doc_mitsuba_PluginManager_getInstance = R"doc(Return the global plugin manager)doc";
+
+static const char *__doc_mitsuba_PluginManager_getLoadedPlugins = R"doc(Return the list of loaded plugins)doc";
 
 static const char *__doc_mitsuba_Properties =
 R"doc(Associative parameter map for constructing subclasses of Object.
@@ -711,6 +808,10 @@ static const char *__doc_mitsuba_Thread_getCoreAffinity = R"doc(Return the core 
 
 static const char *__doc_mitsuba_Thread_getCritical = R"doc(Return the value of the critical flag)doc";
 
+static const char *__doc_mitsuba_Thread_getFileResolver = R"doc(Return the file resolver associated with the current thread)doc";
+
+static const char *__doc_mitsuba_Thread_getFileResolver_2 = R"doc(Return the parent thread (const version))doc";
+
 static const char *__doc_mitsuba_Thread_getID = R"doc(Return a unique ID that is associated with this thread)doc";
 
 static const char *__doc_mitsuba_Thread_getLogger = R"doc(Return the thread's logger instance)doc";
@@ -743,6 +844,8 @@ R"doc(Specify whether or not this thread is critical
 
 When an thread marked critical crashes from an uncaught exception, the
 whole process is brought down. The default is ``False``.)doc";
+
+static const char *__doc_mitsuba_Thread_setFileResolver = R"doc(Set the file resolver associated with the current thread)doc";
 
 static const char *__doc_mitsuba_Thread_setLogger = R"doc(Set the logger instance used to process log messages from this thread)doc";
 
@@ -944,6 +1047,8 @@ static const char *__doc_mitsuba_math_comp_ellint_3 = R"doc(Complete elliptic in
 
 static const char *__doc_mitsuba_math_comp_ellint_3_2 = R"doc(Complete elliptic integral of the third kind (single precision))doc";
 
+static const char *__doc_mitsuba_math_degToRad = R"doc(Convert degrees to radians)doc";
+
 static const char *__doc_mitsuba_math_ellint_1 = R"doc(Incomplete elliptic integral of the first kind (double precision))doc";
 
 static const char *__doc_mitsuba_math_ellint_1_2 = R"doc(Incomplete elliptic integral of the first kind (single precision))doc";
@@ -1026,6 +1131,8 @@ static const char *__doc_mitsuba_math_normal_quantile = R"doc(Quantile function 
 
 static const char *__doc_mitsuba_math_normal_quantile_2 = R"doc(Quantile function of the standard normal distribution (single precision))doc";
 
+static const char *__doc_mitsuba_math_radToDeg = R"doc(/ Convert radians to degrees)doc";
+
 static const char *__doc_mitsuba_math_safe_acos =
 R"doc(Arccosine variant that gracefully handles arguments > 1 due to roundoff
 errors)doc";
@@ -1099,11 +1206,25 @@ static const char *__doc_mitsuba_ref_ref_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
 
-static const char *__doc_mitsuba_string_starts_with = R"doc()doc";
+static const char *__doc_mitsuba_string_starts_with = R"doc(Check if the given string starts with a specified prefix)doc";
+
+static const char *__doc_mitsuba_string_toLower =
+R"doc(Return a lower-case version of the given string (warning: not unicode
+compliant))doc";
+
+static const char *__doc_mitsuba_string_toUpper =
+R"doc(Return a upper-case version of the given string (warning: not unicode
+compliant))doc";
+
+static const char *__doc_mitsuba_string_tokenize =
+R"doc(Chop up the string given a set of delimiters (warning: not unicode
+compliant))doc";
 
 static const char *__doc_mitsuba_util_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
 static const char *__doc_mitsuba_util_memString = R"doc(Turn a memory size into a human-readable string)doc";
+
+static const char *__doc_mitsuba_util_mkString = R"doc(Joins elements of ``v`` into a string, separated by an optional delimiter.)doc";
 
 static const char *__doc_mitsuba_util_timeString =
 R"doc(Convert a time difference (in seconds) to a string representation
@@ -1153,7 +1274,9 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
-static const char *__doc_mitsuba_xml_load = R"doc()doc";
+static const char *__doc_mitsuba_xml_loadFile = R"doc(Load a Mitsuba scene from an XML file)doc";
+
+static const char *__doc_mitsuba_xml_loadString = R"doc(Load a Mitsuba scene from an XML string)doc";
 
 static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 

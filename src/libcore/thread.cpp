@@ -2,6 +2,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/tls.h>
 #include <mitsuba/core/util.h>
+#include <mitsuba/core/fresolver.h>
 #include <thread>
 #include <sstream>
 #include <chrono>
@@ -72,6 +73,7 @@ struct Thread::ThreadPrivate {
     Thread::EPriority priority;
     ref<Logger> logger;
     ref<Thread> parent;
+    ref<FileResolver> fresolver;
 
     ThreadPrivate(const std::string &name) : name(name) { }
 };
@@ -106,6 +108,18 @@ void Thread::setLogger(Logger *logger) {
 
 Logger* Thread::getLogger() {
     return d->logger;
+}
+
+void Thread::setFileResolver(FileResolver *fresolver) {
+	d->fresolver = fresolver;
+}
+
+FileResolver* Thread::getFileResolver() {
+	return d->fresolver;
+}
+
+const FileResolver* Thread::getFileResolver() const {
+	return d->fresolver;
 }
 
 Thread* Thread::getThread() {
@@ -315,8 +329,8 @@ void Thread::start() {
         d->logger = d->parent->getLogger();
 
     /* Inherit the parent thread's file resolver if none was set */
-    //if (!d->fresolver) XXX
-        //d->fresolver = d->parent->getFileResolver();
+    if (!d->fresolver)
+        d->fresolver = d->parent->getFileResolver();
 
     d->running = true;
 
@@ -415,7 +429,7 @@ void Thread::staticInitialization() {
     self = new ThreadLocal<Thread>();
     Thread *mainThread = new MainThread();
     mainThread->d->running = true;
-    //mainThread->d->fresolver = new FileResolver();
+    mainThread->d->fresolver = new FileResolver();
     *self = mainThread;
 }
 

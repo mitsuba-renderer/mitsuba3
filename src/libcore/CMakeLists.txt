@@ -34,10 +34,16 @@ add_library(mitsuba-core SHARED
   tls.cpp          ${INC_DIR}/tls.h
   util.cpp         ${INC_DIR}/util.h
   argparser.cpp    ${INC_DIR}/argparser.h
-  xmlparser.cpp    ${INC_DIR}/xmlparser.h
+  xml.cpp          ${INC_DIR}/xml.h
+  plugin.cpp       ${INC_DIR}/plugin.h
+  fresolver.cpp    ${INC_DIR}/fresolver.h
 )
 
-target_link_libraries(mitsuba-core ${PNG_LIBRARIES} tbb pugixml)
+# Link to Intel's Thread Building Blocks & the pugixml parser
+target_link_libraries(mitsuba-core tbb pugixml)
+
+# Link to libpng (either the system version or a version built via cmake)
+target_link_libraries(mitsuba-core ${PNG_LIBRARIES})
 
 # Copy libcore binary to the 'dist' directory
 add_custom_command(
@@ -49,6 +55,10 @@ add_custom_command(
 set(DEPENDENCIES pugixml IlmThread Half Half Imath IlmImf Iex nanogui mitsuba-core tbb libzmq)
 if (WIN32)
   list(APPEND DEPENDENCIES png16 zlib jpeg)
+endif()
+
+if (PYTHONLIBS_FOUND)
+  list(APPEND DEPENDENCIES nanogui_python)
 endif()
 
 # Copy dependencies into the 'dist' directory

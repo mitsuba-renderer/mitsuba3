@@ -85,19 +85,20 @@ public:
     /// Return the parent thread (const version)
     const Thread *getParent() const;
 
+    /// Set the file resolver associated with the current thread
+    void setFileResolver(FileResolver *resolver);
+
+    /// Return the file resolver associated with the current thread
+    FileResolver *getFileResolver();
+
+    /// Return the parent thread (const version)
+    const FileResolver *getFileResolver() const;
+
     /// Set the logger instance used to process log messages from this thread
     void setLogger(Logger *logger);
 
     /// Return the thread's logger instance
     Logger *getLogger();
-
-#if 0
-    /// Set the thread's file resolver
-    void setFileResolver(FileResolver *fresolver);
-
-    /// Return the thread's file resolver
-    FileResolver *getFileResolver();
-#endif
 
     /// Return the current thread
     static Thread *getThread();

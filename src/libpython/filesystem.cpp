@@ -38,33 +38,6 @@ MTS_PY_EXPORT(filesystem) {
     m2.def("remove", &filesystem::remove, DM(filesystem, remove));
 
 #if 0
-    py::class_<resolver>(fs_module, "resolver")
-        .def(py::init<>())
-        .def("__len__", &resolver::size)
-        .def("append", &resolver::append)
-        .def("prepend", &resolver::prepend)
-        .def("resolve", &resolver::resolve)
-        .def("__getitem__", [](const resolver &r, size_t i) {
-             if (i >= r.size())
-                 throw py::index_error();
-             return r[i];
-         })
-        .def("__setitem__", [](resolver &r, size_t i, path &v) {
-             if (i >= r.size())
-                 throw py::index_error();
-             r[i] = v;
-         })
-        .def("__delitem__", [](resolver &r, size_t i) {
-             if (i >= r.size())
-                 throw py::index_error();
-             r.erase(r.begin() + i);
-         })
-        .def("__repr__", [](const resolver &r) {
-            std::ostringstream oss;
-            oss << r;
-            return oss.str();
-        });
-
     py::class_<MemoryMappedFile>(fs_module, "MemoryMappedFile")
         .def(py::init<fs::path, size_t>())
         .def(py::init<fs::path, bool>())

@@ -12,6 +12,7 @@ template <typename> class ref;
 class Appender;
 class DefaultFormatter;
 class FileResolver;
+class FileResolver;
 class Formatter;
 class Logger;
 class Mutex;

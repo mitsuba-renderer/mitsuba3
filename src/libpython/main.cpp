@@ -7,6 +7,7 @@ MTS_PY_DECLARE(pcg32);
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(util);
 MTS_PY_DECLARE(math);
+MTS_PY_DECLARE(xml);
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(Thread);
 MTS_PY_DECLARE(Logger);
@@ -14,6 +15,7 @@ MTS_PY_DECLARE(Appender);
 MTS_PY_DECLARE(Formatter);
 MTS_PY_DECLARE(Properties);
 MTS_PY_DECLARE(ArgParser);
+MTS_PY_DECLARE(FileResolver);
 
 PYBIND11_PLUGIN(mitsuba) {
     Class::staticInitialization();
@@ -27,6 +29,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(atomic);
     MTS_PY_IMPORT(util);
     MTS_PY_IMPORT(math);
+    MTS_PY_IMPORT(xml);
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Thread);
     MTS_PY_IMPORT(Logger);
@@ -34,6 +37,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(Formatter);
     MTS_PY_IMPORT(Properties);
     MTS_PY_IMPORT(ArgParser);
+    MTS_PY_IMPORT(FileResolver);
 
     atexit([](){
         Logger::staticShutdown();
