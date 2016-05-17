@@ -899,6 +899,18 @@ static const char *__doc_mitsuba_filesystem_path_path_5 =
 R"doc(Construct a path from a string with native type. On Windows, the path can
 use both '/' or '\\' as a delimiter.)doc";
 
+static const char *__doc_mitsuba_filesystem_path_replace_extension =
+R"doc(Replaces the substring starting at the rightmost '.' symbol by the provided
+string. A '.' symbol is automatically inserted if the replacement does not
+start with a dot.
+
+Removes the extension altogether if the empty path is passed. If there is
+no extension, appends a '.' followed by the replacement.
+
+If the path is empty, '.' or '..': does nothing.
+
+Returns *this.)doc";
+
 static const char *__doc_mitsuba_filesystem_path_set = R"doc(Builds a path from the passed string.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_str = R"doc()doc";

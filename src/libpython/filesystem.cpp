@@ -16,6 +16,7 @@ MTS_PY_EXPORT(filesystem) {
         .def("is_relative", &path::is_relative, DM(filesystem, path, is_relative))
         .def("parent_path", &path::parent_path, DM(filesystem, path, parent_path))
         .def("extension", &path::extension, DM(filesystem, path, extension))
+        .def("replace_extension", &path::replace_extension, DM(filesystem, path, replace_extension))
         .def("filename", &path::filename, DM(filesystem, path, filename))
         .def("native", &path::native, DM(filesystem, path, native))
         .def(py::self / py::self, DM(filesystem, path, operator_div))

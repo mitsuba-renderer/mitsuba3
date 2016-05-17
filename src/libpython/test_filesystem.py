@@ -89,6 +89,20 @@ class FilesystemTest(unittest.TestCase):
         self.assertEqual(fs.path("foo" + sep + ".").extension(), "")
         self.assertEqual(fs.path("foo" + sep + "..").extension(), "")
 
+
+        # Replace extension
+        self.assertEqual(FilesystemTest.path_empty.replace_extension(".ext"),
+                         FilesystemTest.path_empty)
+        self.assertEqual(fs.path(".").replace_extension(".ext"), fs.path("."))
+        self.assertEqual(fs.path("..").replace_extension(".ext"), fs.path(".."))
+        self.assertEqual(fs.path("foo.bar").replace_extension(".ext"), fs.path("foo.ext"))
+        self.assertEqual(fs.path("foo.bar").replace_extension(fs.path(".ext")),
+                         fs.path("foo.ext"))
+        self.assertEqual(fs.path("foo").replace_extension(".ext"), fs.path("foo.ext"))
+        self.assertEqual(fs.path("foo.bar").replace_extension("none"), fs.path("foo.none"))
+        self.assertEqual(fs.path(sep + "foo" + sep + "bar.foo").replace_extension(".jpg"),
+                         fs.path(sep + "foo" + sep + "bar.jpg"))
+
     def test08_make_absolute(self):
         self.assertEqual(fs.absolute(FilesystemTest.path_here_relative), FilesystemTest.path_here)
     

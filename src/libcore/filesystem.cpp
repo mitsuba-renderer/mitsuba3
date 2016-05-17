@@ -1,4 +1,5 @@
 #include <mitsuba/core/filesystem.h>
+#include <mitsuba/core/string.h>
 
 #include <cctype>
 #include <cerrno>
@@ -189,6 +190,30 @@ string_type path::extension() const {
     if (pos == string_type::npos)
         return NSTR("");
     return name.substr(pos);  // Including the . character!
+}
+
+path& path::replace_extension(const path &replacement) {
+    if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR("..")) {
+        return *this;
+    }
+
+    auto name = filename();
+    const auto &ext = extension();
+    if (ext.length() > 0) {
+        size_t pos = name.find_last_of(NSTR("."));
+        name = name.substr(0, pos);
+    }
+
+    if (!replacement.empty()) {
+        if (!string::starts_with(replacement.string(), ".")) {
+            name = name + ".";
+        }
+        // TODO: this is a bit weird
+        name += static_cast<string_type>(replacement);
+    }
+
+    m_path.back() = name;
+    return *this;
 }
 
 string_type path::filename() const {

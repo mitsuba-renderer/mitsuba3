@@ -102,6 +102,19 @@ public:
      * Special paths '.' and '..' have an empty extension. */
     string_type extension() const;
 
+    /** \brief Replaces the substring starting at the rightmost '.' symbol
+     * by the provided string. A '.' symbol is automatically inserted
+     * if the replacement does not start with a dot.
+     *
+     * Removes the extension altogether if the empty path is passed.
+     * If there is no extension, appends a '.' followed by the replacement.
+     *
+     * If the path is empty, '.' or '..': does nothing.
+     *
+     * Returns *this.
+     */
+    path& replace_extension(const path& replacement = path());
+
     /// Returns the filename component of the path, including the extension.
     string_type filename() const;
 
