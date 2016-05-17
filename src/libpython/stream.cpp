@@ -9,36 +9,13 @@
 
 NAMESPACE_BEGIN()
 
-/** \brief The following is used to ensure that the getters and setters
- * for all the same types are available for both \ref Stream implementations
- * and \AnnotatedStream. */
-
-template<typename... Args> struct for_each_type;
-
-template <typename T, typename ...Args>
-struct for_each_type<T, Args...> {
-    // TODO: improve syntax for the caller (e.g. operator() or something)
-    template <typename UserFunctionType, typename ...Params>
-    static void recurse(Params&& ...params) {
-        UserFunctionType::template perform<T>(std::forward<Params>(params)...);
-        for_each_type<Args...>::template recurse<UserFunctionType>(std::forward<Params>(params)...);
-    }
-};
-
-/// Base case
-template<>
-struct for_each_type<> {
-    template <typename UserFunctionType, typename... Params>
-    static void recurse(Params&&... params) {}
-};
-
 // User provides a templated [T] function that takes arguments (which might depend on T)
 struct declare_stream_accessors {
     using PyClass = pybind11::class_<mitsuba::Stream,
                                      mitsuba::ref<mitsuba::Stream>>;
 
     template <typename T>
-    static void perform(PyClass &c) {
+    static void apply(PyClass &c) {
         c.def("readValue", [](Stream& s, T &value) {
             s.readValue(value);
         }, DM(Stream, readValue));
@@ -52,7 +29,7 @@ struct declare_astream_accessors {
                                      mitsuba::ref<mitsuba::AnnotatedStream>>;
 
     template <typename T>
-    static void perform(PyClass &c) {
+    static void apply(PyClass &c) {
         c.def("get", [](AnnotatedStream& s,
                         const std::string &name, T &value) {
             return s.get(name, value);

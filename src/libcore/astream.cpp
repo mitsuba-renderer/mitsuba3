@@ -50,7 +50,7 @@ void AnnotatedStream::pop() {
 bool AnnotatedStream::getBase(const std::string &name, const std::string &type_id) {
     if (!canRead()) {
         Log(EError, "Attempted to read from write-only stream: %s",
-            m_stream->toString().c_str());
+            m_stream->toString());
     }
 
     std::string fullName = m_prefixStack.back() + name;
@@ -58,7 +58,7 @@ bool AnnotatedStream::getBase(const std::string &name, const std::string &type_i
     if (it == m_table.end()) {
         const auto logLevel = (m_throwOnMissing ? EError : EWarn);
         Log(logLevel, "Unable to find field named \"%s\". Available fields: %s",
-                      fullName.c_str(), util::mkString(keys()).c_str());
+                      fullName, keys());
 
         return false;
     }
@@ -66,7 +66,7 @@ bool AnnotatedStream::getBase(const std::string &name, const std::string &type_i
     const auto &record = it->second;
     if (record.first != type_id) {
         Log(EError, "Field named \"%s\" has incompatible type: expected %s, found %s",
-            fullName.c_str(), type_id.c_str(), record.first.c_str());
+            fullName, type_id, record.first);
     }
 
     m_stream->seek(static_cast<size_t>(record.second));
@@ -76,13 +76,13 @@ bool AnnotatedStream::getBase(const std::string &name, const std::string &type_i
 void AnnotatedStream::setBase(const std::string &name, const std::string &type_id) {
     if (!canWrite()) {
         Log(EError, "Attempted to write into read-only stream: %s",
-            m_stream->toString().c_str());
+            m_stream->toString());
     }
 
     std::string fullName = m_prefixStack.back() + name;
     auto it = m_table.find(fullName);
     if (it != m_table.end()) {
-        Log(EError, "Field named \"%s\" was already set!", fullName.c_str());
+        Log(EError, "Field named \"%s\" was already set!", fullName);
     }
 
     const auto pos = static_cast<uint64_t>(m_stream->getPos());
@@ -100,7 +100,7 @@ void AnnotatedStream::readTOC() {
     if (header != kSerializedHeaderId) {
         Log(EError, "Error trying to read the table of contents, header mismatch"
                     " (expected %s, found %s). Underlying stream: %s",
-            kSerializedHeaderId.c_str(), header.c_str(), m_stream->toString().c_str());
+            kSerializedHeaderId, header, m_stream->toString());
     }
     m_stream->readValue(trailerOffset);
     m_stream->readValue(nItems);
