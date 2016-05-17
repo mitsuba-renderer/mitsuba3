@@ -28,6 +28,9 @@ NAMESPACE_END(detail)
 class MTS_EXPORT_CORE Stream : public Object {
 
 protected:
+    // In general, only low-level type serializers should call the stream's
+    // protected read & write functions. Otherwise, make sure to handle
+    // endianness swapping explicitly.
     template <typename T> friend struct detail::serialization_helper;
 
 public:
@@ -58,6 +61,7 @@ protected:
 
     /**
      * \brief Reads a specified amount of data from the stream.
+     * \note This does <b>not</b> handle endianness swapping.
      *
      * Throws an exception when the stream ended prematurely.
      * Implementations need to handle endianness swap when appropriate.
@@ -66,6 +70,7 @@ protected:
 
     /**
      * \brief Writes a specified amount of data into the stream.
+     * \note This does <b>not</b> handle endianness swapping.
      *
      * Throws an exception when not all data could be written.
      * Implementations need to handle endianness swap when appropriate.
@@ -117,29 +122,23 @@ public:
     /**
      * \brief Reads one object of type T from the stream at the current position
      * by delegating to the appropriate <tt>serialization_helper</tt>.
+     * Endianness swapping is handled automatically if needed.
      */
     template <typename T>
     void read(T &value) {
-        if (m_byteOrder != m_hostByteOrder) {
-            // TODO: handle endianness swap
-            NotImplementedError("read [endianness swap]");
-        }
         using helper = detail::serialization_helper<T>;
-        helper::read(*this, &value, 1);
+        helper::read(*this, &value, 1, needsEndiannessSwapping());
     }
 
     /**
      * \brief Reads one object of type T from the stream at the current position
      * by delegating to the appropriate <tt>serialization_helper</tt>.
+     * Endianness swapping is handled automatically if needed.
      */
     template <typename T>
     void write(const T &value) {
-        if (m_byteOrder != m_hostByteOrder) {
-            // TODO: handle endianness swap
-            NotImplementedError("write [endianness swap]");
-        }
         using helper = detail::serialization_helper<T>;
-        helper::write(*this, &value, 1);
+        helper::write(*this, &value, 1, needsEndiannessSwapping());
     }
 
     /// @}
@@ -160,6 +159,11 @@ public:
 
     /// Returns the byte order of this stream.
     inline EByteOrder getByteOrder() const { return m_byteOrder; }
+
+    /// Returns true if we need to perform endianness swapping before writing or reading.
+    inline bool needsEndiannessSwapping() const {
+        return m_byteOrder != m_hostByteOrder;
+    }
 
     /// Returns the byte order of the underlying machine.
     inline static EByteOrder getHostByteOrder() { return m_hostByteOrder; }

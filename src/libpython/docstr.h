@@ -1084,17 +1084,23 @@ static const char *__doc_mitsuba_Stream_m_byteOrder = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream_m_writeMode = R"doc()doc";
 
+static const char *__doc_mitsuba_Stream_needsEndiannessSwapping =
+R"doc(Returns true if we need to perform endianness swapping before writing or
+reading.)doc";
+
 static const char *__doc_mitsuba_Stream_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream_read =
-R"doc(Reads a specified amount of data from the stream.
+R"doc(Reads a specified amount of data from the stream. \note This does **not**
+handle endianness swapping.
 
 Throws an exception when the stream ended prematurely. Implementations
 need to handle endianness swap when appropriate.)doc";
 
 static const char *__doc_mitsuba_Stream_read_2 =
 R"doc(Reads one object of type T from the stream at the current position by
-delegating to the appropriate ``serialization_helper``.)doc";
+delegating to the appropriate ``serialization_helper``. Endianness swapping
+is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_Stream_seek =
 R"doc(Seeks to a position inside the stream. Seeking beyond the size of the
@@ -1120,14 +1126,16 @@ R"doc(Truncates the stream to a given size. The position is updated to
 Throws an exception if in read-only mode.)doc";
 
 static const char *__doc_mitsuba_Stream_write =
-R"doc(Writes a specified amount of data into the stream.
+R"doc(Writes a specified amount of data into the stream. \note This does **not**
+handle endianness swapping.
 
 Throws an exception when not all data could be written.
 Implementations need to handle endianness swap when appropriate.)doc";
 
 static const char *__doc_mitsuba_Stream_write_2 =
 R"doc(Reads one object of type T from the stream at the current position by
-delegating to the appropriate ``serialization_helper``.)doc";
+delegating to the appropriate ``serialization_helper``. Endianness swapping
+is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_TNormal = R"doc(3-dimensional surface normal representation)doc";
 

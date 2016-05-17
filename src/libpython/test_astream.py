@@ -226,6 +226,7 @@ class AnnotatedStreamTest(unittest.TestCase):
         #       - Prefix hierarchy
         # TODO: make sure that a file written using the Python bindings can be
         #       read with C++, and the other way around.
+        # TODO: also do read/write with endianness swap enabled
         for (name, stream) in self.streams.items():
             with self.subTest(name):
                 pass
