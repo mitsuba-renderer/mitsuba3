@@ -8,19 +8,51 @@
 #include "python.h"
 
 NAMESPACE_BEGIN()
+
 /** \brief The following is used to ensure that the getters and setters
  * for all the same types are available for both \ref Stream implementations
- * and \AnnotatedStream.
- *
- * TODO: yes, it is way overkill and overcomplicated, this was mostly written
- *       as an exercise to understand template metaprogramming better.
- */
-template<typename... Args> struct template_methods_helper;
+ * and \AnnotatedStream. */
 
-template <typename T, typename... Args>
-struct template_methods_helper<T, Args...> {
-    template <typename PyClass>
-    static void declareGettersAndSetters(PyClass &c) {
+template<typename... Args> struct for_each_type;
+
+template <typename T, typename ...Args>
+struct for_each_type<T, Args...> {
+    // TODO: improve syntax for the caller (e.g. operator() or something)
+    template <typename UserFunctionType, typename ...Params>
+    static void recurse(Params&& ...params) {
+        UserFunctionType::template perform<T>(std::forward<Params>(params)...);
+        for_each_type<Args...>::template recurse<UserFunctionType>(std::forward<Params>(params)...);
+    }
+};
+
+/// Base case
+template<>
+struct for_each_type<> {
+    template <typename UserFunctionType, typename... Params>
+    static void recurse(Params&&... params) {}
+};
+
+// User provides a templated [T] function that takes arguments (which might depend on T)
+struct declare_stream_accessors {
+    using PyClass = pybind11::class_<mitsuba::Stream,
+                                     mitsuba::ref<mitsuba::Stream>>;
+
+    template <typename T>
+    static void perform(PyClass &c) {
+        c.def("readValue", [](Stream& s, T &value) {
+            s.readValue(value);
+        }, DM(Stream, readValue));
+        c.def("writeValue", [](Stream& s, const T &value) {
+            s.writeValue(value);
+        }, DM(Stream, writeValue));
+    }
+};
+struct declare_astream_accessors {
+    using PyClass = pybind11::class_<mitsuba::AnnotatedStream,
+                                     mitsuba::ref<mitsuba::AnnotatedStream>>;
+
+    template <typename T>
+    static void perform(PyClass &c) {
         c.def("get", [](AnnotatedStream& s,
                         const std::string &name, T &value) {
             return s.get(name, value);
@@ -29,66 +61,13 @@ struct template_methods_helper<T, Args...> {
                         const std::string &name, const T &value) {
             s.set(name, value);
         }, DM(AnnotatedStream, set));
-
-        template_methods_helper<Args...>::declareGettersAndSetters(c);
-    }
-
-    template <typename PyClass>
-    static void declareReadAndWriteMethods(PyClass &c) {
-        c.def("readValue", [](Stream& s, T &value) {
-            s.readValue(value);
-        }, DM(Stream, readValue));
-        c.def("writeValue", [](Stream& s, const T &value) {
-            s.writeValue(value);
-        }, DM(Stream, writeValue));
-
-        template_methods_helper<Args...>::declareReadAndWriteMethods(c);
     }
 };
-
-template<>
-struct template_methods_helper<> {
-    template <typename PyClass>
-    static void declareGettersAndSetters(PyClass &) { /* End of recursion*/ }
-
-    template <typename PyClass>
-    static void declareReadAndWriteMethods(PyClass &) { /* End of recursion*/ }
-};
-
-template<typename... Args> struct for_each_type;
-
-// User provides a templated [T] function that takes arguments (which might
-// depend on T)
-struct my_behavior {
-    template <typename T>
-    static void hello() {
-        Log(EInfo, "Here we go again, with param: %s", typeid(T).name());
-    }
-};
-
-template <typename T, typename... Args>
-struct for_each_type<T, Args...> {
-    // TODO: improve syntax for the caller (e.g. operator() or something)
-    template <typename UserFunctionType>
-    static void perform() { // TODO: args
-        UserFunctionType::template hello<T>();
-        for_each_type<Args...>::template perform<UserFunctionType>();
-    }
-};
-
-template<>
-struct for_each_type<> {
-    template <typename UserFunctionType>
-    static void perform() {
-        // Done
-    }
-};
-
 
 /// Use this type alias to list the supported types.
-// TODO: support all types that can occur in Python
-using methods_helper = template_methods_helper<int32_t, int64_t, Float,
-                                               bool, std::string, char>;
+// TODO: support all supported types that can occur in Python
+using methods_declarator = for_each_type<int32_t, int64_t, Float,
+                                         bool, std::string, char>;
 
 NAMESPACE_END()
 
@@ -101,9 +80,8 @@ MTS_PY_EXPORT(Stream) {
         .mdef(Stream, getHostByteOrder)
         .def("__repr__", &Stream::toString);
 
-    // TODO: handle py <=> c++ casts explicitly?
     // TODO: readValue method should be pythonic
-    methods_helper::declareReadAndWriteMethods(c);
+    methods_declarator::recurse<declare_stream_accessors>(c);
 
     py::enum_<Stream::EByteOrder>(c, "EByteOrder", DM(Stream, EByteOrder))
         .value("EBigEndian", Stream::EBigEndian)
@@ -134,8 +112,6 @@ MTS_PY_EXPORT(FileStream) {
         .mdef(FileStream, getPos)
         .mdef(FileStream, getSize)
         .mdef(FileStream, flush)
-//        .def("canWrite", &FileStream::canWrite, DM(Stream, canWrite))
-//        .def("canRead", &FileStream::canRead, DM(Stream, canRead));
         .def("__repr__", &FileStream::toString);
 }
 
@@ -162,7 +138,10 @@ MTS_PY_EXPORT(AnnotatedStream) {
         .mdef(AnnotatedStream, keys)
         .mdef(AnnotatedStream, getSize)
         .mdef(AnnotatedStream, canRead)
-        .mdef(AnnotatedStream, canWrite);
+        .mdef(AnnotatedStream, canWrite)
+        .def("__repr__", &AnnotatedStream::toString);
+
     // get & set declarations for many types
-    methods_helper::declareGettersAndSetters(c);
+    // TODO: read & set methods à la dict (see Properties bindings)
+    methods_declarator::recurse<declare_astream_accessors>(c);
 }
