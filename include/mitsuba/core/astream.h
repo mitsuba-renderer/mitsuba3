@@ -65,7 +65,7 @@ public:
             return false;
         if (!name.empty())
             push(name);
-        m_stream->readValue(value);
+        m_stream->read(value);
         if (!name.empty())
             pop();
         return true;
@@ -77,7 +77,7 @@ public:
         setBase(name, helper::type_id());
         if (!name.empty())
             push(name);
-        m_stream->writeValue(value);
+        m_stream->write(value);
         if (!name.empty())
             pop();
     }

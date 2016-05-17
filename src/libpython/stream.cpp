@@ -16,11 +16,11 @@ struct declare_stream_accessors {
 
     template <typename T>
     static void apply(PyClass &c) {
-        c.def("readValue", [](Stream& s, T &value) {
-            s.readValue(value);
+        c.def("read", [](Stream& s, T &value) {
+            s.read(value);
         }, DM(Stream, readValue));
-        c.def("writeValue", [](Stream& s, const T &value) {
-            s.writeValue(value);
+        c.def("write", [](Stream& s, const T &value) {
+            s.write(value);
         }, DM(Stream, writeValue));
     }
 };
@@ -57,7 +57,7 @@ MTS_PY_EXPORT(Stream) {
         .mdef(Stream, getHostByteOrder)
         .def("__repr__", &Stream::toString);
 
-    // TODO: readValue method should be pythonic
+    // TODO: read method should be pythonic
     methods_declarator::recurse<declare_stream_accessors>(c);
 
     py::enum_<Stream::EByteOrder>(c, "EByteOrder", DM(Stream, EByteOrder))

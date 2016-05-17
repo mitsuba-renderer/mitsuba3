@@ -17,7 +17,7 @@ class CommonStreamTest(unittest.TestCase):
 
     def writeContents(self, stream):
         for v in CommonStreamTest.contents:
-            stream.writeValue(v)
+            stream.write(v)
         stream.flush()
 
     def setUp(self):
@@ -41,11 +41,11 @@ class CommonStreamTest(unittest.TestCase):
 
                 if stream.canWrite():
                     # string length as a uint32_t (4) + string (5)
-                    stream.writeValue("hello")
+                    stream.write("hello")
                     stream.flush()
                     self.assertEqual(stream.getSize(), 9)
                     self.assertEqual(stream.getPos(), 9)
-                    stream.writeValue(42) # Long (4)
+                    stream.write(42) # Long (4)
                     stream.flush()
                     self.assertEqual(stream.getSize(), 9+4)
                     self.assertEqual(stream.getPos(), 9+4)
@@ -65,7 +65,7 @@ class CommonStreamTest(unittest.TestCase):
                 stream.truncate(50)
                 self.assertEqual(stream.getSize(), 50)
                 self.assertEqual(stream.getPos(), 50)
-                stream.writeValue("hello")
+                stream.write("hello")
                 stream.flush()
                 self.assertEqual(stream.getSize(), 50 + 9)
                 self.assertEqual(stream.getPos(), 50 + 9)
@@ -96,7 +96,7 @@ class CommonStreamTest(unittest.TestCase):
                 if stream.canWrite():
                     # A subsequent write should start at the correct position
                     # and update the size.
-                    stream.writeValue(13.37)
+                    stream.write(13.37)
                     self.assertEqual(stream.getPos(), 20 + 4)
                     self.assertEqual(stream.getSize(), 20 + 4)
 
@@ -115,10 +115,10 @@ class CommonStreamTest(unittest.TestCase):
             stream.seek(0)
             with self.subTest(name):
                 for v in CommonStreamTest.contents:
-                    # TODO: should change when the `readValue` binding makes more sense
+                    # TODO: should change when the `read` binding makes more sense
                     r = None
                     r = v + v
-                    stream.readValue(r)
+                    stream.read(r)
                     self.assertEqual(r, v)
 
     # TODO: more read / write tests (read back, check contents of written file, etc)
@@ -135,7 +135,7 @@ class DummyStreamTest(unittest.TestCase):
 
     def test02_str(self):
         # string length as a uint32_t (4) + string (11)
-        self.s.writeValue("hello world")
+        self.s.write("hello world")
         self.s.setByteOrder(Stream.EBigEndian)
         self.assertEqual(str(self.s),
                         "DummyStream[" +
@@ -166,7 +166,7 @@ class FileStreamTest(unittest.TestCase):
 
         # w = FileStream(path('./secret_hello'), True)
         # w.seek(0)
-        # w.writeValue("hello world")
+        # w.write("hello world")
         # w.flush()
 
     def test01_basics(self):
@@ -177,10 +177,10 @@ class FileStreamTest(unittest.TestCase):
 
         # Read / write modes should be enforced
         with self.assertRaises(Exception):
-            self.ro.writeValue("hello")
+            self.ro.write("hello")
         with self.assertRaises(Exception):
             v = 0
-            self.wo.readValue(v)
+            self.wo.read(v)
 
     def test02_create_on_open(self):
         p = FileStreamTest.newPath
@@ -204,7 +204,7 @@ class FileStreamTest(unittest.TestCase):
         self.assertEqual(self.wo.getPos(), 0)
         self.wo.truncate(5)
         self.assertEqual(self.wo.getPos(), 0)
-        self.wo.writeValue("hello")
+        self.wo.write("hello")
         self.wo.flush()
         self.assertEqual(self.wo.getPos(), 0 + 9) # TODO: why not 9? (= 4 + 5)
         self.wo.truncate(5)
@@ -215,12 +215,12 @@ class FileStreamTest(unittest.TestCase):
         self.wo.seek(5)
         self.assertEqual(self.wo.getPos(), 5)
         self.assertEqual(self.wo.getSize(), 5)
-        self.wo.writeValue("hello world")
+        self.wo.write("hello world")
         self.wo.flush()
         self.wo.seek(3)
         self.assertEqual(self.wo.getPos(), 3)
         self.assertEqual(self.wo.getSize(), 5+4+11)
-        self.wo.writeValue("dlrow olleh")
+        self.wo.write("dlrow olleh")
         self.wo.flush()
         self.assertEqual(self.wo.getPos(), 3+4+11)
         self.assertEqual(self.wo.getSize(), 5+4+11)
@@ -236,7 +236,7 @@ class FileStreamTest(unittest.TestCase):
         self.assertEqual(self.wo.getSize(), 5+4+11) # Actual size
 
         # A subsequent write should start at the correct position
-        self.wo.writeValue(13.37)
+        self.wo.write(13.37)
         self.assertEqual(self.wo.getPos(), 40 + 4)
         self.assertEqual(self.wo.getSize(), 40 + 4)
 
@@ -247,7 +247,7 @@ class FileStreamTest(unittest.TestCase):
                          ", path=" + str(FileStreamTest.roPath) +
                          ", writeOnly=false]")
 
-        self.wo.writeValue("hello world")
+        self.wo.write("hello world")
         self.wo.setByteOrder(Stream.EBigEndian)
         self.assertEqual(str(self.wo),
                          "FileStream[" +
@@ -268,7 +268,7 @@ class MemoryStreamTest(unittest.TestCase):
         self.assertTrue(self.s.canRead())
 
     def test02_str(self):
-        self.s.writeValue("hello world")
+        self.s.write("hello world")
         self.s.setByteOrder(Stream.EBigEndian)
         self.assertEqual(str(self.s),
                          "MemoryStream[" +

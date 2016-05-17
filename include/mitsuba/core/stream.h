@@ -119,10 +119,10 @@ public:
      * by delegating to the appropriate <tt>serialization_helper</tt>.
      */
     template <typename T>
-    void readValue(T &value) {
+    void read(T &value) {
         if (m_byteOrder != m_hostByteOrder) {
             // TODO: handle endianness swap
-            NotImplementedError("writeValue [endianness swap]");
+            NotImplementedError("read [endianness swap]");
         }
         using helper = detail::serialization_helper<T>;
         helper::read(*this, &value, 1);
@@ -133,10 +133,10 @@ public:
      * by delegating to the appropriate <tt>serialization_helper</tt>.
      */
     template <typename T>
-    void writeValue(const T &value) {
+    void write(const T &value) {
         if (m_byteOrder != m_hostByteOrder) {
             // TODO: handle endianness swap
-            NotImplementedError("writeValue [endianness swap]");
+            NotImplementedError("write [endianness swap]");
         }
         using helper = detail::serialization_helper<T>;
         helper::write(*this, &value, 1);

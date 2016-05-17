@@ -96,14 +96,14 @@ void AnnotatedStream::readTOC() {
 
     // Check that sentry is present at the beginning of the stream
     m_stream->seek(0);
-    m_stream->readValue(header);
+    m_stream->read(header);
     if (header != kSerializedHeaderId) {
         Log(EError, "Error trying to read the table of contents, header mismatch"
                     " (expected %s, found %s). Underlying stream: %s",
             kSerializedHeaderId, header, m_stream->toString());
     }
-    m_stream->readValue(trailerOffset);
-    m_stream->readValue(nItems);
+    m_stream->read(trailerOffset);
+    m_stream->read(nItems);
 
     // Read the table of contents (tucked at <tt>trailerOffset</tt>)
     m_stream->seek(trailerOffset);
@@ -111,9 +111,9 @@ void AnnotatedStream::readTOC() {
         std::string field_name, type_id;
         uint64_t offset;
         // TODO: make sure that field name, etc are written directly as values
-        m_stream->readValue(field_name);
-        m_stream->readValue(type_id);
-        m_stream->readValue(offset);
+        m_stream->read(field_name);
+        m_stream->read(type_id);
+        m_stream->read(offset);
 
         m_table[field_name] = std::make_pair(type_id, offset);
     }
@@ -125,17 +125,17 @@ void AnnotatedStream::writeTOC() {
 
     // Write sentry at the very beginning of the stream
     m_stream->seek(0);
-    m_stream->writeValue(kSerializedHeaderId);
-    m_stream->writeValue(trailer_offset);
-    m_stream->writeValue(nItems);
+    m_stream->write(kSerializedHeaderId);
+    m_stream->write(trailer_offset);
+    m_stream->write(nItems);
     m_stream->flush();
     // Write table of contents at the end of the stream
     m_stream->seek(static_cast<size_t>(trailer_offset));
     for (const auto &item : m_table) {
         // For each field, write: field name, field type id, corresponding offset
-        m_stream->writeValue(item.first);
-        m_stream->writeValue(item.second.first);
-        m_stream->writeValue(item.second.second);
+        m_stream->write(item.first);
+        m_stream->write(item.second.first);
+        m_stream->write(item.second.second);
     }
     m_stream->flush();
 }
