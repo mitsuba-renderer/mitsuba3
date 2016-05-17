@@ -185,6 +185,12 @@ extern MTS_EXPORT_CORE std::pair<double, double> legendre_pd_diff(int l, double 
 //! @{ \name Miscellaneous mathematical helper functions
 // -----------------------------------------------------------------------
 
+//// Convert radians to degrees
+template <typename T> T radToDeg(T value) { return value * T(180 / Pi_d); }
+
+/// Convert degrees to radians
+template <typename T> T degToRad(T value) { return value * T(Pi_d / 180); }
+
 /// Simple signum function -- note that it returns the FP sign of the input (and never zero)
 template <typename Scalar> Scalar signum(Scalar value) {
     return std::copysign((Scalar) 1, value);
