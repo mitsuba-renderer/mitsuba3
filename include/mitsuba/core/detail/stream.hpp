@@ -125,7 +125,7 @@ template <> struct serialization_helper<std::string> {
 
     static void write(Stream &s, const std::string *value, size_t count, bool swap) {
         for (size_t i = 0; i < count; ++i) {
-            uint32_t length = (uint32_t) value->length();
+            uint32_t length = static_cast<uint32_t>(value->length());
             serialization_helper<uint32_t>::write(s, &length, 1, swap);
             serialization_helper<char>::write(s, value->data(),
                                               value->length(), swap);

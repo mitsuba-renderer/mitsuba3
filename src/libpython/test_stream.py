@@ -13,12 +13,25 @@ class CommonStreamTest(unittest.TestCase):
     woPath = path('./write_only_file_for_common_tests')
 
     # TODO: more contents, exercise lots of types
-    contents = ['some sentence', 42, 13.37]
+    contents = [82.5, 999, 'some sentence', 424, 'hi', 13.37, True, 'hey', 42,
+                'c', False, '', 99.998]
 
     def writeContents(self, stream):
         for v in CommonStreamTest.contents:
             stream.write(v)
         stream.flush()
+
+    def checkContents(self, stream):
+        stream.seek(0)
+        for v in CommonStreamTest.contents:
+            if type(v) is str:
+                self.assertEqual(v, stream.readString())
+            elif type(v) is int:
+                self.assertEqual(v, stream.readLong())
+            elif type(v) is float:
+                self.assertAlmostEqual(v, stream.readFloat(), places=5)
+            elif type(v) is bool:
+                self.assertEqual(v, stream.readBoolean())
 
     def setUp(self):
         touch(CommonStreamTest.roPath)
@@ -45,10 +58,10 @@ class CommonStreamTest(unittest.TestCase):
                     stream.flush()
                     self.assertEqual(stream.getSize(), 9)
                     self.assertEqual(stream.getPos(), 9)
-                    stream.write(42) # Long (4)
+                    stream.write(42) # Long (8)
                     stream.flush()
-                    self.assertEqual(stream.getSize(), 9+4)
-                    self.assertEqual(stream.getPos(), 9+4)
+                    self.assertEqual(stream.getSize(), 9+8)
+                    self.assertEqual(stream.getPos(), 9+8)
 
     def test02_truncate(self):
         for (name, stream) in self.streams.items():
@@ -100,7 +113,6 @@ class CommonStreamTest(unittest.TestCase):
                     self.assertEqual(stream.getPos(), 20 + 4)
                     self.assertEqual(stream.getSize(), 20 + 4)
 
-    @unittest.skip("Not implemented yet")
     def test04_read_back(self):
         # Write some values to be read back
         temporaryWriteStream = FileStream(CommonStreamTest.roPath, True)
@@ -112,14 +124,8 @@ class CommonStreamTest(unittest.TestCase):
             if not stream.canRead():
                 continue
 
-            stream.seek(0)
             with self.subTest(name):
-                for v in CommonStreamTest.contents:
-                    # TODO: should change when the `read` binding makes more sense
-                    r = None
-                    r = v + v
-                    stream.read(r)
-                    self.assertEqual(r, v)
+                self.checkContents(stream)
 
     # TODO: more read / write tests (read back, check contents of written file, etc)
     # TODO: check for compatibility with Mitsuba 1 serialized files

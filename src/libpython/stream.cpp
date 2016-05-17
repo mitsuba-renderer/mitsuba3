@@ -16,9 +16,6 @@ struct declare_stream_accessors {
 
     template <typename T>
     static void apply(PyClass &c) {
-        c.def("read", [](Stream& s, T &value) {
-            s.read(value);
-        }, DM(Stream, read, 2));
         c.def("write", [](Stream& s, const T &value) {
             s.write(value);
         }, DM(Stream, write, 2));
@@ -32,7 +29,7 @@ struct declare_astream_accessors {
     static void apply(PyClass &c) {
         c.def("get", [](AnnotatedStream& s,
                         const std::string &name, T &value) {
-            return s.get(name, value);
+            return py::cast(s.get(name, value));
         }, DM(AnnotatedStream, get));
         c.def("set", [](AnnotatedStream& s,
                         const std::string &name, const T &value) {
@@ -41,23 +38,35 @@ struct declare_astream_accessors {
     }
 };
 
-/// Use this type alias to list the supported types.
+/// Use this type alias to list the supported types. Be wary of automatic type conversions.
 // TODO: support all supported types that can occur in Python
-using methods_declarator = for_each_type<int32_t, int64_t, Float,
-                                         bool, std::string, char>;
+// TODO: Python `long` type probably depends on the architecture, test on 32bits
+using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
 
 NAMESPACE_END()
 
 MTS_PY_EXPORT(Stream) {
+#define DECLARE_READ(Type, ReadableName) \
+    def("read" ReadableName, [](Stream& s) {     \
+        Type v;                                  \
+        s.read(v);                               \
+        return py::cast(v);                      \
+    }, DM(Stream, read, 2))
+
     auto c = MTS_PY_CLASS(Stream, Object)
         .mdef(Stream, canWrite)
         .mdef(Stream, canRead)
         .mdef(Stream, setByteOrder)
         .mdef(Stream, getByteOrder)
         .mdef(Stream, getHostByteOrder)
+        .DECLARE_READ(int64_t, "Long")
+        .DECLARE_READ(Float, "Float")
+        .DECLARE_READ(bool, "Boolean")
+        .DECLARE_READ(std::string, "String")
+        // TODO: support lists and dicts?
         .def("__repr__", &Stream::toString);
+#undef DECLARE_READ
 
-    // TODO: read method should be pythonic
     methods_declarator::recurse<declare_stream_accessors>(c);
 
     py::enum_<Stream::EByteOrder>(c, "EByteOrder", DM(Stream, EByteOrder))
@@ -121,5 +130,6 @@ MTS_PY_EXPORT(AnnotatedStream) {
 
     // get & set declarations for many types
     // TODO: read & set methods à la dict (see Properties bindings)
+    // TODO: infer type from type info stored in the ToC map
     methods_declarator::recurse<declare_astream_accessors>(c);
 }
