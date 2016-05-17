@@ -67,11 +67,15 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
     }
 }
 
+NAMESPACE_END(string)
+NAMESPACE_END(mitsuba)
+
 /// Turns an array into a human-readable representation
-template <typename T> std::ostream &operator<<(std::ostream &os, const std::vector<T> v) {
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
     auto it = v.begin();
     while (it != v.end()) {
-        os << (*it);
+        os << *it;
         it++;
         if (it != v.end())
             os << ", ";
@@ -79,5 +83,3 @@ template <typename T> std::ostream &operator<<(std::ostream &os, const std::vect
     return os;
 }
 
-NAMESPACE_END(string)
-NAMESPACE_END(mitsuba)

@@ -1,6 +1,6 @@
+#include <mitsuba/core/string.h>
 #include <mitsuba/core/astream.h>
 #include <mitsuba/core/util.h>
-#include <string>
 
 NAMESPACE_BEGIN(mitsuba)
 
