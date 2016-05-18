@@ -1,10 +1,15 @@
 #include <mitsuba/core/fresolver.h>
 #include <sstream>
+#include <algorithm>
 
 NAMESPACE_BEGIN(mitsuba)
 
 FileResolver::FileResolver() {
     m_paths.push_back(fs::current_path());
+}
+
+void FileResolver::erase(const fs::path &p) {
+    m_paths.erase(std::remove(m_paths.begin(), m_paths.end(), p), m_paths.end());
 }
 
 fs::path FileResolver::resolve(const fs::path &path) const {

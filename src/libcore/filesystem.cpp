@@ -193,9 +193,8 @@ string_type path::extension() const {
 }
 
 path& path::replace_extension(const path &replacement) {
-    if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR("..")) {
+    if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR(".."))
         return *this;
-    }
 
     auto name = filename();
     const auto &ext = extension();
@@ -205,9 +204,9 @@ path& path::replace_extension(const path &replacement) {
     }
 
     if (!replacement.empty()) {
-        if (!string::starts_with(replacement.string(), ".")) {
-            name = name + ".";
-        }
+        if (!string::starts_with(replacement.string(), "."))
+            name = name + NSTR(".");
+
         // TODO: this is a bit weird
         name += static_cast<string_type>(replacement);
     }

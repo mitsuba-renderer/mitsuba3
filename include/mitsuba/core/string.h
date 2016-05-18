@@ -3,6 +3,7 @@
 #include <mitsuba/mitsuba.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(string)

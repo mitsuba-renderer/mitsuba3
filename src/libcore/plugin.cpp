@@ -26,12 +26,12 @@ public:
         #if defined(__WINDOWS__)
             m_handle = LoadLibraryW(path.native().c_str());
             if (!m_handle)
-                Throw("Error while loading plugin \"%s\": %s", path.native(),
+                Throw("Error while loading plugin \"%s\": %s", path.string(),
                       util::getLastError());
         #else
             m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
             if (!m_handle)
-                Throw("Error while loading plugin \"%s\": %s", path.native(),
+                Throw("Error while loading plugin \"%s\": %s", path.string(),
                       dlerror());
         #endif
 

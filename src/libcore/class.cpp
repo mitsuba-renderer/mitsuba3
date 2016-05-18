@@ -6,6 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 void registerClass(const Class *class_);
+void cleanup();
 NAMESPACE_END(xml)
 
 static std::map<std::string, Class *> *__classes;
@@ -90,6 +91,7 @@ void Class::staticShutdown() {
     delete __classes;
     __classes = nullptr;
     m_isInitialized = false;
+    xml::cleanup();
 }
 
 NAMESPACE_END(mitsuba)

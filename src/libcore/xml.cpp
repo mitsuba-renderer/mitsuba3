@@ -36,33 +36,41 @@ enum ETag {
     EObject
 };
 
-static std::unordered_map<std::string, ETag> tags;
-static std::unordered_map<std::string, const Class *> tagClass;
+static std::unordered_map<std::string, ETag> *tags = nullptr;
+static std::unordered_map<std::string, const Class *> *tagClass = nullptr;
 
 void registerClass(const Class *class_) {
-    if (tags.empty()) {
+    if (!tags) {
+        tags = new std::unordered_map<std::string, ETag>();
+        tagClass = new std::unordered_map<std::string, const Class *>();
+
         /* Create an initial mapping of tag names to IDs */
-        tags["boolean"]    = EBoolean;
-        tags["integer"]    = EInteger;
-        tags["float"]      = EFloat;
-        tags["string"]     = EString;
-        tags["point"]      = EPoint;
-        tags["vector"]     = EVector;
-        tags["color"]      = EColor;
-        tags["transform"]  = ETransform;
-        tags["translate"]  = ETranslate;
-        tags["matrix"]     = EMatrix;
-        tags["rotate"]     = ERotate;
-        tags["scale"]      = EScale;
-        tags["lookat"]     = ELookAt;
+        (*tags)["boolean"]    = EBoolean;
+        (*tags)["integer"]    = EInteger;
+        (*tags)["float"]      = EFloat;
+        (*tags)["string"]     = EString;
+        (*tags)["point"]      = EPoint;
+        (*tags)["vector"]     = EVector;
+        (*tags)["color"]      = EColor;
+        (*tags)["transform"]  = ETransform;
+        (*tags)["translate"]  = ETranslate;
+        (*tags)["matrix"]     = EMatrix;
+        (*tags)["rotate"]     = ERotate;
+        (*tags)["scale"]      = EScale;
+        (*tags)["lookat"]     = ELookAt;
     }
 
     /* Register the new class as an object tag */
     auto tagName = string::toLower(class_->getName());
-    if (tags.find(tagName) == tags.end()) {
-        tags[tagName] = EObject;
-        tagClass[tagName] = class_;
+    if (tags->find(tagName) == tags->end()) {
+        (*tags)[tagName] = EObject;
+        (*tagClass)[tagName] = class_;
     }
+}
+
+void cleanup() {
+    delete tags;
+    delete tagClass;
 }
 
 /* Forward declaration */
@@ -127,7 +135,7 @@ ref<Object> loadFile(const fs::path &filename) {
         return "byte offset " + std::to_string(pos);
     };
 
-    return loadImpl(filename, result, doc, offset);
+    return loadImpl(filename.string(), result, doc, offset);
 }
 
 ref<Object> loadImpl(const std::string &id,
@@ -169,8 +177,8 @@ ref<Object> loadImpl(const std::string &id,
                   offset(node.offset_debug()));
 
         /* Look up the name of the current element */
-        auto it = tags.find(node.name());
-        if (it == tags.end())
+        auto it = tags->find(node.name());
+        if (it == tags->end())
             Throw("Error while parsing \"%s\": unexpected tag \"%s\" at %s", id,
                   node.name(), offset(node.offset_debug()));
         ETag tag = it->second;
@@ -205,8 +213,8 @@ ref<Object> loadImpl(const std::string &id,
         try {
             switch (tag) {
                 case EObject: {
-                        auto it = tagClass.find(node.name());
-                        if (it == tagClass.end())
+                        auto it2 = tagClass->find(node.name());
+                        if (it2 == tagClass->end())
                             Throw("Internal error: could not find class for "
                                   "tag \"%s\"", node.name());
 
@@ -218,7 +226,7 @@ ref<Object> loadImpl(const std::string &id,
 
                         /* This is an object, first instantiate it */
                         props.setObject("asdf", PluginManager::getInstance()->createObject(
-                            it->second, propsNested)); // XXX
+                            it2->second, propsNested)); // XXX
                     }
                     break;
                 case EString: {

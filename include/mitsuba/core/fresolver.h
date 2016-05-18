@@ -48,9 +48,7 @@ public:
     void erase(iterator it) { m_paths.erase(it); }
 
     /// Erase the search path from the list
-    void erase(const fs::path &p) {
-        m_paths.erase(std::remove(m_paths.begin(), m_paths.end(), p), m_paths.end());
-    }
+    void erase(const fs::path &p);
 
     /// Clear the list of search paths
     void clear() { m_paths.clear(); }

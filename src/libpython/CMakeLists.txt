@@ -142,7 +142,8 @@ add_dependencies(mitsuba-python python-test-files)
 # Test targets: rely on the auto-discovery feature of python's `unittest`
 add_test(NAME mitsuba-python-test
   COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -v ${CMAKE_SOURCE_DIR}/src/tests
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist/python)
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist)
+set_tests_properties(mitsuba-python-test PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python")
 
 add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
   ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose
