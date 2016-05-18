@@ -49,7 +49,7 @@ template <typename Scalar> Scalar normal_cdf(Scalar u) {
     Scalar y, z;
 
     if (!std::isfinite(u))
-        return (u < 0 ? 0.f : 1.f);
+        return (u < 0 ? (Scalar) 0 : (Scalar) 1);
     y = std::abs(u);
 
     if (y <= (Scalar) 0.46875 * (Scalar) math::SqrtTwo_d) {
@@ -61,7 +61,7 @@ template <typename Scalar> Scalar normal_cdf(Scalar u) {
     }
 
     z = std::exp(-y*y/2)/2;
-    if (y <= 4.0) {
+    if (y <= 4) {
         /* evaluate erfc() for sqrt(2)*0.46875 <= |u| <= sqrt(2)*4.0 */
         y = y/(Scalar) math::SqrtTwo_d;
         y = ((((((((c[0]*y+c[1])*y+c[2])*y+c[3])*y+c[4])*y+c[5])*y+c[6])*y+c[7])*y+c[8])
@@ -75,7 +75,7 @@ template <typename Scalar> Scalar normal_cdf(Scalar u) {
              /(((((q[0]*y+q[1])*y+q[2])*y+q[3])*y+q[4])*y+q[5]);
         y = z*((Scalar) math::InvSqrtPi_d-y);
     }
-    return (u < 0.0 ? y : 1-y);
+    return (u < 0 ? y : 1-y);
 }
 
 /*
@@ -135,7 +135,7 @@ template <typename Scalar> Scalar normal_quantile(Scalar p) {
     t = t*(Scalar) math::SqrtTwoPi_d*std::exp(u*u/2);   /* f(u)/df(u) */
     u = u-t/(1+u*t/2);     /* Halley's method */
 
-    return p > 0.5 ? -u : u;
+    return p > (Scalar) 0.5 ? -u : u;
 };
 
 // Copyright (C) 2006, 2007, 2008
