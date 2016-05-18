@@ -39,6 +39,11 @@ public:
     /// Return an iterator at the end of the list of search paths (const)
     const_iterator end()   const { return m_paths.end(); }
 
+    /// Check if a given path is included in the search path list
+    bool contains(const fs::path &p) const {
+        return std::find(m_paths.begin(), m_paths.end(), p) != m_paths.end();
+    }
+
     /// Erase the entry at the given iterator position
     void erase(iterator it) { m_paths.erase(it); }
 
@@ -62,8 +67,8 @@ public:
     /// Return an entry from the list of search paths (const)
     const fs::path &operator[](size_t index) const { return m_paths[index]; }
 
-    /// Print a human-readable representation of this instance
-    friend MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, const FileResolver &r);
+    /// Return a human-readable representation of this instance
+    std::string toString() const override;
 
     MTS_DECLARE_CLASS()
 private:

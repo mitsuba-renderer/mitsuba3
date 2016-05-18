@@ -22,11 +22,6 @@ MTS_PY_EXPORT(FileResolver) {
                 throw pybind11::index_error();
             fr[i] = value;
         })
-        .def("__repr__", [](const FileResolver &fr) {
-            std::ostringstream oss;
-            oss << fr;
-            return oss.str();
-        })
         .mdef(FileResolver, resolve)
         .mdef(FileResolver, clear)
         .mdef(FileResolver, prepend)

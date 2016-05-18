@@ -13,10 +13,10 @@ NAMESPACE_BEGIN(mitsuba)
  * which is useful for doing things like:
  *
  * <ul>
- *    <li> Checking if an object derives from a certain class </li>
- *    <li> Determining the parent of a class at runtime </li>
- *    <li> Instantiating a class by name </li>
- *    <li> Unserializing a class from a binary data stream </li>
+ *    <li>Checking if an object derives from a certain class</li>
+ *    <li>Determining the parent of a class at runtime</li>
+ *    <li>Instantiating a class by name</li>
+ *    <li>Unserializing a class from a binary data stream</li>
  * </ul>
  *
  * \sa ref, Object
@@ -24,7 +24,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Class {
 public:
-    typedef Object *(*ConstructFunctor)();
+    typedef Object *(*ConstructFunctor)(const Properties &props);
     typedef Object *(*UnserializeFunctor)(Stream *stream);
 
     /**
@@ -73,13 +73,21 @@ public:
     /// Look up a class by its name
     static const Class *forName(const std::string &name);
 
-    /// Generate an instance of this class (if this is supported)
-    Object *construct() const;
-
-    /** \brief Unserialize an instance of the class (if this is
-     * supported).
+    /**
+     * \brief Generate an instance of this class
+     *
+     * \param props
+     *     A list of extra parameters that are supplied to the constructor
+     *
+     * \remark Throws an exception if the class is not constructible
      */
-    Object *unserialize(Stream *stream) const;
+    ref<Object> construct(const Properties &props) const;
+
+    /**
+     * \brief Unserialize an instance of the class
+     * \remark Throws an exception if the class is not unserializable
+     */
+    ref<Object> unserialize(Stream *stream) const;
 
     /// Check if the RTTI layer has been initialized
     static bool rttiIsInitialized() { return m_isInitialized; }
@@ -142,9 +150,9 @@ public: \
 
 
 NAMESPACE_BEGIN(detail)
-template <typename T, typename std::enable_if<std::is_constructible<T>::value, int>::type = 0>
-Class::ConstructFunctor get_construct_functor() { return []() -> Object * { return new T(); }; }
-template <typename T, typename std::enable_if<!std::is_constructible<T>::value, int>::type = 0>
+template <typename T, typename std::enable_if<std::is_constructible<T, const Properties &>::value, int>::type = 0>
+Class::ConstructFunctor get_construct_functor() { return [](const Properties &p) -> Object * { return new T(p); }; }
+template <typename T, typename std::enable_if<!std::is_constructible<T, const Properties &>::value, int>::type = 0>
 Class::ConstructFunctor get_construct_functor() { return nullptr; }
 template <typename T, typename std::enable_if<std::is_constructible<T, Stream *>::value, int>::type = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return [](Stream *s) -> Object * { return new T(s); }; }
@@ -178,5 +186,13 @@ NAMESPACE_END(detail)
     const Class *Name::getClass() const { return m_theClass; }
 
 extern MTS_EXPORT_CORE const Class *m_theClass;
+
+#define MTS_EXPORT_PLUGIN(name, descr) \
+	extern "C" { \
+		MTS_EXPORT Object *CreateObject(const Properties &props) { \
+			return new name(props); \
+		} \
+		MTS_EXPORT const char *Description = descr; \
+	}
 
 NAMESPACE_END(mitsuba)

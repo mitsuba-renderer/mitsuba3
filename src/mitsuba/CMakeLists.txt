@@ -1,6 +1,6 @@
 add_executable(mitsuba mitsuba.cpp)
 
-target_link_libraries(mitsuba mitsuba-core)
+target_link_libraries(mitsuba mitsuba-core mitsuba-render)
 
 add_custom_command(
   TARGET mitsuba

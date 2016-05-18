@@ -155,8 +155,8 @@ public:
     path& operator=(const std::string &str);
 #endif
 
-    /// Prints the path as it would be returned by <tt>native()</tt>.
-    friend std::ostream& operator<<(std::ostream &os, const path &path);
+    /// Prints the path as it would be returned by <tt>string()</tt>.
+    MTS_EXPORT_CORE friend std::ostream& operator<<(std::ostream &os, const path &path);
 
     /** Equality operator. Warning: this only checks for lexicographic equivalence.
      * To check whether two paths point to the same filesystem resource,

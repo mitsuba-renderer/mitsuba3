@@ -9,11 +9,16 @@ NAMESPACE_BEGIN(string)
 
 /// Check if the given string starts with a specified prefix
 inline bool starts_with(const std::string &string, const std::string &prefix) {
-    size_t i = 0;
-    while (prefix[i] == string[i] &&
-           i < prefix.length() && i < string.length())
-        ++i;
-    return i == prefix.length();
+    if (prefix.size() > string.size())
+        return false;
+    return std::equal(prefix.begin(), prefix.end(), string.begin());
+}
+
+/// Check if the given string ends with a specified suffix
+inline bool ends_with(const std::string &string, const std::string &suffix) {
+    if (suffix.size() > string.size())
+        return false;
+    return std::equal(suffix.rbegin(), suffix.rend(), string.rbegin());
 }
 
 /// Return a lower-case version of the given string (warning: not unicode compliant)

@@ -17,11 +17,16 @@ void Object::decRef(bool dealloc) const noexcept {
 
 std::string Object::toString() const {
     std::ostringstream oss;
-    oss << getClass()->getName() << "[" << this << "]";
+    oss << getClass()->getName() << "[" << (void *) this << "]";
     return oss.str();
 }
 
 Object::~Object() { }
+
+std::ostream& operator<<(std::ostream &os, const Object *object) {
+    os << object->toString();
+    return os;
+}
 
 MTS_IMPLEMENT_CLASS(Object,)
 NAMESPACE_END(mitsuba)

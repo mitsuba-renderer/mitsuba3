@@ -62,21 +62,19 @@ void Class::initializeOnce(Class *theClass) {
     }
 }
 
-Object *Class::construct() const {
-    if (!m_constr) {
-        Log(EError, "RTTI error: Attempted to construct a "
-            "class lacking a default constructor (%s)!",
-            getName());
-    }
-    return m_constr();
+ref<Object> Class::construct(const Properties &props) const {
+    if (!m_constr)
+        Throw("RTTI error: Attempted to construct a "
+              "non-constructible class (%s)!",
+              getName());
+    return m_constr(props);
 }
 
-Object *Class::unserialize(Stream *stream) const {
-    if (!m_unser) {
-        Log(EError, "RTTI error: Attempted to construct a "
-            "class lacking a unserialization constructor (%s)!",
-            getName().c_str());
-    }
+ref<Object> Class::unserialize(Stream *stream) const {
+    if (!m_unser)
+        Throw("RTTI error: Attempted to construct a "
+              "class lacking a unserialization constructor (%s)!",
+              getName());
     return m_unser(stream);
 }
 

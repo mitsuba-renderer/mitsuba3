@@ -31,6 +31,9 @@ extern MTS_EXPORT_CORE std::string memString(size_t size, bool precise = false);
 /// Generate a trap instruction if running in a debugger; otherwise, return.
 extern MTS_EXPORT_CORE void trapDebugger();
 
+/// Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>
+extern MTS_EXPORT_CORE fs::path getLibraryPath();
+
 /// Joins elements of <tt>v</tt> into a string, separated by an optional delimiter.
 template <typename T> std::string mkString(const std::vector<T> v,
                                            const std::string &delimiter = ", ") {

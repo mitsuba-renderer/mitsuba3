@@ -15,8 +15,11 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+extern "C" {
+	typedef Object *(*CreateObjectFunctor)(const Properties &props);
+};
+
 class Plugin {
-	typedef Object *(*CreateInstanceFunctor)(const Properties &props);
 public:
 
     Plugin(const fs::path &path) : m_path(path) {
@@ -33,9 +36,9 @@ public:
         #endif
 
         try {
-            createInstance = (CreateInstanceFunctor) getSymbol("CreateInstance");
-            this->~Plugin();
+            createObject = (CreateObjectFunctor) getSymbol("CreateObject");
         } catch (...) {
+            this->~Plugin();
             throw;
         }
     }
@@ -48,7 +51,7 @@ public:
         #endif
     }
 
-    bool getSymbol(const std::string &name) const {
+    void *getSymbol(const std::string &name) const {
         #if defined(__WINDOWS__)
             void *ptr = GetProcAddress(m_handle, name.c_str());
             if (!ptr)
@@ -63,7 +66,7 @@ public:
         return ptr;
     }
 
-    CreateInstanceFunctor createInstance = nullptr;
+    CreateObjectFunctor createObject = nullptr;
 
 private:
     #if defined(__WINDOWS__)
@@ -126,19 +129,19 @@ PluginManager::~PluginManager() {
 }
 
 ref<Object> PluginManager::createObject(const Class *class_, const Properties &props) {
-	const Plugin *plugin = d->getPlugin(props.getPluginName());
-	ref<Object> object = plugin->createInstance(props);
-	if (!object->getClass()->derivesFrom(class_))
+   const Plugin *plugin = d->getPlugin(props.getPluginName());
+   ref<Object> object = plugin->createObject(props);
+   if (!object->getClass()->derivesFrom(class_))
         Throw("Type mismatch when loading plugin \"%s\": Expected "
-              "an instance of \"%s\"", props.getPluginName().c_str(),
-              class_->getName().c_str());
+              "an instance of \"%s\"", props.getPluginName(),
+              class_->getName());
 
-	return object;
+   return object;
 }
 
 ref<Object> PluginManager::createObject(const Properties &props) {
 	const Plugin *plugin = d->getPlugin(props.getPluginName());
-    return plugin->createInstance(props);
+    return plugin->createObject(props);
 }
 
 std::vector<std::string> PluginManager::getLoadedPlugins() const {

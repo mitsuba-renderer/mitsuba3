@@ -21,7 +21,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 endif()
 
-if(APPLE)
+if (APPLE)
   set(CMAKE_MACOSX_RPATH ON)
 endif()
 
@@ -31,7 +31,7 @@ add_subdirectory(ext ext_build)
 include_directories(include ${TINYFORMAT_INCLUDE_DIRS} ${EIGEN_INCLUDE_DIRS})
 
 # Compile with compiler warnings turned on
-if(MSVC)
+if (MSVC)
   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   else()
@@ -109,5 +109,24 @@ if (MSVC)
   endif()
 endif()
 
+# Function for creating macros
+function(add_plugin)
+  list(GET ARGV 0 target_name)
+  list(REMOVE_AT ARGV 0)
+  add_library(${target_name} SHARED ${ARGV})
+  set_target_properties(${target_name} PROPERTIES PREFIX "")
+  target_link_libraries(${target_name} mitsuba-core mitsuba-render)
+  add_custom_command(
+    TARGET ${target_name}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${target_name}> ${CMAKE_BINARY_DIR}/dist/plugins)
+endfunction(add_plugin)
+
+# For the Mitsuba plugins and libraries, don't set a build/install rpath
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH "")
+
 enable_testing()
 add_subdirectory(src)
+
+set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "@executable_path")

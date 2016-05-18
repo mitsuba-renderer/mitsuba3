@@ -1,5 +1,5 @@
 #include <mitsuba/core/fresolver.h>
-#include <iostream>
+#include <sstream>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -16,16 +16,17 @@ fs::path FileResolver::resolve(const fs::path &path) const {
     return path;
 }
 
-std::ostream &operator<<(std::ostream &os, const FileResolver &r) {
-    os << "resolver[" << std::endl;
-    for (size_t i = 0; i < r.m_paths.size(); ++i) {
-        os << "  \"" << r.m_paths[i] << "\"";
-        if (i + 1 < r.m_paths.size())
-            os << ",";
-        os << std::endl;
+std::string FileResolver::toString() const {
+    std::ostringstream oss;
+    oss << "FileResolver[" << std::endl;
+    for (size_t i = 0; i < m_paths.size(); ++i) {
+        oss << "  \"" << m_paths[i] << "\"";
+        if (i + 1 < m_paths.size())
+            oss << ",";
+        oss << std::endl;
     }
-    os << "]";
-    return os;
+    oss << "]";
+    return oss.str();
 }
 
 MTS_IMPLEMENT_CLASS(FileResolver, Object)

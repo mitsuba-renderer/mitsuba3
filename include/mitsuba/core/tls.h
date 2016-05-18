@@ -26,7 +26,7 @@ NAMESPACE_BEGIN(mitsuba)
  * The implementation is designed to make the \c get() operation as fast as as
  * possible at the cost of more involved locking when creating or destroying
  * threads and TLS objects. To actually instantiate a TLS object with a
- * specific type, use to the \ref ThreadLocal class.
+ * specific type, use the \ref ThreadLocal class.
  *
  * \ingroup libcore
  * \sa ThreadLocal

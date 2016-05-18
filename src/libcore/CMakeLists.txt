@@ -45,14 +45,14 @@ target_link_libraries(mitsuba-core tbb pugixml)
 # Link to libpng (either the system version or a version built via cmake)
 target_link_libraries(mitsuba-core ${PNG_LIBRARIES})
 
-# Copy libcore binary to the 'dist' directory
+# Create the 'dist' and 'dist/plugins' directories
 add_custom_command(
   TARGET mitsuba-core
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist/plugins"
 )
 
-set(DEPENDENCIES pugixml IlmThread Half Half Imath IlmImf Iex nanogui mitsuba-core tbb libzmq)
+set(DEPENDENCIES mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex nanogui tbb libzmq)
 if (WIN32)
   list(APPEND DEPENDENCIES png16 zlib jpeg)
 endif()

@@ -33,6 +33,13 @@ public:
     void decRef(bool dealloc = true) const noexcept;
 
     /**
+     * \brief Return a \ref Class instance containing run-time type information
+     * about this Object
+     * \sa Class
+     */
+    virtual const Class *getClass() const;
+
+    /**
      * \brief Return a human-readable string representation of the object's
      * contents.
      *
@@ -43,12 +50,6 @@ public:
      */
     virtual std::string toString() const;
 
-    /**
-     * \brief Return a \ref Class instance containing run-time type information
-     * about this Object
-     * \sa Class
-     */
-    virtual const Class *getClass() const;
 protected:
     /** \brief Virtual protected deconstructor.
      * (Will only be called by \ref ref)
@@ -175,5 +176,14 @@ public:
 private:
     T *m_ptr = nullptr;
 };
+
+/// Prints the canonical string representation of an object instance
+MTS_EXPORT_CORE std::ostream& operator<<(std::ostream &os, const Object *object);
+
+/// Prints the canonical string representation of an object instance
+template <typename T>
+std::ostream& operator<<(std::ostream &os, const ref<T> &object) {
+    return operator<<(os, object.get());
+}
 
 NAMESPACE_END(mitsuba)
