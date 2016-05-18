@@ -95,11 +95,24 @@ elseif (UNIX)
   endif()
 endif()
 
-# Copy binary to the 'dist' directory
+# Create the 'dist/python' directory 
 add_custom_command(
   TARGET mitsuba-python
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mitsuba-python> ${CMAKE_BINARY_DIR}/dist)
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist/python"
+)
+
+# Copy libmitsuba-python binary to the 'dist/python' directory
+add_custom_command(
+  TARGET mitsuba-python
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mitsuba-python> ${CMAKE_BINARY_DIR}/dist/python)
+
+# Copy nanogui python binding binary to the 'dist/python' directory
+add_custom_command(
+  TARGET mitsuba-python
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nanogui_python> ${CMAKE_BINARY_DIR}/dist/python)
 
 # Compute compilation flags for 'mkdoc' target, which extracts docstrings from the C++ header files
 string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
@@ -121,32 +134,21 @@ add_custom_target(mkdoc COMMAND
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
 
-if (NOT "${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-  # For each test file, generate a rule that copies it over to the build directory.
-  # The rule includes a dependency on the original files so that changes are picked-up.
-  file(GLOB PYTHON_TEST_FILES "test_*.py")
-  set(PYTHON_TEST_FILES_IN_BUILD "")
-  foreach(test ${PYTHON_TEST_FILES})
-    get_filename_component(filename ${test} NAME)
-    set(output_path ${CMAKE_BINARY_DIR}/src/libpython/${filename})
-    list(APPEND PYTHON_TEST_FILES_IN_BUILD ${output_path})
-
-    add_custom_command(
-      OUTPUT ${output_path}
-      COMMAND ${CMAKE_COMMAND} -E copy ${test} ${CMAKE_BINARY_DIR}/src/libpython
-      MAIN_DEPENDENCY ${test})
-  endforeach(test)
-
-  # The python library depends on the test files being present in the build
-  # directory, so that changes in the test files will trigger the copy.
-  add_custom_target(python-test-files DEPENDS ${PYTHON_TEST_FILES_IN_BUILD})
-  add_dependencies(mitsuba-python python-test-files)
-endif()
+# The python library depends on the test files being present in the build
+# directory, so that changes in the test files will trigger the copy.
+add_custom_target(python-test-files DEPENDS ${PYTHON_TEST_FILES_IN_BUILD})
+add_dependencies(mitsuba-python python-test-files)
 
 # Test targets: rely on the auto-discovery feature of python's `unittest`
-add_test(NAME mitsuba-python-test COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -v ${CMAKE_BINARY_DIR}/src/libpython)
-set_tests_properties(mitsuba-python-test PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/dist")
+add_test(NAME mitsuba-python-test
+  COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -v ${CMAKE_SOURCE_DIR}/src/tests
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist/python)
 
 add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
-        ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose
   DEPENDS mitsuba-python)
+
+if (APPLE)
+  set_target_properties(mitsuba-python PROPERTIES INSTALL_RPATH "@loader_path/..")
+  set_target_properties(nanogui_python PROPERTIES INSTALL_RPATH "@loader_path/..")
+endif()

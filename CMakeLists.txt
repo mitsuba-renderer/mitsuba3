@@ -8,7 +8,7 @@ option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
 include(CheckCXXCompilerFlag)
 
 # Set a default build configuration (Release)
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
@@ -128,5 +128,3 @@ set(CMAKE_INSTALL_RPATH "")
 
 enable_testing()
 add_subdirectory(src)
-
-set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "@executable_path")

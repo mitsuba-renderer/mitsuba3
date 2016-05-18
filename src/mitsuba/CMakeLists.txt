@@ -10,3 +10,7 @@ add_custom_command(
   TARGET mitsuba
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mitsuba> ${CMAKE_BINARY_DIR}/dist)
+
+if (APPLE)
+  set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "@executable_path")
+endif()

@@ -1,7 +1,7 @@
 # Add a CMake parameter for choosing a desired Python version
 set(MITSUBA_PYTHON_VERSION "" CACHE STRING "Python version to use for compiling the mitsuba-python library")
 
-if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/openexr/OpenEXR")
+if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/openexr/OpenEXR")
   message(FATAL_ERROR "The Mitsuba dependencies are missing! "
     "You probably did not clone the project with --recursive. It is possible to recover "
     "by calling \"git submodule update --init --recursive\"")
@@ -90,6 +90,9 @@ if (WIN32)
   add_dependencies(IlmImf zlib)
 endif()
 
+# Use install rpath from this point onwards
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
 # Build Thread Building Blocks (main shared libraries only)
 set(TBB_BUILD_SHARED          ON  CACHE BOOL " " FORCE)
 set(TBB_BUILD_STATIC          OFF CACHE BOOL " " FORCE)
@@ -110,6 +113,9 @@ set(NANOGUI_INCLUDE_DIRS
    ${PROJECT_SOURCE_DIR}/ext/nanogui/include
    ${NANOGUI_EXTRA_INCS}
    PARENT_SCOPE)
+if (PYTHONLIBS_FOUND)
+  set_property(TARGET nanogui_python PROPERTY FOLDER "dependencies")
+endif()
 
 # Build the pugixml parser
 add_library(pugixml SHARED pugixml/src/pugixml.cpp)

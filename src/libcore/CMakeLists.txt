@@ -57,10 +57,6 @@ if (WIN32)
   list(APPEND DEPENDENCIES png16 zlib jpeg)
 endif()
 
-if (PYTHONLIBS_FOUND)
-  list(APPEND DEPENDENCIES nanogui_python)
-endif()
-
 # Copy dependencies into the 'dist' directory
 foreach(dep ${DEPENDENCIES})
   add_custom_command(
