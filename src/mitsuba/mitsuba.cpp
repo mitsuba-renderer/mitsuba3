@@ -5,6 +5,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/argparser.h>
 #include <mitsuba/core/util.h>
+#include <tbb/task_scheduler_init.h>
 
 using namespace mitsuba;
 
@@ -19,16 +20,19 @@ int main(int argc, char *argv[]) {
     auto arg_extra = parser.add("", true);
 
     try {
+        /* Parse all command line options */
+        parser.parse(argc, argv);
+
+        /* Initialize Intel Thread Building Blocks with the requested number of threads */
+        tbb::task_scheduler_init init(
+            *arg_threads ? arg_threads->asInt()
+                         : tbb::task_scheduler_init::automatic);
+
         /* Append the mitsuba directory to the FileResolver search path list */
         ref<FileResolver> fr = Thread::getThread()->getFileResolver();
         fs::path basePath = util::getLibraryPath().parent_path();
         if (!fr->contains(basePath))
             fr->append(basePath);
-
-        parser.parse(argc, argv);
-
-        if (*arg_threads)
-            std::cout << "Number of threads: "<< arg_threads->asInt() << std::endl;
 
         while (arg_extra && *arg_extra) {
             xml::loadFile(arg_extra->asString());

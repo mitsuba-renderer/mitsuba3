@@ -1,3 +1,7 @@
+include_directories(
+  ${TBB_INCLUDE_DIRS}
+)
+
 add_executable(mitsuba mitsuba.cpp)
 
 target_link_libraries(mitsuba mitsuba-core mitsuba-render)
