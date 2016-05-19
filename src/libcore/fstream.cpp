@@ -18,7 +18,7 @@ FileStream::FileStream(const path &p, bool writeEnabled)
 
     // TODO: open in binary mode instead of text mode (?)
     // TODO: truncate rather than append when in write mode (?)
-    const auto mode = (m_writeMode ? std::ios_base::out : std::ios_base::in);
+    const auto mode = std::ios_base::binary | (m_writeMode ? std::ios_base::out : std::ios_base::in);
     m_file.open(p.string(), mode);
 
     if (!m_file.good()) {
