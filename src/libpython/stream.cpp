@@ -5,6 +5,7 @@
 #include <mitsuba/core/mstream.h>
 
 #include <mitsuba/core/filesystem.h>
+#include <mitsuba/core/logger.h>
 #include "python.h"
 
 NAMESPACE_BEGIN()
@@ -27,10 +28,6 @@ struct declare_astream_accessors {
 
     template <typename T>
     static void apply(PyClass &c) {
-        c.def("get", [](AnnotatedStream& s,
-                        const std::string &name, T &value) {
-            return py::cast(s.get(name, value));
-        }, DM(AnnotatedStream, get));
         c.def("set", [](AnnotatedStream& s,
                         const std::string &name, const T &value) {
             s.set(name, value);
@@ -128,8 +125,37 @@ MTS_PY_EXPORT(AnnotatedStream) {
         .mdef(AnnotatedStream, canWrite)
         .def("__repr__", &AnnotatedStream::toString);
 
+    // Get: we can "infer" the type from type information stored in the ToC.
+    // We perform a series of try & catch until we find the right type. This is
+    // very inefficient, but better than leaking the type info abstraction, which
+    // is private to the AnnotatedStream.
+    c.def("get", [](AnnotatedStream& s, const std::string &name) {
+        const auto keys = s.keys();
+        bool keyExists = find(keys.begin(), keys.end(), name) != keys.end();
+        if (!keyExists) {
+            Log(EError, "Key \"name\" does not exist in AnnotatedStream. Available keys: %s",
+                        name, s.keys());
+        }
+
+#define TRY_GET_TYPE(Type)                     \
+        try {                                  \
+            Type v;                            \
+            s.get(name, v);                    \
+            return py::cast(v);                \
+        } catch(std::runtime_error& e) {}      \
+
+        TRY_GET_TYPE(bool);
+        TRY_GET_TYPE(int64_t);
+        TRY_GET_TYPE(Float);
+        TRY_GET_TYPE(std::string);
+
+#undef TRY_GET_TYPE
+
+        Log(EError, "Key \"%s\" exists but does not have a supported type.",
+                    name);
+    }, DM(AnnotatedStream, get));
+
     // get & set declarations for many types
-    // TODO: read & set methods à la dict (see Properties bindings)
-    // TODO: infer type from type info stored in the ToC map
+    // TODO: read & set methods à la dict (?)
     methods_declarator::recurse<declare_astream_accessors>(c);
 }

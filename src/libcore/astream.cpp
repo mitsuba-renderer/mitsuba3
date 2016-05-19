@@ -132,7 +132,6 @@ void AnnotatedStream::readTOC() {
     for (uint32_t i = 0; i < nItems; ++i) {
         std::string field_name, type_id;
         uint64_t offset;
-        // TODO: make sure that field name, etc are written directly as values
         m_stream->read(field_name);
         m_stream->read(type_id);
         m_stream->read(offset);
@@ -142,7 +141,7 @@ void AnnotatedStream::readTOC() {
 }
 
 void AnnotatedStream::writeTOC() {
-    const auto trailer_offset = static_cast<uint64_t>(m_stream->getPos());
+    const auto trailerOffset = static_cast<uint64_t>(m_stream->getPos());
     const auto nItems = static_cast<uint32_t>(m_table.size());
 
     // Write sentry at the very beginning of the stream
