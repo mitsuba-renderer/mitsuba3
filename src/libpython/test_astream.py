@@ -49,7 +49,7 @@ class AnnotatedStreamTest(unittest.TestCase):
     # Writes example contents (with nested names, various types, etc)
     def writeContents(self, astream):
         def writeRecursively(contents):
-            for (key, val) in contents.items():
+            for (key, val) in sorted(contents.items()):
                 if type(val) is dict:
                     astream.push(key)
                     writeRecursively(val)
@@ -75,7 +75,7 @@ class AnnotatedStreamTest(unittest.TestCase):
             if len(contents) <= 0:
                 return keys
 
-            for (key, val) in contents.items():
+            for (key, val) in sorted(contents.items()):
                 if type(val) is dict:
                     prefixes.append(key)
                     getKeysRecursively(keys, val)
@@ -90,32 +90,30 @@ class AnnotatedStreamTest(unittest.TestCase):
             self.assertCountEqual(astream.keys(),
                                   getKeysRecursively([], contents))
 
-            for (key, val) in contents.items():
+            for (key, val) in sorted(contents.items()):
                 if type(val) is dict:
                     if len(val) > 0:
                         astream.push(key)
                         checkRecursively(val)
                         astream.pop()
+                elif type(val) is float:
+                    self.assertAlmostEqual(val, astream.get(key), places=6)
                 else:
-                    # TODO: need to get with the right type!
-                    found = 0
-                    astream.get(key, found)
-                    self.assertEqual(val, found)
+                    self.assertEqual(val, astream.get(key))
 
         checkRecursively(self.contents)
 
     # Simply writes all the example values to the stream (no annotations)
     def writeContentsToStream(self, stream):
         def writeRecursively(contents):
-            for (_, val) in contents.items():
+            for (_, val) in sorted(contents.items()):
                 if type(val) is dict:
                     writeRecursively(val)
                 else:
-                    stream.writeValue(val)
+                    stream.write(val)
 
         writeRecursively(self.contents)
 
-    @unittest.skip("disabled")
     def test01_basics(self):
         for (name, stream) in self.streams.items():
             with self.subTest(name):
@@ -134,7 +132,6 @@ class AnnotatedStreamTest(unittest.TestCase):
                 with self.assertRaises(Exception):
                     astream.set('some_field', 42)
 
-    @unittest.skip("disabled")
     def test02_construction(self):
         for (name, stream) in self.streams.items():
             with self.subTest(name):
@@ -162,7 +159,6 @@ class AnnotatedStreamTest(unittest.TestCase):
             with self.assertRaises(Exception):
                 _ = AnnotatedStream(mstream)
 
-    @unittest.skip("disabled")
     def test03_toc_management(self):
         for (name, stream) in self.streams.items():
             if not stream.canWrite():

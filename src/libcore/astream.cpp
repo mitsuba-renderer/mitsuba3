@@ -8,9 +8,13 @@ NAMESPACE_BEGIN()
 /// Sentry used to determine whether a stream is indeed a compatible AnnotatedStream
 static const std::string kSerializedHeaderId = "SER_V1";
 static constexpr auto kSerializedHeaderIdLength = 6;
-/// Protocol id string + total header size in bytes + number of elements
+/** Elements of the header =
+ *    Protocol version string (= string length number followed by chars)
+ *    + total header size in bytes
+ *    + number of elements
+ */
 static constexpr auto kSerializedHeaderSize =
-    kSerializedHeaderIdLength + sizeof(uint64_t) + sizeof(uint32_t);
+    sizeof(uint32_t) + kSerializedHeaderIdLength + sizeof(uint64_t) + sizeof(uint32_t);
 NAMESPACE_END()
 
 AnnotatedStream::AnnotatedStream(ref<Stream> &stream, bool throwOnMissing)
@@ -21,6 +25,8 @@ AnnotatedStream::AnnotatedStream(ref<Stream> &stream, bool throwOnMissing)
     if (m_stream->canRead() && m_stream->getSize() > 0) {
         readTOC();
     }
+    // Even if the file was initially empty, we need to start any write
+    // with an offset, so as to leave space for the header to be written on close.
     m_stream->seek(kSerializedHeaderSize);
 }
 
@@ -142,11 +148,11 @@ void AnnotatedStream::writeTOC() {
     // Write sentry at the very beginning of the stream
     m_stream->seek(0);
     m_stream->write(kSerializedHeaderId);
-    m_stream->write(trailer_offset);
+    m_stream->write(trailerOffset);
     m_stream->write(nItems);
     m_stream->flush();
     // Write table of contents at the end of the stream
-    m_stream->seek(static_cast<size_t>(trailer_offset));
+    m_stream->seek(static_cast<size_t>(trailerOffset));
     for (const auto &item : m_table) {
         // For each field, write: field name, field type id, corresponding offset
         m_stream->write(item.first);
