@@ -54,5 +54,17 @@ inline std::vector<std::string> tokenize(const std::string &string,
     return tokens;
 }
 
+/// Turns a vector of elements into a human-readable representation
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
+    auto it = v.begin();
+    while (it != v.end()) {
+        os << *it;
+        it++;
+        if (it != v.end())
+            os << ", ";
+    }
+}
+
 NAMESPACE_END(string)
 NAMESPACE_END(mitsuba)
