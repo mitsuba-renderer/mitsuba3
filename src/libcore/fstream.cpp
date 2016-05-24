@@ -2,6 +2,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/logger.h>
 #include <sstream>
+#include <fstream>
 
 namespace fs = mitsuba::filesystem;
 using path = fs::path;
@@ -9,7 +10,7 @@ using path = fs::path;
 NAMESPACE_BEGIN(mitsuba)
 
 FileStream::FileStream(const path &p, bool writeEnabled)
-    : Stream(), m_path(p), m_writeEnabled(writeEnabled) {
+    : Stream(), m_path(p), m_file(new std::fstream), m_writeEnabled(writeEnabled) {
     const bool fileExists = fs::exists(p);
     if (!m_writeEnabled && !fileExists) {
         Log(EError, "\"%s\": tried to open a read-only FileStream pointing to"
@@ -26,17 +27,17 @@ FileStream::FileStream(const path &p, bool writeEnabled)
         }
     }
 
-    m_file.open(p.string(), mode);
+    m_file->open(p.string(), mode);
 
-    if (!m_file.good()) {
+    if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to open the file.",
             m_path.string().c_str());
     }
 }
 
 FileStream::~FileStream() {
-    if (m_file.is_open()) {
-        m_file.close();
+    if (m_file->is_open()) {
+        m_file->close();
     }
 }
 
@@ -57,9 +58,9 @@ void FileStream::read(void *p, size_t size) {
             m_path.string().c_str());
     }
 
-    m_file.read((char *)p, size);
+    m_file->read((char *)p, size);
 
-    if (!m_file.good()) {
+    if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to read %llu bytes",
             m_path.string().c_str(), size);
     }
@@ -71,9 +72,9 @@ void FileStream::write(const void *p, size_t size) {
             m_path.string().c_str());
     }
 
-    m_file.write((char *)p, size);
+    m_file->write((char *)p, size);
 
-    if (!m_file.good()) {
+    if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to write %llu bytes",
             m_path.string().c_str(), size);
     }
@@ -81,11 +82,11 @@ void FileStream::write(const void *p, size_t size) {
 
 void FileStream::seek(size_t pos) {
     if (m_writeEnabled)
-        m_file.seekg(static_cast<std::streamoff>(pos));
+        m_file->seekg(static_cast<std::streamoff>(pos));
     else
-        m_file.seekp(static_cast<std::streamoff>(pos));
+        m_file->seekp(static_cast<std::streamoff>(pos));
 
-    if (!m_file.good()) {
+    if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to seek to offset %llu",
             m_path.string().c_str(), pos);
     }
@@ -104,19 +105,23 @@ void FileStream::truncate(size_t size) {
     fs::resize_file(m_path, size);
     seek(std::min(old_pos, size));
 
-    if (!m_file.good()) {
+    if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to truncate file to size %llu",
             m_path.string().c_str(), size);
     }
 }
 
 size_t FileStream::getPos() const {
-    const auto pos = (m_writeEnabled ? m_file.tellg() : m_file.tellp());
+    const auto pos = (m_writeEnabled ? m_file->tellg() : m_file->tellp());
     if (pos < 0) {
         Log(EError, "\"%s\": I/O error while attempting to determine position in file",
             m_path.string().c_str());
     }
     return static_cast<size_t>(pos);
+}
+
+void FileStream::flush() {
+    m_file->flush();
 }
 
 MTS_IMPLEMENT_CLASS(FileStream, Stream)

@@ -2,7 +2,7 @@
 
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/stream.h>
-#include <fstream>
+#include <iosfwd>
 #include "logger.h"
 
 namespace fs = mitsuba::filesystem;
@@ -69,9 +69,7 @@ public:
     }
 
     /// Flushes any buffered operation to the underlying file.
-    virtual void flush() override {
-        m_file.flush();
-    }
+    virtual void flush() override;
 
     /// Can we write to the stream?
     virtual bool canWrite() const override {
@@ -96,7 +94,7 @@ protected:
 private:
 
     fs::path m_path;
-    mutable std::fstream m_file;
+    mutable std::unique_ptr<std::fstream> m_file;
     bool m_writeEnabled;
 };
 
