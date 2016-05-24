@@ -43,6 +43,8 @@ class AnnotatedStreamTest(unittest.TestCase):
         }
 
     def tearDown(self):
+        for stream in self.streams.values():
+            stream.close()
         os.remove(str(AnnotatedStreamTest.roPath))
         os.remove(str(AnnotatedStreamTest.woPath))
 
@@ -213,10 +215,12 @@ class AnnotatedStreamTest(unittest.TestCase):
             astream = AnnotatedStream(fstream1, True)
             self.writeContents(astream)
             astream.close()  # Writes out the ToC
+            fstream1.close()
 
             fstream2 = FileStream(AnnotatedStreamTest.woPath, False)
             astream = AnnotatedStream(fstream2, False)
             self.checkContents(astream)
+            fstream2.close()
 
     @unittest.skip("Not implemented yet")
     def test05_gold_standard(self):

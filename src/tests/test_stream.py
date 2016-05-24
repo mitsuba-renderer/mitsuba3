@@ -43,6 +43,9 @@ class CommonStreamTest(unittest.TestCase):
         self.streams['FileStream (with write)'] = FileStream(CommonStreamTest.rwPath, True)
 
     def tearDown(self):
+        for stream in self.streams.values():
+            stream.close()
+
         os.remove(str(CommonStreamTest.roPath))
         os.remove(str(CommonStreamTest.rwPath))
 
@@ -205,6 +208,9 @@ class FileStreamTest(unittest.TestCase):
         self.wo = FileStream(FileStreamTest.rwPath, True)
 
     def tearDown(self):
+        self.ro.close()
+        self.wo.close()
+
         os.remove(str(FileStreamTest.roPath))
         os.remove(str(FileStreamTest.rwPath))
         if PyPath.exists(str(FileStreamTest.newPath)):
@@ -229,8 +235,9 @@ class FileStreamTest(unittest.TestCase):
         p = FileStreamTest.newPath
         # File should only be created when opening in write mode
         self.assertFalse(PyPath.exists(str(p)))
-        _ = FileStream(p, True)
+        fstream = FileStream(p, True)
         self.assertTrue(PyPath.exists(str(p)))
+        fstream.close()
         os.remove(str(p))
         # In read-only mode, throws if the file doesn't exist
         self.assertFalse(PyPath.exists(str(p)))
@@ -256,6 +263,7 @@ class FileStreamTest(unittest.TestCase):
     def test04_seek(self):
         self.wo.truncate(5)
         self.wo.seek(5)
+        self.wo.flush()
         self.assertEqual(self.wo.getPos(), 5)
         self.assertEqual(self.wo.getSize(), 5)
         self.wo.write("hello world")
@@ -344,6 +352,13 @@ class ZStreamTest(unittest.TestCase):
         self.streams['ZStream (MemoryStream)'] = ZStream(MemoryStream(64))
         self.streams['ZStream (FileStream[read only])'] = ZStream(FileStream(ZStreamTest.roPath, False))
         self.streams['ZStream (FileStream[with write])'] = ZStream(FileStream(ZStreamTest.rwPath, True))
+
+    def tearDown(self):
+        for stream in self.streams.values():
+            stream.close()
+
+        os.remove(str(ZStreamTest.roPath))
+        os.remove(str(ZStreamTest.rwPath))
 
     def test01_construction(self):
         for (name, stream) in self.streams.items():
