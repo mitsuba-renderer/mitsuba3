@@ -93,7 +93,7 @@ template <typename T> struct serialization_helper {
         if (!swap) {
             s.write(value, sizeof(T) * count);
         } else {
-            T v[count];
+            std::unique_ptr<T[]> v(new T[count]);
             for (size_t i = 0; i < count; ++i) {
                 // TODO: this first write could be avoided
                 v[i] = *value;
