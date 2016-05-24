@@ -44,6 +44,7 @@ add_library(mitsuba-core SHARED
   dstream.cpp      ${INC_DIR}/dstream.h
   fstream.cpp      ${INC_DIR}/fstream.h
   mstream.cpp      ${INC_DIR}/mstream.h
+  zstream.cpp      ${INC_DIR}/zstream.h
 )
 
 # Link to Intel's Thread Building Blocks & the pugixml parser

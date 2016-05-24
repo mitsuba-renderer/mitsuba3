@@ -1,7 +1,7 @@
 import unittest
 import os
 from os import path as PyPath
-from mitsuba import Stream, DummyStream, FileStream, MemoryStream
+from mitsuba import Stream, DummyStream, FileStream, MemoryStream, ZStream
 from mitsuba.filesystem import path
 
 def touch(path):
@@ -127,6 +127,7 @@ class CommonStreamTest(unittest.TestCase):
             with self.subTest(name):
                 self.checkContents(stream)
 
+    # TODO: may need to test raw read & write functions since they are public
     # TODO: more read / write tests (read back, check contents of written file, etc)
     # TODO: check for compatibility with Mitsuba 1 serialized files
     # TODO: test endianness swapping
@@ -281,6 +282,28 @@ class MemoryStreamTest(unittest.TestCase):
                          "hostByteOrder=little-endian, byteOrder=big-endian" +
                          ", ownsBuffer=1, capacity=" + str(MemoryStreamTest.defaultCapacity) +
                          ", size=15, pos=15]")
+
+class ZStreamTest(unittest.TestCase):
+    roPath = path('./read_only_file_for_zstream_tests')
+    woPath = path('./write_only_file_for_zstream_tests')
+
+    def setUp(self):
+        touch(ZStreamTest.roPath)
+        # Provide a fresh instances of ZStream with various underlying streams
+        self.streams = {}
+        self.streams['ZStream (MemoryStream)'] = ZStream(MemoryStream(64))
+        self.streams['ZStream (FileStream[read only])'] = ZStream(FileStream(ZStreamTest.roPath, False))
+        self.streams['ZStream (FileStream[write only])'] = ZStream(FileStream(ZStreamTest.woPath, True))
+
+    def test01_construction(self):
+        for (name, stream) in self.streams.items():
+            with self.subTest(name):
+                self.assertEqual(stream.canRead(), stream.getChildStream().canRead())
+                self.assertEqual(stream.canWrite(), stream.getChildStream().canWrite())
+
+    # TODO: test construction with different enum values (EDeflateStream, EGZipStream)
+    # TODO: test write and recover
+    # TODO: test against a gold standard (compressed file)
 
 if __name__ == '__main__':
     unittest.main()

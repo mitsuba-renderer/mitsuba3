@@ -3,6 +3,7 @@
 #include <mitsuba/core/dstream.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/mstream.h>
+#include <mitsuba/core/zstream.h>
 
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/logger.h>
@@ -10,7 +11,6 @@
 
 NAMESPACE_BEGIN()
 
-// User provides a templated [T] function that takes arguments (which might depend on T)
 struct declare_stream_accessors {
     using PyClass = pybind11::class_<mitsuba::Stream,
                                      mitsuba::ref<mitsuba::Stream>>;
@@ -111,6 +111,34 @@ MTS_PY_EXPORT(MemoryStream) {
         .def("__repr__", &MemoryStream::toString);
 }
 
+MTS_PY_EXPORT(ZStream) {
+    auto c = MTS_PY_CLASS(ZStream, Stream);
+
+    py::enum_<ZStream::EStreamType>(c, "EStreamType", DM(ZStream, EStreamType))
+        .value("EDeflateStream", ZStream::EDeflateStream)
+        .value("EGZipStream", ZStream::EGZipStream)
+        .export_values();
+
+
+    c.def(py::init<Stream*, ZStream::EStreamType, int>(), DM(ZStream, ZStream),
+          py::arg("childStream"),
+          py::arg("streamType") = ZStream::EDeflateStream,
+          py::arg("level") = Z_DEFAULT_COMPRESSION)
+        // Unsupported in ZStream: .mdef(ZStream, seek)
+        // Unsupported in ZStream: .mdef(ZStream, truncate)
+        // Unsupported in ZStream: .mdef(ZStream, getPos)
+        // Unsupported in ZStream: .mdef(ZStream, getSize)
+        // Unsupported in ZStream: .mdef(ZStream, flush)
+        .def("getChildStream", [](ZStream &stream) {
+            return py::cast(stream.getChildStream());
+        }, DM(ZStream, getChildStream))
+        .mdef(ZStream, canRead)
+        .mdef(ZStream, canWrite)
+        .def("__repr__", &ZStream::toString);
+
+
+}
+
 MTS_PY_EXPORT(AnnotatedStream) {
     auto c = MTS_PY_CLASS(AnnotatedStream, Object)
         .def(py::init<ref<Stream>, bool>(), DM(AnnotatedStream, AnnotatedStream),
@@ -152,6 +180,7 @@ MTS_PY_EXPORT(AnnotatedStream) {
 
         Log(EError, "Key \"%s\" exists but does not have a supported type.",
                     name);
+        return py::cast(py::none());
     }, DM(AnnotatedStream, get));
 
     // get & set declarations for many types

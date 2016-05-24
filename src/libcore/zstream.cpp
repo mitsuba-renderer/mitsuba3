@@ -1,6 +1,6 @@
 #include <mitsuba/core/zstream.h>
 
-MTS_NAMESPACE_BEGIN
+NAMESPACE_BEGIN(mitsuba)
 
 ZStream::ZStream(Stream *childStream, EStreamType streamType, int level)
     : m_childStream(childStream), m_didWrite(false) {
@@ -30,7 +30,7 @@ ZStream::ZStream(Stream *childStream, EStreamType streamType, int level)
 std::string ZStream::toString() const {
     std::ostringstream oss;
     oss << "ZStream[" << std::endl
-        << "childStream = " << indent(m_childStream->toString()) << std::endl
+        << "childStream = " << m_childStream->toString() << std::endl
         << "]";
     return oss.str();
 }
@@ -119,4 +119,4 @@ ZStream::~ZStream() {
 }
 
 MTS_IMPLEMENT_CLASS(ZStream, Stream)
-MTS_NAMESPACE_END
+NAMESPACE_END(mitsuba)
