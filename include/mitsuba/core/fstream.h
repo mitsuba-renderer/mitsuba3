@@ -19,11 +19,11 @@ class MTS_EXPORT_CORE FileStream : public Stream {
 public:
 
     /** \brief Constructs a new FileStream by opening the file pointed by <tt>p</tt>.
-     * The file is opened in read / write mode as specified by <tt>writeEnabled</tt>.
+     * The file is opened in read-only or read/write mode as specified by <tt>writeEnabled</tt>.
      *
      * If <tt>writeEnabled</tt> and the file did not exist before, it is
-     * created. Trying to open a non-existing file in read-only mode results
-     * in an exception being thrown.
+     * created.
+     * Throws if trying to open a non-existing file in with write disabled.
      * Throws an exception if the file cannot be opened / created.
      */
     FileStream(const fs::path &p, bool writeEnabled);
@@ -75,12 +75,12 @@ public:
 
     /// Can we write to the stream?
     virtual bool canWrite() const override {
-        return m_writeMode;
+        return m_writeEnabled;
     }
 
     /// Can we read from the stream?
     virtual bool canRead() const override {
-        return !m_writeMode;
+        return true;
     }
 
     //! @}
@@ -97,7 +97,7 @@ private:
 
     fs::path m_path;
     mutable std::fstream m_file;
-    bool m_writeMode;
+    bool m_writeEnabled;
 };
 
 NAMESPACE_END(mitsuba)

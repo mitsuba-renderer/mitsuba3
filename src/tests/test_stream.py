@@ -10,7 +10,7 @@ def touch(path):
 
 class CommonStreamTest(unittest.TestCase):
     roPath = path('./read_only_file_for_common_tests')
-    woPath = path('./write_only_file_for_common_tests')
+    rwPath = path('./write_enabled_file_for_common_tests')
 
     # TODO: more contents, exercise lots of types
     contents = [82.548, 999, 'some sentence', 424, 'hi', 13.3701, True, 'hey', 42,
@@ -40,11 +40,11 @@ class CommonStreamTest(unittest.TestCase):
         self.streams['DummyStream'] = DummyStream()
         self.streams['MemoryStream'] = MemoryStream(64)
         self.streams['FileStream (read only)'] = FileStream(CommonStreamTest.roPath, False)
-        self.streams['FileStream (write only)'] = FileStream(CommonStreamTest.woPath, True)
+        self.streams['FileStream (with write)'] = FileStream(CommonStreamTest.rwPath, True)
 
     def tearDown(self):
         os.remove(str(CommonStreamTest.roPath))
-        os.remove(str(CommonStreamTest.woPath))
+        os.remove(str(CommonStreamTest.rwPath))
 
     def test01_size_and_pos(self):
         for (name, stream) in self.streams.items():
@@ -118,11 +118,12 @@ class CommonStreamTest(unittest.TestCase):
         temporaryWriteStream = FileStream(CommonStreamTest.roPath, True)
         self.writeContents(temporaryWriteStream)
         del temporaryWriteStream
-        self.writeContents(self.streams['MemoryStream'])
 
         for (name, stream) in self.streams.items():
             if not stream.canRead():
                 continue
+            if stream.canWrite():
+                self.writeContents(stream)
 
             with self.subTest(name):
                 self.checkContents(stream)
@@ -138,11 +139,12 @@ class CommonStreamTest(unittest.TestCase):
         temporaryWriteStream = FileStream(CommonStreamTest.roPath, True)
         self.writeContents(temporaryWriteStream)
         del temporaryWriteStream
-        self.writeContents(self.streams['MemoryStream'])
 
         for (name, stream) in self.streams.items():
             if not stream.canRead():
                 continue
+            if stream.canWrite():
+                self.writeContents(stream)
 
             with self.subTest(name):
                 self.checkContents(stream)
@@ -170,42 +172,39 @@ class DummyStreamTest(unittest.TestCase):
 
 class FileStreamTest(unittest.TestCase):
     roPath = path("./test_file_read")
-    woPath = path("./test_file_write")
+    rwPath = path("./test_file_write")
     newPath = path("./path_that_did_not_exist")
 
     def setUp(self):
         touch(FileStreamTest.roPath)
-        touch(FileStreamTest.woPath)
+        touch(FileStreamTest.rwPath)
         if PyPath.exists(str(FileStreamTest.newPath)):
             os.remove(str(FileStreamTest.newPath))
 
-        # Provide read-only and write-only FileStream instances on fresh files
+        # Provide read-only and read-write FileStream instances on fresh files
         self.ro = FileStream(FileStreamTest.roPath, False)
-        self.wo = FileStream(FileStreamTest.woPath, True)
+        self.wo = FileStream(FileStreamTest.rwPath, True)
 
     def tearDown(self):
         os.remove(str(FileStreamTest.roPath))
-        os.remove(str(FileStreamTest.woPath))
+        os.remove(str(FileStreamTest.rwPath))
         if PyPath.exists(str(FileStreamTest.newPath)):
             os.remove(str(FileStreamTest.newPath))
-
-        # w = FileStream(path('./secret_hello'), True)
-        # w.seek(0)
-        # w.write("hello world")
-        # w.flush()
 
     def test01_basics(self):
         self.assertTrue(self.ro.canRead())
         self.assertFalse(self.ro.canWrite())
-        self.assertFalse(self.wo.canRead())
+        self.assertTrue(self.wo.canRead())
         self.assertTrue(self.wo.canWrite())
 
-        # Read / write modes should be enforced
+        # Read-only mode should be enforced
         with self.assertRaises(Exception):
             self.ro.write("hello")
-        with self.assertRaises(Exception):
-            v = 0
-            self.wo.read(v)
+
+        self.wo.write(42)
+        self.wo.flush()
+        self.wo.seek(0)
+        self.assertEqual(42, self.wo.readLong())
 
     def test02_create_on_open(self):
         p = FileStreamTest.newPath
@@ -270,15 +269,20 @@ class FileStreamTest(unittest.TestCase):
                          "FileStream[" +
                          "hostByteOrder=little-endian, byteOrder=little-endian" +
                          ", path=" + str(FileStreamTest.roPath) +
-                         ", writeOnly=false]")
+                         ", size=0" +
+                         ", pos=0" +
+                         ", writeEnabled=false]")
 
         self.wo.write("hello world")
         self.wo.setByteOrder(Stream.EBigEndian)
+        self.wo.flush()
         self.assertEqual(str(self.wo),
                          "FileStream[" +
                          "hostByteOrder=little-endian, byteOrder=big-endian" +
-                         ", path=" + str(FileStreamTest.woPath) +
-                         ", writeOnly=true]")
+                         ", path=" + str(FileStreamTest.rwPath) +
+                         ", size=15" +
+                         ", pos=15" +
+                         ", writeEnabled=true]")
 
 
 class MemoryStreamTest(unittest.TestCase):
@@ -301,9 +305,10 @@ class MemoryStreamTest(unittest.TestCase):
                          ", ownsBuffer=1, capacity=" + str(MemoryStreamTest.defaultCapacity) +
                          ", size=15, pos=15]")
 
+
 class ZStreamTest(unittest.TestCase):
     roPath = path('./read_only_file_for_zstream_tests')
-    woPath = path('./write_only_file_for_zstream_tests')
+    rwPath = path('./write_enabled_file_for_zstream_tests')
 
     def setUp(self):
         touch(ZStreamTest.roPath)
@@ -311,7 +316,7 @@ class ZStreamTest(unittest.TestCase):
         self.streams = {}
         self.streams['ZStream (MemoryStream)'] = ZStream(MemoryStream(64))
         self.streams['ZStream (FileStream[read only])'] = ZStream(FileStream(ZStreamTest.roPath, False))
-        self.streams['ZStream (FileStream[write only])'] = ZStream(FileStream(ZStreamTest.woPath, True))
+        self.streams['ZStream (FileStream[with write])'] = ZStream(FileStream(ZStreamTest.rwPath, True))
 
     def test01_construction(self):
         for (name, stream) in self.streams.items():

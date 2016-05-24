@@ -9,20 +9,27 @@ using path = fs::path;
 NAMESPACE_BEGIN(mitsuba)
 
 FileStream::FileStream(const path &p, bool writeEnabled)
-    : Stream(), m_path(p), m_writeMode(writeEnabled) {
-    if (!m_writeMode && !fs::exists(p)) {
+    : Stream(), m_path(p), m_writeEnabled(writeEnabled) {
+    const bool fileExists = fs::exists(p);
+    if (!m_writeEnabled && !fileExists) {
         Log(EError, "\"%s\": tried to open a read-only FileStream pointing to"
                     " a file that cannot be opened.",
             m_path.string().c_str());
     }
 
-    // TODO: open in binary mode instead of text mode (?)
-    // TODO: truncate rather than append when in write mode (?)
-    const auto mode = std::ios_base::binary | (m_writeMode ? std::ios_base::out : std::ios_base::in);
+    auto mode = std::ios::binary | std::ios::in;
+    if (writeEnabled) {
+        mode |= std::ios::out;
+        // If the file doesn't exist, add truncate mode to create it
+        if (!fileExists) {
+            mode |= std::ios::trunc;
+        }
+    }
+
     m_file.open(p.string(), mode);
 
     if (!m_file.good()) {
-        Log(EError, "\"%s\": I/O error while attempting to seek to open the file.",
+        Log(EError, "\"%s\": I/O error while attempting to open the file.",
             m_path.string().c_str());
     }
 }
@@ -37,9 +44,9 @@ std::string FileStream::toString() const {
     std::ostringstream oss;
     oss << "FileStream[" << Stream::toString()
         << ", path=" << m_path.string()
-        << ", writeOnly=" << (m_writeMode ? "true" : "false")
-//        << ", size=" << getSize()
-//        << ", pos=" << getPos()
+        << ", size=" << getSize()
+        << ", pos=" << getPos()
+        << ", writeEnabled=" << (m_writeEnabled ? "true" : "false")
         << "]";
     return oss.str();
 }
@@ -73,7 +80,7 @@ void FileStream::write(const void *p, size_t size) {
 }
 
 void FileStream::seek(size_t pos) {
-    if (m_writeMode)
+    if (m_writeEnabled)
         m_file.seekg(static_cast<std::streamoff>(pos));
     else
         m_file.seekp(static_cast<std::streamoff>(pos));
@@ -85,7 +92,7 @@ void FileStream::seek(size_t pos) {
 }
 
 void FileStream::truncate(size_t size) {
-    if (!m_writeMode) {
+    if (!m_writeEnabled) {
         Log(EError, "\"%s\": attempting to truncate a read-only FileStream",
             m_path.string().c_str());
     }
@@ -104,7 +111,7 @@ void FileStream::truncate(size_t size) {
 }
 
 size_t FileStream::getPos() const {
-    const auto pos = (m_writeMode ? m_file.tellg() : m_file.tellp());
+    const auto pos = (m_writeEnabled ? m_file.tellg() : m_file.tellp());
     if (pos < 0) {
         Log(EError, "\"%s\": I/O error while attempting to determine position in file",
             m_path.string().c_str());
