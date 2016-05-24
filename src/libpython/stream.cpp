@@ -169,7 +169,7 @@ MTS_PY_EXPORT(AnnotatedStream) {
             Type v;                            \
             s.get(name, v);                    \
             return py::cast(v);                \
-        } catch(std::runtime_error& e) {}      \
+        } catch(std::runtime_error&) {}      \
 
         TRY_GET_TYPE(bool);
         TRY_GET_TYPE(int64_t);

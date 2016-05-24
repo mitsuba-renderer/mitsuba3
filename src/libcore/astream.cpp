@@ -138,7 +138,7 @@ void AnnotatedStream::readTOC() {
     m_stream->read(nItems);
 
     // Read the table of contents (tucked at <tt>trailerOffset</tt>)
-    m_stream->seek(trailerOffset);
+    m_stream->seek(static_cast<size_t>(trailerOffset));
     for (uint32_t i = 0; i < nItems; ++i) {
         std::string field_name, type_id;
         uint64_t offset;
