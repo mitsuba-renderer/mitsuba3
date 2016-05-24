@@ -58,7 +58,6 @@ MTS_PY_EXPORT(Stream) {
         .DECLARE_READ(Float, "Float")
         .DECLARE_READ(bool, "Boolean")
         .DECLARE_READ(std::string, "String")
-        // TODO: support lists and dicts?
         .def("__repr__", &Stream::toString);
 #undef DECLARE_READ
 
@@ -186,6 +185,5 @@ MTS_PY_EXPORT(AnnotatedStream) {
     }, DM(AnnotatedStream, get));
 
     // get & set declarations for many types
-    // TODO: read & set methods à la dict (?)
     methods_declarator::recurse<declare_astream_accessors>(c);
 }

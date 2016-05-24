@@ -76,7 +76,6 @@ public:
      * length. However, a subsequent write should start at the seeked position
      * and update the size appropriately.
      */
-    // TODO: consider throwing when seeking further than the end of the stream
     virtual void seek(size_t pos) = 0;
 
     /** \brief Truncates the stream to a given size.
@@ -168,7 +167,6 @@ protected:
     virtual ~Stream() { };
 
     /// Copy is disallowed.
-    // TODO: refactor non-copyable feature to a mixin or macro (?)
     Stream(const Stream&) = delete;
     void operator=(const Stream&) = delete;
 

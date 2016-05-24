@@ -45,9 +45,16 @@ pattern). Anything written to the AnnotatedStream is ultimately passed
 down to the given Stream instance. The given Stream instance should
 not be destructed before this.
 
+Throws if ``writeMode`` is enabled (resp. disabled) but the underlying
+stream does not have write (resp. read) capabilities.
+
 Throws if the underlying stream has read capabilities and is not empty
 but does not correspond to a valid AnnotatedStream (i.e. it does not
-start with the kSerializedHeaderId sentry).)doc";
+start with the kSerializedHeaderId sentry).
+
+@param writeMode Whether to use write mode. The stream is either read-
+only or write-only. @param throwOnMissing Whether an error should be
+thrown when get is called for a missing field.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_canRead = R"doc(Whether the underlying stream has read capabilities)doc";
 
@@ -58,6 +65,8 @@ R"doc(Closes the annotated stream. No further read or write operations are
 permitted.
 
 This is called automatically by the destructor and is idempotent.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_compatibilityMode = R"doc(Whether the stream won't throw when trying to get missing fields.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_get =
 R"doc(Retrieve a field from the serialized file (only valid in read mode)
@@ -97,6 +106,8 @@ R"doc(Maintains the mapping: full field name -> (type, position in the
 stream))doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_m_throwOnMissing = R"doc()doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_writeMode = R"doc()doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_pop = R"doc(Pop a name prefix from the stack)doc";
 
@@ -512,19 +523,18 @@ static const char *__doc_mitsuba_FileResolver_size = R"doc(Return the number of 
 static const char *__doc_mitsuba_FileResolver_toString = R"doc(Return a human-readable representation of this instance)doc";
 
 static const char *__doc_mitsuba_FileStream =
-R"doc(Simple Stream implementation backed-up by a file.
-
-TODO: explain which underlying abstraction is used. TODO: double check
-portability.)doc";
+R"doc(Simple Stream implementation backed-up by a file. The underlying file
+abstraction is std::fstream, and so most operations can be expected to
+behave similarly.)doc";
 
 static const char *__doc_mitsuba_FileStream_FileStream =
 R"doc(Constructs a new FileStream by opening the file pointed by ``p``. The
-file is opened in read / write mode as specified by ``writeEnabled``.
+file is opened in read-only or read/write mode as specified by
+``writeEnabled``.
 
 If ``writeEnabled`` and the file did not exist before, it is created.
-Trying to open a non-existing file in read-only mode results in an
-exception being thrown. Throws an exception if the file cannot be
-opened / created.)doc";
+Throws if trying to open a non-existing file in with write disabled.
+Throws an exception if the file cannot be opened / created.)doc";
 
 static const char *__doc_mitsuba_FileStream_canRead = R"doc(Can we read from the stream?)doc";
 
@@ -536,13 +546,15 @@ static const char *__doc_mitsuba_FileStream_getClass = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_getPos = R"doc(Gets the current position inside the file)doc";
 
-static const char *__doc_mitsuba_FileStream_getSize = R"doc(Returns the size of the file)doc";
+static const char *__doc_mitsuba_FileStream_getSize =
+R"doc(Returns the size of the file. \note After a write, the size may not be
+updated until a flush is performed.)doc";
 
 static const char *__doc_mitsuba_FileStream_m_file = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_m_path = R"doc()doc";
 
-static const char *__doc_mitsuba_FileStream_m_writeMode = R"doc()doc";
+static const char *__doc_mitsuba_FileStream_m_writeEnabled = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception

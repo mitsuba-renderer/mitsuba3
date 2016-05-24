@@ -101,7 +101,6 @@ void FileStream::truncate(size_t size) {
     flush();
     const auto old_pos = getPos();
     seek(0);
-    // TODO: is it safe to change the underlying file while the fstream is still open?
     fs::resize_file(m_path, size);
     seek(std::min(old_pos, size));
 

@@ -256,11 +256,6 @@ struct serialization_helper<Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, 
     static void read(Stream &s, Matrix *value, size_t count, bool swap) {
         for (size_t i = 0; i<count; ++i) {
             uint32_t rows = 0, cols = 0;
-
-            if (swap) {
-                // TODO: handle endianness swap
-                throw std::runtime_error("Not implemented: endianness swap");
-            }
             serialization_helper<uint32_t>::read(s, &rows, 1, swap);
             serialization_helper<uint32_t>::read(s, &cols, 1, swap);
             value->resize(rows, cols);

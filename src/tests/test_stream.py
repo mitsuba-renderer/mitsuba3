@@ -101,7 +101,6 @@ class CommonStreamTest(unittest.TestCase):
                 self.assertEqual(stream.getSize(), size)
                 self.assertEqual(stream.getPos(), 5)
                 # Seeking beyond the end of the file is okay, but won't make it larger
-                # TODO: this behavior is inconsistent for MemoryStream
                 stream.seek(20)
                 self.assertEqual(stream.getSize(), size)
                 self.assertEqual(stream.getPos(), 20)
@@ -230,7 +229,7 @@ class FileStreamTest(unittest.TestCase):
         self.assertEqual(self.wo.getPos(), 0)
         self.wo.write("hello")
         self.wo.flush()
-        self.assertEqual(self.wo.getPos(), 0 + 9) # TODO: why not 9? (= 4 + 5)
+        self.assertEqual(self.wo.getPos(), 0 + 9)
         self.wo.truncate(5)
         self.assertEqual(self.wo.getPos(), 5)
 

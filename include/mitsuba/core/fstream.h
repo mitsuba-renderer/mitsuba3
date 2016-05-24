@@ -11,9 +11,8 @@ using path = fs::path;
 NAMESPACE_BEGIN(mitsuba)
 
 /** \brief Simple \ref Stream implementation backed-up by a file.
- *
- * TODO: explain which underlying abstraction is used.
- * TODO: double check portability.
+ * The underlying file abstraction is std::fstream, and so most
+ * operations can be expected to behave similarly.
  */
 class MTS_EXPORT_CORE FileStream : public Stream {
 public:
@@ -62,8 +61,10 @@ public:
     /// Gets the current position inside the file
     virtual size_t getPos() const override;
 
-    /// Returns the size of the file
-    // TODO: would need to flush first to get accurate results? (but that wouldn't be const)
+    /** \brief Returns the size of the file.
+     * \note After a write, the size may not be updated
+     * until a \ref flush is performed.
+     */
     virtual size_t getSize() const override {
         return fs::file_size(m_path);
     }

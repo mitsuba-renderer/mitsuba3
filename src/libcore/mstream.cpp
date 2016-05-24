@@ -42,7 +42,6 @@ void MemoryStream::write(const void *p, size_t size) {
     if (endPos > m_size) {
         if (endPos > m_capacity) {
             // Double capacity until it will fit `endPos`, à la `std::vector`
-            // TODO: do we want something more 'adjusted'? This may waste memory.
             auto newSize = m_capacity;
             do { newSize *= 2; } while (endPos > newSize);
             resize(newSize);
