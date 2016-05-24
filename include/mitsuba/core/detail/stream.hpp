@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(detail)
  * <tt>type_id</tt> is a unique, prefix-free code identifying the type.
  */
 // TODO: this will need to be adapted for Windows, builtins are not the same
-// TODO: ::swap: pointers can be replaced with nonconst references
+// TODO: ::swap methods: pointers can be replaced with nonconst references
 template <typename T, typename SFINAE = void> struct serialization_traits { };
 template <> struct serialization_traits<int8_t> {
     const char *type_id = "u8";
@@ -98,6 +98,7 @@ template <typename T> struct serialization_helper {
                 // TODO: this first write could be avoided
                 v[i] = *value;
                 serialization_traits<T>::swap(&v[i]);
+                value++;
             }
             s.write(&v, sizeof(T) * count);
         }
