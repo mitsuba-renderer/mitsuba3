@@ -17,8 +17,18 @@ static constexpr auto kSerializedHeaderSize =
     sizeof(uint32_t) + kSerializedHeaderIdLength + sizeof(uint64_t) + sizeof(uint32_t);
 NAMESPACE_END()
 
-AnnotatedStream::AnnotatedStream(ref<Stream> &stream, bool throwOnMissing)
-    : Object(), m_stream(stream), m_isClosed(false), m_throwOnMissing(throwOnMissing) {
+AnnotatedStream::AnnotatedStream(ref<Stream> &stream, bool writeMode, bool throwOnMissing)
+    : Object(), m_stream(stream), m_isClosed(false), m_writeMode(writeMode), m_throwOnMissing(throwOnMissing) {
+    if (!m_writeMode && !m_stream->canRead()) {
+        Log(EError, "Attempted to create a read-only AnnotatedStream from"
+                    " a stream without read capabilities: %s",
+            m_stream->toString());
+    }
+    if (m_writeMode && !m_stream->canWrite()) {
+        Log(EError, "Attempted to create a write-only AnnotatedStream from"
+                    " a stream without write capabilities: %s",
+            m_stream->toString());
+    }
 
     m_prefixStack.push_back("");
 

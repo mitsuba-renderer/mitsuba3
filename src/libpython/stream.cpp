@@ -141,8 +141,9 @@ MTS_PY_EXPORT(ZStream) {
 
 MTS_PY_EXPORT(AnnotatedStream) {
     auto c = MTS_PY_CLASS(AnnotatedStream, Object)
-        .def(py::init<ref<Stream>, bool>(), DM(AnnotatedStream, AnnotatedStream),
-             py::arg("stream"), py::arg("throwOnMissing") = true)
+        .def(py::init<ref<Stream>, bool, bool>(),
+             DM(AnnotatedStream, AnnotatedStream),
+             py::arg("stream"), py::arg("writeMode"), py::arg("throwOnMissing") = true)
         .mdef(AnnotatedStream, close)
         .mdef(AnnotatedStream, push)
         .mdef(AnnotatedStream, pop)
@@ -160,7 +161,8 @@ MTS_PY_EXPORT(AnnotatedStream) {
         const auto keys = s.keys();
         bool keyExists = find(keys.begin(), keys.end(), name) != keys.end();
         if (!keyExists) {
-            Log(EError, "Key \"name\" does not exist in AnnotatedStream. Available keys: %s",
+            const auto logLevel = s.compatibilityMode() ? EWarn : EError;
+            Log(logLevel, "Key \"%s\" does not exist in AnnotatedStream. Available keys: %s",
                         name, s.keys());
         }
 

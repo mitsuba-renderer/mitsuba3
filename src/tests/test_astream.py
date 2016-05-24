@@ -19,7 +19,7 @@ class AnnotatedStreamTest(unittest.TestCase):
         self.streams['DummyStream'] = DummyStream()
         self.streams['MemoryStream'] = MemoryStream(64)
         self.streams['FileStream (read only)'] = FileStream(AnnotatedStreamTest.roPath, False)
-        self.streams['FileStream (write only)'] = FileStream(AnnotatedStreamTest.woPath, True)
+        self.streams['FileStream (with write)'] = FileStream(AnnotatedStreamTest.woPath, True)
 
         # TODO: more types
         self.contents = {
@@ -117,11 +117,12 @@ class AnnotatedStreamTest(unittest.TestCase):
     def test01_basics(self):
         for (name, stream) in self.streams.items():
             with self.subTest(name):
-                astream = AnnotatedStream(stream)
+                writeMode = stream.canWrite()
+                astream = AnnotatedStream(stream, writeMode)
 
-                # Should have the same read & write capabilities as the underlying stream
-                self.assertEqual(astream.canRead(), stream.canRead())
-                self.assertEqual(astream.canWrite(), stream.canWrite())
+                # Should have read-only and write-only modes
+                self.assertEqual(astream.canRead(), not writeMode)
+                self.assertEqual(astream.canWrite(), writeMode)
                 self.assertEqual(astream.getSize(), 0)
 
                 # Cannot read or write to a closed astream
@@ -136,19 +137,22 @@ class AnnotatedStreamTest(unittest.TestCase):
         for (name, stream) in self.streams.items():
             with self.subTest(name):
                 # Construct with throw_on_missing disabled
-                astream = AnnotatedStream(stream, False)
+                writeMode = stream.canWrite()
+                astream = AnnotatedStream(stream, writeMode, False)
 
-                if not astream.canRead():
+                # Checking that both read/write mode are respected and throw_on_missing
+                if writeMode:
                     with self.assertRaises(Exception):
                         v = 0
                         astream.get("some_field", v)
-                if not astream.canWrite():
+                else:
+                    astream.get("some_missing_field")
                     with self.assertRaises(Exception):
                         astream.set("some_other_field", 42)
 
                 # Construct with throw_on_missing enabled
-                astream = AnnotatedStream(stream, True)
-                if astream.canRead():
+                astream = AnnotatedStream(stream, writeMode, True)
+                if not writeMode:
                     with self.assertRaises(Exception):
                         v = 0
                         astream.get("some_field_that_doesnt_exist", v)
@@ -157,7 +161,7 @@ class AnnotatedStreamTest(unittest.TestCase):
             mstream = MemoryStream()
             self.writeContentsToStream(mstream)
             with self.assertRaises(Exception):
-                _ = AnnotatedStream(mstream)
+                _ = AnnotatedStream(mstream, False)
 
     def test03_toc_management(self):
         for (name, stream) in self.streams.items():
@@ -165,7 +169,7 @@ class AnnotatedStreamTest(unittest.TestCase):
                 continue
 
             with self.subTest(name):
-                astream = AnnotatedStream(stream)
+                astream = AnnotatedStream(stream, True)
                 # Build a tree of prefixes
                 self.assertCountEqual(astream.keys(), [])
                 astream.set('a', 0)
@@ -195,23 +199,23 @@ class AnnotatedStreamTest(unittest.TestCase):
     def test04_toc_save_and_load_back(self):
         with self.subTest("MemoryStream"):
             mstream = self.streams['MemoryStream']
-            astream = AnnotatedStream(mstream)
+            astream = AnnotatedStream(mstream, True)
             self.writeContents(astream)
             astream.close()  # Writes out the ToC
 
             # Will throw if the header is missing or corrupted
-            astream = AnnotatedStream(mstream)
+            astream = AnnotatedStream(mstream, False)
             # Will fail if contents do not match
             self.checkContents(astream)
 
         with self.subTest("FileStream"):
-            fstream1 = self.streams['FileStream (write only)']
-            astream = AnnotatedStream(fstream1)
+            fstream1 = self.streams['FileStream (with write)']
+            astream = AnnotatedStream(fstream1, True)
             self.writeContents(astream)
             astream.close()  # Writes out the ToC
 
             fstream2 = FileStream(AnnotatedStreamTest.woPath, False)
-            astream = AnnotatedStream(fstream2)
+            astream = AnnotatedStream(fstream2, False)
             self.checkContents(astream)
 
     @unittest.skip("Not implemented yet")

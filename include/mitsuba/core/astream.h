@@ -30,11 +30,19 @@ public:
      * given Stream instance.
      * The given Stream instance should not be destructed before this.
      *
+     * Throws if <tt>writeMode</tt> is enabled (resp. disabled) but the underlying
+     * stream does not have write (resp. read) capabilities.
+     *
      * Throws if the underlying stream has read capabilities and is not empty
      * but does not correspond to a valid AnnotatedStream (i.e. it does not
      * start with the \ref kSerializedHeaderId sentry).
+     *
+     * @param writeMode Whether to use write mode. The stream is either read-only
+     *                  or write-only.
+     * @param throwOnMissing Whether an error should be thrown when \ref get is
+     *                       called for a missing field.
      */
-    AnnotatedStream(ref<Stream> &stream, bool throwOnMissing = true);
+    AnnotatedStream(ref<Stream> &stream, bool writeMode, bool throwOnMissing = true);
 
     /** \brief Closes the annotated stream. No further read or write operations
      * are permitted.
@@ -89,6 +97,9 @@ public:
             pop();
     }
 
+    /// Whether the stream won't throw when trying to get missing fields.
+    bool compatibilityMode() const { return !m_throwOnMissing; }
+
     /// @}
     // =========================================================================
 
@@ -100,10 +111,10 @@ public:
     size_t getSize() const { return m_stream->getSize(); }
 
     /// Whether the underlying stream has read capabilities
-    bool canRead() const { return m_stream->canRead(); }
+    bool canRead() const { return !m_writeMode; }
 
     /// Whether the underlying stream has write capabilities
-    bool canWrite() const { return m_stream->canWrite(); }
+    bool canWrite() const { return m_writeMode; }
 
     /// Whether the annotated stream has been closed (no further read or writes permitted)
     bool isClosed() { return m_isClosed; }
@@ -162,6 +173,7 @@ private:
     std::vector<std::string> m_prefixStack;
 
     bool m_isClosed;
+    bool m_writeMode;
     bool m_throwOnMissing;
 };
 
