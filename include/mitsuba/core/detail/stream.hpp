@@ -127,7 +127,7 @@ template <typename T> struct serialization_helper {
                 serialization_traits<T>::swap(&v[i]);
                 value++;
             }
-            s.write(&v, sizeof(T) * count);
+            s.write(v.get(), sizeof(T) * count);
         }
     }
 

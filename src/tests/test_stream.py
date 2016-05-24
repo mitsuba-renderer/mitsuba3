@@ -136,6 +136,7 @@ class CommonStreamTest(unittest.TestCase):
             stream.setByteOrder(otherEndianness)
 
         temporaryWriteStream = FileStream(CommonStreamTest.roPath, True)
+        temporaryWriteStream.setByteOrder(otherEndianness)
         self.writeContents(temporaryWriteStream)
         del temporaryWriteStream
 
