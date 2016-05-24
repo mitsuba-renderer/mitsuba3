@@ -4,7 +4,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-NAMESPACE_BEGIN()
+namespace {
 /// Sentry used to determine whether a stream is indeed a compatible AnnotatedStream
 static const std::string kSerializedHeaderId = "SER_V1";
 static constexpr auto kSerializedHeaderIdLength = 6;
@@ -15,7 +15,7 @@ static constexpr auto kSerializedHeaderIdLength = 6;
  */
 static constexpr auto kSerializedHeaderSize =
     sizeof(uint32_t) + kSerializedHeaderIdLength + sizeof(uint64_t) + sizeof(uint32_t);
-NAMESPACE_END()
+}  // end anonymous namespace
 
 AnnotatedStream::AnnotatedStream(ref<Stream> &stream, bool writeMode, bool throwOnMissing)
     : Object(), m_stream(stream), m_isClosed(false), m_writeMode(writeMode), m_throwOnMissing(throwOnMissing) {

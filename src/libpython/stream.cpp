@@ -9,8 +9,7 @@
 #include <mitsuba/core/logger.h>
 #include "python.h"
 
-NAMESPACE_BEGIN()
-
+namespace {
 struct declare_stream_accessors {
     using PyClass = pybind11::class_<mitsuba::Stream,
                                      mitsuba::ref<mitsuba::Stream>>;
@@ -40,7 +39,7 @@ struct declare_astream_accessors {
 // TODO: Python `long` type probably depends on the architecture, test on 32bits
 using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
 
-NAMESPACE_END()
+}  // end anonymous namespace
 
 MTS_PY_EXPORT(Stream) {
 #define DECLARE_READ(Type, ReadableName) \
