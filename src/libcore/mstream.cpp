@@ -23,7 +23,7 @@ void MemoryStream::read(void *p, size_t size) {
     if (m_pos + size > m_size) {
         const auto old_pos = m_pos;
         // Use signed difference since `m_pos` might be beyond `m_size`
-        ssize_t sizeRead = m_size - m_pos;
+        int64_t sizeRead = m_size - m_pos;
         if (sizeRead > 0) {
             memcpy(p, m_data + m_pos, sizeRead);
             m_pos += sizeRead;
