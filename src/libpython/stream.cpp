@@ -51,8 +51,6 @@ MTS_PY_EXPORT(Stream) {
     }, DM(Stream, read, 2))
 
     auto c = MTS_PY_CLASS(Stream, Object)
-        .mdef(Stream, canWrite)
-        .mdef(Stream, canRead)
         .mdef(Stream, setByteOrder)
         .mdef(Stream, getByteOrder)
         .mdef(Stream, getHostByteOrder)
@@ -81,9 +79,8 @@ MTS_PY_EXPORT(DummyStream) {
         .mdef(DummyStream, getPos)
         .mdef(DummyStream, getSize)
         .mdef(DummyStream, flush)
+        .mdef(DummyStream, canRead)
         .mdef(DummyStream, canWrite)
-        .mdef(DummyStream, canRead)
-        .mdef(DummyStream, canRead)
         .def("__repr__", &DummyStream::toString);
 }
 
@@ -95,6 +92,8 @@ MTS_PY_EXPORT(FileStream) {
         .mdef(FileStream, getPos)
         .mdef(FileStream, getSize)
         .mdef(FileStream, flush)
+        .mdef(Stream, canRead)
+        .mdef(Stream, canWrite)
         .def("__repr__", &FileStream::toString);
 }
 

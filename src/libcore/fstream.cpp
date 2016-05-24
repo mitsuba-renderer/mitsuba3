@@ -9,7 +9,7 @@ using path = fs::path;
 NAMESPACE_BEGIN(mitsuba)
 
 FileStream::FileStream(const path &p, bool writeEnabled)
-    : Stream(writeEnabled), m_path(p) {
+    : Stream(), m_path(p), m_writeMode(writeEnabled) {
     if (!m_writeMode && !fs::exists(p)) {
         Log(EError, "\"%s\": tried to open a read-only FileStream pointing to"
                     " a file that cannot be opened.",

@@ -77,6 +77,16 @@ public:
         m_file.flush();
     }
 
+    /// Can we write to the stream?
+    virtual bool canWrite() const override {
+        return m_writeMode;
+    }
+
+    /// Can we read from the stream?
+    virtual bool canRead() const override {
+        return !m_writeMode;
+    }
+
     //! @}
     // =========================================================================
 
@@ -91,7 +101,7 @@ private:
 
     fs::path m_path;
     std::fstream m_file;
-
+    bool m_writeMode;
 };
 
 NAMESPACE_END(mitsuba)

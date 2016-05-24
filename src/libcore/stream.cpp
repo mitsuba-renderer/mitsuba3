@@ -23,9 +23,8 @@ const Stream::EByteOrder Stream::m_hostByteOrder = detail::getByteOrder();
 
 // -----------------------------------------------------------------------------
 
-Stream::Stream(bool writeEnabled)
-    : m_writeMode(writeEnabled)
-    , m_byteOrder(m_hostByteOrder) {
+Stream::Stream()
+    : m_byteOrder(m_hostByteOrder) {
 
 };
 

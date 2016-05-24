@@ -4,13 +4,13 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MemoryStream::MemoryStream(size_t initialSize)
-    : Stream(true), m_capacity(0), m_size(0), m_pos(0),
+    : Stream(), m_capacity(0), m_size(0), m_pos(0),
       m_ownsBuffer(true), m_data(nullptr) {
     resize(initialSize);
 }
 
 MemoryStream::MemoryStream(void *ptr, size_t size)
-    : Stream(true), m_capacity(size), m_size(size), m_pos(0),
+    : Stream(), m_capacity(size), m_size(size), m_pos(0),
       m_ownsBuffer(false), m_data(reinterpret_cast<uint8_t *>(ptr)) {
 }
 

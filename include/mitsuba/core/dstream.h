@@ -14,7 +14,7 @@ class MTS_EXPORT_CORE DummyStream : public Stream {
 public:
 
     DummyStream()
-        : Stream(true), m_size(0), m_pos(0) { }
+        : Stream(), m_size(0), m_pos(0) { }
 
     /// Returns a string representation
     std::string toString() const override;

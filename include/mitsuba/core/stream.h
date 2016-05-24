@@ -21,8 +21,6 @@ NAMESPACE_END(detail)
  * value passed to \ref setByteOrder(). Whenever \ref getHostByteOrder()
  * and \ref getByteOrder() disagree, the endianness is swapped.
  *
- * TODO: explain write-only / read-only modes.
- *
  * \sa FileStream, MemoryStream, DummyStream
  */
 class MTS_EXPORT_CORE Stream : public Object {
@@ -45,11 +43,8 @@ public:
      * \brief Creates a new stream.
      * By default, it assumes the byte order of the underlying system,
      * i.e. no endianness conversion is performed.
-     *
-     * \param writeEnabled If true, the stream will be write-only, otherwise
-     *                     it will be read-only.
      */
-    Stream(bool writeEnabled);
+    Stream();
 
     /// Returns a string representation of the stream
     virtual std::string toString() const override;
@@ -103,14 +98,10 @@ public:
     virtual void flush() = 0;
 
     /// Can we write to the stream?
-    virtual bool canWrite() const {
-        return m_writeMode;
-    }
+    virtual bool canWrite() const = 0;
 
     /// Can we read from the stream?
-    virtual bool canRead() const {
-        return !m_writeMode;
-    }
+    virtual bool canRead() const = 0;
 
     /// @}
     // =========================================================================
@@ -182,8 +173,6 @@ protected:
     // TODO: refactor non-copyable feature to a mixin or macro (?)
     Stream(const Stream&) = delete;
     void operator=(const Stream&) = delete;
-
-    bool m_writeMode;
 
 private:
     static const EByteOrder m_hostByteOrder;
