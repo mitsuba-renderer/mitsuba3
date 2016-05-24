@@ -53,7 +53,7 @@ MTS_PY_EXPORT(Stream) {
     auto c = MTS_PY_CLASS(Stream, Object)
         .mdef(Stream, setByteOrder)
         .mdef(Stream, getByteOrder)
-        .mdef(Stream, getHostByteOrder)
+        .def_static("getHostByteOrder", Stream::getHostByteOrder, DM(Stream, getHostByteOrder))
         .DECLARE_READ(int64_t, "Long")
         .DECLARE_READ(Float, "Float")
         .DECLARE_READ(bool, "Boolean")

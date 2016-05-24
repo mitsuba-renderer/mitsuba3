@@ -13,7 +13,7 @@ class CommonStreamTest(unittest.TestCase):
     woPath = path('./write_only_file_for_common_tests')
 
     # TODO: more contents, exercise lots of types
-    contents = [82.5, 999, 'some sentence', 424, 'hi', 13.37, True, 'hey', 42,
+    contents = [82.548, 999, 'some sentence', 424, 'hi', 13.3701, True, 'hey', 42,
                 'c', False, '', 99.998]
 
     def writeContents(self, stream):
@@ -127,10 +127,28 @@ class CommonStreamTest(unittest.TestCase):
             with self.subTest(name):
                 self.checkContents(stream)
 
+    def test04_read_back_with_swapping(self):
+        otherEndianness = Stream.EBigEndian
+        if Stream.getHostByteOrder() == otherEndianness:
+            otherEndianness = Stream.ELittleEndian
+
+        for (_, stream) in self.streams.items():
+            stream.setByteOrder(otherEndianness)
+
+        temporaryWriteStream = FileStream(CommonStreamTest.roPath, True)
+        self.writeContents(temporaryWriteStream)
+        del temporaryWriteStream
+        self.writeContents(self.streams['MemoryStream'])
+
+        for (name, stream) in self.streams.items():
+            if not stream.canRead():
+                continue
+
+            with self.subTest(name):
+                self.checkContents(stream)
+
     # TODO: may need to test raw read & write functions since they are public
-    # TODO: more read / write tests (read back, check contents of written file, etc)
-    # TODO: check for compatibility with Mitsuba 1 serialized files
-    # TODO: test endianness swapping
+    # TODO: test against gold standard (test asset to be created)
 
 class DummyStreamTest(unittest.TestCase):
     def setUp(self):
