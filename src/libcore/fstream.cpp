@@ -103,8 +103,7 @@ void FileStream::truncate(size_t size) {
     }
 }
 
-size_t FileStream::getPos() {
-    // TODO: Y U NO CONST?
+size_t FileStream::getPos() const {
     const auto pos = (m_writeMode ? m_file.tellg() : m_file.tellp());
     if (pos < 0) {
         Log(EError, "\"%s\": I/O error while attempting to determine position in file",

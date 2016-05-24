@@ -87,10 +87,10 @@ public:
     virtual void truncate(size_t size) = 0;
 
     /// Gets the current position inside the stream
-    virtual size_t getPos() = 0;
+    virtual size_t getPos() const = 0;
 
     /// Returns the size of the stream
-    virtual size_t getSize() = 0;
+    virtual size_t getSize() const = 0;
 
     /// Flushes the stream's buffers, if any
     virtual void flush() = 0;

@@ -97,13 +97,13 @@ public:
     // =========================================================================
 
     /// Returns the current size of the underlying stream
-    size_t getSize() { return m_stream->getSize(); }
+    size_t getSize() const { return m_stream->getSize(); }
 
     /// Whether the underlying stream has read capabilities
-    bool canRead() { return m_stream->canRead(); }
+    bool canRead() const { return m_stream->canRead(); }
 
     /// Whether the underlying stream has write capabilities
-    bool canWrite() { return m_stream->canWrite(); }
+    bool canWrite() const { return m_stream->canWrite(); }
 
     /// Whether the annotated stream has been closed (no further read or writes permitted)
     bool isClosed() { return m_isClosed; }

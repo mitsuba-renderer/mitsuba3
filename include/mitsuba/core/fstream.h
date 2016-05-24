@@ -60,11 +60,11 @@ public:
     virtual void truncate(size_t size) override;
 
     /// Gets the current position inside the file
-    virtual size_t getPos() override;
+    virtual size_t getPos() const override;
 
     /// Returns the size of the file
     // TODO: would need to flush first to get accurate results? (but that wouldn't be const)
-    virtual size_t getSize() override {
+    virtual size_t getSize() const override {
         return fs::file_size(m_path);
     }
 
@@ -96,7 +96,7 @@ protected:
 private:
 
     fs::path m_path;
-    std::fstream m_file;
+    mutable std::fstream m_file;
     bool m_writeMode;
 };
 

@@ -75,13 +75,13 @@ public:
     }
 
     /// Unsupported. Always throws.
-    virtual size_t getPos() override {
+    virtual size_t getPos() const override {
         Log(EError, "getPos(): unsupported in a ZLIB stream!");
         return 0;
     }
 
     /// Unsupported. Always throws.
-    virtual size_t getSize() override {
+    virtual size_t getSize() const override {
         Log(EError, "getSize(): unsupported in a ZLIB stream!");
         return 0;
     }
