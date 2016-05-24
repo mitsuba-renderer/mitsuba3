@@ -14,7 +14,18 @@ class MTS_EXPORT_CORE DummyStream : public Stream {
 public:
 
     DummyStream()
-        : Stream(), m_size(0), m_pos(0) { }
+        : Stream(), m_size(0), m_pos(0), m_isClosed(false) { }
+
+    /** \brief Closes the stream.
+     * No further read or write operations are permitted.
+     *
+     * This function is idempotent.
+     * It may be called automatically by the destructor.
+     */
+    virtual void close() override { m_isClosed = true; };
+
+    /// Whether the stream is closed (no read or write are then permitted).
+    virtual bool isClosed() const override { return m_isClosed; };
 
     /// Returns a string representation
     std::string toString() const override;
@@ -29,6 +40,10 @@ public:
 
     /// Does not actually write anything, only updates the stream's position and size.
     virtual void write(const void *, size_t size) override {
+        if (isClosed()) {
+            Log(EError, "Attempted to write to a closed stream: %s", toString());
+        }
+
         m_size = std::max(m_size, m_pos + size);
         m_pos += size;
     }
@@ -58,8 +73,8 @@ public:
     /// No-op for <tt>DummyStream</tt>.
     virtual void flush() override { /* Nothing to do */ }
 
-    /// Always returns true.
-    virtual bool canWrite() const override { return true; }
+    /// Always returns true, except if the steam is closed.
+    virtual bool canWrite() const override { return !isClosed(); }
 
     /** \brief Always returns false, as nothing written to a
      * <tt>DummyStream</tt> is actually written.
@@ -83,6 +98,8 @@ private:
      * is ever written, we need to maintain consistent positioning).
      */
     size_t m_pos;
+    /// Whether the stream has been closed.
+    bool m_isClosed;
 
 };
 

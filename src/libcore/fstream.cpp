@@ -36,21 +36,32 @@ FileStream::FileStream(const path &p, bool writeEnabled)
 }
 
 FileStream::~FileStream() {
-    if (m_file->is_open()) {
-        m_file->close();
-    }
+    close();
 }
 
 std::string FileStream::toString() const {
     std::ostringstream oss;
     oss << "FileStream[" << Stream::toString()
-        << ", path=" << m_path.string()
-        << ", size=" << getSize()
-        << ", pos=" << getPos()
-        << ", writeEnabled=" << (m_writeEnabled ? "true" : "false")
+        << ", path=" << m_path.string();
+    // Position and size cannot be determined anymore if the file is closed
+    if (isClosed()) {
+        oss << ", size=?, pos=?";
+    } else {
+        oss << ", size=" << getSize()
+            << ", pos=" << getPos();
+    }
+    oss << ", writeEnabled=" << (m_writeEnabled ? "true" : "false")
         << "]";
     return oss.str();
 }
+
+void FileStream::close() {
+    m_file->close();
+};
+
+bool FileStream::isClosed() const {
+    return !m_file->is_open();
+};
 
 void FileStream::read(void *p, size_t size) {
     if (!canRead()) {

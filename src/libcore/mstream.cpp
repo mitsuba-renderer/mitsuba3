@@ -4,14 +4,15 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MemoryStream::MemoryStream(size_t initialSize)
-    : Stream(), m_capacity(0), m_size(0), m_pos(0),
-      m_ownsBuffer(true), m_data(nullptr) {
+    : Stream(), m_capacity(0), m_size(0), m_pos(0)
+    , m_ownsBuffer(true), m_data(nullptr), m_isClosed(false) {
     resize(initialSize);
 }
 
 MemoryStream::MemoryStream(void *ptr, size_t size)
-    : Stream(), m_capacity(size), m_size(size), m_pos(0),
-      m_ownsBuffer(false), m_data(reinterpret_cast<uint8_t *>(ptr)) {
+    : Stream(), m_capacity(size), m_size(size), m_pos(0)
+    , m_ownsBuffer(false), m_data(reinterpret_cast<uint8_t *>(ptr))
+    , m_isClosed(false) {
 }
 
 MemoryStream::~MemoryStream() {
@@ -20,6 +21,10 @@ MemoryStream::~MemoryStream() {
 }
 
 void MemoryStream::read(void *p, size_t size) {
+    if (isClosed()) {
+        Log(EError, "Attempted to read from a closed stream: %s", toString());
+    }
+
     if (m_pos + size > m_size) {
         const auto old_pos = m_pos;
         // Use signed difference since `m_pos` might be beyond `m_size`
@@ -38,6 +43,10 @@ void MemoryStream::read(void *p, size_t size) {
 }
 
 void MemoryStream::write(const void *p, size_t size) {
+    if (isClosed()) {
+        Log(EError, "Attempted to write to a closed stream: %s", toString());
+    }
+
     size_t endPos = m_pos + size;
     if (endPos > m_size) {
         if (endPos > m_capacity) {

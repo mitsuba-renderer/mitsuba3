@@ -44,10 +44,14 @@ public:
      */
     AnnotatedStream(ref<Stream> &stream, bool writeMode, bool throwOnMissing = true);
 
-    /** \brief Closes the annotated stream. No further read or write operations
-     * are permitted.
+    /** \brief Closes the annotated stream.
+     * No further read or write operations are permitted.
      *
-     * This is called automatically by the destructor and is idempotent.
+     * \note The underlying stream is not automatically closed by this function.
+     * It may, however, call its own <tt>close</tt> function in its destructor.
+     *
+     * This function is idempotent and causes the ToC to be written out to the stream.
+     * It is called automatically by the destructor.
      */
     void close();
 
@@ -110,14 +114,14 @@ public:
     /// Returns the current size of the underlying stream
     size_t getSize() const { return m_stream->getSize(); }
 
-    /// Whether the underlying stream has read capabilities
-    bool canRead() const { return !m_writeMode; }
+    /// Whether the underlying stream has read capabilities and is not closed.
+    bool canRead() const { return !m_writeMode && !isClosed(); }
 
-    /// Whether the underlying stream has write capabilities
-    bool canWrite() const { return m_writeMode; }
+    /// Whether the underlying stream has write capabilities and is not closed.
+    bool canWrite() const { return m_writeMode && !isClosed(); }
 
     /// Whether the annotated stream has been closed (no further read or writes permitted)
-    bool isClosed() { return m_isClosed; }
+    bool isClosed() const { return m_isClosed; }
 
     /// @}
     // =========================================================================
@@ -172,9 +176,10 @@ private:
      */
     std::vector<std::string> m_prefixStack;
 
-    bool m_isClosed;
     bool m_writeMode;
     bool m_throwOnMissing;
+    /// Whether the annotated stream is closed (independent of the underlying stream).
+    bool m_isClosed;
 };
 
 NAMESPACE_END(mitsuba)

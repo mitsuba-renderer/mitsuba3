@@ -143,11 +143,30 @@ class CommonStreamTest(unittest.TestCase):
         for (name, stream) in self.streams.items():
             if not stream.canRead():
                 continue
-            if stream.canWrite():
-                self.writeContents(stream)
-
             with self.subTest(name):
+                if stream.canWrite():
+                    self.writeContents(stream)
                 self.checkContents(stream)
+
+    def test05_read_back_through_zstream(self):
+        for (name, stream) in self.streams.items():
+            with self.subTest("ZStream with underlying " + name):
+                if not stream.canRead():
+                    continue
+
+                zstream = ZStream(stream)
+                if zstream.canWrite():
+                    self.writeContents(stream)
+                    self.checkContents(stream)
+
+
+    def test06_close(self):
+        for (name, stream) in self.streams.items():
+            with self.subTest(name):
+                stream.close()
+                self.assertFalse(stream.canRead())
+                self.assertFalse(stream.canWrite())
+
 
     # TODO: may need to test raw read & write functions since they are public
     # TODO: test against gold standard (test asset to be created)
@@ -166,7 +185,7 @@ class DummyStreamTest(unittest.TestCase):
         self.s.setByteOrder(Stream.EBigEndian)
         self.assertEqual(str(self.s),
                         "DummyStream[" +
-                        "hostByteOrder=little-endian, byteOrder=big-endian" +
+                        "hostByteOrder=little-endian, byteOrder=big-endian, isClosed=0" +
                         ", size=15, pos=15]")
 
 
@@ -267,21 +286,29 @@ class FileStreamTest(unittest.TestCase):
     def test05_str(self):
         self.assertEqual(str(self.ro),
                          "FileStream[" +
-                         "hostByteOrder=little-endian, byteOrder=little-endian" +
+                         "hostByteOrder=little-endian, byteOrder=little-endian, isClosed=0" +
                          ", path=" + str(FileStreamTest.roPath) +
                          ", size=0" +
                          ", pos=0" +
                          ", writeEnabled=false]")
 
         self.wo.write("hello world")
-        self.wo.setByteOrder(Stream.EBigEndian)
         self.wo.flush()
         self.assertEqual(str(self.wo),
                          "FileStream[" +
-                         "hostByteOrder=little-endian, byteOrder=big-endian" +
+                         "hostByteOrder=little-endian, byteOrder=little-endian, isClosed=0" +
                          ", path=" + str(FileStreamTest.rwPath) +
                          ", size=15" +
                          ", pos=15" +
+                         ", writeEnabled=true]")
+        self.wo.setByteOrder(Stream.EBigEndian)
+        self.wo.close()
+        self.assertEqual(str(self.wo),
+                         "FileStream[" +
+                         "hostByteOrder=little-endian, byteOrder=big-endian, isClosed=1" +
+                         ", path=" + str(FileStreamTest.rwPath) +
+                         ", size=?" +
+                         ", pos=?" +
                          ", writeEnabled=true]")
 
 
@@ -301,7 +328,7 @@ class MemoryStreamTest(unittest.TestCase):
         self.s.setByteOrder(Stream.EBigEndian)
         self.assertEqual(str(self.s),
                          "MemoryStream[" +
-                         "hostByteOrder=little-endian, byteOrder=big-endian" +
+                         "hostByteOrder=little-endian, byteOrder=big-endian, isClosed=0" +
                          ", ownsBuffer=1, capacity=" + str(MemoryStreamTest.defaultCapacity) +
                          ", size=15, pos=15]")
 
@@ -325,7 +352,6 @@ class ZStreamTest(unittest.TestCase):
                 self.assertEqual(stream.canWrite(), stream.getChildStream().canWrite())
 
     # TODO: test construction with different enum values (EDeflateStream, EGZipStream)
-    # TODO: test write and recover
     # TODO: test against a gold standard (compressed file)
 
 if __name__ == '__main__':

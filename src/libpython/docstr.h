@@ -56,15 +56,22 @@ start with the kSerializedHeaderId sentry).
 only or write-only. @param throwOnMissing Whether an error should be
 thrown when get is called for a missing field.)doc";
 
-static const char *__doc_mitsuba_AnnotatedStream_canRead = R"doc(Whether the underlying stream has read capabilities)doc";
+static const char *__doc_mitsuba_AnnotatedStream_canRead = R"doc(Whether the underlying stream has read capabilities and is not closed.)doc";
 
-static const char *__doc_mitsuba_AnnotatedStream_canWrite = R"doc(Whether the underlying stream has write capabilities)doc";
+static const char *__doc_mitsuba_AnnotatedStream_canWrite =
+R"doc(Whether the underlying stream has write capabilities and is not
+closed.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_close =
 R"doc(Closes the annotated stream. No further read or write operations are
 permitted.
 
-This is called automatically by the destructor and is idempotent.)doc";
+\note The underlying stream is not automatically closed by this
+function. It may, however, call its own ``close`` function in its
+destructor.
+
+This function is idempotent and causes the ToC to be written out to
+the stream. It is called automatically by the destructor.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_compatibilityMode = R"doc(Whether the stream won't throw when trying to get missing fields.)doc";
 
@@ -93,7 +100,9 @@ static const char *__doc_mitsuba_AnnotatedStream_keys =
 R"doc(Return all field names under the current name prefix. Nested names are
 returned with the full path prepended, e.g.: level_1.level_2.my_name)doc";
 
-static const char *__doc_mitsuba_AnnotatedStream_m_isClosed = R"doc()doc";
+static const char *__doc_mitsuba_AnnotatedStream_m_isClosed =
+R"doc(Whether the annotated stream is closed (independent of the underlying
+stream).)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_m_prefixStack =
 R"doc(Stack of accumulated prefixes, i.e. ``m_prefixStack.back`` is the full
@@ -430,7 +439,13 @@ static const char *__doc_mitsuba_DummyStream_canRead =
 R"doc(Always returns false, as nothing written to a ``DummyStream`` is
 actually written.)doc";
 
-static const char *__doc_mitsuba_DummyStream_canWrite = R"doc(Always returns true.)doc";
+static const char *__doc_mitsuba_DummyStream_canWrite = R"doc(Always returns true, except if the steam is closed.)doc";
+
+static const char *__doc_mitsuba_DummyStream_close =
+R"doc(Closes the stream. No further read or write operations are permitted.
+
+This function is idempotent. It may be called automatically by the
+destructor.)doc";
 
 static const char *__doc_mitsuba_DummyStream_flush = R"doc(No-op for ``DummyStream``.)doc";
 
@@ -439,6 +454,10 @@ static const char *__doc_mitsuba_DummyStream_getClass = R"doc()doc";
 static const char *__doc_mitsuba_DummyStream_getPos = R"doc(Returns the current position in the stream.)doc";
 
 static const char *__doc_mitsuba_DummyStream_getSize = R"doc(Returns the size of the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
+
+static const char *__doc_mitsuba_DummyStream_m_isClosed = R"doc(Whether the stream has been closed.)doc";
 
 static const char *__doc_mitsuba_DummyStream_m_pos =
 R"doc(Current position in the "virtual" stream (even though nothing is ever
@@ -536,9 +555,16 @@ If ``writeEnabled`` and the file did not exist before, it is created.
 Throws if trying to open a non-existing file in with write disabled.
 Throws an exception if the file cannot be opened / created.)doc";
 
-static const char *__doc_mitsuba_FileStream_canRead = R"doc(Can we read from the stream?)doc";
+static const char *__doc_mitsuba_FileStream_canRead = R"doc(True except if the stream was closed.)doc";
 
-static const char *__doc_mitsuba_FileStream_canWrite = R"doc(Can we write to the stream?)doc";
+static const char *__doc_mitsuba_FileStream_canWrite = R"doc(Whether the field was open in write-mode (and was not closed))doc";
+
+static const char *__doc_mitsuba_FileStream_close =
+R"doc(Closes the stream and the underlying file. No further read or write
+operations are permitted.
+
+This function is idempotent. It is called automatically by the
+destructor.)doc";
 
 static const char *__doc_mitsuba_FileStream_flush = R"doc(Flushes any buffered operation to the underlying file.)doc";
 
@@ -549,6 +575,8 @@ static const char *__doc_mitsuba_FileStream_getPos = R"doc(Gets the current posi
 static const char *__doc_mitsuba_FileStream_getSize =
 R"doc(Returns the size of the file. \note After a write, the size may not be
 updated until a flush is performed.)doc";
+
+static const char *__doc_mitsuba_FileStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
 
 static const char *__doc_mitsuba_FileStream_m_file = R"doc()doc";
 
@@ -722,9 +750,15 @@ size.
 Remark:
     This constructor is not available in the python bindings.)doc";
 
-static const char *__doc_mitsuba_MemoryStream_canRead = R"doc(Always returns true.)doc";
+static const char *__doc_mitsuba_MemoryStream_canRead = R"doc(Always returns true, except if the stream is closed.)doc";
 
-static const char *__doc_mitsuba_MemoryStream_canWrite = R"doc(Always returns true.)doc";
+static const char *__doc_mitsuba_MemoryStream_canWrite = R"doc(Always returns true, except if the stream is closed.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_close =
+R"doc(Closes the stream. No further read or write operations are permitted.
+
+This function is idempotent. It may be called automatically by the
+destructor.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_flush = R"doc(No-op since all writes are made directly to memory)doc";
 
@@ -739,9 +773,13 @@ R"doc(Returns the size of the contents written to the memory buffer. \note
 This is not equal to the size of the memory buffer in general, since
 we allocate more capacity at once.)doc";
 
+static const char *__doc_mitsuba_MemoryStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
+
 static const char *__doc_mitsuba_MemoryStream_m_capacity = R"doc(Current size of the allocated memory buffer)doc";
 
 static const char *__doc_mitsuba_MemoryStream_m_data = R"doc(Pointer to the memory buffer (might not be owned))doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_isClosed = R"doc(Whether the stream has been closed.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_m_ownsBuffer = R"doc(False if the MemoryStream was created from a pre-allocated buffer)doc";
 
@@ -1080,6 +1118,12 @@ static const char *__doc_mitsuba_Stream_canRead = R"doc(Can we read from the str
 
 static const char *__doc_mitsuba_Stream_canWrite = R"doc(Can we write to the stream?)doc";
 
+static const char *__doc_mitsuba_Stream_close =
+R"doc(Closes the stream. No further read or write operations are permitted.
+
+This function is idempotent. It may be called automatically by the
+destructor.)doc";
+
 static const char *__doc_mitsuba_Stream_flush = R"doc(Flushes the stream's buffers, if any)doc";
 
 static const char *__doc_mitsuba_Stream_getByteOrder = R"doc(Returns the byte order of this stream.)doc";
@@ -1091,6 +1135,8 @@ static const char *__doc_mitsuba_Stream_getHostByteOrder = R"doc(Returns the byt
 static const char *__doc_mitsuba_Stream_getPos = R"doc(Gets the current position inside the stream)doc";
 
 static const char *__doc_mitsuba_Stream_getSize = R"doc(Returns the size of the stream)doc";
+
+static const char *__doc_mitsuba_Stream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
 
 static const char *__doc_mitsuba_Stream_m_byteOrder = R"doc()doc";
 
@@ -1365,11 +1411,19 @@ static const char *__doc_mitsuba_ZStream_EStreamType_EGZipStream = R"doc(< A gzi
 static const char *__doc_mitsuba_ZStream_ZStream =
 R"doc(Creates a new compression stream with the given underlying stream.
 
-TODO: clarify ownership)doc";
+TODO: clarify ownership of the underlying stream (pass a ref
+directly?))doc";
 
 static const char *__doc_mitsuba_ZStream_canRead = R"doc(Can we read from the stream?)doc";
 
 static const char *__doc_mitsuba_ZStream_canWrite = R"doc(Can we write to the stream?)doc";
+
+static const char *__doc_mitsuba_ZStream_close =
+R"doc(Closes the underlying stream. No further read or write operations are
+permitted.
+
+This function is idempotent. It is called automatically by the
+destructor.)doc";
 
 static const char *__doc_mitsuba_ZStream_flush = R"doc(Unsupported. Always throws.)doc";
 
@@ -1382,6 +1436,10 @@ static const char *__doc_mitsuba_ZStream_getClass = R"doc()doc";
 static const char *__doc_mitsuba_ZStream_getPos = R"doc(Unsupported. Always throws.)doc";
 
 static const char *__doc_mitsuba_ZStream_getSize = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_isClosed =
+R"doc(Whether the underlying stream is closed (no read or write are then
+permitted).)doc";
 
 static const char *__doc_mitsuba_ZStream_m_childStream = R"doc()doc";
 

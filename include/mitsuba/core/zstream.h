@@ -25,13 +25,24 @@ public:
 
     /** \brief Creates a new compression stream with the given underlying stream.
      *
-     * TODO: clarify ownership
+     * TODO: clarify ownership of the underlying stream (pass a ref directly?)
      */
     ZStream(Stream *childStream, EStreamType streamType = EDeflateStream,
             int level = Z_DEFAULT_COMPRESSION);
 
     /// Returns a string representation
     std::string toString() const override;
+
+    /** \brief Closes the underlying stream.
+     * No further read or write operations are permitted.
+     *
+     * This function is idempotent.
+     * It is called automatically by the destructor.
+     */
+    virtual void close() override { m_childStream->close(); };
+
+    /// Whether the underlying stream is closed (no read or write are then permitted).
+    virtual bool isClosed() const override { return m_childStream->isClosed(); };
 
     // =========================================================================
     //! @{ \name Compression stream-specific features

@@ -30,6 +30,17 @@ public:
     /// Returns a string representation
     std::string toString() const override;
 
+    /** \brief Closes the stream and the underlying file.
+     * No further read or write operations are permitted.
+     *
+     * This function is idempotent.
+     * It is called automatically by the destructor.
+     */
+    virtual void close() override;
+
+    /// Whether the stream is closed (no read or write are then permitted).
+    virtual bool isClosed() const override;
+
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // Most methods can be delegated directly to the underlying
@@ -72,15 +83,11 @@ public:
     /// Flushes any buffered operation to the underlying file.
     virtual void flush() override;
 
-    /// Can we write to the stream?
-    virtual bool canWrite() const override {
-        return m_writeEnabled;
-    }
+    /// Whether the field was open in write-mode (and was not closed)
+    virtual bool canWrite() const override { return m_writeEnabled && !isClosed(); }
 
-    /// Can we read from the stream?
-    virtual bool canRead() const override {
-        return true;
-    }
+    /// True except if the stream was closed.
+    virtual bool canRead() const override { return !isClosed(); }
 
     //! @}
     // =========================================================================

@@ -50,6 +50,7 @@ MTS_PY_EXPORT(Stream) {
     }, DM(Stream, read, 2))
 
     auto c = MTS_PY_CLASS(Stream, Object)
+        .mdef(Stream, close)
         .mdef(Stream, setByteOrder)
         .mdef(Stream, getByteOrder)
         .def_static("getHostByteOrder", Stream::getHostByteOrder, DM(Stream, getHostByteOrder))

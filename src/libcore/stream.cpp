@@ -37,10 +37,9 @@ void Stream::setByteOrder(EByteOrder value) {
 std::string Stream::toString() const {
     std::ostringstream oss;
 
-    oss << "hostByteOrder="
-        << m_hostByteOrder
-        << ", byteOrder="
-        << m_byteOrder;
+    oss << "hostByteOrder=" << m_hostByteOrder
+        << ", byteOrder=" << m_byteOrder
+        << ", isClosed=" << isClosed();
 
     return oss.str();
 }

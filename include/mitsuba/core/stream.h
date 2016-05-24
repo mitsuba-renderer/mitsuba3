@@ -49,6 +49,17 @@ public:
     /// Returns a string representation of the stream
     virtual std::string toString() const override;
 
+    /** \brief Closes the stream.
+     * No further read or write operations are permitted.
+     *
+     * This function is idempotent.
+     * It may be called automatically by the destructor.
+     */
+    virtual void close() = 0;
+
+    /// Whether the stream is closed (no read or write are then permitted).
+    virtual bool isClosed() const = 0;
+
     // =========================================================================
     //! @{ \name Abstract methods that need to be implemented by subclasses
     // =========================================================================
@@ -164,7 +175,7 @@ public:
 
 protected:
     /// Destructor
-    virtual ~Stream() { };
+    virtual ~Stream() {};
 
     /// Copy is disallowed.
     Stream(const Stream&) = delete;

@@ -116,6 +116,8 @@ ZStream::~ZStream() {
 
     deflateEnd(&m_deflateStream);
     inflateEnd(&m_inflateStream);
+
+    close();
 }
 
 MTS_IMPLEMENT_CLASS(ZStream, Stream)

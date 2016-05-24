@@ -34,6 +34,17 @@ public:
     /// Returns a string representation
     std::string toString() const override;
 
+    /** \brief Closes the stream.
+     * No further read or write operations are permitted.
+     *
+     * This function is idempotent.
+     * It may be called automatically by the destructor.
+     */
+    virtual void close() override { m_isClosed = true; };
+
+    /// Whether the stream is closed (no read or write are then permitted).
+    virtual bool isClosed() const override { return m_isClosed; };
+
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // =========================================================================
@@ -85,11 +96,11 @@ public:
     /// No-op since all writes are made directly to memory
     virtual void flush() override { };
 
-    /// Always returns true.
-    virtual bool canWrite() const override { return true; }
+    /// Always returns true, except if the stream is closed.
+    virtual bool canWrite() const override { return !isClosed(); }
 
-    /// Always returns true.
-    virtual bool canRead() const override { return true; }
+    /// Always returns true, except if the stream is closed.
+    virtual bool canRead() const override { return !isClosed(); }
 
     //! @}
     // =========================================================================
@@ -114,6 +125,8 @@ private:
     bool m_ownsBuffer;
     /// Pointer to the memory buffer (might not be owned)
     uint8_t *m_data;
+    /// Whether the stream has been closed.
+    bool m_isClosed;
 };
 
 NAMESPACE_END(mitsuba)
