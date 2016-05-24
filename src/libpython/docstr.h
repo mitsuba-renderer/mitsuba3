@@ -526,6 +526,10 @@ Trying to open a non-existing file in read-only mode results in an
 exception being thrown. Throws an exception if the file cannot be
 opened / created.)doc";
 
+static const char *__doc_mitsuba_FileStream_canRead = R"doc(Can we read from the stream?)doc";
+
+static const char *__doc_mitsuba_FileStream_canWrite = R"doc(Can we write to the stream?)doc";
+
 static const char *__doc_mitsuba_FileStream_flush = R"doc(Flushes any buffered operation to the underlying file.)doc";
 
 static const char *__doc_mitsuba_FileStream_getClass = R"doc()doc";
@@ -537,6 +541,8 @@ static const char *__doc_mitsuba_FileStream_getSize = R"doc(Returns the size of 
 static const char *__doc_mitsuba_FileStream_m_file = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_m_path = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_m_writeMode = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
@@ -1009,8 +1015,6 @@ conversion based on the endianness of the underlying system and the
 value passed to setByteOrder(). Whenever getHostByteOrder() and
 getByteOrder() disagree, the endianness is swapped.
 
-TODO: explain write-only / read-only modes.
-
 See also:
     FileStream, MemoryStream, DummyStream)doc";
 
@@ -1056,11 +1060,7 @@ static const char *__doc_mitsuba_Stream_EByteOrder_ENetworkByteOrder = R"doc(< N
 
 static const char *__doc_mitsuba_Stream_Stream =
 R"doc(Creates a new stream. By default, it assumes the byte order of the
-underlying system, i.e. no endianness conversion is performed.
-
-Parameter ``writeEnabled``:
-    If true, the stream will be write-only, otherwise it will be read-
-    only.)doc";
+underlying system, i.e. no endianness conversion is performed.)doc";
 
 static const char *__doc_mitsuba_Stream_Stream_2 = R"doc(Copy is disallowed.)doc";
 
@@ -1082,25 +1082,23 @@ static const char *__doc_mitsuba_Stream_getSize = R"doc(Returns the size of the 
 
 static const char *__doc_mitsuba_Stream_m_byteOrder = R"doc()doc";
 
-static const char *__doc_mitsuba_Stream_m_writeMode = R"doc()doc";
-
 static const char *__doc_mitsuba_Stream_needsEndiannessSwapping =
-R"doc(Returns true if we need to perform endianness swapping before writing or
-reading.)doc";
+R"doc(Returns true if we need to perform endianness swapping before writing
+or reading.)doc";
 
 static const char *__doc_mitsuba_Stream_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream_read =
-R"doc(Reads a specified amount of data from the stream. \note This does **not**
-handle endianness swapping.
+R"doc(Reads a specified amount of data from the stream. \note This does
+**not** handle endianness swapping.
 
 Throws an exception when the stream ended prematurely. Implementations
 need to handle endianness swap when appropriate.)doc";
 
 static const char *__doc_mitsuba_Stream_read_2 =
 R"doc(Reads one object of type T from the stream at the current position by
-delegating to the appropriate ``serialization_helper``. Endianness swapping
-is handled automatically if needed.)doc";
+delegating to the appropriate ``serialization_helper``. Endianness
+swapping is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_Stream_seek =
 R"doc(Seeks to a position inside the stream. Seeking beyond the size of the
@@ -1126,16 +1124,16 @@ R"doc(Truncates the stream to a given size. The position is updated to
 Throws an exception if in read-only mode.)doc";
 
 static const char *__doc_mitsuba_Stream_write =
-R"doc(Writes a specified amount of data into the stream. \note This does **not**
-handle endianness swapping.
+R"doc(Writes a specified amount of data into the stream. \note This does
+**not** handle endianness swapping.
 
 Throws an exception when not all data could be written.
 Implementations need to handle endianness swap when appropriate.)doc";
 
 static const char *__doc_mitsuba_Stream_write_2 =
 R"doc(Reads one object of type T from the stream at the current position by
-delegating to the appropriate ``serialization_helper``. Endianness swapping
-is handled automatically if needed.)doc";
+delegating to the appropriate ``serialization_helper``. Endianness
+swapping is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_TNormal = R"doc(3-dimensional surface normal representation)doc";
 
@@ -1339,6 +1337,67 @@ static const char *__doc_mitsuba_Thread_staticShutdown = R"doc(Shut down the thr
 static const char *__doc_mitsuba_Thread_toString = R"doc(Return a string representation)doc";
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
+
+static const char *__doc_mitsuba_ZStream =
+R"doc(Transparent compression/decompression stream based on ``zlib``.
+
+This class transparently decompresses and compresses reads and writes
+to a nested stream, respectively.)doc";
+
+static const char *__doc_mitsuba_ZStream_EStreamType = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_EStreamType_EDeflateStream = R"doc(< A raw deflate stream)doc";
+
+static const char *__doc_mitsuba_ZStream_EStreamType_EGZipStream = R"doc(< A gzip-compatible stream)doc";
+
+static const char *__doc_mitsuba_ZStream_ZStream =
+R"doc(Creates a new compression stream with the given underlying stream.
+
+TODO: clarify ownership)doc";
+
+static const char *__doc_mitsuba_ZStream_canRead = R"doc(Can we read from the stream?)doc";
+
+static const char *__doc_mitsuba_ZStream_canWrite = R"doc(Can we write to the stream?)doc";
+
+static const char *__doc_mitsuba_ZStream_flush = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_getChildStream = R"doc(Returns the child stream of this compression stream)doc";
+
+static const char *__doc_mitsuba_ZStream_getChildStream_2 = R"doc(Returns the child stream of this compression stream)doc";
+
+static const char *__doc_mitsuba_ZStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_getPos = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_getSize = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_m_childStream = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_deflateBuffer = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_deflateStream = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_didWrite = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_inflateBuffer = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_inflateStream = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_read =
+R"doc(Reads a specified amount of data from the stream, decompressing it
+first using ZLib. Throws an exception when the stream ended
+prematurely.)doc";
+
+static const char *__doc_mitsuba_ZStream_seek = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_toString = R"doc(Returns a string representation)doc";
+
+static const char *__doc_mitsuba_ZStream_truncate = R"doc(/ Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_write =
+R"doc(Writes a specified amount of data into the stream, compressing it
+first using ZLib. Throws an exception when not all data could be
+written.)doc";
 
 static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal base {a, b, c})doc";
 
