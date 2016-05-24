@@ -1,5 +1,6 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/string.h>
+#include <mitsuba/core/logger.h>
 
 #include <cctype>
 #include <cerrno>
@@ -150,9 +151,11 @@ bool resize_file(const path& p, size_t target_length) noexcept {
 #if !defined(__WINDOWS__)
     return ::truncate(p.native().c_str(), (off_t) target_length) == 0;
 #else
-    HANDLE handle = CreateFileW(p.native().c_str(), GENERIC_WRITE, 0, nullptr, 0, FILE_ATTRIBUTE_NORMAL, nullptr);
+    HANDLE handle = CreateFileW(p.native().c_str(), GENERIC_WRITE, 0, 
+                                nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE)
         return false;
+
     LARGE_INTEGER size;
     size.QuadPart = (LONGLONG) target_length;
     if (SetFilePointerEx(handle, size, NULL, FILE_BEGIN) == 0) {
