@@ -3,6 +3,9 @@
 #include <set>
 #include <vector>
 #include <Eigen/Core>
+#if defined(__WINDOWS__)
+    #include <intrin.h>
+#endif
 
 /* \brief Basic Stream serialization capabilities can go here.
  * This header file contains template specializations to add support for
@@ -12,6 +15,30 @@
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(detail)
+
+template <typename T> void swap16(T *v) {
+#if !defined(__WINDOWS__)
+    *v = memcpy_cast<T>(__builtin_bswap16(memcpy_cast<uint16_t>(*v)));
+#else
+    *v = memcpy_cast<T>(_byteswap_ushort(memcpy_cast<uint16_t>(*v)));
+#endif
+}
+
+template <typename T> void swap32(T *v) {
+#if !defined(__WINDOWS__)
+    *v = memcpy_cast<T>(__builtin_bswap32(memcpy_cast<uint32_t>(*v)));
+#else
+    *v = memcpy_cast<T>(_byteswap_ulong(memcpy_cast<uint32_t>(*v)));
+#endif
+}
+
+template <typename T> void swap64(T *v) {
+#if !defined(__WINDOWS__)
+    *v = memcpy_cast<T>(__builtin_bswap64(memcpy_cast<uint64_t>(*v)));
+#else
+    *v = memcpy_cast<T>(_byteswap_uint64(memcpy_cast<uint64_t>(*v)));
+#endif
+}
 
 /**
  * \brief The <tt>serialization_trait</tt> templated structure provides
@@ -31,35 +58,35 @@ template <> struct serialization_traits<uint8_t>  {
 };
 template <> struct serialization_traits<int16_t>  {
     const char *type_id = "u16";
-    static void swap(int16_t *v) { *v = __builtin_bswap16(*v); };
+    static void swap(int16_t *v) { swap16(v); };
 };
 template <> struct serialization_traits<uint16_t> {
     const char *type_id = "s16";
-    static void swap(uint16_t *v) { *v = __builtin_bswap16(*v); };
+    static void swap(uint16_t *v) { swap16(v); };
 };
 template <> struct serialization_traits<int32_t>  {
     const char *type_id = "u32";
-    static void swap(int32_t *v) { *v = __builtin_bswap32(*v); };
+    static void swap(int32_t *v) { swap32(v); };
 };
 template <> struct serialization_traits<uint32_t> {
     const char *type_id = "s32";
-    static void swap(uint32_t *v) { *v = __builtin_bswap32(*v); };
+    static void swap(uint32_t *v) { swap32(v); };
 };
 template <> struct serialization_traits<int64_t>  {
     const char *type_id = "u64";
-    static void swap(int64_t *v) { *v = __builtin_bswap64(*v); };
+    static void swap(int64_t *v) { swap64(v); };
 };
 template <> struct serialization_traits<uint64_t> {
     const char *type_id = "s64";
-    static void swap(uint64_t *v) { *v = __builtin_bswap64(*v); };
+    static void swap(uint64_t *v) { swap64(v); };
 };
 template <> struct serialization_traits<float>    {
     const char *type_id = "f32";
-    static void swap(float *v) { *v = __builtin_bswap32(*v); };
+    static void swap(float *v) { swap32(v); };
 };
 template <> struct serialization_traits<double>   {
     const char *type_id = "f64";
-    static void swap(double *v) { *v = __builtin_bswap64(*v); };
+    static void swap(double *v) { swap64(v); };
 };
 template <> struct serialization_traits<bool>     {
     const char *type_id = "b8";
