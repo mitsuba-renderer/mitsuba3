@@ -36,8 +36,6 @@ public:
     // Most methods can be delegated directly to the underlying
     // standard file stream, avoiding having to deal with portability.
     // =========================================================================
-protected:
-
     /**
      * \brief Reads a specified amount of data from the stream.
      * Throws an exception when the stream ended prematurely.
@@ -49,8 +47,6 @@ protected:
      * Throws an exception when not all data could be written.
      */
     virtual void write(const void *p, size_t size) override;
-
-public:
 
     /// Seeks to a position inside the stream. May throw if the resulting state is invalid.
     virtual void seek(size_t pos) override;

@@ -22,10 +22,7 @@ public:
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // =========================================================================
-protected:
-
     /// Always throws, since DummyStream is write-only.
-    // TODO: could we just not offer it from the interface? (e.g. read/write trait or such)
     virtual void read(void *, size_t) override {
         Log(EError, "DummyStream does not support reading.");
     }
@@ -35,8 +32,6 @@ protected:
         m_size = std::max(m_size, m_pos + size);
         m_pos += size;
     }
-
-public:
 
     /** \brief Updates the current position in the stream.
      * Even though the <tt>DummyStream</tt> doesn't write anywhere, position is

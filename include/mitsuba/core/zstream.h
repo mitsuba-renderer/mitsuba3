@@ -5,10 +5,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-NAMESPACE_BEGIN()
+NAMESPACE_BEGIN(detail)
 /// Buffer size used to communicate with zlib. The larger, the better.
 constexpr size_t kZStreamBufferSize = 32768;
-NAMESPACE_END()
+NAMESPACE_END(detail)
 
 /**
  * \brief Transparent compression/decompression stream based on \c zlib.
@@ -49,7 +49,6 @@ public:
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // =========================================================================
-protected:
 
     /**
      * \brief Reads a specified amount of data from the stream, decompressing
@@ -65,16 +64,14 @@ protected:
      */
     virtual void write(const void *p, size_t size) override;
 
-public:
-
     /// Unsupported. Always throws.
     virtual void seek(size_t) override {
-      Log(EError, "seek(): unsupported in a ZLIB stream!");
+        Log(EError, "seek(): unsupported in a ZLIB stream!");
     }
 
     //// Unsupported. Always throws.
     virtual void truncate(size_t) override {
-      Log(EError, "truncate(): unsupported in a ZLIB stream!");
+        Log(EError, "truncate(): unsupported in a ZLIB stream!");
     }
 
     /// Unsupported. Always throws.
@@ -116,8 +113,8 @@ protected:
 private:
     ref<Stream> m_childStream;
     z_stream m_deflateStream, m_inflateStream;
-    uint8_t m_deflateBuffer[kZStreamBufferSize];
-    uint8_t m_inflateBuffer[kZStreamBufferSize];
+    uint8_t m_deflateBuffer[detail::kZStreamBufferSize];
+    uint8_t m_inflateBuffer[detail::kZStreamBufferSize];
     bool m_didWrite;
 };
 

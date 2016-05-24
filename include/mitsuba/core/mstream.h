@@ -37,7 +37,6 @@ public:
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // =========================================================================
-protected:
 
     /**
      * \brief Reads a specified amount of data from the stream.
@@ -51,8 +50,6 @@ protected:
      * The capacity of the memory buffer is extended if necessary.
      */
     virtual void write(const void *p, size_t size) override;
-
-public:
 
     /** Seeks to a position inside the stream.
      * You may seek beyond the size of the stream's contents, or even beyond the

@@ -52,7 +52,6 @@ public:
     // =========================================================================
     //! @{ \name Abstract methods that need to be implemented by subclasses
     // =========================================================================
-protected:
 
     /**
      * \brief Reads a specified amount of data from the stream.
@@ -72,7 +71,6 @@ protected:
      */
     virtual void write(const void *p, size_t size) = 0;
 
-public:
     /** Seeks to a position inside the stream.
      * Seeking beyond the size of the buffer will not modify its contents'
      * length. However, a subsequent write should start at the seeked position
