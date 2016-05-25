@@ -1,6 +1,5 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/string.h>
-#include <mitsuba/core/logger.h>
 
 #include <cctype>
 #include <cerrno>

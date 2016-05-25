@@ -9,15 +9,8 @@ using path = fs::path;
 
 NAMESPACE_BEGIN(mitsuba)
 
-FileStream::FileStream(const path &p, bool writeEnabled)
-    : Stream(), m_path(p), m_file(new std::fstream), m_writeEnabled(writeEnabled) {
-    const bool fileExists = fs::exists(p);
-    if (!m_writeEnabled && !fileExists) {
-        Log(EError, "\"%s\": tried to open a read-only FileStream pointing to"
-                    " a file that cannot be opened.",
-            m_path.string().c_str());
-    }
-
+namespace {
+inline void openStream(std::fstream &f, const fs::path &p, bool writeEnabled, bool fileExists) {
     auto mode = std::ios::binary | std::ios::in;
     if (writeEnabled) {
         mode |= std::ios::out;
@@ -27,7 +20,20 @@ FileStream::FileStream(const path &p, bool writeEnabled)
         }
     }
 
-    m_file->open(p.string(), mode);
+    f.open(p.string(), mode);
+}
+}  // end anonymous namespace
+
+FileStream::FileStream(const path &p, bool writeEnabled)
+    : Stream(), m_path(p), m_file(new std::fstream), m_writeEnabled(writeEnabled) {
+    const bool fileExists = fs::exists(p);
+    if (!m_writeEnabled && !fileExists) {
+        Log(EError, "\"%s\": tried to open a read-only FileStream pointing to"
+                    " a file that cannot be opened.",
+            m_path.string().c_str());
+    }
+
+    openStream(*m_file, m_path, m_writeEnabled, fileExists);
 
     if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to open the file.",
@@ -111,8 +117,19 @@ void FileStream::truncate(size_t size) {
 
     flush();
     const auto old_pos = getPos();
+#if defined(__WINDOWS__)
+    // Windows won't allow a resize if the file is open
+    m_file->close();
+#else
     seek(0);
+#endif
+
     fs::resize_file(m_path, size);
+
+#if defined(__WINDOWS__)
+    openStream(*m_file, m_path, m_writeEnabled, true);
+#endif
+
     seek(std::min(old_pos, size));
 
     if (!m_file->good()) {
