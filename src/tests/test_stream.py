@@ -112,6 +112,7 @@ class CommonStreamTest(unittest.TestCase):
                     # A subsequent write should start at the correct position
                     # and update the size.
                     stream.write(13.37)
+                    stream.flush()
                     self.assertEqual(stream.getPos(), 20 + 4)
                     self.assertEqual(stream.getSize(), 20 + 4)
 
@@ -288,6 +289,7 @@ class FileStreamTest(unittest.TestCase):
 
         # A subsequent write should start at the correct position
         self.wo.write(13.37)
+        self.wo.flush()
         self.assertEqual(self.wo.getPos(), 40 + 4)
         self.assertEqual(self.wo.getSize(), 40 + 4)
 

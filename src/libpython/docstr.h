@@ -1628,7 +1628,7 @@ successful, false if there was an error (e.g. the file did not exist).)doc";
 static const char *__doc_mitsuba_filesystem_resize_file =
 R"doc(Changes the size of the regular file named by ``p`` as if ``truncate``
 was called. If the file was larger than ``target_length``, the
-remainder is discarded.)doc";
+remainder is discarded. The file must exist.)doc";
 
 static const char *__doc_mitsuba_for_each_type = R"doc(Base case)doc";
 
