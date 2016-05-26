@@ -67,8 +67,14 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
   # Enable link time optimization and set the default symbol
   # visibility to hidden (very important to obtain small binaries)
   if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG)
-    # Default symbol visibility
+    # Set default symbol visibility to hidden
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+
+    # Don't use stack security features in release mode
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
+
+    # In release mode, don't keep the frame pointer in a special register unless needed
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fomit-frame-pointer")
   endif()
 endif()
 
