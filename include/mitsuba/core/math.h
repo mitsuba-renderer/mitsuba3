@@ -203,6 +203,27 @@ template <typename Scalar>  Scalar clamp(Scalar value, Scalar min, Scalar max) {
 }
 
 /**
+ * \brief Compare the difference in ULPs between a reference value and another
+ * given floating point number
+ */
+template <typename T> T ulpdiff(T ref, T val) {
+    const T eps = std::numeric_limits<T>::epsilon() / 2;
+
+    /* Express mantissa wrt. same exponent */
+    int e_ref, e_val;
+    T m_ref = std::frexp(ref, &e_ref);
+    T m_val = std::frexp(val, &e_val);
+
+    T diff;
+    if (e_ref == e_val)
+        diff = m_ref - m_val;
+    else
+        diff = m_ref - std::ldexp(m_val, e_val-e_ref);
+
+    return std::abs(diff) / eps;
+}
+
+/**
  * \brief Find an interval in an ordered set
  *
  * This function is very similar to \c std::upper_bound, but it uses a functor

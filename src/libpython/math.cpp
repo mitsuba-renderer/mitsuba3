@@ -43,4 +43,6 @@ MTS_PY_EXPORT(math) {
     math.def("findInterval", [](size_t size, const std::function<bool(size_t)> &pred) {
         return math::findInterval(size, pred);
     }, DM(math, findInterval));
+
+    math.def("ulpdiff", &math::ulpdiff<Float>, DM(math, ulpdiff));
 }
