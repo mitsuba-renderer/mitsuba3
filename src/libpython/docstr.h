@@ -2677,6 +2677,70 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
+static const char *__doc_mitsuba_warp_intervalToNonuniformTent =
+R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
+distribution with nodes ``{a, b, c}``)doc";
+
+static const char *__doc_mitsuba_warp_squareToCosineHemisphere =
+R"doc(Sample a cosine-weighted vector on the unit hemisphere with respect to
+solid angles)doc";
+
+static const char *__doc_mitsuba_warp_squareToStdNormal =
+R"doc(Sample a point on a 2D standard normal distribution Internally uses
+the Box-Muller transformation)doc";
+
+static const char *__doc_mitsuba_warp_squareToStdNormalPdf = R"doc(Density of squareToStdNormal per unit area)doc";
+
+static const char *__doc_mitsuba_warp_squareToTent = R"doc(Warp a uniformly distributed square sample to a 2D tent distribution)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformCone =
+R"doc(Uniformly sample a vector that lies within a given cone of angles
+around the Z axis
+
+Parameter ``cosCutoff``:
+    Cosine of the cutoff angle
+
+Parameter ``sample``:
+    A uniformly distributed sample on $[0,1]^2$)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformConePdf =
+R"doc(Uniformly sample a vector that lies within a given cone of angles
+around the Z axis
+
+Parameter ``cosCutoff``:
+    Cosine of the cutoff angle
+
+Parameter ``sample``:
+    A uniformly distributed sample on $[0,1]^2$)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformDisk = R"doc(Uniformly sample a vector on a 2D disk)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformDiskConcentric =
+R"doc(Low-distortion concentric square to disk mapping by Peter Shirley
+(PDF: 1/PI))doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformDiskConcentricPdf = R"doc(Density of squareToUniformDisk per unit area)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformDiskPdf = R"doc(Density of squareToUniformDisk per unit area)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformHemisphere =
+R"doc(Uniformly sample a vector on the unit hemisphere with respect to solid
+angles)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformHemispherePdf = R"doc(Density of squareToUniformHemisphere() with respect to solid angles)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformSphere =
+R"doc(Uniformly sample a vector on the unit sphere with respect to solid
+angles)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformSpherePdf = R"doc(Density of squareToUniformSphere() with respect to solid angles)doc";
+
+static const char *__doc_mitsuba_warp_squareToUniformTriangle =
+R"doc(Convert an uniformly distributed square sample into barycentric
+coordinates)doc";
+
+static const char *__doc_mitsuba_warp_uniformDiskToSquareConcentric = R"doc(Inverse of the mapping squareToUniformDiskConcentric)doc";
+
 static const char *__doc_mitsuba_xml_loadFile = R"doc(Load a Mitsuba scene from an XML file)doc";
 
 static const char *__doc_mitsuba_xml_loadString = R"doc(Load a Mitsuba scene from an XML string)doc";
