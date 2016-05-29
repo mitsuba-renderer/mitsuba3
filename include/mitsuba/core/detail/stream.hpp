@@ -45,8 +45,6 @@ template <typename T> void swap64(T *v) {
  * a unique type identifier for each supported type.
  * <tt>type_id</tt> is a unique, prefix-free code identifying the type.
  */
-// TODO: this will need to be adapted for Windows, builtins are not the same
-// TODO: ::swap methods: pointers can be replaced with nonconst references
 template <typename T, typename SFINAE = void> struct serialization_traits { };
 template <> struct serialization_traits<int8_t> {
     const char *type_id = "u8";
