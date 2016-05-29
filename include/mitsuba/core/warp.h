@@ -5,6 +5,7 @@
 // #include <mitsuba/core/frame.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/math.h>
+#include <mitsuba/core/vector.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

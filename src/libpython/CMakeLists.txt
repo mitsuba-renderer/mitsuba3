@@ -47,6 +47,7 @@ add_library(mitsuba-python SHARED
   frame.cpp
   ray.cpp
   struct.cpp
+  warp.cpp
 
   # librender
   scene.cpp
@@ -111,7 +112,7 @@ elseif (UNIX)
   endif()
 endif()
 
-# Create the 'dist/python' directory 
+# Create the 'dist/python' directory
 add_custom_command(
   TARGET mitsuba-python
   POST_BUILD

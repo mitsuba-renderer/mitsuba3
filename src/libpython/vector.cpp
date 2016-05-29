@@ -4,4 +4,3 @@
 MTS_PY_EXPORT(vector) {
     m.def("coordinateSystem", &coordinateSystem, DM(coordinateSystem));
 }
-
