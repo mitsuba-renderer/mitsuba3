@@ -51,11 +51,9 @@ extern MTS_EXPORT_CORE Vector3f squareToCosineHemisphere(const Point2f &sample);
 extern MTS_EXPORT_CORE Vector3f squareToUniformCone(Float cosCutoff, const Point2f &sample);
 
 /**
- * \brief Uniformly sample a vector that lies within a given
- * cone of angles around the Z axis
+ * \brief Density of \ref squareToUniformCone per unit area.
  *
  * \param cosCutoff Cosine of the cutoff angle
- * \param sample A uniformly distributed sample on \f$[0,1]^2\f$
  */
 extern MTS_EXPORT_CORE inline Float squareToUniformConePdf(Float cosCutoff) {
   return math::InvTwoPi / (1-cosCutoff);
