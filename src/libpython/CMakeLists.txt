@@ -16,6 +16,7 @@ include_directories(
   ${TINYFORMAT_INCLUDE_DIRS}
   ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
+  ${HYPOTHESIS_INCLUDE_DIRS}
 )
 
 # Create the binding library

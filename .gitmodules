@@ -34,6 +34,9 @@
 [submodule "ext/simdfloat"]
 	path = ext/simdfloat
 	url = https://github.com/mitsuba-renderer/simdfloat
+[submodule "ext/hypothesis"]
+	path = ext/hypothesis
+	url = https://github.com/wjakob/hypothesis.git
 [submodule "ext/asmjit"]
 	path = ext/asmjit
 	url = https://github.com/mitsuba-renderer/asmjit
