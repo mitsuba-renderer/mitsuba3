@@ -1,12 +1,84 @@
 import unittest
 
 from mitsuba import math
-from math import ceil, floor
+from math import ceil, floor, atan2, sqrt, cos, sin
 from mitsuba import math, pcg32
 from mitsuba.hypothesis import adaptiveSimpson2D, chi2_test
 from mitsuba.warp import *
 
 class WarpTest(unittest.TestCase):
+    # Statistical tests parameters
+    (seed1, seed2) = (42, 1337)  # Fixed for reproducibility
+    minExpFrequency = 5
+    significanceLevel = 0.01
+
+    def setUp(self):
+        scaleDisk = 4
+        scalePlane = 100 # TODO: why?
+        scaleSphere = 4 * math.Pi
+        scaleHemisphere = scaleSphere
+
+        def toUnitBox(x, y):
+            p = Point2f()
+            (p[0], p[1]) = (2 * x - 1, 2 * y - 1)
+            return p
+        def fromUnitBox(p):
+            return (0.5 * p[0] + 0.5, 0.5 * p[1] + 0.5)
+
+        # In practice, the standard normal distribution is
+        # almost zero outside of the 5-box in R^2.
+        def toPlane(x, y):
+            p = toUnitBox(x, y)
+            p[0] *= 5.0
+            p[1] *= 5.0
+            return p
+        def fromPlane(p):
+            p[0] /= 5.0
+            p[1] /= 5.0
+            return fromUnitBox(p)
+
+        def to3d(x, y):
+            x *= 2 * math.Pi;
+            y = y * 2 - 1;
+            sinTheta = sqrt(1 - y * y)
+            (cosPhi, sinPhi) = (cos(x), sin(x));
+            v = Vector3f()
+            (v[0], v[1], v[2]) = (sinTheta * cosPhi, sinTheta * sinPhi, y)
+            return v
+        def from3d(v):
+            x = atan2(v[1], v[0]) * math.InvTwoPi
+            if (x < 0):
+                x += 1
+            y = 0.5 * v[2] + 0.5
+            return (x, y)
+
+
+        # name -> (warping function, pdf function, domain indicator, scale,
+        #          coordinates to domain function, domain to coordinates function)
+        self.warps = dict()
+        self.warps["Square to uniform sphere"] = (
+            squareToUniformSphere, lambda _: squareToUniformSpherePdf(),
+            scaleSphere, unitSphereIndicator, to3d, from3d)
+        self.warps["Square to uniform hemisphere"] = (
+            squareToUniformHemisphere, lambda _: squareToUniformHemispherePdf(),
+            scaleHemisphere, unitHemisphereIndicator, to3d, from3d)
+
+        # self.warps["Square to cosine hemisphere"] = (
+        #     squareToCosineHemisphere, lambda _: squareToCosineHemispherePdf(),
+        #     scaleHemisphere, unitHemisphereIndicator, to3d, from3d)
+        # self.warps["Square to uniform cone"] = (
+        #     squareToUniformCone, lambda _: squareToUniformConePdf(),
+        #     scale3d, unitConeIndicator, to3d, from3d)
+
+        self.warps["Square to uniform disk"] = (
+            squareToUniformDisk, lambda _: squareToUniformDiskPdf(),
+            scaleDisk, unitDiskIndicator, toUnitBox, fromUnitBox)
+        self.warps["Square to uniform disk concentric"] = (
+            squareToUniformDiskConcentric, lambda _: squareToUniformDiskConcentricPdf(),
+            scaleDisk, unitDiskIndicator, toUnitBox, fromUnitBox)
+        self.warps["Square to standard normal distribution"] = (
+            squareToStdNormal, squareToStdNormalPdf, scalePlane,
+            lambda _: True, toPlane, fromPlane)
 
     def test01_deterministic_calls(self):
         p = [0.5, 0.25]
@@ -33,22 +105,16 @@ class WarpTest(unittest.TestCase):
         _ = intervalToNonuniformTent(0.25, 0.5, 1.0, 0.75)
 
     def test02_statistical_tests(self):
-        (seed1, seed2) = (42, 1337)  # Fixed for reproducibility
-        minExpFrequency = 5
-        significanceLevel = 0.01
         # TODO: increase resolution & sample more points
         samplingResolution = 31
         (gridWidth, gridHeight) = (samplingResolution, samplingResolution)
         nBins = gridWidth * gridHeight
         sampleCount = 100 * nBins
 
-        warpFunction = squareToUniformDisk
-        pdfFunction = squareToUniformDiskPdf
-
-        def generatePoints():
+        def generatePoints(warpFunction):
             # TODO: consider Grid and Stratified sampling strategies
             rng = pcg32()
-            rng.seed(seed1, seed2)
+            rng.seed(WarpTest.seed1, WarpTest.seed2)
 
             warped = []
             for i in range(sampleCount):
@@ -58,28 +124,22 @@ class WarpTest(unittest.TestCase):
 
             return warped
 
-        def computeHistogram(points):
+        def computeHistogram(points, pointFromDomain):
             hist = [0 for _ in range(nBins)]
             for p in points:
-                # TODO: domain needs to be shifted depending on warping type
-                x = p[0] * 0.5 + 0.5
-                y = p[1] * 0.5 + 0.5
-
+                (x, y) = pointFromDomain(p)
                 x = min(gridWidth - 1, max(0, int(floor(x * gridWidth))))
                 y = min(gridHeight - 1, max(0, int(floor(y * gridHeight))))
                 hist[y * gridWidth + x] += 1
             return hist
 
-        def generateExpectedHistogram():
-            # TODO: depends on the type of warping
-            scale = 4 * sampleCount
+        def generateExpectedHistogram(pdfFunction, pdfScale, domainIndicator, pointToDomain):
+            scale = pdfScale * sampleCount
 
             def integrand(x, y):
-                # Need to convert x \in [0, 1] to [-1, 1]
-                x = 2 * x - 1
-                y = 2 * y - 1
-                if (x * x + y * y <= 1.0):
-                  return pdfFunction()
+                v = pointToDomain(x, y)
+                if domainIndicator(v):
+                  return pdfFunction(v)
                 else:
                   return 0.0
 
@@ -94,6 +154,12 @@ class WarpTest(unittest.TestCase):
                         self.fail("PDF returned a negative values: ({}, {}) = {}".format(x, y, v))
             return hist
 
+        def statisticalTest(observedHistogram, expectedHistogram):
+            (result, text) = chi2_test(nBins, observedHistogram, expectedHistogram,
+                                       sampleCount, WarpTest.minExpFrequency,
+                                       WarpTest.significanceLevel, 1)
+            self.assertTrue(result, text)
+
         def printHistogram(hist):
             print("----------")
             for y in range(gridHeight):
@@ -102,18 +168,16 @@ class WarpTest(unittest.TestCase):
                 print(' ')
             print("----------")
 
-        def statisticalTest(observedHistogram, expectedHistogram):
-            (result, text) = chi2_test(nBins, observedHistogram, expectedHistogram,
-                                       sampleCount, minExpFrequency, significanceLevel, 1)
-            print(result, text)
-            self.assertTrue(result, text)
 
-        observed = computeHistogram(generatePoints())
-        expected = generateExpectedHistogram()
-        # Run the chi^2 test
-        # printHistogram(observed)
-        # printHistogram(expected)
-        statisticalTest(observed, expected)
+        for (name, (warpFunction, pdfFunction, pdfScale, indicator,
+                    toDomain, fromDomain)) in self.warps.items():
+            with self.subTest(name):
+                observed = computeHistogram(generatePoints(warpFunction), fromDomain)
+                expected = generateExpectedHistogram(pdfFunction, pdfScale, indicator, toDomain)
+                # Run the chi^2 test
+                # printHistogram(observed)
+                # printHistogram(expected)
+                statisticalTest(observed, expected)
 
 if __name__ == '__main__':
     unittest.main()
