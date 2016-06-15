@@ -29,6 +29,7 @@ MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Struct);
 MTS_PY_DECLARE(warp);
+MTS_PY_DECLARE(hypothesis);
 
 MTS_PY_DECLARE(Scene);
 
@@ -70,6 +71,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT_CORE(Frame);
     MTS_PY_IMPORT_CORE(Struct);
     MTS_PY_IMPORT(warp);
+    MTS_PY_IMPORT(hypothesis);
 
     MTS_PY_IMPORT_RENDER(Scene);
 

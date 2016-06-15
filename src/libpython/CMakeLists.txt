@@ -21,6 +21,10 @@ include_directories(
 
 # Create the binding library
 add_library(mitsuba-python SHARED
+  # ext
+  pcg32.cpp
+  hypothesis.cpp
+
   # main
   python.h
   docstr.h
@@ -35,7 +39,6 @@ add_library(mitsuba-python SHARED
   math.cpp
   util.cpp
   object.cpp
-  pcg32.cpp
   properties.cpp
   python.h
   stream.cpp
