@@ -20,5 +20,5 @@ elif [ "$ZSH_VERSION" ]; then
 	export MITSUBA_DIR=$(dirname "$0:A")
 fi
 
-export PYTHONPATH="$MITSUBA_DIR/dist/python"
-export PATH="$MITSUBA_DIR/dist:$PATH"
+export PYTHONPATH="$MITSUBA_DIR/dist/python:$MITSUBA_DIR/build/dist/python"
+export PATH="$MITSUBA_DIR/dist:$MITSUBA_DIR/build/dist:$PATH"
