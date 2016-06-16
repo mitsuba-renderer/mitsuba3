@@ -17,6 +17,7 @@ include_directories(
   ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
   ${HYPOTHESIS_INCLUDE_DIRS}
+  ${NANOGUI_INCLUDE_DIRS}
 )
 
 # Create the binding library
@@ -57,7 +58,10 @@ add_library(mitsuba-python SHARED
   scene.cpp
 )
 
+# Link to Mitsuba core library
 target_link_libraries(mitsuba-python mitsuba-core mitsuba-render)
+# Link to NanoGUI
+target_link_libraries(mitsuba-python nanogui)
 
 # Don't add a 'lib' prefix to the shared library
 set_target_properties(mitsuba-python PROPERTIES PREFIX "")
