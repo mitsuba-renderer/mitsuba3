@@ -14,7 +14,7 @@ from nanogui import Color, Screen, Window, GroupLayout, BoxLayout, \
 from nanogui import glfw, entypo
 
 import mitsuba
-from mitsuba.warp import WarpType, SamplingType
+from mitsuba.warp import WarpType, SamplingType, WarpVisualizationWidget
 
 class WarpVisualizer(Screen):
     # Default values for UI controls
@@ -41,6 +41,8 @@ class WarpVisualizer(Screen):
         window = Window(self, "Warp tester")
         window.setPosition(Vector2i(15, 15))
         window.setLayout(GroupLayout())
+
+        visualizationWidget = WarpVisualizationWidget(window)
 
         _ = Label(window, "Input point set", "sans-bold")
 
@@ -116,6 +118,7 @@ class WarpVisualizer(Screen):
         self.performLayout()
         # Keep references to the important UI elements
         self.window = window
+        self.visualizationWidget = visualizationWidget
         self.pointCountSlider = pointCountSlider
         self.pointCountBox = pointCountBox
         self.samplingTypeBox = samplingTypeBox
@@ -155,7 +158,7 @@ class WarpVisualizer(Screen):
         # self.framebufferSizeChanged()
 
     def refresh(self):
-        print("Was refreshed!")
+        self.visualizationWidget.hello()
 
         # TODO: check conversion from int to enum type
         # TODO: get value from a combobox
@@ -183,7 +186,6 @@ class WarpVisualizer(Screen):
 
         # Update the user interface
         def formattedPointCount(n):
-            print(n)
             if (n >= 1e6):
                 self.pointCountBox.setUnits("M")
                 return "{:.2f}".format(n * 1e-6)

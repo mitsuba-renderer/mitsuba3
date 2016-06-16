@@ -3,6 +3,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/warp.h>
 #include <hypothesis.h>
+#include <nanogui/nanogui.h>
 #include <pcg32.h>
 #include "python.h"
 
@@ -297,6 +298,21 @@ runStatisticalTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
                                  pointCount, minExpFrequency, significanceLevel, 1);
 }
 
+
+// TODO: move out of the way
+class WarpVisualizationWidget : public nanogui::Widget {
+public:
+    WarpVisualizationWidget(Widget *parent)
+        : nanogui::Widget(parent) {
+        Log(EInfo, "instantiated :)");
+    }
+
+    void hello() {
+        Log(EInfo, "says hello!");
+    }
+};
+
+
 MTS_PY_EXPORT(warp) {
     auto m2 = m.def_submodule("warp", "Common warping techniques that map from the unit"
                                       "square to other domains, such as spheres,"
@@ -384,4 +400,9 @@ MTS_PY_EXPORT(warp) {
     m2.def("runStatisticalTest", &runStatisticalTest,
            "Runs a Chi^2 statistical test verifying the given warping type"
            "against its PDF. Returns (passed, reason)");
+
+    // Warp visualization widget
+    py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget", "")
+        .def(py::init<nanogui::Widget *>(), "")
+        .def("hello", &WarpVisualizationWidget::hello, "Prints hello");
 }

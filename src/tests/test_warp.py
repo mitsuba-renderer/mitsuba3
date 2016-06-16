@@ -1,9 +1,6 @@
 import unittest
 
 from mitsuba import math
-from math import ceil, floor, atan2, sqrt, cos, sin
-from mitsuba import math, pcg32
-from mitsuba.hypothesis import adaptiveSimpson2D, chi2_test
 from mitsuba.warp import *
 
 class WarpTest(unittest.TestCase):
