@@ -1,6 +1,28 @@
 #include <mitsuba/core/warp.h>
 #include "python.h"
 
+/// Enum of available warp types
+enum WarpType {
+    NoWarp = 0,
+    UniformSphere,
+    UniformHemisphere,
+    UniformHemisphereCos,
+    UniformCone,
+    UniformDisk,
+    UniformDiskConcentric,
+    UniformTriangle,
+    StandardNormal,
+    UniformTent,
+    NonUniformTent
+};
+
+/// Enum of available point sampling types
+enum SamplingType {
+    Independent = 0,
+    Grid,
+    Stratified
+};
+
 MTS_PY_EXPORT(warp) {
     auto m2 = m.def_submodule("warp", "Common warping techniques that map from the unit"
                                       "square to other domains, such as spheres,"
@@ -46,4 +68,25 @@ MTS_PY_EXPORT(warp) {
 
       .mdef(warp, squareToTent)
       .mdef(warp, intervalToNonuniformTent);
+
+
+    py::enum_<WarpType>(m2, "WarpType")
+        .value("NoWarp", WarpType::NoWarp)
+        .value("UniformSphere", WarpType::UniformSphere)
+        .value("UniformHemisphere", WarpType::UniformHemisphere)
+        .value("UniformHemisphereCos", WarpType::UniformHemisphereCos)
+        .value("UniformCone", WarpType::UniformCone)
+        .value("UniformDisk", WarpType::UniformDisk)
+        .value("UniformDiskConcentric", WarpType::UniformDiskConcentric)
+        .value("UniformTriangle", WarpType::UniformTriangle)
+        .value("StandardNormal", WarpType::StandardNormal)
+        .value("UniformTent", WarpType::UniformTent)
+        .value("NonUniformTent", WarpType::NonUniformTent)
+        .export_values();
+
+    py::enum_<SamplingType>(m2, "SamplingType")
+        .value("Independent", SamplingType::Independent)
+        .value("Grid", SamplingType::Grid)
+        .value("Stratified", SamplingType::Stratified)
+        .export_values();
 }

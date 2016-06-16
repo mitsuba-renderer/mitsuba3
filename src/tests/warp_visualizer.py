@@ -12,26 +12,9 @@ from nanogui import Color, Screen, Window, GroupLayout, BoxLayout, \
                     TextBox, ColorWheel, Graph, VectorXf, GridLayout, \
                     Alignment, Orientation
 from nanogui import glfw, entypo
+
 import mitsuba
-
-# TODO: maybe refactor this enum
-class WarpType(Enum):
-    NoWarp = 0
-    UniformSphere = 1
-    UniformHemisphere = 2
-    UniformHemisphereCos = 3
-    UniformCone = 4
-    UniformDisk = 5
-    UniformDiskConcentric = 6
-    UniformTriangle = 7
-    StandardNormal = 8
-    UniformTent = 9
-    NonUniformTent = 10
-
-class SamplingType(Enum):
-    Independent = 0
-    Grid = 1
-    Stratified = 2
+from mitsuba.warp import WarpType, SamplingType
 
 class WarpVisualizer(Screen):
     # Default values for UI controls
