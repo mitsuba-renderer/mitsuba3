@@ -2,8 +2,10 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/warp.h>
+
 #include <hypothesis.h>
 #include <nanogui/nanogui.h>
+#include <nanogui/glutil.h>
 #include <pcg32.h>
 #include "python.h"
 
@@ -298,20 +300,314 @@ runStatisticalTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
                                  pointCount, minExpFrequency, significanceLevel, 1);
 }
 
+namespace warp_detail {
+using nanogui::Arcball;
+using nanogui::Color;
+using nanogui::GLShader;
+using nanogui::ortho;
+using nanogui::lookAt;
+using nanogui::translate;
+using nanogui::frustum;
+using Point2i = Eigen::Matrix<int, 2, 1>;
+using nanogui::Vector2i; // = Eigen::Matrix<int, 2, 1>;
+using nanogui::Vector2f; // = Eigen::Matrix<float, 2, 1>;
+using nanogui::Matrix4f; // = Eigen::Matrix<Float, 4, 4>;
+using nanogui::MatrixXf; // = Eigen::Matrix<Float, Eigen::Dynamic, Eigen::Dynamic>;
+using MatrixXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;
 
-// TODO: move out of the way
-class WarpVisualizationWidget : public nanogui::Widget {
+// TODO: move this class out of the way
+class WarpVisualizationWidget : public nanogui::Screen {
+
 public:
-    WarpVisualizationWidget(Widget *parent)
-        : nanogui::Widget(parent) {
+    WarpVisualizationWidget()
+        : nanogui::Screen(Vector2i(800, 600), "Warp visualization")
+        , m_drawHistogram(false), m_drawGrid(true)
+        , m_pointCount(0), m_lineCount(0)
+        , m_testResult(false), m_testResultText("No test started.") {
         Log(EInfo, "instantiated :)");
+        initializeVisualizerGUI();
+    }
+
+    ~WarpVisualizationWidget() {
+        glDeleteTextures(2, &m_textures[0]);
+        delete m_pointShader;
+        delete m_gridShader;
+        delete m_arrowShader;
+        delete m_histogramShader;
+    }
+
+    void framebufferSizeChanged() {
+        m_arcball.setSize(mSize);
+    }
+
+    virtual bool
+    mouseMotionEvent(const Vector2i &p, const Vector2i &, int, int) override {
+        m_arcball.motion(p);
+        return true;
+    }
+
+    virtual bool
+    mouseButtonEvent(const Vector2i &p, int button, bool down, int) override {
+        if (button == GLFW_MOUSE_BUTTON_1) {
+            m_arcball.button(p, down);
+        }
+        return true;
+    }
+
+    void drawHistogram(const Point2i &pos_, const Vector2i &size_, GLuint tex) {
+        Vector2f s = -(pos_.array().cast<float>() + Vector2f(0.25f, 0.25f).array())  / size_.array().cast<float>();
+        Vector2f e = size().array().cast<float>() / size_.array().cast<float>() + s.array();
+        Matrix4f mvp = ortho(s.x(), e.x(), e.y(), s.y(), -1, 1);
+
+        glDisable(GL_DEPTH_TEST);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        m_histogramShader->bind();
+        m_histogramShader->setUniform("mvp", mvp);
+        m_histogramShader->setUniform("tex", 0);
+        m_histogramShader->drawIndexed(GL_TRIANGLES, 0, 2);
+    }
+
+    virtual void drawContents() override {
+        /* Set up a perspective camera matrix */
+        Matrix4f view, proj, model;
+        view = lookAt(Vector3f(0, 0, 2), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
+        const float viewAngle = 30, near = 0.01, far = 100;
+        float fH = std::tan(viewAngle / 360.0f * math::Pi_f) * near;
+        float fW = fH * (float) mSize.x() / (float) mSize.y();
+        proj = frustum(-fW, fW, -fH, fH, near, far);
+
+        model.setIdentity();
+        model = translate(model, Vector3f(-0.5f, -0.5f, 0.0f));
+        model = m_arcball.matrix() * model;
+
+        if (m_drawHistogram) {
+            /* Render the histograms */
+            const int spacer = 20;
+            const int histWidth = (width() - 3*spacer) / 2;
+            const int histHeight = histWidth;
+            // TODO: histHeight = (warpType == None || warpType == Disk) ? histWidth : histWidth / 2;
+            const int verticalOffset = (height() - histHeight) / 2;
+
+            drawHistogram(Point2i(spacer, verticalOffset), Vector2i(histWidth, histHeight), m_textures[0]);
+            drawHistogram(Point2i(2*spacer + histWidth, verticalOffset), Vector2i(histWidth, histHeight), m_textures[1]);
+
+            auto ctx = nvgContext();
+            // TODO: need getter for Screen::mPixelRatio
+            const double pixelRatio = 1.0;
+            nvgBeginFrame(ctx, mSize[0], mSize[1], pixelRatio);
+            nvgBeginPath(ctx);
+            nvgRect(ctx, spacer, verticalOffset + histHeight + spacer, width()-2*spacer, 70);
+            nvgFillColor(ctx, m_testResult ? Color(100, 255, 100, 100) : Color(255, 100, 100, 100));
+            nvgFill(ctx);
+            nvgFontSize(ctx, 24.0f);
+            nvgFontFace(ctx, "sans-bold");
+            nvgTextAlign(ctx, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+            nvgFillColor(ctx, Color(255, 255));
+            nvgText(ctx, spacer + histWidth / 2, verticalOffset - 3 * spacer,
+                    "Sample histogram", nullptr);
+            nvgText(ctx, 2 * spacer + (histWidth * 3) / 2, verticalOffset - 3 * spacer,
+                    "Integrated density", nullptr);
+            nvgStrokeColor(ctx, Color(255, 255));
+            nvgStrokeWidth(ctx, 2);
+            nvgBeginPath(ctx);
+            nvgRect(ctx, spacer, verticalOffset, histWidth, histHeight);
+            nvgRect(ctx, 2 * spacer + histWidth, verticalOffset, histWidth,
+                    histHeight);
+            nvgStroke(ctx);
+            nvgFontSize(ctx, 20.0f);
+            nvgTextAlign(ctx, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+
+            float bounds[4];
+            nvgTextBoxBounds(ctx, 0, 0, width() - 2 * spacer,
+                             m_testResultText.c_str(), nullptr, bounds);
+            nvgTextBox(
+                ctx, spacer, verticalOffset + histHeight + spacer + (70 - bounds[3])/2,
+                width() - 2 * spacer, m_testResultText.c_str(), nullptr);
+            nvgEndFrame(ctx);
+        } else {
+            /* Render the point set */
+            Matrix4f mvp = proj * view * model;
+            m_pointShader->bind();
+            m_pointShader->setUniform("mvp", mvp);
+            glPointSize(2);
+            glEnable(GL_DEPTH_TEST);
+            m_pointShader->drawArray(GL_POINTS, 0, m_pointCount);
+
+            if (m_drawGrid) {
+                m_gridShader->bind();
+                m_gridShader->setUniform("mvp", mvp);
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                m_gridShader->drawArray(GL_LINES, 0, m_lineCount);
+                glDisable(GL_BLEND);
+            }
+        }
+    }
+
+    void initializeVisualizerGUI() {
+        m_pointShader = new GLShader();
+        m_pointShader->init(
+            "Point shader",
+
+            /* Vertex shader */
+            "#version 330\n"
+            "uniform mat4 mvp;\n"
+            "in vec3 position;\n"
+            "in vec3 color;\n"
+            "out vec3 frag_color;\n"
+            "void main() {\n"
+            "    gl_Position = mvp * vec4(position, 1.0);\n"
+            "    if (isnan(position.r)) /* nan (missing value) */\n"
+            "        frag_color = vec3(0.0);\n"
+            "    else\n"
+            "        frag_color = color;\n"
+            "}",
+
+            /* Fragment shader */
+            "#version 330\n"
+            "in vec3 frag_color;\n"
+            "out vec4 out_color;\n"
+            "void main() {\n"
+            "    if (frag_color == vec3(0.0))\n"
+            "        discard;\n"
+            "    out_color = vec4(frag_color, 1.0);\n"
+            "}"
+        );
+
+        m_gridShader = new GLShader();
+        m_gridShader->init(
+            "Grid shader",
+
+            /* Vertex shader */
+            "#version 330\n"
+            "uniform mat4 mvp;\n"
+            "in vec3 position;\n"
+            "void main() {\n"
+            "    gl_Position = mvp * vec4(position, 1.0);\n"
+            "}",
+
+            /* Fragment shader */
+            "#version 330\n"
+            "out vec4 out_color;\n"
+            "void main() {\n"
+            "    out_color = vec4(vec3(1.0), 0.4);\n"
+            "}"
+        );
+
+        m_arrowShader = new GLShader();
+        m_arrowShader->init(
+            "Arrow shader",
+
+            /* Vertex shader */
+            "#version 330\n"
+            "uniform mat4 mvp;\n"
+            "in vec3 position;\n"
+            "void main() {\n"
+            "    gl_Position = mvp * vec4(position, 1.0);\n"
+            "}",
+
+            /* Fragment shader */
+            "#version 330\n"
+            "out vec4 out_color;\n"
+            "void main() {\n"
+            "    out_color = vec4(vec3(1.0), 0.4);\n"
+            "}"
+        );
+
+        m_histogramShader = new GLShader();
+        m_histogramShader->init(
+            "Histogram shader",
+
+            /* Vertex shader */
+            "#version 330\n"
+            "uniform mat4 mvp;\n"
+            "in vec2 position;\n"
+            "out vec2 uv;\n"
+            "void main() {\n"
+            "    gl_Position = mvp * vec4(position, 0.0, 1.0);\n"
+            "    uv = position;\n"
+            "}",
+
+            /* Fragment shader */
+            "#version 330\n"
+            "out vec4 out_color;\n"
+            "uniform sampler2D tex;\n"
+            "in vec2 uv;\n"
+            "/* http://paulbourke.net/texture_colour/colourspace/ */\n"
+            "vec3 colormap(float v, float vmin, float vmax) {\n"
+            "    vec3 c = vec3(1.0);\n"
+            "    if (v < vmin)\n"
+            "        v = vmin;\n"
+            "    if (v > vmax)\n"
+            "        v = vmax;\n"
+            "    float dv = vmax - vmin;\n"
+            "    \n"
+            "    if (v < (vmin + 0.25 * dv)) {\n"
+            "        c.r = 0.0;\n"
+            "        c.g = 4.0 * (v - vmin) / dv;\n"
+            "    } else if (v < (vmin + 0.5 * dv)) {\n"
+            "        c.r = 0.0;\n"
+            "        c.b = 1.0 + 4.0 * (vmin + 0.25 * dv - v) / dv;\n"
+            "    } else if (v < (vmin + 0.75 * dv)) {\n"
+            "        c.r = 4.0 * (v - vmin - 0.5 * dv) / dv;\n"
+            "        c.b = 0.0;\n"
+            "    } else {\n"
+            "        c.g = 1.0 + 4.0 * (vmin + 0.75 * dv - v) / dv;\n"
+            "        c.b = 0.0;\n"
+            "    }\n"
+            "    return c;\n"
+            "}\n"
+            "void main() {\n"
+            "    float value = texture(tex, uv).r;\n"
+            "    out_color = vec4(colormap(value, 0.0, 1.0), 1.0);\n"
+            "}"
+        );
+
+        // Initially, upload a single uniform rectangle to the histogram
+        MatrixXf positions(2, 4);
+        MatrixXi indices(3, 2);
+        positions <<
+            0, 1, 1, 0,
+            0, 0, 1, 1;
+        indices <<
+            0, 2,
+            1, 3,
+            2, 0;
+        m_histogramShader->bind();
+        m_histogramShader->uploadAttrib("position", positions);
+        m_histogramShader->uploadIndices(indices);
+
+        glGenTextures(2, &m_textures[0]);
+        glBindTexture(GL_TEXTURE_2D, m_textures[0]);
+
+        // mBackground.setZero();
+        drawContents();
+
+        framebufferSizeChanged();
     }
 
     void hello() {
         Log(EInfo, "says hello!");
+        drawContents();
     }
+
+private:
+    GLShader *m_pointShader = nullptr;
+    GLShader *m_gridShader = nullptr;
+    GLShader *m_histogramShader = nullptr;
+    GLShader *m_arrowShader = nullptr;
+    GLuint m_textures[2];
+    Arcball m_arcball;
+
+    bool m_drawHistogram, m_drawGrid;
+    int m_pointCount, m_lineCount;
+    WarpType m_warpType;
+    bool m_testResult;
+    std::string m_testResultText;
 };
 
+}  // end namespace detail
 
 MTS_PY_EXPORT(warp) {
     auto m2 = m.def_submodule("warp", "Common warping techniques that map from the unit"
@@ -402,7 +698,11 @@ MTS_PY_EXPORT(warp) {
            "against its PDF. Returns (passed, reason)");
 
     // Warp visualization widget
-    py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget", "")
-        .def(py::init<nanogui::Widget *>(), "")
-        .def("hello", &WarpVisualizationWidget::hello, "Prints hello");
+    using warp_detail::WarpVisualizationWidget;
+    py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget")
+        .def(py::init<>(), "Default constructor.")
+        .def("hello", &WarpVisualizationWidget::hello, "Prints hello")
+        .def("setVisible", [](WarpVisualizationWidget &widget, bool v) {
+            widget.setVisible(v);
+         }, "");
 }

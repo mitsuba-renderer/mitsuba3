@@ -1,10 +1,11 @@
-# TODO: header / description
-
 import gc
 import math
 from enum import Enum
+import mitsuba
+from mitsuba.warp import WarpType, SamplingType, WarpVisualizationWidget
 
 import nanogui
+# TODO: remove unused imports
 from nanogui import Color, Screen, Window, GroupLayout, BoxLayout, \
                     ToolButton, Vector2i, Label, Button, Widget, \
                     PopupButton, CheckBox, MessageDialog, VScrollPanel, \
@@ -13,22 +14,24 @@ from nanogui import Color, Screen, Window, GroupLayout, BoxLayout, \
                     Alignment, Orientation
 from nanogui import glfw, entypo
 
-import mitsuba
-from mitsuba.warp import WarpType, SamplingType, WarpVisualizationWidget
 
 class WarpVisualizer(Screen):
+    """TODO: docstring for this class"""
+
     # Default values for UI controls
     pointCountDefaultValue = 7.0 / 15.0
     warpParameterDefaultValue = 0.5
     angleDefaultValue = 0.5
 
     def __init__(self):
-        super(WarpVisualizer, self).__init__(Vector2i(800, 600), "Distribution warping visualizer")
+        print("hey")
+        super(WarpVisualizer, self).__init__(Vector2i(800, 600), "Warp visualizer")
+        print("ho")
         self.initializeGUI()
 
     def runTest(self):
         print("Test will be run")
-        pass
+        raise Exception("Not implemented yet.")
 
     def mapParameter(self, warpType, value):
         """Converts the parameter value to the appropriate domain
@@ -37,12 +40,22 @@ class WarpVisualizer(Screen):
         return value
 
     def initializeGUI(self):
+        visualizationWidget = WarpVisualizationWidget()
+        # visualizationWidget.performLayout()
+        # visualizationWidget.drawAll()
+        visualizationWidget.setVisible(True)
+
+        print(self)
+        print(self is WarpVisualizationWidget)
+        print(self is Widget)
+        print(self is Screen)
+        print(self is Window)
+
         # Main window
         window = Window(self, "Warp tester")
         window.setPosition(Vector2i(15, 15))
         window.setLayout(GroupLayout())
 
-        visualizationWidget = WarpVisualizationWidget(window)
 
         _ = Label(window, "Input point set", "sans-bold")
 
@@ -112,8 +125,14 @@ class WarpVisualizer(Screen):
         _ = Label(window, u"\u03C7\u00B2 hypothesis test", "sans-bold")
         testButton = Button(window, "Run", entypo.ICON_CHECK)
         testButton.setBackgroundColor(Color(0, 255, 0, 25))
-        # TODO: might need error handling
-        testButton.setCallback(lambda: self.runTest())
+
+        def tryTest():
+            try:
+                self.runTest()
+            except Exception as e:
+                _ = MessageDialog(self, MessageDialog.Type.Warning, "Error",
+                                  "An error occurred: " + str(e))
+        testButton.setCallback(tryTest)
 
         self.performLayout()
         # Keep references to the important UI elements
@@ -131,25 +150,8 @@ class WarpVisualizer(Screen):
         self.brdfValuesCheckBox = brdfValuesCheckBox
         self.testButton = testButton
 
-        def initShader(shader, code):
-            shader.init(code[0], code[1], code[2])
-        # self.pointShader = GLShader()
-        # initShader(self.pointShader, WarpVisualizer.pointShaderCode)
-        # self.gridShader = GLShader()
-        # initShader(self.gridShader, WarpVisualizer.gridShaderCode)
-        # self.arrowShader = GLShader()
-        # initShader(self.arrowShader, WarpVisualizer.arrowShaderCode)
-        # self.histogramShader = GLShader()
-        # initShader(self.histogramShader, WarpVisualizer.histogramShaderCode)
-
-        # Initially, histogram shows a single quad:
-        # upload it to the GPU.
-        # TODO
-
         # TODO
         #self.background().setZero()
-
-
 
         self.refresh()
         self.drawAll()
@@ -212,6 +214,7 @@ class WarpVisualizer(Screen):
         super(WarpVisualizer, self).draw(ctx)
 
     def drawHistogram(self, pos, size, tex):
+        # TODO: should directly call super
         pass
 
     def mouseMotionEvent(self, p, rel, button, modifiers):
@@ -234,129 +237,17 @@ class WarpVisualizer(Screen):
 
     def keyboardEvent(self, key, scancode, action, modifiers):
         if super(WarpVisualizer, self).keyboardEvent(key, scancode,
-                                              action, modifiers):
+                                                     action, modifiers):
             return True
         if (key is glfw.KEY_ESCAPE) and (action is glfw.PRESS):
             self.setVisible(False)
             return True
         return False
 
-    # Shader code
-    pointShaderCode = ["Point shader",
-        # Vertex shader
-        """
-        #version 330
-        uniform mat4 mvp;
-        in vec3 position;
-        in vec3 color;
-        out vec3 frag_color;
-        void main() {
-            gl_Position = mvp * vec4(position, 1.0);
-            if (isnan(position.r)) /* nan (missing value) */
-                frag_color = vec3(0.0);
-            else
-                frag_color = color;
-        }
-        """,
-        # Fragment shader
-        """
-        #version 330
-        in vec3 frag_color;
-        out vec4 out_color;
-        void main() {
-            if (frag_color == vec3(0.0))
-                discard;
-            out_color = vec4(frag_color, 1.0);
-        }
-        """]
-    gridShaderCode = ["Grid shader",
-        # Vertex shader
-        """
-        #version 330
-        uniform mat4 mvp;
-        in vec3 position;
-        void main() {
-            gl_Position = mvp * vec4(position, 1.0);
-        }
-        """,
-        # Fragment shader
-        """
-        #version 330
-        out vec4 out_color;
-        void main() {
-            out_color = vec4(vec3(1.0), 0.4);
-        }
-        """]
-    arrowShaderCode = ["Arrow shader",
-        # Vertex shader
-        """
-        #version 330
-        uniform mat4 mvp;
-        in vec3 position;
-        void main() {
-            gl_Position = mvp * vec4(position, 1.0);
-        }
-        """,
-        # Fragment shader
-        """
-        #version 330
-        out vec4 out_color;
-        void main() {
-            out_color = vec4(vec3(1.0), 0.4);
-        }
-        """]
-    histogramShaderCode = ["Histogram shader",
-        # Vertex shader
-        """
-        #version 330
-        uniform mat4 mvp;
-        in vec2 position;
-        out vec2 uv;
-        void main() {
-            gl_Position = mvp * vec4(position, 0.0, 1.0);
-            uv = position;
-        }
-        """,
-        # Fragment shader
-        """
-        #version 330
-        out vec4 out_color;
-        uniform sampler2D tex;
-        in vec2 uv;
-        /* http://paulbourke.net/texture_colour/colourspace/ */
-        vec3 colormap(float v, float vmin, float vmax) {
-            vec3 c = vec3(1.0);
-            if (v < vmin)
-                v = vmin;
-            if (v > vmax)
-                v = vmax;
-            float dv = vmax - vmin;
-
-            if (v < (vmin + 0.25 * dv)) {
-                c.r = 0.0;
-                c.g = 4.0 * (v - vmin) / dv;
-            } else if (v < (vmin + 0.5 * dv)) {
-                c.r = 0.0;
-                c.b = 1.0 + 4.0 * (vmin + 0.25 * dv - v) / dv;
-            } else if (v < (vmin + 0.75 * dv)) {
-                c.r = 4.0 * (v - vmin - 0.5 * dv) / dv;
-                c.b = 0.0;
-            } else {
-                c.g = 1.0 + 4.0 * (vmin + 0.75 * dv - v) / dv;
-                c.b = 0.0;
-            }
-            return c;
-        }
-        void main() {
-            float value = texture(tex, uv).r;
-            out_color = vec4(colormap(value, 0.0, 1.0), 1.0);
-        }
-        """]
-
 
 if __name__ == "__main__":
     nanogui.init()
-    test = WarpVisualizer()
+    _ = WarpVisualizer()
     nanogui.mainloop()
     gc.collect()
     nanogui.shutdown()
