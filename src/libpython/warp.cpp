@@ -188,7 +188,8 @@ Float pdfValueForSample(WarpType warpType, double x, double y, Float parameterVa
  *          after the function has returned.
  */
 void generatePoints(size_t &pointCount, SamplingType pointType, WarpType warpType,
-                    Float parameterValue, VectorList &positions, VectorList &weights) {
+                    Float parameterValue,
+                    VectorList &positions, std::vector<Float> &weights) {
     /* Determine the number of points that should be sampled */
     size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
     float invSqrtVal = 1.f / sqrtVal;
@@ -222,10 +223,11 @@ void generatePoints(size_t &pointCount, SamplingType pointType, WarpType warpTyp
     }
 }
 
-std::vector<Float> computeHistogram(WarpType warpType,
-                                    const VectorList &positions, const VectorList &weights,
+std::vector<double> computeHistogram(WarpType warpType,
+                                    const VectorList &positions,
+                                    const std::vector<Float> &weights,
                                     size_t gridWidth, size_t gridHeight) {
-    std::vector<Float> hist(gridWidth * gridHeight, 0.0);
+    std::vector<double> hist(gridWidth * gridHeight, 0.0);
 
     for (size_t i = 0; i < positions.size(); ++i) {
         if (weights[i] == 0) {
@@ -247,10 +249,10 @@ std::vector<Float> computeHistogram(WarpType warpType,
     return hist;
 }
 
-std::vector<Float> generateExpectedHistogram(size_t pointCount,
+std::vector<double> generateExpectedHistogram(size_t pointCount,
                                              WarpType warpType, Float parameterValue,
                                              size_t gridWidth, size_t gridHeight) {
-    std::vector<Float> hist(gridWidth * gridHeight, 0.0);
+    std::vector<double> hist(gridWidth * gridHeight, 0.0);
     double scale = pointCount * getPdfScalingFactor(warpType);
 
     auto integrand = [&warpType, &parameterValue](double x, double y) {
@@ -275,11 +277,15 @@ std::vector<Float> generateExpectedHistogram(size_t pointCount,
     return hist;
 }
 
-bool runTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
-             SamplingType pointType, WarpType warpType, Float parameterValue) {
-    VectorList positions, weights;
+std::pair<bool, std::string>
+runStatisticalTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
+                   SamplingType samplingType, WarpType warpType, Float parameterValue,
+                   double minExpFrequency, double significanceLevel) {
+    const auto nBins = gridWidth * gridHeight;
+    VectorList positions;
+    std::vector<Float> weights;
 
-    generatePoints(pointCount, pointType, warpType,
+    generatePoints(pointCount, samplingType, warpType,
                    parameterValue, positions, weights);
     auto observedHistogram = computeHistogram(warpType, positions, weights,
                                               gridWidth, gridHeight);
@@ -287,8 +293,8 @@ bool runTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
                                                        warpType, parameterValue,
                                                        gridWidth, gridHeight);
 
-
-    return false;
+    return hypothesis::chi2_test(nBins, observedHistogram.data(), expectedHistogram.data(),
+                                 pointCount, minExpFrequency, significanceLevel, 1);
 }
 
 MTS_PY_EXPORT(warp) {
@@ -358,5 +364,24 @@ MTS_PY_EXPORT(warp) {
         .value("Stratified", SamplingType::Stratified)
         .export_values();
 
-    m2.def("generatePoints", &generatePoints, "Generate and warp points.");
+
+    m2.def("generatePoints", [](size_t pointCount, SamplingType pointType,
+                                WarpType warpType, Float parameterValue) {
+        VectorList points;
+        std::vector<Float> weights;
+        generatePoints(pointCount, pointType,
+                       warpType, parameterValue,
+                       points, weights);
+        return std::make_pair(points, weights);
+    }, "Generate and warp points. Returns (list of points, list of weights)");
+
+    m2.def("computeHistogram", &computeHistogram,
+           "Compute histogram from warped points.");
+
+    m2.def("generateExpectedHistogram", &generateExpectedHistogram,
+           "Generate the theoretical histogram from the PDF of the warping function.");
+
+    m2.def("runStatisticalTest", &runStatisticalTest,
+           "Runs a Chi^2 statistical test verifying the given warping type"
+           "against its PDF. Returns (passed, reason)");
 }
