@@ -1,5 +1,10 @@
+#include <mitsuba/core/vector.h>
+#include <mitsuba/core/transform.h>
 #include <mitsuba/core/warp.h>
+#include <pcg32.h>
 #include "python.h"
+
+using Eigen::MatrixXf;
 
 /// Enum of available warp types
 enum WarpType {
@@ -22,6 +27,49 @@ enum SamplingType {
     Grid,
     Stratified
 };
+
+// TODO: should be able to use Mitsuba's vector type here
+Eigen::Vector3f warpPoint(WarpType warpType, Point2f sample, Float parameterValue) {
+    // TODO: route the warping call to the appropriate function
+    Eigen::Vector3f v;
+    v << sample[0], sample[1], 0;
+    return v;
+}
+
+void generatePoints(int &pointCount, SamplingType pointType, WarpType warpType,
+                    Float parameterValue, MatrixXf &positions) {
+    /* Determine the number of points that should be sampled */
+    int sqrtVal = (int) (std::sqrt((float) pointCount) + 0.5f);
+    float invSqrtVal = 1.f / sqrtVal;
+    if (pointType == Grid || pointType == Stratified)
+        pointCount = sqrtVal*sqrtVal;
+
+    pcg32 rng;
+    positions.resize(3, pointCount);
+
+    for (int i = 0; i < pointCount; ++i) {
+        int y = i / sqrtVal, x = i % sqrtVal;
+        Point2f sample;
+
+        switch (pointType) {
+            case Independent:
+                sample = Point2f(rng.nextFloat(), rng.nextFloat());
+                break;
+
+            case Grid:
+                sample = Point2f((x + 0.5f) * invSqrtVal, (y + 0.5f) * invSqrtVal);
+                break;
+
+            case Stratified:
+                sample = Point2f((x + rng.nextFloat()) * invSqrtVal,
+                                 (y + rng.nextFloat()) * invSqrtVal);
+                break;
+        }
+
+        // TODO: what's the cleanest way to do generical warping (which side should route?)
+        positions.col(i) = warpPoint(warpType, sample, parameterValue);
+    }
+}
 
 MTS_PY_EXPORT(warp) {
     auto m2 = m.def_submodule("warp", "Common warping techniques that map from the unit"
