@@ -68,14 +68,14 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Scalar, int Dimension>
 inline TVector<Scalar, Dimension>::operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const {
     Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1> result;
-    store(result.data());
+    Base::store(result.data());
     return result;
 }
 
 template <typename Scalar, int Dimension>
 inline TPoint<Scalar, Dimension>::operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const {
     Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1> result;
-    store(result.data());
+    Base::store(result.data());
     return result;
 }
 
