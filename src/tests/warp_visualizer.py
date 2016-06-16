@@ -186,8 +186,6 @@ class WarpVisualizer(Screen):
         self.pointCountSlider.setValue(
             (math.log(pointCount) / math.log(2.0) - 5) / 15.0);
 
-        print(pointCount)
-
         # TODO: special handling for microfacet BRDF
 
 
@@ -202,19 +200,20 @@ class WarpVisualizer(Screen):
 
         # Update the user interface
         def formattedPointCount(n):
+            print(n)
             if (n >= 1e6):
                 self.pointCountBox.setUnits("M")
-                return "{:.2}".format(n * 1e-6)
+                return "{:.2f}".format(n * 1e-6)
             if (n >= 1e3):
                 self.pointCountBox.setUnits("K")
-                return "{:.2}".format(n * 1e-3)
+                return "{:.2f}".format(n * 1e-3)
 
             self.pointCountBox.setUnits(" ")
             return str(n)
-        self.pointCountBox.setValue(formattedPointCount(self.pointCountSlider.value()))
+        self.pointCountBox.setValue(formattedPointCount(pointCount))
 
-        self.parameterBox.setValue("{:.1}".format(parameterValue))
-        self.angleBox.setValue("{:.1}".format(angle))
+        self.parameterBox.setValue("{:.1g}".format(parameterValue))
+        self.angleBox.setValue("{:.1f}".format(angle))
         # TODO
         self.parameterSlider.setEnabled(warpType in [])
         self.angleSlider.setEnabled(warpType is False)
