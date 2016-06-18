@@ -33,6 +33,21 @@ enum SamplingType {
 
 namespace {
 
+bool isTwoDimensionalWarp(WarpType warpType) {
+    switch (warpType) {
+        case NoWarp:
+        case UniformDisk:
+        case UniformDiskConcentric:
+        case UniformTriangle:
+        case StandardNormal:
+        case UniformTent:
+        case NonUniformTent:
+            return true;
+        default:
+            return false;
+    }
+}
+
 std::pair<Vector3f, Float> warpPoint(WarpType warpType, Point2f sample, Float parameterValue) {
     Vector3f result;
 
@@ -323,7 +338,7 @@ using nanogui::Vector2i; // = Eigen::Matrix<int, 2, 1>;
 using nanogui::Vector2f; // = Eigen::Matrix<float, 2, 1>;
 using nanogui::Matrix4f; // = Eigen::Matrix<Float, 4, 4>;
 using nanogui::MatrixXf; // = Eigen::Matrix<Float, Eigen::Dynamic, Eigen::Dynamic>;
-using MatrixXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;
+using MatrixXu = Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic>;
 
 // TODO: move this class out of the way
 class WarpVisualizationWidget : public nanogui::Screen {
@@ -423,7 +438,7 @@ public:
         m_pointShader->uploadAttrib("position", positions);
         m_pointShader->uploadAttrib("color", colors);
 
-        // Upload lines to GPU
+        // Upload grid lines to the GPU
         if (m_drawGrid) {
             size_t gridRes = static_cast<size_t>(std::sqrt(static_cast<float>(m_pointCount)) + 0.5f);
             size_t fineGridRes = 16 * gridRes;
@@ -434,20 +449,19 @@ public:
             m_lineCount = 4 * (gridRes+1) * (fineGridRes+1);
             positions.resize(3, m_lineCount);
 
-
-            auto getPoint = [this, &fineScale, &coarseScale](size_t i, size_t j) {
-                auto r = warpPoint(m_warpType, Point2f(j * fineScale, i * coarseScale), m_parameterValue);
+            auto getPoint = [this, &fineScale, &coarseScale](float x, float y) {
+                auto r = warpPoint(m_warpType, Point2f(x, y), m_parameterValue);
                 return std::make_pair(static_cast<Eigen::Matrix<float, 3, 1>>(r.first), r.second);
             };
             for (size_t i = 0; i <= gridRes; ++i) {
                 for (size_t j = 0; j <= fineGridRes; ++j) {
-                    auto pt = getPoint(i, j);
+                    auto pt = getPoint(j * fineScale, i * coarseScale);
                     positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                    pt = getPoint(i, j + 1);
+                    pt = getPoint((j+1) * fineScale, i * coarseScale);
                     positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                    pt = getPoint(j, i);
+                    pt = getPoint(i * coarseScale, j * fineScale);
                     positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                    pt = getPoint(j + 1, i);
+                    pt = getPoint(i * coarseScale, (j+1) * fineScale);
                     positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
                 }
             }
@@ -480,11 +494,10 @@ public:
     bool runTest(double minExpFrequency, double significanceLevel) {
         std::vector<double> observedHistogram, expectedHistogram;
         size_t gridWidth = 51, gridHeight = 51;
-        size_t nBins = gridWidth * gridHeight;
-        if (m_warpType != NoWarp &&
-            m_warpType != UniformDisk && m_warpType != UniformDiskConcentric) {
+        if (!isTwoDimensionalWarp(m_warpType)) {
             gridWidth *= 2;
         }
+        size_t nBins = gridWidth * gridHeight;
 
         // Run Chi^2 test
         const auto r = runStatisticalTestAndOutput(m_pointCount,
@@ -505,7 +518,7 @@ public:
         // Upload both histograms to the GPU
         std::unique_ptr<float[]> buffer(new float[nBins]);
         for (int k = 0; k < 2; ++k) {  // For each histogram
-            for (size_t i=0; i < nBins; ++i) {  // For each bin
+            for (size_t i = 0; i < nBins; ++i) {  // For each bin
                 buffer[i] = texScale * static_cast<float>(
                     (k == 0 ? observedHistogram[i] : expectedHistogram[i]) - minValue);
             }
@@ -534,6 +547,16 @@ public:
         m_histogramShader->drawIndexed(GL_TRIANGLES, 0, 2);
     }
 
+    void drawGrid(const Matrix4f& mvp) {
+        // Grid lines were uploaded already in `refresh`
+        m_gridShader->bind();
+        m_gridShader->setUniform("mvp", mvp);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        m_gridShader->drawArray(GL_LINES, 0, m_lineCount);
+        glDisable(GL_BLEND);
+    }
+
     virtual void drawContents() override {
         // Set up a perspective camera matrix
         Matrix4f view, proj, model;
@@ -551,8 +574,10 @@ public:
             // Render the histograms
             const int spacer = 20;
             const int histWidth = (width() - 3*spacer) / 2;
-            const int histHeight = histWidth;
-            // TODO: histHeight = (warpType == None || warpType == Disk) ? histWidth : histWidth / 2;
+            int histHeight = histWidth;
+            if (!isTwoDimensionalWarp(m_warpType)) {
+                histHeight /= 2;
+            }
             const int verticalOffset = (height() - histHeight) / 2;
 
             drawHistogram(Point2i(spacer, verticalOffset), Vector2i(histWidth, histHeight), m_textures[0]);
@@ -601,12 +626,7 @@ public:
             m_pointShader->drawArray(GL_POINTS, 0, m_pointCount);
 
             if (m_drawGrid) {
-                m_gridShader->bind();
-                m_gridShader->setUniform("mvp", mvp);
-                glEnable(GL_BLEND);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                m_gridShader->drawArray(GL_LINES, 0, m_lineCount);
-                glDisable(GL_BLEND);
+                drawGrid(mvp);
             }
         }
     }
@@ -732,7 +752,7 @@ public:
 
         // Initially, upload a single uniform rectangle to the histogram
         MatrixXf positions(2, 4);
-        MatrixXi indices(3, 2);
+        MatrixXu indices(3, 2);
         positions <<
             0, 1, 1, 0,
             0, 0, 1, 1;

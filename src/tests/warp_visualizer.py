@@ -115,7 +115,7 @@ class WarpVisualizer(WarpVisualizationWidget):
         # Chi-2 test button
         _ = Label(window, u"\u03C7\u00B2 hypothesis test", "sans-bold")
         testButton = Button(window, "Run", entypo.ICON_CHECK)
-        testButton.setBackgroundColor(Color(0, 255, 0, 25))
+        testButton.setBackgroundColor(Color(0, 1., 0., 0.25))
 
         def tryTest():
             try:
