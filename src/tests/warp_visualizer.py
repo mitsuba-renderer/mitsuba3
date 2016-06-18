@@ -15,7 +15,7 @@ from nanogui import Color, Screen, Window, GroupLayout, BoxLayout, \
 from nanogui import glfw, entypo
 
 
-class WarpVisualizer(Screen):
+class WarpVisualizer(WarpVisualizationWidget):
     """TODO: docstring for this class"""
 
     # Default values for UI controls
@@ -25,7 +25,8 @@ class WarpVisualizer(Screen):
 
     def __init__(self):
         print("hey")
-        super(WarpVisualizer, self).__init__(Vector2i(800, 600), "Warp visualizer")
+        # super(WarpVisualizer, self).__init__(Vector2i(800, 600), "Warp visualizer")
+        super(WarpVisualizer, self).__init__(800, 600, "Warp visualizer")
         print("ho")
         self.initializeGUI()
 
@@ -40,17 +41,6 @@ class WarpVisualizer(Screen):
         return value
 
     def initializeGUI(self):
-        visualizationWidget = WarpVisualizationWidget()
-        # visualizationWidget.performLayout()
-        # visualizationWidget.drawAll()
-        visualizationWidget.setVisible(True)
-
-        print(self)
-        print(self is WarpVisualizationWidget)
-        print(self is Widget)
-        print(self is Screen)
-        print(self is Window)
-
         # Main window
         window = Window(self, "Warp tester")
         window.setPosition(Vector2i(15, 15))
@@ -137,7 +127,6 @@ class WarpVisualizer(Screen):
         self.performLayout()
         # Keep references to the important UI elements
         self.window = window
-        self.visualizationWidget = visualizationWidget
         self.pointCountSlider = pointCountSlider
         self.pointCountBox = pointCountBox
         self.samplingTypeBox = samplingTypeBox
@@ -150,22 +139,13 @@ class WarpVisualizer(Screen):
         self.brdfValuesCheckBox = brdfValuesCheckBox
         self.testButton = testButton
 
-        # TODO
-        #self.background().setZero()
-
         self.refresh()
         self.drawAll()
         self.setVisible(True)
-        # TODO
-        # self.framebufferSizeChanged()
 
     def refresh(self):
-        self.visualizationWidget.hello()
-
-        # TODO: check conversion from int to enum type
-        # TODO: get value from a combobox
-        samplingType = SamplingType.Independent # SamplingType(self.samplingTypeBox.selectedIndex())
-        warpType = WarpType.NoWarp # WarpType(self.warpTypeBox.selectedIndex())
+        samplingType = SamplingType(self.samplingTypeBox.selectedIndex())
+        warpType = WarpType(self.warpTypeBox.selectedIndex())
         parameterValue = self.mapParameter(warpType, self.parameterSlider.value())
         angle = 180 * self.angleSlider.value() - 90
 
@@ -173,18 +153,6 @@ class WarpVisualizer(Screen):
         pointCount = int(math.pow(2.0, 15.0 * self.pointCountSlider.value() + 5))
         self.pointCountSlider.setValue(
             (math.log(pointCount) / math.log(2.0) - 5) / 15.0);
-
-        # TODO: special handling for microfacet BRDF
-
-
-        # Generate the points' positions
-        # TODO
-
-        # Generate a color gradient
-        # TODO
-
-        # Upload the grid's lines to the GPU
-        # TODO
 
         # Update the user interface
         def formattedPointCount(n):
@@ -208,32 +176,27 @@ class WarpVisualizer(Screen):
         self.parameterBox.setEnabled(warpType is False)
         self.brdfValuesCheckBox.setEnabled(warpType is False)
 
-        return True
+        # Now trigger refresh in WarpVisualizationWidget
+        self.setSamplingType(samplingType)
+        self.setWarpType(warpType)
+        self.setParameterValue(parameterValue)
+        self.setPointCount(pointCount)
+        self.setDrawGrid(self.warpedGridCheckBox.checked())
+        return super(WarpVisualizer, self).refresh()
 
     def draw(self, ctx):
         super(WarpVisualizer, self).draw(ctx)
 
-    def drawHistogram(self, pos, size, tex):
-        # TODO: should directly call super
-        pass
-
     def mouseMotionEvent(self, p, rel, button, modifiers):
-        if not super(WarpVisualizer, self).mouseMotionEvent(p, rel, button, modifiers):
-            # TODO: arcball motion
-            pass
-        return True
+        return super(WarpVisualizer, self).mouseMotionEvent(p, rel, button, modifiers)
 
     def mouseButtonEvent(self, p, button, down, modifiers):
-        if down and (not self.window.visible()):
-            self.drawHistogram = False
+        if down and (self.isDrawingHistogram()):
+            self.setDrawHistogram(False)
             self.window.setVisible(True)
             return True
 
-        if not super(WarpVisualizer, self).mouseButtonEvent(p, button, down, modifiers):
-            if button is glfw.MOUSE_BUTTON_1:
-                # TODO: arcball button
-                pass
-        return True
+        return super(WarpVisualizer, self).mouseButtonEvent(p, button, down, modifiers)
 
     def keyboardEvent(self, key, scancode, action, modifiers):
         if super(WarpVisualizer, self).keyboardEvent(key, scancode,

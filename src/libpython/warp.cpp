@@ -319,8 +319,8 @@ using MatrixXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;
 class WarpVisualizationWidget : public nanogui::Screen {
 
 public:
-    WarpVisualizationWidget()
-        : nanogui::Screen(Vector2i(800, 600), "Warp visualization")
+    WarpVisualizationWidget(int width, int height, std::string description)
+        : nanogui::Screen(Vector2i(width, height), description)
         , m_drawHistogram(false), m_drawGrid(true)
         , m_pointCount(0), m_lineCount(0)
         , m_testResult(false), m_testResultText("No test started.") {
@@ -341,17 +341,115 @@ public:
     }
 
     virtual bool
-    mouseMotionEvent(const Vector2i &p, const Vector2i &, int, int) override {
-        m_arcball.motion(p);
+    mouseMotionEvent(const Vector2i &p, const Vector2i & rel,
+                     int button, int modifiers) override {
+        if (!Screen::mouseMotionEvent(p, rel, button, modifiers)) {
+            m_arcball.motion(p);
+        }
         return true;
     }
 
     virtual bool
-    mouseButtonEvent(const Vector2i &p, int button, bool down, int) override {
-        if (button == GLFW_MOUSE_BUTTON_1) {
-            m_arcball.button(p, down);
+    mouseButtonEvent(const Vector2i &p, int button,
+                     bool down, int modifiers) override {
+        if (!Screen::mouseButtonEvent(p, button, down, modifiers)) {
+            if (button == GLFW_MOUSE_BUTTON_1) {
+                m_arcball.button(p, down);
+            }
         }
         return true;
+    }
+
+    virtual bool
+    keyboardEvent(int key, int scancode, int action, int modifiers) override {
+        return Screen::keyboardEvent(key, scancode, action, modifiers);
+    }
+
+    virtual void refresh() {
+        Log(EInfo, "Refreshing from C++");
+
+        // Generate the point positions
+        VectorList positions;
+        std::vector<Float> values;
+        generatePoints(m_pointCount, m_samplingType, m_warpType, m_parameterValue,
+                       positions, values);
+
+        float valueScale = 0.f;
+        for (size_t i = 0; i < m_pointCount; ++i) {
+            valueScale = std::max(valueScale, values[i]);
+        }
+        valueScale = 1.f / valueScale;
+
+        if (m_warpType != NoWarp) {
+            for (size_t i = 0; i < m_pointCount; ++i) {
+                if (values[i] == 0.0f) {
+                    positions[i] = Vector3f::Constant(std::numeric_limits<float>::quiet_NaN());
+                    continue;
+                }
+                positions[i] =
+                    ((valueScale == 0 ? 1.0f : (valueScale * values[i])) *
+                     positions[i]) * 0.5f + Vector3f(0.5f, 0.5f, 0.0f);
+            }
+        }
+
+        // Generate a color gradient
+        MatrixXf colors(3, m_pointCount);
+        float colorStep = 1.f / m_pointCount;
+        for (size_t i = 0; i < m_pointCount; ++i)
+            colors.col(i) << i * colorStep, 1 - i * colorStep, 0;
+
+        // Upload points to GPU
+        m_pointShader->bind();
+        m_pointShader->uploadAttrib("position", positions);
+        m_pointShader->uploadAttrib("color", colors);
+
+        // Upload lines to GPU
+        if (m_drawGrid) {
+            size_t gridRes = static_cast<size_t>(std::sqrt(static_cast<float>(m_pointCount)) + 0.5f);
+            size_t fineGridRes = 16 * gridRes;
+            float coarseScale = 1.f / gridRes;
+            float fineScale = 1.f / fineGridRes;
+
+            size_t idx = 0;
+            m_lineCount = 4 * (gridRes+1) * (fineGridRes+1);
+            positions.resize(m_lineCount);
+
+            for (size_t i = 0; i <= gridRes; ++i) {
+                for (size_t j = 0; j <= fineGridRes; ++j) {
+                    auto pt = warpPoint(m_warpType, Point2f(j     * fineScale, i * coarseScale), m_parameterValue);
+                    positions[idx++] = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
+                    pt = warpPoint(m_warpType, Point2f((j+1) * fineScale, i * coarseScale), m_parameterValue);
+                    positions[idx++] = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
+                    pt = warpPoint(m_warpType, Point2f(i*coarseScale, j     * fineScale), m_parameterValue);
+                    positions[idx++] = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
+                    pt = warpPoint(m_warpType, Point2f(i*coarseScale, (j+1) * fineScale), m_parameterValue);
+                    positions[idx++] = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
+                }
+            }
+            if (m_warpType != NoWarp) {
+                for (size_t i = 0; i < m_lineCount; ++i) {
+                    positions[i] = positions[i] * 0.5f + Vector3f(0.5f, 0.5f, 0.0f);
+                }
+            }
+            m_gridShader->bind();
+            m_gridShader->uploadAttrib("position", positions);
+        }
+
+        // BRDF-specific
+        // int ctr = 0;
+        // positions.resize(106);
+        // for (int i = 0; i< = 50; ++i) {
+        //     float angle1 = i * 2 * math::Pi_f / 50;
+        //     float angle2 = (i+1) * 2 * math::Pi_f / 50;
+        //     positions[ctr++] = Vector3f(std::cos(angle1)*.5f + 0.5f, std::sin(angle1)*.5f + 0.5f, 0.f);
+        //     positions[ctr++] = Vector3f(std::cos(angle2)*.5f + 0.5f, std::sin(angle2)*.5f + 0.5f, 0.f);
+        // }
+        // positions[ctr++] = Vector3f(0.5f, 0.5f, 0.f);
+        // positions[ctr++] = Vector3f(-m_bRec.wi.x() * 0.5f + 0.5f, -m_bRec.wi.y() * 0.5f + 0.5f, m_bRec.wi.z() * 0.5f);
+        // positions[ctr++] = Vector3f(0.5f, 0.5f, 0.f);
+        // positions[ctr++] = Vector3f(m_bRec.wi.x() * 0.5f + 0.5f, m_bRec.wi.y() * 0.5f + 0.5f, m_bRec.wi.z() * 0.5f);
+        // m_arrowShader->bind();
+        // m_arrowShader->uploadAttrib("position", positions);
     }
 
     void drawHistogram(const Point2i &pos_, const Vector2i &size_, GLuint tex) {
@@ -369,7 +467,9 @@ public:
     }
 
     virtual void drawContents() override {
-        /* Set up a perspective camera matrix */
+        Log(EInfo, "Drawing contents.");
+
+        // Set up a perspective camera matrix
         Matrix4f view, proj, model;
         view = lookAt(Vector3f(0, 0, 2), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
         const float viewAngle = 30, near = 0.01, far = 100;
@@ -382,7 +482,7 @@ public:
         model = m_arcball.matrix() * model;
 
         if (m_drawHistogram) {
-            /* Render the histograms */
+            // Render the histograms
             const int spacer = 20;
             const int histWidth = (width() - 3*spacer) / 2;
             const int histHeight = histWidth;
@@ -393,7 +493,7 @@ public:
             drawHistogram(Point2i(2*spacer + histWidth, verticalOffset), Vector2i(histWidth, histHeight), m_textures[1]);
 
             auto ctx = nvgContext();
-            // TODO: need getter for Screen::mPixelRatio
+            // TODO: need a getter for Screen::mPixelRatio
             const double pixelRatio = 1.0;
             nvgBeginFrame(ctx, mSize[0], mSize[1], pixelRatio);
             nvgBeginPath(ctx);
@@ -426,7 +526,7 @@ public:
                 width() - 2 * spacer, m_testResultText.c_str(), nullptr);
             nvgEndFrame(ctx);
         } else {
-            /* Render the point set */
+            // Render the point set
             Matrix4f mvp = proj * view * model;
             m_pointShader->bind();
             m_pointShader->setUniform("mvp", mvp);
@@ -581,16 +681,21 @@ public:
         glGenTextures(2, &m_textures[0]);
         glBindTexture(GL_TEXTURE_2D, m_textures[0]);
 
-        // mBackground.setZero();
+        setBackground(Vector3f(0, 0, 0));
         drawContents();
 
         framebufferSizeChanged();
     }
 
-    void hello() {
-        Log(EInfo, "says hello!");
-        drawContents();
-    }
+    void setSamplingType(SamplingType s) { m_samplingType = s; }
+    void setWarpType(WarpType w) { m_warpType = w; }
+    void setParameterValue(float v) { m_parameterValue = v; }
+    void setPointCount(int n) { m_pointCount = n; }
+
+    bool isDrawingHistogram() { return m_drawHistogram; }
+    void setDrawHistogram(bool draw) { m_drawHistogram = draw; }
+    bool isDrawingGrid() { return m_drawGrid; }
+    void setDrawGrid(bool draw) { m_drawGrid = draw; }
 
 private:
     GLShader *m_pointShader = nullptr;
@@ -601,8 +706,10 @@ private:
     Arcball m_arcball;
 
     bool m_drawHistogram, m_drawGrid;
-    int m_pointCount, m_lineCount;
+    size_t m_pointCount, m_lineCount;
+    SamplingType m_samplingType;
     WarpType m_warpType;
+    float m_parameterValue;
     bool m_testResult;
     std::string m_testResultText;
 };
@@ -677,32 +784,19 @@ MTS_PY_EXPORT(warp) {
         .export_values();
 
 
-    m2.def("generatePoints", [](size_t pointCount, SamplingType pointType,
-                                WarpType warpType, Float parameterValue) {
-        VectorList points;
-        std::vector<Float> weights;
-        generatePoints(pointCount, pointType,
-                       warpType, parameterValue,
-                       points, weights);
-        return std::make_pair(points, weights);
-    }, "Generate and warp points. Returns (list of points, list of weights)");
-
-    m2.def("computeHistogram", &computeHistogram,
-           "Compute histogram from warped points.");
-
-    m2.def("generateExpectedHistogram", &generateExpectedHistogram,
-           "Generate the theoretical histogram from the PDF of the warping function.");
-
     m2.def("runStatisticalTest", &runStatisticalTest,
            "Runs a Chi^2 statistical test verifying the given warping type"
            "against its PDF. Returns (passed, reason)");
 
-    // Warp visualization widget
+    // Warp visualization widget, inherits from nanogui::Screen which
+    // is already exposed to Python in another module.
     using warp_detail::WarpVisualizationWidget;
-    py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget")
-        .def(py::init<>(), "Default constructor.")
-        .def("hello", &WarpVisualizationWidget::hello, "Prints hello")
-        .def("setVisible", [](WarpVisualizationWidget &widget, bool v) {
-            widget.setVisible(v);
-         }, "");
+    const auto PyScreen = static_cast<py::object>(py::module::import("nanogui").attr("Screen"));
+    py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget", PyScreen)
+        .def(py::init<int, int, std::string>(), "Default constructor.")
+        .def("refresh", &WarpVisualizationWidget::refresh, "Should be called upon UI interaction.")
+        .def("setSamplingType", &WarpVisualizationWidget::setSamplingType, "")
+        .def("setWarpType", &WarpVisualizationWidget::setWarpType, "")
+        .def("setParameterValue", &WarpVisualizationWidget::setParameterValue, "")
+        .def("setPointCount", &WarpVisualizationWidget::setPointCount, "");
 }
