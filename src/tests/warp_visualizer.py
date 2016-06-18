@@ -23,21 +23,23 @@ class WarpVisualizer(WarpVisualizationWidget):
     warpParameterDefaultValue = 0.5
     angleDefaultValue = 0.5
 
+    # Default values for statistical test
+    minExpFrequency = 5.0
+    significanceLevel = 0.01
+
     def __init__(self):
-        print("hey")
-        # super(WarpVisualizer, self).__init__(Vector2i(800, 600), "Warp visualizer")
         super(WarpVisualizer, self).__init__(800, 600, "Warp visualizer")
-        print("ho")
         self.initializeGUI()
 
     def runTest(self):
-        print("Test will be run")
-        raise Exception("Not implemented yet.")
+        super(WarpVisualizer, self).runTest(
+            WarpVisualizer.minExpFrequency, WarpVisualizer.significanceLevel)
+        self.setDrawHistogram(True)
+        self.window.setVisible(False)
 
     def mapParameter(self, warpType, value):
         """Converts the parameter value to the appropriate domain
             depending on the warp type."""
-        # TODO
         return value
 
     def initializeGUI(self):
@@ -45,7 +47,6 @@ class WarpVisualizer(WarpVisualizationWidget):
         window = Window(self, "Warp tester")
         window.setPosition(Vector2i(15, 15))
         window.setLayout(GroupLayout())
-
 
         _ = Label(window, "Input point set", "sans-bold")
 
@@ -186,26 +187,6 @@ class WarpVisualizer(WarpVisualizationWidget):
 
     def draw(self, ctx):
         super(WarpVisualizer, self).draw(ctx)
-
-    def mouseMotionEvent(self, p, rel, button, modifiers):
-        return super(WarpVisualizer, self).mouseMotionEvent(p, rel, button, modifiers)
-
-    def mouseButtonEvent(self, p, button, down, modifiers):
-        if down and (self.isDrawingHistogram()):
-            self.setDrawHistogram(False)
-            self.window.setVisible(True)
-            return True
-
-        return super(WarpVisualizer, self).mouseButtonEvent(p, button, down, modifiers)
-
-    def keyboardEvent(self, key, scancode, action, modifiers):
-        if super(WarpVisualizer, self).keyboardEvent(key, scancode,
-                                                     action, modifiers):
-            return True
-        if (key is glfw.KEY_ESCAPE) and (action is glfw.PRESS):
-            self.setVisible(False)
-            return True
-        return False
 
 
 if __name__ == "__main__":

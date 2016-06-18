@@ -9,8 +9,6 @@
 #include <pcg32.h>
 #include "python.h"
 
-using VectorList = std::vector<Vector3f>;
-
 /// Enum of available warp types
 enum WarpType {
     NoWarp = 0,
@@ -86,16 +84,16 @@ std::pair<Vector3f, Float> warpPoint(WarpType warpType, Point2f sample, Float pa
     return std::make_pair(result, 1.f);
 }
 
-Point2f domainToPoint(const Vector3f &v, WarpType warpType) {
+Point2f domainToPoint(const Eigen::Vector3f &v, WarpType warpType) {
     Point2f p;
     switch (warpType) {
         case NoWarp:
-            p[0] = v[0]; p[1] = v[1];
+            p[0] = v(0); p[1] = v(1);
             break;
         case UniformDisk:
         case UniformDiskConcentric:
-            p[0] = 0.5f * v[0] + 0.5f;
-            p[1] = 0.5f * v[1] + 0.5f;
+            p[0] = 0.5f * v(0) + 0.5f;
+            p[1] = 0.5f * v(1) + 0.5f;
             break;
 
         case StandardNormal:
@@ -103,9 +101,9 @@ Point2f domainToPoint(const Vector3f &v, WarpType warpType) {
             break;
 
         default:
-            p[0] = std::atan2(v[1], v[0]) * math::InvTwoPi;
+            p[0] = std::atan2(v(1), v(0)) * math::InvTwoPi;
             if (p[0] < 0) p[0] += 1;
-            p[1] = 0.5f * v[2] + 0.5f;
+            p[1] = 0.5f * v(2) + 0.5f;
             break;
     }
 
@@ -192,7 +190,7 @@ Float pdfValueForSample(WarpType warpType, double x, double y, Float parameterVa
  */
 void generatePoints(size_t &pointCount, SamplingType pointType, WarpType warpType,
                     Float parameterValue,
-                    VectorList &positions, std::vector<Float> &weights) {
+                    Eigen::MatrixXf &positions, std::vector<Float> &weights) {
     /* Determine the number of points that should be sampled */
     size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
     float invSqrtVal = 1.f / sqrtVal;
@@ -201,6 +199,7 @@ void generatePoints(size_t &pointCount, SamplingType pointType, WarpType warpTyp
 
     pcg32 rng;
 
+    positions.resize(3, pointCount);
     for (size_t i = 0; i < pointCount; ++i) {
         size_t y = i / sqrtVal, x = i % sqrtVal;
         Point2f sample;
@@ -221,23 +220,23 @@ void generatePoints(size_t &pointCount, SamplingType pointType, WarpType warpTyp
         }
 
         auto result = warpPoint(warpType, sample, parameterValue);
-        positions.push_back(result.first);
+        positions.col(i) = static_cast<Eigen::Matrix<float, 3, 1>>(result.first);
         weights.push_back(result.second);
     }
 }
 
 std::vector<double> computeHistogram(WarpType warpType,
-                                    const VectorList &positions,
+                                    const Eigen::MatrixXf &positions,
                                     const std::vector<Float> &weights,
                                     size_t gridWidth, size_t gridHeight) {
     std::vector<double> hist(gridWidth * gridHeight, 0.0);
 
-    for (size_t i = 0; i < positions.size(); ++i) {
+    for (size_t i = 0; i < static_cast<size_t>(positions.cols()); ++i) {
         if (weights[i] == 0) {
             continue;
         }
 
-        Point2f sample = domainToPoint(positions[i], warpType);
+        Point2f sample = domainToPoint(positions.col(i), warpType);
         float x = sample[0],
               y = sample[1];
 
@@ -280,24 +279,35 @@ std::vector<double> generateExpectedHistogram(size_t pointCount,
     return hist;
 }
 
-std::pair<bool, std::string>
-runStatisticalTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
-                   SamplingType samplingType, WarpType warpType, Float parameterValue,
-                   double minExpFrequency, double significanceLevel) {
+std::pair<bool, std::string> runStatisticalTestAndOutput(size_t pointCount,
+    size_t gridWidth, size_t gridHeight, SamplingType samplingType, WarpType warpType,
+    Float parameterValue, double minExpFrequency, double significanceLevel,
+    std::vector<double> &observedHistogram, std::vector<double> &expectedHistogram) {
+
     const auto nBins = gridWidth * gridHeight;
-    VectorList positions;
+    Eigen::MatrixXf positions;
     std::vector<Float> weights;
 
     generatePoints(pointCount, samplingType, warpType,
                    parameterValue, positions, weights);
-    auto observedHistogram = computeHistogram(warpType, positions, weights,
+    observedHistogram = computeHistogram(warpType, positions, weights,
                                               gridWidth, gridHeight);
-    auto expectedHistogram = generateExpectedHistogram(pointCount,
+    expectedHistogram = generateExpectedHistogram(pointCount,
                                                        warpType, parameterValue,
                                                        gridWidth, gridHeight);
 
     return hypothesis::chi2_test(nBins, observedHistogram.data(), expectedHistogram.data(),
                                  pointCount, minExpFrequency, significanceLevel, 1);
+}
+
+std::pair<bool, std::string>
+runStatisticalTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
+                   SamplingType samplingType, WarpType warpType, Float parameterValue,
+                   double minExpFrequency, double significanceLevel) {
+    std::vector<double> observedHistogram, expectedHistogram;
+    return runStatisticalTestAndOutput(pointCount,
+        gridWidth, gridHeight, samplingType, warpType, parameterValue,
+        minExpFrequency, significanceLevel, observedHistogram, expectedHistogram);
 }
 
 namespace warp_detail {
@@ -324,7 +334,6 @@ public:
         , m_drawHistogram(false), m_drawGrid(true)
         , m_pointCount(0), m_lineCount(0)
         , m_testResult(false), m_testResultText("No test started.") {
-        Log(EInfo, "instantiated :)");
         initializeVisualizerGUI();
     }
 
@@ -352,24 +361,35 @@ public:
     virtual bool
     mouseButtonEvent(const Vector2i &p, int button,
                      bool down, int modifiers) override {
+        if (down && isDrawingHistogram()) {
+            setDrawHistogram(false);
+            window->setVisible(true);
+            return true;
+        }
         if (!Screen::mouseButtonEvent(p, button, down, modifiers)) {
             if (button == GLFW_MOUSE_BUTTON_1) {
                 m_arcball.button(p, down);
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     virtual bool
     keyboardEvent(int key, int scancode, int action, int modifiers) override {
-        return Screen::keyboardEvent(key, scancode, action, modifiers);
+        if (Screen::keyboardEvent(key, scancode, action, modifiers)) {
+            return true;
+        }
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+            setVisible(false);
+            return true;
+        }
+        return false;
     }
 
     virtual void refresh() {
-        Log(EInfo, "Refreshing from C++");
-
         // Generate the point positions
-        VectorList positions;
+        Eigen::MatrixXf positions;
         std::vector<Float> values;
         generatePoints(m_pointCount, m_samplingType, m_warpType, m_parameterValue,
                        positions, values);
@@ -383,12 +403,12 @@ public:
         if (m_warpType != NoWarp) {
             for (size_t i = 0; i < m_pointCount; ++i) {
                 if (values[i] == 0.0f) {
-                    positions[i] = Vector3f::Constant(std::numeric_limits<float>::quiet_NaN());
+                    positions.col(i) = Eigen::Vector3f::Constant(std::numeric_limits<float>::quiet_NaN());
                     continue;
                 }
-                positions[i] =
+                positions.col(i) =
                     ((valueScale == 0 ? 1.0f : (valueScale * values[i])) *
-                     positions[i]) * 0.5f + Vector3f(0.5f, 0.5f, 0.0f);
+                     positions.col(i)) * 0.5f + Eigen::Vector3f(0.5f, 0.5f, 0.0f);
             }
         }
 
@@ -412,23 +432,28 @@ public:
 
             size_t idx = 0;
             m_lineCount = 4 * (gridRes+1) * (fineGridRes+1);
-            positions.resize(m_lineCount);
+            positions.resize(3, m_lineCount);
 
+
+            auto getPoint = [this, &fineScale, &coarseScale](size_t i, size_t j) {
+                auto r = warpPoint(m_warpType, Point2f(j * fineScale, i * coarseScale), m_parameterValue);
+                return std::make_pair(static_cast<Eigen::Matrix<float, 3, 1>>(r.first), r.second);
+            };
             for (size_t i = 0; i <= gridRes; ++i) {
                 for (size_t j = 0; j <= fineGridRes; ++j) {
-                    auto pt = warpPoint(m_warpType, Point2f(j     * fineScale, i * coarseScale), m_parameterValue);
-                    positions[idx++] = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                    pt = warpPoint(m_warpType, Point2f((j+1) * fineScale, i * coarseScale), m_parameterValue);
-                    positions[idx++] = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                    pt = warpPoint(m_warpType, Point2f(i*coarseScale, j     * fineScale), m_parameterValue);
-                    positions[idx++] = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                    pt = warpPoint(m_warpType, Point2f(i*coarseScale, (j+1) * fineScale), m_parameterValue);
-                    positions[idx++] = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
+                    auto pt = getPoint(i, j);
+                    positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
+                    pt = getPoint(i, j + 1);
+                    positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
+                    pt = getPoint(j, i);
+                    positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
+                    pt = getPoint(j + 1, i);
+                    positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
                 }
             }
             if (m_warpType != NoWarp) {
                 for (size_t i = 0; i < m_lineCount; ++i) {
-                    positions[i] = positions[i] * 0.5f + Vector3f(0.5f, 0.5f, 0.0f);
+                    positions.col(i) = positions.col(i) * 0.5f + Eigen::Vector3f(0.5f, 0.5f, 0.0f);
                 }
             }
             m_gridShader->bind();
@@ -441,15 +466,58 @@ public:
         // for (int i = 0; i< = 50; ++i) {
         //     float angle1 = i * 2 * math::Pi_f / 50;
         //     float angle2 = (i+1) * 2 * math::Pi_f / 50;
-        //     positions[ctr++] = Vector3f(std::cos(angle1)*.5f + 0.5f, std::sin(angle1)*.5f + 0.5f, 0.f);
-        //     positions[ctr++] = Vector3f(std::cos(angle2)*.5f + 0.5f, std::sin(angle2)*.5f + 0.5f, 0.f);
+        //     positions.col(ctr++) = Vector3f(std::cos(angle1)*.5f + 0.5f, std::sin(angle1)*.5f + 0.5f, 0.f);
+        //     positions.col(ctr++) = Vector3f(std::cos(angle2)*.5f + 0.5f, std::sin(angle2)*.5f + 0.5f, 0.f);
         // }
-        // positions[ctr++] = Vector3f(0.5f, 0.5f, 0.f);
-        // positions[ctr++] = Vector3f(-m_bRec.wi.x() * 0.5f + 0.5f, -m_bRec.wi.y() * 0.5f + 0.5f, m_bRec.wi.z() * 0.5f);
-        // positions[ctr++] = Vector3f(0.5f, 0.5f, 0.f);
-        // positions[ctr++] = Vector3f(m_bRec.wi.x() * 0.5f + 0.5f, m_bRec.wi.y() * 0.5f + 0.5f, m_bRec.wi.z() * 0.5f);
+        // positions.col(ctr++) = Vector3f(0.5f, 0.5f, 0.f);
+        // positions.col(ctr++) = Vector3f(-m_bRec.wi.x() * 0.5f + 0.5f, -m_bRec.wi.y() * 0.5f + 0.5f, m_bRec.wi.z() * 0.5f);
+        // positions.col(ctr++) = Vector3f(0.5f, 0.5f, 0.f);
+        // positions.col(ctr++) = Vector3f(m_bRec.wi.x() * 0.5f + 0.5f, m_bRec.wi.y() * 0.5f + 0.5f, m_bRec.wi.z() * 0.5f);
         // m_arrowShader->bind();
         // m_arrowShader->uploadAttrib("position", positions);
+    }
+
+    bool runTest(double minExpFrequency, double significanceLevel) {
+        std::vector<double> observedHistogram, expectedHistogram;
+        size_t gridWidth = 51, gridHeight = 51;
+        size_t nBins = gridWidth * gridHeight;
+        if (m_warpType != NoWarp &&
+            m_warpType != UniformDisk && m_warpType != UniformDiskConcentric) {
+            gridWidth *= 2;
+        }
+
+        // Run Chi^2 test
+        const auto r = runStatisticalTestAndOutput(m_pointCount,
+            gridWidth, gridHeight, m_samplingType, m_warpType, m_parameterValue,
+            minExpFrequency, significanceLevel, observedHistogram, expectedHistogram);
+        m_testResult = r.first;
+        m_testResultText = r.second;
+
+        // Find min and max value to scale the texture
+        double maxValue = 0, minValue = std::numeric_limits<double>::infinity();
+        for (size_t i = 0; i < nBins; ++i) {
+            maxValue = std::max(maxValue, (double) std::max(observedHistogram[i], expectedHistogram[i]));
+            minValue = std::min(minValue, (double) std::min(observedHistogram[i], expectedHistogram[i]));
+        }
+        minValue /= 2;
+        float texScale = 1 / static_cast<float>(maxValue - minValue);
+
+        // Upload both histograms to the GPU
+        std::unique_ptr<float[]> buffer(new float[nBins]);
+        for (int k = 0; k < 2; ++k) {  // For each histogram
+            for (size_t i=0; i < nBins; ++i) {  // For each bin
+                buffer[i] = texScale * static_cast<float>(
+                    (k == 0 ? observedHistogram[i] : expectedHistogram[i]) - minValue);
+            }
+
+            glBindTexture(GL_TEXTURE_2D, m_textures[k]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, gridWidth, gridHeight,
+                         0, GL_RED, GL_FLOAT, buffer.get());
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        }
+
+        return m_testResult;
     }
 
     void drawHistogram(const Point2i &pos_, const Vector2i &size_, GLuint tex) {
@@ -467,8 +535,6 @@ public:
     }
 
     virtual void drawContents() override {
-        Log(EInfo, "Drawing contents.");
-
         // Set up a perspective camera matrix
         Matrix4f view, proj, model;
         view = lookAt(Vector3f(0, 0, 2), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
@@ -697,6 +763,8 @@ public:
     bool isDrawingGrid() { return m_drawGrid; }
     void setDrawGrid(bool draw) { m_drawGrid = draw; }
 
+    nanogui::Window *window;
+
 private:
     GLShader *m_pointShader = nullptr;
     GLShader *m_gridShader = nullptr;
@@ -783,7 +851,6 @@ MTS_PY_EXPORT(warp) {
         .value("Stratified", SamplingType::Stratified)
         .export_values();
 
-
     m2.def("runStatisticalTest", &runStatisticalTest,
            "Runs a Chi^2 statistical test verifying the given warping type"
            "against its PDF. Returns (passed, reason)");
@@ -794,9 +861,16 @@ MTS_PY_EXPORT(warp) {
     const auto PyScreen = static_cast<py::object>(py::module::import("nanogui").attr("Screen"));
     py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget", PyScreen)
         .def(py::init<int, int, std::string>(), "Default constructor.")
+        .def("runTest", &WarpVisualizationWidget::runTest,
+            "Run the Chi^2 test for the selected parameters and displays the histograms.")
         .def("refresh", &WarpVisualizationWidget::refresh, "Should be called upon UI interaction.")
         .def("setSamplingType", &WarpVisualizationWidget::setSamplingType, "")
         .def("setWarpType", &WarpVisualizationWidget::setWarpType, "")
         .def("setParameterValue", &WarpVisualizationWidget::setParameterValue, "")
-        .def("setPointCount", &WarpVisualizationWidget::setPointCount, "");
+        .def("setPointCount", &WarpVisualizationWidget::setPointCount, "")
+        .def("isDrawingHistogram", &WarpVisualizationWidget::isDrawingHistogram, "")
+        .def("setDrawHistogram", &WarpVisualizationWidget::setDrawHistogram, "")
+        .def("isDrawingGrid", &WarpVisualizationWidget::isDrawingGrid, "")
+        .def("setDrawGrid", &WarpVisualizationWidget::setDrawGrid, "")
+        .def_readwrite("window", &WarpVisualizationWidget::window);
 }
