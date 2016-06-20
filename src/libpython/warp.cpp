@@ -151,10 +151,10 @@ Float pdfValueForSample(WarpType warpType, double x, double y, Float parameterVa
         // TODO: need to use domain indicator functions to zero-out where appropriate
         case UniformDisk:
             p[0] = 2 * x - 1; p[1] = 2 * y - 1;
-            return warp::squareToUniformDiskPdf();
+            return warp::unitDiskIndicator(p) * warp::squareToUniformDiskPdf();
         case UniformDiskConcentric:
             p[0] = 2 * x - 1; p[1] = 2 * y - 1;
-            return warp::squareToUniformDiskConcentricPdf();
+            return warp::unitDiskIndicator(p) * warp::squareToUniformDiskConcentricPdf();
 
         case StandardNormal:
             p[0] = 2 * x - 1; p[1] = 2 * y - 1;
@@ -179,9 +179,9 @@ Float pdfValueForSample(WarpType warpType, double x, double y, Float parameterVa
 
             switch (warpType) {
                 case UniformSphere:
-                    return warp::squareToUniformSpherePdf();
+                    return warp::unitSphereIndicator(v) * warp::squareToUniformSpherePdf();
                 case UniformHemisphere:
-                    return warp::squareToUniformHemispherePdf();
+                    return warp::unitHemisphereIndicator(v) * warp::squareToUniformHemispherePdf();
                 case CosineHemisphere:
                     Log(EError, "TODO: squareToCosineHemispherePdf");
                     // return warp::squareToCosineHemispherePdf();
@@ -267,8 +267,8 @@ std::vector<double> computeHistogram(WarpType warpType,
 }
 
 std::vector<double> generateExpectedHistogram(size_t pointCount,
-                                             WarpType warpType, Float parameterValue,
-                                             size_t gridWidth, size_t gridHeight) {
+                                              WarpType warpType, Float parameterValue,
+                                              size_t gridWidth, size_t gridHeight) {
     std::vector<double> hist(gridWidth * gridHeight, 0.0);
     double scale = pointCount * getPdfScalingFactor(warpType);
 
@@ -306,10 +306,10 @@ std::pair<bool, std::string> runStatisticalTestAndOutput(size_t pointCount,
     generatePoints(pointCount, samplingType, warpType,
                    parameterValue, positions, weights);
     observedHistogram = computeHistogram(warpType, positions, weights,
-                                              gridWidth, gridHeight);
+                                         gridWidth, gridHeight);
     expectedHistogram = generateExpectedHistogram(pointCount,
-                                                       warpType, parameterValue,
-                                                       gridWidth, gridHeight);
+                                                  warpType, parameterValue,
+                                                  gridWidth, gridHeight);
 
     return hypothesis::chi2_test(nBins, observedHistogram.data(), expectedHistogram.data(),
                                  pointCount, minExpFrequency, significanceLevel, 1);
@@ -500,7 +500,7 @@ public:
         size_t nBins = gridWidth * gridHeight;
 
         // Run Chi^2 test
-        const auto r = runStatisticalTestAndOutput(m_pointCount,
+        const auto r = runStatisticalTestAndOutput(1000 * nBins,
             gridWidth, gridHeight, m_samplingType, m_warpType, m_parameterValue,
             minExpFrequency, significanceLevel, observedHistogram, expectedHistogram);
         m_testResult = r.first;
@@ -584,9 +584,7 @@ public:
             drawHistogram(Point2i(2*spacer + histWidth, verticalOffset), Vector2i(histWidth, histHeight), m_textures[1]);
 
             auto ctx = nvgContext();
-            // TODO: need a getter for Screen::mPixelRatio
-            const double pixelRatio = 1.0;
-            nvgBeginFrame(ctx, mSize[0], mSize[1], pixelRatio);
+            nvgBeginFrame(ctx, mSize[0], mSize[1], mPixelRatio);
             nvgBeginPath(ctx);
             nvgRect(ctx, spacer, verticalOffset + histHeight + spacer, width()-2*spacer, 70);
             nvgFillColor(ctx, m_testResult ? Color(100, 255, 100, 100) : Color(255, 100, 100, 100));
@@ -811,16 +809,11 @@ MTS_PY_EXPORT(warp) {
 
     m2.mdef(warp, squareToUniformSphere)
       .mdef(warp, squareToUniformSpherePdf)
-      .def("unitSphereIndicator", [](const Vector3f& v) {
-        return (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) <= 1;
-      }, "Indicator function of the 3D unit sphere's domain.")
+      .mdef(warp, unitSphereIndicator)
 
       .mdef(warp, squareToUniformHemisphere)
       .mdef(warp, squareToUniformHemispherePdf)
-      .def("unitHemisphereIndicator", [](const Vector3f& v) {
-        return ((v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) <= 1)
-            && (v[2] >= 0);
-      }, "Indicator function of the 3D unit sphere's domain.")
+      .mdef(warp, unitHemisphereIndicator)
 
       .mdef(warp, squareToCosineHemisphere)
       // TODO: cosine hemisphere's PDF

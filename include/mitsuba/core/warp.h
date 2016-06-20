@@ -21,11 +21,22 @@ NAMESPACE_BEGIN(warp)
 //! @{ \name Warping techniques related to spheres and subsets
 // =============================================================
 
+/// Returns 1.0 if the point is in the domain of the unit ball, 0.0 otherwise
+extern MTS_EXPORT_CORE Float unitSphereIndicator(const Vector3f &v) {
+  return (v[0] * v[0] + v[1] * v[1] + v[2] * v[2] <= 1) ? 1.0 : 0.0;
+}
+
 /// Uniformly sample a vector on the unit sphere with respect to solid angles
 extern MTS_EXPORT_CORE Vector3f squareToUniformSphere(const Point2f &sample);
 
 /// Density of \ref squareToUniformSphere() with respect to solid angles
 extern MTS_EXPORT_CORE inline Float squareToUniformSpherePdf() { return math::InvFourPi; }
+
+/// Returns 1.0 if the point is in the domain of the upper half unit ball, 0.0 otherwise.
+extern MTS_EXPORT_CORE Float unitHemisphereIndicator(const Vector3f &v) {
+  return ((v[0] * v[0] + v[1] * v[1] + v[2] * v[2] <= 1)
+          && (v[2] >= 0)) ? 1.0 : 0.0;
+}
 
 /// Uniformly sample a vector on the unit hemisphere with respect to solid angles
 extern MTS_EXPORT_CORE Vector3f squareToUniformHemisphere(const Point2f &sample);
@@ -65,6 +76,11 @@ extern MTS_EXPORT_CORE inline Float squareToUniformConePdf(Float cosCutoff) {
 // =============================================================
 //! @{ \name Warping techniques that operate in the plane
 // =============================================================
+
+/// Returns 1.0 if the point is in the domain of the unit disk, 0.0 otherwise.
+extern MTS_EXPORT_CORE Float unitDiskIndicator(const Point2f &p) {
+  return (p[0] * p[0] + p[1] * p[1] <= 1) ? 1.0 : 0.0;
+}
 
 /// Uniformly sample a vector on a 2D disk
 extern MTS_EXPORT_CORE Point2f squareToUniformDisk(const Point2f &sample);

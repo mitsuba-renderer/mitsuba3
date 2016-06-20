@@ -2704,14 +2704,10 @@ Parameter ``sample``:
     A uniformly distributed sample on $[0,1]^2$)doc";
 
 static const char *__doc_mitsuba_warp_squareToUniformConePdf =
-R"doc(Uniformly sample a vector that lies within a given cone of angles
-around the Z axis
+R"doc(Density of squareToUniformCone per unit area.
 
 Parameter ``cosCutoff``:
-    Cosine of the cutoff angle
-
-Parameter ``sample``:
-    A uniformly distributed sample on $[0,1]^2$)doc";
+    Cosine of the cutoff angle)doc";
 
 static const char *__doc_mitsuba_warp_squareToUniformDisk = R"doc(Uniformly sample a vector on a 2D disk)doc";
 
@@ -2740,6 +2736,18 @@ R"doc(Convert an uniformly distributed square sample into barycentric
 coordinates)doc";
 
 static const char *__doc_mitsuba_warp_uniformDiskToSquareConcentric = R"doc(Inverse of the mapping squareToUniformDiskConcentric)doc";
+
+static const char *__doc_mitsuba_warp_unitDiskIndicator =
+R"doc(Returns 1.0 if the point is in the domain of the unit disk, 0.0
+otherwise.)doc";
+
+static const char *__doc_mitsuba_warp_unitHemisphereIndicator =
+R"doc(Returns 1.0 if the point is in the domain of the upper half unit ball,
+0.0 otherwise.)doc";
+
+static const char *__doc_mitsuba_warp_unitSphereIndicator =
+R"doc(Returns 1.0 if the point is in the domain of the unit ball, 0.0
+otherwise)doc";
 
 static const char *__doc_mitsuba_xml_loadFile = R"doc(Load a Mitsuba scene from an XML file)doc";
 
