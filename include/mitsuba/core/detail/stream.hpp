@@ -16,27 +16,27 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(detail)
 
-template <typename T> void swap16(T *v) {
+template <typename T> T swap16(const T &v) {
 #if !defined(__WINDOWS__)
-    *v = memcpy_cast<T>(__builtin_bswap16(memcpy_cast<uint16_t>(*v)));
+    return memcpy_cast<T>(__builtin_bswap16(memcpy_cast<uint16_t>(v)));
 #else
-    *v = memcpy_cast<T>(_byteswap_ushort(memcpy_cast<uint16_t>(*v)));
+    return memcpy_cast<T>(_byteswap_ushort(memcpy_cast<uint16_t>(v)));
 #endif
 }
 
-template <typename T> void swap32(T *v) {
+template <typename T> T swap32(const T &v) {
 #if !defined(__WINDOWS__)
-    *v = memcpy_cast<T>(__builtin_bswap32(memcpy_cast<uint32_t>(*v)));
+    return memcpy_cast<T>(__builtin_bswap32(memcpy_cast<uint32_t>(v)));
 #else
-    *v = memcpy_cast<T>(_byteswap_ulong(memcpy_cast<uint32_t>(*v)));
+    return memcpy_cast<T>(_byteswap_ulong(memcpy_cast<uint32_t>(v)));
 #endif
 }
 
-template <typename T> void swap64(T *v) {
+template <typename T> T swap64(const T &v) {
 #if !defined(__WINDOWS__)
-    *v = memcpy_cast<T>(__builtin_bswap64(memcpy_cast<uint64_t>(*v)));
+    return memcpy_cast<T>(__builtin_bswap64(memcpy_cast<uint64_t>(v)));
 #else
-    *v = memcpy_cast<T>(_byteswap_uint64(memcpy_cast<uint64_t>(*v)));
+    return memcpy_cast<T>(_byteswap_uint64(memcpy_cast<uint64_t>(v)));
 #endif
 }
 
@@ -48,51 +48,51 @@ template <typename T> void swap64(T *v) {
 template <typename T, typename SFINAE = void> struct serialization_traits { };
 template <> struct serialization_traits<int8_t> {
     const char *type_id = "u8";
-    static void swap(int8_t *) { };
+    static int8_t swap(const int8_t &v) { return v; };
 };
 template <> struct serialization_traits<uint8_t>  {
     const char *type_id = "s8";
-    static void swap(uint8_t *) { };
+    static uint8_t swap(const uint8_t &v) { return v; };
 };
 template <> struct serialization_traits<int16_t>  {
     const char *type_id = "u16";
-    static void swap(int16_t *v) { swap16(v); };
+    static int16_t swap(const int16_t &v) { return swap16(v); };
 };
 template <> struct serialization_traits<uint16_t> {
     const char *type_id = "s16";
-    static void swap(uint16_t *v) { swap16(v); };
+    static uint16_t swap(const uint16_t &v) { return swap16(v); };
 };
 template <> struct serialization_traits<int32_t>  {
     const char *type_id = "u32";
-    static void swap(int32_t *v) { swap32(v); };
+    static int32_t swap(const int32_t &v) { return swap32(v); };
 };
 template <> struct serialization_traits<uint32_t> {
     const char *type_id = "s32";
-    static void swap(uint32_t *v) { swap32(v); };
+    static uint32_t swap(const uint32_t &v) { return swap32(v); };
 };
 template <> struct serialization_traits<int64_t>  {
     const char *type_id = "u64";
-    static void swap(int64_t *v) { swap64(v); };
+    static int64_t swap(const int64_t &v) { return swap64(v); };
 };
 template <> struct serialization_traits<uint64_t> {
     const char *type_id = "s64";
-    static void swap(uint64_t *v) { swap64(v); };
+    static uint64_t swap(const uint64_t &v) { return swap64(v); };
 };
 template <> struct serialization_traits<float>    {
     const char *type_id = "f32";
-    static void swap(float *v) { swap32(v); };
+    static float swap(const float &v) { return swap32(v); };
 };
 template <> struct serialization_traits<double>   {
     const char *type_id = "f64";
-    static void swap(double *v) { swap64(v); };
+    static double swap(const double &v) { return swap64(v); };
 };
 template <> struct serialization_traits<bool>     {
     const char *type_id = "b8";
-    static void swap(bool *) { };
+    static bool swap(const bool &v) { return v; };
 };
 template <> struct serialization_traits<char>     {
     const char *type_id = "c8";
-    static void swap(char *) { };
+    static char swap(const char &v) { return v; };
 };
 
 template <typename T> struct serialization_traits<T> :
@@ -120,9 +120,7 @@ template <typename T> struct serialization_helper {
         } else {
             std::unique_ptr<T[]> v(new T[count]);
             for (size_t i = 0; i < count; ++i) {
-                // TODO: this first write could be avoided
-                v[i] = *value;
-                serialization_traits<T>::swap(&v[i]);
+                v[i] = serialization_traits<T>::swap(*value);
                 value++;
             }
             s.write(v.get(), sizeof(T) * count);
@@ -140,7 +138,7 @@ template <typename T> struct serialization_helper {
         s.read(value, sizeof(T) * count);
         if (swap) {
             for (size_t i = 0; i < count; ++i) {
-                serialization_traits<T>::swap(&value[i]);
+                value[i] = serialization_traits<T>::swap(value[i]);
             }
         }
     }
