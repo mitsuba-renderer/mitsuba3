@@ -104,47 +104,36 @@ std::pair<Vector3f, Float> warpPoint(WarpType warpType, Point2f sample, Float pa
 
 Point2f domainToPoint(const Eigen::Vector3f &v, WarpType warpType) {
     Point2f p;
-    switch (warpType) {
-        case NoWarp:
-            p[0] = v(0); p[1] = v(1);
-            break;
-        case UniformDisk:
-        case UniformDiskConcentric:
-            p[0] = 0.5f * v(0) + 0.5f;
-            p[1] = 0.5f * v(1) + 0.5f;
-            break;
-
-        case StandardNormal:
-            p = 5 * domainToPoint(v, UniformDisk);
-            break;
-
-        default:
-            p[0] = std::atan2(v(1), v(0)) * math::InvTwoPi;
-            if (p[0] < 0) p[0] += 1;
-            p[1] = 0.5f * v(2) + 0.5f;
-            break;
+    if (warpType == NoWarp) {
+        p[0] = v(0); p[1] = v(1);
+    } else if (warpType == UniformTriangle) {
+        p[0] = v(0); p[1] = v(1);
+    } else if (isTwoDimensionalWarp(warpType)) {
+        p[0] = 0.5f * v(0) + 0.5f;
+        p[1] = 0.5f * v(1) + 0.5f;
+    } else if (warpType == StandardNormal) {
+        p = 5 * domainToPoint(v, UniformDisk);
+    } else {
+        p[0] = std::atan2(v(1), v(0)) * math::InvTwoPi;
+        if (p[0] < 0) p[0] += 1;
+        p[1] = 0.5f * v(2) + 0.5f;
     }
 
     return p;
 }
 
 double getPdfScalingFactor(WarpType warpType) {
-    switch (warpType) {
-        case NoWarp: return 1.0;
+    if (warpType == NoWarp)
+        return 1.0;
 
-        case UniformDisk:
-        case UniformDiskConcentric:
-            return 4.0;
+    if (isTwoDimensionalWarp(warpType))
+        return 4.0;
 
-        // TODO: probably not correct
-        case StandardNormal: return 100.0;
+    if (warpType == StandardNormal)
+        return 100.0;
 
-        case UniformSphere:
-        case UniformHemisphere:
-        case CosineHemisphere:
-        default:
-            return 4.0 * math::Pi_d;
-    }
+    // Other warps are 3D
+    return 4.0 * math::Pi_d;
 }
 
 Float pdfValueForSample(WarpType warpType, double x, double y, Float parameterValue) {
@@ -152,7 +141,11 @@ Float pdfValueForSample(WarpType warpType, double x, double y, Float parameterVa
         return 1.0;
     } else if (isTwoDimensionalWarp(warpType)) {
         Point2f p;
-        p[0] = 2 * x - 1; p[1] = 2 * y - 1;
+        if (warpType == UniformTriangle) {
+            p[0] = x; p[1] = y;
+        } else {
+            p[0] = 2 * x - 1; p[1] = 2 * y - 1;
+        }
 
         switch (warpType) {
             case UniformDisk:

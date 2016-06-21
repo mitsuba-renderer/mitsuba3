@@ -117,18 +117,17 @@ extern MTS_EXPORT_CORE Point2f uniformDiskToSquareConcentric(const Point2f &p);
 extern MTS_EXPORT_CORE inline Float squareToUniformDiskConcentricPdf() { return math::InvPi; }
 
 /// Returns 1.0 if the vector is in the domain of the triangle, 0.0 otherwise.
-extern MTS_EXPORT_CORE Float triangleIndicator(const Point2f &) {
-  // TODO
-  Log(EError, "Not implemented yet.");
+extern MTS_EXPORT_CORE Float triangleIndicator(const Point2f &p) {
+  return ((p[0] >= 0 && p[1] >= 0 && p[0] <= 1 && p[1] <= 1)
+          && (p[0] + p[1] <= 1)) ? 1.0 : 0.0;
 }
 
 /// Convert an uniformly distributed square sample into barycentric coordinates
 extern MTS_EXPORT_CORE Point2f squareToUniformTriangle(const Point2f &sample);
 
 /// Density of \ref squareToUniformTriangle per unit area.
-extern MTS_EXPORT_CORE Float squareToUniformTrianglePdf(const Point2f &p) {
-  return (p[0] >= 0 && p[1] >= 0 && p[0] <= 1 && p[1] <= 1)
-      && (p[0] + p[1] <= 1) ? 1.0 : 0.0;
+extern MTS_EXPORT_CORE Float squareToUniformTrianglePdf(const Point2f &) {
+  return 0.5;
 }
 
 /** \brief Sample a point on a 2D standard normal distribution
