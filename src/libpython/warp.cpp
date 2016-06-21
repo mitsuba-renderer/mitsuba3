@@ -272,7 +272,7 @@ std::vector<double> generateExpectedHistogram(size_t pointCount,
     std::vector<double> hist(gridWidth * gridHeight, 0.0);
     double scale = pointCount * getPdfScalingFactor(warpType);
 
-    auto integrand = [&warpType, &parameterValue](double x, double y) {
+    auto integrand = [&warpType, &parameterValue](double y, double x) {
         return pdfValueForSample(warpType, x, y, parameterValue);
     };
 

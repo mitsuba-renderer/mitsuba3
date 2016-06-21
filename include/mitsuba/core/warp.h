@@ -9,6 +9,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+namespace {
+  Float kDomainEpsilon = 1e-5;
+}  // end anonymous namespace
+
 /**
  * \brief Implements common warping techniques that map from the unit
  * square to other domains, such as spheres, hemispheres, etc.
@@ -23,7 +27,7 @@ NAMESPACE_BEGIN(warp)
 
 /// Returns 1.0 if the point is in the domain of the unit ball, 0.0 otherwise
 extern MTS_EXPORT_CORE Float unitSphereIndicator(const Vector3f &v) {
-  return (v[0] * v[0] + v[1] * v[1] + v[2] * v[2] <= 1) ? 1.0 : 0.0;
+  return std::abs(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1) < kDomainEpsilon ? 1.0 : 0.0;
 }
 
 /// Uniformly sample a vector on the unit sphere with respect to solid angles
@@ -34,7 +38,7 @@ extern MTS_EXPORT_CORE inline Float squareToUniformSpherePdf() { return math::In
 
 /// Returns 1.0 if the point is in the domain of the upper half unit ball, 0.0 otherwise.
 extern MTS_EXPORT_CORE Float unitHemisphereIndicator(const Vector3f &v) {
-  return ((v[0] * v[0] + v[1] * v[1] + v[2] * v[2] <= 1)
+  return (std::abs(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1) < kDomainEpsilon
           && (v[2] >= 0)) ? 1.0 : 0.0;
 }
 
