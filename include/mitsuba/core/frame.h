@@ -30,11 +30,11 @@ struct Frame {
 
     /// Construct a frame from the given orthonormal vectors
     inline Frame(const Vector3f &x, const Vector3f &y, const Vector3f &z)
-        : s(x), t(y), n(static_cast<Vector3f::Base>(z)) {
+        : s(x), t(y), n(z) {
     }
 
     /// Construct a new coordinate frame from a single vector
-    inline Frame(const Vector3f &v) : n(static_cast<Vector3f::Base>(v)) {
+    inline Frame(const Vector3f &v) : n(v) {
         // TODO: double-check these .first and .second have not been swapped
         const auto rest = coordinateSystem(v);
         s = rest.first;
@@ -51,7 +51,7 @@ struct Frame {
     }
 
     /// Serialize to a binary data stream
-    // TODO: this is not the way to serialize
+    // TODO: this is not the way to serialize anymore
     inline void serialize(Stream *) const {
         Log(EError, "Not implemented: Frame serialization");
         // s.serialize(stream);
