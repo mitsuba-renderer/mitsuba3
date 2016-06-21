@@ -74,6 +74,9 @@ typedef float Float;
 #  if !defined(NOMINMAX)
 #    define NOMINMAX
 #  endif
+#  if !defined(_USE_MATH_DEFINES)
+#    define _USE_MATH_DEFINES
+#  endif
 #endif
 
 NAMESPACE_END(mitsuba)

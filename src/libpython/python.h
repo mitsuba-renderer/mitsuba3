@@ -8,6 +8,7 @@
 #include <pybind11/stl.h>
 #include "docstr.h"
 #include <mitsuba/core/object.h>
+#include <simdfloat/static.h>
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 
@@ -43,3 +44,79 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 using namespace mitsuba;
 
 namespace py = pybind11;
+
+template <typename T> class is_simd_float {
+private:
+    template <typename Scalar, int Dimension, bool ApproximateMath, typename Derived>
+    static std::true_type test(const
+          simd::StaticFloatBase<Scalar, Dimension, ApproximateMath, Derived> &);
+    static std::false_type test(...);
+public:
+    static constexpr bool value = decltype(test(std::declval<T>()))::value;
+};
+
+NAMESPACE_BEGIN(pybind11)
+NAMESPACE_BEGIN(detail)
+template<typename Type>
+struct type_caster<Type, typename std::enable_if<is_simd_float<Type>::value>::type> {
+    typedef typename Type::Scalar Scalar;
+
+    bool load(handle src, bool) {
+       array_t<Scalar> buffer(src, true);
+       if (!buffer.check())
+           return false;
+
+        buffer_info info = buffer.request();
+        if (info.ndim == 1) {
+            if (info.shape[0] != Type::Dimension)
+                return false;
+            memcpy(value.data(), (Scalar *) info.ptr, Type::Dimension * sizeof(Scalar));
+        } else if (info.ndim == 2) {
+
+            if (!(info.shape[0] == Type::Dimension && info.shape[1] == 1) &&
+                !(info.shape[1] == Type::Dimension && info.shape[0] == 1))
+                return false;
+            memcpy(value.data(), (Scalar *) info.ptr, Type::Dimension * sizeof(Scalar));
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    static handle cast(const Type *src, return_value_policy policy, handle parent) {
+        return cast(*src, policy, parent);
+    }
+
+    static handle cast(const Type &src, return_value_policy /* policy */, handle /* parent */) {
+        return array(buffer_info(
+            /* Pointer to buffer */
+            const_cast<Scalar *>(src.data()),
+            /* Size of one scalar */
+            sizeof(Scalar),
+            /* Python struct-style format descriptor */
+            format_descriptor<Scalar>::value,
+            /* Number of dimensions */
+            1,
+            /* Buffer dimensions */
+            { Type::Dimension },
+            /* Strides (in bytes) for each index */
+            { sizeof(Scalar) }
+        )).release();
+    }
+
+    template <typename _T> using cast_op_type = pybind11::detail::cast_op_type<_T>;
+
+    static PYBIND11_DESCR name() {
+        return _("numpy.ndarray[dtype=") + npy_format_descriptor<Scalar>::name() +
+               _(", shape=(") + _<Type::Dimension>() + _(", 1)]");
+    }
+
+    operator Type*() { return &value; }
+    operator Type&() { return value; }
+
+private:
+    Type value;
+};
+
+NAMESPACE_END(detail)
+NAMESPACE_END(pybind11)

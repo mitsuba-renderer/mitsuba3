@@ -36,6 +36,7 @@ add_library(mitsuba-python SHARED
   argparser.cpp
   xml.cpp
   fresolver.cpp
+  vector.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)

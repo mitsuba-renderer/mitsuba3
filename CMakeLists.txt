@@ -2,11 +2,11 @@
 cmake_minimum_required (VERSION 2.8)
 project(mitsuba)
 
-option(MTS_HAVE_AVX         "Enable AVX optimizations" TRUE)
 option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
 
-include(CheckCXXCompilerFlag)
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/simdfloat/data" ${CMAKE_MODULE_PATH})
 
+include(CheckCXXCompilerFlag)
 # Set a default build configuration (Release)
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
@@ -15,6 +15,13 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "MinSizeRel" "RelWithDebInfo")
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
+
+# Optimize for current architecture
+include(OptimizeForArchitecture)
+OptimizeForArchitecture()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
 
 # Enable folders for projects in Visual Studio
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -27,8 +34,12 @@ endif()
 
 add_subdirectory(ext ext_build)
 
-# Always add the include directories for tinyformat and Eigen
-include_directories(include ${TINYFORMAT_INCLUDE_DIRS} ${EIGEN_INCLUDE_DIRS})
+# Always add the include directories for tinyformat, SIMDFloat and Eigen
+include_directories(include
+  ${TINYFORMAT_INCLUDE_DIRS}
+  ${EIGEN_INCLUDE_DIRS}
+  ${SIMDFLOAT_INCLUDE_DIRS}
+)
 
 # Compile with compiler warnings turned on
 if (MSVC)
@@ -58,15 +69,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
   if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG)
     # Default symbol visibility
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
-  endif()
-endif()
-
-# Compile with AVX
-if (MTS_HAVE_AVX)
-  if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
   endif()
 endif()
 

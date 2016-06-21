@@ -141,3 +141,6 @@ set(PCG32_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pcg32 PARENT_SCOPE)
 
 # tinyformat include path
 set(TINYFORMAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/tinyformat PARENT_SCOPE)
+
+# SIMDFloat include path
+set(SIMDFLOAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/simdfloat/include PARENT_SCOPE)

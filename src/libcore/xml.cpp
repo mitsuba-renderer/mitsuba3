@@ -8,6 +8,7 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/plugin.h>
+#include <mitsuba/core/transform.h>
 
 #include <pugixml.hpp>
 #include <fstream>

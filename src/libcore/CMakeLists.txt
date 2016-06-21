@@ -19,6 +19,7 @@ add_library(mitsuba-core SHARED
   ${INC_DIR}/platform.h
   ${INC_DIR}/variant.h
   ${INC_DIR}/vector.h
+  ${INC_DIR}/transform.h
   ${INC_DIR}/atomic.h
   ${INC_DIR}/string.h
 

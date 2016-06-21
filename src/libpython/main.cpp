@@ -8,6 +8,7 @@ MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(util);
 MTS_PY_DECLARE(math);
 MTS_PY_DECLARE(xml);
+MTS_PY_DECLARE(vector);
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(Thread);
 MTS_PY_DECLARE(Logger);
@@ -30,6 +31,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(util);
     MTS_PY_IMPORT(math);
     MTS_PY_IMPORT(xml);
+    MTS_PY_IMPORT(vector);
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Thread);
     MTS_PY_IMPORT(Logger);

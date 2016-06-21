@@ -31,3 +31,6 @@
 [submodule "ext/tinyformat"]
 	path = ext/tinyformat
 	url = https://github.com/mitsuba-renderer/tinyformat
+[submodule "ext/simdfloat"]
+	path = ext/simdfloat
+	url = https://github.com/mitsuba-renderer/simdfloat

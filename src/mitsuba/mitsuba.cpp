@@ -5,6 +5,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/argparser.h>
 #include <mitsuba/core/util.h>
+#include <mitsuba/core/vector.h>
 #include <tbb/task_scheduler_init.h>
 
 using namespace mitsuba;
@@ -18,6 +19,24 @@ int main(int argc, char *argv[]) {
     ArgParser parser;
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
     auto arg_extra = parser.add("", true);
+
+
+    std::cout << "Compiled with: ";
+    if (simd::has_avx512dq)
+        std::cout << "avx512dq ";
+    if (simd::has_avx512vl)
+        std::cout << "avx512vl ";
+    if (simd::has_avx512f)
+        std::cout << "avx512f ";
+    if (simd::has_avx2)
+        std::cout << "avx2 ";
+    if (simd::has_avx)
+        std::cout << "avx ";
+    if (simd::has_fma)
+        std::cout << "fma ";
+    if (simd::has_sse4_2)
+        std::cout << "sse4.2 ";
+    std::cout << std::endl;
 
     try {
         /* Parse all command line options */

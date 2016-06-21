@@ -1,15 +1,7 @@
 #pragma once
 
-#include <mitsuba/mitsuba.h>
-
-#if !defined(NDEBUG)
-#  define EIGEN_INITIALIZE_MATRICES_BY_NAN 1
-#endif
-
-#define EIGEN_DONT_PARALLELIZE 1
-
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include <mitsuba/core/logger.h>
+#include <simdfloat/static.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -21,142 +13,90 @@ NAMESPACE_BEGIN(mitsuba)
     coordinate transformations.
  * =================================================================== */
 
-/**
- * \brief Generic N-dimensional vector data structure based on Eigen::Matrix
- */
-template <typename _Scalar, int _Dimension> struct TVector : public Eigen::Matrix<_Scalar, _Dimension, 1> {
+template <typename Scalar, int Dimension>
+struct TVector : public simd::StaticFloatBase<Scalar, Dimension,
+                                              std::is_same<Scalar, float>::value,
+                                              TVector<Scalar, Dimension>> {
+
 public:
-    enum {
-        Dimension = _Dimension
-    };
+    typedef simd::StaticFloatBase<Scalar, Dimension,
+                                std::is_same<Scalar, float>::value,
+                                TVector<Scalar, Dimension>> Base;
 
-    typedef _Scalar                             Scalar;
-    typedef Eigen::Matrix<Scalar, Dimension, 1> Base;
-    typedef TVector<Scalar, Dimension>          VectorType;
-    typedef TPoint<Scalar, Dimension>           PointType;
+    typedef TVector<Scalar, Dimension> VectorType;
+    typedef TPoint<Scalar, Dimension>  PointType;
 
-    /// Create a new vector with constant component vlaues
-    TVector(Scalar value = (Scalar) 0) { Base::setConstant(value); }
+    using Base::Base;
+    TVector() : Base() { }
+    TVector(const Base &f) : Base(f) { }
 
-    /// Create a new 2D vector (type error if \c Dimension != 2)
-    TVector(Scalar x, Scalar y) : Base(x, y) { }
-
-    /// Create a new 3D vector (type error if \c Dimension != 3)
-    TVector(Scalar x, Scalar y, Scalar z) : Base(x, y, z) { }
-
-    /// Create a new 4D vector (type error if \c Dimension != 4)
-    TVector(Scalar x, Scalar y, Scalar z, Scalar w) : Base(x, y, z, w) { }
-
-    /// Construct a vector from MatrixBase (needed to play nice with Eigen)
-    template <typename Derived> TVector(const Eigen::MatrixBase<Derived>& p)
-        : Base(p) { }
-
-    /// Assign a vector from MatrixBase (needed to play nice with Eigen)
-    template <typename Derived> TVector &operator=(const Eigen::MatrixBase<Derived>& p) {
-        this->Base::operator=(p);
-        return *this;
-    }
+    /// Convert to an Eigen vector (definition in transform.h)
+    inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
 };
 
-/**
- * \brief Generic N-dimensional point data structure based on Eigen::Matrix
- */
-template <typename _Scalar, int _Dimension> struct TPoint : public Eigen::Matrix<_Scalar, _Dimension, 1> {
+template <typename Scalar, int Dimension>
+struct TPoint : public simd::StaticFloatBase<Scalar, Dimension,
+                                             std::is_same<Scalar, float>::value,
+                                             TPoint<Scalar, Dimension>> {
+
 public:
-    enum {
-        Dimension = _Dimension
-    };
+    typedef simd::StaticFloatBase<Scalar, Dimension,
+                                  std::is_same<Scalar, float>::value,
+                                  TPoint<Scalar, Dimension>> Base;
 
-    typedef _Scalar                             Scalar;
-    typedef Eigen::Matrix<Scalar, Dimension, 1> Base;
-    typedef TVector<Scalar, Dimension>          VectorType;
-    typedef TPoint<Scalar, Dimension>           PointType;
+    typedef TVector<Scalar, Dimension> VectorType;
+    typedef TPoint<Scalar, Dimension>  PointType;
 
-    /// Create a new point with constant component vlaues
-    TPoint(Scalar value = (Scalar) 0) { Base::setConstant(value); }
+    using Base::Base;
+    TPoint() : Base() { }
+    TPoint(const Base &f) : Base(f) { }
 
-    /// Create a new 2D point (type error if \c Dimension != 2)
-    TPoint(Scalar x, Scalar y) : Base(x, y) { }
-
-    /// Create a new 3D point (type error if \c Dimension != 3)
-    TPoint(Scalar x, Scalar y, Scalar z) : Base(x, y, z) { }
-
-    /// Create a new 4D point (type error if \c Dimension != 4)
-    TPoint(Scalar x, Scalar y, Scalar z, Scalar w) : Base(x, y, z, w) { }
-
-    /// Construct a point from MatrixBase (needed to play nice with Eigen)
-    template <typename Derived> TPoint(const Eigen::MatrixBase<Derived>& p)
-        : Base(p) { }
-
-    /// Assign a point from MatrixBase (needed to play nice with Eigen)
-    template <typename Derived> TPoint &operator=(const Eigen::MatrixBase<Derived>& p) {
-        this->Base::operator=(p);
-        return *this;
-    }
+    /// Convert to an Eigen vector (definition in transform.h)
+    inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
 };
 
-/**
- * \brief 3-dimensional surface normal representation
- */
-struct Normal3f : public Eigen::Matrix<Float, 3, 1> {
+/// 3-dimensional surface normal representation
+template <typename Scalar>
+struct TNormal : public simd::StaticFloatBase<Scalar, 3,
+                                              std::is_same<Scalar, float>::value,
+                                              TNormal<Scalar>> {
+
 public:
-    enum {
-        Dimension = 3
-    };
+    typedef simd::StaticFloatBase<Scalar, 3,
+                                std::is_same<Scalar, float>::value,
+                                TNormal<Scalar>> Base;
 
-    typedef float                               Scalar;
-    typedef Eigen::Matrix<Scalar, Dimension, 1> Base;
-    typedef TVector<Scalar, Dimension>          VectorType;
-    typedef TPoint<Scalar, Dimension>           PointType;
+    typedef TVector<Scalar, 3> VectorType;
+    typedef TPoint<Scalar, 3>  PointType;
 
+    using Base::Base;
+    TNormal() : Base() { }
+    TNormal(const Base &f) : Base(f) { }
 
-    /// Create a new normal with constant component vlaues
-    Normal3f(Scalar value = 0.0f) { Base::setConstant(value); }
-
-    /// Create a new 3D normal
-    Normal3f(Scalar x, Scalar y, Scalar z) : Base(x, y, z) { }
-
-    /// Construct a normal from MatrixBase (needed to play nice with Eigen)
-    template <typename Derived> Normal3f(const Eigen::MatrixBase<Derived>& p)
-        : Base(p) { }
-
-    /// Assign a normal from MatrixBase (needed to play nice with Eigen)
-    template <typename Derived> Normal3f &operator=(const Eigen::MatrixBase<Derived>& p) {
-        this->Base::operator=(p);
-        return *this;
-    }
+    /// Convert to an Eigen vector (definition in transform.h)
+    inline operator Eigen::Matrix<Scalar, 3, 1, 0, 3, 1>() const;
 };
 
 /// Complete the set {a} to an orthonormal base {a, b, c}
-extern MTS_EXPORT_CORE void coordinateSystem(const Vector3f &a, Vector3f &b, Vector3f &c);
+inline std::pair<Vector3f, Vector3f> coordinateSystem(const Vector3f &n) {
+    Assert(std::abs(norm(n) - 1) < 1e-5f);
 
-template <typename Derived> std::ostream& operator<<(std::ostream &os, const Eigen::MatrixBase<Derived>& m) {
-    constexpr bool isColVector = Eigen::MatrixBase<Derived>::ColsAtCompileTime == 1;
-    if (isColVector)
-        os << m.transpose().format(Eigen::IOFormat(4, isColVector ? Eigen::DontAlignCols : 0, ", ", ";\n", "", "", "[", "]"));
-    else
-        os << m.format(Eigen::IOFormat(4, isColVector ? Eigen::DontAlignCols : 0, ", ", ";\n", "", "", "[", "]"));
-    return os;
+    /* Based on "Building an Orthonormal Basis from a 3D Unit Vector Without
+       Normalization" by Jeppe Revall Frisvad */
+    if (n.z() > Float(-1+1e-7)) {
+        const Float a = 1.0f / (1.0f + n.z());
+        const Float b = -n.x() * n.y() * a;
+
+        return std::make_pair(
+            Vector3f(1.0f - n.x() * n.x() * a, b, -n.x()),
+            Vector3f(b, 1.0f - n.y() * n.y() * a, -n.y())
+        );
+    } else {
+        return std::make_pair(
+            Vector3f(0.0f, -1.0f, 0.0f),
+            Vector3f(-1.0f, 0.0f, 0.0f)
+        );
+    }
 }
-
-template <typename Derived> std::ostream& operator<<(std::ostream &os, const Eigen::ArrayBase<Derived>& a) {
-    os << a.matrix();
-    return os;
-}
-
 
 NAMESPACE_END(mitsuba)
-
-NAMESPACE_BEGIN(Eigen)
-NAMESPACE_BEGIN(internal)
-template <typename Scalar, int Dimension>
-struct traits<mitsuba::TVector<Scalar, Dimension>>
-    : public traits<typename mitsuba::TVector<Scalar, Dimension>::Base> { };
-
-template <typename Scalar, int Dimension>
-struct traits<mitsuba::TPoint<Scalar, Dimension>>
-    : public traits<typename mitsuba::TPoint<Scalar, Dimension>::Base> { };
-
-template <> struct traits<mitsuba::Normal3f> : public traits<mitsuba::Normal3f::Base> { };
-NAMESPACE_END(internal)
-NAMESPACE_END(Eigen)
