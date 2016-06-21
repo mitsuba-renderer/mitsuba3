@@ -24,8 +24,8 @@ public:
     };
 
     /** \brief Creates a new compression stream with the given underlying stream.
-     *
-     * TODO: clarify ownership of the underlying stream (pass a ref directly?)
+     * This new instance takes ownership of the child stream. The child stream
+     * must outlive the ZStream.
      */
     ZStream(Stream *childStream, EStreamType streamType = EDeflateStream,
             int level = Z_DEFAULT_COMPRESSION);

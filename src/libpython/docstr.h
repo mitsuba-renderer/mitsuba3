@@ -1410,9 +1410,8 @@ static const char *__doc_mitsuba_ZStream_EStreamType_EGZipStream = R"doc(< A gzi
 
 static const char *__doc_mitsuba_ZStream_ZStream =
 R"doc(Creates a new compression stream with the given underlying stream.
-
-TODO: clarify ownership of the underlying stream (pass a ref
-directly?))doc";
+This new instance takes ownership of the child stream. The child
+stream must outlive the ZStream.)doc";
 
 static const char *__doc_mitsuba_ZStream_canRead = R"doc(Can we read from the stream?)doc";
 

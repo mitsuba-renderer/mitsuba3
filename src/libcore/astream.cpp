@@ -17,7 +17,7 @@ static constexpr auto kSerializedHeaderSize =
     sizeof(uint32_t) + kSerializedHeaderIdLength + sizeof(uint64_t) + sizeof(uint32_t);
 }  // end anonymous namespace
 
-AnnotatedStream::AnnotatedStream(ref<Stream> &stream, bool writeMode, bool throwOnMissing)
+AnnotatedStream::AnnotatedStream(Stream *stream, bool writeMode, bool throwOnMissing)
     : Object(), m_stream(stream), m_writeMode(writeMode)
     , m_throwOnMissing(throwOnMissing), m_isClosed(false) {
     if (!m_writeMode && !m_stream->canRead()) {

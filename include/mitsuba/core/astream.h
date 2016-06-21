@@ -42,7 +42,7 @@ public:
      * @param throwOnMissing Whether an error should be thrown when \ref get is
      *                       called for a missing field.
      */
-    AnnotatedStream(ref<Stream> &stream, bool writeMode, bool throwOnMissing = true);
+    AnnotatedStream(Stream *stream, bool writeMode, bool throwOnMissing = true);
 
     /** \brief Closes the annotated stream.
      * No further read or write operations are permitted.
