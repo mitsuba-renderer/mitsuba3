@@ -1,4 +1,8 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 import os
 from os import path as PyPath
 from mitsuba import AnnotatedStream, DummyStream, FileStream, MemoryStream
@@ -11,6 +15,9 @@ def touch(path):
 class AnnotatedStreamTest(unittest.TestCase):
     roPath = path('./read_only_file_for_annotated_stream')
     woPath = path('./write_only_file_for_annotated_stream')
+
+    def assertCountEqual(self, a, b):
+        self.assertEqual(sorted(a), sorted(b))
 
     def setUp(self):
         touch(AnnotatedStreamTest.roPath)

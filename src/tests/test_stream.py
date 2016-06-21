@@ -1,4 +1,8 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 import os
 from os import path as PyPath
 from mitsuba import Stream, DummyStream, FileStream, MemoryStream, ZStream
