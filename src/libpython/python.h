@@ -27,8 +27,7 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
     py::class_<Name, ref<Name>>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__)
 
 #define MTS_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
-    py::class_<Trampoline, ref<Trampoline>>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__) \
-       .alias<Name>()
+    py::class_<Name, ref<Name>, Trampoline>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__)
 
 #define MTS_PY_STRUCT(Name, ...) \
     py::class_<Name>(m, #Name, DM(Name), ##__VA_ARGS__)

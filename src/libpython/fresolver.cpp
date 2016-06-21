@@ -4,6 +4,7 @@
 MTS_PY_EXPORT(FileResolver) {
     MTS_PY_CLASS(FileResolver, Object)
         .def(py::init<>(), DM(FileResolver, FileResolver))
+        .def(py::init<const FileResolver &>(), "Copy constructor")
         .def("__len__", &FileResolver::size, DM(FileResolver, size))
         .def("__iter__", [](const FileResolver &fr) { return py::make_iterator(fr.begin(), fr.end()); },
                          py::keep_alive<0, 1>())

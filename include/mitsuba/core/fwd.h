@@ -62,3 +62,9 @@ NAMESPACE_END(filesystem)
 namespace fs = filesystem;
 
 NAMESPACE_END(mitsuba)
+
+/* Forward declaration for Eigen types */
+NAMESPACE_BEGIN(Eigen)
+template<typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+class Matrix;
+NAMESPACE_END(Eigen)

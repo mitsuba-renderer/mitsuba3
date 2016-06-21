@@ -6,7 +6,6 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \headerfile mitsuba/core/class.h mitsuba/mitsuba.h
  * \brief Stores meta-information about \ref Object instances.
  *
  * This class provides a thin layer of RTTI (run-time type information),
@@ -31,9 +30,7 @@ public:
      * \brief Construct a new class descriptor
      *
      * This method should never be called manually. Instead, use
-     * one of the  \ref MTS_IMPLEMENT_CLASS, \ref MTS_IMPLEMENT_CLASS_S,
-     * \ref MTS_IMPLEMENT_CLASS_I or \ref MTS_IMPLEMENT_CLASS_IS macros
-     * to automatically do this for you.
+     * the  \ref MTS_IMPLEMENT_CLASS macro to automatically do this for you.
      *
      * \param name Name of the class
      * \param parent Name of the parent class

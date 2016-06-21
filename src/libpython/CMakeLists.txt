@@ -18,6 +18,8 @@ include_directories(
 
 # Create the binding library
 add_library(mitsuba-python SHARED
+  python.h
+  docstr.h
   appender.cpp
   atomic.cpp
   filesystem.cpp

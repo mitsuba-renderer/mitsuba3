@@ -17,6 +17,7 @@ Makefile
 *.dir
 *~
 \.DS_Store
+Testing
 
 # Visual studio
 *.vcxproj

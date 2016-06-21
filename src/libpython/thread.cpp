@@ -26,7 +26,7 @@ MTS_PY_EXPORT(Thread) {
         .mdef(Thread, join)
         .sdef(Thread, sleep);
 
-    py::enum_<Thread::EPriority>(m.attr("Thread"), "EPriority")
+    py::enum_<Thread::EPriority>(m.attr("Thread"), "EPriority", DM(Thread, EPriority))
         .value("EIdlePriority,", Thread::EIdlePriority)
         .value("ELowestPriority,", Thread::ELowestPriority)
         .value("ELowPriority,", Thread::ELowPriority)
