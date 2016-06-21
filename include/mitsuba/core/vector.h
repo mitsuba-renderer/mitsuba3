@@ -11,7 +11,7 @@ template <typename> struct TNormal;
     This file contains a few templates and specializations, which
     provide 2/3D points, vectors, and normals over different
     underlying data types. Points, vectors, and normals are distinct
-    in Nori, because they transform differently under homogeneous
+    in Mitsuba, because they transform differently under homogeneous
     coordinate transformations.
  * =================================================================== */
 
