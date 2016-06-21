@@ -52,9 +52,18 @@ extern MTS_EXPORT_CORE inline Float squareToUniformHemispherePdf() { return math
 extern MTS_EXPORT_CORE Vector3f squareToCosineHemisphere(const Point2f &sample);
 
 /// Density of \ref squareToCosineHemisphere() with respect to solid angles
-// TODO: re-enable
-// extern MTS_EXPORT_CORE inline Float squareToCosineHemispherePdf(const Vector &d)
-//   { return math::InvPi * Frame::cosTheta(d); }
+extern MTS_EXPORT_CORE inline Float squareToCosineHemispherePdf(const Vector3f &) {
+  // TODO
+  Log(EError, "Not implemented yet.");
+  //return math::InvPi * Frame::cosTheta(d);
+}
+
+/// Returns 1.0 if the vector is in the domain of the cone, 0.0 otherwise.
+extern MTS_EXPORT_CORE Float unitConeIndicator(const Vector3f &) {
+  // TODO
+  Log(EError, "Not implemented yet.");
+}
+
 
 /**
  * \brief Uniformly sample a vector that lies within a given
@@ -71,7 +80,7 @@ extern MTS_EXPORT_CORE Vector3f squareToUniformCone(Float cosCutoff, const Point
  * \param cosCutoff Cosine of the cutoff angle
  */
 extern MTS_EXPORT_CORE inline Float squareToUniformConePdf(Float cosCutoff) {
-  return math::InvTwoPi / (1-cosCutoff);
+  return math::InvTwoPi / (1 - cosCutoff);
 }
 
 //! @}
@@ -95,14 +104,32 @@ extern MTS_EXPORT_CORE inline Float squareToUniformDiskPdf() { return math::InvP
 /// Low-distortion concentric square to disk mapping by Peter Shirley (PDF: 1/PI)
 extern MTS_EXPORT_CORE Point2f squareToUniformDiskConcentric(const Point2f &sample);
 
+/// Returns 1.0 if the vector is in the domain of the unit square, 0.0 otherwise.
+extern MTS_EXPORT_CORE Float unitSquareIndicator(const Point2f &) {
+  // TODO
+  Log(EError, "Not implemented yet.");
+}
+
 /// Inverse of the mapping \ref squareToUniformDiskConcentric
 extern MTS_EXPORT_CORE Point2f uniformDiskToSquareConcentric(const Point2f &p);
 
 /// Density of \ref squareToUniformDisk per unit area
 extern MTS_EXPORT_CORE inline Float squareToUniformDiskConcentricPdf() { return math::InvPi; }
 
+/// Returns 1.0 if the vector is in the domain of the triangle, 0.0 otherwise.
+extern MTS_EXPORT_CORE Float triangleIndicator(const Point2f &) {
+  // TODO
+  Log(EError, "Not implemented yet.");
+}
+
 /// Convert an uniformly distributed square sample into barycentric coordinates
 extern MTS_EXPORT_CORE Point2f squareToUniformTriangle(const Point2f &sample);
+
+/// Density of \ref squareToUniformTriangle per unit area.
+extern MTS_EXPORT_CORE Float squareToUniformTrianglePdf(const Point2f &p) {
+  return (p[0] >= 0 && p[1] >= 0 && p[0] <= 1 && p[1] <= 1)
+      && (p[0] + p[1] <= 1) ? 1.0 : 0.0;
+}
 
 /** \brief Sample a point on a 2D standard normal distribution
  * Internally uses the Box-Muller transformation */
@@ -113,6 +140,12 @@ extern MTS_EXPORT_CORE Float squareToStdNormalPdf(const Point2f &pos);
 
 /// Warp a uniformly distributed square sample to a 2D tent distribution
 extern MTS_EXPORT_CORE Point2f squareToTent(const Point2f &sample);
+
+/// Density of \ref squareToTent per unit area.
+extern MTS_EXPORT_CORE Float squareToTentPdf(const Point2f &) {
+  // TODO
+  Log(EError, "Not implemented yet.");
+}
 
 /** \brief Warp a uniformly distributed sample on [0, 1] to a nonuniform
  * tent distribution with nodes <tt>{a, b, c}</tt>

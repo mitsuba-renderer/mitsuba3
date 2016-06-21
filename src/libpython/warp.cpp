@@ -31,6 +31,10 @@ enum SamplingType {
     Stratified
 };
 
+// TODO: proper support for:
+// - uniformDiskToSquareConcentric
+// - intervalToNonuniformTent
+
 namespace {
 
 bool isTwoDimensionalWarp(WarpType warpType) {
@@ -41,7 +45,6 @@ bool isTwoDimensionalWarp(WarpType warpType) {
         case UniformTriangle:
         case StandardNormal:
         case UniformTent:
-        case NonUniformTent:
             return true;
         default:
             return false;
@@ -133,7 +136,8 @@ double getPdfScalingFactor(WarpType warpType) {
         case UniformDiskConcentric:
             return 4.0;
 
-        case StandardNormal: return 100.0;  // TODO: why?
+        // TODO: probably not correct
+        case StandardNormal: return 100.0;
 
         case UniformSphere:
         case UniformHemisphere:
@@ -144,52 +148,52 @@ double getPdfScalingFactor(WarpType warpType) {
 }
 
 Float pdfValueForSample(WarpType warpType, double x, double y, Float parameterValue) {
-    Point2f p;
-    switch (warpType) {
-        case NoWarp: return 1.0;
+    if (warpType == NoWarp) {
+        return 1.0;
+    } else if (isTwoDimensionalWarp(warpType)) {
+        Point2f p;
+        p[0] = 2 * x - 1; p[1] = 2 * y - 1;
 
-        // TODO: need to use domain indicator functions to zero-out where appropriate
-        case UniformDisk:
-            p[0] = 2 * x - 1; p[1] = 2 * y - 1;
-            return warp::unitDiskIndicator(p) * warp::squareToUniformDiskPdf();
-        case UniformDiskConcentric:
-            p[0] = 2 * x - 1; p[1] = 2 * y - 1;
-            return warp::unitDiskIndicator(p) * warp::squareToUniformDiskConcentricPdf();
+        switch (warpType) {
+            case UniformDisk:
+                return warp::unitDiskIndicator(p) * warp::squareToUniformDiskPdf();
+            case UniformDiskConcentric:
+                return warp::unitDiskIndicator(p) * warp::squareToUniformDiskConcentricPdf();
+            case StandardNormal:
+                // TODO: do not hardcode domain
+                return warp::squareToStdNormalPdf((1 / 5.0) * p);
+            case UniformTriangle:
+                return warp::triangleIndicator(p) * warp::squareToUniformTrianglePdf(p);
+            case UniformTent:
+                return warp::squareToTentPdf(p);
 
-        case StandardNormal:
-            p[0] = 2 * x - 1; p[1] = 2 * y - 1;
-            return warp::squareToStdNormalPdf((1 / 5.0) * p);
+            default:
+                Log(EError, "Unsupported 2D warp type");
+        }
+    } else {
+        // Map 2D sample to 3D domain
+        x = 2 * math::Pi_d * x;
+        y = 2 * y - 1;
 
-        // TODO
-        // case UniformTriangle:
-        // case UniformTent:
-        // case NonUniformTent:
+        double sinTheta = std::sqrt(1 - y * y);
+        double sinPhi, cosPhi;
+        math::sincos(x, &sinPhi, &cosPhi);
 
-        default: {
-            x = 2 * math::Pi_d * x;
-            y = 2 * y - 1;
+        Vector3f v((Float) (sinTheta * cosPhi),
+                   (Float) (sinTheta * sinPhi),
+                   (Float) y);
 
-            double sinTheta = std::sqrt(1 - y * y);
-            double sinPhi, cosPhi;
-            math::sincos(x, &sinPhi, &cosPhi);
-
-            Vector3f v((Float) (sinTheta * cosPhi),
-                       (Float) (sinTheta * sinPhi),
-                       (Float) y);
-
-            switch (warpType) {
-                case UniformSphere:
-                    return warp::unitSphereIndicator(v) * warp::squareToUniformSpherePdf();
-                case UniformHemisphere:
-                    return warp::unitHemisphereIndicator(v) * warp::squareToUniformHemispherePdf();
-                case CosineHemisphere:
-                    Log(EError, "TODO: squareToCosineHemispherePdf");
-                    // return warp::squareToCosineHemispherePdf();
-                case UniformCone:
-                    return warp::squareToUniformConePdf(parameterValue);
-                default:
-                    Log(EError, "Unsupported warp type");
-            }
+        switch (warpType) {
+            case UniformSphere:
+                return warp::unitSphereIndicator(v) * warp::squareToUniformSpherePdf();
+            case UniformHemisphere:
+                return warp::unitHemisphereIndicator(v) * warp::squareToUniformHemispherePdf();
+            case CosineHemisphere:
+                return warp::unitHemisphereIndicator(v) * warp::squareToCosineHemispherePdf(v);
+            case UniformCone:
+                return warp::unitConeIndicator(v) * warp::squareToUniformConePdf(parameterValue);
+            default:
+                Log(EError, "Unsupported 3D warp type");
         }
     }
 
@@ -807,40 +811,40 @@ MTS_PY_EXPORT(warp) {
                                       "square to other domains, such as spheres,"
                                       " hemispheres, etc.");
 
-    m2.mdef(warp, squareToUniformSphere)
+    m2.mdef(warp, unitSphereIndicator)
+      .mdef(warp, squareToUniformSphere)
       .mdef(warp, squareToUniformSpherePdf)
-      .mdef(warp, unitSphereIndicator)
 
+      .mdef(warp, unitHemisphereIndicator)
       .mdef(warp, squareToUniformHemisphere)
       .mdef(warp, squareToUniformHemispherePdf)
-      .mdef(warp, unitHemisphereIndicator)
 
       .mdef(warp, squareToCosineHemisphere)
-      // TODO: cosine hemisphere's PDF
+      .mdef(warp, squareToCosineHemispherePdf)
 
+      .mdef(warp, unitConeIndicator)
       .mdef(warp, squareToUniformCone)
       .mdef(warp, squareToUniformConePdf)
-      // TODO
-      // .def("unitConeIndicator", [](const Vector3f& v, float cosCutoff) {
-      //   return false;
-      // }, "Indicator function of the 3D cone's domain.")
 
+      .mdef(warp, unitDiskIndicator)
       .mdef(warp, squareToUniformDisk)
       .mdef(warp, squareToUniformDiskPdf)
-      .def("unitDiskIndicator", [](const Point2f& p) {
-        return (p[0] * p[0] + p[1] * p[1]) <= 1;
-      }, "Indicator function of the 2D unit disc's domain.")
 
       .mdef(warp, squareToUniformDiskConcentric)
       .mdef(warp, squareToUniformDiskConcentricPdf)
+
+      .mdef(warp, unitSquareIndicator)
       .mdef(warp, uniformDiskToSquareConcentric)
 
+      .mdef(warp, triangleIndicator)
       .mdef(warp, squareToUniformTriangle)
+      .mdef(warp, squareToUniformTrianglePdf)
 
       .mdef(warp, squareToStdNormal)
       .mdef(warp, squareToStdNormalPdf)
 
       .mdef(warp, squareToTent)
+      .mdef(warp, squareToTentPdf)
       .mdef(warp, intervalToNonuniformTent);
 
 

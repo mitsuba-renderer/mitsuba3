@@ -2685,6 +2685,8 @@ static const char *__doc_mitsuba_warp_squareToCosineHemisphere =
 R"doc(Sample a cosine-weighted vector on the unit hemisphere with respect to
 solid angles)doc";
 
+static const char *__doc_mitsuba_warp_squareToCosineHemispherePdf = R"doc(Density of squareToCosineHemisphere() with respect to solid angles)doc";
+
 static const char *__doc_mitsuba_warp_squareToStdNormal =
 R"doc(Sample a point on a 2D standard normal distribution Internally uses
 the Box-Muller transformation)doc";
@@ -2692,6 +2694,8 @@ the Box-Muller transformation)doc";
 static const char *__doc_mitsuba_warp_squareToStdNormalPdf = R"doc(Density of squareToStdNormal per unit area)doc";
 
 static const char *__doc_mitsuba_warp_squareToTent = R"doc(Warp a uniformly distributed square sample to a 2D tent distribution)doc";
+
+static const char *__doc_mitsuba_warp_squareToTentPdf = R"doc(Density of squareToTent per unit area.)doc";
 
 static const char *__doc_mitsuba_warp_squareToUniformCone =
 R"doc(Uniformly sample a vector that lies within a given cone of angles
@@ -2735,7 +2739,15 @@ static const char *__doc_mitsuba_warp_squareToUniformTriangle =
 R"doc(Convert an uniformly distributed square sample into barycentric
 coordinates)doc";
 
+static const char *__doc_mitsuba_warp_squareToUniformTrianglePdf = R"doc(Density of squareToUniformTriangle per unit area.)doc";
+
+static const char *__doc_mitsuba_warp_triangleIndicator =
+R"doc(Returns 1.0 if the vector is in the domain of the triangle, 0.0
+otherwise.)doc";
+
 static const char *__doc_mitsuba_warp_uniformDiskToSquareConcentric = R"doc(Inverse of the mapping squareToUniformDiskConcentric)doc";
+
+static const char *__doc_mitsuba_warp_unitConeIndicator = R"doc(Returns 1.0 if the vector is in the domain of the cone, 0.0 otherwise.)doc";
 
 static const char *__doc_mitsuba_warp_unitDiskIndicator =
 R"doc(Returns 1.0 if the point is in the domain of the unit disk, 0.0
@@ -2748,6 +2760,10 @@ R"doc(Returns 1.0 if the point is in the domain of the upper half unit ball,
 static const char *__doc_mitsuba_warp_unitSphereIndicator =
 R"doc(Returns 1.0 if the point is in the domain of the unit ball, 0.0
 otherwise)doc";
+
+static const char *__doc_mitsuba_warp_unitSquareIndicator =
+R"doc(Returns 1.0 if the vector is in the domain of the unit square, 0.0
+otherwise.)doc";
 
 static const char *__doc_mitsuba_xml_loadFile = R"doc(Load a Mitsuba scene from an XML file)doc";
 

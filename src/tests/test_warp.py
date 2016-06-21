@@ -34,7 +34,7 @@ class WarpTest(unittest.TestCase):
         _ = intervalToNonuniformTent(0.25, 0.5, 1.0, 0.75)
 
     def test02_statistical_tests(self):
-        # TODO: just iterate over the enum
+        # TODO: just iterate over the enum (pybind enum?)
         warps = [
             WarpType.NoWarp,
             WarpType.UniformSphere,
