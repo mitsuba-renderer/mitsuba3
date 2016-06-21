@@ -23,6 +23,129 @@
 #endif
 
 
+static const char *__doc_mitsuba_AnnotatedStream =
+R"doc(An AnnotatedStream adds Table of Contents capabilities to an
+underlying stream. A Stream instance must first be created and passed
+to to the constructor. The underlying stream should either be empty or
+a stream that was previously written with an AnnotatedStream, so that
+it contains a proper Table of Contents.
+
+Table of Contents: objects and variables written to the stream are
+prepended by a field name. Contents can then be queried by field name,
+as if using a map. A hierarchy can be created by ``push``ing and
+``pop``ing prefixes. The root of this hierarchy is the empty prefix
+"".
+
+The table of contents is automatically read from the underlying stream
+on creation and written back on destruction.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_AnnotatedStream =
+R"doc(Creates an AnnotatedStream based on the given Stream (decorator
+pattern). Anything written to the AnnotatedStream is ultimately passed
+down to the given Stream instance. The given Stream instance should
+not be destructed before this.
+
+Throws if ``writeMode`` is enabled (resp. disabled) but the underlying
+stream does not have write (resp. read) capabilities.
+
+Throws if the underlying stream has read capabilities and is not empty
+but does not correspond to a valid AnnotatedStream (i.e. it does not
+start with the kSerializedHeaderId sentry).
+
+@param writeMode Whether to use write mode. The stream is either read-
+only or write-only. @param throwOnMissing Whether an error should be
+thrown when get is called for a missing field.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_canRead = R"doc(Whether the underlying stream has read capabilities and is not closed.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_canWrite =
+R"doc(Whether the underlying stream has write capabilities and is not
+closed.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_close =
+R"doc(Closes the annotated stream. No further read or write operations are
+permitted.
+
+\note The underlying stream is not automatically closed by this
+function. It may, however, call its own ``close`` function in its
+destructor.
+
+This function is idempotent and causes the ToC to be written out to
+the stream. It is called automatically by the destructor.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_compatibilityMode = R"doc(Whether the stream won't throw when trying to get missing fields.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_get =
+R"doc(Retrieve a field from the serialized file (only valid in read mode)
+
+Throws if the field exists but has the wrong type. Throws if the field
+is not found and ``throwOnMissing`` is true.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_getBase =
+R"doc(Attempts to seek to the position of the given field. The active prefix
+(from previous push operations) is prepended to the given ``name``.
+
+Throws if the field exists but has the wrong type. Throws if the field
+is not found and ``m_throwOnMissing`` is true.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_getSize = R"doc(Returns the current size of the underlying stream)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_isClosed =
+R"doc(Whether the annotated stream has been closed (no further read or
+writes permitted))doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_keys =
+R"doc(Return all field names under the current name prefix. Nested names are
+returned with the full path prepended, e.g.: level_1.level_2.my_name)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_isClosed =
+R"doc(Whether the annotated stream is closed (independent of the underlying
+stream).)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_prefixStack =
+R"doc(Stack of accumulated prefixes, i.e. ``m_prefixStack.back`` is the full
+prefix path currently applied.)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_stream = R"doc(Underlying stream where the names and contents are written)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_table =
+R"doc(Maintains the mapping: full field name -> (type, position in the
+stream))doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_throwOnMissing = R"doc()doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_m_writeMode = R"doc()doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_pop = R"doc(Pop a name prefix from the stack)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_push =
+R"doc(Push a name prefix onto the stack (use this to isolate identically-
+named data fields).)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_readTOC =
+R"doc(Read back the table of contents from the underlying stream and update
+the in-memory ``m_table`` accordingly. Should be called on
+construction.
+
+Throws if the underlying stream does not have read capabilities.
+Throws if the underlying stream does not have start with the
+AnnotatedStream sentry (kSerializedHeaderId).)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_set = R"doc(Store a field in the serialized file (only valid in write mode))doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_setBase =
+R"doc(Attempts to associate the current position of the stream to the given
+field. The active prefix (from previous push operations) is prepended
+to the ``name`` of the field.
+
+Throws if a value was already set with that name (including prefix).)doc";
+
+static const char *__doc_mitsuba_AnnotatedStream_writeTOC =
+R"doc(Write back the table of contents to the underlying stream. Should be
+called on destruction.)doc";
+
 static const char *__doc_mitsuba_Appender =
 R"doc(This class defines an abstract destination for logging-relevant
 information)doc";
@@ -304,6 +427,61 @@ static const char *__doc_mitsuba_DefaultFormatter_setHaveLogLevel = R"doc(Should
 
 static const char *__doc_mitsuba_DefaultFormatter_setHaveThread = R"doc(Should thread information be included? The default is yes.)doc";
 
+static const char *__doc_mitsuba_DummyStream =
+R"doc(Stream implementation that never writes to disk, but keeps track of
+the size of the content being written. It can be used, for example, to
+measure the precise amount of memory needed to store serialized
+content.)doc";
+
+static const char *__doc_mitsuba_DummyStream_DummyStream = R"doc()doc";
+
+static const char *__doc_mitsuba_DummyStream_canRead =
+R"doc(Always returns false, as nothing written to a ``DummyStream`` is
+actually written.)doc";
+
+static const char *__doc_mitsuba_DummyStream_canWrite = R"doc(Always returns true, except if the steam is closed.)doc";
+
+static const char *__doc_mitsuba_DummyStream_close =
+R"doc(Closes the stream. No further read or write operations are permitted.
+
+This function is idempotent. It may be called automatically by the
+destructor.)doc";
+
+static const char *__doc_mitsuba_DummyStream_flush = R"doc(No-op for ``DummyStream``.)doc";
+
+static const char *__doc_mitsuba_DummyStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_DummyStream_getPos = R"doc(Returns the current position in the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_getSize = R"doc(Returns the size of the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
+
+static const char *__doc_mitsuba_DummyStream_m_isClosed = R"doc(Whether the stream has been closed.)doc";
+
+static const char *__doc_mitsuba_DummyStream_m_pos =
+R"doc(Current position in the "virtual" stream (even though nothing is ever
+written, we need to maintain consistent positioning).)doc";
+
+static const char *__doc_mitsuba_DummyStream_m_size = R"doc(Size of all data written to the stream)doc";
+
+static const char *__doc_mitsuba_DummyStream_read = R"doc(Always throws, since DummyStream is write-only.)doc";
+
+static const char *__doc_mitsuba_DummyStream_seek =
+R"doc(Updates the current position in the stream. Even though the
+``DummyStream`` doesn't write anywhere, position is taken into account
+to accurately compute the size of the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_toString = R"doc(Returns a string representation)doc";
+
+static const char *__doc_mitsuba_DummyStream_truncate =
+R"doc(Simply sets the current size of the stream. The position is updated to
+``min(old_position, size)``.)doc";
+
+static const char *__doc_mitsuba_DummyStream_write =
+R"doc(Does not actually write anything, only updates the stream's position
+and size.)doc";
+
 static const char *__doc_mitsuba_ELogLevel = R"doc(Available Log message types)doc";
 
 static const char *__doc_mitsuba_ELogLevel_EDebug = R"doc(< Debug message, usually turned off)doc";
@@ -362,6 +540,70 @@ path)doc";
 static const char *__doc_mitsuba_FileResolver_size = R"doc(Return the number of search paths)doc";
 
 static const char *__doc_mitsuba_FileResolver_toString = R"doc(Return a human-readable representation of this instance)doc";
+
+static const char *__doc_mitsuba_FileStream =
+R"doc(Simple Stream implementation backed-up by a file. The underlying file
+abstraction is std::fstream, and so most operations can be expected to
+behave similarly.)doc";
+
+static const char *__doc_mitsuba_FileStream_FileStream =
+R"doc(Constructs a new FileStream by opening the file pointed by ``p``. The
+file is opened in read-only or read/write mode as specified by
+``writeEnabled``.
+
+If ``writeEnabled`` and the file did not exist before, it is created.
+Throws if trying to open a non-existing file in with write disabled.
+Throws an exception if the file cannot be opened / created.)doc";
+
+static const char *__doc_mitsuba_FileStream_canRead = R"doc(True except if the stream was closed.)doc";
+
+static const char *__doc_mitsuba_FileStream_canWrite = R"doc(Whether the field was open in write-mode (and was not closed))doc";
+
+static const char *__doc_mitsuba_FileStream_close =
+R"doc(Closes the stream and the underlying file. No further read or write
+operations are permitted.
+
+This function is idempotent. It is called automatically by the
+destructor.)doc";
+
+static const char *__doc_mitsuba_FileStream_flush = R"doc(Flushes any buffered operation to the underlying file.)doc";
+
+static const char *__doc_mitsuba_FileStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_getPos = R"doc(Gets the current position inside the file)doc";
+
+static const char *__doc_mitsuba_FileStream_getSize =
+R"doc(Returns the size of the file. \note After a write, the size may not be
+updated until a flush is performed.)doc";
+
+static const char *__doc_mitsuba_FileStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
+
+static const char *__doc_mitsuba_FileStream_m_file = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_m_path = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_m_writeEnabled = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_read =
+R"doc(Reads a specified amount of data from the stream. Throws an exception
+when the stream ended prematurely.)doc";
+
+static const char *__doc_mitsuba_FileStream_seek =
+R"doc(Seeks to a position inside the stream. May throw if the resulting
+state is invalid.)doc";
+
+static const char *__doc_mitsuba_FileStream_toString = R"doc(Returns a string representation)doc";
+
+static const char *__doc_mitsuba_FileStream_truncate =
+R"doc(Truncates the file to a given size. Automatically flushes the stream
+before truncating the file. The position is updated to
+``min(old_position, size)``.
+
+Throws an exception if in read-only mode.)doc";
+
+static const char *__doc_mitsuba_FileStream_write =
+R"doc(Writes a specified amount of data into the stream. Throws an exception
+when not all data could be written.)doc";
 
 static const char *__doc_mitsuba_Formatter =
 R"doc(Abstract interface for converting log information into a human-
@@ -484,6 +726,92 @@ static const char *__doc_mitsuba_Logger_setLogLevel = R"doc(Set the log level (e
 static const char *__doc_mitsuba_Logger_staticInitialization = R"doc(Initialize logging)doc";
 
 static const char *__doc_mitsuba_Logger_staticShutdown = R"doc(Shutdown logging)doc";
+
+static const char *__doc_mitsuba_MemoryStream =
+R"doc(Simple memory buffer-based stream with automatic memory management. It
+always has read & write capabilities.
+
+The underlying memory storage of this implementation dynamically
+expands as data is written to the stream, à la ``std::vector``.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_MemoryStream =
+R"doc(Creates a new memory stream, initializing the memory buffer with a
+capacity of ``initialSize`` bytes. For best performance, set this
+argument to the estimated size of the content that will be written to
+the stream.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_MemoryStream_2 =
+R"doc(Creates a memory stream, which operates on a pre-allocated buffer.
+
+A memory stream created in this way will never resize the underlying
+buffer. An exception is thrown e.g. when attempting to extend its
+size.
+
+Remark:
+    This constructor is not available in the python bindings.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_canRead = R"doc(Always returns true, except if the stream is closed.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_canWrite = R"doc(Always returns true, except if the stream is closed.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_close =
+R"doc(Closes the stream. No further read or write operations are permitted.
+
+This function is idempotent. It may be called automatically by the
+destructor.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_flush = R"doc(No-op since all writes are made directly to memory)doc";
+
+static const char *__doc_mitsuba_MemoryStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryStream_getPos =
+R"doc(Gets the current position inside the memory buffer. Note that this
+might be further than the stream's size or even capacity.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_getSize =
+R"doc(Returns the size of the contents written to the memory buffer. \note
+This is not equal to the size of the memory buffer in general, since
+we allocate more capacity at once.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_capacity = R"doc(Current size of the allocated memory buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_data = R"doc(Pointer to the memory buffer (might not be owned))doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_isClosed = R"doc(Whether the stream has been closed.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_ownsBuffer = R"doc(False if the MemoryStream was created from a pre-allocated buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_pos = R"doc(Current position inside of the memory buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_m_size = R"doc(Current size of the contents written to the memory buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_read =
+R"doc(Reads a specified amount of data from the stream. Throws an exception
+if trying to read further than the current size of the contents.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_resize = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryStream_seek =
+R"doc(Seeks to a position inside the stream. You may seek beyond the size of
+the stream's contents, or even beyond the buffer's capacity. The size
+and capacity are **not** affected. A subsequent write would then
+expand the size and capacity accordingly. The contents of the memory
+that was skipped is undefined.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_toString = R"doc(Returns a string representation)doc";
+
+static const char *__doc_mitsuba_MemoryStream_truncate =
+R"doc(Truncates the contents **and** the memory buffer's capacity to a given
+size. The position is updated to ``min(old_position, size)``.
+
+\note This will throw is the MemoryStream was initialized with a pre-
+allocated buffer.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_write =
+R"doc(Writes a specified amount of data into the memory buffer. The capacity
+of the memory buffer is extended if necessary.)doc";
 
 static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
 
@@ -726,6 +1054,20 @@ static const char *__doc_mitsuba_Properties_setVector3f = R"doc(Store a vector i
 
 static const char *__doc_mitsuba_Properties_wasQueried = R"doc(Check if a certain property was queried)doc";
 
+static const char *__doc_mitsuba_Stream =
+R"doc(Abstract seekable stream class
+
+Specifies all functions to be implemented by stream subclasses and
+provides various convenience functions layered on top of on them.
+
+All read**X**() and write**X**() methods support transparent
+conversion based on the endianness of the underlying system and the
+value passed to setByteOrder(). Whenever getHostByteOrder() and
+getByteOrder() disagree, the endianness is swapped.
+
+See also:
+    FileStream, MemoryStream, DummyStream)doc";
+
 static const char *__doc_mitsuba_StreamAppender =
 R"doc(%Appender implementation, which writes to an arbitrary C++ output
 stream)doc";
@@ -757,6 +1099,99 @@ static const char *__doc_mitsuba_StreamAppender_m_stream = R"doc()doc";
 static const char *__doc_mitsuba_StreamAppender_readLog = R"doc(Return the contents of the log file as a string)doc";
 
 static const char *__doc_mitsuba_StreamAppender_toString = R"doc(Return a string representation)doc";
+
+static const char *__doc_mitsuba_Stream_EByteOrder = R"doc(Defines the byte order (endianness) to use in this Stream)doc";
+
+static const char *__doc_mitsuba_Stream_EByteOrder_EBigEndian = R"doc(< PowerPC, SPARC, Motorola 68K)doc";
+
+static const char *__doc_mitsuba_Stream_EByteOrder_ELittleEndian = R"doc(< x86, x86_64)doc";
+
+static const char *__doc_mitsuba_Stream_EByteOrder_ENetworkByteOrder = R"doc(< Network byte order (an alias for big endian))doc";
+
+static const char *__doc_mitsuba_Stream_Stream =
+R"doc(Creates a new stream. By default, it assumes the byte order of the
+underlying system, i.e. no endianness conversion is performed.)doc";
+
+static const char *__doc_mitsuba_Stream_Stream_2 = R"doc(Copy is disallowed.)doc";
+
+static const char *__doc_mitsuba_Stream_canRead = R"doc(Can we read from the stream?)doc";
+
+static const char *__doc_mitsuba_Stream_canWrite = R"doc(Can we write to the stream?)doc";
+
+static const char *__doc_mitsuba_Stream_close =
+R"doc(Closes the stream. No further read or write operations are permitted.
+
+This function is idempotent. It may be called automatically by the
+destructor.)doc";
+
+static const char *__doc_mitsuba_Stream_flush = R"doc(Flushes the stream's buffers, if any)doc";
+
+static const char *__doc_mitsuba_Stream_getByteOrder = R"doc(Returns the byte order of this stream.)doc";
+
+static const char *__doc_mitsuba_Stream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_getHostByteOrder = R"doc(Returns the byte order of the underlying machine.)doc";
+
+static const char *__doc_mitsuba_Stream_getPos = R"doc(Gets the current position inside the stream)doc";
+
+static const char *__doc_mitsuba_Stream_getSize = R"doc(Returns the size of the stream)doc";
+
+static const char *__doc_mitsuba_Stream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
+
+static const char *__doc_mitsuba_Stream_m_byteOrder = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_needsEndiannessSwapping =
+R"doc(Returns true if we need to perform endianness swapping before writing
+or reading.)doc";
+
+static const char *__doc_mitsuba_Stream_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_read =
+R"doc(Reads a specified amount of data from the stream. \note This does
+**not** handle endianness swapping.
+
+Throws an exception when the stream ended prematurely. Implementations
+need to handle endianness swap when appropriate.)doc";
+
+static const char *__doc_mitsuba_Stream_read_2 =
+R"doc(Reads one object of type T from the stream at the current position by
+delegating to the appropriate ``serialization_helper``. Endianness
+swapping is handled automatically if needed.)doc";
+
+static const char *__doc_mitsuba_Stream_seek =
+R"doc(Seeks to a position inside the stream. Seeking beyond the size of the
+buffer will not modify its contents' length. However, a subsequent
+write should start at the seeked position and update the size
+appropriately.)doc";
+
+static const char *__doc_mitsuba_Stream_setByteOrder =
+R"doc(Sets the byte order to use in this stream. Automatic conversion will
+be performed on read and write operations to match the system's native
+endianness.
+
+No consistency is guaranteed if this method is called after performing
+some read and write operations on the system using a different
+endianness.)doc";
+
+static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a string representation of the stream)doc";
+
+static const char *__doc_mitsuba_Stream_truncate =
+R"doc(Truncates the stream to a given size. The position is updated to
+``min(old_position, size)``.
+
+Throws an exception if in read-only mode.)doc";
+
+static const char *__doc_mitsuba_Stream_write =
+R"doc(Writes a specified amount of data into the stream. \note This does
+**not** handle endianness swapping.
+
+Throws an exception when not all data could be written.
+Implementations need to handle endianness swap when appropriate.)doc";
+
+static const char *__doc_mitsuba_Stream_write_2 =
+R"doc(Reads one object of type T from the stream at the current position by
+delegating to the appropriate ``serialization_helper``. Endianness
+swapping is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_TNormal = R"doc(3-dimensional surface normal representation)doc";
 
@@ -961,6 +1396,78 @@ static const char *__doc_mitsuba_Thread_toString = R"doc(Return a string represe
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
 
+static const char *__doc_mitsuba_ZStream =
+R"doc(Transparent compression/decompression stream based on ``zlib``.
+
+This class transparently decompresses and compresses reads and writes
+to a nested stream, respectively.)doc";
+
+static const char *__doc_mitsuba_ZStream_EStreamType = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_EStreamType_EDeflateStream = R"doc(< A raw deflate stream)doc";
+
+static const char *__doc_mitsuba_ZStream_EStreamType_EGZipStream = R"doc(< A gzip-compatible stream)doc";
+
+static const char *__doc_mitsuba_ZStream_ZStream =
+R"doc(Creates a new compression stream with the given underlying stream.
+This new instance takes ownership of the child stream. The child
+stream must outlive the ZStream.)doc";
+
+static const char *__doc_mitsuba_ZStream_canRead = R"doc(Can we read from the stream?)doc";
+
+static const char *__doc_mitsuba_ZStream_canWrite = R"doc(Can we write to the stream?)doc";
+
+static const char *__doc_mitsuba_ZStream_close =
+R"doc(Closes the underlying stream. No further read or write operations are
+permitted.
+
+This function is idempotent. It is called automatically by the
+destructor.)doc";
+
+static const char *__doc_mitsuba_ZStream_flush = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_getChildStream = R"doc(Returns the child stream of this compression stream)doc";
+
+static const char *__doc_mitsuba_ZStream_getChildStream_2 = R"doc(Returns the child stream of this compression stream)doc";
+
+static const char *__doc_mitsuba_ZStream_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_getPos = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_getSize = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_isClosed =
+R"doc(Whether the underlying stream is closed (no read or write are then
+permitted).)doc";
+
+static const char *__doc_mitsuba_ZStream_m_childStream = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_deflateBuffer = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_deflateStream = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_didWrite = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_inflateBuffer = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_m_inflateStream = R"doc()doc";
+
+static const char *__doc_mitsuba_ZStream_read =
+R"doc(Reads a specified amount of data from the stream, decompressing it
+first using ZLib. Throws an exception when the stream ended
+prematurely.)doc";
+
+static const char *__doc_mitsuba_ZStream_seek = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_toString = R"doc(Returns a string representation)doc";
+
+static const char *__doc_mitsuba_ZStream_truncate = R"doc(/ Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_write =
+R"doc(Writes a specified amount of data into the stream, compressing it
+first using ZLib. Throws an exception when not all data could be
+written.)doc";
+
 static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal base {a, b, c})doc";
 
 static const char *__doc_mitsuba_detail_Log = R"doc()doc";
@@ -1120,7 +1627,11 @@ successful, false if there was an error (e.g. the file did not exist).)doc";
 static const char *__doc_mitsuba_filesystem_resize_file =
 R"doc(Changes the size of the regular file named by ``p`` as if ``truncate``
 was called. If the file was larger than ``target_length``, the
-remainder is discarded.)doc";
+remainder is discarded. The file must exist.)doc";
+
+static const char *__doc_mitsuba_for_each_type = R"doc(Base case)doc";
+
+static const char *__doc_mitsuba_for_each_type_recurse = R"doc()doc";
 
 static const char *__doc_mitsuba_math_clamp = R"doc(Generic range clamping function)doc";
 
@@ -1262,6 +1773,8 @@ static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical st
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
 
@@ -1338,10 +1851,6 @@ static const char *__doc_mitsuba_util_getLibraryPath = R"doc(Return the absolute
 
 static const char *__doc_mitsuba_util_memString = R"doc(Turn a memory size into a human-readable string)doc";
 
-static const char *__doc_mitsuba_util_mkString =
-R"doc(Joins elements of ``v`` into a string, separated by an optional
-delimiter.)doc";
-
 static const char *__doc_mitsuba_util_timeString =
 R"doc(Convert a time difference (in seconds) to a string representation
 
@@ -1396,9 +1905,11 @@ static const char *__doc_mitsuba_xml_loadFile = R"doc(Load a Mitsuba scene from 
 
 static const char *__doc_mitsuba_xml_loadString = R"doc(Load a Mitsuba scene from an XML string)doc";
 
-static const char *__doc_operator_lshift = R"doc()doc";
+static const char *__doc_operator_lshift = R"doc(Turns an array into a human-readable representation)doc";
 
 static const char *__doc_operator_lshift_2 = R"doc()doc";
+
+static const char *__doc_operator_lshift_3 = R"doc()doc";
 
 static const char *__doc_operator_mul = R"doc()doc";
 
@@ -1408,19 +1919,7 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
-static const char *__doc_pcg32_8_inc = R"doc()doc";
-
 static const char *__doc_pcg32_8_nextDouble =
-R"doc(Generate eight double precision floating point value on the interval
-[0, 1)
-
-Remark:
-    Since the underlying random number generator produces 32 bit
-    output, only the first 32 mantissa bits will be filled (however,
-    the resolution is still finer than in nextFloat(), which only uses
-    23 mantissa bits))doc";
-
-static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -1434,27 +1933,19 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
-static const char *__doc_pcg32_8_nextFloat_2 =
-R"doc(Generate eight single precision floating point value on the interval
-[0, 1))doc";
-
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
-
-static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
+
+static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
-
-static const char *__doc_pcg32_8_state = R"doc()doc";
-
-static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)

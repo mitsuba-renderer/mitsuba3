@@ -224,7 +224,7 @@ extern MTS_EXPORT_CORE bool equivalent(const path& p1, const path& p2);
 extern MTS_EXPORT_CORE bool create_directory(const path& p) noexcept;
 /** \brief Changes the size of the regular file named by <tt>p</tt> as if
  * <tt>truncate</tt> was called. If the file was larger than <tt>target_length</tt>,
- * the remainder is discarded.
+ * the remainder is discarded. The file must exist.
  */
 extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
 /** \brief Removes a file or empty directory. Returns true if removal was

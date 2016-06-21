@@ -14,6 +14,7 @@ include_directories(
   ${EIGEN_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
   ${TINYFORMAT_INCLUDE_DIRS}
+  ${ZLIB_INCLUDE_DIR}
 )
 
 # Create the binding library
@@ -32,6 +33,7 @@ add_library(mitsuba-python SHARED
   pcg32.cpp
   properties.cpp
   python.h
+  stream.cpp
   thread.cpp
   argparser.cpp
   xml.cpp

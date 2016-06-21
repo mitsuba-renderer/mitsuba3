@@ -1,6 +1,5 @@
 import unittest
-import platform
-import re
+import platform, re, os
 
 from mitsuba import filesystem as fs
 from mitsuba.filesystem import preferred_separator as sep
@@ -136,6 +135,15 @@ class FilesystemTest(unittest.TestCase):
 
     def test11_implicit_string_cast(self):
         self.assertFalse(fs.exists("some random" + sep + "path"))
+
+    def test12_truncate_and_file_size(self):
+        p = FilesystemTest.path_here / 'test_file_for_resize.txt'
+        open(str(p), 'a').close()
+        self.assertTrue(fs.resize_file(p, 42))
+        self.assertEqual(fs.file_size(p), 42)
+        self.assertTrue(fs.remove(p))
+        self.assertFalse(fs.exists(p))
+
 
 if __name__ == '__main__':
     unittest.main()

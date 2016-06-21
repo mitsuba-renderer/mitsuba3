@@ -34,20 +34,5 @@ extern MTS_EXPORT_CORE void trapDebugger();
 /// Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>
 extern MTS_EXPORT_CORE fs::path getLibraryPath();
 
-/// Joins elements of <tt>v</tt> into a string, separated by an optional delimiter.
-template <typename T> std::string mkString(const std::vector<T> v,
-                                           const std::string &delimiter = ", ") {
-    std::ostringstream oss;
-    auto it = v.begin();
-    while (it != v.end()) {
-        oss << (*it);
-        it++;
-        if (it != v.end())
-            oss << delimiter;
-    }
-
-    return oss.str();
-}
-
 NAMESPACE_END(util)
 NAMESPACE_END(mitsuba)

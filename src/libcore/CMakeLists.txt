@@ -3,6 +3,7 @@ include_directories(
   ${TBB_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
   ${PUGIXML_INCLUDE_DIRS}
+  ${ZLIB_INCLUDE_DIR}
 )
 
 add_definitions(
@@ -38,13 +39,20 @@ add_library(mitsuba-core SHARED
   xml.cpp          ${INC_DIR}/xml.h
   plugin.cpp       ${INC_DIR}/plugin.h
   fresolver.cpp    ${INC_DIR}/fresolver.h
+
+  stream.cpp       ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
+  astream.cpp      ${INC_DIR}/astream.h
+  dstream.cpp      ${INC_DIR}/dstream.h
+  fstream.cpp      ${INC_DIR}/fstream.h
+  mstream.cpp      ${INC_DIR}/mstream.h
+  zstream.cpp      ${INC_DIR}/zstream.h
 )
 
 # Link to Intel's Thread Building Blocks & the pugixml parser
 target_link_libraries(mitsuba-core tbb pugixml)
 
-# Link to libpng (either the system version or a version built via cmake)
-target_link_libraries(mitsuba-core ${PNG_LIBRARIES})
+# Link to libpng and zlib (either the system version or a version built via cmake)
+target_link_libraries(mitsuba-core ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
 
 # Create the 'dist' and 'dist/plugins' directories
 add_custom_command(
