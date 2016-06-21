@@ -69,10 +69,4 @@ inline TPoint<Scalar, Dimension>::operator Eigen::Matrix<Scalar, Dimension, 1, 0
     return result;
 }
 
-template <typename Scalar>
-inline TNormal<Scalar>::operator Eigen::Matrix<Scalar, 3, 1, 0, 3, 1>() const {
-    Eigen::Matrix<Scalar, 3, 1, 0, 3, 1> result;
-    storeu(result.data());
-    return result;
-}
 NAMESPACE_END(mitsuba)

@@ -31,13 +31,11 @@ public:
 
     typedef TVector<Scalar, Dimension> VectorType;
     typedef TPoint<Scalar, Dimension>  PointType;
-    typedef TNormal<Scalar>            NormalType;
 
     using Base::Base;
     TVector() : Base() { }
     TVector(const Base &f) : Base(f) { }
     TVector(const PointType &f) : Base((const VectorType &) f) { }
-    TVector(const NormalType &f) : Base((const VectorType &) f) { }
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
@@ -71,32 +69,18 @@ public:
 
 /// 3-dimensional surface normal representation
 template <typename Scalar>
-struct TNormal : public simd::StaticFloatBase<Scalar, 3,
-                                              std::is_same<Scalar, float>::value,
-                                              TNormal<Scalar>> {
-
+struct TNormal : public TVector<Scalar, 3> {
 public:
+    using Base = TVector<Scalar, 3>;
+
     enum {
         Dimension = 3
     };
 
-    typedef simd::StaticFloatBase<Scalar, 3,
-                                std::is_same<Scalar, float>::value,
-                                TNormal<Scalar>> Base;
-
-    typedef TVector<Scalar, 3> VectorType;
-    typedef TPoint<Scalar, 3>  PointType;
-
     using Base::Base;
-    TNormal() : Base() { }
-    TNormal(const Base &f) : Base(f) { }
-    TNormal(const VectorType &f) : Base((const TNormal &) f) { }
-
-    /// Convert to an Eigen vector (definition in transform.h)
-    inline operator Eigen::Matrix<Scalar, 3, 1, 0, 3, 1>() const;
 };
 
-/// Complete the set {a} to an orthonormal base {a, b, c}
+/// Complete the set {a} to an orthonormal basis {a, b, c}
 inline std::pair<Vector3f, Vector3f> coordinateSystem(const Vector3f &n) {
     Assert(std::abs(norm(n) - 1) < 1e-5f);
 
