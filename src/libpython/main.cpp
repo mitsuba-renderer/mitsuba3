@@ -23,6 +23,7 @@ MTS_PY_DECLARE(DummyStream);
 MTS_PY_DECLARE(FileStream);
 MTS_PY_DECLARE(MemoryStream);
 MTS_PY_DECLARE(ZStream);
+MTS_PY_DECLARE(BoundingBox);
 
 PYBIND11_PLUGIN(mitsuba) {
     Class::staticInitialization();
@@ -52,6 +53,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(FileStream);
     MTS_PY_IMPORT(MemoryStream);
     MTS_PY_IMPORT(ZStream);
+    MTS_PY_IMPORT(BoundingBox);
 
     atexit([](){
         Logger::staticShutdown();

@@ -39,6 +39,7 @@ add_library(mitsuba-python SHARED
   xml.cpp
   fresolver.cpp
   vector.cpp
+  bbox.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)

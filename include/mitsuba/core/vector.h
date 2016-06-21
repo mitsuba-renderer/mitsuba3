@@ -5,6 +5,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+template <typename> struct TNormal;
+
 /* ===================================================================
     This file contains a few templates and specializations, which
     provide 2/3D points, vectors, and normals over different
@@ -13,33 +15,44 @@ NAMESPACE_BEGIN(mitsuba)
     coordinate transformations.
  * =================================================================== */
 
-template <typename Scalar, int Dimension>
-struct TVector : public simd::StaticFloatBase<Scalar, Dimension,
+template <typename Scalar, int Dimension_>
+struct TVector : public simd::StaticFloatBase<Scalar, Dimension_,
                                               std::is_same<Scalar, float>::value,
-                                              TVector<Scalar, Dimension>> {
+                                              TVector<Scalar, Dimension_>> {
 
 public:
+    enum {
+        Dimension = Dimension_
+    };
+
     typedef simd::StaticFloatBase<Scalar, Dimension,
                                 std::is_same<Scalar, float>::value,
                                 TVector<Scalar, Dimension>> Base;
 
     typedef TVector<Scalar, Dimension> VectorType;
     typedef TPoint<Scalar, Dimension>  PointType;
+    typedef TNormal<Scalar>            NormalType;
 
     using Base::Base;
     TVector() : Base() { }
     TVector(const Base &f) : Base(f) { }
+    TVector(const PointType &f) : Base((const VectorType &) f) { }
+    TVector(const NormalType &f) : Base((const VectorType &) f) { }
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
 };
 
-template <typename Scalar, int Dimension>
-struct TPoint : public simd::StaticFloatBase<Scalar, Dimension,
+template <typename Scalar, int Dimension_>
+struct TPoint : public simd::StaticFloatBase<Scalar, Dimension_,
                                              std::is_same<Scalar, float>::value,
-                                             TPoint<Scalar, Dimension>> {
+                                             TPoint<Scalar, Dimension_>> {
 
 public:
+    enum {
+        Dimension = Dimension_
+    };
+
     typedef simd::StaticFloatBase<Scalar, Dimension,
                                   std::is_same<Scalar, float>::value,
                                   TPoint<Scalar, Dimension>> Base;
@@ -50,6 +63,7 @@ public:
     using Base::Base;
     TPoint() : Base() { }
     TPoint(const Base &f) : Base(f) { }
+    TPoint(const VectorType &f) : Base((const PointType &) f) { }
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
@@ -62,6 +76,10 @@ struct TNormal : public simd::StaticFloatBase<Scalar, 3,
                                               TNormal<Scalar>> {
 
 public:
+    enum {
+        Dimension = 3
+    };
+
     typedef simd::StaticFloatBase<Scalar, 3,
                                 std::is_same<Scalar, float>::value,
                                 TNormal<Scalar>> Base;
@@ -72,6 +90,7 @@ public:
     using Base::Base;
     TNormal() : Base() { }
     TNormal(const Base &f) : Base(f) { }
+    TNormal(const VectorType &f) : Base((const TNormal &) f) { }
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, 3, 1, 0, 3, 1>() const;
