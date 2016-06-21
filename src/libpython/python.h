@@ -47,9 +47,9 @@ namespace py = pybind11;
 
 template <typename T> class is_simd_float {
 private:
-    template <typename Scalar, int Dimension, bool ApproximateMath, typename Derived>
+    template <typename Scalar, size_t Dimension, bool ApproximateMath, typename Derived, typename SFINAE>
     static std::true_type test(const
-          simd::StaticFloatBase<Scalar, Dimension, ApproximateMath, Derived> &);
+          simd::StaticFloatBase<Scalar, Dimension, ApproximateMath, Derived, SFINAE> &);
     static std::false_type test(...);
 public:
     static constexpr bool value = decltype(test(std::declval<T>()))::value;

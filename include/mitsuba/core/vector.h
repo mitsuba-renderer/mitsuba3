@@ -26,8 +26,8 @@ public:
     };
 
     typedef simd::StaticFloatBase<Scalar, Dimension,
-                                std::is_same<Scalar, float>::value,
-                                TVector<Scalar, Dimension>> Base;
+                                  std::is_same<Scalar, float>::value,
+                                  TVector<Scalar, Dimension>> Base;
 
     typedef TVector<Scalar, Dimension> VectorType;
     typedef TPoint<Scalar, Dimension>  PointType;
@@ -35,7 +35,7 @@ public:
     using Base::Base;
     TVector() : Base() { }
     TVector(const Base &f) : Base(f) { }
-    TVector(const PointType &f) : Base((const VectorType &) f) { }
+    TVector(const PointType &f) : Base((const Base &) f) { }
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
@@ -61,7 +61,7 @@ public:
     using Base::Base;
     TPoint() : Base() { }
     TPoint(const Base &f) : Base(f) { }
-    TPoint(const VectorType &f) : Base((const PointType &) f) { }
+    TPoint(const VectorType &f) : Base((const Base &) f) { }
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
