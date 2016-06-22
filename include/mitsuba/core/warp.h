@@ -85,12 +85,14 @@ extern MTS_EXPORT_CORE inline Float squareToCosineHemispherePdf(const Vector3f &
   // TODO
   Log(EError, "Not implemented yet.");
   //return math::InvPi * Frame::cosTheta(d);
+  return 0.0;
 }
 
 /// Returns 1.0 if the vector is in the domain of the cone, 0.0 otherwise.
 extern MTS_EXPORT_CORE Float unitConeIndicator(const Vector3f &) {
   // TODO
   Log(EError, "Not implemented yet.");
+  return 0.0;
 }
 
 
@@ -137,6 +139,7 @@ extern MTS_EXPORT_CORE Point2f squareToUniformDiskConcentric(const Point2f &samp
 extern MTS_EXPORT_CORE Float unitSquareIndicator(const Point2f &) {
   // TODO
   Log(EError, "Not implemented yet.");
+  return 0.0;
 }
 
 /// Inverse of the mapping \ref squareToUniformDiskConcentric
@@ -173,6 +176,7 @@ extern MTS_EXPORT_CORE Point2f squareToTent(const Point2f &sample);
 extern MTS_EXPORT_CORE Float squareToTentPdf(const Point2f &) {
   // TODO
   Log(EError, "Not implemented yet.");
+  return 0.0;
 }
 
 /** \brief Warp a uniformly distributed sample on [0, 1] to a nonuniform
