@@ -37,7 +37,6 @@ struct Frame {
 
     /// Construct a new coordinate frame from a single vector
     inline Frame(const Vector3f &v) : n(v) {
-        // TODO: double-check these .first and .second have not been swapped
         const auto rest = coordinateSystem(v);
         s = rest.first;
         t = rest.second;

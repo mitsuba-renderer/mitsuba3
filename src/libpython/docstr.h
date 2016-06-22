@@ -637,7 +637,10 @@ R"doc(Stores a three-dimensional orthonormal coordinate frame
 
 This class is mostly used to quickly convert between different
 cartesian coordinate systems and to efficiently compute certain
-quantities (e.g. cosTheta(), tanTheta, ..).)doc";
+quantities (e.g. cosTheta(), tanTheta, ..).
+
+TODO: serialization support (serialization_traits template
+specialization))doc";
 
 static const char *__doc_mitsuba_Frame_Frame = R"doc(Default constructor -- performs no initialization!)doc";
 
@@ -646,8 +649,6 @@ static const char *__doc_mitsuba_Frame_Frame_2 = R"doc(Given a normal and tangen
 static const char *__doc_mitsuba_Frame_Frame_3 = R"doc(Construct a frame from the given orthonormal vectors)doc";
 
 static const char *__doc_mitsuba_Frame_Frame_4 = R"doc(Construct a new coordinate frame from a single vector)doc";
-
-static const char *__doc_mitsuba_Frame_Frame_5 = R"doc(Unserialize from a binary data stream)doc";
 
 static const char *__doc_mitsuba_Frame_cosPhi =
 R"doc(Assuming that the given direction is in the local coordinate system,
@@ -673,8 +674,6 @@ static const char *__doc_mitsuba_Frame_operator_eq = R"doc(Equality test)doc";
 static const char *__doc_mitsuba_Frame_operator_ne = R"doc(Inequality test)doc";
 
 static const char *__doc_mitsuba_Frame_s = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_serialize = R"doc(Serialize to a binary data stream)doc";
 
 static const char *__doc_mitsuba_Frame_sinPhi =
 R"doc(Assuming that the given direction is in the local coordinate system,
@@ -1273,6 +1272,150 @@ R"doc(Reads one object of type T from the stream at the current position by
 delegating to the appropriate ``serialization_helper``. Endianness
 swapping is handled automatically if needed.)doc";
 
+static const char *__doc_mitsuba_TBoundingBox =
+R"doc(Generic n-dimensional bounding box data structure
+
+Maintains a minimum and maximum position along each dimension and
+provides various convenience functions for querying and modifying
+them.
+
+This class is parameterized by the underlying point data structure,
+which permits the use of different scalar types and dimensionalities,
+e.g.
+
+```
+TBoundingBox<Vector3i> integerBBox(Point3i(0, 1, 3), Point3i(4, 5, 6));
+TBoundingBox<Vector2d> doubleBBox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
+```
+
+Template parameter ``T``:
+    The underlying point data type (e.g. ``Point2d``))doc";
+
+static const char *__doc_mitsuba_TBoundingBox_Dimension = R"doc()doc";
+
+static const char *__doc_mitsuba_TBoundingBox_TBoundingBox =
+R"doc(Create a new invalid bounding box
+
+Initializes the components of the minimum and maximum position to
+$\infty$ and $-\infty$, respectively.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_TBoundingBox_2 = R"doc(Create a collapsed bounding box from a single point)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_TBoundingBox_3 = R"doc(Create a bounding box from two positions)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_center = R"doc(Return the center point)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_clip = R"doc(Clip to another bounding box)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_collapsed = R"doc(Check whether this bounding box has collapsed to a single point)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_contains =
+R"doc(Check whether a point lies *on* or *inside* the bounding box
+
+Parameter ``p``:
+    The point to be tested
+
+Template parameter ``Strict``:
+    Set this parameter to ``True`` if the bounding box boundary should
+    be excluded in the test
+
+Remark:
+    In the Python bindings, the 'Strict' argument is a normal function
+    parameter with default value ``False``.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_contains_2 =
+R"doc(Check whether a specified bounding box lies *on* or *within* the
+current bounding box
+
+Note that by definition, an 'invalid' bounding box (where min=$\infty$
+and max=$-\infty$) does not cover any space. Hence, this method will
+always return *true* when given such an argument.
+
+Template parameter ``Strict``:
+    Set this parameter to ``True`` if the bounding box boundary should
+    be excluded in the test
+
+Remark:
+    In the Python bindings, the 'Strict' argument is a normal function
+    parameter with default value ``False``.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_corner = R"doc(Return the position of a bounding box corner)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_distanceTo =
+R"doc(Calculate the smallest distance between the axis-aligned bounding box
+and the point ``p``.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_distanceTo_2 =
+R"doc(Calculate the smallest distance between the axis-aligned bounding box
+and ``bbox``.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_expand = R"doc(Expand the bounding box to contain another point)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_expand_2 = R"doc(Expand the bounding box to contain another bounding box)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_extents =
+R"doc(Calculate the bounding box extents
+
+Returns:
+    max-min)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_majorAxis = R"doc(Return the dimension index with the largest associated side length)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_max = R"doc(< Component-wise maximum)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_merge = R"doc(Merge two bounding boxes)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_min = R"doc(< Component-wise minimum)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_minorAxis = R"doc(Return the dimension index with the shortest associated side length)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_operator_eq = R"doc(Test for equality against another bounding box)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_operator_ne = R"doc(Test for inequality against another bounding box)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_overlaps =
+R"doc(Check two axis-aligned bounding boxes for possible overlap.
+
+Parameter ``Strict``:
+    Set this parameter to ``True`` if the bounding box boundary should
+    be excluded in the test
+
+Remark:
+    In the Python bindings, the 'Strict' argument is a normal function
+    parameter with default value ``False``.
+
+Returns:
+    ``True`` If overlap was detected.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_reset =
+R"doc(Mark the bounding box as invalid.
+
+This operation sets the components of the minimum and maximum position
+to $\infty$ and $-\infty$, respectively.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_squaredDistanceTo =
+R"doc(Calculate the smallest squared distance between the axis-aligned
+bounding box and the point ``p``.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_squaredDistanceTo_2 =
+R"doc(Calculate the smallest square distance between the axis-aligned
+bounding box and ``bbox``.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_surfaceArea = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_valid =
+R"doc(Check whether this is a valid bounding box
+
+A bounding box ``bbox`` is considered to be valid when
+
+```
+bbox.min[i] <= bbox.max[i]
+```
+
+holds for each component ``i``.)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_volume = R"doc(Calculate the n-dimensional volume of the bounding box)doc";
+
 static const char *__doc_mitsuba_TNormal = R"doc(3-dimensional surface normal representation)doc";
 
 static const char *__doc_mitsuba_TNormal_Dimension = R"doc()doc";
@@ -1855,7 +1998,9 @@ static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical st
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Return a string representation of the bounding box)doc";
+
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -2001,7 +2146,19 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
+static const char *__doc_pcg32_8_inc = R"doc()doc";
+
 static const char *__doc_pcg32_8_nextDouble =
+R"doc(Generate eight double precision floating point value on the interval
+[0, 1)
+
+Remark:
+    Since the underlying random number generator produces 32 bit
+    output, only the first 32 mantissa bits will be filled (however,
+    the resolution is still finer than in nextFloat(), which only uses
+    23 mantissa bits))doc";
+
+static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2015,19 +2172,27 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
+static const char *__doc_pcg32_8_nextFloat_2 =
+R"doc(Generate eight single precision floating point value on the interval
+[0, 1))doc";
+
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
+
+static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
-
-static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
+
+static const char *__doc_pcg32_8_state = R"doc()doc";
+
+static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)
