@@ -15,6 +15,8 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \ingroup libcore
  * \ingroup libpython
+ *
+ * TODO: serialization support (serialization_traits template specialization)
  */
 struct Frame {
     Vector3f s, t;
@@ -41,24 +43,6 @@ struct Frame {
         t = rest.second;
     }
 
-    /// Unserialize from a binary data stream
-    // TODO: this is not the way to deserialize anymore
-    inline Frame(Stream *) {
-        Log(EError, "Not implemented: Frame deserialization");
-        // s = Vector3f(stream);
-        // t = Vector3f(stream);
-        // n = Normal3f(stream);
-    }
-
-    /// Serialize to a binary data stream
-    // TODO: this is not the way to serialize anymore
-    inline void serialize(Stream *) const {
-        Log(EError, "Not implemented: Frame serialization");
-        // s.serialize(stream);
-        // t.serialize(stream);
-        // n.serialize(stream);
-    }
-
     /// Convert from world coordinates to local coordinates
     inline Vector3f toLocal(const Vector3f &v) const {
         return Vector3f(
@@ -74,27 +58,15 @@ struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the squared cosine of the angle between the normal and v */
-    inline static Float cosTheta2(const Vector3f &v) {
-        return v.z() * v.z();
-    }
-
-    /** \brief Assuming that the given direction is in the local coordinate
     * system, return the cosine of the angle between the normal and v */
     inline static Float cosTheta(const Vector3f &v) {
         return v.z();
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the u and v coordinates of the vector 'v' */
-    inline static Vector2f uv(const Vector3f &v) {
-        return Vector2f(v.x(), v.y());
-    }
-
-    /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the squared sine of the angle between the normal and v */
-    inline static Float sinTheta2(const Vector3f &v) {
-        return 1.0f - v.z() * v.z();
+    * system, return the squared cosine of the angle between the normal and v */
+    inline static Float cosTheta2(const Vector3f &v) {
+        return v.z() * v.z();
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
@@ -104,6 +76,12 @@ struct Frame {
         if (temp <= 0.0f)
             return 0.0f;
         return std::sqrt(temp);
+    }
+
+    /** \brief Assuming that the given direction is in the local coordinate
+    * system, return the squared sine of the angle between the normal and v */
+    inline static Float sinTheta2(const Vector3f &v) {
+        return 1.0f - v.z() * v.z();
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
@@ -134,6 +112,13 @@ struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
+    * system, return the squared sine of the phi parameter in  spherical
+    * coordinates */
+    inline static Float sinPhi2(const Vector3f &v) {
+        return math::clamp(v.y() * v.y() / sinTheta2(v), (Float) 0.0f, (Float) 1.0f);
+    }
+
+    /** \brief Assuming that the given direction is in the local coordinate
     * system, return the cosine of the phi parameter in spherical coordinates */
     inline static Float cosPhi(const Vector3f &v) {
         Float sinTheta = Frame::sinTheta(v);
@@ -143,17 +128,16 @@ struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the squared sine of the phi parameter in  spherical
-    * coordinates */
-    inline static Float sinPhi2(const Vector3f &v) {
-        return math::clamp(v.y() * v.y() / sinTheta2(v), (Float) 0.0f, (Float) 1.0f);
-    }
-
-    /** \brief Assuming that the given direction is in the local coordinate
     * system, return the squared cosine of the phi parameter in  spherical
     * coordinates */
     inline static Float cosPhi2(const Vector3f &v) {
         return math::clamp(v.x() * v.x() / sinTheta2(v), (Float) 0.0f, (Float) 1.0f);
+    }
+
+    /** \brief Assuming that the given direction is in the local coordinate
+    * system, return the u and v coordinates of the vector 'v' */
+    inline static Vector2f uv(const Vector3f &v) {
+        return Vector2f(v.x(), v.y());
     }
 
     /// Equality test
