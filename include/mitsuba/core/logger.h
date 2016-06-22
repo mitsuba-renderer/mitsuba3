@@ -147,13 +147,14 @@ NAMESPACE_END(detail)
 /// Write a log message to the console
 #define Log(level, ...)                                                        \
     do {                                                                       \
-        detail::Log(level, m_theClass, __FILE__, __LINE__, ##__VA_ARGS__);     \
+        mitsuba::detail::Log(level, m_theClass, __FILE__, __LINE__,            \
+                               ##__VA_ARGS__);                                 \
     } while (0)
 
 /// Throw an exception
 #define Throw(...)                                                             \
     do {                                                                       \
-        detail::Throw(EError, m_theClass, __FILE__, __LINE__,                  \
+        mitsuba::detail::Throw(EError, m_theClass, __FILE__, __LINE__,         \
                       tfm::format(__VA_ARGS__));                               \
     } while (0)
 
