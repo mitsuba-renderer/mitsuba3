@@ -9,6 +9,7 @@ add_definitions(
 set(INC_DIR "../../include/mitsuba/gui")
 
 add_library(mitsuba-gui SHARED
+  warp_visualizer.cpp     ${INC_DIR}/warp_visualizer.h
 )
 
 # Link to Mitsuba core library

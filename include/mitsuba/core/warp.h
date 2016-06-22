@@ -7,11 +7,11 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/vector.h>
 
-NAMESPACE_BEGIN(mitsuba)
-
 namespace {
-  Float kDomainEpsilon = 1e-5;
+  mitsuba::Float kDomainEpsilon = 1e-5;
 }  // end anonymous namespace
+
+NAMESPACE_BEGIN(mitsuba)
 
 /**
  * \brief Implements common warping techniques that map from the unit
@@ -21,6 +21,24 @@ namespace {
  * distributed or weighted point sets in certain common target domains.
  */
 NAMESPACE_BEGIN(warp)
+
+/// Enum of available warping types
+// TODO: make exhaustive and precise
+enum WarpType {
+    NoWarp = 0,
+    UniformSphere,
+    UniformHemisphere,
+    CosineHemisphere,
+    UniformCone,
+    UniformDisk,
+    UniformDiskConcentric,
+    UniformTriangle,
+    StandardNormal,
+    UniformTent,
+    NonUniformTent
+};
+
+
 // =============================================================
 //! @{ \name Warping techniques related to spheres and subsets
 // =============================================================
