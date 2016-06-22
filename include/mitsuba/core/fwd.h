@@ -29,6 +29,7 @@ template <typename> class AtomicFloat;
 /* Forward declarations of various vector types */
 template <typename Scalar, int Dimension>  struct TVector;
 template <typename Scalar, int Dimension>  struct TPoint;
+template <typename Scalar>                 struct TNormal;
 template <typename Point, typename Vector> struct TRay;
 template <typename Point>                  struct TBoundingBox;
 
@@ -46,6 +47,8 @@ typedef TPoint<Float, 1>        Point1f;
 typedef TPoint<Float, 2>        Point2f;
 typedef TPoint<Float, 3>        Point3f;
 typedef TPoint<Float, 4>        Point4f;
+
+typedef TNormal<Float>          Normal3f;
 
 typedef TBoundingBox<Point1f>   BoundingBox1f;
 typedef TBoundingBox<Point2f>   BoundingBox2f;

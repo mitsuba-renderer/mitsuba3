@@ -632,6 +632,85 @@ Parameter ``msg``:
 
 static const char *__doc_mitsuba_Formatter_getClass = R"doc()doc";
 
+static const char *__doc_mitsuba_Frame =
+R"doc(Stores a three-dimensional orthonormal coordinate frame
+
+This class is mostly used to quickly convert between different
+cartesian coordinate systems and to efficiently compute certain
+quantities (e.g. cosTheta(), tanTheta, ..).
+
+TODO: serialization support (serialization_traits template
+specialization))doc";
+
+static const char *__doc_mitsuba_Frame_Frame = R"doc(Default constructor -- performs no initialization!)doc";
+
+static const char *__doc_mitsuba_Frame_Frame_2 = R"doc(Given a normal and tangent vectors, construct a new coordinate frame)doc";
+
+static const char *__doc_mitsuba_Frame_Frame_3 = R"doc(Construct a frame from the given orthonormal vectors)doc";
+
+static const char *__doc_mitsuba_Frame_Frame_4 = R"doc(Construct a new coordinate frame from a single vector)doc";
+
+static const char *__doc_mitsuba_Frame_cosPhi =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the cosine of the phi parameter in spherical coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_cosPhi2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared cosine of the phi parameter in spherical
+coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_cosTheta =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the cosine of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_cosTheta2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared cosine of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_n = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_eq = R"doc(Equality test)doc";
+
+static const char *__doc_mitsuba_Frame_operator_ne = R"doc(Inequality test)doc";
+
+static const char *__doc_mitsuba_Frame_s = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_sinPhi =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the sine of the phi parameter in spherical coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_sinPhi2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared sine of the phi parameter in spherical coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_sinTheta =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the sine of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_sinTheta2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared sine of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_t = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_tanTheta =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the tangent of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_tanTheta2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared tangent of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_toLocal = R"doc(Convert from world coordinates to local coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_toString = R"doc(Return a string representation of this frame)doc";
+
+static const char *__doc_mitsuba_Frame_toWorld = R"doc(Convert from local coordinates to world coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_uv =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the u and v coordinates of the vector 'v')doc";
+
 static const char *__doc_mitsuba_Logger =
 R"doc(Responsible for processing log messages
 
@@ -1341,12 +1420,6 @@ static const char *__doc_mitsuba_TNormal = R"doc(3-dimensional surface normal re
 
 static const char *__doc_mitsuba_TNormal_Dimension = R"doc()doc";
 
-static const char *__doc_mitsuba_TNormal_TNormal = R"doc()doc";
-
-static const char *__doc_mitsuba_TNormal_TNormal_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_TNormal_operator_Matrix = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
-
 static const char *__doc_mitsuba_TPoint = R"doc()doc";
 
 static const char *__doc_mitsuba_TPoint_Dimension = R"doc()doc";
@@ -1622,7 +1695,7 @@ R"doc(Writes a specified amount of data into the stream, compressing it
 first using ZLib. Throws an exception when not all data could be
 written.)doc";
 
-static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal base {a, b, c})doc";
+static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal basis {a, b, c})doc";
 
 static const char *__doc_mitsuba_detail_Log = R"doc()doc";
 
@@ -1920,8 +1993,6 @@ static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that hav
 static const char *__doc_mitsuba_operator_Matrix = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
 
 static const char *__doc_mitsuba_operator_Matrix_2 = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
-
-static const char *__doc_mitsuba_operator_Matrix_3 = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
 

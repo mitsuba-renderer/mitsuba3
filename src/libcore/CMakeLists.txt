@@ -23,6 +23,7 @@ add_library(mitsuba-core SHARED
   ${INC_DIR}/transform.h
   ${INC_DIR}/atomic.h
   ${INC_DIR}/string.h
+  ${INC_DIR}/frame.h
 
   appender.cpp     ${INC_DIR}/appender.h
   class.cpp        ${INC_DIR}/class.h

@@ -166,7 +166,7 @@ ref<Object> loadImpl(const std::string &id,
 
     Eigen::Affine3f transform;
 
-    /* Helper function to parse a Nori XML node (recursive) */
+    /* Helper function to parse a Mitsuba XML node (recursive) */
     std::function<void(pugi::xml_node &, Properties &, ETag)> parseTag = [&](
         pugi::xml_node &node, Properties &props, ETag parentTag) -> void {
         /* Skip over comments */

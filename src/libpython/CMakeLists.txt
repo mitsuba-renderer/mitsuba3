@@ -40,6 +40,7 @@ add_library(mitsuba-python SHARED
   fresolver.cpp
   vector.cpp
   bbox.cpp
+  frame.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)
