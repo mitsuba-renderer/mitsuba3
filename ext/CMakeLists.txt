@@ -106,6 +106,8 @@ set(TBB_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/tbb/include PARENT_SCOPE)
 set(NANOGUI_BUILD_EXAMPLE OFF CACHE BOOL " " FORCE)
 set(NANOGUI_BUILD_SHARED  ON  CACHE BOOL " " FORCE)
 set(NANOGUI_BUILD_PYTHON  ON  CACHE BOOL " " FORCE)
+set(NANOGUI_INSTALLL      OFF CACHE BOOL " " FORCE)
+
 add_subdirectory(nanogui)
 set_property(TARGET glfw glfw_objects bin2c nanogui PROPERTY FOLDER "dependencies")
 set(EIGEN_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/eigen PARENT_SCOPE)
@@ -113,6 +115,7 @@ set(NANOGUI_INCLUDE_DIRS
    ${PROJECT_SOURCE_DIR}/ext/nanogui/include
    ${NANOGUI_EXTRA_INCS}
    PARENT_SCOPE)
+
 if (PYTHONLIBS_FOUND)
   set_property(TARGET nanogui_python PROPERTY FOLDER "dependencies")
 endif()
