@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(warp)
 /**
  * TODO: docstrings for this class
  */
-class WarpVisualizationWidget : public nanogui::Screen {
+class MTS_EXPORT_GUI WarpVisualizationWidget : public nanogui::Screen {
 
 public:
     WarpVisualizationWidget(int width, int height, std::string description);
