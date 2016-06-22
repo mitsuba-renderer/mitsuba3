@@ -17,7 +17,7 @@ target_link_libraries(mitsuba-gui mitsuba-core)
 # Link to NanoGUI
 target_link_libraries(mitsuba-gui nanogui)
 
-set(DEPENDENCIES mitsuba-gui nanogui)
+set(DEPENDENCIES mitsuba-gui mitsuba-core nanogui)
 
 # Copy dependencies into the 'dist' directory
 foreach(dep ${DEPENDENCIES})

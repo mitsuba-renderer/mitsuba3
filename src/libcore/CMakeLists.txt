@@ -1,4 +1,5 @@
 include_directories(
+  ${HYPOTHESIS_INCLUDE_DIRS}
   ${PNG_INCLUDE_DIRS}
   ${TBB_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}

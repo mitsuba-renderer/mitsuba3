@@ -18,14 +18,6 @@ NAMESPACE_BEGIN(warp)
 class WarpVisualizationWidget : public nanogui::Screen {
 
 public:
-    /// Enum of available point sampling strategies
-    enum SamplingType {
-        Independent = 0,
-        Grid,
-        Stratified
-    };
-
-public:
     WarpVisualizationWidget(int width, int height, std::string description);
 
     virtual ~WarpVisualizationWidget() {
@@ -33,6 +25,8 @@ public:
     }
 
     bool runTest(double minExpFrequency, double significanceLevel);
+
+    virtual void refresh();
 
     void setSamplingType(SamplingType s) { m_samplingType = s; }
     void setWarpType(WarpType w) { m_warpType = w; }
@@ -66,7 +60,6 @@ private:
 
     void drawGrid(const Eigen::Matrix4f& mvp);
 
-    virtual void refresh();
 
     void initializeVisualizerGUI();
 

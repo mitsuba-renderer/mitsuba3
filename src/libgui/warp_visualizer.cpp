@@ -1,4 +1,5 @@
 #include <mitsuba/gui/warp_visualizer.h>
+#include <mitsuba/core/transform.h>
 
 namespace {
 // Forward declaration of HSLS code strings.
@@ -27,6 +28,11 @@ using nanogui::Vector2f;
 using nanogui::Matrix4f;
 using nanogui::MatrixXf;
 using MatrixXu = Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic>;
+
+using detail::generatePoints;
+using detail::isTwoDimensionalWarp;
+using detail::runStatisticalTestAndOutput;
+using detail::warpPoint;
 
 WarpVisualizationWidget::WarpVisualizationWidget(int width, int height,
                                                  std::string description)

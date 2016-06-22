@@ -2,10 +2,11 @@
 #if !defined(__MITSUBA_CORE_WARP_H_)
 #define __MITSUBA_CORE_WARP_H_
 
-// #include <mitsuba/core/frame.h>
 #include <mitsuba/core/fwd.h>
+// #include <mitsuba/core/frame.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/vector.h>
+#include <Eigen/Core>
 
 namespace {
   mitsuba::Float kDomainEpsilon = 1e-5;
@@ -15,12 +16,16 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**
  * \brief Implements common warping techniques that map from the unit
- * square to other domains, such as spheres, hemispheres, etc.
+ * square [0, 1]^2 to other domains such as spheres, hemispheres, etc.
  *
  * The main application of this class is to generate uniformly
  * distributed or weighted point sets in certain common target domains.
  */
 NAMESPACE_BEGIN(warp)
+
+// TODO: proper support for:
+// - uniformDiskToSquareConcentric
+// - intervalToNonuniformTent
 
 /// Enum of available warping types
 // TODO: make exhaustive and precise
@@ -38,6 +43,12 @@ enum WarpType {
     NonUniformTent
 };
 
+/// Enum of available point sampling strategies
+enum SamplingType {
+    Independent = 0,
+    Grid,
+    Stratified
+};
 
 // =============================================================
 //! @{ \name Warping techniques related to spheres and subsets
@@ -171,6 +182,106 @@ extern MTS_EXPORT_CORE Float intervalToNonuniformTent(Float a, Float b, Float c,
 
 //! @}
 // =============================================================
+
+// =============================================================
+//! @{ \name Extra functions related to sampling and testing
+//!    of those distributions.
+// =============================================================
+NAMESPACE_BEGIN(detail)
+
+/// Returns true if the warping operates in the 2D plane
+extern MTS_EXPORT_CORE bool isTwoDimensionalWarp(WarpType warpType);
+/// Warps a 2D sample according to the given warp type. The parameter value is
+/// passed to the warping function if it uses one.
+extern MTS_EXPORT_CORE std::pair<Vector3f, Float>
+warpPoint(WarpType warpType, Point2f sample, Float parameterValue);
+
+/// TODO
+extern MTS_EXPORT_CORE Point2f
+domainToPoint(const Eigen::Vector3f &v, WarpType warpType);
+
+/// TODO
+extern MTS_EXPORT_CORE double getPdfScalingFactor(WarpType warpType);
+
+/// TODO
+extern MTS_EXPORT_CORE Float
+pdfValueForSample(WarpType warpType, Float parameterValue, double x, double y);
+/**
+ * \brief Generates warped points using the specified sampling strategy and
+ * warping types. The points are output as columns in \p positions and the
+ * associated weight is stored in \p weights.
+ *
+ * \warning The point count may change depending on the sample strategy,
+ *          the effective point count is the length of \ref positions
+ *          after the function has returned.
+ */
+extern MTS_EXPORT_CORE void
+generatePoints(size_t &pointCount, SamplingType pointType,
+               WarpType warpType, Float parameterValue,
+               Eigen::MatrixXf &positions, std::vector<Float> &weights);
+
+/**
+ * Computes the discretized histogram of \p positions using simple binning.
+ * The domain of the histogram automatically matches the domain of the specified
+ * warping type.
+ *
+ * \return Linearized values of the histogram, stored row after row
+ *         (\p gridWidth * \gridHeight entries).
+ */
+extern MTS_EXPORT_CORE std::vector<double>
+computeHistogram(WarpType warpType,
+                 const Eigen::MatrixXf &positions,
+                 const std::vector<Float> &weights,
+                 size_t gridWidth, size_t gridHeight);
+
+/**
+ * Generates the histogram that would be expected for the given warping type.
+ * It is computed by integrating the warp's PDF over each bin of the histogram.
+ * The domain of the histogram automatically matches the domain of the specified
+ * warping type.
+ *
+ * \return Linearized values of the expected histogram, stored row after row
+ *         (\p gridWidth * \gridHeight entries).
+ */
+extern MTS_EXPORT_CORE std::vector<double>
+generateExpectedHistogram(size_t pointCount,
+                          WarpType warpType, Float parameterValue,
+                          size_t gridWidth, size_t gridHeight);
+
+/**
+ * For a given warping type, parameter value and sampling strategy, runs a Chi^2
+ * statistical test to check that the warping function matches the announced PDF.
+ * Also outputs the observed and expected histograms computed for the test.
+ *
+ * \return (Whether the test succeeded, an explanatory text).
+ */
+extern MTS_EXPORT_CORE std::pair<bool, std::string>
+runStatisticalTestAndOutput(size_t pointCount, size_t gridWidth, size_t gridHeight,
+    SamplingType samplingType, WarpType warpType, Float parameterValue,
+    double minExpFrequency, double significanceLevel,
+    std::vector<double> &observedHistogram, std::vector<double> &expectedHistogram);
+
+/**
+ * For a given warping type, parameter value and sampling strategy, runs a Chi^2
+ * statistical test to check that the warping function matches the announced PDF.
+ * Also outputs the observed and expected histograms computed for the test.
+ *
+ * \return (Whether the test succeeded, an explanatory text).
+ */
+extern MTS_EXPORT_CORE std::pair<bool, std::string>
+runStatisticalTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
+                   SamplingType samplingType, WarpType warpType, Float parameterValue,
+                   double minExpFrequency, double significanceLevel) {
+    std::vector<double> observedHistogram, expectedHistogram;
+    return runStatisticalTestAndOutput(pointCount,
+        gridWidth, gridHeight, samplingType, warpType, parameterValue,
+        minExpFrequency, significanceLevel, observedHistogram, expectedHistogram);
+}
+
+NAMESPACE_END(detail)
+//! @}
+// =============================================================
+
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)
 
