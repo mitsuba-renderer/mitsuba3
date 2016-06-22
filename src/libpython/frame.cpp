@@ -5,6 +5,7 @@
 MTS_PY_EXPORT(Frame) {
     py::class_<Frame>(m, "Frame", DM(Frame))
         .def(py::init<>(), DM(Frame, Frame))
+        .def(py::init<const Frame &>(), DM(Frame, Frame))
         // Omitted because the Vector/Normal distinction doesn't apply in Python
         // .def(py::init<Vector3f, Vector3f, Normal3f>(), DM(Frame, Frame, 2))
         .def(py::init<Vector3f, Vector3f, Vector3f>(), DM(Frame, Frame, 3))

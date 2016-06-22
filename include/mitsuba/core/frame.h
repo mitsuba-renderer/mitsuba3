@@ -37,9 +37,7 @@ struct Frame {
 
     /// Construct a new coordinate frame from a single vector
     inline Frame(const Vector3f &v) : n(v) {
-        const auto rest = coordinateSystem(v);
-        s = rest.first;
-        t = rest.second;
+        std::tie(s, t) = coordinateSystem(v);
     }
 
     /// Convert from world coordinates to local coordinates

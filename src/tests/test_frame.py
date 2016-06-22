@@ -12,17 +12,20 @@ class FrameTest(unittest.TestCase):
         _ = Frame()
 
         # Frame from the 3 vectors: no normalization should be performed
-        f = Frame([0.005, 50, -6], [0.01, -13.37, 1], [0.5, 0, -6.2])
-        self.assertVectorsEqual(f.s, [0.005, 50, -6])
-        self.assertVectorsEqual(f.t, [0.01, -13.37, 1])
-        self.assertVectorsEqual(f.n, [0.5, 0, -6.2])
+        f1 = Frame([0.005, 50, -6], [0.01, -13.37, 1], [0.5, 0, -6.2])
+        self.assertVectorsEqual(f1.s, [0.005, 50, -6])
+        self.assertVectorsEqual(f1.t, [0.01, -13.37, 1])
+        self.assertVectorsEqual(f1.n, [0.5, 0, -6.2])
 
         # Frame from the Normal component only
-        f = Frame([0, 0, 1])
-        self.assertVectorsEqual(f.s, [1, 0, 0])
-        self.assertVectorsEqual(f.t, [0, 1, 0])
-        self.assertVectorsEqual(f.n, [0, 0, 1])
+        f2 = Frame([0, 0, 1])
+        self.assertVectorsEqual(f2.s, [1, 0, 0])
+        self.assertVectorsEqual(f2.t, [0, 1, 0])
+        self.assertVectorsEqual(f2.n, [0, 0, 1])
 
+        # Copy constructor
+        f3 = Frame(f2)
+        self.assertEqual(f2, f3)
 
     def test02_unit_frame(self):
         f = Frame([1, 0, 0], [0, 1, 0], [0, 0, 1])
