@@ -58,8 +58,8 @@ add_library(mitsuba-python SHARED
   scene.cpp
 )
 
-# Link to Mitsuba core library
-target_link_libraries(mitsuba-python mitsuba-core mitsuba-render)
+# Link to Mitsuba core and GUI libraries
+target_link_libraries(mitsuba-python mitsuba-core mitsuba-render mitsuba-gui)
 # Link to NanoGUI
 target_link_libraries(mitsuba-python nanogui)
 
