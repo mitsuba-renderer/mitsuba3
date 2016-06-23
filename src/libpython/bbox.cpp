@@ -18,7 +18,7 @@ template <typename Type> void bind_bbox(py::module &m, const char *name) {
         .def("extents", &Type::extents, DM(TBoundingBox, extents))
         .def("corner", &Type::corner, DM(TBoundingBox, corner))
         .def("volume", &Type::volume, DM(TBoundingBox, volume))
-        .def("surfaceArea", &Type::surfaceArea, DM(TBoundingBox, surfaceArea))
+        .def("surfaceArea", &Type::template surfaceArea<>, DM(TBoundingBox, surfaceArea))
         .def("contains", [](const Type &self, const PointType &p, bool strict) {
                 return strict ? self.template contains<true>(p) : self.template contains<false>(p);
             }, DM(TBoundingBox, contains), py::arg("p"), py::arg("strict") = false)
@@ -28,14 +28,14 @@ template <typename Type> void bind_bbox(py::module &m, const char *name) {
         .def("overlaps", [](const Type &self, const Type &bbox, bool strict) {
                 return strict ? self.template overlaps<true>(bbox) : self.template overlaps<false>(bbox);
             }, DM(TBoundingBox, overlaps), py::arg("bbox"), py::arg("strict") = false)
-        .def("squaredDistanceTo", (Scalar (Type::*)(const PointType &) const) &Type::squaredDistanceTo,
-             DM(TBoundingBox, squaredDistanceTo))
-        .def("squaredDistanceTo", (Scalar (Type::*)(const Type &bbox) const) &Type::squaredDistanceTo,
-             DM(TBoundingBox, squaredDistanceTo, 2))
-        .def("distanceTo", (Scalar (Type::*)(const PointType &) const) &Type::distanceTo,
-             DM(TBoundingBox, distanceTo))
-        .def("distanceTo", (Scalar (Type::*)(const Type &bbox) const) &Type::distanceTo,
-             DM(TBoundingBox, distanceTo, 2))
+        .def("squaredDistance", (Scalar (Type::*)(const PointType &) const) &Type::squaredDistance,
+             DM(TBoundingBox, squaredDistance))
+        .def("squaredDistance", (Scalar (Type::*)(const Type &bbox) const) &Type::squaredDistance,
+             DM(TBoundingBox, squaredDistance, 2))
+        .def("distance", (Scalar (Type::*)(const PointType &) const) &Type::distance,
+             DM(TBoundingBox, distance))
+        .def("distance", (Scalar (Type::*)(const Type &bbox) const) &Type::distance,
+             DM(TBoundingBox, distance, 2))
         .def("reset", &Type::reset, DM(TBoundingBox, reset))
         .def("clip", &Type::clip, DM(TBoundingBox, clip))
         .def("expand", (void (Type::*)(const PointType &)) &Type::expand, DM(TBoundingBox, expand))

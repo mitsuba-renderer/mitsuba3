@@ -1,21 +1,3 @@
-/*
-    This file is part of Nori, a simple educational ray tracer
-
-    Copyright (c) 2015 by Wenzel Jakob
-
-    Nori is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License Version 3
-    as published by the Free Software Foundation.
-
-    Nori is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #pragma once
 
 #include <mitsuba/core/vector.h>
@@ -147,8 +129,19 @@ template <typename _PointType> struct TBoundingBox {
     }
 
     /// Calculate the n-1 dimensional volume of the boundary
+    template <typename T = PointType, typename std::enable_if<T::Dimension == 3, int>::type = 0>
     Scalar surfaceArea() const {
+        /* Optimized implementation for Dimension == 3 */
         VectorType d = max - min;
+        return hsum(d.template swizzle<1,2,0>() * d) * Scalar(2);
+    }
+
+    /// Calculate the n-1 dimensional volume of the boundary
+    template <typename T = PointType, typename std::enable_if<T::Dimension != 3, int>::type = 0>
+    Scalar surfaceArea() const {
+        /* Generic implementation for Dimension != 3 */
+        VectorType d = max - min;
+
         Scalar result = Scalar(0);
         for (int i = 0; i < Dimension; ++i) {
             Scalar term = Scalar(1);
@@ -223,61 +216,42 @@ template <typename _PointType> struct TBoundingBox {
     }
 
     /**
-     * \brief Calculate the smallest squared distance between
+     * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Scalar squaredDistanceTo(const PointType &p) const {
-        Scalar result(0);
-
-        for (int i=0; i<Dimension; ++i) {
-            Scalar value(0);
-
-            if (p[i] < min[i])
-                value = min[i] - p[i];
-            else if (p[i] > max[i])
-                value = p[i] - max[i];
-
-            result += value * value;
-        }
-
-        return result;
+    Scalar squaredDistance(const PointType &p) const {
+        auto d1 = select(p < min, min - p, PointType::Zero());
+        auto d2 = select(p > max, p - max, PointType::Zero());
+        auto d = d1 + d2;
+        return hsum(d * d);
     }
 
+
     /**
-     * \brief Calculate the smallest square distance between
+     * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar squaredDistanceTo(const TBoundingBox &bbox) const {
-        Scalar result = 0;
-
-        for (int i=0; i<Dimension; ++i) {
-            Scalar value = 0;
-
-            if (bbox.max[i] < min[i])
-                value = min[i] - bbox.max[i];
-            else if (bbox.min[i] > max[i])
-                value = bbox.min[i] - max[i];
-
-            result += value*value;
-        }
-
-        return result;
+    Scalar squaredDistance(const TBoundingBox &bbox) const {
+        auto d1 = select(bbox.max < min, min - bbox.max, PointType::Zero());
+        auto d2 = select(bbox.min > max, bbox.min - max, PointType::Zero());
+        auto d = d1 + d2;
+        return hsum(d * d);
     }
 
     /**
-     * \brief Calculate the smallest distance between
+     * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Scalar distanceTo(const PointType &p) const {
-        return std::sqrt(squaredDistanceTo(p));
+    Scalar distance(const PointType &p) const {
+        return std::sqrt(squaredDistance(p));
     }
 
     /**
-     * \brief Calculate the smallest distance between
+     * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar distanceTo(const TBoundingBox &bbox) const {
-        return std::sqrt(squaredDistanceTo(bbox));
+    Scalar distance(const TBoundingBox &bbox) const {
+        return std::sqrt(squaredDistance(bbox));
     }
 
     /**
@@ -292,7 +266,7 @@ template <typename _PointType> struct TBoundingBox {
         max = -std::numeric_limits<Scalar>::infinity();
     }
 
-    /// Clip to another bounding box
+    /// Clip this bounding box to another bounding box
     void clip(const TBoundingBox &bbox) {
         using simd::min;
         using simd::max;

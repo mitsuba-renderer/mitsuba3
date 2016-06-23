@@ -1305,7 +1305,7 @@ static const char *__doc_mitsuba_TBoundingBox_TBoundingBox_3 = R"doc(Create a bo
 
 static const char *__doc_mitsuba_TBoundingBox_center = R"doc(Return the center point)doc";
 
-static const char *__doc_mitsuba_TBoundingBox_clip = R"doc(Clip to another bounding box)doc";
+static const char *__doc_mitsuba_TBoundingBox_clip = R"doc(Clip this bounding box to another bounding box)doc";
 
 static const char *__doc_mitsuba_TBoundingBox_collapsed = R"doc(Check whether this bounding box has collapsed to a single point)doc";
 
@@ -1341,12 +1341,12 @@ Remark:
 
 static const char *__doc_mitsuba_TBoundingBox_corner = R"doc(Return the position of a bounding box corner)doc";
 
-static const char *__doc_mitsuba_TBoundingBox_distanceTo =
-R"doc(Calculate the smallest distance between the axis-aligned bounding box
+static const char *__doc_mitsuba_TBoundingBox_distance =
+R"doc(Calculate the shortest distance between the axis-aligned bounding box
 and the point ``p``.)doc";
 
-static const char *__doc_mitsuba_TBoundingBox_distanceTo_2 =
-R"doc(Calculate the smallest distance between the axis-aligned bounding box
+static const char *__doc_mitsuba_TBoundingBox_distance_2 =
+R"doc(Calculate the shortest distance between the axis-aligned bounding box
 and ``bbox``.)doc";
 
 static const char *__doc_mitsuba_TBoundingBox_expand = R"doc(Expand the bounding box to contain another point)doc";
@@ -1393,15 +1393,17 @@ R"doc(Mark the bounding box as invalid.
 This operation sets the components of the minimum and maximum position
 to $\infty$ and $-\infty$, respectively.)doc";
 
-static const char *__doc_mitsuba_TBoundingBox_squaredDistanceTo =
+static const char *__doc_mitsuba_TBoundingBox_squaredDistance =
 R"doc(Calculate the smallest squared distance between the axis-aligned
 bounding box and the point ``p``.)doc";
 
-static const char *__doc_mitsuba_TBoundingBox_squaredDistanceTo_2 =
-R"doc(Calculate the smallest square distance between the axis-aligned
+static const char *__doc_mitsuba_TBoundingBox_squaredDistance_2 =
+R"doc(Calculate the smallest squared distance between the axis-aligned
 bounding box and ``bbox``.)doc";
 
 static const char *__doc_mitsuba_TBoundingBox_surfaceArea = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
+
+static const char *__doc_mitsuba_TBoundingBox_surfaceArea_2 = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
 
 static const char *__doc_mitsuba_TBoundingBox_valid =
 R"doc(Check whether this is a valid bounding box
@@ -2146,19 +2148,7 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
-static const char *__doc_pcg32_8_inc = R"doc()doc";
-
 static const char *__doc_pcg32_8_nextDouble =
-R"doc(Generate eight double precision floating point value on the interval
-[0, 1)
-
-Remark:
-    Since the underlying random number generator produces 32 bit
-    output, only the first 32 mantissa bits will be filled (however,
-    the resolution is still finer than in nextFloat(), which only uses
-    23 mantissa bits))doc";
-
-static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2172,27 +2162,19 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
-static const char *__doc_pcg32_8_nextFloat_2 =
-R"doc(Generate eight single precision floating point value on the interval
-[0, 1))doc";
-
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
-
-static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
+
+static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
-
-static const char *__doc_pcg32_8_state = R"doc()doc";
-
-static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)
