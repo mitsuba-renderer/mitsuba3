@@ -9,12 +9,10 @@ NAMESPACE_BEGIN(mitsuba)
 /**
  * \brief Stores a three-dimensional orthonormal coordinate frame
  *
- * This class is mostly used to quickly convert between different
- * cartesian coordinate systems and to efficiently compute certain
- * quantities (e.g. \ref cosTheta(), \ref tanTheta, ..).
- *
- * \ingroup libcore
- * \ingroup libpython
+ * This class is used to convert between different cartesian coordinate systems
+ * and to efficiently evaluate trigonometric functions in a spherical
+ * coordinate system whose pole is aligned with the \c n axis (e.g. \ref
+ * cosTheta(), \ref sinPhi(), etc.).
  *
  * TODO: serialization support (serialization_traits template specialization)
  */
