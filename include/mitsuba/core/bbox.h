@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/vector.h>
+#include <mitsuba/core/ray.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -40,11 +41,11 @@ template <typename _PointType> struct TBoundingBox {
         reset();
     }
 
-	/// Unserialize a bounding box from a binary data stream
-	//TBoundingBox(Stream *stream) { // XXX
-		//min = PointType(stream);
-		//max = PointType(stream);
-	//}
+    /// Unserialize a bounding box from a binary data stream
+    //TBoundingBox(Stream *stream) { // XXX
+        //min = PointType(stream);
+        //max = PointType(stream);
+    //}
 
     /// Create a collapsed bounding box from a single point
     TBoundingBox(const PointType &p)
@@ -220,8 +221,8 @@ template <typename _PointType> struct TBoundingBox {
      * the axis-aligned bounding box and the point \c p.
      */
     Scalar squaredDistance(const PointType &p) const {
-        auto d1 = select(p < min, min - p, PointType::Zero());
-        auto d2 = select(p > max, p - max, PointType::Zero());
+        auto d1 = select(VectorType(p < min), min - p, VectorType::Zero());
+        auto d2 = select(VectorType(p > max), p - max, VectorType::Zero());
         auto d = d1 + d2;
         return hsum(d * d);
     }
@@ -232,8 +233,8 @@ template <typename _PointType> struct TBoundingBox {
      * the axis-aligned bounding box and \c bbox.
      */
     Scalar squaredDistance(const TBoundingBox &bbox) const {
-        auto d1 = select(bbox.max < min, min - bbox.max, PointType::Zero());
-        auto d2 = select(bbox.min > max, bbox.min - max, PointType::Zero());
+        auto d1 = select(VectorType(bbox.max < min), min - bbox.max, VectorType::Zero());
+        auto d2 = select(VectorType(bbox.min > max), bbox.min - max, VectorType::Zero());
         auto d = d1 + d2;
         return hsum(d * d);
     }
@@ -304,67 +305,28 @@ template <typename _PointType> struct TBoundingBox {
         );
     }
 
-#if 0
     /// Check if a ray intersects a bounding box
-    bool rayIntersect(const Ray3f &ray) const {
-        float nearT = -std::numeric_limits<float>::infinity();
-        float farT = std::numeric_limits<float>::infinity();
+    bool rayIntersect(const Ray3f &ray, Scalar &nearT, Scalar &farT) const {
+        /* Early out test */
+        if (any(cwiseEqual(ray.d, VectorType::Zero()) &
+                Vector3f(ray.o < min | ray.o > max)))
+            return false;
 
-        for (int i=0; i<3; i++) {
-            float origin = ray.o[i];
-            float minVal = min[i], maxVal = max[i];
+        /* Compute intersection intervals for each axis */
+        auto t1 = (min - ray.o) * ray.dRcp;
+        auto t2 = (max - ray.o) * ray.dRcp;
 
-            if (ray.d[i] == 0) {
-                if (origin < minVal || origin > maxVal)
-                    return false;
-            } else {
-                float t1 = (minVal - origin) * ray.dRcp[i];
-                float t2 = (maxVal - origin) * ray.dRcp[i];
+        /* Ensure proper ordering */
+        auto mask = t1 < t2;
+        auto t1p = select(mask, t1, t2);
+        auto t2p = select(mask, t2, t1);
 
-                if (t1 > t2)
-                    std::swap(t1, t2);
-
-                nearT = std::max(t1, nearT);
-                farT = std::min(t2, farT);
-
-                if (!(nearT <= farT))
-                    return false;
-            }
-        }
+        /* Intersect intervals */
+        nearT = hmax(t1p);
+        farT  = hmin(t2p);
 
         return ray.mint <= farT && nearT <= ray.maxt;
     }
-
-    /// Return the overlapping region of the bounding box and an unbounded ray
-    bool rayIntersect(const Ray3f &ray, float &nearT, float &farT) const {
-        nearT = -std::numeric_limits<float>::infinity();
-        farT = std::numeric_limits<float>::infinity();
-
-        for (int i=0; i<3; i++) {
-            float origin = ray.o[i];
-            float minVal = min[i], maxVal = max[i];
-
-            if (ray.d[i] == 0) {
-                if (origin < minVal || origin > maxVal)
-                    return false;
-            } else {
-                float t1 = (minVal - origin) * ray.dRcp[i];
-                float t2 = (maxVal - origin) * ray.dRcp[i];
-
-                if (t1 > t2)
-                    std::swap(t1, t2);
-
-                nearT = std::max(t1, nearT);
-                farT = std::min(t2, farT);
-
-                if (!(nearT <= farT))
-                    return false;
-            }
-        }
-
-        return true;
-    }
-#endif
 
     PointType min; ///< Component-wise minimum
     PointType max; ///< Component-wise maximum

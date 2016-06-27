@@ -635,9 +635,10 @@ static const char *__doc_mitsuba_Formatter_getClass = R"doc()doc";
 static const char *__doc_mitsuba_Frame =
 R"doc(Stores a three-dimensional orthonormal coordinate frame
 
-This class is mostly used to quickly convert between different
-cartesian coordinate systems and to efficiently compute certain
-quantities (e.g. cosTheta(), tanTheta, ..).
+This class is used to convert between different cartesian coordinate
+systems and to efficiently evaluate trigonometric functions in a
+spherical coordinate system whose pole is aligned with the ``n`` axis
+(e.g. cosTheta(), sinPhi(), etc.).
 
 TODO: serialization support (serialization_traits template
 specialization))doc";
@@ -1387,6 +1388,8 @@ Remark:
 Returns:
     ``True`` If overlap was detected.)doc";
 
+static const char *__doc_mitsuba_TBoundingBox_rayIntersect = R"doc(Check if a ray intersects a bounding box)doc";
+
 static const char *__doc_mitsuba_TBoundingBox_reset =
 R"doc(Mark the bounding box as invalid.
 
@@ -1394,11 +1397,11 @@ This operation sets the components of the minimum and maximum position
 to $\infty$ and $-\infty$, respectively.)doc";
 
 static const char *__doc_mitsuba_TBoundingBox_squaredDistance =
-R"doc(Calculate the smallest squared distance between the axis-aligned
+R"doc(Calculate the shortest squared distance between the axis-aligned
 bounding box and the point ``p``.)doc";
 
 static const char *__doc_mitsuba_TBoundingBox_squaredDistance_2 =
-R"doc(Calculate the smallest squared distance between the axis-aligned
+R"doc(Calculate the shortest squared distance between the axis-aligned
 bounding box and ``bbox``.)doc";
 
 static const char *__doc_mitsuba_TBoundingBox_surfaceArea = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
@@ -1433,6 +1436,46 @@ static const char *__doc_mitsuba_TPoint_TPoint_2 = R"doc()doc";
 static const char *__doc_mitsuba_TPoint_TPoint_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_TPoint_operator_Matrix = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
+
+static const char *__doc_mitsuba_TRay =
+R"doc(Simple n-dimensional ray segment data structure
+
+Along with the ray origin and direction, this data structure
+additionally stores a ray segment [mint, maxt] (whose entries may
+include positive/negative infinity), as well as the componentwise
+reciprocals of the ray direction. That is just done for convenience,
+as these values are frequently required.
+
+Remark:
+    Important: be careful when changing the ray direction. You must
+    call update() to compute the componentwise reciprocals as well, or
+    Mitsuba's ray-triangle intersection code will go haywire.)doc";
+
+static const char *__doc_mitsuba_TRay_TRay = R"doc(Construct a new ray)doc";
+
+static const char *__doc_mitsuba_TRay_TRay_2 = R"doc(Construct a new ray)doc";
+
+static const char *__doc_mitsuba_TRay_TRay_3 = R"doc(Construct a new ray)doc";
+
+static const char *__doc_mitsuba_TRay_TRay_4 = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_TRay_TRay_5 = R"doc(Copy a ray, but change the covered segment of the copy)doc";
+
+static const char *__doc_mitsuba_TRay_d = R"doc(< Ray direction)doc";
+
+static const char *__doc_mitsuba_TRay_dRcp = R"doc(< Componentwise reciprocals of the ray direction)doc";
+
+static const char *__doc_mitsuba_TRay_maxt = R"doc(< Maximum position on the ray segment)doc";
+
+static const char *__doc_mitsuba_TRay_mint = R"doc(< Minimum position on the ray segment)doc";
+
+static const char *__doc_mitsuba_TRay_o = R"doc(< Ray origin)doc";
+
+static const char *__doc_mitsuba_TRay_operator_call = R"doc(Return the position of a point along the ray)doc";
+
+static const char *__doc_mitsuba_TRay_reverse = R"doc(Return a ray that points into the opposite direction)doc";
+
+static const char *__doc_mitsuba_TRay_update = R"doc(Update the reciprocal ray directions after changing 'd')doc";
 
 static const char *__doc_mitsuba_TVector = R"doc()doc";
 
@@ -2002,7 +2045,9 @@ static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical 
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Return a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Return a string representation of the bounding box)doc";
+
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

@@ -63,6 +63,30 @@ public:
     TPoint(const Base &f) : Base(f) { }
     TPoint(const VectorType &f) : Base((const Base &) f) { }
 
+    using Base::operator+;
+    using Base::operator+=;
+    using Base::operator-=;
+
+    PointType operator+(const VectorType &v) const {
+        return Base::operator+((const PointType &) v);
+    }
+
+    PointType operator-(const VectorType &v) const {
+        return Base::operator-((const PointType &) v);
+    }
+
+    VectorType operator-(const PointType &p) const {
+        return VectorType(Base::operator-(p));
+    }
+
+    PointType& operator+=(const VectorType &v) const {
+        return Base::operator+=((const PointType &) v);
+    }
+
+    PointType& operator-=(const VectorType &v) const {
+        return Base::operator-=((const PointType &) v);
+    }
+
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
 };

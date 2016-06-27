@@ -24,6 +24,7 @@ MTS_PY_DECLARE(FileStream);
 MTS_PY_DECLARE(MemoryStream);
 MTS_PY_DECLARE(ZStream);
 MTS_PY_DECLARE(BoundingBox);
+MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(Frame);
 
 PYBIND11_PLUGIN(mitsuba) {
@@ -55,6 +56,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(MemoryStream);
     MTS_PY_IMPORT(ZStream);
     MTS_PY_IMPORT(BoundingBox);
+    MTS_PY_IMPORT(Ray);
     MTS_PY_IMPORT(Frame);
 
     atexit([](){

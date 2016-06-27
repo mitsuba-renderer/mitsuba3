@@ -41,6 +41,7 @@ add_library(mitsuba-python SHARED
   vector.cpp
   bbox.cpp
   frame.cpp
+  ray.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)
