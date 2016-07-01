@@ -223,6 +223,11 @@ template <typename T> T ulpdiff(T ref, T val) {
     return std::abs(diff) / eps;
 }
 
+template <typename T> T modulo(T a, T b) {
+    T result = a - (a / b) * b;
+    return (result < 0) ? result + b : result;
+}
+
 /**
  * \brief Find an interval in an ordered set
  *
