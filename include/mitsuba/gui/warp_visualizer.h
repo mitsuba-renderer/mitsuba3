@@ -6,7 +6,6 @@
 
 #include <Eigen/Core>
 #include <nanogui/screen.h>
-#include <nanogui/window.h>
 #include <nanogui/glutil.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -54,10 +53,6 @@ public:
     bool isDrawingGrid() { return m_drawGrid; }
     void setDrawGrid(bool draw) { m_drawGrid = draw; }
 
-    nanogui::Window *window;
-
-protected:
-    // TODO: do event handling on the py side
     virtual bool
     mouseMotionEvent(const nanogui::Vector2i &p, const nanogui::Vector2i & rel,
                      int button, int modifiers) override;
@@ -65,9 +60,6 @@ protected:
     virtual bool
     mouseButtonEvent(const nanogui::Vector2i &p, int button,
                      bool down, int modifiers) override;
-
-    virtual bool
-    keyboardEvent(int key, int scancode, int action, int modifiers) override;
 
     virtual void drawContents() override;
 

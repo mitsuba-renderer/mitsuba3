@@ -141,29 +141,11 @@ WarpVisualizationWidget::mouseMotionEvent(const Vector2i &p, const Vector2i & re
 bool
 WarpVisualizationWidget::mouseButtonEvent(const Vector2i &p, int button,
                                           bool down, int modifiers) {
-    if (down && isDrawingHistogram()) {
-        setDrawHistogram(false);
-        window->setVisible(true);
-        return true;
-    }
     if (!Screen::mouseButtonEvent(p, button, down, modifiers)) {
         if (button == GLFW_MOUSE_BUTTON_1) {
             m_arcball.button(p, down);
             return true;
         }
-    }
-    return false;
-}
-
-bool
-WarpVisualizationWidget::keyboardEvent(int key, int scancode,
-                                       int action, int modifiers) {
-    if (Screen::keyboardEvent(key, scancode, action, modifiers)) {
-        return true;
-    }
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        setVisible(false);
-        return true;
     }
     return false;
 }
@@ -301,8 +283,8 @@ bool WarpVisualizationWidget::runTest(double minExpFrequency, double significanc
 
 void WarpVisualizationWidget::drawHistogram(const Vector2i &position,
                                             const Vector2i &dimensions, GLuint tex) {
-    Vector2f s((position.x() + 0.25f) / dimensions.x(),
-               (position.y() + 0.25f) / dimensions.y() );
+    Vector2f s(- (position.x() + 0.25f) / dimensions.x(),
+               - (position.y() + 0.25f) / dimensions.y());
     Vector2f e = size().array().cast<float>() / dimensions.array().cast<float>() + s.array();
     Matrix4f mvp = ortho(s.x(), e.x(), e.y(), s.y(), -1, 1);
 

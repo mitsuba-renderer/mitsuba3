@@ -9,7 +9,7 @@ from nanogui import Color, Screen, Window, Widget, GroupLayout, BoxLayout, \
                     ComboBox, Slider, Alignment, Orientation
 from nanogui import glfw, entypo
 
-# TODO: should this move to libgui?
+# TODO: should this move to libgui
 class WarpVisualizer(WarpVisualizationWidget):
     """TODO: docstring for this class"""
 
@@ -36,6 +36,23 @@ class WarpVisualizer(WarpVisualizationWidget):
         """Converts the parameter value to the appropriate domain
             depending on the warp type."""
         return value
+
+    def mouseButtonEvent(self, p, button, down, modifiers):
+        if down and self.isDrawingHistogram():
+            self.setDrawHistogram(False);
+            self.window.setVisible(True);
+            return True;
+        return super(WarpVisualizer, self).mouseButtonEvent(p, button, down, modifiers)
+
+    def keyboardEvent(self, key, scancode, action, modifiers):
+        if super(WarpVisualizer, self).keyboardEvent(key, scancode,
+                                                     action, modifiers):
+            return True
+        if key == glfw.KEY_ESCAPE and action == glfw.PRESS:
+            self.setVisible(False)
+            return True
+        return False
+
 
     def initializeGUI(self):
         # Main window
