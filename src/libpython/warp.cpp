@@ -1,6 +1,17 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/gui/warp_visualizer.h>
+#include <nanogui/python.h>
+
 #include "python.h"
+
+/// Trampoline class
+using mitsuba::warp::WarpVisualizationWidget;
+class PyWarpVisualizationWidget : public WarpVisualizationWidget {
+public:
+    using WarpVisualizationWidget::WarpVisualizationWidget;
+    NANOGUI_WIDGET_OVERLOADS(WarpVisualizationWidget);
+    NANOGUI_SCREEN_OVERLOADS(WarpVisualizationWidget);
+};
 
 MTS_PY_EXPORT(warp) {
     auto m2 = m.def_submodule("warp", "Common warping techniques that map from the unit"
@@ -65,28 +76,24 @@ MTS_PY_EXPORT(warp) {
         .value("Stratified", SamplingType::Stratified)
         .export_values();
 
-    m2.def("runStatisticalTest", &warp::detail::runStatisticalTest,
-           "Runs a Chi^2 statistical test verifying the given warping type"
-           "against its PDF. Returns (passed, reason)");
+    m2.def("runStatisticalTest", &warp::detail::runStatisticalTest, DM(warp, detail, runStatisticalTest));
+
 
     // Warp visualization widget, inherits from nanogui::Screen (which is
     // already exposed to Python in another module).
-    const auto PyScreen = static_cast<py::object>(py::module::import("nanogui").attr("Screen"));
-    using mitsuba::warp::WarpVisualizationWidget;
-    // TODO: use docstrings from the class (DM, etc)
-    py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget", PyScreen)
-        .def(py::init<int, int, std::string>(), "Default constructor.")
-        .def("runTest", &WarpVisualizationWidget::runTest,
-            "Run the Chi^2 test for the selected parameters and displays the histograms.")
-        .def("refresh", &WarpVisualizationWidget::refresh,
-             "Should be called upon UI interaction.")
-        .def("setSamplingType", &WarpVisualizationWidget::setSamplingType, "")
-        .def("setWarpType", &WarpVisualizationWidget::setWarpType, "")
-        .def("setParameterValue", &WarpVisualizationWidget::setParameterValue, "")
-        .def("setPointCount", &WarpVisualizationWidget::setPointCount, "")
-        .def("isDrawingHistogram", &WarpVisualizationWidget::isDrawingHistogram, "")
-        .def("setDrawHistogram", &WarpVisualizationWidget::setDrawHistogram, "")
-        .def("isDrawingGrid", &WarpVisualizationWidget::isDrawingGrid, "")
-        .def("setDrawGrid", &WarpVisualizationWidget::setDrawGrid, "")
+    py::module::import("nanogui");
+    // py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget", PyScreen, DM(warp, WarpVisualizationWidget))
+    py::class_<WarpVisualizationWidget, ref<WarpVisualizationWidget>, PyWarpVisualizationWidget>(m2, "WarpVisualizationWidget", py::base<nanogui::Screen>())
+        .def(py::init<int, int, std::string>(), DM(warp, WarpVisualizationWidget, WarpVisualizationWidget))
+        .def("runTest", &WarpVisualizationWidget::runTest, DM(warp, WarpVisualizationWidget, runTest))
+        .def("refresh", &WarpVisualizationWidget::refresh, DM(warp, WarpVisualizationWidget, refresh))
+        .def("setSamplingType", &WarpVisualizationWidget::setSamplingType, DM(warp, WarpVisualizationWidget, setSamplingType))
+        .def("setWarpType", &WarpVisualizationWidget::setWarpType, DM(warp, WarpVisualizationWidget, setWarpType))
+        .def("setParameterValue", &WarpVisualizationWidget::setParameterValue, DM(warp, WarpVisualizationWidget, setParameterValue))
+        .def("setPointCount", &WarpVisualizationWidget::setPointCount, DM(warp, WarpVisualizationWidget, setPointCount))
+        .def("isDrawingHistogram", &WarpVisualizationWidget::isDrawingHistogram, DM(warp, WarpVisualizationWidget, isDrawingHistogram))
+        .def("setDrawHistogram", &WarpVisualizationWidget::setDrawHistogram, DM(warp, WarpVisualizationWidget, setDrawHistogram))
+        .def("isDrawingGrid", &WarpVisualizationWidget::isDrawingGrid, DM(warp, WarpVisualizationWidget, isDrawingGrid))
+        .def("setDrawGrid", &WarpVisualizationWidget::setDrawGrid, DM(warp, WarpVisualizationWidget, setDrawGrid))
         .def_readwrite("window", &WarpVisualizationWidget::window);
 }

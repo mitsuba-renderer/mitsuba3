@@ -1,20 +1,15 @@
 import gc
 import math
-from enum import Enum
 import mitsuba
 from mitsuba.warp import WarpType, SamplingType, WarpVisualizationWidget
 
 import nanogui
-# TODO: remove unused imports
-from nanogui import Color, Screen, Window, GroupLayout, BoxLayout, \
-                    ToolButton, Vector2i, Label, Button, Widget, \
-                    PopupButton, CheckBox, MessageDialog, VScrollPanel, \
-                    ImagePanel, ImageView, ComboBox, ProgressBar, Slider, \
-                    TextBox, ColorWheel, Graph, VectorXf, GridLayout, \
-                    Alignment, Orientation
+from nanogui import Color, Screen, Window, Widget, GroupLayout, BoxLayout, \
+                    Vector2i, Label, Button, TextBox, CheckBox, MessageDialog, \
+                    ComboBox, Slider, Alignment, Orientation
 from nanogui import glfw, entypo
 
-
+# TODO: should this move to libgui?
 class WarpVisualizer(WarpVisualizationWidget):
     """TODO: docstring for this class"""
 
