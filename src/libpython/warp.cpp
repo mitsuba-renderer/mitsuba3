@@ -50,6 +50,7 @@ MTS_PY_EXPORT(warp) {
       .mdef(warp, squareToStdNormal)
       .mdef(warp, squareToStdNormalPdf)
 
+      .mdef(warp, tentIndicator)
       .mdef(warp, squareToTent)
       .mdef(warp, squareToTentPdf)
       .mdef(warp, intervalToNonuniformTent);
@@ -82,7 +83,6 @@ MTS_PY_EXPORT(warp) {
     // Warp visualization widget, inherits from nanogui::Screen (which is
     // already exposed to Python in another module).
     py::module::import("nanogui");
-    // py::class_<WarpVisualizationWidget>(m2, "WarpVisualizationWidget", PyScreen, DM(warp, WarpVisualizationWidget))
     py::class_<WarpVisualizationWidget, ref<WarpVisualizationWidget>, PyWarpVisualizationWidget>(m2, "WarpVisualizationWidget", py::base<nanogui::Screen>(), DM(warp, WarpVisualizationWidget))
         .def(py::init<int, int, std::string>(), DM(warp, WarpVisualizationWidget, WarpVisualizationWidget))
         .def("runTest", &WarpVisualizationWidget::runTest, DM(warp, WarpVisualizationWidget, runTest))

@@ -2820,11 +2820,14 @@ the associated weight is stored in \p weights.
 the effective point count is the length of positions after the
 function has returned.)doc";
 
-static const char *__doc_mitsuba_warp_detail_getPdfScalingFactor = R"doc(TODO)doc";
+static const char *__doc_mitsuba_warp_detail_getPdfScalingFactor =
+R"doc(Returns the PDF scaling factor to be applied to the PDF values when
+accumulating values into a 2D histogram. This is only dependent on the
+number of dimensions of the target domain of the warping function.)doc";
 
 static const char *__doc_mitsuba_warp_detail_isTwoDimensionalWarp = R"doc(Returns true if the warping operates in the 2D plane)doc";
 
-static const char *__doc_mitsuba_warp_detail_pdfValueForSample = R"doc(TODO)doc";
+static const char *__doc_mitsuba_warp_detail_pdfValueForSample = R"doc(Returns the PDF value assotiated to a sampled point.)doc";
 
 static const char *__doc_mitsuba_warp_detail_runStatisticalTest =
 R"doc(For a given warping type, parameter value and sampling strategy, runs
@@ -2911,6 +2914,8 @@ R"doc(Convert an uniformly distributed square sample into barycentric
 coordinates)doc";
 
 static const char *__doc_mitsuba_warp_squareToUniformTrianglePdf = R"doc(Density of squareToUniformTriangle per unit area.)doc";
+
+static const char *__doc_mitsuba_warp_tentIndicator = R"doc(Returns 1.0 if the vector is in the domain of the tent, 0.0 otherwise.)doc";
 
 static const char *__doc_mitsuba_warp_triangleIndicator =
 R"doc(Returns 1.0 if the vector is in the domain of the triangle, 0.0

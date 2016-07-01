@@ -236,6 +236,7 @@ Point2f domainToPoint(const Eigen::Vector3f &v, WarpType warpType) {
         p[0] = 0.5f * v(0) + 0.5f;
         p[1] = 0.5f * v(1) + 0.5f;
     } else if (warpType == StandardNormal) {
+        // TODO: inverse gaussian mapping
         p = 5 * domainToPoint(v, UniformDisk);
     } else {
         p[0] = std::atan2(v(1), v(0)) * math::InvTwoPi;
@@ -278,12 +279,12 @@ Float pdfValueForSample(WarpType warpType, Float parameterValue,
             case UniformDiskConcentric:
                 return warp::unitDiskIndicator(p) * warp::squareToUniformDiskConcentricPdf();
             case StandardNormal:
-                // TODO: do not hardcode domain
+                // TODO: use inverse gaussian mapping instead
                 return warp::squareToStdNormalPdf((1 / 5.0) * p);
             case UniformTriangle:
                 return warp::triangleIndicator(p) * warp::squareToUniformTrianglePdf(p);
             case UniformTent:
-                return warp::squareToTentPdf(p);
+                return warp::tentIndicator(p) * warp::squareToTentPdf(p);
 
             default:
                 Log(EError, "Unsupported 2D warp type");
@@ -309,7 +310,7 @@ Float pdfValueForSample(WarpType warpType, Float parameterValue,
             case CosineHemisphere:
                 return warp::unitHemisphereIndicator(v) * warp::squareToCosineHemispherePdf(v);
             case UniformCone:
-                return warp::unitConeIndicator(v) * warp::squareToUniformConePdf(parameterValue);
+                return warp::unitConeIndicator(parameterValue, v) * warp::squareToUniformConePdf(parameterValue);
             default:
                 Log(EError, "Unsupported 3D warp type");
         }

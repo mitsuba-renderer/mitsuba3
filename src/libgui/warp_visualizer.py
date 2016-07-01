@@ -196,7 +196,8 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.setParameterValue(parameterValue)
         self.setPointCount(pointCount)
         self.setDrawGrid(self.warpedGridCheckBox.checked())
-        return super(WarpVisualizer, self).refresh()
+
+        super(WarpVisualizer, self).refresh()
 
     def draw(self, ctx):
         super(WarpVisualizer, self).draw(ctx)
