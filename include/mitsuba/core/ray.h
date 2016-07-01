@@ -37,7 +37,9 @@ template <typename _PointType, typename _VectorType> struct TRay {
 
     /// Construct a new ray
     TRay(const PointType &o, const VectorType &d, Scalar mint, Scalar maxt)
-        : o(o), d(d), mint(mint), maxt(maxt) { }
+        : o(o), d(d), mint(mint), maxt(maxt) {
+        update();
+    }
 
     /// Copy constructor
     TRay(const TRay &ray)
@@ -63,7 +65,9 @@ template <typename _PointType, typename _VectorType> struct TRay {
 };
 
 /// Return a string representation of the bounding box
-template <typename PointType, typename VectorType> std::ostream& operator<<(std::ostream &os, const TRay<PointType, VectorType>& r) {
+template <typename PointType, typename VectorType>
+std::ostream &operator<<(std::ostream &os,
+                         const TRay<PointType, VectorType> &r) {
     os << "Ray[\n"
        << "  o = " << r.o << ","
        << "  d = " << r.d << ","
