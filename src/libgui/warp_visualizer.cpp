@@ -2,15 +2,100 @@
 #include <mitsuba/core/transform.h>
 
 namespace {
-// Forward declaration of HSLS code strings.
-const std::string kPointVertexShader;
-const std::string kPointFragmentShader;
-const std::string kGridVertexShader;
-const std::string kGridFragmentShader;
-const std::string kArrowVertexShader;
-const std::string kArrowFragmentShader;
-const std::string kHistogramVertexShader;
-const std::string kHistogramFragmentShader;
+/// HSLS code (shaders)
+const std::string kPointVertexShader =
+    "#version 330\n"
+    "uniform mat4 mvp;\n"
+    "in vec3 position;\n"
+    "in vec3 color;\n"
+    "out vec3 frag_color;\n"
+    "void main() {\n"
+    "    gl_Position = mvp * vec4(position, 1.0);\n"
+    "    if (isnan(position.r)) /* nan (missing value) */\n"
+    "        frag_color = vec3(0.0);\n"
+    "    else\n"
+    "        frag_color = color;\n"
+    "}";
+const std::string kPointFragmentShader =
+    "#version 330\n"
+    "in vec3 frag_color;\n"
+    "out vec4 out_color;\n"
+    "void main() {\n"
+    "    if (frag_color == vec3(0.0))\n"
+    "        discard;\n"
+    "    out_color = vec4(frag_color, 1.0);\n"
+    "}";
+
+const std::string kGridVertexShader =
+    "#version 330\n"
+    "uniform mat4 mvp;\n"
+    "in vec3 position;\n"
+    "void main() {\n"
+    "    gl_Position = mvp * vec4(position, 1.0);\n"
+    "}";
+const std::string kGridFragmentShader =
+    "#version 330\n"
+    "out vec4 out_color;\n"
+    "void main() {\n"
+    "    out_color = vec4(vec3(1.0), 0.4);\n"
+    "}";
+
+const std::string kArrowVertexShader =
+    "#version 330\n"
+    "uniform mat4 mvp;\n"
+    "in vec3 position;\n"
+    "void main() {\n"
+    "    gl_Position = mvp * vec4(position, 1.0);\n"
+    "}";
+const std::string kArrowFragmentShader =
+    "#version 330\n"
+    "out vec4 out_color;\n"
+    "void main() {\n"
+    "    out_color = vec4(vec3(1.0), 0.4);\n"
+    "}";
+
+const std::string kHistogramVertexShader =
+    "#version 330\n"
+    "uniform mat4 mvp;\n"
+    "in vec2 position;\n"
+    "out vec2 uv;\n"
+    "void main() {\n"
+    "    gl_Position = mvp * vec4(position, 0.0, 1.0);\n"
+    "    uv = position;\n"
+    "}";
+const std::string kHistogramFragmentShader =
+    "#version 330\n"
+    "out vec4 out_color;\n"
+    "uniform sampler2D tex;\n"
+    "in vec2 uv;\n"
+    "/* http://paulbourke.net/texture_colour/colourspace/ */\n"
+    "vec3 colormap(float v, float vmin, float vmax) {\n"
+    "    vec3 c = vec3(1.0);\n"
+    "    if (v < vmin)\n"
+    "        v = vmin;\n"
+    "    if (v > vmax)\n"
+    "        v = vmax;\n"
+    "    float dv = vmax - vmin;\n"
+    "    \n"
+    "    if (v < (vmin + 0.25 * dv)) {\n"
+    "        c.r = 0.0;\n"
+    "        c.g = 4.0 * (v - vmin) / dv;\n"
+    "    } else if (v < (vmin + 0.5 * dv)) {\n"
+    "        c.r = 0.0;\n"
+    "        c.b = 1.0 + 4.0 * (vmin + 0.25 * dv - v) / dv;\n"
+    "    } else if (v < (vmin + 0.75 * dv)) {\n"
+    "        c.r = 4.0 * (v - vmin - 0.5 * dv) / dv;\n"
+    "        c.b = 0.0;\n"
+    "    } else {\n"
+    "        c.g = 1.0 + 4.0 * (vmin + 0.75 * dv - v) / dv;\n"
+    "        c.b = 0.0;\n"
+    "    }\n"
+    "    return c;\n"
+    "}\n"
+    "void main() {\n"
+    "    float value = texture(tex, uv).r;\n"
+    "    out_color = vec4(colormap(value, 0.0, 1.0), 1.0);\n"
+    "}";
 }  // end anonymous namespace
 
 NAMESPACE_BEGIN(mitsuba)
@@ -40,6 +125,7 @@ WarpVisualizationWidget::WarpVisualizationWidget(int width, int height,
     , m_drawHistogram(false), m_drawGrid(true)
     , m_pointCount(0), m_lineCount(0)
     , m_testResult(false), m_testResultText("No test started.") {
+
     initializeVisualizerGUI();
 }
 
@@ -325,7 +411,7 @@ void WarpVisualizationWidget::initializeVisualizerGUI() {
     m_arrowShader.reset(new GLShader());
     m_arrowShader->init("Arrow shader",
                         kArrowVertexShader,
-                        kArrowFragmentShader );
+                        kArrowFragmentShader);
 
     m_histogramShader.reset(new GLShader());
     m_histogramShader->init("Histogram shader",
@@ -354,105 +440,6 @@ void WarpVisualizationWidget::initializeVisualizerGUI() {
 
     framebufferSizeChanged();
 }
-
-namespace {
-/// HSLS code
-
-const std::string kPointVertexShader =
-    "#version 330\n"
-    "uniform mat4 mvp;\n"
-    "in vec3 position;\n"
-    "in vec3 color;\n"
-    "out vec3 frag_color;\n"
-    "void main() {\n"
-    "    gl_Position = mvp * vec4(position, 1.0);\n"
-    "    if (isnan(position.r)) /* nan (missing value) */\n"
-    "        frag_color = vec3(0.0);\n"
-    "    else\n"
-    "        frag_color = color;\n"
-    "}";
-const std::string kPointFragmentShader =
-    "#version 330\n"
-    "in vec3 frag_color;\n"
-    "out vec4 out_color;\n"
-    "void main() {\n"
-    "    if (frag_color == vec3(0.0))\n"
-    "        discard;\n"
-    "    out_color = vec4(frag_color, 1.0);\n"
-    "}";
-
-const std::string kGridVertexShader =
-    "#version 330\n"
-    "uniform mat4 mvp;\n"
-    "in vec3 position;\n"
-    "void main() {\n"
-    "    gl_Position = mvp * vec4(position, 1.0);\n"
-    "}";
-const std::string kGridFragmentShader =
-    "#version 330\n"
-    "out vec4 out_color;\n"
-    "void main() {\n"
-    "    out_color = vec4(vec3(1.0), 0.4);\n"
-    "}";
-
-const std::string kArrowVertexShader =
-    "#version 330\n"
-    "uniform mat4 mvp;\n"
-    "in vec3 position;\n"
-    "void main() {\n"
-    "    gl_Position = mvp * vec4(position, 1.0);\n"
-    "}";
-const std::string kArrowFragmentShader =
-    "#version 330\n"
-    "out vec4 out_color;\n"
-    "void main() {\n"
-    "    out_color = vec4(vec3(1.0), 0.4);\n"
-    "}";
-
-const std::string kHistogramVertexShader =
-    "#version 330\n"
-    "uniform mat4 mvp;\n"
-    "in vec2 position;\n"
-    "out vec2 uv;\n"
-    "void main() {\n"
-    "    gl_Position = mvp * vec4(position, 0.0, 1.0);\n"
-    "    uv = position;\n"
-    "}";
-const std::string kHistogramFragmentShader =
-    "#version 330\n"
-    "out vec4 out_color;\n"
-    "uniform sampler2D tex;\n"
-    "in vec2 uv;\n"
-    "/* http://paulbourke.net/texture_colour/colourspace/ */\n"
-    "vec3 colormap(float v, float vmin, float vmax) {\n"
-    "    vec3 c = vec3(1.0);\n"
-    "    if (v < vmin)\n"
-    "        v = vmin;\n"
-    "    if (v > vmax)\n"
-    "        v = vmax;\n"
-    "    float dv = vmax - vmin;\n"
-    "    \n"
-    "    if (v < (vmin + 0.25 * dv)) {\n"
-    "        c.r = 0.0;\n"
-    "        c.g = 4.0 * (v - vmin) / dv;\n"
-    "    } else if (v < (vmin + 0.5 * dv)) {\n"
-    "        c.r = 0.0;\n"
-    "        c.b = 1.0 + 4.0 * (vmin + 0.25 * dv - v) / dv;\n"
-    "    } else if (v < (vmin + 0.75 * dv)) {\n"
-    "        c.r = 4.0 * (v - vmin - 0.5 * dv) / dv;\n"
-    "        c.b = 0.0;\n"
-    "    } else {\n"
-    "        c.g = 1.0 + 4.0 * (vmin + 0.75 * dv - v) / dv;\n"
-    "        c.b = 0.0;\n"
-    "    }\n"
-    "    return c;\n"
-    "}\n"
-    "void main() {\n"
-    "    float value = texture(tex, uv).r;\n"
-    "    out_color = vec4(colormap(value, 0.0, 1.0), 1.0);\n"
-    "}";
-
-}  // end anonymous namespace
 
 NAMESPACE_END(mitsuba)
 NAMESPACE_END(warp)
