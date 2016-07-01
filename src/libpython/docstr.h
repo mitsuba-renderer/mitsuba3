@@ -2677,6 +2677,177 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
+static const char *__doc_mitsuba_warp_SamplingType = R"doc(Enum of available point sampling strategies)doc";
+
+static const char *__doc_mitsuba_warp_SamplingType_Grid = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SamplingType_Independent = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SamplingType_Stratified = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType = R"doc(Enum of available warping types)doc";
+
+static const char *__doc_mitsuba_warp_WarpType_CosineHemisphere = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_NoWarp = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_NonUniformTent = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_StandardNormal = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_UniformCone = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_UniformDisk = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_UniformDiskConcentric = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_UniformHemisphere = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_UniformSphere = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_UniformTent = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpType_UniformTriangle = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget =
+R"doc(A Nanogui widget to visualize warping functions for different sampling
+strategies. It also performs a statistical test checking that the
+warping function matches its PDF and draws the corresponding
+histograms (observed / expected).
+
+Note that it does not implement any UI elements, which are added via
+inheritance in Python (see \r warp_visualizer.py).
+
+This class is decoupled from the UI and implemented in C++ so that it
+can take care of the heavy lifting (warping, binning, draw calls,
+etc).)doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_WarpVisualizationWidget = R"doc(The parameters are passed to the \r nanogui::Screen constructor.)doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawContents = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawGrid = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawHistogram = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_framebufferSizeChanged = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_initializeVisualizerGUI = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_isDrawingGrid = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_isDrawingHistogram = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_arcball = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_arrowShader = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_drawGrid = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_drawHistogram = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_gridShader = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_histogramShader = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_lineCount = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_parameterValue = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_pointCount = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_pointShader = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_samplingType = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_testResult = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_testResultText = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_textures = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_warpType = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_mouseButtonEvent = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_mouseMotionEvent = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_refresh = R"doc(Should be called after any UI interaction)doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_runTest =
+R"doc(Run the Chi^2 test for the selected parameters, saves the results and
+uploads the histograms (observed / expected) to the GPU for rendering.)doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setDrawGrid = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setDrawHistogram = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setParameterValue = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setPointCount = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setSamplingType = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setWarpType = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_detail_computeHistogram =
+R"doc(Computes the discretized histogram of \p positions using simple
+binning. The domain of the histogram automatically matches the domain
+of the specified warping type.
+
+Returns:
+    Linearized values of the histogram, stored row after row (\p
+    gridWidth * \gridHeight entries).)doc";
+
+static const char *__doc_mitsuba_warp_detail_domainToPoint = R"doc(TODO)doc";
+
+static const char *__doc_mitsuba_warp_detail_generateExpectedHistogram =
+R"doc(Generates the histogram that would be expected for the given warping
+type. It is computed by integrating the warp's PDF over each bin of
+the histogram. The domain of the histogram automatically matches the
+domain of the specified warping type.
+
+Returns:
+    Linearized values of the expected histogram, stored row after row
+    (\p gridWidth * \gridHeight entries).)doc";
+
+static const char *__doc_mitsuba_warp_detail_generatePoints =
+R"doc(Generates warped points using the specified sampling strategy and
+warping types. The points are output as columns in \p positions and
+the associated weight is stored in \p weights.
+
+\warning The point count may change depending on the sample strategy,
+the effective point count is the length of positions after the
+function has returned.)doc";
+
+static const char *__doc_mitsuba_warp_detail_getPdfScalingFactor = R"doc(TODO)doc";
+
+static const char *__doc_mitsuba_warp_detail_isTwoDimensionalWarp = R"doc(Returns true if the warping operates in the 2D plane)doc";
+
+static const char *__doc_mitsuba_warp_detail_pdfValueForSample = R"doc(TODO)doc";
+
+static const char *__doc_mitsuba_warp_detail_runStatisticalTest =
+R"doc(For a given warping type, parameter value and sampling strategy, runs
+a Chi^2 statistical test to check that the warping function matches
+the announced PDF. Also outputs the observed and expected histograms
+computed for the test.
+
+Returns:
+    (Whether the test succeeded, an explanatory text).)doc";
+
+static const char *__doc_mitsuba_warp_detail_runStatisticalTestAndOutput =
+R"doc(For a given warping type, parameter value and sampling strategy, runs
+a Chi^2 statistical test to check that the warping function matches
+the announced PDF. Also outputs the observed and expected histograms
+computed for the test.
+
+Returns:
+    (Whether the test succeeded, an explanatory text).)doc";
+
+static const char *__doc_mitsuba_warp_detail_warpPoint =
+R"doc(Warps a 2D sample according to the given warp type. The parameter
+value is passed to the warping function if it uses one.)doc";
+
 static const char *__doc_mitsuba_warp_intervalToNonuniformTent =
 R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
 distribution with nodes ``{a, b, c}``)doc";
@@ -2783,7 +2954,19 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
+static const char *__doc_pcg32_8_inc = R"doc()doc";
+
 static const char *__doc_pcg32_8_nextDouble =
+R"doc(Generate eight double precision floating point value on the interval
+[0, 1)
+
+Remark:
+    Since the underlying random number generator produces 32 bit
+    output, only the first 32 mantissa bits will be filled (however,
+    the resolution is still finer than in nextFloat(), which only uses
+    23 mantissa bits))doc";
+
+static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2797,19 +2980,27 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
+static const char *__doc_pcg32_8_nextFloat_2 =
+R"doc(Generate eight single precision floating point value on the interval
+[0, 1))doc";
+
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
+
+static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
-
-static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
+
+static const char *__doc_pcg32_8_state = R"doc()doc";
+
+static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)

@@ -157,6 +157,7 @@ add_custom_target(mkdoc COMMAND
   ${MKDOC_CXX_FLAGS_LIST}
   `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
   `find ${PROJECT_SOURCE_DIR}/include/mitsuba/render -name '*.h' ! -name fwd.h -print`
+  `find ${PROJECT_SOURCE_DIR}/include/mitsuba/gui -name '*.h' ! -name fwd.h -print`
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
 
