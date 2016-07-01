@@ -9,9 +9,10 @@ from nanogui import Color, Screen, Window, Widget, GroupLayout, BoxLayout, \
                     ComboBox, Slider, Alignment, Orientation
 from nanogui import glfw, entypo
 
-# TODO: should this move to libgui
 class WarpVisualizer(WarpVisualizationWidget):
-    """TODO: docstring for this class"""
+    """Nanogui app allowing to visualize and test warping functions.
+    Note that this file is mostly responsible for implementing the GUI, whereas
+    heavy-lifting is performed by the C++ WarpVisualizationWidget."""
 
     # Default values for UI controls
     pointCountDefaultValue = 7.0 / 15.0
