@@ -169,15 +169,19 @@ private:
 
     /// Underlying stream where the names and contents are written
     ref<Stream> m_stream;
+
     /// Maintains the mapping: full field name -> (type, position in the stream)
     std::unordered_map<std::string, std::pair<std::string, uint64_t>> m_table;
+
     /** \brief Stack of accumulated prefixes,
      * i.e. <tt>m_prefixStack.back</tt> is the full prefix path currently applied.
      */
     std::vector<std::string> m_prefixStack;
 
     bool m_writeMode;
+
     bool m_throwOnMissing;
+
     /// Whether the annotated stream is closed (independent of the underlying stream).
     bool m_isClosed;
 };

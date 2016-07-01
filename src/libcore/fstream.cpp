@@ -29,15 +29,14 @@ FileStream::FileStream(const path &p, bool writeEnabled)
     const bool fileExists = fs::exists(p);
     if (!m_writeEnabled && !fileExists) {
         Log(EError, "\"%s\": tried to open a read-only FileStream pointing to"
-                    " a file that cannot be opened.",
-            m_path.string().c_str());
+                    " a file that cannot be opened.", m_path.string());
     }
 
     openStream(*m_file, m_path, m_writeEnabled, fileExists);
 
     if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to open the file.",
-            m_path.string().c_str());
+            m_path.string());
     }
 }
 
@@ -72,28 +71,28 @@ bool FileStream::isClosed() const {
 void FileStream::read(void *p, size_t size) {
     if (!canRead()) {
         Log(EError, "\"%s\": attempted to read from a write-only FileStream",
-            m_path.string().c_str());
+            m_path.string());
     }
 
     m_file->read((char *)p, size);
 
     if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to read %llu bytes",
-            m_path.string().c_str(), size);
+            m_path.string(), size);
     }
 }
 
 void FileStream::write(const void *p, size_t size) {
     if (!canWrite()) {
         Log(EError, "\"%s\": attempted to write to a read-only FileStream",
-            m_path.string().c_str());
+            m_path.string());
     }
 
     m_file->write((char *)p, size);
 
     if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to write %llu bytes",
-            m_path.string().c_str(), size);
+            m_path.string(), size);
     }
 }
 
@@ -105,14 +104,14 @@ void FileStream::seek(size_t pos) {
 
     if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to seek to offset %llu",
-            m_path.string().c_str(), pos);
+            m_path.string(), pos);
     }
 }
 
 void FileStream::truncate(size_t size) {
     if (!m_writeEnabled) {
         Log(EError, "\"%s\": attempting to truncate a read-only FileStream",
-            m_path.string().c_str());
+            m_path.string());
     }
 
     flush();
@@ -134,7 +133,7 @@ void FileStream::truncate(size_t size) {
 
     if (!m_file->good()) {
         Log(EError, "\"%s\": I/O error while attempting to truncate file to size %llu",
-            m_path.string().c_str(), size);
+            m_path.string(), size);
     }
 }
 
@@ -142,7 +141,7 @@ size_t FileStream::getPos() const {
     const auto pos = (m_writeEnabled ? m_file->tellg() : m_file->tellp());
     if (pos < 0) {
         Log(EError, "\"%s\": I/O error while attempting to determine position in file",
-            m_path.string().c_str());
+            m_path.string());
     }
     return static_cast<size_t>(pos);
 }

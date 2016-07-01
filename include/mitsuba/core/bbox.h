@@ -332,7 +332,7 @@ template <typename _PointType> struct TBoundingBox {
     PointType max; ///< Component-wise maximum
 };
 
-/// Return a string representation of the bounding box
+/// Print a string representation of the bounding box
 template <typename PointType> std::ostream& operator<<(std::ostream &os, const TBoundingBox<PointType>& bbox) {
     if (!bbox.valid())
         os << "BoundingBox[invalid]";

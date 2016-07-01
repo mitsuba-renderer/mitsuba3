@@ -26,9 +26,10 @@ NAMESPACE_END(detail)
 class MTS_EXPORT_CORE Stream : public Object {
 
 protected:
-    // In general, only low-level type serializers should call the stream's
-    // protected read & write functions. Otherwise, make sure to handle
-    // endianness swapping explicitly.
+    /* In general, only low-level type serializers should call the stream's
+       protected read & write functions. Otherwise, make sure to handle
+       endianness swapping explicitly.
+    */
     template <typename T> friend struct detail::serialization_helper;
 
 public:
@@ -41,15 +42,17 @@ public:
 
     /**
      * \brief Creates a new stream.
-     * By default, it assumes the byte order of the underlying system,
-     * i.e. no endianness conversion is performed.
+     *
+     * By default, this function sets the stream byte order
+     * to that of the system (i.e. no conversion is performed)
      */
     Stream();
 
-    /// Returns a string representation of the stream
+    /// Returns a human-readable desriptor of the stream
     virtual std::string toString() const override;
 
     /** \brief Closes the stream.
+     *
      * No further read or write operations are permitted.
      *
      * This function is idempotent.
@@ -82,16 +85,17 @@ public:
      */
     virtual void write(const void *p, size_t size) = 0;
 
-    /** Seeks to a position inside the stream.
-     * Seeking beyond the size of the buffer will not modify its contents'
-     * length. However, a subsequent write should start at the seeked position
-     * and update the size appropriately.
+    /** \brief Seeks to a position inside the stream.
+     *
+     * Seeking beyond the size of the buffer will not modify the length of
+     * its contents. However, a subsequent write should start at the seeked
+     * position and update the size appropriately.
      */
     virtual void seek(size_t pos) = 0;
 
     /** \brief Truncates the stream to a given size.
-     * The position is updated to <tt>min(old_position, size)</tt>.
      *
+     * The position is updated to <tt>min(old_position, size)</tt>.
      * Throws an exception if in read-only mode.
      */
     virtual void truncate(size_t size) = 0;
@@ -121,6 +125,7 @@ public:
     /**
      * \brief Reads one object of type T from the stream at the current position
      * by delegating to the appropriate <tt>serialization_helper</tt>.
+     *
      * Endianness swapping is handled automatically if needed.
      */
     template <typename T>
@@ -132,6 +137,7 @@ public:
     /**
      * \brief Reads one object of type T from the stream at the current position
      * by delegating to the appropriate <tt>serialization_helper</tt>.
+     *
      * Endianness swapping is handled automatically if needed.
      */
     template <typename T>
@@ -147,12 +153,14 @@ public:
     //! @{ \name Endianness handling
     // =========================================================================
 
-    /** \brief Sets the byte order to use in this stream. Automatic conversion
-     * will be performed on read and write operations to match the system's
-     * native endianness.
+    /** \brief Sets the byte order to use in this stream. 
      *
-     * No consistency is guaranteed if this method is called after performing
-     * some read and write operations on the system using a different endianness.
+     * Automatic conversion will be performed on read and write operations
+     * to match the system's native endianness.
+     *
+     * No consistency is guaranteed if this method is called after
+     * performing some read and write operations on the system using a
+     * different endianness.
      */
     void setByteOrder(EByteOrder byteOrder);
 

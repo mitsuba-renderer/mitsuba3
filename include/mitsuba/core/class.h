@@ -19,7 +19,6 @@ NAMESPACE_BEGIN(mitsuba)
  * </ul>
  *
  * \sa ref, Object
- * \ingroup libcore
  */
 class MTS_EXPORT_CORE Class {
 public:
@@ -30,7 +29,7 @@ public:
      * \brief Construct a new class descriptor
      *
      * This method should never be called manually. Instead, use
-     * the  \ref MTS_IMPLEMENT_CLASS macro to automatically do this for you.
+     * the \ref MTS_IMPLEMENT_CLASS macro to automatically do this for you.
      *
      * \param name Name of the class
      * \param parent Name of the parent class
