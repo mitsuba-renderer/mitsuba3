@@ -40,6 +40,7 @@ add_library(mitsuba-core SHARED
   xml.cpp          ${INC_DIR}/xml.h
   plugin.cpp       ${INC_DIR}/plugin.h
   fresolver.cpp    ${INC_DIR}/fresolver.h
+  structconv.cpp   ${INC_DIR}/structconv.h
 
   stream.cpp       ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
   astream.cpp      ${INC_DIR}/astream.h

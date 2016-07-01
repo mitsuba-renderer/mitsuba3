@@ -588,6 +588,8 @@ static const char *__doc_mitsuba_FileStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
 when the stream ended prematurely.)doc";
 
+static const char *__doc_mitsuba_FileStream_readLine = R"doc(Convenience function for reading a line of text from an ASCII file)doc";
+
 static const char *__doc_mitsuba_FileStream_seek =
 R"doc(Seeks to a position inside the stream. May throw if the resulting
 state is invalid.)doc";
@@ -1189,17 +1191,21 @@ static const char *__doc_mitsuba_Stream_EByteOrder_ELittleEndian = R"doc(< x86, 
 static const char *__doc_mitsuba_Stream_EByteOrder_ENetworkByteOrder = R"doc(< Network byte order (an alias for big endian))doc";
 
 static const char *__doc_mitsuba_Stream_Stream =
-R"doc(Creates a new stream. By default, it assumes the byte order of the
-underlying system, i.e. no endianness conversion is performed.)doc";
+R"doc(Creates a new stream.
 
-static const char *__doc_mitsuba_Stream_Stream_2 = R"doc(Copy is disallowed.)doc";
+By default, this function sets the stream byte order to that of the
+system (i.e. no conversion is performed))doc";
+
+static const char *__doc_mitsuba_Stream_Stream_2 = R"doc(Copying is disallowed.)doc";
 
 static const char *__doc_mitsuba_Stream_canRead = R"doc(Can we read from the stream?)doc";
 
 static const char *__doc_mitsuba_Stream_canWrite = R"doc(Can we write to the stream?)doc";
 
 static const char *__doc_mitsuba_Stream_close =
-R"doc(Closes the stream. No further read or write operations are permitted.
+R"doc(Closes the stream.
+
+No further read or write operations are permitted.
 
 This function is idempotent. It may be called automatically by the
 destructor.)doc";
@@ -1233,33 +1239,38 @@ R"doc(Reads a specified amount of data from the stream. \note This does
 Throws an exception when the stream ended prematurely. Implementations
 need to handle endianness swap when appropriate.)doc";
 
+static const char *__doc_mitsuba_Stream_readLine = R"doc(Convenience function for reading a line of text from an ASCII file)doc";
+
 static const char *__doc_mitsuba_Stream_read_2 =
 R"doc(Reads one object of type T from the stream at the current position by
-delegating to the appropriate ``serialization_helper``. Endianness
-swapping is handled automatically if needed.)doc";
+delegating to the appropriate ``serialization_helper``.
+
+Endianness swapping is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_Stream_seek =
-R"doc(Seeks to a position inside the stream. Seeking beyond the size of the
-buffer will not modify its contents' length. However, a subsequent
-write should start at the seeked position and update the size
-appropriately.)doc";
+R"doc(Seeks to a position inside the stream.
+
+Seeking beyond the size of the buffer will not modify the length of
+its contents. However, a subsequent write should start at the seeked
+position and update the size appropriately.)doc";
 
 static const char *__doc_mitsuba_Stream_setByteOrder =
-R"doc(Sets the byte order to use in this stream. Automatic conversion will
-be performed on read and write operations to match the system's native
-endianness.
+R"doc(Sets the byte order to use in this stream.
+
+Automatic conversion will be performed on read and write operations to
+match the system's native endianness.
 
 No consistency is guaranteed if this method is called after performing
 some read and write operations on the system using a different
 endianness.)doc";
 
-static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a string representation of the stream)doc";
+static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a human-readable desriptor of the stream)doc";
 
 static const char *__doc_mitsuba_Stream_truncate =
-R"doc(Truncates the stream to a given size. The position is updated to
-``min(old_position, size)``.
+R"doc(Truncates the stream to a given size.
 
-Throws an exception if in read-only mode.)doc";
+The position is updated to ``min(old_position, size)``. Throws an
+exception if in read-only mode.)doc";
 
 static const char *__doc_mitsuba_Stream_write =
 R"doc(Writes a specified amount of data into the stream. \note This does
@@ -1270,8 +1281,69 @@ Implementations need to handle endianness swap when appropriate.)doc";
 
 static const char *__doc_mitsuba_Stream_write_2 =
 R"doc(Reads one object of type T from the stream at the current position by
-delegating to the appropriate ``serialization_helper``. Endianness
-swapping is handled automatically if needed.)doc";
+delegating to the appropriate ``serialization_helper``.
+
+Endianness swapping is handled automatically if needed.)doc";
+
+static const char *__doc_mitsuba_Struct =
+R"doc(Descriptor for specifying the contents and in-memory layout of a POD-
+style data record)doc";
+
+static const char *__doc_mitsuba_Struct_Field = R"doc(Field specifier with size and offset)doc";
+
+static const char *__doc_mitsuba_Struct_Field_name = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Field_offset = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Field_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Field_type = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Struct =
+R"doc(Create a new ``Struct`` and indicate whether the contents are packed
+or aligned)doc";
+
+static const char *__doc_mitsuba_Struct_Type = R"doc(Type of a field in the ``Struct``)doc";
+
+static const char *__doc_mitsuba_Struct_Type_EFloat16 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Type_EFloat32 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Type_EFloat64 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Type_EInt16 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Type_EInt32 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Type_EInt8 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Type_EUInt16 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Type_EUInt32 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Type_EUInt8 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_alignment = R"doc(Return the alignment (in bytes) of the data structure)doc";
+
+static const char *__doc_mitsuba_Struct_append =
+R"doc(Append a new field to the ``Struct``; determines size and offset
+automatically)doc";
+
+static const char *__doc_mitsuba_Struct_append_2 = R"doc(Append a new field to the ``Struct`` (manual version))doc";
+
+static const char *__doc_mitsuba_Struct_fieldCount = R"doc(Return the number of fields)doc";
+
+static const char *__doc_mitsuba_Struct_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_m_fields = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_m_pack = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_operator_array = R"doc(Access an individual field entry)doc";
+
+static const char *__doc_mitsuba_Struct_size = R"doc(Return the size (in bytes) of the data structure, including padding)doc";
+
+static const char *__doc_mitsuba_Struct_toString = R"doc(Return a string representation)doc";
 
 static const char *__doc_mitsuba_TBoundingBox =
 R"doc(Generic n-dimensional bounding box data structure
@@ -1436,6 +1508,16 @@ static const char *__doc_mitsuba_TPoint_TPoint_2 = R"doc()doc";
 static const char *__doc_mitsuba_TPoint_TPoint_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_TPoint_operator_Matrix = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
+
+static const char *__doc_mitsuba_TPoint_operator_add = R"doc()doc";
+
+static const char *__doc_mitsuba_TPoint_operator_iadd = R"doc()doc";
+
+static const char *__doc_mitsuba_TPoint_operator_isub = R"doc()doc";
+
+static const char *__doc_mitsuba_TPoint_operator_sub = R"doc()doc";
+
+static const char *__doc_mitsuba_TPoint_operator_sub_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_TRay =
 R"doc(Simple n-dimensional ray segment data structure
@@ -1995,6 +2077,8 @@ static const char *__doc_mitsuba_math_legendre_pd_diff_2 =
 R"doc(Evaluate the function ``legendre_pd(l+1, x) - legendre_pd(l-1, x)``,
 double precision)doc";
 
+static const char *__doc_mitsuba_math_modulo = R"doc()doc";
+
 static const char *__doc_mitsuba_math_normal_cdf =
 R"doc(Cumulative distribution function of the standard normal distribution
 (double precision))doc";
@@ -2043,11 +2127,11 @@ static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical st
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -2193,7 +2277,19 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
+static const char *__doc_pcg32_8_inc = R"doc()doc";
+
 static const char *__doc_pcg32_8_nextDouble =
+R"doc(Generate eight double precision floating point value on the interval
+[0, 1)
+
+Remark:
+    Since the underlying random number generator produces 32 bit
+    output, only the first 32 mantissa bits will be filled (however,
+    the resolution is still finer than in nextFloat(), which only uses
+    23 mantissa bits))doc";
+
+static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2207,19 +2303,27 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
+static const char *__doc_pcg32_8_nextFloat_2 =
+R"doc(Generate eight single precision floating point value on the interval
+[0, 1))doc";
+
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
+
+static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
-
-static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
+
+static const char *__doc_pcg32_8_state = R"doc()doc";
+
+static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)

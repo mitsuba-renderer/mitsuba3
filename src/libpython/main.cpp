@@ -26,6 +26,7 @@ MTS_PY_DECLARE(ZStream);
 MTS_PY_DECLARE(BoundingBox);
 MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(Frame);
+MTS_PY_DECLARE(structconv);
 
 PYBIND11_PLUGIN(mitsuba) {
     Class::staticInitialization();
@@ -58,6 +59,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(BoundingBox);
     MTS_PY_IMPORT(Ray);
     MTS_PY_IMPORT(Frame);
+    MTS_PY_IMPORT(structconv);
 
     atexit([](){
         Logger::staticShutdown();
