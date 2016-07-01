@@ -146,6 +146,9 @@ public:
         helper::write(*this, &value, 1, needsEndiannessSwapping());
     }
 
+    /// Convenience function for reading a line of text from an ASCII file
+    virtual std::string readLine();
+
     /// @}
     // =========================================================================
 
@@ -183,9 +186,9 @@ public:
 
 protected:
     /// Destructor
-    virtual ~Stream() {};
+    virtual ~Stream();
 
-    /// Copy is disallowed.
+    /// Copying is disallowed.
     Stream(const Stream&) = delete;
     void operator=(const Stream&) = delete;
 

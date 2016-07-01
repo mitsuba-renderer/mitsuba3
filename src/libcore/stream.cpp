@@ -24,9 +24,9 @@ const Stream::EByteOrder Stream::m_hostByteOrder = detail::getByteOrder();
 // -----------------------------------------------------------------------------
 
 Stream::Stream()
-    : m_byteOrder(m_hostByteOrder) {
+    : m_byteOrder(m_hostByteOrder) { }
 
-};
+Stream::~Stream() { }
 
 void Stream::setByteOrder(EByteOrder value) {
     m_byteOrder = value;
@@ -51,6 +51,26 @@ std::ostream &operator<<(std::ostream &os, const Stream::EByteOrder &value) {
         default: os << "invalid"; break;
     }
     return os;
+}
+
+std::string Stream::readLine() {
+	std::string result;
+	result.reserve(80);
+
+	try {
+        do {
+	        char data;
+            read(&data, sizeof(char));
+            if (data == '\n')
+                break;
+            else if (data != '\r')
+                result += data;
+        } while (true);
+    } catch (...) {
+        if (getPos() != getSize() || result.empty())
+            throw;
+    }
+	return result;
 }
 
 MTS_IMPLEMENT_CLASS(Stream, Object)

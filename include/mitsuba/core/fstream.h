@@ -41,6 +41,9 @@ public:
     /// Whether the stream is closed (no read or write are then permitted).
     virtual bool isClosed() const override;
 
+    /// Convenience function for reading a line of text from an ASCII file
+    virtual std::string readLine() override;
+
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // Most methods can be delegated directly to the underlying

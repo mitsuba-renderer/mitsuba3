@@ -150,6 +150,14 @@ void FileStream::flush() {
     m_file->flush();
 }
 
+std::string FileStream::readLine() {
+    std::string result;
+    if (!std::getline(*m_file, result))
+        Log(EError, "\"%s\": I/O error while attempting to read a line of text",
+            m_path.string());
+    return result;
+}
+
 MTS_IMPLEMENT_CLASS(FileStream, Stream)
 
 NAMESPACE_END(mitsuba)
