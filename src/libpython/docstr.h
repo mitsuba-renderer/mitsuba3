@@ -714,6 +714,22 @@ static const char *__doc_mitsuba_Frame_uv =
 R"doc(Assuming that the given direction is in the local coordinate system,
 return the u and v coordinates of the vector 'v')doc";
 
+static const char *__doc_mitsuba_Jit = R"doc()doc";
+
+static const char *__doc_mitsuba_Jit_Jit = R"doc()doc";
+
+static const char *__doc_mitsuba_Jit_Jit_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Jit_getInstance = R"doc()doc";
+
+static const char *__doc_mitsuba_Jit_mutex = R"doc()doc";
+
+static const char *__doc_mitsuba_Jit_runtime = R"doc()doc";
+
+static const char *__doc_mitsuba_Jit_staticInitialization = R"doc()doc";
+
+static const char *__doc_mitsuba_Jit_staticShutdown = R"doc()doc";
+
 static const char *__doc_mitsuba_Logger =
 R"doc(Responsible for processing log messages
 
@@ -1289,39 +1305,143 @@ static const char *__doc_mitsuba_Struct =
 R"doc(Descriptor for specifying the contents and in-memory layout of a POD-
 style data record)doc";
 
+static const char *__doc_mitsuba_StructConverter =
+R"doc(This class solves the any-to-any problem: effiently converting from
+one kind of structured data representation to another
+
+Graphics applications often need to convert from one kind of
+structured representation to another. Consider the following data
+records which both describe positions tagged with color data.
+
+```
+struct Source { // <-- Big endian! :(
+   uint8_t r, g, b; // in sRGB
+   half x, y, z;
+};
+
+struct Target { // <-- Little endian!
+   float x, y, z;
+   float r, g, b, a; // in linear space
+};
+```
+
+The record ``Source`` may represent what is stored in a file on disk,
+while ``Target`` represents the assumed input of an existing
+algorithm. Not only are the formats (e.g. float vs half or uint8_t,
+incompatible endianness) and encodings different (e.g. gamma
+correction vs linear space), but the second record even has a
+different order and extra fields that don't exist in the first one.
+
+This class provides a routine convert() which <ol>
+
+* reorders entries
+
+* converts between many different formats (u[int]8-64, float16-64)
+
+* performs endianness conversion
+
+* applies or removes gamma correction
+
+* substitutes missing values with specified defaults
+
+</ol>
+
+On x86_64 platforms, the implementation of this class relies on a JIT
+compiler to instantiate an function that efficiently performs the
+conversion for any number of elements. The function is cached and
+reused if this particular conversion is needed any any later point.
+
+On non-x86_64 platforms, a slow fallback implementation is used.)doc";
+
+static const char *__doc_mitsuba_StructConverter_StructConverter =
+R"doc(Construct an optimized conversion routine going from ``source`` to
+``target``)doc";
+
+static const char *__doc_mitsuba_StructConverter_convert = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_m_func = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_m_source = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_m_target = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_source = R"doc(Return the source ``Struct`` descriptor)doc";
+
+static const char *__doc_mitsuba_StructConverter_target = R"doc(Return the target ``Struct`` descriptor)doc";
+
+static const char *__doc_mitsuba_StructConverter_toString = R"doc(Return a string representation)doc";
+
+static const char *__doc_mitsuba_Struct_EByteOrder = R"doc(Byte order of the fields in the ``Struct``)doc";
+
+static const char *__doc_mitsuba_Struct_EByteOrder_EBigEndian = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EByteOrder_ELittleEndian = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EFlags = R"doc(Field-specific flags)doc";
+
+static const char *__doc_mitsuba_Struct_EFlags_EGamma = R"doc(Specifies whether the field encodes a sRGB gamma-corrected value)doc";
+
+static const char *__doc_mitsuba_Struct_EFlags_ENormalized =
+R"doc(Only applies to integer fields: specifies whether the field encodes a
+normalized value in the range [0, 1])doc";
+
+static const char *__doc_mitsuba_Struct_EType = R"doc(Type of a field in the ``Struct``)doc";
+
+static const char *__doc_mitsuba_Struct_EType_EFloat16 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EFloat32 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EFloat64 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EInt16 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EInt32 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EInt64 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EInt8 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EUInt16 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EUInt32 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EUInt64 = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EType_EUInt8 = R"doc()doc";
+
 static const char *__doc_mitsuba_Struct_Field = R"doc(Field specifier with size and offset)doc";
 
-static const char *__doc_mitsuba_Struct_Field_name = R"doc()doc";
+static const char *__doc_mitsuba_Struct_Field_default = R"doc(Default value)doc";
 
-static const char *__doc_mitsuba_Struct_Field_offset = R"doc()doc";
+static const char *__doc_mitsuba_Struct_Field_flags = R"doc(Additional flags)doc";
 
-static const char *__doc_mitsuba_Struct_Field_size = R"doc()doc";
+static const char *__doc_mitsuba_Struct_Field_getRange = R"doc()doc";
 
-static const char *__doc_mitsuba_Struct_Field_type = R"doc()doc";
+static const char *__doc_mitsuba_Struct_Field_isFloat = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Field_isInteger = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Field_isSigned = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Field_isUnsigned = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_Field_name = R"doc(Name of the field)doc";
+
+static const char *__doc_mitsuba_Struct_Field_offset = R"doc(Offset within the ``Struct`` (in bytes))doc";
+
+static const char *__doc_mitsuba_Struct_Field_operator_eq = R"doc(Equality operator)doc";
+
+static const char *__doc_mitsuba_Struct_Field_operator_ne = R"doc(Equality operator)doc";
+
+static const char *__doc_mitsuba_Struct_Field_size = R"doc(Size in bytes)doc";
+
+static const char *__doc_mitsuba_Struct_Field_type = R"doc(Type identifier)doc";
 
 static const char *__doc_mitsuba_Struct_Struct =
 R"doc(Create a new ``Struct`` and indicate whether the contents are packed
 or aligned)doc";
-
-static const char *__doc_mitsuba_Struct_Type = R"doc(Type of a field in the ``Struct``)doc";
-
-static const char *__doc_mitsuba_Struct_Type_EFloat16 = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_Type_EFloat32 = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_Type_EFloat64 = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_Type_EInt16 = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_Type_EInt32 = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_Type_EInt8 = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_Type_EUInt16 = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_Type_EUInt32 = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_Type_EUInt8 = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_alignment = R"doc(Return the alignment (in bytes) of the data structure)doc";
 
@@ -1331,15 +1451,29 @@ automatically)doc";
 
 static const char *__doc_mitsuba_Struct_append_2 = R"doc(Append a new field to the ``Struct`` (manual version))doc";
 
+static const char *__doc_mitsuba_Struct_begin = R"doc(Return an iterator associated with the first field)doc";
+
+static const char *__doc_mitsuba_Struct_byteOrder = R"doc(Return the byte order of the ``Struct``)doc";
+
+static const char *__doc_mitsuba_Struct_end = R"doc(Return an iterator associated with the end of the data structure)doc";
+
 static const char *__doc_mitsuba_Struct_fieldCount = R"doc(Return the number of fields)doc";
 
 static const char *__doc_mitsuba_Struct_getClass = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_getField = R"doc(Look up a field by name (throws an exception if not found))doc";
+
+static const char *__doc_mitsuba_Struct_m_byteOrder = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_m_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_m_pack = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_operator_array = R"doc(Access an individual field entry)doc";
+
+static const char *__doc_mitsuba_Struct_operator_eq = R"doc(Equality operator)doc";
+
+static const char *__doc_mitsuba_Struct_operator_ne = R"doc(Inequality operator)doc";
 
 static const char *__doc_mitsuba_Struct_size = R"doc(Return the size (in bytes) of the data structure, including padding)doc";
 
@@ -1822,6 +1956,10 @@ R"doc(Writes a specified amount of data into the stream, compressing it
 first using ZLib. Throws an exception when not all data could be
 written.)doc";
 
+static const char *__doc_mitsuba_comparator = R"doc()doc";
+
+static const char *__doc_mitsuba_comparator_operator_call = R"doc()doc";
+
 static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} to an orthonormal basis {a, b, c})doc";
 
 static const char *__doc_mitsuba_detail_Log = R"doc()doc";
@@ -1987,6 +2125,22 @@ static const char *__doc_mitsuba_for_each_type = R"doc(Base case)doc";
 
 static const char *__doc_mitsuba_for_each_type_recurse = R"doc()doc";
 
+static const char *__doc_mitsuba_hash = R"doc()doc";
+
+static const char *__doc_mitsuba_hash_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_hash_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_hash_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_hash_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_hash_combine = R"doc()doc";
+
+static const char *__doc_mitsuba_hasher = R"doc()doc";
+
+static const char *__doc_mitsuba_hasher_operator_call = R"doc()doc";
+
 static const char *__doc_mitsuba_math_clamp = R"doc(Generic range clamping function)doc";
 
 static const char *__doc_mitsuba_math_comp_ellint_1 = R"doc(Complete elliptic integral of the first kind (double precision))doc";
@@ -2133,11 +2287,11 @@ static const char *__doc_mitsuba_operator_Matrix = R"doc(Convert to an Eigen vec
 
 static const char *__doc_mitsuba_operator_Matrix_2 = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
@@ -2197,6 +2351,8 @@ static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
 
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 
+static const char *__doc_mitsuba_string_indent = R"doc(Indent every line of a string by some number of spaces)doc";
+
 static const char *__doc_mitsuba_string_operator_lshift = R"doc(Turns a vector of elements into a human-readable representation)doc";
 
 static const char *__doc_mitsuba_string_starts_with = R"doc(Check if the given string starts with a specified prefix)doc";
@@ -2212,6 +2368,10 @@ compliant))doc";
 static const char *__doc_mitsuba_string_tokenize =
 R"doc(Chop up the string given a set of delimiters (warning: not unicode
 compliant))doc";
+
+static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
+
+static const char *__doc_mitsuba_tuple_hasher_operator_call = R"doc()doc";
 
 static const char *__doc_mitsuba_util_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
@@ -2287,19 +2447,7 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
-static const char *__doc_pcg32_8_inc = R"doc()doc";
-
 static const char *__doc_pcg32_8_nextDouble =
-R"doc(Generate eight double precision floating point value on the interval
-[0, 1)
-
-Remark:
-    Since the underlying random number generator produces 32 bit
-    output, only the first 32 mantissa bits will be filled (however,
-    the resolution is still finer than in nextFloat(), which only uses
-    23 mantissa bits))doc";
-
-static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2313,27 +2461,19 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
-static const char *__doc_pcg32_8_nextFloat_2 =
-R"doc(Generate eight single precision floating point value on the interval
-[0, 1))doc";
-
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
-
-static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
+
+static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
-
-static const char *__doc_pcg32_8_state = R"doc()doc";
-
-static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)

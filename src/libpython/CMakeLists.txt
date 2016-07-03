@@ -14,6 +14,7 @@ include_directories(
   ${EIGEN_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
   ${TINYFORMAT_INCLUDE_DIRS}
+  ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
 )
 
@@ -42,7 +43,7 @@ add_library(mitsuba-python SHARED
   bbox.cpp
   frame.cpp
   ray.cpp
-  structconv.cpp
+  struct.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core)

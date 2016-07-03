@@ -147,3 +147,12 @@ set(TINYFORMAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/tinyformat PARENT_SCOPE)
 
 # SIMDFloat include path
 set(SIMDFLOAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/simdfloat/include PARENT_SCOPE)
+
+# Build asmjit
+set(ASMJIT_BUILD_X64 TRUE)
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-undefined-inline")
+endif()
+add_subdirectory(asmjit)
+set(ASMJIT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/asmjit/src PARENT_SCOPE)
+set_property(TARGET asmjit PROPERTY FOLDER "dependencies")

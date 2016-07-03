@@ -3,6 +3,7 @@ include_directories(
   ${TBB_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
   ${PUGIXML_INCLUDE_DIRS}
+  ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
 )
 
@@ -24,6 +25,8 @@ add_library(mitsuba-core SHARED
   ${INC_DIR}/atomic.h
   ${INC_DIR}/string.h
   ${INC_DIR}/frame.h
+  ${INC_DIR}/hash.h
+  ${INC_DIR}/jit.h
 
   appender.cpp     ${INC_DIR}/appender.h
   class.cpp        ${INC_DIR}/class.h
@@ -40,7 +43,8 @@ add_library(mitsuba-core SHARED
   xml.cpp          ${INC_DIR}/xml.h
   plugin.cpp       ${INC_DIR}/plugin.h
   fresolver.cpp    ${INC_DIR}/fresolver.h
-  structconv.cpp   ${INC_DIR}/structconv.h
+  jit.cpp          ${INC_DIR}/jit.h
+  struct.cpp       ${INC_DIR}/struct.h
 
   stream.cpp       ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
   astream.cpp      ${INC_DIR}/astream.h
@@ -56,6 +60,9 @@ target_link_libraries(mitsuba-core tbb pugixml)
 # Link to libpng and zlib (either the system version or a version built via cmake)
 target_link_libraries(mitsuba-core ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
 
+# Link to asmjit (for structconv)
+target_link_libraries(mitsuba-core asmjit)
+
 # Create the 'dist' and 'dist/plugins' directories
 add_custom_command(
   TARGET mitsuba-core
@@ -63,7 +70,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist/plugins"
 )
 
-set(DEPENDENCIES mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex nanogui tbb libzmq)
+set(DEPENDENCIES mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex nanogui tbb libzmq asmjit)
 if (WIN32)
   list(APPEND DEPENDENCIES png16 zlib jpeg)
 endif()
