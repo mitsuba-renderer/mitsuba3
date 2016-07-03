@@ -15,12 +15,14 @@ class MTS_EXPORT_CORE Struct : public Object {
 public:
     /// Type of a field in the \c Struct
     enum EType {
+        /* Signed and unsigned integer values */
         EInt8, EUInt8,
         EInt16, EUInt16,
         EInt32, EUInt32,
         EInt64, EUInt64,
-        EFloat16, EFloat32,
-        EFloat64
+
+        /* Floating point values */
+        EFloat16, EFloat32, EFloat64
     };
 
     /// Byte order of the fields in the \c Struct
@@ -38,8 +40,17 @@ public:
          */
         ENormalized = 0x01,
 
-        /// Specifies whether the field encodes a sRGB gamma-corrected value
-        EGamma      = 0x02
+        /**
+         * Specifies whether the field encodes a sRGB gamma-corrected value.
+         * Assumes \c ENormalized is also specified.
+         */
+        EGamma      = 0x02,
+
+        /**
+         * In \ref FieldConverter::convert, check that the field value matches
+         * the specified default value. Otherwise, return a failure
+         */
+        EAssert     = 0x04
     };
 
     /// Field specifier with size and offset
@@ -110,7 +121,7 @@ public:
     };
 
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
-    Struct(bool pack = true, EByteOrder byteOrder = ELittleEndian);
+    Struct(bool pack = false, EByteOrder byteOrder = ELittleEndian);
 
     /// Append a new field to the \c Struct; determines size and offset automatically
     Struct &append(const std::string &name, EType type, uint32_t flags = 0,
@@ -202,27 +213,30 @@ protected:
  * <li>converts between many different formats (u[int]8-64, float16-64)</li>
  * <li>performs endianness conversion</li>
  * <li>applies or removes gamma correction</li>
+ * <li>optionally checks that certain entries have expected default values</li>
  * <li>substitutes missing values with specified defaults</li>
  * </ol>
  *
  * On x86_64 platforms, the implementation of this class relies on a JIT
- * compiler to instantiate an function that efficiently performs the conversion
+ * compiler to instantiate a function that efficiently performs the conversion
  * for any number of elements. The function is cached and reused if this
  * particular conversion is needed any any later point.
  *
  * On non-x86_64 platforms, a slow fallback implementation is used.
  */
 class MTS_EXPORT_CORE StructConverter : public Object {
-    using FuncType = void (*) (size_t, const void *, void *);
+    using FuncType = bool (*) (size_t, const void *, void *);
 public:
     /// Construct an optimized conversion routine going from \c source to \c target
     StructConverter(const Struct *source, const Struct *target);
 
-    /// Convert \c count elements
+    /// Convert \c count elements. Returns \c true upon success
 #if defined(__x86_64__) || defined(_WIN64)
-    void convert(size_t count, const void *src, void *dest) const { m_func(count, src, dest); }
+    bool convert(size_t count, const void *src, void *dest) const {
+        return m_func(count, src, dest);
+    }
 #else
-    void convert(size_t count, const void *src, void *dest) const;
+    bool convert(size_t count, const void *src, void *dest) const;
 #endif
 
     /// Return the source \c Struct descriptor

@@ -24,8 +24,9 @@ MTS_PY_EXPORT(Struct) {
         .export_values();
 
     py::enum_<Struct::EFlags>(c, "EFlags")
-        .value("ENormalized",  Struct::EFlags::ENormalized)
-        .value("EGamma",  Struct::EFlags::EGamma)
+        .value("ENormalized", Struct::EFlags::ENormalized)
+        .value("EGamma", Struct::EFlags::EGamma)
+        .value("EAssert", Struct::EFlags::EAssert)
         .export_values();
 
     c.def(py::init<bool, Struct::EByteOrder>(), py::arg("pack") = false,
@@ -37,7 +38,7 @@ MTS_PY_EXPORT(Struct) {
         .def("__getitem__", [](const Struct & s, size_t i) {
             if (i >= s.fieldCount())
                 throw py::index_error();
-            return s[i]; 
+            return s[i];
         })
         .def("__len__", &Struct::fieldCount)
         .def(py::self == py::self)
@@ -45,6 +46,7 @@ MTS_PY_EXPORT(Struct) {
         .def("__hash__", [](const Struct &s) { return hash(s); })
         .mdef(Struct, size)
         .mdef(Struct, alignment)
+        .mdef(Struct, byteOrder)
         .mdef(Struct, fieldCount);
 
     py::class_<Struct::Field>(c, "Field", DM(Struct, Field))
@@ -70,7 +72,8 @@ MTS_PY_EXPORT(Struct) {
             std::string input(input_);
             size_t count = input.length() / c.source()->size();
             std::string result(c.target()->size() * count, '\0');
-            c.convert(count, input.data(), (void *) result.data());
+            if (!c.convert(count, input.data(), (void *) result.data()))
+               throw std::runtime_error("Conversion failed!");
             return result;
         });
 }

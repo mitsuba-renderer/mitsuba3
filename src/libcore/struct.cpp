@@ -296,6 +296,23 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 default: Throw("StructConverter: unknown field type!");
             }
 
+            if (sf.flags & Struct::EAssert) {
+                if (sf.isInteger()) {
+                    auto ref = c.newInt64Const(asmjit::kConstScopeLocal, (int64_t) sf.default_);
+                    c.cmp(reg.r64(), ref);
+                } else if (sf.type == Struct::EFloat32) {
+                    auto ref = c.newFloatConst(asmjit::kConstScopeLocal, (float) sf.default_);
+                    c.ucomiss(reg_f, ref);
+                } else if (sf.type == Struct::EFloat64) {
+                    auto ref = c.newDoubleConst(asmjit::kConstScopeLocal, sf.default_);
+                    c.ucomisd(reg_d, ref);
+                } else {
+                    Throw("Internal error!");
+                }
+                failNeeded = true;
+                c.jne(loopFail);
+            }
+
             if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
                 auto range = sf.getRange();
                 float scale = float(1 / (range.second - range.first));
@@ -479,12 +496,19 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
     c.jne(loopStart);
     c.bind(loopEnd);
 
-    c.ret();
+    auto rv = c.newInt64("rv");
+    c.mov(rv.r32(), 1);
+    c.ret(rv);
+    if (failNeeded) {
+        c.bind(loopFail);
+        c.xor_(rv, rv);
+        c.ret(rv);
+    }
     c.endFunc();
     c.finalize();
 
     #if MTS_JIT_LOG_ASSEMBLY == 1
-       Log(EInfo, "%s", logger.getString());
+       Log(EInfo, "Assembly:\n%s", logger.getString());
     #endif
 
     m_func = asmjit_cast<FuncType>(assembler.make());
@@ -493,7 +517,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 }
 
 #if !(defined(__x86_64__) || defined(_WIN64))
-void StructConverter::convert(size_t count, const void *src_, void *dest_) const {
+bool StructConverter::convert(size_t count, const void *src_, void *dest_) const {
     size_t sourceSize = m_source->size();
     size_t targetSize = m_target->size();
     using namespace mitsuba::detail;
@@ -607,58 +631,67 @@ void StructConverter::convert(size_t count, const void *src_, void *dest_) const
                     default: Throw("StructConverter: unknown field type!");
                 }
 
-            if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
-                auto range = sf.getRange();
-                float scale = float(1 / (range.second - range.first));
-                float offset = float(-range.first);
-                reg_f = ((float) reg + offset) * scale;
-                if (sf.flags & Struct::EGamma)
-                    reg_f = math::inverseGamma<float>(reg_f);
-                sf.type = Struct::EFloat32;
-            }
+                if (sf.flags & Struct::EAssert) {
+                    if (sf.isInteger() && (int64_t) sf.default_ != reg)
+                        return false;
+                    else if (sf.type == Struct::EFloat32 && (float) sf.default_ != reg_f)
+                        return false;
+                    else if (sf.type == Struct::EFloat64 && (float) sf.default_ != reg_d)
+                        return false;
+                }
+
+                if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
+                    auto range = sf.getRange();
+                    float scale = float(1 / (range.second - range.first));
+                    float offset = float(-range.first);
+                    reg_f = ((float) reg + offset) * scale;
+                    if (sf.flags & Struct::EGamma)
+                        reg_f = math::inverseGamma<float>(reg_f);
+                    sf.type = Struct::EFloat32;
+                }
 
 
-            if (sf.isInteger() != df.isInteger()) {
-                if (sf.isInteger()) {
-                    if (df.type == Struct::EFloat16 || df.type == Struct::EFloat32)
-                        reg_f = (float) reg;
-                    else if (df.type == Struct::EFloat64)
-                        reg_d = (double) reg;
-                } else if (df.isInteger()) {
-                    if (sf.type == Struct::EFloat32) {
-                        auto range = df.getRange();
+                if (sf.isInteger() != df.isInteger()) {
+                    if (sf.isInteger()) {
+                        if (df.type == Struct::EFloat16 || df.type == Struct::EFloat32)
+                            reg_f = (float) reg;
+                        else if (df.type == Struct::EFloat64)
+                            reg_d = (double) reg;
+                    } else if (df.isInteger()) {
+                        if (sf.type == Struct::EFloat32) {
+                            auto range = df.getRange();
 
-                        if (df.flags & Struct::ENormalized) {
-                            if (df.flags & Struct::EGamma)
-                                reg_f = math::gamma<float>(reg_f);
-                            reg_f = reg_f * (float) (range.second - range.first) + (float) range.first;
+                            if (df.flags & Struct::ENormalized) {
+                                if (df.flags & Struct::EGamma)
+                                    reg_f = math::gamma<float>(reg_f);
+                                reg_f = reg_f * (float) (range.second - range.first) + (float) range.first;
+                            }
+
+                            reg_f = std::round(reg_f);
+                            reg_f = std::max(reg_f, (float) range.first);
+                            reg_f = std::min(reg_f, (float) range.second);
+                            reg = (int64_t) reg_f;
+                        } else if (sf.type == Struct::EFloat64) {
+                            auto range = df.getRange();
+
+                            if (df.flags & Struct::ENormalized) {
+                                reg_d = math::gamma<double>(reg_d);
+                                reg_d = reg_d * (range.second - range.first) + range.first;
+                            }
+
+                            reg_d = std::round(reg_d);
+                            reg_d = std::max(reg_d, range.first);
+                            reg_d = std::min(reg_d, range.second);
+                            reg = (int64_t) reg_d;
                         }
-
-                        reg_f = std::round(reg_f);
-                        reg_f = std::max(reg_f, (float) range.first);
-                        reg_f = std::min(reg_f, (float) range.second);
-                        reg = (int64_t) reg_f;
-                    } else if (sf.type == Struct::EFloat64) {
-                        auto range = df.getRange();
-
-                        if (df.flags & Struct::ENormalized) {
-                            reg_d = math::gamma<double>(reg_d);
-                            reg_d = reg_d * (range.second - range.first) + range.first;
-                        }
-
-                        reg_d = std::round(reg_d);
-                        reg_d = std::max(reg_d, range.first);
-                        reg_d = std::min(reg_d, range.second);
-                        reg = (int64_t) reg_d;
                     }
                 }
-            }
 
-            if (sf.type == Struct::EFloat32 && df.type == Struct::EFloat64)
-                reg_d = (double) reg_f;
-            else if (sf.type == Struct::EFloat64 && (df.type == Struct::EFloat16 ||
-                                                     df.type == Struct::EFloat32))
-                reg_f = (float) reg_d;
+                if (sf.type == Struct::EFloat32 && df.type == Struct::EFloat64)
+                    reg_d = (double) reg_f;
+                else if (sf.type == Struct::EFloat64 && (df.type == Struct::EFloat16 ||
+                                                         df.type == Struct::EFloat32))
+                    reg_f = (float) reg_d;
             } catch (...) {
                 if (df.isInteger())
                     reg = (int64_t) df.default_;
@@ -754,6 +787,7 @@ void StructConverter::convert(size_t count, const void *src_, void *dest_) const
             }
         }
     }
+    return true;
 }
 #endif
 
