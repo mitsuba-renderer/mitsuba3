@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mitsuba/mitsuba.h>
+#include <mitsuba/core/logger.h>
 #include <cmath>
 #include <algorithm>
 
@@ -223,9 +223,73 @@ template <typename T> T ulpdiff(T ref, T val) {
     return std::abs(diff) / eps;
 }
 
+/// Always-positive modulo function
 template <typename T> T modulo(T a, T b) {
     T result = a - (a / b) * b;
     return (result < 0) ? result + b : result;
+}
+
+/// Check whether the provided integer is a power of two
+template <typename T> bool isPowerOfTwo(T i) {
+    return i > 0 && (i & (i-1)) == 0;
+}
+
+/// Round an unsigned integer to the next integer power of two
+template <typename T> T roundToPowerOfTwo(T i) {
+    if (i <= 1)
+        return 1;
+#if defined(MTS_CLZ) && defined(MTS_CLZLL)
+    if (sizeof(T) <= 4)
+        return T(1u << (32 - MTS_CLZ((unsigned int) i - 1u)));
+    else
+        return T(1ull << (64 - MTS_CLZLL((unsigned long long) i - 1ull)));
+#else
+	i--;
+	i |= i >> 1;
+	i |= i >> 2;
+	i |= i >> 4;
+	if (sizeof(T) >= 2)
+        i |= i >> 8;
+	if (sizeof(T) >= 4)
+        i |= i >> 16;
+	if (sizeof(T) >= 8)
+        i |= i >> 32;
+    return i + 1;
+#endif
+}
+
+/// Compute the base-2 logarithm of an unsigned integer
+template <typename T> T log2i(T value) {
+    Assert(value >= 0);
+#if defined(MTS_CLZ) && defined(MTS_CLZLL)
+    if (sizeof(T) <= 4)
+        return T(31 - MTS_CLZ((unsigned int) value));
+    else
+        return T(63 - MTS_CLZLL((unsigned long long) value));
+#else
+    T r = 0;
+    while ((value >> r) != 0)
+        r++;
+    return r - 1;
+#endif
+}
+
+/// Apply the sRGB gamma curve to a floating point scalar
+template <typename T>
+static T gamma(T value) {
+    if (value <= T(0.0031308))
+        return T(12.92) * value;
+    else
+        return T(1.055) * std::pow(value, T(1.0/2.4)) - T(0.055);
+}
+
+/// Apply the inverse of the sRGB gamma curve to a floating point scalar
+template <typename T>
+static T inverseGamma(T value) {
+    if (value <= T(0.04045))
+        return value * T(1.0 / 12.92);
+    else
+        return std::pow((value + T(0.055)) * T(1.0 / 1.055), T(2.4));
 }
 
 /**

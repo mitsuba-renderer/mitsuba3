@@ -45,4 +45,9 @@ MTS_PY_EXPORT(math) {
     }, DM(math, findInterval));
 
     math.def("ulpdiff", &math::ulpdiff<Float>, DM(math, ulpdiff));
+    math.def("log2i", &math::log2i<uint64_t>, DM(math, log2i));
+    math.def("isPowerOfTwo", &math::isPowerOfTwo<uint64_t>, DM(math, isPowerOfTwo));
+    math.def("roundToPowerOfTwo", &math::roundToPowerOfTwo<uint64_t>, DM(math, roundToPowerOfTwo));
+    math.def("gamma", &math::gamma<double>, DM(math, gamma));
+    math.def("inverseGamma", &math::inverseGamma<double>, DM(math, inverseGamma));
 }

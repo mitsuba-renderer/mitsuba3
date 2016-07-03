@@ -2037,6 +2037,8 @@ accesses, and to deal with predicates that evaluate to ``True`` or
 ``False`` on the entire domain, the returned left interval index is
 clamped to the range ``[0, size-2]``.)doc";
 
+static const char *__doc_mitsuba_math_gamma = R"doc(Apply the sRGB gamma curve to a floating point scalar)doc";
+
 static const char *__doc_mitsuba_math_i0e =
 R"doc(Exponentially scaled modified Bessel function of the first kind (order
 0), double precision)doc";
@@ -2044,6 +2046,10 @@ R"doc(Exponentially scaled modified Bessel function of the first kind (order
 static const char *__doc_mitsuba_math_i0e_2 =
 R"doc(Exponentially scaled modified Bessel function of the first kind (order
 0), single precision)doc";
+
+static const char *__doc_mitsuba_math_inverseGamma = R"doc(Apply the inverse of the sRGB gamma curve to a floating point scalar)doc";
+
+static const char *__doc_mitsuba_math_isPowerOfTwo = R"doc(Check whether the provided integer is a power of two)doc";
 
 static const char *__doc_mitsuba_math_legendre_p =
 R"doc(Evaluate the l-th Legendre polynomial using recurrence, single
@@ -2077,7 +2083,9 @@ static const char *__doc_mitsuba_math_legendre_pd_diff_2 =
 R"doc(Evaluate the function ``legendre_pd(l+1, x) - legendre_pd(l-1, x)``,
 double precision)doc";
 
-static const char *__doc_mitsuba_math_modulo = R"doc()doc";
+static const char *__doc_mitsuba_math_log2i = R"doc(Compute the base-2 logarithm of an unsigned integer)doc";
+
+static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo function)doc";
 
 static const char *__doc_mitsuba_math_normal_cdf =
 R"doc(Cumulative distribution function of the standard normal distribution
@@ -2096,6 +2104,8 @@ R"doc(Quantile function of the standard normal distribution (single
 precision))doc";
 
 static const char *__doc_mitsuba_math_radToDeg = R"doc(/ Convert radians to degrees)doc";
+
+static const char *__doc_mitsuba_math_roundToPowerOfTwo = R"doc(Round an unsigned integer to the next integer power of two)doc";
 
 static const char *__doc_mitsuba_math_safe_acos =
 R"doc(Arccosine variant that gracefully handles arguments > 1 due to
