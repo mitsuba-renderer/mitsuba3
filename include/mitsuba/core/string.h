@@ -55,6 +55,21 @@ inline std::vector<std::string> tokenize(const std::string &string,
     return tokens;
 }
 
+/// Indent every line of a string by some number of spaces
+inline std::string indent(const std::string &string, int amount = 2) {
+    std::string result;
+    result.reserve(string.size());
+    for (size_t i = 0; i<string.length(); ++i) {
+        char ch = string[i];
+        result += ch;
+        if (ch == '\n') {
+            for (int j = 0; j < amount; ++j)
+                result += ' ';
+        }
+    }
+    return result;
+}
+
 /// Turns a vector of elements into a human-readable representation
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
