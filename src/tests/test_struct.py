@@ -249,5 +249,16 @@ class StructConvTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.assertConversion(s, "<f", "<f", (11,), (11,))
 
+    def test11_fail(self):
+        s = StructConverter(
+            Struct().append("v1", Struct.EFloat32, default=10,
+                            flags=int(Struct.EAssert))
+                    .append("v2", Struct.EFloat32),
+            Struct().append("v2", Struct.EFloat32)
+        )
+        self.assertConversion(s, "<ff", "<f", (10, 10,), (10,))
+        with self.assertRaises(RuntimeError):
+            self.assertConversion(s, "<ff", "<f", (11, 11), (11,))
+
 if __name__ == '__main__':
     unittest.main()

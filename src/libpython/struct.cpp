@@ -48,7 +48,8 @@ MTS_PY_EXPORT(Struct) {
         .mdef(Struct, size)
         .mdef(Struct, alignment)
         .mdef(Struct, byteOrder)
-        .mdef(Struct, fieldCount);
+        .mdef(Struct, fieldCount)
+        .mdef(Struct, hasField);
 
     py::class_<Struct::Field>(c, "Field", DM(Struct, Field))
         .def("isFloat", &Struct::Field::isFloat, DM(Struct, Field, isFloat))

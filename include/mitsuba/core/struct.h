@@ -139,6 +139,12 @@ public:
     /// Access an individual field entry
     const Field &operator[](size_t i) const { return m_fields[i]; }
 
+    /// Access an individual field entry
+    Field &operator[](size_t i) { return m_fields[i]; }
+
+    /// Check if the \c Struct has a field of the specified name
+    bool hasField(const std::string &name) const;
+
     /// Return the size (in bytes) of the data structure, including padding
     size_t size() const;
 
@@ -156,6 +162,9 @@ public:
 
     /// Look up a field by name (throws an exception if not found)
     const Field &field(const std::string &name) const;
+
+    /// Look up a field by name. Throws an exception if not found
+    Field &field(const std::string &name);
 
     /// Return a string representation
     std::string toString() const override;

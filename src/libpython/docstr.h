@@ -1396,6 +1396,10 @@ static const char *__doc_mitsuba_Struct_EFlags_EAssert =
 R"doc(In FieldConverter::convert, check that the field value matches the
 specified default value. Otherwise, return a failure)doc";
 
+static const char *__doc_mitsuba_Struct_EFlags_EDefault =
+R"doc(In FieldConverter::convert, when the field is missing in the source
+record, replace it by the specified default value)doc";
+
 static const char *__doc_mitsuba_Struct_EFlags_EGamma =
 R"doc(Specifies whether the field encodes a sRGB gamma-corrected value.
 Assumes ``ENormalized`` is also specified.)doc";
@@ -1479,6 +1483,8 @@ static const char *__doc_mitsuba_Struct_end = R"doc(Return an iterator associate
 static const char *__doc_mitsuba_Struct_field = R"doc(Look up a field by name (throws an exception if not found))doc";
 
 static const char *__doc_mitsuba_Struct_fieldCount = R"doc(Return the number of fields)doc";
+
+static const char *__doc_mitsuba_Struct_hasField = R"doc(Check if the ``Struct`` has a field of the specified name)doc";
 
 static const char *__doc_mitsuba_Struct_hostByteOrder = R"doc(Return the byte order of the host machine)doc";
 

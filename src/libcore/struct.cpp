@@ -33,6 +33,13 @@ size_t Struct::alignment() const {
     return size;
 }
 
+bool Struct::hasField(const std::string &name) const {
+    for (auto const &field : m_fields)
+        if (field.name == name)
+            return true;
+    return false;
+}
+
 Struct &Struct::append(const std::string &name, EType type, uint32_t flags, double default_) {
     Field f;
     f.name = name;
@@ -115,7 +122,14 @@ const Struct::Field &Struct::field(const std::string &name) const {
     for (auto const &field : m_fields)
         if (field.name == name)
             return field;
-    Throw("Unable to find field '%s'", name);
+    Throw("Unable to find field \"%s\"", name);
+}
+
+Struct::Field &Struct::field(const std::string &name) {
+    for (auto &field : m_fields)
+        if (field.name == name)
+            return field;
+    Throw("Unable to find field \"%s\"", name);
 }
 
 std::pair<double, double> Struct::Field::range() const {
@@ -228,10 +242,21 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
     auto reg_d = c.newXmmVar(kX86VarTypeXmmSd, "reg_d");
 
     bool failNeeded = false;
+    std::vector<std::string> fields;
+    for (Struct::Field f : *source) {
+        if ((f.flags & Struct::EAssert) && !target->hasField(f.name))
+            fields.push_back(f.name);
+    }
+    for (Struct::Field f : *target)
+        fields.push_back(f.name);
 
-    for (Struct::Field df : *target) {
+    for (auto const &name : fields) {
+        Struct::Field df;
+        if (target->hasField(name))
+            df = target->field(name);
+
         try {
-            auto sf = source->field(df.name);
+            auto sf = source->field(name);
 
             bool sourceSigned = sf.isSigned();
             bool sourceSwap = source->byteOrder() == Struct::EBigEndian;
@@ -330,6 +355,9 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 c.jne(loopFail);
             }
 
+            if (!target->hasField(name))
+                continue;
+
             if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
                 auto range = sf.range();
                 float scale = float(1 / (range.second - range.first));
@@ -416,8 +444,9 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
         } catch (...) {
             if (!(df.flags & Struct::EDefault))
-                Throw("StructConverter(): field '%s' is missing in the source "
-                      "structure", df.name);
+                Throw("StructConverter(): field \"%s\" is missing in the "
+                      "source structure.\nsource = %s,\ntarget = %s",
+                      name, m_source->toString(), m_target->toString());
 
             if (df.isInteger()) {
                 if (df.default_ == 0) {
@@ -543,19 +572,30 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
     size_t targetSize = m_target->size();
     using namespace mitsuba::detail;
 
-
     /* Is swapping needed */
     bool sourceSwap = m_source->byteOrder() != Struct::hostByteOrder();
     bool targetSwap = m_target->byteOrder() != Struct::hostByteOrder();
 
+    std::vector<std::string> fields;
+    for (Struct::Field f : *m_source) {
+        if ((f.flags & Struct::EAssert) && !m_target->hasField(f.name))
+            fields.push_back(f.name);
+    }
+    for (Struct::Field f : *m_target)
+        fields.push_back(f.name);
+
     for (size_t i = 0; i<count; ++i) {
-        for (auto df : *m_target) {
+        for (auto const &name : fields) {
             int64_t reg = 0;
             float reg_f = 0;
             double reg_d = 0;
 
+            Struct::Field df;
+            if (m_target->hasField(name))
+                df = m_target->field(name);
+
             try {
-                auto sf = m_source->field(df.name);
+                auto sf = m_source->field(name);
                 const uint8_t *src = (const uint8_t *) src_ + sf.offset + sourceSize * i;
 
                 switch (sf.type) {
@@ -648,9 +688,12 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                         return false;
                     else if (sf.type == Struct::EFloat32 && (float) sf.default_ != reg_f)
                         return false;
-                    else if (sf.type == Struct::EFloat64 && (float) sf.default_ != reg_d)
+                    else if (sf.type == Struct::EFloat64 && sf.default_ != reg_d)
                         return false;
                 }
+
+                if (!m_target->hasField(name))
+                    continue;
 
                 if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
                     auto range = sf.range();
@@ -706,8 +749,9 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                     reg_f = (float) reg_d;
             } catch (...) {
                 if (!(df.flags & Struct::EDefault))
-                    Throw("StructConverter(): field '%s' is missing in the source "
-                          "structure", df.name);
+                    Throw("StructConverter(): field \"%s\" is missing in the "
+                          "source structure.\nsource = %s,\ntarget = %s",
+                          name, m_source->toString(), m_target->toString());
                 if (df.isInteger())
                     reg = (int64_t) df.default_;
                 else if (df.type == Struct::EFloat16 || df.type == Struct::EFloat32)
