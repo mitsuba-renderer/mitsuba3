@@ -40,7 +40,20 @@ public:
             stream = parseASCII((FileStream *) stream.get(), header.elements);
 
         for (auto const &el : header.elements) {
+            size_t size = el.struct_->size();
+            if (el.name == "vertex") {
+                /// TBD
+            } else if (el.name == "face") {
+                /// TBD
+            } else {
+                stream->seek(stream->tell() + size * el.count);
+            }
         }
+
+        std::cout << stream->tell() << " " << stream->size() << std::endl;
+
+        if (stream->tell() != stream->size())
+            Throw("Invalid PLY file: trailing content");
     }
 
     PLYHeader parsePLYHeader(Stream *stream) {
@@ -262,6 +275,7 @@ public:
         std::string token;
         if (is >> token)
             Throw("Trailing tokens after end of PLY file");
+        out->seek(0);
         return out;
     }
 
