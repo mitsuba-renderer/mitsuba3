@@ -2,7 +2,18 @@
 
 #include <set>
 #include <vector>
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <Eigen/Core>
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#endif
+
 #if defined(__WINDOWS__)
     #include <intrin.h>
 #endif

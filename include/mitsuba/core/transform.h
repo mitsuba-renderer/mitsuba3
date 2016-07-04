@@ -7,8 +7,18 @@
 #define EIGEN_DONT_PARALLELIZE 1
 
 #include <mitsuba/core/vector.h>
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#endif
 
 template <typename T, size_t N, int K>
 mitsuba::TVector<T, N> operator*(const Eigen::Matrix<T, K, K> &m, const mitsuba::TVector<T, N> &x) {
