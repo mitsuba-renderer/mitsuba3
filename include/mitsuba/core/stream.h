@@ -168,15 +168,15 @@ public:
     void setByteOrder(EByteOrder byteOrder);
 
     /// Returns the byte order of this stream.
-    inline EByteOrder getByteOrder() const { return m_byteOrder; }
+    EByteOrder getByteOrder() const { return m_byteOrder; }
 
     /// Returns true if we need to perform endianness swapping before writing or reading.
-    inline bool needsEndiannessSwapping() const {
+    bool needsEndiannessSwapping() const {
         return m_byteOrder != m_hostByteOrder;
     }
 
     /// Returns the byte order of the underlying machine.
-    inline static EByteOrder getHostByteOrder() { return m_hostByteOrder; }
+    static EByteOrder getHostByteOrder() { return m_hostByteOrder; }
 
 
     /// @}

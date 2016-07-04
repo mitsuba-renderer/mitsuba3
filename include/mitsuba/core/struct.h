@@ -145,6 +145,9 @@ public:
     /// Return the byte order of the \c Struct
     EByteOrder byteOrder() const { return m_byteOrder; }
 
+    /// Return the byte order of the host machine
+    static EByteOrder hostByteOrder();
+
     /// Look up a field by name (throws an exception if not found)
     const Field &getField(const std::string &name) const;
 

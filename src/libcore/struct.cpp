@@ -9,7 +9,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Struct::Struct(bool pack, EByteOrder byteOrder) : m_pack(pack), m_byteOrder(byteOrder) { }
+Struct::Struct(bool pack, EByteOrder byteOrder)
+    : m_pack(pack), m_byteOrder(byteOrder) { }
 
 size_t Struct::size() const {
     if (m_fields.empty())
@@ -64,6 +65,19 @@ Struct &Struct::append(const std::string &name, EType type, uint32_t flags, doub
     return *this;
 }
 
+Struct::EByteOrder Struct::hostByteOrder() {
+    /* Determine host byte order */
+    union {
+        uint8_t  charValue[2];
+        uint16_t shortValue;
+    };
+
+    charValue[0] = 1;
+    charValue[1] = 0;
+
+    return (shortValue == 1) ? Struct::ELittleEndian : Struct::EBigEndian;
+}
+
 std::string Struct::toString() const {
     std::ostringstream os;
     os << "Struct[" << std::endl;
@@ -87,10 +101,10 @@ std::string Struct::toString() const {
             os << ", normalized";
         if (f.flags & EGamma)
             os << ", gamma";
+        if (f.flags & EAssert)
+            os << ", assert";
         if (f.default_ != 0)
             os << ", default=" << f.default_;
-        if (i + 1 < m_fields.size())
-            os << ",";
         os << "\n";
     }
     os << "]";
@@ -192,6 +206,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
     Label loopStart = c.newLabel();
     Label loopEnd = c.newLabel();
+    Label loopFail = c.newLabel();
 
     c.test(count, count);
     c.jz(loopEnd);
@@ -211,6 +226,8 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
     auto reg   = c.newInt64("reg");
     auto reg_f = c.newXmmVar(kX86VarTypeXmmSs, "reg_f");
     auto reg_d = c.newXmmVar(kX86VarTypeXmmSd, "reg_d");
+
+    bool failNeeded = false;
 
     for (Struct::Field df : *target) {
         try {
@@ -522,19 +539,10 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
     size_t targetSize = m_target->size();
     using namespace mitsuba::detail;
 
-    /* Determine host byte order */
-    union {
-        uint8_t  charValue[2];
-        uint16_t shortValue;
-    };
-    charValue[0] = 1;
-    charValue[1] = 0;
-    Struct::EByteOrder hostByteOrder =
-        (shortValue == 1) ? Struct::ELittleEndian : Struct::EBigEndian;
 
     /* Is swapping needed */
-    bool sourceSwap = m_source->byteOrder() != hostByteOrder;
-    bool targetSwap = m_target->byteOrder() != hostByteOrder;
+    bool sourceSwap = m_source->byteOrder() != Struct::hostByteOrder();
+    bool targetSwap = m_target->byteOrder() != Struct::hostByteOrder();
 
     for (size_t i = 0; i<count; ++i) {
         for (auto df : *m_target) {
