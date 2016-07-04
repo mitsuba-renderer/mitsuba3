@@ -13,10 +13,12 @@ void FileResolver::erase(const fs::path &p) {
 }
 
 fs::path FileResolver::resolve(const fs::path &path) const {
-    for (auto const &base : m_paths) {
-        fs::path combined = base / path;
-        if (fs::exists(combined))
-            return combined;
+    if (!path.is_absolute()) {
+        for (auto const &base : m_paths) {
+            fs::path combined = base / path;
+            if (fs::exists(combined))
+                return combined;
+        }
     }
     return path;
 }
