@@ -50,7 +50,13 @@ public:
          * In \ref FieldConverter::convert, check that the field value matches
          * the specified default value. Otherwise, return a failure
          */
-        EAssert     = 0x04
+        EAssert     = 0x04,
+
+        /**
+         * In \ref FieldConverter::convert, when the field is missing in the
+         * source record, replace it by the specified default value
+         */
+        EDefault    = 0x08
     };
 
     /// Field specifier with size and offset
@@ -186,9 +192,9 @@ protected:
 
 template <typename T> struct struct_traits { };
 
-#define MTS_STRUCT_TRAITS(type, value) \
+#define MTS_STRUCT_TRAITS(type, enumVal) \
     template <> struct struct_traits<type> { \
-        static constexpr auto value = Struct::value; \
+        static constexpr Struct::EType value = Struct::enumVal; \
     };
 
 MTS_STRUCT_TRAITS(int8_t, EInt8);

@@ -101,10 +101,10 @@ std::string Struct::toString() const {
             os << ", normalized";
         if (f.flags & EGamma)
             os << ", gamma";
-        if (f.flags & EAssert)
-            os << ", assert";
-        if (f.default_ != 0)
+        if (f.flags & EDefault)
             os << ", default=" << f.default_;
+        if (f.flags & EAssert)
+            os << ", assert=" << f.default_;
         os << "\n";
     }
     os << "]";
@@ -415,6 +415,10 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 c.cvtsd2ss(reg_f, reg_d);
 
         } catch (...) {
+            if (!(df.flags & Struct::EDefault))
+                Throw("StructConverter(): field '%s' is missing in the source "
+                      "structure", df.name);
+
             if (df.isInteger()) {
                 if (df.default_ == 0) {
                     c.xor_(reg, reg);
@@ -701,6 +705,9 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                                                          df.type == Struct::EFloat32))
                     reg_f = (float) reg_d;
             } catch (...) {
+                if (!(df.flags & Struct::EDefault))
+                    Throw("StructConverter(): field '%s' is missing in the source "
+                          "structure", df.name);
                 if (df.isInteger())
                     reg = (int64_t) df.default_;
                 else if (df.type == Struct::EFloat16 || df.type == Struct::EFloat32)

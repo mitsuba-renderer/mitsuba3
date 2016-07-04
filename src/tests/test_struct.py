@@ -155,7 +155,7 @@ class StructConvTest(unittest.TestCase):
         s1 = Struct().append("val1", Struct.EInt32) \
                      .append("val3", Struct.EInt32)
         s2 = Struct().append("val1", Struct.EInt32) \
-                     .append("val2", Struct.EInt32, 0, 123) \
+                     .append("val2", Struct.EInt32, int(Struct.EDefault), 123) \
                      .append("val3", Struct.EInt32)
         s = StructConverter(s1, s2)
         self.assertConversion(s, "<ii", "<iii", (1, 3), (1, 123, 3))

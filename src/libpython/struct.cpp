@@ -27,6 +27,7 @@ MTS_PY_EXPORT(Struct) {
         .value("ENormalized", Struct::EFlags::ENormalized)
         .value("EGamma", Struct::EFlags::EGamma)
         .value("EAssert", Struct::EFlags::EAssert)
+        .value("EDefault", Struct::EFlags::EDefault)
         .export_values();
 
     c.def(py::init<bool, Struct::EByteOrder>(), py::arg("pack") = false,
