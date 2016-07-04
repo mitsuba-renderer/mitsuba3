@@ -81,11 +81,13 @@ typedef float Float;
 
 /* Definitions for various compiler intrinsics */
 #if defined(__GNUG__) || defined(__clang__)
-#  define MTS_CLZ   __builtin_clz
-#  define MTS_CLZLL __builtin_clzll
+#  define MTS_CLZ     __builtin_clz
+#  define MTS_CLZLL   __builtin_clzll
 #elif defined(_MSC_VER)
-#  define MTS_CLZ   __lzcnt
-#  define MTS_CLZLL __lzcnt64
+#  define MTS_CLZ     __lzcnt
+#  define MTS_CLZLL   __lzcnt64
 #endif
+#define MTS_BLSR    _blsr_u32
+#define MTS_BLSRLL  _blsr_u64
 
 NAMESPACE_END(mitsuba)

@@ -231,7 +231,14 @@ template <typename T> T modulo(T a, T b) {
 
 /// Check whether the provided integer is a power of two
 template <typename T> bool isPowerOfTwo(T i) {
+#if defined(MTS_BSLR) && defined(MTS_BSLRLL)
+    if (sizeof(T) <= 4)
+        return i > 0 && MTS_BLSR((unsigned int) i) == 0;
+    else
+        return i > 0 && MTS_BLSRLL((unsigned long long) i) == 0;
+#else
     return i > 0 && (i & (i-1)) == 0;
+#endif
 }
 
 /// Round an unsigned integer to the next integer power of two
