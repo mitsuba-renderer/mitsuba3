@@ -12,3 +12,4 @@ add_subdirectory(mitsuba)
 
 # Plugins
 add_subdirectory(bsdfs)
+add_subdirectory(shapes)

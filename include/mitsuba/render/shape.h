@@ -7,6 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
     MTS_DECLARE_CLASS()
+    virtual void doSomething() = 0;
         
 protected:
     virtual ~Shape() { }
