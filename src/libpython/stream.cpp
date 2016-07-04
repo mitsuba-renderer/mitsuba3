@@ -53,6 +53,13 @@ MTS_PY_EXPORT(Stream) {
         .mdef(Stream, close)
         .mdef(Stream, setByteOrder)
         .mdef(Stream, byteOrder)
+        .mdef(Stream, seek)
+        .mdef(Stream, truncate)
+        .mdef(Stream, tell)
+        .mdef(Stream, size)
+        .mdef(Stream, flush)
+        .mdef(Stream, canRead)
+        .mdef(Stream, canWrite)
         .def_static("hostByteOrder", Stream::hostByteOrder, DM(Stream, hostByteOrder))
         .DECLARE_READ(int64_t, "Long")
         .DECLARE_READ(Float, "Float")
@@ -72,42 +79,18 @@ MTS_PY_EXPORT(Stream) {
 
 MTS_PY_EXPORT(DummyStream) {
     MTS_PY_CLASS(DummyStream, Stream)
-        .def(py::init<>(), DM(DummyStream, DummyStream))
-        .mdef(DummyStream, seek)
-        .mdef(DummyStream, truncate)
-        .mdef(DummyStream, pos)
-        .mdef(DummyStream, size)
-        .mdef(DummyStream, flush)
-        .mdef(DummyStream, canRead)
-        .mdef(DummyStream, canWrite)
-        .def("__repr__", &DummyStream::toString);
+        .def(py::init<>(), DM(DummyStream, DummyStream));
 }
 
 MTS_PY_EXPORT(FileStream) {
     MTS_PY_CLASS(FileStream, Stream)
-        .def(py::init<const mitsuba::filesystem::path &, bool>(), DM(FileStream, FileStream))
-        .mdef(FileStream, seek)
-        .mdef(FileStream, truncate)
-        .mdef(FileStream, pos)
-        .mdef(FileStream, size)
-        .mdef(FileStream, flush)
-        .mdef(Stream, canRead)
-        .mdef(Stream, canWrite)
-        .def("__repr__", &FileStream::toString);
+        .def(py::init<const mitsuba::filesystem::path &, bool>(), DM(FileStream, FileStream));
 }
 
 MTS_PY_EXPORT(MemoryStream) {
     MTS_PY_CLASS(MemoryStream, Stream)
         .def(py::init<size_t>(), DM(MemoryStream, MemoryStream),
-             py::arg("initialSize") = 512)
-        .mdef(MemoryStream, seek)
-        .mdef(MemoryStream, truncate)
-        .mdef(MemoryStream, pos)
-        .mdef(MemoryStream, size)
-        .mdef(MemoryStream, flush)
-        .mdef(MemoryStream, canRead)
-        .mdef(MemoryStream, canWrite)
-        .def("__repr__", &MemoryStream::toString);
+             py::arg("initialSize") = 512);
 }
 
 MTS_PY_EXPORT(ZStream) {
@@ -123,17 +106,9 @@ MTS_PY_EXPORT(ZStream) {
           py::arg("childStream"),
           py::arg("streamType") = ZStream::EDeflateStream,
           py::arg("level") = Z_DEFAULT_COMPRESSION)
-        // Unsupported in ZStream: .mdef(ZStream, seek)
-        // Unsupported in ZStream: .mdef(ZStream, truncate)
-        // Unsupported in ZStream: .mdef(ZStream, pos)
-        // Unsupported in ZStream: .mdef(ZStream, size)
-        // Unsupported in ZStream: .mdef(ZStream, flush)
         .def("childStream", [](ZStream &stream) {
             return py::cast(stream.childStream());
-        }, DM(ZStream, childStream))
-        .mdef(ZStream, canRead)
-        .mdef(ZStream, canWrite)
-        .def("__repr__", &ZStream::toString);
+        }, DM(ZStream, childStream));
 
 
 }

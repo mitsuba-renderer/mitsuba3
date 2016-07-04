@@ -65,7 +65,7 @@ public:
     }
 
     /// Returns the current position in the stream.
-    virtual size_t pos() const override { return m_pos; }
+    virtual size_t tell() const override { return m_pos; }
 
     /// Returns the size of the stream.
     virtual size_t size() const override { return m_size; }

@@ -54,7 +54,7 @@ std::string FileStream::toString() const {
         oss << ", size=?, pos=?";
     } else {
         oss << ", size=" << size()
-            << ", pos=" << pos();
+            << ", pos=" << tell();
     }
     oss << ", writeEnabled=" << (m_writeEnabled ? "true" : "false")
         << "]";
@@ -116,7 +116,7 @@ void FileStream::truncate(size_t size) {
     }
 
     flush();
-    const auto old_pos = pos();
+    const auto old_pos = tell();
 #if defined(__WINDOWS__)
     // Windows won't allow a resize if the file is open
     m_file->close();
@@ -138,7 +138,7 @@ void FileStream::truncate(size_t size) {
     }
 }
 
-size_t FileStream::pos() const {
+size_t FileStream::tell() const {
     const auto pos = (m_writeEnabled ? m_file->tellg() : m_file->tellp());
     if (pos < 0) {
         Log(EError, "\"%s\": I/O error while attempting to determine position in file",

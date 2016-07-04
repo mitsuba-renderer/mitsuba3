@@ -44,6 +44,9 @@ public:
     /// Convenience function for reading a line of text from an ASCII file
     virtual std::string readLine() override;
 
+    /// Return the "native" std::fstream associated with this FileStream
+    std::fstream *native() { return m_file.get(); }
+
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // Most methods can be delegated directly to the underlying
@@ -73,7 +76,7 @@ public:
     virtual void truncate(size_t size) override;
 
     /// Gets the current position inside the file
-    virtual size_t pos() const override;
+    virtual size_t tell() const override;
 
     /** \brief Returns the size of the file.
      * \note After a write, the size may not be updated

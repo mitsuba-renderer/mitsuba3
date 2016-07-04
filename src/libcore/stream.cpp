@@ -67,7 +67,7 @@ std::string Stream::readLine() {
                 result += data;
         } while (true);
     } catch (...) {
-        if (pos() != size() || result.empty())
+        if (tell() != size() || result.empty())
             throw;
     }
 	return result;

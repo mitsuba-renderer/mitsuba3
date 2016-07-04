@@ -461,8 +461,6 @@ written, we need to maintain consistent positioning).)doc";
 
 static const char *__doc_mitsuba_DummyStream_m_size = R"doc(Size of all data written to the stream)doc";
 
-static const char *__doc_mitsuba_DummyStream_pos = R"doc(Returns the current position in the stream.)doc";
-
 static const char *__doc_mitsuba_DummyStream_read = R"doc(Always throws, since DummyStream is write-only.)doc";
 
 static const char *__doc_mitsuba_DummyStream_seek =
@@ -471,6 +469,8 @@ R"doc(Updates the current position in the stream. Even though the
 to accurately compute the size of the stream.)doc";
 
 static const char *__doc_mitsuba_DummyStream_size = R"doc(Returns the size of the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_tell = R"doc(Returns the current position in the stream.)doc";
 
 static const char *__doc_mitsuba_DummyStream_toString = R"doc(Returns a string representation)doc";
 
@@ -578,7 +578,7 @@ static const char *__doc_mitsuba_FileStream_m_path = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_m_writeEnabled = R"doc()doc";
 
-static const char *__doc_mitsuba_FileStream_pos = R"doc(Gets the current position inside the file)doc";
+static const char *__doc_mitsuba_FileStream_native = R"doc(Return the "native" std::fstream associated with this FileStream)doc";
 
 static const char *__doc_mitsuba_FileStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
@@ -593,6 +593,8 @@ state is invalid.)doc";
 static const char *__doc_mitsuba_FileStream_size =
 R"doc(Returns the size of the file. \note After a write, the size may not be
 updated until a flush is performed.)doc";
+
+static const char *__doc_mitsuba_FileStream_tell = R"doc(Gets the current position inside the file)doc";
 
 static const char *__doc_mitsuba_FileStream_toString = R"doc(Returns a string representation)doc";
 
@@ -883,10 +885,6 @@ static const char *__doc_mitsuba_MemoryStream_m_pos = R"doc(Current position ins
 
 static const char *__doc_mitsuba_MemoryStream_m_size = R"doc(Current size of the contents written to the memory buffer)doc";
 
-static const char *__doc_mitsuba_MemoryStream_pos =
-R"doc(Gets the current position inside the memory buffer. Note that this
-might be further than the stream's size or even capacity.)doc";
-
 static const char *__doc_mitsuba_MemoryStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
 if trying to read further than the current size of the contents.)doc";
@@ -904,6 +902,10 @@ static const char *__doc_mitsuba_MemoryStream_size =
 R"doc(Returns the size of the contents written to the memory buffer. \note
 This is not equal to the size of the memory buffer in general, since
 we allocate more capacity at once.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_tell =
+R"doc(Gets the current position inside the memory buffer. Note that this
+might be further than the stream's size or even capacity.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_toString = R"doc(Returns a string representation)doc";
 
@@ -1251,8 +1253,6 @@ or reading.)doc";
 
 static const char *__doc_mitsuba_Stream_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_Stream_pos = R"doc(Gets the current position inside the stream)doc";
-
 static const char *__doc_mitsuba_Stream_read =
 R"doc(Reads a specified amount of data from the stream. \note This does
 **not** handle endianness swapping.
@@ -1286,6 +1286,8 @@ some read and write operations on the system using a different
 endianness.)doc";
 
 static const char *__doc_mitsuba_Stream_size = R"doc(Returns the size of the stream)doc";
+
+static const char *__doc_mitsuba_Stream_tell = R"doc(Gets the current position inside the stream)doc";
 
 static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a human-readable desriptor of the stream)doc";
 
@@ -1953,8 +1955,6 @@ static const char *__doc_mitsuba_ZStream_m_inflateBuffer = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream_m_inflateStream = R"doc()doc";
 
-static const char *__doc_mitsuba_ZStream_pos = R"doc(Unsupported. Always throws.)doc";
-
 static const char *__doc_mitsuba_ZStream_read =
 R"doc(Reads a specified amount of data from the stream, decompressing it
 first using ZLib. Throws an exception when the stream ended
@@ -1963,6 +1963,8 @@ prematurely.)doc";
 static const char *__doc_mitsuba_ZStream_seek = R"doc(Unsupported. Always throws.)doc";
 
 static const char *__doc_mitsuba_ZStream_size = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_tell = R"doc(Unsupported. Always throws.)doc";
 
 static const char *__doc_mitsuba_ZStream_toString = R"doc(Returns a string representation)doc";
 

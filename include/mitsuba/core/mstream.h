@@ -85,7 +85,7 @@ public:
      * this might be further than the stream's size or even capacity.
      */
 
-    virtual size_t pos() const override { return m_pos; };
+    virtual size_t tell() const override { return m_pos; };
 
     /** \brief Returns the size of the contents written to the memory buffer.
      * \note This is not equal to the size of the memory buffer in general,

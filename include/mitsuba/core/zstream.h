@@ -86,8 +86,8 @@ public:
     }
 
     /// Unsupported. Always throws.
-    virtual size_t pos() const override {
-        Log(EError, "pos(): unsupported in a ZLIB stream!");
+    virtual size_t tell() const override {
+        Log(EError, "tell(): unsupported in a ZLIB stream!");
         return 0;
     }
 
