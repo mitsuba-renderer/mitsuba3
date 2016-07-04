@@ -25,9 +25,9 @@ public:
 	/// Supported types of properties
 	enum EPropertyType {
 		/// Boolean value (true/false)
-		EBoolean = 0,
+		EBool = 0,
 		/// 64-bit signed integer
-		EInteger,
+		ELong,
 		/// Floating point value
 		EFloat,
 		/// 3D point
@@ -62,7 +62,7 @@ public:
     ~Properties();
 
     /// Get the associated plugin name
-    const std::string &getPluginName() const;
+    const std::string &pluginName() const;
 
     /// Set the associated plugin name
     void setPluginName(const std::string &name);
@@ -74,7 +74,7 @@ public:
      * If no property exists under that name, an error is logged
      * and type <tt>void</tt> is returned.
      */
-    EPropertyType getPropertyType(const std::string &name) const;
+    EPropertyType propertyType(const std::string &name) const;
 
     /**
      * \brief Remove a property with the specified name
@@ -92,7 +92,7 @@ public:
     bool wasQueried(const std::string &name) const;
 
     /// Returns a unique identifier associated with this instance (or an empty string)
-    const std::string &getID() const;
+    const std::string &id() const;
 
     /// Set the unique identifier associated with this instance
     void setID(const std::string &id);
@@ -103,10 +103,10 @@ public:
                        const std::string &targetName);
 
     /// Store an array containing the names of all stored properties
-    std::vector<std::string> getPropertyNames() const;
+    std::vector<std::string> propertyNames() const;
 
     /// Return the list of un-queried attributed
-    std::vector<std::string> getUnqueried() const;
+    std::vector<std::string> unqueried() const;
 
     /**
      * Merge another properties record into the current one.
@@ -129,59 +129,57 @@ public:
 public:  // Type-specific getters and setters ----------------------------------
 
     /// Store a boolean value in the Properties instance
-    void setBoolean(const std::string &name, const bool &value, bool warnDuplicates = true);
+    void setBool(const std::string &name, const bool &value, bool warnDuplicates = true);
     /// Retrieve a boolean value
-    const bool& getBoolean(const std::string &name) const;
+    const bool& bool_(const std::string &name) const;
     /// Retrieve a boolean value (use default value if no entry exists)
-    const bool& getBoolean(const std::string &name, const bool &defVal) const;
+    const bool& bool_(const std::string &name, const bool &defVal) const;
 
     /// Set an integer value in the Properties instance
-    void setInteger(const std::string &name, const int &value, bool warnDuplicates = true) {
+    void setInt(const std::string &name, const int &value, bool warnDuplicates = true) {
         setLong(name, (int64_t) value, warnDuplicates);
     }
     /// Retrieve an integer value
-    int getInteger(const std::string &name) const {
-        return (int) getLong(name);
-    }
+    int int_(const std::string &name) const { return (int) long_(name); }
     /// Retrieve a boolean value (use default value if no entry exists)
-	int getInteger(const std::string &name, const int &defVal) const {
-        return (int) getLong(name, (int64_t) defVal);
+	int int_(const std::string &name, const int &defVal) const {
+        return (int) long_(name, (int64_t) defVal);
 	}
 
     /// Store an integer value in the Properties instance
     void setLong(const std::string &name, const int64_t &value, bool warnDuplicates = true);
     /// Retrieve an integer value
-    const int64_t& getLong(const std::string &name) const;
+    const int64_t& long_(const std::string &name) const;
     /// Retrieve an integer value (use default value if no entry exists)
-    const int64_t& getLong(const std::string &name, const int64_t &defVal) const;
+    const int64_t& long_(const std::string &name, const int64_t &defVal) const;
 
     /// Store a floating point value in the Properties instance
     void setFloat(const std::string &name, const Float &value, bool warnDuplicates = true);
     /// Retrieve a floating point value
-    const Float& getFloat(const std::string &name) const;
+    const Float& float_(const std::string &name) const;
     /// Retrieve a floating point value (use default value if no entry exists)
-    const Float& getFloat(const std::string &name, const Float &defVal) const;
+    const Float& float_(const std::string &name, const Float &defVal) const;
 
     /// Store a string in the Properties instance
     void setString(const std::string &name, const std::string &value, bool warnDuplicates = true);
     /// Retrieve a string value
-    const std::string& getString(const std::string &name) const;
+    const std::string& string(const std::string &name) const;
     /// Retrieve a string value (use default value if no entry exists)
-    const std::string& getString(const std::string &name, const std::string &defVal) const;
+    const std::string& string(const std::string &name, const std::string &defVal) const;
 
     /// Store a vector in the Properties instance
     void setVector3f(const std::string &name, const Vector3f &value, bool warnDuplicates = true);
     /// Retrieve a vector
-    const Vector3f& getVector3f(const std::string &name) const;
+    const Vector3f& vector3f(const std::string &name) const;
     /// Retrieve a vector (use default value if no entry exists)
-    const Vector3f& getVector3f(const std::string &name, const Vector3f &defVal) const;
+    const Vector3f& vector3f(const std::string &name, const Vector3f &defVal) const;
 
     /// Store an arbitrary object in the Properties instance
     void setObject(const std::string &name, const ref<Object> &value, bool warnDuplicates = true);
     /// Retrieve an arbitrary object
-    const ref<Object>& getObject(const std::string &name) const;
+    const ref<Object>& object(const std::string &name) const;
     /// Retrieve an arbitrary object (use default value if no entry exists)
-    const ref<Object>& getObject(const std::string &name, const ref<Object> &defVal) const;
+    const ref<Object>& object(const std::string &name, const ref<Object> &defVal) const;
 private:
     struct PropertiesPrivate;
     std::unique_ptr<PropertiesPrivate> d;

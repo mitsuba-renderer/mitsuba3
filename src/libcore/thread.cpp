@@ -90,11 +90,11 @@ void Thread::setCritical(bool critical) {
     d->critical = critical;
 }
 
-bool Thread::getCritical() const {
+bool Thread::isCritical() const {
     return d->critical;
 }
 
-const std::string &Thread::getName() const {
+const std::string &Thread::name() const {
     return d->name;
 }
 
@@ -106,7 +106,7 @@ void Thread::setLogger(Logger *logger) {
     d->logger = logger;
 }
 
-Logger* Thread::getLogger() {
+Logger* Thread::logger() {
     return d->logger;
 }
 
@@ -114,15 +114,15 @@ void Thread::setFileResolver(FileResolver *fresolver) {
 	d->fresolver = fresolver;
 }
 
-FileResolver* Thread::getFileResolver() {
+FileResolver* Thread::fileResolver() {
 	return d->fresolver;
 }
 
-const FileResolver* Thread::getFileResolver() const {
+const FileResolver* Thread::fileResolver() const {
 	return d->fresolver;
 }
 
-Thread* Thread::getThread() {
+Thread* Thread::thread() {
     return *self;
 }
 
@@ -130,23 +130,23 @@ bool Thread::isRunning() const {
     return d->running;
 }
 
-Thread* Thread::getParent() {
+Thread* Thread::parent() {
     return d->parent;
 }
 
-const Thread* Thread::getParent() const {
+const Thread* Thread::parent() const {
     return d->parent.get();
 }
 
-Thread::EPriority Thread::getPriority() const {
+Thread::EPriority Thread::priority() const {
     return d->priority;
 }
 
-int Thread::getCoreAffinity() const {
+int Thread::coreAffinity() const {
     return d->coreAffinity;
 }
 
-uint32_t Thread::getID() {
+uint32_t Thread::id() {
 #if defined(__WINDOWS__)
     return this_thread_id;
 #elif defined(__OSX__) || defined(__LINUX__)
@@ -214,7 +214,7 @@ bool Thread::setPriority(EPriority priority) {
     const HANDLE handle = d->thread.native_handle();
     if (SetThreadPriority(handle, win32Priority) == 0) {
         Log(EWarn, "Could not adjust the thread priority to %i: %s!",
-            win32Priority, util::getLastError());
+            win32Priority, util::lastError());
         return false;
     }
 #endif
@@ -299,7 +299,7 @@ void Thread::setCoreAffinity(int coreID) {
 
     CPU_FREE(cpuset);
 #elif defined(__WINDOWS__)
-    int nCores = util::getCoreCount();
+    int nCores = util::coreCount();
     const HANDLE handle = d->thread.native_handle();
 
     DWORD_PTR mask;
@@ -322,15 +322,15 @@ void Thread::start() {
 
     Log(EDebug, "Spawning thread \"%s\"", d->name);
 
-    d->parent = Thread::getThread();
+    d->parent = Thread::thread();
 
     /* Inherit the parent thread's logger if none was set */
     if (!d->logger)
-        d->logger = d->parent->getLogger();
+        d->logger = d->parent->logger();
 
     /* Inherit the parent thread's file resolver if none was set */
     if (!d->fresolver)
-        d->fresolver = d->parent->getFileResolver();
+        d->fresolver = d->parent->fileResolver();
 
     d->running = true;
 
@@ -354,7 +354,7 @@ void Thread::dispatch() {
         setPriority(d->priority);
 
     if (!d->name.empty()) {
-        const std::string threadName = "Mitsuba: " + getName();
+        const std::string threadName = "Mitsuba: " + name();
         #if defined(__LINUX__)
             pthread_setname_np(pthread_self(), threadName.c_str());
             // prctl(PR_SET_NAME, threadName.c_str());
@@ -371,7 +371,7 @@ void Thread::dispatch() {
     try {
         run();
     } catch (std::exception &e) {
-        ELogLevel warnLogLevel = getLogger()->getErrorLevel() == EError ? EWarn : EInfo;
+        ELogLevel warnLogLevel = logger()->errorLevel() == EError ? EWarn : EInfo;
         Log(warnLogLevel, "Fatal error: uncaught exception: \"%s\"", e.what());
         if (d->critical)
             abort();
@@ -434,7 +434,7 @@ void Thread::staticInitialization() {
 }
 
 void Thread::staticShutdown() {
-    getThread()->d->running = false;
+    thread()->d->running = false;
     ThreadLocalBase::unregisterThread();
     delete self;
     self = nullptr;

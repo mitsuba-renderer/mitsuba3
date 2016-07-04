@@ -11,7 +11,7 @@ NAMESPACE_END(xml)
 
 static std::map<std::string, Class *> *__classes;
 bool Class::m_isInitialized = false;
-const Class *m_theClass = nullptr;
+const Class *m_class = nullptr;
 
 Class::Class(const std::string &name, const std::string &parent, bool abstract,
              ConstructFunctor constr, UnserializeFunctor unser)
@@ -36,28 +36,28 @@ const Class *Class::forName(const std::string &name) {
     return nullptr;
 }
 
-bool Class::derivesFrom(const Class *theClass) const {
+bool Class::derivesFrom(const Class *class_) const {
     const Class *mClass = this;
 
     while (mClass) {
-        if (theClass == mClass)
+        if (class_ == mClass)
             return true;
-        mClass = mClass->getParent();
+        mClass = mClass->parent();
     }
 
     return false;
 }
 
-void Class::initializeOnce(Class *theClass) {
-    const std::string &base = theClass->m_parentName;
+void Class::initializeOnce(Class *class_) {
+    const std::string &base = class_->m_parentName;
 
     if (!base.empty()) {
         if (__classes->find(base) != __classes->end()) {
-            theClass->m_parent = (*__classes)[base];
+            class_->m_parent = (*__classes)[base];
         } else {
             std::cerr << "Critical error during the static RTTI initialization: " << std::endl
                 << "Could not locate the base class '" << base << "' while initializing '"
-                << theClass->getName() << "'!" << std::endl;
+                << class_->name() << "'!" << std::endl;
             abort();
         }
     }
@@ -67,7 +67,7 @@ ref<Object> Class::construct(const Properties &props) const {
     if (!m_constr)
         Throw("RTTI error: Attempted to construct a "
               "non-constructible class (%s)!",
-              getName());
+              name());
     return m_constr(props);
 }
 
@@ -75,7 +75,7 @@ ref<Object> Class::unserialize(Stream *stream) const {
     if (!m_unser)
         Throw("RTTI error: Attempted to construct a "
               "class lacking a unserialization constructor (%s)!",
-              getName());
+              name());
     return m_unser(stream);
 }
 

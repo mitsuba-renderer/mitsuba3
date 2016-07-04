@@ -117,7 +117,7 @@ public:
             return !isFloat();
         }
 
-        std::pair<double, double> getRange() const;
+        std::pair<double, double> range() const;
     };
 
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
@@ -149,7 +149,7 @@ public:
     static EByteOrder hostByteOrder();
 
     /// Look up a field by name (throws an exception if not found)
-    const Field &getField(const std::string &name) const;
+    const Field &field(const std::string &name) const;
 
     /// Return a string representation
     std::string toString() const override;

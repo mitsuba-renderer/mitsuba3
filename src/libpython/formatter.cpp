@@ -28,12 +28,12 @@ MTS_PY_EXPORT(Formatter) {
 
     MTS_PY_CLASS(DefaultFormatter, Formatter)
         .def(py::init<>())
-        .mdef(DefaultFormatter, getHaveDate)
-        .mdef(DefaultFormatter, setHaveDate)
-        .mdef(DefaultFormatter, getHaveThread)
-        .mdef(DefaultFormatter, setHaveThread)
-        .mdef(DefaultFormatter, getHaveLogLevel)
-        .mdef(DefaultFormatter, setHaveLogLevel)
-        .mdef(DefaultFormatter, getHaveClass)
-        .mdef(DefaultFormatter, setHaveClass);
+        .mdef(DefaultFormatter, hasDate)
+        .mdef(DefaultFormatter, setHasDate)
+        .mdef(DefaultFormatter, hasThread)
+        .mdef(DefaultFormatter, setHasThread)
+        .mdef(DefaultFormatter, hasLogLevel)
+        .mdef(DefaultFormatter, setHasLogLevel)
+        .mdef(DefaultFormatter, hasClass)
+        .mdef(DefaultFormatter, setHasClass);
 }

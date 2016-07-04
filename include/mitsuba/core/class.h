@@ -44,7 +44,7 @@ public:
           UnserializeFunctor unser = nullptr);
 
     /// Return the name of the represented class
-    const std::string &getName() const { return m_name; }
+    const std::string &name() const { return m_name; }
 
     /**
      * \brief Return whether or not the class represented
@@ -61,10 +61,10 @@ public:
     /** \brief Return the Class object associated with the parent
      * class of nullptr if it does not have one.
      */
-    const Class *getParent() const { return m_parent; }
+    const Class *parent() const { return m_parent; }
 
-    /// Check whether this class derives from \a theClass
-    bool derivesFrom(const Class *theClass) const;
+    /// Check whether this class derives from \a class_
+    bool derivesFrom(const Class *class_) const;
 
     /// Look up a class by its name
     static const Class *forName(const std::string &name);
@@ -99,7 +99,7 @@ private:
     /** \brief Initialize a class - called by
      * staticInitialization()
      */
-    static void initializeOnce(Class *theClass);
+    static void initializeOnce(Class *class_);
 private:
     std::string m_name, m_parentName;
     Class *m_parent;
@@ -115,7 +115,7 @@ private:
  * Call the Macro without quotes, e.g. \c MTS_CLASS(SerializableObject)
  * \ingroup libcore
  */
-#define MTS_CLASS(x) x::m_theClass
+#define MTS_CLASS(x) x::m_class
 
 /**
  * \brief This macro must be used in the initial definition in
@@ -140,9 +140,9 @@ private:
  * \ingroup libcore
  */
 #define MTS_DECLARE_CLASS() \
-    virtual const Class *getClass() const override; \
+    virtual const Class *class_() const override; \
 public: \
-    static Class *m_theClass;
+    static Class *m_class;
 
 
 NAMESPACE_BEGIN(detail)
@@ -175,13 +175,13 @@ NAMESPACE_END(detail)
  * \ingroup libcore
  */
 #define MTS_IMPLEMENT_CLASS(Name, Parent) \
-    Class *Name::m_theClass = new Class(#Name, #Parent, \
+    Class *Name::m_class = new Class(#Name, #Parent, \
             std::is_abstract<Name>::value, \
             detail::get_construct_functor<Name>(), \
             detail::get_unserialize_functor<Name>()); \
-    const Class *Name::getClass() const { return m_theClass; }
+    const Class *Name::class_() const { return m_class; }
 
-extern MTS_EXPORT_CORE const Class *m_theClass;
+extern MTS_EXPORT_CORE const Class *m_class;
 
 #define MTS_EXPORT_PLUGIN(name, descr) \
 	extern "C" { \

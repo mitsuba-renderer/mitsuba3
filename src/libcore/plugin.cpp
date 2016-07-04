@@ -27,7 +27,7 @@ public:
             m_handle = LoadLibraryW(path.native().c_str());
             if (!m_handle)
                 Throw("Error while loading plugin \"%s\": %s", path.string(),
-                      util::getLastError());
+                      util::lastError());
         #else
             m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
             if (!m_handle)
@@ -36,7 +36,7 @@ public:
         #endif
 
         try {
-            createObject = (CreateObjectFunctor) getSymbol("CreateObject");
+            createObject = (CreateObjectFunctor) symbol("CreateObject");
         } catch (...) {
             this->~Plugin();
             throw;
@@ -51,12 +51,12 @@ public:
         #endif
     }
 
-    void *getSymbol(const std::string &name) const {
+    void *symbol(const std::string &name) const {
         #if defined(__WINDOWS__)
             void *ptr = GetProcAddress(m_handle, name.c_str());
             if (!ptr)
                 Throw("Could not resolve symbol \"%s\" in \"%s\": %s", name,
-                      m_path.string(), util::getLastError());
+                      m_path.string(), util::lastError());
         #else
             void *ptr = dlsym(m_handle, name.c_str());
             if (!ptr)
@@ -81,7 +81,7 @@ struct PluginManager::PluginManagerPrivate {
 	std::unordered_map<std::string, Plugin *> m_plugins;
     std::mutex m_mutex;
 
-    Plugin *getPlugin(const std::string &name) {
+    Plugin *plugin(const std::string &name) {
         std::lock_guard<std::mutex> guard(m_mutex);
 
         /* Plugin already loaded? */
@@ -100,7 +100,7 @@ struct PluginManager::PluginManagerPrivate {
             filename.replace_extension(".so");
         #endif
 
-        const FileResolver *resolver = Thread::getThread()->getFileResolver();
+        const FileResolver *resolver = Thread::thread()->fileResolver();
         fs::path resolved = resolver->resolve(filename);
 
         if (fs::exists(resolved)) {
@@ -108,7 +108,7 @@ struct PluginManager::PluginManagerPrivate {
             Plugin *plugin = new Plugin(resolved);
             /* New classes must be registered within the class hierarchy */
             Class::staticInitialization();
-	        ///Statistics::getInstance()->logPlugin(shortName, getDescription()); XXX
+	        ///Statistics::instance()->logPlugin(shortName, description()); XXX
             m_plugins[name] = plugin;
             return plugin;
         }
@@ -129,22 +129,22 @@ PluginManager::~PluginManager() {
 }
 
 ref<Object> PluginManager::createObject(const Class *class_, const Properties &props) {
-   const Plugin *plugin = d->getPlugin(props.getPluginName());
+   const Plugin *plugin = d->plugin(props.pluginName());
    ref<Object> object = plugin->createObject(props);
-   if (!object->getClass()->derivesFrom(class_))
+   if (!object->class_()->derivesFrom(class_))
         Throw("Type mismatch when loading plugin \"%s\": Expected "
-              "an instance of \"%s\"", props.getPluginName(),
-              class_->getName());
+              "an instance of \"%s\"", props.pluginName(),
+              class_->name());
 
    return object;
 }
 
 ref<Object> PluginManager::createObject(const Properties &props) {
-	const Plugin *plugin = d->getPlugin(props.getPluginName());
+	const Plugin *plugin = d->plugin(props.pluginName());
     return plugin->createObject(props);
 }
 
-std::vector<std::string> PluginManager::getLoadedPlugins() const {
+std::vector<std::string> PluginManager::loadedPlugins() const {
 	std::vector<std::string> list;
     std::lock_guard<std::mutex> guard(d->m_mutex);
     for (auto const &pair: d->m_plugins)
@@ -153,7 +153,7 @@ std::vector<std::string> PluginManager::getLoadedPlugins() const {
 }
 
 void PluginManager::ensurePluginLoaded(const std::string &name) {
-    (void) d->getPlugin(name);
+    (void) d->plugin(name);
 }
 
 MTS_IMPLEMENT_CLASS(PluginManager, Object)

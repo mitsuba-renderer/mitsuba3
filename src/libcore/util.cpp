@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(util)
 
 #if defined(__WINDOWS__)
-std::string getLastError() {
+std::string lastError() {
     DWORD errCode = GetLastError();
     char *errorText = nullptr;
     if (!FormatMessageA(
@@ -43,7 +43,7 @@ std::string getLastError() {
 }
 #endif
 
-int getCoreCount() {
+int coreCount() {
 #if defined(__WINDOWS__)
     SYSTEM_INFO sys_info;
     GetSystemInfo(&sys_info);
@@ -143,7 +143,7 @@ std::string memString(size_t size, bool precise) {
 	}
 #endif
 
-fs::path getLibraryPath() {
+fs::path libraryPath() {
 	fs::path result;
 #if defined(__LINUX__)
 	Dl_info info;

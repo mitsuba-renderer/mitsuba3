@@ -56,69 +56,69 @@ class CommonStreamTest(unittest.TestCase):
     def test01_size_and_pos(self):
         for (name, stream) in self.streams.items():
             with self.subTest(name):
-                self.assertEqual(stream.getSize(), 0)
-                self.assertEqual(stream.getPos(), 0)
+                self.assertEqual(stream.size(), 0)
+                self.assertEqual(stream.pos(), 0)
 
                 if stream.canWrite():
                     # string length as a uint32_t (4) + string (5)
                     stream.write("hello")
                     stream.flush()
-                    self.assertEqual(stream.getSize(), 9)
-                    self.assertEqual(stream.getPos(), 9)
+                    self.assertEqual(stream.size(), 9)
+                    self.assertEqual(stream.pos(), 9)
                     stream.write(42) # Long (8)
                     stream.flush()
-                    self.assertEqual(stream.getSize(), 9+8)
-                    self.assertEqual(stream.getPos(), 9+8)
+                    self.assertEqual(stream.size(), 9+8)
+                    self.assertEqual(stream.pos(), 9+8)
 
     def test02_truncate(self):
         for (name, stream) in self.streams.items():
             if not stream.canWrite():
                 continue
             with self.subTest(name):
-                self.assertEqual(stream.getSize(), 0)
-                self.assertEqual(stream.getPos(), 0)
+                self.assertEqual(stream.size(), 0)
+                self.assertEqual(stream.pos(), 0)
                 stream.truncate(100)
-                self.assertEqual(stream.getSize(), 100)
-                self.assertEqual(stream.getPos(), 0)
+                self.assertEqual(stream.size(), 100)
+                self.assertEqual(stream.pos(), 0)
                 stream.seek(99)
-                self.assertEqual(stream.getPos(), 99)
+                self.assertEqual(stream.pos(), 99)
                 stream.truncate(50)
-                self.assertEqual(stream.getSize(), 50)
-                self.assertEqual(stream.getPos(), 50)
+                self.assertEqual(stream.size(), 50)
+                self.assertEqual(stream.pos(), 50)
                 stream.write("hello")
                 stream.flush()
-                self.assertEqual(stream.getSize(), 50 + 9)
-                self.assertEqual(stream.getPos(), 50 + 9)
+                self.assertEqual(stream.size(), 50 + 9)
+                self.assertEqual(stream.pos(), 50 + 9)
 
     def test03_seek(self):
         for (name, stream) in self.streams.items():
             with self.subTest(name):
                 size = 0
 
-                self.assertEqual(stream.getSize(), size)
-                self.assertEqual(stream.getPos(), 0)
+                self.assertEqual(stream.size(), size)
+                self.assertEqual(stream.pos(), 0)
 
                 if stream.canWrite():
                     size = 5
                     stream.truncate(size)
-                    self.assertEqual(stream.getSize(), size)
-                    self.assertEqual(stream.getPos(), 0)
+                    self.assertEqual(stream.size(), size)
+                    self.assertEqual(stream.pos(), 0)
 
                 stream.seek(5)
-                self.assertEqual(stream.getSize(), size)
-                self.assertEqual(stream.getPos(), 5)
+                self.assertEqual(stream.size(), size)
+                self.assertEqual(stream.pos(), 5)
                 # Seeking beyond the end of the file is okay, but won't make it larger
                 stream.seek(20)
-                self.assertEqual(stream.getSize(), size)
-                self.assertEqual(stream.getPos(), 20)
+                self.assertEqual(stream.size(), size)
+                self.assertEqual(stream.pos(), 20)
 
                 if stream.canWrite():
                     # A subsequent write should start at the correct position
                     # and update the size.
                     stream.write(13.37)
                     stream.flush()
-                    self.assertEqual(stream.getPos(), 20 + 4)
-                    self.assertEqual(stream.getSize(), 20 + 4)
+                    self.assertEqual(stream.pos(), 20 + 4)
+                    self.assertEqual(stream.size(), 20 + 4)
 
     def test04_read_back(self):
         # Write some values to be read back
@@ -137,7 +137,7 @@ class CommonStreamTest(unittest.TestCase):
 
     def test04_read_back_with_swapping(self):
         otherEndianness = Stream.EBigEndian
-        if Stream.getHostByteOrder() == otherEndianness:
+        if Stream.hostByteOrder() == otherEndianness:
             otherEndianness = Stream.ELittleEndian
 
         for (_, stream) in self.streams.items():
@@ -256,46 +256,46 @@ class FileStreamTest(unittest.TestCase):
             self.ro.truncate(5)
 
         # Truncating shouldn't change the position if not necessary
-        self.assertEqual(self.wo.getPos(), 0)
+        self.assertEqual(self.wo.pos(), 0)
         self.wo.truncate(5)
-        self.assertEqual(self.wo.getPos(), 0)
+        self.assertEqual(self.wo.pos(), 0)
         self.wo.write("hello")
         self.wo.flush()
-        self.assertEqual(self.wo.getPos(), 0 + 9)
+        self.assertEqual(self.wo.pos(), 0 + 9)
         self.wo.truncate(5)
-        self.assertEqual(self.wo.getPos(), 5)
+        self.assertEqual(self.wo.pos(), 5)
 
     def test04_seek(self):
         self.wo.truncate(5)
         self.wo.seek(5)
         self.wo.flush()
-        self.assertEqual(self.wo.getPos(), 5)
-        self.assertEqual(self.wo.getSize(), 5)
+        self.assertEqual(self.wo.pos(), 5)
+        self.assertEqual(self.wo.size(), 5)
         self.wo.write("hello world")
         self.wo.flush()
         self.wo.seek(3)
-        self.assertEqual(self.wo.getPos(), 3)
-        self.assertEqual(self.wo.getSize(), 5+4+11)
+        self.assertEqual(self.wo.pos(), 3)
+        self.assertEqual(self.wo.size(), 5+4+11)
         self.wo.write("dlrow olleh")
         self.wo.flush()
-        self.assertEqual(self.wo.getPos(), 3+4+11)
-        self.assertEqual(self.wo.getSize(), 5+4+11)
+        self.assertEqual(self.wo.pos(), 3+4+11)
+        self.assertEqual(self.wo.size(), 5+4+11)
 
         # Seeking further that the limit of the file should be okay too, but
         # not update the size.
         self.ro.seek(10)
-        self.assertEqual(self.ro.getPos(), 10)
-        self.assertEqual(self.ro.getSize(), 0)
+        self.assertEqual(self.ro.pos(), 10)
+        self.assertEqual(self.ro.size(), 0)
 
         self.wo.seek(40)
-        self.assertEqual(self.wo.getPos(), 40)
-        self.assertEqual(self.wo.getSize(), 5+4+11) # Actual size
+        self.assertEqual(self.wo.pos(), 40)
+        self.assertEqual(self.wo.size(), 5+4+11) # Actual size
 
         # A subsequent write should start at the correct position
         self.wo.write(13.37)
         self.wo.flush()
-        self.assertEqual(self.wo.getPos(), 40 + 4)
-        self.assertEqual(self.wo.getSize(), 40 + 4)
+        self.assertEqual(self.wo.pos(), 40 + 4)
+        self.assertEqual(self.wo.size(), 40 + 4)
 
     def test05_str(self):
         self.assertEqual(str(self.ro),
@@ -369,8 +369,8 @@ class ZStreamTest(unittest.TestCase):
     def test01_construction(self):
         for (name, stream) in self.streams.items():
             with self.subTest(name):
-                self.assertEqual(stream.canRead(), stream.getChildStream().canRead())
-                self.assertEqual(stream.canWrite(), stream.getChildStream().canWrite())
+                self.assertEqual(stream.canRead(), stream.childStream().canRead())
+                self.assertEqual(stream.canWrite(), stream.childStream().canWrite())
 
     # TODO: test construction with different enum values (EDeflateStream, EGZipStream)
     # TODO: test against a gold standard (compressed file)

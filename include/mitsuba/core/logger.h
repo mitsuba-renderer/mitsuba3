@@ -32,15 +32,16 @@ public:
 
     /**
      * \brief Process a log message
-     * \param level Log level of the message
-     * \param theClass Class descriptor of the message creator
-     * \param filename Source file of the message creator
-     * \param line Source line number of the message creator
-     * \param fmt printf-style string formatter
+     * \param level      Log level of the message
+     * \param class_     Class descriptor of the message creator
+     * \param filename   Source file of the message creator
+     * \param line       Source line number of the message creator
+     * \param fmt        printf-style string formatter
+     *
      * \note This function is not exposed in the Python bindings.
      *       Instead, please use \cc mitsuba.core.Log
      */
-    void log(ELogLevel level, const Class *theClass, const char *filename,
+    void log(ELogLevel level, const Class *class_, const char *filename,
              int line, const std::string &message);
 
     /**
@@ -71,10 +72,10 @@ public:
     void setErrorLevel(ELogLevel level);
 
     /// Return the current log level
-    ELogLevel getLogLevel() const { return m_logLevel; }
+    ELogLevel logLevel() const { return m_logLevel; }
 
     /// Return the current error level
-    ELogLevel getErrorLevel() const;
+    ELogLevel errorLevel() const;
 
     /// Add an appender to this logger
     void addAppender(Appender *appender);
@@ -86,22 +87,22 @@ public:
     void clearAppenders();
 
     /// Return the number of registered appenders
-    size_t getAppenderCount() const;
+    size_t appenderCount() const;
 
     /// Return one of the appenders
-    Appender *getAppender(size_t index);
+    Appender *appender(size_t index);
 
     /// Return one of the appenders
-    const Appender *getAppender(size_t index) const;
+    const Appender *appender(size_t index) const;
 
     /// Set the logger's formatter implementation
     void setFormatter(Formatter *formatter);
 
     /// Return the logger's formatter implementation
-    Formatter *getFormatter();
+    Formatter *formatter();
 
     /// Return the logger's formatter implementation (const)
-    const Formatter *getFormatter() const;
+    const Formatter *formatter() const;
 
     /**
      * \brief Return the contents of the log file as a string
@@ -131,15 +132,15 @@ private:
 NAMESPACE_BEGIN(detail)
 
 [[noreturn]] extern MTS_EXPORT_CORE
-void Throw(ELogLevel level, const Class *theClass, const char *file,
+void Throw(ELogLevel level, const Class *class_, const char *file,
            int line, const std::string &msg);
 
 template <typename... Args> MTS_FORCEINLINE
-static void Log(ELogLevel level, const Class *theClass,
+static void Log(ELogLevel level, const Class *class_,
                          const char *filename, int line, Args &&... args) {
-    auto logger = mitsuba::Thread::getThread()->getLogger();
-    if (logger && level >= logger->getLogLevel())
-        logger->log(level, theClass, filename, line, tfm::format(std::forward<Args>(args)...));
+    auto logger = mitsuba::Thread::thread()->logger();
+    if (logger && level >= logger->logLevel())
+        logger->log(level, class_, filename, line, tfm::format(std::forward<Args>(args)...));
 }
 
 NAMESPACE_END(detail)
@@ -147,14 +148,14 @@ NAMESPACE_END(detail)
 /// Write a log message to the console
 #define Log(level, ...)                                                        \
     do {                                                                       \
-        mitsuba::detail::Log(level, m_theClass, __FILE__, __LINE__,            \
+        mitsuba::detail::Log(level, m_class, __FILE__, __LINE__,               \
                                ##__VA_ARGS__);                                 \
     } while (0)
 
 /// Throw an exception
 #define Throw(...)                                                             \
     do {                                                                       \
-        mitsuba::detail::Throw(EError, m_theClass, __FILE__, __LINE__,         \
+        mitsuba::detail::Throw(EError, m_class, __FILE__, __LINE__,            \
                       tfm::format(__VA_ARGS__));                               \
     } while (0)
 
@@ -180,6 +181,6 @@ NAMESPACE_END(detail)
 
 /// Throw an exception reporting that the given function is not implemented
 #define NotImplementedError(funcName) \
-    Throw("%s::" funcName "(): Not implemented!", getClass()->getName());
+    Throw("%s::" funcName "(): Not implemented!", class_()->name());
 
 NAMESPACE_END(mitsuba)

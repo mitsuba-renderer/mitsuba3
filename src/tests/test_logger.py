@@ -3,16 +3,16 @@ try:
 except:
     import unittest
 
-from mitsuba import Thread, Logger, Appender, Formatter, Log, EInfo
+from mitsuba import Thread, Appender, Formatter, Log, EInfo
 
 
 class LoggerTest(unittest.TestCase):
     def setUp(self):
-        self.logger = Thread.getThread().getLogger()
-        self.formatter = self.logger.getFormatter()
+        self.logger = Thread.thread().logger()
+        self.formatter = self.logger.formatter()
         self.appenders = []
-        while self.logger.getAppenderCount() > 0:
-            app = self.logger.getAppender(0)
+        while self.logger.appenderCount() > 0:
+            app = self.logger.appender(0)
             self.appenders.append(app)
             self.logger.removeAppender(app)
 
@@ -29,7 +29,7 @@ class LoggerTest(unittest.TestCase):
         class MyFormatter(Formatter):
             def format(self, level, theClass, thread, filename, line, msg):
                 return "%i: class=%s, thread=%s, text=%s, filename=%s, ' \
-                    'line=%i" % (level, str(theClass), thread.getName(), msg,
+                    'line=%i" % (level, str(theClass), thread.name(), msg,
                                  filename, line)
 
         class MyAppender(Appender):

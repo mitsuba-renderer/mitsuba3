@@ -37,7 +37,7 @@ public:
      * about this Object
      * \sa Class
      */
-    virtual const Class *getClass() const;
+    virtual const Class *class_() const;
 
     /**
      * \brief Return a human-readable string representation of the object's
@@ -58,7 +58,7 @@ protected:
 
 private:
     mutable std::atomic<int> m_refCount { 0 };
-    static Class *m_theClass;
+    static Class *m_class;
 };
 
 /**

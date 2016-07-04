@@ -4,7 +4,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 NAMESPACE_BEGIN(detail)
-static Stream::EByteOrder getByteOrder() {
+static Stream::EByteOrder byteOrder() {
     union {
         uint8_t  charValue[2];
         uint16_t shortValue;
@@ -19,7 +19,7 @@ static Stream::EByteOrder getByteOrder() {
 }
 NAMESPACE_END(detail)
 
-const Stream::EByteOrder Stream::m_hostByteOrder = detail::getByteOrder();
+const Stream::EByteOrder Stream::m_hostByteOrder = detail::byteOrder();
 
 // -----------------------------------------------------------------------------
 
@@ -67,7 +67,7 @@ std::string Stream::readLine() {
                 result += data;
         } while (true);
     } catch (...) {
-        if (getPos() != getSize() || result.empty())
+        if (pos() != size() || result.empty())
             throw;
     }
 	return result;

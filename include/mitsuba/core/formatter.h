@@ -14,14 +14,14 @@ public:
     /**
      * \brief Turn a log message into a human-readable format
      * \param level     The importance of the debug message
-     * \param theClass  Originating class or nullptr
+     * \param class_    Originating class or \c nullptr
      * \param thread    Thread, which is reponsible for creating the message
      * \param file      File, which is responsible for creating the message
      * \param line      Associated line within the source file
      * \param msg       Text content associated with the log message
      */
 
-    virtual std::string format(ELogLevel level, const Class *theClass,
+    virtual std::string format(ELogLevel level, const Class *class_,
                                const Thread *thread, const char *file, int line,
                                const std::string &msg) = 0;
 
@@ -42,37 +42,37 @@ public:
     /// Create a new default formatter
     DefaultFormatter();
 
-    std::string format(ELogLevel level, const Class *theClass,
+    std::string format(ELogLevel level, const Class *class_,
                        const Thread *thread, const char *file, int line,
                        const std::string &msg) override;
 
     /// Should date information be included? The default is yes.
-    void setHaveDate(bool value) { m_haveDate = value; }
-    /// \sa setHaveDate
-    bool getHaveDate() { return m_haveDate; }
+    void setHasDate(bool value) { m_hasDate = value; }
+    /// \sa setHasDate
+    bool hasDate() { return m_hasDate; }
 
     /// Should thread information be included? The default is yes.
-    void setHaveThread(bool value) { m_haveThread = value; }
-    /// \sa setHaveThread
-    bool getHaveThread() { return m_haveThread; }
+    void setHasThread(bool value) { m_hasThread = value; }
+    /// \sa setHasThread
+    bool hasThread() { return m_hasThread; }
 
     /// Should log level information be included? The default is yes.
-    void setHaveLogLevel(bool value) { m_haveLogLevel = value; }
-    /// \sa setHaveLogLevel
-    bool getHaveLogLevel() { return m_haveLogLevel; }
+    void setHasLogLevel(bool value) { m_hasLogLevel = value; }
+    /// \sa setHasLogLevel
+    bool hasLogLevel() { return m_hasLogLevel; }
 
     /// Should class information be included? The default is yes.
-    void setHaveClass(bool value) { m_haveClass = value; }
-    /// \sa setHaveClass
-    bool getHaveClass() { return m_haveClass; }
+    void setHasClass(bool value) { m_hasClass = value; }
+    /// \sa setHasClass
+    bool hasClass() { return m_hasClass; }
 
     MTS_DECLARE_CLASS()
 
 protected:
-    bool m_haveDate;
-    bool m_haveLogLevel;
-    bool m_haveThread;
-    bool m_haveClass;
+    bool m_hasDate;
+    bool m_hasLogLevel;
+    bool m_hasThread;
+    bool m_hasClass;
 };
 
 NAMESPACE_END(mitsuba)

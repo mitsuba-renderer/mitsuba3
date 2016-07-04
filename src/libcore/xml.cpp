@@ -62,7 +62,7 @@ void registerClass(const Class *class_) {
     }
 
     /* Register the new class as an object tag */
-    auto tagName = string::toLower(class_->getName());
+    auto tagName = string::toLower(class_->name());
     if (tags->find(tagName) == tags->end()) {
         (*tags)[tagName] = EObject;
         (*tagClass)[tagName] = class_;
@@ -226,7 +226,7 @@ ref<Object> loadImpl(const std::string &id,
                             parseTag(ch, propsNested, tag);
 
                         /* This is an object, first instantiate it */
-                        props.setObject("asdf", PluginManager::getInstance()->createObject(
+                        props.setObject("asdf", PluginManager::instance()->createObject(
                             it2->second, propsNested)); // XXX
                     }
                     break;
@@ -242,12 +242,12 @@ ref<Object> loadImpl(const std::string &id,
                     break;
                 case EInteger: {
                         check_attributes(node, { "name", "value" });
-                        props.setInteger(node.attribute("name").value(), std::stoi(node.attribute("value").value()));
+                        props.setInt(node.attribute("name").value(), std::stoi(node.attribute("value").value()));
                     }
                     break;
                 case EBoolean: {
                         check_attributes(node, { "name", "value" });
-                        //props.setBoolean(node.attribute("name").value(), toBool(node.attribute("value").value()));
+                        //props.setBool(node.attribute("name").value(), toBool(node.attribute("value").value()));
                     }
                     break;
                 case EPoint: {

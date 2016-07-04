@@ -132,7 +132,7 @@ class AnnotatedStreamTest(unittest.TestCase):
                 # Should have read-only and write-only modes
                 self.assertEqual(astream.canRead(), not writeMode)
                 self.assertEqual(astream.canWrite(), writeMode)
-                self.assertEqual(astream.getSize(), 0)
+                self.assertEqual(astream.size(), 0)
 
                 # Cannot read or write to a closed astream
                 # TODO: these assertions could be refined (there are other reasons to throw)

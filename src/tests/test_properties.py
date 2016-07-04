@@ -22,11 +22,11 @@ class PropertiesTest(unittest.TestCase):
     def test01_name_and_id(self):
         self.p.setID("magic")
         self.p.setPluginName("unicorn")
-        self.assertEqual(self.p.getID(), "magic")
-        self.assertEqual(self.p.getPluginName(), "unicorn")
+        self.assertEqual(self.p.id(), "magic")
+        self.assertEqual(self.p.pluginName(), "unicorn")
 
-        p2 = Prop(self.p.getPluginName())
-        self.assertEqual(self.p.getPluginName(), p2.getPluginName())
+        p2 = Prop(self.p.pluginName())
+        self.assertEqual(self.p.pluginName(), p2.pluginName())
 
     def test02_type_is_preserved(self):
         fillProperties(self.p)
@@ -60,12 +60,12 @@ class PropertiesTest(unittest.TestCase):
         self.assertTrue(self.p.wasQueried('prop_1'))
         self.assertTrue(self.p.wasQueried('prop_2'))
         self.assertFalse(self.p.wasQueried('prop_3'))
-        self.assertEqual(self.p.getUnqueried(), ['prop_3', 'prop_4'])
+        self.assertEqual(self.p.unqueried(), ['prop_3', 'prop_4'])
 
         # Mark field as queried explicitly
         self.p.markQueried('prop_3')
         self.assertTrue(self.p.wasQueried('prop_3'))
-        self.assertEqual(self.p.getUnqueried(), ['prop_4'])
+        self.assertEqual(self.p.unqueried(), ['prop_4'])
 
     def test05_copy_and_merge(self):
         fillProperties(self.p)

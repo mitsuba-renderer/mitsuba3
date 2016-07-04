@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
                          : tbb::task_scheduler_init::automatic);
 
         /* Append the mitsuba directory to the FileResolver search path list */
-        ref<FileResolver> fr = Thread::getThread()->getFileResolver();
-        fs::path basePath = util::getLibraryPath().parent_path();
+        ref<FileResolver> fr = Thread::thread()->fileResolver();
+        fs::path basePath = util::libraryPath().parent_path();
         if (!fr->contains(basePath))
             fr->append(basePath);
 

@@ -20,18 +20,18 @@ MTS_PY_EXPORT(Properties) {
         .mdef(Properties, removeProperty)
         .mdef(Properties, markQueried)
         .mdef(Properties, wasQueried)
-        .mdef(Properties, getPluginName)
+        .mdef(Properties, pluginName)
         .mdef(Properties, setPluginName)
-        .mdef(Properties, getID)
+        .mdef(Properties, id)
         .mdef(Properties, setID)
         .mdef(Properties, copyAttribute)
-        .mdef(Properties, getPropertyNames)
-        .mdef(Properties, getUnqueried)
+        .mdef(Properties, propertyNames)
+        .mdef(Properties, unqueried)
         .mdef(Properties, merge)
 
         // Getters & setters: used as if it were a simple map
        .SET_ITEM_BINDING(Float, py::float_)
-       .SET_ITEM_BINDING(Boolean, bool)
+       .SET_ITEM_BINDING(Bool, bool)
        .SET_ITEM_BINDING(Long, int64_t)
        .SET_ITEM_BINDING(String, std::string)
        .SET_ITEM_BINDING(Vector3f, Vector3f)
@@ -39,20 +39,20 @@ MTS_PY_EXPORT(Properties) {
 
        .def("__getitem__", [](const Properties& p, const std::string &key) {
             // We need to ask for type information to return the right cast
-            auto type = p.getPropertyType(key);
+            auto type = p.propertyType(key);
 
-            if (type == Properties::EBoolean)
-                return py::cast(p.getBoolean(key));
-            else if (type == Properties::EInteger)
-                return py::cast(p.getLong(key));
+            if (type == Properties::EBool)
+                return py::cast(p.bool_(key));
+            else if (type == Properties::ELong)
+                return py::cast(p.long_(key));
             else if (type == Properties::EFloat)
-                return py::cast(p.getFloat(key));
+                return py::cast(p.float_(key));
             else if (type == Properties::EString)
-                return py::cast(p.getString(key));
+                return py::cast(p.string(key));
             else if (type == Properties::EVector3f)
-                return py::cast(p.getVector3f(key));
+                return py::cast(p.vector3f(key));
             else if (type == Properties::EObject)
-                return py::cast(p.getObject(key));
+                return py::cast(p.object(key));
             else {
                 throw std::runtime_error("Unsupported property type");
             }

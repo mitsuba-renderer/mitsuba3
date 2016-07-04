@@ -17,7 +17,7 @@ void Object::decRef(bool dealloc) const noexcept {
 
 std::string Object::toString() const {
     std::ostringstream oss;
-    oss << getClass()->getName() << "[" << (void *) this << "]";
+    oss << class_()->name() << "[" << (void *) this << "]";
     return oss.str();
 }
 

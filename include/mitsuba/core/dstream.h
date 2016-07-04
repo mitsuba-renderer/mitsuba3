@@ -65,10 +65,10 @@ public:
     }
 
     /// Returns the current position in the stream.
-    virtual size_t getPos() const override { return m_pos; }
+    virtual size_t pos() const override { return m_pos; }
 
     /// Returns the size of the stream.
-    virtual size_t getSize() const override { return m_size; }
+    virtual size_t size() const override { return m_size; }
 
     /// No-op for <tt>DummyStream</tt>.
     virtual void flush() override { /* Nothing to do */ }

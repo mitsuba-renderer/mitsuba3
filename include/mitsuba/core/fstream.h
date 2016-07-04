@@ -73,13 +73,13 @@ public:
     virtual void truncate(size_t size) override;
 
     /// Gets the current position inside the file
-    virtual size_t getPos() const override;
+    virtual size_t pos() const override;
 
     /** \brief Returns the size of the file.
      * \note After a write, the size may not be updated
      * until a \ref flush is performed.
      */
-    virtual size_t getSize() const override {
+    virtual size_t size() const override {
         return fs::file_size(m_path);
     }
 

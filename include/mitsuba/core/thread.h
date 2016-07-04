@@ -44,7 +44,7 @@ public:
     bool setPriority(EPriority priority);
 
     /// Return the thread priority
-    EPriority getPriority() const;
+    EPriority priority() const;
 
     /**
      * \brief Set the core affinity
@@ -57,7 +57,7 @@ public:
     void setCoreAffinity(int core);
 
     /// Return the core affinity
-    int getCoreAffinity() const;
+    int coreAffinity() const;
 
     /**
      * \brief Specify whether or not this thread is critical
@@ -68,40 +68,40 @@ public:
     void setCritical(bool critical);
 
     /// Return the value of the critical flag
-    bool getCritical() const;
+    bool isCritical() const;
 
     /// Return a unique ID that is associated with this thread
-    static uint32_t getID();
+    static uint32_t id();
 
     /// Return the name of this thread
-    const std::string &getName() const;
+    const std::string &name() const;
 
     /// Set the name of this thread
     void setName(const std::string &name);
 
     /// Return the parent thread
-    Thread *getParent();
+    Thread *parent();
 
     /// Return the parent thread (const version)
-    const Thread *getParent() const;
+    const Thread *parent() const;
 
     /// Set the file resolver associated with the current thread
     void setFileResolver(FileResolver *resolver);
 
     /// Return the file resolver associated with the current thread
-    FileResolver *getFileResolver();
+    FileResolver *fileResolver();
 
     /// Return the parent thread (const version)
-    const FileResolver *getFileResolver() const;
+    const FileResolver *fileResolver() const;
 
     /// Set the logger instance used to process log messages from this thread
     void setLogger(Logger *logger);
 
     /// Return the thread's logger instance
-    Logger *getLogger();
+    Logger *logger();
 
     /// Return the current thread
-    static Thread *getThread();
+    static Thread *thread();
 
     /// Is this thread still running?
     bool isRunning() const;

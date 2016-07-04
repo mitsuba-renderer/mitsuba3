@@ -54,7 +54,7 @@ MTS_PY_EXPORT(Struct) {
         .def("isInteger", &Struct::Field::isInteger, DM(Struct, Field, isInteger))
         .def("isSigned", &Struct::Field::isSigned, DM(Struct, Field, isSigned))
         .def("isUnsigned", &Struct::Field::isUnsigned, DM(Struct, Field, isUnsigned))
-        .def("getRange", &Struct::Field::getRange, DM(Struct, Field, getRange))
+        .def("range", &Struct::Field::range, DM(Struct, Field, range))
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__hash__", [](const Struct::Field &f) { return hash(f); })

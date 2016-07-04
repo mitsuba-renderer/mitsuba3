@@ -16,7 +16,7 @@ static void PyLog(ELogLevel level, const std::string &msg) {
     if (!name.empty() && name[0] != '<')
         fmt.insert(2, "()");
 
-    Thread::getThread()->getLogger()->log(
+    Thread::thread()->logger()->log(
         level, nullptr, /* theClass */
         filename.c_str(), lineno,
         tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
@@ -28,15 +28,15 @@ MTS_PY_EXPORT(Logger) {
         .mdef(Logger, logProgress, py::arg("progress"), py::arg("name"),
               py::arg("formatted"), py::arg("eta"), py::arg("ptr") = py::none())
         .mdef(Logger, setLogLevel)
-        .mdef(Logger, getLogLevel)
+        .mdef(Logger, logLevel)
         .mdef(Logger, setErrorLevel)
-        .mdef(Logger, getErrorLevel)
+        .mdef(Logger, errorLevel)
         .mdef(Logger, addAppender, py::keep_alive<1, 2>())
         .mdef(Logger, removeAppender)
         .mdef(Logger, clearAppenders)
-        .mdef(Logger, getAppenderCount)
-        .def("getAppender", (Appender * (Logger::*)(size_t)) &Logger::getAppender, DM(Logger, getAppender))
-        .def("getFormatter", (Formatter * (Logger::*)()) &Logger::getFormatter, DM(Logger, getFormatter))
+        .mdef(Logger, appenderCount)
+        .def("appender", (Appender * (Logger::*)(size_t)) &Logger::appender, DM(Logger, appender))
+        .def("formatter", (Formatter * (Logger::*)()) &Logger::formatter, DM(Logger, formatter))
         .mdef(Logger, setFormatter, py::keep_alive<1, 2>())
         .mdef(Logger, readLog);
 

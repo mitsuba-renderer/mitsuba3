@@ -33,7 +33,7 @@ AnnotatedStream::AnnotatedStream(Stream *stream, bool writeMode, bool throwOnMis
 
     m_prefixStack.push_back("");
 
-    if (m_stream->canRead() && m_stream->getSize() > 0) {
+    if (m_stream->canRead() && m_stream->size() > 0) {
         readTOC();
     }
     // Even if the file was initially empty, we need to start any write
@@ -118,7 +118,7 @@ void AnnotatedStream::setBase(const std::string &name, const std::string &type_i
         Log(EError, "Field named \"%s\" was already set!", fullName);
     }
 
-    const auto pos = static_cast<uint64_t>(m_stream->getPos());
+    const auto pos = static_cast<uint64_t>(m_stream->pos());
     m_table[fullName] = std::make_pair(type_id, pos);
 }
 
@@ -152,7 +152,7 @@ void AnnotatedStream::readTOC() {
 }
 
 void AnnotatedStream::writeTOC() {
-    const auto trailerOffset = static_cast<uint64_t>(m_stream->getPos());
+    const auto trailerOffset = static_cast<uint64_t>(m_stream->pos());
     const auto nItems = static_cast<uint32_t>(m_table.size());
 
     // Write sentry at the very beginning of the stream

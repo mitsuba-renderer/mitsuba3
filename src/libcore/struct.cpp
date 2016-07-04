@@ -111,14 +111,14 @@ std::string Struct::toString() const {
     return os.str();
 }
 
-const Struct::Field &Struct::getField(const std::string &name) const {
+const Struct::Field &Struct::field(const std::string &name) const {
     for (auto const &field : m_fields)
         if (field.name == name)
             return field;
     Throw("Unable to find field '%s'", name);
 }
 
-std::pair<double, double> Struct::Field::getRange() const {
+std::pair<double, double> Struct::Field::range() const {
     switch (type) {
         case Struct::EUInt8:
             return std::make_pair(std::numeric_limits<uint8_t>::min(),
@@ -231,7 +231,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
     for (Struct::Field df : *target) {
         try {
-            auto sf = source->getField(df.name);
+            auto sf = source->field(df.name);
 
             bool sourceSigned = sf.isSigned();
             bool sourceSwap = source->byteOrder() == Struct::EBigEndian;
@@ -331,7 +331,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
             }
 
             if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
-                auto range = sf.getRange();
+                auto range = sf.range();
                 float scale = float(1 / (range.second - range.first));
                 float offset = float(-range.first);
 
@@ -361,7 +361,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                         c.cvtsi2sd(reg_d, reg.r64());
                 } else if (df.isInteger()) {
                     if (sf.type == Struct::EFloat32) {
-                        auto range = df.getRange();
+                        auto range = df.range();
                         auto rbegin = c.newFloatConst(asmjit::kConstScopeLocal, float(range.first));
                         auto rend = c.newFloatConst(asmjit::kConstScopeLocal, float(range.second));
 
@@ -383,7 +383,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                         c.minss(reg_f, rend);
                         c.cvtss2si(reg.r64(), reg_f);
                     } else if (sf.type == Struct::EFloat64) {
-                        auto range = df.getRange();
+                        auto range = df.range();
                         auto rbegin = c.newDoubleConst(asmjit::kConstScopeLocal, range.first);
                         auto rend = c.newDoubleConst(asmjit::kConstScopeLocal, range.second);
 
@@ -551,7 +551,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
             double reg_d = 0;
 
             try {
-                auto sf = m_source->getField(df.name);
+                auto sf = m_source->field(df.name);
                 const uint8_t *src = (const uint8_t *) src_ + sf.offset + sourceSize * i;
 
                 switch (sf.type) {
@@ -649,7 +649,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                 }
 
                 if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
-                    auto range = sf.getRange();
+                    auto range = sf.range();
                     float scale = float(1 / (range.second - range.first));
                     float offset = float(-range.first);
                     reg_f = ((float) reg + offset) * scale;
@@ -667,7 +667,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                             reg_d = (double) reg;
                     } else if (df.isInteger()) {
                         if (sf.type == Struct::EFloat32) {
-                            auto range = df.getRange();
+                            auto range = df.range();
 
                             if (df.flags & Struct::ENormalized) {
                                 if (df.flags & Struct::EGamma)
@@ -680,7 +680,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                             reg_f = std::min(reg_f, (float) range.second);
                             reg = (int64_t) reg_f;
                         } else if (sf.type == Struct::EFloat64) {
-                            auto range = df.getRange();
+                            auto range = df.range();
 
                             if (df.flags & Struct::ENormalized) {
                                 reg_d = math::gamma<double>(reg_d);

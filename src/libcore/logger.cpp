@@ -29,11 +29,11 @@ void Logger::setFormatter(Formatter *formatter) {
     d->formatter = formatter;
 }
 
-Formatter *Logger::getFormatter() {
+Formatter *Logger::formatter() {
     return d->formatter;
 }
 
-const Formatter *Logger::getFormatter() const {
+const Formatter *Logger::formatter() const {
     return d->formatter;
 }
 
@@ -47,27 +47,27 @@ void Logger::setErrorLevel(ELogLevel level) {
     d->errorLevel = level;
 }
 
-ELogLevel Logger::getErrorLevel() const {
+ELogLevel Logger::errorLevel() const {
     return d->errorLevel;
 }
 
 #undef Throw
 
-void Logger::log(ELogLevel level, const Class *theClass, const char *file,
+void Logger::log(ELogLevel level, const Class *class_, const char *file,
                  int line, const std::string &msg) {
 
     if (level < m_logLevel)
         return;
     else if (level >= d->errorLevel)
-        detail::Throw(level, theClass, file, line, msg);
+        detail::Throw(level, class_, file, line, msg);
 
     if (!d->formatter) {
         std::cerr << "PANIC: Logging has not been properly initialized!" << std::endl;
         abort();
     }
 
-    std::string text = d->formatter->format(level, theClass,
-        Thread::getThread(), file, line, msg);
+    std::string text = d->formatter->format(level, class_,
+        Thread::thread(), file, line, msg);
 
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto entry : d->appenders)
@@ -95,7 +95,7 @@ void Logger::removeAppender(Appender *appender) {
 std::string Logger::readLog() {
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto appender: d->appenders) {
-        if (appender->getClass()->derivesFrom(MTS_CLASS(StreamAppender))) {
+        if (appender->class_()->derivesFrom(MTS_CLASS(StreamAppender))) {
             auto sa = static_cast<StreamAppender *>(appender.get());
             if (sa->logsToFile())
                 return sa->readLog();
@@ -116,22 +116,22 @@ void Logger::staticInitialization() {
     ref<Formatter> formatter = new DefaultFormatter();
     logger->addAppender(appender);
     logger->setFormatter(formatter);
-    Thread::getThread()->setLogger(logger);
+    Thread::thread()->setLogger(logger);
 }
 
 void Logger::staticShutdown() {
-    Thread::getThread()->setLogger(nullptr);
+    Thread::thread()->setLogger(nullptr);
 }
 
-size_t Logger::getAppenderCount() const {
+size_t Logger::appenderCount() const {
     return d->appenders.size();
 }
 
-Appender *Logger::getAppender(size_t index) {
+Appender *Logger::appender(size_t index) {
     return d->appenders[index];
 }
 
-const Appender *Logger::getAppender(size_t index) const {
+const Appender *Logger::appender(size_t index) const {
     return d->appenders[index];
 }
 
@@ -143,11 +143,11 @@ void Throw(ELogLevel level, const Class *theClass, const char *file,
     util::trapDebugger();
 
     DefaultFormatter formatter;
-    formatter.setHaveDate(false);
-    formatter.setHaveLogLevel(false);
-    formatter.setHaveThread(false);
+    formatter.setHasDate(false);
+    formatter.setHasLogLevel(false);
+    formatter.setHasThread(false);
     std::string text =
-        formatter.format(level, theClass, Thread::getThread(), file, line, msg);
+        formatter.format(level, theClass, Thread::thread(), file, line, msg);
     throw std::runtime_error(text);
 }
 

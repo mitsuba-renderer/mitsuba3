@@ -18,8 +18,8 @@ NAMESPACE_END(detail)
  *
  * All read<b>X</b>() and write<b>X</b>() methods support transparent
  * conversion based on the endianness of the underlying system and the
- * value passed to \ref setByteOrder(). Whenever \ref getHostByteOrder()
- * and \ref getByteOrder() disagree, the endianness is swapped.
+ * value passed to \ref setByteOrder(). Whenever \ref hostByteOrder()
+ * and \ref byteOrder() disagree, the endianness is swapped.
  *
  * \sa FileStream, MemoryStream, DummyStream
  */
@@ -101,10 +101,10 @@ public:
     virtual void truncate(size_t size) = 0;
 
     /// Gets the current position inside the stream
-    virtual size_t getPos() const = 0;
+    virtual size_t pos() const = 0;
 
     /// Returns the size of the stream
-    virtual size_t getSize() const = 0;
+    virtual size_t size() const = 0;
 
     /// Flushes the stream's buffers, if any
     virtual void flush() = 0;
@@ -168,7 +168,7 @@ public:
     void setByteOrder(EByteOrder byteOrder);
 
     /// Returns the byte order of this stream.
-    EByteOrder getByteOrder() const { return m_byteOrder; }
+    EByteOrder byteOrder() const { return m_byteOrder; }
 
     /// Returns true if we need to perform endianness swapping before writing or reading.
     bool needsEndiannessSwapping() const {
@@ -176,7 +176,7 @@ public:
     }
 
     /// Returns the byte order of the underlying machine.
-    static EByteOrder getHostByteOrder() { return m_hostByteOrder; }
+    static EByteOrder hostByteOrder() { return m_hostByteOrder; }
 
 
     /// @}

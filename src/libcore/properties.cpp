@@ -28,40 +28,40 @@ struct Properties::PropertiesPrivate {
     std::string id, pluginName;
 };
 
-#define DEFINE_PROPERTY_ACCESSOR(Type, TypeName, ReadableName) \
-    void Properties::set##TypeName(const std::string &name, const Type &value, bool warnDuplicates) { \
+#define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
+    void Properties::SetterName(const std::string &name, const Type &value, bool warnDuplicates) { \
         if (hasProperty(name) && warnDuplicates) \
             Log(EWarn, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
         d->entries[name].queried = false; \
     } \
     \
-    const Type& Properties::get##TypeName(const std::string &name) const { \
+    const Type& Properties::GetterName(const std::string &name) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
             Log(EError, "Property \"%s\" has not been specified!", name); \
         if (!it->second.data.is<Type>()) \
-            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">).", name); \
+            Log(EError, "The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
         it->second.queried = true; \
         return (const Type &) it->second.data; \
     } \
     \
-    const Type &Properties::get##TypeName(const std::string &name, const Type &defVal) const { \
+    const Type &Properties::GetterName(const std::string &name, const Type &defVal) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
             return defVal; \
         if (!it->second.data.is<Type>()) \
-            Log(EError, "The property \"%s\" has the wrong type (expected <" #ReadableName ">).", name); \
+            Log(EError, "The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
         it->second.queried = true; \
         return (const Type &) it->second.data; \
     }
 
-DEFINE_PROPERTY_ACCESSOR(bool, Boolean, boolean)
-DEFINE_PROPERTY_ACCESSOR(int64_t, Long, integer)
-DEFINE_PROPERTY_ACCESSOR(Float, Float, float)
-DEFINE_PROPERTY_ACCESSOR(std::string, String, string)
-DEFINE_PROPERTY_ACCESSOR(Vector3f, Vector3f, vector)
-DEFINE_PROPERTY_ACCESSOR(ref<Object>, Object, object)
+DEFINE_PROPERTY_ACCESSOR(bool,        boolean, setBool,     bool_)
+DEFINE_PROPERTY_ACCESSOR(int64_t,     integer, setLong,     long_)
+DEFINE_PROPERTY_ACCESSOR(Float,       float,   setFloat,    float_)
+DEFINE_PROPERTY_ACCESSOR(std::string, string,  setString,   string)
+DEFINE_PROPERTY_ACCESSOR(Vector3f,    vector,  setVector3f, vector3f)
+DEFINE_PROPERTY_ACCESSOR(ref<Object>, object,  setObject,   object)
 
 Properties::Properties()
     : d(new PropertiesPrivate()) { }
@@ -88,8 +88,8 @@ namespace {
     struct PropertyTypeVisitor {
         typedef Properties::EPropertyType Result;
         Result operator()(const std::nullptr_t &) { throw std::runtime_error("Internal error"); }
-        Result operator()(const int64_t &) { return Properties::EInteger; }
-        Result operator()(const bool &) { return Properties::EBoolean; }
+        Result operator()(const int64_t &) { return Properties::ELong; }
+        Result operator()(const bool &) { return Properties::EBool; }
         Result operator()(const Float &) { return Properties::EFloat; }
         Result operator()(const Vector3f &) { return Properties::EVector3f; }
         Result operator()(const std::string &) { return Properties::EString; }
@@ -109,10 +109,10 @@ namespace {
     };
 }
 
-Properties::EPropertyType Properties::getPropertyType(const std::string &name) const {
+Properties::EPropertyType Properties::propertyType(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
-        Log(EError, "getPropertyType(): Could not find property named \"%s\"!", name);
+        Log(EError, "propertyType(): Could not find property named \"%s\"!", name);
 
     return it->second.data.visit(PropertyTypeVisitor());
 }
@@ -140,7 +140,7 @@ bool Properties::removeProperty(const std::string &name) {
     return true;
 }
 
-const std::string &Properties::getPluginName() const {
+const std::string &Properties::pluginName() const {
     return d->pluginName;
 }
 
@@ -148,7 +148,7 @@ void Properties::setPluginName(const std::string &name) {
     d->pluginName = name;
 }
 
-const std::string &Properties::getID() const {
+const std::string &Properties::id() const {
     return d->id;
 }
 
@@ -164,14 +164,14 @@ void Properties::copyAttribute(const Properties &properties,
     d->entries[targetName] = it->second;
 }
 
-std::vector<std::string> Properties::getPropertyNames() const {
+std::vector<std::string> Properties::propertyNames() const {
     std::vector<std::string> result;
     for (const auto &e : d->entries)
         result.push_back(e.first);
     return result;
 }
 
-std::vector<std::string> Properties::getUnqueried() const {
+std::vector<std::string> Properties::unqueried() const {
     std::vector<std::string> result;
     for (const auto &e : d->entries) {
         if (!e.second.queried)

@@ -62,6 +62,8 @@ static const char *__doc_mitsuba_AnnotatedStream_canWrite =
 R"doc(Whether the underlying stream has write capabilities and is not
 closed.)doc";
 
+static const char *__doc_mitsuba_AnnotatedStream_class = R"doc()doc";
+
 static const char *__doc_mitsuba_AnnotatedStream_close =
 R"doc(Closes the annotated stream. No further read or write operations are
 permitted.
@@ -87,10 +89,6 @@ R"doc(Attempts to seek to the position of the given field. The active prefix
 
 Throws if the field exists but has the wrong type. Throws if the field
 is not found and ``m_throwOnMissing`` is true.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_getSize = R"doc(Returns the current size of the underlying stream)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_isClosed =
 R"doc(Whether the annotated stream has been closed (no further read or
@@ -142,6 +140,8 @@ to the ``name`` of the field.
 
 Throws if a value was already set with that name (including prefix).)doc";
 
+static const char *__doc_mitsuba_AnnotatedStream_size = R"doc(Returns the current size of the underlying stream)doc";
+
 static const char *__doc_mitsuba_AnnotatedStream_writeTOC =
 R"doc(Write back the table of contents to the underlying stream. Should be
 called on destruction.)doc";
@@ -152,7 +152,7 @@ information)doc";
 
 static const char *__doc_mitsuba_Appender_append = R"doc(Append a line of text with the given log level)doc";
 
-static const char *__doc_mitsuba_Appender_getClass = R"doc()doc";
+static const char *__doc_mitsuba_Appender_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Appender_logProgress =
 R"doc(Process a progress message
@@ -339,15 +339,9 @@ Parameter ``props``:
 Remark:
     Throws an exception if the class is not constructible)doc";
 
-static const char *__doc_mitsuba_Class_derivesFrom = R"doc(Check whether this class derives from *theClass*)doc";
+static const char *__doc_mitsuba_Class_derivesFrom = R"doc(Check whether this class derives from *class_*)doc";
 
 static const char *__doc_mitsuba_Class_forName = R"doc(Look up a class by its name)doc";
-
-static const char *__doc_mitsuba_Class_getName = R"doc(Return the name of the represented class)doc";
-
-static const char *__doc_mitsuba_Class_getParent =
-R"doc(Return the Class object associated with the parent class of nullptr if
-it does not have one.)doc";
 
 static const char *__doc_mitsuba_Class_initializeOnce = R"doc(Initialize a class - called by staticInitialization())doc";
 
@@ -371,6 +365,12 @@ static const char *__doc_mitsuba_Class_m_parentName = R"doc()doc";
 
 static const char *__doc_mitsuba_Class_m_unser = R"doc()doc";
 
+static const char *__doc_mitsuba_Class_name = R"doc(Return the name of the represented class)doc";
+
+static const char *__doc_mitsuba_Class_parent =
+R"doc(Return the Class object associated with the parent class of nullptr if
+it does not have one.)doc";
+
 static const char *__doc_mitsuba_Class_rttiIsInitialized = R"doc(Check if the RTTI layer has been initialized)doc";
 
 static const char *__doc_mitsuba_Class_staticInitialization =
@@ -391,41 +391,41 @@ form)doc";
 
 static const char *__doc_mitsuba_DefaultFormatter_DefaultFormatter = R"doc(Create a new default formatter)doc";
 
+static const char *__doc_mitsuba_DefaultFormatter_class = R"doc()doc";
+
 static const char *__doc_mitsuba_DefaultFormatter_format = R"doc()doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_DefaultFormatter_getHaveClass =
+static const char *__doc_mitsuba_DefaultFormatter_hasClass =
 R"doc(See also:
-    setHaveClass)doc";
+    setHasClass)doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_getHaveDate =
+static const char *__doc_mitsuba_DefaultFormatter_hasDate =
 R"doc(See also:
-    setHaveDate)doc";
+    setHasDate)doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_getHaveLogLevel =
+static const char *__doc_mitsuba_DefaultFormatter_hasLogLevel =
 R"doc(See also:
-    setHaveLogLevel)doc";
+    setHasLogLevel)doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_getHaveThread =
+static const char *__doc_mitsuba_DefaultFormatter_hasThread =
 R"doc(See also:
-    setHaveThread)doc";
+    setHasThread)doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_m_haveClass = R"doc()doc";
+static const char *__doc_mitsuba_DefaultFormatter_m_hasClass = R"doc()doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_m_haveDate = R"doc()doc";
+static const char *__doc_mitsuba_DefaultFormatter_m_hasDate = R"doc()doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_m_haveLogLevel = R"doc()doc";
+static const char *__doc_mitsuba_DefaultFormatter_m_hasLogLevel = R"doc()doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_m_haveThread = R"doc()doc";
+static const char *__doc_mitsuba_DefaultFormatter_m_hasThread = R"doc()doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_setHaveClass = R"doc(Should class information be included? The default is yes.)doc";
+static const char *__doc_mitsuba_DefaultFormatter_setHasClass = R"doc(Should class information be included? The default is yes.)doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_setHaveDate = R"doc(Should date information be included? The default is yes.)doc";
+static const char *__doc_mitsuba_DefaultFormatter_setHasDate = R"doc(Should date information be included? The default is yes.)doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_setHaveLogLevel = R"doc(Should log level information be included? The default is yes.)doc";
+static const char *__doc_mitsuba_DefaultFormatter_setHasLogLevel = R"doc(Should log level information be included? The default is yes.)doc";
 
-static const char *__doc_mitsuba_DefaultFormatter_setHaveThread = R"doc(Should thread information be included? The default is yes.)doc";
+static const char *__doc_mitsuba_DefaultFormatter_setHasThread = R"doc(Should thread information be included? The default is yes.)doc";
 
 static const char *__doc_mitsuba_DummyStream =
 R"doc(Stream implementation that never writes to disk, but keeps track of
@@ -441,6 +441,8 @@ actually written.)doc";
 
 static const char *__doc_mitsuba_DummyStream_canWrite = R"doc(Always returns true, except if the steam is closed.)doc";
 
+static const char *__doc_mitsuba_DummyStream_class = R"doc()doc";
+
 static const char *__doc_mitsuba_DummyStream_close =
 R"doc(Closes the stream. No further read or write operations are permitted.
 
@@ -448,12 +450,6 @@ This function is idempotent. It may be called automatically by the
 destructor.)doc";
 
 static const char *__doc_mitsuba_DummyStream_flush = R"doc(No-op for ``DummyStream``.)doc";
-
-static const char *__doc_mitsuba_DummyStream_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_DummyStream_getPos = R"doc(Returns the current position in the stream.)doc";
-
-static const char *__doc_mitsuba_DummyStream_getSize = R"doc(Returns the size of the stream.)doc";
 
 static const char *__doc_mitsuba_DummyStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
 
@@ -465,12 +461,16 @@ written, we need to maintain consistent positioning).)doc";
 
 static const char *__doc_mitsuba_DummyStream_m_size = R"doc(Size of all data written to the stream)doc";
 
+static const char *__doc_mitsuba_DummyStream_pos = R"doc(Returns the current position in the stream.)doc";
+
 static const char *__doc_mitsuba_DummyStream_read = R"doc(Always throws, since DummyStream is write-only.)doc";
 
 static const char *__doc_mitsuba_DummyStream_seek =
 R"doc(Updates the current position in the stream. Even though the
 ``DummyStream`` doesn't write anywhere, position is taken into account
 to accurately compute the size of the stream.)doc";
+
+static const char *__doc_mitsuba_DummyStream_size = R"doc(Returns the size of the stream.)doc";
 
 static const char *__doc_mitsuba_DummyStream_toString = R"doc(Returns a string representation)doc";
 
@@ -511,6 +511,8 @@ static const char *__doc_mitsuba_FileResolver_begin_2 =
 R"doc(Return an iterator at the beginning of the list of search paths
 (const))doc";
 
+static const char *__doc_mitsuba_FileResolver_class = R"doc()doc";
+
 static const char *__doc_mitsuba_FileResolver_clear = R"doc(Clear the list of search paths)doc";
 
 static const char *__doc_mitsuba_FileResolver_contains = R"doc(Check if a given path is included in the search path list)doc";
@@ -522,8 +524,6 @@ static const char *__doc_mitsuba_FileResolver_end_2 = R"doc(Return an iterator a
 static const char *__doc_mitsuba_FileResolver_erase = R"doc(Erase the entry at the given iterator position)doc";
 
 static const char *__doc_mitsuba_FileResolver_erase_2 = R"doc(Erase the search path from the list)doc";
-
-static const char *__doc_mitsuba_FileResolver_getClass = R"doc()doc";
 
 static const char *__doc_mitsuba_FileResolver_m_paths = R"doc()doc";
 
@@ -559,6 +559,8 @@ static const char *__doc_mitsuba_FileStream_canRead = R"doc(True except if the s
 
 static const char *__doc_mitsuba_FileStream_canWrite = R"doc(Whether the field was open in write-mode (and was not closed))doc";
 
+static const char *__doc_mitsuba_FileStream_class = R"doc()doc";
+
 static const char *__doc_mitsuba_FileStream_close =
 R"doc(Closes the stream and the underlying file. No further read or write
 operations are permitted.
@@ -568,14 +570,6 @@ destructor.)doc";
 
 static const char *__doc_mitsuba_FileStream_flush = R"doc(Flushes any buffered operation to the underlying file.)doc";
 
-static const char *__doc_mitsuba_FileStream_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_FileStream_getPos = R"doc(Gets the current position inside the file)doc";
-
-static const char *__doc_mitsuba_FileStream_getSize =
-R"doc(Returns the size of the file. \note After a write, the size may not be
-updated until a flush is performed.)doc";
-
 static const char *__doc_mitsuba_FileStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
 
 static const char *__doc_mitsuba_FileStream_m_file = R"doc()doc";
@@ -583,6 +577,8 @@ static const char *__doc_mitsuba_FileStream_m_file = R"doc()doc";
 static const char *__doc_mitsuba_FileStream_m_path = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_m_writeEnabled = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_pos = R"doc(Gets the current position inside the file)doc";
 
 static const char *__doc_mitsuba_FileStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
@@ -593,6 +589,10 @@ static const char *__doc_mitsuba_FileStream_readLine = R"doc(Convenience functio
 static const char *__doc_mitsuba_FileStream_seek =
 R"doc(Seeks to a position inside the stream. May throw if the resulting
 state is invalid.)doc";
+
+static const char *__doc_mitsuba_FileStream_size =
+R"doc(Returns the size of the file. \note After a write, the size may not be
+updated until a flush is performed.)doc";
 
 static const char *__doc_mitsuba_FileStream_toString = R"doc(Returns a string representation)doc";
 
@@ -611,14 +611,16 @@ static const char *__doc_mitsuba_Formatter =
 R"doc(Abstract interface for converting log information into a human-
 readable format)doc";
 
+static const char *__doc_mitsuba_Formatter_class = R"doc()doc";
+
 static const char *__doc_mitsuba_Formatter_format =
 R"doc(Turn a log message into a human-readable format
 
 Parameter ``level``:
     The importance of the debug message
 
-Parameter ``theClass``:
-    Originating class or nullptr
+Parameter ``class_``:
+    Originating class or ``nullptr``
 
 Parameter ``thread``:
     Thread, which is reponsible for creating the message
@@ -631,8 +633,6 @@ Parameter ``line``:
 
 Parameter ``msg``:
     Text content associated with the log message)doc";
-
-static const char *__doc_mitsuba_Formatter_getClass = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame =
 R"doc(Stores a three-dimensional orthonormal coordinate frame
@@ -726,9 +726,14 @@ static const char *__doc_mitsuba_Jit_mutex = R"doc()doc";
 
 static const char *__doc_mitsuba_Jit_runtime = R"doc()doc";
 
-static const char *__doc_mitsuba_Jit_staticInitialization = R"doc()doc";
+static const char *__doc_mitsuba_Jit_staticInitialization =
+R"doc(Statically initialize the JIT runtime
 
-static const char *__doc_mitsuba_Jit_staticShutdown = R"doc()doc";
+This function also does a runtime-check to ensure that the host
+processor supports all instruction sets which were selected at compile
+time. If not, the application is terminated via ``abort``().)doc";
+
+static const char *__doc_mitsuba_Jit_staticShutdown = R"doc(Release all memory used by JIT-compiled routines)doc";
 
 static const char *__doc_mitsuba_Logger =
 R"doc(Responsible for processing log messages
@@ -741,25 +746,23 @@ static const char *__doc_mitsuba_Logger_Logger = R"doc(Construct a new logger wi
 
 static const char *__doc_mitsuba_Logger_addAppender = R"doc(Add an appender to this logger)doc";
 
+static const char *__doc_mitsuba_Logger_appender = R"doc(Return one of the appenders)doc";
+
+static const char *__doc_mitsuba_Logger_appenderCount = R"doc(Return the number of registered appenders)doc";
+
+static const char *__doc_mitsuba_Logger_appender_2 = R"doc(Return one of the appenders)doc";
+
+static const char *__doc_mitsuba_Logger_class = R"doc()doc";
+
 static const char *__doc_mitsuba_Logger_clearAppenders = R"doc(Remove all appenders from this logger)doc";
 
 static const char *__doc_mitsuba_Logger_d = R"doc()doc";
 
-static const char *__doc_mitsuba_Logger_getAppender = R"doc(Return one of the appenders)doc";
+static const char *__doc_mitsuba_Logger_errorLevel = R"doc(Return the current error level)doc";
 
-static const char *__doc_mitsuba_Logger_getAppenderCount = R"doc(Return the number of registered appenders)doc";
+static const char *__doc_mitsuba_Logger_formatter = R"doc(Return the logger's formatter implementation)doc";
 
-static const char *__doc_mitsuba_Logger_getAppender_2 = R"doc(Return one of the appenders)doc";
-
-static const char *__doc_mitsuba_Logger_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_Logger_getErrorLevel = R"doc(Return the current error level)doc";
-
-static const char *__doc_mitsuba_Logger_getFormatter = R"doc(Return the logger's formatter implementation)doc";
-
-static const char *__doc_mitsuba_Logger_getFormatter_2 = R"doc(Return the logger's formatter implementation (const))doc";
-
-static const char *__doc_mitsuba_Logger_getLogLevel = R"doc(Return the current log level)doc";
+static const char *__doc_mitsuba_Logger_formatter_2 = R"doc(Return the logger's formatter implementation (const))doc";
 
 static const char *__doc_mitsuba_Logger_log =
 R"doc(Process a log message
@@ -767,7 +770,7 @@ R"doc(Process a log message
 Parameter ``level``:
     Log level of the message
 
-Parameter ``theClass``:
+Parameter ``class_``:
     Class descriptor of the message creator
 
 Parameter ``filename``:
@@ -777,8 +780,12 @@ Parameter ``line``:
     Source line number of the message creator
 
 Parameter ``fmt``:
-    printf-style string formatter \note This function is not exposed
-    in the Python bindings. Instead, please use \cc mitsuba.core.Log)doc";
+    printf-style string formatter
+
+\note This function is not exposed in the Python bindings. Instead,
+please use \cc mitsuba.core.Log)doc";
+
+static const char *__doc_mitsuba_Logger_logLevel = R"doc(Return the current log level)doc";
 
 static const char *__doc_mitsuba_Logger_logProgress =
 R"doc(Process a progress message
@@ -852,6 +859,8 @@ static const char *__doc_mitsuba_MemoryStream_canRead = R"doc(Always returns tru
 
 static const char *__doc_mitsuba_MemoryStream_canWrite = R"doc(Always returns true, except if the stream is closed.)doc";
 
+static const char *__doc_mitsuba_MemoryStream_class = R"doc()doc";
+
 static const char *__doc_mitsuba_MemoryStream_close =
 R"doc(Closes the stream. No further read or write operations are permitted.
 
@@ -859,17 +868,6 @@ This function is idempotent. It may be called automatically by the
 destructor.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_flush = R"doc(No-op since all writes are made directly to memory)doc";
-
-static const char *__doc_mitsuba_MemoryStream_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_MemoryStream_getPos =
-R"doc(Gets the current position inside the memory buffer. Note that this
-might be further than the stream's size or even capacity.)doc";
-
-static const char *__doc_mitsuba_MemoryStream_getSize =
-R"doc(Returns the size of the contents written to the memory buffer. \note
-This is not equal to the size of the memory buffer in general, since
-we allocate more capacity at once.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
 
@@ -885,6 +883,10 @@ static const char *__doc_mitsuba_MemoryStream_m_pos = R"doc(Current position ins
 
 static const char *__doc_mitsuba_MemoryStream_m_size = R"doc(Current size of the contents written to the memory buffer)doc";
 
+static const char *__doc_mitsuba_MemoryStream_pos =
+R"doc(Gets the current position inside the memory buffer. Note that this
+might be further than the stream's size or even capacity.)doc";
+
 static const char *__doc_mitsuba_MemoryStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
 if trying to read further than the current size of the contents.)doc";
@@ -897,6 +899,11 @@ the stream's contents, or even beyond the buffer's capacity. The size
 and capacity are **not** affected. A subsequent write would then
 expand the size and capacity accordingly. The contents of the memory
 that was skipped is undefined.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_size =
+R"doc(Returns the size of the contents written to the memory buffer. \note
+This is not equal to the size of the memory buffer in general, since
+we allocate more capacity at once.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_toString = R"doc(Returns a string representation)doc";
 
@@ -917,18 +924,18 @@ static const char *__doc_mitsuba_Object_Object = R"doc(Default constructor)doc";
 
 static const char *__doc_mitsuba_Object_Object_2 = R"doc(Copy constructor)doc";
 
-static const char *__doc_mitsuba_Object_decRef =
-R"doc(Decrease the reference count of the object and possibly deallocate it.
-
-The object will automatically be deallocated once the reference count
-reaches zero.)doc";
-
-static const char *__doc_mitsuba_Object_getClass =
+static const char *__doc_mitsuba_Object_class =
 R"doc(Return a Class instance containing run-time type information about
 this Object
 
 See also:
     Class)doc";
+
+static const char *__doc_mitsuba_Object_decRef =
+R"doc(Decrease the reference count of the object and possibly deallocate it.
+
+The object will automatically be deallocated once the reference count
+reaches zero.)doc";
 
 static const char *__doc_mitsuba_Object_getRefCount = R"doc(Return the current reference count)doc";
 
@@ -988,6 +995,8 @@ called.)doc";
 
 static const char *__doc_mitsuba_PluginManager_PluginManager = R"doc()doc";
 
+static const char *__doc_mitsuba_PluginManager_class = R"doc()doc";
+
 static const char *__doc_mitsuba_PluginManager_createObject =
 R"doc(Instantiate a plugin, verify its type, and return the newly created
 object instance.
@@ -1012,11 +1021,9 @@ static const char *__doc_mitsuba_PluginManager_d = R"doc()doc";
 
 static const char *__doc_mitsuba_PluginManager_ensurePluginLoaded = R"doc(Ensure that a plugin is loaded and ready)doc";
 
-static const char *__doc_mitsuba_PluginManager_getClass = R"doc()doc";
+static const char *__doc_mitsuba_PluginManager_instance = R"doc(Return the global plugin manager)doc";
 
-static const char *__doc_mitsuba_PluginManager_getInstance = R"doc(Return the global plugin manager)doc";
-
-static const char *__doc_mitsuba_PluginManager_getLoadedPlugins = R"doc(Return the list of loaded plugins)doc";
+static const char *__doc_mitsuba_PluginManager_loadedPlugins = R"doc(Return the list of loaded plugins)doc";
 
 static const char *__doc_mitsuba_Properties =
 R"doc(Associative parameter map for constructing subclasses of Object.
@@ -1035,11 +1042,11 @@ static const char *__doc_mitsuba_Properties_EPropertyType = R"doc(Supported type
 
 static const char *__doc_mitsuba_Properties_EPropertyType_EAnimatedTransform = R"doc(An animated 4x4 transformation)doc";
 
-static const char *__doc_mitsuba_Properties_EPropertyType_EBoolean = R"doc(Boolean value (true/false))doc";
+static const char *__doc_mitsuba_Properties_EPropertyType_EBool = R"doc(Boolean value (true/false))doc";
 
 static const char *__doc_mitsuba_Properties_EPropertyType_EFloat = R"doc(Floating point value)doc";
 
-static const char *__doc_mitsuba_Properties_EPropertyType_EInteger = R"doc(64-bit signed integer)doc";
+static const char *__doc_mitsuba_Properties_EPropertyType_ELong = R"doc(64-bit signed integer)doc";
 
 static const char *__doc_mitsuba_Properties_EPropertyType_EObject = R"doc(Arbitrary object)doc";
 
@@ -1059,55 +1066,33 @@ static const char *__doc_mitsuba_Properties_Properties_2 = R"doc(Construct an em
 
 static const char *__doc_mitsuba_Properties_Properties_3 = R"doc(Copy constructor)doc";
 
+static const char *__doc_mitsuba_Properties_bool = R"doc(Retrieve a boolean value)doc";
+
+static const char *__doc_mitsuba_Properties_bool_2 = R"doc(Retrieve a boolean value (use default value if no entry exists))doc";
+
 static const char *__doc_mitsuba_Properties_copyAttribute =
 R"doc(Copy an attribute from another Properties object and potentially
 rename it)doc";
 
 static const char *__doc_mitsuba_Properties_d = R"doc()doc";
 
-static const char *__doc_mitsuba_Properties_getBoolean = R"doc(Retrieve a boolean value)doc";
+static const char *__doc_mitsuba_Properties_float = R"doc(Retrieve a floating point value)doc";
 
-static const char *__doc_mitsuba_Properties_getBoolean_2 = R"doc(Retrieve a boolean value (use default value if no entry exists))doc";
+static const char *__doc_mitsuba_Properties_float_2 = R"doc(Retrieve a floating point value (use default value if no entry exists))doc";
 
-static const char *__doc_mitsuba_Properties_getFloat = R"doc(Retrieve a floating point value)doc";
+static const char *__doc_mitsuba_Properties_hasProperty = R"doc(Verify if a value with the specified name exists)doc";
 
-static const char *__doc_mitsuba_Properties_getFloat_2 = R"doc(Retrieve a floating point value (use default value if no entry exists))doc";
-
-static const char *__doc_mitsuba_Properties_getID =
+static const char *__doc_mitsuba_Properties_id =
 R"doc(Returns a unique identifier associated with this instance (or an empty
 string))doc";
 
-static const char *__doc_mitsuba_Properties_getInteger = R"doc(Retrieve an integer value)doc";
+static const char *__doc_mitsuba_Properties_int = R"doc(Retrieve an integer value)doc";
 
-static const char *__doc_mitsuba_Properties_getInteger_2 = R"doc(Retrieve a boolean value (use default value if no entry exists))doc";
+static const char *__doc_mitsuba_Properties_int_2 = R"doc(Retrieve a boolean value (use default value if no entry exists))doc";
 
-static const char *__doc_mitsuba_Properties_getLong = R"doc(Retrieve an integer value)doc";
+static const char *__doc_mitsuba_Properties_long = R"doc(Retrieve an integer value)doc";
 
-static const char *__doc_mitsuba_Properties_getLong_2 = R"doc(Retrieve an integer value (use default value if no entry exists))doc";
-
-static const char *__doc_mitsuba_Properties_getObject = R"doc(Retrieve an arbitrary object)doc";
-
-static const char *__doc_mitsuba_Properties_getObject_2 = R"doc(Retrieve an arbitrary object (use default value if no entry exists))doc";
-
-static const char *__doc_mitsuba_Properties_getPluginName = R"doc(Get the associated plugin name)doc";
-
-static const char *__doc_mitsuba_Properties_getPropertyNames = R"doc(Store an array containing the names of all stored properties)doc";
-
-static const char *__doc_mitsuba_Properties_getPropertyType =
-R"doc(Returns the type of an existing property. If no property exists under
-that name, an error is logged and type ``void`` is returned.)doc";
-
-static const char *__doc_mitsuba_Properties_getString = R"doc(Retrieve a string value)doc";
-
-static const char *__doc_mitsuba_Properties_getString_2 = R"doc(Retrieve a string value (use default value if no entry exists))doc";
-
-static const char *__doc_mitsuba_Properties_getUnqueried = R"doc(Return the list of un-queried attributed)doc";
-
-static const char *__doc_mitsuba_Properties_getVector3f = R"doc(Retrieve a vector)doc";
-
-static const char *__doc_mitsuba_Properties_getVector3f_2 = R"doc(Retrieve a vector (use default value if no entry exists))doc";
-
-static const char *__doc_mitsuba_Properties_hasProperty = R"doc(Verify if a value with the specified name exists)doc";
+static const char *__doc_mitsuba_Properties_long_2 = R"doc(Retrieve an integer value (use default value if no entry exists))doc";
 
 static const char *__doc_mitsuba_Properties_markQueried =
 R"doc(Manually mark a certain property as queried
@@ -1120,11 +1105,23 @@ R"doc(Merge another properties record into the current one. Existing
 properties will be overwritten with the values from ``props`` if they
 have the same name.)doc";
 
+static const char *__doc_mitsuba_Properties_object = R"doc(Retrieve an arbitrary object)doc";
+
+static const char *__doc_mitsuba_Properties_object_2 = R"doc(Retrieve an arbitrary object (use default value if no entry exists))doc";
+
 static const char *__doc_mitsuba_Properties_operator_assign = R"doc(Assignment operator)doc";
 
 static const char *__doc_mitsuba_Properties_operator_eq = R"doc(Equality comparison operator)doc";
 
 static const char *__doc_mitsuba_Properties_operator_ne = R"doc(Inequality comparison operator)doc";
+
+static const char *__doc_mitsuba_Properties_pluginName = R"doc(Get the associated plugin name)doc";
+
+static const char *__doc_mitsuba_Properties_propertyNames = R"doc(Store an array containing the names of all stored properties)doc";
+
+static const char *__doc_mitsuba_Properties_propertyType =
+R"doc(Returns the type of an existing property. If no property exists under
+that name, an error is logged and type ``void`` is returned.)doc";
 
 static const char *__doc_mitsuba_Properties_removeProperty =
 R"doc(Remove a property with the specified name
@@ -1132,13 +1129,13 @@ R"doc(Remove a property with the specified name
 Returns:
     ``True`` upon success)doc";
 
-static const char *__doc_mitsuba_Properties_setBoolean = R"doc(Store a boolean value in the Properties instance)doc";
+static const char *__doc_mitsuba_Properties_setBool = R"doc(Store a boolean value in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_setFloat = R"doc(Store a floating point value in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_setID = R"doc(Set the unique identifier associated with this instance)doc";
 
-static const char *__doc_mitsuba_Properties_setInteger = R"doc(Set an integer value in the Properties instance)doc";
+static const char *__doc_mitsuba_Properties_setInt = R"doc(Set an integer value in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_setLong = R"doc(Store an integer value in the Properties instance)doc";
 
@@ -1150,6 +1147,16 @@ static const char *__doc_mitsuba_Properties_setString = R"doc(Store a string in 
 
 static const char *__doc_mitsuba_Properties_setVector3f = R"doc(Store a vector in the Properties instance)doc";
 
+static const char *__doc_mitsuba_Properties_string = R"doc(Retrieve a string value)doc";
+
+static const char *__doc_mitsuba_Properties_string_2 = R"doc(Retrieve a string value (use default value if no entry exists))doc";
+
+static const char *__doc_mitsuba_Properties_unqueried = R"doc(Return the list of un-queried attributed)doc";
+
+static const char *__doc_mitsuba_Properties_vector3f = R"doc(Retrieve a vector)doc";
+
+static const char *__doc_mitsuba_Properties_vector3f_2 = R"doc(Retrieve a vector (use default value if no entry exists))doc";
+
 static const char *__doc_mitsuba_Properties_wasQueried = R"doc(Check if a certain property was queried)doc";
 
 static const char *__doc_mitsuba_Stream =
@@ -1160,8 +1167,8 @@ provides various convenience functions layered on top of on them.
 
 All read**X**() and write**X**() methods support transparent
 conversion based on the endianness of the underlying system and the
-value passed to setByteOrder(). Whenever getHostByteOrder() and
-getByteOrder() disagree, the endianness is swapped.
+value passed to setByteOrder(). Whenever hostByteOrder() and
+byteOrder() disagree, the endianness is swapped.
 
 See also:
     FileStream, MemoryStream, DummyStream)doc";
@@ -1180,7 +1187,7 @@ static const char *__doc_mitsuba_StreamAppender_StreamAppender_2 = R"doc(Create 
 
 static const char *__doc_mitsuba_StreamAppender_append = R"doc(Append a line of text)doc";
 
-static const char *__doc_mitsuba_StreamAppender_getClass = R"doc()doc";
+static const char *__doc_mitsuba_StreamAppender_class = R"doc()doc";
 
 static const char *__doc_mitsuba_StreamAppender_logProgress = R"doc(Process a progress message)doc";
 
@@ -1214,9 +1221,13 @@ system (i.e. no conversion is performed))doc";
 
 static const char *__doc_mitsuba_Stream_Stream_2 = R"doc(Copying is disallowed.)doc";
 
+static const char *__doc_mitsuba_Stream_byteOrder = R"doc(Returns the byte order of this stream.)doc";
+
 static const char *__doc_mitsuba_Stream_canRead = R"doc(Can we read from the stream?)doc";
 
 static const char *__doc_mitsuba_Stream_canWrite = R"doc(Can we write to the stream?)doc";
+
+static const char *__doc_mitsuba_Stream_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream_close =
 R"doc(Closes the stream.
@@ -1228,15 +1239,7 @@ destructor.)doc";
 
 static const char *__doc_mitsuba_Stream_flush = R"doc(Flushes the stream's buffers, if any)doc";
 
-static const char *__doc_mitsuba_Stream_getByteOrder = R"doc(Returns the byte order of this stream.)doc";
-
-static const char *__doc_mitsuba_Stream_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_Stream_getHostByteOrder = R"doc(Returns the byte order of the underlying machine.)doc";
-
-static const char *__doc_mitsuba_Stream_getPos = R"doc(Gets the current position inside the stream)doc";
-
-static const char *__doc_mitsuba_Stream_getSize = R"doc(Returns the size of the stream)doc";
+static const char *__doc_mitsuba_Stream_hostByteOrder = R"doc(Returns the byte order of the underlying machine.)doc";
 
 static const char *__doc_mitsuba_Stream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
 
@@ -1247,6 +1250,8 @@ R"doc(Returns true if we need to perform endianness swapping before writing
 or reading.)doc";
 
 static const char *__doc_mitsuba_Stream_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Stream_pos = R"doc(Gets the current position inside the stream)doc";
 
 static const char *__doc_mitsuba_Stream_read =
 R"doc(Reads a specified amount of data from the stream. \note This does
@@ -1279,6 +1284,8 @@ match the system's native endianness.
 No consistency is guaranteed if this method is called after performing
 some read and write operations on the system using a different
 endianness.)doc";
+
+static const char *__doc_mitsuba_Stream_size = R"doc(Returns the size of the stream)doc";
 
 static const char *__doc_mitsuba_Stream_toString = R"doc(Returns a human-readable desriptor of the stream)doc";
 
@@ -1342,12 +1349,14 @@ This class provides a routine convert() which <ol>
 
 * applies or removes gamma correction
 
+* optionally checks that certain entries have expected default values
+
 * substitutes missing values with specified defaults
 
 </ol>
 
 On x86_64 platforms, the implementation of this class relies on a JIT
-compiler to instantiate an function that efficiently performs the
+compiler to instantiate a function that efficiently performs the
 conversion for any number of elements. The function is cached and
 reused if this particular conversion is needed any any later point.
 
@@ -1357,9 +1366,9 @@ static const char *__doc_mitsuba_StructConverter_StructConverter =
 R"doc(Construct an optimized conversion routine going from ``source`` to
 ``target``)doc";
 
-static const char *__doc_mitsuba_StructConverter_convert = R"doc()doc";
+static const char *__doc_mitsuba_StructConverter_class = R"doc()doc";
 
-static const char *__doc_mitsuba_StructConverter_getClass = R"doc()doc";
+static const char *__doc_mitsuba_StructConverter_convert = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_m_func = R"doc()doc";
 
@@ -1381,7 +1390,13 @@ static const char *__doc_mitsuba_Struct_EByteOrder_ELittleEndian = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_EFlags = R"doc(Field-specific flags)doc";
 
-static const char *__doc_mitsuba_Struct_EFlags_EGamma = R"doc(Specifies whether the field encodes a sRGB gamma-corrected value)doc";
+static const char *__doc_mitsuba_Struct_EFlags_EAssert =
+R"doc(In FieldConverter::convert, check that the field value matches the
+specified default value. Otherwise, return a failure)doc";
+
+static const char *__doc_mitsuba_Struct_EFlags_EGamma =
+R"doc(Specifies whether the field encodes a sRGB gamma-corrected value.
+Assumes ``ENormalized`` is also specified.)doc";
 
 static const char *__doc_mitsuba_Struct_EFlags_ENormalized =
 R"doc(Only applies to integer fields: specifies whether the field encodes a
@@ -1417,8 +1432,6 @@ static const char *__doc_mitsuba_Struct_Field_default = R"doc(Default value)doc"
 
 static const char *__doc_mitsuba_Struct_Field_flags = R"doc(Additional flags)doc";
 
-static const char *__doc_mitsuba_Struct_Field_getRange = R"doc()doc";
-
 static const char *__doc_mitsuba_Struct_Field_isFloat = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_Field_isInteger = R"doc()doc";
@@ -1434,6 +1447,8 @@ static const char *__doc_mitsuba_Struct_Field_offset = R"doc(Offset within the `
 static const char *__doc_mitsuba_Struct_Field_operator_eq = R"doc(Equality operator)doc";
 
 static const char *__doc_mitsuba_Struct_Field_operator_ne = R"doc(Equality operator)doc";
+
+static const char *__doc_mitsuba_Struct_Field_range = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_Field_size = R"doc(Size in bytes)doc";
 
@@ -1455,13 +1470,15 @@ static const char *__doc_mitsuba_Struct_begin = R"doc(Return an iterator associa
 
 static const char *__doc_mitsuba_Struct_byteOrder = R"doc(Return the byte order of the ``Struct``)doc";
 
+static const char *__doc_mitsuba_Struct_class = R"doc()doc";
+
 static const char *__doc_mitsuba_Struct_end = R"doc(Return an iterator associated with the end of the data structure)doc";
+
+static const char *__doc_mitsuba_Struct_field = R"doc(Look up a field by name (throws an exception if not found))doc";
 
 static const char *__doc_mitsuba_Struct_fieldCount = R"doc(Return the number of fields)doc";
 
-static const char *__doc_mitsuba_Struct_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_Struct_getField = R"doc(Look up a field by name (throws an exception if not found))doc";
+static const char *__doc_mitsuba_Struct_hostByteOrder = R"doc(Return the byte order of the host machine)doc";
 
 static const char *__doc_mitsuba_Struct_m_byteOrder = R"doc()doc";
 
@@ -1800,6 +1817,10 @@ Parameter ``name``:
     An identifying name of this thread (will be shown in debug
     messages))doc";
 
+static const char *__doc_mitsuba_Thread_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Thread_coreAffinity = R"doc(Return the core affinity)doc";
+
 static const char *__doc_mitsuba_Thread_d = R"doc()doc";
 
 static const char *__doc_mitsuba_Thread_detach =
@@ -1813,33 +1834,27 @@ static const char *__doc_mitsuba_Thread_dispatch = R"doc(Initialize thread execu
 
 static const char *__doc_mitsuba_Thread_exit = R"doc(Exit the thread, should be called from inside the thread)doc";
 
-static const char *__doc_mitsuba_Thread_getClass = R"doc()doc";
+static const char *__doc_mitsuba_Thread_fileResolver = R"doc(Return the file resolver associated with the current thread)doc";
 
-static const char *__doc_mitsuba_Thread_getCoreAffinity = R"doc(Return the core affinity)doc";
+static const char *__doc_mitsuba_Thread_fileResolver_2 = R"doc(Return the parent thread (const version))doc";
 
-static const char *__doc_mitsuba_Thread_getCritical = R"doc(Return the value of the critical flag)doc";
+static const char *__doc_mitsuba_Thread_id = R"doc(Return a unique ID that is associated with this thread)doc";
 
-static const char *__doc_mitsuba_Thread_getFileResolver = R"doc(Return the file resolver associated with the current thread)doc";
-
-static const char *__doc_mitsuba_Thread_getFileResolver_2 = R"doc(Return the parent thread (const version))doc";
-
-static const char *__doc_mitsuba_Thread_getID = R"doc(Return a unique ID that is associated with this thread)doc";
-
-static const char *__doc_mitsuba_Thread_getLogger = R"doc(Return the thread's logger instance)doc";
-
-static const char *__doc_mitsuba_Thread_getName = R"doc(Return the name of this thread)doc";
-
-static const char *__doc_mitsuba_Thread_getParent = R"doc(Return the parent thread)doc";
-
-static const char *__doc_mitsuba_Thread_getParent_2 = R"doc(Return the parent thread (const version))doc";
-
-static const char *__doc_mitsuba_Thread_getPriority = R"doc(Return the thread priority)doc";
-
-static const char *__doc_mitsuba_Thread_getThread = R"doc(Return the current thread)doc";
+static const char *__doc_mitsuba_Thread_isCritical = R"doc(Return the value of the critical flag)doc";
 
 static const char *__doc_mitsuba_Thread_isRunning = R"doc(Is this thread still running?)doc";
 
 static const char *__doc_mitsuba_Thread_join = R"doc(Wait until the thread finishes)doc";
+
+static const char *__doc_mitsuba_Thread_logger = R"doc(Return the thread's logger instance)doc";
+
+static const char *__doc_mitsuba_Thread_name = R"doc(Return the name of this thread)doc";
+
+static const char *__doc_mitsuba_Thread_parent = R"doc(Return the parent thread)doc";
+
+static const char *__doc_mitsuba_Thread_parent_2 = R"doc(Return the parent thread (const version))doc";
+
+static const char *__doc_mitsuba_Thread_priority = R"doc(Return the thread priority)doc";
 
 static const char *__doc_mitsuba_Thread_run = R"doc(The thread's run method)doc";
 
@@ -1880,6 +1895,8 @@ static const char *__doc_mitsuba_Thread_staticInitialization = R"doc(Initialize 
 
 static const char *__doc_mitsuba_Thread_staticShutdown = R"doc(Shut down the threading system)doc";
 
+static const char *__doc_mitsuba_Thread_thread = R"doc(Return the current thread)doc";
+
 static const char *__doc_mitsuba_Thread_toString = R"doc(Return a string representation)doc";
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
@@ -1905,6 +1922,12 @@ static const char *__doc_mitsuba_ZStream_canRead = R"doc(Can we read from the st
 
 static const char *__doc_mitsuba_ZStream_canWrite = R"doc(Can we write to the stream?)doc";
 
+static const char *__doc_mitsuba_ZStream_childStream = R"doc(Returns the child stream of this compression stream)doc";
+
+static const char *__doc_mitsuba_ZStream_childStream_2 = R"doc(Returns the child stream of this compression stream)doc";
+
+static const char *__doc_mitsuba_ZStream_class = R"doc()doc";
+
 static const char *__doc_mitsuba_ZStream_close =
 R"doc(Closes the underlying stream. No further read or write operations are
 permitted.
@@ -1913,16 +1936,6 @@ This function is idempotent. It is called automatically by the
 destructor.)doc";
 
 static const char *__doc_mitsuba_ZStream_flush = R"doc(Unsupported. Always throws.)doc";
-
-static const char *__doc_mitsuba_ZStream_getChildStream = R"doc(Returns the child stream of this compression stream)doc";
-
-static const char *__doc_mitsuba_ZStream_getChildStream_2 = R"doc(Returns the child stream of this compression stream)doc";
-
-static const char *__doc_mitsuba_ZStream_getClass = R"doc()doc";
-
-static const char *__doc_mitsuba_ZStream_getPos = R"doc(Unsupported. Always throws.)doc";
-
-static const char *__doc_mitsuba_ZStream_getSize = R"doc(Unsupported. Always throws.)doc";
 
 static const char *__doc_mitsuba_ZStream_isClosed =
 R"doc(Whether the underlying stream is closed (no read or write are then
@@ -1940,12 +1953,16 @@ static const char *__doc_mitsuba_ZStream_m_inflateBuffer = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream_m_inflateStream = R"doc()doc";
 
+static const char *__doc_mitsuba_ZStream_pos = R"doc(Unsupported. Always throws.)doc";
+
 static const char *__doc_mitsuba_ZStream_read =
 R"doc(Reads a specified amount of data from the stream, decompressing it
 first using ZLib. Throws an exception when the stream ended
 prematurely.)doc";
 
 static const char *__doc_mitsuba_ZStream_seek = R"doc(Unsupported. Always throws.)doc";
+
+static const char *__doc_mitsuba_ZStream_size = R"doc(Unsupported. Always throws.)doc";
 
 static const char *__doc_mitsuba_ZStream_toString = R"doc(Returns a string representation)doc";
 
@@ -2373,9 +2390,9 @@ static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 
 static const char *__doc_mitsuba_tuple_hasher_operator_call = R"doc()doc";
 
-static const char *__doc_mitsuba_util_getCoreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
+static const char *__doc_mitsuba_util_coreCount = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
-static const char *__doc_mitsuba_util_getLibraryPath = R"doc(Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>)doc";
+static const char *__doc_mitsuba_util_libraryPath = R"doc(Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>)doc";
 
 static const char *__doc_mitsuba_util_memString = R"doc(Turn a memory size into a human-readable string)doc";
 
@@ -2447,7 +2464,19 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
+static const char *__doc_pcg32_8_inc = R"doc()doc";
+
 static const char *__doc_pcg32_8_nextDouble =
+R"doc(Generate eight double precision floating point value on the interval
+[0, 1)
+
+Remark:
+    Since the underlying random number generator produces 32 bit
+    output, only the first 32 mantissa bits will be filled (however,
+    the resolution is still finer than in nextFloat(), which only uses
+    23 mantissa bits))doc";
+
+static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2461,19 +2490,27 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
+static const char *__doc_pcg32_8_nextFloat_2 =
+R"doc(Generate eight single precision floating point value on the interval
+[0, 1))doc";
+
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
+
+static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
-
-static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
+
+static const char *__doc_pcg32_8_state = R"doc()doc";
+
+static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)

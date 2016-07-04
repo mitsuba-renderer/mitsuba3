@@ -112,7 +112,7 @@ public:
     // =========================================================================
 
     /// Returns the current size of the underlying stream
-    size_t getSize() const { return m_stream->getSize(); }
+    size_t size() const { return m_stream->size(); }
 
     /// Whether the underlying stream has read capabilities and is not closed.
     bool canRead() const { return !m_writeMode && !isClosed(); }

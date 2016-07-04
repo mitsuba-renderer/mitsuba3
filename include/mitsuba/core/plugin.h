@@ -51,13 +51,13 @@ NAMESPACE_BEGIN(mitsuba)
 class MTS_EXPORT_CORE PluginManager : public Object {
 public:
 	/// Return the global plugin manager
-	static PluginManager *getInstance() { return m_instance; }
+	static PluginManager *instance() { return m_instance; }
 
 	/// Ensure that a plugin is loaded and ready
 	void ensurePluginLoaded(const std::string &name);
 
 	/// Return the list of loaded plugins
-	std::vector<std::string> getLoadedPlugins() const;
+	std::vector<std::string> loadedPlugins() const;
 
 	/**
      * \brief Instantiate a plugin, verify its type, and return the newly

@@ -4,7 +4,7 @@
 MTS_PY_EXPORT(util) {
     py::module util = m.def_submodule("util", "Miscellaneous utility routines");
 
-    util.def("getCoreCount", &util::getCoreCount, DM(util, getCoreCount));
+    util.def("coreCount", &util::coreCount, DM(util, coreCount));
     util.def("timeString", &util::timeString, py::arg("time"),
           py::arg("precise") = false, DM(util, timeString));
     util.def("memString", &util::memString, py::arg("size"),

@@ -85,13 +85,13 @@ public:
      * this might be further than the stream's size or even capacity.
      */
 
-    virtual size_t getPos() const override { return m_pos; };
+    virtual size_t pos() const override { return m_pos; };
 
     /** \brief Returns the size of the contents written to the memory buffer.
      * \note This is not equal to the size of the memory buffer in general,
      * since we allocate more capacity at once.
      */
-    virtual size_t getSize() const override { return m_size; };
+    virtual size_t size() const override { return m_size; };
 
     /// No-op since all writes are made directly to memory
     virtual void flush() override { };
