@@ -165,6 +165,9 @@ public:
     /// Return a pointer to the referenced object
     operator T* () { return m_ptr; }
 
+    /// Return a pointer to the referenced object
+    operator const T* () const { return m_ptr; }
+
     /// Return a const pointer to the referenced object
     T* get() { return m_ptr; }
 
