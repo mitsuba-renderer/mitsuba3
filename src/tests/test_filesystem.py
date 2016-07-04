@@ -1,8 +1,14 @@
-import unittest
-import platform, re, os
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
+import platform
+import re
 
 from mitsuba import filesystem as fs
 from mitsuba.filesystem import preferred_separator as sep
+
 
 class FilesystemTest(unittest.TestCase):
     path_here_relative = fs.path("." + sep)

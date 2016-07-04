@@ -1,4 +1,8 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
+
 from mitsuba import Thread, Logger, Appender, Formatter, Log, EInfo
 
 

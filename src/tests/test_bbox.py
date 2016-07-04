@@ -1,4 +1,7 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 from mitsuba import BoundingBox3f as BBox
 import numpy as np

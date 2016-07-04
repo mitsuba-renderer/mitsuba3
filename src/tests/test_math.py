@@ -1,4 +1,7 @@
-import unittest
+try:
+    import unittest2 as unittest
+except:
+    import unittest
 
 from mitsuba.math import log2i
 from mitsuba.math import isPowerOfTwo
