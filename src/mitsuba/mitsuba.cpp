@@ -18,7 +18,6 @@ int main(int argc, char *argv[]) {
     Class::staticInitialization();
     Thread::staticInitialization();
     Logger::staticInitialization();
-    typedef std::vector<std::string> StringVec;
 
     std::cout << "Mitsuba 2 (flags:";
     if (simd::has_avx512dq)
@@ -40,6 +39,7 @@ int main(int argc, char *argv[]) {
     std::cout << ")" << std::endl;
 
     ArgParser parser;
+    typedef std::vector<std::string> StringVec;
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
     auto arg_extra = parser.add("", true);
 

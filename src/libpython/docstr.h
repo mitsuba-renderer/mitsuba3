@@ -2160,6 +2160,8 @@ static const char *__doc_mitsuba_hash_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_hash_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_hash_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_hash_combine = R"doc()doc";
 
 static const char *__doc_mitsuba_hasher = R"doc()doc";
@@ -2350,6 +2352,8 @@ static const char *__doc_mitsuba_ref_operator_assign_3 = R"doc(Overwrite this re
 
 static const char *__doc_mitsuba_ref_operator_bool = R"doc(Check if the object is defined)doc";
 
+static const char *__doc_mitsuba_ref_operator_const_T0 = R"doc(Return a pointer to the referenced object)doc";
+
 static const char *__doc_mitsuba_ref_operator_eq = R"doc(Compare this reference to another reference)doc";
 
 static const char *__doc_mitsuba_ref_operator_eq_2 = R"doc(Compare this reference to a pointer)doc";
@@ -2474,19 +2478,7 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
-static const char *__doc_pcg32_8_inc = R"doc()doc";
-
 static const char *__doc_pcg32_8_nextDouble =
-R"doc(Generate eight double precision floating point value on the interval
-[0, 1)
-
-Remark:
-    Since the underlying random number generator produces 32 bit
-    output, only the first 32 mantissa bits will be filled (however,
-    the resolution is still finer than in nextFloat(), which only uses
-    23 mantissa bits))doc";
-
-static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2500,27 +2492,19 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
-static const char *__doc_pcg32_8_nextFloat_2 =
-R"doc(Generate eight single precision floating point value on the interval
-[0, 1))doc";
-
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
-
-static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
+
+static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
-
-static const char *__doc_pcg32_8_state = R"doc()doc";
-
-static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)
