@@ -82,6 +82,15 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
     }
 }
 
+inline std::string trim(const std::string &str,
+                        const std::string &whitespace = " \t") {
+    auto it1 = str.find_first_not_of(whitespace);
+    if (it1 == std::string::npos)
+        return "";
+    auto it2 = str.find_last_not_of(whitespace);
+    return str.substr(it1, it2 - it1 + 1);
+}
+
 NAMESPACE_END(string)
 NAMESPACE_END(mitsuba)
 
