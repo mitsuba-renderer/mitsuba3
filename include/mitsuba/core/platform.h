@@ -7,7 +7,7 @@
 #  define NAMESPACE_END(name) }
 #endif
 
-#if defined(__WINDOWS__)
+#if defined(_MSC_VER)
 #  define MTS_EXPORT __declspec(dllexport)
 #  define MTS_IMPORT __declspec(dllimport)
 #  define MTS_NOINLINE __declspec(noinline)
@@ -59,11 +59,11 @@ NAMESPACE_BEGIN(mitsuba)
 
 /* Define a 'Float' data type with customizable precision */
 #if defined(DOUBLE_PRECISION)
-typedef double Float;
+    typedef double Float;
 #elif defined(SINGLE_PRECISION)
-typedef float Float;
+    typedef float Float;
 #else
-#error No precision flag was defined!
+#  error No precision flag was defined!
 #endif
 
 /* Reduce namespace pollution from windows.h */
@@ -87,7 +87,17 @@ typedef float Float;
 #  define MTS_CLZ     __lzcnt
 #  define MTS_CLZLL   __lzcnt64
 #endif
-#define MTS_BLSR    _blsr_u32
-#define MTS_BLSRLL  _blsr_u64
+
+#define MTS_BLSR      _blsr_u32
+#define MTS_BLSRLL    _blsr_u64
+
+/* Likely/unlikely macros (only on GCC/Clang) */
+#if defined(__GNUG__) || defined(__clang__)
+#  define likely(x)   __builtin_expect(!!(x), 1)
+#  define unlikely(x) __builtin_expect(!!(x), 0)
+#else
+#  define likely(x)       (x)
+#  define unlikely(x)     (x)
+#endif
 
 NAMESPACE_END(mitsuba)
