@@ -80,6 +80,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
         if (it != v.end())
             os << ", ";
     }
+    return os;
 }
 
 inline std::string trim(const std::string &str,
