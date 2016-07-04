@@ -6,11 +6,15 @@
 #include <mitsuba/core/argparser.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
+#include <mitsuba/core/jit.h>
 #include <tbb/task_scheduler_init.h>
+
+#include <mitsuba/render/shape.h>
 
 using namespace mitsuba;
 
 int main(int argc, char *argv[]) {
+    Jit::staticInitialization();
     Class::staticInitialization();
     Thread::staticInitialization();
     Logger::staticInitialization();
@@ -19,7 +23,6 @@ int main(int argc, char *argv[]) {
     ArgParser parser;
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
     auto arg_extra = parser.add("", true);
-
 
     std::cout << "Compiled with: ";
     if (simd::has_avx512dq)
@@ -30,10 +33,12 @@ int main(int argc, char *argv[]) {
         std::cout << "avx512f ";
     if (simd::has_avx2)
         std::cout << "avx2 ";
-    if (simd::has_avx)
-        std::cout << "avx ";
     if (simd::has_fma)
         std::cout << "fma ";
+    if (simd::has_f16c)
+        std::cout << "f16c ";
+    if (simd::has_avx)
+        std::cout << "avx ";
     if (simd::has_sse4_2)
         std::cout << "sse4.2 ";
     std::cout << std::endl;
@@ -68,5 +73,6 @@ int main(int argc, char *argv[]) {
     Logger::staticShutdown();
     Thread::staticShutdown();
     Class::staticShutdown();
+    Jit::staticShutdown();
     return 0;
 }

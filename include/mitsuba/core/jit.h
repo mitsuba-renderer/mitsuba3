@@ -14,7 +14,16 @@ struct MTS_EXPORT_CORE Jit {
     std::mutex mutex;
     asmjit::JitRuntime runtime;
 
+    /**
+     * \brief Statically initialize the JIT runtime
+     *
+     * This function also does a runtime-check to ensure that the host
+     * processor supports all instruction sets which were selected at compile
+     * time. If not, the application is terminated via \c abort().
+     */
     static void staticInitialization();
+
+    /// Release all memory used by JIT-compiled routines
     static void staticShutdown();
 
     static Jit *getInstance();

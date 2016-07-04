@@ -1,5 +1,6 @@
 include_directories(
   ${TBB_INCLUDE_DIRS}
+  ${ASMJIT_INCLUDE_DIRS}
 )
 
 add_executable(mitsuba mitsuba.cpp)

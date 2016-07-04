@@ -30,10 +30,10 @@ MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Struct);
 
 PYBIND11_PLUGIN(mitsuba) {
+    Jit::staticInitialization();
     Class::staticInitialization();
     Thread::staticInitialization();
     Logger::staticInitialization();
-    Jit::staticInitialization();
 
     py::module m("mitsuba", "Mitsuba Python extension library");
 
@@ -64,10 +64,10 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT(Struct);
 
     atexit([](){
-        Jit::staticShutdown();
         Logger::staticShutdown();
         Thread::staticShutdown();
         Class::staticShutdown();
+        Jit::staticShutdown();
     });
 
     return m.ptr();
