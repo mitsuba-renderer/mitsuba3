@@ -20,28 +20,28 @@ int main(int argc, char *argv[]) {
     Logger::staticInitialization();
     typedef std::vector<std::string> StringVec;
 
+    std::cout << "Mitsuba 2 (flags:";
+    if (simd::has_avx512dq)
+        std::cout << " avx512dq";
+    if (simd::has_avx512vl)
+        std::cout << " avx512vl";
+    if (simd::has_avx512f)
+        std::cout << " avx512f";
+    if (simd::has_avx2)
+        std::cout << " avx2";
+    if (simd::has_fma)
+        std::cout << " fma";
+    if (simd::has_f16c)
+        std::cout << " f16c";
+    if (simd::has_avx)
+        std::cout << " avx";
+    if (simd::has_sse4_2)
+        std::cout << " sse4.2";
+    std::cout << ")" << std::endl;
+
     ArgParser parser;
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
     auto arg_extra = parser.add("", true);
-
-    std::cout << "Compiled with: ";
-    if (simd::has_avx512dq)
-        std::cout << "avx512dq ";
-    if (simd::has_avx512vl)
-        std::cout << "avx512vl ";
-    if (simd::has_avx512f)
-        std::cout << "avx512f ";
-    if (simd::has_avx2)
-        std::cout << "avx2 ";
-    if (simd::has_fma)
-        std::cout << "fma ";
-    if (simd::has_f16c)
-        std::cout << "f16c ";
-    if (simd::has_avx)
-        std::cout << "avx ";
-    if (simd::has_sse4_2)
-        std::cout << "sse4.2 ";
-    std::cout << std::endl;
 
     try {
         /* Parse all command line options */
