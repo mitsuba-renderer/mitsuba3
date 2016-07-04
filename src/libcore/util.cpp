@@ -2,7 +2,6 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/filesystem.h>
-#include <sstream>
 #include <cmath>
 
 #if defined(__LINUX__)
@@ -114,10 +113,7 @@ std::string timeString(Float value, bool precise) {
     for (i = 0; i < 6 && value > orders[i+1].factor; ++i)
         value /= orders[i+1].factor;
 
-    std::ostringstream os;
-    os.precision(precise ? 4 : 1);
-    os << value << orders[i].suffix;
-    return os.str();
+    return tfm::format(precise ? "%.5g%s" : "%.3g%s", value, orders[i].suffix);
 }
 
 std::string memString(size_t size, bool precise) {
@@ -131,10 +127,7 @@ std::string memString(size_t size, bool precise) {
     for (i = 0; i < 6 && value > 1024.0f; ++i)
         value /= 1024.0f;
 
-    std::ostringstream os;
-    os.precision(precise ? 4 : 1);
-    os << value << " " << orders[i];
-    return os.str();
+    return tfm::format(precise ? "%.5g %s" : "%.3g %s", value, orders[i]);
 }
 
 #if defined(__WINDOWS__) || defined(__LINUX__)
