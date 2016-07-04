@@ -168,7 +168,8 @@ public:
 
     /// Equality operator
     bool operator==(const Struct &s) const {
-        return m_fields == s.m_fields && m_pack == s.m_pack && m_byteOrder == s.m_byteOrder;
+        return m_fields == s.m_fields && m_pack == s.m_pack &&
+               m_byteOrder == s.m_byteOrder;
     }
 
     /// Inequality operator
@@ -182,6 +183,26 @@ protected:
     bool m_pack;
     EByteOrder m_byteOrder;
 };
+
+template <typename T> struct struct_traits { };
+
+#define MTS_STRUCT_TRAITS(type, value) \
+    template <> struct struct_traits<type> { \
+        static constexpr auto value = Struct::value; \
+    };
+
+MTS_STRUCT_TRAITS(int8_t, EInt8);
+MTS_STRUCT_TRAITS(uint8_t, EUInt8);
+MTS_STRUCT_TRAITS(int16_t, EInt16);
+MTS_STRUCT_TRAITS(uint16_t, EUInt16);
+MTS_STRUCT_TRAITS(int32_t, EInt32);
+MTS_STRUCT_TRAITS(uint32_t, EUInt32);
+MTS_STRUCT_TRAITS(int64_t, EInt64);
+MTS_STRUCT_TRAITS(uint64_t, EUInt64);
+MTS_STRUCT_TRAITS(float, EFloat32);
+MTS_STRUCT_TRAITS(double, EFloat64);
+
+#undef MTS_STRUCT_TRAITS
 
 /**
  * \brief This class solves the any-to-any problem: effiently converting from

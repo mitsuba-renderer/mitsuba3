@@ -2388,6 +2388,8 @@ static const char *__doc_mitsuba_string_tokenize =
 R"doc(Chop up the string given a set of delimiters (warning: not unicode
 compliant))doc";
 
+static const char *__doc_mitsuba_string_trim = R"doc()doc";
+
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 
 static const char *__doc_mitsuba_tuple_hasher_operator_call = R"doc()doc";
