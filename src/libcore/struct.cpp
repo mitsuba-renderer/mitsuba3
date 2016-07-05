@@ -3,6 +3,7 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/jit.h>
 #include <mitsuba/core/stream.h>
+#include <mitsuba/core/hash.h>
 #include <simdfloat/static.h>
 #include <ostream>
 #include <unordered_map>
@@ -173,6 +174,21 @@ std::pair<double, double> Struct::Field::range() const {
     }
 }
 
+size_t hash(const Struct::Field &f) {
+    size_t value = hash(f.name);
+    value = hash_combine(value, hash(f.type));
+    value = hash_combine(value, hash(f.size));
+    value = hash_combine(value, hash(f.offset));
+    value = hash_combine(value, hash(f.flags));
+    value = hash_combine(value, hash(f.default_));
+    return value;
+}
+
+size_t hash(const Struct &s) {
+    return hash_combine(hash_combine(hash(s.m_fields), hash(s.m_pack)),
+                        hash(s.m_byteOrder));
+}
+
 static std::unordered_map<
            std::pair<ref<const Struct>, ref<const Struct>>, void *,
     hasher<std::pair<ref<const Struct>, ref<const Struct>>>,
@@ -180,7 +196,7 @@ static std::unordered_map<
 
 StructConverter::StructConverter(const Struct *source, const Struct *target)
  : m_source(source), m_target(target) {
-#if defined(__x86_64__) || defined(_WIN64)
+#if MTS_STRUCTCONVERTER_USE_JIT == 1
     using namespace asmjit;
 
     auto jit = Jit::getInstance();
@@ -566,7 +582,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 #endif
 }
 
-#if !(defined(__x86_64__) || defined(_WIN64))
+#if MTS_STRUCTCONVERTER_USE_JIT == 0
 bool StructConverter::convert(size_t count, const void *src_, void *dest_) const {
     size_t sourceSize = m_source->size();
     size_t targetSize = m_target->size();

@@ -1,11 +1,16 @@
 #pragma once
 
 #include <mitsuba/core/object.h>
-#include <mitsuba/core/hash.h>
 #include <vector>
 #include <limits>
 
 NAMESPACE_BEGIN(mitsuba)
+
+#if defined(__x86_64__) || defined(_WIN64)
+#  define MTS_STRUCTCONVERTER_USE_JIT 1
+#else
+#  define MTS_STRUCTCONVERTER_USE_JIT 0
+#endif
 
 /**
  * \brief Descriptor for specifying the contents and in-memory layout of a
@@ -80,15 +85,7 @@ public:
         double default_;
 
         /// Return a hash code associated with this \c Field
-        friend size_t hash(const Field &f) {
-            size_t value = hash(f.name);
-            value = hash_combine(value, hash(f.type));
-            value = hash_combine(value, hash(f.size));
-            value = hash_combine(value, hash(f.offset));
-            value = hash_combine(value, hash(f.flags));
-            value = hash_combine(value, hash(f.default_));
-            return value;
-        }
+        friend size_t hash(const Field &f);
 
         /// Equality operator
         bool operator==(const Field &f) const {
@@ -176,10 +173,7 @@ public:
     std::vector<Field>::const_iterator end() const { return m_fields.cend(); }
 
     /// Return a hash code associated with this \c Struct
-    friend size_t hash(const Struct &s) {
-        return hash_combine(hash_combine(hash(s.m_fields), hash(s.m_pack)),
-                            hash(s.m_byteOrder));
-    }
+    friend size_t hash(const Struct &s);
 
     /// Equality operator
     bool operator==(const Struct &s) const {
@@ -270,7 +264,7 @@ public:
     StructConverter(const Struct *source, const Struct *target);
 
     /// Convert \c count elements. Returns \c true upon success
-#if defined(__x86_64__) || defined(_WIN64)
+#if MTS_STRUCTCONVERTER_USE_JIT == 1
     bool convert(size_t count, const void *src, void *dest) const {
         return m_func(count, src, dest);
     }
@@ -291,7 +285,7 @@ public:
 protected:
     ref<const Struct> m_source;
     ref<const Struct> m_target;
-#if defined(__x86_64__) || defined(_WIN64)
+#if MTS_STRUCTCONVERTER_USE_JIT == 1
     FuncType m_func;
 #endif
 };
