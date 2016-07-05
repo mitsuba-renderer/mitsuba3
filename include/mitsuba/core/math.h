@@ -100,6 +100,53 @@ template <typename Scalar> Scalar safe_sqrt(Scalar value) {
     return std::sqrt(std::max((Scalar) 0, value));
 }
 
+/// sqrt(a^2 + b^2) without range issues (like 'hypot' on compilers that support C99)
+template <typename Scalar> Scalar hypot2(Scalar a, Scalar b) {
+    Scalar r;
+    if (std::abs(a) > std::abs(b)) {
+        r = b / a;
+        r = std::abs(a) * std::sqrt((Scalar) 1 + r*r);
+    } else if (b != (Scalar) 0) {
+        r = a / b;
+        r = std::abs(b) * std::sqrt((Scalar) 1 + r*r);
+    } else {
+        r = (Scalar) 0;
+    }
+    return r;
+}
+
+//! @}
+// -----------------------------------------------------------------------
+
+// -----------------------------------------------------------------------
+//! @{ \name Fast computation of both sin & cos for a given angle,
+//! enabled on Linux.
+// -----------------------------------------------------------------------
+
+#if defined(_GNU_SOURCE)
+    /// Fast computation of both sin & cos for a given angle
+    inline void sincos(float theta, float *sin, float *cos) {
+        ::sincosf(theta, sin, cos);
+    }
+
+    /// Fast computation of both sin & cos for a given angle
+    inline void sincos(double theta, double *sin, double *cos) {
+        ::sincos(theta, sin, cos);
+    }
+#else
+    /// On this platform, equivalent to computing sin and cos separately
+    inline void sincos(float theta, float *_sin, float *_cos) {
+        *_sin = sinf(theta);
+        *_cos = cosf(theta);
+    }
+
+    /// On this platform, equivalent to computing sin and cos separately
+    inline void sincos(double theta, double *_sin, double *_cos) {
+        *_sin = sin(theta);
+        *_cos = cos(theta);
+    }
+#endif
+
 //! @}
 // -----------------------------------------------------------------------
 
