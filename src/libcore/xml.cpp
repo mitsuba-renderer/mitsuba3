@@ -9,8 +9,9 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/transform.h>
-
 #include <pugixml.hpp>
+#include <tbb/tbb.h>
+
 #include <fstream>
 #include <set>
 #include <unordered_map>
@@ -222,12 +223,32 @@ ref<Object> loadImpl(const std::string &id,
                         check_attributes(node, { "type" });
 
                         Properties propsNested(node.attribute("type").value());
-                        for (pugi::xml_node &ch: node.children())
-                            parseTag(ch, propsNested, tag);
+                        if (false) {
+                            for (pugi::xml_node &ch: node.children())
+                                parseTag(ch, propsNested, tag);
+                        } else {
+                            std::vector<pugi::xml_node> children(
+                                node.children().begin(), node.children().end());
+
+                            Thread *thread = Thread::thread();
+
+                            tbb::parallel_for(tbb::blocked_range<uint32_t>(
+                                0u, (uint32_t) children.size(), 1),
+                                [&](const tbb::blocked_range<uint32_t> &range) {
+                                    ThreadEnvironment env(thread);
+                                    for (uint32_t i = range.begin(); i != range.end(); ++i) {
+                                        pugi::xml_node &ch = children[i];
+                                        parseTag(ch, propsNested, tag);
+                                    }
+                                }
+                            );
+                        }
 
                         /* This is an object, first instantiate it */
-                        props.setObject("asdf", PluginManager::instance()->createObject(
-                            it2->second, propsNested)); // XXX
+                        ref<Object> obj = PluginManager::instance()->createObject(
+                            it2->second, propsNested);
+
+                        //props.setObject("asdf", );
                     }
                     break;
                 case EString: {
