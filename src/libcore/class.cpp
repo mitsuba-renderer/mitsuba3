@@ -24,7 +24,7 @@ Class::Class(const std::string &name, const std::string &parent, bool abstract,
     (*__classes)[name] = this;
 
     /* Also register new abstract classes with the XML parser */
-    if (abstract)
+    if (abstract || name == "Scene" /* Special case for 'Scene' */)
         xml::registerClass(this);
 }
 

@@ -129,6 +129,9 @@ PluginManager::~PluginManager() {
 }
 
 ref<Object> PluginManager::createObject(const Class *class_, const Properties &props) {
+   if (class_->name() == "Scene")
+       return class_->construct(props);
+
    const Plugin *plugin = d->plugin(props.pluginName());
    ref<Object> object = plugin->createObject(props);
    if (!object->class_()->derivesFrom(class_))

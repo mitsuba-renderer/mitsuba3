@@ -14,6 +14,7 @@ add_library(mitsuba-render SHARED
   bsdf.cpp         ${INC_DIR}/bsdf.h
   shape.cpp        ${INC_DIR}/shape.h
   mesh.cpp         ${INC_DIR}/mesh.h
+  scene.cpp        ${INC_DIR}/scene.h
 )
 
 # Link to Intel's Thread Building Blocks
