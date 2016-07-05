@@ -30,17 +30,27 @@ public:
 
         auto fs = Thread::thread()->fileResolver();
         fs::path filePath = fs->resolve(props.string("filename"));
+        m_name = filePath.filename();
 
-		Log(EInfo, "Loading geometry from \"%s\" ..", filePath.filename());
+        auto fail = [&](const char *descr) {
+            Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
+        };
+
+		Log(EInfo, "Loading geometry from \"%s\" ..", m_name);
 		if (!fs::exists(filePath))
-			Log(EError, "PLY file \"%s\" could not be found!", filePath);
+		    fail("file not found");
 
         ref<Stream> stream = new FileStream(filePath, false);
         Timer timer;
 
-        auto header = parsePLYHeader(stream);
-        if (header.ascii)
-            stream = parseASCII((FileStream *) stream.get(), header.elements);
+        PLYHeader header;
+        try {
+            header = parsePLYHeader(stream);
+            if (header.ascii)
+                stream = parseASCII((FileStream *) stream.get(), header.elements);
+        } catch (const std::exception &e) {
+            fail(e.what());
+        }
 
         for (auto const &el : header.elements) {
             size_t size = el.struct_->size();
@@ -58,10 +68,12 @@ public:
                 try {
                     conv = new StructConverter(el.struct_, m_vertexStruct);
                 } catch (const std::exception &e) {
-                    Throw("PLY loader: %s", e.what());
+                    fail(e.what());
                 }
+
+                /* Allocate memory for vertices (+1 unused entry) */
                 m_vertices = VertexHolder(
-                    (VertexType *) Allocator::alloc(el.count * oStructSize));
+                    (VertexType *) Allocator::alloc((el.count + 1) * oStructSize));
 
                 size_t nPackets      = el.count / nAtOnce;
                 size_t nRemainder    = el.count % nAtOnce;
@@ -74,7 +86,8 @@ public:
                 for (size_t i = 0; i < nPackets; ++i) {
                     stream->read(buf.get(), iPacketSize);
                     if (unlikely(!conv->convert(nAtOnce, buf.get(), target)))
-                        Throw("PLY loader: incompatible contents (is this a triangle mesh?)");
+                        fail("incompatible contents -- is this a triangle mesh?");
+
                     for (size_t j = 0; j < nAtOnce; ++j) {
                         Vector3f p;
                         p.load((Float *) target);
@@ -85,7 +98,7 @@ public:
 
                 stream->read(buf.get(), remainderSize);
                 if (unlikely(!conv->convert(nRemainder, buf.get(), target)))
-                    Throw("PLY loader: incompatible contents (is this a triangle mesh?)");
+                    fail("incompatible contents -- is this a triangle mesh?");
 
                 for (size_t j = 0; j < nRemainder; ++j) {
                     Vector3f p;
@@ -104,7 +117,8 @@ public:
                 else if (el.struct_->hasField("vertex_indices.count"))
                     fieldName = "vertex_indices";
                 else
-                    Throw("PLY loader: vertex_index/vertex_indices property not found!");
+                    fail("vertex_index/vertex_indices "
+                         "property not found");
 
                 for (int i = 0; i < 3; ++i)
                     m_faceStruct->append(tfm::format("%s.i%i", fieldName, i),
@@ -117,7 +131,7 @@ public:
                 try {
                     conv = new StructConverter(el.struct_, m_faceStruct);
                 } catch (const std::exception &e) {
-                    Throw("PLY loader: %s", e.what());
+                    fail(e.what());
                 }
 
                 m_faces = FaceHolder(
@@ -135,26 +149,23 @@ public:
                 for (size_t i = 0; i < nPackets; ++i) {
                     stream->read(buf.get(), iPacketSize);
                     if (unlikely(!conv->convert(nAtOnce, buf.get(), target)))
-                        Throw("PLY loader: incompatible contents (is this a triangle mesh?)");
+                        fail("incompatible contents -- is this a triangle mesh?");
                     target += oPacketSize;
                 }
 
                 stream->read(buf.get(), remainderSize);
                 if (unlikely(!conv->convert(nRemainder, buf.get(), target)))
-                    Throw("PLY loader: incompatible contents (is this a triangle mesh?)");
+                    fail("incompatible contents -- is this a triangle mesh?");
 
                 m_faceCount = el.count;
             } else {
-                Log(EWarn, "Skipping unknown element \"%s\"", el.name);
+                Log(EWarn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + size * el.count);
             }
         }
 
         if (stream->tell() != stream->size())
-            Throw("Invalid PLY file: trailing content");
-
-
-        m_name = filePath.filename();
+            fail("invalid file -- trailing content");
 
         Log(EInfo, "\"%s\": Loaded %i triangles, %i vertices (%s in %s)",
             m_name,
@@ -202,17 +213,17 @@ public:
                 continue;
             } else if (token == "ply") {
                 if (plySpecifierProcessed)
-                    Throw("Invalid PLY header: duplicate \"ply\" tag!");
+                    Throw("invalid PLY header: duplicate \"ply\" tag");
                 plySpecifierProcessed = true;
                 if (iss >> token)
-                    Throw("Invalid PLY header: excess tokens after \"ply\"");
+                    Throw("invalid PLY header: excess tokens after \"ply\"");
             } else if (token == "format") {
                 if (!plySpecifierProcessed)
-                    Throw("Invalid PLY header: \"format\" before \"ply\" tag!");
+                    Throw("invalid PLY header: \"format\" before \"ply\" tag");
                 if (headerProcessed)
-                    Throw("Invalid PLY header: duplicate \"format\" tag!");
+                    Throw("invalid PLY header: duplicate \"format\" tag");
                 if (!(iss >> token))
-                    Throw("Invalid PLY header: missing token after \"format\"");
+                    Throw("invalid PLY header: missing token after \"format\"");
                 if (token == "ascii")
                     header.ascii = true;
                 else if (token == "binary_little_endian")
@@ -220,47 +231,47 @@ public:
                 else if (token == "binary_big_endian")
                     byteOrder = Struct::EBigEndian;
                 else
-                    Throw("Invalid PLY header: invalid token after \"format\"");
+                    Throw("invalid PLY header: invalid token after \"format\"");
                 if (!(iss >> token))
-                    Throw("Invalid PLY header: missing version number after \"format\"");
+                    Throw("invalid PLY header: missing version number after \"format\"");
                 if (token != "1.0")
                     Throw("PLY file has unknown version number \"%s\"", token);
                 if (iss >> token)
-                    Throw("Invalid PLY header: excess tokens after \"format\"");
+                    Throw("invalid PLY header: excess tokens after \"format\"");
                 headerProcessed = true;
             } else if (token == "element") {
                 if (!(iss >> token))
-                    Throw("Invalid PLY header: missing token after \"element\"");
+                    Throw("invalid PLY header: missing token after \"element\"");
                 header.elements.emplace_back();
                 auto &element = header.elements.back();
                 element.name = token;
                 if (!(iss >> token))
-                    Throw("Invalid PLY header: missing token after \"element\"");
+                    Throw("invalid PLY header: missing token after \"element\"");
                 element.count = (size_t) stoull(token);
                 struct_ = element.struct_ = new Struct(true, byteOrder);
             } else if (token == "property") {
                 if (!headerProcessed)
-                    Throw("Invalid PLY header: encountered \"property\" before \"format\"!");
+                    Throw("invalid PLY header: encountered \"property\" before \"format\"");
                 if (header.elements.empty())
-                    Throw("Invalid PLY header: encountered \"property\" before \"element\"!");
+                    Throw("invalid PLY header: encountered \"property\" before \"element\"");
                 if (!(iss >> token))
-                    Throw("Invalid PLY header: missing token after \"property\"");
+                    Throw("invalid PLY header: missing token after \"property\"");
 
                 if (token == "list") {
                     if (!(iss >> token))
-                        Throw("Invalid PLY header: missing token after \"property list\"");
+                        Throw("invalid PLY header: missing token after \"property list\"");
                     auto it1 = fmtMap.find(token);
                     if (it1 == fmtMap.end())
-                        Throw("Invalid PLY header: unknown format type \"%s\"", token);
+                        Throw("invalid PLY header: unknown format type \"%s\"", token);
 
                     if (!(iss >> token))
-                        Throw("Invalid PLY header: missing token after \"property list\"");
+                        Throw("invalid PLY header: missing token after \"property list\"");
                     auto it2 = fmtMap.find(token);
                     if (it2 == fmtMap.end())
-                        Throw("Invalid PLY header: unknown format type \"%s\"", token);
+                        Throw("invalid PLY header: unknown format type \"%s\"", token);
 
                     if (!(iss >> token))
-                        Throw("Invalid PLY header: missing token after \"property list\"");
+                        Throw("invalid PLY header: missing token after \"property list\"");
 
                     struct_->append(token + ".count", it1->second, Struct::EAssert, 3);
                     for (int i = 0; i<3; ++i)
@@ -268,9 +279,9 @@ public:
                 } else {
                     auto it = fmtMap.find(token);
                     if (it == fmtMap.end())
-                        Throw("Invalid PLY header: unknown format type \"%s\"", token);
+                        Throw("invalid PLY header: unknown format type \"%s\"", token);
                     if (!(iss >> token))
-                        Throw("Invalid PLY header: missing token after \"property\"");
+                        Throw("invalid PLY header: missing token after \"property\"");
                     int flags = 0;
                     if (it->second >= Struct::EInt8 && it->second <= Struct::EUInt64)
                         flags |= Struct::ENormalized | Struct::EGamma;
@@ -278,17 +289,17 @@ public:
                 }
 
                 if (iss >> token)
-                    Throw("Invalid PLY header: excess tokens after \"property\"");
+                    Throw("invalid PLY header: excess tokens after \"property\"");
             } else if (token == "end_header") {
                 if (iss >> token)
-                    Throw("Invalid PLY header: excess tokens after \"end_header\"");
+                    Throw("invalid PLY header: excess tokens after \"end_header\"");
                 break;
             } else {
-                Throw("Invalid PLY header: unknown token \"%s\"", token);
+                Throw("invalid PLY header: unknown token \"%s\"", token);
             }
         }
         if (!headerProcessed)
-            Throw("Invalid PLY file: no header information");
+            Throw("invalid PLY file: no header information");
         return header;
     }
 
@@ -377,7 +388,7 @@ public:
                             break;
 
                         default:
-                            Throw("Internal error!");
+                            Throw("internal error");
                     }
                 }
             }

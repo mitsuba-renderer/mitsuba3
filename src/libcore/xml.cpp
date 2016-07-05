@@ -322,8 +322,8 @@ ref<Object> loadImpl(const std::string &id,
                 default: Throw("Unhandled element \"%s\"", node.name());
             }
         } catch (const std::exception &e) {
-            Throw("Error while parsing \"%s\": %s (at %s)", id, e.what(),
-                  offset(node.offset_debug()));
+            Throw("Error while parsing \"%s\" (at %s): %s", id,
+                  offset(node.offset_debug()), e.what());
         }
     };
 
