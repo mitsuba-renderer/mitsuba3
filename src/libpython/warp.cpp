@@ -18,39 +18,32 @@ MTS_PY_EXPORT(warp) {
                                       "square to other domains, such as spheres,"
                                       " hemispheres, etc.");
 
-    m2.mdef(warp, unitSphereIndicator)
-      .mdef(warp, squareToUniformSphere)
+    m2.mdef(warp, squareToUniformSphere)
       .mdef(warp, squareToUniformSpherePdf)
 
-      .mdef(warp, unitHemisphereIndicator)
       .mdef(warp, squareToUniformHemisphere)
       .mdef(warp, squareToUniformHemispherePdf)
 
       .mdef(warp, squareToCosineHemisphere)
       .mdef(warp, squareToCosineHemispherePdf)
 
-      .mdef(warp, unitConeIndicator)
       .mdef(warp, squareToUniformCone)
       .mdef(warp, squareToUniformConePdf)
 
-      .mdef(warp, unitDiskIndicator)
       .mdef(warp, squareToUniformDisk)
       .mdef(warp, squareToUniformDiskPdf)
 
       .mdef(warp, squareToUniformDiskConcentric)
       .mdef(warp, squareToUniformDiskConcentricPdf)
 
-      .mdef(warp, unitSquareIndicator)
       .mdef(warp, uniformDiskToSquareConcentric)
 
-      .mdef(warp, triangleIndicator)
       .mdef(warp, squareToUniformTriangle)
       .mdef(warp, squareToUniformTrianglePdf)
 
       .mdef(warp, squareToStdNormal)
       .mdef(warp, squareToStdNormalPdf)
 
-      .mdef(warp, tentIndicator)
       .mdef(warp, squareToTent)
       .mdef(warp, squareToTentPdf)
       .mdef(warp, intervalToNonuniformTent);

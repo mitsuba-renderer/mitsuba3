@@ -275,16 +275,16 @@ Float pdfValueForSample(WarpType warpType, Float parameterValue,
 
         switch (warpType) {
             case UniformDisk:
-                return warp::unitDiskIndicator(p) * warp::squareToUniformDiskPdf();
+                return warp::squareToUniformDiskPdf(p);
             case UniformDiskConcentric:
-                return warp::unitDiskIndicator(p) * warp::squareToUniformDiskConcentricPdf();
+                return warp::squareToUniformDiskConcentricPdf(p);
             case StandardNormal:
                 // TODO: use inverse gaussian mapping instead
                 return warp::squareToStdNormalPdf((1 / 5.0) * p);
             case UniformTriangle:
-                return warp::triangleIndicator(p) * warp::squareToUniformTrianglePdf(p);
+                return warp::squareToUniformTrianglePdf(p);
             case UniformTent:
-                return warp::tentIndicator(p) * warp::squareToTentPdf(p);
+                return warp::squareToTentPdf(p);
 
             default:
                 Log(EError, "Unsupported 2D warp type");
@@ -304,13 +304,13 @@ Float pdfValueForSample(WarpType warpType, Float parameterValue,
 
         switch (warpType) {
             case UniformSphere:
-                return warp::unitSphereIndicator(v) * warp::squareToUniformSpherePdf();
+                return warp::squareToUniformSpherePdf(v);
             case UniformHemisphere:
-                return warp::unitHemisphereIndicator(v) * warp::squareToUniformHemispherePdf();
+                return warp::squareToUniformHemispherePdf(v);
             case CosineHemisphere:
-                return warp::unitHemisphereIndicator(v) * warp::squareToCosineHemispherePdf(v);
+                return warp::squareToCosineHemispherePdf(v);
             case UniformCone:
-                return warp::unitConeIndicator(parameterValue, v) * warp::squareToUniformConePdf(parameterValue);
+                return warp::squareToUniformConePdf(v, parameterValue);
             default:
                 Log(EError, "Unsupported 3D warp type");
         }

@@ -12,14 +12,30 @@ class WarpTest(unittest.TestCase):
     minExpFrequency = 5
     significanceLevel = 0.01
 
-    def test01_deterministic_calls(self):
+    def test01_pdfs(self):
         p = [0.5, 0.25]
+        unit = [0.0, 1.0, 0.0]
+        ten = [10.0, 10.0, 10.0]
+        zero2D = [0.0, 0.0]
+        ten2D = [10.0, 10.0]
 
-        self.assertAlmostEqual(squareToUniformSpherePdf(), math.InvFourPi, places = 6)
-        self.assertAlmostEqual(squareToUniformHemispherePdf(), math.InvTwoPi, places = 6)
-        self.assertAlmostEqual(squareToUniformConePdf(0.5), math.InvTwoPi / 0.5, places = 6)
-        self.assertAlmostEqual(squareToUniformDiskPdf(), math.InvPi, places = 6)
-        self.assertAlmostEqual(squareToUniformDiskConcentricPdf(), math.InvPi, places = 6)
+        # The PDF functions are > 0 inside of the warping function's target
+        # domain, null outide.
+        self.assertAlmostEqual(squareToUniformSpherePdf(unit), math.InvFourPi, places = 6)
+        self.assertAlmostEqual(squareToUniformSpherePdf(ten), 0, places = 6)
+
+        self.assertAlmostEqual(squareToUniformHemispherePdf(unit), math.InvTwoPi, places = 6)
+        self.assertAlmostEqual(squareToUniformHemispherePdf(ten), 0, places = 6)
+
+        self.assertAlmostEqual(squareToUniformConePdf([0.0, 0.0, 1.0], 0.5), math.InvTwoPi / 0.5, places = 6)
+        self.assertAlmostEqual(squareToUniformConePdf(unit, 0.5), 0, places = 6)
+        self.assertAlmostEqual(squareToUniformConePdf(ten, 0.5), 0, places = 6)
+
+        self.assertAlmostEqual(squareToUniformDiskPdf(zero2D), math.InvPi, places = 6)
+        self.assertAlmostEqual(squareToUniformDiskPdf(ten2D), 0, places = 6)
+
+        self.assertAlmostEqual(squareToUniformDiskConcentricPdf(zero2D), math.InvPi, places = 6)
+        self.assertAlmostEqual(squareToUniformDiskConcentricPdf(ten2D), 0, places = 6)
 
         # Just checking that these are not crashing, the actual results
         # are tested statistically.
