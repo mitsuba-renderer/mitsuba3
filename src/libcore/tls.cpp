@@ -22,6 +22,7 @@ struct PerThreadData {
     tbb::spin_mutex mutex;
     std::unordered_map<ThreadLocalBase *, TLSEntry> entries;
     std::list<TLSEntry *> entries_ordered;
+    uint32_t refCount = 1;
 };
 
 #if defined(__WINDOWS__)
@@ -111,21 +112,31 @@ void ThreadLocalBase::staticShutdown() {
 #endif
 }
 
-void ThreadLocalBase::registerThread() {
+bool ThreadLocalBase::registerThread() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
+    bool success = false;
 #if defined(__OSX__)
     PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptdLocal);
     if (!ptd) {
         ptd = new PerThreadData();
         ptdGlobal.insert(ptd);
         pthread_setspecific(ptdLocal, ptd);
+        success = true;
+        return true;
+    } else {
+        ptd->refCount++;
     }
 #else
     if (!ptdLocal) {
-        ptdLocal = new PerThreadData();
-        ptdGlobal.insert(ptdLocal);
+        auto ptd = new PerThreadLocal();
+        ptdLocal = ptd;
+        ptdGlobal.insert(ptd);
+        return true;
+    } else {
+        ptdLocal->refCount++;
     }
 #endif
+    return false;
 }
 
 /// A thread has died -- destroy any remaining TLS entries associated with it
@@ -137,21 +148,24 @@ void ThreadLocalBase::unregisterThread() {
     #else
         PerThreadData *ptd = ptdLocal;
     #endif
+    ptd->refCount--;
 
-    tbb::spin_mutex::scoped_lock local_guard(ptd->mutex);
-    for (auto it = ptd->entries_ordered.rbegin();
-         it != ptd->entries_ordered.rend(); ++it)
-        (*it)->destruct((*it)->data);
+    if (ptd->refCount == 0) {
+        tbb::spin_mutex::scoped_lock local_guard(ptd->mutex);
+        for (auto it = ptd->entries_ordered.rbegin();
+             it != ptd->entries_ordered.rend(); ++it)
+            (*it)->destruct((*it)->data);
 
-    local_guard.release();
-    ptdGlobal.erase(ptd);
-    delete ptd;
+        local_guard.release();
+        ptdGlobal.erase(ptd);
+        delete ptd;
 
-    #if defined(__OSX__)
-        pthread_setspecific(ptdLocal, nullptr);
-    #else
-        ptdLocal = nullptr;
-    #endif
+        #if defined(__OSX__)
+            pthread_setspecific(ptdLocal, nullptr);
+        #else
+            ptdLocal = nullptr;
+        #endif
+    }
 }
 
 NAMESPACE_END(mitsuba)

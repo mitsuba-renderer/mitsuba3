@@ -3,6 +3,7 @@
 #include <mitsuba/core/tls.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
+#include <tbb/task_scheduler_observer.h>
 #include <thread>
 #include <sstream>
 #include <chrono>
@@ -58,11 +59,28 @@ namespace {
 class MainThread : public Thread {
 public:
     MainThread() : Thread("main") { }
+
     virtual void run() override { Log(EError, "The main thread is already running!"); }
+
     MTS_DECLARE_CLASS()
 protected:
     virtual ~MainThread() { }
 };
+
+/// Dummy class to associate a thread identity with the main thread
+class WorkerThread : public Thread {
+public:
+    WorkerThread() : Thread(tfm::format("wrk%i", idx++)) { }
+
+    virtual void run() override { Log(EError, "The worker thread is already running!"); }
+
+    MTS_DECLARE_CLASS()
+protected:
+    virtual ~WorkerThread() { }
+    static std::atomic<uint32_t> idx;
+};
+
+std::atomic<uint32_t> WorkerThread::idx{0};
 
 struct Thread::ThreadPrivate {
     std::thread thread;
@@ -416,10 +434,32 @@ std::string Thread::toString() const {
     return oss.str();
 }
 
+class Thread::TaskObserver : public tbb::task_scheduler_observer {
+public:
+    TaskObserver() {
+        observe();
+    }
+
+    void on_scheduler_entry(bool) {
+        if (ThreadLocalBase::registerThread()) {
+            uint32_t id = thread_id++;
+            #if defined(__LINUX__) || defined(__OSX__)
+                pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
+            #elif defined(__WINDOWS__)
+                this_thread_id = id;
+            #endif
+            *self = new WorkerThread();
+        }
+    }
+
+    void on_scheduler_exit(bool) {
+        ThreadLocalBase::unregisterThread();
+    }
+};
+
+static std::unique_ptr<Thread::TaskObserver> observer;
+
 void Thread::staticInitialization() {
-    #if defined(__OSX__)
-        //__mts_autorelease_init(); XXX
-    #endif
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_key_create(&this_thread_id, nullptr);
     #endif
@@ -431,9 +471,13 @@ void Thread::staticInitialization() {
     mainThread->d->running = true;
     mainThread->d->fresolver = new FileResolver();
     *self = mainThread;
+
+    observer = std::unique_ptr<Thread::TaskObserver>(
+        new Thread::TaskObserver());
 }
 
 void Thread::staticShutdown() {
+    observer.reset();
     thread()->d->running = false;
     ThreadLocalBase::unregisterThread();
     delete self;
@@ -443,11 +487,24 @@ void Thread::staticShutdown() {
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_key_delete(this_thread_id);
     #endif
-    #if defined(__OSX__)
-    //  __mts_autorelease_shutdown(); // XXX
-    #endif
+}
+
+ThreadEnvironment::ThreadEnvironment(Thread *other) {
+    auto thread = Thread::thread();
+    Assert(thread);
+    m_logger = thread->logger();
+    m_fileResolver = thread->fileResolver();
+    thread->setLogger(other->logger());
+    thread->setFileResolver(other->fileResolver());
+}
+
+ThreadEnvironment::~ThreadEnvironment() {
+    auto thread = Thread::thread();
+    thread->setLogger(m_logger);
+    thread->setFileResolver(m_fileResolver);
 }
 
 MTS_IMPLEMENT_CLASS(Thread, Object)
 MTS_IMPLEMENT_CLASS(MainThread, Thread)
+MTS_IMPLEMENT_CLASS(WorkerThread, Thread)
 NAMESPACE_END(mitsuba)

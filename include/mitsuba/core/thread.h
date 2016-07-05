@@ -15,6 +15,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Thread : public Object {
 public:
+    class TaskObserver; /* Used internally to keep track of TBB threads */
+
     /// Possible priority values for \ref Thread::setPriority()
     enum EPriority {
         EIdlePriority,
@@ -155,6 +157,17 @@ protected:
 private:
     struct ThreadPrivate;
     std::unique_ptr<ThreadPrivate> d;
+};
+
+/// RAII-style class to temporarily switch to another thread's logger/file resolver
+class ThreadEnvironment {
+public:
+    ThreadEnvironment(Thread *thread);
+    ~ThreadEnvironment();
+
+private:
+    ref<Logger> m_logger;
+    ref<FileResolver> m_fileResolver;
 };
 
 NAMESPACE_END(mitsuba)

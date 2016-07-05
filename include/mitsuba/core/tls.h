@@ -60,8 +60,9 @@ protected:
     /// Destruct core data structures for TLS management
     static void staticShutdown();
 
-    /// A new thread was started -- set up local TLS data structures
-    static void registerThread();
+    /** \brief A new thread was started -- set up local TLS data structures.
+        Returns \c true upon success */
+    static bool registerThread();
 
     /// A thread has died -- destroy any remaining TLS entries associated with it
     static void unregisterThread();
