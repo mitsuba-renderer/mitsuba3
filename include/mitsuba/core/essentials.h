@@ -37,4 +37,14 @@ struct for_each_type<> {
     static void recurse(Params&&...) { }
 };
 
+/// Replacement for std::is_constructible which also works when the destructor is not accessible
+template <typename T, typename... Args> struct is_constructible {
+private:
+    static std::false_type test(...);
+    template <typename T2 = T>
+    static std::true_type test(decltype(new T2(std::declval<Args>()...)) value);
+public:
+    static constexpr bool value = decltype(test(std::declval<T *>()))::value;
+};
+
 NAMESPACE_END(mitsuba)

@@ -66,16 +66,14 @@ void Class::initializeOnce(Class *class_) {
 ref<Object> Class::construct(const Properties &props) const {
     if (!m_constr)
         Throw("RTTI error: Attempted to construct a "
-              "non-constructible class (%s)!",
-              name());
+              "non-constructible class (%s)!", name());
     return m_constr(props);
 }
 
 ref<Object> Class::unserialize(Stream *stream) const {
     if (!m_unser)
         Throw("RTTI error: Attempted to construct a "
-              "class lacking a unserialization constructor (%s)!",
-              name());
+              "class lacking a unserialization constructor (%s)!", name());
     return m_unser(stream);
 }
 

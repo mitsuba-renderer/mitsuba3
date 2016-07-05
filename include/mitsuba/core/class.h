@@ -146,13 +146,13 @@ public: \
 
 
 NAMESPACE_BEGIN(detail)
-template <typename T, typename std::enable_if<std::is_constructible<T, const Properties &>::value, int>::type = 0>
+template <typename T, typename std::enable_if<is_constructible<T, const Properties &>::value, int>::type = 0>
 Class::ConstructFunctor get_construct_functor() { return [](const Properties &p) -> Object * { return new T(p); }; }
-template <typename T, typename std::enable_if<!std::is_constructible<T, const Properties &>::value, int>::type = 0>
+template <typename T, typename std::enable_if<!is_constructible<T, const Properties &>::value, int>::type = 0>
 Class::ConstructFunctor get_construct_functor() { return nullptr; }
-template <typename T, typename std::enable_if<std::is_constructible<T, Stream *>::value, int>::type = 0>
+template <typename T, typename std::enable_if<is_constructible<T, Stream *>::value, int>::type = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return [](Stream *s) -> Object * { return new T(s); }; }
-template <typename T, typename std::enable_if<!std::is_constructible<T, Stream *>::value, int>::type = 0>
+template <typename T, typename std::enable_if<!is_constructible<T, Stream *>::value, int>::type = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
 NAMESPACE_END(detail)
 
