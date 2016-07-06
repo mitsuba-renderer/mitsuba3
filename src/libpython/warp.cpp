@@ -13,16 +13,8 @@ class PyWarpAdapter : public WarpAdapter {
 public:
     using WarpAdapter::WarpAdapter;
 
-    std::vector<double> generateObservedHistogram(Sampler *sampler,
-        SamplingType strategy, size_t pointCount,
-        size_t gridWidth, size_t gridHeight) {
-        PYBIND11_OVERLOAD(std::vector<double>, WarpAdapter,
-            generateObservedHistogram, sampler, strategy,
-            pointCount, gridWidth, gridHeight);
-    }
-    std::vector<double> generateExpectedHistogram(size_t pointCount, size_t gridWidth, size_t gridHeight) {
-        PYBIND11_OVERLOAD(std::vector<double>, WarpAdapter,
-            generateExpectedHistogram, pointCount, gridWidth, gridHeight);
+    bool isIdentity() const {
+        PYBIND11_OVERLOAD(bool, WarpAdapter, isIdentity);
     }
     size_t inputDimensionality() const {
         PYBIND11_OVERLOAD(size_t, WarpAdapter, inputDimensionality);
@@ -100,29 +92,29 @@ MTS_PY_EXPORT(warp) {
 
     using warp::WarpAdapter;
     py::class_<WarpAdapter, ref<WarpAdapter>, PyWarpAdapter>(m2, "WarpAdapter",
-        "TODO: doc")
-        // TODO: expose virtual calls
+                                                             DM(warp, WarpAdapter))
+        .def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
+        .def("inputDimensionality", &WarpAdapter::inputDimensionality, DM(warp, WarpAdapter, inputDimensionality))
+        .def("domainDimensionality", &WarpAdapter::domainDimensionality, DM(warp, WarpAdapter, domainDimensionality))
         .def("__repr__", &WarpAdapter::toString);
 
     using warp::PlaneWarpAdapter;
     // TODO: build a trampoline if there are new virtual functions
     // TODO: check that virtual methods there are forwarded correctly
-    py::class_<PlaneWarpAdapter>(m2, "PlaneWarpAdapter", py::base<WarpAdapter>(), "TODO: line warp adapter doc")
+    py::class_<PlaneWarpAdapter>(m2, "PlaneWarpAdapter", py::base<WarpAdapter>(),
+                                 DM(warp, PlaneWarpAdapter))
         .def(py::init<const std::string &,
                       const PlaneWarpAdapter::WarpFunctionType &,
                       const PlaneWarpAdapter::PdfFunctionType &,
                       const std::vector<WarpAdapter::Argument> &>(),
              py::arg("name"), py::arg("f"), py::arg("pdf"),
              py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
-             "TODO: constructor doc");
-        // TODO: route to the right constructor based on the return type of the lambda
-        // .def(py::init<const std::string &,
-        //               const std::function<PlaneWarpAdapter::DomainType(const PlaneWarpAdapter::SampleType &)> &,
-        //               const PlaneWarpAdapter::PdfFunctionType &,
-        //               const std::vector<WarpAdapter::Argument> &>(),
-        //      py::arg("name"), py::arg("f"), py::arg("pdf"),
-        //      py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
-        //      "TODO: constructor doc");
+             DM(warp, PlaneWarpAdapter, PlaneWarpAdapter));
+
+    using warp::IdentityWarpAdapter;
+    py::class_<IdentityWarpAdapter>(m2, "IdentityWarpAdapter", py::base<PlaneWarpAdapter>(),
+                                    DM(warp, IdentityWarpAdapter))
+        .def(py::init<>(), DM(warp, IdentityWarpAdapter, IdentityWarpAdapter));
 
 
     m2.def("runStatisticalTest", &warp::detail::runStatisticalTest, DM(warp, detail, runStatisticalTest));
@@ -140,8 +132,7 @@ MTS_PY_EXPORT(warp) {
         .def("mouseButtonEvent", &WarpVisualizationWidget::mouseButtonEvent, DM(warp, WarpVisualizationWidget, mouseButtonEvent))
 
         .def("setSamplingType", &WarpVisualizationWidget::setSamplingType, DM(warp, WarpVisualizationWidget, setSamplingType))
-        .def("setWarpType", &WarpVisualizationWidget::setWarpType, DM(warp, WarpVisualizationWidget, setWarpType))
-        .def("setParameterValue", &WarpVisualizationWidget::setParameterValue, DM(warp, WarpVisualizationWidget, setParameterValue))
+        .def("setWarpAdapter", &WarpVisualizationWidget::setWarpAdapter, DM(warp, WarpVisualizationWidget, setWarpAdapter))
         .def("setPointCount", &WarpVisualizationWidget::setPointCount, DM(warp, WarpVisualizationWidget, setPointCount))
         .def("isDrawingHistogram", &WarpVisualizationWidget::isDrawingHistogram, DM(warp, WarpVisualizationWidget, isDrawingHistogram))
         .def("setDrawHistogram", &WarpVisualizationWidget::setDrawHistogram, DM(warp, WarpVisualizationWidget, setDrawHistogram))

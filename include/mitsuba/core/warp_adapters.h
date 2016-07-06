@@ -43,17 +43,28 @@ public:
     virtual Point2f samplePoint(Sampler * sampler, SamplingType strategy,
                                 float invSqrtVal) const;
 
-    // virtual std::vector<Vector3f> generateWarpedPoints(Sampler *sampler, size_t pointCount) = 0;
+    virtual std::pair<Vector3f, Float> warpSample(const Point2f& sample) const = 0;
+
+    /**
+     * Writes out generated points into \p positions and associated weights
+     * into \p weights. This method's job is mostly to package the results of
+     * a point generation function into a general Eigen matrix.
+     */
+    virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
+                                      size_t pointCount,
+                                      Eigen::MatrixXf &positions,
+                                      std::vector<Float> &weights) const = 0;
 
     virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
         SamplingType strategy, size_t pointCount,
-        size_t gridWidth, size_t gridHeight) = 0;
+        size_t gridWidth, size_t gridHeight) const = 0;
 
     virtual std::vector<double> generateExpectedHistogram(size_t pointCount,
-        size_t gridWidth, size_t gridHeight) = 0;
+        size_t gridWidth, size_t gridHeight) const = 0;
 
 
-
+    /// Returns true if the warping function is the identity function.
+    virtual bool isIdentity() const { return false; };
     /// Returns the number of dimensions of the input domain.
     virtual size_t inputDimensionality() const = 0;
     /// Returns the number of dimensions of the ouput domain.
@@ -83,8 +94,8 @@ public:
     using PdfFunctionType = std::function<Float (const DomainType&)>;
 
     PlaneWarpAdapter(const std::string &name,
-                    const WarpFunctionType &f, const PdfFunctionType &pdf,
-                    const std::vector<Argument> &arguments = {})
+                     const WarpFunctionType &f, const PdfFunctionType &pdf,
+                     const std::vector<Argument> &arguments = {})
         : WarpAdapter(name, arguments), f_(f), pdf_(pdf) { }
 
     // PlaneWarpAdapter(const std::string &name,
@@ -99,16 +110,23 @@ public:
     //     };
     // }
 
+    virtual std::pair<Vector3f, Float>
+    warpSample(const Point2f& sample) const override;
+
+    virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
+                                      size_t pointCount,
+                                      Eigen::MatrixXf &positions,
+                                      std::vector<Float> &weights) const override;
+
     virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
         SamplingType strategy, size_t pointCount,
-        size_t gridWidth, size_t gridHeight) override;
+        size_t gridWidth, size_t gridHeight) const override;
 
     virtual std::vector<double> generateExpectedHistogram(size_t pointCount,
-        size_t gridWidth, size_t gridHeight) override;
+        size_t gridWidth, size_t gridHeight) const override;
 
-
-    virtual size_t inputDimensionality() const override { return 1; }
-    virtual size_t domainDimensionality() const override { return 1; }
+    virtual size_t inputDimensionality() const override { return 2; }
+    virtual size_t domainDimensionality() const override { return 2; }
 
 protected:
     /**
@@ -126,19 +144,19 @@ protected:
      */
     virtual DomainType pointToDomain(const Point2f &p) const;
 
-    virtual std::vector<DomainType> generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount);
+    virtual std::vector<DomainType> generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount) const;
 
     virtual std::vector<double> binPoints(const std::vector<DomainType> &points,
-        size_t gridWidth, size_t gridHeight);
+        size_t gridWidth, size_t gridHeight) const;
 
 
     /// TODO: doc
-    std::pair<DomainType, Float> warp(SampleType p) const {
+    virtual std::pair<DomainType, Float> warp(SampleType p) const {
         return f_(p);
     }
 
     /// TODO: doc
-    Float pdf(DomainType p) const {
+    virtual Float pdf(DomainType p) const {
         return pdf_(p);
     }
 
@@ -154,6 +172,47 @@ protected:
      * Should return the PDF associated with that point.
      */
     PdfFunctionType pdf_;
+};
+
+
+class MTS_EXPORT_CORE IdentityWarpAdapter : public PlaneWarpAdapter {
+protected:
+    static constexpr Float kPdfScalingFactor = 1.0;
+
+public:
+    using SampleType = Point2f;
+    using DomainType = Point2f;
+
+    IdentityWarpAdapter()
+        : PlaneWarpAdapter("Identity",
+                           [](const SampleType& s) {
+                               return std::make_pair(s, 1.0);
+                           },
+                           [](const DomainType& p) {
+                               return (p.x() >= 0 && p.x() <= 1
+                                    && p.y() >= 0 && p.y() <= 1) ? 1.0 : 0.0;
+                           }) { }
+
+    // const std::string &name,
+    // const WarpFunctionType &f, const PdfFunctionType &pdf,
+    // const std::vector<Argument> &arguments = {}
+
+    bool isIdentity() const override { return true; }
+
+    // virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
+    //     SamplingType strategy, size_t pointCount,
+    //     size_t gridWidth, size_t gridHeight) const override;
+
+    // virtual std::vector<double> generateExpectedHistogram(size_t pointCount,
+    //     size_t gridWidth, size_t gridHeight) const override;
+
+protected:
+    virtual Point2f domainToPoint(const DomainType &v) const override {
+        return v;
+    }
+    virtual DomainType pointToDomain(const Point2f &p) const override {
+        return p;
+    }
 };
 
 NAMESPACE_END(warp)

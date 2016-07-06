@@ -1,5 +1,9 @@
 #include <mitsuba/gui/warp_visualizer.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/warp.h>
+#include <mitsuba/core/warp_adapters.h>
+
+#include <pcg32.h>
 
 namespace {
 /// HSLS code (shaders)
@@ -114,14 +118,12 @@ using nanogui::Matrix4f;
 using nanogui::MatrixXf;
 using MatrixXu = Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic>;
 
-using detail::generatePoints;
-using detail::isTwoDimensionalWarp;
 using detail::runStatisticalTestAndOutput;
-using detail::warpPoint;
 
 WarpVisualizationWidget::WarpVisualizationWidget(int width, int height,
                                                  std::string description)
     : nanogui::Screen(Vector2i(width, height), description)
+    , m_warpAdapter(new IdentityWarpAdapter())
     , m_drawHistogram(false), m_drawGrid(true)
     , m_pointCount(0), m_lineCount(0)
     , m_testResult(false), m_testResultText("No test started.") {
@@ -152,25 +154,26 @@ WarpVisualizationWidget::mouseButtonEvent(const Vector2i &p, int button,
 
 void WarpVisualizationWidget::refresh() {
     // Generate the point positions
+    pcg32 sampler;
     Eigen::MatrixXf positions;
-    std::vector<Float> values;
-    generatePoints(m_pointCount, m_samplingType, m_warpType, m_parameterValue,
-                   positions, values);
+    std::vector<Float> weights;
+    m_warpAdapter->generateWarpedPoints(&sampler, m_samplingType, m_pointCount,
+                                        positions, weights);
 
     float valueScale = 0.f;
     for (size_t i = 0; i < m_pointCount; ++i) {
-        valueScale = std::max(valueScale, values[i]);
+        valueScale = std::max(valueScale, weights[i]);
     }
     valueScale = 1.f / valueScale;
 
-    if (m_warpType != NoWarp) {
+    if (!m_warpAdapter->isIdentity()) {
         for (size_t i = 0; i < m_pointCount; ++i) {
-            if (values[i] == 0.0f) {
+            if (weights[i] == 0.0f) {
                 positions.col(i) = Eigen::Vector3f::Constant(std::numeric_limits<float>::quiet_NaN());
                 continue;
             }
             positions.col(i) =
-                ((valueScale == 0 ? 1.0f : (valueScale * values[i])) *
+                ((valueScale == 0 ? 1.0f : (valueScale * weights[i])) *
                  positions.col(i)) * 0.5f + Eigen::Vector3f(0.5f, 0.5f, 0.0f);
         }
     }
@@ -181,12 +184,12 @@ void WarpVisualizationWidget::refresh() {
     for (size_t i = 0; i < m_pointCount; ++i)
         colors.col(i) << i * colorStep, 1 - i * colorStep, 0;
 
-    // Upload points to GPU
+    // Upload warped points to the GPU
     m_pointShader->bind();
     m_pointShader->uploadAttrib("position", positions);
     m_pointShader->uploadAttrib("color", colors);
 
-    // Upload grid lines to the GPU
+    // Upload warped grid lines to the GPU
     if (m_drawGrid) {
         size_t gridRes = static_cast<size_t>(std::sqrt(static_cast<float>(m_pointCount)) + 0.5f);
         size_t fineGridRes = 16 * gridRes;
@@ -197,8 +200,8 @@ void WarpVisualizationWidget::refresh() {
         m_lineCount = 4 * (gridRes+1) * (fineGridRes+1);
         positions.resize(3, m_lineCount);
 
-        auto getPoint = [this, &fineScale, &coarseScale](float x, float y) {
-            auto r = warpPoint(m_warpType, Point2f(x, y), m_parameterValue);
+        auto getPoint = [this](float x, float y) {
+            auto r = m_warpAdapter->warpSample(Point2f(x, y));
             return std::make_pair(static_cast<Eigen::Matrix<float, 3, 1>>(r.first), r.second);
         };
         for (size_t i = 0; i <= gridRes; ++i) {
@@ -213,7 +216,7 @@ void WarpVisualizationWidget::refresh() {
                 positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
             }
         }
-        if (m_warpType != NoWarp) {
+        if (!m_warpAdapter->isIdentity()) {
             for (size_t i = 0; i < m_lineCount; ++i) {
                 positions.col(i) = positions.col(i) * 0.5f + Eigen::Vector3f(0.5f, 0.5f, 0.0f);
             }
@@ -242,14 +245,14 @@ void WarpVisualizationWidget::refresh() {
 bool WarpVisualizationWidget::runTest(double minExpFrequency, double significanceLevel) {
     std::vector<double> observedHistogram, expectedHistogram;
     size_t gridWidth = 51, gridHeight = 51;
-    if (!isTwoDimensionalWarp(m_warpType)) {
+    if (m_warpAdapter->domainDimensionality() >= 3) {
         gridWidth *= 2;
     }
     size_t nBins = gridWidth * gridHeight;
 
     // Run Chi^2 test
     const auto r = runStatisticalTestAndOutput(1000 * nBins,
-        gridWidth, gridHeight, m_samplingType, m_warpType, m_parameterValue,
+        gridWidth, gridHeight, m_samplingType, m_warpAdapter,
         minExpFrequency, significanceLevel, observedHistogram, expectedHistogram);
     m_testResult = r.first;
     m_testResultText = r.second;
@@ -325,7 +328,7 @@ void WarpVisualizationWidget::drawContents() {
         const int spacer = 20;
         const int histWidth = (width() - 3*spacer) / 2;
         int histHeight = histWidth;
-        if (!isTwoDimensionalWarp(m_warpType)) {
+        if (m_warpAdapter->domainDimensionality() >= 3) {
             histHeight /= 2;
         }
         const int verticalOffset = (height() - histHeight) / 2;

@@ -44,8 +44,7 @@ public:
     virtual void refresh();
 
     void setSamplingType(SamplingType s) { m_samplingType = s; }
-    void setWarpType(WarpType w) { m_warpType = w; }
-    void setParameterValue(float v) { m_parameterValue = v; }
+    void setWarpAdapter(WarpAdapter * wa) { m_warpAdapter = wa; }
     void setPointCount(int n) { m_pointCount = n; }
 
     bool isDrawingHistogram() { return m_drawHistogram; }
@@ -69,7 +68,6 @@ private:
 
     void drawGrid(const Eigen::Matrix4f& mvp);
 
-
     void initializeVisualizerGUI();
 
     void framebufferSizeChanged() {
@@ -84,11 +82,11 @@ private:
     GLuint m_textures[2];
     nanogui::Arcball m_arcball;
 
+    SamplingType m_samplingType;
+    ref<WarpAdapter> m_warpAdapter;
+
     bool m_drawHistogram, m_drawGrid;
     size_t m_pointCount, m_lineCount;
-    SamplingType m_samplingType;
-    WarpType m_warpType;
-    float m_parameterValue;
     bool m_testResult;
     std::string m_testResultText;
 };
