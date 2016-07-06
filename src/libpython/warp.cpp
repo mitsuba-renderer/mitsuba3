@@ -106,8 +106,9 @@ MTS_PY_EXPORT(warp) {
     using warp::PlaneWarpAdapter;
     // TODO: build a trampoline if there are new virtual functions
     // TODO: check that virtual methods there are forwarded correctly
-    py::class_<PlaneWarpAdapter>(m2, "PlaneWarpAdapter", py::base<WarpAdapter>(),
-                                 DM(warp, PlaneWarpAdapter))
+    py::class_<PlaneWarpAdapter, ref<PlaneWarpAdapter>>(m2, "PlaneWarpAdapter",
+                                                        py::base<WarpAdapter>(),
+                                                        DM(warp, PlaneWarpAdapter))
         .def(py::init<const std::string &,
                       const PlaneWarpAdapter::WarpFunctionType &,
                       const PlaneWarpAdapter::PdfFunctionType &,
@@ -117,8 +118,9 @@ MTS_PY_EXPORT(warp) {
              DM(warp, PlaneWarpAdapter, PlaneWarpAdapter));
 
     using warp::IdentityWarpAdapter;
-    py::class_<IdentityWarpAdapter>(m2, "IdentityWarpAdapter", py::base<PlaneWarpAdapter>(),
-                                    DM(warp, IdentityWarpAdapter))
+    py::class_<IdentityWarpAdapter, ref<IdentityWarpAdapter>>(m2, "IdentityWarpAdapter",
+                                                              py::base<PlaneWarpAdapter>(),
+                                                              DM(warp, IdentityWarpAdapter))
         .def(py::init<>(), DM(warp, IdentityWarpAdapter, IdentityWarpAdapter));
 
 

@@ -44,7 +44,7 @@ public:
     virtual void refresh();
 
     void setSamplingType(SamplingType s) { m_samplingType = s; }
-    void setWarpAdapter(WarpAdapter * wa) { m_warpAdapter = wa; }
+    void setWarpAdapter(ref<WarpAdapter> wa) { m_warpAdapter = wa; }
     void setPointCount(int n) { m_pointCount = n; }
 
     bool isDrawingHistogram() { return m_drawHistogram; }

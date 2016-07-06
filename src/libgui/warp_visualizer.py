@@ -1,7 +1,11 @@
 import gc
+from collections import OrderedDict
 import math
 import mitsuba
-from mitsuba.warp import WarpType, SamplingType, WarpVisualizationWidget
+from mitsuba import warp
+from mitsuba.warp import WarpType, SamplingType, \
+                         IdentityWarpAdapter, PlaneWarpAdapter
+from mitsuba.warp import WarpVisualizationWidget
 
 import nanogui
 from nanogui import Color, Screen, Window, Widget, GroupLayout, BoxLayout, \
@@ -25,6 +29,47 @@ class WarpVisualizer(WarpVisualizationWidget):
 
     def __init__(self):
         super(WarpVisualizer, self).__init__(800, 600, "Warp visualizer")
+
+        # TODO: refactor (this could be useful for the tests as well)
+        class WarpFactory:
+            # TODO: args should be proper arguments instances
+            def __init__(self, adapter, name, f, pdf, arguments = []):
+                self.adapter = adapter
+                self.name = name
+                self.f = f
+                self.pdf = pdf
+                self.arguments = arguments
+
+            def make(self, args):
+                f = lambda s: self.f(s, **args)
+                pdf = lambda v: self.pdf(v, **args)
+
+                return self.adapter(self.name, f, pdf, self.arguments)
+
+        class IdentityWarpFactory:
+            def __init__(self):
+                self.name = "Identity"
+
+            def make(self, args):
+                return IdentityWarpAdapter()
+
+        def warpWithUnitWeight(f):
+            return lambda p: (f(p), 1.0)
+
+        w = OrderedDict()
+        w[WarpType.NoWarp] = IdentityWarpFactory()
+        w[WarpType.UniformDisk] = WarpFactory(PlaneWarpAdapter,
+            "Square to uniform disk",
+            warpWithUnitWeight(warp.squareToUniformDisk),
+            warp.squareToUniformDiskPdf)
+        w[WarpType.UniformDiskConcentric] = WarpFactory(PlaneWarpAdapter,
+            "Square to uniform disk concentric",
+            warpWithUnitWeight(warp.squareToUniformDiskConcentric),
+            warp.squareToUniformDiskConcentricPdf)
+
+        self.warps = w
+
+        # Initialize UI elements
         self.initializeGUI()
 
     def runTest(self):
@@ -33,10 +78,11 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.setDrawHistogram(True)
         self.window.setVisible(False)
 
-    def mapParameter(self, warpType, value):
-        """Converts the parameter value to the appropriate domain
-            depending on the warp type."""
-        return value
+    def makeAdapter(self, warpType, args):
+        """Creates a new WarpAdapter corresponding to the selected warping type
+        and parameter values.
+        `args` will be passed as kwargs to the warping function."""
+        return self.warps[warpType].make(args)
 
     def mouseButtonEvent(self, p, button, down, modifiers):
         if down and self.isDrawingHistogram():
@@ -53,7 +99,6 @@ class WarpVisualizer(WarpVisualizationWidget):
             self.setVisible(False)
             return True
         return False
-
 
     def initializeGUI(self):
         # Main window
@@ -82,11 +127,8 @@ class WarpVisualizer(WarpVisualizationWidget):
 
         # Selection of warping method
         _ = Label(window, "Warping method", "sans-bold")
-        warpTypeBox = ComboBox(window, ["None", "Sphere", "Hemisphere (unif.)",
-                                        "Hemisphere (cos)", "Cone", "Disk",
-                                        "Disk (concentric)", "Triangle",
-                                        "Standard normal", "Tent (unif.)",
-                                        "Tent (non unif.)"])
+        warpingNames = map(lambda w: w.name, self.warps.values())
+        warpTypeBox = ComboBox(window, warpingNames)
         warpTypeBox.setCallback(lambda _: self.refresh())
 
         # ---------- Second panel
@@ -159,8 +201,9 @@ class WarpVisualizer(WarpVisualizationWidget):
 
     def refresh(self):
         samplingType = SamplingType(self.samplingTypeBox.selectedIndex())
-        warpType = WarpType(self.warpTypeBox.selectedIndex())
-        parameterValue = self.mapParameter(warpType, self.parameterSlider.value())
+        warpType = self.warps.keys()[self.warpTypeBox.selectedIndex()]
+        # TODO: many parameters packaged in a dict
+        parameterValue = self.parameterSlider.value()
         angle = 180 * self.angleSlider.value() - 90
 
         # Point count slider input is not linear
@@ -183,7 +226,7 @@ class WarpVisualizer(WarpVisualizationWidget):
 
         self.parameterBox.setValue("{:.1g}".format(parameterValue))
         self.angleBox.setValue("{:.1f}".format(angle))
-        # TODO
+        # TODO: this will be built-in the described arguments
         self.parameterSlider.setEnabled(warpType in [])
         self.angleSlider.setEnabled(warpType is False)
         self.angleBox.setEnabled(warpType is False)
@@ -192,8 +235,8 @@ class WarpVisualizer(WarpVisualizationWidget):
 
         # Now trigger refresh in WarpVisualizationWidget
         self.setSamplingType(samplingType)
-        self.setWarpType(warpType)
-        self.setParameterValue(parameterValue)
+        args = dict() # TODO: actually pass the slider's values
+        self.setWarpAdapter(self.makeAdapter(warpType, args))
         self.setPointCount(pointCount)
         self.setDrawGrid(self.warpedGridCheckBox.checked())
 

@@ -77,9 +77,7 @@ protected:
     /// Human-readable name
     std::string name_;
 
-    // TODO: actually we shouldn't care about this, the user writes an adapter.
-    // std::function<SampleType (SampleType)> sampleToInputDomain;
-
+    // TODO: actually, do we even need to know about those on the C++ side?
     std::vector<Argument> arguments_;
 };
 
