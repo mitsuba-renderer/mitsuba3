@@ -63,10 +63,10 @@ int main(int argc, char *argv[]) {
             arg_extra = arg_extra->next();
         }
 	} catch (const std::exception &e) {
-		std::cerr << "Caught a critical exception: " << e.what() << std::endl;
+		std::cerr << "\nCaught a critical exception: " << e.what() << std::endl;
 		return -1;
 	} catch (...) {
-		std::cerr << "Caught a critical exception of unknown type!" << std::endl;
+		std::cerr << "\nCaught a critical exception of unknown type!" << std::endl;
 		return -1;
 	}
 

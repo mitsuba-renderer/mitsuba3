@@ -138,7 +138,7 @@ const Appender *Logger::appender(size_t index) const {
 NAMESPACE_BEGIN(detail)
 
 void Throw(ELogLevel level, const Class *theClass, const char *file,
-           int line, const std::string &msg) {
+           int line, const std::string &msg_) {
     /* Trap if we're running in a debugger to facilitate debugging */
     util::trapDebugger();
 
@@ -146,6 +146,12 @@ void Throw(ELogLevel level, const Class *theClass, const char *file,
     formatter.setHasDate(false);
     formatter.setHasLogLevel(false);
     formatter.setHasThread(false);
+
+    std::string msg = msg_;
+    auto it = msg.find("[");
+    if (it != std::string::npos)
+        msg = msg.substr(0, it) + "\n  " + msg.substr(it);
+
     std::string text =
         formatter.format(level, theClass, Thread::thread(), file, line, msg);
     throw std::runtime_error(text);

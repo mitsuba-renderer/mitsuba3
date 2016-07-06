@@ -3,6 +3,9 @@
 #include <mitsuba/mitsuba.h>
 #include <string>
 
+/// Max level of nested <include> directives
+#define MTS_XML_INCLUDE_MAX_RECURSION 15
+
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 

@@ -21,23 +21,9 @@ NAMESPACE_BEGIN(xml)
 
 /* Set of supported XML tags */
 enum ETag {
-    EBoolean,
-    EInteger,
-    EFloat,
-    EString,
-    EPoint,
-    EVector,
-    EColor,
-    ETransform,
-    ETranslate,
-    EMatrix,
-    ERotate,
-    EScale,
-    ELookAt,
-    EObject,
-    ENamedReference,
-    EInclude,
-    EInvalid
+    EBoolean, EInteger, EFloat, EString, EPoint, EVector, EColor, ETransform,
+    ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject, ENamedReference,
+    EInclude, EInvalid
 };
 
 NAMESPACE_BEGIN(detail)
@@ -127,6 +113,7 @@ struct XMLSource {
     std::string id;
     const pugi::xml_document &doc;
     const std::function<std::string(ptrdiff_t)> &offset;
+    size_t depth = 0;
 
     template <typename... Args>
     void throwError(const pugi::xml_node &n, const std::string &msg_, Args&&... args) {
@@ -254,7 +241,9 @@ parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     size_t argCounterNested = 0;
                     for (pugi::xml_node &ch: node.children()) {
                         std::string nestedID, argName;
-                        std::tie(argName, nestedID) = parseXML(src, ctx, ch, tag, propsNested, argCounterNested);
+                        std::tie(argName, nestedID) =
+                            parseXML(src, ctx, ch, tag, propsNested,
+                                     argCounterNested);
                         if (!nestedID.empty())
                             propsNested.setNamedReference(argName, nestedID);
                     }
@@ -288,8 +277,12 @@ parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
                     detail::XMLSource nestedSrc {
                         filename.string(), doc,
-                        [&](ptrdiff_t pos) { return detail::fileOffset(filename, pos); }
+                        [&](ptrdiff_t pos) { return detail::fileOffset(filename, pos); },
+                        src.depth + 1
                     };
+
+                    if (nestedSrc.depth > MTS_XML_INCLUDE_MAX_RECURSION)
+                        Throw("Exceeded <include> recursion limit of %i", MTS_XML_INCLUDE_MAX_RECURSION);
 
                     if (!result) /* There was a parser / file IO error */
                         src.throwError(node, "Error while loading \"%s\" (at %s): %s",
