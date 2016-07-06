@@ -36,6 +36,7 @@ enum ETag {
     ELookAt,
     EObject,
     ENamedReference,
+    EInclude,
     EInvalid
 };
 
@@ -65,6 +66,7 @@ void registerClass(const Class *class_) {
         (*tags)["scale"]      = EScale;
         (*tags)["lookat"]     = ELookAt;
         (*tags)["ref"]        = ENamedReference;
+        (*tags)["include"]    = EInclude;
     }
 
     /* Register the new class as an object tag */
@@ -128,7 +130,7 @@ struct XMLSource {
 
     template <typename... Args>
     void throwError(const pugi::xml_node &n, const std::string &msg_, Args&&... args) {
-        std::string msg = "Error while parsing \"%s\" (at %s): " + msg_;
+        std::string msg = "Error while loading \"%s\" (at %s): " + msg_ + "!";
         Throw(msg.c_str(), id, offset(n.offset_debug()), args...);
     }
 };
@@ -273,6 +275,35 @@ parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
+            case EInclude: {
+                    checkAttributes(src, node, { "filename" });
+                    fs::path filename = node.attribute("filename").value();
+                    if (!fs::exists(filename))
+                        src.throwError(node, "included file \"%s\" not found", filename);
+
+                    Log(EInfo, "Loading included XML file \"%s\" ..", filename);
+
+                    pugi::xml_document doc;
+                    pugi::xml_parse_result result = doc.load_file(filename.native().c_str());
+
+                    detail::XMLSource nestedSrc {
+                        filename.string(), doc,
+                        [&](ptrdiff_t pos) { return detail::fileOffset(filename, pos); }
+                    };
+
+                    if (!result) /* There was a parser / file IO error */
+                        src.throwError(node, "Error while loading \"%s\" (at %s): %s",
+                            nestedSrc.id, nestedSrc.offset(result.offset),
+                            result.description());
+
+                    try {
+                        return parseXML(nestedSrc, ctx, *doc.begin(), parentTag, props, argCounter);
+                    } catch (const std::exception &e) {
+                        src.throwError(node, "%s", e.what());
+                    }
+                }
+                break;
+
             case EString: {
                     checkAttributes(src, node, { "name", "value" });
                     props.setString(node.attribute("name").value(), node.attribute("value").value());
@@ -380,7 +411,7 @@ parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         for (pugi::xml_node &ch: node.children())
             parseXML(src, ctx, ch, tag, props, argCounter);
     } catch (const std::exception &e) {
-        if (strstr(e.what(), "Error while parsing") == nullptr)
+        if (strstr(e.what(), "Error while loading") == nullptr)
             src.throwError(node, "%s", e.what());
         else
             throw;
@@ -447,9 +478,9 @@ ref<Object> loadString(const std::string &string) {
         [&](ptrdiff_t pos) { return detail::stringOffset(string, pos); }
     };
 
-    if (!result) /* There was a parser / file IO error */
-        Throw("Error while parsing \"%s\": %s (at %s)", src.id,
-              result.description(), src.offset(result.offset));
+    if (!result) /* There was a parser error */
+        Throw("Error while loading \"%s\" (at %s): %s", src.id,
+              src.offset(result.offset), result.description());
 
     detail::XMLParseContext ctx;
     Properties prop; size_t argCounter; /* Unused */
@@ -461,6 +492,8 @@ ref<Object> loadFile(const fs::path &filename) {
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);
 
+    Log(EInfo, "Loading XML file \"%s\" ..", filename);
+
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(filename.native().c_str());
 
@@ -470,8 +503,8 @@ ref<Object> loadFile(const fs::path &filename) {
     };
 
     if (!result) /* There was a parser / file IO error */
-        Throw("Error while parsing \"%s\": %s (at %s)", src.id,
-              result.description(), src.offset(result.offset));
+        Throw("Error while loading \"%s\" (at %s): %s", src.id,
+              src.offset(result.offset), result.description());
 
     detail::XMLParseContext ctx;
     Properties prop; size_t argCounter; /* Unused */

@@ -30,9 +30,9 @@ class XMLTest(unittest.TestCase):
         self.assertTrue(type(obj2) is Scene)
 
     def test05_duplicateID(self):
-        err_str = r'Error while parsing "<string>" \(at line 4, col 18\):' + \
+        err_str = r'Error while loading "<string>" \(at line 4, col 18\):' + \
             ' "shape" has duplicate id "myID" \(previous was at line 3,' + \
-            ' col 18\)'
+            ' col 18\)!'
         with self.assertRaisesRegexp(Exception, err_str):
             loadString("""
             <scene version="0.4.0">
