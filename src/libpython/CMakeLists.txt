@@ -20,14 +20,17 @@ include_directories(
 
 # Create the binding library
 add_library(mitsuba-python SHARED
+  # main
   python.h
   docstr.h
+  main.cpp
+
+  # libcore
   appender.cpp
   atomic.cpp
   filesystem.cpp
   formatter.cpp
   logger.cpp
-  main.cpp
   math.cpp
   util.cpp
   object.cpp
@@ -44,9 +47,12 @@ add_library(mitsuba-python SHARED
   frame.cpp
   ray.cpp
   struct.cpp
+
+  # librender
+  scene.cpp
 )
 
-target_link_libraries(mitsuba-python mitsuba-core)
+target_link_libraries(mitsuba-python mitsuba-core mitsuba-render)
 
 # Don't add a 'lib' prefix to the shared library
 set_target_properties(mitsuba-python PROPERTIES PREFIX "")
@@ -141,6 +147,7 @@ add_custom_target(mkdoc COMMAND
   python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py
   ${MKDOC_CXX_FLAGS_LIST}
   `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
+  `find ${PROJECT_SOURCE_DIR}/include/mitsuba/render -name '*.h' ! -name fwd.h -print`
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
 

@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import Struct, StructConverter
+from mitsuba.core import Struct, StructConverter
 import struct
 import numpy as np
 

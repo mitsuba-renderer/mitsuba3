@@ -6,8 +6,8 @@ except:
 import platform
 import re
 
-from mitsuba import filesystem as fs
-from mitsuba.filesystem import preferred_separator as sep
+from mitsuba.core import filesystem as fs
+from mitsuba.core.filesystem import preferred_separator as sep
 
 
 class FilesystemTest(unittest.TestCase):

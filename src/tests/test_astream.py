@@ -5,8 +5,8 @@ except:
 
 import os
 from os import path as PyPath
-from mitsuba import AnnotatedStream, DummyStream, FileStream, MemoryStream
-from mitsuba.filesystem import path
+from mitsuba.core import AnnotatedStream, DummyStream, FileStream, MemoryStream
+from mitsuba.core.filesystem import path
 
 def touch(path):
     # Equivalent of `touch` that is compatible with Python 2

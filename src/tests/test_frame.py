@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import Frame
+from mitsuba.core import Frame
 
 class FrameTest(unittest.TestCase):
     def assertVectorsEqual(self, a, b):

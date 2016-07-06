@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import ArgParser
+from mitsuba.core import ArgParser
 
 
 class ArgParserTest(unittest.TestCase):

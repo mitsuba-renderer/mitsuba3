@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import Thread, Appender, Formatter, Log, EInfo
+from mitsuba.core import Thread, Appender, Formatter, Log, EInfo
 
 
 class LoggerTest(unittest.TestCase):

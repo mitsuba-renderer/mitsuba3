@@ -3,9 +3,9 @@ try:
 except:
     import unittest
 
-from mitsuba.math import log2i
-from mitsuba.math import isPowerOfTwo
-from mitsuba.math import roundToPowerOfTwo
+from mitsuba.core.math import log2i
+from mitsuba.core.math import isPowerOfTwo
+from mitsuba.core.math import roundToPowerOfTwo
 
 
 class MathTest(unittest.TestCase):

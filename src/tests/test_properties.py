@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import Properties as Prop
+from mitsuba.core import Properties as Prop
 
 
 def fillProperties(p):

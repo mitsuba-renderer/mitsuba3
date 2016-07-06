@@ -18,8 +18,11 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 #define MTS_PY_DECLARE(name) \
     extern void python_export_##name(py::module &)
 
-#define MTS_PY_IMPORT(name) \
-    python_export_##name(m)
+#define MTS_PY_IMPORT_CORE(name) \
+    python_export_##name(core)
+
+#define MTS_PY_IMPORT_RENDER(name) \
+    python_export_##name(render)
 
 #define MTS_PY_EXPORT(name) \
     void python_export_##name(py::module &m)

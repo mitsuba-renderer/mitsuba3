@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba.xml import loadString
+from mitsuba.core.xml import loadString
 
 
 class XMLTest(unittest.TestCase):
@@ -11,9 +11,12 @@ class XMLTest(unittest.TestCase):
         with self.assertRaises(Exception):
             loadString("<?xml version='1.0'?>")
 
-    def test01_invalidRootNode(self):
+    def test02_invalidRootNode(self):
         with self.assertRaises(Exception):
             loadString("<?xml version='1.0'?><invalid></invalid>")
+
+    def test04_validRootNode(self):
+        loadString("<?xml version='1.0'?>\n<scene version='0.4.0'></scene>")
 
 
 if __name__ == '__main__':

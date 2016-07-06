@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import AtomicFloat
+from mitsuba.core import AtomicFloat
 from threading import Thread
 
 

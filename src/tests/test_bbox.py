@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import BoundingBox3f as BBox
+from mitsuba.core import BoundingBox3f as BBox
 import numpy as np
 
 

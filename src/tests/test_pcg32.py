@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import pcg32
+from mitsuba.core import pcg32
 
 
 class PCG32Test(unittest.TestCase):
