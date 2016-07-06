@@ -15,6 +15,7 @@ using VariantType = variant<
     Float,
     Vector3f,
     std::string,
+    NamedReference,
     ref<Object>
 >;
 
@@ -39,9 +40,9 @@ struct Properties::PropertiesPrivate {
     const Type& Properties::GetterName(const std::string &name) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
-            Log(EError, "Property \"%s\" has not been specified!", name); \
+            Throw("Property \"%s\" has not been specified!", name); \
         if (!it->second.data.is<Type>()) \
-            Log(EError, "The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
+            Throw("The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
         it->second.queried = true; \
         return (const Type &) it->second.data; \
     } \
@@ -51,17 +52,18 @@ struct Properties::PropertiesPrivate {
         if (it == d->entries.end()) \
             return defVal; \
         if (!it->second.data.is<Type>()) \
-            Log(EError, "The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
+            Throw("The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
         it->second.queried = true; \
         return (const Type &) it->second.data; \
     }
 
-DEFINE_PROPERTY_ACCESSOR(bool,        boolean, setBool,     bool_)
-DEFINE_PROPERTY_ACCESSOR(int64_t,     integer, setLong,     long_)
-DEFINE_PROPERTY_ACCESSOR(Float,       float,   setFloat,    float_)
-DEFINE_PROPERTY_ACCESSOR(std::string, string,  setString,   string)
-DEFINE_PROPERTY_ACCESSOR(Vector3f,    vector,  setVector3f, vector3f)
-DEFINE_PROPERTY_ACCESSOR(ref<Object>, object,  setObject,   object)
+DEFINE_PROPERTY_ACCESSOR(bool,           boolean, setBool,           bool_)
+DEFINE_PROPERTY_ACCESSOR(int64_t,        integer, setLong,           long_)
+DEFINE_PROPERTY_ACCESSOR(Float,          float,   setFloat,          float_)
+DEFINE_PROPERTY_ACCESSOR(std::string,    string,  setString,         string)
+DEFINE_PROPERTY_ACCESSOR(Vector3f,       vector,  setVector3f,       vector3f)
+DEFINE_PROPERTY_ACCESSOR(NamedReference, ref,     setNamedReference, namedReference)
+DEFINE_PROPERTY_ACCESSOR(ref<Object>,    object,  setObject,         object)
 
 Properties::Properties()
     : d(new PropertiesPrivate()) { }
@@ -93,6 +95,7 @@ namespace {
         Result operator()(const Float &) { return Properties::EFloat; }
         Result operator()(const Vector3f &) { return Properties::EVector3f; }
         Result operator()(const std::string &) { return Properties::EString; }
+        Result operator()(const NamedReference &) { return Properties::ENamedReference; }
         Result operator()(const ref<Object> &) { return Properties::EObject; }
     };
 
@@ -105,6 +108,7 @@ namespace {
         void operator()(const Float &f) { os << f; }
         void operator()(const Vector3f &v) { os << v; }
         void operator()(const std::string &s) { os << "\"" << s << "\""; }
+        void operator()(const NamedReference &nr) { os << "\"" << (const std::string &) nr << "\""; }
         void operator()(const ref<Object> &o) { os << o->toString(); }
     };
 }
@@ -112,7 +116,7 @@ namespace {
 Properties::EPropertyType Properties::propertyType(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
-        Log(EError, "propertyType(): Could not find property named \"%s\"!", name);
+        Throw("propertyType(): Could not find property named \"%s\"!", name);
 
     return it->second.data.visit(PropertyTypeVisitor());
 }
@@ -128,7 +132,7 @@ bool Properties::markQueried(const std::string &name) const {
 bool Properties::wasQueried(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
-        Log(EError, "Could not find property named \"%s\"!", name);
+        Throw("Could not find property named \"%s\"!", name);
     return it->second.queried;
 }
 
@@ -157,10 +161,11 @@ void Properties::setID(const std::string &id) {
 }
 
 void Properties::copyAttribute(const Properties &properties,
-                               const std::string &sourceName, const std::string &targetName) {
+                               const std::string &sourceName,
+                               const std::string &targetName) {
     const auto it = properties.d->entries.find(sourceName);
     if (it == properties.d->entries.end())
-        Log(EError, "copyAttribute(): Could not find parameter \"%s\"!", sourceName);
+        Throw("copyAttribute(): Could not find parameter \"%s\"!", sourceName);
     d->entries[targetName] = it->second;
 }
 
@@ -168,6 +173,18 @@ std::vector<std::string> Properties::propertyNames() const {
     std::vector<std::string> result;
     for (const auto &e : d->entries)
         result.push_back(e.first);
+    return result;
+}
+
+std::vector<std::pair<std::string, NamedReference>> Properties::namedReferences() const {
+    std::vector<std::pair<std::string, NamedReference>> result;
+    for (auto &e : d->entries) {
+        auto type = e.second.data.visit(PropertyTypeVisitor());
+        if (type != ENamedReference)
+            continue;
+        auto const &value = (const NamedReference &) e.second.data;
+        result.push_back(std::make_pair(e.first, value));
+    }
     return result;
 }
 

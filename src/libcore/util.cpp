@@ -147,7 +147,7 @@ fs::path libraryPath() {
 	uint32_t imageCount = _dyld_image_count();
 	for (uint32_t i=0; i<imageCount; ++i) {
 		const char *imageName = _dyld_get_image_name(i);
-		if (string::ends_with(imageName, "libmitsuba-core.dylib")) {
+		if (string::endsWith(imageName, "libmitsuba-core.dylib")) {
 			result = fs::path(imageName);
 			break;
 		}

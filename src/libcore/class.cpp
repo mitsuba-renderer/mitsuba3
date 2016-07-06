@@ -5,8 +5,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
+NAMESPACE_BEGIN(detail)
 void registerClass(const Class *class_);
 void cleanup();
+NAMESPACE_END(detail)
 NAMESPACE_END(xml)
 
 static std::map<std::string, Class *> *__classes;
@@ -25,7 +27,7 @@ Class::Class(const std::string &name, const std::string &parent, bool abstract,
 
     /* Also register new abstract classes with the XML parser */
     if (abstract || name == "Scene" /* Special case for 'Scene' */)
-        xml::registerClass(this);
+        xml::detail::registerClass(this);
 }
 
 const Class *Class::forName(const std::string &name) {
@@ -89,7 +91,7 @@ void Class::staticShutdown() {
     delete __classes;
     __classes = nullptr;
     m_isInitialized = false;
-    xml::cleanup();
+    xml::detail::cleanup();
 }
 
 NAMESPACE_END(mitsuba)

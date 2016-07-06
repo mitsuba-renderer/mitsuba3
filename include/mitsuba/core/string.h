@@ -10,14 +10,14 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(string)
 
 /// Check if the given string starts with a specified prefix
-inline bool starts_with(const std::string &string, const std::string &prefix) {
+inline bool startsWith(const std::string &string, const std::string &prefix) {
     if (prefix.size() > string.size())
         return false;
     return std::equal(prefix.begin(), prefix.end(), string.begin());
 }
 
 /// Check if the given string ends with a specified suffix
-inline bool ends_with(const std::string &string, const std::string &suffix) {
+inline bool endsWith(const std::string &string, const std::string &suffix) {
     if (suffix.size() > string.size())
         return false;
     return std::equal(suffix.rbegin(), suffix.rend(), string.rbegin());

@@ -7,6 +7,18 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/// Wrapper object used to represent named references to Object instances
+class NamedReference {
+public:
+    NamedReference(const std::string &value) : m_value(value) { }
+    operator const std::string&() const { return m_value; }
+    bool operator==(const NamedReference &r) const { return r.m_value == m_value; }
+    bool operator!=(const NamedReference &r) const { return r.m_value != m_value; }
+
+private:
+    std::string m_value;
+};
+
 /** \brief Associative parameter map for constructing
  * subclasses of \ref Object.
  *
@@ -40,8 +52,10 @@ public:
 		EAnimatedTransform,
 		/// Discretized color spectrum
 		ESpectrum,
-		/// Arbitrary-length string
+		/// String
 		EString,
+		/// Named reference to another named object
+		ENamedReference,
 		/// Arbitrary object
 		EObject
 	};
@@ -97,13 +111,16 @@ public:
     /// Set the unique identifier associated with this instance
     void setID(const std::string &id);
 
-    /// Copy an attribute from another Properties object and potentially rename it
+    /// Copy a single attribute from another Properties object and potentially rename it
     void copyAttribute(const Properties &properties,
                        const std::string &sourceName,
                        const std::string &targetName);
 
-    /// Store an array containing the names of all stored properties
+    /// Return an array containing the names of all stored properties
     std::vector<std::string> propertyNames() const;
+
+    /// Return an array containing all named references and their destinations
+    std::vector<std::pair<std::string, NamedReference>> namedReferences() const;
 
     /// Return the list of un-queried attributed
     std::vector<std::string> unqueried() const;
@@ -166,6 +183,13 @@ public:  // Type-specific getters and setters ----------------------------------
     const std::string& string(const std::string &name) const;
     /// Retrieve a string value (use default value if no entry exists)
     const std::string& string(const std::string &name, const std::string &defVal) const;
+
+    /// Store a named reference in the Properties instance
+    void setNamedReference(const std::string &name, const NamedReference &value, bool warnDuplicates = true);
+    /// Retrieve a named reference value
+    const NamedReference& namedReference(const std::string &name) const;
+    /// Retrieve a named reference value (use default value if no entry exists)
+    const NamedReference& namedReference(const std::string &name, const NamedReference &defVal) const;
 
     /// Store a vector in the Properties instance
     void setVector3f(const std::string &name, const Vector3f &value, bool warnDuplicates = true);
