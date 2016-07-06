@@ -37,7 +37,7 @@ Vector3f squareToCosineHemisphere(const Point2f &sample) {
     return Vector3f(p[0], p[1], z);
 }
 
-Vector3f squareToUniformCone(Float cosCutoff, const Point2f &sample) {
+Vector3f squareToUniformCone(const Point2f &sample, Float cosCutoff) {
     Float cosTheta = (1-sample[0]) + sample[0] * cosCutoff;
     Float sinTheta = math::safe_sqrt(1.0f - cosTheta * cosTheta);
 
@@ -199,7 +199,7 @@ std::pair<Vector3f, Float> warpPoint(WarpType warpType, Point2f sample,
             result = warp::squareToCosineHemisphere(sample);
             break;
         case UniformCone:
-            result = warp::squareToUniformCone(parameterValue, sample);
+            result = warp::squareToUniformCone(sample, parameterValue);
             break;
 
         case UniformDisk:

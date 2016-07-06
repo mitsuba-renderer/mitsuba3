@@ -47,8 +47,10 @@ MTS_PY_EXPORT(warp) {
       .mdef(warp, squareToCosineHemisphere)
       .mdef(warp, squareToCosineHemispherePdf)
 
-      .mdef(warp, squareToUniformCone)
-      .mdef(warp, squareToUniformConePdf)
+      .def("squareToUniformCone", &warp::squareToUniformCone,
+           py::arg("sample"), py::arg("cosCutoff"), DM(warp, squareToUniformCone))
+      .def("squareToUniformConePdf", &warp::squareToUniformConePdf,
+           py::arg("v"), py::arg("cosCutoff"), DM(warp, squareToUniformConePdf))
 
       .mdef(warp, squareToUniformDisk)
       .mdef(warp, squareToUniformDiskPdf)
@@ -66,7 +68,10 @@ MTS_PY_EXPORT(warp) {
 
       .mdef(warp, squareToTent)
       .mdef(warp, squareToTentPdf)
-      .mdef(warp, intervalToNonuniformTent);
+
+      .def("intervalToNonuniformTent", &warp::intervalToNonuniformTent,
+           py::arg("sample"), py::arg("a"), py::arg("b"), py::arg("c"),
+           DM(warp, intervalToNonuniformTent));
 
     using mitsuba::warp::WarpType;
     py::enum_<WarpType>(m2, "WarpType")

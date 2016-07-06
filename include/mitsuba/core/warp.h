@@ -95,7 +95,7 @@ inline MTS_EXPORT_CORE Float squareToCosineHemispherePdf(const Vector3f &v) {
  * \param cosCutoff Cosine of the cutoff angle
  * \param sample A uniformly distributed sample on \f$[0,1]^2\f$
  */
-extern MTS_EXPORT_CORE Vector3f squareToUniformCone(Float cosCutoff, const Point2f &sample);
+extern MTS_EXPORT_CORE Vector3f squareToUniformCone(const Point2f &sample, Float cosCutoff);
 
 /**
  * \brief Density of \ref squareToUniformCone per unit area.
@@ -177,7 +177,7 @@ inline MTS_EXPORT_CORE Float squareToTentPdf(const Point2f &) {
 /** \brief Warp a uniformly distributed sample on [0, 1] to a nonuniform
  * tent distribution with nodes <tt>{a, b, c}</tt>
  */
-extern MTS_EXPORT_CORE Float intervalToNonuniformTent(Float a, Float b, Float c, Float sample);
+extern MTS_EXPORT_CORE Float intervalToNonuniformTent(Float sample, Float a, Float b, Float c);
 
 //! @}
 // =============================================================
