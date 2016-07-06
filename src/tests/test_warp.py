@@ -37,6 +37,8 @@ class WarpTest(unittest.TestCase):
         self.assertAlmostEqual(squareToUniformDiskConcentricPdf(zero2D), math.InvPi, places = 6)
         self.assertAlmostEqual(squareToUniformDiskConcentricPdf(ten2D), 0, places = 6)
 
+        # TODO: same thing for 1D functions
+
         # Just checking that these are not crashing, the actual results
         # are tested statistically.
         _ = squareToUniformSphere(p)
@@ -50,22 +52,30 @@ class WarpTest(unittest.TestCase):
         _ = squareToStdNormal(p)
         _ = squareToStdNormalPdf(p)
         _ = squareToTent(p)
+        _ = squareToTentPdf(p)
         _ = intervalToNonuniformTent(0.25, 0.5, 1.0, 0.75)
 
     def test02_statistical_tests(self):
         # TODO: just iterate over the enum (pybind enum?)
+        # warps = [
+        #     WarpType.NoWarp,
+        #     WarpType.UniformSphere,
+        #     WarpType.UniformHemisphere,
+        #     # WarpType.CosineHemisphere,
+        #     # WarpType.UniformCone,
+        #     WarpType.UniformDisk,
+        #     WarpType.UniformDiskConcentric,
+        #     # WarpType.UniformTriangle,
+        #     WarpType.StandardNormal,
+        #     # WarpType.UniformTent,
+        #     # WarpType.NonUniformTent
+        # ]
+
         warps = [
-            WarpType.NoWarp,
-            WarpType.UniformSphere,
-            WarpType.UniformHemisphere,
-            # WarpType.CosineHemisphere,
-            # WarpType.UniformCone,
-            WarpType.UniformDisk,
-            WarpType.UniformDiskConcentric,
-            # WarpType.UniformTriangle,
-            WarpType.StandardNormal,
-            # WarpType.UniformTent,
-            # WarpType.NonUniformTent
+            PlaneWarpAdapter("Square to uniform disk",
+                lambda p: (squareToUniformDisk(p), 1.0),
+                squareToUniformDiskPdf)
+            # PlaneWarpAdapter("Square to tent", squareToTent, squareToTentPdf)
         ]
 
         # TODO: cover all sampling types
@@ -79,12 +89,18 @@ class WarpTest(unittest.TestCase):
         nBins = gridWidth * gridHeight
         sampleCount = 100 * nBins
 
-        for warpType in warps:
-            with self.subTest(str(warpType)):
+        for warpAdapter in warps:
+            with self.subTest(str(warpAdapter)):
+
+                print(warpAdapter)
+                print(type(warpAdapter))
+
+                # (result, reason) = runStatisticalTest("hello", 5, 5, SamplingType.Independent, warpAdapter, 5, 0.01)
                 (result, reason) = runStatisticalTest(
                     sampleCount, gridWidth, gridHeight,
-                    samplingType, warpType, parameterValue,
+                    samplingType, warpAdapter,
                     WarpTest.minExpFrequency, WarpTest.significanceLevel)
+
                 self.assertTrue(result, reason)
 
 if __name__ == '__main__':

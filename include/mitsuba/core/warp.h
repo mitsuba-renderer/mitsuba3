@@ -23,6 +23,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 NAMESPACE_BEGIN(warp)
 
+class WarpAdapter;
+
 // TODO: proper support for:
 // - uniformDiskToSquareConcentric
 // - intervalToNonuniformTent
@@ -273,11 +275,11 @@ runStatisticalTestAndOutput(size_t pointCount, size_t gridWidth, size_t gridHeig
  */
 inline MTS_EXPORT_CORE std::pair<bool, std::string>
 runStatisticalTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
-                   SamplingType samplingType, WarpType warpType, Float parameterValue,
+                   SamplingType samplingType, WarpAdapter *warpAdapter,
                    double minExpFrequency, double significanceLevel) {
     std::vector<double> observedHistogram, expectedHistogram;
     return runStatisticalTestAndOutput(pointCount,
-        gridWidth, gridHeight, samplingType, warpType, parameterValue,
+        gridWidth, gridHeight, samplingType, warpAdapter,
         minExpFrequency, significanceLevel, observedHistogram, expectedHistogram);
 }
 

@@ -1,8 +1,36 @@
+#include <mitsuba/core/warp_adapters.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/gui/warp_visualizer.h>
 #include <nanogui/python.h>
 
 #include "python.h"
+
+/// Trampoline class
+using mitsuba::warp::WarpAdapter;
+using mitsuba::warp::SamplingType;
+using Sampler = pcg32;
+class PyWarpAdapter : public WarpAdapter {
+public:
+    using WarpAdapter::WarpAdapter;
+
+    std::vector<double> generateObservedHistogram(Sampler *sampler,
+        SamplingType strategy, size_t pointCount,
+        size_t gridWidth, size_t gridHeight) {
+        PYBIND11_OVERLOAD(std::vector<double>, WarpAdapter,
+            generateObservedHistogram, sampler, strategy,
+            pointCount, gridWidth, gridHeight);
+    }
+    std::vector<double> generateExpectedHistogram(size_t pointCount, size_t gridWidth, size_t gridHeight) {
+        PYBIND11_OVERLOAD(std::vector<double>, WarpAdapter,
+            generateExpectedHistogram, pointCount, gridWidth, gridHeight);
+    }
+    size_t inputDimensionality() const {
+        PYBIND11_OVERLOAD(size_t, WarpAdapter, inputDimensionality);
+    }
+    size_t domainDimensionality() const {
+        PYBIND11_OVERLOAD(size_t, WarpAdapter, domainDimensionality);
+    }
+};
 
 /// Trampoline class
 using mitsuba::warp::WarpVisualizationWidget;
@@ -69,6 +97,33 @@ MTS_PY_EXPORT(warp) {
         .value("Grid", SamplingType::Grid)
         .value("Stratified", SamplingType::Stratified)
         .export_values();
+
+    using warp::WarpAdapter;
+    py::class_<WarpAdapter, ref<WarpAdapter>, PyWarpAdapter>(m2, "WarpAdapter",
+        "TODO: doc")
+        // TODO: expose virtual calls
+        .def("__repr__", &WarpAdapter::toString);
+
+    using warp::PlaneWarpAdapter;
+    // TODO: build a trampoline if there are new virtual functions
+    // TODO: check that virtual methods there are forwarded correctly
+    py::class_<PlaneWarpAdapter>(m2, "PlaneWarpAdapter", py::base<WarpAdapter>(), "TODO: line warp adapter doc")
+        .def(py::init<const std::string &,
+                      const PlaneWarpAdapter::WarpFunctionType &,
+                      const PlaneWarpAdapter::PdfFunctionType &,
+                      const std::vector<WarpAdapter::Argument> &>(),
+             py::arg("name"), py::arg("f"), py::arg("pdf"),
+             py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
+             "TODO: constructor doc");
+        // TODO: route to the right constructor based on the return type of the lambda
+        // .def(py::init<const std::string &,
+        //               const std::function<PlaneWarpAdapter::DomainType(const PlaneWarpAdapter::SampleType &)> &,
+        //               const PlaneWarpAdapter::PdfFunctionType &,
+        //               const std::vector<WarpAdapter::Argument> &>(),
+        //      py::arg("name"), py::arg("f"), py::arg("pdf"),
+        //      py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
+        //      "TODO: constructor doc");
+
 
     m2.def("runStatisticalTest", &warp::detail::runStatisticalTest, DM(warp, detail, runStatisticalTest));
 

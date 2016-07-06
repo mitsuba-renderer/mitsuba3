@@ -1,4 +1,5 @@
 #include <mitsuba/core/warp.h>
+#include <mitsuba/core/warp_adapters.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/transform.h>
 #include <hypothesis.h>
@@ -412,7 +413,7 @@ std::vector<double> generateExpectedHistogram(size_t pointCount,
 
 std::pair<bool, std::string>
 runStatisticalTestAndOutput(size_t pointCount, size_t gridWidth, size_t gridHeight,
-    SamplingType samplingType, WarpType warpType, Float parameterValue,
+    SamplingType samplingType, WarpAdapter *warpAdapter,
     double minExpFrequency, double significanceLevel,
     std::vector<double> &observedHistogram, std::vector<double> &expectedHistogram) {
 
@@ -420,13 +421,12 @@ runStatisticalTestAndOutput(size_t pointCount, size_t gridWidth, size_t gridHeig
     Eigen::MatrixXf positions;
     std::vector<Float> weights;
 
-    generatePoints(pointCount, samplingType, warpType,
-                   parameterValue, positions, weights);
-    observedHistogram = computeHistogram(warpType, positions, weights,
-                                         gridWidth, gridHeight);
-    expectedHistogram = generateExpectedHistogram(pointCount,
-                                                  warpType, parameterValue,
-                                                  gridWidth, gridHeight);
+    // TODO: should rather use the Sampler interface
+    pcg32 sampler;
+    observedHistogram = warpAdapter->generateObservedHistogram(
+        &sampler, samplingType, pointCount, gridWidth, gridHeight);
+    expectedHistogram = warpAdapter->generateExpectedHistogram(
+        pointCount, gridWidth, gridHeight);
 
     return hypothesis::chi2_test(nBins,
         observedHistogram.data(), expectedHistogram.data(),

@@ -29,24 +29,25 @@ add_library(mitsuba-core SHARED
   ${INC_DIR}/hash.h
   ${INC_DIR}/jit.h
 
-  appender.cpp     ${INC_DIR}/appender.h
-  class.cpp        ${INC_DIR}/class.h
-  filesystem.cpp   ${INC_DIR}/filesystem.h
-  formatter.cpp    ${INC_DIR}/formatter.h
-  logger.cpp       ${INC_DIR}/logger.h
-  math.cpp         ${INC_DIR}/math.h
-  object.cpp       ${INC_DIR}/object.h
-  properties.cpp   ${INC_DIR}/properties.h
-  thread.cpp       ${INC_DIR}/thread.h
-  tls.cpp          ${INC_DIR}/tls.h
-  util.cpp         ${INC_DIR}/util.h
-  argparser.cpp    ${INC_DIR}/argparser.h
-  xml.cpp          ${INC_DIR}/xml.h
-  plugin.cpp       ${INC_DIR}/plugin.h
-  fresolver.cpp    ${INC_DIR}/fresolver.h
-  jit.cpp          ${INC_DIR}/jit.h
-  struct.cpp       ${INC_DIR}/struct.h
-  warp.cpp         ${INC_DIR}/warp.h
+  appender.cpp         ${INC_DIR}/appender.h
+  class.cpp            ${INC_DIR}/class.h
+  filesystem.cpp       ${INC_DIR}/filesystem.h
+  formatter.cpp        ${INC_DIR}/formatter.h
+  logger.cpp           ${INC_DIR}/logger.h
+  math.cpp             ${INC_DIR}/math.h
+  object.cpp           ${INC_DIR}/object.h
+  properties.cpp       ${INC_DIR}/properties.h
+  thread.cpp           ${INC_DIR}/thread.h
+  tls.cpp              ${INC_DIR}/tls.h
+  util.cpp             ${INC_DIR}/util.h
+  argparser.cpp        ${INC_DIR}/argparser.h
+  xml.cpp              ${INC_DIR}/xml.h
+  plugin.cpp           ${INC_DIR}/plugin.h
+  fresolver.cpp        ${INC_DIR}/fresolver.h
+  jit.cpp              ${INC_DIR}/jit.h
+  struct.cpp           ${INC_DIR}/struct.h
+  warp.cpp             ${INC_DIR}/warp.h
+  warp_adapters.cpp    ${INC_DIR}/warp_adapters.h
 
   stream.cpp       ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
   astream.cpp      ${INC_DIR}/astream.h
