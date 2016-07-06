@@ -57,13 +57,13 @@ struct Properties::PropertiesPrivate {
         return (const Type &) it->second.data; \
     }
 
-DEFINE_PROPERTY_ACCESSOR(bool,           boolean, setBool,           bool_)
-DEFINE_PROPERTY_ACCESSOR(int64_t,        integer, setLong,           long_)
-DEFINE_PROPERTY_ACCESSOR(Float,          float,   setFloat,          float_)
-DEFINE_PROPERTY_ACCESSOR(std::string,    string,  setString,         string)
-DEFINE_PROPERTY_ACCESSOR(Vector3f,       vector,  setVector3f,       vector3f)
-DEFINE_PROPERTY_ACCESSOR(NamedReference, ref,     setNamedReference, namedReference)
-DEFINE_PROPERTY_ACCESSOR(ref<Object>,    object,  setObject,         object)
+DEFINE_PROPERTY_ACCESSOR(bool,           boolean,   setBool,            bool_)
+DEFINE_PROPERTY_ACCESSOR(int64_t,        integer,   setLong,            long_)
+DEFINE_PROPERTY_ACCESSOR(Float,          float,     setFloat,           float_)
+DEFINE_PROPERTY_ACCESSOR(std::string,    string,    setString,          string)
+DEFINE_PROPERTY_ACCESSOR(Vector3f,       vector,    setVector3f,        vector3f)
+DEFINE_PROPERTY_ACCESSOR(NamedReference, ref,       setNamedReference,  namedReference)
+DEFINE_PROPERTY_ACCESSOR(ref<Object>,    object,    setObject,          object)
 
 Properties::Properties()
     : d(new PropertiesPrivate()) { }

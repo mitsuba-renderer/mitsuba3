@@ -34,8 +34,9 @@ enum ETag {
     ERotate,
     EScale,
     ELookAt,
-    EInvalid,
-    EObject
+    EObject,
+    ENamedReference,
+    EInvalid
 };
 
 NAMESPACE_BEGIN(detail)
@@ -63,6 +64,7 @@ void registerClass(const Class *class_) {
         (*tags)["rotate"]     = ERotate;
         (*tags)["scale"]      = EScale;
         (*tags)["lookat"]     = ELookAt;
+        (*tags)["ref"]        = ENamedReference;
     }
 
     /* Register the new class as an object tag */
@@ -158,12 +160,13 @@ static void checkAttributes(XMLSource &src, const pugi::xml_node &node, std::set
         src.throwError(node, "missing attribute \"%s\" in \"%s\"", *attrs.begin(), node.name());
 }
 
-static std::string parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
-                            ETag parentTag, Properties &props) {
+static std::pair<std::string, std::string>
+parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
+         ETag parentTag, Properties &props, size_t &argCounter) {
     try {
         /* Skip over comments */
         if (node.type() == pugi::node_comment || node.type() == pugi::node_declaration)
-            return "";
+            return std::make_pair("", "");
 
         if (node.type() != pugi::node_element)
             src.throwError(node, "unexpected content");
@@ -187,12 +190,15 @@ static std::string parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node
         if (!hasParent && !currentIsObject)
             src.throwError(node, "root element \"%s\" must be an object", node.name());
 
-        if (parentIsTransform != currentIsTransformOp)
-            src.throwError(node, "transform nodes can only contain transform operations");
+        if (parentIsTransform != currentIsTransformOp) {
+            if (parentIsTransform)
+                src.throwError(node, "transform nodes can only contain transform operations");
+            else
+                src.throwError(node, "transform operations can only occur in a transform node");
+        }
 
         if (hasParent && !parentIsObject && !(parentIsTransform && currentIsTransformOp))
-            src.throwError(node, "node \"%s\" requires an object "
-                  "as parent (at %s)", node.name());
+            src.throwError(node, "node \"%s\" cannot occur as child of a property", node.name());
 
         if (std::string(node.name()) == "scene") {
             checkAttributes(src, node, { "version" });
@@ -207,35 +213,31 @@ static std::string parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node
             if (string::startsWith(name, "_"))
                 src.throwError(
                     node, "invalid parameter name \"%s\" in \"%s\": leading "
-                          "underscores are reserved for "
-                          "internal identifiers",
+                          "underscores are reserved for internal identifiers",
                     name, node.name());
+        } else if (currentIsObject || tag == ENamedReference) {
+            node.append_attribute("name") = tfm::format("_arg_%i", argCounter++).c_str();
+        }
+
+        if (node.attribute("id")) {
+            auto id = node.attribute("id").value();
+            if (string::startsWith(id, "_"))
+                src.throwError(
+                    node, "invalid id \"%s\" in \"%s\": leading "
+                          "underscores are reserved for internal identifiers",
+                    id, node.name());
+        } else if (currentIsObject) {
+            node.append_attribute("id") = tfm::format("_unnamed_%i", ctx.idCounter++).c_str();
         }
 
         switch (tag) {
             case EObject: {
-                    auto id_attrib = node.attribute("id");
-                    if (!id_attrib) {
-                        id_attrib = node.append_attribute("id");
-                        id_attrib = tfm::format("_unnamed_%i", ctx.idCounter++).c_str();
-                    } else if (string::startsWith(id_attrib.value(), "_")) {
-                        src.throwError(node, "invalid id \"%s\" in \"%s\": leading "
-                                             "underscores are reserved for "
-                                             "internal identifiers",
-                                       id_attrib.value(), node.name());
-                    }
-
-                    checkAttributes(src, node, { "type", "id" });
-                    std::string id = id_attrib.value();
+                    checkAttributes(src, node, { "type", "id", "name" });
+                    auto id = node.attribute("id").value();
+                    auto name = node.attribute("name").value();
 
                     Properties propsNested(node.attribute("type").value());
                     propsNested.setID(id);
-                    size_t argCounter = 0;
-                    for (pugi::xml_node &ch: node.children()) {
-                        std::string nestedID = parseXML(src, ctx, ch, tag, propsNested);
-                        if (!nestedID.empty())
-                            propsNested.setNamedReference(tfm::format("_arg_", argCounter++), nestedID);
-                    }
 
                     auto it = ctx.instances.find(id);
                     if (it != ctx.instances.end())
@@ -247,59 +249,85 @@ static std::string parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node
                         src.throwError(node, "could not retrieve class object for "
                                        "tag \"%s\"", node.name());
 
+                    size_t argCounterNested = 0;
+                    for (pugi::xml_node &ch: node.children()) {
+                        std::string nestedID, argName;
+                        std::tie(argName, nestedID) = parseXML(src, ctx, ch, tag, propsNested, argCounterNested);
+                        if (!nestedID.empty())
+                            propsNested.setNamedReference(argName, nestedID);
+                    }
+
                     auto &inst = ctx.instances[id];
                     inst.location = node.offset_debug();
                     inst.props = propsNested;
                     inst.class_ = it2->second;
-                    return id;
+                    return std::make_pair(name, id);
                 }
                 break;
+
+            case ENamedReference: {
+                    checkAttributes(src, node, { "name", "id" });
+                    auto id = node.attribute("id").value();
+                    auto name = node.attribute("name").value();
+                    return std::make_pair(name, id);
+                }
+                break;
+
             case EString: {
                     checkAttributes(src, node, { "name", "value" });
                     props.setString(node.attribute("name").value(), node.attribute("value").value());
                 }
                 break;
+
             case EFloat: {
                     checkAttributes(src, node, { "name", "value" });
                     props.setFloat(node.attribute("name").value(), std::stof(node.attribute("value").value()));
                 }
                 break;
+
             case EInteger: {
                     checkAttributes(src, node, { "name", "value" });
                     props.setInt(node.attribute("name").value(), std::stoi(node.attribute("value").value()));
                 }
                 break;
+
             case EBoolean: {
                     checkAttributes(src, node, { "name", "value" });
                     //props.setBool(node.attribute("name").value(), toBool(node.attribute("value").value()));
                 }
                 break;
+
             case EPoint: {
                     checkAttributes(src, node, { "name", "value" });
                     //props.setPoint(node.attribute("name").value(), Point3f(toVector3f(node.attribute("value").value())));
                 }
                 break;
+
             case EVector: {
                     checkAttributes(src, node, { "name", "value" });
                     //props.setVector(node.attribute("name").value(), Vector3f(toVector3f(node.attribute("value").value())));
                 }
                 break;
+
             case EColor: {
                     checkAttributes(src, node, { "name", "value" });
                     //props.setColor(node.attribute("name").value(), Color3f(toVector3f(node.attribute("value").value()).array()));
                 }
                 break;
+
             case ETransform: {
                     checkAttributes(src, node, { "name" });
                     //props.setTransform(node.attribute("name").value(), transform.matrix());
                 }
                 break;
+
             case ETranslate: {
                     checkAttributes(src, node, { "value" });
                     //Eigen::Vector3f v = toVector3f(node.attribute("value").value());
                     //transform = Eigen::Translation<float, 3>(v.x(), v.y(), v.z()) * transform;
                 }
                 break;
+
             case EMatrix: {
                     checkAttributes(src, node, { "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
@@ -312,12 +340,14 @@ static std::string parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node
                     ctx.transform = Eigen::Affine3f(matrix) * ctx.transform;
                 }
                 break;
+
             case EScale: {
                     checkAttributes(src, node, { "value" });
                     //Eigen::Vector3f v = toVector3f(node.attribute("value").value());
                     //transform = Eigen::DiagonalMatrix<float, 3>(v) * transform;
                 }
                 break;
+
             case ERotate: {
                     checkAttributes(src, node, { "angle", "axis" });
                     //float angle = math::degToRad(std::stof(node.attribute("angle").value()));
@@ -325,6 +355,7 @@ static std::string parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node
                     //transform = Eigen::AngleAxis<float>(angle, axis) * transform;
                 }
                 break;
+
             case ELookAt: {
                     checkAttributes(src, node, { "origin", "target", "up" });
                     //Eigen::Vector3f origin = toVector3f(node.attribute("origin").value());
@@ -345,6 +376,9 @@ static std::string parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node
 
             default: Throw("Unhandled element \"%s\"", node.name());
         }
+
+        for (pugi::xml_node &ch: node.children())
+            parseXML(src, ctx, ch, tag, props, argCounter);
     } catch (const std::exception &e) {
         if (strstr(e.what(), "Error while parsing") == nullptr)
             src.throwError(node, "%s", e.what());
@@ -352,13 +386,14 @@ static std::string parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node
             throw;
     }
 
-    return "";
+    return std::make_pair("", "");
 }
 
 static ref<Object> instantiateNode(XMLSource &src, XMLParseContext &ctx, std::string id) {
     auto it = ctx.instances.find(id);
     if (it == ctx.instances.end())
-        Throw("tried to instantiate unknown instance \"%s\"!", id);
+        Throw("reference to unknown object \"%s\"!", id);
+
     auto &inst = it->second;
     tbb::spin_mutex::scoped_lock lock(inst.mutex);
 
@@ -376,8 +411,16 @@ static ref<Object> instantiateNode(XMLSource &src, XMLParseContext &ctx, std::st
             ThreadEnvironment env(thread);
             for (uint32_t i = range.begin(); i != range.end(); ++i) {
                 auto &kv = namedReferences[i];
-                ref<Object> obj = instantiateNode(src, ctx, kv.second);
-                props.setObject(kv.first, obj, false);
+                try {
+                    ref<Object> obj = instantiateNode(src, ctx, kv.second);
+                    props.setObject(kv.first, obj, false);
+                } catch (const std::exception &e) {
+                    if (strstr(e.what(), "Error while loading") == nullptr)
+                        Throw("Error while loading \"%s\" (near %s): %s",
+                            src.id, src.offset(inst.location), e.what());
+                    else
+                        throw;
+                }
             }
         }
     );
@@ -409,8 +452,8 @@ ref<Object> loadString(const std::string &string) {
               result.description(), src.offset(result.offset));
 
     detail::XMLParseContext ctx;
-    Properties prop; /* Unused */
-    auto sceneID = detail::parseXML(src, ctx, *doc.begin(), EInvalid, prop);
+    Properties prop; size_t argCounter; /* Unused */
+    auto sceneID = detail::parseXML(src, ctx, *doc.begin(), EInvalid, prop, argCounter).second;
     return detail::instantiateNode(src, ctx, sceneID);
 }
 
@@ -431,8 +474,8 @@ ref<Object> loadFile(const fs::path &filename) {
               result.description(), src.offset(result.offset));
 
     detail::XMLParseContext ctx;
-    Properties prop; /* Unused */
-    auto sceneID = parseXML(src, ctx, *doc.begin(), EInvalid, prop);
+    Properties prop; size_t argCounter; /* Unused */
+    auto sceneID = parseXML(src, ctx, *doc.begin(), EInvalid, prop, argCounter).second;
     return detail::instantiateNode(src, ctx, sceneID);
 }
 
