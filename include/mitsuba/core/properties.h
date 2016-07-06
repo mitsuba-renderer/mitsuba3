@@ -122,13 +122,17 @@ public:
     /// Return an array containing all named references and their destinations
     std::vector<std::pair<std::string, NamedReference>> namedReferences() const;
 
+    /// Return an array containing names and references for all stored objects and
+    std::vector<std::pair<std::string, ref<Object>>> objects() const;
+
     /// Return the list of un-queried attributed
     std::vector<std::string> unqueried() const;
 
     /**
-     * Merge another properties record into the current one.
-     * Existing properties will be overwritten with the values
-     * from <tt>props</tt> if they have the same name.
+     * \brief Merge another properties record into the current one.
+     *
+     * Existing properties will be overwritten with the values from
+     * <tt>props</tt> if they have the same name.
      */
     void merge(const Properties &props);
 

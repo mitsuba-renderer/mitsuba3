@@ -28,7 +28,7 @@ size_t ArgParser::Arg::count() const {
 int ArgParser::Arg::asInt() const {
     try {
         return std::stoi(m_value);
-    } catch (...) {
+    } catch (const std::logic_error &) {
         Throw("Argument \"%s\": value \"%s\" is not an integer!", m_prefixes[0], m_value);
     }
 }
@@ -36,7 +36,7 @@ int ArgParser::Arg::asInt() const {
 Float ArgParser::Arg::asFloat() const {
     try {
         return (Float) std::stod(m_value);
-    } catch (...) {
+    } catch (const std::logic_error &) {
         Throw("Argument \"%s\": value \"%s\" is not a floating point value!", m_prefixes[0], m_value);
     }
 }

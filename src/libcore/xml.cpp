@@ -113,7 +113,7 @@ static std::string fileOffset(const fs::path &filename, ptrdiff_t pos) {
 struct XMLSource {
     std::string id;
     const pugi::xml_document &doc;
-    const std::function<std::string(ptrdiff_t)> &offset;
+    std::function<std::string(ptrdiff_t)> offset;
     size_t depth = 0;
 
     template <typename... Args>
@@ -126,9 +126,11 @@ struct XMLSource {
 
 struct XMLObject {
     Properties props;
-    ref<Object> object;
     const Class *class_ = nullptr;
+    std::string srcId;
+    std::function<std::string(ptrdiff_t)> offset;
     size_t location = 0;
+    ref<Object> object;
     tbb::spin_mutex mutex;
 };
 
@@ -282,9 +284,11 @@ parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     }
 
                     auto &inst = ctx.instances[id];
-                    inst.location = node.offset_debug();
                     inst.props = propsNested;
                     inst.class_ = it2->second;
+                    inst.offset = src.offset;
+                    inst.srcId = src.id;
+                    inst.location = node.offset_debug();
                     return std::make_pair(name, id);
                 }
                 break;
@@ -323,7 +327,8 @@ parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             result.description());
 
                     try {
-                        return parseXML(nestedSrc, ctx, *doc.begin(), parentTag, props, argCounter);
+                        return parseXML(nestedSrc, ctx, *doc.begin(), parentTag,
+                                        props, argCounter);
                     } catch (const std::exception &e) {
                         src.throwError(node, "%s", e.what());
                     }
@@ -470,7 +475,7 @@ parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
     return std::make_pair("", "");
 }
 
-static ref<Object> instantiateNode(XMLSource &src, XMLParseContext &ctx, std::string id) {
+static ref<Object> instantiateNode(XMLParseContext &ctx, std::string id) {
     auto it = ctx.instances.find(id);
     if (it == ctx.instances.end())
         Throw("reference to unknown object \"%s\"!", id);
@@ -493,12 +498,12 @@ static ref<Object> instantiateNode(XMLSource &src, XMLParseContext &ctx, std::st
             for (uint32_t i = range.begin(); i != range.end(); ++i) {
                 auto &kv = namedReferences[i];
                 try {
-                    ref<Object> obj = instantiateNode(src, ctx, kv.second);
+                    ref<Object> obj = instantiateNode(ctx, kv.second);
                     props.setObject(kv.first, obj, false);
                 } catch (const std::exception &e) {
                     if (strstr(e.what(), "Error while loading") == nullptr)
                         Throw("Error while loading \"%s\" (near %s): %s",
-                            src.id, src.offset(inst.location), e.what());
+                              inst.srcId, inst.offset(inst.location), e.what());
                     else
                         throw;
                 }
@@ -508,13 +513,34 @@ static ref<Object> instantiateNode(XMLSource &src, XMLParseContext &ctx, std::st
 
     try {
         inst.object = PluginManager::instance()->createObject(inst.class_, props);
-        return inst.object;
     } catch (const std::exception &e) {
         Throw("Error while loading \"%s\" (near %s): could not instantiate "
-              "\"%s\" plugin \"%s\": %s", src.id, src.offset(inst.location),
+              "%s plugin of type \"%s\": %s", inst.srcId, inst.offset(inst.location),
               string::toLower(inst.class_->name()), props.pluginName(),
               e.what());
     }
+
+    auto unqueried = props.unqueried();
+    if (!unqueried.empty()) {
+        for (auto &v : unqueried) {
+            if (props.propertyType(v) == Properties::EObject) {
+                const auto &obj = props.object(v);
+                Throw("Error while loading \"%s\" (near %s): unreferenced "
+                      "object %s (within %s of type \"%s\")",
+                      inst.srcId, inst.offset(inst.location),
+                      obj, string::toLower(inst.class_->name()),
+                      inst.props.pluginName());
+            } else {
+                v = "\"" + v + "\"";
+            }
+        }
+        Throw("Error while loading \"%s\" (near %s): unreferenced %s "
+              "%s in %s plugin of type \"%s\"",
+              inst.srcId, inst.offset(inst.location),
+              unqueried.size() > 1 ? "properties" : "property", unqueried,
+              string::toLower(inst.class_->name()), props.pluginName());
+    }
+    return inst.object;
 }
 
 NAMESPACE_END(detail)
@@ -534,8 +560,9 @@ ref<Object> loadString(const std::string &string) {
 
     detail::XMLParseContext ctx;
     Properties prop; size_t argCounter; /* Unused */
-    auto sceneID = detail::parseXML(src, ctx, *doc.begin(), EInvalid, prop, argCounter).second;
-    return detail::instantiateNode(src, ctx, sceneID);
+    auto sceneID = detail::parseXML(src, ctx, *doc.begin(), EInvalid, prop,
+                                    argCounter).second;
+    return detail::instantiateNode(ctx, sceneID);
 }
 
 ref<Object> loadFile(const fs::path &filename) {
@@ -558,8 +585,9 @@ ref<Object> loadFile(const fs::path &filename) {
 
     detail::XMLParseContext ctx;
     Properties prop; size_t argCounter; /* Unused */
-    auto sceneID = parseXML(src, ctx, *doc.begin(), EInvalid, prop, argCounter).second;
-    return detail::instantiateNode(src, ctx, sceneID);
+    auto sceneID = detail::parseXML(src, ctx, *doc.begin(), EInvalid, prop,
+                                    argCounter).second;
+    return detail::instantiateNode(ctx, sceneID);
 }
 
 NAMESPACE_END(xml)

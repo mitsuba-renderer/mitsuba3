@@ -24,8 +24,23 @@ struct Entry {
     bool queried;
 };
 
+struct SortKey {
+    bool operator()(std::string a, std::string b) const {
+        size_t i = 0;
+        while (i < a.size() && i < b.size() && a[i] == b[i])
+            ++i;
+        a = a.substr(i);
+        b = b.substr(i);
+        try {
+            return std::stoi(a) < std::stoi(b);
+        } catch (const std::logic_error &) {
+            return a < b;
+        }
+    }
+};
+
 struct Properties::PropertiesPrivate {
-    std::map<std::string, Entry> entries;
+    std::map<std::string, Entry, SortKey> entries;
     std::string id, pluginName;
 };
 
@@ -181,12 +196,27 @@ std::vector<std::string> Properties::propertyNames() const {
 
 std::vector<std::pair<std::string, NamedReference>> Properties::namedReferences() const {
     std::vector<std::pair<std::string, NamedReference>> result;
+    result.reserve(d->entries.size());
     for (auto &e : d->entries) {
         auto type = e.second.data.visit(PropertyTypeVisitor());
         if (type != ENamedReference)
             continue;
         auto const &value = (const NamedReference &) e.second.data;
         result.push_back(std::make_pair(e.first, value));
+        e.second.queried = true;
+    }
+    return result;
+}
+
+std::vector<std::pair<std::string, ref<Object>>> Properties::objects() const {
+    std::vector<std::pair<std::string, ref<Object>>> result;
+    result.reserve(d->entries.size());
+    for (auto &e : d->entries) {
+        auto type = e.second.data.visit(PropertyTypeVisitor());
+        if (type != EObject)
+            continue;
+        result.push_back(std::make_pair(e.first, (const ref<Object> &) e.second));
+        e.second.queried = true;
     }
     return result;
 }
