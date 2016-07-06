@@ -85,7 +85,7 @@ public:
         double default_;
 
         /// Return a hash code associated with this \c Field
-        friend size_t hash(const Field &f);
+        friend MTS_EXPORT_CORE size_t hash(const Field &f);
 
         /// Equality operator
         bool operator==(const Field &f) const {
@@ -173,7 +173,7 @@ public:
     std::vector<Field>::const_iterator end() const { return m_fields.cend(); }
 
     /// Return a hash code associated with this \c Struct
-    friend size_t hash(const Struct &s);
+    friend MTS_EXPORT_CORE size_t hash(const Struct &s);
 
     /// Equality operator
     bool operator==(const Struct &s) const {
