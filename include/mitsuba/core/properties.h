@@ -43,7 +43,7 @@ public:
 		/// Floating point value
 		EFloat,
 		/// 3D point
-		EPoint,
+		EPoint3f,
 		/// 3D vector
 		EVector3f,
 		/// 4x4 transform for homogeneous coordinates
@@ -191,12 +191,19 @@ public:  // Type-specific getters and setters ----------------------------------
     /// Retrieve a named reference value (use default value if no entry exists)
     const NamedReference& namedReference(const std::string &name, const NamedReference &defVal) const;
 
-    /// Store a vector in the Properties instance
+    /// Store a 3D vector in the Properties instance
     void setVector3f(const std::string &name, const Vector3f &value, bool warnDuplicates = true);
-    /// Retrieve a vector
+    /// Retrieve a 3D vector
     const Vector3f& vector3f(const std::string &name) const;
-    /// Retrieve a vector (use default value if no entry exists)
+    /// Retrieve a 3D vector (use default value if no entry exists)
     const Vector3f& vector3f(const std::string &name, const Vector3f &defVal) const;
+
+    /// Store a 3D point in the Properties instance
+    void setPoint3f(const std::string &name, const Point3f &value, bool warnDuplicates = true);
+    /// Retrieve a 3D point
+    const Point3f& point3f(const std::string &name) const;
+    /// Retrieve a 3D point (use default value if no entry exists)
+    const Point3f& point3f(const std::string &name, const Point3f &defVal) const;
 
     /// Store an arbitrary object in the Properties instance
     void setObject(const std::string &name, const ref<Object> &value, bool warnDuplicates = true);

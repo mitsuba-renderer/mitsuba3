@@ -9,6 +9,7 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/vector.h>
 #include <pugixml.hpp>
 #include <tbb/tbb.h>
 
@@ -116,8 +117,9 @@ struct XMLSource {
     size_t depth = 0;
 
     template <typename... Args>
+    [[noreturn]]
     void throwError(const pugi::xml_node &n, const std::string &msg_, Args&&... args) {
-        std::string msg = "Error while loading \"%s\" (at %s): " + msg_ + "!";
+        std::string msg = "Error while loading \"%s\" (at %s): " + msg_;
         Throw(msg.c_str(), id, offset(n.offset_debug()), args...);
     }
 };
@@ -147,6 +149,37 @@ static void checkAttributes(XMLSource &src, const pugi::xml_node &node, std::set
     }
     if (!attrs.empty())
         src.throwError(node, "missing attribute \"%s\" in \"%s\"", *attrs.begin(), node.name());
+}
+
+/// Helper function to split the 'value' attribute into X/Y/Z components
+void expandValueToXYZ(XMLSource &src, pugi::xml_node &node) {
+    if (node.attribute("value")) {
+        auto list = string::tokenize(node.attribute("value").value());
+        if (list.size() != 3)
+            src.throwError(node, "\"value\" attribute must have exactly 3 elements.");
+        else if (node.attribute("x") || node.attribute("y") || node.attribute("z"))
+            src.throwError(node, "Can't mix and match \"value\" and \"x\"/\"y\"/\"z\" attributes");
+        node.append_attribute("x") = list[0].c_str();
+        node.append_attribute("y") = list[1].c_str();
+        node.append_attribute("z") = list[2].c_str();
+        node.remove_attribute("value");
+    }
+}
+
+Vector3f parseVector(XMLSource &src, pugi::xml_node &node) {
+    std::string value;
+    try {
+        Float x = 0.f, y = 0.f, z = 0.f;
+        value = node.attribute("x").value();
+        if (!value.empty()) x = Float(std::stod(value));
+        value = node.attribute("y").value();
+        if (!value.empty()) y = Float(std::stod(value));
+        value = node.attribute("z").value();
+        if (!value.empty()) z = Float(std::stod(value));
+        return Vector3f(x, y, z);
+    } catch (const std::logic_error &) {
+        src.throwError(node, "Could not parse floating point value \"%s\"", value);
+    }
 }
 
 static std::pair<std::string, std::string>
@@ -305,31 +338,55 @@ parseXML(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
             case EFloat: {
                     checkAttributes(src, node, { "name", "value" });
-                    props.setFloat(node.attribute("name").value(), std::stof(node.attribute("value").value()));
+                    std::string value = node.attribute("value").value();
+                    try {
+                        props.setFloat(node.attribute("name").value(), Float(std::stod(value)));
+                    } catch (const std::logic_error &) {
+                        src.throwError(node, "Could not parse floating point value \"%s\"", value);
+                    }
                 }
                 break;
 
             case EInteger: {
                     checkAttributes(src, node, { "name", "value" });
-                    props.setInt(node.attribute("name").value(), std::stoi(node.attribute("value").value()));
+                    std::string value = node.attribute("value").value();
+                    try {
+                        props.setInt(node.attribute("name").value(), int64_t(std::stoll(value)));
+                    } catch (const std::logic_error &) {
+                        src.throwError(node, "Could not parse integer value \"%s\"", value);
+                    }
                 }
                 break;
 
             case EBoolean: {
                     checkAttributes(src, node, { "name", "value" });
-                    //props.setBool(node.attribute("name").value(), toBool(node.attribute("value").value()));
-                }
-                break;
-
-            case EPoint: {
-                    checkAttributes(src, node, { "name", "value" });
-                    //props.setPoint(node.attribute("name").value(), Point3f(toVector3f(node.attribute("value").value())));
+                    std::string value = string::toLower(node.attribute("value").value());
+                    bool result = false;
+                    if (value == "true")
+                        result = true;
+                    else if (value == "false")
+                        result = false;
+                    else
+                        src.throwError(node, "Could not parse boolean value "
+                                             "\"%s\" -- must be \"true\" or "
+                                             "\"false\"", value);
+                    props.setBool(node.attribute("name").value(), result);
                 }
                 break;
 
             case EVector: {
-                    checkAttributes(src, node, { "name", "value" });
-                    //props.setVector(node.attribute("name").value(), Vector3f(toVector3f(node.attribute("value").value())));
+                    detail::expandValueToXYZ(src, node);
+                    checkAttributes(src, node, { "name", "x", "y", "z" });
+                    props.setVector3f(node.attribute("name").value(),
+                                      detail::parseVector(src, node));
+                }
+                break;
+
+            case EPoint: {
+                    detail::expandValueToXYZ(src, node);
+                    checkAttributes(src, node, { "name", "x", "y", "z" });
+                    props.setPoint3f(node.attribute("name").value(),
+                                     detail::parseVector(src, node));
                 }
                 break;
 

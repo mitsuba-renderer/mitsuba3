@@ -51,6 +51,8 @@ MTS_PY_EXPORT(Properties) {
                 return py::cast(p.string(key));
             else if (type == Properties::EVector3f)
                 return py::cast(p.vector3f(key));
+            else if (type == Properties::EPoint3f)
+                return py::cast(p.point3f(key));
             else if (type == Properties::EObject)
                 return py::cast(p.object(key));
             else {
