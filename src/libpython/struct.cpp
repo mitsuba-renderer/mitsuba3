@@ -21,6 +21,7 @@ MTS_PY_EXPORT(Struct) {
     py::enum_<Struct::EByteOrder>(c, "EByteOrder")
         .value("ELittleEndian",  Struct::EByteOrder::ELittleEndian)
         .value("EBigEndian",  Struct::EByteOrder::EBigEndian)
+        .value("EHostByteOrder",  Struct::EByteOrder::EHostByteOrder)
         .export_values();
 
     py::enum_<Struct::EFlags>(c, "EFlags")
@@ -31,7 +32,7 @@ MTS_PY_EXPORT(Struct) {
         .export_values();
 
     c.def(py::init<bool, Struct::EByteOrder>(), py::arg("pack") = false,
-             py::arg("byteOrder") = Struct::EByteOrder::ELittleEndian,
+             py::arg("byteOrder") = Struct::EByteOrder::EHostByteOrder,
              DM(Struct, Struct))
         .def("append", (Struct &(Struct::*)(const std::string&, Struct::EType, uint32_t, double)) &Struct::append,
              py::arg("name"), py::arg("type"), py::arg("flags") = 0, py::arg("default") = 0.0,

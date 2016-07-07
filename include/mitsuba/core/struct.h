@@ -33,7 +33,8 @@ public:
     /// Byte order of the fields in the \c Struct
     enum EByteOrder {
         ELittleEndian,
-        EBigEndian
+        EBigEndian,
+        EHostByteOrder
     };
 
     /// Field-specific flags
@@ -124,7 +125,7 @@ public:
     };
 
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
-    Struct(bool pack = false, EByteOrder byteOrder = ELittleEndian);
+    Struct(bool pack = false, EByteOrder byteOrder = EHostByteOrder);
 
     /// Append a new field to the \c Struct; determines size and offset automatically
     Struct &append(const std::string &name, EType type, uint32_t flags = 0,

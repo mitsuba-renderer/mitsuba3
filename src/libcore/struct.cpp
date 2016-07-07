@@ -1,17 +1,20 @@
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
-#include <mitsuba/core/jit.h>
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/hash.h>
+#include <mitsuba/core/jit.h>
 #include <simdfloat/static.h>
-#include <ostream>
 #include <unordered_map>
+#include <ostream>
 
 NAMESPACE_BEGIN(mitsuba)
 
 Struct::Struct(bool pack, EByteOrder byteOrder)
-    : m_pack(pack), m_byteOrder(byteOrder) { }
+    : m_pack(pack), m_byteOrder(byteOrder) {
+    if (m_byteOrder == EHostByteOrder)
+        m_byteOrder = hostByteOrder();
+}
 
 size_t Struct::size() const {
     if (m_fields.empty())
