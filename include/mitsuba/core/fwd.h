@@ -9,18 +9,27 @@ class Object;
 class Class;
 template <typename> class ref;
 
+class AnnotatedStraem;
 class Appender;
+class ArgParser;
 class DefaultFormatter;
+class DummyStream;
 class FileResolver;
-class FileResolver;
+class FileStream;
 class Formatter;
 class Logger;
+class MemoryStream;
 class Mutex;
+class PluginManager;
 class Properties;
 class Stream;
 class StreamAppender;
+class Struct;
+class StructConverter;
 class Thread;
 class ThreadLocalBase;
+class ThreadLocalBase;
+class ZStream;
 enum ELogLevel : int;
 
 template <typename, typename> class ThreadLocal;
