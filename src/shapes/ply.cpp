@@ -36,7 +36,7 @@ public:
             Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
         };
 
-		Log(EInfo, "Loading geometry from \"%s\" ..", m_name);
+		Log(EInfo, "Loading mesh from \"%s\" ..", m_name);
 		if (!fs::exists(filePath))
 		    fail("file not found");
 
@@ -168,7 +168,7 @@ public:
         if (stream->tell() != stream->size())
             fail("invalid file -- trailing content");
 
-        Log(EInfo, "\"%s\": Loaded %i triangles, %i vertices (%s in %s)",
+        Log(EInfo, "\"%s\": read %i faces, %i vertices (%s in %s)",
             m_name,
             m_faceCount,
             m_vertexCount,
@@ -176,9 +176,6 @@ public:
                             m_vertexCount * m_vertexStruct->size()),
             util::timeString(timer.value())
         );
-
-        ref<FileStream> fs2 = new FileStream("out.ply", true);
-        write(fs2);
     }
 
     std::string typeName(const Struct::EType type) const {
@@ -199,6 +196,16 @@ public:
     }
 
     void write(Stream *stream) const override {
+        std::string streamName = "<stream>";
+        {
+            auto fs = dynamic_cast<FileStream *>(stream);
+            if (fs)
+                streamName = fs->path().filename();
+        }
+
+        Log(EInfo, "Writing mesh to \"%s\" ..", streamName);
+
+        Timer timer;
         stream->writeLine("ply");
         if (Struct::hostByteOrder() == Struct::EBigEndian)
             stream->writeLine("format binary_big_endian 1.0");
@@ -248,6 +255,15 @@ public:
                 faceStructOut->size() * m_faceCount
             );
         }
+
+        Log(EInfo, "\"%s\": wrote %i faces, %i vertices (%s in %s)",
+            m_name,
+            m_faceCount,
+            m_vertexCount,
+            util::memString(m_faceCount * m_faceStruct->size() +
+                            m_vertexCount * m_vertexStruct->size()),
+            util::timeString(timer.value())
+        );
     }
 
 private:
