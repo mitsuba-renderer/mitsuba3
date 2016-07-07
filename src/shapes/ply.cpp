@@ -150,6 +150,7 @@ public:
                     stream->read(buf.get(), iPacketSize);
                     if (unlikely(!conv->convert(nAtOnce, buf.get(), target)))
                         fail("incompatible contents -- is this a triangle mesh?");
+
                     target += oPacketSize;
                 }
 
@@ -175,8 +176,81 @@ public:
                             m_vertexCount * m_vertexStruct->size()),
             util::timeString(timer.value())
         );
+
+        ref<FileStream> fs2 = new FileStream("out.ply", true);
+        write(fs2);
     }
 
+    std::string typeName(const Struct::EType type) const {
+        switch (type) {
+            case Struct::EInt8:    return "char";
+            case Struct::EUInt8:   return "uchar";
+            case Struct::EInt16:   return "short";
+            case Struct::EUInt16:  return "ushort";
+            case Struct::EInt32:   return "int";
+            case Struct::EUInt32:  return "uint";
+            case Struct::EInt64:   return "long";
+            case Struct::EUInt64:  return "ulong";
+            case Struct::EFloat16: return "half";
+            case Struct::EFloat32: return "float";
+            case Struct::EFloat64: return "double";
+            default: Throw("internal error");
+        }
+    }
+
+    void write(Stream *stream) const override {
+        stream->writeLine("ply");
+        if (Struct::hostByteOrder() == Struct::EBigEndian)
+            stream->writeLine("format binary_big_endian 1.0");
+        else
+            stream->writeLine("format binary_little_endian 1.0");
+
+        if (m_vertexStruct->fieldCount() > 0) {
+            stream->writeLine(tfm::format("element vertex %i", m_vertexCount));
+            for (auto const &f : *m_vertexStruct)
+                stream->writeLine(
+                    tfm::format("property %s %s", typeName(f.type), f.name));
+        }
+
+        if (m_faceStruct->fieldCount() > 0) {
+            stream->writeLine(tfm::format("element face %i", m_faceCount));
+            stream->writeLine(tfm::format("property list uchar %s vertex_indices",
+                typeName((*m_faceStruct)[0].type)));
+        }
+
+        stream->writeLine("end_header");
+
+        if (m_vertexStruct->fieldCount() > 0) {
+            stream->write(
+                m_vertices.get(),
+                m_vertexStruct->size() * m_vertexCount
+            );
+        }
+
+        if (m_faceStruct->fieldCount() > 0) {
+            ref<Struct> faceStructOut = new Struct(true);
+
+            faceStructOut->append("__size", Struct::EUInt8, Struct::EDefault, 3.0);
+            for (auto f: *m_faceStruct)
+                faceStructOut->append(f.name, f.type);
+
+            ref<StructConverter> conv =
+                new StructConverter(m_faceStruct, faceStructOut);
+
+            FaceHolder temp((IndexType *) Allocator::alloc(
+                faceStructOut->size() * m_faceCount));
+
+            if (!conv->convert(m_faceCount, m_faces.get(), temp.get()))
+                Throw("PLYMesh::write(): internal error during conversion");
+
+            stream->write(
+                temp.get(),
+                faceStructOut->size() * m_faceCount
+            );
+        }
+    }
+
+private:
     PLYHeader parsePLYHeader(Stream *stream) {
         Struct::EByteOrder byteOrder = Struct::hostByteOrder();
         bool plySpecifierProcessed = false;

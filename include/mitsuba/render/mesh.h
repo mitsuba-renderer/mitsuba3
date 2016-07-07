@@ -16,6 +16,24 @@ public:
     using FaceHolder   = std::unique_ptr<IndexType[], Allocator>;
     using VertexHolder = std::unique_ptr<VertexType[], Allocator>;
 
+    /// Return an axis aligned box that bounds the (transformed) shape geometry
+    BoundingBox3f bbox() const override;
+
+    /// Return a pointer to the raw vertex buffer
+    const VertexType *vertices() const { return m_vertices.get(); }
+
+    /// Return a \c Struct instance describing the contents of the vertex buffer
+    const Struct *vertexStruct() const { return m_vertexStruct.get(); }
+
+    /// Return a pointer to the raw vertex buffer
+    const IndexType *faces() const { return m_faces.get(); }
+
+    /// Return a \c Struct instance describing the contents of the face buffer
+    const Struct *faceStruct() const { return m_faceStruct.get(); }
+
+    /// Export mesh using the file format implemented by the subclass
+    virtual void write(Stream *stream) const = 0;
+
     MTS_DECLARE_CLASS()
 
 protected:
