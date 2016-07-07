@@ -15,6 +15,7 @@ add_library(mitsuba-render SHARED
   shape.cpp        ${INC_DIR}/shape.h
   mesh.cpp         ${INC_DIR}/mesh.h
   scene.cpp        ${INC_DIR}/scene.h
+  kdtree.cpp       ${INC_DIR}/kdtree.h
 )
 
 # Link to Intel's Thread Building Blocks

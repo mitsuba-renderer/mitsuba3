@@ -13,6 +13,8 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     virtual ~Scene();
+
+    ref<ShapeKDTree> m_kdtree;
 };
 
 NAMESPACE_END(mitsuba)
