@@ -280,8 +280,14 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
             bool sourceSigned = sf.isSigned();
             bool sourceSwap = source->byteOrder() == Struct::EBigEndian;
 
-            uint32_t op = sourceSigned ? kX86InstIdMovsx :
-                (sf.size < 4 ? kX86InstIdMovzx : kX86InstIdMov);
+            uint32_t op;
+            if (sourceSigned) {
+                op = sf.size < 4 ? kX86InstIdMovsx : kX86InstIdMovsxd;
+            } else {
+                op = sf.size < 4 ? kX86InstIdMovzx : kX86InstIdMov;
+            }
+            if (sf.size == 8)
+                op = kX86InstIdMov;
 
             switch (sf.type) {
                 case Struct::EUInt8:
