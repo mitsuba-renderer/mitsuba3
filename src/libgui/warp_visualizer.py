@@ -45,8 +45,6 @@ class WarpVisualizer(WarpVisualizationWidget):
                 f = lambda s: self.f(s, **args)
                 pdf = lambda v: self.pdf(v, **args)
 
-                print("Making adapter with args: ", args)
-
                 return self.adapter(self.name, f, pdf, [])
 
         class IdentityWarpFactory:
@@ -228,7 +226,6 @@ class WarpVisualizer(WarpVisualizationWidget):
             box = TextBox(panel)
             box.setFixedSize(Vector2i(80, 25))
 
-            print("Created slider to go with name", arg.name)
             self.parameterSliders[arg.name] = (slider, box)
 
         self.performLayout()
@@ -273,8 +270,6 @@ class WarpVisualizer(WarpVisualizationWidget):
                 arg = self.warps[warpType].arguments[i]
                 # Actual value needs to be mapped on the range
                 value = arg.map(self.parameterSliders[arg.name][0].value())
-                print(arg.name)
-                print(value)
                 args[arg.name] = value
 
             self.setWarpAdapter(self.makeAdapter(warpType, args))

@@ -2537,9 +2537,9 @@ static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical 
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -2889,45 +2889,6 @@ static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setSamplingType = 
 
 static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setWarpAdapter = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_detail_computeHistogram =
-R"doc(Computes the discretized histogram of \p positions using simple
-binning. The domain of the histogram automatically matches the domain
-of the specified warping type.
-
-Returns:
-    Linearized values of the histogram, stored row after row (\p
-    gridWidth * \gridHeight entries).)doc";
-
-static const char *__doc_mitsuba_warp_detail_domainToPoint = R"doc(TODO)doc";
-
-static const char *__doc_mitsuba_warp_detail_generateExpectedHistogram =
-R"doc(Generates the histogram that would be expected for the given warping
-type. It is computed by integrating the warp's PDF over each bin of
-the histogram. The domain of the histogram automatically matches the
-domain of the specified warping type.
-
-Returns:
-    Linearized values of the expected histogram, stored row after row
-    (\p gridWidth * \gridHeight entries).)doc";
-
-static const char *__doc_mitsuba_warp_detail_generatePoints =
-R"doc(Generates warped points using the specified sampling strategy and
-warping types. The points are output as columns in \p positions and
-the associated weight is stored in \p weights.
-
-\warning The point count may change depending on the sample strategy,
-the effective point count is the length of positions after the
-function has returned.)doc";
-
-static const char *__doc_mitsuba_warp_detail_getPdfScalingFactor =
-R"doc(Returns the PDF scaling factor to be applied to the PDF values when
-accumulating values into a 2D histogram. This is only dependent on the
-number of dimensions of the target domain of the warping function.)doc";
-
-static const char *__doc_mitsuba_warp_detail_isTwoDimensionalWarp = R"doc(Returns true if the warping operates in the 2D plane)doc";
-
-static const char *__doc_mitsuba_warp_detail_pdfValueForSample = R"doc(Returns the PDF value assotiated to a sampled point.)doc";
-
 static const char *__doc_mitsuba_warp_detail_runStatisticalTest =
 R"doc(For a given warping type, parameter value and sampling strategy, runs
 a Chi^2 statistical test to check that the warping function matches
@@ -2945,10 +2906,6 @@ computed for the test.
 
 Returns:
     (Whether the test succeeded, an explanatory text).)doc";
-
-static const char *__doc_mitsuba_warp_detail_warpPoint =
-R"doc(Warps a 2D sample according to the given warp type. The parameter
-value is passed to the warping function if it uses one.)doc";
 
 static const char *__doc_mitsuba_warp_intervalToNonuniformTent =
 R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
