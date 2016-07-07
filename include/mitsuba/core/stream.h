@@ -149,6 +149,9 @@ public:
     /// Convenience function for reading a line of text from an ASCII file
     virtual std::string readLine();
 
+    /// Convenience function for writing a line of text to an ASCII file
+    void writeLine(const std::string &text);
+
     /// @}
     // =========================================================================
 

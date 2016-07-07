@@ -53,6 +53,11 @@ std::ostream &operator<<(std::ostream &os, const Stream::EByteOrder &value) {
     return os;
 }
 
+void Stream::writeLine(const std::string &text) {
+    write(text.data(), text.length());
+    write('\n');
+}
+
 std::string Stream::readLine() {
 	std::string result;
 	result.reserve(80);
