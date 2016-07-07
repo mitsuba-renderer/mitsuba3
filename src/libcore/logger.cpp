@@ -147,14 +147,18 @@ void Throw(ELogLevel level, const Class *theClass, const char *file,
     formatter.setHasLogLevel(false);
     formatter.setHasThread(false);
 
+    /* Tag beginning of exception text with UTF8 zero width space */
+    const std::string zeroWidthSpace = "\xe2\x80\x8b";
+
+    /* Separate nested exceptions by a newline */
     std::string msg = msg_;
-    auto it = msg.find("[");
+    auto it = msg.find(zeroWidthSpace);
     if (it != std::string::npos)
         msg = msg.substr(0, it) + "\n  " + msg.substr(it);
 
     std::string text =
         formatter.format(level, theClass, Thread::thread(), file, line, msg);
-    throw std::runtime_error(text);
+    throw std::runtime_error(zeroWidthSpace + text);
 }
 
 NAMESPACE_END(detail)
