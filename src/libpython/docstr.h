@@ -928,7 +928,17 @@ of the memory buffer is extended if necessary.)doc";
 
 static const char *__doc_mitsuba_Mesh = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_bbox =
+R"doc(Return an axis aligned box that bounds the (transformed) shape
+geometry)doc";
+
 static const char *__doc_mitsuba_Mesh_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_faceStruct =
+R"doc(Return a ``Struct`` instance describing the contents of the face
+buffer)doc";
+
+static const char *__doc_mitsuba_Mesh_faces = R"doc(Return a pointer to the raw vertex buffer)doc";
 
 static const char *__doc_mitsuba_Mesh_m_bbox = R"doc()doc";
 
@@ -945,6 +955,14 @@ static const char *__doc_mitsuba_Mesh_m_vertexCount = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_vertexStruct = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_vertexStruct =
+R"doc(Return a ``Struct`` instance describing the contents of the vertex
+buffer)doc";
+
+static const char *__doc_mitsuba_Mesh_vertices = R"doc(Return a pointer to the raw vertex buffer)doc";
+
+static const char *__doc_mitsuba_Mesh_write = R"doc(Export mesh using the file format implemented by the subclass)doc";
 
 static const char *__doc_mitsuba_NamedReference = R"doc(Wrapper object used to represent named references to Object instances)doc";
 
@@ -1092,7 +1110,7 @@ static const char *__doc_mitsuba_Properties_EPropertyType_ENamedReference = R"do
 
 static const char *__doc_mitsuba_Properties_EPropertyType_EObject = R"doc(Arbitrary object)doc";
 
-static const char *__doc_mitsuba_Properties_EPropertyType_EPoint = R"doc(3D point)doc";
+static const char *__doc_mitsuba_Properties_EPropertyType_EPoint3f = R"doc(3D point)doc";
 
 static const char *__doc_mitsuba_Properties_EPropertyType_ESpectrum = R"doc(Discretized color spectrum)doc";
 
@@ -1143,9 +1161,10 @@ Returns:
     ``True`` upon success)doc";
 
 static const char *__doc_mitsuba_Properties_merge =
-R"doc(Merge another properties record into the current one. Existing
-properties will be overwritten with the values from ``props`` if they
-have the same name.)doc";
+R"doc(Merge another properties record into the current one.
+
+Existing properties will be overwritten with the values from ``props``
+if they have the same name.)doc";
 
 static const char *__doc_mitsuba_Properties_namedReference = R"doc(Retrieve a named reference value)doc";
 
@@ -1159,6 +1178,10 @@ static const char *__doc_mitsuba_Properties_object = R"doc(Retrieve an arbitrary
 
 static const char *__doc_mitsuba_Properties_object_2 = R"doc(Retrieve an arbitrary object (use default value if no entry exists))doc";
 
+static const char *__doc_mitsuba_Properties_objects =
+R"doc(Return an array containing names and references for all stored objects
+and)doc";
+
 static const char *__doc_mitsuba_Properties_operator_assign = R"doc(Assignment operator)doc";
 
 static const char *__doc_mitsuba_Properties_operator_eq = R"doc(Equality comparison operator)doc";
@@ -1166,6 +1189,10 @@ static const char *__doc_mitsuba_Properties_operator_eq = R"doc(Equality compari
 static const char *__doc_mitsuba_Properties_operator_ne = R"doc(Inequality comparison operator)doc";
 
 static const char *__doc_mitsuba_Properties_pluginName = R"doc(Get the associated plugin name)doc";
+
+static const char *__doc_mitsuba_Properties_point3f = R"doc(Retrieve a 3D point)doc";
+
+static const char *__doc_mitsuba_Properties_point3f_2 = R"doc(Retrieve a 3D point (use default value if no entry exists))doc";
 
 static const char *__doc_mitsuba_Properties_propertyNames = R"doc(Return an array containing the names of all stored properties)doc";
 
@@ -1195,9 +1222,11 @@ static const char *__doc_mitsuba_Properties_setObject = R"doc(Store an arbitrary
 
 static const char *__doc_mitsuba_Properties_setPluginName = R"doc(Set the associated plugin name)doc";
 
+static const char *__doc_mitsuba_Properties_setPoint3f = R"doc(Store a 3D point in the Properties instance)doc";
+
 static const char *__doc_mitsuba_Properties_setString = R"doc(Store a string in the Properties instance)doc";
 
-static const char *__doc_mitsuba_Properties_setVector3f = R"doc(Store a vector in the Properties instance)doc";
+static const char *__doc_mitsuba_Properties_setVector3f = R"doc(Store a 3D vector in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_string = R"doc(Retrieve a string value)doc";
 
@@ -1205,9 +1234,9 @@ static const char *__doc_mitsuba_Properties_string_2 = R"doc(Retrieve a string v
 
 static const char *__doc_mitsuba_Properties_unqueried = R"doc(Return the list of un-queried attributed)doc";
 
-static const char *__doc_mitsuba_Properties_vector3f = R"doc(Retrieve a vector)doc";
+static const char *__doc_mitsuba_Properties_vector3f = R"doc(Retrieve a 3D vector)doc";
 
-static const char *__doc_mitsuba_Properties_vector3f_2 = R"doc(Retrieve a vector (use default value if no entry exists))doc";
+static const char *__doc_mitsuba_Properties_vector3f_2 = R"doc(Retrieve a 3D vector (use default value if no entry exists))doc";
 
 static const char *__doc_mitsuba_Properties_wasQueried = R"doc(Check if a certain property was queried)doc";
 
@@ -1217,7 +1246,23 @@ static const char *__doc_mitsuba_Scene_Scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_class = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_m_kdtree = R"doc()doc";
+
 static const char *__doc_mitsuba_Shape = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_addShape = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_class = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_m_bbox = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_m_shapes = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_bbox =
+R"doc(Return an axis aligned box that bounds the (transformed) shape
+geometry)doc";
 
 static const char *__doc_mitsuba_Shape_class = R"doc()doc";
 
@@ -1366,6 +1411,8 @@ R"doc(Writes a specified amount of data into the stream. \note This does
 Throws an exception when not all data could be written.
 Implementations need to handle endianness swap when appropriate.)doc";
 
+static const char *__doc_mitsuba_Stream_writeLine = R"doc(Convenience function for writing a line of text to an ASCII file)doc";
+
 static const char *__doc_mitsuba_Stream_write_2 =
 R"doc(Reads one object of type T from the stream at the current position by
 delegating to the appropriate ``serialization_helper``.
@@ -1449,6 +1496,8 @@ static const char *__doc_mitsuba_StructConverter_toString = R"doc(Return a strin
 static const char *__doc_mitsuba_Struct_EByteOrder = R"doc(Byte order of the fields in the ``Struct``)doc";
 
 static const char *__doc_mitsuba_Struct_EByteOrder_EBigEndian = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_EByteOrder_EHostByteOrder = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_EByteOrder_ELittleEndian = R"doc()doc";
 
@@ -2644,19 +2693,7 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
-static const char *__doc_pcg32_8_inc = R"doc()doc";
-
 static const char *__doc_pcg32_8_nextDouble =
-R"doc(Generate eight double precision floating point value on the interval
-[0, 1)
-
-Remark:
-    Since the underlying random number generator produces 32 bit
-    output, only the first 32 mantissa bits will be filled (however,
-    the resolution is still finer than in nextFloat(), which only uses
-    23 mantissa bits))doc";
-
-static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2670,27 +2707,19 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
-static const char *__doc_pcg32_8_nextFloat_2 =
-R"doc(Generate eight single precision floating point value on the interval
-[0, 1))doc";
-
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
-
-static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
+
+static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
-
-static const char *__doc_pcg32_8_state = R"doc()doc";
-
-static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)
