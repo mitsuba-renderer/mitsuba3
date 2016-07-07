@@ -47,6 +47,9 @@ public:
     /// Return the "native" std::fstream associated with this FileStream
     std::fstream *native() { return m_file.get(); }
 
+    /// Return the path descriptor associated with this FileStream
+    const fs::path &path() const { return m_path; }
+
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // Most methods can be delegated directly to the underlying
@@ -82,9 +85,7 @@ public:
      * \note After a write, the size may not be updated
      * until a \ref flush is performed.
      */
-    virtual size_t size() const override {
-        return fs::file_size(m_path);
-    }
+    virtual size_t size() const override;
 
     /// Flushes any buffered operation to the underlying file.
     virtual void flush() override;

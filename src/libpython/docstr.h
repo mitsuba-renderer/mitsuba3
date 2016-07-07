@@ -586,6 +586,8 @@ static const char *__doc_mitsuba_FileStream_m_writeEnabled = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_native = R"doc(Return the "native" std::fstream associated with this FileStream)doc";
 
+static const char *__doc_mitsuba_FileStream_path = R"doc(Return the path descriptor associated with this FileStream)doc";
+
 static const char *__doc_mitsuba_FileStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
 when the stream ended prematurely.)doc";

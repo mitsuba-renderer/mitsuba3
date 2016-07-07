@@ -5,7 +5,6 @@
 #include <fstream>
 
 namespace fs = mitsuba::filesystem;
-using path = fs::path;
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -24,7 +23,7 @@ inline void openStream(std::fstream &f, const fs::path &p, bool writeEnabled, bo
 }
 }  // end anonymous namespace
 
-FileStream::FileStream(const path &p, bool writeEnabled)
+FileStream::FileStream(const fs::path &p, bool writeEnabled)
     : Stream(), m_path(p), m_file(new std::fstream), m_writeEnabled(writeEnabled) {
     const bool fileExists = fs::exists(p);
     if (!m_writeEnabled && !fileExists) {
@@ -149,6 +148,10 @@ size_t FileStream::tell() const {
 
 void FileStream::flush() {
     m_file->flush();
+}
+
+size_t FileStream::size() const {
+    return fs::file_size(m_path);
 }
 
 std::string FileStream::readLine() {

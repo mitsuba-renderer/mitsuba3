@@ -84,7 +84,8 @@ MTS_PY_EXPORT(DummyStream) {
 
 MTS_PY_EXPORT(FileStream) {
     MTS_PY_CLASS(FileStream, Stream)
-        .def(py::init<const mitsuba::filesystem::path &, bool>(), DM(FileStream, FileStream));
+        .def(py::init<const mitsuba::filesystem::path &, bool>(), DM(FileStream, FileStream))
+        .mdef(FileStream, path);
 }
 
 MTS_PY_EXPORT(MemoryStream) {
