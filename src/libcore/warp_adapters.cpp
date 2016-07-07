@@ -6,7 +6,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
 
 Point2f WarpAdapter::samplePoint(Sampler * sampler, SamplingType strategy,
-                                 float invSqrtVal) const {
+                                 float) const {
     switch (strategy) {
         case Independent:
             return Point2f(sampler->nextFloat(), sampler->nextFloat());
@@ -20,6 +20,7 @@ Point2f WarpAdapter::samplePoint(Sampler * sampler, SamplingType strategy,
 
         default:
             Log(EError, "Unsupported sampling strategy: %d", strategy);
+            return Point2f();
     }
 }
 

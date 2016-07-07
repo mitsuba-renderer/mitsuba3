@@ -2741,17 +2741,25 @@ static const char *__doc_mitsuba_warp_SamplingType_Stratified = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter = R"doc(TODO: doc, purpose, why we use this design)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_Argument = R"doc(Only supports Float type argument)doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_Argument_Argument = R"doc()doc";
 
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument_clamp = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument_defaultValue = R"doc(Range and default value for the parameter)doc";
+
 static const char *__doc_mitsuba_warp_WarpAdapter_Argument_description = R"doc(Human-readable description of the parameter)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_Argument_maxValue = R"doc(Range for the parameters)doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument_map = R"doc(Returns \p value (in [0..1]) mapped to this argument's range)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_Argument_minValue = R"doc(Range for the parameters)doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument_maxValue = R"doc(Range and default value for the parameter)doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument_minValue = R"doc(Range and default value for the parameter)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_Argument_name = R"doc(Formal name of the parameter)doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument_normalize = R"doc(Returns \p value (in [minValue..maxValue]), mapped to [0..1])doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_WarpAdapter = R"doc()doc";
 

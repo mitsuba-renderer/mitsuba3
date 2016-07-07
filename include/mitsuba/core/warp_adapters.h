@@ -19,18 +19,37 @@ NAMESPACE_BEGIN(warp)
 class MTS_EXPORT_CORE WarpAdapter {
 public:
 
-    /// Only supports Float type argument
+    // TODO: this could actually be Python-only
     struct Argument {
-        Argument(std::string name, Float minValue, Float maxValue, std::string description = "")
-            : name(name), minValue(minValue), maxValue(maxValue)
-            , description(description.length() <= 0 ? name : description) {}
+        Argument(const std::string &_name,
+                 Float _minValue = 0.0, Float _maxValue = 1.0,
+                 Float _defaultValue = 0.0,
+                 const std::string &_description = "")
+            : name(_name), minValue(_minValue), maxValue(_maxValue)
+            , description(_description.length() <= 0 ? _name : _description) {
+                defaultValue = clamp(_defaultValue);
+            }
 
         /// Formal name of the parameter
         std::string name;
-        /// Range for the parameters
-        Float minValue, maxValue;
+        /// Range and default value for the parameter
+        Float minValue, maxValue, defaultValue;
         /// Human-readable description of the parameter
         std::string description;
+
+        /// Returns \p value (in [0..1]) mapped to this argument's range
+        Float map(Float value) const {
+            return value * (maxValue - minValue) + minValue;
+        }
+
+        /// Returns \p value (in [minValue..maxValue]), mapped to [0..1]
+        Float normalize(Float value) const {
+            return  (value - minValue) / (maxValue - minValue);
+        }
+
+        Float clamp(Float value) const {
+            return std::min(maxValue, std::max(minValue, value));
+        }
     };
 
     // TODO: support construction with:

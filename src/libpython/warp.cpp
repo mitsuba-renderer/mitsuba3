@@ -96,12 +96,30 @@ MTS_PY_EXPORT(warp) {
         .export_values();
 
     using warp::WarpAdapter;
-    py::class_<WarpAdapter, ref<WarpAdapter>, PyWarpAdapter>(m2, "WarpAdapter",
-                                                             DM(warp, WarpAdapter))
-        .def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
-        .def("inputDimensionality", &WarpAdapter::inputDimensionality, DM(warp, WarpAdapter, inputDimensionality))
-        .def("domainDimensionality", &WarpAdapter::domainDimensionality, DM(warp, WarpAdapter, domainDimensionality))
-        .def("__repr__", &WarpAdapter::toString);
+    auto w = py::class_<WarpAdapter, ref<WarpAdapter>, PyWarpAdapter>(
+        m2, "WarpAdapter", DM(warp, WarpAdapter));
+    w.def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
+     .def("inputDimensionality", &WarpAdapter::inputDimensionality, DM(warp, WarpAdapter, inputDimensionality))
+     .def("domainDimensionality", &WarpAdapter::domainDimensionality, DM(warp, WarpAdapter, domainDimensionality))
+     .def("__repr__", &WarpAdapter::toString);
+
+    py::class_<WarpAdapter::Argument>(w, "Argument", DM(warp, WarpAdapter, Argument))
+        .def(py::init<const std::string &, Float, Float, Float, const std::string &>(),
+             py::arg("name"), py::arg("minValue") = 0.0, py::arg("maxValue") = 1.0,
+             py::arg("defaultValue") = 0.0, py::arg("description") = "",
+             "Represents one argument to a warping function")
+        .def("map", &WarpAdapter::Argument::map, DM(warp, WarpAdapter, Argument, map))
+        .def("normalize", &WarpAdapter::Argument::normalize, DM(warp, WarpAdapter, Argument, normalize))
+        .def_readonly("name", &WarpAdapter::Argument::name,
+                      DM(warp, WarpAdapter, Argument, name))
+        .def_readonly("minValue", &WarpAdapter::Argument::minValue,
+                      DM(warp, WarpAdapter, Argument, minValue))
+        .def_readonly("maxValue", &WarpAdapter::Argument::maxValue,
+                      DM(warp, WarpAdapter, Argument, maxValue))
+        .def_readonly("defaultValue", &WarpAdapter::Argument::defaultValue,
+                      DM(warp, WarpAdapter, Argument, defaultValue))
+        .def_readonly("description", &WarpAdapter::Argument::description,
+                      DM(warp, WarpAdapter, Argument, description));
 
     using warp::PlaneWarpAdapter;
     // TODO: build a trampoline if there are new virtual functions

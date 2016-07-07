@@ -4,7 +4,7 @@ import math
 import mitsuba
 from mitsuba import warp
 from mitsuba.warp import WarpType, SamplingType, \
-                         IdentityWarpAdapter, PlaneWarpAdapter
+                         WarpAdapter, IdentityWarpAdapter, PlaneWarpAdapter
 from mitsuba.warp import WarpVisualizationWidget
 
 import nanogui
@@ -41,14 +41,18 @@ class WarpVisualizer(WarpVisualizationWidget):
                 self.arguments = arguments
 
             def make(self, args):
+                args = dict()
                 f = lambda s: self.f(s, **args)
                 pdf = lambda v: self.pdf(v, **args)
 
-                return self.adapter(self.name, f, pdf, self.arguments)
+                print("Making adapter with args: ", args)
+
+                return self.adapter(self.name, f, pdf, [])
 
         class IdentityWarpFactory:
             def __init__(self):
                 self.name = "Identity"
+                self.arguments = []
 
             def make(self, args):
                 return IdentityWarpAdapter()
@@ -65,11 +69,13 @@ class WarpVisualizer(WarpVisualizationWidget):
         w[WarpType.UniformDiskConcentric] = WarpFactory(PlaneWarpAdapter,
             "Square to uniform disk concentric",
             warpWithUnitWeight(warp.squareToUniformDiskConcentric),
-            warp.squareToUniformDiskConcentricPdf)
+            warp.squareToUniformDiskConcentricPdf,
+            [WarpAdapter.Argument("dummy", 5.0, 10.0, 7.5, "Dummy parameter")])
 
         self.warps = w
 
         # Initialize UI elements
+        self.warpTypeChanged = True
         self.initializeGUI()
 
     def runTest(self):
@@ -126,31 +132,27 @@ class WarpVisualizer(WarpVisualizationWidget):
         samplingTypeBox.setCallback(lambda _: self.refresh())
 
         # Selection of warping method
+        def warpTypeCallback(_):
+            self.warpTypeChanged = True
+            self.refresh()
+
         _ = Label(window, "Warping method", "sans-bold")
         warpingNames = map(lambda w: w.name, self.warps.values())
         warpTypeBox = ComboBox(window, warpingNames)
-        warpTypeBox.setCallback(lambda _: self.refresh())
-
-        # ---------- Second panel
-        panel = Widget(window)
-        panel.setLayout(BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
-
-        # Parameter value of the warping function
-        parameterSlider = Slider(panel)
-        parameterSlider.setFixedWidth(55)
-        parameterSlider.setValue(WarpVisualizer.warpParameterDefaultValue)
-        parameterSlider.setCallback(lambda _: self.refresh())
-        # Companion text box
-        parameterBox = TextBox(panel)
-        parameterBox.setFixedSize(Vector2i(80, 25))
+        warpTypeBox.setCallback(warpTypeCallback)
 
         # Option to visualize the warped grid
         warpedGridCheckBox = CheckBox(window, "Visualize warped grid")
         warpedGridCheckBox.setCallback(lambda _: self.refresh())
 
-        _ = Label(window, "BSDF parameters", "sans-bold")
+        # ---------- Second panel
+        _ = Label(window, "Method parmeters", "sans-bold")
+
+        warpParametersPanel = Widget(window)
+        warpParametersPanel.setLayout(BoxLayout(Orientation.Vertical, Alignment.Middle, 0, 20))
 
         # ---------- Third panel
+        _ = Label(window, "BSDF parameters", "sans-bold")
         panel = Widget(window)
         panel.setLayout(BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
 
@@ -180,38 +182,69 @@ class WarpVisualizer(WarpVisualizationWidget):
                                   "An error occurred: " + str(e))
         testButton.setCallback(tryTest)
 
-        self.performLayout()
         # Keep references to the important UI elements
         self.window = window
         self.pointCountSlider = pointCountSlider
         self.pointCountBox = pointCountBox
         self.samplingTypeBox = samplingTypeBox
         self.warpTypeBox = warpTypeBox
-        self.parameterSlider = parameterSlider
-        self.parameterBox = parameterBox
         self.warpedGridCheckBox = warpedGridCheckBox
+        self.warpParametersPanel = warpParametersPanel
         self.angleSlider = angleSlider
         self.angleBox = angleBox
         self.brdfValuesCheckBox = brdfValuesCheckBox
         self.testButton = testButton
 
+        self.setupSlidersForWarpType(warp.NoWarp)
+
+        self.performLayout()
         self.refresh()
         self.drawAll()
         self.setVisible(True)
 
+    def setupSlidersForWarpType(self, warpType):
+        # Clear the previous sliders
+        while self.warpParametersPanel.childCount() > 0:
+            self.warpParametersPanel.removeChild(0)
+
+        self.parameterSliders = dict()
+
+        arguments = self.warps[warpType].arguments
+
+        for arg in arguments:
+            ppanel = Widget(self.warpParametersPanel)
+            ppanel.setLayout(BoxLayout(Orientation.Vertical, Alignment.Minimum, 0, 20))
+            _ = Label(ppanel, arg.description, "sans-bold")
+
+            panel = Widget(self.warpParametersPanel)
+            panel.setLayout(BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
+
+
+            slider = Slider(panel)
+            slider.setFixedWidth(55)
+            slider.setValue(arg.normalize(arg.defaultValue))
+            slider.setCallback(lambda e: self.refresh())
+            # Companion text box
+            box = TextBox(panel)
+            box.setFixedSize(Vector2i(80, 25))
+
+            print("Created slider to go with name", arg.name)
+            self.parameterSliders[arg.name] = (slider, box)
+
+        self.performLayout()
+        self.refresh()
+
     def refresh(self):
         samplingType = SamplingType(self.samplingTypeBox.selectedIndex())
         warpType = self.warps.keys()[self.warpTypeBox.selectedIndex()]
-        # TODO: many parameters packaged in a dict
-        parameterValue = self.parameterSlider.value()
-        angle = 180 * self.angleSlider.value() - 90
+        # angle = 180 * self.angleSlider.value() - 90
+        # self.angleBox.setValue("{:.1f}".format(angle))
 
         # Point count slider input is not linear
         pointCount = int(math.pow(2.0, 15.0 * self.pointCountSlider.value() + 5))
         self.pointCountSlider.setValue(
             (math.log(pointCount) / math.log(2.0) - 5) / 15.0);
-
-        # Update the user interface
+        # Update the companion box
         def formattedPointCount(n):
             if (n >= 1e6):
                 self.pointCountBox.setUnits("M")
@@ -224,21 +257,38 @@ class WarpVisualizer(WarpVisualizationWidget):
             return str(n)
         self.pointCountBox.setValue(formattedPointCount(pointCount))
 
-        self.parameterBox.setValue("{:.1g}".format(parameterValue))
-        self.angleBox.setValue("{:.1f}".format(angle))
-        # TODO: this will be built-in the described arguments
-        self.parameterSlider.setEnabled(warpType in [])
-        self.angleSlider.setEnabled(warpType is False)
-        self.angleBox.setEnabled(warpType is False)
-        self.parameterBox.setEnabled(warpType is False)
-        self.brdfValuesCheckBox.setEnabled(warpType is False)
-
         # Now trigger refresh in WarpVisualizationWidget
         self.setSamplingType(samplingType)
-        args = dict() # TODO: actually pass the slider's values
-        self.setWarpAdapter(self.makeAdapter(warpType, args))
         self.setPointCount(pointCount)
         self.setDrawGrid(self.warpedGridCheckBox.checked())
+
+        if self.warpTypeChanged:
+            self.warpTypeChanged = False
+
+            self.setupSlidersForWarpType(warpType)
+
+            # Build the arguments
+            args = dict()
+            for i in range(len(self.warps[warpType].arguments)):
+                arg = self.warps[warpType].arguments[i]
+                # Actual value needs to be mapped on the range
+                value = arg.map(self.parameterSliders[arg.name][0].value())
+                print(arg.name)
+                print(value)
+                args[arg.name] = value
+
+            self.setWarpAdapter(self.makeAdapter(warpType, args))
+
+            # TODO: this will be built-in the described arguments
+            self.angleSlider.setEnabled(False)
+            self.angleBox.setEnabled(False)
+            self.brdfValuesCheckBox.setEnabled(False)
+
+        # Update companion boxes for each parameter
+        for i in range(len(self.warps[warpType].arguments)):
+            arg = self.warps[warpType].arguments[i]
+            (slider, box) = self.parameterSliders[arg.name]
+            box.setValue("{:.2g}".format(arg.map(slider.value())))
 
         super(WarpVisualizer, self).refresh()
 
