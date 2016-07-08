@@ -9,18 +9,62 @@
 using mitsuba::warp::WarpAdapter;
 using mitsuba::warp::SamplingType;
 using Sampler = pcg32;
+
 class PyWarpAdapter : public WarpAdapter {
 public:
     using WarpAdapter::WarpAdapter;
 
-    bool isIdentity() const {
+    std::pair<Vector3f, Float> warpSample(const Point2f &sample) const override {
+        using ReturnType = std::pair<Vector3f, Float>;
+        PYBIND11_OVERLOAD_PURE(ReturnType, WarpAdapter, warpSample, sample);
+    }
+
+    Point2f samplePoint(Sampler * sampler, SamplingType strategy,
+                                float invSqrtVal) const override {
+        PYBIND11_OVERLOAD(
+            Point2f, WarpAdapter, samplePoint, sampler, strategy, invSqrtVal);
+    }
+
+    void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
+                                      size_t pointCount,
+                                      Eigen::MatrixXf &positions,
+                                      std::vector<Float> &weights) const override {
+        PYBIND11_OVERLOAD_PURE(
+            void, WarpAdapter, generateWarpedPoints,
+            sampler, strategy, pointCount, positions, weights);
+    }
+
+    std::vector<double> generateObservedHistogram(Sampler *sampler,
+        SamplingType strategy, size_t pointCount,
+        size_t gridWidth, size_t gridHeight) const override {
+        PYBIND11_OVERLOAD_PURE(
+            std::vector<double>, WarpAdapter, generateObservedHistogram,
+            sampler, strategy, pointCount, gridWidth, gridHeight);
+    }
+
+    std::vector<double> generateExpectedHistogram(size_t pointCount,
+        size_t gridWidth, size_t gridHeight) const override {
+        PYBIND11_OVERLOAD_PURE(
+            std::vector<double>, WarpAdapter, generateExpectedHistogram,
+            pointCount, gridWidth, gridHeight);
+    }
+
+    bool isIdentity() const override {
         PYBIND11_OVERLOAD(bool, WarpAdapter, isIdentity);
     }
-    size_t inputDimensionality() const {
-        PYBIND11_OVERLOAD(size_t, WarpAdapter, inputDimensionality);
+    size_t inputDimensionality() const override {
+        PYBIND11_OVERLOAD_PURE(size_t, WarpAdapter, inputDimensionality, /* no args */);
     }
-    size_t domainDimensionality() const {
-        PYBIND11_OVERLOAD(size_t, WarpAdapter, domainDimensionality);
+    size_t domainDimensionality() const override {
+        PYBIND11_OVERLOAD_PURE(size_t, WarpAdapter, domainDimensionality, /* no args */);
+    }
+    std::string toString() const override {
+        PYBIND11_OVERLOAD_NAME(std::string, WarpAdapter, "__repr__", toString, /* no args */);
+    }
+
+protected:
+    virtual Float getPdfScalingFactor() const override {
+        PYBIND11_OVERLOAD_PURE(Float, WarpAdapter, getPdfScalingFactor, /* no args */);
     }
 };
 
@@ -95,14 +139,20 @@ MTS_PY_EXPORT(warp) {
         .value("Stratified", SamplingType::Stratified)
         .export_values();
 
-    using warp::WarpAdapter;
-    auto w = py::class_<WarpAdapter, ref<WarpAdapter>, PyWarpAdapter>(
-        m2, "WarpAdapter", DM(warp, WarpAdapter));
-    w.def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
-     .def("inputDimensionality", &WarpAdapter::inputDimensionality, DM(warp, WarpAdapter, inputDimensionality))
-     .def("domainDimensionality", &WarpAdapter::domainDimensionality, DM(warp, WarpAdapter, domainDimensionality))
-     .def("__repr__", &WarpAdapter::toString);
 
+    /// WarpAdapter class declaration
+    using warp::WarpAdapter;
+    auto w = py::class_<WarpAdapter, std::unique_ptr<WarpAdapter>, PyWarpAdapter>(
+        m2, "WarpAdapter", DM(warp, WarpAdapter))
+        .def(py::init<const std::string &, const std::vector<WarpAdapter::Argument> &>(), DM(warp, WarpAdapter, WarpAdapter))
+        .def("samplePoint", &WarpAdapter::samplePoint, DM(warp, WarpAdapter, samplePoint))
+        .def("warpSample", &WarpAdapter::warpSample, DM(warp, WarpAdapter, warpSample))
+        .def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
+        .def("inputDimensionality", &WarpAdapter::inputDimensionality, DM(warp, WarpAdapter, inputDimensionality))
+        .def("domainDimensionality", &WarpAdapter::domainDimensionality, DM(warp, WarpAdapter, domainDimensionality))
+        .def("__repr__", &WarpAdapter::toString);
+
+    /// Argument class
     py::class_<WarpAdapter::Argument>(w, "Argument", DM(warp, WarpAdapter, Argument))
         .def(py::init<const std::string &, Float, Float, Float, const std::string &>(),
              py::arg("name"), py::arg("minValue") = 0.0, py::arg("maxValue") = 1.0,
@@ -121,25 +171,28 @@ MTS_PY_EXPORT(warp) {
         .def_readonly("description", &WarpAdapter::Argument::description,
                       DM(warp, WarpAdapter, Argument, description));
 
+
     using warp::PlaneWarpAdapter;
-    // TODO: build a trampoline if there are new virtual functions
-    // TODO: check that virtual methods there are forwarded correctly
-    py::class_<PlaneWarpAdapter, ref<PlaneWarpAdapter>>(m2, "PlaneWarpAdapter",
-                                                        py::base<WarpAdapter>(),
-                                                        DM(warp, PlaneWarpAdapter))
+    py::class_<PlaneWarpAdapter>(
+        m2, "PlaneWarpAdapter", py::base<WarpAdapter>(), DM(warp, PlaneWarpAdapter))
         .def(py::init<const std::string &,
                       const PlaneWarpAdapter::WarpFunctionType &,
                       const PlaneWarpAdapter::PdfFunctionType &,
                       const std::vector<WarpAdapter::Argument> &>(),
              py::arg("name"), py::arg("f"), py::arg("pdf"),
              py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
-             DM(warp, PlaneWarpAdapter, PlaneWarpAdapter));
+             DM(warp, PlaneWarpAdapter, PlaneWarpAdapter))
+        .def("__repr__", [](const PlaneWarpAdapter &w) {
+            return w.toString();
+        });
 
     using warp::IdentityWarpAdapter;
-    py::class_<IdentityWarpAdapter, ref<IdentityWarpAdapter>>(m2, "IdentityWarpAdapter",
-                                                              py::base<PlaneWarpAdapter>(),
-                                                              DM(warp, IdentityWarpAdapter))
-        .def(py::init<>(), DM(warp, IdentityWarpAdapter, IdentityWarpAdapter));
+    py::class_<IdentityWarpAdapter>(
+        m2, "IdentityWarpAdapter", py::base<PlaneWarpAdapter>(), DM(warp, IdentityWarpAdapter))
+        .def(py::init<>(), DM(warp, IdentityWarpAdapter, IdentityWarpAdapter))
+        .def("__repr__", [](const IdentityWarpAdapter &w) {
+            return w.toString();
+        });
 
 
     m2.def("runStatisticalTest", &warp::detail::runStatisticalTest, DM(warp, detail, runStatisticalTest));

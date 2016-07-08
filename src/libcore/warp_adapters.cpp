@@ -59,7 +59,7 @@ std::vector<double> PlaneWarpAdapter::generateExpectedHistogram(size_t pointCoun
     size_t gridWidth, size_t gridHeight) const {
 
     std::vector<double> hist(gridWidth * gridHeight, 0.0);
-    double scale = pointCount * static_cast<double>(kPdfScalingFactor);
+    double scale = pointCount * static_cast<double>(getPdfScalingFactor());
 
     auto integrand = [this](double y, double x) {
         return pdf(pointToDomain(Point2f(x, y)));

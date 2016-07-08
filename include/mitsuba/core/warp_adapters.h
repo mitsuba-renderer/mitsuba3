@@ -55,14 +55,13 @@ public:
     // TODO: support construction with:
     // - No domain function (inferred from input / output types)
     // - Warping function that doesn't return a weight (then weight is 1.)
-    WarpAdapter(std::string name, const std::vector<Argument> &arguments)
-        : name_(name), arguments_(arguments) {
-    }
+    WarpAdapter(const std::string &name, const std::vector<Argument> &arguments)
+        : name_(name), arguments_(arguments) { }
 
     virtual Point2f samplePoint(Sampler * sampler, SamplingType strategy,
                                 float invSqrtVal) const;
 
-    virtual std::pair<Vector3f, Float> warpSample(const Point2f& sample) const = 0;
+    virtual std::pair<Vector3f, Float> warpSample(const Point2f &sample) const = 0;
 
     /**
      * Writes out generated points into \p positions and associated weights
@@ -90,9 +89,11 @@ public:
     virtual size_t domainDimensionality() const = 0;
 
     // TODO: more informative string representation
-    std::string toString() { return name_; }
+    virtual std::string toString() const { return name_; }
 
 protected:
+    virtual Float getPdfScalingFactor() const = 0;
+
     /// Human-readable name
     std::string name_;
 
@@ -101,9 +102,6 @@ protected:
 };
 
 class MTS_EXPORT_CORE PlaneWarpAdapter : public WarpAdapter {
-protected:
-    static constexpr Float kPdfScalingFactor = 4.0;
-
 public:
     using SampleType = Point2f;
     using DomainType = Point2f;
@@ -113,19 +111,8 @@ public:
     PlaneWarpAdapter(const std::string &name,
                      const WarpFunctionType &f, const PdfFunctionType &pdf,
                      const std::vector<Argument> &arguments = {})
-        : WarpAdapter(name, arguments), f_(f), pdf_(pdf) { }
-
-    // PlaneWarpAdapter(const std::string &name,
-    //                 const std::function<DomainType (const SampleType&)> &f,
-    //                 const PdfFunctionType &pdf,
-    //                 const std::vector<Argument> &arguments = {})
-    //     : WarpAdapter(name, arguments), pdf_(pdf) {
-
-    //     Log(EInfo, "Lazy constructor called");
-    //     f_ = [f](const SampleType &p) {
-    //         return std::make_pair(f(p), 1.0);
-    //     };
-    // }
+        : WarpAdapter(name, arguments), f_(f), pdf_(pdf) {
+    }
 
     virtual std::pair<Vector3f, Float>
     warpSample(const Point2f& sample) const override;
@@ -146,6 +133,10 @@ public:
     virtual size_t domainDimensionality() const override { return 2; }
 
 protected:
+    virtual Float getPdfScalingFactor() const override {
+        return 4.0;
+    }
+
     /**
      * Maps a point on the warping function's output domain to a 2D point.
      * This is used when aggregating warped points into a 2D histogram.
@@ -193,9 +184,6 @@ protected:
 
 
 class MTS_EXPORT_CORE IdentityWarpAdapter : public PlaneWarpAdapter {
-protected:
-    static constexpr Float kPdfScalingFactor = 1.0;
-
 public:
     using SampleType = Point2f;
     using DomainType = Point2f;
@@ -210,10 +198,6 @@ public:
                                     && p.y() >= 0 && p.y() <= 1) ? 1.0 : 0.0;
                            }) { }
 
-    // const std::string &name,
-    // const WarpFunctionType &f, const PdfFunctionType &pdf,
-    // const std::vector<Argument> &arguments = {}
-
     bool isIdentity() const override { return true; }
 
     // virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
@@ -224,6 +208,10 @@ public:
     //     size_t gridWidth, size_t gridHeight) const override;
 
 protected:
+    virtual Float getPdfScalingFactor() const override {
+        return 1.0;
+    }
+
     virtual Point2f domainToPoint(const DomainType &v) const override {
         return v;
     }

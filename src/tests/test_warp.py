@@ -8,7 +8,7 @@ from mitsuba.warp import *
 
 class WarpTest(unittest.TestCase):
     # Statistical tests parameters
-    (seed1, seed2) = (42, 1337)  # Fixed for reproducibility
+    # TODO: consider fixing seed
     minExpFrequency = 5
     significanceLevel = 0.01
 
@@ -44,7 +44,7 @@ class WarpTest(unittest.TestCase):
         _ = squareToUniformSphere(p)
         _ = squareToUniformHemisphere(p)
         _ = squareToCosineHemisphere(p)
-        _ = squareToUniformCone(0.5, p)
+        _ = squareToUniformCone(p, 0.5)
         _ = squareToUniformDisk(p)
         _ = squareToUniformDiskConcentric(p)
         _ = uniformDiskToSquareConcentric(p)
@@ -55,7 +55,19 @@ class WarpTest(unittest.TestCase):
         _ = squareToTentPdf(p)
         _ = intervalToNonuniformTent(0.25, 0.5, 1.0, 0.75)
 
-    def test02_statistical_tests(self):
+    def test02_indentity(self):
+        w = IdentityWarpAdapter()
+        self.assertTrue(w.isIdentity())
+        self.assertEqual(w.inputDimensionality(), 2)
+        self.assertEqual(w.domainDimensionality(), 2)
+        p1 = [0.5, 0.3]
+        (p2, weight) = w.warpSample(p1)
+        self.assertAlmostEqual(weight, 1.0, places=6)
+        self.assertAlmostEqual(p1[0], p2[0], places=6)
+        self.assertAlmostEqual(p1[1], p2[1], places=6)
+        self.assertEqual(str(w), "Identity")
+
+    def test03_statistical_tests(self):
         # TODO: just iterate over the enum (pybind enum?)
         # warps = [
         #     WarpType.NoWarp,
@@ -70,11 +82,26 @@ class WarpTest(unittest.TestCase):
         #     # WarpType.UniformTent,
         #     # WarpType.NonUniformTent
         # ]
+        def warpWithUnitWeight(f):
+            return lambda p: (f(p), 1.0)
 
         warps = [
+            IdentityWarpAdapter(),
             PlaneWarpAdapter("Square to uniform disk",
-                lambda p: (squareToUniformDisk(p), 1.0),
-                squareToUniformDiskPdf)
+                warpWithUnitWeight(squareToUniformDisk),
+                squareToUniformDiskPdf),
+            PlaneWarpAdapter("Square to uniform disk concentric",
+                warpWithUnitWeight(squareToUniformDiskConcentric),
+                squareToUniformDiskConcentricPdf),
+            # PlaneWarpAdapter("Square to uniform triangle",
+            #     warpWithUnitWeight(squareToUniformTriangle),
+            #     squareToUniformTrianglePdf),
+            # PlaneWarpAdapter("Square to 2D gaussian",
+            #     warpWithUnitWeight(squareToStdNormal),
+            #     squareToStdNormalPdf),
+            # PlaneWarpAdapter("Square to tent",
+            #     warpWithUnitWeight(squareToTent),
+            #     squareToTentPdf)
             # PlaneWarpAdapter("Square to tent", squareToTent, squareToTentPdf)
         ]
 
@@ -91,11 +118,6 @@ class WarpTest(unittest.TestCase):
 
         for warpAdapter in warps:
             with self.subTest(str(warpAdapter)):
-
-                print(warpAdapter)
-                print(type(warpAdapter))
-
-                # (result, reason) = runStatisticalTest("hello", 5, 5, SamplingType.Independent, warpAdapter, 5, 0.01)
                 (result, reason) = runStatisticalTest(
                     sampleCount, gridWidth, gridHeight,
                     samplingType, warpAdapter,
