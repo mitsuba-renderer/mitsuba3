@@ -126,4 +126,6 @@ inline std::pair<Vector3f, Vector3f> coordinateSystem(const Vector3f &n) {
     }
 }
 
+using AlignedAllocator = simd::AlignedAllocator<>;
+
 NAMESPACE_END(mitsuba)

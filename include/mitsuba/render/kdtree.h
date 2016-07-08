@@ -39,7 +39,7 @@ public:
      */
     void cleanup() {
         for (auto &chunk: m_chunks)
-            simd::AlignedAllocator<>()(chunk.start);
+            AlignedAllocator::dealloc(chunk.start);
         m_chunks.clear();
     }
 
@@ -74,7 +74,7 @@ public:
         size_t allocSize = std::max(size, m_minAllocation);
 
         Chunk chunk;
-        chunk.start = (uint8_t *) simd::AlignedAllocator<>::alloc(allocSize);
+        chunk.start = (uint8_t *) AlignedAllocator::alloc(allocSize);
         chunk.cur = chunk.start + size;
         chunk.size = allocSize;
         m_chunks.push_back(chunk);
