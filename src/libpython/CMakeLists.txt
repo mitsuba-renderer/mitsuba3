@@ -50,6 +50,7 @@ add_library(mitsuba-python SHARED
 
   # librender
   scene.cpp
+  shape.cpp
 )
 
 target_link_libraries(mitsuba-python mitsuba-core mitsuba-render)

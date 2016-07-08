@@ -22,11 +22,17 @@ public:
     /// Return a pointer to the raw vertex buffer
     const VertexType *vertices() const { return m_vertices.get(); }
 
+    /// Return a pointer to the raw vertex buffer
+    VertexType *vertices() { return m_vertices.get(); }
+
     /// Return a \c Struct instance describing the contents of the vertex buffer
     const Struct *vertexStruct() const { return m_vertexStruct.get(); }
 
     /// Return a pointer to the raw vertex buffer
     const IndexType *faces() const { return m_faces.get(); }
+
+    /// Return a pointer to the raw vertex buffer
+    IndexType *faces() { return m_faces.get(); }
 
     /// Return a \c Struct instance describing the contents of the face buffer
     const Struct *faceStruct() const { return m_faceStruct.get(); }
