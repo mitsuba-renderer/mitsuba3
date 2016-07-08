@@ -942,6 +942,8 @@ buffer)doc";
 
 static const char *__doc_mitsuba_Mesh_faces = R"doc(Return a pointer to the raw vertex buffer)doc";
 
+static const char *__doc_mitsuba_Mesh_faces_2 = R"doc(Return a pointer to the raw vertex buffer)doc";
+
 static const char *__doc_mitsuba_Mesh_m_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_faceCount = R"doc()doc";
@@ -963,6 +965,8 @@ R"doc(Return a ``Struct`` instance describing the contents of the vertex
 buffer)doc";
 
 static const char *__doc_mitsuba_Mesh_vertices = R"doc(Return a pointer to the raw vertex buffer)doc";
+
+static const char *__doc_mitsuba_Mesh_vertices_2 = R"doc(Return a pointer to the raw vertex buffer)doc";
 
 static const char *__doc_mitsuba_Mesh_write = R"doc(Export mesh using the file format implemented by the subclass)doc";
 
@@ -2132,6 +2136,24 @@ static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} t
 
 static const char *__doc_mitsuba_detail_Log = R"doc()doc";
 
+static const char *__doc_mitsuba_detail_MinMaxBins =
+R"doc(Min-max binning data structure
+
+See "Highly Parallel Fast KD-tree Construction for Interactive Ray
+Tracing of Dynamic Scenes" by M. Shevtsov, A. Soupikov and A. Kapustin)doc";
+
+static const char *__doc_mitsuba_detail_MinMaxBins_Dimension = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_MinMaxBins_MinMaxBins = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_MinMaxBins_m_binCount = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_MinMaxBins_m_bins = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_MinMaxBins_operator_iadd = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_MinMaxBins_setBoundingBox = R"doc(Prepare to bin for the specified bounds)doc";
+
 static const char *__doc_mitsuba_detail_OrderedChunkAllocator =
 R"doc(Special ordered memory allocator
 
@@ -2537,9 +2559,9 @@ static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical 
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -2695,7 +2717,19 @@ static const char *__doc_pcg32 = R"doc(PCG32 Pseudorandom number generator)doc";
 
 static const char *__doc_pcg32_8 = R"doc(8 parallel PCG32 pseudorandom number generators)doc";
 
+static const char *__doc_pcg32_8_inc = R"doc()doc";
+
 static const char *__doc_pcg32_8_nextDouble =
+R"doc(Generate eight double precision floating point value on the interval
+[0, 1)
+
+Remark:
+    Since the underlying random number generator produces 32 bit
+    output, only the first 32 mantissa bits will be filled (however,
+    the resolution is still finer than in nextFloat(), which only uses
+    23 mantissa bits))doc";
+
+static const char *__doc_pcg32_8_nextDouble_2 =
 R"doc(Generate eight double precision floating point value on the interval
 [0, 1)
 
@@ -2709,19 +2743,27 @@ static const char *__doc_pcg32_8_nextFloat =
 R"doc(Generate eight single precision floating point value on the interval
 [0, 1))doc";
 
+static const char *__doc_pcg32_8_nextFloat_2 =
+R"doc(Generate eight single precision floating point value on the interval
+[0, 1))doc";
+
 static const char *__doc_pcg32_8_nextUInt = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
+
+static const char *__doc_pcg32_8_nextUInt_2 = R"doc(Generate 8 uniformly distributed unsigned 32-bit random numbers)doc";
 
 static const char *__doc_pcg32_8_pcg32_8 = R"doc(Initialize the pseudorandom number generator with default seed)doc";
 
 static const char *__doc_pcg32_8_pcg32_8_2 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
-
-static const char *__doc_pcg32_8_rng = R"doc()doc";
 
 static const char *__doc_pcg32_8_seed =
 R"doc(Seed the pseudorandom number generator
 
 Specified in two parts: a state initializer and a sequence selection
 constant (a.k.a. stream id))doc";
+
+static const char *__doc_pcg32_8_state = R"doc()doc";
+
+static const char *__doc_pcg32_8_step = R"doc()doc";
 
 static const char *__doc_pcg32_advance =
 R"doc(Multi-step advance function (jump-ahead, jump-back)
