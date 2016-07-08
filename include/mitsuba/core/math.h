@@ -68,12 +68,12 @@ static const Float  SqrtTwo           = (Float) SqrtTwo_d;
 static const Float  InvSqrtTwo        = (Float) InvSqrtTwo_d;
 static const Float  SqrtTwoPi         = (Float) SqrtTwoPi_d;
 static const Float  InvSqrtTwoPi      = (Float) InvSqrtTwoPi_d;
-static const Float  OneMinusEpsilon   = sizeof(Float) == sizeof(double) ?
-                                        OneMinusEpsilon_d : OneMinusEpsilon_f;
-static const Float  RecipOverflow     = sizeof(Float) == sizeof(double) ?
-                                        RecipOverflow_d : RecipOverflow_f;
-static const Float  Epsilon           = sizeof(Float) == sizeof(double) ?
-                                        Epsilon_d : Epsilon_f;
+static const Float  OneMinusEpsilon   = Float(sizeof(Float) == sizeof(double) ?
+                                        OneMinusEpsilon_d : (double) OneMinusEpsilon_f);
+static const Float  RecipOverflow     = Float(sizeof(Float) == sizeof(double) ?
+                                        RecipOverflow_d : (double) RecipOverflow_f);
+static const Float  Epsilon           = Float(sizeof(Float) == sizeof(double) ?
+                                        Epsilon_d : (double) Epsilon_f);
 static const Float  MaxFloat          = std::numeric_limits<Float>::max();
 static const Float  Infinity          = std::numeric_limits<Float>::infinity();
 static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 2;
