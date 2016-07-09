@@ -7,11 +7,11 @@
 #include <vector>
 #include <pcg32.h>
 
-// TODO: needs sampler interface
-using Sampler = pcg32;
-
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
+
+// TODO: needs sampler interface
+using Sampler = pcg32;
 
 /**
  * TODO: doc, purpose, why we use this design
@@ -54,6 +54,7 @@ public:
             return  (value - minValue) / (maxValue - minValue);
         }
 
+        /// Clamps \p value to the authorized range of this argument
         Float clamp(Float value) const {
             return std::min(maxValue, std::max(minValue, value));
         }

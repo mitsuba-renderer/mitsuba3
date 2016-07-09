@@ -32,7 +32,6 @@ class WarpVisualizer(WarpVisualizationWidget):
 
         # TODO: refactor (this could be useful for the tests as well)
         class WarpFactory:
-            # TODO: args should be proper arguments instances
             def __init__(self, adapter, name, f, pdf, arguments = [], bbox = None):
                 self.adapter = adapter
                 self.name = name
@@ -41,7 +40,7 @@ class WarpVisualizer(WarpVisualizationWidget):
                 self.arguments = arguments
                 self.bbox = bbox
 
-            def make(self, args):
+            def bind(self, args):
                 f = lambda s: self.f(s, **args)
                 pdf = lambda v: self.pdf(v, **args)
 
@@ -54,7 +53,7 @@ class WarpVisualizer(WarpVisualizationWidget):
                 self.name = "Identity"
                 self.arguments = []
 
-            def make(self, args):
+            def bind(self, args):
                 return IdentityWarpAdapter()
 
         def warpWithUnitWeight(f):
@@ -130,7 +129,7 @@ class WarpVisualizer(WarpVisualizationWidget):
         """Creates a new WarpAdapter corresponding to the selected warping type
         and parameter values.
         `args` will be passed as kwargs to the warping function."""
-        return self.warps[warpType].make(args)
+        return self.warps[warpType].bind(args)
 
     def mouseButtonEvent(self, p, button, down, modifiers):
         if down and self.isDrawingHistogram():

@@ -6,11 +6,11 @@
 #include "python.h"
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 
-/// Trampoline class
 using mitsuba::warp::WarpAdapter;
 using mitsuba::warp::SamplingType;
 using Sampler = pcg32;
 
+/// Trampoline class for WarpAdapter
 class PyWarpAdapter : public WarpAdapter {
 public:
     using WarpAdapter::WarpAdapter;
@@ -75,7 +75,7 @@ protected:
     }
 };
 
-/// Trampoline class
+/// Trampoline class for WarpVisualizationWidget
 using mitsuba::warp::WarpVisualizationWidget;
 class PyWarpVisualizationWidget : public WarpVisualizationWidget {
 public:
@@ -85,9 +85,10 @@ public:
 };
 
 MTS_PY_EXPORT(warp) {
-    auto m2 = m.def_submodule("warp", "Common warping techniques that map from the unit"
-                                      "square to other domains, such as spheres,"
-                                      " hemispheres, etc.");
+    auto m2 = m.def_submodule("warp",
+        "Common warping techniques that map from the unit square to other"
+        " domains, such as spheres, hemispheres, etc. Also includes all"
+        " necessary tools to design and test new warping functions.");
 
     m2.mdef(warp, squareToUniformSphere)
       .mdef(warp, squareToUniformSpherePdf)
@@ -124,6 +125,7 @@ MTS_PY_EXPORT(warp) {
            py::arg("sample"), py::arg("a"), py::arg("b"), py::arg("c"),
            DM(warp, intervalToNonuniformTent));
 
+    // TODO: probably shouldn't need this anymore
     using mitsuba::warp::WarpType;
     py::enum_<WarpType>(m2, "WarpType")
         .value("NoWarp", WarpType::NoWarp)
@@ -155,10 +157,12 @@ MTS_PY_EXPORT(warp) {
                       const std::vector<WarpAdapter::Argument>,
                       const BoundingBox3f &>(),
              DM(warp, WarpAdapter, WarpAdapter))
-        .def_readonly_static("kUnitSquareBoundingBox", &WarpAdapter::kUnitSquareBoundingBox,
-                             "Bounding box corresponding to the first quadrant ([0..1]^n)")
-        .def_readonly_static("kCenteredSquareBoundingBox", &WarpAdapter::kCenteredSquareBoundingBox,
-                             "Bounding box corresponding to a disk of radius 1 centered at the origin ([-1..1]^n)")
+        .def_readonly_static(
+            "kUnitSquareBoundingBox", &WarpAdapter::kUnitSquareBoundingBox,
+            "Bounding box corresponding to the first quadrant ([0..1]^n)")
+        .def_readonly_static(
+            "kCenteredSquareBoundingBox", &WarpAdapter::kCenteredSquareBoundingBox,
+            "Bounding box corresponding to a disk of radius 1 centered at the origin ([-1..1]^n)")
         .def("samplePoint", &WarpAdapter::samplePoint, DM(warp, WarpAdapter, samplePoint))
         .def("warpSample", &WarpAdapter::warpSample, DM(warp, WarpAdapter, warpSample))
         .def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
@@ -174,6 +178,7 @@ MTS_PY_EXPORT(warp) {
              "Represents one argument to a warping function")
         .def("map", &WarpAdapter::Argument::map, DM(warp, WarpAdapter, Argument, map))
         .def("normalize", &WarpAdapter::Argument::normalize, DM(warp, WarpAdapter, Argument, normalize))
+        .def("clamp", &WarpAdapter::Argument::clamp, DM(warp, WarpAdapter, Argument, clamp))
         .def_readonly("name", &WarpAdapter::Argument::name,
                       DM(warp, WarpAdapter, Argument, name))
         .def_readonly("minValue", &WarpAdapter::Argument::minValue,
