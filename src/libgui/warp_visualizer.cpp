@@ -123,7 +123,7 @@ using detail::runStatisticalTestAndOutput;
 WarpVisualizationWidget::WarpVisualizationWidget(int width, int height,
                                                  std::string description)
     : nanogui::Screen(Vector2i(width, height), description)
-    , m_warpAdapter(new IdentityWarpAdapter())
+    , m_warpAdapter(std::make_shared<IdentityWarpAdapter>())
     , m_drawHistogram(false), m_drawGrid(true)
     , m_pointCount(0), m_lineCount(0)
     , m_testResult(false), m_testResultText("No test started.") {
@@ -254,7 +254,7 @@ bool WarpVisualizationWidget::runTest(double minExpFrequency, double significanc
 
     // Run Chi^2 test
     const auto r = runStatisticalTestAndOutput(1000 * nBins,
-        gridWidth, gridHeight, m_samplingType, m_warpAdapter,
+        gridWidth, gridHeight, m_samplingType, m_warpAdapter.get(),
         minExpFrequency, significanceLevel, observedHistogram, expectedHistogram);
     m_testResult = r.first;
     m_testResultText = r.second;

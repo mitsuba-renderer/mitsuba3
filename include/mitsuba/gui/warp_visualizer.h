@@ -3,6 +3,7 @@
 #include <mitsuba/core/platform.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/warp.h>
+#include <mitsuba/core/warp_adapters.h>
 
 #include <Eigen/Core>
 #include <nanogui/screen.h>
@@ -44,7 +45,7 @@ public:
     virtual void refresh();
 
     void setSamplingType(SamplingType s) { m_samplingType = s; }
-    void setWarpAdapter(ref<WarpAdapter> wa) { m_warpAdapter = wa; }
+    void setWarpAdapter(std::shared_ptr<WarpAdapter> wa) { m_warpAdapter = wa; }
     void setPointCount(int n) { m_pointCount = n; }
 
     bool isDrawingHistogram() { return m_drawHistogram; }
@@ -83,7 +84,7 @@ private:
     nanogui::Arcball m_arcball;
 
     SamplingType m_samplingType;
-    ref<WarpAdapter> m_warpAdapter;
+    std::shared_ptr<WarpAdapter> m_warpAdapter;
 
     bool m_drawHistogram, m_drawGrid;
     size_t m_pointCount, m_lineCount;
