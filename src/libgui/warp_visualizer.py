@@ -2,9 +2,9 @@ import gc
 from collections import OrderedDict
 import math
 import mitsuba
-from mitsuba import warp
+from mitsuba import warp, BoundingBox3f
 from mitsuba.warp import WarpType, SamplingType, \
-                         WarpAdapter, IdentityWarpAdapter, PlaneWarpAdapter
+                         WarpAdapter, PlaneWarpAdapter, IdentityWarpAdapter, SphereWarpAdapter
 from mitsuba.warp import WarpVisualizationWidget
 
 import nanogui
@@ -33,19 +33,21 @@ class WarpVisualizer(WarpVisualizationWidget):
         # TODO: refactor (this could be useful for the tests as well)
         class WarpFactory:
             # TODO: args should be proper arguments instances
-            def __init__(self, adapter, name, f, pdf, arguments = []):
+            def __init__(self, adapter, name, f, pdf, arguments = [], bbox = None):
                 self.adapter = adapter
                 self.name = name
                 self.f = f
                 self.pdf = pdf
                 self.arguments = arguments
+                self.bbox = bbox
 
             def make(self, args):
-                args = dict()
                 f = lambda s: self.f(s, **args)
                 pdf = lambda v: self.pdf(v, **args)
 
-                return self.adapter(self.name, f, pdf, [])
+                if self.bbox:
+                    return self.adapter(self.name, f, pdf, self.arguments, self.bbox)
+                return self.adapter(self.name, f, pdf, self.arguments)
 
         class IdentityWarpFactory:
             def __init__(self):
@@ -56,7 +58,7 @@ class WarpVisualizer(WarpVisualizationWidget):
                 return IdentityWarpAdapter()
 
         def warpWithUnitWeight(f):
-            return lambda p: (f(p), 1.0)
+            return lambda p, *args, **kwargs: (f(p, *args, **kwargs), 1.0)
 
         w = OrderedDict()
         w[WarpType.NoWarp] = IdentityWarpFactory()
@@ -67,13 +69,55 @@ class WarpVisualizer(WarpVisualizationWidget):
         w[WarpType.UniformDiskConcentric] = WarpFactory(PlaneWarpAdapter,
             "Square to uniform disk concentric",
             warpWithUnitWeight(warp.squareToUniformDiskConcentric),
-            warp.squareToUniformDiskConcentricPdf,
-            [WarpAdapter.Argument("dummy", 5.0, 10.0, 7.5, "Dummy parameter")])
+            warp.squareToUniformDiskConcentricPdf)
+        w[WarpType.UniformTriangle] = WarpFactory(PlaneWarpAdapter,
+            "Square to uniform triangle",
+            warpWithUnitWeight(warp.squareToUniformTriangle),
+            warp.squareToUniformTrianglePdf,
+            bbox = WarpAdapter.kUnitSquareBoundingBox)
+        # TODO: manage the case of infinite support (need inverse mapping?)
+        w[warp.StandardNormal] = WarpFactory(PlaneWarpAdapter,
+            "Square to 2D gaussian",
+            warpWithUnitWeight(warp.squareToStdNormal),
+            warp.squareToStdNormalPdf,
+            bbox = BoundingBox3f([-5, -5, -5], [5, 5, 5]))
+        w[warp.UniformTent] = WarpFactory(PlaneWarpAdapter,
+            "Square to tent",
+            warpWithUnitWeight(warp.squareToTent),
+            warp.squareToTentPdf)
+
+        # 2D -> 3D warps
+        w[WarpType.UniformSphere] = WarpFactory(SphereWarpAdapter,
+            "Square to uniform sphere",
+            warpWithUnitWeight(warp.squareToUniformSphere),
+            warp.squareToUniformSpherePdf)
+        w[warp.UniformHemisphere] = WarpFactory(SphereWarpAdapter,
+            "Square to uniform hemisphere",
+            warpWithUnitWeight(warp.squareToUniformHemisphere),
+            warp.squareToUniformHemispherePdf)
+        w[warp.CosineHemisphere] = WarpFactory(SphereWarpAdapter,
+            "Square to cosine hemisphere",
+            warpWithUnitWeight(warp.squareToCosineHemisphere),
+            warp.squareToCosineHemispherePdf)
+        w[warp.UniformCone] = WarpFactory(SphereWarpAdapter,
+            "Square to uniform cone",
+            warpWithUnitWeight(warp.squareToUniformCone),
+            warp.squareToUniformConePdf,
+            arguments = [WarpAdapter.Argument("cosCutoff", defaultValue = 0.5, description = "Cosine cutoff")])
+
+        # 1D -> 1D warps
+        # TODO
+        # w[warp.NonUniformTent] = WarpFactory(LineWarpAdapter,
+        #     "Square to nonuniform tent",
+        #     warpWithUnitWeight(warp.squareToNonUniformTent),
+        #     warp.squareToNonuniformTentPdf,
+        #     [WarpAdapter.Argument("a"), WarpAdapter.Argument("b"), WarpAdapter.Argument("c")])
 
         self.warps = w
 
         # Initialize UI elements
         self.warpTypeChanged = True
+        self.warpParametersChanged = True
         self.initializeGUI()
 
     def runTest(self):
@@ -135,7 +179,7 @@ class WarpVisualizer(WarpVisualizationWidget):
             self.refresh()
 
         _ = Label(window, "Warping method", "sans-bold")
-        warpingNames = map(lambda w: w.name, self.warps.values())
+        warpingNames = map(lambda w: self.warps[w].name, self.warps.keys())
         warpTypeBox = ComboBox(window, warpingNames)
         warpTypeBox.setCallback(warpTypeCallback)
 
@@ -206,7 +250,6 @@ class WarpVisualizer(WarpVisualizationWidget):
             self.warpParametersPanel.removeChild(0)
 
         self.parameterSliders = dict()
-
         arguments = self.warps[warpType].arguments
 
         for arg in arguments:
@@ -217,11 +260,13 @@ class WarpVisualizer(WarpVisualizationWidget):
             panel = Widget(self.warpParametersPanel)
             panel.setLayout(BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
 
-
             slider = Slider(panel)
             slider.setFixedWidth(55)
             slider.setValue(arg.normalize(arg.defaultValue))
-            slider.setCallback(lambda e: self.refresh())
+            def sliderCallback(_):
+                self.warpParametersChanged = True
+                self.refresh()
+            slider.setCallback(sliderCallback)
             # Companion text box
             box = TextBox(panel)
             box.setFixedSize(Vector2i(80, 25))
@@ -232,6 +277,8 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.refresh()
 
     def refresh(self):
+        # TODO: rate limit on refreshes
+
         samplingType = SamplingType(self.samplingTypeBox.selectedIndex())
         warpType = self.warps.keys()[self.warpTypeBox.selectedIndex()]
         # angle = 180 * self.angleSlider.value() - 90
@@ -259,11 +306,12 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.setPointCount(pointCount)
         self.setDrawGrid(self.warpedGridCheckBox.checked())
 
-        if self.warpTypeChanged:
-            self.warpTypeChanged = False
+        # TODO: this will be built-in the described arguments
+        self.angleSlider.setEnabled(False)
+        self.angleBox.setEnabled(False)
+        self.brdfValuesCheckBox.setEnabled(False)
 
-            self.setupSlidersForWarpType(warpType)
-
+        def updateWarpAdapter():
             # Build the arguments
             args = dict()
             for i in range(len(self.warps[warpType].arguments)):
@@ -274,10 +322,14 @@ class WarpVisualizer(WarpVisualizationWidget):
 
             self.setWarpAdapter(self.makeAdapter(warpType, args))
 
-            # TODO: this will be built-in the described arguments
-            self.angleSlider.setEnabled(False)
-            self.angleBox.setEnabled(False)
-            self.brdfValuesCheckBox.setEnabled(False)
+        if self.warpParametersChanged:
+            self.warpParametersChanged = False
+            updateWarpAdapter()
+
+        if self.warpTypeChanged:
+            self.warpTypeChanged = False
+            self.setupSlidersForWarpType(warpType)
+            updateWarpAdapter()
 
         # Update companion boxes for each parameter
         for i in range(len(self.warps[warpType].arguments)):

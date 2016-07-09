@@ -129,7 +129,8 @@ class WarpTest(unittest.TestCase):
             # LineWarp("Square to tent",
             #     warpWithUnitWeight(squareToTent),
             #     squareToTentPdf)
-            # LineWarp("Square to tent", squareToTent, squareToTentPdf)
+            # LineWarp("Square to nonuniform tent",
+            #     squareToTent, squareToTentPdf, [TODO: args])
         ]
 
         # TODO: cover all sampling types
