@@ -101,11 +101,13 @@ protected:
     std::vector<Argument> arguments_;
 };
 
+/// TODO: docs
 class MTS_EXPORT_CORE PlaneWarpAdapter : public WarpAdapter {
 public:
     using SampleType = Point2f;
     using DomainType = Point2f;
-    using WarpFunctionType = std::function<std::pair<DomainType, Float> (const SampleType&)>;
+    using PairType = std::pair<DomainType, Float>;
+    using WarpFunctionType = std::function<PairType (const SampleType&)>;
     using PdfFunctionType = std::function<Float (const DomainType&)>;
 
     PlaneWarpAdapter(const std::string &name,
@@ -152,14 +154,15 @@ protected:
      */
     virtual DomainType pointToDomain(const Point2f &p) const;
 
-    virtual std::vector<DomainType> generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount) const;
+    /// Returns a list of warped points
+    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount) const;
 
-    virtual std::vector<double> binPoints(const std::vector<DomainType> &points,
+    virtual std::vector<double> binPoints(const std::vector<PairType> &points,
         size_t gridWidth, size_t gridHeight) const;
 
 
     /// TODO: doc
-    virtual std::pair<DomainType, Float> warp(SampleType p) const {
+    virtual PairType warp(SampleType p) const {
         return f_(p);
     }
 
@@ -170,7 +173,7 @@ protected:
 
     /**
      * Warping function.
-     * Will be called with the sample only, so any parameter will be bound
+     * Will be called with the sample only, so any parameter needs to be bound
      * in advance.
      * Returns a pair (warped point on the domain; weight).
      */

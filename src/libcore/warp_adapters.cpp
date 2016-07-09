@@ -42,9 +42,9 @@ void PlaneWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType strat
     weights.resize(points.size());
     for (size_t i = 0; i < points.size(); ++i) {
         const auto& p = points[i];
-        positions.col(i) << p.x(), p.y(), 0.f;
+        positions.col(i) << p.first.x(), p.first.y(), 0.f;
         // TODO: also write out proper weights
-        weights[i] = 1.0;
+        weights[i] = p.second;
     }
 }
 
@@ -90,35 +90,35 @@ PlaneWarpAdapter::DomainType PlaneWarpAdapter::pointToDomain(const Point2f &p) c
     return Point2f(2 * p.x() - 1, 2 * p.y() - 1);
 }
 
-std::vector<PlaneWarpAdapter::DomainType> PlaneWarpAdapter::generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount) const {
+std::vector<PlaneWarpAdapter::PairType>
+PlaneWarpAdapter::generatePoints(Sampler * sampler, SamplingType strategy,
+                                 size_t pointCount) const {
     size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
     float invSqrtVal = 1.f / sqrtVal;
     if (strategy == Grid || strategy == Stratified)
         pointCount = sqrtVal * sqrtVal;
 
-    std::vector<DomainType> points(pointCount);
+    std::vector<PairType> warpedPoints(pointCount);
     for (size_t i = 0; i < pointCount; ++i) {
-        const auto s = samplePoint(sampler, strategy, invSqrtVal);
-        // TODO: we'll need to export that weight
-        Float weight;
-        std::tie(points[i], weight) = warp(s);
+        warpedPoints[i] = warp(samplePoint(sampler, strategy, invSqrtVal));
     }
 
-    return points;
+    return warpedPoints;
 }
 
-std::vector<double> PlaneWarpAdapter::binPoints(const std::vector<PlaneWarpAdapter::DomainType> &points,
+std::vector<double> PlaneWarpAdapter::binPoints(
+    const std::vector<PlaneWarpAdapter::PairType> &points,
     size_t gridWidth, size_t gridHeight) const {
 
     std::vector<double> hist(gridWidth * gridHeight, 0.0);
 
     for (size_t i = 0; i < static_cast<size_t>(points.size()); ++i) {
-        // TODO: support weights
-        // if (weights[i] == 0) {
-        //     continue;
-        // }
+        const auto& p = points[i];
+        if (p.second == static_cast<Float>(0.0)) {
+            continue;
+        }
 
-        Point2f observation = domainToPoint(points[i]);
+        Point2f observation = domainToPoint(p.first);
         float x = observation[0],
               y = observation[1];
 

@@ -37,7 +37,11 @@ class WarpTest(unittest.TestCase):
         self.assertAlmostEqual(squareToUniformDiskConcentricPdf(zero2D), math.InvPi, places = 6)
         self.assertAlmostEqual(squareToUniformDiskConcentricPdf(ten2D), 0, places = 6)
 
-        # TODO: same thing for 1D functions
+        self.assertAlmostEqual(squareToStdNormalPdf(zero2D), 1, places = 6)
+        self.assertLessThan(squareToStdNormalPdf(ten2D), 0.0001)
+
+        self.assertAlmostEqual(squareToTentPdf(zero2D), 1, places = 6)
+        self.assertAlmostEqual(squareToTentPdf(ten2D), 0, places = 6)
 
         # Just checking that these are not crashing, the actual results
         # are tested statistically.

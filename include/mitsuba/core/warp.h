@@ -169,7 +169,7 @@ extern MTS_EXPORT_CORE Float squareToStdNormalPdf(const Point2f &pos);
 extern MTS_EXPORT_CORE Point2f squareToTent(const Point2f &sample);
 
 /// Density of \ref squareToTent per unit area.
-inline MTS_EXPORT_CORE Float squareToTentPdf(const Point2f &) {
+inline MTS_EXPORT_CORE Float squareToTentPdf(const Float &) {
     // TODO: probably wrong, needs domain specification
     return 1.0;
 }
