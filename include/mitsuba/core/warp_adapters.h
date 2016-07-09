@@ -63,6 +63,7 @@ public:
     // TODO: support construction with:
     // - No domain function (inferred from input / output types)
     // - Warping function that doesn't return a weight (then weight is 1.)
+    // TODO: actually don't need to know about the arguments
     WarpAdapter(const std::string &name, const std::vector<Argument> &arguments,
                 const BoundingBox3f bbox)
         : name_(name), arguments_(arguments), bbox_(bbox) { }

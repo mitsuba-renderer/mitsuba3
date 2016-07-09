@@ -32,21 +32,34 @@ class WarpVisualizer(WarpVisualizationWidget):
 
         # TODO: refactor (this could be useful for the tests as well)
         class WarpFactory:
-            def __init__(self, adapter, name, f, pdf, arguments = [], bbox = None):
+            def __init__(self, adapter, name, f, pdf, arguments = [], bbox = None,
+                         returnsWeight = False):
+                """returnsWeight: whether the passed f and pdf functions return
+                the expected (warped point, weight) pair or only the warped
+                point. In the second case, we wrap the function and return a
+                weight of 1.0 for every point."""
                 self.adapter = adapter
                 self.name = name
                 self.f = f
                 self.pdf = pdf
                 self.arguments = arguments
                 self.bbox = bbox
+                self.returnsWeight = returnsWeight
 
             def bind(self, args):
-                f = lambda s: self.f(s, **args)
-                pdf = lambda v: self.pdf(v, **args)
+                kwargs = dict()
+                kwargs['name'] = self.name
+                if self.returnsWeight:
+                    kwargs['f'] = lambda s: self.f(s, **args)
+                else:
+                    kwargs['f'] = lambda s: (self.f(s, **args), 1.0)
+                kwargs['pdf'] = lambda v: self.pdf(v, **args)
 
-                if self.bbox:
-                    return self.adapter(self.name, f, pdf, self.arguments, self.bbox)
-                return self.adapter(self.name, f, pdf, self.arguments)
+                kwargs['arguments'] = self.arguments
+                if (self.bbox):
+                    kwargs['bbox'] = self.bbox
+
+                return self.adapter(**kwargs)
 
         class IdentityWarpFactory:
             def __init__(self):
@@ -56,51 +69,48 @@ class WarpVisualizer(WarpVisualizationWidget):
             def bind(self, args):
                 return IdentityWarpAdapter()
 
-        def warpWithUnitWeight(f):
-            return lambda p, *args, **kwargs: (f(p, *args, **kwargs), 1.0)
-
         w = OrderedDict()
         w[WarpType.NoWarp] = IdentityWarpFactory()
         w[WarpType.UniformDisk] = WarpFactory(PlaneWarpAdapter,
             "Square to uniform disk",
-            warpWithUnitWeight(warp.squareToUniformDisk),
+            warp.squareToUniformDisk,
             warp.squareToUniformDiskPdf)
         w[WarpType.UniformDiskConcentric] = WarpFactory(PlaneWarpAdapter,
             "Square to uniform disk concentric",
-            warpWithUnitWeight(warp.squareToUniformDiskConcentric),
+            warp.squareToUniformDiskConcentric,
             warp.squareToUniformDiskConcentricPdf)
         w[WarpType.UniformTriangle] = WarpFactory(PlaneWarpAdapter,
             "Square to uniform triangle",
-            warpWithUnitWeight(warp.squareToUniformTriangle),
+            warp.squareToUniformTriangle,
             warp.squareToUniformTrianglePdf,
             bbox = WarpAdapter.kUnitSquareBoundingBox)
         # TODO: manage the case of infinite support (need inverse mapping?)
         w[warp.StandardNormal] = WarpFactory(PlaneWarpAdapter,
             "Square to 2D gaussian",
-            warpWithUnitWeight(warp.squareToStdNormal),
+            warp.squareToStdNormal,
             warp.squareToStdNormalPdf,
             bbox = BoundingBox3f([-5, -5, -5], [5, 5, 5]))
         w[warp.UniformTent] = WarpFactory(PlaneWarpAdapter,
             "Square to tent",
-            warpWithUnitWeight(warp.squareToTent),
+            warp.squareToTent,
             warp.squareToTentPdf)
 
         # 2D -> 3D warps
         w[WarpType.UniformSphere] = WarpFactory(SphereWarpAdapter,
             "Square to uniform sphere",
-            warpWithUnitWeight(warp.squareToUniformSphere),
+            warp.squareToUniformSphere,
             warp.squareToUniformSpherePdf)
         w[warp.UniformHemisphere] = WarpFactory(SphereWarpAdapter,
             "Square to uniform hemisphere",
-            warpWithUnitWeight(warp.squareToUniformHemisphere),
+            warp.squareToUniformHemisphere,
             warp.squareToUniformHemispherePdf)
         w[warp.CosineHemisphere] = WarpFactory(SphereWarpAdapter,
             "Square to cosine hemisphere",
-            warpWithUnitWeight(warp.squareToCosineHemisphere),
+            warp.squareToCosineHemisphere,
             warp.squareToCosineHemispherePdf)
         w[warp.UniformCone] = WarpFactory(SphereWarpAdapter,
             "Square to uniform cone",
-            warpWithUnitWeight(warp.squareToUniformCone),
+            warp.squareToUniformCone,
             warp.squareToUniformConePdf,
             arguments = [WarpAdapter.Argument("cosCutoff", defaultValue = 0.5, description = "Cosine cutoff")])
 
@@ -108,7 +118,7 @@ class WarpVisualizer(WarpVisualizationWidget):
         # TODO
         # w[warp.NonUniformTent] = WarpFactory(LineWarpAdapter,
         #     "Square to nonuniform tent",
-        #     warpWithUnitWeight(warp.squareToNonUniformTent),
+        #     warp.squareToNonUniformTent,
         #     warp.squareToNonuniformTentPdf,
         #     [WarpAdapter.Argument("a"), WarpAdapter.Argument("b"), WarpAdapter.Argument("c")])
 
