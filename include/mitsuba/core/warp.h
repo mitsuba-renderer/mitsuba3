@@ -129,21 +129,20 @@ inline MTS_EXPORT_CORE Float squareToUniformDiskPdf(const Point2f &p) {
 /// Low-distortion concentric square to disk mapping by Peter Shirley (PDF: 1/PI)
 extern MTS_EXPORT_CORE Point2f squareToUniformDiskConcentric(const Point2f &sample);
 
+/// Density of \ref squareToUniformDisk per unit area
+inline MTS_EXPORT_CORE Float squareToUniformDiskConcentricPdf(const Point2f &p) {
+    if (p[0] * p[0] + p[1] * p[1] <= 1)
+        return math::InvPi;
+    return 0.0;
+}
+
 /// Inverse of the mapping \ref squareToUniformDiskConcentric
 extern MTS_EXPORT_CORE Point2f uniformDiskToSquareConcentric(const Point2f &p);
-
 
 inline MTS_EXPORT_CORE Point2f uniformDiskToSquareConcentricPdf(const Point2f &p) {
     // TODO: verify this is correct
     if (p[0] >= 0 && p[0] <= 1 && p[1] >= 0 && p[1] <= 1)
         return 1.0;
-    return 0.0;
-}
-
-/// Density of \ref squareToUniformDisk per unit area
-inline MTS_EXPORT_CORE Float squareToUniformDiskConcentricPdf(const Point2f &p) {
-    if (p[0] * p[0] + p[1] * p[1] <= 1)
-        return math::InvPi;
     return 0.0;
 }
 
@@ -163,16 +162,13 @@ inline MTS_EXPORT_CORE Float squareToUniformTrianglePdf(const Point2f &p) {
 extern MTS_EXPORT_CORE Point2f squareToStdNormal(const Point2f &sample);
 
 /// Density of \ref squareToStdNormal per unit area
-extern MTS_EXPORT_CORE Float squareToStdNormalPdf(const Point2f &pos);
+extern MTS_EXPORT_CORE Float squareToStdNormalPdf(const Point2f &p);
 
 /// Warp a uniformly distributed square sample to a 2D tent distribution
 extern MTS_EXPORT_CORE Point2f squareToTent(const Point2f &sample);
 
 /// Density of \ref squareToTent per unit area.
-inline MTS_EXPORT_CORE Float squareToTentPdf(const Float &) {
-    // TODO: probably wrong, needs domain specification
-    return 1.0;
-}
+extern MTS_EXPORT_CORE Float squareToTentPdf(const Point2f &p);
 
 /** \brief Warp a uniformly distributed sample on [0, 1] to a nonuniform
  * tent distribution with nodes <tt>{a, b, c}</tt>

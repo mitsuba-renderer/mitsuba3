@@ -120,8 +120,8 @@ Point2f squareToStdNormal(const Point2f &sample) {
     return result * r;
 }
 
-Float squareToStdNormalPdf(const Point2f &pos) {
-    return math::InvTwoPi * std::exp(-(pos[0]*pos[0] + pos[1]*pos[1])/2.0f);
+Float squareToStdNormalPdf(const Point2f &p) {
+    return math::InvTwoPi * std::exp(-(p[0]*p[0] + p[1]*p[1])/2.0f);
 }
 
 static Float intervalToTent(Float sample) {
@@ -139,8 +139,15 @@ static Float intervalToTent(Float sample) {
 }
 
 Point2f squareToTent(const Point2f &sample) {
-    return Point2f(intervalToTent(sample[0]),
-                   intervalToTent(sample[1]));
+    return Point2f(intervalToTent(sample.x()),
+                   intervalToTent(sample.y()));
+}
+
+Float squareToTentPdf(const Point2f &p) {
+    // TODO: probably wrong
+    if (p.x() >= -1 && p.x() <= 1 && p.y() >= -1 && p.y() <= 1)
+        return 1.0;
+    return 0.0;
 }
 
 Float intervalToNonuniformTent(Float a, Float b, Float c, Float sample) {

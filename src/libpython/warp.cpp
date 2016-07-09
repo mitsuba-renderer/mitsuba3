@@ -4,6 +4,7 @@
 #include <nanogui/python.h>
 
 #include "python.h"
+PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 
 /// Trampoline class
 using mitsuba::warp::WarpAdapter;
@@ -44,7 +45,7 @@ public:
 
     std::vector<double> generateExpectedHistogram(size_t pointCount,
         size_t gridWidth, size_t gridHeight) const override {
-        PYBIND11_OVERLOAD_PURE(
+        PYBIND11_OVERLOAD(
             std::vector<double>, WarpAdapter, generateExpectedHistogram,
             pointCount, gridWidth, gridHeight);
     }
@@ -63,6 +64,12 @@ public:
     }
 
 protected:
+    virtual std::function<Float (double, double)> getPdfIntegrand() const override {
+        PYBIND11_OVERLOAD_PURE(
+            std::function<Float (double, double)>, WarpAdapter,
+            getPdfIntegrand, /* no args */);
+    }
+
     virtual Float getPdfScalingFactor() const override {
         PYBIND11_OVERLOAD_PURE(Float, WarpAdapter, getPdfScalingFactor, /* no args */);
     }
@@ -142,7 +149,7 @@ MTS_PY_EXPORT(warp) {
 
     /// WarpAdapter class declaration
     using warp::WarpAdapter;
-    auto w = py::class_<WarpAdapter, std::unique_ptr<WarpAdapter>, PyWarpAdapter>(
+    auto w = py::class_<WarpAdapter, std::shared_ptr<WarpAdapter>, PyWarpAdapter>(
         m2, "WarpAdapter", DM(warp, WarpAdapter))
         .def(py::init<const std::string &,
                       const std::vector<WarpAdapter::Argument>,
@@ -180,7 +187,7 @@ MTS_PY_EXPORT(warp) {
 
 
     using warp::PlaneWarpAdapter;
-    py::class_<PlaneWarpAdapter>(
+    py::class_<PlaneWarpAdapter, std::shared_ptr<PlaneWarpAdapter>>(
         m2, "PlaneWarpAdapter", py::base<WarpAdapter>(), DM(warp, PlaneWarpAdapter))
         .def(py::init<const std::string &,
                       const PlaneWarpAdapter::WarpFunctionType &,
@@ -196,12 +203,29 @@ MTS_PY_EXPORT(warp) {
         });
 
     using warp::IdentityWarpAdapter;
-    py::class_<IdentityWarpAdapter>(
+    py::class_<IdentityWarpAdapter, std::shared_ptr<IdentityWarpAdapter>>(
         m2, "IdentityWarpAdapter", py::base<PlaneWarpAdapter>(), DM(warp, IdentityWarpAdapter))
         .def(py::init<>(), DM(warp, IdentityWarpAdapter, IdentityWarpAdapter))
         .def("__repr__", [](const IdentityWarpAdapter &w) {
             return w.toString();
         });
+
+    using warp::SphereWarpAdapter;
+    py::class_<SphereWarpAdapter, std::shared_ptr<SphereWarpAdapter>>(
+        m2, "SphereWarpAdapter", py::base<WarpAdapter>(), DM(warp, SphereWarpAdapter))
+        .def(py::init<const std::string &,
+                      const SphereWarpAdapter::WarpFunctionType &,
+                      const SphereWarpAdapter::PdfFunctionType &,
+                      const std::vector<WarpAdapter::Argument> &,
+                      const BoundingBox3f &>(),
+             py::arg("name"), py::arg("f"), py::arg("pdf"),
+             py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
+             py::arg("bbox") = WarpAdapter::kCenteredSquareBoundingBox,
+             DM(warp, SphereWarpAdapter, SphereWarpAdapter))
+        .def("__repr__", [](const SphereWarpAdapter &w) {
+            return w.toString();
+        });
+
 
 
     m2.def("runStatisticalTest", &warp::detail::runStatisticalTest, DM(warp, detail, runStatisticalTest));

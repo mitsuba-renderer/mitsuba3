@@ -86,7 +86,7 @@ public:
         size_t gridWidth, size_t gridHeight) const = 0;
 
     virtual std::vector<double> generateExpectedHistogram(size_t pointCount,
-        size_t gridWidth, size_t gridHeight) const = 0;
+        size_t gridWidth, size_t gridHeight) const;
 
 
     /// Returns true if the warping function is the identity function.
@@ -101,6 +101,8 @@ public:
 
 protected:
     virtual Float getPdfScalingFactor() const = 0;
+
+    virtual std::function<Float (double, double)> getPdfIntegrand() const = 0;
 
     /**
      * Maps a point on the warping function's output domain to a 2D point in [0..1]^2.
@@ -208,13 +210,12 @@ public:
         SamplingType strategy, size_t pointCount,
         size_t gridWidth, size_t gridHeight) const override;
 
-    virtual std::vector<double> generateExpectedHistogram(size_t pointCount,
-        size_t gridWidth, size_t gridHeight) const override;
-
     virtual size_t inputDimensionality() const override { return 2; }
     virtual size_t domainDimensionality() const override { return 2; }
 
 protected:
+    virtual std::function<Float (double, double)> getPdfIntegrand() const override;
+
     virtual Float getPdfScalingFactor() const override {
         return 4.0;
     }
@@ -244,13 +245,15 @@ protected:
      */
     WarpFunctionType f_;
     /**
-     * PDF function. Will be called with a domain point and all arguments.
+     * PDF function.
+     * Will be called with a domain point only, so any parameter needs to be
+     * bound in advance.
      * Should return the PDF associated with that point.
      */
     PdfFunctionType pdf_;
 };
 
-
+/// TODO: docs
 class MTS_EXPORT_CORE IdentityWarpAdapter : public PlaneWarpAdapter {
 public:
     using SampleType = Point2f;
@@ -281,6 +284,80 @@ protected:
     virtual Float getPdfScalingFactor() const override {
         return 1.0;
     }
+};
+
+
+/// TODO: docs
+class MTS_EXPORT_CORE SphereWarpAdapter : public WarpAdapter {
+public:
+    using SampleType = Point2f;
+    using DomainType = Vector3f;
+    using PairType = std::pair<DomainType, Float>;
+    using WarpFunctionType = std::function<PairType (const SampleType&)>;
+    using PdfFunctionType = std::function<Float (const DomainType&)>;
+
+    SphereWarpAdapter(const std::string &name,
+                      const WarpFunctionType &f, const PdfFunctionType &pdf,
+                      const std::vector<Argument> &arguments = {},
+                      const BoundingBox3f &bbox = WarpAdapter::kCenteredSquareBoundingBox)
+        : WarpAdapter(name, arguments, bbox), f_(f), pdf_(pdf) {
+    }
+
+    virtual std::pair<Vector3f, Float>
+    warpSample(const Point2f& sample) const override {
+        return warp(sample);
+    }
+
+    virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
+                                      size_t pointCount,
+                                      Eigen::MatrixXf &positions,
+                                      std::vector<Float> &weights) const override;
+
+    virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
+        SamplingType strategy, size_t pointCount,
+        size_t gridWidth, size_t gridHeight) const override;
+
+    virtual size_t inputDimensionality() const override { return 2; }
+    virtual size_t domainDimensionality() const override { return 3; }
+
+protected:
+    virtual std::function<Float (double, double)> getPdfIntegrand() const override;
+
+    virtual Float getPdfScalingFactor() const override {
+        return (Float)4.0 * math::Pi;
+    }
+
+    /// Returns a list of warped points
+    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount) const;
+
+    virtual std::vector<double> binPoints(const std::vector<PairType> &points,
+        size_t gridWidth, size_t gridHeight) const;
+
+
+    /// TODO: doc
+    virtual PairType warp(SampleType p) const {
+        return f_(p);
+    }
+
+    /// TODO: doc
+    virtual Float pdf(DomainType p) const {
+        return pdf_(p);
+    }
+
+    /**
+     * Warping function.
+     * Will be called with the sample only, so any parameter needs to be bound
+     * in advance.
+     * Returns a pair (warped point on the domain; weight).
+     */
+    WarpFunctionType f_;
+    /**
+     * PDF function.
+     * Will be called with a domain point only, so any parameter needs to be
+     * bound in advance.
+     * Should return the PDF associated with that point.
+     */
+    PdfFunctionType pdf_;
 };
 
 NAMESPACE_END(warp)
