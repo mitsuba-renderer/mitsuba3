@@ -360,11 +360,15 @@ static T inverseGamma(T value) {
  * domain, the returned left interval index is clamped to the range <tt>[0,
  * size-2]</tt>.
  */
-template <typename Predicate>
-size_t findInterval(size_t size, const Predicate &pred) {
-    size_t first = 0, len = size;
+template <typename Size, typename Predicate>
+size_t findInterval(Size size, const Predicate &pred) {
+    typedef typename std::make_signed<Size>::type SignedSize;
+
+    Size first = 0, len = size;
     while (len > 0) {
-        size_t half = len >> 1, middle = first + half;
+        Size half = len >> 1,
+             middle = first + half;
+
         if (pred(middle)) {
             first = middle + 1;
             len -= half + 1;
@@ -372,7 +376,12 @@ size_t findInterval(size_t size, const Predicate &pred) {
             len = half;
         }
     }
-    return (size_t) clamp<ssize_t>((ssize_t) first - 1, 0, size - 2);
+
+    return (Size) clamp<SignedSize>(
+        (SignedSize) first - 1,
+        (SignedSize) 0,
+        (SignedSize) size - 2
+    );
 }
 
 /// Quantile function of the standard normal distribution (double precision)
