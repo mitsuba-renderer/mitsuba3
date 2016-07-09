@@ -1,6 +1,6 @@
 #pragma once
-
 #include <mitsuba/mitsuba.h>
+#include <mitsuba/core/bbox.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/warp.h>
 
@@ -17,6 +17,13 @@ NAMESPACE_BEGIN(warp)
  * TODO: doc, purpose, why we use this design
  */
 class MTS_EXPORT_CORE WarpAdapter {
+public:
+    /// Bounding box corresponding to the first quadrant ([0..1]^n)
+    static const BoundingBox3f kUnitSquareBoundingBox;
+    /// Bounding box corresponding to a disk of radius 1 centered at the origin ([-1..1]^n)
+    // TODO: better name
+    static const BoundingBox3f kCenteredSquareBoundingBox;
+
 public:
 
     // TODO: this could actually be Python-only
@@ -55,8 +62,9 @@ public:
     // TODO: support construction with:
     // - No domain function (inferred from input / output types)
     // - Warping function that doesn't return a weight (then weight is 1.)
-    WarpAdapter(const std::string &name, const std::vector<Argument> &arguments)
-        : name_(name), arguments_(arguments) { }
+    WarpAdapter(const std::string &name, const std::vector<Argument> &arguments,
+                const BoundingBox3f bbox)
+        : name_(name), arguments_(arguments), bbox_(bbox) { }
 
     virtual Point2f samplePoint(Sampler * sampler, SamplingType strategy,
                                 float invSqrtVal) const;
@@ -94,12 +102,83 @@ public:
 protected:
     virtual Float getPdfScalingFactor() const = 0;
 
+    /**
+     * Maps a point on the warping function's output domain to a 2D point in [0..1]^2.
+     * This is used when aggregating warped points into a 2D histogram.
+     * For technical reasons, it always takes a 3D vector but may use only
+     * some of it components.
+     */
+    template <typename DomainType> inline
+    Point2f domainToPoint(const DomainType &v) const;
+
+    /**
+     * Maps a regularly sampled 2D point to the warping function's output domain.
+     * This is used when querying the PDF function at various points of the domain.
+     */
+    template <typename DomainType> inline
+    DomainType pointToDomain(const Point2f &p) const;
+
     /// Human-readable name
     std::string name_;
 
     // TODO: actually, do we even need to know about those on the C++ side?
     std::vector<Argument> arguments_;
+
+    /// Bounding box of the output domain (may not use all 3 components of the points)
+    const BoundingBox3f bbox_;
 };
+
+// Template specializations
+// TODO: could probably be made more efficient
+// TODO: these assume bounding boxes centered around zero
+template <> inline
+Point2f WarpAdapter::domainToPoint<Float>(const Float &v) const {
+    return Point2f(
+        ((Float)1.0 / bbox_.extents().x()) * (v - bbox_.min.x()),
+        0.0);
+}
+template <> inline
+Point2f WarpAdapter::domainToPoint<Point2f>(const Point2f &v) const {
+    const auto &delta = bbox_.extents();
+    return Point2f(
+        ((Float)1.0 / delta.x()) * (v.x() - bbox_.min.x()),
+        ((Float)1.0 / delta.y()) * (v.y() - bbox_.min.y()));
+}
+template <> inline
+Point2f WarpAdapter::domainToPoint<Vector3f>(const Vector3f &v) const {
+    Point2f p;
+    // TODO: this assumes a bounding box of [-1..1]^3, generalize
+    p[0] = std::atan2(v.y(), v.x()) * math::InvTwoPi;
+    if (p[0] < 0) p[0] += 1;
+    p[1] = 0.5f * v.z() + 0.5f;
+    return p;
+}
+
+template <> inline
+Float WarpAdapter::pointToDomain(const Point2f &p) const {
+    return bbox_.extents().x() * p.x() + bbox_.min.x();
+}
+template <> inline
+Point2f WarpAdapter::pointToDomain(const Point2f &p) const {
+    const auto &delta = bbox_.extents();
+    return Point2f(
+        delta.x() * p.x() + bbox_.min.x(),
+        delta.y() * p.y() + bbox_.min.y());
+}
+template <> inline
+Vector3f WarpAdapter::pointToDomain(const Point2f &p) const {
+    // TODO: this assumes a bounding box of [-1..1]^3, generalize
+    const Float x = 2 * math::Pi * p.x();
+    const Float y = 2 * p.y() - 1;
+    Float sinTheta = std::sqrt(1 - y * y);
+    Float sinPhi, cosPhi;
+    math::sincos(x, &sinPhi, &cosPhi);
+
+    return Vector3f(
+        sinTheta * cosPhi,
+        sinTheta * sinPhi,
+        p.y());
+}
 
 /// TODO: docs
 class MTS_EXPORT_CORE PlaneWarpAdapter : public WarpAdapter {
@@ -112,8 +191,9 @@ public:
 
     PlaneWarpAdapter(const std::string &name,
                      const WarpFunctionType &f, const PdfFunctionType &pdf,
-                     const std::vector<Argument> &arguments = {})
-        : WarpAdapter(name, arguments), f_(f), pdf_(pdf) {
+                     const std::vector<Argument> &arguments = {},
+                     const BoundingBox3f &bbox = WarpAdapter::kCenteredSquareBoundingBox)
+        : WarpAdapter(name, arguments, bbox), f_(f), pdf_(pdf) {
     }
 
     virtual std::pair<Vector3f, Float>
@@ -138,21 +218,6 @@ protected:
     virtual Float getPdfScalingFactor() const override {
         return 4.0;
     }
-
-    /**
-     * Maps a point on the warping function's output domain to a 2D point.
-     * This is used when aggregating warped points into a 2D histogram.
-     * For technical reasons, it always takes a 3D vector but may use only
-     * some of it components.
-     */
-    // TODO: consider domainToBin directly instead
-    virtual Point2f domainToPoint(const DomainType &v) const;
-
-    /**
-     * Maps a regularly sampled 2D point to the warping function's output domain.
-     * This is used when querying the PDF function at various points of the domain.
-     */
-    virtual DomainType pointToDomain(const Point2f &p) const;
 
     /// Returns a list of warped points
     virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount) const;
@@ -199,7 +264,9 @@ public:
                            [](const DomainType& p) {
                                return (p.x() >= 0 && p.x() <= 1
                                     && p.y() >= 0 && p.y() <= 1) ? 1.0 : 0.0;
-                           }) { }
+                           },
+                           {} /* No arguments to warping function */,
+                           kUnitSquareBoundingBox) { }
 
     bool isIdentity() const override { return true; }
 
@@ -213,13 +280,6 @@ public:
 protected:
     virtual Float getPdfScalingFactor() const override {
         return 1.0;
-    }
-
-    virtual Point2f domainToPoint(const DomainType &v) const override {
-        return v;
-    }
-    virtual DomainType pointToDomain(const Point2f &p) const override {
-        return p;
     }
 };
 

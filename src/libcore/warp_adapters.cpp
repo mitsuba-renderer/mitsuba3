@@ -5,6 +5,11 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
 
+const BoundingBox3f WarpAdapter::kUnitSquareBoundingBox =
+    BoundingBox3f(Point3f(0, 0, 0), Point3f(1, 1, 1));
+const BoundingBox3f WarpAdapter::kCenteredSquareBoundingBox =
+    BoundingBox3f(Point3f(-1, -1, -1), Point3f(1, 1, 1));
+
 Point2f WarpAdapter::samplePoint(Sampler * sampler, SamplingType strategy,
                                  float) const {
     switch (strategy) {
@@ -30,7 +35,6 @@ std::pair<Vector3f, Float> PlaneWarpAdapter::warpSample(const Point2f& sample) c
     std::tie(p, w) = warp(sample);
     return std::make_pair(Vector3f(p.x(), p.y(), 0.0), w);
 }
-
 
 void PlaneWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType strategy,
                                             size_t pointCount,
@@ -62,7 +66,7 @@ std::vector<double> PlaneWarpAdapter::generateExpectedHistogram(size_t pointCoun
     double scale = pointCount * static_cast<double>(getPdfScalingFactor());
 
     auto integrand = [this](double y, double x) {
-        return pdf(pointToDomain(Point2f(x, y)));
+        return pdf(pointToDomain<DomainType>(Point2f(x, y)));
     };
 
     for (size_t y = 0; y < gridHeight; ++y) {
@@ -81,13 +85,6 @@ std::vector<double> PlaneWarpAdapter::generateExpectedHistogram(size_t pointCoun
     }
 
     return hist;
-}
-
-Point2f PlaneWarpAdapter::domainToPoint(const PlaneWarpAdapter::DomainType &v) const {
-    return Point2f(0.5f * v.x() + 0.5f, 0.5f * v.y() + 0.5f);
-}
-PlaneWarpAdapter::DomainType PlaneWarpAdapter::pointToDomain(const Point2f &p) const {
-    return Point2f(2 * p.x() - 1, 2 * p.y() - 1);
 }
 
 std::vector<PlaneWarpAdapter::PairType>
@@ -118,7 +115,7 @@ std::vector<double> PlaneWarpAdapter::binPoints(
             continue;
         }
 
-        Point2f observation = domainToPoint(p.first);
+        Point2f observation = domainToPoint<DomainType>(p.first);
         float x = observation[0],
               y = observation[1];
 

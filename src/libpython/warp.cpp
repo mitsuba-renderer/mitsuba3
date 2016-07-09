@@ -144,7 +144,14 @@ MTS_PY_EXPORT(warp) {
     using warp::WarpAdapter;
     auto w = py::class_<WarpAdapter, std::unique_ptr<WarpAdapter>, PyWarpAdapter>(
         m2, "WarpAdapter", DM(warp, WarpAdapter))
-        .def(py::init<const std::string &, const std::vector<WarpAdapter::Argument> &>(), DM(warp, WarpAdapter, WarpAdapter))
+        .def(py::init<const std::string &,
+                      const std::vector<WarpAdapter::Argument>,
+                      const BoundingBox3f &>(),
+             DM(warp, WarpAdapter, WarpAdapter))
+        .def_readonly_static("kUnitSquareBoundingBox", &WarpAdapter::kUnitSquareBoundingBox,
+                             "Bounding box corresponding to the first quadrant ([0..1]^n)")
+        .def_readonly_static("kCenteredSquareBoundingBox", &WarpAdapter::kCenteredSquareBoundingBox,
+                             "Bounding box corresponding to a disk of radius 1 centered at the origin ([-1..1]^n)")
         .def("samplePoint", &WarpAdapter::samplePoint, DM(warp, WarpAdapter, samplePoint))
         .def("warpSample", &WarpAdapter::warpSample, DM(warp, WarpAdapter, warpSample))
         .def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
@@ -178,9 +185,11 @@ MTS_PY_EXPORT(warp) {
         .def(py::init<const std::string &,
                       const PlaneWarpAdapter::WarpFunctionType &,
                       const PlaneWarpAdapter::PdfFunctionType &,
-                      const std::vector<WarpAdapter::Argument> &>(),
+                      const std::vector<WarpAdapter::Argument> &,
+                      const BoundingBox3f &>(),
              py::arg("name"), py::arg("f"), py::arg("pdf"),
              py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
+             py::arg("bbox") = WarpAdapter::kCenteredSquareBoundingBox,
              DM(warp, PlaneWarpAdapter, PlaneWarpAdapter))
         .def("__repr__", [](const PlaneWarpAdapter &w) {
             return w.toString();

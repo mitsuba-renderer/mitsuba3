@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from mitsuba import math
+from mitsuba import math, BoundingBox3f
 from mitsuba.warp import *
 
 class WarpTest(unittest.TestCase):
@@ -37,8 +37,8 @@ class WarpTest(unittest.TestCase):
         self.assertAlmostEqual(squareToUniformDiskConcentricPdf(zero2D), math.InvPi, places = 6)
         self.assertAlmostEqual(squareToUniformDiskConcentricPdf(ten2D), 0, places = 6)
 
-        self.assertAlmostEqual(squareToStdNormalPdf(zero2D), 1, places = 6)
-        self.assertLessThan(squareToStdNormalPdf(ten2D), 0.0001)
+        self.assertAlmostEqual(squareToStdNormalPdf(zero2D), math.InvTwoPi, places = 6)
+        self.assertTrue(squareToStdNormalPdf(ten2D) < 0.0001)
 
         self.assertAlmostEqual(squareToTentPdf(zero2D), 1, places = 6)
         self.assertAlmostEqual(squareToTentPdf(ten2D), 0, places = 6)
@@ -90,23 +90,33 @@ class WarpTest(unittest.TestCase):
             return lambda p: (f(p), 1.0)
 
         warps = [
+            # No warping
             IdentityWarpAdapter(),
+            # 2D -> 2D warps
             PlaneWarpAdapter("Square to uniform disk",
                 warpWithUnitWeight(squareToUniformDisk),
                 squareToUniformDiskPdf),
             PlaneWarpAdapter("Square to uniform disk concentric",
                 warpWithUnitWeight(squareToUniformDiskConcentric),
                 squareToUniformDiskConcentricPdf),
-            # PlaneWarpAdapter("Square to uniform triangle",
-            #     warpWithUnitWeight(squareToUniformTriangle),
-            #     squareToUniformTrianglePdf),
+            PlaneWarpAdapter("Square to uniform triangle",
+                warpWithUnitWeight(squareToUniformTriangle),
+                squareToUniformTrianglePdf,
+                bbox = WarpAdapter.kUnitSquareBoundingBox),
+            # TODO: manage the case of infinite support (need inverse mapping?)
             # PlaneWarpAdapter("Square to 2D gaussian",
             #     warpWithUnitWeight(squareToStdNormal),
-            #     squareToStdNormalPdf),
-            # PlaneWarpAdapter("Square to tent",
+            #     squareToStdNormalPdf,
+            #     bbox = BoundingBox3f([-5, -5, -5], [5, 5, 5])),
+
+            # 2D -> 3D warps
+
+
+            # 1D -> 1D warps
+            # LineWarp("Square to tent",
             #     warpWithUnitWeight(squareToTent),
             #     squareToTentPdf)
-            # PlaneWarpAdapter("Square to tent", squareToTent, squareToTentPdf)
+            # LineWarp("Square to tent", squareToTent, squareToTentPdf)
         ]
 
         # TODO: cover all sampling types
@@ -121,7 +131,7 @@ class WarpTest(unittest.TestCase):
         sampleCount = 100 * nBins
 
         for warpAdapter in warps:
-            with self.subTest(str(warpAdapter)):
+            with self.subTest("Warp: " + str(warpAdapter)):
                 (result, reason) = runStatisticalTest(
                     sampleCount, gridWidth, gridHeight,
                     samplingType, warpAdapter,
