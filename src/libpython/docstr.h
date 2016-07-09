@@ -2677,17 +2677,15 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_IdentityWarpAdapter = R"doc()doc";
+static const char *__doc_mitsuba_warp_IdentityWarpAdapter = R"doc(TODO: docs)doc";
 
 static const char *__doc_mitsuba_warp_IdentityWarpAdapter_IdentityWarpAdapter = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_IdentityWarpAdapter_domainToPoint = R"doc()doc";
+static const char *__doc_mitsuba_warp_IdentityWarpAdapter_getPdfScalingFactor = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_IdentityWarpAdapter_isIdentity = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_IdentityWarpAdapter_pointToDomain = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter = R"doc()doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter = R"doc(TODO: docs)doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_PlaneWarpAdapter = R"doc()doc";
 
@@ -2695,37 +2693,29 @@ static const char *__doc_mitsuba_warp_PlaneWarpAdapter_binPoints = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_domainDimensionality = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_domainToPoint =
-R"doc(Maps a point on the warping function's output domain to a 2D point.
-This is used when aggregating warped points into a 2D histogram. For
-technical reasons, it always takes a 3D vector but may use only some
-of it components.)doc";
-
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_f =
 R"doc(Warping function. Will be called with the sample only, so any
-parameter will be bound in advance. Returns a pair (warped point on
-the domain; weight).)doc";
-
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generateExpectedHistogram = R"doc()doc";
+parameter needs to be bound in advance. Returns a pair (warped point
+on the domain; weight).)doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generateObservedHistogram = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generatePoints = R"doc()doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generatePoints = R"doc(Returns a list of warped points)doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generateWarpedPoints = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_getPdfIntegrand = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_getPdfScalingFactor = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_inputDimensionality = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_pdf = R"doc(TODO: doc)doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_pdf_2 =
-R"doc(PDF function. Will be called with a domain point and all arguments.
-Should return the PDF associated with that point.)doc";
-
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_pointToDomain =
-R"doc(Maps a regularly sampled 2D point to the warping function's output
-domain. This is used when querying the PDF function at various points
-of the domain.)doc";
+R"doc(PDF function. Will be called with a domain point only, so any
+parameter needs to be bound in advance. Should return the PDF
+associated with that point.)doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_warp = R"doc(TODO: doc)doc";
 
@@ -2739,13 +2729,49 @@ static const char *__doc_mitsuba_warp_SamplingType_Independent = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_SamplingType_Stratified = R"doc()doc";
 
+static const char *__doc_mitsuba_warp_SphereWarpAdapter = R"doc(TODO: docs)doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_SphereWarpAdapter = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_binPoints = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_domainDimensionality = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_f =
+R"doc(Warping function. Will be called with the sample only, so any
+parameter needs to be bound in advance. Returns a pair (warped point
+on the domain; weight).)doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_generateObservedHistogram = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_generatePoints = R"doc(Returns a list of warped points)doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_generateWarpedPoints = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_getPdfIntegrand = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_getPdfScalingFactor = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_inputDimensionality = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_pdf = R"doc(TODO: doc)doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_pdf_2 =
+R"doc(PDF function. Will be called with a domain point only, so any
+parameter needs to be bound in advance. Should return the PDF
+associated with that point.)doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_warp = R"doc(TODO: doc)doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_warpSample = R"doc()doc";
+
 static const char *__doc_mitsuba_warp_WarpAdapter = R"doc(TODO: doc, purpose, why we use this design)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_Argument = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_Argument_Argument = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_Argument_clamp = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument_clamp = R"doc(Clamps \p value to the authorized range of this argument)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_Argument_defaultValue = R"doc(Range and default value for the parameter)doc";
 
@@ -2765,7 +2791,17 @@ static const char *__doc_mitsuba_warp_WarpAdapter_WarpAdapter = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_arguments = R"doc()doc";
 
+static const char *__doc_mitsuba_warp_WarpAdapter_bbox =
+R"doc(Bounding box of the output domain (may not use all 3 components of the
+points))doc";
+
 static const char *__doc_mitsuba_warp_WarpAdapter_domainDimensionality = R"doc(Returns the number of dimensions of the ouput domain.)doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_domainToPoint =
+R"doc(Maps a point on the warping function's output domain to a 2D point in
+[0..1]^2. This is used when aggregating warped points into a 2D
+histogram. For technical reasons, it always takes a 3D vector but may
+use only some of it components.)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_generateExpectedHistogram = R"doc()doc";
 
@@ -2776,11 +2812,20 @@ R"doc(Writes out generated points into \p positions and associated weights
 into \p weights. This method's job is mostly to package the results of
 a point generation function into a general Eigen matrix.)doc";
 
+static const char *__doc_mitsuba_warp_WarpAdapter_getPdfIntegrand = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_getPdfScalingFactor = R"doc()doc";
+
 static const char *__doc_mitsuba_warp_WarpAdapter_inputDimensionality = R"doc(Returns the number of dimensions of the input domain.)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_isIdentity = R"doc(Returns true if the warping function is the identity function.)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_name = R"doc(Human-readable name)doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_pointToDomain =
+R"doc(Maps a regularly sampled 2D point to the warping function's output
+domain. This is used when querying the PDF function at various points
+of the domain.)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_samplePoint = R"doc()doc";
 
@@ -2907,9 +2952,21 @@ computed for the test.
 Returns:
     (Whether the test succeeded, an explanatory text).)doc";
 
+static const char *__doc_mitsuba_warp_domainToPoint = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_domainToPoint_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_domainToPoint_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_warp_intervalToNonuniformTent =
 R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
 distribution with nodes ``{a, b, c}``)doc";
+
+static const char *__doc_mitsuba_warp_pointToDomain = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_pointToDomain_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_pointToDomain_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_squareToCosineHemisphere =
 R"doc(Sample a cosine-weighted vector on the unit hemisphere with respect to
