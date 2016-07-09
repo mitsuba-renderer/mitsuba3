@@ -93,7 +93,7 @@ std::function<Float (double, double)> PlaneWarpAdapter::getPdfIntegrand() const 
 
 std::vector<PlaneWarpAdapter::PairType>
 PlaneWarpAdapter::generatePoints(Sampler * sampler, SamplingType strategy,
-                                 size_t pointCount) const {
+                                 size_t &pointCount) const {
     size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
     float invSqrtVal = 1.f / sqrtVal;
     if (strategy == Grid || strategy == Stratified)
@@ -169,7 +169,7 @@ std::function<Float (double, double)> SphereWarpAdapter::getPdfIntegrand() const
 // TODO: refactor, this is almost the same as in PlaneWarpAdapter
 std::vector<SphereWarpAdapter::PairType>
 SphereWarpAdapter::generatePoints(Sampler * sampler, SamplingType strategy,
-                                 size_t pointCount) const {
+                                 size_t &pointCount) const {
     size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
     float invSqrtVal = 1.f / sqrtVal;
     if (strategy == Grid || strategy == Stratified)

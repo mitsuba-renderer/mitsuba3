@@ -92,17 +92,21 @@ class WarpTest(unittest.TestCase):
         warps = [
             # No warping
             IdentityWarpAdapter(),
+
             # 2D -> 2D warps
-            # PlaneWarpAdapter("Square to uniform disk",
-            #     warpWithUnitWeight(squareToUniformDisk),
-            #     squareToUniformDiskPdf),
-            # PlaneWarpAdapter("Square to uniform disk concentric",
-            #     warpWithUnitWeight(squareToUniformDiskConcentric),
-            #     squareToUniformDiskConcentricPdf),
-            # PlaneWarpAdapter("Square to uniform triangle",
-            #     warpWithUnitWeight(squareToUniformTriangle),
-            #     squareToUniformTrianglePdf,
-            #     bbox = WarpAdapter.kUnitSquareBoundingBox),
+            PlaneWarpAdapter("Square to uniform disk",
+                warpWithUnitWeight(squareToUniformDisk),
+                squareToUniformDiskPdf),
+            PlaneWarpAdapter("Square to uniform disk concentric",
+                warpWithUnitWeight(squareToUniformDiskConcentric),
+                squareToUniformDiskConcentricPdf),
+            PlaneWarpAdapter("Square to uniform triangle",
+                warpWithUnitWeight(squareToUniformTriangle),
+                squareToUniformTrianglePdf,
+                bbox = WarpAdapter.kUnitSquareBoundingBox),
+            PlaneWarpAdapter("Square to tent",
+                warpWithUnitWeight(squareToTent),
+                squareToTentPdf),
 
             # TODO: manage the case of infinite support (need inverse mapping?)
             # PlaneWarpAdapter("Square to 2D gaussian",
@@ -120,15 +124,12 @@ class WarpTest(unittest.TestCase):
             SphereWarpAdapter("Square to cosine hemisphere",
                 warpWithUnitWeight(squareToCosineHemisphere),
                 squareToCosineHemispherePdf),
-            # SphereWarpAdapter("Square to uniform cone",
-            #     warpWithUnitWeight(squareToUniformCone),
-            #     squareToUniformConePdf,
-            #     [WarpAdapter.Argument("cosCutoff", -1, 1)]),
+            SphereWarpAdapter("Square to uniform cone",
+                warpWithUnitWeight(squareToUniformCone),
+                squareToUniformConePdf,
+                [WarpAdapter.Argument("cosCutoff", -1, 1)])
 
             # 1D -> 1D warps
-            # LineWarp("Square to tent",
-            #     warpWithUnitWeight(squareToTent),
-            #     squareToTentPdf)
             # LineWarp("Square to nonuniform tent",
             #     squareToTent, squareToTentPdf, [TODO: args])
         ]

@@ -179,7 +179,7 @@ Vector3f WarpAdapter::pointToDomain(const Point2f &p) const {
     return Vector3f(
         sinTheta * cosPhi,
         sinTheta * sinPhi,
-        p.y());
+        y);
 }
 
 /// TODO: docs
@@ -221,7 +221,7 @@ protected:
     }
 
     /// Returns a list of warped points
-    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount) const;
+    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
 
     virtual std::vector<double> binPoints(const std::vector<PairType> &points,
         size_t gridWidth, size_t gridHeight) const;
@@ -328,7 +328,7 @@ protected:
     }
 
     /// Returns a list of warped points
-    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t pointCount) const;
+    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
 
     virtual std::vector<double> binPoints(const std::vector<PairType> &points,
         size_t gridWidth, size_t gridHeight) const;
