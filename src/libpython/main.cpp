@@ -29,6 +29,7 @@ MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Struct);
 MTS_PY_DECLARE(warp);
+MTS_PY_DECLARE(WarpVisualizationWidget);
 MTS_PY_DECLARE(hypothesis);
 
 MTS_PY_DECLARE(Scene);
@@ -43,7 +44,9 @@ PYBIND11_PLUGIN(mitsuba) {
     py::module core = m.def_submodule("core",
         "Mitsuba core support library (generic mathematical and I/O routines)");
     py::module render = m.def_submodule("render",
-        "Mitsuba rendering support library (scene representation, ray intersection, ..)");
+        "Mitsuba rendering support library (scene representation, ray intersection, ...)");
+    py::module gui = m.def_submodule("gui",
+        "Mitsuba GUI library (rendering interface, visualization of warping functions, ...)");
 
     MTS_PY_IMPORT_CORE(filesystem);
     MTS_PY_IMPORT_CORE(pcg32);
@@ -70,10 +73,12 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT_CORE(Ray);
     MTS_PY_IMPORT_CORE(Frame);
     MTS_PY_IMPORT_CORE(Struct);
-    MTS_PY_IMPORT(warp);
-    MTS_PY_IMPORT(hypothesis);
+    MTS_PY_IMPORT_CORE(warp);
+    MTS_PY_IMPORT_CORE(hypothesis);
 
     MTS_PY_IMPORT_RENDER(Scene);
+
+    MTS_PY_IMPORT_GUI(WarpVisualizationWidget);
 
     atexit([](){
         Logger::staticShutdown();

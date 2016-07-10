@@ -56,6 +56,9 @@ add_library(mitsuba-python SHARED
 
   # librender
   scene.cpp
+
+  # libgui
+  warp_visualizer.cpp
 )
 
 # Link to Mitsuba core and GUI libraries

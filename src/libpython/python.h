@@ -24,6 +24,9 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 #define MTS_PY_IMPORT_RENDER(name) \
     python_export_##name(render)
 
+#define MTS_PY_IMPORT_GUI(name) \
+    python_export_##name(gui)
+
 #define MTS_PY_EXPORT(name) \
     void python_export_##name(py::module &m)
 

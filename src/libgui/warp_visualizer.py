@@ -1,11 +1,10 @@
 import gc
 from collections import OrderedDict
 import math
-import mitsuba
-from mitsuba import warp, BoundingBox3f
-from mitsuba.warp import WarpType, SamplingType, \
+from mitsuba.core import warp, BoundingBox3f
+from mitsuba.core.warp import WarpType, SamplingType, \
                          WarpAdapter, PlaneWarpAdapter, IdentityWarpAdapter, SphereWarpAdapter
-from mitsuba.warp import WarpVisualizationWidget
+from mitsuba.gui import WarpVisualizationWidget
 
 import nanogui
 from nanogui import Color, Screen, Window, Widget, GroupLayout, BoxLayout, \

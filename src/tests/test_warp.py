@@ -3,8 +3,8 @@ try:
 except:
     import unittest
 
-from mitsuba import math, BoundingBox3f
-from mitsuba.warp import *
+from mitsuba.core import math, BoundingBox3f
+from mitsuba.core.warp import *
 
 class WarpTest(unittest.TestCase):
     # Statistical tests parameters
