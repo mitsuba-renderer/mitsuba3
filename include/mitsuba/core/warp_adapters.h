@@ -13,6 +13,12 @@ NAMESPACE_BEGIN(warp)
 // TODO: needs sampler interface
 using Sampler = pcg32;
 
+// Forward declaration of helper class.
+NAMESPACE_BEGIN(detail)
+template <typename Adapter, typename SampleType, typename DomainType>
+class WarpAdapterHelper;
+NAMESPACE_END(detail)
+
 /**
  * TODO: doc, purpose, why we use this design
  */
@@ -67,9 +73,6 @@ public:
     WarpAdapter(const std::string &name, const std::vector<Argument> &arguments,
                 const BoundingBox3f bbox)
         : name_(name), arguments_(arguments), bbox_(bbox) { }
-
-    virtual Point2f samplePoint(Sampler * sampler, SamplingType strategy,
-                                float invSqrtVal) const;
 
     virtual std::pair<Vector3f, Float> warpSample(const Point2f &sample) const = 0;
 
@@ -183,6 +186,7 @@ Vector3f WarpAdapter::pointToDomain(const Point2f &p) const {
         sinTheta * sinPhi,
         y);
 }
+// TODO: avoid multiple repeated declarations
 
 /// TODO: docs
 /// TODO: only uses the first coordinate from the 2D samples, which is wasteful.
@@ -193,6 +197,8 @@ public:
     using PairType = std::pair<DomainType, Float>;
     using WarpFunctionType = std::function<PairType (const SampleType&)>;
     using PdfFunctionType = std::function<Float (const DomainType&)>;
+    friend class detail::WarpAdapterHelper<LineWarpAdapter, SampleType, DomainType>;
+    using Helper = detail::WarpAdapterHelper<LineWarpAdapter, SampleType, DomainType>;
 
     LineWarpAdapter(const std::string &name,
                     const WarpFunctionType &f, const PdfFunctionType &pdf,
@@ -264,6 +270,9 @@ public:
     using PairType = std::pair<DomainType, Float>;
     using WarpFunctionType = std::function<PairType (const SampleType&)>;
     using PdfFunctionType = std::function<Float (const DomainType&)>;
+    friend class detail::WarpAdapterHelper<PlaneWarpAdapter, SampleType, DomainType>;
+    using Helper = detail::WarpAdapterHelper<PlaneWarpAdapter, SampleType, DomainType>;
+
 
     PlaneWarpAdapter(const std::string &name,
                      const WarpFunctionType &f, const PdfFunctionType &pdf,
@@ -347,13 +356,6 @@ public:
 
     bool isIdentity() const override { return true; }
 
-    // virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
-    //     SamplingType strategy, size_t pointCount,
-    //     size_t gridWidth, size_t gridHeight) const override;
-
-    // virtual std::vector<double> generateExpectedHistogram(size_t pointCount,
-    //     size_t gridWidth, size_t gridHeight) const override;
-
 protected:
     virtual Float getPdfScalingFactor() const override {
         return 1.0;
@@ -369,6 +371,8 @@ public:
     using PairType = std::pair<DomainType, Float>;
     using WarpFunctionType = std::function<PairType (const SampleType&)>;
     using PdfFunctionType = std::function<Float (const DomainType&)>;
+    friend class detail::WarpAdapterHelper<SphereWarpAdapter, SampleType, DomainType>;
+    using Helper = detail::WarpAdapterHelper<SphereWarpAdapter, SampleType, DomainType>;
 
     SphereWarpAdapter(const std::string &name,
                       const WarpFunctionType &f, const PdfFunctionType &pdf,
@@ -378,9 +382,7 @@ public:
     }
 
     virtual std::pair<Vector3f, Float>
-    warpSample(const Point2f& sample) const override {
-        return warp(sample);
-    }
+    warpSample(const Point2f& sample) const override;
 
     virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
                                       size_t pointCount,

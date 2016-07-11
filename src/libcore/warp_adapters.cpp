@@ -1,33 +1,17 @@
 #include <mitsuba/core/warp_adapters.h>
+#include <mitsuba/core/detail/warp_adapters.hpp>
 
 #include <hypothesis.h>
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
 
+using detail::WarpAdapterHelper;
+
 const BoundingBox3f WarpAdapter::kUnitSquareBoundingBox =
     BoundingBox3f(Point3f(0, 0, 0), Point3f(1, 1, 1));
 const BoundingBox3f WarpAdapter::kCenteredSquareBoundingBox =
     BoundingBox3f(Point3f(-1, -1, -1), Point3f(1, 1, 1));
-
-Point2f WarpAdapter::samplePoint(Sampler * sampler, SamplingType strategy,
-                                 float) const {
-    switch (strategy) {
-        case Independent:
-            return Point2f(sampler->nextFloat(), sampler->nextFloat());
-
-        // case Grid:
-        //     return Point2f((x + 0.5f) * invSqrtVal, (y + 0.5f) * invSqrtVal);
-
-        // case Stratified:
-        //     return Point2f((x + sampler->nextFloat()) * invSqrtVal,
-        //                    (y + sampler->nextFloat()) * invSqrtVal);
-
-        default:
-            Log(EError, "Unsupported sampling strategy: %d", strategy);
-            return Point2f();
-    }
-}
 
 std::vector<double> WarpAdapter::generateExpectedHistogram(size_t pointCount,
     size_t gridWidth, size_t gridHeight) const {
@@ -36,6 +20,8 @@ std::vector<double> WarpAdapter::generateExpectedHistogram(size_t pointCount,
     double scale = pointCount * static_cast<double>(getPdfScalingFactor());
 
     auto integrand = getPdfIntegrand();
+
+    Log(EInfo, "%f x %f", gridWidth, gridHeight);
 
     for (size_t y = 0; y < gridHeight; ++y) {
         double yStart = y       / static_cast<double>(gridHeight);
@@ -55,244 +41,53 @@ std::vector<double> WarpAdapter::generateExpectedHistogram(size_t pointCount,
     return hist;
 }
 
-std::pair<Vector3f, Float> LineWarpAdapter::warpSample(const Point2f& sample) const {
-    DomainType p;
-    Float w;
-    std::tie(p, w) = warp(sample.x());
-    return std::make_pair(Vector3f(p, 0.0, 0.0), w);
-}
+// -----------------------------------------------------------------------------
 
-void LineWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType strategy,
-                                            size_t pointCount,
-                                            Eigen::MatrixXf &positions,
-                                            std::vector<Float> &weights) const {
-    const auto points = generatePoints(sampler, strategy, pointCount);
-
-    positions.resize(3, points.size());
-    weights.resize(points.size());
-    for (size_t i = 0; i < points.size(); ++i) {
-        const auto& p = points[i];
-        positions.col(i) << p.first, 0.f, 0.f;
-        weights[i] = p.second;
-    }
-}
-
-std::vector<double> LineWarpAdapter::generateObservedHistogram(Sampler *sampler,
-    SamplingType strategy, size_t pointCount, size_t gridWidth, size_t gridHeight) const {
-
-    const auto points = generatePoints(sampler, strategy, pointCount);
-    return binPoints(points, gridWidth, gridHeight);
-}
-
-std::function<Float (double, double)> LineWarpAdapter::getPdfIntegrand() const {
-    return [this](double y, double x) {
-        return pdf(pointToDomain<DomainType>(Point2f(x, y)));
-    };
-}
-
-std::vector<LineWarpAdapter::PairType>
-LineWarpAdapter::generatePoints(Sampler * sampler, SamplingType strategy,
-                                 size_t &pointCount) const {
-    size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
-    float invSqrtVal = 1.f / sqrtVal;
-    if (strategy == Grid || strategy == Stratified)
-        pointCount = sqrtVal * sqrtVal;
-
-    std::vector<PairType> warpedPoints(pointCount);
-    for (size_t i = 0; i < pointCount; ++i) {
-        warpedPoints[i] = warp(samplePoint(sampler, strategy, invSqrtVal).x());
+#define FORWARD_TO_HELPER(AdapterType) \
+    std::pair<Vector3f, Float> AdapterType::warpSample(const Point2f& sample) const { \
+        return Helper::warpSample(this, sample);                                      \
+    }                                                                                 \
+                                                                                      \
+    void AdapterType::generateWarpedPoints(Sampler *sampler, SamplingType strategy,   \
+                                                size_t pointCount,                    \
+                                                Eigen::MatrixXf &positions,           \
+                                                std::vector<Float> &weights) const {  \
+        Helper::generateWarpedPoints(this,                                            \
+            sampler, strategy, pointCount, positions, weights);                       \
+    }                                                                                 \
+                                                                                      \
+    std::vector<double> AdapterType::generateObservedHistogram(Sampler *sampler,      \
+        SamplingType strategy, size_t pointCount, size_t gridWidth, size_t gridHeight) const { \
+                                                                                      \
+        return Helper::generateObservedHistogram(this,                                \
+            sampler, strategy, pointCount, gridWidth, gridHeight);                    \
+    }                                                                                 \
+                                                                                      \
+    std::function<Float (double, double)> AdapterType::getPdfIntegrand() const {      \
+        return Helper::getPdfIntegrand(this);                                         \
+    }                                                                                 \
+                                                                                      \
+    std::vector<AdapterType::PairType>                                                \
+    AdapterType::generatePoints(Sampler * sampler, SamplingType strategy,             \
+                                     size_t &pointCount) const {                      \
+        return Helper::generatePoints(this, sampler, strategy, pointCount);           \
+    }                                                                                 \
+                                                                                      \
+    std::vector<double> AdapterType::binPoints(                                       \
+        const std::vector<AdapterType::PairType> &points,                             \
+        size_t gridWidth, size_t gridHeight) const {                                  \
+                                                                                      \
+        return Helper::binPoints(this, points, gridWidth, gridHeight);                \
     }
 
-    return warpedPoints;
-}
 
-std::vector<double> LineWarpAdapter::binPoints(
-    const std::vector<LineWarpAdapter::PairType> &points,
-    size_t gridWidth, size_t gridHeight) const {
+// -----------------------------------------------------------------------------
 
-    std::vector<double> hist(gridWidth * gridHeight, 0.0);
+FORWARD_TO_HELPER(LineWarpAdapter)
+FORWARD_TO_HELPER(PlaneWarpAdapter)
+FORWARD_TO_HELPER(SphereWarpAdapter)
 
-    for (size_t i = 0; i < static_cast<size_t>(points.size()); ++i) {
-        const auto& p = points[i];
-        if (p.second <= math::Epsilon) { // Sample has null weight
-            continue;
-        }
-
-        Point2f observation = domainToPoint<DomainType>(p.first);
-        float x = observation[0],
-              y = observation[1];
-
-        size_t xbin = std::min(gridWidth - 1,
-            std::max(0lu, static_cast<size_t>(std::floor(x * gridWidth))));
-        size_t ybin = std::min(gridHeight - 1,
-            std::max(0lu, static_cast<size_t>(std::floor(y * gridHeight))));
-
-        hist[ybin * gridWidth + xbin] += 1;
-    }
-
-    return hist;
-}
-
-
-// -----------------------------------
-
-std::pair<Vector3f, Float> PlaneWarpAdapter::warpSample(const Point2f& sample) const {
-    DomainType p;
-    Float w;
-    std::tie(p, w) = warp(sample);
-    return std::make_pair(Vector3f(p.x(), p.y(), 0.0), w);
-}
-
-void PlaneWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType strategy,
-                                            size_t pointCount,
-                                            Eigen::MatrixXf &positions,
-                                            std::vector<Float> &weights) const {
-    const auto points = generatePoints(sampler, strategy, pointCount);
-
-    positions.resize(3, points.size());
-    weights.resize(points.size());
-    for (size_t i = 0; i < points.size(); ++i) {
-        const auto& p = points[i];
-        positions.col(i) << p.first.x(), p.first.y(), 0.f;
-        weights[i] = p.second;
-    }
-}
-
-std::vector<double> PlaneWarpAdapter::generateObservedHistogram(Sampler *sampler,
-    SamplingType strategy, size_t pointCount, size_t gridWidth, size_t gridHeight) const {
-
-    const auto points = generatePoints(sampler, strategy, pointCount);
-    return binPoints(points, gridWidth, gridHeight);
-}
-
-std::function<Float (double, double)> PlaneWarpAdapter::getPdfIntegrand() const {
-    return [this](double y, double x) {
-        return pdf(pointToDomain<DomainType>(Point2f(x, y)));
-    };
-}
-
-std::vector<PlaneWarpAdapter::PairType>
-PlaneWarpAdapter::generatePoints(Sampler * sampler, SamplingType strategy,
-                                 size_t &pointCount) const {
-    size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
-    float invSqrtVal = 1.f / sqrtVal;
-    if (strategy == Grid || strategy == Stratified)
-        pointCount = sqrtVal * sqrtVal;
-
-    std::vector<PairType> warpedPoints(pointCount);
-    for (size_t i = 0; i < pointCount; ++i) {
-        warpedPoints[i] = warp(samplePoint(sampler, strategy, invSqrtVal));
-    }
-
-    return warpedPoints;
-}
-
-std::vector<double> PlaneWarpAdapter::binPoints(
-    const std::vector<PlaneWarpAdapter::PairType> &points,
-    size_t gridWidth, size_t gridHeight) const {
-
-    std::vector<double> hist(gridWidth * gridHeight, 0.0);
-
-    for (size_t i = 0; i < static_cast<size_t>(points.size()); ++i) {
-        const auto& p = points[i];
-        if (p.second <= math::Epsilon) { // Sample has null weight
-            continue;
-        }
-
-        Point2f observation = domainToPoint<DomainType>(p.first);
-        float x = observation[0],
-              y = observation[1];
-
-        size_t xbin = std::min(gridWidth - 1,
-            std::max(0lu, static_cast<size_t>(std::floor(x * gridWidth))));
-        size_t ybin = std::min(gridHeight - 1,
-            std::max(0lu, static_cast<size_t>(std::floor(y * gridHeight))));
-
-        hist[ybin * gridWidth + xbin] += 1;
-    }
-
-    return hist;
-}
-
-
-// -----------------------------------
-
-
-// TODO: refactor, this is almost the same as in PlaneWarpAdapter
-void SphereWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType strategy,
-                                             size_t pointCount,
-                                             Eigen::MatrixXf &positions,
-                                             std::vector<Float> &weights) const {
-    const auto points = generatePoints(sampler, strategy, pointCount);
-
-    positions.resize(3, points.size());
-    weights.resize(points.size());
-    for (size_t i = 0; i < points.size(); ++i) {
-        const auto& p = points[i];
-        positions.col(i) << p.first.x(), p.first.y(), p.first.z();
-        weights[i] = p.second;
-    }
-}
-
-// TODO: refactor, this is almost the same as in PlaneWarpAdapter
-std::vector<double> SphereWarpAdapter::generateObservedHistogram(Sampler *sampler,
-    SamplingType strategy, size_t pointCount, size_t gridWidth, size_t gridHeight) const {
-
-    const auto points = generatePoints(sampler, strategy, pointCount);
-    return binPoints(points, gridWidth, gridHeight);
-}
-
-std::function<Float (double, double)> SphereWarpAdapter::getPdfIntegrand() const {
-    return [this](double y, double x) {
-        return pdf(pointToDomain<DomainType>(Point2f(x, y)));
-    };
-}
-
-// TODO: refactor, this is almost the same as in PlaneWarpAdapter
-std::vector<SphereWarpAdapter::PairType>
-SphereWarpAdapter::generatePoints(Sampler * sampler, SamplingType strategy,
-                                 size_t &pointCount) const {
-    size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
-    float invSqrtVal = 1.f / sqrtVal;
-    if (strategy == Grid || strategy == Stratified)
-        pointCount = sqrtVal * sqrtVal;
-
-    std::vector<PairType> warpedPoints(pointCount);
-    for (size_t i = 0; i < pointCount; ++i) {
-        warpedPoints[i] = warp(samplePoint(sampler, strategy, invSqrtVal));
-    }
-
-    return warpedPoints;
-}
-
-// TODO: refactor, this is almost the same as in PlaneWarpAdapter
-std::vector<double> SphereWarpAdapter::binPoints(
-    const std::vector<SphereWarpAdapter::PairType> &points,
-    size_t gridWidth, size_t gridHeight) const {
-
-    std::vector<double> hist(gridWidth * gridHeight, 0.0);
-
-    for (size_t i = 0; i < static_cast<size_t>(points.size()); ++i) {
-        const auto& p = points[i];
-        if (p.second <= math::Epsilon) { // Sample has null weight
-            continue;
-        }
-
-        Point2f observation = domainToPoint<DomainType>(p.first);
-        float x = observation[0],
-              y = observation[1];
-
-        size_t xbin = std::min(gridWidth - 1,
-            std::max(0lu, static_cast<size_t>(std::floor(x * gridWidth))));
-        size_t ybin = std::min(gridHeight - 1,
-            std::max(0lu, static_cast<size_t>(std::floor(y * gridHeight))));
-
-        hist[ybin * gridWidth + xbin] += 1;
-    }
-
-    return hist;
-}
-
+#undef FORWARD_TO_HELPER
 
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)

@@ -144,7 +144,6 @@ Point2f squareToTent(const Point2f &sample) {
 }
 
 Float squareToTentPdf(const Point2f &p) {
-    // TODO: probably wrong
     if (p.x() >= -1 && p.x() <= 1 && p.y() >= -1 && p.y() <= 1)
         return (1 - std::abs(p.x())) * (1 - std::abs(p.y()));
     return 0.0;

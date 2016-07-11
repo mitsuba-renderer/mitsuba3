@@ -18,12 +18,6 @@ public:
         PYBIND11_OVERLOAD_PURE(ReturnType, WarpAdapter, warpSample, sample);
     }
 
-    Point2f samplePoint(Sampler * sampler, SamplingType strategy,
-                                float invSqrtVal) const override {
-        PYBIND11_OVERLOAD(
-            Point2f, WarpAdapter, samplePoint, sampler, strategy, invSqrtVal);
-    }
-
     void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
                                       size_t pointCount,
                                       Eigen::MatrixXf &positions,
@@ -152,7 +146,6 @@ MTS_PY_EXPORT(warp) {
         .def_readonly_static(
             "kCenteredSquareBoundingBox", &WarpAdapter::kCenteredSquareBoundingBox,
             "Bounding box corresponding to a disk of radius 1 centered at the origin ([-1..1]^n)")
-        .def("samplePoint", &WarpAdapter::samplePoint, DM(warp, WarpAdapter, samplePoint))
         .def("warpSample", &WarpAdapter::warpSample, DM(warp, WarpAdapter, warpSample))
         .def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
         .def("inputDimensionality", &WarpAdapter::inputDimensionality, DM(warp, WarpAdapter, inputDimensionality))
