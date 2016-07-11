@@ -55,6 +55,87 @@ std::vector<double> WarpAdapter::generateExpectedHistogram(size_t pointCount,
     return hist;
 }
 
+std::pair<Vector3f, Float> LineWarpAdapter::warpSample(const Point2f& sample) const {
+    DomainType p;
+    Float w;
+    std::tie(p, w) = warp(sample.x());
+    return std::make_pair(Vector3f(p, 0.0, 0.0), w);
+}
+
+void LineWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType strategy,
+                                            size_t pointCount,
+                                            Eigen::MatrixXf &positions,
+                                            std::vector<Float> &weights) const {
+    const auto points = generatePoints(sampler, strategy, pointCount);
+
+    positions.resize(3, points.size());
+    weights.resize(points.size());
+    for (size_t i = 0; i < points.size(); ++i) {
+        const auto& p = points[i];
+        positions.col(i) << p.first, 0.f, 0.f;
+        weights[i] = p.second;
+    }
+}
+
+std::vector<double> LineWarpAdapter::generateObservedHistogram(Sampler *sampler,
+    SamplingType strategy, size_t pointCount, size_t gridWidth, size_t gridHeight) const {
+
+    const auto points = generatePoints(sampler, strategy, pointCount);
+    return binPoints(points, gridWidth, gridHeight);
+}
+
+std::function<Float (double, double)> LineWarpAdapter::getPdfIntegrand() const {
+    return [this](double y, double x) {
+        return pdf(pointToDomain<DomainType>(Point2f(x, y)));
+    };
+}
+
+std::vector<LineWarpAdapter::PairType>
+LineWarpAdapter::generatePoints(Sampler * sampler, SamplingType strategy,
+                                 size_t &pointCount) const {
+    size_t sqrtVal = static_cast<size_t>(std::sqrt((float) pointCount) + 0.5f);
+    float invSqrtVal = 1.f / sqrtVal;
+    if (strategy == Grid || strategy == Stratified)
+        pointCount = sqrtVal * sqrtVal;
+
+    std::vector<PairType> warpedPoints(pointCount);
+    for (size_t i = 0; i < pointCount; ++i) {
+        warpedPoints[i] = warp(samplePoint(sampler, strategy, invSqrtVal).x());
+    }
+
+    return warpedPoints;
+}
+
+std::vector<double> LineWarpAdapter::binPoints(
+    const std::vector<LineWarpAdapter::PairType> &points,
+    size_t gridWidth, size_t gridHeight) const {
+
+    std::vector<double> hist(gridWidth * gridHeight, 0.0);
+
+    for (size_t i = 0; i < static_cast<size_t>(points.size()); ++i) {
+        const auto& p = points[i];
+        if (p.second <= math::Epsilon) { // Sample has null weight
+            continue;
+        }
+
+        Point2f observation = domainToPoint<DomainType>(p.first);
+        float x = observation[0],
+              y = observation[1];
+
+        size_t xbin = std::min(gridWidth - 1,
+            std::max(0lu, static_cast<size_t>(std::floor(x * gridWidth))));
+        size_t ybin = std::min(gridHeight - 1,
+            std::max(0lu, static_cast<size_t>(std::floor(y * gridHeight))));
+
+        hist[ybin * gridWidth + xbin] += 1;
+    }
+
+    return hist;
+}
+
+
+// -----------------------------------
+
 std::pair<Vector3f, Float> PlaneWarpAdapter::warpSample(const Point2f& sample) const {
     DomainType p;
     Float w;
@@ -73,7 +154,6 @@ void PlaneWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType strat
     for (size_t i = 0; i < points.size(); ++i) {
         const auto& p = points[i];
         positions.col(i) << p.first.x(), p.first.y(), 0.f;
-        // TODO: also write out proper weights
         weights[i] = p.second;
     }
 }
@@ -115,7 +195,7 @@ std::vector<double> PlaneWarpAdapter::binPoints(
 
     for (size_t i = 0; i < static_cast<size_t>(points.size()); ++i) {
         const auto& p = points[i];
-        if (p.second == static_cast<Float>(0.0)) {
+        if (p.second <= math::Epsilon) { // Sample has null weight
             continue;
         }
 
@@ -135,6 +215,9 @@ std::vector<double> PlaneWarpAdapter::binPoints(
 }
 
 
+// -----------------------------------
+
+
 // TODO: refactor, this is almost the same as in PlaneWarpAdapter
 void SphereWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType strategy,
                                              size_t pointCount,
@@ -147,7 +230,6 @@ void SphereWarpAdapter::generateWarpedPoints(Sampler *sampler, SamplingType stra
     for (size_t i = 0; i < points.size(); ++i) {
         const auto& p = points[i];
         positions.col(i) << p.first.x(), p.first.y(), p.first.z();
-        // TODO: also write out proper weights
         weights[i] = p.second;
     }
 }

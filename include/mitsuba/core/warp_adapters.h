@@ -185,6 +185,78 @@ Vector3f WarpAdapter::pointToDomain(const Point2f &p) const {
 }
 
 /// TODO: docs
+/// TODO: only uses the first coordinate from the 2D samples, which is wasteful.
+class MTS_EXPORT_CORE LineWarpAdapter : public WarpAdapter {
+public:
+    using SampleType = Float;
+    using DomainType = Float;
+    using PairType = std::pair<DomainType, Float>;
+    using WarpFunctionType = std::function<PairType (const SampleType&)>;
+    using PdfFunctionType = std::function<Float (const DomainType&)>;
+
+    LineWarpAdapter(const std::string &name,
+                    const WarpFunctionType &f, const PdfFunctionType &pdf,
+                    const std::vector<Argument> &arguments = {},
+                    const BoundingBox3f &bbox = WarpAdapter::kUnitSquareBoundingBox)
+        : WarpAdapter(name, arguments, bbox), f_(f), pdf_(pdf) {
+    }
+
+    virtual std::pair<Vector3f, Float>
+    warpSample(const Point2f& sample) const override;
+
+    virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
+                                      size_t pointCount,
+                                      Eigen::MatrixXf &positions,
+                                      std::vector<Float> &weights) const override;
+
+    virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
+        SamplingType strategy, size_t pointCount,
+        size_t gridWidth, size_t gridHeight) const override;
+
+    virtual size_t inputDimensionality() const override { return 1; }
+    virtual size_t domainDimensionality() const override { return 1; }
+
+protected:
+    virtual std::function<Float (double, double)> getPdfIntegrand() const override;
+
+    virtual Float getPdfScalingFactor() const override {
+        return (Float)1.0;  // TODO: check
+    }
+
+    /// Returns a list of warped points
+    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
+
+    virtual std::vector<double> binPoints(const std::vector<PairType> &points,
+        size_t gridWidth, size_t gridHeight) const;
+
+
+    /// TODO: doc
+    virtual PairType warp(SampleType p) const {
+        return f_(p);
+    }
+
+    /// TODO: doc
+    virtual Float pdf(DomainType p) const {
+        return pdf_(p);
+    }
+
+    /**
+     * Warping function.
+     * Will be called with the sample only, so any parameter needs to be bound
+     * in advance.
+     * Returns a pair (warped point on the domain; weight).
+     */
+    WarpFunctionType f_;
+    /**
+     * PDF function.
+     * Will be called with a domain point only, so any parameter needs to be
+     * bound in advance.
+     * Should return the PDF associated with that point.
+     */
+    PdfFunctionType pdf_;
+};
+
+/// TODO: docs
 class MTS_EXPORT_CORE PlaneWarpAdapter : public WarpAdapter {
 public:
     using SampleType = Point2f;

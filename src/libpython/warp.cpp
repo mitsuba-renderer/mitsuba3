@@ -179,6 +179,38 @@ MTS_PY_EXPORT(warp) {
         .def_readonly("description", &WarpAdapter::Argument::description,
                       DM(warp, WarpAdapter, Argument, description));
 
+    //             return pdf_(*args, **kwargs);
+    //         }
+
+    //         return std::make_shared<???>(name_, f, pdf, );
+    //     }
+
+    //     std::string name() { return name_; }
+
+    // protected:
+    //     const std::string name_;
+    //     const py::function f_, pdf_;
+    //     const BoundingBox3f bbox_;
+    // };
+
+    // py::class_<WarpFactory>(m2, "WarpFactory", "TODO: docs")
+    //     .def(py::init<>())
+
+    using warp::LineWarpAdapter;
+    py::class_<LineWarpAdapter, std::shared_ptr<LineWarpAdapter>>(
+        m2, "LineWarpAdapter", py::base<WarpAdapter>(), DM(warp, LineWarpAdapter))
+        .def(py::init<const std::string &,
+                      const LineWarpAdapter::WarpFunctionType &,
+                      const LineWarpAdapter::PdfFunctionType &,
+                      const std::vector<WarpAdapter::Argument> &,
+                      const BoundingBox3f &>(),
+             py::arg("name"), py::arg("f"), py::arg("pdf"),
+             py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
+             py::arg("bbox") = WarpAdapter::kCenteredSquareBoundingBox,
+             DM(warp, LineWarpAdapter, LineWarpAdapter))
+        .def("__repr__", [](const LineWarpAdapter &w) {
+            return w.toString();
+        });
 
     using warp::PlaneWarpAdapter;
     py::class_<PlaneWarpAdapter, std::shared_ptr<PlaneWarpAdapter>>(
