@@ -245,7 +245,10 @@ void WarpVisualizationWidget::refresh() {
 bool WarpVisualizationWidget::runTest(double minExpFrequency, double significanceLevel) {
     std::vector<double> observedHistogram, expectedHistogram;
     size_t gridWidth = 51, gridHeight = 51;
-    if (m_warpAdapter->domainDimensionality() >= 3) {
+    if (m_warpAdapter->domainDimensionality() <= 1) {
+        gridHeight = 1;
+    }
+    else if (m_warpAdapter->domainDimensionality() >= 3) {
         gridWidth *= 2;
     }
     size_t nBins = gridWidth * gridHeight;

@@ -3,7 +3,8 @@ from collections import OrderedDict
 import math
 from mitsuba.core import warp, BoundingBox3f
 from mitsuba.core.warp import WarpType, SamplingType, \
-                         WarpAdapter, PlaneWarpAdapter, IdentityWarpAdapter, SphereWarpAdapter
+                              WarpAdapter, LineWarpAdapter, PlaneWarpAdapter, \
+                              IdentityWarpAdapter, SphereWarpAdapter
 from mitsuba.gui import WarpVisualizationWidget
 
 import nanogui
@@ -56,7 +57,10 @@ class WarpVisualizer(WarpVisualizationWidget):
 
                 kwargs['arguments'] = self.arguments
                 if (self.bbox):
-                    kwargs['bbox'] = self.bbox
+                    if (hasattr(self.bbox, '__call__')):
+                        kwargs['bbox'] = self.bbox(**args)
+                    else:
+                        kwargs['bbox'] = self.bbox
 
                 return self.adapter(**kwargs)
 
@@ -114,12 +118,22 @@ class WarpVisualizer(WarpVisualizationWidget):
             arguments = [WarpAdapter.Argument("cosCutoff", defaultValue = 0.5, description = "Cosine cutoff")])
 
         # 1D -> 1D warps
-        # TODO
-        # w[warp.NonUniformTent] = WarpFactory(LineWarpAdapter,
-        #     "Square to nonuniform tent",
-        #     warp.squareToNonUniformTent,
-        #     warp.squareToNonuniformTentPdf,
-        #     [WarpAdapter.Argument("a"), WarpAdapter.Argument("b"), WarpAdapter.Argument("c")])
+        def linearHalfTent(s, length):
+            return length * (1 - math.sqrt(s))
+        def linearHalfTentPdf(v, length):
+            # print("Evaluating PDF at: " + str(v) + ", value is " + str(1 - (v / float(length))))
+            if (v >= 0) and (v <= length):
+                return 1 - (v / float(length))
+            return 0
+        warp.LinearTent = 10000
+
+        # TODO: for some reason, PDF integration not working correctly
+        w[warp.LinearTent] = WarpFactory(LineWarpAdapter,
+            "Linear 1D half-tent",
+            linearHalfTent,
+            linearHalfTentPdf,
+            [WarpAdapter.Argument("length", 0, 10, 1)],
+            bbox = lambda length: BoundingBox3f([0, 0, 0], [length, 0, 0]))
 
         self.warps = w
 
