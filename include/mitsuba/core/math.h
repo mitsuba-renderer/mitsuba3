@@ -276,16 +276,31 @@ template <typename T> T modulo(T a, T b) {
     return (result < 0) ? result + b : result;
 }
 
+/// Efficiently compute the floor of the base-2 logarithm of an unsigned integer
+template <typename T> T log2i(T value) {
+    Assert(value >= 0);
+#if defined(__GNUC__) && defined(__x86_64__)
+    T result;
+    asm ("bsr %1, %0" : "=r" (result) : "r" (value));
+    return result;
+#elif defined(_WIN32)
+    unsigned long result;
+    if (sizeof(T) <= 4)
+        _BitScanReverse(&result, (unsigned long) value);
+    else
+        _BitScanReverse64(&result, (unsigned __int64) value);
+    return T(result);
+#else
+    T r = 0;
+    while ((value >> r) != 0)
+        r++;
+    return r - 1;
+#endif
+}
+
 /// Check whether the provided integer is a power of two
 template <typename T> bool isPowerOfTwo(T i) {
-#if defined(MTS_BSLR) && defined(MTS_BSLRLL)
-    if (sizeof(T) <= 4)
-        return i > 0 && MTS_BLSR((unsigned int) i) == 0;
-    else
-        return i > 0 && MTS_BLSRLL((unsigned long long) i) == 0;
-#else
     return i > 0 && (i & (i-1)) == 0;
-#endif
 }
 
 /// Round an unsigned integer to the next integer power of two
@@ -293,10 +308,7 @@ template <typename T> T roundToPowerOfTwo(T i) {
     if (i <= 1)
         return 1;
 #if defined(MTS_CLZ) && defined(MTS_CLZLL)
-    if (sizeof(T) <= 4)
-        return T(1u << (32 - MTS_CLZ((unsigned int) i - 1u)));
-    else
-        return T(1ull << (64 - MTS_CLZLL((unsigned long long) i - 1ull)));
+    return T(1) << (log2i<T>(i - 1) + 1);
 #else
 	i--;
 	i |= i >> 1;
@@ -309,22 +321,6 @@ template <typename T> T roundToPowerOfTwo(T i) {
 	if (sizeof(T) >= 8)
         i |= i >> 32;
     return i + 1;
-#endif
-}
-
-/// Compute the base-2 logarithm of an unsigned integer
-template <typename T> T log2i(T value) {
-    Assert(value >= 0);
-#if defined(MTS_CLZ) && defined(MTS_CLZLL)
-    if (sizeof(T) <= 4)
-        return T(31 - MTS_CLZ((unsigned int) value));
-    else
-        return T(63 - MTS_CLZLL((unsigned long long) value));
-#else
-    T r = 0;
-    while ((value >> r) != 0)
-        r++;
-    return r - 1;
 #endif
 }
 

@@ -79,18 +79,6 @@ NAMESPACE_BEGIN(mitsuba)
 #  endif
 #endif
 
-/* Definitions for various compiler intrinsics */
-#if defined(__GNUG__) || defined(__clang__)
-#  define MTS_CLZ     __builtin_clz
-#  define MTS_CLZLL   __builtin_clzll
-#elif defined(_MSC_VER)
-#  define MTS_CLZ     __lzcnt
-#  define MTS_CLZLL   __lzcnt64
-#endif
-
-#define MTS_BLSR      _blsr_u32
-#define MTS_BLSRLL    _blsr_u64
-
 /* Likely/unlikely macros (only on GCC/Clang) */
 #if defined(__GNUG__) || defined(__clang__)
 #  define likely(x)   __builtin_expect(!!(x), 1)
@@ -98,6 +86,16 @@ NAMESPACE_BEGIN(mitsuba)
 #else
 #  define likely(x)       (x)
 #  define unlikely(x)     (x)
+#endif
+
+/* Processor architecture */
+#if defined(_MSC_VER)
+#  ifdef _M_X86 && !defined(__i386__)
+#    define __i386__
+#  endif
+#  ifdef _M_X64 && !defined(__x86_64__)
+#    define __x86_64__
+#  endif
 #endif
 
 NAMESPACE_END(mitsuba)
