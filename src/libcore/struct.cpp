@@ -68,6 +68,7 @@ Struct &Struct::append(const std::string &name, EType type, uint32_t flags, doub
         case EInt64:
         case EUInt64:
         case EFloat64: f.size = 8; break;
+        case EFloat:   f.size = sizeof(Float); break;
         default: Throw("Struct::append(): invalid field type!");
     }
     if (!m_pack)
@@ -105,6 +106,7 @@ std::string Struct::toString() const {
             case EFloat16: os << "float16"; break;
             case EFloat32: os << "float32"; break;
             case EFloat64: os << "float64"; break;
+            case EFloat:   os << "Float"; break;
             default: Throw("Struct::toString(): invalid field type!");
         }
         os << " " << f.name << "; // @" << f.offset;
@@ -174,6 +176,9 @@ std::pair<double, double> Struct::Field::range() const {
             return std::make_pair(-std::numeric_limits<double>::max(),
                                    std::numeric_limits<double>::max());
 
+        case Struct::EFloat:
+            return std::make_pair(-std::numeric_limits<Float>::max(),
+                                   std::numeric_limits<Float>::max());
     }
 }
 
@@ -274,6 +279,16 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
         if (target->hasField(name))
             df = target->field(name);
 
+        int dfType = df.type;
+        if (dfType == Struct::EFloat) {
+            if (sizeof(Float) == sizeof(float))
+                dfType = Struct::EFloat32;
+            else if (sizeof(Float) == sizeof(double))
+                dfType = Struct::EFloat64;
+            else
+                Throw("Invalid 'Float' size");
+        }
+
         try {
             auto sf = source->field(name);
 
@@ -289,7 +304,17 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
             if (sf.size == 8)
                 op = kX86InstIdMov;
 
-            switch (sf.type) {
+            int sfType = sf.type;
+            if (sfType == Struct::EFloat) {
+                if (sizeof(Float) == sizeof(float))
+                    sfType = Struct::EFloat32;
+                else if (sizeof(Float) == sizeof(double))
+                    sfType = Struct::EFloat64;
+                else
+                    Throw("Invalid 'Float' size");
+            }
+
+            switch (sfType) {
                 case Struct::EUInt8:
                 case Struct::EInt8:
                     c.emit(op, reg, x86::byte_ptr(input, sf.offset));
@@ -336,7 +361,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
                         call->setArg(0, reg);
                         call->setRet(0, reg_f);
-                        sf.type = Struct::EFloat32;
+                        sfType = Struct::EFloat32;
                     }
                     break;
 
@@ -367,10 +392,10 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 if (sf.isInteger()) {
                     auto ref = c.newInt64Const(asmjit::kConstScopeLocal, (int64_t) sf.default_);
                     c.cmp(reg.r64(), ref);
-                } else if (sf.type == Struct::EFloat32) {
+                } else if (sfType == Struct::EFloat32) {
                     auto ref = c.newFloatConst(asmjit::kConstScopeLocal, (float) sf.default_);
                     c.ucomiss(reg_f, ref);
-                } else if (sf.type == Struct::EFloat64) {
+                } else if (sfType == Struct::EFloat64) {
                     auto ref = c.newDoubleConst(asmjit::kConstScopeLocal, sf.default_);
                     c.ucomisd(reg_d, ref);
                 } else {
@@ -403,17 +428,17 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                     call->setRet(0, reg_f);
                 }
 
-                sf.type = Struct::EFloat32;
+                sfType = Struct::EFloat32;
             }
 
             if (sf.isInteger() != df.isInteger()) {
                 if (sf.isInteger()) {
-                    if (df.type == Struct::EFloat16 || df.type == Struct::EFloat32)
+                    if (dfType == Struct::EFloat16 || dfType == Struct::EFloat32)
                         c.cvtsi2ss(reg_f, reg.r64());
-                    else if (df.type == Struct::EFloat64)
+                    else if (dfType == Struct::EFloat64)
                         c.cvtsi2sd(reg_d, reg.r64());
                 } else if (df.isInteger()) {
-                    if (sf.type == Struct::EFloat32) {
+                    if (sfType == Struct::EFloat32) {
                         auto range = df.range();
                         auto rbegin = c.newFloatConst(asmjit::kConstScopeLocal, float(range.first));
                         auto rend = c.newFloatConst(asmjit::kConstScopeLocal, float(range.second));
@@ -435,7 +460,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                         c.maxss(reg_f, rbegin);
                         c.minss(reg_f, rend);
                         c.cvtss2si(reg.r64(), reg_f);
-                    } else if (sf.type == Struct::EFloat64) {
+                    } else if (sfType == Struct::EFloat64) {
                         auto range = df.range();
                         auto rbegin = c.newDoubleConst(asmjit::kConstScopeLocal, range.first);
                         auto rend = c.newDoubleConst(asmjit::kConstScopeLocal, range.second);
@@ -461,10 +486,10 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 }
             }
 
-            if (sf.type == Struct::EFloat32 && df.type == Struct::EFloat64)
+            if (sfType == Struct::EFloat32 && dfType == Struct::EFloat64)
                 c.cvtss2sd(reg_d, reg_f);
-            else if (sf.type == Struct::EFloat64 && (df.type == Struct::EFloat16 ||
-                                                     df.type == Struct::EFloat32))
+            else if (sfType == Struct::EFloat64 && (dfType == Struct::EFloat16 ||
+                                                    dfType == Struct::EFloat32))
                 c.cvtsd2ss(reg_f, reg_d);
 
         } catch (...) {
@@ -480,14 +505,14 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                     auto cval = c.newInt64Const(asmjit::kConstScopeLocal, df.default_);
                     c.mov(reg, cval);
                 }
-            } else if (df.type == Struct::EFloat16 || df.type == Struct::EFloat32) {
+            } else if (dfType == Struct::EFloat16 || dfType == Struct::EFloat32) {
                 if (df.default_ == 0) {
                     c.xorps(reg_f, reg_f);
                 } else {
                     auto cval = c.newFloatConst(asmjit::kConstScopeLocal, (float) df.default_);
                     c.movd(reg_f, cval);
                 }
-            } else if (df.type == Struct::EFloat64) {
+            } else if (dfType == Struct::EFloat64) {
                 if (df.default_ == 0) {
                     c.xorpd(reg_d, reg_d);
                 } else {
@@ -498,7 +523,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
         }
 
         bool targetSwap = target->byteOrder() == Struct::EBigEndian;
-        switch (df.type) {
+        switch (dfType) {
             case Struct::EUInt8:
             case Struct::EInt8:
                 c.mov(x86::byte_ptr(output, df.offset), reg.r8());
@@ -619,11 +644,31 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
             if (m_target->hasField(name))
                 df = m_target->field(name);
 
+            int dfType = df.type;
+            if (dfType == Struct::EFloat) {
+                if (sizeof(Float) == sizeof(float))
+                    dfType = Struct::EFloat32;
+                else if (sizeof(Float) == sizeof(double))
+                    dfType = Struct::EFloat64;
+                else
+                    Throw("Invalid 'Float' size");
+            }
+
             try {
                 auto sf = m_source->field(name);
                 const uint8_t *src = (const uint8_t *) src_ + sf.offset + sourceSize * i;
 
-                switch (sf.type) {
+                int sfType = sf.type;
+                if (sfType == Struct::EFloat) {
+                    if (sizeof(Float) == sizeof(float))
+                        sfType = Struct::EFloat32;
+                    else if (sizeof(Float) == sizeof(double))
+                        sfType = Struct::EFloat64;
+                    else
+                        Throw("Invalid 'Float' size");
+                }
+
+                switch (sfType) {
                     case Struct::EUInt8:
                         reg = (int64_t) *((const uint8_t *) src);
                         break;
@@ -685,7 +730,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                             if (sourceSwap)
                                 val = swap16(val);
                             reg_f = simd::half::float16_to_float32(val);
-                            sf.type = Struct::EFloat32;
+                            sfType = Struct::EFloat32;
                         }
                         break;
 
@@ -711,9 +756,9 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                 if (sf.flags & Struct::EAssert) {
                     if (sf.isInteger() && (int64_t) sf.default_ != reg)
                         return false;
-                    else if (sf.type == Struct::EFloat32 && (float) sf.default_ != reg_f)
+                    else if (sfType == Struct::EFloat32 && (float) sf.default_ != reg_f)
                         return false;
-                    else if (sf.type == Struct::EFloat64 && sf.default_ != reg_d)
+                    else if (sfType == Struct::EFloat64 && sf.default_ != reg_d)
                         return false;
                 }
 
@@ -727,18 +772,18 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                     reg_f = ((float) reg + offset) * scale;
                     if (sf.flags & Struct::EGamma)
                         reg_f = math::inverseGamma<float>(reg_f);
-                    sf.type = Struct::EFloat32;
+                    sfType = Struct::EFloat32;
                 }
 
 
                 if (sf.isInteger() != df.isInteger()) {
                     if (sf.isInteger()) {
-                        if (df.type == Struct::EFloat16 || df.type == Struct::EFloat32)
+                        if (dfType == Struct::EFloat16 || dfType == Struct::EFloat32)
                             reg_f = (float) reg;
-                        else if (df.type == Struct::EFloat64)
+                        else if (dfType == Struct::EFloat64)
                             reg_d = (double) reg;
                     } else if (df.isInteger()) {
-                        if (sf.type == Struct::EFloat32) {
+                        if (sfType == Struct::EFloat32) {
                             auto range = df.range();
 
                             if (df.flags & Struct::ENormalized) {
@@ -751,7 +796,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                             reg_f = std::max(reg_f, (float) range.first);
                             reg_f = std::min(reg_f, (float) range.second);
                             reg = (int64_t) reg_f;
-                        } else if (sf.type == Struct::EFloat64) {
+                        } else if (sfType == Struct::EFloat64) {
                             auto range = df.range();
 
                             if (df.flags & Struct::ENormalized) {
@@ -767,10 +812,10 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                     }
                 }
 
-                if (sf.type == Struct::EFloat32 && df.type == Struct::EFloat64)
+                if (sfType == Struct::EFloat32 && dfType == Struct::EFloat64)
                     reg_d = (double) reg_f;
-                else if (sf.type == Struct::EFloat64 && (df.type == Struct::EFloat16 ||
-                                                         df.type == Struct::EFloat32))
+                else if (sfType == Struct::EFloat64 && (dfType == Struct::EFloat16 ||
+                                                        dfType == Struct::EFloat32))
                     reg_f = (float) reg_d;
             } catch (...) {
                 if (!(df.flags & Struct::EDefault))
@@ -779,14 +824,14 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                           name, m_source->toString(), m_target->toString());
                 if (df.isInteger())
                     reg = (int64_t) df.default_;
-                else if (df.type == Struct::EFloat16 || df.type == Struct::EFloat32)
+                else if (dfType == Struct::EFloat16 || dfType == Struct::EFloat32)
                     reg_f = (float) df.default_;
-                else if (df.type == Struct::EFloat64)
+                else if (dfType == Struct::EFloat64)
                     reg_d = df.default_;
             }
 
             uint8_t *dst = (uint8_t *) dest_ + df.offset + targetSize * i;
-            switch (df.type) {
+            switch (dfType) {
                 case Struct::EUInt8:
                     *((uint8_t *) dst) = (uint8_t) reg;
                     break;

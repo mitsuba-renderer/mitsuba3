@@ -16,6 +16,7 @@ MTS_PY_EXPORT(Struct) {
         .value("EFloat16", Struct::EType::EFloat16)
         .value("EFloat32", Struct::EType::EFloat32)
         .value("EFloat64", Struct::EType::EFloat64)
+        .value("EFloat", Struct::EType::EFloat)
         .export_values();
 
     py::enum_<Struct::EByteOrder>(c, "EByteOrder")

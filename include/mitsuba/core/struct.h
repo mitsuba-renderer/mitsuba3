@@ -27,7 +27,10 @@ public:
         EInt64, EUInt64,
 
         /* Floating point values */
-        EFloat16, EFloat32, EFloat64
+        EFloat16, EFloat32, EFloat64,
+
+        /* Compile-time float precision */
+        EFloat
     };
 
     /// Byte order of the fields in the \c Struct
@@ -110,7 +113,8 @@ public:
         bool isFloat() const {
             return type == Struct::EFloat16 ||
                    type == Struct::EFloat32 ||
-                   type == Struct::EFloat64;
+                   type == Struct::EFloat64 ||
+                   type == Struct::EFloat;
         }
 
         bool isSigned() const {
