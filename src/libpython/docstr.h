@@ -931,10 +931,16 @@ of the memory buffer is extended if necessary.)doc";
 static const char *__doc_mitsuba_Mesh = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_bbox =
-R"doc(Return an axis aligned box that bounds the (transformed) shape
-geometry)doc";
+R"doc(Return an axis aligned box that bounds the set of triangles (including
+any transformations that may have been applied to them))doc";
+
+static const char *__doc_mitsuba_Mesh_bbox_2 =
+R"doc(Return an axis aligned box that bounds a single triangle (including
+any transformations that may have been applied to it))doc";
 
 static const char *__doc_mitsuba_Mesh_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_faceCount = R"doc(Return the total number of faces)doc";
 
 static const char *__doc_mitsuba_Mesh_faceStruct =
 R"doc(Return a ``Struct`` instance describing the contents of the face
@@ -959,6 +965,12 @@ static const char *__doc_mitsuba_Mesh_m_vertexCount = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_vertexStruct = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_primitiveCount =
+R"doc(Returns the number of sub-primitives (i.e. triangles) that make up
+this shape)doc";
+
+static const char *__doc_mitsuba_Mesh_vertexCount = R"doc(Return the total number of vertices)doc";
 
 static const char *__doc_mitsuba_Mesh_vertexStruct =
 R"doc(Return a ``Struct`` instance describing the contents of the vertex
@@ -1258,21 +1270,51 @@ static const char *__doc_mitsuba_Shape = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
 
+static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeKDTree_addShape = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_class = R"doc()doc";
 
-static const char *__doc_mitsuba_ShapeKDTree_m_bbox = R"doc()doc";
+static const char *__doc_mitsuba_ShapeKDTree_findShape =
+R"doc(Map an abstract TShapeKDTree primitive index to a specific shape
+managed by the ShapeKDTree.
+
+The function returns the shape index and updates the *idx* parameter
+to point to the primitive index (e.g. triangle ID) within the shape.)doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_m_meshFlag = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_m_primitiveMap = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_m_shapes = R"doc()doc";
 
+static const char *__doc_mitsuba_ShapeKDTree_primitiveCount = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_shapeCount = R"doc()doc";
+
 static const char *__doc_mitsuba_Shape_bbox =
-R"doc(Return an axis aligned box that bounds the (transformed) shape
-geometry)doc";
+R"doc(Return an axis aligned box that bounds all shape primitives (including
+any transformations that may have been applied to them))doc";
+
+static const char *__doc_mitsuba_Shape_bbox_2 =
+R"doc(Return an axis aligned box that bounds a single shape primitives
+(including any transformations that may have been applied to it)
+
+Remark:
+    The default implementation simply calls bbox())doc";
 
 static const char *__doc_mitsuba_Shape_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_doSomething = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_primitiveCount =
+R"doc(Returns the number of sub-primitives that make up this shape
+
+Remark:
+    The default implementation simply returns ``1``)doc";
 
 static const char *__doc_mitsuba_Stream =
 R"doc(Abstract seekable stream class
@@ -1526,6 +1568,8 @@ R"doc(Only applies to integer fields: specifies whether the field encodes a
 normalized value in the range [0, 1])doc";
 
 static const char *__doc_mitsuba_Struct_EType = R"doc(Type of a field in the ``Struct``)doc";
+
+static const char *__doc_mitsuba_Struct_EType_EFloat = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_EType_EFloat16 = R"doc()doc";
 
@@ -2136,37 +2180,19 @@ static const char *__doc_mitsuba_coordinateSystem = R"doc(Complete the set {a} t
 
 static const char *__doc_mitsuba_detail_Log = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_MinMaxBins =
-R"doc(Min-max binning data structure
-
-See "Highly Parallel Fast KD-tree Construction for Interactive Ray
-Tracing of Dynamic Scenes" by M. Shevtsov, A. Soupikov and A. Kapustin)doc";
-
-static const char *__doc_mitsuba_detail_MinMaxBins_Dimension = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_MinMaxBins_MinMaxBins = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_MinMaxBins_m_binCount = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_MinMaxBins_m_bins = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_MinMaxBins_operator_iadd = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_MinMaxBins_setBoundingBox = R"doc(Prepare to bin for the specified bounds)doc";
-
 static const char *__doc_mitsuba_detail_OrderedChunkAllocator =
-R"doc(Special ordered memory allocator
+R"doc(Ordered memory allocator
 
 During kd-tree construction, large amounts of memory are required to
 temporarily hold index and edge event lists. When not implemented
 properly, these allocations can become a critical bottleneck. The
 class OrderedChunkAllocator provides a specialized memory allocator,
-which reserves memory in chunks of at least 512KiB. An important
-assumption made by the allocator is that memory will be released in
-the exact same order, in which it was previously allocated. This makes
-it possible to create an implementation with a very low memory
-overhead. Note that no locking is done, hence each thread will need
-its own allocator.)doc";
+which reserves memory in chunks of at least 512KiB (this number is
+configurable). An important assumption made by the allocator is that
+memory will be released in the exact same order in which it was
+previously allocated. This makes it possible to create an
+implementation with a very low memory overhead. Note that no locking
+is done, hence each thread will need its own allocator.)doc";
 
 static const char *__doc_mitsuba_detail_OrderedChunkAllocator_Chunk = R"doc()doc";
 
@@ -2212,7 +2238,154 @@ static const char *__doc_mitsuba_detail_OrderedChunkAllocator_toString = R"doc(R
 
 static const char *__doc_mitsuba_detail_OrderedChunkAllocator_used = R"doc(Return the total amount of used memory in bytes)doc";
 
+static const char *__doc_mitsuba_detail_TShapeKDTree = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_Dimension = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins =
+R"doc(Min-max binning data structure
+
+See "Highly Parallel Fast KD-tree Construction for Interactive Ray
+Tracing of Dynamic Scenes" by M. Shevtsov, A. Soupikov and A. Kapustin)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_MinMaxBins = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_m_binCount = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_m_binSize = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_m_bins = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_m_invBinSize = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_m_maxBin = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_m_offset = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_operator_iadd = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_put = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_MinMaxBins_setBoundingBox = R"doc(Prepare to bin for the specified bounds)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_TShapeKDTree = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_build = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_class = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_clipPrimitives = R"doc(Return whether primitive clipping is used during tree construction)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_derived = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_emptySpaceBonus =
+R"doc(Return the bonus factor for empty space used by the tree construction
+heuristic)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_exactPrimitiveThreshold =
+R"doc(Return the number of primitives, at which the builder will switch from
+(approximate) Min-Max binning to the accurate O(n log n) optimization
+method.)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_logLevel = R"doc(Return the log level of kd-tree status messages)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_bbox = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_clipPrimitives = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_emptySpaceBonus = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_exactPrimThreshold = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_indexCount = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_indices = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_logLevel = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_maxBadRefines = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_maxDepth = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_minMaxBins = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_nodeCount = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_nodes = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_queryCost = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_retractBadSplits = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_stopPrims = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_m_traversalCost = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_maxBadRefines =
+R"doc(Return the number of bad refines allowed to happen in succession
+before a leaf node will be created.)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_maxDepth = R"doc(Return the maximum tree depth (0 == use heuristic))doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_minMaxBins = R"doc(Return the number of bins used for Min-Max binning)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_queryCost =
+R"doc(Return the query cost used by the tree construction heuristic (This is
+the average cost for testing a contained shape against a kd-tree
+search query))doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_ready = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_retractBadSplits = R"doc(Return whether or not bad splits can be "retracted".)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setClipPrimitives = R"doc(Set whether primitive clipping is used during tree construction)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setEmptySpaceBonus =
+R"doc(Set the bonus factor for empty space used by the tree construction
+heuristic)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setExactPrimitiveThreshold =
+R"doc(Specify the number of primitives, at which the builder will switch
+from (approximate) Min-Max binning to the accurate O(n log n)
+optimization method.)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setLogLevel = R"doc(Return the log level of kd-tree status messages)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setMaxBadRefines =
+R"doc(Set the number of bad refines allowed to happen in succession before a
+leaf node will be created.)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setMaxDepth = R"doc(Set the maximum tree depth (0 == use heuristic))doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setMinMaxBins = R"doc(Set the number of bins used for Min-Max binning)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setQueryCost =
+R"doc(Set the query cost used by the tree construction heuristic
+
+This is the average cost for testing a contained shape against a kd-
+tree search query)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setRetractBadSplits = R"doc(Specify whether or not bad splits can be "retracted".)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setStopPrims =
+R"doc(Set the number of primitives, at which recursion will stop when
+building the tree.)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_setTraversalCost =
+R"doc(Set the cost of a traversal operation used by the tree construction
+heuristic)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_stopPrims =
+R"doc(Return the number of primitives, at which recursion will stop when
+building the tree.)doc";
+
+static const char *__doc_mitsuba_detail_TShapeKDTree_traversalCost =
+R"doc(Get the cost of a traversal operation used by the tree construction
+heuristic)doc";
+
 static const char *__doc_mitsuba_detail_Throw = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_class = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_get_construct_functor = R"doc()doc";
 

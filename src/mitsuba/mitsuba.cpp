@@ -33,11 +33,20 @@ int main(int argc, char *argv[]) {
     ArgParser parser;
     typedef std::vector<std::string> StringVec;
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
+    auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
     auto arg_extra = parser.add("", true);
 
     try {
         /* Parse all command line options */
         parser.parse(argc, argv);
+
+        if (*arg_verbose) {
+            auto logger = Thread::thread()->logger();
+            if (arg_verbose->next())
+                logger->setLogLevel(ETrace);
+            else
+                logger->setLogLevel(EDebug);
+        }
 
         /* Initialize Intel Thread Building Blocks with the requested number of threads */
         tbb::task_scheduler_init init(
