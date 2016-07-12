@@ -29,13 +29,13 @@ public:
                                   std::is_same<Scalar, float>::value,
                                   TVector<Scalar, Dimension>> Base;
 
-    typedef TVector<Scalar, Dimension> VectorType;
-    typedef TPoint<Scalar, Dimension>  PointType;
+    typedef TVector<Scalar, Dimension> Vector;
+    typedef TPoint<Scalar, Dimension>  Point;
 
     using Base::Base;
     TVector() : Base() { }
     TVector(const Base &f) : Base(f) { }
-    TVector(const PointType &f) : Base((const Base &) f) { }
+    TVector(const Point &f) : Base((const Base &) f) { }
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
@@ -55,36 +55,36 @@ public:
                                   std::is_same<Scalar, float>::value,
                                   TPoint<Scalar, Dimension>> Base;
 
-    typedef TVector<Scalar, Dimension> VectorType;
-    typedef TPoint<Scalar, Dimension>  PointType;
+    typedef TVector<Scalar, Dimension> Vector;
+    typedef TPoint<Scalar, Dimension>  Point;
 
     using Base::Base;
     TPoint() : Base() { }
     TPoint(const Base &f) : Base(f) { }
-    TPoint(const VectorType &f) : Base((const Base &) f) { }
+    TPoint(const Vector &f) : Base((const Base &) f) { }
 
     using Base::operator+;
     using Base::operator+=;
     using Base::operator-=;
 
-    PointType operator+(const VectorType &v) const {
-        return Base::operator+((const PointType &) v);
+    Point operator+(const Vector &v) const {
+        return Base::operator+((const Point &) v);
     }
 
-    PointType operator-(const VectorType &v) const {
-        return Base::operator-((const PointType &) v);
+    Point operator-(const Vector&v) const {
+        return Base::operator-((const Point &) v);
     }
 
-    VectorType operator-(const PointType &p) const {
-        return VectorType(Base::operator-(p));
+    Vector operator-(const Point &p) const {
+        return Vector(Base::operator-(p));
     }
 
-    PointType& operator+=(const VectorType &v) const {
-        return Base::operator+=((const PointType &) v);
+    Point& operator+=(const Vector &v) const {
+        return Base::operator+=((const Point &) v);
     }
 
-    PointType& operator-=(const VectorType &v) const {
-        return Base::operator-=((const PointType &) v);
+    Point& operator-=(const Vector &v) const {
+        return Base::operator-=((const Point &) v);
     }
 
     /// Convert to an Eigen vector (definition in transform.h)
