@@ -2,7 +2,6 @@
 
 #include <mitsuba/render/shape.h>
 #include <mitsuba/core/vector.h>
-#include <mitsuba/core/bbox.h>
 #include <mitsuba/core/struct.h>
 
 NAMESPACE_BEGIN(mitsuba)

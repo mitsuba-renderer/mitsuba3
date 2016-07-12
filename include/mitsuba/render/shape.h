@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/object.h>
+#include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

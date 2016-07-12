@@ -5,20 +5,24 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/util.h>
+#include <mitsuba/core/timer.h>
 #include <mitsuba/render/shape.h>
 #include <tbb/tbb.h>
 
-/// Compile-time KD-tree depth limit to enable traversal with stack memory
-#define MTS_KD_MAXDEPTH 48
-
-/// Number of bins used for Min-Max binning
-#define MTS_KD_BINS 256
-
-/// OrderedChunkAllocator: don't create chunks smaller than 512 KiB
-#define MTS_KD_MIN_ALLOC 512*1024
-
 /// Optional: turn on lots of assertions in the kd-tree builder
 #define MTS_KD_DEBUG 1
+
+/// Compile-time KD-tree depth limit to enable traversal with stack memory
+#define MTS_KD_MAXDEPTH 48u
+
+/// Number of bins used for Min-Max binning
+#define MTS_KD_BINS 256u
+
+/// OrderedChunkAllocator: don't create chunks smaller than 512 KiB
+#define MTS_KD_MIN_ALLOC 512u*1024u
+
+/// Grain size for TBB parallelization
+#define MTS_KD_GRAIN_SIZE 10240u
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(detail)
@@ -371,12 +375,30 @@ public:
             m_retractBadSplits ? "yes" : "no");
         Log(m_logLevel, "");
 
-        MinMaxBins bins(m_minMaxBins);
+        //MinMaxBins bins(m_minMaxBins);
 
-        bins.setBoundingBox(m_bbox);
-        for (Size i = 0; i<primCount; ++i) {
-            bins.put(derived().bbox(i));
-        }
+        Timer timer;
+        timer.beginStage("binning (par)");
+
+        /* Accumulate all shapes into bins */
+        MinMaxBins bins = tbb::parallel_reduce(
+            tbb::blocked_range<Size>(0u, primCount, MTS_KD_GRAIN_SIZE),
+            MinMaxBins(m_minMaxBins, m_bbox),
+
+            /* MAP: Bin a number of shapes and return the resulting 'MinMaxBins' data structure */
+            [&](const tbb::blocked_range<uint32_t> &range, MinMaxBins bins) {
+                for (uint32_t i = range.begin(); i != range.end(); ++i)
+                    bins.put(derived().bbox(i));
+                return bins;
+            },
+
+            /* REDUCE: Combine two 'MinMaxBins' data structures */
+            [](MinMaxBins b1, const MinMaxBins &b2) {
+                b1 += b2;
+                return b1;
+            }
+        );
+        timer.endStage();
     }
 
     MTS_DECLARE_CLASS()
@@ -390,17 +412,53 @@ protected:
      */
     class MinMaxBins {
     public:
-        MinMaxBins(Size binCount) : m_binCount(binCount) {
-            m_bins = AlignedAllocator::alloc<Size>(m_binCount * Dimension * 2);
-            memset(m_bins, 0, sizeof(Size) * m_binCount * Dimension * 2);
-            m_maxBin = Vector::Constant(Scalar(m_binCount - 1));
+        MinMaxBins(Size binCount, const BoundingBox &bbox)
+            : m_bins(AlignedAllocator::alloc<Size>(binCount * Dimension * 2)),
+              m_binCount(binCount) {
+            memset(m_bins.get(), 0, sizeof(Size) * binCount * Dimension * 2);
+            m_maxBin = Vector::Constant(Scalar(binCount - 1));
+            m_invBinSize = 1 / (bbox.extents() / (Float) binCount);
+            m_offset = bbox.min;
         }
 
-        ~MinMaxBins() {
-            AlignedAllocator::dealloc(m_bins);
+        MinMaxBins(const MinMaxBins &other)
+            : m_bins(AlignedAllocator::alloc<Size>(other.m_binCount * Dimension * 2)),
+              m_binCount(other.m_binCount), m_invBinSize(other.m_invBinSize),
+              m_maxBin(other.m_maxBin), m_offset(other.m_offset) {
+            memcpy(m_bins.get(), other.m_bins.get(),
+                   sizeof(Size) * m_binCount * Dimension * 2);
         }
 
-        SIMD_API void put(BoundingBox bbox) {
+        MinMaxBins(MinMaxBins &&other)
+            : m_bins(std::move(other.m_bins)), m_binCount(other.m_binCount),
+              m_invBinSize(other.m_invBinSize), m_maxBin(other.m_maxBin),
+              m_offset(other.m_offset) {
+            other.m_binCount = 0;
+        }
+
+        void operator=(const MinMaxBins &other) {
+            if (m_binCount != other.binCount) {
+                m_bins = std::unique_ptr<Size[], AlignedAllocator>(
+                    AlignedAllocator::alloc<Size>(other.binCount * Dimension * 2));
+                m_binCount = other.m_binCount;
+            }
+            memcpy(m_bins.get(), other.m_bins.get(),
+                   sizeof(Size) * other.binCount * Dimension * 2);
+            m_invBinSize = other.m_invBinSize;
+            m_maxBin = other.m_maxBin;
+            m_offset = other.m_offset;
+        }
+
+        void operator=(MinMaxBins &&other) {
+            m_bins = std::move(other.m_bins);
+            m_binCount = other.m_binCount;
+            m_invBinSize = other.m_invBinSize;
+            m_maxBin = other.m_maxBin;
+            m_offset = other.m_offset;
+            other.m_binCount = 0;
+        }
+
+        void put(BoundingBox bbox) {
             using simd::min;
             using simd::max;
             using Int = typename Vector::Int;
@@ -421,15 +479,14 @@ protected:
             for (Index axis = 0; axis < Dimension; ++axis) {
                 m_bins[offset + indexMin[axis] * 2 + 0]++;
                 m_bins[offset + indexMax[axis] * 2 + 1]++;
-
-                offset += 2 * Dimension * m_binCount;
+                offset += 2 * m_binCount;
             }
         }
 
         MinMaxBins& operator+=(const MinMaxBins &other) {
             /* Add bin counts (using SIMD instructions, please) */
-            Size * __restrict__ b        = (Size *)       SIMD_ASSUME_ALIGNED(m_bins);
-            const Size * __restrict__ bo = (const Size *) SIMD_ASSUME_ALIGNED(other.m_bins);
+            Size * __restrict__ b        = (Size *)       SIMD_ASSUME_ALIGNED(m_bins.get());
+            const Size * __restrict__ bo = (const Size *) SIMD_ASSUME_ALIGNED(other.m_bins.get());
 
             SIMD_IVDEP /* No, the arrays don't alias */
             for (Size i = 0, size = m_binCount * Dimension * 2; i < size; ++i)
@@ -437,18 +494,9 @@ protected:
             return *this;
         }
 
-        /// \brief Prepare to bin for the specified bounds
-        void setBoundingBox(const BoundingBox &bbox) {
-            std::cout << "setBOundingBox = " << bbox << std::endl;
-            m_binSize = bbox.extents() / (Float) m_binCount;
-            m_offset = bbox.min;
-            m_invBinSize = 1 / m_binSize;
-        }
-
-    protected:
-        Size *m_bins;
-        Size m_binCount;
-        Vector m_binSize;
+    public: // XXX
+        std::unique_ptr<Size[], AlignedAllocator> m_bins;
+        Size m_binCount = 0;
         Vector m_invBinSize;
         Vector m_maxBin;
         Point m_offset;
