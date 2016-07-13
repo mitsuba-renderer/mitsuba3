@@ -128,7 +128,7 @@ WarpVisualizationWidget::WarpVisualizationWidget(int width, int height,
     , m_pointCount(0), m_lineCount(0)
     , m_testResult(false), m_testResultText("No test started.") {
 
-    initializeVisualizerGUI();
+    initializeShaders();
 }
 
 bool
@@ -387,7 +387,7 @@ void WarpVisualizationWidget::drawContents() {
     }
 }
 
-void WarpVisualizationWidget::initializeVisualizerGUI() {
+void WarpVisualizationWidget::initializeShaders() {
     m_pointShader.reset(new GLShader());
     m_pointShader->init("Point shader",
                         kPointVertexShader,

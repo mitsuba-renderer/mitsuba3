@@ -8,7 +8,7 @@ using mitsuba::warp::WarpAdapter;
 using mitsuba::warp::SamplingType;
 using Sampler = pcg32;
 
-/// Trampoline class for WarpAdapter
+/// Trampoline class for WarpAdapter (overrides all the virtual methods).
 class PyWarpAdapter : public WarpAdapter {
 public:
     using WarpAdapter::WarpAdapter;
@@ -131,6 +131,7 @@ MTS_PY_EXPORT(warp) {
         .value("Stratified", SamplingType::Stratified)
         .export_values();
 
+    // -------------------------------------------------------------------------
 
     /// WarpAdapter class declaration
     using warp::WarpAdapter;
@@ -171,23 +172,6 @@ MTS_PY_EXPORT(warp) {
                       DM(warp, WarpAdapter, Argument, defaultValue))
         .def_readonly("description", &WarpAdapter::Argument::description,
                       DM(warp, WarpAdapter, Argument, description));
-
-    //             return pdf_(*args, **kwargs);
-    //         }
-
-    //         return std::make_shared<???>(name_, f, pdf, );
-    //     }
-
-    //     std::string name() { return name_; }
-
-    // protected:
-    //     const std::string name_;
-    //     const py::function f_, pdf_;
-    //     const BoundingBox3f bbox_;
-    // };
-
-    // py::class_<WarpFactory>(m2, "WarpFactory", "TODO: docs")
-    //     .def(py::init<>())
 
     using warp::LineWarpAdapter;
     py::class_<LineWarpAdapter, std::shared_ptr<LineWarpAdapter>>(
@@ -245,7 +229,7 @@ MTS_PY_EXPORT(warp) {
             return w.toString();
         });
 
-
+    // -------------------------------------------------------------------------
 
     m2.def("runStatisticalTest", &warp::detail::runStatisticalTest, DM(warp, detail, runStatisticalTest));
 }

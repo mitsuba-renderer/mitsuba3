@@ -1,6 +1,4 @@
 #pragma once
-#if !defined(__MITSUBA_CORE_WARP_H_)
-#define __MITSUBA_CORE_WARP_H_
 
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/frame.h>
@@ -26,11 +24,11 @@ NAMESPACE_BEGIN(warp)
 class WarpAdapter;
 
 // TODO: proper support for:
-// - uniformDiskToSquareConcentric
-// - intervalToNonuniformTent
+// - uniformDiskToSquareConcentric  (starting sample != uniform square)
+// - intervalToNonuniformTent       (float to float)
 
 /// Enum of available warping types
-// TODO: make exhaustive and precise
+// TODO: shouldn't be needed anymore
 enum WarpType {
     NoWarp = 0,
     UniformSphere,
@@ -180,16 +178,17 @@ extern MTS_EXPORT_CORE Float intervalToNonuniformTent(Float sample, Float a, Flo
 
 // =============================================================
 //! @{ \name Extra functions related to sampling and testing
-//!    of those distributions.
+//!    of those warping functions.
 // =============================================================
 NAMESPACE_BEGIN(detail)
 
 /**
- * For a given warping type, parameter value and sampling strategy, runs a Chi^2
- * statistical test to check that the warping function matches the announced PDF.
+ * For a given warping method captured by the passed \p warpAdater, and for
+ * a given sampling strategy, runs a Chi^2  statistical test to check that the
+ * warping function matches its associated PDF.
  * Also outputs the observed and expected histograms computed for the test.
  *
- * \return (Whether the test succeeded, an explanatory text).
+ * \return Pair (whether the test succeeded, an explanatory text).
  */
 extern MTS_EXPORT_CORE std::pair<bool, std::string>
 runStatisticalTestAndOutput(size_t pointCount, size_t gridWidth, size_t gridHeight,
@@ -198,11 +197,11 @@ runStatisticalTestAndOutput(size_t pointCount, size_t gridWidth, size_t gridHeig
     std::vector<double> &observedHistogram, std::vector<double> &expectedHistogram);
 
 /**
- * For a given warping type, parameter value and sampling strategy, runs a Chi^2
- * statistical test to check that the warping function matches the announced PDF.
- * Also outputs the observed and expected histograms computed for the test.
+ * For a given warping method captured by the passed \p warpAdater, and for
+ * a given sampling strategy, runs a Chi^2 statistical test to check that
+ * the warping function matches its associated PDF.
  *
- * \return (Whether the test succeeded, an explanatory text).
+ * \return Pair (whether the test succeeded, an explanatory text).
  */
 inline MTS_EXPORT_CORE std::pair<bool, std::string>
 runStatisticalTest(size_t pointCount, size_t gridWidth, size_t gridHeight,
@@ -220,5 +219,3 @@ NAMESPACE_END(detail)
 
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)
-
-#endif /* __MITSUBA_CORE_WARP_H_ */

@@ -10,7 +10,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
 
-// TODO: needs sampler interface
+// TODO: use the actual Sampler interface when it is available
 using Sampler = pcg32;
 
 // Forward declaration of helper class.
@@ -21,6 +21,9 @@ NAMESPACE_END(detail)
 
 /**
  * TODO: doc, purpose, why we use this design
+ *
+ * \note In practice, most implementations are delegated to a \c WarpHelper
+ * class nested in the \c detail namespace.
  */
 class MTS_EXPORT_CORE WarpAdapter {
 public:
@@ -32,6 +35,17 @@ public:
 
 public:
 
+    /**
+     * Represents a single parameter to a warping function, including its
+     * formal name, a human-readable description and a domain of valid values.
+     * Only Float arguments are supported.
+     * This description is then used to automatically test warping functions
+     * for different combinations of their parameters.
+     *
+     * \param _name Should match the formal parameter name to the warping and
+     *              PDF functions, since the argument may be passed as a
+     *              keyword argument in Python.
+     */
     // TODO: this could actually be Python-only
     struct Argument {
         Argument(const std::string &_name,
@@ -67,18 +81,24 @@ public:
     };
 
     // TODO: support construction with:
-    // - No domain function (inferred from input / output types)
     // - Warping function that doesn't return a weight (then weight is 1.)
-    // TODO: actually don't need to know about the arguments
+    // TODO: actually we don't really need to know about the arguments here.
     WarpAdapter(const std::string &name, const std::vector<Argument> &arguments,
                 const BoundingBox3f bbox)
         : name_(name), arguments_(arguments), bbox_(bbox) { }
 
+    /**
+     * Warps a \c Point2f sample (sampled uniformly on the unit square) to a
+     * \c Vector3f. If the warping function outputs 2D or 1D points, the
+     * remaining entries of the results are left undefined or set to 0.0.
+     *
+     * \return Pair (warped point, weight)
+     */
     virtual std::pair<Vector3f, Float> warpSample(const Point2f &sample) const = 0;
 
     /**
      * Writes out generated points into \p positions and associated weights
-     * into \p weights. This method's job is mostly to package the results of
+     * into \p weights. This method's role is mostly to package the results of
      * a point generation function into a general Eigen matrix.
      */
     virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
@@ -86,10 +106,30 @@ public:
                                       Eigen::MatrixXf &positions,
                                       std::vector<Float> &weights) const = 0;
 
+    /**
+     * Given a sampler, sampling strategy and histogram description, generates
+     * random samples and bins them to a 2D histogram.
+     * This involves mapping the warped points from the output domain of the
+     * warping function back onto the unit square where the bins are defined
+     * (\see \r domainToPoint).
+     *
+     * @return An unrolled vector of \p gridWidth times \p gridHeight histogram
+     *         bin values.
+     */
     virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
         SamplingType strategy, size_t pointCount,
         size_t gridWidth, size_t gridHeight) const = 0;
 
+    /**
+     * Sampling the PDF over the warping functions output domain, generates
+     * the expected histogram of the warping function. It can then be compared
+     * to the observed histogram.
+     * This involves mapping regular 2D grid points into the output domain
+     * of the warping function (\see \r pointToDomain).
+     *
+     * @return An unrolled vector of \p gridWidth times \p gridHeight histogram
+     *         bin values.
+     */
     virtual std::vector<double> generateExpectedHistogram(size_t pointCount,
         size_t gridWidth, size_t gridHeight) const;
 
@@ -105,8 +145,10 @@ public:
     virtual std::string toString() const { return name_; }
 
 protected:
+    /// TODO: docs
     virtual Float getPdfScalingFactor() const = 0;
 
+    /// TODO: docs
     virtual std::function<Float (double, double)> getPdfIntegrand() const = 0;
 
     /**
@@ -128,7 +170,7 @@ protected:
     /// Human-readable name
     std::string name_;
 
-    // TODO: actually, do we even need to know about those on the C++ side?
+    // TODO: actually, we may not even need to know about those on the C++ side.
     std::vector<Argument> arguments_;
 
     /// Bounding box of the output domain (may not use all 3 components of the points)

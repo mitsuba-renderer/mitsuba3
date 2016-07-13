@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(warp)
 /**
  * A Nanogui widget to visualize warping functions for different
  * sampling strategies. It also performs a statistical test checking
- * that the warping function matches its PDF and draws the corresponding
+ * that the warping function matches its PDF and displays the corresponding
  * histograms (observed / expected).
  *
  * Note that it does not implement any UI elements, which are
@@ -31,6 +31,7 @@ public:
     /// The parameters are passed to the \r nanogui::Screen constructor.
     WarpVisualizationWidget(int width, int height, std::string description);
 
+    /// Destructor, releases the GL resources.
     virtual ~WarpVisualizationWidget() {
         glDeleteTextures(2, &m_textures[0]);
     }
@@ -53,25 +54,42 @@ public:
     bool isDrawingGrid() { return m_drawGrid; }
     void setDrawGrid(bool draw) { m_drawGrid = draw; }
 
+    /**
+     * Fired upon Nanogui mouse motion event. Forwards the motion to the
+     * underlying arcball to update the view.
+     */
     virtual bool
     mouseMotionEvent(const nanogui::Vector2i &p, const nanogui::Vector2i & rel,
                      int button, int modifiers) override;
 
+    /**
+     * Fired upon Nanogui mouse button event. Forwards clicks to the
+     * underlying arcball.
+     */
     virtual bool
     mouseButtonEvent(const nanogui::Vector2i &p, int button,
                      bool down, int modifiers) override;
 
+    /// Triggers a scene render, drawing the points, grid and histograms if enabled.
     virtual void drawContents() override;
 
 private:
+    /**
+     * Draws the previously uploaded histogram texture \p tex at a given
+     * position and dimensions on the canvas.
+     */
     void drawHistogram(const nanogui::Vector2i &position,
                        const nanogui::Vector2i &dimensions, GLuint tex);
 
+    /// Draws previously uploaded gridlines for a view matrix \p mvp on the canvas.
     void drawGrid(const Eigen::Matrix4f& mvp);
 
-    void initializeVisualizerGUI();
+    /// Initializes the widget's shaders and performs a first draw.
+    void initializeShaders();
 
+    /// Updates the size of the underlying arcball, e.g. after a canvas resize.
     void framebufferSizeChanged() {
+        // `mSize` is a member of `nanogui::Screen`
         m_arcball.setSize(mSize);
     }
 
@@ -84,6 +102,7 @@ private:
     nanogui::Arcball m_arcball;
 
     SamplingType m_samplingType;
+    /// Holds the current warping method selected by the user. May be Identity.
     std::shared_ptr<WarpAdapter> m_warpAdapter;
 
     bool m_drawHistogram, m_drawGrid;

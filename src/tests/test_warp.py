@@ -72,25 +72,18 @@ class WarpTest(unittest.TestCase):
         self.assertEqual(str(w), "Identity")
 
     def test03_statistical_tests(self):
-        # TODO: just iterate over the enum (pybind enum?)
-        # warps = [
-        #     WarpType.NoWarp,
-        #     WarpType.UniformSphere,
-        #     WarpType.UniformHemisphere,
-        #     # WarpType.CosineHemisphere,
-        #     # WarpType.UniformCone,
-        #     WarpType.UniformDisk,
-        #     WarpType.UniformDiskConcentric,
-        #     # WarpType.UniformTriangle,
-        #     WarpType.StandardNormal,
-        #     # WarpType.UniformTent,
-        #     # WarpType.NonUniformTent
-        # ]
         def warpWithUnitWeight(f):
             return lambda p: (f(p), 1.0)
 
+        def constantValue(v): #, length
+            length = 4
+            if (v >= 0) and (v <= length):
+                return 1 / float(length)
+            return 0
+
+        # TODO: use the common "warp factory" Python code currently in `warp_visualize.py`
         warps = [
-            # No warping
+            # Identity warping (no-op)
             IdentityWarpAdapter(),
 
             # 2D -> 2D warps
@@ -109,10 +102,10 @@ class WarpTest(unittest.TestCase):
                 squareToTentPdf),
 
             # TODO: manage the case of infinite support (need inverse mapping?)
-            # PlaneWarpAdapter("Square to 2D gaussian",
-            #     warpWithUnitWeight(squareToStdNormal),
-            #     squareToStdNormalPdf,
-            #     bbox = BoundingBox3f([-5, -5, -5], [5, 5, 5])),
+            PlaneWarpAdapter("Square to 2D gaussian",
+                warpWithUnitWeight(squareToStdNormal),
+                squareToStdNormalPdf,
+                bbox = BoundingBox3f([-5, -5, -5], [5, 5, 5])),
 
             # 2D -> 3D warps
             SphereWarpAdapter("Square to uniform sphere",
@@ -127,19 +120,21 @@ class WarpTest(unittest.TestCase):
             SphereWarpAdapter("Square to uniform cone",
                 warpWithUnitWeight(squareToUniformCone),
                 squareToUniformConePdf,
-                [WarpAdapter.Argument("cosCutoff", -1, 1)])
+                [WarpAdapter.Argument("cosCutoff", -1, 1)]),
 
-            # 1D -> 1D warps
-            # LineWarp("Square to nonuniform tent",
-            #     squareToTent, squareToTentPdf, [TODO: args])
+            # 1D -> 1D warps (simple test)
+            LineWarpAdapter("Constant value",
+                warpWithUnitWeight(constantValue),
+                constantValue,
+                [WarpAdapter.Argument("length", 0, 100)])
         ]
 
         # TODO: cover all sampling types
         samplingType = SamplingType.Independent
-        # TODO: also cover several parameter values when relevant
+        # TODO: also cover several parameter values when relevant (argument range is specified)
         parameterValue = 0.5
 
-        # TODO: increase sampling resolution and sample count
+        # TODO: increase sampling resolution and sample count if needed
         samplingResolution = 31
         (gridWidth, gridHeight) = (samplingResolution, samplingResolution)
         nBins = gridWidth * gridHeight

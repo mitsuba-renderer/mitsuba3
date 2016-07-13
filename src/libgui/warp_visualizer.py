@@ -20,8 +20,6 @@ class WarpVisualizer(WarpVisualizationWidget):
 
     # Default values for UI controls
     pointCountDefaultValue = 7.0 / 15.0
-    warpParameterDefaultValue = 0.5
-    angleDefaultValue = 0.5
 
     # Default values for statistical test
     minExpFrequency = 5.0
@@ -220,18 +218,19 @@ class WarpVisualizer(WarpVisualizationWidget):
         panel = Widget(window)
         panel.setLayout(BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
 
-        # Angle BSDF parameter
-        angleSlider = Slider(panel)
-        angleSlider.setFixedWidth(55)
-        angleSlider.setValue(WarpVisualizer.angleDefaultValue)
-        angleSlider.setCallback(lambda _: self.refresh())
-        # Companion text box
-        angleBox = TextBox(panel)
-        angleBox.setFixedSize(Vector2i(80, 25))
-        angleBox.setUnits(u"\u00B0")
-        # Option to visualize the BRDF values
-        brdfValuesCheckBox = CheckBox(window, "Visualize BRDF values")
-        brdfValuesCheckBox.setCallback(lambda _: self.refresh())
+        # TODO: BRDF-specific, some of this should be built-in the described args
+        # # Angle BSDF parameter
+        # angleSlider = Slider(panel)
+        # angleSlider.setFixedWidth(55)
+        # angleSlider.setValue(WarpVisualizer.angleDefaultValue)
+        # angleSlider.setCallback(lambda _: self.refresh())
+        # # Companion text box
+        # angleBox = TextBox(panel)
+        # angleBox.setFixedSize(Vector2i(80, 25))
+        # angleBox.setUnits(u"\u00B0")
+        # # Option to visualize the BRDF values
+        # brdfValuesCheckBox = CheckBox(window, "Visualize BRDF values")
+        # brdfValuesCheckBox.setCallback(lambda _: self.refresh())
 
         # Chi-2 test button
         _ = Label(window, u"\u03C7\u00B2 hypothesis test", "sans-bold")
@@ -254,9 +253,6 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.warpTypeBox = warpTypeBox
         self.warpedGridCheckBox = warpedGridCheckBox
         self.warpParametersPanel = warpParametersPanel
-        self.angleSlider = angleSlider
-        self.angleBox = angleBox
-        self.brdfValuesCheckBox = brdfValuesCheckBox
         self.testButton = testButton
 
         self.setupSlidersForWarpType(warp.NoWarp)
@@ -299,12 +295,10 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.refresh()
 
     def refresh(self):
-        # TODO: rate limit on refreshes
+        # TODO: rate limit on refreshes?
 
         samplingType = SamplingType(self.samplingTypeBox.selectedIndex())
         warpType = self.warps.keys()[self.warpTypeBox.selectedIndex()]
-        # angle = 180 * self.angleSlider.value() - 90
-        # self.angleBox.setValue("{:.1f}".format(angle))
 
         # Point count slider input is not linear
         pointCount = int(math.pow(2.0, 15.0 * self.pointCountSlider.value() + 5))
@@ -328,10 +322,12 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.setPointCount(pointCount)
         self.setDrawGrid(self.warpedGridCheckBox.checked())
 
-        # TODO: this will be built-in the described arguments
-        self.angleSlider.setEnabled(False)
-        self.angleBox.setEnabled(False)
-        self.brdfValuesCheckBox.setEnabled(False)
+        # TODO: method-specific, this should will be built-in the described arguments
+        # angle = 180 * self.angleSlider.value() - 90
+        # self.angleBox.setValue("{:.1f}".format(angle))
+        # self.angleSlider.setEnabled(False)
+        # self.angleBox.setEnabled(False)
+        # self.brdfValuesCheckBox.setEnabled(False)
 
         def updateWarpAdapter():
             # Build the arguments
