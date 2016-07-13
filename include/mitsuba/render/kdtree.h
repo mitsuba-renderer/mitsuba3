@@ -9,9 +9,6 @@
 #include <mitsuba/render/shape.h>
 #include <tbb/tbb.h>
 
-/// Optional: turn on lots of assertions in the kd-tree builder
-#define MTS_KD_DEBUG 1
-
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MTS_KD_MAXDEPTH 48u
 
@@ -110,7 +107,7 @@ public:
             }
         }
 
-        #if MTS_KD_DEBUG == 1
+        #if !defined(NDEBUG)
             for (auto const &chunk : m_chunks) {
                 if (ptr == chunk.start + chunk.size)
                     return; /* Potentially 0-sized buffer, don't be too stringent */
@@ -134,7 +131,7 @@ public:
             }
         }
 
-        #if MTS_KD_DEBUG == 1
+        #if !defined(NDEBUG)
             if (newSize == 0) {
                 for (auto const &chunk : m_chunks) {
                     if (ptr == chunk.start + chunk.size)
@@ -196,11 +193,11 @@ private:
     std::vector<Chunk> m_chunks;
 };
 
-template <typename BoundingBox_,
-          typename Index_,
+template <typename BoundingBox_, typename Index_, typename CostModel_,
           typename Derived_> class TShapeKDTree : public Object {
 public:
     using BoundingBox = BoundingBox_;
+    using CostModel   = CostModel_;
     using Index       = Index_;
     using Size        = Index;
     using Derived     = Derived_;
@@ -377,6 +374,10 @@ public:
 
         //MinMaxBins bins(m_minMaxBins);
 
+        /* ==================================================================== */
+        /*                              Binning                                 */
+        /* ==================================================================== */
+
         Timer timer;
         timer.beginStage("binning (par)");
 
@@ -398,11 +399,62 @@ public:
                 return b1;
             }
         );
+
+        /* ==================================================================== */
+        /*                        Split candidate search                        */
+        /* ==================================================================== */
+
+        Float leafCost = primCount * m_queryCost;
+
+        auto bestSplit = bins.bestCandidate(
+            primCount,
+            m_traversalCost,
+            m_queryCost,
+            m_emptySpaceBonus
+        );
+
+#if 0
+        /* "Bad refines" heuristic from PBRT */
+        if (bestSplit.cost >= leafCost) {
+            if ((bestSplit.cost > 4 * leafCost && primCount < 16)
+                || badRefines >= m_maxBadRefines) {
+                createLeaf(ctx, node, indices, primCount);
+                return leafCost;
+            }
+            ++badRefines;
+        }
+#endif
+
+        std::cout << bestSplit << std::endl;
+
         timer.endStage();
     }
 
     MTS_DECLARE_CLASS()
 protected:
+    /// Data type for split candidates suggested by the tree cost model
+    struct SplitCandidate {
+        Float cost = std::numeric_limits<Float>::infinity();
+        float pos = 0;
+        int axis = 0;
+        Size numLeft = 0, numRight = 0;
+        Size leftBin = 0;        /* used by min-max binning only */
+        bool planarLeft = false; /* used by the O(n log n) builder only */
+
+        friend std::ostream& operator<<(std::ostream &os, const SplitCandidate &c) {
+            os << "SplitCandidate[" << std::endl
+               << "  cost = " << c.cost << "," << std::endl
+               << "  pos = " << c.pos << "," << std::endl
+               << "  axis = " << c.axis << "," << std::endl
+               << "  numLeft = " << c.numLeft << "," << std::endl
+               << "  numRight = " << c.numRight << "," << std::endl
+               << "  leftBin = " << c.leftBin << "," << std::endl
+               << "  planarLeft = " << (c.planarLeft ? "yes" : "no") << std::endl
+               << "]";
+            return os;
+        }
+    };
+
     /**
      * \brief Min-max binning data structure
      *
@@ -414,17 +466,16 @@ protected:
     public:
         MinMaxBins(Size binCount, const BoundingBox &bbox)
             : m_bins(AlignedAllocator::alloc<Size>(binCount * Dimension * 2)),
-              m_binCount(binCount) {
+              m_binCount(binCount), m_bbox(bbox) {
             memset(m_bins.get(), 0, sizeof(Size) * binCount * Dimension * 2);
             m_maxBin = Vector::Constant(Scalar(binCount - 1));
             m_invBinSize = 1 / (bbox.extents() / (Float) binCount);
-            m_offset = bbox.min;
         }
 
         MinMaxBins(const MinMaxBins &other)
             : m_bins(AlignedAllocator::alloc<Size>(other.m_binCount * Dimension * 2)),
               m_binCount(other.m_binCount), m_invBinSize(other.m_invBinSize),
-              m_maxBin(other.m_maxBin), m_offset(other.m_offset) {
+              m_maxBin(other.m_maxBin), m_bbox(other.m_bbox) {
             memcpy(m_bins.get(), other.m_bins.get(),
                    sizeof(Size) * m_binCount * Dimension * 2);
         }
@@ -432,7 +483,7 @@ protected:
         MinMaxBins(MinMaxBins &&other)
             : m_bins(std::move(other.m_bins)), m_binCount(other.m_binCount),
               m_invBinSize(other.m_invBinSize), m_maxBin(other.m_maxBin),
-              m_offset(other.m_offset) {
+              m_bbox(other.m_bbox) {
             other.m_binCount = 0;
         }
 
@@ -446,7 +497,7 @@ protected:
                    sizeof(Size) * other.binCount * Dimension * 2);
             m_invBinSize = other.m_invBinSize;
             m_maxBin = other.m_maxBin;
-            m_offset = other.m_offset;
+            m_bbox = other.m_bbox;
         }
 
         void operator=(MinMaxBins &&other) {
@@ -454,11 +505,11 @@ protected:
             m_binCount = other.m_binCount;
             m_invBinSize = other.m_invBinSize;
             m_maxBin = other.m_maxBin;
-            m_offset = other.m_offset;
+            m_bbox = other.m_bbox;
             other.m_binCount = 0;
         }
 
-        void put(BoundingBox bbox) {
+        MTS_INLINE void put(const BoundingBox &bbox) {
             using simd::min;
             using simd::max;
             using Int = typename Vector::Int;
@@ -466,8 +517,8 @@ protected:
             alignas(alignof(Vector)) Int indexMin[Vector::ActualSize];
             alignas(alignof(Vector)) Int indexMax[Vector::ActualSize];
 
-            Vector relMin = (bbox.min - m_offset) * m_invBinSize;
-            Vector relMax = (bbox.max - m_offset) * m_invBinSize;
+            Vector relMin = (bbox.min - m_bbox.min) * m_invBinSize;
+            Vector relMax = (bbox.max - m_bbox.min) * m_invBinSize;
 
             relMin = min(max(relMin, Vector::Zero()), m_maxBin);
             relMax = min(max(relMax, Vector::Zero()), m_maxBin);
@@ -494,12 +545,150 @@ protected:
             return *this;
         }
 
-    public: // XXX
+        SplitCandidate bestCandidate(Size primCount,
+                                     Float traversalCost,
+                                     Float queryCost,
+                                     Float emptySpaceBonus) const {
+            Vector extents = m_bbox.extents();
+            Vector binSize = extents / (Float) m_binCount;
+            const uint32_t *bin = m_bins.get();
+            CostModel model(m_bbox);
+            SplitCandidate best;
+            best.cost = primCount * queryCost;
+
+            for (int axis = 0; axis < Dimension; ++axis) {
+                SplitCandidate candidate;
+
+                /* Initially: all primitives to the right, none on the left */
+                candidate.numLeft = 0;
+                candidate.numRight = primCount;
+                candidate.axis = axis;
+
+                Float leftWidth = 0, rightWidth = extents[axis];
+                const Float step = binSize[axis];
+
+                for (Index i = 0; i < m_binCount - 1; ++i) {
+                    /* Move one bin to the right and
+
+                       1. Increase numLeft by the number of primitives which
+                          started in the bin (thus they at least overlap with
+                          the left interval). This information is stored in the MIN
+                          bin.
+
+                       2. Reduce numRight by the number of primitives which
+                          ended (thus they are entirely on the left). This
+                          information is stored in the MAX bin.
+                    */
+                    candidate.numLeft  += *bin++; /* MIN-bin */
+                    candidate.numRight -= *bin++; /* MAX-bin */
+                    candidate.leftBin = i;
+
+                    /* Update interval lengths */
+                    leftWidth  += step;
+                    rightWidth -= step;
+
+                    /* Compute cost model */
+                    std::pair<Float, Float> prob =
+                        model(axis, leftWidth, rightWidth);
+
+                    candidate.cost =
+                        traversalCost +
+                        queryCost * (prob.first * candidate.numLeft +
+                                     prob.second * candidate.numRight);
+
+                    if (unlikely(candidate.numLeft == 0 || candidate.numRight == 0))
+                        candidate.cost *= emptySpaceBonus;
+
+                    if (candidate.cost < best.cost)
+                        best = candidate;
+                }
+
+                candidate.numLeft  += *bin++;
+                candidate.numRight -= *bin++;
+
+                Assert(candidate.numLeft == primCount);
+                Assert(candidate.numRight == 0);
+            }
+
+            Assert(std::isfinite(best.cost) && best.leftBin >= 0);
+
+            return best;
+        }
+
+#if 0
+        /**
+         * \brief Given a suitable split candidate, compute tight bounding
+         * boxes for the left and right subtrees and return associated
+         * primitive lists.
+         */
+        Partition partition(
+                BuildContext &ctx, const Derived *derived, Index *primIndices,
+                SplitCandidate &split, bool isLeftChild, Float traversalCost,
+                Float queryCost) {
+            SizeType numLeft = 0, numRight = 0;
+            BoundingBox leftBounds, rightBounds;
+            const int axis = split.axis;
+
+            Index *leftIndices, *rightIndices;
+            if (isLeftChild) {
+                OrderedChunkAllocator &rightAlloc = ctx.rightAlloc;
+                leftIndices = primIndices;
+                rightIndices = rightAlloc.allocate<Index>(split.numRight);
+            } else {
+                OrderedChunkAllocator &leftAlloc = ctx.leftAlloc;
+                leftIndices = leftAlloc.allocate<Index>(split.numLeft);
+                rightIndices = primIndices;
+            }
+
+            for (SizeType i=0; i<m_primCount; ++i) {
+                const Index primIndex = primIndices[i];
+                const BoundingBox aabb = derived->getAABB(primIndex);
+                int startIdx = computeIndex(math::castflt_down(aabb.min[axis]), axis);
+                int endIdx   = computeIndex(math::castflt_up  (aabb.max[axis]), axis);
+
+                if (endIdx <= split.leftBin) {
+                    KDAssert(numLeft < split.numLeft);
+                    leftBounds.expandBy(aabb);
+                    leftIndices[numLeft++] = primIndex;
+                } else if (startIdx > split.leftBin) {
+                    KDAssert(numRight < split.numRight);
+                    rightBounds.expandBy(aabb);
+                    rightIndices[numRight++] = primIndex;
+                } else {
+                    leftBounds.expandBy(aabb);
+                    rightBounds.expandBy(aabb);
+                    KDAssert(numLeft < split.numLeft);
+                    KDAssert(numRight < split.numRight);
+                    leftIndices[numLeft++] = primIndex;
+                    rightIndices[numRight++] = primIndex;
+                }
+            }
+            leftBounds.clip(m_aabb);
+            rightBounds.clip(m_aabb);
+            split.pos = m_min[axis] + m_binSize[axis] * (split.leftBin + 1);
+            leftBounds.max[axis] = std::min(leftBounds.max[axis], (Float) split.pos);
+            rightBounds.min[axis] = std::max(rightBounds.min[axis], (Float) split.pos);
+
+            KDAssert(numLeft == split.numLeft);
+            KDAssert(numRight == split.numRight);
+
+            /// Release the unused memory regions
+            if (isLeftChild)
+                ctx.leftAlloc.shrinkAllocation(leftIndices, split.numLeft);
+            else
+                ctx.rightAlloc.shrinkAllocation(rightIndices, split.numRight);
+
+            return Partition(leftBounds, leftIndices,
+                rightBounds, rightIndices);
+        }
+#endif
+
+    protected:
         std::unique_ptr<Size[], AlignedAllocator> m_bins;
         Size m_binCount = 0;
         Vector m_invBinSize;
         Vector m_maxBin;
-        Point m_offset;
+        BoundingBox m_bbox;
     };
 
     /// Release all memory
@@ -528,21 +717,59 @@ protected:
     BoundingBox m_bbox;
 };
 
-template <typename BoundingBox, typename Index, typename Derived>
-Class *TShapeKDTree<BoundingBox, Index, Derived>::m_class =
+template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
+Class * TShapeKDTree<BoundingBox, Index, CostModel, Derived>::m_class =
     new Class("TShapeKDTree", "Object", true, nullptr, nullptr);
 
-template <typename BoundingBox, typename Index, typename Derived>
-const Class *TShapeKDTree<BoundingBox, Index, Derived>::class_() const {
+template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
+const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() const {
     return m_class;
 }
 
 NAMESPACE_END(detail)
 
-class MTS_EXPORT ShapeKDTree
-    : public detail::TShapeKDTree<BoundingBox3f, uint32_t, ShapeKDTree> {
+class SurfaceAreaHeuristic3f {
 public:
-    using Base = detail::TShapeKDTree<BoundingBox3f, uint32_t, ShapeKDTree>;
+    /**
+     * \brief Initialize the surface area heuristic with the bounds of
+     * a parent node
+     *
+     * Precomputes some information so that traversal probabilities
+     * of potential split planes can be evaluated efficiently
+     */
+    SurfaceAreaHeuristic3f(const BoundingBox3f &bbox) {
+        auto extents = bbox.extents();
+        Float temp = 2.f / bbox.surfaceArea();
+        auto a = extents.swizzle<1, 2, 0>();
+        auto b = extents.swizzle<2, 0, 1>();
+        m_temp0 = (a * b) * temp;
+        m_temp1 = (a + b) * temp;
+    }
+
+    /**
+     * \brief Evaluate the surface area heuristic
+     *
+     * Given a split on axis \a axis that produces children having extents \a
+     * leftWidth and \a rightWidth along \a axis, compute the probability of
+     * traversing the left and right child during a typical query operation. In
+     * the case of the surface area heuristic, this is simply the ratio of
+     * surface areas.
+     */
+    std::pair<Float, Float> operator()(int axis, Float leftWidth, Float rightWidth) const {
+        return std::pair<Float, Float>(
+            m_temp0[axis] + m_temp1[axis] * leftWidth,
+            m_temp0[axis] + m_temp1[axis] * rightWidth);
+    }
+private:
+    Vector3f m_temp0, m_temp1;
+};
+
+
+
+class MTS_EXPORT ShapeKDTree
+    : public detail::TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree> {
+public:
+    using Base = detail::TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
 
     ShapeKDTree();
     void addShape(Shape *shape);

@@ -135,7 +135,7 @@ NAMESPACE_BEGIN(detail)
 void Throw(ELogLevel level, const Class *class_, const char *file,
            int line, const std::string &msg);
 
-template <typename... Args> MTS_FORCEINLINE
+template <typename... Args> MTS_INLINE
 static void Log(ELogLevel level, const Class *class_,
                          const char *filename, int line, Args &&... args) {
     auto logger = mitsuba::Thread::thread()->logger();
