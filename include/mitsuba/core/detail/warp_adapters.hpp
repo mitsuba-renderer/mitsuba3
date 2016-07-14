@@ -7,6 +7,15 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
 NAMESPACE_BEGIN(detail)
 
+/**
+ * This template class provides appropriate helper functions for all required
+ * \c WarpAdapter methods to be implemented by subclasses.
+ * These implementations are refactored to this helper class to avoid repetition
+ * in \c WarpAdapter subclasses, which are now reduced to a simple call to
+ * the appropriate helper.
+ * TODO: any way to achieve the same goal without having to explicitly delegate
+ *       each method to the helper class?
+ */
 template <typename Adapter, typename SampleType, typename DomainType>
 class WarpAdapterHelper {
 public:
@@ -141,7 +150,7 @@ WarpAdapterHelper<LineWarpAdapter, Float, Float>::warpSample(
 
 template <> Float
 WarpAdapterHelper<LineWarpAdapter, Float, Float>::toSampleType(const Point2f &p) {
-    // TODO: we're wasting a lot of potential here
+    // TODO: we're wasting a some potential here by using only one of the two dimensions.
     return p.x();
 }
 

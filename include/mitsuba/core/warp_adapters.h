@@ -20,17 +20,26 @@ class WarpAdapterHelper;
 NAMESPACE_END(detail)
 
 /**
- * TODO: doc, purpose, why we use this design
+ * Abstract class allowing handling and testing of warping functions of various
+ * dimensions. WarpAdapters encapsulate the variability incurred by the
+ * different input and output dimensionalities supported for warping functions
+ * (e.g. some functions map to the 2D plane while others map to a 3D sphere).
  *
- * \note In practice, most implementations are delegated to a \c WarpHelper
- * class nested in the \c detail namespace.
+ * The interface provides methods allowing to warp samples, bin observations
+ * to a 2D histogram and compute the expected histogram (as given by the PDF)
+ * for comparison.
+ * After selecting the WarpAdapter subclass corresponding to the warping
+ * function's input and output domains, it is constructed with lambda
+ * expressions evaluating the warping function and PDF.
+ *
+ * \note In practice, most implementations are delegated to a
+ *       \c WarpAdapterHelper class nested in the \c warp::detail namespace.
  */
 class MTS_EXPORT_CORE WarpAdapter {
 public:
     /// Bounding box corresponding to the first quadrant ([0..1]^n)
     static const BoundingBox3f kUnitSquareBoundingBox;
     /// Bounding box corresponding to a disk of radius 1 centered at the origin ([-1..1]^n)
-    // TODO: better name
     static const BoundingBox3f kCenteredSquareBoundingBox;
 
 public:
@@ -80,8 +89,23 @@ public:
         }
     };
 
-    // TODO: support construction with:
-    // - Warping function that doesn't return a weight (then weight is 1.)
+    /**
+     * Base constructor for all WarpAdapters. The specific warping and PDF
+     * functions should be taken in the constructor of concrete subclasses (we
+     * cannot do it here since the type of the lambdas couldn't be determined
+     * until we specify the input and output types of the warping functions).
+     *
+     * \param name Human-readable name of the warping function.
+     * \param arguments Description of the arguments taken by the warping
+     *                  and PDF functions.
+     * \param bbox The bounding box defines the extent of the output domain
+     *             of the warping function. If it has lower dimensionality
+     *             than 3, only the corresponding entries of the bbox's
+     *             coordinates are used.
+     */
+    // TODO: consider supporting construction with warping functions that do not
+    //       return a weight (then we can easily and cheaply wrap them and
+    //       automatically return the 1.0 default weight for them).
     // TODO: actually we don't really need to know about the arguments here.
     WarpAdapter(const std::string &name, const std::vector<Argument> &arguments,
                 const BoundingBox3f bbox)
@@ -145,10 +169,21 @@ public:
     virtual std::string toString() const { return name_; }
 
 protected:
-    /// TODO: docs
+    /** Returns the scaling factor to be applied when evaluating the expected
+     * PDF value at in the cell of a 2D grid. This factor accounts for the
+     * mapping of this 2D cell onto the warping function's output domain and
+     * thus changes depending on the target domain.
+     */
     virtual Float getPdfScalingFactor() const = 0;
 
-    /// TODO: docs
+    /**
+     * \return A function that, given 2D sample coordinates (y, x), transforms
+     *         the 2D sample to the output domain of the warping function and
+     *         returns the PDF value at that point.
+     *         This lambda is intended to be passed to an adaptive sampling
+     *         algorithm which estimates the expected probability densities
+     *         over the output domain.
+     */
     virtual std::function<Float (double, double)> getPdfIntegrand() const = 0;
 
     /**
@@ -228,10 +263,15 @@ Vector3f WarpAdapter::pointToDomain(const Point2f &p) const {
         sinTheta * sinPhi,
         y);
 }
-// TODO: avoid multiple repeated declarations
 
-/// TODO: docs
-/// TODO: only uses the first coordinate from the 2D samples, which is wasteful.
+/**
+ * Adapter for warping functions that map the real unit interval [0, 1] onto
+ * a subset of the real line (1D -> 1D).
+ */
+// TODO: avoid repetitive declarations of the WarpAdapter subclasses.
+// TODO: avoid repetitive docs of the WarpAdapter subclasses.
+// TODO: only uses the first coordinate from the 2D samples, which is wasteful.
+//       Find a way to map?
 class MTS_EXPORT_CORE LineWarpAdapter : public WarpAdapter {
 public:
     using SampleType = Float;
@@ -242,61 +282,87 @@ public:
     friend class detail::WarpAdapterHelper<LineWarpAdapter, SampleType, DomainType>;
     using Helper = detail::WarpAdapterHelper<LineWarpAdapter, SampleType, DomainType>;
 
-    LineWarpAdapter(const std::string &name,
-                    const WarpFunctionType &f, const PdfFunctionType &pdf,
-                    const std::vector<Argument> &arguments = {},
-                    const BoundingBox3f &bbox = WarpAdapter::kUnitSquareBoundingBox)
+    /**
+     * \param f   A lambda that, given a sample, returns a pair (warped point,
+     *            weight). The lambda will only be passed the sample and must
+     *            thus bind any other parameter in advance.
+     * \param pdf A lambda that, given a warped point, returns its PDF value.
+     *            The lambda will only be passed the warped point and must
+     *            thus bind any other parameter in advance.
+     *
+     * \see \r WarpAdapter
+     */
+    LineWarpAdapter(
+        const std::string &name,
+        const WarpFunctionType &f, const PdfFunctionType &pdf,
+        const std::vector<Argument> &arguments = {},
+        const BoundingBox3f &bbox = WarpAdapter::kUnitSquareBoundingBox)
         : WarpAdapter(name, arguments, bbox), f_(f), pdf_(pdf) {
     }
 
-    virtual std::pair<Vector3f, Float>
-    warpSample(const Point2f& sample) const override;
+    /// \see \r WarpAdapter
+    virtual std::pair<Vector3f, Float> warpSample(
+        const Point2f& sample) const override;
 
-    virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
-                                      size_t pointCount,
-                                      Eigen::MatrixXf &positions,
-                                      std::vector<Float> &weights) const override;
+    /// \see \r WarpAdapter
+    virtual void generateWarpedPoints(
+        Sampler *sampler, SamplingType strategy, size_t pointCount,
+        Eigen::MatrixXf &positions, std::vector<Float> &weights) const override;
 
+    /// \see \r WarpAdapter
     virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
         SamplingType strategy, size_t pointCount,
         size_t gridWidth, size_t gridHeight) const override;
 
+    /// \see \r WarpAdapter
     virtual size_t inputDimensionality() const override { return 1; }
+    /// \see \r WarpAdapter
     virtual size_t domainDimensionality() const override { return 1; }
 
 protected:
+    /// \see \r WarpAdapter
     virtual std::function<Float (double, double)> getPdfIntegrand() const override;
 
+    /// \see \r WarpAdapter
     virtual Float getPdfScalingFactor() const override {
         return (Float)1.0;  // TODO: check
     }
 
-    /// Returns a list of warped points
-    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
+    /// Returns a list of pairs (warped point, weight).
+    virtual std::vector<PairType> generatePoints(
+        Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
 
-    virtual std::vector<double> binPoints(const std::vector<PairType> &points,
+    /** Returns the 2D histogram (linearized) from a set of observed warped
+     * points. Points with null weight are ignored.
+     */
+    virtual std::vector<double> binPoints(
+        const std::vector<PairType> &points,
         size_t gridWidth, size_t gridHeight) const;
 
 
-    /// TODO: doc
+    /** Warps a provided sample \p using the warping function. No additional
+     * parameters are passed, since we assume that the lambda provided on
+     * construction already handles it if needed.
+     */
     virtual PairType warp(SampleType p) const {
         return f_(p);
     }
 
-    /// TODO: doc
+    /** Computes the PDF of a provided domain point \p using the PDF function.
+     * No additional parameters are passed, since we assume that the lambda
+     * provided on construction already handles it if needed.
+     */
     virtual Float pdf(DomainType p) const {
         return pdf_(p);
     }
 
-    /**
-     * Warping function.
+    /** Warping function.
      * Will be called with the sample only, so any parameter needs to be bound
      * in advance.
      * Returns a pair (warped point on the domain; weight).
      */
     WarpFunctionType f_;
-    /**
-     * PDF function.
+    /** PDF function.
      * Will be called with a domain point only, so any parameter needs to be
      * bound in advance.
      * Should return the PDF associated with that point.
@@ -304,7 +370,10 @@ protected:
     PdfFunctionType pdf_;
 };
 
-/// TODO: docs
+/**
+ * Adapter for warping functions that map the 2D unit square [0, 1]^2 onto
+ * a subset of the real plane.
+ */
 class MTS_EXPORT_CORE PlaneWarpAdapter : public WarpAdapter {
 public:
     using SampleType = Point2f;
@@ -316,61 +385,87 @@ public:
     using Helper = detail::WarpAdapterHelper<PlaneWarpAdapter, SampleType, DomainType>;
 
 
-    PlaneWarpAdapter(const std::string &name,
-                     const WarpFunctionType &f, const PdfFunctionType &pdf,
-                     const std::vector<Argument> &arguments = {},
-                     const BoundingBox3f &bbox = WarpAdapter::kCenteredSquareBoundingBox)
+    /**
+     * \param f   A lambda that, given a sample, returns a pair (warped point,
+     *            weight). The lambda will only be passed the sample and must
+     *            thus bind any other parameter in advance.
+     * \param pdf A lambda that, given a warped point, returns its PDF value.
+     *            The lambda will only be passed the warped point and must
+     *            thus bind any other parameter in advance.
+     *
+     * \see \r WarpAdapter
+     */
+    PlaneWarpAdapter(
+        const std::string &name,
+        const WarpFunctionType &f, const PdfFunctionType &pdf,
+        const std::vector<Argument> &arguments = {},
+        const BoundingBox3f &bbox = WarpAdapter::kCenteredSquareBoundingBox)
         : WarpAdapter(name, arguments, bbox), f_(f), pdf_(pdf) {
     }
 
-    virtual std::pair<Vector3f, Float>
-    warpSample(const Point2f& sample) const override;
+    /// \see \r WarpAdapter
+    virtual std::pair<Vector3f, Float> warpSample(
+        const Point2f& sample) const override;
 
-    virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
-                                      size_t pointCount,
-                                      Eigen::MatrixXf &positions,
-                                      std::vector<Float> &weights) const override;
+    /// \see \r WarpAdapter
+    virtual void generateWarpedPoints(
+        Sampler *sampler, SamplingType strategy, size_t pointCount,
+        Eigen::MatrixXf &positions, std::vector<Float> &weights) const override;
 
-    virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
-        SamplingType strategy, size_t pointCount,
+    /// \see \r WarpAdapter
+    virtual std::vector<double> generateObservedHistogram(
+        Sampler *sampler, SamplingType strategy, size_t pointCount,
         size_t gridWidth, size_t gridHeight) const override;
 
+    /// \see \r WarpAdapter
     virtual size_t inputDimensionality() const override { return 2; }
+    /// \see \r WarpAdapter
     virtual size_t domainDimensionality() const override { return 2; }
 
 protected:
+    /// \see \r WarpAdapter
     virtual std::function<Float (double, double)> getPdfIntegrand() const override;
 
+    /// \see \r WarpAdapter
     virtual Float getPdfScalingFactor() const override {
         return 4.0;
     }
 
-    /// Returns a list of warped points
-    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
+    /// Returns a list of pairs (warped point, weight).
+    virtual std::vector<PairType> generatePoints(
+        Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
 
-    virtual std::vector<double> binPoints(const std::vector<PairType> &points,
+    /** Returns the 2D histogram (linearized) from a set of observed warped
+     * points. Points with null weight are ignored.
+     */
+    virtual std::vector<double> binPoints(
+        const std::vector<PairType> &points,
         size_t gridWidth, size_t gridHeight) const;
 
 
-    /// TODO: doc
+    /** Warps a provided sample \p using the warping function. No additional
+     * parameters are passed, since we assume that the lambda provided on
+     * construction already handles it if needed.
+     */
     virtual PairType warp(SampleType p) const {
         return f_(p);
     }
 
-    /// TODO: doc
+    /** Computes the PDF of a provided domain point \p using the PDF function.
+     * No additional parameters are passed, since we assume that the lambda
+     * provided on construction already handles it if needed.
+     */
     virtual Float pdf(DomainType p) const {
         return pdf_(p);
     }
 
-    /**
-     * Warping function.
+    /** Warping function.
      * Will be called with the sample only, so any parameter needs to be bound
      * in advance.
      * Returns a pair (warped point on the domain; weight).
      */
     WarpFunctionType f_;
-    /**
-     * PDF function.
+    /** PDF function.
      * Will be called with a domain point only, so any parameter needs to be
      * bound in advance.
      * Should return the PDF associated with that point.
@@ -378,7 +473,10 @@ protected:
     PdfFunctionType pdf_;
 };
 
-/// TODO: docs
+/** Identity warping function on the 2D unit square. Its PDF always evaluates
+ * to 1 on the 2D unit square, 0 otherwise.
+ * All mechanics are inherited from the standard \c PlaneWarpAdapter.
+ */
 class MTS_EXPORT_CORE IdentityWarpAdapter : public PlaneWarpAdapter {
 public:
     using SampleType = Point2f;
@@ -405,7 +503,10 @@ protected:
 };
 
 
-/// TODO: docs
+/**
+ * Adapter for warping functions that map the 2D unit square [0, 1]^2 onto
+ * a subset of the unit 3D sphere centered at zero.
+ */
 class MTS_EXPORT_CORE SphereWarpAdapter : public WarpAdapter {
 public:
     using SampleType = Point2f;
@@ -416,61 +517,86 @@ public:
     friend class detail::WarpAdapterHelper<SphereWarpAdapter, SampleType, DomainType>;
     using Helper = detail::WarpAdapterHelper<SphereWarpAdapter, SampleType, DomainType>;
 
-    SphereWarpAdapter(const std::string &name,
-                      const WarpFunctionType &f, const PdfFunctionType &pdf,
-                      const std::vector<Argument> &arguments = {},
-                      const BoundingBox3f &bbox = WarpAdapter::kCenteredSquareBoundingBox)
+    /**
+     * \param f   A lambda that, given a sample, returns a pair (warped point,
+     *            weight). The lambda will only be passed the sample and must
+     *            thus bind any other parameter in advance.
+     * \param pdf A lambda that, given a warped point, returns its PDF value.
+     *            The lambda will only be passed the warped point and must
+     *            thus bind any other parameter in advance.
+     *
+     * \see \r WarpAdapter
+     */
+    SphereWarpAdapter(
+        const std::string &name,
+        const WarpFunctionType &f, const PdfFunctionType &pdf,
+        const std::vector<Argument> &arguments = {},
+        const BoundingBox3f &bbox = WarpAdapter::kCenteredSquareBoundingBox)
         : WarpAdapter(name, arguments, bbox), f_(f), pdf_(pdf) {
     }
 
-    virtual std::pair<Vector3f, Float>
-    warpSample(const Point2f& sample) const override;
+    /// \see \r WarpAdapter
+    virtual std::pair<Vector3f, Float> warpSample(
+        const Point2f& sample) const override;
 
-    virtual void generateWarpedPoints(Sampler *sampler, SamplingType strategy,
-                                      size_t pointCount,
-                                      Eigen::MatrixXf &positions,
-                                      std::vector<Float> &weights) const override;
+    /// \see \r WarpAdapter
+    virtual void generateWarpedPoints(
+        Sampler *sampler, SamplingType strategy, size_t pointCount,
+        Eigen::MatrixXf &positions, std::vector<Float> &weights) const override;
 
-    virtual std::vector<double> generateObservedHistogram(Sampler *sampler,
-        SamplingType strategy, size_t pointCount,
+    /// \see \r WarpAdapter
+    virtual std::vector<double> generateObservedHistogram(
+        Sampler *sampler, SamplingType strategy, size_t pointCount,
         size_t gridWidth, size_t gridHeight) const override;
 
+    /// \see \r WarpAdapter
     virtual size_t inputDimensionality() const override { return 2; }
+    /// \see \r WarpAdapter
     virtual size_t domainDimensionality() const override { return 3; }
 
 protected:
+    /// \see \r WarpAdapter
     virtual std::function<Float (double, double)> getPdfIntegrand() const override;
 
+    /// \see \r WarpAdapter
     virtual Float getPdfScalingFactor() const override {
         return (Float)4.0 * math::Pi;
     }
 
-    /// Returns a list of warped points
-    virtual std::vector<PairType> generatePoints(Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
+    /// Returns a list of pairs (warped point, weight).
+    virtual std::vector<PairType> generatePoints(
+        Sampler * sampler, SamplingType strategy, size_t &pointCount) const;
 
-    virtual std::vector<double> binPoints(const std::vector<PairType> &points,
+    /** Returns the 2D histogram (linearized) from a set of observed warped
+     * points. Points with null weight are ignored.
+     */
+    virtual std::vector<double> binPoints(
+        const std::vector<PairType> &points,
         size_t gridWidth, size_t gridHeight) const;
 
-
-    /// TODO: doc
+    /** Warps a provided sample \p using the warping function. No additional
+     * parameters are passed, since we assume that the lambda provided on
+     * construction already handles it if needed.
+     */
     virtual PairType warp(SampleType p) const {
         return f_(p);
     }
 
-    /// TODO: doc
+    /** Computes the PDF of a provided domain point \p using the PDF function.
+     * No additional parameters are passed, since we assume that the lambda
+     * provided on construction already handles it if needed.
+     */
     virtual Float pdf(DomainType p) const {
         return pdf_(p);
     }
 
-    /**
-     * Warping function.
+    /** Warping function.
      * Will be called with the sample only, so any parameter needs to be bound
      * in advance.
      * Returns a pair (warped point on the domain; weight).
      */
     WarpFunctionType f_;
-    /**
-     * PDF function.
+    /** PDF function.
      * Will be called with a domain point only, so any parameter needs to be
      * bound in advance.
      * Should return the PDF associated with that point.

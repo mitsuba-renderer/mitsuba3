@@ -2537,9 +2537,9 @@ static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical 
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Return a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -2677,7 +2677,10 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_IdentityWarpAdapter = R"doc(TODO: docs)doc";
+static const char *__doc_mitsuba_warp_IdentityWarpAdapter =
+R"doc(Identity warping function on the 2D unit square. Its PDF always
+evaluates to 1 on the 2D unit square, 0 otherwise. All mechanics are
+inherited from the standard ``PlaneWarpAdapter``.)doc";
 
 static const char *__doc_mitsuba_warp_IdentityWarpAdapter_IdentityWarpAdapter = R"doc()doc";
 
@@ -2685,41 +2688,149 @@ static const char *__doc_mitsuba_warp_IdentityWarpAdapter_getPdfScalingFactor = 
 
 static const char *__doc_mitsuba_warp_IdentityWarpAdapter_isIdentity = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter = R"doc(TODO: docs)doc";
+static const char *__doc_mitsuba_warp_LineWarpAdapter =
+R"doc(Adapter for warping functions that map the real unit interval [0, 1]
+onto a subset of the real line (1D -> 1D).)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_PlaneWarpAdapter = R"doc()doc";
+static const char *__doc_mitsuba_warp_LineWarpAdapter_LineWarpAdapter =
+R"doc(Parameter ``f``:
+    A lambda that, given a sample, returns a pair (warped point,
+    weight). The lambda will only be passed the sample and must thus
+    bind any other parameter in advance.
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_binPoints = R"doc()doc";
+Parameter ``pdf``:
+    A lambda that, given a warped point, returns its PDF value. The
+    lambda will only be passed the warped point and must thus bind any
+    other parameter in advance.
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_domainDimensionality = R"doc()doc";
+See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_binPoints =
+R"doc(Returns the 2D histogram (linearized) from a set of observed warped
+points. Points with null weight are ignored.)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_domainDimensionality =
+R"doc(See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_f =
+R"doc(Warping function. Will be called with the sample only, so any
+parameter needs to be bound in advance. Returns a pair (warped point
+on the domain; weight).)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_generateObservedHistogram =
+R"doc(See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_generatePoints = R"doc(Returns a list of pairs (warped point, weight).)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_generateWarpedPoints =
+R"doc(See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_getPdfIntegrand =
+R"doc(See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_getPdfScalingFactor =
+R"doc(See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_inputDimensionality =
+R"doc(See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_pdf =
+R"doc(Computes the PDF of a provided domain point \p using the PDF function.
+No additional parameters are passed, since we assume that the lambda
+provided on construction already handles it if needed.)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_pdf_2 =
+R"doc(PDF function. Will be called with a domain point only, so any
+parameter needs to be bound in advance. Should return the PDF
+associated with that point.)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_warp =
+R"doc(Warps a provided sample \p using the warping function. No additional
+parameters are passed, since we assume that the lambda provided on
+construction already handles it if needed.)doc";
+
+static const char *__doc_mitsuba_warp_LineWarpAdapter_warpSample =
+R"doc(See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter =
+R"doc(Adapter for warping functions that map the 2D unit square [0, 1]^2
+onto a subset of the real plane.)doc";
+
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_PlaneWarpAdapter =
+R"doc(Parameter ``f``:
+    A lambda that, given a sample, returns a pair (warped point,
+    weight). The lambda will only be passed the sample and must thus
+    bind any other parameter in advance.
+
+Parameter ``pdf``:
+    A lambda that, given a warped point, returns its PDF value. The
+    lambda will only be passed the warped point and must thus bind any
+    other parameter in advance.
+
+See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_binPoints =
+R"doc(Returns the 2D histogram (linearized) from a set of observed warped
+points. Points with null weight are ignored.)doc";
+
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_domainDimensionality =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_f =
 R"doc(Warping function. Will be called with the sample only, so any
 parameter needs to be bound in advance. Returns a pair (warped point
 on the domain; weight).)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generateObservedHistogram = R"doc()doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generateObservedHistogram =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generatePoints = R"doc(Returns a list of warped points)doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generatePoints = R"doc(Returns a list of pairs (warped point, weight).)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generateWarpedPoints = R"doc()doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_generateWarpedPoints =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_getPdfIntegrand = R"doc()doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_getPdfIntegrand =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_getPdfScalingFactor = R"doc()doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_getPdfScalingFactor =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_inputDimensionality = R"doc()doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_inputDimensionality =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_pdf = R"doc(TODO: doc)doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_pdf =
+R"doc(Computes the PDF of a provided domain point \p using the PDF function.
+No additional parameters are passed, since we assume that the lambda
+provided on construction already handles it if needed.)doc";
 
 static const char *__doc_mitsuba_warp_PlaneWarpAdapter_pdf_2 =
 R"doc(PDF function. Will be called with a domain point only, so any
 parameter needs to be bound in advance. Should return the PDF
 associated with that point.)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_warp = R"doc(TODO: doc)doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_warp =
+R"doc(Warps a provided sample \p using the warping function. No additional
+parameters are passed, since we assume that the lambda provided on
+construction already handles it if needed.)doc";
 
-static const char *__doc_mitsuba_warp_PlaneWarpAdapter_warpSample = R"doc()doc";
+static const char *__doc_mitsuba_warp_PlaneWarpAdapter_warpSample =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
 static const char *__doc_mitsuba_warp_SamplingType = R"doc(Enum of available point sampling strategies)doc";
 
@@ -2729,45 +2840,106 @@ static const char *__doc_mitsuba_warp_SamplingType_Independent = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_SamplingType_Stratified = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter = R"doc(TODO: docs)doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter =
+R"doc(Adapter for warping functions that map the 2D unit square [0, 1]^2
+onto a subset of the unit 3D sphere centered at zero.)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_SphereWarpAdapter = R"doc()doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_SphereWarpAdapter =
+R"doc(Parameter ``f``:
+    A lambda that, given a sample, returns a pair (warped point,
+    weight). The lambda will only be passed the sample and must thus
+    bind any other parameter in advance.
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_binPoints = R"doc()doc";
+Parameter ``pdf``:
+    A lambda that, given a warped point, returns its PDF value. The
+    lambda will only be passed the warped point and must thus bind any
+    other parameter in advance.
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_domainDimensionality = R"doc()doc";
+See also:
+    \r WarpAdapter)doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_binPoints =
+R"doc(Returns the 2D histogram (linearized) from a set of observed warped
+points. Points with null weight are ignored.)doc";
+
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_domainDimensionality =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
 static const char *__doc_mitsuba_warp_SphereWarpAdapter_f =
 R"doc(Warping function. Will be called with the sample only, so any
 parameter needs to be bound in advance. Returns a pair (warped point
 on the domain; weight).)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_generateObservedHistogram = R"doc()doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_generateObservedHistogram =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_generatePoints = R"doc(Returns a list of warped points)doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_generatePoints = R"doc(Returns a list of pairs (warped point, weight).)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_generateWarpedPoints = R"doc()doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_generateWarpedPoints =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_getPdfIntegrand = R"doc()doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_getPdfIntegrand =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_getPdfScalingFactor = R"doc()doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_getPdfScalingFactor =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_inputDimensionality = R"doc()doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_inputDimensionality =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_pdf = R"doc(TODO: doc)doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_pdf =
+R"doc(Computes the PDF of a provided domain point \p using the PDF function.
+No additional parameters are passed, since we assume that the lambda
+provided on construction already handles it if needed.)doc";
 
 static const char *__doc_mitsuba_warp_SphereWarpAdapter_pdf_2 =
 R"doc(PDF function. Will be called with a domain point only, so any
 parameter needs to be bound in advance. Should return the PDF
 associated with that point.)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_warp = R"doc(TODO: doc)doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_warp =
+R"doc(Warps a provided sample \p using the warping function. No additional
+parameters are passed, since we assume that the lambda provided on
+construction already handles it if needed.)doc";
 
-static const char *__doc_mitsuba_warp_SphereWarpAdapter_warpSample = R"doc()doc";
+static const char *__doc_mitsuba_warp_SphereWarpAdapter_warpSample =
+R"doc(See also:
+    \r WarpAdapter)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter = R"doc(TODO: doc, purpose, why we use this design)doc";
+static const char *__doc_mitsuba_warp_WarpAdapter =
+R"doc(Abstract class allowing handling and testing of warping functions of
+various dimensions. WarpAdapters encapsulate the variability incurred
+by the different input and output dimensionalities supported for
+warping functions (e.g. some functions map to the 2D plane while
+others map to a 3D sphere).
 
-static const char *__doc_mitsuba_warp_WarpAdapter_Argument = R"doc()doc";
+The interface provides methods allowing to warp samples, bin
+observations to a 2D histogram and compute the expected histogram (as
+given by the PDF) for comparison. After selecting the WarpAdapter
+subclass corresponding to the warping function's input and output
+domains, it is constructed with lambda expressions evaluating the
+warping function and PDF.
+
+\note In practice, most implementations are delegated to a
+``WarpAdapterHelper`` class nested in the ``warp::detail`` namespace.)doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_Argument =
+R"doc(Represents a single parameter to a warping function, including its
+formal name, a human-readable description and a domain of valid
+values. Only Float arguments are supported. This description is then
+used to automatically test warping functions for different
+combinations of their parameters.
+
+Parameter ``_name``:
+    Should match the formal parameter name to the warping and PDF
+    functions, since the argument may be passed as a keyword argument
+    in Python.)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_Argument_Argument = R"doc()doc";
 
@@ -2787,7 +2959,24 @@ static const char *__doc_mitsuba_warp_WarpAdapter_Argument_name = R"doc(Formal n
 
 static const char *__doc_mitsuba_warp_WarpAdapter_Argument_normalize = R"doc(Returns \p value (in [minValue..maxValue]), mapped to [0..1])doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_WarpAdapter = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_WarpAdapter =
+R"doc(Base constructor for all WarpAdapters. The specific warping and PDF
+functions should be taken in the constructor of concrete subclasses
+(we cannot do it here since the type of the lambdas couldn't be
+determined until we specify the input and output types of the warping
+functions).
+
+Parameter ``name``:
+    Human-readable name of the warping function.
+
+Parameter ``arguments``:
+    Description of the arguments taken by the warping and PDF
+    functions.
+
+Parameter ``bbox``:
+    The bounding box defines the extent of the output domain of the
+    warping function. If it has lower dimensionality than 3, only the
+    corresponding entries of the bbox's coordinates are used.)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_arguments = R"doc()doc";
 
@@ -2803,18 +2992,49 @@ R"doc(Maps a point on the warping function's output domain to a 2D point in
 histogram. For technical reasons, it always takes a 3D vector but may
 use only some of it components.)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_generateExpectedHistogram = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_generateExpectedHistogram =
+R"doc(Sampling the PDF over the warping functions output domain, generates
+the expected histogram of the warping function. It can then be
+compared to the observed histogram. This involves mapping regular 2D
+grid points into the output domain of the warping function (
 
-static const char *__doc_mitsuba_warp_WarpAdapter_generateObservedHistogram = R"doc()doc";
+See also:
+    \r pointToDomain).
+
+@return An unrolled vector of \p gridWidth times \p gridHeight
+histogram bin values.)doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_generateObservedHistogram =
+R"doc(Given a sampler, sampling strategy and histogram description,
+generates random samples and bins them to a 2D histogram. This
+involves mapping the warped points from the output domain of the
+warping function back onto the unit square where the bins are defined
+(
+
+See also:
+    \r domainToPoint).
+
+@return An unrolled vector of \p gridWidth times \p gridHeight
+histogram bin values.)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_generateWarpedPoints =
 R"doc(Writes out generated points into \p positions and associated weights
-into \p weights. This method's job is mostly to package the results of
-a point generation function into a general Eigen matrix.)doc";
+into \p weights. This method's role is mostly to package the results
+of a point generation function into a general Eigen matrix.)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_getPdfIntegrand = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_getPdfIntegrand =
+R"doc(Returns:
+    A function that, given 2D sample coordinates (y, x), transforms
+    the 2D sample to the output domain of the warping function and
+    returns the PDF value at that point. This lambda is intended to be
+    passed to an adaptive sampling algorithm which estimates the
+    expected probability densities over the output domain.)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_getPdfScalingFactor = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_getPdfScalingFactor =
+R"doc(Returns the scaling factor to be applied when evaluating the expected
+PDF value at in the cell of a 2D grid. This factor accounts for the
+mapping of this 2D cell onto the warping function's output domain and
+thus changes depending on the target domain.)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_inputDimensionality = R"doc(Returns the number of dimensions of the input domain.)doc";
 
@@ -2827,11 +3047,15 @@ R"doc(Maps a regularly sampled 2D point to the warping function's output
 domain. This is used when querying the PDF function at various points
 of the domain.)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_samplePoint = R"doc()doc";
-
 static const char *__doc_mitsuba_warp_WarpAdapter_toString = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_warpSample = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_warpSample =
+R"doc(Warps a ``Point2f`` sample (sampled uniformly on the unit square) to a
+``Vector3f``. If the warping function outputs 2D or 1D points, the
+remaining entries of the results are left undefined or set to 0.0.
+
+Returns:
+    Pair (warped point, weight))doc";
 
 static const char *__doc_mitsuba_warp_WarpType = R"doc(Enum of available warping types)doc";
 
@@ -2860,7 +3084,7 @@ static const char *__doc_mitsuba_warp_WarpType_UniformTriangle = R"doc()doc";
 static const char *__doc_mitsuba_warp_WarpVisualizationWidget =
 R"doc(A Nanogui widget to visualize warping functions for different sampling
 strategies. It also performs a statistical test checking that the
-warping function matches its PDF and draws the corresponding
+warping function matches its PDF and displays the corresponding
 histograms (observed / expected).
 
 Note that it does not implement any UI elements, which are added via
@@ -2872,15 +3096,23 @@ etc).)doc";
 
 static const char *__doc_mitsuba_warp_WarpVisualizationWidget_WarpVisualizationWidget = R"doc(The parameters are passed to the \r nanogui::Screen constructor.)doc";
 
-static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawContents = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawContents =
+R"doc(Triggers a scene render, drawing the points, grid and histograms if
+enabled.)doc";
 
-static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawGrid = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawGrid =
+R"doc(Draws previously uploaded gridlines for a view matrix \p mvp on the
+canvas.)doc";
 
-static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawHistogram = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_drawHistogram =
+R"doc(Draws the previously uploaded histogram texture \p tex at a given
+position and dimensions on the canvas.)doc";
 
-static const char *__doc_mitsuba_warp_WarpVisualizationWidget_framebufferSizeChanged = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_framebufferSizeChanged =
+R"doc(Updates the size of the underlying arcball, e.g. after a canvas
+resize.)doc";
 
-static const char *__doc_mitsuba_warp_WarpVisualizationWidget_initializeVisualizerGUI = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_initializeShaders = R"doc(Initializes the widget's shaders and performs a first draw.)doc";
 
 static const char *__doc_mitsuba_warp_WarpVisualizationWidget_isDrawingGrid = R"doc()doc";
 
@@ -2912,11 +3144,17 @@ static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_testResultText =
 
 static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_textures = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_warpAdapter = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_m_warpAdapter =
+R"doc(Holds the current warping method selected by the user. May be
+Identity.)doc";
 
-static const char *__doc_mitsuba_warp_WarpVisualizationWidget_mouseButtonEvent = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_mouseButtonEvent =
+R"doc(Fired upon Nanogui mouse button event. Forwards clicks to the
+underlying arcball.)doc";
 
-static const char *__doc_mitsuba_warp_WarpVisualizationWidget_mouseMotionEvent = R"doc()doc";
+static const char *__doc_mitsuba_warp_WarpVisualizationWidget_mouseMotionEvent =
+R"doc(Fired upon Nanogui mouse motion event. Forwards the motion to the
+underlying arcball to update the view.)doc";
 
 static const char *__doc_mitsuba_warp_WarpVisualizationWidget_refresh = R"doc(Should be called after any UI interaction)doc";
 
@@ -2935,22 +3173,21 @@ static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setSamplingType = 
 static const char *__doc_mitsuba_warp_WarpVisualizationWidget_setWarpAdapter = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_detail_runStatisticalTest =
-R"doc(For a given warping type, parameter value and sampling strategy, runs
-a Chi^2 statistical test to check that the warping function matches
-the announced PDF. Also outputs the observed and expected histograms
-computed for the test.
+R"doc(For a given warping method captured by the passed \p warpAdater, and
+for a given sampling strategy, runs a Chi^2 statistical test to check
+that the warping function matches its associated PDF.
 
 Returns:
-    (Whether the test succeeded, an explanatory text).)doc";
+    Pair (whether the test succeeded, an explanatory text).)doc";
 
 static const char *__doc_mitsuba_warp_detail_runStatisticalTestAndOutput =
-R"doc(For a given warping type, parameter value and sampling strategy, runs
-a Chi^2 statistical test to check that the warping function matches
-the announced PDF. Also outputs the observed and expected histograms
-computed for the test.
+R"doc(For a given warping method captured by the passed \p warpAdater, and
+for a given sampling strategy, runs a Chi^2 statistical test to check
+that the warping function matches its associated PDF. Also outputs the
+observed and expected histograms computed for the test.
 
 Returns:
-    (Whether the test succeeded, an explanatory text).)doc";
+    Pair (whether the test succeeded, an explanatory text).)doc";
 
 static const char *__doc_mitsuba_warp_domainToPoint = R"doc()doc";
 
