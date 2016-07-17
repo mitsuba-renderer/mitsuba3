@@ -9,62 +9,62 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
 
 Vector3f squareToUniformSphere(const Point2f &sample) {
-    Float z = 1.0f - 2.0f * sample[1];
+    Float z = 1.0f - 2.0f * sample.y();
     Float r = math::safe_sqrt(1.0f - z*z);
     Float sinPhi, cosPhi;
-    math::sincos(2.0f * math::Pi * sample[0], &sinPhi, &cosPhi);
+    math::sincos(2.0f * math::Pi * sample.x(), &sinPhi, &cosPhi);
     return Vector3f(r * cosPhi, r * sinPhi, z);
 }
 
 Vector3f squareToUniformHemisphere(const Point2f &sample) {
-    Float z = sample[0];
+    Float z = sample.x();
     Float tmp = math::safe_sqrt(1.0f - z*z);
 
     Float sinPhi, cosPhi;
-    math::sincos(2.0f * math::Pi * sample[1], &sinPhi, &cosPhi);
+    math::sincos(2.0f * math::Pi * sample.y(), &sinPhi, &cosPhi);
 
     return Vector3f(cosPhi * tmp, sinPhi * tmp, z);
 }
 
 Vector3f squareToCosineHemisphere(const Point2f &sample) {
     Point2f p = squareToUniformDiskConcentric(sample);
-    Float z = math::safe_sqrt(1.0f - p[0]*p[0] - p[1]*p[1]);
+    Float z = math::safe_sqrt(1.0f - p.x()*p.x() - p.y()*p.y());
 
     /* Guard against numerical imprecisions */
     if (z == 0)
         z = 1e-10;
 
-    return Vector3f(p[0], p[1], z);
+    return Vector3f(p.x(), p.y(), z);
 }
 
 Vector3f squareToUniformCone(const Point2f &sample, Float cosCutoff) {
-    Float cosTheta = (1-sample[0]) + sample[0] * cosCutoff;
+    Float cosTheta = (1-sample.x()) + sample.x() * cosCutoff;
     Float sinTheta = math::safe_sqrt(1.0f - cosTheta * cosTheta);
 
     Float sinPhi, cosPhi;
-    math::sincos(2.0f * math::Pi * sample[1], &sinPhi, &cosPhi);
+    math::sincos(2.0f * math::Pi * sample.y(), &sinPhi, &cosPhi);
 
     return Vector3f(cosPhi * sinTheta,
                     sinPhi * sinTheta, cosTheta);
 }
 
 Point2f squareToUniformDisk(const Point2f &sample) {
-    Float r = std::sqrt(sample[0]);
+    Float r = std::sqrt(sample.x());
     Float sinPhi, cosPhi;
-    math::sincos(2.0f * math::Pi * sample[1], &sinPhi, &cosPhi);
+    math::sincos(2.0f * math::Pi * sample.y(), &sinPhi, &cosPhi);
 
     return Point2f(cosPhi * r,
                    sinPhi * r);
 }
 
 Point2f squareToUniformTriangle(const Point2f &sample) {
-    Float a = math::safe_sqrt(1.0f - sample[0]);
-    return Point2f(1 - a, a * sample[1]);
+    Float a = math::safe_sqrt(1.0f - sample.x());
+    return Point2f(1 - a, a * sample.y());
 }
 
 Point2f squareToUniformDiskConcentric(const Point2f &sample) {
-    Float r1 = 2.0f*sample[0] - 1.0f;
-    Float r2 = 2.0f*sample[1] - 1.0f;
+    Float r1 = 2.0f*sample.x() - 1.0f;
+    Float r2 = 2.0f*sample.y() - 1.0f;
 
     /* Modified concencric map code with less branching (by Dave Cline), see
      * http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html */
@@ -86,8 +86,8 @@ Point2f squareToUniformDiskConcentric(const Point2f &sample) {
 }
 
 Point2f uniformDiskToSquareConcentric(const Point2f &p) {
-    Float r   = std::sqrt(p[0] * p[0] + p[1] * p[1]),
-          phi = std::atan2(p[1], p[0]),
+    Float r   = std::sqrt(p.x() * p.x() + p.y() * p.y()),
+          phi = std::atan2(p.y(), p.x()),
           a, b;
 
     if (phi < -math::Pi/4) {
@@ -113,15 +113,15 @@ Point2f uniformDiskToSquareConcentric(const Point2f &p) {
 }
 
 Point2f squareToStdNormal(const Point2f &sample) {
-    Float r   = std::sqrt(-2 * std::log(1-sample[0])),
-          phi = 2 * math::Pi * sample[1];
+    Float r   = std::sqrt(-2 * std::log(1-sample.x())),
+          phi = 2 * math::Pi * sample.y();
     Point2f result;
-    math::sincos(phi, &result[1], &result[0]);
+    math::sincos(phi, &result.y(), &result.x());
     return result * r;
 }
 
 Float squareToStdNormalPdf(const Point2f &p) {
-    return math::InvTwoPi * std::exp(-(p[0]*p[0] + p[1]*p[1])/2.0f);
+    return math::InvTwoPi * std::exp(-(p.x()*p.x() + p.y()*p.y())/2.0f);
 }
 
 static Float intervalToTent(Float sample) {

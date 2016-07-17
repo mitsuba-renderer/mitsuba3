@@ -59,7 +59,7 @@ extern MTS_EXPORT_CORE Vector3f squareToUniformSphere(const Point2f &sample);
 
 /// Density of \ref squareToUniformSphere() with respect to solid angles
 inline MTS_EXPORT_CORE Float squareToUniformSpherePdf(const Vector3f &v) {
-    if (std::abs(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1) < kDomainEpsilon)
+    if (std::abs(v.x() * v.x() + v.y() * v.y() + v.z() * v.z() - 1) < kDomainEpsilon)
         return math::InvFourPi;
     return 0.0;
 }
@@ -69,8 +69,8 @@ extern MTS_EXPORT_CORE Vector3f squareToUniformHemisphere(const Point2f &sample)
 
 /// Density of \ref squareToUniformHemisphere() with respect to solid angles
 inline MTS_EXPORT_CORE Float squareToUniformHemispherePdf(const Vector3f &v) {
-    if (std::abs(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1) < kDomainEpsilon
-        && (v[2] >= 0))
+    if (std::abs(v.x() * v.x() + v.y() * v.y() + v.z() * v.z() - 1) < kDomainEpsilon
+        && (v.z() >= 0))
         return math::InvTwoPi;
     return 0.0;
 }
@@ -80,8 +80,8 @@ extern MTS_EXPORT_CORE Vector3f squareToCosineHemisphere(const Point2f &sample);
 
 /// Density of \ref squareToCosineHemisphere() with respect to solid angles
 inline MTS_EXPORT_CORE Float squareToCosineHemispherePdf(const Vector3f &v) {
-    if (std::abs(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1) < kDomainEpsilon
-        && (v[2] >= 0))
+    if (std::abs(v.x() * v.x() + v.y() * v.y() + v.z() * v.z() - 1) < kDomainEpsilon
+        && (v.z() >= 0))
         return math::InvPi * Frame::cosTheta(v);
     return 0.0;
 }
@@ -101,7 +101,7 @@ extern MTS_EXPORT_CORE Vector3f squareToUniformCone(const Point2f &sample, Float
  * \param cosCutoff Cosine of the cutoff angle
  */
 inline MTS_EXPORT_CORE Float squareToUniformConePdf(const Vector3f &v, Float cosCutoff) {
-    if (std::abs(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1) < kDomainEpsilon
+    if (std::abs(v.x() * v.x() + v.y() * v.y() + v.z() * v.z() - 1) < kDomainEpsilon
         && Frame::cosTheta(v) - cosCutoff >= kDomainEpsilon)
         return math::InvTwoPi / (1 - cosCutoff);
     return 0.0;
@@ -119,7 +119,7 @@ extern MTS_EXPORT_CORE Point2f squareToUniformDisk(const Point2f &sample);
 
 /// Density of \ref squareToUniformDisk per unit area
 inline MTS_EXPORT_CORE Float squareToUniformDiskPdf(const Point2f &p) {
-    if (p[0] * p[0] + p[1] * p[1] <= 1)
+    if (p.x() * p.x() + p[1] * p[1] <= 1)
         return math::InvPi;
     return 0.0;
 }
@@ -129,7 +129,7 @@ extern MTS_EXPORT_CORE Point2f squareToUniformDiskConcentric(const Point2f &samp
 
 /// Density of \ref squareToUniformDisk per unit area
 inline MTS_EXPORT_CORE Float squareToUniformDiskConcentricPdf(const Point2f &p) {
-    if (p[0] * p[0] + p[1] * p[1] <= 1)
+    if (p.x() * p.x() + p[1] * p[1] <= 1)
         return math::InvPi;
     return 0.0;
 }
@@ -139,7 +139,7 @@ extern MTS_EXPORT_CORE Point2f uniformDiskToSquareConcentric(const Point2f &p);
 
 inline MTS_EXPORT_CORE Point2f uniformDiskToSquareConcentricPdf(const Point2f &p) {
     // TODO: verify this is correct
-    if (p[0] >= 0 && p[0] <= 1 && p[1] >= 0 && p[1] <= 1)
+    if (p.x() >= 0 && p.x() <= 1 && p[1] >= 0 && p[1] <= 1)
         return 1.0;
     return 0.0;
 }
@@ -149,8 +149,8 @@ extern MTS_EXPORT_CORE Point2f squareToUniformTriangle(const Point2f &sample);
 
 /// Density of \ref squareToUniformTriangle per unit area.
 inline MTS_EXPORT_CORE Float squareToUniformTrianglePdf(const Point2f &p) {
-    if (p[0] >= 0 && p[1] >= 0 && p[0] <= 1 && p[1] <= 1
-        && p[0] + p[1] <= 1)
+    if (p.x() >= 0 && p[1] >= 0 && p.x() <= 1 && p[1] <= 1
+        && p.x() + p[1] <= 1)
         return 0.5;
     return 0.0;
 }
