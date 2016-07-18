@@ -148,10 +148,10 @@ struct Frame {
     /// Return a string representation of this frame
     inline std::string toString() const {
         std::ostringstream oss;
-        oss << "Frame[" << std::endl
-            << "  s = " << s << "," << std::endl
-            << "  t = " << t << "," << std::endl
-            << "  n = " << n << std::endl
+        oss << "Frame["
+            << "  s = " << s << ","
+            << "  t = " << t << ","
+            << "  n = " << n
             << "]";
         return oss.str();
     }

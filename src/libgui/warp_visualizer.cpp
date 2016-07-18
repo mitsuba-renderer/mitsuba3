@@ -253,7 +253,7 @@ bool WarpVisualizationWidget::runTest(double minExpFrequency, double significanc
     }
     size_t nBins = gridWidth * gridHeight;
 
-    // TODO: very, very slow (virtual function calls? lambda functions? too many Py <-> C++?)
+    // TODO: very, very slow (likely because of many Py <-> C++ roundtrips)
 
     // Run Chi^2 test
     const auto r = runStatisticalTestAndOutput(1000 * nBins,

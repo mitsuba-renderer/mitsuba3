@@ -69,19 +69,19 @@ class WarpTest(unittest.TestCase):
         self.assertAlmostEqual(weight, 1.0, places=6)
         self.assertAlmostEqual(p1[0], p2[0], places=6)
         self.assertAlmostEqual(p1[1], p2[1], places=6)
-        self.assertEqual(str(w), "Identity")
+        self.assertEqual(w.name(), "Identity")
 
     def test03_statistical_tests(self):
         def warpWithUnitWeight(f):
             return lambda p: (f(p), 1.0)
 
-        def constantValue(v): #, length
+        def constantValue(v): #, length as parameter
             length = 4
             if (v >= 0) and (v <= length):
                 return 1 / float(length)
             return 0
 
-        # TODO: use the common "warp factory" Python code currently in `warp_visualize.py`
+        # TODO: use the "warp factory" Python class (currently residing in `warp_visualize.py`)
         warps = [
             # Identity warping (no-op)
             IdentityWarpAdapter(),

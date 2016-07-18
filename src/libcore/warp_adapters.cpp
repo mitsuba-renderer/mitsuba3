@@ -21,8 +21,6 @@ std::vector<double> WarpAdapter::generateExpectedHistogram(size_t pointCount,
 
     auto integrand = getPdfIntegrand();
 
-    Log(EInfo, "%f x %f", gridWidth, gridHeight);
-
     for (size_t y = 0; y < gridHeight; ++y) {
         double yStart = y       / static_cast<double>(gridHeight);
         double yEnd   = (y + 1) / static_cast<double>(gridHeight);
@@ -78,6 +76,12 @@ std::vector<double> WarpAdapter::generateExpectedHistogram(size_t pointCount,
         size_t gridWidth, size_t gridHeight) const {                                  \
                                                                                       \
         return Helper::binPoints(this, points, gridWidth, gridHeight);                \
+    }                                                                                 \
+    std::ostream& operator<<(std::ostream &os, const AdapterType &wa) {               \
+        os <<  #AdapterType "["                                                       \
+           << " name = " << wa.name()                                                 \
+           << ", bbox = " << wa.bbox() << "]";                                        \
+        return os;                                                                    \
     }
 
 
@@ -86,6 +90,13 @@ std::vector<double> WarpAdapter::generateExpectedHistogram(size_t pointCount,
 FORWARD_TO_HELPER(LineWarpAdapter)
 FORWARD_TO_HELPER(PlaneWarpAdapter)
 FORWARD_TO_HELPER(SphereWarpAdapter)
+
+std::ostream& operator<<(std::ostream &os, const IdentityWarpAdapter &wa) {
+    os << "IdentityWarpAdapter["
+       << " name = " << wa.name()
+       << ", bbox = " << wa.bbox() << "]";
+    return os;
+}
 
 #undef FORWARD_TO_HELPER
 

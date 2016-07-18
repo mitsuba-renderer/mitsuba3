@@ -295,8 +295,6 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.refresh()
 
     def refresh(self):
-        # TODO: rate limit on refreshes?
-
         samplingType = SamplingType(self.samplingTypeBox.selectedIndex())
         warpType = self.warps.keys()[self.warpTypeBox.selectedIndex()]
 

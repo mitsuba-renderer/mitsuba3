@@ -106,7 +106,7 @@ public:
     // TODO: consider supporting construction with warping functions that do not
     //       return a weight (then we can easily and cheaply wrap them and
     //       automatically return the 1.0 default weight for them).
-    // TODO: actually we don't really need to know about the arguments here.
+    // TODO: actually we don't really need to know about the arguments here, only in \r WarpAdapterFactory
     WarpAdapter(const std::string &name, const std::vector<Argument> &arguments,
                 const BoundingBox3f bbox)
         : name_(name), arguments_(arguments), bbox_(bbox) { }
@@ -165,8 +165,8 @@ public:
     /// Returns the number of dimensions of the ouput domain.
     virtual size_t domainDimensionality() const = 0;
 
-    // TODO: more informative string representation
-    virtual std::string toString() const { return name_; }
+    virtual std::string name() const { return name_; }
+    virtual BoundingBox3f bbox() const { return bbox_; }
 
 protected:
     /** Returns the scaling factor to be applied when evaluating the expected
@@ -270,8 +270,7 @@ Vector3f WarpAdapter::pointToDomain(const Point2f &p) const {
  */
 // TODO: avoid repetitive declarations of the WarpAdapter subclasses.
 // TODO: avoid repetitive docs of the WarpAdapter subclasses.
-// TODO: only uses the first coordinate from the 2D samples, which is wasteful.
-//       Find a way to map?
+// TODO: LineWarpAdapter only uses the first coordinate from the 2D samples, which is wasteful.
 class MTS_EXPORT_CORE LineWarpAdapter : public WarpAdapter {
 public:
     using SampleType = Float;
@@ -369,6 +368,10 @@ protected:
      */
     PdfFunctionType pdf_;
 };
+
+/// Print a string representation of the adapter
+extern MTS_EXPORT_CORE
+std::ostream& operator<<(std::ostream &os, const LineWarpAdapter& wa);
 
 /**
  * Adapter for warping functions that map the 2D unit square [0, 1]^2 onto
@@ -473,6 +476,10 @@ protected:
     PdfFunctionType pdf_;
 };
 
+/// Print a string representation of the adapter
+extern MTS_EXPORT_CORE
+std::ostream& operator<<(std::ostream &os, const PlaneWarpAdapter& wa);
+
 /** Identity warping function on the 2D unit square. Its PDF always evaluates
  * to 1 on the 2D unit square, 0 otherwise.
  * All mechanics are inherited from the standard \c PlaneWarpAdapter.
@@ -502,6 +509,9 @@ protected:
     }
 };
 
+/// Print a string representation of the adapter
+extern MTS_EXPORT_CORE
+std::ostream& operator<<(std::ostream &os, const IdentityWarpAdapter& wa);
 
 /**
  * Adapter for warping functions that map the 2D unit square [0, 1]^2 onto
@@ -603,6 +613,10 @@ protected:
      */
     PdfFunctionType pdf_;
 };
+
+/// Print a string representation of the adapter
+extern MTS_EXPORT_CORE
+std::ostream& operator<<(std::ostream &os, const SphereWarpAdapter& wa);
 
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)

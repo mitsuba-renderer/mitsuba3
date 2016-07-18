@@ -51,9 +51,6 @@ public:
     size_t domainDimensionality() const override {
         PYBIND11_OVERLOAD_PURE(size_t, WarpAdapter, domainDimensionality, /* no args */);
     }
-    std::string toString() const override {
-        PYBIND11_OVERLOAD_NAME(std::string, WarpAdapter, "__repr__", toString, /* no args */);
-    }
 
 protected:
     virtual std::function<Float (double, double)> getPdfIntegrand() const override {
@@ -132,6 +129,12 @@ MTS_PY_EXPORT(warp) {
         .export_values();
 
     // -------------------------------------------------------------------------
+#define def_repr(AdapterType)                                                  \
+    def("__repr__", [](const AdapterType &w) {                                 \
+        std::ostringstream oss;                                                \
+        oss << w;                                                              \
+        return oss.str();                                                      \
+    })
 
     /// WarpAdapter class declaration
     using warp::WarpAdapter;
@@ -151,7 +154,8 @@ MTS_PY_EXPORT(warp) {
         .def("isIdentity", &WarpAdapter::isIdentity, DM(warp, WarpAdapter, isIdentity))
         .def("inputDimensionality", &WarpAdapter::inputDimensionality, DM(warp, WarpAdapter, inputDimensionality))
         .def("domainDimensionality", &WarpAdapter::domainDimensionality, DM(warp, WarpAdapter, domainDimensionality))
-        .def("__repr__", &WarpAdapter::toString);
+        .def("name", &WarpAdapter::name, DM(warp, WarpAdapter, name))
+        .def("bbox", &WarpAdapter::bbox, DM(warp, WarpAdapter, bbox));
 
     /// Argument class
     py::class_<WarpAdapter::Argument>(w, "Argument", DM(warp, WarpAdapter, Argument))
@@ -185,9 +189,7 @@ MTS_PY_EXPORT(warp) {
              py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
              py::arg("bbox") = WarpAdapter::kCenteredSquareBoundingBox,
              DM(warp, LineWarpAdapter, LineWarpAdapter))
-        .def("__repr__", [](const LineWarpAdapter &w) {
-            return w.toString();
-        });
+        .def_repr(LineWarpAdapter);
 
     using warp::PlaneWarpAdapter;
     py::class_<PlaneWarpAdapter, std::shared_ptr<PlaneWarpAdapter>>(
@@ -201,17 +203,13 @@ MTS_PY_EXPORT(warp) {
              py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
              py::arg("bbox") = WarpAdapter::kCenteredSquareBoundingBox,
              DM(warp, PlaneWarpAdapter, PlaneWarpAdapter))
-        .def("__repr__", [](const PlaneWarpAdapter &w) {
-            return w.toString();
-        });
+        .def_repr(PlaneWarpAdapter);
 
     using warp::IdentityWarpAdapter;
     py::class_<IdentityWarpAdapter, std::shared_ptr<IdentityWarpAdapter>>(
         m2, "IdentityWarpAdapter", py::base<PlaneWarpAdapter>(), DM(warp, IdentityWarpAdapter))
         .def(py::init<>(), DM(warp, IdentityWarpAdapter, IdentityWarpAdapter))
-        .def("__repr__", [](const IdentityWarpAdapter &w) {
-            return w.toString();
-        });
+        .def_repr(IdentityWarpAdapter);
 
     using warp::SphereWarpAdapter;
     py::class_<SphereWarpAdapter, std::shared_ptr<SphereWarpAdapter>>(
@@ -225,10 +223,9 @@ MTS_PY_EXPORT(warp) {
              py::arg("arguments") = std::vector<WarpAdapter::Argument>(),
              py::arg("bbox") = WarpAdapter::kCenteredSquareBoundingBox,
              DM(warp, SphereWarpAdapter, SphereWarpAdapter))
-        .def("__repr__", [](const SphereWarpAdapter &w) {
-            return w.toString();
-        });
+        .def_repr(SphereWarpAdapter);
 
+#undef def_repr
     // -------------------------------------------------------------------------
 
     m2.def("runStatisticalTest", &warp::detail::runStatisticalTest, DM(warp, detail, runStatisticalTest));
