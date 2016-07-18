@@ -75,6 +75,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
 
     # In release mode, don't keep the frame pointer in a special register unless needed
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fomit-frame-pointer")
+
+    # Don't update the 'errno' global when encountering domain errors in math functions
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-math-errno")
   endif()
 endif()
 
