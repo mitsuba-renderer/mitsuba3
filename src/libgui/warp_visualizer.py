@@ -2,7 +2,7 @@ import gc
 from collections import OrderedDict
 import math
 from mitsuba.core import warp, BoundingBox3f
-from mitsuba.core.warp import WarpType, SamplingType, \
+from mitsuba.core.warp import SamplingType, \
                               WarpAdapter, LineWarpAdapter, PlaneWarpAdapter, \
                               IdentityWarpAdapter, SphereWarpAdapter
 from mitsuba.gui import WarpVisualizationWidget
@@ -28,7 +28,7 @@ class WarpVisualizer(WarpVisualizationWidget):
     def __init__(self):
         super(WarpVisualizer, self).__init__(800, 600, "Warp visualizer")
 
-        # TODO: refactor (this could be useful for the tests as well)
+        # TODO: refactor to the `mitsuba.warp` module (this could be useful for the tests as well)
         class WarpFactory:
             def __init__(self, adapter, name, f, pdf, arguments = [], bbox = None,
                          returnsWeight = False):
@@ -70,70 +70,70 @@ class WarpVisualizer(WarpVisualizationWidget):
             def bind(self, args):
                 return IdentityWarpAdapter()
 
-        w = OrderedDict()
-        w[WarpType.NoWarp] = IdentityWarpFactory()
-        w[WarpType.UniformDisk] = WarpFactory(PlaneWarpAdapter,
-            "Square to uniform disk",
-            warp.squareToUniformDisk,
-            warp.squareToUniformDiskPdf)
-        w[WarpType.UniformDiskConcentric] = WarpFactory(PlaneWarpAdapter,
-            "Square to uniform disk concentric",
-            warp.squareToUniformDiskConcentric,
-            warp.squareToUniformDiskConcentricPdf)
-        w[WarpType.UniformTriangle] = WarpFactory(PlaneWarpAdapter,
-            "Square to uniform triangle",
-            warp.squareToUniformTriangle,
-            warp.squareToUniformTrianglePdf,
-            bbox = WarpAdapter.kUnitSquareBoundingBox)
-        # TODO: manage the case of infinite support (need inverse mapping?)
-        w[warp.StandardNormal] = WarpFactory(PlaneWarpAdapter,
-            "Square to 2D gaussian",
-            warp.squareToStdNormal,
-            warp.squareToStdNormalPdf,
-            bbox = BoundingBox3f([-5, -5, -5], [5, 5, 5]))
-        w[warp.UniformTent] = WarpFactory(PlaneWarpAdapter,
-            "Square to tent",
-            warp.squareToTent,
-            warp.squareToTentPdf)
-
-        # 2D -> 3D warps
-        w[WarpType.UniformSphere] = WarpFactory(SphereWarpAdapter,
-            "Square to uniform sphere",
-            warp.squareToUniformSphere,
-            warp.squareToUniformSpherePdf)
-        w[warp.UniformHemisphere] = WarpFactory(SphereWarpAdapter,
-            "Square to uniform hemisphere",
-            warp.squareToUniformHemisphere,
-            warp.squareToUniformHemispherePdf)
-        w[warp.CosineHemisphere] = WarpFactory(SphereWarpAdapter,
-            "Square to cosine hemisphere",
-            warp.squareToCosineHemisphere,
-            warp.squareToCosineHemispherePdf)
-        w[warp.UniformCone] = WarpFactory(SphereWarpAdapter,
-            "Square to uniform cone",
-            warp.squareToUniformCone,
-            warp.squareToUniformConePdf,
-            arguments = [WarpAdapter.Argument("cosCutoff", defaultValue = 0.5, description = "Cosine cutoff")])
-
-        # 1D -> 1D warps
-        def linearHalfTent(s, length):
-            return length * (1 - math.sqrt(s))
-        def linearHalfTentPdf(v, length):
-            # print("Evaluating PDF at: " + str(v) + ", value is " + str(1 - (v / float(length))))
+        def uniform1D(s, length):
+            return length * s
+        def uniform1DPdf(v, length):
             if (v >= 0) and (v <= length):
-                return 1 - (v / float(length))
+                return 1
             return 0
-        warp.LinearTent = 10000
 
-        # TODO: for some reason, PDF integration not working correctly
-        w[warp.LinearTent] = WarpFactory(LineWarpAdapter,
-            "Linear 1D half-tent",
-            linearHalfTent,
-            linearHalfTentPdf,
-            [WarpAdapter.Argument("length", 0, 10, 1)],
-            bbox = lambda length: BoundingBox3f([0, 0, 0], [length, 0, 0]))
+        factories = [
+            IdentityWarpFactory(),
+            WarpFactory(PlaneWarpAdapter,
+                "Square to uniform disk",
+                warp.squareToUniformDisk,
+                warp.squareToUniformDiskPdf),
+            WarpFactory(PlaneWarpAdapter,
+                "Square to uniform disk concentric",
+                warp.squareToUniformDiskConcentric,
+                warp.squareToUniformDiskConcentricPdf),
+            WarpFactory(PlaneWarpAdapter,
+                "Square to uniform triangle",
+                warp.squareToUniformTriangle,
+                warp.squareToUniformTrianglePdf,
+                bbox = WarpAdapter.kUnitSquareBoundingBox),
+            # TODO: manage the case of infinite support (need inverse mapping?)
+            WarpFactory(PlaneWarpAdapter,
+                "Square to 2D gaussian",
+                warp.squareToStdNormal,
+                warp.squareToStdNormalPdf,
+                bbox = BoundingBox3f([-5, -5, 0], [5, 5, 0])),
+            WarpFactory(PlaneWarpAdapter,
+                "Square to tent",
+                warp.squareToTent,
+                warp.squareToTentPdf),
 
-        self.warps = w
+            # 2D -> 3D warps
+            WarpFactory(SphereWarpAdapter,
+                "Square to uniform sphere",
+                warp.squareToUniformSphere,
+                warp.squareToUniformSpherePdf),
+            WarpFactory(SphereWarpAdapter,
+                "Square to uniform hemisphere",
+                warp.squareToUniformHemisphere,
+                warp.squareToUniformHemispherePdf),
+            WarpFactory(SphereWarpAdapter,
+                "Square to cosine hemisphere",
+                warp.squareToCosineHemisphere,
+                warp.squareToCosineHemispherePdf),
+            WarpFactory(SphereWarpAdapter,
+                "Square to uniform cone",
+                warp.squareToUniformCone,
+                warp.squareToUniformConePdf,
+                arguments = [WarpAdapter.Argument("cosCutoff", defaultValue = 0.5, description = "Cosine cutoff")]),
+
+            # 1D -> 1D warps
+            WarpFactory(LineWarpAdapter,
+                "Uniform 1D over an interval",
+                uniform1D,
+                uniform1DPdf,
+                [WarpAdapter.Argument("length", 0, 10, 1)],
+                bbox = lambda length: BoundingBox3f([0, 0, 0], [length, 0, 0]))
+        ]
+
+        self.warps = OrderedDict()
+        for w in factories:
+            self.warps[w.name] = w
 
         # Initialize UI elements
         self.warpTypeChanged = True
@@ -255,20 +255,23 @@ class WarpVisualizer(WarpVisualizationWidget):
         self.warpParametersPanel = warpParametersPanel
         self.testButton = testButton
 
-        self.setupSlidersForWarpType(warp.NoWarp)
+        self.setupSlidersForWarp(None)
 
         self.performLayout()
         self.refresh()
         self.drawAll()
         self.setVisible(True)
 
-    def setupSlidersForWarpType(self, warpType):
+    def setupSlidersForWarp(self, warpFactory):
         # Clear the previous sliders
         while self.warpParametersPanel.childCount() > 0:
             self.warpParametersPanel.removeChild(0)
 
+        if warpFactory is None:
+            warpFactory = self.warps["Identity"]
+
         self.parameterSliders = dict()
-        arguments = self.warps[warpType].arguments
+        arguments = warpFactory.arguments
 
         for arg in arguments:
             ppanel = Widget(self.warpParametersPanel)
@@ -344,7 +347,7 @@ class WarpVisualizer(WarpVisualizationWidget):
 
         if self.warpTypeChanged:
             self.warpTypeChanged = False
-            self.setupSlidersForWarpType(warpType)
+            self.setupSlidersForWarp(self.warps[warpType])
             updateWarpAdapter()
 
         # Update companion boxes for each parameter

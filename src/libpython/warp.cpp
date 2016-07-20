@@ -105,22 +105,6 @@ MTS_PY_EXPORT(warp) {
            py::arg("sample"), py::arg("a"), py::arg("b"), py::arg("c"),
            DM(warp, intervalToNonuniformTent));
 
-    // TODO: probably shouldn't need this anymore
-    using mitsuba::warp::WarpType;
-    py::enum_<WarpType>(m2, "WarpType")
-        .value("NoWarp", WarpType::NoWarp)
-        .value("UniformSphere", WarpType::UniformSphere)
-        .value("UniformHemisphere", WarpType::UniformHemisphere)
-        .value("CosineHemisphere", WarpType::CosineHemisphere)
-        .value("UniformCone", WarpType::UniformCone)
-        .value("UniformDisk", WarpType::UniformDisk)
-        .value("UniformDiskConcentric", WarpType::UniformDiskConcentric)
-        .value("UniformTriangle", WarpType::UniformTriangle)
-        .value("StandardNormal", WarpType::StandardNormal)
-        .value("UniformTent", WarpType::UniformTent)
-        .value("NonUniformTent", WarpType::NonUniformTent)
-        .export_values();
-
     using mitsuba::warp::SamplingType;
     py::enum_<SamplingType>(m2, "SamplingType")
         .value("Independent", SamplingType::Independent)
@@ -157,7 +141,7 @@ MTS_PY_EXPORT(warp) {
         .def("name", &WarpAdapter::name, DM(warp, WarpAdapter, name))
         .def("bbox", &WarpAdapter::bbox, DM(warp, WarpAdapter, bbox));
 
-    /// Argument class
+    /// Argument inner class
     py::class_<WarpAdapter::Argument>(w, "Argument", DM(warp, WarpAdapter, Argument))
         .def(py::init<const std::string &, Float, Float, Float, const std::string &>(),
              py::arg("name"), py::arg("minValue") = 0.0, py::arg("maxValue") = 1.0,

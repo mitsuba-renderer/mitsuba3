@@ -23,26 +23,6 @@ NAMESPACE_BEGIN(warp)
 
 class WarpAdapter;
 
-// TODO: proper support for:
-// - uniformDiskToSquareConcentric  (starting sample != uniform square)
-// - intervalToNonuniformTent       (float to float)
-
-/// Enum of available warping types
-// TODO: shouldn't be needed anymore
-enum WarpType {
-    NoWarp = 0,
-    UniformSphere,
-    UniformHemisphere,
-    CosineHemisphere,
-    UniformCone,
-    UniformDisk,
-    UniformDiskConcentric,
-    UniformTriangle,
-    StandardNormal,
-    UniformTent,
-    NonUniformTent
-};
-
 /// Enum of available point sampling strategies
 enum SamplingType {
     Independent = 0,
@@ -135,6 +115,7 @@ inline MTS_EXPORT_CORE Float squareToUniformDiskConcentricPdf(const Point2f &p) 
 }
 
 /// Inverse of the mapping \ref squareToUniformDiskConcentric
+// TODO: proper support for warping functions where starting sample != uniform square (?)
 extern MTS_EXPORT_CORE Point2f uniformDiskToSquareConcentric(const Point2f &p);
 
 inline MTS_EXPORT_CORE Point2f uniformDiskToSquareConcentricPdf(const Point2f &p) {
