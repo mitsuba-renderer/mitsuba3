@@ -82,7 +82,7 @@ extern MTS_EXPORT_CORE Vector3f squareToUniformCone(const Point2f &sample, Float
  */
 inline MTS_EXPORT_CORE Float squareToUniformConePdf(const Vector3f &v, Float cosCutoff) {
     if (std::abs(v.x() * v.x() + v.y() * v.y() + v.z() * v.z() - 1) < kDomainEpsilon
-        && Frame::cosTheta(v) - cosCutoff >= kDomainEpsilon)
+        && Frame::cosTheta(v) - cosCutoff >= -kDomainEpsilon)
         return math::InvTwoPi / (1 - cosCutoff);
     return 0.0;
 }

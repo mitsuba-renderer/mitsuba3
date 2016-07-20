@@ -2537,9 +2537,9 @@ static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical 
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -2980,7 +2980,9 @@ Parameter ``bbox``:
 
 static const char *__doc_mitsuba_warp_WarpAdapter_arguments = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_bbox =
+static const char *__doc_mitsuba_warp_WarpAdapter_bbox = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_bbox_2 =
 R"doc(Bounding box of the output domain (may not use all 3 components of the
 points))doc";
 
@@ -3040,14 +3042,14 @@ static const char *__doc_mitsuba_warp_WarpAdapter_inputDimensionality = R"doc(Re
 
 static const char *__doc_mitsuba_warp_WarpAdapter_isIdentity = R"doc(Returns true if the warping function is the identity function.)doc";
 
-static const char *__doc_mitsuba_warp_WarpAdapter_name = R"doc(Human-readable name)doc";
+static const char *__doc_mitsuba_warp_WarpAdapter_name = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_WarpAdapter_name_2 = R"doc(Human-readable name)doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_pointToDomain =
 R"doc(Maps a regularly sampled 2D point to the warping function's output
 domain. This is used when querying the PDF function at various points
 of the domain.)doc";
-
-static const char *__doc_mitsuba_warp_WarpAdapter_toString = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_WarpAdapter_warpSample =
 R"doc(Warps a ``Point2f`` sample (sampled uniformly on the unit square) to a
@@ -3056,30 +3058,6 @@ remaining entries of the results are left undefined or set to 0.0.
 
 Returns:
     Pair (warped point, weight))doc";
-
-static const char *__doc_mitsuba_warp_WarpType = R"doc(Enum of available warping types)doc";
-
-static const char *__doc_mitsuba_warp_WarpType_CosineHemisphere = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_NoWarp = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_NonUniformTent = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_StandardNormal = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_UniformCone = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_UniformDisk = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_UniformDiskConcentric = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_UniformHemisphere = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_UniformSphere = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_UniformTent = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_WarpType_UniformTriangle = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_WarpVisualizationWidget =
 R"doc(A Nanogui widget to visualize warping functions for different sampling
@@ -3198,6 +3176,14 @@ static const char *__doc_mitsuba_warp_domainToPoint_3 = R"doc()doc";
 static const char *__doc_mitsuba_warp_intervalToNonuniformTent =
 R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
 distribution with nodes ``{a, b, c}``)doc";
+
+static const char *__doc_mitsuba_warp_operator_lshift = R"doc(Print a string representation of the adapter)doc";
+
+static const char *__doc_mitsuba_warp_operator_lshift_2 = R"doc(Print a string representation of the adapter)doc";
+
+static const char *__doc_mitsuba_warp_operator_lshift_3 = R"doc(Print a string representation of the adapter)doc";
+
+static const char *__doc_mitsuba_warp_operator_lshift_4 = R"doc(Print a string representation of the adapter)doc";
 
 static const char *__doc_mitsuba_warp_pointToDomain = R"doc()doc";
 

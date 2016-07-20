@@ -36,6 +36,7 @@ MTS_PY_EXPORT(math) {
     math.attr("InvSqrtTwoPi")    = py::cast(math::InvSqrtTwoPi_d);
     math.attr("OneMinusEpsilon") = py::cast(math::OneMinusEpsilon);
     math.attr("RecipOverflow")   = py::cast(math::RecipOverflow);
+    math.attr("Epsilon")         = py::cast(math::Epsilon);
     math.attr("Infinity")        = py::cast(math::Infinity);
     math.attr("MaxFloat")        = py::cast(math::MaxFloat);
     math.attr("MachineEpsilon")  = py::cast(math::MachineEpsilon);

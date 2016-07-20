@@ -213,7 +213,6 @@ protected:
 };
 
 // Template specializations
-// TODO: could probably be made more efficient
 // TODO: these assume bounding boxes centered around zero
 template <> inline
 Point2f WarpAdapter::domainToPoint<Float>(const Float &v) const {
@@ -324,7 +323,7 @@ protected:
 
     /// \see \r WarpAdapter
     virtual Float getPdfScalingFactor() const override {
-        return (Float)1.0;  // TODO: check
+        return (Float)1.0;
     }
 
     /// Returns a list of pairs (warped point, weight).
