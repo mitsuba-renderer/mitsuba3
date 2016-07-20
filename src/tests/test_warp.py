@@ -6,6 +6,8 @@ except:
 from mitsuba.core import math, BoundingBox3f
 from mitsuba.core.warp import *
 
+import warp_factory
+
 class WarpTest(unittest.TestCase):
     # Statistical tests parameters
     # TODO: consider fixing seed
@@ -75,79 +77,56 @@ class WarpTest(unittest.TestCase):
         def warpWithUnitWeight(f):
             return lambda p: (f(p), 1.0)
 
-        def constantValue(v): #, length as parameter
-            length = 4
-            if (v >= 0) and (v <= length):
-                return 1 / float(length)
-            return 0
+        def createValueGrid(arguments, n):
+            """Returns a list of dicts, each representing a set of parameter
+            values to try out in order to explore the parameter space.
+            n: number of values to try out for each parameter."""
+            if not arguments:
+                return [dict()]
 
-        # TODO: use the "warp factory" Python class (currently residing in `warp_visualize.py`)
-        warps = [
-            # Identity warping (no-op)
-            IdentityWarpAdapter(),
+            import itertools
+            values = [[arg.map(i / float(n-1)) for i in range(n)] for arg in arguments]
+            candidates = []
+            for t in list(itertools.product(*values)):
+                args = dict()
+                for i in range(len(arguments)):
+                    args[arguments[i].name] = t[i]
+                candidates.append(args)
+            return candidates
 
-            # 2D -> 2D warps
-            PlaneWarpAdapter("Square to uniform disk",
-                warpWithUnitWeight(squareToUniformDisk),
-                squareToUniformDiskPdf),
-            PlaneWarpAdapter("Square to uniform disk concentric",
-                warpWithUnitWeight(squareToUniformDiskConcentric),
-                squareToUniformDiskConcentricPdf),
-            PlaneWarpAdapter("Square to uniform triangle",
-                warpWithUnitWeight(squareToUniformTriangle),
-                squareToUniformTrianglePdf,
-                bbox = WarpAdapter.kUnitSquareBoundingBox),
-            PlaneWarpAdapter("Square to tent",
-                warpWithUnitWeight(squareToTent),
-                squareToTentPdf),
 
-            # TODO: manage the case of infinite support (need inverse mapping?)
-            PlaneWarpAdapter("Square to 2D gaussian",
-                warpWithUnitWeight(squareToStdNormal),
-                squareToStdNormalPdf,
-                bbox = BoundingBox3f([-5, -5, -5], [5, 5, 5])),
+        # Import pre-defined factories for all available warping functions
+        warps = warp_factory.factories
+        # Number of parameter values to try out for each argument
+        nParametersValues = 4
 
-            # 2D -> 3D warps
-            SphereWarpAdapter("Square to uniform sphere",
-                warpWithUnitWeight(squareToUniformSphere),
-                squareToUniformSpherePdf),
-            SphereWarpAdapter("Square to uniform hemisphere",
-                warpWithUnitWeight(squareToUniformHemisphere),
-                squareToUniformHemispherePdf),
-            SphereWarpAdapter("Square to cosine hemisphere",
-                warpWithUnitWeight(squareToCosineHemisphere),
-                squareToCosineHemispherePdf),
-            SphereWarpAdapter("Square to uniform cone",
-                warpWithUnitWeight(squareToUniformCone),
-                squareToUniformConePdf,
-                [WarpAdapter.Argument("cosCutoff", -1, 1)]),
+        def runTest(warpAdapter):
+            samplingType = SamplingType.Independent
 
-            # 1D -> 1D warps (simple test)
-            LineWarpAdapter("Constant value",
-                warpWithUnitWeight(constantValue),
-                constantValue,
-                [WarpAdapter.Argument("length", 0, 100)])
-        ]
+            # TODO: increase sampling resolution and sample count if needed
+            samplingResolution = 31
+            (gridWidth, gridHeight) = (samplingResolution, samplingResolution)
+            nBins = gridWidth * gridHeight
+            sampleCount = 100 * nBins
 
-        # TODO: cover all sampling types
-        samplingType = SamplingType.Independent
-        # TODO: also cover several parameter values when relevant (argument range is specified)
-        parameterValue = 0.5
+            if warpAdapter.domainDimensionality() <= 1:
+                gridHeight = 1;
+            elif warpAdapter.domainDimensionality() >= 3:
+                gridWidth *= 2;
 
-        # TODO: increase sampling resolution and sample count if needed
-        samplingResolution = 31
-        (gridWidth, gridHeight) = (samplingResolution, samplingResolution)
-        nBins = gridWidth * gridHeight
-        sampleCount = 100 * nBins
+            return runStatisticalTest(
+                sampleCount, gridWidth, gridHeight,
+                samplingType, warpAdapter,
+                WarpTest.minExpFrequency, WarpTest.significanceLevel)
 
-        for warpAdapter in warps:
-            with self.subTest("Warp: " + str(warpAdapter)):
-                (result, reason) = runStatisticalTest(
-                    sampleCount, gridWidth, gridHeight,
-                    samplingType, warpAdapter,
-                    WarpTest.minExpFrequency, WarpTest.significanceLevel)
+        for warpFactory in warps.values():
+            # Cover a few values for each of the warping function's parameters
+            for args in createValueGrid(warpFactory.arguments, nParametersValues):
+                warpAdapter = warpFactory.bind(args)
 
-                self.assertTrue(result, reason)
+                with self.subTest("Warp: " + warpAdapter.name() + ", args: " + str(args)):
+                    (result, reason) = runTest(warpAdapter)
+                    self.assertTrue(result, reason)
 
 if __name__ == '__main__':
     unittest.main()
