@@ -22,12 +22,23 @@ public:
     virtual BoundingBox3f bbox() const = 0;
 
     /**
-     * \brief Return an axis aligned box that bounds a single shape primitives
+     * \brief Return an axis aligned box that bounds a single shape primitive
      * (including any transformations that may have been applied to it)
      *
      * \remark The default implementation simply calls \ref bbox()
      */
     virtual BoundingBox3f bbox(Index Size) const;
+
+    /**
+     * \brief Return an axis aligned box that bounds a single shape primitive
+     * after it has been clipped to another bounding box.
+	 *
+     * This is extremely important to construct decent kd-trees. The default
+     * implementation just takes the bounding box returned by \ref bbox(Index
+     * index) and clips it to \a clip.
+     */
+    virtual BoundingBox3f bbox(Index index,
+                               const BoundingBox3f &clip) const;
 
     /**
      * \brief Returns the number of sub-primitives that make up this shape

@@ -9,6 +9,12 @@ BoundingBox3f Shape::bbox(Index) const {
     return bbox();
 }
 
+BoundingBox3f Shape::bbox(Index index, const BoundingBox3f &clip) const {
+    BoundingBox3f result = bbox(index);
+    result.clip(clip);
+    return result;
+}
+
 Shape::Size Shape::primitiveCount() const {
     return 1;
 }
