@@ -353,14 +353,14 @@ static T inverseGamma(T value) {
  * This function is primarily used to locate an interval (i, i+1) for linear
  * interpolation, hence its name. To avoid issues out of bounds accesses, and
  * to deal with predicates that evaluate to \c true or \c false on the entire
- * domain, the returned left interval index is clamped to the range <tt>[0,
- * size-2]</tt>.
+ * domain, the returned left interval index is clamped to the range <tt>[left,
+ * right-2]</tt>.
  */
 template <typename Size, typename Predicate>
-size_t findInterval(Size size, const Predicate &pred) {
+size_t findInterval(Size left, Size right, const Predicate &pred) {
     typedef typename std::make_signed<Size>::type SignedSize;
 
-    Size first = 0, len = size;
+    Size first = left, len = right - left;
     while (len > 0) {
         Size half = len >> 1,
              middle = first + half;
@@ -375,8 +375,8 @@ size_t findInterval(Size size, const Predicate &pred) {
 
     return (Size) clamp<SignedSize>(
         (SignedSize) first - 1,
-        (SignedSize) 0,
-        (SignedSize) size - 2
+        (SignedSize) left,
+        (SignedSize) right - 2
     );
 }
 
