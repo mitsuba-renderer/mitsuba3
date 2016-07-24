@@ -1,5 +1,11 @@
 #pragma once
 
+/**
+ * TODO: proper compaction, 
+ * why are some nodes exactly 1 larger than maxprims??
+ * retractions
+ */
+
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/vector.h>
@@ -12,8 +18,8 @@
 #include <tbb/concurrent_vector.h>
 #include <unordered_set>
 
-#undef Assert // XXX
-#define Assert(cond) if (!(cond)) Throw("Assertion failure " #cond " in line %i", __LINE__);
+//#undef Assert // XXX
+//#define Assert(cond) if (!(cond)) Throw("Assertion failure " #cond " in line %i", __LINE__);
 
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MTS_KD_MAXDEPTH 48u
@@ -21,8 +27,8 @@
 /// Number of bins used for Min-Max binning
 #define MTS_KD_BINS 128u
 
-/// OrderedChunkAllocator: don't create chunks smaller than 512 KiB
-#define MTS_KD_MIN_ALLOC 512u*1024u
+/// OrderedChunkAllocator: don't create chunks smaller than 5MiB
+#define MTS_KD_MIN_ALLOC 5*1024u*1024u
 
 /// Grain size for TBB parallelization
 #define MTS_KD_GRAIN_SIZE 10240u
@@ -311,8 +317,12 @@ protected:
         EBoth   = 3  ///< Primitive straddles the split plane
     };
 
+    /* ==================================================================== */
+    /*                    Specialized memory allocators                     */
+    /* ==================================================================== */
+
     /**
-     * \brief Compact storage for primitive classifcation
+     * \brief Compact storage for primitive classification
      *
      * When classifying primitives with respect to a split plane, a data structure
      * is needed to hold the tertiary result of this operation. This class
@@ -322,41 +332,47 @@ protected:
     class ClassificationStorage {
     public:
         void resize(Size size) {
-            m_buffer.reset(new uint8_t[(size + 3) / 4]);
+            if (size != m_size) {
+                m_buffer.reset(new uint8_t[(size + 3) / 4]);
+                m_size = size;
+            }
         }
 
         void set(Index index, EPrimClassification value) {
+            Assert(index < m_size);
             uint8_t *ptr = m_buffer.get() + (index >> 2);
             uint8_t shift = (index & 3) << 1;
             *ptr = (*ptr & ~(3 << shift)) | (value << shift);
         }
 
         EPrimClassification get(Index index) const {
+            Assert(index < m_size);
             uint8_t *ptr = m_buffer.get() + (index >> 2);
             uint8_t shift = (index & 3) << 1;
             return EPrimClassification((*ptr >> shift) & 3);
         }
     private:
         std::unique_ptr<uint8_t[]> m_buffer;
+        size_t m_size = 0;
     };
 
     /**
      * During kd-tree construction, large amounts of memory are required to
-     * temporarily hold index and edge event lists. When not implemented properly,
-     * these allocations can become a critical bottleneck. The class \ref
-     * OrderedChunkAllocator provides a specialized memory allocator, which
-     * reserves memory in chunks of at least 512KiB (this number is configurable).
-     * An important assumption made by the allocator is that memory will be
-     * released in the exact same order in which it was previously allocated. This
-     * makes it possible to create an implementation with a very low memory
-     * overhead. Note that no locking is done, hence each thread will need its own
-     * allocator.
+     * temporarily hold index and edge event lists. When not implemented
+     * properly, these allocations can become a critical bottleneck. The class
+     * \ref OrderedChunkAllocator provides a specialized memory allocator,
+     * which reserves memory in chunks of at least 512KiB (this number is
+     * configurable). An important assumption made by the allocator is that
+     * memory will be released in the exact same order in which it was
+     * previously allocated. This makes it possible to create an implementation
+     * with a very low memory overhead. Note that no locking is done, hence
+     * each thread will need its own allocator.
      */
     class OrderedChunkAllocator {
     public:
         OrderedChunkAllocator(size_t minAllocation = MTS_KD_MIN_ALLOC)
                 : m_minAllocation(minAllocation) {
-            m_chunks.reserve(16);
+            m_chunks.reserve(4);
         }
 
         ~OrderedChunkAllocator() {
@@ -383,13 +399,11 @@ protected:
             /* No chunk had enough free memory */
             size_t allocSize = std::max(size, m_minAllocation);
 
-            Chunk chunk;
-            chunk.start = AlignedAllocator::alloc<uint8_t>(allocSize);
-            chunk.cur = chunk.start + size;
-            chunk.size = allocSize;
-            m_chunks.push_back(chunk);
+            std::unique_ptr<uint8_t[]> data(new uint8_t[allocSize]);
+            uint8_t *start = data.get(), *cur = start + size;
+            m_chunks.emplace_back(std::move(data), cur, allocSize);
 
-            return reinterpret_cast<T *>(chunk.start);
+            return reinterpret_cast<T *>(start);
         }
 
         template <typename T> void release(T *ptr_) {
@@ -404,7 +418,7 @@ protected:
 
             #if !defined(NDEBUG)
                 for (auto const &chunk : m_chunks) {
-                    if (ptr == chunk.start + chunk.size)
+                    if (ptr == chunk.start.get() + chunk.size)
                         return; /* Potentially 0-sized buffer, don't be too stringent */
                 }
 
@@ -429,7 +443,7 @@ protected:
             #if !defined(NDEBUG)
                 if (newSize == 0) {
                     for (auto const &chunk : m_chunks) {
-                        if (ptr == chunk.start + chunk.size)
+                        if (ptr == chunk.start.get() + chunk.size)
                             return; /* Potentially 0-sized buffer, don't be too stringent */
                     }
                 }
@@ -458,30 +472,31 @@ protected:
         }
 
         /// Return a string representation of the chunks
-        std::string toString() const {
-            std::ostringstream oss;
-            oss << "OrderedChunkAllocator[" << std::endl;
-            for (size_t i = 0; i < m_chunks.size(); ++i)
-                oss << "    Chunk " << i << ": " << m_chunks[i].toString()
-                    << std::endl;
-            oss << "]";
-            return oss.str();
+        friend std::ostream& operator<<(std::ostream &os, const OrderedChunkAllocator &o) {
+            os << "OrderedChunkAllocator[" << std::endl;
+            for (size_t i = 0; i < o.m_chunks.size(); ++i)
+                os << "    Chunk " << i << ": " << o.m_chunks[i] << std::endl;
+            os << "]";
+            return os;
         }
 
     private:
         struct Chunk {
-            std::unique_ptr<uint8_t[], AlignedAllocator> start;
+            std::unique_ptr<uint8_t[]> start;
             uint8_t *cur;
             size_t size;
 
-            size_t used() const { return cur - start; }
+            Chunk(std::unique_ptr<uint8_t[]> &&start, uint8_t *cur, size_t size)
+                : start(std::move(start)), cur(cur), size(size) { }
+
+            size_t used() const { return (size_t) (cur - start.get()); }
             size_t remainder() const { return size - used(); }
 
-            bool contains(uint8_t *ptr) const { return ptr >= start && ptr < start + size; }
+            bool contains(uint8_t *ptr) const { return ptr >= start.get() && ptr < start.get() + size; }
 
             friend std::ostream& operator<<(std::ostream &os, const Chunk &ch) {
-                os << ch.start << "-" << ch.start + ch.size
-                   << " (size =" << ch.size << ", unused = " << ch.unused()
+                os << (const void *) ch.start.get() << "-" << (const void *) (ch.start.get() + ch.size)
+                   << " (size = " << ch.size << ", remainder = " << ch.remainder()
                    << ")";
                 return os;
             }
@@ -495,8 +510,11 @@ protected:
     /*                    Build-related data structures                     */
     /* ==================================================================== */
 
+    /// Helper data structure used during tree construction (used by a single thread)
     struct LocalBuildContext {
         ClassificationStorage classificationStorage;
+        OrderedChunkAllocator leftAlloc;
+        OrderedChunkAllocator rightAlloc;
     };
 
     /// Helper data structure used during tree construction (shared by all threads)
@@ -507,6 +525,7 @@ protected:
         tbb::concurrent_vector<Index> indexStorage;
         ThreadLocal<LocalBuildContext> local;
 
+        /* Keep some statistics about the build process */
         std::atomic<size_t> emptyNodes {0};
         std::atomic<size_t> badRefines {0};
         std::atomic<size_t> retractedSplits {0};
@@ -947,11 +966,9 @@ protected:
             }
 
             if (primCount <= derived.exactPrimitiveThreshold()) {
-            std::cout << "Switching to O(N log N builder)..." << std::endl;
                 *m_cost = transitionToNLogN();
                 return nullptr;
             }
-            std::cout << "Min-max-binning..." << std::endl;
 
             /* ==================================================================== */
             /*                              Binning                                 */
@@ -1069,8 +1086,10 @@ protected:
 
         /// Recursively run the O(N log N builder)
         Scalar buildNLogN(NodeIterator node, Size primCount,
-                          EdgeEventVector &&events, const BoundingBox3f &bbox,
-                          Size depth, Size badRefines) {
+                          EdgeEvent *eventsStart, EdgeEvent *eventsEnd,
+                          const BoundingBox3f &bbox, Size depth,
+                          Size badRefines, bool leftChild = true) {
+
             const Derived &derived = m_ctx.derived;
 
             /* Initialize the tree cost model */
@@ -1078,15 +1097,12 @@ protected:
             model.setBoundingBox(bbox);
             Scalar leafCost = model.leafCost(primCount);
 
-            for (size_t i=1 ; i<events.size(); ++i)
-                Assert(events[i-1] < events[i]);
-
             /* ==================================================================== */
             /*                           Stopping criteria                          */
             /* ==================================================================== */
 
             if (primCount <= derived.stopPrimitives() || depth >= derived.maxDepth()) {
-                makeLeaf(node, primCount, std::move(events));
+                makeLeaf(node, primCount, eventsStart, eventsEnd);
                 return leafCost;
             }
 
@@ -1107,20 +1123,20 @@ protected:
             }
 
             /* Keep track of where events for different axes start */
-            typename EdgeEventVector::iterator eventsByDimension[Dimension + 1] { };
-            eventsByDimension[0] = events.begin();
-            eventsByDimension[Dimension] = events.end();
+            EdgeEvent* eventsByDimension[Dimension + 1] { };
+            eventsByDimension[0] = eventsStart;
+            eventsByDimension[Dimension] = eventsEnd;
 
             /* Iterate over all events and find the best split plane */
             SplitCandidate best;
-            for (auto event = events.begin(); event != events.end(); ) {
+            for (auto event = eventsStart; event != eventsEnd; ) {
                 /* Record the current position and count the number
                    and type of remaining events that are also here. */
                 Size numStart = 0, numEnd = 0, numPlanar = 0;
                 int axis = event->axis;
                 Scalar pos = event->pos;
 
-                while (event < events.end() && event->pos == pos && event->axis == axis) {
+                while (event < eventsEnd && event->pos == pos && event->axis == axis) {
                     switch (event->type) {
                         case EdgeEvent::EEdgeStart:  ++numStart;  break;
                         case EdgeEvent::EEdgePlanar: ++numPlanar; break;
@@ -1130,14 +1146,14 @@ protected:
                 }
 
                 /* Keep track of the beginning of each dimension */
-                if (event < events.end() && event->axis != axis)
+                if (event < eventsEnd && event->axis != axis)
                     eventsByDimension[event->axis] = event;
 
                 /* The split plane can now be moved onto 't'. Accordingly, all planar
                    and ending primitives are removed from the right side */
                 rightCount[axis] -= numPlanar + numEnd;
 
-                /* Check if the ddge event is out of bounds -- when primitive
+                /* Check if the edge event is out of bounds -- when primitive
                    clipping is active, this should never happen! */
                 Assert(!(derived.clipPrimitives() &&
                          (pos < bbox.min[axis] || pos > bbox.max[axis])));
@@ -1190,13 +1206,8 @@ protected:
 
             /* Sanity checks. Everything should now be left of the split plane */
             for (int i=0; i<Dimension; ++i) {
-                if (!(rightCount[i] == 0 && leftCount[i] == primCount)) {
-                    std::cout << leftCount[0] << " " << leftCount[1] << " " << leftCount[2] << std::endl;
-                    std::cout << rightCount[0] << " " << rightCount[1] << " " << rightCount[2] << std::endl;
-                    std::cout << primCount << std::endl;
-                }
                 Assert(rightCount[i] == 0 && leftCount[i] == primCount);
-                Assert(eventsByDimension[i] != events.end() && eventsByDimension[i]->axis == i);
+                Assert(eventsByDimension[i] != eventsEnd && eventsByDimension[i]->axis == i);
                 Assert((i == 0) || ((eventsByDimension[i]-1)->axis == i - 1));
             }
 
@@ -1205,13 +1216,12 @@ protected:
                 if ((best.cost > 4 * leafCost && primCount < 16)
                     || badRefines >= derived.maxBadRefines()
                     || !std::isfinite(best.cost) ) {
-                    makeLeaf(node, primCount, std::move(events));
+                    makeLeaf(node, primCount, eventsStart, eventsEnd);
                     return leafCost;
                 }
                 ++badRefines;
                 m_ctx.badRefines++;
             }
-            std::cout << "Splitting along " << best << std::endl;
 
             /* ==================================================================== */
             /*                      Primitive Classification                        */
@@ -1275,154 +1285,187 @@ protected:
 
             Size prunedLeft = 0, prunedRight = 0;
 
-            std::vector<EdgeEvent> leftEvents, rightEvents;
-            std::vector<EdgeEvent> leftEventsNew, rightEventsNew;
+            auto &leftAlloc = m_local->leftAlloc;
+            auto &rightAlloc = m_local->rightAlloc;
 
-            leftEvents.reserve((primsLeft + primsBoth) * 2 * Dimension);
-            rightEvents.reserve((primsRight + primsBoth) * 2 * Dimension);
+            EdgeEvent *leftEventsStart, *rightEventsStart,
+                      *leftEventsEnd, *rightEventsEnd;
 
-            if (derived.clipPrimitives()) {
-                leftEventsNew.reserve(primsBoth * 2 * Dimension);
-                rightEventsNew.reserve(primsBoth * 2 * Dimension);
+            /* First, allocate a conservative amount of scratch space for
+               the final event lists and then resize it to the actual used
+               amount */
+            if (leftChild) {
+                leftEventsStart = eventsStart;
+                rightEventsStart = rightAlloc.template allocate<EdgeEvent>(
+                    best.rightCount * 2 * Dimension);
+            } else {
+                leftEventsStart = leftAlloc.template allocate<EdgeEvent>(
+                    best.leftCount * 2 * Dimension);
+                rightEventsStart = eventsStart;
             }
+            leftEventsEnd = leftEventsStart;
+            rightEventsEnd = rightEventsStart;
 
-            for (auto event : events) {
-                const Index index = event.index;
+            if (primsBoth == 0 || !derived.clipPrimitives()) {
+                /* Fast path: no clipping needed. */
+                for (auto it = eventsStart; it != eventsEnd; ++it) {
+                    auto event = *it;
 
-                /* Fetch the classification of the current event */
-                EPrimClassification class_ = classification.get(index);
+                    /* Fetch the classification of the current event */
+                    switch (classification.get(event.index)) {
+                        case EPrimClassification::ELeft:
+                            *leftEventsEnd++ = event;
+                            break;
 
-                if (class_ == EPrimClassification::ELeft) {
-                    leftEvents.push_back(event);
-                    std::cout << "Pushing left: " << index << "." << std::endl;
-                } else if (class_ == EPrimClassification::ERight) {
-                    rightEvents.push_back(event);
-                    std::cout << "Pushing right: " << index << "." << std::endl;
-                } else if (class_ == EPrimClassification::EIgnore) {
-                    std::cout << "Ignoring " << index << " now" << std::endl;
-                    /* Do nothing */
-                } else if (class_ == EPrimClassification::EBoth) {
-                    if (!derived.clipPrimitives()) {
-                        leftEvents.push_back(event);
-                        rightEvents.push_back(event);
-                        continue;
+                        case EPrimClassification::ERight:
+                            *rightEventsEnd++ = event;
+                            break;
+
+                        case EPrimClassification::EBoth:
+                            *leftEventsEnd++ = event;
+                            *rightEventsEnd++ = event;
+                            break;
+
+                        default:
+                            Assert(false);
                     }
-                    std::cout << "Got straddeling " << index << std::endl;
-
-                    BoundingBox clippedLeft  = derived.bbox(index, leftBBox);
-                    BoundingBox clippedRight = derived.bbox(index, rightBBox);
-
-                    Assert(leftBBox.contains(clippedLeft) || !clippedLeft.valid());
-                    Assert(rightBBox.contains(clippedRight) || !clippedRight.valid());
-
-                    if (clippedLeft.valid() &&
-                        clippedLeft.surfaceArea() > 0) {
-                        for (int axis = 0; axis < Dimension; ++axis) {
-                            Scalar min = clippedLeft.min[axis],
-                                   max = clippedLeft.max[axis];
-
-                            if (min != max) {
-                                leftEventsNew.emplace_back(
-                                    EdgeEvent::EEdgeStart, axis, min, index);
-                                leftEventsNew.emplace_back(
-                                    EdgeEvent::EEdgeEnd, axis, max, index);
-                            } else {
-                                leftEventsNew.emplace_back(
-                                    EdgeEvent::EEdgePlanar, axis, min, index);
-                            }
-                        }
-                    } else {
-                        prunedLeft++;
-                    }
-
-                    if (clippedRight.valid() &&
-                        clippedRight.surfaceArea() > 0) {
-                        for (int axis = 0; axis < Dimension; ++axis) {
-                            Scalar min = clippedRight.min[axis],
-                                   max = clippedRight.max[axis];
-
-                            if (min != max) {
-                                rightEventsNew.emplace_back(
-                                    EdgeEvent::EEdgeStart, axis, min, index);
-                                rightEventsNew.emplace_back(
-                                    EdgeEvent::EEdgeEnd, axis, max, index);
-                            } else {
-                                rightEventsNew.emplace_back(
-                                    EdgeEvent::EEdgePlanar, axis, min, index);
-                            }
-                        }
-                    } else {
-                        prunedRight++;
-                    }
-
-                    /* Set classification to 'EIgnore' to ensure that
-                       clipping occurs only once */
-                    classification.set(index, EPrimClassification::EIgnore);
                 }
-            }
 
-            /* Free original set of edge events */
-            EdgeEventVector().swap(events);
+                Assert((Size) (leftEventsEnd - leftEventsStart) <= best.leftCount* 2 * Dimension);
+                Assert((Size) (rightEventsEnd - rightEventsStart) <= best.rightCount * 2 * Dimension);
+            } else {
+                /* Slow path: some primitives are straddling the split plane
+                   and primitive clipping is enabled. They will generate new
+                   events that have to be sorted and merged into the current
+                   sorted event lists. Start by allocating some more scratch
+                   space for this.. */
+                EdgeEvent *tempLeftEventsStart, *tempLeftEventsEnd,
+                    *tempRightEventsStart, *tempRightEventsEnd,
+                    *newLeftEventsStart, *newLeftEventsEnd,
+                    *newRightEventsStart, *newRightEventsEnd;
 
-            if (derived.clipPrimitives() && primsBoth > 0) {
-                std::cout << "Got " << primsBoth << " on both sides" << std::endl;
-                std::cout << "Event list: " << leftEvents.size() << " " << rightEvents.size() << std::endl;
-                std::cout << "New event list: " << leftEventsNew.size() << " " << rightEventsNew.size() << std::endl;
-                Assert(leftEvents.size() <= primsLeft * 2 * Dimension);
-                Assert(rightEvents.size() <= primsRight * 2 * Dimension);
-                Assert(leftEventsNew.size() <= primsBoth * 2 * Dimension);
-                Assert(rightEventsNew.size() <= primsBoth * 2 * Dimension);
+                tempLeftEventsStart = tempLeftEventsEnd =
+                    leftAlloc.template allocate<EdgeEvent>(primsLeft * 2 * Dimension);
+                tempRightEventsStart = tempRightEventsEnd =
+                    rightAlloc.template allocate<EdgeEvent>(primsRight * 2 * Dimension);
+                newLeftEventsStart = newLeftEventsEnd =
+                    leftAlloc.template allocate<EdgeEvent>(primsBoth * 2 * Dimension);
+                newRightEventsStart = newRightEventsEnd =
+                    rightAlloc.template allocate<EdgeEvent>(primsBoth * 2 * Dimension);
+
+                for (auto it = eventsStart; it != eventsEnd; ++it) {
+                    auto event = *it;
+
+                    /* Fetch the classification of the current event */
+                    switch (classification.get(event.index)) {
+                        case EPrimClassification::ELeft:
+                            *tempLeftEventsEnd++ = event;
+                            break;
+
+                        case EPrimClassification::ERight:
+                            *tempRightEventsEnd++ = event;
+                            break;
+
+                        case EPrimClassification::EIgnore:
+                            break;
+
+                        case EPrimClassification::EBoth: {
+                                BoundingBox clippedLeft  = derived.bbox(event.index, leftBBox);
+                                BoundingBox clippedRight = derived.bbox(event.index, rightBBox);
+
+                                Assert(leftBBox.contains(clippedLeft) || !clippedLeft.valid());
+                                Assert(rightBBox.contains(clippedRight) || !clippedRight.valid());
+
+                                if (clippedLeft.valid() &&
+                                    clippedLeft.surfaceArea() > 0) {
+                                    for (int axis = 0; axis < Dimension; ++axis) {
+                                        Scalar min = clippedLeft.min[axis],
+                                               max = clippedLeft.max[axis];
+
+                                        if (min != max) {
+                                            *newLeftEventsEnd++ = EdgeEvent(
+                                                EdgeEvent::EEdgeStart, axis, min, event.index);
+                                            *newLeftEventsEnd++ = EdgeEvent(
+                                                EdgeEvent::EEdgeEnd, axis, max, event.index);
+                                        } else {
+                                            *newLeftEventsEnd++ = EdgeEvent(
+                                                EdgeEvent::EEdgePlanar, axis, min, event.index);
+                                        }
+                                    }
+                                } else {
+                                    prunedLeft++;
+                                }
+
+                                if (clippedRight.valid() &&
+                                    clippedRight.surfaceArea() > 0) {
+                                    for (int axis = 0; axis < Dimension; ++axis) {
+                                        Scalar min = clippedRight.min[axis],
+                                               max = clippedRight.max[axis];
+
+                                        if (min != max) {
+                                            *newRightEventsEnd++ = EdgeEvent(
+                                                EdgeEvent::EEdgeStart, axis, min, event.index);
+                                            *newRightEventsEnd++ = EdgeEvent( 
+                                                EdgeEvent::EEdgeEnd, axis, max, event.index);
+                                        } else {
+                                            *newRightEventsEnd++ = EdgeEvent( 
+                                                EdgeEvent::EEdgePlanar, axis, min, event.index);
+                                        }
+                                    }
+                                } else {
+                                    prunedRight++;
+                                }
+
+                                /* Set classification to 'EIgnore' to ensure that
+                                   clipping occurs only once */
+                                classification.set(
+                                    event.index, EPrimClassification::EIgnore);
+                            }
+                            break;
+
+                        default:
+                            Assert(false);
+                    }
+                }
+
+                Assert((Size) (tempLeftEventsEnd - tempLeftEventsStart) <= primsLeft * 2 * Dimension);
+                Assert((Size) (tempRightEventsEnd - tempRightEventsStart) <= primsRight * 2 * Dimension);
+                Assert((Size) (newLeftEventsEnd - newLeftEventsStart) <= primsBoth * 2 * Dimension);
+                Assert((Size) (newRightEventsEnd - newRightEventsStart) <= primsBoth * 2 * Dimension);
 
                 m_ctx.pruned += prunedLeft + prunedRight;
 
                 /* Sort the events due to primitives which overlap the split plane */
-                std::sort(leftEventsNew.begin(), leftEventsNew.end());
-                std::sort(rightEventsNew.begin(), rightEventsNew.end());
+                std::sort(newLeftEventsStart, newLeftEventsEnd);
+                std::sort(newRightEventsStart, newRightEventsEnd);
 
-                /* Merge the sorted event lists */
-                size_t leftEventCount = leftEvents.size();
-                size_t rightEventCount = rightEvents.size();
-                leftEvents.resize(leftEventCount + leftEventsNew.size());
-                rightEvents.resize(rightEventCount + rightEventsNew.size());
+                /* Merge the left list */
+                leftEventsEnd = std::merge(tempLeftEventsStart,
+                    tempLeftEventsEnd, newLeftEventsStart, newLeftEventsEnd,
+                    leftEventsStart);
 
-                for (size_t i=1 ; i<leftEventCount; ++i)
-                    Assert(leftEvents[i-1] < leftEvents[i]);
-                for (size_t i=1 ; i<rightEventCount; ++i)
-                    Assert(rightEvents[i-1] < rightEvents[i]);
-                for (size_t i=1 ; i<leftEventsNew.size(); ++i)
-                    Assert(leftEventsNew[i-1] < leftEventsNew[i]);
-                for (size_t i=1 ; i<rightEventsNew.size(); ++i)
-                    Assert(rightEventsNew[i-1] < rightEventsNew[i]);
+                /* Merge the right list */
+                rightEventsEnd = std::merge(tempRightEventsStart,
+                    tempRightEventsEnd, newRightEventsStart, newRightEventsEnd,
+                    rightEventsStart);
 
-                auto it1 = std::merge(leftEvents.begin(),
-                           leftEvents.begin() + leftEventCount,
-                           leftEventsNew.begin(), leftEventsNew.end(),
-                           leftEvents.begin());
-                auto it2 = std::merge(rightEvents.begin(),
-                           rightEvents.begin() + rightEventCount,
-                           rightEventsNew.begin(), rightEventsNew.end(),
-                           rightEvents.begin());
-
-                (void) it1; (void) it2;
-                Assert(it1 == leftEvents.end() && it2 == rightEvents.end());
-
+                /* Release temporary memory */
+                leftAlloc.release(newLeftEventsStart);
+                rightAlloc.release(newRightEventsStart);
+                leftAlloc.release(tempLeftEventsStart);
+                rightAlloc.release(tempRightEventsStart);
             }
-            for (size_t i=1 ; i<leftEvents.size(); ++i) {
-                if (!(leftEvents[i-1] < leftEvents[i]))
-                    std::cout << "At index " << i-1 << " and " << i << ": "<< leftEvents[i-1] << " " << leftEvents[i] << std::endl;
-                Assert(leftEvents[i-1] < leftEvents[i]);
-            }
-            for (size_t i=1 ; i<rightEvents.size(); ++i)
-                Assert(rightEvents[i-1] < rightEvents[i]);
 
-            Assert(leftEvents.size() <= best.leftCount * 2 * Dimension);
-            Assert(rightEvents.size() <= best.rightCount * 2 * Dimension);
+            /* Shrink the edge event storage now that we know exactly how
+               many events are on each side */
+            leftAlloc.shrinkAllocation(leftEventsStart,
+                                       leftEventsEnd - leftEventsStart);
+            rightAlloc.shrinkAllocation(rightEventsStart,
+                                        rightEventsEnd - rightEventsStart);
 
-            /* ====================================================================
-             */
-            /*                              Recursion */
-            /* ====================================================================
-             */
+            /* ==================================================================== */
+            /*                              Recursion                               */
+            /* ==================================================================== */
 
             NodeIterator children = m_ctx.nodeStorage.grow_by(2);
 
@@ -1433,21 +1476,25 @@ protected:
                       "to store overly large offset to left child node (%i)",
                       leftOffset);
 
-            std::cout << "Prunec " << prunedLeft << ", " << prunedRight << std::endl;
+            Scalar leftCost =
+                buildNLogN(children, best.leftCount - prunedLeft,
+                           leftEventsStart, leftEventsEnd, leftBBox,
+                           depth + 1, badRefines, true);
 
-            Scalar leftCost = buildNLogN(
-                children, best.leftCount - prunedLeft,
-                std::move(leftEvents), leftBBox, depth + 1, badRefines);
+            Scalar rightCost =
+                buildNLogN(std::next(children), best.rightCount - prunedRight,
+                           rightEventsStart, rightEventsEnd, rightBBox,
+                           depth + 1, badRefines, false);
 
-            Scalar rightCost = buildNLogN(
-                std::next(children), best.rightCount - prunedRight,
-                std::move(rightEvents), rightBBox, depth + 1, badRefines);
+            /* Release the index lists not needed by the children anymore */
+            if (leftChild)
+                rightAlloc.release(rightEventsStart);
+            else
+                leftAlloc.release(leftEventsStart);
 
-            /* ====================================================================
-             */
-            /*                           Final decision */
-            /* ====================================================================
-             */
+            /* ==================================================================== */
+            /*                           Final decision                             */
+            /* ==================================================================== */
 
             Scalar finalCost =
                 model.innerCost(best.axis, best.split, leftCost, rightCost);
@@ -1458,10 +1505,18 @@ protected:
         /// Create an initial sorted edge event list and start the O(N log N) builder
         Scalar transitionToNLogN() {
             const auto &derived = m_ctx.derived;
-            Size primCount = Size(m_indices.size()), finalPrimCount = primCount;
             m_local = &((LocalBuildContext &) m_ctx.local);
 
-            EdgeEventVector events(primCount * Dimension * 2);
+            Size primCount = Size(m_indices.size()), finalPrimCount = primCount;
+
+            /* We don't yet know how many edge events there will be. Allocate a
+               conservative amount and shrink the buffer later on. */
+            Size initialSize = primCount * 2 * Dimension;
+
+            EdgeEvent *eventsStart =
+                m_local->leftAlloc.template allocate<EdgeEvent>(initialSize),
+                *eventsEnd = eventsStart + initialSize;
+
             for (Size i = 0; i<primCount; ++i) {
                 Index primIndex = m_indices[i];
                 BoundingBox primBBox = derived.bbox(primIndex, m_bbox);
@@ -1477,14 +1532,14 @@ protected:
                     Index offset = (axis * primCount + i) * 2;
 
                     if (unlikely(!valid)) {
-                        events[offset  ].setInvalid();
-                        events[offset+1].setInvalid();
+                        eventsStart[offset  ].setInvalid();
+                        eventsStart[offset+1].setInvalid();
                     } else if (min == max) {
-                        events[offset  ] = EdgeEvent(EdgeEvent::EEdgePlanar, axis, min, primIndex);
-                        events[offset+1].setInvalid();
+                        eventsStart[offset  ] = EdgeEvent(EdgeEvent::EEdgePlanar, axis, min, primIndex);
+                        eventsStart[offset+1].setInvalid();
                     } else {
-                        events[offset  ] = EdgeEvent(EdgeEvent::EEdgeStart, axis, min, primIndex);
-                        events[offset+1] = EdgeEvent(EdgeEvent::EEdgeEnd,   axis, max, primIndex);
+                        eventsStart[offset  ] = EdgeEvent(EdgeEvent::EEdgeStart, axis, min, primIndex);
+                        eventsStart[offset+1] = EdgeEvent(EdgeEvent::EEdgeEnd,   axis, max, primIndex);
                     }
                 }
             }
@@ -1493,14 +1548,20 @@ protected:
             IndexVector().swap(m_indices);
 
             /* Sort the events list and remove invalid ones from the end */
-            std::sort(events.begin(), events.end());
-            while (events.begin() != events.end() &&
-                   !events[events.size()-1].valid())
-                events.pop_back();
+            std::sort(eventsStart, eventsEnd);
+            while (eventsStart != eventsEnd && !(eventsEnd-1)->valid())
+                --eventsEnd;
 
+            m_local->leftAlloc.template shrinkAllocation<EdgeEvent>(
+                eventsStart, eventsEnd - eventsStart);
             m_local->classificationStorage.resize(derived.primitiveCount());
 
-            return buildNLogN(m_node, finalPrimCount, std::move(events), m_bbox, m_depth, 0);
+            Float cost = buildNLogN(m_node, finalPrimCount, eventsStart,
+                                    eventsEnd, m_bbox, m_depth, 0);
+
+            m_local->leftAlloc.release(eventsStart);
+
+            return cost;
         }
 
         /// Create a leaf node using the given set of indices (called by min-max binning)
@@ -1516,7 +1577,8 @@ protected:
         }
 
         /// Create a leaf node using the given edge event list (called by the O(N log N) builder)
-        void makeLeaf(NodeIterator node, Size primCount, std::vector<EdgeEvent> &&events) const {
+        void makeLeaf(NodeIterator node, Size primCount, EdgeEvent *eventsStart,
+                      EdgeEvent *eventsEnd) const {
             auto it = m_ctx.indexStorage.grow_by(primCount);
             Size offset(std::distance(m_ctx.indexStorage.begin(), it));
 
@@ -1524,13 +1586,13 @@ protected:
                 Throw("Internal error: could not create leaf node with %i "
                       "primitives -- too much geometry?", primCount);
 
-            for (auto event: events) {
-                if (event.axis != 0)
+            for (auto event = eventsStart; event != eventsEnd; ++event) {
+                if (event->axis != 0)
                     break;
-                if (event.type == EdgeEvent::EEdgeStart ||
-                    event.type == EdgeEvent::EEdgePlanar) {
+                if (event->type == EdgeEvent::EEdgeStart ||
+                    event->type == EdgeEvent::EEdgePlanar) {
                     Assert(--primCount >= 0);
-                    *it++ = event.index;
+                    *it++ = event->index;
                 }
             }
 
@@ -1580,7 +1642,7 @@ protected:
     }
 
     void build() {
-        /* Some samity checks */
+        /* Some sanity checks */
         if (ready())
             Throw("The kd-tree has already been built!");
         if (m_minMaxBins <= 1)

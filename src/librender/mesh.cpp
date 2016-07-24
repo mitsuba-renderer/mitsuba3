@@ -31,7 +31,7 @@ BoundingBox3f Mesh::bbox(Index index) const {
 
 
 namespace {
-    constexpr size_t maxVertices = 8;
+    constexpr size_t maxVertices = 10;
 
     size_t sutherlandHodgman(Point3d *input, size_t inCount, Point3d *output,
                                     int axis, double splitPos, bool isMinimum) {
