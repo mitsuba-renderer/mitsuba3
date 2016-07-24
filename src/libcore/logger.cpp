@@ -140,7 +140,7 @@ NAMESPACE_BEGIN(detail)
 void Throw(ELogLevel level, const Class *theClass, const char *file,
            int line, const std::string &msg_) {
     /* Trap if we're running in a debugger to facilitate debugging */
-    util::trapDebugger();
+    //util::trapDebugger();
 
     DefaultFormatter formatter;
     formatter.setHasDate(false);

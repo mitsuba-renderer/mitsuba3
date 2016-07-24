@@ -72,7 +72,7 @@ void *ThreadLocalBase::get() {
         PerThreadData *ptd = ptdLocal;
     #endif
 
-    if (!ptd)
+    if (unlikely(!ptd))
         throw std::runtime_error(
             "Internal error: call to ThreadLocalPrivate::get() precedes the "
             "construction of thread-specific data structures!");
@@ -81,7 +81,7 @@ void *ThreadLocalBase::get() {
     tbb::spin_mutex::scoped_lock guard(ptd->mutex);
 
     auto it = ptd->entries.find(this);
-    if (it != ptd->entries.end())
+    if (likely(it != ptd->entries.end()))
         return it->second.data;
 
     /* This is the first access from this thread */

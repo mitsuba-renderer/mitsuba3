@@ -5,7 +5,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 Scene::Scene(const Properties &props) {
-    m_kdtree = new ShapeKDTree();
+    m_kdtree = new ShapeKDTree(props);
 
     for (auto &kv : props.objects()) {
         Shape *shape = dynamic_cast<Shape *>(kv.second.get());

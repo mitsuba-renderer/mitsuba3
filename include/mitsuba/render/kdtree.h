@@ -6,14 +6,20 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
+#include <mitsuba/core/tls.h>
 #include <mitsuba/render/shape.h>
 #include <tbb/tbb.h>
+#include <tbb/concurrent_vector.h>
+#include <unordered_set>
+
+#undef Assert // XXX
+#define Assert(cond) if (!(cond)) Throw("Assertion failure " #cond " in line %i", __LINE__);
 
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MTS_KD_MAXDEPTH 48u
 
 /// Number of bins used for Min-Max binning
-#define MTS_KD_BINS 256u
+#define MTS_KD_BINS 128u
 
 /// OrderedChunkAllocator: don't create chunks smaller than 512 KiB
 #define MTS_KD_MIN_ALLOC 512u*1024u
@@ -22,176 +28,67 @@
 #define MTS_KD_GRAIN_SIZE 10240u
 
 NAMESPACE_BEGIN(mitsuba)
-NAMESPACE_BEGIN(detail)
 
 /**
- * \brief Ordered memory allocator
+ * \brief Optimized KD-tree acceleration data structure for n-dimensional
+ * (n<=4) shapes and various queries involving them.
  *
- * During kd-tree construction, large amounts of memory are required to
- * temporarily hold index and edge event lists. When not implemented properly,
- * these allocations can become a critical bottleneck. The class \ref
- * OrderedChunkAllocator provides a specialized memory allocator, which
- * reserves memory in chunks of at least 512KiB (this number is configurable).
- * An important assumption made by the allocator is that memory will be
- * released in the exact same order in which it was previously allocated. This
- * makes it possible to create an implementation with a very low memory
- * overhead. Note that no locking is done, hence each thread will need its own
- * allocator.
+ * Note that this class mainly concerns itself with primitives that cover <em>a
+ * region</em> of space. For point data, other implementations will be more
+ * suitable. The most important application in Mitsuba is the fast construction
+ * of high-quality trees for ray tracing. See the class \ref ShapeKDTree for
+ * this specialization.
+ *
+ * The code in this class is a fully generic kd-tree implementation, which can
+ * theoretically support any kind of shape. However, subclasses still need to
+ * provide the following signatures for a functional implementation:
+ *
+ * \code
+ * /// Return the total number of primitives
+ * Size primitiveCount() const;
+ *
+ * /// Return the axis-aligned bounding box of a certain primitive
+ * BoundingBox bbox(Index primIdx) const;
+ *
+ * /// Return the bounding box of a primitive when clipped to another bounding box
+ * BoundingBox bbox(Index primIdx, const BoundingBox &aabb) const;
+ * \endcode
+ *
+ * This class follows the "Curiously recurring template" design pattern so that
+ * the above functions can be inlined (in particular, no virtual calls will be
+ * necessary!).
+ *
+ * When the kd-tree is initially built, this class optimizes a cost heuristic
+ * every time a split plane has to be chosen. For ray tracing, the heuristic is
+ * usually the surface area heuristic (SAH), but other choices are possible as
+ * well. The tree cost model must be passed as a template argument, which can
+ * use a supplied bounding box and split candidate to compute approximate
+ * probabilities of recursing into the left and right subrees during a typical
+ * kd-tree query operation. See \ref SurfaceAreaHeuristic3f for an example of
+ * the interface that must be implemented.
+ *
+ * The kd-tree construction algorithm creates 'perfect split' trees as outlined
+ * in the paper "On Building fast kd-Trees for Ray Tracing, and on doing that
+ * in O(N log N)" by Ingo Wald and Vlastimil Havran. This works even when the
+ * tree is not meant to be used for ray tracing. For polygonal meshes, the
+ * involved Sutherland-Hodgman iterations can be quite expensive in terms of
+ * the overall construction time. The \ref setClipPrimitives() method can be
+ * used to deactivate perfect splits at the cost of a lower-quality tree.
+ *
+ * Because the O(N log N) construction algorithm tends to cause many incoherent
+ * memory accesses and does not parallelize particularly well, a different
+ * method known as <em>Min-Max Binning</em> is used for the top levels of the
+ * tree. Min-Max-binning is an approximation to the O(N log N) approach, which
+ * works extremely well at the top of the tree (i.e. when there are many
+ * elements). This algorithm realized as a series of efficient parallel sweeps
+ * that harness the available cores at all levels (even at the root node). Each
+ * iteration splits the list of primitives into independent subtrees which can
+ * also be processed in parallel. Eventually, the input data is reduced into
+ * sufficiently small chunks, at which point the implementation switches over
+ * to the more accurate O(N log N) builder. The various thresholds and
+ * parameters for these different methods can be accessed and configured via
+ * getters and setters of this class.
  */
-class OrderedChunkAllocator {
-public:
-    OrderedChunkAllocator(size_t minAllocation = MTS_KD_MIN_ALLOC)
-            : m_minAllocation(minAllocation) {
-        m_chunks.reserve(16);
-    }
-
-    ~OrderedChunkAllocator() {
-        cleanup();
-    }
-
-    /**
-     * \brief Release all memory used by the allocator
-     */
-    void cleanup() {
-        for (auto &chunk: m_chunks)
-            AlignedAllocator::dealloc(chunk.start);
-        m_chunks.clear();
-    }
-
-    /**
-     * \brief Merge the chunks of another allocator into this one
-     */
-    void merge(OrderedChunkAllocator &&other) {
-        m_chunks.reserve(m_chunks.size() + other.m_chunks.size());
-        m_chunks.insert(m_chunks.end(), other.m_chunks.begin(),
-                other.m_chunks.end());
-        other.m_chunks.clear();
-    }
-
-    /**
-     * \brief Request a block of memory from the allocator
-     *
-     * Walks through the list of chunks to find one with enough
-     * free memory. If no chunk could be found, a new one is created.
-     */
-    template <typename T> T * SIMD_MALLOC allocate(size_t size) {
-        size *= sizeof(T);
-
-        for (auto &chunk : m_chunks) {
-            if (chunk.remainder() >= size) {
-                T* result = reinterpret_cast<T *>(chunk.cur);
-                chunk.cur += size;
-                return result;
-            }
-        }
-
-        /* No chunk had enough free memory */
-        size_t allocSize = std::max(size, m_minAllocation);
-
-        Chunk chunk;
-        chunk.start = AlignedAllocator::alloc<uint8_t>(allocSize);
-        chunk.cur = chunk.start + size;
-        chunk.size = allocSize;
-        m_chunks.push_back(chunk);
-
-        return reinterpret_cast<T *>(chunk.start);
-    }
-
-    template <typename T> void release(T *ptr_) {
-        auto ptr = reinterpret_cast<uint8_t *>(ptr_);
-
-        for (auto &chunk: m_chunks) {
-            if (chunk.contains(ptr)) {
-                chunk.cur = ptr;
-                return;
-            }
-        }
-
-        #if !defined(NDEBUG)
-            for (auto const &chunk : m_chunks) {
-                if (ptr == chunk.start + chunk.size)
-                    return; /* Potentially 0-sized buffer, don't be too stringent */
-            }
-
-            Throw("OrderedChunkAllocator: Internal error while releasing memory");
-        #endif
-    }
-
-    /**
-     * \brief Shrink the size of the last allocated chunk
-     */
-    template <typename T> void shrinkAllocation(T *ptr_, size_t newSize) {
-        auto ptr = reinterpret_cast<uint8_t *>(ptr_);
-        newSize *= sizeof(T);
-
-        for (auto &chunk: m_chunks) {
-            if (chunk.contains(ptr)) {
-                chunk.cur = ptr + newSize;
-                return;
-            }
-        }
-
-        #if !defined(NDEBUG)
-            if (newSize == 0) {
-                for (auto const &chunk : m_chunks) {
-                    if (ptr == chunk.start + chunk.size)
-                        return; /* Potentially 0-sized buffer, don't be too stringent */
-                }
-            }
-
-            Throw("OrderedChunkAllocator: Internal error while releasing memory");
-        #endif
-    }
-
-    /// Return the currently allocated number of chunks
-    size_t chunkCount() const { return m_chunks.size(); }
-
-    /// Return the total amount of chunk memory in bytes
-    size_t size() const {
-        size_t result = 0;
-        for (auto const &chunk : m_chunks)
-            result += chunk.size;
-        return result;
-    }
-
-    /// Return the total amount of used memory in bytes
-    size_t used() const {
-        size_t result = 0;
-        for (auto const &chunk : m_chunks)
-            result += chunk.used();
-        return result;
-    }
-
-    /// Return a string representation of the chunks
-    std::string toString() const {
-        std::ostringstream oss;
-        oss << "OrderedChunkAllocator[" << std::endl;
-        for (size_t i = 0; i < m_chunks.size(); ++i)
-            oss << "    Chunk " << i << ": " << m_chunks[i].toString()
-                << std::endl;
-        oss << "]";
-        return oss.str();
-    }
-
-private:
-    struct Chunk {
-        size_t size;
-        uint8_t *start, *cur;
-
-        size_t used() const { return cur - start; }
-        size_t remainder() const { return size - used(); }
-
-        bool contains(uint8_t *ptr) const { return ptr >= start && ptr < start + size; }
-
-        std::string toString() const {
-            return tfm::format("0x%x-0x%x (size=%i, used=%i)", start,
-                               start + size, size, used());
-        }
-    };
-
-    size_t m_minAllocation;
-    std::vector<Chunk> m_chunks;
-};
 
 template <typename BoundingBox_, typename Index_, typename CostModel_,
           typename Derived_> class TShapeKDTree : public Object {
@@ -204,45 +101,20 @@ public:
     using Point       = typename BoundingBox::Point;
     using Vector      = typename BoundingBox::Vector;
     using Scalar      = typename Vector::Scalar;
+    using IndexVector = std::vector<Index>;
 
     enum {
         Dimension = BoundingBox::Dimension
     };
 
-    TShapeKDTree() { }
+    /* ==================================================================== */
+    /*                     Public kd-tree interface                         */
+    /* ==================================================================== */
 
-    /// Get the cost of a traversal operation used by the tree construction heuristic
-    Float traversalCost() const { return m_traversalCost; }
+    TShapeKDTree(const CostModel &model) : m_costModel(model) { }
 
-    /// Set the cost of a traversal operation used by the tree construction heuristic
-    void setTraversalCost(Float traversalCost) { m_traversalCost = traversalCost; }
-
-    /**
-     * \brief Return the query cost used by the tree construction heuristic
-     * (This is the average cost for testing a contained shape against
-     *  a kd-tree search query)
-     */
-    Float queryCost() const { return m_queryCost; }
-
-    /**
-     * \brief Set the query cost used by the tree construction heuristic
-     *
-     * This is the average cost for testing a contained shape against a kd-tree
-     * search query
-     */
-    void setQueryCost(Float queryCost) { m_queryCost = queryCost; }
-
-    /**
-     * \brief Return the bonus factor for empty space used by the
-     * tree construction heuristic
-     */
-    Float emptySpaceBonus() const { return m_emptySpaceBonus; }
-
-    /**
-     * \brief Set the bonus factor for empty space used by the
-     * tree construction heuristic
-     */
-    void setEmptySpaceBonus(Float emptySpaceBonus) { m_emptySpaceBonus = emptySpaceBonus; }
+    /// Return the cost model used by the tree construction algorithm
+    CostModel costModel() const { return m_costModel; }
 
     /// Return the maximum tree depth (0 == use heuristic)
     Size maxDepth() const { return m_maxDepth; }
@@ -284,13 +156,13 @@ public:
      * \brief Return the number of primitives, at which recursion will
      * stop when building the tree.
      */
-    Size stopPrims() const { return m_stopPrims; }
+    Size stopPrimitives() const { return m_stopPrimitives; }
 
     /**
      * \brief Set the number of primitives, at which recursion will
      * stop when building the tree.
      */
-    void setStopPrims(Size stopPrims) { m_stopPrims = stopPrims; }
+    void setStopPrimitives(Size stopPrimitives) { m_stopPrimitives = stopPrimitives; }
 
     /**
      * \brief Return the number of primitives, at which the builder will switch
@@ -317,138 +189,358 @@ public:
     bool ready() const { return false; }
 
     const Derived& derived() const { return (Derived&) *this; }
-
-    void build() {
-        /* Some samity checks */
-        if (ready())
-            Throw("The kd-tree has already been built!");
-        if (m_traversalCost <= 0)
-            Throw("The traveral cost must be > 0");
-        if (m_queryCost <= 0)
-            Throw("The query cost must be > 0");
-        if (m_emptySpaceBonus <= 0 || m_emptySpaceBonus > 1)
-            Throw("The empty space bonus must be in [0, 1]");
-        if (m_minMaxBins <= 1)
-            Throw("The number of min-max bins must be > 2");
-
-        Log(m_logLevel, "Building tree");
-
-        Size primCount = derived().primitiveCount();
-        if (m_maxDepth == 0)
-            m_maxDepth = (int) (8 + 1.3f * math::log2i(primCount));
-        m_maxDepth = std::min(m_maxDepth, (Size) MTS_KD_MAXDEPTH);
-
-        if (primCount == 0) {
-            Log(EWarn, "kd-tree contains no geometry!");
-            // +1 shift is for alignment purposes (see KDNode::getSibling)
-            // XXX
-            //m_nodes = static_cast<KDNode *>(allocAligned(sizeof(KDNode) * 2))+1;
-            //m_nodes[0].initLeafNode(0, 0);
-            return;
-        }
-
-        Log(m_logLevel, "Creating a preliminary index list (%s)",
-            util::memString(primCount * sizeof(Index)).c_str());
-
-        //OrderedChunkAllocator &leftAlloc = ctx.leftAlloc;
-        //Index *indices = leftAlloc.allocate<Index>(primCount);
-
-        Log(m_logLevel, "");
-
-        Log(m_logLevel, "kd-tree configuration:");
-        Log(m_logLevel, "   Traversal cost           : %.2f", m_traversalCost);
-        Log(m_logLevel, "   Query cost               : %.2f", m_queryCost);
-        Log(m_logLevel, "   Empty space bonus        : %.2f", m_emptySpaceBonus);
-        Log(m_logLevel, "   Max. tree depth          : %i", m_maxDepth);
-        Log(m_logLevel, "   Stopping primitive count : %i", m_stopPrims);
-        Log(m_logLevel, "   Scene bounding box (min) : %s", m_bbox.min);
-        Log(m_logLevel, "   Scene bounding box (max) : %s", m_bbox.max);
-        Log(m_logLevel, "   Min-max bins             : %i", m_minMaxBins);
-        Log(m_logLevel, "   O(n log n) method        : use for <= %i primitives",
-            m_exactPrimThreshold);
-        Log(m_logLevel, "   Perfect splits           : %s",
-            m_clipPrimitives ? "yes" : "no");
-        Log(m_logLevel, "   Retract bad splits       : %s",
-            m_retractBadSplits ? "yes" : "no");
-        Log(m_logLevel, "");
-
-        //MinMaxBins bins(m_minMaxBins);
-
-        /* ==================================================================== */
-        /*                              Binning                                 */
-        /* ==================================================================== */
-
-        Timer timer;
-        timer.beginStage("binning (par)");
-
-        /* Accumulate all shapes into bins */
-        MinMaxBins bins = tbb::parallel_reduce(
-            tbb::blocked_range<Size>(0u, primCount, MTS_KD_GRAIN_SIZE),
-            MinMaxBins(m_minMaxBins, m_bbox),
-
-            /* MAP: Bin a number of shapes and return the resulting 'MinMaxBins' data structure */
-            [&](const tbb::blocked_range<uint32_t> &range, MinMaxBins bins) {
-                for (uint32_t i = range.begin(); i != range.end(); ++i)
-                    bins.put(derived().bbox(i));
-                return bins;
-            },
-
-            /* REDUCE: Combine two 'MinMaxBins' data structures */
-            [](MinMaxBins b1, const MinMaxBins &b2) {
-                b1 += b2;
-                return b1;
-            }
-        );
-
-        /* ==================================================================== */
-        /*                        Split candidate search                        */
-        /* ==================================================================== */
-
-        Float leafCost = primCount * m_queryCost;
-
-        auto bestSplit = bins.bestCandidate(
-            primCount,
-            m_traversalCost,
-            m_queryCost,
-            m_emptySpaceBonus
-        );
-
-#if 0
-        /* "Bad refines" heuristic from PBRT */
-        if (bestSplit.cost >= leafCost) {
-            if ((bestSplit.cost > 4 * leafCost && primCount < 16)
-                || badRefines >= m_maxBadRefines) {
-                createLeaf(ctx, node, indices, primCount);
-                return leafCost;
-            }
-            ++badRefines;
-        }
-#endif
-
-        std::cout << bestSplit << std::endl;
-
-        timer.endStage();
-    }
+    Derived& derived() { return (Derived&) *this; }
 
     MTS_DECLARE_CLASS()
+
 protected:
+    /* ==================================================================== */
+    /*                  Essential internal data structures                  */
+    /* ==================================================================== */
+
+    /// kd-tree node in 8 bytes.
+    struct alignas(8) KDNode {
+        union {
+            /// Inner node
+            struct {
+                /// Split plane coordinate
+                Scalar split;
+
+                /// X/Y/Z axis specifier
+                unsigned int axis : 3;
+
+                /// Offset to left child (max 512M nodes in between in 32 bit)
+                unsigned int leftOffset : sizeof(Index) * 8 - 3;
+            } inner;
+
+            /// Leaf node
+            struct {
+                #if defined(LITTLE_ENDIAN)
+                    /// How many primitives does this leaf reference?
+                    unsigned int primCount : 23;
+
+                    /// Mask bits (all 1s for leaf nodes)
+                    unsigned int mask : 9;
+                #else /* Swap for big endian machines */
+                    /// Mask bits (all 1s for leaf nodes)
+                    unsigned int mask : 9;
+
+                    /// How many primitives does this leaf reference?
+                    unsigned int primCount : 23;
+                #endif
+
+                /// Start offset of the primitive list
+                Index primOffset;
+            } leaf;
+        } data;
+
+        /**
+         * \brief Initialize a leaf kd-tree node.
+         *
+         * Returns \c false if the offset or number of primitives is so large
+         * that it can't be represented
+         */
+        bool setLeafNode(size_t primOffset, size_t primCount) {
+            data.leaf.primCount = (unsigned int) primCount;
+            data.leaf.mask      = 0b111111111u;
+            data.leaf.primOffset = (Index) primOffset;
+            return (size_t) data.leaf.primOffset == primOffset &&
+                   (size_t) data.leaf.primCount == primCount;
+        }
+
+        /**
+         * \brief Initialize an interior kd-tree node.
+         *
+         * Returns \c false if the offset or number of primitives is so large
+         * that it can't be represented
+         */
+        bool setInnerNode(int axis, Scalar split, size_t leftOffset) {
+            data.inner.split = split;
+            data.inner.axis = (unsigned int) axis;
+            data.inner.leftOffset = (Index) leftOffset;
+            return (size_t) data.inner.leftOffset == leftOffset;
+        }
+
+        /// Is this a leaf node?
+        bool leaf() const { return data.leaf.mask == 0b111111111u; }
+
+        /// Assuming this is a leaf node, return the first primitive index
+        Index primitiveOffset() const { return data.leaf.primOffset; }
+
+        /// Assuming this is a leaf node, return the number of primitives
+        Index primitiveCount() const { return data.leaf.primCount; }
+
+        /// Assuming that this is an inner node, return the relative offset to the left child
+        Index leftOffset() const { return data.inner.leftOffset; }
+
+        /// Return the left child (for interior nodes)
+        const KDNode *__restrict left() const { return this + data.inner.leftOffset; }
+
+        /// Return the left child (for interior nodes)
+        const KDNode *__restrict right() const { return this + data.inner.leftOffset + 1; }
+
+        /// Return the split plane location (for interior nodes)
+        Scalar split() const { return data.inner.split; }
+
+        /// Return the split axis (for interior nodes)
+        int axis() const { return (int) data.inner.axis; }
+
+        /// Return a string representation
+        friend std::ostream& operator<<(std::ostream &os, const KDNode &n) {
+            if (n.leaf()) {
+                os << "KDNode[leaf, primitiveOffset=" << n.primitiveOffset()
+                   << ", primitiveCount=" << n.primitiveCount() << "]";
+            } else {
+                os << "KDNode[interior, axis=" << n.axis()
+                    << ", split=" << n.split()
+                    << ", leftOffset=" << n.leftOffset() << "]";
+            }
+            return os;
+        }
+    };
+
+    static_assert(sizeof(KDNode) == sizeof(Size) + sizeof(Scalar),
+                  "kd-tree node has unexpected size. Padding issue?");
+
+protected:
+    /// Enumeration representing the state of a classified primitive in the O(N log N) builder
+    enum EPrimClassification : uint8_t {
+        EIgnore = 0, ///< Primitive was handled already, ignore from now on
+        ELeft   = 1, ///< Primitive is left of the split plane
+        ERight  = 2, ///< Primitive is right of the split plane
+        EBoth   = 3  ///< Primitive straddles the split plane
+    };
+
+    /**
+     * \brief Compact storage for primitive classifcation
+     *
+     * When classifying primitives with respect to a split plane, a data structure
+     * is needed to hold the tertiary result of this operation. This class
+     * implements a compact storage (2 bits per entry) in the spirit of the
+     * std::vector<bool> specialization.
+     */
+    class ClassificationStorage {
+    public:
+        void resize(Size size) {
+            m_buffer.reset(new uint8_t[(size + 3) / 4]);
+        }
+
+        void set(Index index, EPrimClassification value) {
+            uint8_t *ptr = m_buffer.get() + (index >> 2);
+            uint8_t shift = (index & 3) << 1;
+            *ptr = (*ptr & ~(3 << shift)) | (value << shift);
+        }
+
+        EPrimClassification get(Index index) const {
+            uint8_t *ptr = m_buffer.get() + (index >> 2);
+            uint8_t shift = (index & 3) << 1;
+            return EPrimClassification((*ptr >> shift) & 3);
+        }
+    private:
+        std::unique_ptr<uint8_t[]> m_buffer;
+    };
+
+    /**
+     * During kd-tree construction, large amounts of memory are required to
+     * temporarily hold index and edge event lists. When not implemented properly,
+     * these allocations can become a critical bottleneck. The class \ref
+     * OrderedChunkAllocator provides a specialized memory allocator, which
+     * reserves memory in chunks of at least 512KiB (this number is configurable).
+     * An important assumption made by the allocator is that memory will be
+     * released in the exact same order in which it was previously allocated. This
+     * makes it possible to create an implementation with a very low memory
+     * overhead. Note that no locking is done, hence each thread will need its own
+     * allocator.
+     */
+    class OrderedChunkAllocator {
+    public:
+        OrderedChunkAllocator(size_t minAllocation = MTS_KD_MIN_ALLOC)
+                : m_minAllocation(minAllocation) {
+            m_chunks.reserve(16);
+        }
+
+        ~OrderedChunkAllocator() {
+            m_chunks.clear();
+        }
+
+        /**
+         * \brief Request a block of memory from the allocator
+         *
+         * Walks through the list of chunks to find one with enough
+         * free memory. If no chunk could be found, a new one is created.
+         */
+        template <typename T> T * SIMD_MALLOC allocate(size_t size) {
+            size *= sizeof(T);
+
+            for (auto &chunk : m_chunks) {
+                if (chunk.remainder() >= size) {
+                    T* result = reinterpret_cast<T *>(chunk.cur);
+                    chunk.cur += size;
+                    return result;
+                }
+            }
+
+            /* No chunk had enough free memory */
+            size_t allocSize = std::max(size, m_minAllocation);
+
+            Chunk chunk;
+            chunk.start = AlignedAllocator::alloc<uint8_t>(allocSize);
+            chunk.cur = chunk.start + size;
+            chunk.size = allocSize;
+            m_chunks.push_back(chunk);
+
+            return reinterpret_cast<T *>(chunk.start);
+        }
+
+        template <typename T> void release(T *ptr_) {
+            auto ptr = reinterpret_cast<uint8_t *>(ptr_);
+
+            for (auto &chunk: m_chunks) {
+                if (chunk.contains(ptr)) {
+                    chunk.cur = ptr;
+                    return;
+                }
+            }
+
+            #if !defined(NDEBUG)
+                for (auto const &chunk : m_chunks) {
+                    if (ptr == chunk.start + chunk.size)
+                        return; /* Potentially 0-sized buffer, don't be too stringent */
+                }
+
+                Throw("OrderedChunkAllocator: Internal error while releasing memory");
+            #endif
+        }
+
+        /**
+         * \brief Shrink the size of the last allocated chunk
+         */
+        template <typename T> void shrinkAllocation(T *ptr_, size_t newSize) {
+            auto ptr = reinterpret_cast<uint8_t *>(ptr_);
+            newSize *= sizeof(T);
+
+            for (auto &chunk: m_chunks) {
+                if (chunk.contains(ptr)) {
+                    chunk.cur = ptr + newSize;
+                    return;
+                }
+            }
+
+            #if !defined(NDEBUG)
+                if (newSize == 0) {
+                    for (auto const &chunk : m_chunks) {
+                        if (ptr == chunk.start + chunk.size)
+                            return; /* Potentially 0-sized buffer, don't be too stringent */
+                    }
+                }
+
+                Throw("OrderedChunkAllocator: Internal error while releasing memory");
+            #endif
+        }
+
+        /// Return the currently allocated number of chunks
+        size_t chunkCount() const { return m_chunks.size(); }
+
+        /// Return the total amount of chunk memory in bytes
+        size_t size() const {
+            size_t result = 0;
+            for (auto const &chunk : m_chunks)
+                result += chunk.size;
+            return result;
+        }
+
+        /// Return the total amount of used memory in bytes
+        size_t used() const {
+            size_t result = 0;
+            for (auto const &chunk : m_chunks)
+                result += chunk.used();
+            return result;
+        }
+
+        /// Return a string representation of the chunks
+        std::string toString() const {
+            std::ostringstream oss;
+            oss << "OrderedChunkAllocator[" << std::endl;
+            for (size_t i = 0; i < m_chunks.size(); ++i)
+                oss << "    Chunk " << i << ": " << m_chunks[i].toString()
+                    << std::endl;
+            oss << "]";
+            return oss.str();
+        }
+
+    private:
+        struct Chunk {
+            std::unique_ptr<uint8_t[], AlignedAllocator> start;
+            uint8_t *cur;
+            size_t size;
+
+            size_t used() const { return cur - start; }
+            size_t remainder() const { return size - used(); }
+
+            bool contains(uint8_t *ptr) const { return ptr >= start && ptr < start + size; }
+
+            friend std::ostream& operator<<(std::ostream &os, const Chunk &ch) {
+                os << ch.start << "-" << ch.start + ch.size
+                   << " (size =" << ch.size << ", unused = " << ch.unused()
+                   << ")";
+                return os;
+            }
+        };
+
+        size_t m_minAllocation;
+        std::vector<Chunk> m_chunks;
+    };
+
+    /* ==================================================================== */
+    /*                    Build-related data structures                     */
+    /* ==================================================================== */
+
+    struct LocalBuildContext {
+        ClassificationStorage classificationStorage;
+    };
+
+    /// Helper data structure used during tree construction (shared by all threads)
+    struct BuildContext {
+        const Derived &derived;
+        Thread *thread;
+        tbb::concurrent_vector<KDNode> nodeStorage;
+        tbb::concurrent_vector<Index> indexStorage;
+        ThreadLocal<LocalBuildContext> local;
+
+        std::atomic<size_t> emptyNodes {0};
+        std::atomic<size_t> badRefines {0};
+        std::atomic<size_t> retractedSplits {0};
+        std::atomic<size_t> pruned {0};
+        Scalar expTraversalSteps = 0;
+        Scalar expLeavesVisited = 0;
+        Scalar expPrimitivesQueried = 0;
+        Size maxPrimsInLeaf = 0;
+        Size nonEmptyLeafCount = 0;
+        Size maxDepth = 0;
+        Size primBuckets[16] { };
+
+        BuildContext(const Derived &derived)
+            : derived(derived), thread(Thread::thread()) { }
+    };
+
+
     /// Data type for split candidates suggested by the tree cost model
     struct SplitCandidate {
-        Float cost = std::numeric_limits<Float>::infinity();
-        float pos = 0;
+        Scalar cost = std::numeric_limits<Scalar>::infinity();
+        Scalar split = 0;
         int axis = 0;
-        Size numLeft = 0, numRight = 0;
-        Size leftBin = 0;        /* used by min-max binning only */
+        Size leftCount = 0, rightCount = 0;
+        Size rightBin = 0;       /* used by min-max binning only */
         bool planarLeft = false; /* used by the O(n log n) builder only */
 
         friend std::ostream& operator<<(std::ostream &os, const SplitCandidate &c) {
             os << "SplitCandidate[" << std::endl
                << "  cost = " << c.cost << "," << std::endl
-               << "  pos = " << c.pos << "," << std::endl
+               << "  split = " << c.split << "," << std::endl
                << "  axis = " << c.axis << "," << std::endl
-               << "  numLeft = " << c.numLeft << "," << std::endl
-               << "  numRight = " << c.numRight << "," << std::endl
-               << "  leftBin = " << c.leftBin << "," << std::endl
+               << "  leftCount = " << c.leftCount << "," << std::endl
+               << "  rightCount = " << c.rightCount << "," << std::endl
+               << "  rightBin = " << c.rightBin << "," << std::endl
                << "  planarLeft = " << (c.planarLeft ? "yes" : "no") << std::endl
                << "]";
             return os;
@@ -456,7 +548,67 @@ protected:
     };
 
     /**
-     * \brief Min-max binning data structure
+     * \brief Describes the beginning or end of a primitive under orthogonal
+     * projection onto different axes
+     */
+    struct EdgeEvent {
+        /// Possible event types
+        enum EEventType {
+            EEdgeEnd = 0,
+            EEdgePlanar = 1,
+            EEdgeStart = 2
+        };
+
+        /// Dummy constructor
+        EdgeEvent() { }
+
+        /// Create a new edge event
+        EdgeEvent(EEventType type, int axis, Scalar pos, Index index)
+         : pos(pos), index(index), type(type), axis(axis) { }
+
+        /// Return a string representation
+        friend std::ostream& operator<<(std::ostream &os, const EdgeEvent &e) {
+            os << "EdgeEvent[" << std::endl
+                << "  pos = " << e.pos << "," << std::endl
+                << "  index = " << e.index << "," << std::endl
+                << "  type = ";
+            switch (e.type) {
+                case EEdgeEnd: os << "end"; break;
+                case EEdgeStart: os << "start"; break;
+                case EEdgePlanar: os << "planar"; break;
+                default: os << "unknown!"; break;
+            }
+            os << "," << std::endl
+               << "  axis = " << e.axis << std::endl
+               << "]";
+            return os;
+        }
+
+        bool operator<(const EdgeEvent &other) const {
+            return std::tie(axis, pos, type, index) <
+                   std::tie(other.axis, other.pos, other.type, other.index);
+        }
+
+        void setInvalid() { pos = 0; index = 0; type = 0; axis = 7; }
+        bool valid() const { return axis != 7; }
+
+        /// Plane position
+        Scalar pos;
+        /// Primitive index
+        Index index;
+        /// Event type: end/planar/start
+        uint16_t type;
+        /// Event axis
+        uint16_t axis;
+    };
+
+    using EdgeEventVector = std::vector<EdgeEvent>;
+
+    static_assert(sizeof(Scalar) + sizeof(Index) + sizeof(uint32_t) ==
+                  sizeof(EdgeEvent), "EdgeEvent has an unexpected size!");
+
+    /**
+     * \brief Min-max binning data structure with parallel binning & partitioning steps
      *
      * See
      *   "Highly Parallel Fast KD-tree Construction for Interactive Ray Tracing of
@@ -465,36 +617,25 @@ protected:
     class MinMaxBins {
     public:
         MinMaxBins(Size binCount, const BoundingBox &bbox)
-            : m_bins(AlignedAllocator::alloc<Size>(binCount * Dimension * 2)),
-              m_binCount(binCount), m_bbox(bbox) {
-            memset(m_bins.get(), 0, sizeof(Size) * binCount * Dimension * 2);
-            m_maxBin = Vector::Constant(Scalar(binCount - 1));
-            m_invBinSize = 1 / (bbox.extents() / (Float) binCount);
+            : m_bins(binCount * Dimension * 2, Size(0)), m_binCount(binCount),
+              m_invBinSize(1 / (bbox.extents() / (Scalar) binCount)),
+              m_maxBin(Scalar(binCount - 1)), m_bbox(bbox) {
+            Assert(bbox.valid());
         }
 
         MinMaxBins(const MinMaxBins &other)
-            : m_bins(AlignedAllocator::alloc<Size>(other.m_binCount * Dimension * 2)),
-              m_binCount(other.m_binCount), m_invBinSize(other.m_invBinSize),
-              m_maxBin(other.m_maxBin), m_bbox(other.m_bbox) {
-            memcpy(m_bins.get(), other.m_bins.get(),
-                   sizeof(Size) * m_binCount * Dimension * 2);
-        }
+            : m_bins(other.m_bins), m_binCount(other.m_binCount),
+              m_invBinSize(other.m_invBinSize), m_maxBin(other.m_maxBin),
+              m_bbox(other.m_bbox) { }
 
         MinMaxBins(MinMaxBins &&other)
             : m_bins(std::move(other.m_bins)), m_binCount(other.m_binCount),
               m_invBinSize(other.m_invBinSize), m_maxBin(other.m_maxBin),
-              m_bbox(other.m_bbox) {
-            other.m_binCount = 0;
-        }
+              m_bbox(other.m_bbox) { }
 
         void operator=(const MinMaxBins &other) {
-            if (m_binCount != other.binCount) {
-                m_bins = std::unique_ptr<Size[], AlignedAllocator>(
-                    AlignedAllocator::alloc<Size>(other.binCount * Dimension * 2));
-                m_binCount = other.m_binCount;
-            }
-            memcpy(m_bins.get(), other.m_bins.get(),
-                   sizeof(Size) * other.binCount * Dimension * 2);
+            m_bins = other.m_bins;
+            m_binCount = other.m_binCount;
             m_invBinSize = other.m_invBinSize;
             m_maxBin = other.m_maxBin;
             m_bbox = other.m_bbox;
@@ -506,13 +647,18 @@ protected:
             m_invBinSize = other.m_invBinSize;
             m_maxBin = other.m_maxBin;
             m_bbox = other.m_bbox;
-            other.m_binCount = 0;
         }
 
-        MTS_INLINE void put(const BoundingBox &bbox) {
-            using simd::min;
-            using simd::max;
+        MinMaxBins& operator+=(const MinMaxBins &other) {
+            Assert(m_bins.size() == other.m_bins.size());
+            for (Size i = 0; i < m_bins.size(); ++i)
+                m_bins[i] += other.m_bins[i];
+            return *this;
+        }
+
+        MTS_INLINE void put(BoundingBox bbox) {
             using Int = typename Vector::Int;
+            Assert(bbox.valid());
 
             alignas(alignof(Vector)) Int indexMin[Vector::ActualSize];
             alignas(alignof(Vector)) Int indexMax[Vector::ActualSize];
@@ -523,196 +669,1097 @@ protected:
             relMin = min(max(relMin, Vector::Zero()), m_maxBin);
             relMax = min(max(relMax, Vector::Zero()), m_maxBin);
 
-            floatToInt(relMin).store((float *) indexMin);
-            floatToInt(relMax).store((float *) indexMax);
+            floatToInt(relMin).store((Scalar *) indexMin);
+            floatToInt(relMax).store((Scalar *) indexMax);
 
-            Index offset = 0;
+            Index offset = 0, step = Index(2 * m_binCount);
             for (Index axis = 0; axis < Dimension; ++axis) {
+                Assert(indexMin[axis] <= indexMax[axis]);
                 m_bins[offset + indexMin[axis] * 2 + 0]++;
                 m_bins[offset + indexMax[axis] * 2 + 1]++;
-                offset += 2 * m_binCount;
+                offset += step;
             }
         }
 
-        MinMaxBins& operator+=(const MinMaxBins &other) {
-            /* Add bin counts (using SIMD instructions, please) */
-            Size * __restrict__ b        = (Size *)       SIMD_ASSUME_ALIGNED(m_bins.get());
-            const Size * __restrict__ bo = (const Size *) SIMD_ASSUME_ALIGNED(other.m_bins.get());
-
-            SIMD_IVDEP /* No, the arrays don't alias */
-            for (Size i = 0, size = m_binCount * Dimension * 2; i < size; ++i)
-                b[i] += bo[i];
-            return *this;
-        }
-
-        SplitCandidate bestCandidate(Size primCount,
-                                     Float traversalCost,
-                                     Float queryCost,
-                                     Float emptySpaceBonus) const {
-            Vector extents = m_bbox.extents();
-            Vector binSize = extents / (Float) m_binCount;
-            const uint32_t *bin = m_bins.get();
-            CostModel model(m_bbox);
+        SplitCandidate bestCandidate(Size primCount, const CostModel &model) const {
+            const Index *bin = m_bins.data();
             SplitCandidate best;
-            best.cost = primCount * queryCost;
+
+            Vector step = m_bbox.extents() / Scalar(m_binCount);
 
             for (int axis = 0; axis < Dimension; ++axis) {
                 SplitCandidate candidate;
 
                 /* Initially: all primitives to the right, none on the left */
-                candidate.numLeft = 0;
-                candidate.numRight = primCount;
+                candidate.leftCount = 0;
+                candidate.rightCount = primCount;
+                candidate.rightBin = 0;
                 candidate.axis = axis;
+                candidate.split = m_bbox.min[axis];
 
-                Float leftWidth = 0, rightWidth = extents[axis];
-                const Float step = binSize[axis];
+                for (Index i = 0; i < m_binCount; ++i) {
+                    /* Evaluate the cost model and keep the best candidate */
+                    candidate.cost = model.innerCost(
+                        axis, candidate.split,
+                        model.leafCost(candidate.leftCount),
+                        model.leafCost(candidate.rightCount));
 
-                for (Index i = 0; i < m_binCount - 1; ++i) {
+                    if (candidate.cost < best.cost)
+                        best = candidate;
+
                     /* Move one bin to the right and
 
-                       1. Increase numLeft by the number of primitives which
+                       1. Increase leftCount by the number of primitives which
                           started in the bin (thus they at least overlap with
                           the left interval). This information is stored in the MIN
                           bin.
 
-                       2. Reduce numRight by the number of primitives which
+                       2. Reduce rightCount by the number of primitives which
                           ended (thus they are entirely on the left). This
                           information is stored in the MAX bin.
                     */
-                    candidate.numLeft  += *bin++; /* MIN-bin */
-                    candidate.numRight -= *bin++; /* MAX-bin */
-                    candidate.leftBin = i;
-
-                    /* Update interval lengths */
-                    leftWidth  += step;
-                    rightWidth -= step;
-
-                    /* Compute cost model */
-                    std::pair<Float, Float> prob =
-                        model(axis, leftWidth, rightWidth);
-
-                    candidate.cost =
-                        traversalCost +
-                        queryCost * (prob.first * candidate.numLeft +
-                                     prob.second * candidate.numRight);
-
-                    if (unlikely(candidate.numLeft == 0 || candidate.numRight == 0))
-                        candidate.cost *= emptySpaceBonus;
-
-                    if (candidate.cost < best.cost)
-                        best = candidate;
+                    candidate.leftCount  += *bin++; /* MIN-bin */
+                    candidate.rightCount -= *bin++; /* MAX-bin */
+                    candidate.rightBin++;
+                    candidate.split += step[axis];
                 }
 
-                candidate.numLeft  += *bin++;
-                candidate.numRight -= *bin++;
+                /* Evaluate the cost model and keep the best candidate */
+                candidate.cost = model.innerCost(
+                    axis, candidate.split,
+                    model.leafCost(candidate.leftCount),
+                    model.leafCost(candidate.rightCount));
 
-                Assert(candidate.numLeft == primCount);
-                Assert(candidate.numRight == 0);
+                if (candidate.cost < best.cost)
+                    best = candidate;
+
+                Assert(candidate.leftCount == primCount);
+                Assert(candidate.rightCount == 0);
             }
 
-            Assert(std::isfinite(best.cost) && best.leftBin >= 0);
+            Assert(bin == m_bins.data() + m_bins.size());
+            Assert(best.leftCount + best.rightCount >= primCount);
+
+            if (best.rightBin == 0) {
+                best.split = m_bbox.min[best.axis];
+            } else if (best.rightBin == m_binCount) {
+                best.split = m_bbox.max[best.axis];
+            } else {
+                auto predicate = [
+                    invBinSize = m_invBinSize[best.axis],
+                    offset = m_bbox.min[best.axis],
+                    rightBin = best.rightBin
+                ](Scalar value) {
+                    /* Predicate which says whether a value falls on the left
+                       of the chosen split plane. This function is meant to
+                       behave exactly the same way as put() above. */
+                    return Index((value - offset) * invBinSize) < rightBin;
+                };
+
+                /* Find the last floating point value which is classified as
+                   falling into the left subtree. Due the various rounding
+                   errors that are involved, it's tricky to compute this
+                   variable using an explicit floating point expression. The
+                   code below bisects the interval to find this value, which is
+                   guaranteed to work (this takes ~ 20-30 iterations) */
+                best.split = math::bisect<Scalar>(
+                    m_bbox.min[best.axis],
+                    m_bbox.max[best.axis],
+                    predicate
+                );
+
+                /* Double-check that it worked */
+                Assert(predicate(best.split));
+                Assert(!predicate(std::nextafter(
+                    best.split, std::numeric_limits<float>::infinity())));
+            }
 
             return best;
         }
 
-#if 0
+        struct Partition {
+            IndexVector leftIndices;
+            IndexVector rightIndices;
+            BoundingBox leftBounds;
+            BoundingBox rightBounds;
+        };
+
         /**
          * \brief Given a suitable split candidate, compute tight bounding
          * boxes for the left and right subtrees and return associated
          * primitive lists.
          */
-        Partition partition(
-                BuildContext &ctx, const Derived *derived, Index *primIndices,
-                SplitCandidate &split, bool isLeftChild, Float traversalCost,
-                Float queryCost) {
-            SizeType numLeft = 0, numRight = 0;
-            BoundingBox leftBounds, rightBounds;
+        Partition partition(const Derived &derived,
+                            const IndexVector &indices,
+                            const SplitCandidate &split) {
             const int axis = split.axis;
+            const Scalar offset = m_bbox.min[axis],
+                         maxBin = m_maxBin[axis],
+                         invBinSize = m_invBinSize[axis];
 
-            Index *leftIndices, *rightIndices;
-            if (isLeftChild) {
-                OrderedChunkAllocator &rightAlloc = ctx.rightAlloc;
-                leftIndices = primIndices;
-                rightIndices = rightAlloc.allocate<Index>(split.numRight);
-            } else {
-                OrderedChunkAllocator &leftAlloc = ctx.leftAlloc;
-                leftIndices = leftAlloc.allocate<Index>(split.numLeft);
-                rightIndices = primIndices;
-            }
+            tbb::spin_mutex mutex;
+            IndexVector leftIndices(split.leftCount);
+            IndexVector rightIndices(split.rightCount);
+            Size leftCount = 0, rightCount = 0;
+            BoundingBox leftBounds, rightBounds;
 
-            for (SizeType i=0; i<m_primCount; ++i) {
-                const Index primIndex = primIndices[i];
-                const BoundingBox aabb = derived->getAABB(primIndex);
-                int startIdx = computeIndex(math::castflt_down(aabb.min[axis]), axis);
-                int endIdx   = computeIndex(math::castflt_up  (aabb.max[axis]), axis);
+            tbb::parallel_for(
+                tbb::blocked_range<Size>(0u, Size(indices.size()), MTS_KD_GRAIN_SIZE),
+                [&](const tbb::blocked_range<Index> &range) {
+                    IndexVector leftIndicesLocal, rightIndicesLocal;
+                    BoundingBox leftBoundsLocal, rightBoundsLocal;
 
-                if (endIdx <= split.leftBin) {
-                    KDAssert(numLeft < split.numLeft);
-                    leftBounds.expandBy(aabb);
-                    leftIndices[numLeft++] = primIndex;
-                } else if (startIdx > split.leftBin) {
-                    KDAssert(numRight < split.numRight);
-                    rightBounds.expandBy(aabb);
-                    rightIndices[numRight++] = primIndex;
-                } else {
-                    leftBounds.expandBy(aabb);
-                    rightBounds.expandBy(aabb);
-                    KDAssert(numLeft < split.numLeft);
-                    KDAssert(numRight < split.numRight);
-                    leftIndices[numLeft++] = primIndex;
-                    rightIndices[numRight++] = primIndex;
+                    leftIndicesLocal.reserve(range.size());
+                    rightIndicesLocal.reserve(range.size());
+
+                    for (Size i = range.begin(); i != range.end(); ++i) {
+                        const Index primIndex = indices[i];
+                        const BoundingBox primBBox = derived.bbox(primIndex);
+
+                        Scalar relMin = (primBBox.min[axis] - offset) * invBinSize;
+                        Scalar relMax = (primBBox.max[axis] - offset) * invBinSize;
+
+                        relMin = std::min(std::max(relMin, Scalar(0)), maxBin);
+                        relMax = std::min(std::max(relMax, Scalar(0)), maxBin);
+
+                        const Size indexMin = (Size) relMin,
+                                   indexMax = (Size) relMax;
+
+                        if (indexMax < split.rightBin) {
+                            leftIndicesLocal.push_back(primIndex);
+                            leftBoundsLocal.expand(primBBox);
+                        } else if (indexMin >= split.rightBin) {
+                            rightIndicesLocal.push_back(primIndex);
+                            rightBoundsLocal.expand(primBBox);
+                        } else {
+                            leftIndicesLocal.push_back(primIndex);
+                            rightIndicesLocal.push_back(primIndex);
+                            leftBoundsLocal.expand(primBBox);
+                            rightBoundsLocal.expand(primBBox);
+                        }
+                    }
+
+                    /* Merge into global results */
+                    Index *targetLeft, *targetRight;
+                    {
+                        tbb::spin_mutex::scoped_lock lock(mutex);
+                        targetLeft = &leftIndices[leftCount];
+                        targetRight = &rightIndices[rightCount];
+                        leftCount += leftIndicesLocal.size();
+                        rightCount += rightIndicesLocal.size();
+                        leftBounds.expand(leftBoundsLocal);
+                        rightBounds.expand(rightBoundsLocal);
+                    }
+
+                    memcpy(targetLeft, leftIndicesLocal.data(),
+                           leftIndicesLocal.size() * sizeof(Size));
+                    memcpy(targetRight, rightIndicesLocal.data(),
+                           rightIndicesLocal.size() * sizeof(Size));
                 }
-            }
-            leftBounds.clip(m_aabb);
-            rightBounds.clip(m_aabb);
-            split.pos = m_min[axis] + m_binSize[axis] * (split.leftBin + 1);
-            leftBounds.max[axis] = std::min(leftBounds.max[axis], (Float) split.pos);
-            rightBounds.min[axis] = std::max(rightBounds.min[axis], (Float) split.pos);
+            );
 
-            KDAssert(numLeft == split.numLeft);
-            KDAssert(numRight == split.numRight);
 
-            /// Release the unused memory regions
-            if (isLeftChild)
-                ctx.leftAlloc.shrinkAllocation(leftIndices, split.numLeft);
-            else
-                ctx.rightAlloc.shrinkAllocation(rightIndices, split.numRight);
+            Assert(leftCount == split.leftCount);
+            Assert(rightCount == split.rightCount);
 
-            return Partition(leftBounds, leftIndices,
-                rightBounds, rightIndices);
+            return { std::move(leftIndices), std::move(rightIndices),
+                     leftBounds, rightBounds };
         }
-#endif
 
     protected:
-        std::unique_ptr<Size[], AlignedAllocator> m_bins;
-        Size m_binCount = 0;
+        std::vector<Size> m_bins;
+        Size m_binCount;
         Vector m_invBinSize;
         Vector m_maxBin;
         BoundingBox m_bbox;
     };
 
-    /// Release all memory
-    virtual ~TShapeKDTree() {
-        AlignedAllocator::dealloc(m_indices);
-        if (m_nodes)
-            AlignedAllocator::dealloc(m_nodes - 1 /* undo shift */);
+
+    /**
+     * \brief TBB task for building subtrees in parallel
+     *
+     * This class is responsible for building a subtree of the final kd-tree.
+     * It recursively spawns new tasks for its respective subtrees to enable
+     * parallel construction.
+     *
+     * At the top of the tree, it uses min-max-binning and parallel reductions
+     * to create sufficient parallelism. When the number of elements is
+     * sufficiently small, it switches to a more accurate O(N log N) builder
+     * which uses normal recursion on the stack (i.e. it does not spawn further
+     * parallel pieces of work).
+     */
+    class BuildTask : public tbb::task {
+    public:
+        using NodeIterator  = typename tbb::concurrent_vector<KDNode>::iterator;
+        using IndexIterator = typename tbb::concurrent_vector<Index>::iterator;
+
+        /// Context with build-specific variables (shared by all threads/tasks)
+        BuildContext &m_ctx;
+
+        /// Local context with thread local variables
+        LocalBuildContext *m_local = nullptr;
+
+        /// Node to be initialized by this task
+        NodeIterator m_node;
+
+        /// Index list of primitives to be organized
+        IndexVector m_indices;
+
+        /// Bounding box of the node
+        BoundingBox m_bbox;
+
+        /// Tighter bounding box of the contained primitives
+        BoundingBox m_tightBBox;
+
+        /// Depth of the node within the tree
+        Size m_depth;
+
+        /// Number of "bad refines" so far
+        Size m_badRefines;
+
+        /// This scalar should be set to the final cost when done
+        Scalar *m_cost;
+
+        BuildTask(BuildContext &ctx, const NodeIterator &node,
+                  IndexVector &&indices, const BoundingBox bbox,
+                  const BoundingBox &tightBBox, Index depth, Size badRefines,
+                  Scalar *cost)
+            : m_ctx(ctx), m_node(node), m_indices(std::move(indices)),
+              m_bbox(bbox), m_tightBBox(tightBBox), m_depth(depth),
+              m_badRefines(badRefines), m_cost(cost) {
+            Assert(m_bbox.contains(tightBBox));
+        }
+
+        /// Run one iteration of min-max binning and spawn recursive tasks
+        task *execute() {
+            ThreadEnvironment env(m_ctx.thread);
+            Size primCount = Size(m_indices.size());
+            const Derived &derived = m_ctx.derived;
+
+            /* ==================================================================== */
+            /*                           Stopping criteria                          */
+            /* ==================================================================== */
+
+            if (primCount <= derived.stopPrimitives() ||
+                m_depth >= derived.maxDepth() || m_tightBBox.collapsed()) {
+                makeLeaf(std::move(m_indices));
+                return nullptr;
+            }
+
+            if (primCount <= derived.exactPrimitiveThreshold()) {
+            std::cout << "Switching to O(N log N builder)..." << std::endl;
+                *m_cost = transitionToNLogN();
+                return nullptr;
+            }
+            std::cout << "Min-max-binning..." << std::endl;
+
+            /* ==================================================================== */
+            /*                              Binning                                 */
+            /* ==================================================================== */
+
+            /* Accumulate all shapes into bins */
+            MinMaxBins bins = tbb::parallel_reduce(
+                tbb::blocked_range<Size>(0u, primCount, MTS_KD_GRAIN_SIZE),
+                MinMaxBins(derived.minMaxBins(), m_tightBBox),
+
+                /* MAP: Bin a number of shapes and return the resulting 'MinMaxBins' data structure */
+                [&](const tbb::blocked_range<Index> &range, MinMaxBins bins) {
+                    for (Index i = range.begin(); i != range.end(); ++i)
+                        bins.put(derived.bbox(m_indices[i]));
+                    return bins;
+                },
+
+                /* REDUCE: Combine two 'MinMaxBins' data structures */
+                [](MinMaxBins b1, const MinMaxBins &b2) {
+                    b1 += b2;
+                    return b1;
+                }
+            );
+
+            /* ==================================================================== */
+            /*                        Split candidate search                        */
+            /* ==================================================================== */
+
+            CostModel model(derived.costModel());
+            model.setBoundingBox(m_bbox);
+            auto best = bins.bestCandidate(primCount, model);
+
+            Assert(std::isfinite(best.cost));
+            Assert(best.split >= m_bbox.min[best.axis]);
+            Assert(best.split <= m_bbox.max[best.axis]);
+
+            /* Allow a few bad refines in sequence before giving up */
+            Scalar leafCost = model.leafCost(primCount);
+            if (best.cost >= leafCost) {
+                if ((best.cost > 4 * leafCost && primCount < 16)
+                    || m_badRefines >= derived.maxBadRefines()) {
+                    makeLeaf(std::move(m_indices));
+                    return nullptr;
+                }
+                ++m_badRefines;
+                m_ctx.badRefines++;
+            }
+
+            /* ==================================================================== */
+            /*                            Partitioning                              */
+            /* ==================================================================== */
+
+            auto partition = bins.partition(derived, m_indices, best);
+
+            /* Release index list */
+            IndexVector().swap(m_indices);
+
+            /* ==================================================================== */
+            /*                              Recursion                               */
+            /* ==================================================================== */
+
+            NodeIterator children = m_ctx.nodeStorage.grow_by(2);
+            Size leftOffset(std::distance(m_node, children));
+
+            if (!m_node->setInnerNode(best.axis, best.split, leftOffset))
+                Throw("Internal error during kd-tree construction: unable to store "
+                      "overly large offset to left child node (%i)", leftOffset);
+
+            BoundingBox leftBounds(m_bbox), rightBounds(m_bbox);
+
+            leftBounds.max[best.axis] = Scalar(best.split);
+            rightBounds.min[best.axis] = Scalar(best.split);
+
+            partition.leftBounds.clip(leftBounds);
+            partition.rightBounds.clip(rightBounds);
+
+            Scalar leftCost = 0, rightCost = 0;
+
+            BuildTask &leftTask = *new (allocate_child()) BuildTask(
+                m_ctx, children, std::move(partition.leftIndices),
+                leftBounds, partition.leftBounds, m_depth+1,
+                m_badRefines, &leftCost);
+
+            BuildTask &rightTask = *new (allocate_child()) BuildTask(
+                m_ctx, std::next(children), std::move(partition.rightIndices),
+                rightBounds, partition.rightBounds, m_depth + 1,
+                m_badRefines, &rightCost);
+
+            set_ref_count(3);
+            spawn(leftTask);
+            spawn(rightTask);
+            wait_for_all();
+
+            /* ==================================================================== */
+            /*                           Final decision                             */
+            /* ==================================================================== */
+
+            *m_cost = model.innerCost(
+                best.axis,
+                best.split,
+                leftCost, rightCost
+            );
+
+            /* Tear up bad (i.e. costly) subtrees and replace them with leaf nodes */
+            if (unlikely(*m_cost > leafCost && derived.retractBadSplits())) {
+                std::unordered_set<Index> temp;
+                traverse(&*m_node, temp);
+                m_indices.assign(temp.begin(), temp.end());
+                m_ctx.retractedSplits++;
+                makeLeaf(std::move(m_indices));
+            }
+
+            return nullptr;
+        }
+
+        /// Recursively run the O(N log N builder)
+        Scalar buildNLogN(NodeIterator node, Size primCount,
+                          EdgeEventVector &&events, const BoundingBox3f &bbox,
+                          Size depth, Size badRefines) {
+            const Derived &derived = m_ctx.derived;
+
+            /* Initialize the tree cost model */
+            CostModel model(derived.costModel());
+            model.setBoundingBox(bbox);
+            Scalar leafCost = model.leafCost(primCount);
+
+            for (size_t i=1 ; i<events.size(); ++i)
+                Assert(events[i-1] < events[i]);
+
+            /* ==================================================================== */
+            /*                           Stopping criteria                          */
+            /* ==================================================================== */
+
+            if (primCount <= derived.stopPrimitives() || depth >= derived.maxDepth()) {
+                makeLeaf(node, primCount, std::move(events));
+                return leafCost;
+            }
+
+            /* ==================================================================== */
+            /*                        Split candidate search                        */
+            /* ==================================================================== */
+
+            /* First, find the optimal splitting plane according to the
+               tree construction heuristic. To do this in O(n), the search is
+               implemented as a sweep over the edge events */
+
+            /* Initially, the split plane is placed left of the scene
+               and thus all geometry is on its right side */
+            Size leftCount[Dimension], rightCount[Dimension];
+            for (int i=0; i<Dimension; ++i) {
+                leftCount[i] = 0;
+                rightCount[i] = primCount;
+            }
+
+            /* Keep track of where events for different axes start */
+            typename EdgeEventVector::iterator eventsByDimension[Dimension + 1] { };
+            eventsByDimension[0] = events.begin();
+            eventsByDimension[Dimension] = events.end();
+
+            /* Iterate over all events and find the best split plane */
+            SplitCandidate best;
+            for (auto event = events.begin(); event != events.end(); ) {
+                /* Record the current position and count the number
+                   and type of remaining events that are also here. */
+                Size numStart = 0, numEnd = 0, numPlanar = 0;
+                int axis = event->axis;
+                Scalar pos = event->pos;
+
+                while (event < events.end() && event->pos == pos && event->axis == axis) {
+                    switch (event->type) {
+                        case EdgeEvent::EEdgeStart:  ++numStart;  break;
+                        case EdgeEvent::EEdgePlanar: ++numPlanar; break;
+                        case EdgeEvent::EEdgeEnd:    ++numEnd;    break;
+                    }
+                    ++event;
+                }
+
+                /* Keep track of the beginning of each dimension */
+                if (event < events.end() && event->axis != axis)
+                    eventsByDimension[event->axis] = event;
+
+                /* The split plane can now be moved onto 't'. Accordingly, all planar
+                   and ending primitives are removed from the right side */
+                rightCount[axis] -= numPlanar + numEnd;
+
+                /* Check if the ddge event is out of bounds -- when primitive
+                   clipping is active, this should never happen! */
+                Assert(!(derived.clipPrimitives() &&
+                         (pos < bbox.min[axis] || pos > bbox.max[axis])));
+
+                /* Calculate a score using the tree construction heuristic */
+                if (likely(pos > bbox.min[axis] && pos < bbox.max[axis])) {
+                    Size numLeft = leftCount[axis] + numPlanar,
+                         numRight = rightCount[axis];
+
+                    Scalar cost = model.innerCost(
+                        axis, pos, model.leafCost(numLeft),
+                        model.leafCost(numRight));
+
+                    if (cost < best.cost) {
+                        best.cost = cost;
+                        best.split = pos;
+                        best.axis = axis;
+                        best.leftCount = numLeft;
+                        best.rightCount = numRight;
+                        best.planarLeft = true;
+                    }
+
+                    if (numPlanar != 0) {
+                        /* There are planar events here -- also consider
+                           placing them on the right side */
+                        numLeft = leftCount[axis];
+                        numRight = rightCount[axis] + numPlanar;
+
+                        cost = model.innerCost(
+                            axis, pos, model.leafCost(numLeft),
+                            model.leafCost(numRight));
+
+                        if (cost < best.cost) {
+                            best.cost = cost;
+                            best.split = pos;
+                            best.axis = axis;
+                            best.leftCount = numLeft;
+                            best.rightCount = numRight;
+                            best.planarLeft = false;
+                        }
+                    }
+                }
+
+                /* The split plane is moved past 't'. All prims,
+                    which were planar on 't', are moved to the left
+                    side. Also, starting prims are now also left of
+                    the split plane. */
+                leftCount[axis] += numStart + numPlanar;
+            }
+
+            /* Sanity checks. Everything should now be left of the split plane */
+            for (int i=0; i<Dimension; ++i) {
+                if (!(rightCount[i] == 0 && leftCount[i] == primCount)) {
+                    std::cout << leftCount[0] << " " << leftCount[1] << " " << leftCount[2] << std::endl;
+                    std::cout << rightCount[0] << " " << rightCount[1] << " " << rightCount[2] << std::endl;
+                    std::cout << primCount << std::endl;
+                }
+                Assert(rightCount[i] == 0 && leftCount[i] == primCount);
+                Assert(eventsByDimension[i] != events.end() && eventsByDimension[i]->axis == i);
+                Assert((i == 0) || ((eventsByDimension[i]-1)->axis == i - 1));
+            }
+
+            /* Allow a few bad refines in sequence before giving up */
+            if (best.cost >= leafCost) {
+                if ((best.cost > 4 * leafCost && primCount < 16)
+                    || badRefines >= derived.maxBadRefines()
+                    || !std::isfinite(best.cost) ) {
+                    makeLeaf(node, primCount, std::move(events));
+                    return leafCost;
+                }
+                ++badRefines;
+                m_ctx.badRefines++;
+            }
+            std::cout << "Splitting along " << best << std::endl;
+
+            /* ==================================================================== */
+            /*                      Primitive Classification                        */
+            /* ==================================================================== */
+
+            auto &classification = m_local->classificationStorage;
+
+            /* Initially mark all prims as being located on both sides */
+            for (auto event = eventsByDimension[best.axis];
+                 event != eventsByDimension[best.axis + 1]; ++event)
+                classification.set(event->index, EPrimClassification::EBoth);
+
+            Size primsLeft = 0, primsRight = 0;
+            for (auto event = eventsByDimension[best.axis];
+                 event != eventsByDimension[best.axis + 1]; ++event) {
+
+                if (event->type == EdgeEvent::EEdgeEnd &&
+                    event->pos <= best.split) {
+                    /* Fully on the left side (the primitive's interval ends
+                       before (or on) the split plane) */
+                    Assert(classification.get(event->index) == EPrimClassification::EBoth);
+                    classification.set(event->index, EPrimClassification::ELeft);
+                    primsLeft++;
+                } else if (event->type == EdgeEvent::EEdgeStart &&
+                           event->pos >= best.split) {
+                    /* Fully on the right side (the primitive's interval
+                       starts after (or on) the split plane) */
+                    Assert(classification.get(event->index) == EPrimClassification::EBoth);
+                    classification.set(event->index, EPrimClassification::ERight);
+                    primsRight++;
+                } else if (event->type == EdgeEvent::EEdgePlanar) {
+                    /* If the planar primitive is not on the split plane,
+                       the classification is easy. Otherwise, place it on
+                       the side with the lower cost */
+                    Assert(classification.get(event->index) == EPrimClassification::EBoth);
+                    if (event->pos < best.split ||
+                        (event->pos == best.split && best.planarLeft)) {
+                        classification.set(event->index, EPrimClassification::ELeft);
+                        primsLeft++;
+                    } else if (event->pos > best.split ||
+                               (event->pos == best.split && !best.planarLeft)) {
+                        classification.set(event->index, EPrimClassification::ERight);
+                        primsRight++;
+                    }
+                }
+            }
+
+            Size primsBoth = primCount - primsLeft - primsRight;
+
+            /* Some sanity checks */
+            Assert(primsLeft + primsBoth == best.leftCount);
+            Assert(primsRight + primsBoth == best.rightCount);
+
+            /* ==================================================================== */
+            /*                            Partitioning                              */
+            /* ==================================================================== */
+
+            BoundingBox leftBBox = bbox, rightBBox = bbox;
+            leftBBox.max[best.axis] = best.split;
+            rightBBox.min[best.axis] = best.split;
+
+            Size prunedLeft = 0, prunedRight = 0;
+
+            std::vector<EdgeEvent> leftEvents, rightEvents;
+            std::vector<EdgeEvent> leftEventsNew, rightEventsNew;
+
+            leftEvents.reserve((primsLeft + primsBoth) * 2 * Dimension);
+            rightEvents.reserve((primsRight + primsBoth) * 2 * Dimension);
+
+            if (derived.clipPrimitives()) {
+                leftEventsNew.reserve(primsBoth * 2 * Dimension);
+                rightEventsNew.reserve(primsBoth * 2 * Dimension);
+            }
+
+            for (auto event : events) {
+                const Index index = event.index;
+
+                /* Fetch the classification of the current event */
+                EPrimClassification class_ = classification.get(index);
+
+                if (class_ == EPrimClassification::ELeft) {
+                    leftEvents.push_back(event);
+                    std::cout << "Pushing left: " << index << "." << std::endl;
+                } else if (class_ == EPrimClassification::ERight) {
+                    rightEvents.push_back(event);
+                    std::cout << "Pushing right: " << index << "." << std::endl;
+                } else if (class_ == EPrimClassification::EIgnore) {
+                    std::cout << "Ignoring " << index << " now" << std::endl;
+                    /* Do nothing */
+                } else if (class_ == EPrimClassification::EBoth) {
+                    if (!derived.clipPrimitives()) {
+                        leftEvents.push_back(event);
+                        rightEvents.push_back(event);
+                        continue;
+                    }
+                    std::cout << "Got straddeling " << index << std::endl;
+
+                    BoundingBox clippedLeft  = derived.bbox(index, leftBBox);
+                    BoundingBox clippedRight = derived.bbox(index, rightBBox);
+
+                    Assert(leftBBox.contains(clippedLeft) || !clippedLeft.valid());
+                    Assert(rightBBox.contains(clippedRight) || !clippedRight.valid());
+
+                    if (clippedLeft.valid() &&
+                        clippedLeft.surfaceArea() > 0) {
+                        for (int axis = 0; axis < Dimension; ++axis) {
+                            Scalar min = clippedLeft.min[axis],
+                                   max = clippedLeft.max[axis];
+
+                            if (min != max) {
+                                leftEventsNew.emplace_back(
+                                    EdgeEvent::EEdgeStart, axis, min, index);
+                                leftEventsNew.emplace_back(
+                                    EdgeEvent::EEdgeEnd, axis, max, index);
+                            } else {
+                                leftEventsNew.emplace_back(
+                                    EdgeEvent::EEdgePlanar, axis, min, index);
+                            }
+                        }
+                    } else {
+                        prunedLeft++;
+                    }
+
+                    if (clippedRight.valid() &&
+                        clippedRight.surfaceArea() > 0) {
+                        for (int axis = 0; axis < Dimension; ++axis) {
+                            Scalar min = clippedRight.min[axis],
+                                   max = clippedRight.max[axis];
+
+                            if (min != max) {
+                                rightEventsNew.emplace_back(
+                                    EdgeEvent::EEdgeStart, axis, min, index);
+                                rightEventsNew.emplace_back(
+                                    EdgeEvent::EEdgeEnd, axis, max, index);
+                            } else {
+                                rightEventsNew.emplace_back(
+                                    EdgeEvent::EEdgePlanar, axis, min, index);
+                            }
+                        }
+                    } else {
+                        prunedRight++;
+                    }
+
+                    /* Set classification to 'EIgnore' to ensure that
+                       clipping occurs only once */
+                    classification.set(index, EPrimClassification::EIgnore);
+                }
+            }
+
+            /* Free original set of edge events */
+            EdgeEventVector().swap(events);
+
+            if (derived.clipPrimitives() && primsBoth > 0) {
+                std::cout << "Got " << primsBoth << " on both sides" << std::endl;
+                std::cout << "Event list: " << leftEvents.size() << " " << rightEvents.size() << std::endl;
+                std::cout << "New event list: " << leftEventsNew.size() << " " << rightEventsNew.size() << std::endl;
+                Assert(leftEvents.size() <= primsLeft * 2 * Dimension);
+                Assert(rightEvents.size() <= primsRight * 2 * Dimension);
+                Assert(leftEventsNew.size() <= primsBoth * 2 * Dimension);
+                Assert(rightEventsNew.size() <= primsBoth * 2 * Dimension);
+
+                m_ctx.pruned += prunedLeft + prunedRight;
+
+                /* Sort the events due to primitives which overlap the split plane */
+                std::sort(leftEventsNew.begin(), leftEventsNew.end());
+                std::sort(rightEventsNew.begin(), rightEventsNew.end());
+
+                /* Merge the sorted event lists */
+                size_t leftEventCount = leftEvents.size();
+                size_t rightEventCount = rightEvents.size();
+                leftEvents.resize(leftEventCount + leftEventsNew.size());
+                rightEvents.resize(rightEventCount + rightEventsNew.size());
+
+                for (size_t i=1 ; i<leftEventCount; ++i)
+                    Assert(leftEvents[i-1] < leftEvents[i]);
+                for (size_t i=1 ; i<rightEventCount; ++i)
+                    Assert(rightEvents[i-1] < rightEvents[i]);
+                for (size_t i=1 ; i<leftEventsNew.size(); ++i)
+                    Assert(leftEventsNew[i-1] < leftEventsNew[i]);
+                for (size_t i=1 ; i<rightEventsNew.size(); ++i)
+                    Assert(rightEventsNew[i-1] < rightEventsNew[i]);
+
+                auto it1 = std::merge(leftEvents.begin(),
+                           leftEvents.begin() + leftEventCount,
+                           leftEventsNew.begin(), leftEventsNew.end(),
+                           leftEvents.begin());
+                auto it2 = std::merge(rightEvents.begin(),
+                           rightEvents.begin() + rightEventCount,
+                           rightEventsNew.begin(), rightEventsNew.end(),
+                           rightEvents.begin());
+
+                (void) it1; (void) it2;
+                Assert(it1 == leftEvents.end() && it2 == rightEvents.end());
+
+            }
+            for (size_t i=1 ; i<leftEvents.size(); ++i) {
+                if (!(leftEvents[i-1] < leftEvents[i]))
+                    std::cout << "At index " << i-1 << " and " << i << ": "<< leftEvents[i-1] << " " << leftEvents[i] << std::endl;
+                Assert(leftEvents[i-1] < leftEvents[i]);
+            }
+            for (size_t i=1 ; i<rightEvents.size(); ++i)
+                Assert(rightEvents[i-1] < rightEvents[i]);
+
+            Assert(leftEvents.size() <= best.leftCount * 2 * Dimension);
+            Assert(rightEvents.size() <= best.rightCount * 2 * Dimension);
+
+            /* ====================================================================
+             */
+            /*                              Recursion */
+            /* ====================================================================
+             */
+
+            NodeIterator children = m_ctx.nodeStorage.grow_by(2);
+
+            Size leftOffset(std::distance(node, children));
+
+            if (!node->setInnerNode(best.axis, best.split, leftOffset))
+                Throw("Internal error during kd-tree construction: unable "
+                      "to store overly large offset to left child node (%i)",
+                      leftOffset);
+
+            std::cout << "Prunec " << prunedLeft << ", " << prunedRight << std::endl;
+
+            Scalar leftCost = buildNLogN(
+                children, best.leftCount - prunedLeft,
+                std::move(leftEvents), leftBBox, depth + 1, badRefines);
+
+            Scalar rightCost = buildNLogN(
+                std::next(children), best.rightCount - prunedRight,
+                std::move(rightEvents), rightBBox, depth + 1, badRefines);
+
+            /* ====================================================================
+             */
+            /*                           Final decision */
+            /* ====================================================================
+             */
+
+            Scalar finalCost =
+                model.innerCost(best.axis, best.split, leftCost, rightCost);
+
+            return finalCost;
+        }
+
+        /// Create an initial sorted edge event list and start the O(N log N) builder
+        Scalar transitionToNLogN() {
+            const auto &derived = m_ctx.derived;
+            Size primCount = Size(m_indices.size()), finalPrimCount = primCount;
+            m_local = &((LocalBuildContext &) m_ctx.local);
+
+            EdgeEventVector events(primCount * Dimension * 2);
+            for (Size i = 0; i<primCount; ++i) {
+                Index primIndex = m_indices[i];
+                BoundingBox primBBox = derived.bbox(primIndex, m_bbox);
+                bool valid = primBBox.valid() && primBBox.surfaceArea() > 0;
+
+                if (unlikely(!valid)) {
+                    --finalPrimCount;
+                    m_ctx.pruned++;
+                }
+
+                for (int axis = 0; axis < Dimension; ++axis) {
+                    Scalar min = primBBox.min[axis], max = primBBox.max[axis];
+                    Index offset = (axis * primCount + i) * 2;
+
+                    if (unlikely(!valid)) {
+                        events[offset  ].setInvalid();
+                        events[offset+1].setInvalid();
+                    } else if (min == max) {
+                        events[offset  ] = EdgeEvent(EdgeEvent::EEdgePlanar, axis, min, primIndex);
+                        events[offset+1].setInvalid();
+                    } else {
+                        events[offset  ] = EdgeEvent(EdgeEvent::EEdgeStart, axis, min, primIndex);
+                        events[offset+1] = EdgeEvent(EdgeEvent::EEdgeEnd,   axis, max, primIndex);
+                    }
+                }
+            }
+
+            /* Release index list */
+            IndexVector().swap(m_indices);
+
+            /* Sort the events list and remove invalid ones from the end */
+            std::sort(events.begin(), events.end());
+            while (events.begin() != events.end() &&
+                   !events[events.size()-1].valid())
+                events.pop_back();
+
+            m_local->classificationStorage.resize(derived.primitiveCount());
+
+            return buildNLogN(m_node, finalPrimCount, std::move(events), m_bbox, m_depth, 0);
+        }
+
+        /// Create a leaf node using the given set of indices (called by min-max binning)
+        void makeLeaf(std::vector<Index> &&indices) {
+            auto it = m_ctx.indexStorage.grow_by(indices.begin(), indices.end());
+            Size offset(std::distance(m_ctx.indexStorage.begin(), it));
+
+            if (!m_node->setLeafNode(offset, indices.size()))
+                Throw("Internal error: could not create leaf node with %i "
+                      "primitives -- too much geometry?", m_indices.size());
+
+            *m_cost = m_ctx.derived.costModel().leafCost(Size(indices.size()));
+        }
+
+        /// Create a leaf node using the given edge event list (called by the O(N log N) builder)
+        void makeLeaf(NodeIterator node, Size primCount, std::vector<EdgeEvent> &&events) const {
+            auto it = m_ctx.indexStorage.grow_by(primCount);
+            Size offset(std::distance(m_ctx.indexStorage.begin(), it));
+
+            if (!node->setLeafNode(offset, primCount))
+                Throw("Internal error: could not create leaf node with %i "
+                      "primitives -- too much geometry?", primCount);
+
+            for (auto event: events) {
+                if (event.axis != 0)
+                    break;
+                if (event.type == EdgeEvent::EEdgeStart ||
+                    event.type == EdgeEvent::EEdgePlanar) {
+                    Assert(--primCount >= 0);
+                    *it++ = event.index;
+                }
+            }
+
+            Assert(primCount == 0);
+        }
+
+        /// Traverse a subtree and collect all encountered primitive references in a set
+        void traverse(const KDNode *node, std::unordered_set<Index> &result) {
+            if (node->leaf()) {
+                for (Size i = 0; i < node->primitiveCount(); ++i)
+                    result.insert(m_ctx.indexStorage[node->primitiveOffset() + i]);
+            } else {
+                traverse(node->left(), result);
+                traverse(node->right(), result);
+            }
+        }
+    };
+
+    void computeStatistics(BuildContext &ctx, const KDNode *node,
+                           const BoundingBox &bbox, Size depth) {
+        if (depth > ctx.maxDepth)
+            ctx.maxDepth = depth;
+
+        if (node->leaf()) {
+            auto primCount = node->primitiveCount();
+            Scalar value = CostModel::eval(bbox);
+
+            ctx.expLeavesVisited += value;
+            ctx.expPrimitivesQueried += value * Scalar(primCount);
+            if (primCount < sizeof(ctx.primBuckets) / sizeof(Size))
+                ctx.primBuckets[primCount]++;
+            if (primCount > ctx.maxPrimsInLeaf)
+                ctx.maxPrimsInLeaf = primCount;
+            if (primCount > 0)
+                ctx.nonEmptyLeafCount++;
+        } else {
+            ctx.expTraversalSteps += CostModel::eval(bbox);
+
+            int axis = node->axis();
+            Scalar split = Scalar(node->split());
+            BoundingBox leftBBox(bbox), rightBBox(bbox);
+            leftBBox.max[axis] = split;
+            rightBBox.min[axis] = split;
+            computeStatistics(ctx, node->left(), leftBBox, depth + 1);
+            computeStatistics(ctx, node->right(), rightBBox, depth + 1);
+        }
+    }
+
+    void build() {
+        /* Some samity checks */
+        if (ready())
+            Throw("The kd-tree has already been built!");
+        if (m_minMaxBins <= 1)
+            Throw("The number of min-max bins must be > 2");
+        if (m_stopPrimitives <= 0)
+            Throw("The stopping primitive count must be greater than zero");
+        if (m_exactPrimThreshold <= m_stopPrimitives)
+            Throw("The exact primitive threshold must be bigger than the "
+                  "stopping primitive count");
+
+        Size primCount = derived().primitiveCount();
+        if (m_maxDepth == 0)
+            m_maxDepth = (int) (8 + 1.3f * math::log2i(primCount));
+        m_maxDepth = std::min(m_maxDepth, (Size) MTS_KD_MAXDEPTH);
+
+        Log(m_logLevel, "");
+
+        Log(m_logLevel, "kd-tree configuration:");
+        Log(m_logLevel, "   Cost model               : %s", m_costModel);
+        Log(m_logLevel, "   Max. tree depth          : %i", m_maxDepth);
+        Log(m_logLevel, "   Scene bounding box (min) : %s", m_bbox.min);
+        Log(m_logLevel, "   Scene bounding box (max) : %s", m_bbox.max);
+        Log(m_logLevel, "   Min-max bins             : %i", m_minMaxBins);
+        Log(m_logLevel, "   O(n log n) method        : use for <= %i primitives",
+            m_exactPrimThreshold);
+        Log(m_logLevel, "   Stopping primitive count : %i", m_stopPrimitives);
+        Log(m_logLevel, "   Perfect splits           : %s",
+            m_clipPrimitives ? "yes" : "no");
+        Log(m_logLevel, "   Retract bad splits       : %s",
+            m_retractBadSplits ? "yes" : "no");
+        Log(m_logLevel, "");
+
+        Timer timer;
+
+        /* ==================================================================== */
+        /*              Create build context and preallocate memory             */
+        /* ==================================================================== */
+
+        BuildContext ctx(derived());
+        ctx.nodeStorage.grow_by(1);
+
+        //ctx.nodeStorage.reserve(100); // XXX revisit this
+        //ctx.indexStorage.reserve(100); // XXX revisit this
+
+        /* ==================================================================== */
+        /*                      Build the tree in parallel                      */
+        /* ==================================================================== */
+
+        Scalar finalCost = 0;
+        if (primCount == 0) {
+            Log(EWarn, "kd-tree contains no geometry!");
+            ctx.nodeStorage[0].setLeafNode(0, 0);
+        } else {
+
+            timer.beginStage("Index list");
+            Log(m_logLevel, "Creating a preliminary index list (%s)",
+                util::memString(primCount * sizeof(Index)).c_str());
+
+            IndexVector indices(primCount);
+            for (size_t i = 0; i < primCount; ++i)
+                indices[i] = i;
+            timer.endStage();
+
+            timer.beginStage("Main construction task");
+            BuildTask &task = *new (tbb::task::allocate_root()) BuildTask(
+                ctx, ctx.nodeStorage.begin(), std::move(indices),
+                m_bbox, m_bbox, 0, 0, &finalCost);
+
+            tbb::task::spawn_root_and_wait(task);
+            timer.endStage();
+        }
+
+        Log(m_logLevel, "Structural kd-tree statistics:");
+
+        /* ==================================================================== */
+        /*     Store the node and index lists in a compact contiguous format    */
+        /* ==================================================================== */
+
+        timer.beginStage("Compactifying");
+        m_nodeCount = Size(ctx.nodeStorage.size());
+        m_indexCount = Size(ctx.indexStorage.size());
+
+        m_indices.reset(AlignedAllocator::alloc<Index>(m_indexCount));
+        tbb::parallel_for(
+            tbb::blocked_range<Size>(0u, m_indexCount, MTS_KD_GRAIN_SIZE),
+            [&](const tbb::blocked_range<Size> &range) {
+                for (Size i = range.begin(); i != range.end(); ++i)
+                    m_indices[i] = ctx.indexStorage[i];
+            }
+        );
+
+        tbb::concurrent_vector<Index>().swap(ctx.indexStorage);
+
+        m_nodes.reset(AlignedAllocator::alloc<KDNode>(m_nodeCount));
+        tbb::parallel_for(
+            tbb::blocked_range<Size>(0u, m_nodeCount, MTS_KD_GRAIN_SIZE),
+            [&](const tbb::blocked_range<Size> &range) {
+                for (Size i = range.begin(); i != range.end(); ++i)
+                    m_nodes[i] = ctx.nodeStorage[i];
+            }
+        );
+        tbb::concurrent_vector<KDNode>().swap(ctx.nodeStorage);
+        timer.endStage();
+
+        /* ==================================================================== */
+        /*         Print various tree statistics if requested by the user       */
+        /* ==================================================================== */
+
+        if (Thread::thread()->logger()->logLevel() <= m_logLevel) {
+            computeStatistics(ctx, m_nodes.get(), m_bbox, 0);
+
+            ctx.expTraversalSteps /= CostModel::eval(m_bbox);
+            ctx.expLeavesVisited /= CostModel::eval(m_bbox);
+            ctx.expPrimitivesQueried /= CostModel::eval(m_bbox);
+
+            Log(m_logLevel, "   Primitive references        : %i (%s)",
+                m_indexCount, util::memString(m_indexCount * sizeof(Index)));
+
+            Log(m_logLevel, "   kd-tree nodes               : %i (%s)",
+                m_nodeCount, util::memString(m_nodeCount * sizeof(KDNode)));
+
+            Log(m_logLevel, "   kd-tree depth               : %i",
+                ctx.maxDepth);
+
+            std::ostringstream oss;
+            Size primBucketCount = sizeof(ctx.primBuckets) / sizeof(Size);
+            oss << "   Leaf node histogram         : ";
+            for (Size i = 0; i < primBucketCount; i++) {
+                oss << i << "(" << ctx.primBuckets[i] << ") ";
+                if ((i + 1) % 4 == 0 && i + 1 < primBucketCount) {
+                    Log(m_logLevel, "%s", oss.str());
+                    oss.str("");
+                    oss << "                                 ";
+                }
+            }
+            Log(m_logLevel, "%s", oss.str().c_str());
+            Log(m_logLevel, "");
+
+            Log(m_logLevel, "Qualitative kd-tree statistics:");
+            Log(m_logLevel, "   Retracted splits            : %i",
+                ctx.retractedSplits);
+            Log(m_logLevel, "   Bad refines                 : %i",
+                ctx.badRefines);
+            Log(m_logLevel, "   Pruned                      : %i",
+                ctx.pruned);
+            Log(m_logLevel, "   Largest leaf node           : %i primitives",
+                ctx.maxPrimsInLeaf);
+            Log(m_logLevel, "   Avg. prims/nonempty leaf    : %.2f",
+                m_indexCount / (Scalar) ctx.nonEmptyLeafCount);
+            Log(m_logLevel, "   Expected traversals/query   : %.2f",
+                ctx.expTraversalSteps);
+            Log(m_logLevel, "   Expected leaf visits/query  : %.2f",
+                ctx.expLeavesVisited);
+            Log(m_logLevel, "   Expected prim. visits/query : %.2f",
+                ctx.expPrimitivesQueried);
+            Log(m_logLevel, "   Final cost                  : %.2f",
+                finalCost);
+        }
+
+        #if defined(__LINUX__)
+            /* Forcefully release Heap memory back to the OS */
+            malloc_trim(0);
+        #endif
     }
 
 protected:
-    Index *m_indices = nullptr;
-    Index *m_nodes = nullptr;
-    Float m_traversalCost = 15;
-    Float m_queryCost = 20;
-    Float m_emptySpaceBonus = Float(0.9f);
-    bool m_clipPrimitives = true;
-    bool m_retractBadSplits = true;
-    Size m_maxDepth = 0;
-    Size m_stopPrims = 6;
-    Size m_maxBadRefines = 3;
-    Size m_exactPrimThreshold = 65536;
-    Size m_minMaxBins = 128;
+    std::unique_ptr<KDNode[], AlignedAllocator> m_nodes;
+    std::unique_ptr<Index[],  AlignedAllocator> m_indices;
     Size m_nodeCount = 0;
     Size m_indexCount = 0;
+
+    CostModel m_costModel;
+    bool m_clipPrimitives = true;
+    bool m_retractBadSplits = true; /// XXX
+    Size m_maxDepth = 0;
+    Size m_stopPrimitives = 6;
+    Size m_maxBadRefines = 3;
+    Size m_exactPrimThreshold = 65536;
+    Size m_minMaxBins = MTS_KD_BINS;
     ELogLevel m_logLevel = EDebug;
     BoundingBox m_bbox;
 };
@@ -726,10 +1773,38 @@ const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() cons
     return m_class;
 }
 
-NAMESPACE_END(detail)
-
 class SurfaceAreaHeuristic3f {
 public:
+    using Size = uint32_t;
+
+    SurfaceAreaHeuristic3f(Float queryCost, Float traversalCost,
+                           Float emptySpaceBonus)
+        : m_queryCost(queryCost), m_traversalCost(traversalCost),
+          m_emptySpaceBonus(emptySpaceBonus) {
+        if (m_queryCost <= 0)
+            Throw("The query cost must be > 0");
+        if (m_traversalCost <= 0)
+            Throw("The traveral cost must be > 0");
+        if (m_emptySpaceBonus <= 0 || m_emptySpaceBonus > 1)
+            Throw("The empty space bonus must be in [0, 1]");
+    }
+
+    /**
+     * \brief Return the query cost used by the tree construction heuristic
+     *
+     * (This is the average cost for testing a shape against a kd-tree query)
+     */
+    Float queryCost() const { return m_queryCost; }
+
+    /// Get the cost of a traversal operation used by the tree construction heuristic
+    Float traversalCost() const { return m_traversalCost; }
+
+    /**
+     * \brief Return the bonus factor for empty space used by the
+     * tree construction heuristic
+     */
+    Float emptySpaceBonus() const { return m_emptySpaceBonus; }
+
     /**
      * \brief Initialize the surface area heuristic with the bounds of
      * a parent node
@@ -737,13 +1812,20 @@ public:
      * Precomputes some information so that traversal probabilities
      * of potential split planes can be evaluated efficiently
      */
-    SurfaceAreaHeuristic3f(const BoundingBox3f &bbox) {
+    void setBoundingBox(const BoundingBox3f &bbox) {
         auto extents = bbox.extents();
         Float temp = 2.f / bbox.surfaceArea();
         auto a = extents.swizzle<1, 2, 0>();
         auto b = extents.swizzle<2, 0, 1>();
-        m_temp0 = (a * b) * temp;
-        m_temp1 = (a + b) * temp;
+        m_temp0 = m_temp1 = (a * b) * temp;
+        m_temp2 = (a + b) * temp;
+        m_temp0 -= m_temp2 * Vector3f(bbox.min);
+        m_temp1 += m_temp2 * Vector3f(bbox.max);
+    }
+
+    /// \brief Evaluate the cost of a leaf node
+    Float leafCost(Size nElements) const {
+        return m_queryCost * nElements;
     }
 
     /**
@@ -755,31 +1837,67 @@ public:
      * the case of the surface area heuristic, this is simply the ratio of
      * surface areas.
      */
-    std::pair<Float, Float> operator()(int axis, Float leftWidth, Float rightWidth) const {
-        return std::pair<Float, Float>(
-            m_temp0[axis] + m_temp1[axis] * leftWidth,
-            m_temp0[axis] + m_temp1[axis] * rightWidth);
+    Float innerCost(int axis, Float split, Float leftCost, Float rightCost) const {
+        Float leftProb  = m_temp0[axis] + m_temp2[axis] * split;
+        Float rightProb = m_temp1[axis] - m_temp2[axis] * split;
+
+        Float cost = m_traversalCost +
+            (leftProb * leftCost + rightProb * rightCost);
+
+        //if (unlikely(leftCost == 0 || rightCost == 0)) // XXX
+            //cost *= m_emptySpaceBonus;
+
+        return cost;
+    }
+
+    static Float eval(const BoundingBox3f &bbox) {
+        return bbox.surfaceArea();
+
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const SurfaceAreaHeuristic3f &sa) {
+        os << "SurfaceAreaHeuristic3f["
+           << "queryCost=" << sa.queryCost() << ", "
+           << "traversalCost=" << sa.traversalCost() << ", "
+           << "emptySpaceBonus=" << sa.emptySpaceBonus() << "]";
+        return os;
     }
 private:
-    Vector3f m_temp0, m_temp1;
+    Vector3f m_temp0, m_temp1, m_temp2;
+    Float m_queryCost;
+    Float m_traversalCost;
+    Float m_emptySpaceBonus;
 };
 
 
 
 class MTS_EXPORT ShapeKDTree
-    : public detail::TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree> {
+    : public TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree> {
 public:
-    using Base = detail::TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
+    using Base = TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
+    using Base::Scalar;
 
-    ShapeKDTree();
+    ShapeKDTree(const Properties &props);
     void addShape(Shape *shape);
 
     Size primitiveCount() const { return m_primitiveMap.back(); }
-    Size shapeCount() const { return m_primitiveMap.back(); }
+    Size shapeCount() const { return Size(m_shapes.size()); }
+
+    void build() {
+        Log(m_logLevel, "Building a SAH kd-tree (%i primitives)",
+            primitiveCount());
+
+        Base::build();
+    }
 
     BoundingBox3f bbox(Index i) const {
-        //Index shapeIndex = findShape(i);
-        return m_shapes[0]->bbox(i);
+        Index shapeIndex = findShape(i);
+        return m_shapes[shapeIndex]->bbox(i);
+    }
+
+    BoundingBox3f bbox(Index i, const BoundingBox3f &clip) const {
+        Index shapeIndex = findShape(i);
+        return m_shapes[shapeIndex]->bbox(i, clip);
     }
 
     MTS_DECLARE_CLASS()
@@ -795,13 +1913,14 @@ protected:
         Assert(i < primitiveCount());
 
         Index shapeIndex = math::findInterval(
-            (Size) m_primitiveMap.size(),
+            Size(0),
+            Size(m_primitiveMap.size()),
             [&](Index k) {
                 return m_primitiveMap[k] <= i;
             }
         );
         Assert(shapeIndex < shapeCount() &&
-               m_primitiveMap.size() == primitiveCount() + 1);
+               m_primitiveMap.size() == shapeCount() + 1);
 
         Assert(i >= m_primitiveMap[shapeIndex]);
         Assert(i <  m_primitiveMap[shapeIndex + 1]);
