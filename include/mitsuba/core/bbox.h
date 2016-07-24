@@ -78,9 +78,9 @@ template <typename _Point> struct TBoundingBox {
         return all(max >= min);
     }
 
-    /// Check whether this bounding box has collapsed to a single point
+    /// Check whether this bounding box has collapsed to a point, line, or plane
     bool collapsed() const {
-        return min == max;
+        return any(cwiseEqual(min, max));
     }
 
     /// Return the dimension index with the largest associated side length
@@ -335,9 +335,11 @@ template <typename _Point> struct TBoundingBox {
 /// Print a string representation of the bounding box
 template <typename Point> std::ostream& operator<<(std::ostream &os, const TBoundingBox<Point>& bbox) {
     if (!bbox.valid())
-        os << "BoundingBox[invalid]";
+        os << "BoundingBox" << Point::Dimension << "[invalid]";
     else
-        os << "BoundingBox[min = " << bbox.min << ", max = " << bbox.max << "]";
+        os << "BoundingBox" << Point::Dimension
+           << "[min = " << bbox.min
+           << ", max = " << bbox.max << "]";
     return os;
 }
 
