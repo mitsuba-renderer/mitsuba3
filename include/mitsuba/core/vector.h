@@ -33,9 +33,6 @@ public:
     typedef TPoint<Scalar, Dimension>  Point;
 
     using Base::Base;
-    TVector() : Base() { }
-    TVector(const Base &f) : Base(f) { }
-    TVector(const Point &f) : Base((const Base &) f) { }
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
@@ -59,10 +56,6 @@ public:
     typedef TPoint<Scalar, Dimension>  Point;
 
     using Base::Base;
-    TPoint() : Base() { }
-    TPoint(const Base &f) : Base(f) { }
-    TPoint(const Vector &f) : Base((const Base &) f) { }
-
     using Base::operator+;
     using Base::operator+=;
     using Base::operator-=;
