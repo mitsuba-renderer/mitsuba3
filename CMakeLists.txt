@@ -7,6 +7,9 @@ option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/simdfloat/data" ${CMAKE_MODULE_PATH})
 
 include(CheckCXXCompilerFlag)
+include(TestBigEndian)
+include(OptimizeForArchitecture)
+
 # Set a default build configuration (Release)
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
@@ -17,9 +20,7 @@ endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
 
 # Optimize for current architecture
-include(OptimizeForArchitecture)
 OptimizeForArchitecture()
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
 
@@ -28,6 +29,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 endif()
 
+# Enable default rpaths
 if (APPLE)
   set(CMAKE_MACOSX_RPATH ON)
 endif()
@@ -67,9 +69,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
   # Enable link time optimization and set the default symbol
   # visibility to hidden (very important to obtain small binaries)
   if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG)
-    # Set default symbol visibility to hidden
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
-
     # Don't use stack security features in release mode
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
 
@@ -78,6 +77,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
 
     # Don't update the 'errno' global when encountering domain errors in math functions
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-math-errno")
+  endif()
+
+  if (${U_CMAKE_BUILD_TYPE} MATCHES RELEASE)
+    # Set default symbol visibility to hidden
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
   endif()
 endif()
 
@@ -90,6 +94,13 @@ elseif(UNIX)
   else()
     add_definitions(-D__LINUX__)
   endif()
+endif()
+
+test_big_endian(IS_BIG_ENDIAN)
+if (IS_BIG_ENDIAN)
+  add_definitions(-DBIG_ENDIAN)
+else()
+  add_definitions(-DLITTLE_ENDIAN)
 endif()
 
 if (MTS_DOUBLE_PRECISION)
