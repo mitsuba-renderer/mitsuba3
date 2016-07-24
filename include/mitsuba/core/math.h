@@ -380,6 +380,45 @@ size_t findInterval(Size left, Size right, const Predicate &pred) {
     );
 }
 
+/**
+ * \brief Bisect a floating point interval given a predicate function
+ *
+ * This function takes an interval [\c left, \c right] and a predicate \c pred
+ * as inputs. It assumes that <tt>pred(left)==true</tt> and
+ * <tt>pred(right)==false</tt>. It also assumes that there is a single floating
+ * point number \c t such that \c pred is \c true for all values in the range
+ * [\c left, \c t] and \c false for all values in the range (\c t, \c right].
+ *
+ * The bisection search then finds and returns \c t by repeatedly splitting the
+ * input interval. The number of iterations is roughly bounded by the number of
+ * bits of the underlying floating point representation.
+ */
+template <typename Scalar, typename Predicate>
+Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
+    int it = 0;
+    while (true) {
+        Scalar middle = (left + right) * 0.5f;
+
+        /* Paranoid stopping criterion */
+        if (middle <= left || middle >= right) {
+            middle = std::nextafter(left, right);
+            if (middle == right)
+                break;
+        }
+
+        if (pred(middle))
+            left = middle;
+        else
+            right = middle;
+        it++;
+        if (it > 100)
+            std::cout << "Now at " << it << " iterations" << std::endl;
+    }
+
+    return left;
+}
+
+
 /// Quantile function of the standard normal distribution (double precision)
 extern MTS_EXPORT_CORE double normal_quantile(double p);
 
