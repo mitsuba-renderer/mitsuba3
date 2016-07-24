@@ -160,7 +160,7 @@ private:
 };
 
 /// RAII-style class to temporarily switch to another thread's logger/file resolver
-class ThreadEnvironment {
+class MTS_EXPORT_CORE ThreadEnvironment {
 public:
     ThreadEnvironment(Thread *thread);
     ~ThreadEnvironment();
