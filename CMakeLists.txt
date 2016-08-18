@@ -4,11 +4,8 @@ project(mitsuba)
 
 option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/ext/simdfloat/data" ${CMAKE_MODULE_PATH})
-
 include(CheckCXXCompilerFlag)
 include(TestBigEndian)
-include(OptimizeForArchitecture)
 
 # Set a default build configuration (Release)
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -20,9 +17,29 @@ endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
 
 # Optimize for current architecture
-OptimizeForArchitecture()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
+    CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  add_compile_options("-march=native")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+  add_compile_options("-xHost")
+else(MSVC)
+  # MSVC doesn't have a flag equivalent to -march=native
+  # The 'archflags' executable provides this functionality
+  try_run(
+    ARCHFLAGS_FLAGS ARCHFLAGS_COMPILE_RESULT
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/src/libcore/archflags.cpp
+  )
+  if(NOT ${ARCHFLAGS_COMPILE_RESULT})
+     message(FATAL_ERROR "Failed to compile 'archflags' binary")
+  endif()
+  add_compile_options(${ARCHFLAGS_FLAGS})
+endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+  # Disable overly aggressive FP optimization in the Intel compiler
+  add_compile_options("-fp-model" "precise")
+endif()
 
 # Enable folders for projects in Visual Studio
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -36,11 +53,11 @@ endif()
 
 add_subdirectory(ext ext_build)
 
-# Always add the include directories for tinyformat, SIMDFloat and Eigen
+# Always add the include directories for tinyformat, SIMDArray and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
-  ${SIMDFLOAT_INCLUDE_DIRS}
+  ${SIMDARRAY_INCLUDE_DIRS}
 )
 
 # Compile with compiler warnings turned on
@@ -70,18 +87,28 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
   # visibility to hidden (very important to obtain small binaries)
   if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG)
     # Don't use stack security features in release mode
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
+    add_compile_options("-fno-stack-protector")
 
     # In release mode, don't keep the frame pointer in a special register unless needed
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fomit-frame-pointer")
+    add_compile_options("-fomit-frame-pointer")
 
     # Don't update the 'errno' global when encountering domain errors in math functions
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-math-errno")
+    add_compile_options("-fno-math-errno")
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+      # Increase function size limits for inlining on GCC (useful for templated
+      # code where significant portions can be optimized away during inlining)
+      add_compile_options("-finline-limit=150")
+    endif()
+
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+      # Contract multiplications and additions into fused multiply-add instructions
+      add_compile_options("-ffp-contract=fast")
+    endif()
   endif()
 
   if (${U_CMAKE_BUILD_TYPE} MATCHES RELEASE)
-    # Set default symbol visibility to hidden
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+    add_compile_options("-fvisibility=hidden")
   endif()
 endif()
 
@@ -122,12 +149,20 @@ if (MSVC)
   # Parallel build on MSVC
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 
+  # Permit many sections in .obj files
+  add_compile_options("/bigobj")
+
+  # Disable buffer security check cookie
+  string(REPLACE "/GS" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  string(REPLACE "/GS" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+  add_compile_options("$<$<NOT:$<CONFIG:Debug>>:/GS->")
+
   if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     # Enable SSE2 instructions on 32-bit builds builds
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2")
+    add_compile_options("/arch:SSE2")
 
     # Disable Eigen vectorization for Windows 32-bit builds (issues with unaligned access segfaults)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DEIGEN_DONT_ALIGN")
+    add_definitions(/D "EIGEN_DONT_ALIGN")
   endif()
 endif()
 

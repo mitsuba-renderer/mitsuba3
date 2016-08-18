@@ -8,7 +8,7 @@
 #include <pybind11/stl.h>
 #include "docstr.h"
 #include <mitsuba/core/object.h>
-#include <simdfloat/static.h>
+#include <simdarray/array.h>
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 
@@ -48,11 +48,12 @@ using namespace mitsuba;
 
 namespace py = pybind11;
 
-template <typename T> class is_simd_float {
+template <typename T> class is_simdarray {
 private:
-    template <typename Scalar, size_t Dimension, bool ApproximateMath, typename Derived, typename SFINAE>
+    template <typename Scalar, size_t Dimension, bool ApproximateMath, 
+              simd::RoundingMode Mode, typename Derived, typename SFINAE>
     static std::true_type test(const
-          simd::StaticFloatBase<Scalar, Dimension, ApproximateMath, Derived, SFINAE> &);
+          simd::ArrayBase<Scalar, Dimension, ApproximateMath, Mode, Derived, SFINAE> &);
     static std::false_type test(...);
 public:
     static constexpr bool value = decltype(test(std::declval<T>()))::value;
@@ -61,7 +62,7 @@ public:
 NAMESPACE_BEGIN(pybind11)
 NAMESPACE_BEGIN(detail)
 template<typename Type>
-struct type_caster<Type, typename std::enable_if<is_simd_float<Type>::value>::type> {
+struct type_caster<Type, typename std::enable_if<is_simdarray<Type>::value>::type> {
     typedef typename Type::Scalar Scalar;
 
     bool load(handle src, bool) {

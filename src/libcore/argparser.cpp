@@ -69,7 +69,7 @@ void ArgParser::parse(int argc, const char **argv) {
                     found = true;
                 } else if (longForm && prefixFound) {
                     found = true;
-                } else if (other) {
+                } else if (other && !string::startsWith(cmdline[i], "-")) {
                     cmdline.insert(cmdline.begin() + i + 1, cmdline[i]);
                     found = true;
                 }

@@ -41,9 +41,9 @@ struct Frame {
     /// Convert from world coordinates to local coordinates
     inline Vector3f toLocal(const Vector3f &v) const {
         return Vector3f(
-            dot(v, s),
-            dot(v, t),
-            dot(v, n)
+            simd::dot(v, s),
+            simd::dot(v, t),
+            simd::dot(v, Vector3f(n))
         );
     }
 

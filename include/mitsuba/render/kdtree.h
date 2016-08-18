@@ -676,11 +676,9 @@ protected:
         }
 
         MTS_INLINE void put(BoundingBox bbox) {
-            using Int = typename Vector::Int;
-            Assert(bbox.valid());
+            using IndexVec = simd::Array<Index, 3>;
 
-            alignas(alignof(Vector)) Int indexMin[Vector::ActualSize];
-            alignas(alignof(Vector)) Int indexMax[Vector::ActualSize];
+            Assert(bbox.valid());
 
             Vector relMin = (bbox.min - m_bbox.min) * m_invBinSize;
             Vector relMax = (bbox.max - m_bbox.min) * m_invBinSize;
@@ -688,8 +686,8 @@ protected:
             relMin = min(max(relMin, Vector::Zero()), m_maxBin);
             relMax = min(max(relMax, Vector::Zero()), m_maxBin);
 
-            floatToInt(relMin).store((Scalar *) indexMin);
-            floatToInt(relMax).store((Scalar *) indexMax);
+            IndexVec indexMin = simd::cast<IndexVec>(relMin);
+            IndexVec indexMax = simd::cast<IndexVec>(relMax);
 
             Index offset = 0, step = Index(2 * m_binCount);
             for (Index axis = 0; axis < Dimension; ++axis) {
@@ -698,6 +696,11 @@ protected:
                 m_bins[offset + indexMax[axis] * 2 + 1]++;
                 offset += step;
             }
+            /// TODO: try replacing this with Gather/Scatter
+            /// indexMin += indexMin + (0, step, 2*step);
+            /// indexMax += indexMax + (0, step, 2*step) + 1;
+            /// IndexVec::Scatter(m_bins, indexMin, IndexVec::Gather(m_bins, indexMin) + 1);
+            /// IndexVec::Scatter(m_bins, indexMax, IndexVec::Gather(m_bins, indexMax) + 1);
         }
 
         SplitCandidate bestCandidate(Size primCount, const CostModel &model) const {
@@ -1877,8 +1880,8 @@ public:
     void setBoundingBox(const BoundingBox3f &bbox) {
         auto extents = bbox.extents();
         Float temp = 2.f / bbox.surfaceArea();
-        auto a = extents.swizzle<1, 2, 0>();
-        auto b = extents.swizzle<2, 0, 1>();
+        auto a = simd::shuffle<1, 2, 0>(extents);
+        auto b = simd::shuffle<2, 0, 1>(extents);
         m_temp0 = m_temp1 = (a * b) * temp;
         m_temp2 = (a + b) * temp;
         m_temp0 -= m_temp2 * Vector3f(bbox.min);

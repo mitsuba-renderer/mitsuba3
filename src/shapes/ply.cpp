@@ -92,8 +92,7 @@ public:
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     for (size_t j = 0; j < nAtOnce; ++j) {
-                        Vector3f p;
-                        p.load((Float *) target);
+                        Vector3f p = Vector3f::Load((Float *) target);
                         m_bbox.expand(p);
                         target += oStructSize;
                     }
@@ -104,8 +103,7 @@ public:
                     fail("incompatible contents -- is this a triangle mesh?");
 
                 for (size_t j = 0; j < nRemainder; ++j) {
-                    Vector3f p;
-                    p.load((Float *) target);
+                    Vector3f p = Vector3f::Load((Float *) target);
                     m_bbox.expand(p);
                     target += oStructSize;
                 }

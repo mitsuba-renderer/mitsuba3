@@ -57,12 +57,12 @@ template <typename _Point> struct TBoundingBox {
 
     /// Test for equality against another bounding box
     bool operator==(const TBoundingBox &bbox) const {
-        return all(cwiseEqual(min, bbox.min) & cwiseEqual(max, bbox.max));
+        return all(eq(min, bbox.min) & eq(max, bbox.max));
     }
 
     /// Test for inequality against another bounding box
     bool operator!=(const TBoundingBox &bbox) const {
-        return any(cwiseNotEqual(min, bbox.min) | cwiseNotEqual(max, bbox.max));
+        return any(neq(min, bbox.min) | neq(max, bbox.max));
     }
 
     /**
@@ -80,7 +80,7 @@ template <typename _Point> struct TBoundingBox {
 
     /// Check whether this bounding box has collapsed to a point, line, or plane
     bool collapsed() const {
-        return any(cwiseEqual(min, max));
+        return any(eq(min, max));
     }
 
     /// Return the dimension index with the largest associated side length
@@ -134,7 +134,7 @@ template <typename _Point> struct TBoundingBox {
     Scalar surfaceArea() const {
         /* Optimized implementation for Dimension == 3 */
         Vector d = max - min;
-        return hsum(d.template swizzle<1,2,0>() * d) * Scalar(2);
+        return hsum(simd::shuffle<1, 2, 0>(d) * d) * Scalar(2);
     }
 
     /// Calculate the n-1 dimensional volume of the boundary
@@ -221,10 +221,8 @@ template <typename _Point> struct TBoundingBox {
      * the axis-aligned bounding box and the point \c p.
      */
     Scalar squaredDistance(const Point &p) const {
-        auto d1 = select(Vector(p < min), min - p, Vector::Zero());
-        auto d2 = select(Vector(p > max), p - max, Vector::Zero());
-        auto d = d1 + d2;
-        return hsum(d * d);
+        return squaredNorm(((p < min) & (min - p)) +
+                           ((p > max) & (p - max)));
     }
 
 
@@ -233,10 +231,8 @@ template <typename _Point> struct TBoundingBox {
      * the axis-aligned bounding box and \c bbox.
      */
     Scalar squaredDistance(const TBoundingBox &bbox) const {
-        auto d1 = select(Vector(bbox.max < min), min - bbox.max, Vector::Zero());
-        auto d2 = select(Vector(bbox.min > max), bbox.min - max, Vector::Zero());
-        auto d = d1 + d2;
-        return hsum(d * d);
+        return squaredNorm(((bbox.max < min) & (min - bbox.max)) +
+                           ((bbox.min > max) & (bbox.min - max)));
     }
 
     /**
@@ -269,46 +265,34 @@ template <typename _Point> struct TBoundingBox {
 
     /// Clip this bounding box to another bounding box
     void clip(const TBoundingBox &bbox) {
-        using simd::min;
-        using simd::max;
-
-        this->min = max(this->min, bbox.min);
-        this->max = min(this->max, bbox.max);
+        this->min = simd::max(this->min, bbox.min);
+        this->max = simd::min(this->max, bbox.max);
     }
 
     /// Expand the bounding box to contain another point
     void expand(const Point &p) {
-        using simd::min;
-        using simd::max;
-
-        this->min = min(this->min, p);
-        this->max = max(this->max, p);
+        this->min = simd::min(this->min, p);
+        this->max = simd::max(this->max, p);
     }
 
     /// Expand the bounding box to contain another bounding box
     void expand(const TBoundingBox &bbox) {
-        using simd::min;
-        using simd::max;
-
-        this->min = min(this->min, bbox.min);
-        this->max = max(this->max, bbox.max);
+        this->min = simd::min(this->min, bbox.min);
+        this->max = simd::max(this->max, bbox.max);
     }
 
     /// Merge two bounding boxes
     static TBoundingBox merge(const TBoundingBox &bbox1, const TBoundingBox &bbox2) {
-        using simd::min;
-        using simd::max;
-
         return TBoundingBox(
-            min(bbox1.min, bbox2.min),
-            max(bbox1.max, bbox2.max)
+            simd::min(bbox1.min, bbox2.min),
+            simd::max(bbox1.max, bbox2.max)
         );
     }
 
     /// Check if a ray intersects a bounding box
     bool rayIntersect(const Ray3f &ray, Scalar &nearT, Scalar &farT) const {
         /* Early out test */
-        if (any(cwiseEqual(ray.d, Vector::Zero()) &
+        if (any(eq(ray.d, Vector::Zero()) &
                 Vector3f(ray.o < min | ray.o > max)))
             return false;
 

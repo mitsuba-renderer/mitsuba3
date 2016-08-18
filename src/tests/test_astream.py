@@ -5,7 +5,8 @@ except:
 
 import os
 from os import path as PyPath
-from mitsuba.core import AnnotatedStream, DummyStream, FileStream, MemoryStream
+from mitsuba.core import AnnotatedStream, DummyStream, FileStream, \
+    MemoryStream, Thread, EError
 from mitsuba.core.filesystem import path
 
 def touch(path):
@@ -155,7 +156,11 @@ class AnnotatedStreamTest(unittest.TestCase):
                         v = 0
                         astream.get("some_field", v)
                 else:
+                    logger = Thread.thread().logger()
+                    level = logger.logLevel()
+                    logger.setLogLevel(EError)
                     astream.get("some_missing_field")
+                    logger.setLogLevel(level)
                     with self.assertRaises(Exception):
                         astream.set("some_other_field", 42)
 

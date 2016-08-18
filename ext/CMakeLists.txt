@@ -145,8 +145,8 @@ set(PCG32_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pcg32 PARENT_SCOPE)
 # tinyformat include path
 set(TINYFORMAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/tinyformat PARENT_SCOPE)
 
-# SIMDFloat include path
-set(SIMDFLOAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/simdfloat/include PARENT_SCOPE)
+# SIMDArray include path
+set(SIMDARRAY_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/simdarray/include PARENT_SCOPE)
 
 # Build asmjit
 set(ASMJIT_BUILD_X64 TRUE)

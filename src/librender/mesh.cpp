@@ -18,10 +18,9 @@ BoundingBox3f Mesh::bbox(Index index) const {
     Assert(idx[1] < m_vertexCount);
     Assert(idx[2] < m_vertexCount);
 
-    Point3f v0, v1, v2;
-    v0.loadUnaligned((float *) vertex(idx[0]));
-    v1.loadUnaligned((float *) vertex(idx[1]));
-    v2.loadUnaligned((float *) vertex(idx[2]));
+    Point3f v0 = Point3f::LoadUnaligned((float *) vertex(idx[0]));
+    Point3f v1 = Point3f::LoadUnaligned((float *) vertex(idx[1]));
+    Point3f v2 = Point3f::LoadUnaligned((float *) vertex(idx[2]));
 
     return BoundingBox3f(
         min(min(v0, v1), v2),
@@ -84,8 +83,6 @@ namespace {
 
 BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
 	using simd::cast;
-	using simd::cast_up;
-	using simd::cast_down;
 
 	/* Reserve room for some additional vertices */
 	Point3d vertices1[maxVertices], vertices2[maxVertices];
@@ -98,10 +95,9 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
     Assert(idx[1] < m_vertexCount);
     Assert(idx[2] < m_vertexCount);
 
-    Point3f v0, v1, v2;
-    v0.loadUnaligned((float *) vertex(idx[0]));
-    v1.loadUnaligned((float *) vertex(idx[1]));
-    v2.loadUnaligned((float *) vertex(idx[2]));
+    Point3f v0 = Point3f::LoadUnaligned((float *) vertex(idx[0]));
+    Point3f v1 = Point3f::LoadUnaligned((float *) vertex(idx[1]));
+    Point3f v2 = Point3f::LoadUnaligned((float *) vertex(idx[2]));
 
     /* The kd-tree code will frequently call this function with
        almost-collapsed bounding boxes. It's extremely important not to
@@ -122,8 +118,10 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
 
     BoundingBox3f result;
     for (size_t i = 0; i < nVertices; ++i) {
-        result.min = min(result.min, cast_down<Point3f>(vertices1[i]));
-        result.max = max(result.max, cast_up  <Point3f>(vertices1[i]));
+        simd::Array<double, 3, false, simd::RoundingMode::Up>   p1Up  (vertices1[i]);
+        simd::Array<double, 3, false, simd::RoundingMode::Down> p1Down(vertices1[i]);
+        result.min = min(result.min, cast<Point3f>(p1Down));
+        result.max = max(result.max, cast<Point3f>(p1Up));
     }
     result.clip(clip);
 

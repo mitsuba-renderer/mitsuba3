@@ -4,7 +4,7 @@
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/hash.h>
 #include <mitsuba/core/jit.h>
-#include <simdfloat/static.h>
+#include <simdarray/array.h>
 #include <unordered_map>
 #include <ostream>
 
@@ -304,7 +304,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
             if (sf.size == 8)
                 op = kX86InstIdMov;
 
-            int sfType = sf.type;
+            Struct::EType& sfType = sf.type;
             if (sfType == Struct::EFloat) {
                 if (sizeof(Float) == sizeof(float))
                     sfType = Struct::EFloat32;
@@ -658,7 +658,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                 auto sf = m_source->field(name);
                 const uint8_t *src = (const uint8_t *) src_ + sf.offset + sourceSize * i;
 
-                int sfType = sf.type;
+                Struct::EType& sfType = sf.type;
                 if (sfType == Struct::EFloat) {
                     if (sizeof(Float) == sizeof(float))
                         sfType = Struct::EFloat32;
