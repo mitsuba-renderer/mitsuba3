@@ -16,19 +16,17 @@ template <typename> struct TNormal;
  * =================================================================== */
 
 template <typename Scalar, int Dimension_>
-struct TVector : public simd::ArrayBase<Scalar, Dimension_, false,
-                                        simd::RoundingMode::Default,
-                                        TVector<Scalar, Dimension_>> {
-
-public:
+struct TVector : simd::ArrayBase<Scalar, Dimension_, false,
+                                 simd::RoundingMode::Default,
+                                 TVector<Scalar, Dimension_>> {
     enum { Dimension = Dimension_ };
 
-    typedef simd::ArrayBase<Scalar, Dimension, false,
-                            simd::RoundingMode::Default,
-                            TVector<Scalar, Dimension>> Base;
+    using Base = simd::ArrayBase<Scalar, Dimension_, false,
+                                 simd::RoundingMode::Default,
+                                 TVector<Scalar, Dimension_>>;
 
-    typedef TVector<Scalar, Dimension> Vector;
-    typedef TPoint<Scalar, Dimension>  Point;
+    using Vector = TVector<Scalar, Dimension>;
+    using Point = TPoint<Scalar, Dimension>;
 
     using Base::Base;
 
@@ -37,18 +35,17 @@ public:
 };
 
 template <typename Scalar, int Dimension_>
-struct TPoint : public simd::ArrayBase<Scalar, Dimension_, false,
-                                       simd::RoundingMode::Default,
-                                       TPoint<Scalar, Dimension_>> {
-public:
+struct TPoint : simd::ArrayBase<Scalar, Dimension_, false,
+                                simd::RoundingMode::Default,
+                                TPoint<Scalar, Dimension_>> {
     enum { Dimension = Dimension_ };
 
-    typedef simd::ArrayBase<Scalar, Dimension, false,
-                            simd::RoundingMode::Default,
-                            TPoint<Scalar, Dimension>> Base;
+    using Base = simd::ArrayBase<Scalar, Dimension_, false,
+                                 simd::RoundingMode::Default,
+                                 TPoint<Scalar, Dimension_>>;
 
-    typedef TVector<Scalar, Dimension> Vector;
-    typedef TPoint<Scalar, Dimension>  Point;
+    using Vector = TVector<Scalar, Dimension>;
+    using Point = TPoint<Scalar, Dimension>;
 
     using Base::Base;
 
@@ -58,12 +55,8 @@ public:
 
 /// 3-dimensional surface normal representation
 template <typename Scalar>
-struct TNormal : public TVector<Scalar, 3> {
-public:
+struct TNormal : TVector<Scalar, 3> {
     using Base = TVector<Scalar, 3>;
-
-    enum { Dimension = 3 };
-
     using Base::Base;
 };
 

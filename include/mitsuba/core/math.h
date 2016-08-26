@@ -24,7 +24,7 @@ static const double SqrtTwoPi_d       = 2.50662827463100050242;
 static const double InvSqrtTwoPi_d    = 0.39894228040143267794;
 static const double Epsilon_d         = 1e-7;
 #if !defined(_MSC_VER)
-static const double OneMinusEpsilon_d = 0x1.fffffffffffff7p-1;
+static const double OneMinusEpsilon_d = 0x1.fffffffffffffp-1;
 static const double RecipOverflow_d   = 0x1p-1024;
 #else
 static const double OneMinusEpsilon_d = 0.999999999999999888;

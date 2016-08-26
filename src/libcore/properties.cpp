@@ -14,6 +14,7 @@ using VariantType = variant<
     int64_t,
     Float,
     Vector3f,
+    Point3f,
     std::string,
     NamedReference,
     ref<Object>

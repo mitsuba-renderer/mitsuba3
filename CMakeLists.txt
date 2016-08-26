@@ -65,13 +65,20 @@ if (MSVC)
   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+    add_compile_options("/W4")
   endif()
 else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wdouble-promotion")
+  add_compile_options("-Wall" "-Wextra")
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    # Quench inlining-related remarks
+    add_compile_options("-wd11074" "-wd11076")
+  else()
+    # Be extra noisy about unintended float->double conversions
+    add_compile_options("-Wdouble-promotion")
+  endif()
 endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "^(GNU|Clang|Intel)$")
   CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
   CHECK_CXX_COMPILER_FLAG("-std=c++11" HAS_CPP11_FLAG)
 
@@ -144,10 +151,10 @@ if (MSVC)
   add_definitions(/D "__TBB_NO_IMPLICIT_LINKAGE")
 
   # Don't complain about not DLL-exporting STL classes
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+  add_compile_options("/wd4251")
 
   # Parallel build on MSVC
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+  add_compile_options("/MP")
 
   # Permit many sections in .obj files
   add_compile_options("/bigobj")

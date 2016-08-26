@@ -179,6 +179,8 @@ std::pair<double, double> Struct::Field::range() const {
         case Struct::EFloat:
             return std::make_pair(-std::numeric_limits<Float>::max(),
                                    std::numeric_limits<Float>::max());
+        default:
+            Throw("Internal error: invalid field type");
     }
 }
 

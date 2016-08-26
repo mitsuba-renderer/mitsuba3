@@ -972,12 +972,12 @@ template <typename Scalar> Scalar erfinv(Scalar x) {
 }
 
 template <typename Scalar> Scalar erf(Scalar x) {
-    const Scalar a1 = (const Scalar)  0.254829592;
-    const Scalar a2 = (const Scalar) -0.284496736;
-    const Scalar a3 = (const Scalar)  1.421413741;
-    const Scalar a4 = (const Scalar) -1.453152027;
-    const Scalar a5 = (const Scalar)  1.061405429;
-    const Scalar p  = (const Scalar)  0.3275911;
+    const Scalar a1 = Scalar( 0.254829592);
+    const Scalar a2 = Scalar(-0.284496736);
+    const Scalar a3 = Scalar( 1.421413741);
+    const Scalar a4 = Scalar(-1.453152027);
+    const Scalar a5 = Scalar( 1.061405429);
+    const Scalar p  = Scalar( 0.3275911);
 
     // Save the sign of x
     Scalar sign = math::signum(x);

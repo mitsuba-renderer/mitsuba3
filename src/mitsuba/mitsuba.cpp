@@ -58,7 +58,7 @@ Options:
 )";
 }
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
     // Limit instruction set usage in main() to SSE only. This is so that
     // target<->host mismatches can be caught in Jit::staticInitialization()
     // without running into a segmentation fault before that.
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
         if (!fr->contains(basePath))
             fr->append(basePath);
 
-        if (!arg_extra || *arg_help)
+        if (!*arg_extra || *arg_help)
             help();
 
         while (arg_extra && *arg_extra) {
