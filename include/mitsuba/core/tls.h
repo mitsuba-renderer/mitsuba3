@@ -47,6 +47,14 @@ public:
     /// Destroy the thread local storage object
     ~ThreadLocalBase();
 
+    /**
+     * \brief Release all current instances associated with this TLS
+     *
+     * Dangerous: don't use this method when the data is still concurrently
+     * being used by other threads
+     */
+    void clear();
+
 protected:
     /// Return the data value associated with the current thread
     void *get();
@@ -81,6 +89,8 @@ private:
  */
 template <typename Type, typename SFINAE = void> class ThreadLocal : ThreadLocalBase {
 public:
+    using ThreadLocalBase::clear;
+
     /// Construct a new thread local storage object
     ThreadLocal() : ThreadLocalBase(
             []() -> void * { return new Type(); },

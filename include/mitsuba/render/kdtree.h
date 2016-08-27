@@ -1,11 +1,5 @@
 #pragma once
 
-/**
- * TODO: proper compaction, 
- * why are some nodes exactly 1 larger than maxprims??
- * retractions
- */
-
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/vector.h>
@@ -14,12 +8,8 @@
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/tls.h>
 #include <mitsuba/render/shape.h>
-#include <tbb/tbb.h>
-#include <tbb/concurrent_vector.h>
 #include <unordered_set>
-
-//#undef Assert // XXX
-//#define Assert(cond) if (!(cond)) Throw("Assertion failure " #cond " in line %i", __LINE__);
+#include <tbb/tbb.h>
 
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MTS_KD_MAXDEPTH 48u
@@ -280,10 +270,10 @@ protected:
         Index leftOffset() const { return data.inner.leftOffset; }
 
         /// Return the left child (for interior nodes)
-        const KDNode *__restrict left() const { return this + data.inner.leftOffset; }
+        const KDNode *left() const { return this + data.inner.leftOffset; }
 
         /// Return the left child (for interior nodes)
-        const KDNode *__restrict right() const { return this + data.inner.leftOffset + 1; }
+        const KDNode *right() const { return this + data.inner.leftOffset + 1; }
 
         /// Return the split plane location (for interior nodes)
         Scalar split() const { return data.inner.split; }
@@ -331,29 +321,33 @@ protected:
      */
     class ClassificationStorage {
     public:
-        void resize(Size size) {
-            if (size != m_size) {
-                m_buffer.reset(new uint8_t[(size + 3) / 4]);
-                m_size = size;
+        void resize(Size count) {
+            if (count != m_count) {
+                m_buffer.reset(new uint8_t[(count + 3) / 4]);
+                m_count = count;
             }
         }
 
         void set(Index index, EPrimClassification value) {
-            Assert(index < m_size);
+            Assert(index < m_count);
             uint8_t *ptr = m_buffer.get() + (index >> 2);
             uint8_t shift = (index & 3) << 1;
             *ptr = (*ptr & ~(3 << shift)) | (value << shift);
         }
 
         EPrimClassification get(Index index) const {
-            Assert(index < m_size);
+            Assert(index < m_count);
             uint8_t *ptr = m_buffer.get() + (index >> 2);
             uint8_t shift = (index & 3) << 1;
             return EPrimClassification((*ptr >> shift) & 3);
         }
+
+        /// Return the size (in bytes)
+        size_t size() const { return (m_count + 3) / 4; }
+
     private:
         std::unique_ptr<uint8_t[]> m_buffer;
-        size_t m_size = 0;
+        Size m_count = 0;
     };
 
     /**
@@ -496,8 +490,7 @@ protected:
 
             friend std::ostream& operator<<(std::ostream &os, const Chunk &ch) {
                 os << (const void *) ch.start.get() << "-" << (const void *) (ch.start.get() + ch.size)
-                   << " (size = " << ch.size << ", remainder = " << ch.remainder()
-                   << ")";
+                   << " (size = " << ch.size << ", remainder = " << ch.remainder() << ")";
                 return os;
             }
         };
@@ -510,11 +503,22 @@ protected:
     /*                    Build-related data structures                     */
     /* ==================================================================== */
 
+    struct BuildContext;
+
     /// Helper data structure used during tree construction (used by a single thread)
     struct LocalBuildContext {
         ClassificationStorage classificationStorage;
         OrderedChunkAllocator leftAlloc;
         OrderedChunkAllocator rightAlloc;
+        BuildContext *ctx = nullptr;
+
+        ~LocalBuildContext() {
+            Assert(leftAlloc.used() == 0);
+            Assert(rightAlloc.used() == 0);
+            if (ctx)
+                ctx->tempStorage += leftAlloc.size() + rightAlloc.size() +
+                                    classificationStorage.size();
+        }
     };
 
     /// Helper data structure used during tree construction (shared by all threads)
@@ -530,9 +534,11 @@ protected:
         std::atomic<size_t> badRefines {0};
         std::atomic<size_t> retractedSplits {0};
         std::atomic<size_t> pruned {0};
-        Scalar expTraversalSteps = 0;
-        Scalar expLeavesVisited = 0;
-        Scalar expPrimitivesQueried = 0;
+        std::atomic<size_t> tempStorage {0};
+        std::atomic<size_t> workUnits {0};
+        double expTraversalSteps = 0;
+        double expLeavesVisited = 0;
+        double expPrimitivesQueried = 0;
         Size maxPrimsInLeaf = 0;
         Size nonEmptyLeafCount = 0;
         Size maxDepth = 0;
@@ -958,6 +964,8 @@ protected:
             Size primCount = Size(m_indices.size());
             const Derived &derived = m_ctx.derived;
 
+            m_ctx.workUnits++;
+
             /* ==================================================================== */
             /*                           Stopping criteria                          */
             /* ==================================================================== */
@@ -1078,10 +1086,9 @@ protected:
             /* Tear up bad (i.e. costly) subtrees and replace them with leaf nodes */
             if (unlikely(*m_cost > leafCost && derived.retractBadSplits())) {
                 std::unordered_set<Index> temp;
-                traverse(&*m_node, temp);
-                m_indices.assign(temp.begin(), temp.end());
+                traverse(m_node, temp);
                 m_ctx.retractedSplits++;
-                makeLeaf(std::move(m_indices));
+                makeLeaf(std::move(temp));
             }
 
             return nullptr;
@@ -1092,7 +1099,6 @@ protected:
                           EdgeEvent *eventsStart, EdgeEvent *eventsEnd,
                           const BoundingBox3f &bbox, Size depth,
                           Size badRefines, bool leftChild = true) {
-
             const Derived &derived = m_ctx.derived;
 
             /* Initialize the tree cost model */
@@ -1218,7 +1224,7 @@ protected:
             if (best.cost >= leafCost) {
                 if ((best.cost > 4 * leafCost && primCount < 16)
                     || badRefines >= derived.maxBadRefines()
-                    || !std::isfinite(best.cost) ) {
+                    || !std::isfinite(best.cost)) {
                     makeLeaf(node, primCount, eventsStart, eventsEnd);
                     return leafCost;
                 }
@@ -1408,10 +1414,10 @@ protected:
                                         if (min != max) {
                                             *newRightEventsEnd++ = EdgeEvent(
                                                 EdgeEvent::EEdgeStart, axis, min, event.index);
-                                            *newRightEventsEnd++ = EdgeEvent( 
+                                            *newRightEventsEnd++ = EdgeEvent(
                                                 EdgeEvent::EEdgeEnd, axis, max, event.index);
                                         } else {
-                                            *newRightEventsEnd++ = EdgeEvent( 
+                                            *newRightEventsEnd++ = EdgeEvent(
                                                 EdgeEvent::EEdgePlanar, axis, min, event.index);
                                         }
                                     }
@@ -1478,6 +1484,8 @@ protected:
                 Throw("Internal error during kd-tree construction: unable "
                       "to store overly large offset to left child node (%i)",
                       leftOffset);
+            if (node->left() == &*node || node->right() == &*node)
+                Throw("Internal error..");
 
             Scalar leftCost =
                 buildNLogN(children, best.leftCount - prunedLeft,
@@ -1501,6 +1509,22 @@ protected:
 
             Scalar finalCost =
                 model.innerCost(best.axis, best.split, leftCost, rightCost);
+
+            /* Tear up bad (i.e. costly) subtrees and replace them with leaf nodes */
+            if (unlikely(finalCost > leafCost && derived.retractBadSplits())) {
+                std::unordered_set<Index> temp;
+                traverse(node, temp);
+
+                auto it = m_ctx.indexStorage.grow_by(temp.begin(), temp.end());
+                Size offset(std::distance(m_ctx.indexStorage.begin(), it));
+
+                if (!node->setLeafNode(offset, temp.size()))
+                    Throw("Internal error: could not create leaf node with %i "
+                          "primitives -- too much geometry?", m_indices.size());
+
+                m_ctx.retractedSplits++;
+                return leafCost;
+            }
 
             return finalCost;
         }
@@ -1558,6 +1582,7 @@ protected:
             m_local->leftAlloc.template shrinkAllocation<EdgeEvent>(
                 eventsStart, eventsEnd - eventsStart);
             m_local->classificationStorage.resize(derived.primitiveCount());
+            m_local->ctx = &m_ctx;
 
             Float cost = buildNLogN(m_node, finalPrimCount, eventsStart,
                                     eventsEnd, m_bbox, m_depth, 0);
@@ -1568,7 +1593,7 @@ protected:
         }
 
         /// Create a leaf node using the given set of indices (called by min-max binning)
-        void makeLeaf(std::vector<Index> &&indices) {
+        template <typename T> void makeLeaf(T &&indices) {
             auto it = m_ctx.indexStorage.grow_by(indices.begin(), indices.end());
             Size offset(std::distance(m_ctx.indexStorage.begin(), it));
 
@@ -1603,13 +1628,15 @@ protected:
         }
 
         /// Traverse a subtree and collect all encountered primitive references in a set
-        void traverse(const KDNode *node, std::unordered_set<Index> &result) {
+        void traverse(NodeIterator node, std::unordered_set<Index> &result) {
             if (node->leaf()) {
                 for (Size i = 0; i < node->primitiveCount(); ++i)
                     result.insert(m_ctx.indexStorage[node->primitiveOffset() + i]);
             } else {
-                traverse(node->left(), result);
-                traverse(node->right(), result);
+                NodeIterator leftChild = node + node->leftOffset(),
+                             rightChild = leftChild + 1;
+                traverse(leftChild, result);
+                traverse(rightChild, result);
             }
         }
     };
@@ -1621,10 +1648,10 @@ protected:
 
         if (node->leaf()) {
             auto primCount = node->primitiveCount();
-            Scalar value = CostModel::eval(bbox);
+            double value = (double) CostModel::eval(bbox);
 
             ctx.expLeavesVisited += value;
-            ctx.expPrimitivesQueried += value * Scalar(primCount);
+            ctx.expPrimitivesQueried += value * double(primCount);
             if (primCount < sizeof(ctx.primBuckets) / sizeof(Size))
                 ctx.primBuckets[primCount]++;
             if (primCount > ctx.maxPrimsInLeaf)
@@ -1632,7 +1659,7 @@ protected:
             if (primCount > 0)
                 ctx.nonEmptyLeafCount++;
         } else {
-            ctx.expTraversalSteps += CostModel::eval(bbox);
+            ctx.expTraversalSteps += (double) CostModel::eval(bbox);
 
             int axis = node->axis();
             Scalar split = Scalar(node->split());
@@ -1685,10 +1712,11 @@ protected:
         /* ==================================================================== */
 
         BuildContext ctx(derived());
-        ctx.nodeStorage.grow_by(1);
 
-        //ctx.nodeStorage.reserve(100); // XXX revisit this
-        //ctx.indexStorage.reserve(100); // XXX revisit this
+        ctx.nodeStorage.reserve(primCount);
+        ctx.indexStorage.reserve(primCount);
+
+        ctx.nodeStorage.grow_by(1);
 
         /* ==================================================================== */
         /*                      Build the tree in parallel                      */
@@ -1757,9 +1785,14 @@ protected:
         if (Thread::thread()->logger()->logLevel() <= m_logLevel) {
             computeStatistics(ctx, m_nodes.get(), m_bbox, 0);
 
-            ctx.expTraversalSteps /= CostModel::eval(m_bbox);
-            ctx.expLeavesVisited /= CostModel::eval(m_bbox);
-            ctx.expPrimitivesQueried /= CostModel::eval(m_bbox);
+            // Trigger per-thread data release
+            ctx.local.clear();
+
+            ctx.expTraversalSteps /= (double) CostModel::eval(m_bbox);
+            ctx.expLeavesVisited /= (double) CostModel::eval(m_bbox);
+            ctx.expPrimitivesQueried /= (double) CostModel::eval(m_bbox);
+            ctx.tempStorage += ctx.nodeStorage.size() * sizeof(KDNode);
+            ctx.tempStorage += ctx.indexStorage.size() * sizeof(Index);
 
             Log(m_logLevel, "   Primitive references        : %i (%s)",
                 m_indexCount, util::memString(m_indexCount * sizeof(Index)));
@@ -1769,6 +1802,12 @@ protected:
 
             Log(m_logLevel, "   kd-tree depth               : %i",
                 ctx.maxDepth);
+
+            Log(m_logLevel, "   Temporary storage used      : %s",
+                util::memString(ctx.tempStorage));
+
+            Log(m_logLevel, "   Parallel work units         : %i",
+                ctx.workUnits);
 
             std::ostringstream oss;
             Size primBucketCount = sizeof(ctx.primBuckets) / sizeof(Size);
@@ -1819,10 +1858,10 @@ protected:
 
     CostModel m_costModel;
     bool m_clipPrimitives = true;
-    bool m_retractBadSplits = true; /// XXX
+    bool m_retractBadSplits = true;
     Size m_maxDepth = 0;
-    Size m_stopPrimitives = 6;
-    Size m_maxBadRefines = 3;
+    Size m_stopPrimitives = 1;
+    Size m_maxBadRefines = 0;
     Size m_exactPrimThreshold = 65536;
     Size m_minMaxBins = MTS_KD_BINS;
     ELogLevel m_logLevel = EDebug;
@@ -1909,8 +1948,8 @@ public:
         Float cost = m_traversalCost +
             (leftProb * leftCost + rightProb * rightCost);
 
-        //if (unlikely(leftCost == 0 || rightCost == 0)) // XXX
-            //cost *= m_emptySpaceBonus;
+        if (unlikely(leftCost == 0 || rightCost == 0))
+            cost *= m_emptySpaceBonus;
 
         return cost;
     }

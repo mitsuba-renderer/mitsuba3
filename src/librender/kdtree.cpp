@@ -38,11 +38,6 @@ ShapeKDTree::ShapeKDTree(const Properties &props)
     if (props.hasProperty("kdRetractBadSplits"))
         setRetractBadSplits(props.bool_("kdRetractBadSplits"));
 
-	/* kd-tree construction: Set the number of bad refines allowed to happen
-	   in succession before a leaf node will be created.*/
-    if (props.hasProperty("kdMaxBadRefines"))
-        setMaxBadRefines(props.int_("kdMaxBadRefines"));
-
 	/* kd-tree construction: Specify the number of primitives, at which the
 	   builder will switch from (approximate) Min-Max binning to the accurate
 	   O(n log n) SAH-based optimization method. */

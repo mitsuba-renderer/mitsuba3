@@ -44,6 +44,10 @@ ThreadLocalBase::ThreadLocalBase(const ConstructFunctor &constructFunctor,
     : m_constructFunctor(constructFunctor), m_destructFunctor(destructFunctor) { }
 
 ThreadLocalBase::~ThreadLocalBase() {
+    clear();
+}
+
+void ThreadLocalBase::clear() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
 
     /* For every thread */
