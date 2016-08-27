@@ -12,9 +12,12 @@ MTS_PY_EXPORT(Shape) {
         .mdef(Mesh, vertexStruct)
         .mdef(Mesh, faceStruct)
         .mdef(Mesh, write)
-        .def("faces", [](Mesh &) {
-                //auto f = m.faces();
-                return nullptr;
-            },
-            DM(Mesh, faces));
+        .def("vertices", [](Mesh &m) {
+            auto dtype = dtypeForStruct(m.vertexStruct());
+            return py::array(dtype, m.vertexCount(), m.vertices());
+        })
+        .def("faces", [](Mesh &m) {
+            auto dtype = dtypeForStruct(m.faceStruct());
+            return py::array(dtype, m.faceCount(), m.faces());
+        });
 }

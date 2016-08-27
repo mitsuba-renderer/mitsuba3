@@ -58,6 +58,7 @@ include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
   ${SIMDARRAY_INCLUDE_DIRS}
+  ${TBB_INCLUDE_DIRS}
 )
 
 # Compile with compiler warnings turned on

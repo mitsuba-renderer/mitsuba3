@@ -89,24 +89,27 @@ public:
     /// @}
     // =========================================================================
 
+    /// Return a human-readable string representation of the shape contents.
+    virtual std::string toString() const override;
+
     MTS_DECLARE_CLASS()
 
 protected:
     virtual ~Mesh();
 
-    BoundingBox3f m_bbox;
-    std::string m_name;
-
-    Size m_vertexCount = 0;
+    VertexHolder m_vertices;
     Size m_vertexSize = 0;
-    Size m_faceCount = 0;
+    FaceHolder m_faces;
     Size m_faceSize = 0;
 
-    ref<Struct> m_faceStruct;
-    FaceHolder m_faces;
+    std::string m_name;
+    BoundingBox3f m_bbox;
 
+    Size m_vertexCount = 0;
+    Size m_faceCount = 0;
+
+    ref<Struct> m_faceStruct;
     ref<Struct> m_vertexStruct;
-    VertexHolder m_vertices;
 };
 
 NAMESPACE_END(mitsuba)

@@ -59,6 +59,8 @@ public:
     static constexpr bool value = decltype(test(std::declval<T>()))::value;
 };
 
+extern py::dtype dtypeForStruct(const Struct *s);
+
 NAMESPACE_BEGIN(pybind11)
 NAMESPACE_BEGIN(detail)
 template<typename Type>

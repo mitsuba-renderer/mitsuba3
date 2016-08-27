@@ -404,16 +404,20 @@ private:
                 for (auto const &field : *(el.struct_)) {
                     switch (field.type) {
                         case Struct::EInt8: {
-                                int8_t value;
+                                int value;
                                 if (!(is >> value)) Throw("Could not parse \"char\" value");
-                                out->write(value);
+                                if (value < -128 || value > 127)
+                                    Throw("Could not parse \"char\" value");
+                                out->write((int8_t) value);
                             }
                             break;
 
                         case Struct::EUInt8: {
-                                uint8_t value;
+                                int value;
                                 if (!(is >> value)) Throw("Could not parse \"uchar\" value");
-                                out->write(value);
+                                if (value < 0 || value > 255)
+                                    Throw("Could not parse \"uchar\" value");
+                                out->write((uint8_t) value);
                             }
                             break;
 

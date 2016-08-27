@@ -59,5 +59,16 @@ void ShapeKDTree::addShape(Shape *shape) {
 	m_bbox.expand(shape->bbox());
 }
 
+std::string ShapeKDTree::toString() const {
+    std::ostringstream oss;
+    oss << "ShapeKDTree[" << std::endl;
+    oss << "  shapes = [" << std::endl;
+    for (auto shape : m_shapes)
+        oss << "    " << string::indent(shape->toString(), 4) << ", " << std::endl;
+    oss << "  ]" << std::endl;
+    oss << "]";
+    return oss.str();
+}
+
 MTS_IMPLEMENT_CLASS(ShapeKDTree, TShapeKDTree)
 NAMESPACE_END(mitsuba)

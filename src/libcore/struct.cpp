@@ -77,19 +77,6 @@ Struct &Struct::append(const std::string &name, EType type, uint32_t flags, doub
     return *this;
 }
 
-Struct::EByteOrder Struct::hostByteOrder() {
-    /* Determine host byte order */
-    union {
-        uint8_t  charValue[2];
-        uint16_t shortValue;
-    };
-
-    charValue[0] = 1;
-    charValue[1] = 0;
-
-    return (shortValue == 1) ? Struct::ELittleEndian : Struct::EBigEndian;
-}
-
 std::string Struct::toString() const {
     std::ostringstream os;
     os << "Struct[" << std::endl;
@@ -672,7 +659,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 switch (sfType) {
                     case Struct::EUInt8:
-                        reg = (int64_t) *((const uint8_t *) src);
+                        reg = ((const uint8_t *)src)[0];
                         break;
 
                     case Struct::EInt8:

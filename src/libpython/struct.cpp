@@ -1,5 +1,35 @@
 #include <mitsuba/core/struct.h>
+#include <mitsuba/core/logger.h>
 #include "python.h"
+
+/// Conversion between 'Struct' and NumPy 'dtype' data structures
+py::dtype dtypeForStruct(const Struct *s) {
+    py::list names, offsets, formats;
+
+    for (auto field: *s) {
+        names.append(py::str(field.name));
+        offsets.append(py::int_(field.offset));
+        std::string format;
+        switch (field.type) {
+            case Struct::EInt8:    format = "int8";   break;
+            case Struct::EUInt8:   format = "uint8";  break;
+            case Struct::EInt16:   format = "int16";  break;
+            case Struct::EUInt16:  format = "uint16"; break;
+            case Struct::EInt32:   format = "int32";  break;
+            case Struct::EUInt32:  format = "uint32"; break;
+            case Struct::EInt64:   format = "int64";  break;
+            case Struct::EUInt64:  format = "uint64"; break;
+            case Struct::EFloat16: format = "float16";  break;
+            case Struct::EFloat32: format = "float32";  break;
+            case Struct::EFloat64: format = "float64";  break;
+            case Struct::EFloat:   format = "float"
+                + std::to_string(sizeof(Float) * 8);  break;
+            default: Throw("Internal error.");
+        }
+        formats.append(py::str(format));
+    }
+    return py::dtype(names, formats, offsets, s->size());
+}
 
 MTS_PY_EXPORT(Struct) {
     auto c = MTS_PY_CLASS(Struct, Object);
@@ -51,7 +81,8 @@ MTS_PY_EXPORT(Struct) {
         .mdef(Struct, alignment)
         .mdef(Struct, byteOrder)
         .mdef(Struct, fieldCount)
-        .mdef(Struct, hasField);
+        .mdef(Struct, hasField)
+        .def("dtype", &dtypeForStruct, "Return a NumPy dtype corresponding to this data structure");
 
     py::class_<Struct::Field>(c, "Field", DM(Struct, Field))
         .def("isFloat", &Struct::Field::isFloat, DM(Struct, Field, isFloat))

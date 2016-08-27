@@ -143,7 +143,6 @@ fs::path libraryPath() {
 	if (dladdr((const void *) &dummySymbol, &info) == 0)
         result = fs::path(info.dli_fname);
 #elif defined(__OSX__)
-	//MTS_AUTORELEASE_BEGIN()
 	uint32_t imageCount = _dyld_image_count();
 	for (uint32_t i=0; i<imageCount; ++i) {
 		const char *imageName = _dyld_get_image_name(i);
@@ -152,7 +151,6 @@ fs::path libraryPath() {
 			break;
 		}
 	}
-	//MTS_AUTORELEASE_END()
 #elif defined(__WINDOWS__)
 	std::vector<WCHAR> lpFilename(MAX_PATH);
 

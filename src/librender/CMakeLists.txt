@@ -1,5 +1,4 @@
 include_directories(
-  ${TBB_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
 )
 

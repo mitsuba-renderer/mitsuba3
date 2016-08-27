@@ -13,8 +13,11 @@ NAMESPACE_BEGIN(mitsuba)
 #endif
 
 /**
- * \brief Descriptor for specifying the contents and in-memory layout of a
- * POD-style data record
+ * \brief Descriptor for specifying the contents and in-memory layout
+ * of a POD-style data record
+ *
+ * \remark The python API provides an additional \c dtype() method, which
+ * returns the NumPy \c dtype equivalent of a given \c Struct instance.
  */
 class MTS_EXPORT_CORE Struct : public Object {
 public:
@@ -160,7 +163,15 @@ public:
     EByteOrder byteOrder() const { return m_byteOrder; }
 
     /// Return the byte order of the host machine
-    static EByteOrder hostByteOrder();
+    static EByteOrder hostByteOrder() {
+        #if defined(LITTLE_ENDIAN)
+            return ELittleEndian;
+        #elif defined(BIG_ENDIAN)
+            return ELittleEndian;
+        #else
+            #error Either LITTLE_ENDIAN or BIG_ENDIAN must be defined!
+        #endif
+    };
 
     /// Look up a field by name (throws an exception if not found)
     const Field &field(const std::string &name) const;

@@ -132,5 +132,24 @@ Shape::Size Mesh::primitiveCount() const {
     return faceCount();
 }
 
+std::string Mesh::toString() const {
+    return tfm::format("%s[\n"
+        "  name = \"%s\",\n"
+        "  bbox = %s,\n"
+        "  vertexCount = %i,\n"
+        "  vertexStruct = %s,\n"
+        "  faceCount = %i,\n"
+        "  faceStruct = %s,\n"
+        "]",
+        class_()->name(),
+        m_name,
+        m_bbox,
+        m_vertexCount,
+        string::indent(m_vertexStruct->toString()),
+        m_faceCount,
+        string::indent(m_faceStruct->toString())
+    );
+}
+
 MTS_IMPLEMENT_CLASS(Mesh, Shape)
 NAMESPACE_END(mitsuba)

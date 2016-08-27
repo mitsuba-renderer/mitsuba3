@@ -22,5 +22,14 @@ Scene::Scene(const Properties &props) {
 
 Scene::~Scene() { }
 
+std::string Scene::toString() const {
+    return tfm::format("Scene[\n"
+        "  kdtree = %s\n"
+        "]",
+        string::indent(m_kdtree->toString())
+    );
+}
+
+
 MTS_IMPLEMENT_CLASS(Scene, Object)
 NAMESPACE_END(mitsuba)

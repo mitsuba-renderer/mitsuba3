@@ -1,6 +1,8 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/jit.h>
+#include <mitsuba/core/util.h>
+#include <mitsuba/core/fresolver.h>
 #include "python.h"
 
 MTS_PY_DECLARE(filesystem);
@@ -31,6 +33,7 @@ MTS_PY_DECLARE(Struct);
 
 MTS_PY_DECLARE(Scene);
 MTS_PY_DECLARE(Shape);
+MTS_PY_DECLARE(ShapeKDTree);
 
 PYBIND11_PLUGIN(mitsuba) {
     Jit::staticInitialization();
@@ -72,6 +75,7 @@ PYBIND11_PLUGIN(mitsuba) {
 
     MTS_PY_IMPORT_RENDER(Scene);
     MTS_PY_IMPORT_RENDER(Shape);
+    MTS_PY_IMPORT_RENDER(ShapeKDTree);
 
     atexit([](){
         Logger::staticShutdown();
@@ -79,6 +83,12 @@ PYBIND11_PLUGIN(mitsuba) {
         Class::staticShutdown();
         Jit::staticShutdown();
     });
+
+    /* Append the mitsuba directory to the FileResolver search path list */
+    ref<FileResolver> fr = Thread::thread()->fileResolver();
+    fs::path basePath = util::libraryPath().parent_path();
+    if (!fr->contains(basePath))
+        fr->append(basePath);
 
     return m.ptr();
 }

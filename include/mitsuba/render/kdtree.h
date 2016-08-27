@@ -1955,15 +1955,26 @@ public:
         Base::build();
     }
 
+    /// Return the i-th shape
+    const Shape *shape(size_t i) const { Assert(i < m_shapes.size()); return m_shapes[i]; }
+
+    /// Return the i-th shape
+    Shape *shape(size_t i) { Assert(i < m_shapes.size()); return m_shapes[i]; }
+
+    /// Return the bounding box of the i-th primitive
     BoundingBox3f bbox(Index i) const {
         Index shapeIndex = findShape(i);
         return m_shapes[shapeIndex]->bbox(i);
     }
 
+    /// Return the (clipped) bounding box of the i-th primitive
     BoundingBox3f bbox(Index i, const BoundingBox3f &clip) const {
         Index shapeIndex = findShape(i);
         return m_shapes[shapeIndex]->bbox(i, clip);
     }
+
+    /// Return a human-readable string representation of the scene contents.
+    virtual std::string toString() const override;
 
     MTS_DECLARE_CLASS()
 protected:

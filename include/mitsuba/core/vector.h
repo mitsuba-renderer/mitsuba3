@@ -19,16 +19,15 @@ template <typename Scalar, int Dimension_>
 struct TVector : simd::ArrayBase<Scalar, Dimension_, false,
                                  simd::RoundingMode::Default,
                                  TVector<Scalar, Dimension_>> {
-    enum { Dimension = Dimension_ };
-
     using Base = simd::ArrayBase<Scalar, Dimension_, false,
                                  simd::RoundingMode::Default,
                                  TVector<Scalar, Dimension_>>;
+    using Base::Base;
+
+    enum { Dimension = Dimension_ };
 
     using Vector = TVector<Scalar, Dimension>;
     using Point = TPoint<Scalar, Dimension>;
-
-    using Base::Base;
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
@@ -38,16 +37,15 @@ template <typename Scalar, int Dimension_>
 struct TPoint : simd::ArrayBase<Scalar, Dimension_, false,
                                 simd::RoundingMode::Default,
                                 TPoint<Scalar, Dimension_>> {
-    enum { Dimension = Dimension_ };
-
     using Base = simd::ArrayBase<Scalar, Dimension_, false,
                                  simd::RoundingMode::Default,
                                  TPoint<Scalar, Dimension_>>;
+    using Base::Base;
+
+    enum { Dimension = Dimension_ };
 
     using Vector = TVector<Scalar, Dimension>;
     using Point = TPoint<Scalar, Dimension>;
-
-    using Base::Base;
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
