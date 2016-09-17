@@ -129,15 +129,15 @@ Logger* Thread::logger() {
 }
 
 void Thread::setFileResolver(FileResolver *fresolver) {
-	d->fresolver = fresolver;
+    d->fresolver = fresolver;
 }
 
 FileResolver* Thread::fileResolver() {
-	return d->fresolver;
+    return d->fresolver;
 }
 
 const FileResolver* Thread::fileResolver() const {
-	return d->fresolver;
+    return d->fresolver;
 }
 
 Thread* Thread::thread() {
@@ -257,7 +257,7 @@ void Thread::setCoreAffinity(int coreID) {
     /* The kernel may expect a larger cpu_set_t than would
        be warranted by the physical core count. Keep querying with increasingly
        larger buffers if the pthread_getaffinity_np operation fails */
-    for (int i = 0; i<6; ++i) {
+    for (int i = 0; i<10; ++i) {
         size = CPU_ALLOC_SIZE(nLogicalCores);
         cpuset = CPU_ALLOC(nLogicalCores);
         if (!cpuset) {
@@ -267,7 +267,7 @@ void Thread::setCoreAffinity(int coreID) {
 
         CPU_ZERO_S(size, cpuset);
 
-        int retval = pthread_getaffinity_np(d->native_handle, size, cpuset);
+        int retval = pthread_getaffinity_np(d->thread.native_handle(), size, cpuset);
         if (retval == 0)
             break;
 
@@ -308,7 +308,7 @@ void Thread::setCoreAffinity(int coreID) {
     CPU_ZERO_S(size, cpuset);
     CPU_SET_S(actualCoreID, size, cpuset);
 
-    retval = pthread_setaffinity_np(d->native_handle, size, cpuset);
+    retval = pthread_setaffinity_np(d->thread.native_handle(), size, cpuset);
     if (retval) {
         Log(EWarn, "Thread::setCoreAffinity(): pthread_setaffinity_np: failed: %s", strerror(retval));
         CPU_FREE(cpuset);

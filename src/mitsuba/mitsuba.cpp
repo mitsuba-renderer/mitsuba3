@@ -13,19 +13,20 @@
 
 using namespace mitsuba;
 
-void help() {
+void help(int coreCount) {
     std::cout << "Mitsuba version " << MTS_VERSION << " (";
 #if defined(__WINDOWS__)
-	std::cout << "Windows, ";
+    std::cout << "Windows, ";
 #elif defined(__LINUX__)
-	std::cout << "Linux, ";
+    std::cout << "Linux, ";
 #elif defined(__OSX__)
-	std::cout << "Mac OS, ";
+    std::cout << "Mac OS, ";
 #else
-	std::cout << "Unknown, ";
+    std::cout << "Unknown, ";
 #endif
-    std::cout << (sizeof(size_t) * 8) << "bit), Copyright " << MTS_YEAR
-              << " by Wenzel Jakob" << std::endl;
+    std::cout << (sizeof(size_t) * 8) << "bit, ";
+    std::cout << coreCount << " core" << (coreCount > 1 ? "s" : "");
+    std::cout << "), Copyright " << MTS_YEAR << " by Wenzel Jakob" << std::endl;
 
     std::cout << "Instruction sets enabled:";
     if (simd::hasAVX512DQ) std::cout << " avx512dq";
@@ -91,9 +92,8 @@ int main(int argc, char *argv[]) {
         }
 
         /* Initialize Intel Thread Building Blocks with the requested number of threads */
-        tbb::task_scheduler_init init(
-            *arg_threads ? arg_threads->asInt()
-                         : tbb::task_scheduler_init::automatic);
+        int coreCount = *arg_threads ? arg_threads->asInt() : util::coreCount();
+        tbb::task_scheduler_init init(coreCount);
 
         /* Append the mitsuba directory to the FileResolver search path list */
         ref<FileResolver> fr = Thread::thread()->fileResolver();
@@ -102,19 +102,19 @@ int main(int argc, char *argv[]) {
             fr->append(basePath);
 
         if (!*arg_extra || *arg_help)
-            help();
+            help(coreCount);
 
         while (arg_extra && *arg_extra) {
             xml::loadFile(arg_extra->asString());
             arg_extra = arg_extra->next();
         }
-	} catch (const std::exception &e) {
-		std::cerr << "\nCaught a critical exception: " << e.what() << std::endl;
-		return -1;
-	} catch (...) {
-		std::cerr << "\nCaught a critical exception of unknown type!" << std::endl;
-		return -1;
-	}
+    } catch (const std::exception &e) {
+        std::cerr << "\nCaught a critical exception: " << e.what() << std::endl;
+        return -1;
+    } catch (...) {
+        std::cerr << "\nCaught a critical exception of unknown type!" << std::endl;
+        return -1;
+    }
 
     Logger::staticShutdown();
     Thread::staticShutdown();

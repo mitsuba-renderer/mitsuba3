@@ -22,3 +22,4 @@ fi
 
 export PYTHONPATH="$MITSUBA_DIR/dist/python"
 export PATH="$MITSUBA_DIR/dist:$PATH"
+export LD_LIBRARY_PATH="$MITSUBA_DIR/dist:$LD_LIBRARY_PATH"

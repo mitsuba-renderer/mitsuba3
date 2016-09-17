@@ -110,7 +110,7 @@ class FilesystemTest(unittest.TestCase):
 
     def test08_make_absolute(self):
         self.assertEqual(fs.absolute(FilesystemTest.path_here_relative), FilesystemTest.path_here)
-    
+
     # Assumes either Windows or a POSIX system
     def test09_system_specific_tests(self):
         if (platform.system() == 'Windows'):

@@ -59,6 +59,10 @@ target_link_libraries(mitsuba-core tbb pugixml)
 # Link to libpng and zlib (either the system version or a version built via cmake)
 target_link_libraries(mitsuba-core ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
 
+if(UNIX AND NOT APPLE)
+  target_link_libraries(mitsuba-core dl)
+endif()
+
 # Link to asmjit (for structconv)
 target_link_libraries(mitsuba-core asmjit)
 

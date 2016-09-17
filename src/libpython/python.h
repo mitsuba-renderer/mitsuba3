@@ -50,7 +50,7 @@ namespace py = pybind11;
 
 template <typename T> class is_simdarray {
 private:
-    template <typename Scalar, size_t Dimension, bool ApproximateMath, 
+    template <typename Scalar, size_t Dimension, bool ApproximateMath,
               simd::RoundingMode Mode, typename Derived, typename SFINAE>
     static std::true_type test(const
           simd::ArrayBase<Scalar, Dimension, ApproximateMath, Mode, Derived, SFINAE> &);

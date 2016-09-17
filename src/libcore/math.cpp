@@ -890,7 +890,7 @@ template <typename Scalar> Scalar i0e(Scalar x) {
     /* Chebyshev coefficients for exp(-x) I0(x)
      * in the interval [0,8].
      *
-     * lim(x->0){ exp(-x) I0(x) } = 1.
+     * lim(x->0) { exp(-x) I0(x) } = 1.
      */
     static const Scalar A[] = {
         -4.41534164647933937950E-18, 3.33079451882223809783E-17,
@@ -913,7 +913,7 @@ template <typename Scalar> Scalar i0e(Scalar x) {
     /* Chebyshev coefficients for exp(-x) sqrt(x) I0(x)
      * in the inverted interval [8,infinity].
      *
-     * lim(x->inf){ exp(-x) sqrt(x) I0(x) } = 1/sqrt(2pi).
+     * lim(x->inf) { exp(-x) sqrt(x) I0(x) } = 1/sqrt(2pi).
      */
     static const Scalar B[] = {
         -7.23318048787475395456E-18, -4.83050448594418207126E-18,

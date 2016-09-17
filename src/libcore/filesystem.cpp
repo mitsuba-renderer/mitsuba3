@@ -150,7 +150,7 @@ bool resize_file(const path& p, size_t target_length) noexcept {
 #if !defined(__WINDOWS__)
     return ::truncate(p.native().c_str(), (off_t) target_length) == 0;
 #else
-    HANDLE handle = CreateFileW(p.native().c_str(), GENERIC_WRITE, 0, 
+    HANDLE handle = CreateFileW(p.native().c_str(), GENERIC_WRITE, 0,
                                 nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE)
         return false;

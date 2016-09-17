@@ -16,31 +16,31 @@ ShapeKDTree::ShapeKDTree(const Properties &props)
              empty space */
           props.float_("kdEmptySpaceBonus", .9f))) {
 
-	/* kd-tree construction: A kd-tree node containing this many or fewer
-	   primitives will not be split */
+    /* kd-tree construction: A kd-tree node containing this many or fewer
+       primitives will not be split */
     if (props.hasProperty("kdStopPrims"))
         setStopPrimitives(props.int_("kdStopPrims"));
 
-	/* kd-tree construction: Maximum tree depth */
+    /* kd-tree construction: Maximum tree depth */
     if (props.hasProperty("kdMaxDepth"))
         setMaxDepth(props.int_("kdMaxDepth"));
 
-	/* kd-tree construction: Number of bins used by the min-max binning method */
+    /* kd-tree construction: Number of bins used by the min-max binning method */
     if (props.hasProperty("kdMinMaxBins"))
         setMinMaxBins(props.int_("kdMinMaxBins"));
 
-	/* kd-tree construction: Enable primitive clipping? Generally leads to a
-	  significant improvement of the resulting tree. */
+    /* kd-tree construction: Enable primitive clipping? Generally leads to a
+      significant improvement of the resulting tree. */
     if (props.hasProperty("kdClip"))
         setClipPrimitives(props.bool_("kdClip"));
 
-	/* kd-tree construction: specify whether or not bad splits can be "retracted". */
+    /* kd-tree construction: specify whether or not bad splits can be "retracted". */
     if (props.hasProperty("kdRetractBadSplits"))
         setRetractBadSplits(props.bool_("kdRetractBadSplits"));
 
-	/* kd-tree construction: Specify the number of primitives, at which the
-	   builder will switch from (approximate) Min-Max binning to the accurate
-	   O(n log n) SAH-based optimization method. */
+    /* kd-tree construction: Specify the number of primitives, at which the
+       builder will switch from (approximate) Min-Max binning to the accurate
+       O(n log n) SAH-based optimization method. */
     if (props.hasProperty("kdExactPrimitiveThreshold"))
         setExactPrimitiveThreshold(props.int_("kdExactPrimitiveThreshold"));
 
@@ -49,9 +49,9 @@ ShapeKDTree::ShapeKDTree(const Properties &props)
 
 void ShapeKDTree::addShape(Shape *shape) {
     Assert(!ready());
-	m_primitiveMap.push_back(m_primitiveMap.back() + shape->primitiveCount());
-	m_shapes.push_back(shape);
-	m_bbox.expand(shape->bbox());
+    m_primitiveMap.push_back(m_primitiveMap.back() + shape->primitiveCount());
+    m_shapes.push_back(shape);
+    m_bbox.expand(shape->bbox());
 }
 
 std::string ShapeKDTree::toString() const {

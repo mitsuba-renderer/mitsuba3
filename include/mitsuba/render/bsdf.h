@@ -9,7 +9,7 @@ public:
     virtual void dummy() = 0;
 
     MTS_DECLARE_CLASS()
-        
+
 protected:
     virtual ~BSDF() { }
 };

@@ -82,11 +82,11 @@ namespace {
 }
 
 BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
-	using simd::cast;
+    using simd::cast;
 
-	/* Reserve room for some additional vertices */
-	Point3d vertices1[maxVertices], vertices2[maxVertices];
-	size_t nVertices = 3;
+    /* Reserve room for some additional vertices */
+    Point3d vertices1[maxVertices], vertices2[maxVertices];
+    size_t nVertices = 3;
 
     Assert(index <= m_faceCount);
 
@@ -105,11 +105,11 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
        incorrectly remove triangles from the associated nodes. Hence, do
        the following computation in double precision! */
 
-	vertices1[0] = cast<Point3d>(v0);
-	vertices1[1] = cast<Point3d>(v1);
-	vertices1[2] = cast<Point3d>(v2);
+    vertices1[0] = cast<Point3d>(v0);
+    vertices1[1] = cast<Point3d>(v1);
+    vertices1[2] = cast<Point3d>(v2);
 
-	for (int axis=0; axis<3; ++axis) {
+    for (int axis=0; axis<3; ++axis) {
         nVertices = sutherlandHodgman(vertices1, nVertices, vertices2, axis,
                                       (double) clip.min[axis], true);
         nVertices = sutherlandHodgman(vertices2, nVertices, vertices1, axis,

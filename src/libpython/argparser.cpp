@@ -16,7 +16,7 @@ MTS_PY_EXPORT(ArgParser) {
         .def("parse", [](ArgParser &a, std::vector<std::string> args) {
                 std::unique_ptr<const char *[]> args_(new const char *[args.size()]);
                 for (size_t i = 0; i<args.size(); ++i)
-                   args_[i] = args[i].c_str(); 
+                   args_[i] = args[i].c_str();
                 a.parse((int) args.size(), args_.get());
             },
             DM(ArgParser, parse))

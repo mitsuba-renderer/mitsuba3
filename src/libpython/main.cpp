@@ -77,7 +77,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT_RENDER(Shape);
     MTS_PY_IMPORT_RENDER(ShapeKDTree);
 
-    atexit([](){
+    atexit([]() {
         Logger::staticShutdown();
         Thread::staticShutdown();
         Class::staticShutdown();

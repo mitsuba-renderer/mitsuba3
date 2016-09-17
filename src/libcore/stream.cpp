@@ -59,12 +59,12 @@ void Stream::writeLine(const std::string &text) {
 }
 
 std::string Stream::readLine() {
-	std::string result;
-	result.reserve(80);
+    std::string result;
+    result.reserve(80);
 
-	try {
+    try {
         do {
-	        char data;
+            char data;
             read(&data, sizeof(char));
             if (data == '\n')
                 break;
@@ -75,7 +75,7 @@ std::string Stream::readLine() {
         if (tell() != size() || result.empty())
             throw;
     }
-	return result;
+    return result;
 }
 
 MTS_IMPLEMENT_CLASS(Stream, Object)

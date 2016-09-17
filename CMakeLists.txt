@@ -41,6 +41,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   add_compile_options("-fp-model" "precise")
 endif()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Always use libc++ on Clang
+  add_compile_options(-stdlib=libc++)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+endif()
+
 # Enable folders for projects in Visual Studio
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)

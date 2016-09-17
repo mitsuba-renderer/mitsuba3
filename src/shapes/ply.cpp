@@ -36,9 +36,9 @@ public:
             Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
         };
 
-		Log(EInfo, "Loading mesh from \"%s\" ..", m_name);
-		if (!fs::exists(filePath))
-		    fail("file not found");
+        Log(EInfo, "Loading mesh from \"%s\" ..", m_name);
+        if (!fs::exists(filePath))
+            fail("file not found");
 
         ref<Stream> stream = new FileStream(filePath, false);
         Timer timer;

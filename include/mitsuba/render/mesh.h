@@ -72,7 +72,7 @@ public:
     /**
      * \brief Return an axis aligned box that bounds a single triangle after it
      * has been clipped to another bounding box.
-	 *
+     *
      * This is extremely important to construct decent kd-trees. The default
      * implementation just takes the bounding box returned by \ref bbox(Index
      * index) and clips it to \a clip.

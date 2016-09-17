@@ -50,49 +50,49 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE PluginManager : public Object {
 public:
-	/// Return the global plugin manager
-	static PluginManager *instance() { return m_instance; }
+    /// Return the global plugin manager
+    static PluginManager *instance() { return m_instance; }
 
-	/// Ensure that a plugin is loaded and ready
-	void ensurePluginLoaded(const std::string &name);
+    /// Ensure that a plugin is loaded and ready
+    void ensurePluginLoaded(const std::string &name);
 
-	/// Return the list of loaded plugins
-	std::vector<std::string> loadedPlugins() const;
+    /// Return the list of loaded plugins
+    std::vector<std::string> loadedPlugins() const;
 
-	/**
+    /**
      * \brief Instantiate a plugin, verify its type, and return the newly
      * created object instance.
-	 *
+     *
      * \param classType
      *     Expected type of the instance. An exception will be thrown if it
      *     turns out not to derive from this class.
      *
-	 * \param props
+     * \param props
      *     A \ref Properties instance containing all information required to
      *     find and construct the plugin.
-	 */
+     */
     ref<Object> createObject(const Class *classType, const Properties &props);
 
     /**
      * \brief Instantiate a plugin and return the new instance (without
      * verifying its type).
-	 *
-	 * \param props
+     *
+     * \param props
      *    A \ref Properties instance containing all information required to
      *    find and construct the plugin.
-	 */
-	ref<Object> createObject(const Properties &props);
+     */
+    ref<Object> createObject(const Properties &props);
 
     MTS_DECLARE_CLASS()
 protected:
-	PluginManager();
+    PluginManager();
 
-	/// Destruct and unload all plugins
-	~PluginManager();
+    /// Destruct and unload all plugins
+    ~PluginManager();
 private:
     struct PluginManagerPrivate;
     std::unique_ptr<PluginManagerPrivate> d;
-	static ref<PluginManager> m_instance;
+    static ref<PluginManager> m_instance;
 };
 
 NAMESPACE_END(mitsuba)

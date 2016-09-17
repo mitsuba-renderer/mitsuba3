@@ -184,11 +184,11 @@ NAMESPACE_END(detail)
 extern MTS_EXPORT_CORE const Class *m_class;
 
 #define MTS_EXPORT_PLUGIN(name, descr) \
-	extern "C" { \
-		MTS_EXPORT Object *CreateObject(const Properties &props) { \
-			return new name(props); \
-		} \
-		MTS_EXPORT const char *Description = descr; \
-	}
+    extern "C" { \
+        MTS_EXPORT Object *CreateObject(const Properties &props) { \
+            return new name(props); \
+        } \
+        MTS_EXPORT const char *Description = descr; \
+    }
 
 NAMESPACE_END(mitsuba)

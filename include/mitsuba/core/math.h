@@ -310,15 +310,15 @@ template <typename T> T roundToPowerOfTwo(T i) {
 #if defined(MTS_CLZ) && defined(MTS_CLZLL)
     return T(1) << (log2i<T>(i - 1) + 1);
 #else
-	i--;
-	i |= i >> 1;
-	i |= i >> 2;
-	i |= i >> 4;
-	if (sizeof(T) >= 2)
+    i--;
+    i |= i >> 1;
+    i |= i >> 2;
+    i |= i >> 4;
+    if (sizeof(T) >= 2)
         i |= i >> 8;
-	if (sizeof(T) >= 4)
+    if (sizeof(T) >= 4)
         i |= i >> 16;
-	if (sizeof(T) >= 8)
+    if (sizeof(T) >= 8)
         i |= i >> 32;
     return i + 1;
 #endif

@@ -159,7 +159,7 @@ public:
     //! @{ \name Endianness handling
     // =========================================================================
 
-    /** \brief Sets the byte order to use in this stream. 
+    /** \brief Sets the byte order to use in this stream.
      *
      * Automatic conversion will be performed on read and write operations
      * to match the system's native endianness.

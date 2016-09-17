@@ -118,21 +118,19 @@ void ThreadLocalBase::staticShutdown() {
 
 bool ThreadLocalBase::registerThread() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
-    bool success = false;
 #if defined(__OSX__)
     PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptdLocal);
     if (!ptd) {
         ptd = new PerThreadData();
         ptdGlobal.insert(ptd);
         pthread_setspecific(ptdLocal, ptd);
-        success = true;
         return true;
     } else {
         ptd->refCount++;
     }
 #else
     if (!ptdLocal) {
-        auto ptd = new PerThreadLocal();
+        auto ptd = new PerThreadData();
         ptdLocal = ptd;
         ptdGlobal.insert(ptd);
         return true;
