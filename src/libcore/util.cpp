@@ -10,6 +10,7 @@
 #  endif
 #  include <dlfcn.h>
 #  include <unistd.h>
+#  include <limits.h>
 #elif defined(__OSX__)
 #  include <sys/sysctl.h>
 #  include <mach-o/dyld.h>

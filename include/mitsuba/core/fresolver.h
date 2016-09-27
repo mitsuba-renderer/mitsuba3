@@ -40,9 +40,7 @@ public:
     const_iterator end()   const { return m_paths.end(); }
 
     /// Check if a given path is included in the search path list
-    bool contains(const fs::path &p) const {
-        return std::find(m_paths.begin(), m_paths.end(), p) != m_paths.end();
-    }
+    bool contains(const fs::path &p) const;
 
     /// Erase the entry at the given iterator position
     void erase(iterator it) { m_paths.erase(it); }
