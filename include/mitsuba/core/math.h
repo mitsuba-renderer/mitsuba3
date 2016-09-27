@@ -280,8 +280,8 @@ template <typename T> T modulo(T a, T b) {
 template <typename T> T log2i(T value) {
     Assert(value >= 0);
 #if defined(__GNUC__) && defined(__x86_64__)
-    T result;
-    asm ("bsr %1, %0" : "=r" (result) : "r" (value));
+    T result = 0;
+    asm ("bsr %1, %0" : "+r" (result) : "r" (value));
     return result;
 #elif defined(_WIN32)
     unsigned long result;
