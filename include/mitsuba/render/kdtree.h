@@ -679,31 +679,30 @@ protected:
         }
 
         MTS_INLINE void put(BoundingBox bbox) {
-            using IndexVec = simd::Array<Index, 3>;
+            using IndexArray = simd::Array<Index, 3>;
+            const IndexArray offsetMin = IndexArray(0, 2 * m_binCount, 4 * m_binCount);
+            const IndexArray offsetMax = offsetMin + 1;
+            Index *ptr = m_bins.data();
 
             Assert(bbox.valid());
-
             Vector relMin = (bbox.min - m_bbox.min) * m_invBinSize;
             Vector relMax = (bbox.max - m_bbox.min) * m_invBinSize;
 
             relMin = min(max(relMin, Vector::Zero()), m_maxBin);
             relMax = min(max(relMax, Vector::Zero()), m_maxBin);
 
-            IndexVec indexMin = simd::cast<IndexVec>(relMin);
-            IndexVec indexMax = simd::cast<IndexVec>(relMax);
+            IndexArray indexMin = simd::cast<IndexArray>(relMin);
+            IndexArray indexMax = simd::cast<IndexArray>(relMax);
 
-            Index offset = 0, step = Index(2 * m_binCount);
-            for (Index axis = 0; axis < Dimension; ++axis) {
-                Assert(indexMin[axis] <= indexMax[axis]);
-                m_bins[offset + indexMin[axis] * 2 + 0]++;
-                m_bins[offset + indexMax[axis] * 2 + 1]++;
-                offset += step;
-            }
-            /// TODO: try replacing this with Gather/Scatter
-            /// indexMin += indexMin + (0, step, 2*step);
-            /// indexMax += indexMax + (0, step, 2*step) + 1;
-            /// IndexVec::Scatter(m_bins, indexMin, IndexVec::Gather(m_bins, indexMin) + 1);
-            /// IndexVec::Scatter(m_bins, indexMax, IndexVec::Gather(m_bins, indexMax) + 1);
+            Assert(simd::all(indexMin <= indexMax));
+            indexMin = indexMin + indexMin + offsetMin;
+            indexMax = indexMax + indexMax + offsetMax;
+
+            IndexArray minCounts = IndexArray::Gather(ptr, indexMin),
+                       maxCounts = IndexArray::Gather(ptr, indexMax);
+
+            simd::scatter(ptr, minCounts + 1, indexMin);
+            simd::scatter(ptr, maxCounts + 1, indexMax);
         }
 
         SplitCandidate bestCandidate(Size primCount, const CostModel &model) const {
