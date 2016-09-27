@@ -28,7 +28,6 @@ NAMESPACE_BEGIN(mitsuba)
  * threads and TLS objects. To actually instantiate a TLS object with a
  * specific type, use the \ref ThreadLocal class.
  *
- * \ingroup libcore
  * \sa ThreadLocal
  */
 
@@ -82,7 +81,6 @@ private:
 
 /**
  * \brief Flexible platform-independent thread local storage class
- * \ingroup libcore
  *
  * This class implements a generic thread local storage object. For details,
  * refer to its base class, \ref ThreadLocalBase.
@@ -119,7 +117,6 @@ public:
 
 /**
  * \brief Flexible platform-independent thread local storage class
- * \ingroup libcore
  *
  * This class implements a generic thread local storage object. For details,
  * refer to its base class, \ref ThreadLocalBase.

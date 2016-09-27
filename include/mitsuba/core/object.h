@@ -6,10 +6,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * \brief Reference counted object base class
- * \ingroup libcore
- */
+/// Reference counted object base class
 class MTS_EXPORT_CORE Object {
 public:
     /// Default constructor
@@ -72,8 +69,6 @@ private:
  * The advantage over C++ solutions such as <tt>std::shared_ptr</tt> is that
  * the reference count is very compactly integrated into the base object
  * itself.
- *
- * \ingroup libcore
  */
 template <typename T> class ref {
 public:

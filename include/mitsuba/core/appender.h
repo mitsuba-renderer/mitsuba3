@@ -7,8 +7,6 @@ NAMESPACE_BEGIN(mitsuba)
 
 /** \brief This class defines an abstract destination
  * for logging-relevant information
- *
- * \ingroup libcore
  */
 class MTS_EXPORT_CORE Appender : public Object {
 public:
@@ -37,8 +35,6 @@ protected:
 
 /** \brief %Appender implementation, which writes to an
  * arbitrary C++ output stream
- *
- * \ingroup libcore
  */
 class MTS_EXPORT_CORE StreamAppender : public Appender {
 public:

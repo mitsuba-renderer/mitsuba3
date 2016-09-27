@@ -19,7 +19,6 @@ NAMESPACE_BEGIN(mitsuba)
  * \endcode
  *
  * \tparam T The underlying point data type (e.g. \c Point2d)
- * \ingroup libcore
  */
 template <typename _Point> struct TBoundingBox {
     enum {

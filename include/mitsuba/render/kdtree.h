@@ -14,9 +14,6 @@
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MTS_KD_MAXDEPTH 48u
 
-/// Number of bins used for Min-Max binning
-#define MTS_KD_BINS 128u
-
 /// OrderedChunkAllocator: don't create chunks smaller than 5MiB
 #define MTS_KD_MIN_ALLOC 5*1024u*1024u
 
@@ -644,7 +641,7 @@ protected:
         MinMaxBins(Size binCount, const BoundingBox &bbox)
             : m_bins(binCount * Dimension * 2, Size(0)), m_binCount(binCount),
               m_invBinSize(1 / (bbox.extents() / (Scalar) binCount)),
-              m_maxBin(Scalar(binCount - 1)), m_bbox(bbox) {
+              m_maxBin(binCount - 1), m_bbox(bbox) {
             Assert(bbox.valid());
         }
 
@@ -1860,10 +1857,10 @@ protected:
     bool m_clipPrimitives = true;
     bool m_retractBadSplits = true;
     Size m_maxDepth = 0;
-    Size m_stopPrimitives = 1;
+    Size m_stopPrimitives = 3;
     Size m_maxBadRefines = 0;
     Size m_exactPrimThreshold = 65536;
-    Size m_minMaxBins = MTS_KD_BINS;
+    Size m_minMaxBins = 128;
     ELogLevel m_logLevel = EDebug;
     BoundingBox m_bbox;
 };
