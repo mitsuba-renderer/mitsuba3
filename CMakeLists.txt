@@ -28,7 +28,7 @@ else(MSVC)
   try_run(
     ARCHFLAGS_FLAGS ARCHFLAGS_COMPILE_RESULT
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_SOURCE_DIR}/src/libcore/archflags.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/archflags.cpp
   )
   if(NOT ${ARCHFLAGS_COMPILE_RESULT})
      message(FATAL_ERROR "Failed to compile 'archflags' binary")
