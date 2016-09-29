@@ -13,36 +13,56 @@
 
 using namespace mitsuba;
 
-void help(int coreCount) {
-    std::cout << "Mitsuba version " << MTS_VERSION << " (";
+static std::string buildInfo(int threadCount) {
+    std::ostringstream oss;
+    oss << "Mitsuba version " << MTS_VERSION << " (";
+    oss << MTS_BRANCH << "[" << MTS_HASH << "], ";
 #if defined(__WINDOWS__)
-    std::cout << "Windows, ";
+    oss << "Windows, ";
 #elif defined(__LINUX__)
-    std::cout << "Linux, ";
+    oss << "Linux, ";
 #elif defined(__OSX__)
-    std::cout << "Mac OS, ";
+    oss << "Mac OS, ";
 #else
-    std::cout << "Unknown, ";
+    oss << "Unknown, ";
 #endif
-    std::cout << (sizeof(size_t) * 8) << "bit, ";
-    std::cout << coreCount << " core" << (coreCount > 1 ? "s" : "");
-    std::cout << "), Copyright " << MTS_YEAR << " by Wenzel Jakob" << std::endl;
+    oss << (sizeof(size_t) * 8) << "bit, ";
+    oss << threadCount << " thread" << (threadCount > 1 ? "s" : "");
+    oss << ")";
 
-    std::cout << "Instruction sets enabled:";
-    if (simd::hasAVX512DQ) std::cout << " avx512dq";
-    if (simd::hasAVX512BW) std::cout << " avx512bw";
-    if (simd::hasAVX512VL) std::cout << " avx512vl";
-    if (simd::hasAVX512ER) std::cout << " avx512eri";
-    if (simd::hasAVX512PF) std::cout << " avx512pfi";
-    if (simd::hasAVX512CD) std::cout << " avx512cdi";
-    if (simd::hasAVX512F)  std::cout << " avx512f";
-    if (simd::hasAVX2)     std::cout << " avx2";
-    if (simd::hasAVX)      std::cout << " avx";
-    if (simd::hasFMA)      std::cout << " fma";
-    if (simd::hasF16C)     std::cout << " f16c";
-    if (simd::hasSSE42)    std::cout << " sse4.2";
-    std::cout << std::endl;
+    return oss.str();
+}
 
+static std::string copyrightInfo() {
+    std::ostringstream oss;
+    oss << "Copyright " << MTS_YEAR << " by " << MTS_AUTHORS;
+    return oss.str();
+}
+
+static std::string isaInfo() {
+    std::ostringstream oss;
+
+    oss << "Instruction sets enabled:";
+    if (simd::hasAVX512DQ) oss << " avx512dq";
+    if (simd::hasAVX512BW) oss << " avx512bw";
+    if (simd::hasAVX512VL) oss << " avx512vl";
+    if (simd::hasAVX512ER) oss << " avx512eri";
+    if (simd::hasAVX512PF) oss << " avx512pfi";
+    if (simd::hasAVX512CD) oss << " avx512cdi";
+    if (simd::hasAVX512F)  oss << " avx512f";
+    if (simd::hasAVX2)     oss << " avx2";
+    if (simd::hasAVX)      oss << " avx";
+    if (simd::hasFMA)      oss << " fma";
+    if (simd::hasF16C)     oss << " f16c";
+    if (simd::hasSSE42)    oss << " sse4.2";
+
+    return oss.str();
+}
+
+static void help(int threadCount) {
+    std::cout << buildInfo(threadCount) << std::endl;
+    std::cout << copyrightInfo() << std::endl;
+    std::cout << isaInfo() << std::endl;
     std::cout << R"(
 Usage: mitsuba [options] <One or more scene XML files>
 
@@ -92,8 +112,8 @@ int main(int argc, char *argv[]) {
         }
 
         /* Initialize Intel Thread Building Blocks with the requested number of threads */
-        int coreCount = *arg_threads ? arg_threads->asInt() : util::coreCount();
-        tbb::task_scheduler_init init(coreCount);
+        int threadCount = *arg_threads ? arg_threads->asInt() : util::coreCount();
+        tbb::task_scheduler_init init(threadCount);
 
         /* Append the mitsuba directory to the FileResolver search path list */
         ref<FileResolver> fr = Thread::thread()->fileResolver();
@@ -101,8 +121,13 @@ int main(int argc, char *argv[]) {
         if (!fr->contains(basePath))
             fr->append(basePath);
 
-        if (!*arg_extra || *arg_help)
-            help(coreCount);
+        if (!*arg_extra || *arg_help) {
+            help(threadCount);
+        } else {
+            Log(EInfo, "%s", buildInfo(threadCount));
+            Log(EInfo, "%s", copyrightInfo());
+            Log(EInfo, "%s", isaInfo());
+        }
 
         while (arg_extra && *arg_extra) {
             xml::loadFile(arg_extra->asString());

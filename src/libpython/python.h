@@ -50,13 +50,11 @@ namespace py = pybind11;
 
 template <typename T> class is_simdarray {
 private:
-    template <typename Scalar, size_t Dimension, bool ApproximateMath,
-              simd::RoundingMode Mode, typename Derived, typename SFINAE>
-    static std::true_type test(const
-          simd::ArrayBase<Scalar, Dimension, ApproximateMath, Mode, Derived, SFINAE> &);
+    template <typename T2>
+    static std::true_type test(const simd::DerivedType<T2> &);
     static std::false_type test(...);
 public:
-    static constexpr bool value = decltype(test(std::declval<T>()))::value;
+    static constexpr bool value = decltype(is_simdarray::test(std::declval<const T &>()))::value;
 };
 
 extern py::dtype dtypeForStruct(const Struct *s);

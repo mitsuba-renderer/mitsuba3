@@ -19,7 +19,7 @@ include_directories(
 )
 
 # Create the binding library
-add_library(mitsuba-python SHARED
+add_library(mitsuba-python-obj OBJECT
   # main
   python.h
   docstr.h
@@ -53,7 +53,10 @@ add_library(mitsuba-python SHARED
   shape.cpp
 )
 
-target_link_libraries(mitsuba-python mitsuba-core mitsuba-render)
+add_library(mitsuba-python SHARED $<TARGET_OBJECTS:mitsuba-python-obj>)
+set_property(TARGET mitsuba-python PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET mitsuba-python-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(mitsuba-python PRIVATE mitsuba-core mitsuba-render)
 
 # Don't add a 'lib' prefix to the shared library
 set_target_properties(mitsuba-python PROPERTIES PREFIX "")
@@ -129,7 +132,7 @@ add_custom_command(
 add_custom_command(
   TARGET mitsuba-python
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nanogui_python> ${CMAKE_BINARY_DIR}/dist/python)
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nanogui-python> ${CMAKE_BINARY_DIR}/dist/python)
 
 # Compute compilation flags for 'mkdoc' target, which extracts docstrings from the C++ header files
 string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})

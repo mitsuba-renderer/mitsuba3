@@ -13,7 +13,7 @@ add_definitions(
 
 set(INC_DIR "../../include/mitsuba/core")
 
-add_library(mitsuba-core SHARED
+add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/../mitsuba.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/essentials.h
@@ -53,18 +53,25 @@ add_library(mitsuba-core SHARED
   zstream.cpp      ${INC_DIR}/zstream.h
 )
 
-# Link to Intel's Thread Building Blocks & the pugixml parser
-target_link_libraries(mitsuba-core tbb pugixml)
+add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)
+set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-# Link to libpng and zlib (either the system version or a version built via cmake)
-target_link_libraries(mitsuba-core ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
+# Link to Intel's Thread Building Blocks, the pugixml parser, and asmjit
+target_link_libraries(mitsuba-core PRIVATE tbb pugixml asmjit)
 
-if(UNIX AND NOT APPLE)
-  target_link_libraries(mitsuba-core dl)
+if (UNIX AND NOT APPLE)
+  target_link_libraries(mitsuba-core PUBLIC
+    -Wl,-rpath-link=$<TARGET_FILE_DIR:tbb>
+    -Wl,-rpath-link=$<TARGET_FILE_DIR:pugixml>
+    -Wl,-rpath-link=$<TARGET_FILE_DIR:asmjit>)
 endif()
 
-# Link to asmjit (for structconv)
-target_link_libraries(mitsuba-core asmjit)
+# Link to libpng and zlib (either the system version or a version built via cmake)
+target_link_libraries(mitsuba-core PRIVATE ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
+
+if(UNIX AND NOT APPLE)
+  target_link_libraries(mitsuba-core PRIVATE dl)
+endif()
 
 # Create the 'dist' and 'dist/plugins' directories
 add_custom_command(

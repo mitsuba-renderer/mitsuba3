@@ -118,7 +118,7 @@ set(NANOGUI_INCLUDE_DIRS
    PARENT_SCOPE)
 
 if (PYTHONLIBS_FOUND)
-  set_property(TARGET nanogui_python PROPERTY FOLDER "dependencies")
+  set_property(TARGET nanogui-python PROPERTY FOLDER "dependencies")
 endif()
 
 # Build the pugixml parser

@@ -4,6 +4,9 @@ project(mitsuba)
 
 option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
 
+cmake_policy(SET CMP0022 NEW) # New-style link interface
+cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
+
 include(CheckCXXCompilerFlag)
 include(TestBigEndian)
 
@@ -36,15 +39,17 @@ else(MSVC)
   add_compile_options(${ARCHFLAGS_FLAGS})
 endif()
 
+# Disable overly aggressive FP optimization in the Intel compiler
+# (this flag is intentially added here so that it also applies to dependencies)
 if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-  # Disable overly aggressive FP optimization in the Intel compiler
   add_compile_options("-fp-model" "precise")
 endif()
 
+# Always use libc++ on Clang
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # Always use libc++ on Clang
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
 endif()
 
 # Enable folders for projects in Visual Studio
@@ -57,6 +62,7 @@ if (APPLE)
   set(CMAKE_MACOSX_RPATH ON)
 endif()
 
+# Build the dependencies
 add_subdirectory(ext ext_build)
 
 # Always add the include directories for tinyformat, SIMDArray and Eigen
@@ -86,20 +92,18 @@ else()
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "^(GNU|Clang|Intel)$")
+  # Enable C++11/14
   CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
-  CHECK_CXX_COMPILER_FLAG("-std=c++11" HAS_CPP11_FLAG)
 
   if (HAS_CPP14_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-  elseif (HAS_CPP11_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   else()
-    message(FATAL_ERROR "Unsupported compiler -- pybind11 requires C++11 support!")
+    message(FATAL_ERROR "Unsupported compiler -- Mitsuba requires C++14 support!")
   endif()
 
   # Enable link time optimization and set the default symbol
   # visibility to hidden (very important to obtain small binaries)
-  if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG)
+  if (U_CMAKE_BUILD_TYPE MATCHES REL)
     # Don't use stack security features in release mode
     add_compile_options("-fno-stack-protector")
 
@@ -109,45 +113,23 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "^(GNU|Clang|Intel)$")
     # Don't update the 'errno' global when encountering domain errors in math functions
     add_compile_options("-fno-math-errno")
 
+    # Increase function size limits for inlining on GCC (useful for templated
+    # code where significant portions can be optimized away during inlining)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-      # Increase function size limits for inlining on GCC (useful for templated
-      # code where significant portions can be optimized away during inlining)
       add_compile_options("-finline-limit=150")
     endif()
 
+    # Contract multiplications and additions into fused multiply-add instructions
     if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-      # Contract multiplications and additions into fused multiply-add instructions
       add_compile_options("-ffp-contract=fast")
     endif()
   endif()
 
-  if (${U_CMAKE_BUILD_TYPE} MATCHES RELEASE)
+  # Set the default symbol visibility to hidden
+  if (U_CMAKE_BUILD_TYPE MATCHES RELEASE OR
+      U_CMAKE_BUILD_TYPE MATCHES MINSIZEREL)
     add_compile_options("-fvisibility=hidden")
   endif()
-endif()
-
-# Set platform-specific flags
-if (WIN32)
-  add_definitions(-D__WINDOWS__)
-elseif(UNIX)
-  if(APPLE)
-    add_definitions(-D__OSX__)
-  else()
-    add_definitions(-D__LINUX__)
-  endif()
-endif()
-
-test_big_endian(IS_BIG_ENDIAN)
-if (IS_BIG_ENDIAN)
-  add_definitions(-DBIG_ENDIAN)
-else()
-  add_definitions(-DLITTLE_ENDIAN)
-endif()
-
-if (MTS_DOUBLE_PRECISION)
-  add_definitions(-DDOUBLE_PRECISION)
-else()
-  add_definitions(-DSINGLE_PRECISION)
 endif()
 
 if (MSVC)
@@ -180,13 +162,117 @@ if (MSVC)
   endif()
 endif()
 
-# Function for creating macros
+# Enable link time optimizatoin in release mode (if possible)
+if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+  # Enable link time optimization
+  if (NOT CMAKE_CXX_FLAGS MATCHES "-flto")
+    set(BACKUP_C_FLAGS ${CMAKE_CXX_FLAGS})
+    set(BACKUP_CXX_FLAGS ${CMAKE_C_FLAGS})
+    set(BACKUP_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
+    set(BACKUP_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      set(CMAKE_CXX_FLAGS "-flto=thin ${CMAKE_CXX_FLAGS}")
+      set(CMAKE_C_FLAGS "-flto=thin ${CMAKE_C_FLAGS}")
+
+      if (APPLE)
+        set(CMAKE_EXE_LINKER_FLAGS    "-flto=thin -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_EXE_LINKER_FLAGS}")
+        set(CMAKE_SHARED_LINKER_FLAGS "-flto=thin -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_SHARED_LINKER_FLAGS}")
+      else()
+        set(CMAKE_EXE_LINKER_FLAGS    "-flto=thin -Wl,-plugin-opt,cache-dir=${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_EXE_LINKER_FLAGS}")
+        set(CMAKE_SHARED_LINKER_FLAGS "-flto=thin -Wl,-plugin-opt,cache-dir=${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_SHARED_LINKER_FLAGS}")
+      endif()
+
+      if (NOT APPLE AND U_CMAKE_BUILD_TYPE MATCHES MINSIZEREL)
+          # Clang Gold plugin does not support -Os
+          set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O3")
+          set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -O3")
+      endif()
+    else()
+      set(CMAKE_EXE_LINKER_FLAGS "-flto ${CMAKE_EXE_LINKER_FLAGS}")
+      set(CMAKE_SHARED_LINKER_FLAGS "-flto ${CMAKE_SHARED_LINKER_FLAGS}")
+      set(CMAKE_CXX_FLAGS "-flto -fno-fat-lto-objects ${CMAKE_CXX_FLAGS}")
+      set(CMAKE_C_FLAGS "-flto -fno-fat-lto-objects ${CMAKE_C_FLAGS}")
+    endif()
+
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c "int main(int argc, char **argv) { return 0; }")
+    try_compile(HAS_LTO
+      ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp
+      ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c)
+
+    if (HAS_LTO)
+      message(STATUS "Mitsuba: LTO support enabled.")
+    else()
+      message(STATUS "Mitsuba: LTO not supported by the compiler.")
+      set(CMAKE_C_FLAGS ${BACKUP_CXX_FLAGS})
+      set(CMAKE_CXX_FLAGS ${BACKUP_C_FLAGS})
+      set(CMAKE_EXE_LINKER_FLAGS ${BACKUP_EXE_LINKER_FLAGS})
+      set(CMAKE_SHARED_LINKER_FLAGS ${BACKUP_SHARED_LINKER_FLAGS})
+    endif()
+  endif()
+elseif(MSVC)
+  set(Configurations RELEASE RELWITHDEBINFO MINSIZEREL)
+  set(LinkTypes EXE SHARED MODULE STATIC)
+  foreach(Configuration ${Configurations})
+    set("CMAKE_CXX_FLAGS_${Configuration}" "${CMAKE_CXX_FLAGS_${Configuration}} /GL")
+    foreach(LinkType ${LinkTypes})
+      set("CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}" "${CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}} /LTCG")
+      message(STATUS CMAKE_${LinkType}_LINKER_FLAGS_${Configuration})
+    endforeach()
+  endforeach()
+  message(STATUS "Mitsuba: LTO support enabled.")
+endif()
+
+# Set platform-specific flags
+if (WIN32)
+  add_definitions(-D__WINDOWS__)
+elseif(UNIX)
+  if(APPLE)
+    add_definitions(-D__OSX__)
+  else()
+    add_definitions(-D__LINUX__)
+  endif()
+endif()
+
+test_big_endian(IS_BIG_ENDIAN)
+if (IS_BIG_ENDIAN)
+  add_definitions(-DBIG_ENDIAN)
+else()
+  add_definitions(-DLITTLE_ENDIAN)
+endif()
+
+if (MTS_DOUBLE_PRECISION)
+  add_definitions(-DDOUBLE_PRECISION)
+else()
+  add_definitions(-DSINGLE_PRECISION)
+endif()
+
+# Get the current working branch
+execute_process(
+  COMMAND git rev-parse --abbrev-ref HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest abbreviated commit hash of the working branch
+execute_process(
+  COMMAND git log -1 --format=%h
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Function for creating Mitsuba plugins
 function(add_plugin)
   list(GET ARGV 0 target_name)
   list(REMOVE_AT ARGV 0)
-  add_library(${target_name} SHARED ${ARGV})
+  add_library(${target_name}-obj OBJECT ${ARGV})
+  add_library(${target_name} SHARED $<TARGET_OBJECTS:${target_name}-obj>)
+  set_property(TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
+  set_property(TARGET ${target_name}-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_target_properties(${target_name} PROPERTIES PREFIX "")
-  target_link_libraries(${target_name} mitsuba-core mitsuba-render)
+  target_link_libraries(${target_name} PRIVATE mitsuba-core mitsuba-render)
   add_custom_command(
     TARGET ${target_name}
     POST_BUILD
@@ -198,4 +284,6 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH "")
 
 enable_testing()
+
+# Register the Mitsuba codebase
 add_subdirectory(src)

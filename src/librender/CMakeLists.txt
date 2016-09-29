@@ -8,7 +8,7 @@ add_definitions(
 
 set(INC_DIR "../../include/mitsuba/render")
 
-add_library(mitsuba-render SHARED
+add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/fwd.h
   bsdf.cpp         ${INC_DIR}/bsdf.h
   shape.cpp        ${INC_DIR}/shape.h
@@ -17,11 +17,15 @@ add_library(mitsuba-render SHARED
   kdtree.cpp       ${INC_DIR}/kdtree.h
 )
 
+add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
+set_property(TARGET mitsuba-render PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET mitsuba-render-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 # Link to Intel's Thread Building Blocks
-target_link_libraries(mitsuba-render tbb)
+target_link_libraries(mitsuba-render PRIVATE tbb)
 
 # Link to libcore
-target_link_libraries(mitsuba-render mitsuba-core)
+target_link_libraries(mitsuba-render PUBLIC mitsuba-core)
 
 add_custom_command(
   TARGET mitsuba-render
