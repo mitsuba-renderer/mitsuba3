@@ -23,12 +23,11 @@ ninja
 On Windows, open the generated ``mitsuba.sln`` file after running
 ``cmake .`` and proceed building as usual from within Visual Studio.
 
-Mitsuba organizes its software dependencies in a hierarchy of
-sub-repositories using *git submodule*. Unfortunately, as of May 2016,
-pulling from the main repository won't automatically keep the
-sub-repositories in sync, which can lead to various problems. The
-following command installs a git alias named ``pullall`` that automates
-these two steps.
+Mitsuba organizes its software dependencies in a hierarchy of sub-repositories
+using *git submodule*. Unfortunately, as of May 2016, pulling from the main
+repository won't automatically keep the sub-repositories in sync, which can
+lead to various problems. The following command installs a git alias named
+``pullall`` that automates these two steps.
 
 ```bash
 git config --global alias.pullall '!f(){ git pull "$@" && git submodule update --init --recursive; }; f'
@@ -39,3 +38,11 @@ Afterwards, simply write
 git pullall
 ```
 to stay in sync.
+
+## About
+
+This project was created by [Wenzel Jakob](http://rgl.epfl.ch/people/wjakob)
+Significant features and/or improvements to the code were contributed by
+Merlin Nimier-David,
+...
+TBD
