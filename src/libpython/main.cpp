@@ -30,6 +30,7 @@ MTS_PY_DECLARE(BoundingBox);
 MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Struct);
+MTS_PY_DECLARE(Bitmap);
 
 MTS_PY_DECLARE(Scene);
 MTS_PY_DECLARE(Shape);
@@ -72,6 +73,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT_CORE(Ray);
     MTS_PY_IMPORT_CORE(Frame);
     MTS_PY_IMPORT_CORE(Struct);
+    MTS_PY_IMPORT_CORE(Bitmap);
 
     MTS_PY_IMPORT_RENDER(Scene);
     MTS_PY_IMPORT_RENDER(Shape);

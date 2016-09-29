@@ -44,6 +44,7 @@ add_library(mitsuba-core-obj OBJECT
   fresolver.cpp    ${INC_DIR}/fresolver.h
   jit.cpp          ${INC_DIR}/jit.h
   struct.cpp       ${INC_DIR}/struct.h
+  bitmap.cpp       ${INC_DIR}/bitmap.h
 
   stream.cpp       ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
   astream.cpp      ${INC_DIR}/astream.h
@@ -68,10 +69,6 @@ endif()
 
 # Link to libpng and zlib (either the system version or a version built via cmake)
 target_link_libraries(mitsuba-core PRIVATE ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
-
-if(UNIX AND NOT APPLE)
-  target_link_libraries(mitsuba-core PRIVATE dl)
-endif()
 
 # Create the 'dist' and 'dist/plugins' directories
 add_custom_command(

@@ -88,7 +88,7 @@ public:
 
 protected:
 
-    /// Trivial destructor.
+    /// Protected destructor.
     virtual ~DummyStream() = default;
 
 private:

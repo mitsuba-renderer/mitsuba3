@@ -118,7 +118,7 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
-    /// Destructor
+    /// Protected destructor
     virtual ~ZStream();
 
 private:

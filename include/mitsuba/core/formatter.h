@@ -25,8 +25,8 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    /// Virtual destructor
-    virtual ~Formatter() { }
+    /// Protected destructor
+    virtual ~Formatter() = default;
 };
 
 /** \brief The default formatter used to turn log messages into

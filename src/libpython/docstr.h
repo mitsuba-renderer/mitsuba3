@@ -298,6 +298,175 @@ static const char *__doc_mitsuba_BSDF_class = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_dummy = R"doc()doc";
 
+static const char *__doc_mitsuba_Bitmap =
+R"doc(General-purpose bitmap class with read and write support for several
+common file formats.
+
+This class handles loading of PNG, JPEG, BMP, TGA, as well as OpenEXR
+files, and it supports writing of PNG, JPEG and OpenEXR files.
+
+PNG and OpenEXR files are optionally annotated with string-valued
+metadata, and the gamma setting can be stored as well. Please see the
+class methods and enumerations for further detail.
+
+The Python version of this API contains thee additional member
+functions: ``fromByteArray`` and ``toByteArray`` copy image data
+between the Bitmap instance and a Python ``bytearray``. The function
+``buffer`` returns a ``memoryview``-compatible buffer object that can
+also interoperate with ``numpy``'s ``ndarray``.)doc";
+
+static const char *__doc_mitsuba_Bitmap_Bitmap =
+R"doc(Create a bitmap of the specified type and allocate the necessary
+amount of memory
+
+Parameter ``pFmt``:
+    Specifies the pixel format (e.g. RGBA or Luminance-only)
+
+Parameter ``cFmt``:
+    Specifies how the per-pixel components are encoded (e.g. unsigned
+    8 bit integers or 32-bit floating point values)
+
+Parameter ``size``:
+    Specifies the horizontal and vertical bitmap size in pixels
+
+Parameter ``channelCount``:
+    Channel count of the image. This parameter is only required when
+    ``pFmt`` = EMultiChannel or EMultiSpectrumAlphaWeight
+
+Parameter ``data``:
+    External pointer to the image data. If set to ``NULL``, the
+    implementation will allocate memory itself.)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat = R"doc(Supported file formats)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_EAuto =
+R"doc(Automatically detect the file format
+
+Note: this flag only applies when loading a file. In this case, the
+source stream must support the ``seek``() operation.)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_EBMP =
+R"doc(Windows Bitmap file format
+
+The following is supported:
+
+* Loading of uncompressed 8-bit luminance and RGBA bitmaps)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_EJPEG =
+R"doc(Joint Photographic Experts Group file format
+
+The following is supported:
+
+* Loading and saving of 8 bit per component RGB and luminance bitmaps)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_EOpenEXR =
+R"doc(OpenEXR high dynamic range file format developed by Industrial Light &
+Magic (ILM)
+
+The following is supported:
+
+* Loading and saving of Eloat16 / EFloat32/ EUInt32 bitmaps with all
+supported RGB/Luminance/Alpha combinations
+
+* Loading and saving of spectral bitmaps</tt>
+
+* Loading and saving of XYZ tristimulus bitmaps</tt>
+
+* Loading and saving of string-valued metadata fields
+
+The following is *not* supported:
+
+* Saving of tiled images, tile-based read access
+
+* Display windows that are different than the data window
+
+* Loading of spectrum-valued bitmaps)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_EPFM =
+R"doc(PFM (Portable Float Map) image format
+
+The following is supported
+
+* Loading and saving of EFloat32 - based Luminance or RGB bitmaps)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_EPNG =
+R"doc(Portable network graphics
+
+The following is supported:
+
+* Loading and saving of 8/16-bit per component bitmaps for all pixel
+formats (ELuminance, ELuminanceAlpha, ERGB, ERGBA)
+
+* Loading and saving of 1-bit per component mask bitmaps
+
+* Loading and saving of string-valued metadata fields)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_EPPM =
+R"doc(PPM (Portable Pixel Map) image format
+
+The following is supported
+
+* Loading and saving of EUInt8 and EUInt16 - based RGB bitmaps)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_ERGBE =
+R"doc(RGBE image format by Greg Ward
+
+The following is supported
+
+* Loading and saving of EFloat32 - based RGB bitmaps)doc";
+
+static const char *__doc_mitsuba_Bitmap_EFileFormat_ETGA =
+R"doc(Truevision Advanced Raster Graphics Array file format
+
+The following is supported:
+
+* Loading of uncompressed 8-bit RGB/RGBA files)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat =
+R"doc(This enumeration lists all pixel format types supported by the Bitmap
+class. This both determines the number of channels, and how they
+should be interpreted)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_ELuminance = R"doc(Single-channel luminance bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_ELuminanceAlpha = R"doc(Two-channel luminance + alpha bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_EMultiChannel = R"doc(Arbitrary multi-channel bitmap without a fixed interpretation)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGB = R"doc(RGB bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGBA = R"doc(RGB bitmap + alpha channel)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZ = R"doc(XYZ tristimulus bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZA = R"doc(XYZ tristimulus + alpha channel)doc";
+
+static const char *__doc_mitsuba_Bitmap_bufferSize = R"doc(Return the bitmap size in bytes (excluding metadata))doc";
+
+static const char *__doc_mitsuba_Bitmap_bytesPerPixel = R"doc(Return the number bytes of storage used per pixel)doc";
+
+static const char *__doc_mitsuba_Bitmap_channelCount = R"doc(Return the number of channels used by this bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_m_channelCount = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_m_componentFormat = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_m_data = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_m_gamma = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_m_ownsData = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_m_pixelFormat = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_m_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_size = R"doc(Return the bitmap dimensions in pixels)doc";
+
+static const char *__doc_mitsuba_Bitmap_updateChannelCount = R"doc(Determine the channel count from the pixel format)doc";
+
 static const char *__doc_mitsuba_Class =
 R"doc(Stores meta-information about Object instances.
 
@@ -2074,7 +2243,11 @@ static const char *__doc_mitsuba_TShapeKDTree_BuildContext_pruned = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_BuildContext_retractedSplits = R"doc()doc";
 
+static const char *__doc_mitsuba_TShapeKDTree_BuildContext_tempStorage = R"doc()doc";
+
 static const char *__doc_mitsuba_TShapeKDTree_BuildContext_thread = R"doc()doc";
+
+static const char *__doc_mitsuba_TShapeKDTree_BuildContext_workUnits = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_BuildTask =
 R"doc(TBB task for building subtrees in parallel
@@ -2141,11 +2314,13 @@ static const char *__doc_mitsuba_TShapeKDTree_ClassificationStorage_get = R"doc(
 
 static const char *__doc_mitsuba_TShapeKDTree_ClassificationStorage_m_buffer = R"doc()doc";
 
-static const char *__doc_mitsuba_TShapeKDTree_ClassificationStorage_m_size = R"doc()doc";
+static const char *__doc_mitsuba_TShapeKDTree_ClassificationStorage_m_count = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_ClassificationStorage_resize = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_ClassificationStorage_set = R"doc()doc";
+
+static const char *__doc_mitsuba_TShapeKDTree_ClassificationStorage_size = R"doc(Return the size (in bytes))doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_Dimension = R"doc()doc";
 
@@ -2230,6 +2405,8 @@ R"doc(Helper data structure used during tree construction (used by a single
 thread))doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_LocalBuildContext_classificationStorage = R"doc()doc";
+
+static const char *__doc_mitsuba_TShapeKDTree_LocalBuildContext_ctx = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_LocalBuildContext_leftAlloc = R"doc()doc";
 
@@ -2387,7 +2564,7 @@ static const char *__doc_mitsuba_TShapeKDTree_m_logLevel = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_m_maxBadRefines = R"doc()doc";
 
-static const char *__doc_mitsuba_TShapeKDTree_m_maxDepth = R"doc(XXX)doc";
+static const char *__doc_mitsuba_TShapeKDTree_m_maxDepth = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_m_minMaxBins = R"doc()doc";
 
@@ -2495,6 +2672,12 @@ See also:
     ThreadLocal)doc";
 
 static const char *__doc_mitsuba_ThreadLocalBase_ThreadLocalBase = R"doc(Construct a new thread local storage object)doc";
+
+static const char *__doc_mitsuba_ThreadLocalBase_clear =
+R"doc(Release all current instances associated with this TLS
+
+Dangerous: don't use this method when the data is still concurrently
+being used by other threads)doc";
 
 static const char *__doc_mitsuba_ThreadLocalBase_get = R"doc(Return the data value associated with the current thread)doc";
 

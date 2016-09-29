@@ -111,8 +111,8 @@ struct type_caster<Type, typename std::enable_if<is_simdarray<Type>::value>::typ
     template <typename _T> using cast_op_type = pybind11::detail::cast_op_type<_T>;
 
     static PYBIND11_DESCR name() {
-        return _("numpy.ndarray[dtype=") + npy_format_descriptor<Scalar>::name() +
-               _(", shape=(") + _<Type::Dimension>() + _(", 1)]");
+        return py::detail::type_descr(_("numpy.ndarray[dtype=") + npy_format_descriptor<Scalar>::name() +
+               _(", shape=(") + _<Type::Dimension>() + _(", 1)]"));
     }
 
     operator Type*() { return &value; }

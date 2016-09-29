@@ -120,7 +120,7 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
-    /// Virtual destructor
+    /// Protected destructor
     virtual ~Logger();
 
 private:

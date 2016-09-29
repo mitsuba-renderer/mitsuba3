@@ -29,8 +29,8 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    /// Virtual destructor
-    virtual ~Appender() { }
+    /// Protected destructor
+    virtual ~Appender() = default;
 };
 
 /** \brief %Appender implementation, which writes to an
@@ -66,7 +66,7 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    /// Virtual destructor
+    /// Protected destructor
     virtual ~StreamAppender();
 private:
     std::ostream *m_stream;

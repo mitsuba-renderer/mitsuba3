@@ -47,6 +47,7 @@ add_library(mitsuba-python-obj OBJECT
   frame.cpp
   ray.cpp
   struct.cpp
+  bitmap.cpp
 
   # librender
   scene.cpp
@@ -172,5 +173,5 @@ add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
 
 if (APPLE)
   set_target_properties(mitsuba-python PROPERTIES INSTALL_RPATH "@loader_path/..")
-  set_target_properties(nanogui_python PROPERTIES INSTALL_RPATH "@loader_path/..")
+  set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "@loader_path/..")
 endif()

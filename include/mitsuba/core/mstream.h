@@ -109,7 +109,7 @@ public:
 
 protected:
 
-    /// Destructor
+    /// Protected destructor
     virtual ~MemoryStream();
 
     void resize(size_t newSize);
