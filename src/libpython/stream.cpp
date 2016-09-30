@@ -12,6 +12,7 @@
 namespace {
 struct declare_stream_accessors {
     using PyClass = pybind11::class_<mitsuba::Stream,
+                                     mitsuba::Object,
                                      mitsuba::ref<mitsuba::Stream>>;
 
     template <typename T>
@@ -23,6 +24,7 @@ struct declare_stream_accessors {
 };
 struct declare_astream_accessors {
     using PyClass = pybind11::class_<mitsuba::AnnotatedStream,
+                                     mitsuba::Object,
                                      mitsuba::ref<mitsuba::AnnotatedStream>>;
 
     template <typename T>

@@ -28,10 +28,10 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
     void python_export_##name(py::module &m)
 
 #define MTS_PY_CLASS(Name, Base, ...) \
-    py::class_<Name, ref<Name>>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__)
+    py::class_<Name, Base, ref<Name>>(m, #Name, DM(Name), ##__VA_ARGS__)
 
 #define MTS_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
-    py::class_<Name, ref<Name>, Trampoline>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__)
+    py::class_<Name, Base, ref<Name>, Trampoline>(m, #Name, DM(Name), ##__VA_ARGS__)
 
 #define MTS_PY_STRUCT(Name, ...) \
     py::class_<Name>(m, #Name, DM(Name), ##__VA_ARGS__)
