@@ -128,6 +128,12 @@ public:
     /// Return the list of un-queried attributed
     std::vector<std::string> unqueried() const;
 
+    /// Return one of the parameters (converting it to a string if necessary)
+    std::string asString(const std::string &name) const;
+
+    /// Return one of the parameters (converting it to a string if necessary, with default value)
+    std::string asString(const std::string &name, const std::string &defVal) const;
+
     /**
      * \brief Merge another properties record into the current one.
      *
@@ -160,6 +166,7 @@ public:  // Type-specific getters and setters ----------------------------------
     void setInt(const std::string &name, const int &value, bool warnDuplicates = true) {
         setLong(name, (int64_t) value, warnDuplicates);
     }
+
     /// Retrieve an integer value
     int int_(const std::string &name) const { return (int) long_(name); }
     /// Retrieve a boolean value (use default value if no entry exists)

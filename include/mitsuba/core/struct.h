@@ -134,6 +134,9 @@ public:
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
     Struct(bool pack = false, EByteOrder byteOrder = EHostByteOrder);
 
+    /// Copy constructor
+    Struct(const Struct &s);
+
     /// Append a new field to the \c Struct; determines size and offset automatically
     Struct &append(const std::string &name, EType type, uint32_t flags = 0,
                    double default_ = 0.0);
@@ -305,5 +308,7 @@ protected:
     FuncType m_func;
 #endif
 };
+
+extern std::ostream &operator<<(std::ostream &os, Struct::EType value);
 
 NAMESPACE_END(mitsuba)

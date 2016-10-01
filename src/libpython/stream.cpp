@@ -38,7 +38,6 @@ struct declare_astream_accessors {
 
 /// Use this type alias to list the supported types. Be wary of automatic type conversions.
 // TODO: support all supported types that can occur in Python
-// TODO: Python `long` type probably depends on the architecture, test on 32bits
 using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
 
 }  // end anonymous namespace

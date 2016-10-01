@@ -4,6 +4,7 @@ include_directories(
   ${PUGIXML_INCLUDE_DIRS}
   ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
+  ${OPENEXR_INCLUDE_DIRS}
 )
 
 add_definitions(
@@ -59,6 +60,9 @@ set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Link to Intel's Thread Building Blocks, the pugixml parser, and asmjit
 target_link_libraries(mitsuba-core PRIVATE tbb pugixml asmjit)
+
+# Image libraries: link to libjpeg, libpng, OpenEXR
+target_link_libraries(mitsuba-core PRIVATE ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf)
 
 if (UNIX AND NOT APPLE)
   target_link_libraries(mitsuba-core PUBLIC

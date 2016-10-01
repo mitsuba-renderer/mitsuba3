@@ -307,13 +307,7 @@ files, and it supports writing of PNG, JPEG and OpenEXR files.
 
 PNG and OpenEXR files are optionally annotated with string-valued
 metadata, and the gamma setting can be stored as well. Please see the
-class methods and enumerations for further detail.
-
-The Python version of this API contains thee additional member
-functions: ``fromByteArray`` and ``toByteArray`` copy image data
-between the Bitmap instance and a Python ``bytearray``. The function
-``buffer`` returns a ``memoryview``-compatible buffer object that can
-also interoperate with ``numpy``'s ``ndarray``.)doc";
+class methods and enumerations for further detail.)doc";
 
 static const char *__doc_mitsuba_Bitmap_Bitmap =
 R"doc(Create a bitmap of the specified type and allocate the necessary
@@ -331,11 +325,27 @@ Parameter ``size``:
 
 Parameter ``channelCount``:
     Channel count of the image. This parameter is only required when
-    ``pFmt`` = EMultiChannel or EMultiSpectrumAlphaWeight
+    ``pFmt`` = EMultiChannel
 
 Parameter ``data``:
-    External pointer to the image data. If set to ``NULL``, the
+    External pointer to the image data. If set to ``nullptr`` , the
     implementation will allocate memory itself.)doc";
+
+static const char *__doc_mitsuba_Bitmap_Bitmap_2 =
+R"doc(Load a bitmap from an arbitrary stream data source
+
+Parameter ``stream``:
+    Pointer to an arbitrary stream data source
+
+Parameter ``format``:
+    File format to be read (PNG/EXR/Auto-detect ...)
+
+Parameter ``prefix``:
+    Only consider image layers whose identifier begins with
+    ``prefix``. This is currently only supported by the OpenEXR format
+    loader.)doc";
+
+static const char *__doc_mitsuba_Bitmap_Bitmap_3 = R"doc(Copy constructor (copies the image contents))doc";
 
 static const char *__doc_mitsuba_Bitmap_EFileFormat = R"doc(Supported file formats)doc";
 
@@ -441,6 +451,18 @@ static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZ = R"doc(XYZ tristimulu
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZA = R"doc(XYZ tristimulus + alpha channel)doc";
 
+static const char *__doc_mitsuba_Bitmap_Layer =
+R"doc(Describes a sub-layer of a multilayer bitmap (e.g. OpenEXR)
+
+A layer is defined as a named collection of bitmap channels along with
+a pixel format. This data structure is used by Bitmap::getLayers().)doc";
+
+static const char *__doc_mitsuba_Bitmap_Layer_name = R"doc(Descriptive name of the bitmap layer)doc";
+
+static const char *__doc_mitsuba_Bitmap_Layer_pixelFormat = R"doc(Pixel format of the layer)doc";
+
+static const char *__doc_mitsuba_Bitmap_Layer_struct = R"doc(Data structure listing channels and component formats)doc";
+
 static const char *__doc_mitsuba_Bitmap_bufferSize = R"doc(Return the bitmap size in bytes (excluding metadata))doc";
 
 static const char *__doc_mitsuba_Bitmap_bytesPerPixel = R"doc(Return the number bytes of storage used per pixel)doc";
@@ -449,7 +471,15 @@ static const char *__doc_mitsuba_Bitmap_channelCount = R"doc(Return the number o
 
 static const char *__doc_mitsuba_Bitmap_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Bitmap_m_channelCount = R"doc()doc";
+static const char *__doc_mitsuba_Bitmap_clear = R"doc(Clear the bitmap to zero)doc";
+
+static const char *__doc_mitsuba_Bitmap_componentFormat = R"doc(Return the component format of this bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_gamma = R"doc(Return the bitmap's gamma identifier (-1: sRGB))doc";
+
+static const char *__doc_mitsuba_Bitmap_hasAlpha = R"doc(Return whether this image has an alpha channel)doc";
+
+static const char *__doc_mitsuba_Bitmap_height = R"doc(Return the bitmap's height in pixels)doc";
 
 static const char *__doc_mitsuba_Bitmap_m_componentFormat = R"doc()doc";
 
@@ -463,9 +493,21 @@ static const char *__doc_mitsuba_Bitmap_m_pixelFormat = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap_m_size = R"doc()doc";
 
+static const char *__doc_mitsuba_Bitmap_m_struct = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_pixelCount = R"doc(Return the total number of pixels)doc";
+
+static const char *__doc_mitsuba_Bitmap_pixelFormat = R"doc(Return the pixel format of this bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_rebuildStruct = R"doc(Rebuild the 'm_struct' field based on the pixel format etc.)doc";
+
+static const char *__doc_mitsuba_Bitmap_setGamma = R"doc(Set the bitmap's gamma identifier (-1: sRGB))doc";
+
 static const char *__doc_mitsuba_Bitmap_size = R"doc(Return the bitmap dimensions in pixels)doc";
 
-static const char *__doc_mitsuba_Bitmap_updateChannelCount = R"doc(Determine the channel count from the pixel format)doc";
+static const char *__doc_mitsuba_Bitmap_toString = R"doc(Return a human-readable summary of this bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_width = R"doc(Return the bitmap's width in pixels)doc";
 
 static const char *__doc_mitsuba_Class =
 R"doc(Stores meta-information about Object instances.
@@ -1854,6 +1896,8 @@ static const char *__doc_mitsuba_Struct_Field_type = R"doc(Type identifier)doc";
 static const char *__doc_mitsuba_Struct_Struct =
 R"doc(Create a new ``Struct`` and indicate whether the contents are packed
 or aligned)doc";
+
+static const char *__doc_mitsuba_Struct_Struct_2 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_Struct_alignment = R"doc(Return the alignment (in bytes) of the data structure)doc";
 
@@ -3272,15 +3316,19 @@ static const char *__doc_mitsuba_operator_Matrix = R"doc(Convert to an Eigen vec
 
 static const char *__doc_mitsuba_operator_Matrix_2 = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

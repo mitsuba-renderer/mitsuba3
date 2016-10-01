@@ -1701,8 +1701,6 @@ protected:
             m_retractBadSplits ? "yes" : "no");
         Log(m_logLevel, "");
 
-        Timer timer;
-
         /* ==================================================================== */
         /*              Create build context and preallocate memory             */
         /* ==================================================================== */
@@ -1724,22 +1722,18 @@ protected:
             ctx.nodeStorage[0].setLeafNode(0, 0);
         } else {
 
-            timer.beginStage("Index list");
             Log(m_logLevel, "Creating a preliminary index list (%s)",
                 util::memString(primCount * sizeof(Index)).c_str());
 
             IndexVector indices(primCount);
             for (size_t i = 0; i < primCount; ++i)
                 indices[i] = i;
-            timer.endStage();
 
-            timer.beginStage("Main construction task");
             BuildTask &task = *new (tbb::task::allocate_root()) BuildTask(
                 ctx, ctx.nodeStorage.begin(), std::move(indices),
                 m_bbox, m_bbox, 0, 0, &finalCost);
 
             tbb::task::spawn_root_and_wait(task);
-            timer.endStage();
         }
 
         Log(m_logLevel, "Structural kd-tree statistics:");
@@ -1748,7 +1742,6 @@ protected:
         /*     Store the node and index lists in a compact contiguous format    */
         /* ==================================================================== */
 
-        timer.beginStage("Compactifying");
         m_nodeCount = Size(ctx.nodeStorage.size());
         m_indexCount = Size(ctx.indexStorage.size());
 
@@ -1772,7 +1765,6 @@ protected:
             }
         );
         tbb::concurrent_vector<KDNode>().swap(ctx.nodeStorage);
-        timer.endStage();
 
         /* ==================================================================== */
         /*         Print various tree statistics if requested by the user       */
@@ -1969,8 +1961,6 @@ private:
     Float m_emptySpaceBonus;
 };
 
-
-
 class MTS_EXPORT ShapeKDTree
     : public TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree> {
 public:
@@ -1984,10 +1974,13 @@ public:
     Size shapeCount() const { return Size(m_shapes.size()); }
 
     void build() {
-        Log(m_logLevel, "Building a SAH kd-tree (%i primitives)",
+        Timer timer;
+        Log(EInfo, "Building a SAH kd-tree (%i primitives)",
             primitiveCount());
 
         Base::build();
+
+        Log(EInfo, "Finished -- took %s", util::timeString(timer.value()));
     }
 
     /// Return the i-th shape

@@ -16,6 +16,9 @@ Struct::Struct(bool pack, EByteOrder byteOrder)
         m_byteOrder = hostByteOrder();
 }
 
+Struct::Struct(const Struct &s)
+    : m_fields(s.m_fields), m_pack(s.m_pack), m_byteOrder(s.m_byteOrder) { }
+
 size_t Struct::size() const {
     if (m_fields.empty())
         return 0;
@@ -77,25 +80,28 @@ Struct &Struct::append(const std::string &name, EType type, uint32_t flags, doub
     return *this;
 }
 
+std::ostream &operator<<(std::ostream &os, Struct::EType value) {
+    switch (value) {
+        case Struct::EInt8:    os << "int8";    break;
+        case Struct::EUInt8:   os << "uint8";   break;
+        case Struct::EInt16:   os << "int16";   break;
+        case Struct::EUInt16:  os << "uint16";  break;
+        case Struct::EInt32:   os << "int32";   break;
+        case Struct::EUInt32:  os << "uint32";  break;
+        case Struct::EFloat16: os << "float16"; break;
+        case Struct::EFloat32: os << "float32"; break;
+        case Struct::EFloat64: os << "float64"; break;
+        case Struct::EFloat:   os << "Float";   break;
+        default: Throw("Struct: invalid field type!");
+    }
+    return os;
+}
 std::string Struct::toString() const {
     std::ostringstream os;
     os << "Struct[" << std::endl;
     for (size_t i = 0; i < m_fields.size(); ++i) {
         auto const &f = m_fields[i];
-        os << "  ";
-        switch (f.type) {
-            case EInt8:    os << "int8";    break;
-            case EUInt8:   os << "uint8";   break;
-            case EInt16:   os << "int16";   break;
-            case EUInt16:  os << "uint16";  break;
-            case EInt32:   os << "int32";   break;
-            case EUInt32:  os << "uint32";  break;
-            case EFloat16: os << "float16"; break;
-            case EFloat32: os << "float32"; break;
-            case EFloat64: os << "float64"; break;
-            case EFloat:   os << "Float"; break;
-            default: Throw("Struct::toString(): invalid field type!");
-        }
+        os << "  " << f.type;
         os << " " << f.name << "; // @" << f.offset;
         if (f.flags & ENormalized)
             os << ", normalized";
