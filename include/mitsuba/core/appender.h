@@ -7,8 +7,6 @@ NAMESPACE_BEGIN(mitsuba)
 
 /** \brief This class defines an abstract destination
  * for logging-relevant information
- *
- * \ingroup libcore
  */
 class MTS_EXPORT_CORE Appender : public Object {
 public:
@@ -31,14 +29,12 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    /// Virtual destructor
-    virtual ~Appender() { }
+    /// Protected destructor
+    virtual ~Appender() = default;
 };
 
 /** \brief %Appender implementation, which writes to an
  * arbitrary C++ output stream
- *
- * \ingroup libcore
  */
 class MTS_EXPORT_CORE StreamAppender : public Appender {
 public:
@@ -70,7 +66,7 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    /// Virtual destructor
+    /// Protected destructor
     virtual ~StreamAppender();
 private:
     std::ostream *m_stream;

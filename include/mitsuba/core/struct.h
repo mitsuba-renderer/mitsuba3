@@ -13,8 +13,11 @@ NAMESPACE_BEGIN(mitsuba)
 #endif
 
 /**
- * \brief Descriptor for specifying the contents and in-memory layout of a
- * POD-style data record
+ * \brief Descriptor for specifying the contents and in-memory layout
+ * of a POD-style data record
+ *
+ * \remark The python API provides an additional \c dtype() method, which
+ * returns the NumPy \c dtype equivalent of a given \c Struct instance.
  */
 class MTS_EXPORT_CORE Struct : public Object {
 public:
@@ -27,7 +30,10 @@ public:
         EInt64, EUInt64,
 
         /* Floating point values */
-        EFloat16, EFloat32, EFloat64
+        EFloat16, EFloat32, EFloat64,
+
+        /* Compile-time float precision */
+        EFloat
     };
 
     /// Byte order of the fields in the \c Struct
@@ -110,7 +116,8 @@ public:
         bool isFloat() const {
             return type == Struct::EFloat16 ||
                    type == Struct::EFloat32 ||
-                   type == Struct::EFloat64;
+                   type == Struct::EFloat64 ||
+                   type == Struct::EFloat;
         }
 
         bool isSigned() const {
@@ -126,6 +133,9 @@ public:
 
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
     Struct(bool pack = false, EByteOrder byteOrder = EHostByteOrder);
+
+    /// Copy constructor
+    Struct(const Struct &s);
 
     /// Append a new field to the \c Struct; determines size and offset automatically
     Struct &append(const std::string &name, EType type, uint32_t flags = 0,
@@ -156,7 +166,15 @@ public:
     EByteOrder byteOrder() const { return m_byteOrder; }
 
     /// Return the byte order of the host machine
-    static EByteOrder hostByteOrder();
+    static EByteOrder hostByteOrder() {
+        #if defined(LITTLE_ENDIAN)
+            return ELittleEndian;
+        #elif defined(BIG_ENDIAN)
+            return ELittleEndian;
+        #else
+            #error Either LITTLE_ENDIAN or BIG_ENDIAN must be defined!
+        #endif
+    };
 
     /// Look up a field by name (throws an exception if not found)
     const Field &field(const std::string &name) const;
@@ -290,5 +308,7 @@ protected:
     FuncType m_func;
 #endif
 };
+
+extern std::ostream &operator<<(std::ostream &os, Struct::EType value);
 
 NAMESPACE_END(mitsuba)

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/logger.h>
-#include <simdfloat/static.h>
+#include <simdarray/array.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -16,76 +16,36 @@ template <typename> struct TNormal;
  * =================================================================== */
 
 template <typename Scalar, int Dimension_>
-struct TVector : public simd::StaticFloatBase<Scalar, Dimension_,
-                                              std::is_same<Scalar, float>::value,
-                                              TVector<Scalar, Dimension_>> {
-
-public:
-    enum {
-        Dimension = Dimension_
-    };
-
-    typedef simd::StaticFloatBase<Scalar, Dimension,
-                                  std::is_same<Scalar, float>::value,
-                                  TVector<Scalar, Dimension>> Base;
-
-    typedef TVector<Scalar, Dimension> VectorType;
-    typedef TPoint<Scalar, Dimension>  PointType;
-
+struct TVector : simd::ArrayBase<Scalar, Dimension_, false,
+                                 simd::RoundingMode::Default,
+                                 TVector<Scalar, Dimension_>> {
+    using Base = simd::ArrayBase<Scalar, Dimension_, false,
+                                 simd::RoundingMode::Default,
+                                 TVector<Scalar, Dimension_>>;
     using Base::Base;
-    TVector() : Base() { }
-    TVector(const Base &f) : Base(f) { }
-    TVector(const PointType &f) : Base((const Base &) f) { }
+
+    enum { Dimension = Dimension_ };
+
+    using Vector = TVector<Scalar, Dimension>;
+    using Point = TPoint<Scalar, Dimension>;
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
 };
 
 template <typename Scalar, int Dimension_>
-struct TPoint : public simd::StaticFloatBase<Scalar, Dimension_,
-                                             std::is_same<Scalar, float>::value,
-                                             TPoint<Scalar, Dimension_>> {
-
-public:
-    enum {
-        Dimension = Dimension_
-    };
-
-    typedef simd::StaticFloatBase<Scalar, Dimension,
-                                  std::is_same<Scalar, float>::value,
-                                  TPoint<Scalar, Dimension>> Base;
-
-    typedef TVector<Scalar, Dimension> VectorType;
-    typedef TPoint<Scalar, Dimension>  PointType;
-
+struct TPoint : simd::ArrayBase<Scalar, Dimension_, false,
+                                simd::RoundingMode::Default,
+                                TPoint<Scalar, Dimension_>> {
+    using Base = simd::ArrayBase<Scalar, Dimension_, false,
+                                 simd::RoundingMode::Default,
+                                 TPoint<Scalar, Dimension_>>;
     using Base::Base;
-    TPoint() : Base() { }
-    TPoint(const Base &f) : Base(f) { }
-    TPoint(const VectorType &f) : Base((const Base &) f) { }
 
-    using Base::operator+;
-    using Base::operator+=;
-    using Base::operator-=;
+    enum { Dimension = Dimension_ };
 
-    PointType operator+(const VectorType &v) const {
-        return Base::operator+((const PointType &) v);
-    }
-
-    PointType operator-(const VectorType &v) const {
-        return Base::operator-((const PointType &) v);
-    }
-
-    VectorType operator-(const PointType &p) const {
-        return VectorType(Base::operator-(p));
-    }
-
-    PointType& operator+=(const VectorType &v) const {
-        return Base::operator+=((const PointType &) v);
-    }
-
-    PointType& operator-=(const VectorType &v) const {
-        return Base::operator-=((const PointType &) v);
-    }
+    using Vector = TVector<Scalar, Dimension>;
+    using Point = TPoint<Scalar, Dimension>;
 
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
@@ -93,14 +53,8 @@ public:
 
 /// 3-dimensional surface normal representation
 template <typename Scalar>
-struct TNormal : public TVector<Scalar, 3> {
-public:
+struct TNormal : TVector<Scalar, 3> {
     using Base = TVector<Scalar, 3>;
-
-    enum {
-        Dimension = 3
-    };
-
     using Base::Base;
 };
 
@@ -120,10 +74,12 @@ inline std::pair<Vector3f, Vector3f> coordinateSystem(const Vector3f &n) {
         );
     } else {
         return std::make_pair(
-            Vector3f(0.0f, -1.0f, 0.0f),
-            Vector3f(-1.0f, 0.0f, 0.0f)
+            Vector3f( 0.0f, -1.0f, 0.0f),
+            Vector3f(-1.0f,  0.0f, 0.0f)
         );
     }
 }
+
+using AlignedAllocator = simd::AlignedAllocator<>;
 
 NAMESPACE_END(mitsuba)

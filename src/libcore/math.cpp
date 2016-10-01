@@ -890,7 +890,7 @@ template <typename Scalar> Scalar i0e(Scalar x) {
     /* Chebyshev coefficients for exp(-x) I0(x)
      * in the interval [0,8].
      *
-     * lim(x->0){ exp(-x) I0(x) } = 1.
+     * lim(x->0) { exp(-x) I0(x) } = 1.
      */
     static const Scalar A[] = {
         -4.41534164647933937950E-18, 3.33079451882223809783E-17,
@@ -913,7 +913,7 @@ template <typename Scalar> Scalar i0e(Scalar x) {
     /* Chebyshev coefficients for exp(-x) sqrt(x) I0(x)
      * in the inverted interval [8,infinity].
      *
-     * lim(x->inf){ exp(-x) sqrt(x) I0(x) } = 1/sqrt(2pi).
+     * lim(x->inf) { exp(-x) sqrt(x) I0(x) } = 1/sqrt(2pi).
      */
     static const Scalar B[] = {
         -7.23318048787475395456E-18, -4.83050448594418207126E-18,
@@ -972,12 +972,12 @@ template <typename Scalar> Scalar erfinv(Scalar x) {
 }
 
 template <typename Scalar> Scalar erf(Scalar x) {
-    const Scalar a1 = (const Scalar)  0.254829592;
-    const Scalar a2 = (const Scalar) -0.284496736;
-    const Scalar a3 = (const Scalar)  1.421413741;
-    const Scalar a4 = (const Scalar) -1.453152027;
-    const Scalar a5 = (const Scalar)  1.061405429;
-    const Scalar p  = (const Scalar)  0.3275911;
+    const Scalar a1 = Scalar( 0.254829592);
+    const Scalar a2 = Scalar(-0.284496736);
+    const Scalar a3 = Scalar( 1.421413741);
+    const Scalar a4 = Scalar(-1.453152027);
+    const Scalar a5 = Scalar( 1.061405429);
+    const Scalar p  = Scalar( 0.3275911);
 
     // Save the sign of x
     Scalar sign = math::signum(x);

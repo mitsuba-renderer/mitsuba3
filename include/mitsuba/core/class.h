@@ -113,7 +113,6 @@ private:
  * \brief Return the \ref Class object corresponding to a named class.
  *
  * Call the Macro without quotes, e.g. \c MTS_CLASS(SerializableObject)
- * \ingroup libcore
  */
 #define MTS_CLASS(x) x::m_class
 
@@ -137,7 +136,6 @@ private:
  *
  * };
  * \endcode
- * \ingroup libcore
  */
 #define MTS_DECLARE_CLASS() \
     virtual const Class *class_() const override; \
@@ -172,7 +170,6 @@ NAMESPACE_END(detail)
  * \param name Name of the class
  * \param abstract \c true if the class contains pure virtual methods
  * \param super Name of the parent class
- * \ingroup libcore
  */
 #define MTS_IMPLEMENT_CLASS(Name, Parent) \
     Class *Name::m_class = new Class(#Name, #Parent, \
@@ -184,11 +181,11 @@ NAMESPACE_END(detail)
 extern MTS_EXPORT_CORE const Class *m_class;
 
 #define MTS_EXPORT_PLUGIN(name, descr) \
-	extern "C" { \
-		MTS_EXPORT Object *CreateObject(const Properties &props) { \
-			return new name(props); \
-		} \
-		MTS_EXPORT const char *Description = descr; \
-	}
+    extern "C" { \
+        MTS_EXPORT Object *CreateObject(const Properties &props) { \
+            return new name(props); \
+        } \
+        MTS_EXPORT const char *Description = descr; \
+    }
 
 NAMESPACE_END(mitsuba)

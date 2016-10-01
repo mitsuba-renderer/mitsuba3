@@ -49,10 +49,10 @@ public:
     // =========================================================================
 
     /// Returns the child stream of this compression stream
-    inline const Stream *childStream() const { return m_childStream.get(); }
+    const Stream *childStream() const { return m_childStream.get(); }
 
     /// Returns the child stream of this compression stream
-    inline Stream *childStream() { return m_childStream; }
+    Stream *childStream() { return m_childStream; }
 
     //! @}
     // =========================================================================
@@ -118,7 +118,7 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
-    /// Destructor
+    /// Protected destructor
     virtual ~ZStream();
 
 private:

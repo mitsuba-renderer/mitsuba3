@@ -10,6 +10,12 @@ class MTS_EXPORT_RENDER Scene : public Object {
 public:
     Scene(const Properties &props);
 
+    const ShapeKDTree *kdtree() const { return m_kdtree; }
+    ShapeKDTree *kdtree() { return m_kdtree; }
+
+    /// Return a human-readable string representation of the scene contents.
+    virtual std::string toString() const override;
+
     MTS_DECLARE_CLASS()
 protected:
     virtual ~Scene();

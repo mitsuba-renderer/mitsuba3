@@ -23,7 +23,7 @@ if (PYTHONLIBS_FOUND)
   # The above sometimes returns version numbers like "3.4.3+"; the "+" must be removed for the next line to work
   string(REPLACE "+" "" PYTHONLIBS_VERSION_STRING "+${PYTHONLIBS_VERSION_STRING}")
   find_package(PythonInterp ${PYTHONLIBS_VERSION_STRING} EXACT REQUIRED)
-  set(PYBIND11_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pybind11/include ${PYTHON_INCLUDE_DIR} PARENT_SCOPE)
+  set(PYBIND11_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/pybind11/include ${PYTHON_INCLUDE_DIR} PARENT_SCOPE)
 else()
   message(WARNING "Compiling without Python support")
 endif()
@@ -52,21 +52,21 @@ if (WIN32)
 
   set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
   set(PNG_LIBRARIES    "$<TARGET_LINKER_FILE:png16>" PARENT_SCOPE)
-  set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
 
   # Build libjpeg 7 (only on Windows)
   set(LIBJPEG_BUILD_SHARED ON CACHE BOOL " " FORCE)
   set(LIBJPEG_BUILD_EXECUTABLES OFF CACHE BOOL " " FORCE)
   add_subdirectory(libjpeg)
   set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
+  set(JPEG_LIBRARIES libjpeg PARENT_SCOPE)
+
+  set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg" PARENT_SCOPE)
+  set(JPEG_LIBRARIES    "$<TARGET_LINKER_FILE:jpeg>" PARENT_SCOPE)
 else()
   # Find system libpng
-  find_package(PNG)
-  if (PNG_FOUND)
-    set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
-    set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
-    set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
-  endif()
+  find_package(PNG REQUIRED)
+  set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
+  set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
 
   # Find system libjpeg
   find_package(JPEG)
@@ -90,17 +90,30 @@ if (WIN32)
   add_dependencies(IlmImf zlib)
 endif()
 
+set(OPENEXR_INCLUDE_DIRS
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Iex
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Half
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/OpenEXR/IlmImf
+  ${CMAKE_CURRENT_BINARY_DIR}/openexr/OpenEXR/config
+  ${CMAKE_CURRENT_BINARY_DIR}/openexr/IlmBase/config
+  PARENT_SCOPE
+)
+
 # Use install rpath from this point onwards
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
 # Build Thread Building Blocks (main shared libraries only)
 set(TBB_BUILD_SHARED          ON  CACHE BOOL " " FORCE)
 set(TBB_BUILD_STATIC          OFF CACHE BOOL " " FORCE)
+set(TBB_BUILD_TESTS           OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC       OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
 add_subdirectory(tbb)
 set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
-set(TBB_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/tbb/include PARENT_SCOPE)
+set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include PARENT_SCOPE)
 
 # Build NanoGUI
 set(NANOGUI_BUILD_EXAMPLE OFF CACHE BOOL " " FORCE)
@@ -110,14 +123,14 @@ set(NANOGUI_INSTALLL      OFF CACHE BOOL " " FORCE)
 
 add_subdirectory(nanogui)
 set_property(TARGET glfw glfw_objects bin2c nanogui PROPERTY FOLDER "dependencies")
-set(EIGEN_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/nanogui/ext/eigen PARENT_SCOPE)
+set(EIGEN_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/ext/eigen PARENT_SCOPE)
 set(NANOGUI_INCLUDE_DIRS
-   ${PROJECT_SOURCE_DIR}/ext/nanogui/include
+   ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/include
    ${NANOGUI_EXTRA_INCS}
    PARENT_SCOPE)
 
 if (PYTHONLIBS_FOUND)
-  set_property(TARGET nanogui_python PROPERTY FOLDER "dependencies")
+  set_property(TARGET nanogui-python PROPERTY FOLDER "dependencies")
 endif()
 
 # Build the pugixml parser
@@ -125,7 +138,7 @@ add_library(pugixml SHARED pugixml/src/pugixml.cpp)
 set_property(TARGET pugixml PROPERTY
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/pugixml")
 set_property(TARGET pugixml PROPERTY FOLDER "dependencies")
-set(PUGIXML_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pugixml/src PARENT_SCOPE)
+set(PUGIXML_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src PARENT_SCOPE)
 set_property(SOURCE pugixml/src/pugixml.cpp
   APPEND PROPERTY COMPILE_DEFINITIONS PUGIXML_BUILD_DLL)
 
@@ -140,13 +153,13 @@ add_subdirectory(zeromq)
 set_property(TARGET libzmq PROPERTY FOLDER "dependencies")
 
 # pcg32 include path
-set(PCG32_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/pcg32 PARENT_SCOPE)
+set(PCG32_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/pcg32 PARENT_SCOPE)
 
 # tinyformat include path
-set(TINYFORMAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/tinyformat PARENT_SCOPE)
+set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 
-# SIMDFloat include path
-set(SIMDFLOAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/simdfloat/include PARENT_SCOPE)
+# SIMDArray include path
+set(SIMDARRAY_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/simdarray/include PARENT_SCOPE)
 
 # Hypothesis include path
 set(HYPOTHESIS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/hypothesis PARENT_SCOPE)
@@ -157,5 +170,5 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-undefined-inline")
 endif()
 add_subdirectory(asmjit)
-set(ASMJIT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/asmjit/src PARENT_SCOPE)
+set(ASMJIT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src PARENT_SCOPE)
 set_property(TARGET asmjit PROPERTY FOLDER "dependencies")

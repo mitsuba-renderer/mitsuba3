@@ -42,8 +42,8 @@ class BBoxTest(unittest.TestCase):
         self.assertTrue((bbox3.corner(5) == [2, 2, 5]).all())
         self.assertTrue((bbox3.corner(6) == [1, 3, 5]).all())
         self.assertTrue((bbox3.corner(7) == [2, 3, 5]).all())
-        self.assertEqual(str(bbox1), "BoundingBox[invalid]")
-        self.assertEqual(str(bbox3), "BoundingBox[min = [1, 2, 3],"
+        self.assertEqual(str(bbox1), "BoundingBox3[invalid]")
+        self.assertEqual(str(bbox3), "BoundingBox3[min = [1, 2, 3],"
                                      " max = [2, 3, 5]]")
         bbox4 = BBox.merge(bbox2, bbox3)
         self.assertTrue((bbox4.min == [0, 1, 2]).all())

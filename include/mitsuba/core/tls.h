@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  * This class implements a generic thread local storage object that can be used
  * in situations where the new \c thread_local keyword is not available (e.g.
  * on Mac OS, as of 2016), or when TLS object are created dynamically (which \c
- * thread_local does not allow). 
+ * thread_local does not allow).
  *
  * The native TLS classes on Linux/MacOS/Windows only support a limited number
  * of dynamically allocated entries (usually 1024 or 1088). Furthermore, they
@@ -22,13 +22,12 @@ NAMESPACE_BEGIN(mitsuba)
  * amount, so this is a big deal), and it also has the desired cleanup
  * semantics: TLS entries are destroyed when the owning thread dies \a or when
  * the \c ThreadLocal instance is freed (whichever occurs first).
- * 
+ *
  * The implementation is designed to make the \c get() operation as fast as as
  * possible at the cost of more involved locking when creating or destroying
  * threads and TLS objects. To actually instantiate a TLS object with a
  * specific type, use the \ref ThreadLocal class.
  *
- * \ingroup libcore
  * \sa ThreadLocal
  */
 
@@ -46,6 +45,14 @@ public:
 
     /// Destroy the thread local storage object
     ~ThreadLocalBase();
+
+    /**
+     * \brief Release all current instances associated with this TLS
+     *
+     * Dangerous: don't use this method when the data is still concurrently
+     * being used by other threads
+     */
+    void clear();
 
 protected:
     /// Return the data value associated with the current thread
@@ -74,13 +81,14 @@ private:
 
 /**
  * \brief Flexible platform-independent thread local storage class
- * \ingroup libcore
  *
  * This class implements a generic thread local storage object. For details,
  * refer to its base class, \ref ThreadLocalBase.
  */
 template <typename Type, typename SFINAE = void> class ThreadLocal : ThreadLocalBase {
 public:
+    using ThreadLocalBase::clear;
+
     /// Construct a new thread local storage object
     ThreadLocal() : ThreadLocalBase(
             []() -> void * { return new Type(); },
@@ -109,7 +117,6 @@ public:
 
 /**
  * \brief Flexible platform-independent thread local storage class
- * \ingroup libcore
  *
  * This class implements a generic thread local storage object. For details,
  * refer to its base class, \ref ThreadLocalBase.

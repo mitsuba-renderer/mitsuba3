@@ -1,8 +1,11 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/jit.h>
+#include <mitsuba/core/util.h>
+#include <mitsuba/core/fresolver.h>
 #include "python.h"
 
+// libmitsuba-core
 MTS_PY_DECLARE(filesystem);
 MTS_PY_DECLARE(pcg32);
 MTS_PY_DECLARE(atomic);
@@ -28,11 +31,17 @@ MTS_PY_DECLARE(BoundingBox);
 MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Struct);
+MTS_PY_DECLARE(Bitmap);
 MTS_PY_DECLARE(warp);
-MTS_PY_DECLARE(WarpVisualizationWidget);
 MTS_PY_DECLARE(hypothesis);
 
+// libmitsuba-render
 MTS_PY_DECLARE(Scene);
+MTS_PY_DECLARE(Shape);
+MTS_PY_DECLARE(ShapeKDTree);
+
+// libmitsuba-ui
+MTS_PY_DECLARE(WarpVisualizationWidget);
 
 PYBIND11_PLUGIN(mitsuba) {
     Jit::staticInitialization();
@@ -48,8 +57,12 @@ PYBIND11_PLUGIN(mitsuba) {
     py::module gui = m.def_submodule("gui",
         "Mitsuba GUI library (rendering interface, visualization of warping functions, ...)");
 
-    MTS_PY_IMPORT_CORE(filesystem);
+    // ext
     MTS_PY_IMPORT_CORE(pcg32);
+    MTS_PY_IMPORT_CORE(hypothesis);
+
+    // libmitsuba-core
+    MTS_PY_IMPORT_CORE(filesystem);
     MTS_PY_IMPORT_CORE(atomic);
     MTS_PY_IMPORT_CORE(util);
     MTS_PY_IMPORT_CORE(math);
@@ -73,19 +86,29 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT_CORE(Ray);
     MTS_PY_IMPORT_CORE(Frame);
     MTS_PY_IMPORT_CORE(Struct);
+    MTS_PY_IMPORT_CORE(Bitmap);
     MTS_PY_IMPORT_CORE(warp);
-    MTS_PY_IMPORT_CORE(hypothesis);
 
+    // libmitsuba-render
     MTS_PY_IMPORT_RENDER(Scene);
+    MTS_PY_IMPORT_RENDER(Shape);
+    MTS_PY_IMPORT_RENDER(ShapeKDTree);
 
+    // libmitsuba-ui
     MTS_PY_IMPORT_GUI(WarpVisualizationWidget);
 
-    atexit([](){
+    atexit([]() {
         Logger::staticShutdown();
         Thread::staticShutdown();
         Class::staticShutdown();
         Jit::staticShutdown();
     });
+
+    /* Append the mitsuba directory to the FileResolver search path list */
+    ref<FileResolver> fr = Thread::thread()->fileResolver();
+    fs::path basePath = util::libraryPath().parent_path();
+    if (!fr->contains(basePath))
+        fr->append(basePath);
 
     return m.ptr();
 }

@@ -22,14 +22,14 @@ include_directories(
 
 # Create the binding library
 add_library(mitsuba-python SHARED
-  # ext
-  pcg32.cpp
-  hypothesis.cpp
-
   # main
   python.h
   docstr.h
   main.cpp
+
+  # ext
+  pcg32.cpp
+  hypothesis.cpp
 
   # libcore
   appender.cpp
@@ -52,19 +52,20 @@ add_library(mitsuba-python SHARED
   frame.cpp
   ray.cpp
   struct.cpp
-  warp.cpp
+  bitmap.cpp
 
   # librender
   scene.cpp
+  shape.cpp
 
-  # libgui
+  # libui
   warp_visualizer.cpp
 )
 
-# Link to Mitsuba core and GUI libraries
-target_link_libraries(mitsuba-python mitsuba-core mitsuba-render mitsuba-gui)
-# Link to NanoGUI
-target_link_libraries(mitsuba-python nanogui)
+add_library(mitsuba-python SHARED $<TARGET_OBJECTS:mitsuba-python-obj>)
+set_property(TARGET mitsuba-python PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET mitsuba-python-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(mitsuba-python PRIVATE mitsuba-core mitsuba-render mitsuba-ui nanogui)
 
 # Don't add a 'lib' prefix to the shared library
 set_target_properties(mitsuba-python PROPERTIES PREFIX "")
@@ -140,7 +141,7 @@ add_custom_command(
 add_custom_command(
   TARGET mitsuba-python
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nanogui_python> ${CMAKE_BINARY_DIR}/dist/python)
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nanogui-python> ${CMAKE_BINARY_DIR}/dist/python)
 
 # Compute compilation flags for 'mkdoc' target, which extracts docstrings from the C++ header files
 string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
@@ -181,5 +182,5 @@ add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
 
 if (APPLE)
   set_target_properties(mitsuba-python PROPERTIES INSTALL_RPATH "@loader_path/..")
-  set_target_properties(nanogui_python PROPERTIES INSTALL_RPATH "@loader_path/..")
+  set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "@loader_path/..")
 endif()

@@ -136,8 +136,9 @@ public:
     static void staticShutdown();
 
     MTS_DECLARE_CLASS()
+
 protected:
-    /// Virtual destructor
+    /// Protected destructor
     virtual ~Thread();
 
     /// Initialize thread execution environment and then call \ref run()
@@ -154,13 +155,14 @@ protected:
 
     /// The thread's run method
     virtual void run() = 0;
+
 private:
     struct ThreadPrivate;
     std::unique_ptr<ThreadPrivate> d;
 };
 
 /// RAII-style class to temporarily switch to another thread's logger/file resolver
-class ThreadEnvironment {
+class MTS_EXPORT_CORE ThreadEnvironment {
 public:
     ThreadEnvironment(Thread *thread);
     ~ThreadEnvironment();

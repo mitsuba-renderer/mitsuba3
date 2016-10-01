@@ -1,11 +1,11 @@
 include_directories(
   ${HYPOTHESIS_INCLUDE_DIRS}
   ${PNG_INCLUDE_DIRS}
-  ${TBB_INCLUDE_DIRS}
   ${PCG32_INCLUDE_DIRS}
   ${PUGIXML_INCLUDE_DIRS}
   ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
+  ${OPENEXR_INCLUDE_DIRS}
 )
 
 add_definitions(
@@ -15,7 +15,7 @@ add_definitions(
 
 set(INC_DIR "../../include/mitsuba/core")
 
-add_library(mitsuba-core SHARED
+add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/../mitsuba.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/essentials.h
@@ -46,6 +46,7 @@ add_library(mitsuba-core SHARED
   fresolver.cpp        ${INC_DIR}/fresolver.h
   jit.cpp              ${INC_DIR}/jit.h
   struct.cpp           ${INC_DIR}/struct.h
+  bitmap.cpp           ${INC_DIR}/bitmap.h
   warp.cpp             ${INC_DIR}/warp.h
   warp_adapters.cpp    ${INC_DIR}/warp_adapters.h
 
@@ -57,14 +58,24 @@ add_library(mitsuba-core SHARED
   zstream.cpp      ${INC_DIR}/zstream.h
 )
 
-# Link to Intel's Thread Building Blocks & the pugixml parser
-target_link_libraries(mitsuba-core tbb pugixml)
+add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)
+set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# Link to Intel's Thread Building Blocks, the pugixml parser, and asmjit
+target_link_libraries(mitsuba-core PRIVATE tbb pugixml asmjit)
+
+# Image libraries: link to libjpeg, libpng, OpenEXR
+target_link_libraries(mitsuba-core PRIVATE ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf)
+
+if (UNIX AND NOT APPLE)
+  target_link_libraries(mitsuba-core PUBLIC
+    -Wl,-rpath-link=$<TARGET_FILE_DIR:tbb>
+    -Wl,-rpath-link=$<TARGET_FILE_DIR:pugixml>
+    -Wl,-rpath-link=$<TARGET_FILE_DIR:asmjit>)
+endif()
 
 # Link to libpng and zlib (either the system version or a version built via cmake)
-target_link_libraries(mitsuba-core ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
-
-# Link to asmjit (for structconv)
-target_link_libraries(mitsuba-core asmjit)
+target_link_libraries(mitsuba-core PRIVATE ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
 
 # Create the 'dist' and 'dist/plugins' directories
 add_custom_command(

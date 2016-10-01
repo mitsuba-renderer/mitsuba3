@@ -8,7 +8,7 @@
 #include <pybind11/stl.h>
 #include "docstr.h"
 #include <mitsuba/core/object.h>
-#include <simdfloat/static.h>
+#include <simdarray/array.h>
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
 
@@ -31,10 +31,10 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
     void python_export_##name(py::module &m)
 
 #define MTS_PY_CLASS(Name, Base, ...) \
-    py::class_<Name, ref<Name>>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__)
+    py::class_<Name, Base, ref<Name>>(m, #Name, DM(Name), ##__VA_ARGS__)
 
 #define MTS_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
-    py::class_<Name, ref<Name>, Trampoline>(m, #Name, DM(Name), py::base<Base>(), ##__VA_ARGS__)
+    py::class_<Name, Base, ref<Name>, Trampoline>(m, #Name, DM(Name), ##__VA_ARGS__)
 
 #define MTS_PY_STRUCT(Name, ...) \
     py::class_<Name>(m, #Name, DM(Name), ##__VA_ARGS__)
@@ -51,20 +51,21 @@ using namespace mitsuba;
 
 namespace py = pybind11;
 
-template <typename T> class is_simd_float {
+template <typename T> class is_simdarray {
 private:
-    template <typename Scalar, size_t Dimension, bool ApproximateMath, typename Derived, typename SFINAE>
-    static std::true_type test(const
-          simd::StaticFloatBase<Scalar, Dimension, ApproximateMath, Derived, SFINAE> &);
+    template <typename T2>
+    static std::true_type test(const simd::DerivedType<T2> &);
     static std::false_type test(...);
 public:
-    static constexpr bool value = decltype(test(std::declval<T>()))::value;
+    static constexpr bool value = decltype(is_simdarray::test(std::declval<const T &>()))::value;
 };
+
+extern py::dtype dtypeForStruct(const Struct *s);
 
 NAMESPACE_BEGIN(pybind11)
 NAMESPACE_BEGIN(detail)
 template<typename Type>
-struct type_caster<Type, typename std::enable_if<is_simd_float<Type>::value>::type> {
+struct type_caster<Type, typename std::enable_if<is_simdarray<Type>::value>::type> {
     typedef typename Type::Scalar Scalar;
 
     bool load(handle src, bool) {
@@ -113,8 +114,8 @@ struct type_caster<Type, typename std::enable_if<is_simd_float<Type>::value>::ty
     template <typename _T> using cast_op_type = pybind11::detail::cast_op_type<_T>;
 
     static PYBIND11_DESCR name() {
-        return _("numpy.ndarray[dtype=") + npy_format_descriptor<Scalar>::name() +
-               _(", shape=(") + _<Type::Dimension>() + _(", 1)]");
+        return py::detail::type_descr(_("numpy.ndarray[dtype=") + npy_format_descriptor<Scalar>::name() +
+               _(", shape=(") + _<Type::Dimension>() + _(", 1)]"));
     }
 
     operator Type*() { return &value; }

@@ -44,6 +44,10 @@ ThreadLocalBase::ThreadLocalBase(const ConstructFunctor &constructFunctor,
     : m_constructFunctor(constructFunctor), m_destructFunctor(destructFunctor) { }
 
 ThreadLocalBase::~ThreadLocalBase() {
+    clear();
+}
+
+void ThreadLocalBase::clear() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
 
     /* For every thread */
@@ -72,7 +76,7 @@ void *ThreadLocalBase::get() {
         PerThreadData *ptd = ptdLocal;
     #endif
 
-    if (!ptd)
+    if (unlikely(!ptd))
         throw std::runtime_error(
             "Internal error: call to ThreadLocalPrivate::get() precedes the "
             "construction of thread-specific data structures!");
@@ -81,7 +85,7 @@ void *ThreadLocalBase::get() {
     tbb::spin_mutex::scoped_lock guard(ptd->mutex);
 
     auto it = ptd->entries.find(this);
-    if (it != ptd->entries.end())
+    if (likely(it != ptd->entries.end()))
         return it->second.data;
 
     /* This is the first access from this thread */
@@ -114,21 +118,19 @@ void ThreadLocalBase::staticShutdown() {
 
 bool ThreadLocalBase::registerThread() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
-    bool success = false;
 #if defined(__OSX__)
     PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptdLocal);
     if (!ptd) {
         ptd = new PerThreadData();
         ptdGlobal.insert(ptd);
         pthread_setspecific(ptdLocal, ptd);
-        success = true;
         return true;
     } else {
         ptd->refCount++;
     }
 #else
     if (!ptdLocal) {
-        auto ptd = new PerThreadLocal();
+        auto ptd = new PerThreadData();
         ptdLocal = ptd;
         ptdGlobal.insert(ptd);
         return true;

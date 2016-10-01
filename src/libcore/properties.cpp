@@ -14,6 +14,7 @@ using VariantType = variant<
     int64_t,
     Float,
     Vector3f,
+    Point3f,
     std::string,
     NamedReference,
     ref<Object>
@@ -250,6 +251,36 @@ bool Properties::operator==(const Properties &p) const {
     }
 
     return true;
+}
+
+std::string Properties::asString(const std::string &name) const {
+    std::ostringstream oss;
+    bool found = false;
+    for (auto &e : d->entries) {
+        if (e.first != name)
+            continue;
+        e.second.data.visit(StreamVisitor(oss));
+        found = true;
+        break;
+    }
+    if (!found)
+        Throw("Property \"%s\" has not been specified!", name); \
+    return oss.str();
+}
+
+std::string Properties::asString(const std::string &name, const std::string &defVal) const {
+    std::ostringstream oss;
+    bool found = false;
+    for (auto &e : d->entries) {
+        if (e.first != name)
+            continue;
+        e.second.data.visit(StreamVisitor(oss));
+        found = true;
+        break;
+    }
+    if (!found)
+        return defVal;
+    return oss.str();
 }
 
 std::ostream &operator<<(std::ostream &os, const Properties &p) {

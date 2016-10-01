@@ -103,7 +103,7 @@ public:
 
 protected:
 
-    /// Destructor
+    /// Protected destructor
     virtual ~FileStream();
 
 private:

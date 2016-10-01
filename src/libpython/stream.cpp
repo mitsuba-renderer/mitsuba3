@@ -12,6 +12,7 @@
 namespace {
 struct declare_stream_accessors {
     using PyClass = pybind11::class_<mitsuba::Stream,
+                                     mitsuba::Object,
                                      mitsuba::ref<mitsuba::Stream>>;
 
     template <typename T>
@@ -23,6 +24,7 @@ struct declare_stream_accessors {
 };
 struct declare_astream_accessors {
     using PyClass = pybind11::class_<mitsuba::AnnotatedStream,
+                                     mitsuba::Object,
                                      mitsuba::ref<mitsuba::AnnotatedStream>>;
 
     template <typename T>
@@ -36,7 +38,6 @@ struct declare_astream_accessors {
 
 /// Use this type alias to list the supported types. Be wary of automatic type conversions.
 // TODO: support all supported types that can occur in Python
-// TODO: Python `long` type probably depends on the architecture, test on 32bits
 using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
 
 }  // end anonymous namespace

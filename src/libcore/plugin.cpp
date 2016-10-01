@@ -16,7 +16,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 extern "C" {
-	typedef Object *(*CreateObjectFunctor)(const Properties &props);
+    typedef Object *(*CreateObjectFunctor)(const Properties &props);
 };
 
 class Plugin {
@@ -45,9 +45,9 @@ public:
 
     ~Plugin() {
         #if defined(__WINDOWS__)
-	        FreeLibrary(m_handle);
+            FreeLibrary(m_handle);
         #else
-	        dlclose(m_handle);
+            dlclose(m_handle);
         #endif
     }
 
@@ -78,7 +78,7 @@ private:
 };
 
 struct PluginManager::PluginManagerPrivate {
-	std::unordered_map<std::string, Plugin *> m_plugins;
+    std::unordered_map<std::string, Plugin *> m_plugins;
     std::mutex m_mutex;
 
     Plugin *plugin(const std::string &name) {
@@ -108,7 +108,7 @@ struct PluginManager::PluginManagerPrivate {
             Plugin *plugin = new Plugin(resolved);
             /* New classes must be registered within the class hierarchy */
             Class::staticInitialization();
-	        ///Statistics::instance()->logPlugin(shortName, description()); XXX
+            ///Statistics::instance()->logPlugin(shortName, description()); XXX
             m_plugins[name] = plugin;
             return plugin;
         }
@@ -143,16 +143,16 @@ ref<Object> PluginManager::createObject(const Class *class_, const Properties &p
 }
 
 ref<Object> PluginManager::createObject(const Properties &props) {
-	const Plugin *plugin = d->plugin(props.pluginName());
+    const Plugin *plugin = d->plugin(props.pluginName());
     return plugin->createObject(props);
 }
 
 std::vector<std::string> PluginManager::loadedPlugins() const {
-	std::vector<std::string> list;
+    std::vector<std::string> list;
     std::lock_guard<std::mutex> guard(d->m_mutex);
     for (auto const &pair: d->m_plugins)
         list.push_back(pair.first);
-	return list;
+    return list;
 }
 
 void PluginManager::ensurePluginLoaded(const std::string &name) {

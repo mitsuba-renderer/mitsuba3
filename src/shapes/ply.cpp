@@ -36,9 +36,9 @@ public:
             Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
         };
 
-		Log(EInfo, "Loading mesh from \"%s\" ..", m_name);
-		if (!fs::exists(filePath))
-		    fail("file not found");
+        Log(EInfo, "Loading mesh from \"%s\" ..", m_name);
+        if (!fs::exists(filePath))
+            fail("file not found");
 
         ref<Stream> stream = new FileStream(filePath, false);
         Timer timer;
@@ -73,7 +73,10 @@ public:
 
                 /* Allocate memory for vertices (+1 unused entry) */
                 m_vertices = VertexHolder(
-                    (VertexType *) Allocator::alloc((el.count + 1) * oStructSize));
+                    (uint8_t *) Allocator::alloc_((el.count + 1) * oStructSize));
+
+                /* Clear unused entry */
+                memset(m_vertices.get() + oStructSize * el.count, 0, oStructSize);
 
                 size_t nPackets      = el.count / nAtOnce;
                 size_t nRemainder    = el.count % nAtOnce;
@@ -89,8 +92,7 @@ public:
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     for (size_t j = 0; j < nAtOnce; ++j) {
-                        Vector3f p;
-                        p.load((Float *) target);
+                        Vector3f p = Vector3f::Load((Float *) target);
                         m_bbox.expand(p);
                         target += oStructSize;
                     }
@@ -101,13 +103,13 @@ public:
                     fail("incompatible contents -- is this a triangle mesh?");
 
                 for (size_t j = 0; j < nRemainder; ++j) {
-                    Vector3f p;
-                    p.load((Float *) target);
+                    Vector3f p = Vector3f::Load((Float *) target);
                     m_bbox.expand(p);
                     target += oStructSize;
                 }
 
                 m_vertexCount = el.count;
+                m_vertexSize = oStructSize;
             } else if (el.name == "face") {
                 m_faceStruct = new Struct(true);
 
@@ -122,7 +124,7 @@ public:
 
                 for (int i = 0; i < 3; ++i)
                     m_faceStruct->append(tfm::format("%s.i%i", fieldName, i),
-                                         struct_traits<IndexType>::value);
+                                         struct_traits<Index>::value);
 
                 size_t iStructSize = el.struct_->size();
                 size_t oStructSize = m_faceStruct->size();
@@ -135,7 +137,7 @@ public:
                 }
 
                 m_faces = FaceHolder(
-                    (IndexType *) Allocator::alloc(el.count * oStructSize));
+                    (uint8_t *) Allocator::alloc_(el.count * oStructSize));
 
                 size_t nPackets      = el.count / nAtOnce;
                 size_t nRemainder    = el.count % nAtOnce;
@@ -159,6 +161,7 @@ public:
                     fail("incompatible contents -- is this a triangle mesh?");
 
                 m_faceCount = el.count;
+                m_faceSize = oStructSize;
             } else {
                 Log(EWarn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + size * el.count);
@@ -244,7 +247,7 @@ public:
             ref<StructConverter> conv =
                 new StructConverter(m_faceStruct, faceStructOut);
 
-            FaceHolder temp((IndexType *) Allocator::alloc(
+            FaceHolder temp((uint8_t *) Allocator::alloc_(
                 faceStructOut->size() * m_faceCount));
 
             if (!conv->convert(m_faceCount, m_faces.get(), temp.get()))
@@ -401,16 +404,20 @@ private:
                 for (auto const &field : *(el.struct_)) {
                     switch (field.type) {
                         case Struct::EInt8: {
-                                int8_t value;
+                                int value;
                                 if (!(is >> value)) Throw("Could not parse \"char\" value");
-                                out->write(value);
+                                if (value < -128 || value > 127)
+                                    Throw("Could not parse \"char\" value");
+                                out->write((int8_t) value);
                             }
                             break;
 
                         case Struct::EUInt8: {
-                                uint8_t value;
+                                int value;
                                 if (!(is >> value)) Throw("Could not parse \"uchar\" value");
-                                out->write(value);
+                                if (value < 0 || value > 255)
+                                    Throw("Could not parse \"uchar\" value");
+                                out->write((uint8_t) value);
                             }
                             break;
 

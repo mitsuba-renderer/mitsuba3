@@ -24,7 +24,7 @@ static const double SqrtTwoPi_d       = 2.50662827463100050242;
 static const double InvSqrtTwoPi_d    = 0.39894228040143267794;
 static const double Epsilon_d         = 1e-7;
 #if !defined(_MSC_VER)
-static const double OneMinusEpsilon_d = 0x1.fffffffffffff7p-1;
+static const double OneMinusEpsilon_d = 0x1.fffffffffffffp-1;
 static const double RecipOverflow_d   = 0x1p-1024;
 #else
 static const double OneMinusEpsilon_d = 0.999999999999999888;
@@ -68,12 +68,12 @@ static const Float  SqrtTwo           = (Float) SqrtTwo_d;
 static const Float  InvSqrtTwo        = (Float) InvSqrtTwo_d;
 static const Float  SqrtTwoPi         = (Float) SqrtTwoPi_d;
 static const Float  InvSqrtTwoPi      = (Float) InvSqrtTwoPi_d;
-static const Float  OneMinusEpsilon   = sizeof(Float) == sizeof(double) ?
-                                        OneMinusEpsilon_d : OneMinusEpsilon_f;
-static const Float  RecipOverflow     = sizeof(Float) == sizeof(double) ?
-                                        RecipOverflow_d : RecipOverflow_f;
-static const Float  Epsilon           = sizeof(Float) == sizeof(double) ?
-                                        Epsilon_d : Epsilon_f;
+static const Float  OneMinusEpsilon   = Float(sizeof(Float) == sizeof(double) ?
+                                        OneMinusEpsilon_d : (double) OneMinusEpsilon_f);
+static const Float  RecipOverflow     = Float(sizeof(Float) == sizeof(double) ?
+                                        RecipOverflow_d : (double) RecipOverflow_f);
+static const Float  Epsilon           = Float(sizeof(Float) == sizeof(double) ?
+                                        Epsilon_d : (double) Epsilon_f);
 static const Float  MaxFloat          = std::numeric_limits<Float>::max();
 static const Float  Infinity          = std::numeric_limits<Float>::infinity();
 static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 2;
@@ -276,16 +276,31 @@ template <typename T> T modulo(T a, T b) {
     return (result < 0) ? result + b : result;
 }
 
+/// Efficiently compute the floor of the base-2 logarithm of an unsigned integer
+template <typename T> T log2i(T value) {
+    Assert(value >= 0);
+#if defined(__GNUC__) && defined(__x86_64__)
+    T result = 0;
+    asm ("bsr %1, %0" : "+r" (result) : "r" (value));
+    return result;
+#elif defined(_WIN32)
+    unsigned long result;
+    if (sizeof(T) <= 4)
+        _BitScanReverse(&result, (unsigned long) value);
+    else
+        _BitScanReverse64(&result, (unsigned __int64) value);
+    return T(result);
+#else
+    T r = 0;
+    while ((value >> r) != 0)
+        r++;
+    return r - 1;
+#endif
+}
+
 /// Check whether the provided integer is a power of two
 template <typename T> bool isPowerOfTwo(T i) {
-#if defined(MTS_BSLR) && defined(MTS_BSLRLL)
-    if (sizeof(T) <= 4)
-        return i > 0 && MTS_BLSR((unsigned int) i) == 0;
-    else
-        return i > 0 && MTS_BLSRLL((unsigned long long) i) == 0;
-#else
     return i > 0 && (i & (i-1)) == 0;
-#endif
 }
 
 /// Round an unsigned integer to the next integer power of two
@@ -293,38 +308,19 @@ template <typename T> T roundToPowerOfTwo(T i) {
     if (i <= 1)
         return 1;
 #if defined(MTS_CLZ) && defined(MTS_CLZLL)
-    if (sizeof(T) <= 4)
-        return T(1u << (32 - MTS_CLZ((unsigned int) i - 1u)));
-    else
-        return T(1ull << (64 - MTS_CLZLL((unsigned long long) i - 1ull)));
+    return T(1) << (log2i<T>(i - 1) + 1);
 #else
-	i--;
-	i |= i >> 1;
-	i |= i >> 2;
-	i |= i >> 4;
-	if (sizeof(T) >= 2)
+    i--;
+    i |= i >> 1;
+    i |= i >> 2;
+    i |= i >> 4;
+    if (sizeof(T) >= 2)
         i |= i >> 8;
-	if (sizeof(T) >= 4)
+    if (sizeof(T) >= 4)
         i |= i >> 16;
-	if (sizeof(T) >= 8)
+    if (sizeof(T) >= 8)
         i |= i >> 32;
     return i + 1;
-#endif
-}
-
-/// Compute the base-2 logarithm of an unsigned integer
-template <typename T> T log2i(T value) {
-    Assert(value >= 0);
-#if defined(MTS_CLZ) && defined(MTS_CLZLL)
-    if (sizeof(T) <= 4)
-        return T(31 - MTS_CLZ((unsigned int) value));
-    else
-        return T(63 - MTS_CLZLL((unsigned long long) value));
-#else
-    T r = 0;
-    while ((value >> r) != 0)
-        r++;
-    return r - 1;
 #endif
 }
 
@@ -357,14 +353,18 @@ static T inverseGamma(T value) {
  * This function is primarily used to locate an interval (i, i+1) for linear
  * interpolation, hence its name. To avoid issues out of bounds accesses, and
  * to deal with predicates that evaluate to \c true or \c false on the entire
- * domain, the returned left interval index is clamped to the range <tt>[0,
- * size-2]</tt>.
+ * domain, the returned left interval index is clamped to the range <tt>[left,
+ * right-2]</tt>.
  */
-template <typename Predicate>
-size_t findInterval(size_t size, const Predicate &pred) {
-    size_t first = 0, len = size;
+template <typename Size, typename Predicate>
+size_t findInterval(Size left, Size right, const Predicate &pred) {
+    typedef typename std::make_signed<Size>::type SignedSize;
+
+    Size first = left, len = right - left;
     while (len > 0) {
-        size_t half = len >> 1, middle = first + half;
+        Size half = len >> 1,
+             middle = first + half;
+
         if (pred(middle)) {
             first = middle + 1;
             len -= half + 1;
@@ -372,8 +372,52 @@ size_t findInterval(size_t size, const Predicate &pred) {
             len = half;
         }
     }
-    return (size_t) clamp<ssize_t>((ssize_t) first - 1, 0, size - 2);
+
+    return (Size) clamp<SignedSize>(
+        (SignedSize) first - 1,
+        (SignedSize) left,
+        (SignedSize) right - 2
+    );
 }
+
+/**
+ * \brief Bisect a floating point interval given a predicate function
+ *
+ * This function takes an interval [\c left, \c right] and a predicate \c pred
+ * as inputs. It assumes that <tt>pred(left)==true</tt> and
+ * <tt>pred(right)==false</tt>. It also assumes that there is a single floating
+ * point number \c t such that \c pred is \c true for all values in the range
+ * [\c left, \c t] and \c false for all values in the range (\c t, \c right].
+ *
+ * The bisection search then finds and returns \c t by repeatedly splitting the
+ * input interval. The number of iterations is roughly bounded by the number of
+ * bits of the underlying floating point representation.
+ */
+template <typename Scalar, typename Predicate>
+Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
+    int it = 0;
+    while (true) {
+        Scalar middle = (left + right) * 0.5f;
+
+        /* Paranoid stopping criterion */
+        if (middle <= left || middle >= right) {
+            middle = std::nextafter(left, right);
+            if (middle == right)
+                break;
+        }
+
+        if (pred(middle))
+            left = middle;
+        else
+            right = middle;
+        it++;
+        if (it > 100)
+            std::cout << "Now at " << it << " iterations" << std::endl;
+    }
+
+    return left;
+}
+
 
 /// Quantile function of the standard normal distribution (double precision)
 extern MTS_EXPORT_CORE double normal_quantile(double p);

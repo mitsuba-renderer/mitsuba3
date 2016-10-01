@@ -6,9 +6,9 @@ Makefile
 *.cmake
 
 # Ninja
-.ninja_deps
-.ninja_log
-*.ninja
+/.ninja_deps
+/.ninja_log
+/*.ninja
 
 # Miscellaneous;
 /ext_build
@@ -17,7 +17,8 @@ Makefile
 *.dir
 *~
 \.DS_Store
-Testing
+/Testing
+/.cache
 
 # Visual studio
 *.vcxproj

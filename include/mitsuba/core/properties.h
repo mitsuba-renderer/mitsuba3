@@ -34,36 +34,36 @@ private:
  */
 class MTS_EXPORT_CORE Properties {
 public:
-	/// Supported types of properties
-	enum EPropertyType {
-		/// Boolean value (true/false)
-		EBool = 0,
-		/// 64-bit signed integer
-		ELong,
-		/// Floating point value
-		EFloat,
-		/// 3D point
-		EPoint3f,
-		/// 3D vector
-		EVector3f,
-		/// 4x4 transform for homogeneous coordinates
-		ETransform,
-		/// An animated 4x4 transformation
-		EAnimatedTransform,
-		/// Discretized color spectrum
-		ESpectrum,
-		/// String
-		EString,
-		/// Named reference to another named object
-		ENamedReference,
-		/// Arbitrary object
-		EObject
-	};
+    /// Supported types of properties
+    enum EPropertyType {
+        /// Boolean value (true/false)
+        EBool = 0,
+        /// 64-bit signed integer
+        ELong,
+        /// Floating point value
+        EFloat,
+        /// 3D point
+        EPoint3f,
+        /// 3D vector
+        EVector3f,
+        /// 4x4 transform for homogeneous coordinates
+        ETransform,
+        /// An animated 4x4 transformation
+        EAnimatedTransform,
+        /// Discretized color spectrum
+        ESpectrum,
+        /// String
+        EString,
+        /// Named reference to another named object
+        ENamedReference,
+        /// Arbitrary object
+        EObject
+    };
 
-	/// Construct an empty property container
+    /// Construct an empty property container
     Properties();
 
-	/// Construct an empty property container with a specific plugin name
+    /// Construct an empty property container with a specific plugin name
     Properties(const std::string &pluginName);
 
     /// Copy constructor
@@ -128,6 +128,12 @@ public:
     /// Return the list of un-queried attributed
     std::vector<std::string> unqueried() const;
 
+    /// Return one of the parameters (converting it to a string if necessary)
+    std::string asString(const std::string &name) const;
+
+    /// Return one of the parameters (converting it to a string if necessary, with default value)
+    std::string asString(const std::string &name, const std::string &defVal) const;
+
     /**
      * \brief Merge another properties record into the current one.
      *
@@ -160,12 +166,13 @@ public:  // Type-specific getters and setters ----------------------------------
     void setInt(const std::string &name, const int &value, bool warnDuplicates = true) {
         setLong(name, (int64_t) value, warnDuplicates);
     }
+
     /// Retrieve an integer value
     int int_(const std::string &name) const { return (int) long_(name); }
     /// Retrieve a boolean value (use default value if no entry exists)
-	int int_(const std::string &name, const int &defVal) const {
+    int int_(const std::string &name, const int &defVal) const {
         return (int) long_(name, (int64_t) defVal);
-	}
+    }
 
     /// Store an integer value in the Properties instance
     void setLong(const std::string &name, const int64_t &value, bool warnDuplicates = true);

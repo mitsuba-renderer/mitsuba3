@@ -130,7 +130,7 @@ public:
 
 protected:
 
-    /// Destructor
+    /// Protected destructor
     virtual ~AnnotatedStream();
 
     /** \brief Attempts to seek to the position of the given field.

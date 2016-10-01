@@ -47,6 +47,11 @@ typedef TVector<Float, 2>       Vector2f;
 typedef TVector<Float, 3>       Vector3f;
 typedef TVector<Float, 4>       Vector4f;
 
+typedef TVector<double, 1>      Vector1d;
+typedef TVector<double, 2>      Vector2d;
+typedef TVector<double, 3>      Vector3d;
+typedef TVector<double, 4>      Vector4d;
+
 typedef TVector<size_t, 1>      Vector1s;
 typedef TVector<size_t, 2>      Vector2s;
 typedef TVector<size_t, 3>      Vector3s;
@@ -57,7 +62,13 @@ typedef TPoint<Float, 2>        Point2f;
 typedef TPoint<Float, 3>        Point3f;
 typedef TPoint<Float, 4>        Point4f;
 
+typedef TPoint<double, 1>       Point1d;
+typedef TPoint<double, 2>       Point2d;
+typedef TPoint<double, 3>       Point3d;
+typedef TPoint<double, 4>       Point4d;
+
 typedef TNormal<Float>          Normal3f;
+typedef TNormal<double>         Normal3d;
 
 typedef TBoundingBox<Point1f>   BoundingBox1f;
 typedef TBoundingBox<Point2f>   BoundingBox2f;
