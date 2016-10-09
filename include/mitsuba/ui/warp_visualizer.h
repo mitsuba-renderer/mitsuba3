@@ -10,22 +10,10 @@
 #include <nanogui/glutil.h>
 
 NAMESPACE_BEGIN(mitsuba)
-NAMESPACE_BEGIN(warp)
+NAMESPACE_BEGIN(ui)
 
-/**
- * A Nanogui widget to visualize warping functions for different
- * sampling strategies. It also performs a statistical test checking
- * that the warping function matches its PDF and displays the corresponding
- * histograms (observed / expected).
- *
- * Note that it does not implement any UI elements, which are
- * added via inheritance in Python (see \r warp_visualizer.py).
- *
- * This class is decoupled from the UI and implemented in C++
- * so that it can take care of the heavy lifting (warping,
- * binning, draw calls, etc).
- */
-class MTS_EXPORT_GUI WarpVisualizationWidget : public nanogui::Screen {
+/// A NanoGUI widget to visualize 2D histograms (e.g. from Monte Carlo sampling techniques)
+class MTS_EXPORT_UI HistogramWidget : public nanogui::Widget {
 
 public:
     /// The parameters are passed to the \r nanogui::Screen constructor.
@@ -45,8 +33,8 @@ public:
     /// Should be called after any UI interaction
     virtual void refresh();
 
-    void setSamplingType(SamplingType s) { m_samplingType = s; }
-    void setWarpAdapter(std::shared_ptr<WarpAdapter> wa) { m_warpAdapter = wa; }
+    void setSamplingType(warp::SamplingType s) { m_samplingType = s; }
+    void setWarpAdapter(std::shared_ptr<warp::WarpAdapter> wa) { m_warpAdapter = wa; }
     void setPointCount(int n) { m_pointCount = n; }
 
     bool isDrawingHistogram() { return m_drawHistogram; }
@@ -101,9 +89,9 @@ private:
     GLuint m_textures[2];
     nanogui::Arcball m_arcball;
 
-    SamplingType m_samplingType;
+    warp::SamplingType m_samplingType;
     /// Holds the current warping method selected by the user. May be Identity.
-    std::shared_ptr<WarpAdapter> m_warpAdapter;
+    std::shared_ptr<warp::WarpAdapter> m_warpAdapter;
 
     bool m_drawHistogram, m_drawGrid;
     size_t m_pointCount, m_lineCount;
@@ -111,5 +99,5 @@ private:
     std::string m_testResultText;
 };
 
-NAMESPACE_END(warp)
+NAMESPACE_END(ui)
 NAMESPACE_END(mitsuba)

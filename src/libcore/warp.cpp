@@ -1,7 +1,6 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/transform.h>
-#include <hypothesis.h>
 #include <pcg32.h>
 
 NAMESPACE_BEGIN(mitsuba)

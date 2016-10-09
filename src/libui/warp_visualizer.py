@@ -1,7 +1,6 @@
 import gc
 import math
 from mitsuba.core.warp import SamplingType
-from mitsuba.gui import WarpVisualizationWidget
 
 import nanogui
 from nanogui import Color, Screen, Window, Widget, GroupLayout, BoxLayout, \
@@ -11,7 +10,7 @@ from nanogui import glfw, entypo
 
 from ..tests import warp_factory
 
-class WarpVisualizer(WarpVisualizationWidget):
+class WarpVisualizer(Screen):
     """Nanogui app allowing to visualize and test warping functions.
     Note that this file is mostly responsible for implementing the GUI, whereas
     heavy-lifting is performed by the C++ WarpVisualizationWidget."""

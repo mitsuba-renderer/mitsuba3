@@ -21,7 +21,7 @@ include_directories(
 )
 
 # Create the binding library
-add_library(mitsuba-python SHARED
+add_library(mitsuba-python-obj OBJECT
   # main
   python.h
   docstr.h
@@ -29,7 +29,6 @@ add_library(mitsuba-python SHARED
 
   # ext
   pcg32.cpp
-  hypothesis.cpp
 
   # libcore
   appender.cpp
@@ -53,13 +52,14 @@ add_library(mitsuba-python SHARED
   ray.cpp
   struct.cpp
   bitmap.cpp
+  warp.cpp
 
   # librender
   scene.cpp
   shape.cpp
 
   # libui
-  warp_visualizer.cpp
+  #warp_visualizer.cpp
 )
 
 add_library(mitsuba-python SHARED $<TARGET_OBJECTS:mitsuba-python-obj>)
@@ -164,21 +164,6 @@ add_custom_target(mkdoc COMMAND
   `find ${PROJECT_SOURCE_DIR}/include/mitsuba/gui -name '*.h' ! -name fwd.h -print`
   ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
-
-# The python library depends on the test files being present in the build
-# directory, so that changes in the test files will trigger the copy.
-add_custom_target(python-test-files DEPENDS ${PYTHON_TEST_FILES_IN_BUILD})
-add_dependencies(mitsuba-python python-test-files)
-
-# Test targets: rely on the auto-discovery feature of python's `unittest`
-add_test(NAME mitsuba-python-test
-  COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -v ${CMAKE_SOURCE_DIR}/src/tests
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist)
-set_tests_properties(mitsuba-python-test PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python")
-
-add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
-  ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose
-  DEPENDS mitsuba-python)
 
 if (APPLE)
   set_target_properties(mitsuba-python PROPERTIES INSTALL_RPATH "@loader_path/..")

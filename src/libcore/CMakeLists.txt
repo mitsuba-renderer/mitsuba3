@@ -48,7 +48,6 @@ add_library(mitsuba-core-obj OBJECT
   struct.cpp           ${INC_DIR}/struct.h
   bitmap.cpp           ${INC_DIR}/bitmap.h
   warp.cpp             ${INC_DIR}/warp.h
-  warp_adapters.cpp    ${INC_DIR}/warp_adapters.h
 
   stream.cpp       ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
   astream.cpp      ${INC_DIR}/astream.h

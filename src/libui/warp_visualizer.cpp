@@ -1,4 +1,5 @@
-#include <mitsuba/gui/warp_visualizer.h>
+#if 0
+#include <mitsuba/ui/warp_visualizer.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/warp_adapters.h>
@@ -6,7 +7,7 @@
 #include <pcg32.h>
 
 namespace {
-/// HSLS code (shaders)
+/// GLSL code (shaders)
 const std::string kPointVertexShader =
     "#version 330\n"
     "uniform mat4 mvp;\n"
@@ -103,7 +104,7 @@ const std::string kHistogramFragmentShader =
 }  // end anonymous namespace
 
 NAMESPACE_BEGIN(mitsuba)
-NAMESPACE_BEGIN(warp)
+NAMESPACE_BEGIN(ui)
 
 using nanogui::Arcball;
 using nanogui::Color;
@@ -431,6 +432,7 @@ void WarpVisualizationWidget::initializeShaders() {
     framebufferSizeChanged();
 }
 
+NAMESPACE_END(ui)
 NAMESPACE_END(mitsuba)
-NAMESPACE_END(warp)
 
+#endif

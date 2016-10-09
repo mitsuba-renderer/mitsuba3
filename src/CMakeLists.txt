@@ -1,11 +1,7 @@
 # Mitsuba support libraries
 add_subdirectory(libcore)
 add_subdirectory(librender)
-add_subdirectory(libgui)
-
-if (PYTHONLIBS_FOUND)
-  add_subdirectory(libpython)
-endif()
+add_subdirectory(libui)
 
 # Mitsuba executables
 add_subdirectory(mitsuba)
@@ -13,3 +9,10 @@ add_subdirectory(mitsuba)
 # Plugins
 add_subdirectory(bsdfs)
 add_subdirectory(shapes)
+
+if (PYTHONLIBS_FOUND)
+  add_subdirectory(libpython)
+
+  # Testcases
+  add_subdirectory(tests)
+endif()

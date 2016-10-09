@@ -4,26 +4,26 @@ include_directories(
 )
 
 add_definitions(
-  -DMTS_BUILD_MODULE=MTS_MODULE_GUI
+  -DMTS_BUILD_MODULE=MTS_MODULE_UI
 )
 
-set(INC_DIR "../../include/mitsuba/gui")
+set(INC_DIR "../../include/mitsuba/ui")
 
-add_library(mitsuba-gui SHARED
+add_library(mitsuba-ui SHARED
   warp_visualizer.cpp     ${INC_DIR}/warp_visualizer.h
 )
 
 # Link to Mitsuba core library
-target_link_libraries(mitsuba-gui mitsuba-core)
+target_link_libraries(mitsuba-ui mitsuba-core)
 # Link to NanoGUI
-target_link_libraries(mitsuba-gui nanogui)
+target_link_libraries(mitsuba-ui nanogui)
 
-set(DEPENDENCIES mitsuba-gui mitsuba-core nanogui)
+set(DEPENDENCIES mitsuba-ui mitsuba-core nanogui)
 
 # Copy dependencies into the 'dist' directory
 foreach(dep ${DEPENDENCIES})
   add_custom_command(
-    TARGET mitsuba-gui
+    TARGET mitsuba-ui
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${dep}> ${CMAKE_BINARY_DIR}/dist)
 endforeach(dep)

@@ -44,7 +44,6 @@ Bitmap::Bitmap(EPixelFormat pFormat, Struct::EType cFormat,
                const Vector2s &size, size_t channelCount, uint8_t *data)
     : m_data(data), m_pixelFormat(pFormat), m_componentFormat(cFormat),
       m_size(size), m_ownsData(false) {
-    Assert(size.x > 0 && size.y > 0, "Invalid bitmap size");
 
     if (m_componentFormat == Struct::EUInt8)
         m_gamma = -1.0f; // sRGB by default

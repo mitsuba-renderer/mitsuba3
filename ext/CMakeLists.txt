@@ -8,24 +8,15 @@ if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/openexr/OpenEXR")
 endif()
 
 # Try to autodetect Python (can be overridden manually if needed)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/pybind11/tools")
 set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6 3.7)
-if (NOT ${MITSUBA_PYTHON_VERSION} STREQUAL "")
-  find_package(PythonLibs ${MITSUBA_PYTHON_VERSION} EXACT)
-  if (NOT PYTHONLIBS_FOUND)
-    find_package(PythonLibs ${MITSUBA_PYTHON_VERSION})
-  endif()
-else()
-  find_package(PythonLibs)
-endif()
+find_package(PythonLibsNew ${MITSUBA_PYTHON_VERSION})
 
 # Find a matching Python interpreter
 if (PYTHONLIBS_FOUND)
-  # The above sometimes returns version numbers like "3.4.3+"; the "+" must be removed for the next line to work
-  string(REPLACE "+" "" PYTHONLIBS_VERSION_STRING "+${PYTHONLIBS_VERSION_STRING}")
-  find_package(PythonInterp ${PYTHONLIBS_VERSION_STRING} EXACT REQUIRED)
   set(PYBIND11_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/pybind11/include ${PYTHON_INCLUDE_DIR} PARENT_SCOPE)
 else()
-  message(WARNING "Compiling without Python support")
+  message(WARNING "Compiling Mitsuba without Python & unit testing support!")
 endif()
 set(PYTHONLIBS_FOUND ${PYTHONLIBS_FOUND} PARENT_SCOPE)
 

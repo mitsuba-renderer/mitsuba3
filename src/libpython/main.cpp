@@ -5,9 +5,11 @@
 #include <mitsuba/core/fresolver.h>
 #include "python.h"
 
+// ext
+MTS_PY_DECLARE(pcg32);
+
 // libmitsuba-core
 MTS_PY_DECLARE(filesystem);
-MTS_PY_DECLARE(pcg32);
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(util);
 MTS_PY_DECLARE(math);
@@ -33,7 +35,6 @@ MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Struct);
 MTS_PY_DECLARE(Bitmap);
 MTS_PY_DECLARE(warp);
-MTS_PY_DECLARE(hypothesis);
 
 // libmitsuba-render
 MTS_PY_DECLARE(Scene);
@@ -41,7 +42,7 @@ MTS_PY_DECLARE(Shape);
 MTS_PY_DECLARE(ShapeKDTree);
 
 // libmitsuba-ui
-MTS_PY_DECLARE(WarpVisualizationWidget);
+//MTS_PY_DECLARE(WarpVisualizationWidget);
 
 PYBIND11_PLUGIN(mitsuba) {
     Jit::staticInitialization();
@@ -54,12 +55,11 @@ PYBIND11_PLUGIN(mitsuba) {
         "Mitsuba core support library (generic mathematical and I/O routines)");
     py::module render = m.def_submodule("render",
         "Mitsuba rendering support library (scene representation, ray intersection, ...)");
-    py::module gui = m.def_submodule("gui",
-        "Mitsuba GUI library (rendering interface, visualization of warping functions, ...)");
+    py::module ui = m.def_submodule("ui",
+        "Mitsuba user interface library (rendering interface, visualization of warping functions, ...)");
 
     // ext
     MTS_PY_IMPORT_CORE(pcg32);
-    MTS_PY_IMPORT_CORE(hypothesis);
 
     // libmitsuba-core
     MTS_PY_IMPORT_CORE(filesystem);
@@ -95,7 +95,7 @@ PYBIND11_PLUGIN(mitsuba) {
     MTS_PY_IMPORT_RENDER(ShapeKDTree);
 
     // libmitsuba-ui
-    MTS_PY_IMPORT_GUI(WarpVisualizationWidget);
+    //MTS_PY_IMPORT_UI(WarpVisualizationWidget);
 
     atexit([]() {
         Logger::staticShutdown();
