@@ -1,20 +1,8 @@
 import pytest
 import os
 import numpy as np
-
 from mitsuba.core import Stream, DummyStream, FileStream, MemoryStream, ZStream
-from mitsuba.core.filesystem import path
-
-
-# Fixture to create a temporary file
-@pytest.fixture
-def tmpfile(request, tmpdir_factory):
-    dir = tmpdir_factory.mktemp('tmpdir')
-    request.addfinalizer(lambda: dir.remove(rec=1))
-    path_value = str(dir.join('tmpfile'))
-    open(path_value, 'a').close()
-    return path_value
-
+from .utils import tmpfile
 
 parameters = [
     'class_,args',
@@ -237,8 +225,7 @@ def test07_memory_stream():
 ]"""
 
 
-@pytest.mark.parametrize(
-    'rw', [True, False])
+@pytest.mark.parametrize('rw', [True, False])
 def test08_fstream(rw, tmpfile):
         s = FileStream(tmpfile, rw)
 

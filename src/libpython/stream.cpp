@@ -112,6 +112,7 @@ struct declare_astream_accessors {
         }, DM(AnnotatedStream, set));
     }
 };
+
 /// Use this type alias to list the supported types. Be wary of automatic type conversions.
 // TODO: support all supported types that can occur in Python
 using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
@@ -139,30 +140,25 @@ MTS_PY_EXPORT(AnnotatedStream) {
     c.def("get", [](AnnotatedStream& s, const std::string &name) {
         const auto keys = s.keys();
         bool keyExists = find(keys.begin(), keys.end(), name) != keys.end();
-        if (!keyExists) {
-            const auto logLevel = s.compatibilityMode() ? EWarn : EError;
-            Log(logLevel, "Key \"%s\" does not exist in AnnotatedStream. Available keys: %s",
-                        name, s.keys());
-        }
+        if (!keyExists)
+            Throw("Key \"%s\" does not exist in AnnotatedStream. Available "
+                  "keys: %s", name, s.keys());
 
 #define TRY_GET_TYPE(Type)                     \
         try {                                  \
             Type v;                            \
             s.get(name, v);                    \
             return py::cast(v);                \
-        } catch(std::runtime_error&) {}      \
+        } catch(const std::runtime_error &) { }
 
         TRY_GET_TYPE(bool);
         TRY_GET_TYPE(int64_t);
         TRY_GET_TYPE(Float);
         TRY_GET_TYPE(std::string);
-
 #undef TRY_GET_TYPE
 
-        Log(EError, "Key \"%s\" exists but does not have a supported type.",
-                    name);
-        return py::cast(py::none());
-    }, DM(AnnotatedStream, get));
+        Throw("Key \"%s\" exists but does not have a supported type.", name);
+    }, DM(AnnotatedStream, get), py::arg("name"));
 
     // get & set declarations for many types
     methods_declarator::recurse<declare_astream_accessors>(c);

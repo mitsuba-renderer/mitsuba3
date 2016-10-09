@@ -20,22 +20,21 @@ static constexpr auto kSerializedHeaderSize =
 AnnotatedStream::AnnotatedStream(Stream *stream, bool writeMode, bool throwOnMissing)
     : Object(), m_stream(stream), m_writeMode(writeMode)
     , m_throwOnMissing(throwOnMissing), m_isClosed(false) {
-    if (!m_writeMode && !m_stream->canRead()) {
-        Log(EError, "Attempted to create a read-only AnnotatedStream from"
-                    " a stream without read capabilities: %s",
-            m_stream->toString());
-    }
-    if (m_writeMode && !m_stream->canWrite()) {
-        Log(EError, "Attempted to create a write-only AnnotatedStream from"
-                    " a stream without write capabilities: %s",
-            m_stream->toString());
-    }
+    if (!m_writeMode && !m_stream->canRead())
+        Throw("Attempted to create a read-only AnnotatedStream from"
+              " a stream without read capabilities: %s",
+              m_stream->toString());
+
+    if (m_writeMode && !m_stream->canWrite())
+        Throw("Attempted to create a write-only AnnotatedStream from"
+              " a stream without write capabilities: %s",
+              m_stream->toString());
 
     m_prefixStack.push_back("");
 
-    if (m_stream->canRead() && m_stream->size() > 0) {
+    if (m_stream->canRead() && m_stream->size() > 0)
         readTOC();
-    }
+
     // Even if the file was initially empty, we need to start any write
     // with an offset, so as to leave space for the header to be written on close.
     m_stream->seek(kSerializedHeaderSize);
@@ -73,14 +72,12 @@ void AnnotatedStream::pop() {
 }
 
 bool AnnotatedStream::getBase(const std::string &name, const std::string &type_id) {
-    if (!canRead()) {
-        Log(EError, "Attempted to read from write-only stream: %s",
-            m_stream->toString());
-    }
-    if (m_isClosed) {
-        Log(EError, "Attempted to read from a closed annotated stream: %s",
-            toString());
-    }
+    if (!canRead())
+        Throw("Attempted to read from write-only stream: %s",
+              m_stream->toString());
+    if (m_isClosed)
+        Throw("Attempted to read from a closed annotated stream: %s",
+              toString());
 
     std::string fullName = m_prefixStack.back() + name;
     auto it = m_table.find(fullName);
@@ -93,30 +90,24 @@ bool AnnotatedStream::getBase(const std::string &name, const std::string &type_i
     }
 
     const auto &record = it->second;
-    if (record.first != type_id) {
-        Log(EError, "Field named \"%s\" has incompatible type: expected %s, found %s",
-            fullName, type_id, record.first);
-    }
+    if (record.first != type_id)
+        Throw("Field named \"%s\" has incompatible type: expected %s, found %s",
+              fullName, type_id, record.first);
 
     m_stream->seek(static_cast<size_t>(record.second));
     return true;
 }
 
 void AnnotatedStream::setBase(const std::string &name, const std::string &type_id) {
-    if (!canWrite()) {
-        Log(EError, "Attempted to write into read-only stream: %s",
-            m_stream->toString());
-    }
-    if (m_isClosed) {
-        Log(EError, "Attempted to write to a closed annotated stream: %s",
-            toString());
-    }
+    if (!canWrite())
+        Throw("Attempted to write into read-only stream: %s", m_stream->toString());
+    if (m_isClosed)
+        Throw("Attempted to write to a closed annotated stream: %s", toString());
 
     std::string fullName = m_prefixStack.back() + name;
     auto it = m_table.find(fullName);
-    if (it != m_table.end()) {
-        Log(EError, "Field named \"%s\" was already set!", fullName);
-    }
+    if (it != m_table.end())
+        Throw("Field named \"%s\" was already set!", fullName);
 
     const auto pos = static_cast<uint64_t>(m_stream->tell());
     m_table[fullName] = std::make_pair(type_id, pos);
@@ -129,16 +120,20 @@ void AnnotatedStream::readTOC() {
 
     // Check that sentry is present at the beginning of the stream
     m_stream->seek(0);
-    m_stream->read(header);
-    if (header != kSerializedHeaderId) {
-        Log(EError, "Error trying to read the table of contents, header mismatch"
-                    " (expected %s, found %s). Underlying stream: %s",
-            kSerializedHeaderId, header, m_stream->toString());
+    try {
+        m_stream->read(header);
+    } catch (const std::runtime_error &e) {
+        Throw("Error trying to read the table of contents: %s", e.what());
     }
+    if (header != kSerializedHeaderId)
+        Throw("Error trying to read the table of contents, header mismatch"
+              " (expected %s, found %s). Underlying stream: %s",
+              kSerializedHeaderId, header, m_stream->toString());
+
     m_stream->read(trailerOffset);
     m_stream->read(nItems);
 
-    // Read the table of contents (tucked at <tt>trailerOffset</tt>)
+    // Read the table of contents (located at offset 'trailerOffset')
     m_stream->seek(static_cast<size_t>(trailerOffset));
     for (uint32_t i = 0; i < nItems; ++i) {
         std::string field_name, type_id;
@@ -161,6 +156,7 @@ void AnnotatedStream::writeTOC() {
     m_stream->write(trailerOffset);
     m_stream->write(nItems);
     m_stream->flush();
+
     // Write table of contents at the end of the stream
     m_stream->seek(static_cast<size_t>(trailerOffset));
     for (const auto &item : m_table) {
