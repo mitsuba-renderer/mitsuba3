@@ -497,8 +497,6 @@ private:
         return out;
     }
 
-    void doSomething() override { }
-
     MTS_DECLARE_CLASS()
 };
 

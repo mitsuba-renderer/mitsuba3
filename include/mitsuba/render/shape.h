@@ -13,8 +13,6 @@ public:
     /// Use 32 bit indices to keep track of sizes to conserve memory
     using Size  = uint32_t;
 
-    virtual void doSomething() = 0;
-
     /**
      * \brief Return an axis aligned box that bounds all shape primitives
      * (including any transformations that may have been applied to them)

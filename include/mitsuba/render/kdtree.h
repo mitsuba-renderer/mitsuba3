@@ -1975,12 +1975,16 @@ public:
 
     void build() {
         Timer timer;
-        Log(EInfo, "Building a SAH kd-tree (%i primitives)",
+        Log(EInfo, "Building a SAH kd-tree (%i primitives) ..",
             primitiveCount());
 
         Base::build();
 
-        Log(EInfo, "Finished -- took %s", util::timeString(timer.value()));
+        Log(EInfo, "Finished. (%s of storage, took %s)",
+            util::memString(m_indexCount * sizeof(Index) +
+                            m_nodeCount * sizeof(KDNode)),
+            util::timeString(timer.value())
+        );
     }
 
     /// Return the i-th shape
