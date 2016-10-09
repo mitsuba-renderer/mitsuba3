@@ -6,6 +6,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
+#include <tbb/tbb.h>
 #include "docstr.h"
 #include <mitsuba/core/object.h>
 #include <simdarray/array.h>
@@ -79,7 +80,6 @@ struct type_caster<Type, typename std::enable_if<is_simdarray<Type>::value>::typ
                 return false;
             memcpy(value.data(), (Scalar *) info.ptr, Type::Dimension * sizeof(Scalar));
         } else if (info.ndim == 2) {
-
             if (!(info.shape[0] == Type::Dimension && info.shape[1] == 1) &&
                 !(info.shape[1] == Type::Dimension && info.shape[0] == 1))
                 return false;
@@ -127,3 +127,70 @@ private:
 
 NAMESPACE_END(detail)
 NAMESPACE_END(pybind11)
+
+NAMESPACE_BEGIN(mitsuba)
+NAMESPACE_BEGIN(detail)
+
+template <typename Return, typename... Args, typename Func>
+py::array vectorizeImpl(Func&& f, const py::array_t<typename Args::Scalar, py::array::f_style>&... args) {
+    size_t nElements[] = { (args.ndim() == 2 ? args.shape(1) :
+            (args.ndim() == 0 || args.ndim() > 2) ? 0 : 1) ... };
+    bool compat[] = { (args.ndim() > 0 ? (args.shape(0) == Args::Dimension) : false)... };
+
+    size_t count = sizeof...(Args) > 0 ? nElements[0] : 0;
+    for (size_t i = 0; i<sizeof...(Args); ++i) {
+        if (count != nElements[i] || !compat[i])
+            throw std::runtime_error("Incompatible input dimension!");
+    }
+    using ReturnScalar = typename Return::Scalar;
+
+    py::array_t<ReturnScalar> out(
+        { Return::Dimension, count },
+        { sizeof(ReturnScalar), sizeof(ReturnScalar) * Return::Dimension });
+
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0u, count),
+        [&](const tbb::blocked_range<size_t> &range) {
+            for (size_t i = range.begin(); i < range.end(); ++i) {
+                simd::storeUnaligned(
+                    (ReturnScalar *) out.mutable_data(0, i),
+                    Return(f(Args::LoadUnaligned(args.ndim() == 2 ? args.data(0, i) : args.data())...))
+                );
+            }
+        }
+    );
+
+    return out.squeeze();
+}
+
+template <typename T>
+using VecType = typename std::conditional<std::is_arithmetic<T>::value,
+                                          TVector<T, 1>, T>::type;
+
+template <typename Func, typename Return, typename... Args>
+auto vectorize(const Func &f, Return (*)(Args...)) {
+    return [f](const py::array_t<
+        typename VecType<py::detail::intrinsic_t<Args>>::Scalar, py::array::f_style> &... in) -> py::object {
+        return vectorizeImpl<VecType<Return>, VecType<py::detail::intrinsic_t<Args>>...>(f, in...);
+    };
+}
+
+NAMESPACE_END(detail)
+
+template <typename Return, typename... Args>
+auto vectorize(Return (*f)(Args...)) {
+    return mitsuba::detail::vectorize<Return (*)(Args...), Return, Args...>(f, f);
+}
+
+template <typename Func>
+auto vectorize(Func &&f) -> decltype(mitsuba::detail::vectorize(
+    std::forward<Func>(f),
+    (typename py::detail::remove_class<decltype(
+         &std::remove_reference<Func>::type::operator())>::type *) nullptr)) {
+    return mitsuba::detail::vectorize(
+        std::forward<Func>(f),
+        (typename py::detail::remove_class<decltype(
+             &std::remove_reference<Func>::type::operator())>::type *) nullptr);
+}
+
+NAMESPACE_END(mitsuba)
