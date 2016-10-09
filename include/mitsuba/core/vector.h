@@ -29,6 +29,11 @@ struct TVector : simd::ArrayBase<Scalar, Dimension_, false,
     using Vector = TVector<Scalar, Dimension>;
     using Point = TPoint<Scalar, Dimension>;
 
+    TVector() { }
+
+    template <typename Derived>
+    explicit TVector(const Eigen::MatrixBase<Derived> &m) : Base(Base::Load(m.derived().data())) { }
+
     /// Convert to an Eigen vector (definition in transform.h)
     inline operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const;
 };

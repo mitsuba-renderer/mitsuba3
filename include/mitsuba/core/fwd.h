@@ -90,4 +90,5 @@ NAMESPACE_END(mitsuba)
 NAMESPACE_BEGIN(Eigen)
 template<typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
 class Matrix;
+template <typename Derived> class MatrixBase;
 NAMESPACE_END(Eigen)

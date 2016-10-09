@@ -27,10 +27,10 @@ mitsuba::TVector<T, N> operator*(const Eigen::Matrix<T, K, K> &m, const mitsuba:
                   "Expected column-major matrix!");
 
     typedef mitsuba::TVector<T, N> Vec;
-    Vec accum = Vec::Zero(), col;
+    Vec accum = Vec::Zero();
 
     for (int i = 0; i<N; ++i)
-        accum += col.load(m.data() + i*N) * Vec(x[i]);
+        accum += Vec::Load(m.data() + i*N) * Vec(x[i]);
 
     return accum;
 }
@@ -42,10 +42,10 @@ mitsuba::TVector<T, N> operator*(const mitsuba::TVector<T, N> &x, const Eigen::M
                   "Expected column-major matrix!");
 
     typedef mitsuba::TVector<T, N> Vec;
-    Vec accum = Vec::Zero(), col;
+    Vec accum = Vec::Zero();
 
     for (int i = 0; i<N; ++i)
-        accum[i] = dot(col.load(m.data() + i*N), x);
+        accum[i] = simd::dot(Vec::Load(m.data() + i*N), x);
 
     return accum;
 }
@@ -68,14 +68,14 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Scalar, int Dimension>
 inline TVector<Scalar, Dimension>::operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const {
     Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1> result;
-    Base::store(result.data());
+    Base::store_(result.data());
     return result;
 }
 
 template <typename Scalar, int Dimension>
 inline TPoint<Scalar, Dimension>::operator Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1>() const {
     Eigen::Matrix<Scalar, Dimension, 1, 0, Dimension, 1> result;
-    Base::store(result.data());
+    Base::store_(result.data());
     return result;
 }
 
