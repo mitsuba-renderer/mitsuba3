@@ -3160,6 +3160,27 @@ splitting the input interval. The number of iterations is roughly
 bounded by the number of bits of the underlying floating point
 representation.)doc";
 
+static const char *__doc_mitsuba_math_chi2 =
+R"doc(Compute the Chi^2 statistic and degrees of freedom of the given arrays
+while pooling low-valued entries together
+
+Given a list of observations counts (``obs[i]``) and expected
+observation counts (``exp[i]``), this function accumulates the Chi^2
+statistic, that is, ``(obs-exp)^2 / exp`` for each element ``0, ...,
+n-1``.
+
+Minimum expected cell frequency. The Chi^2 test statistic is not
+useful when when the expected frequency in a cell is low (e.g. less
+than 5), because normality assumptions break down in this case.
+Therefore, the implementation will merge such low-frequency cells when
+they fall below the threshold specified here. Specifically, low-valued
+cells with ``exp[i] < poolThreshold`` are pooled into larger groups
+that are above the threshold before their contents are added to the
+Chi^2 statistic.
+
+The function returns the statistic value, degrees of freedom, below-
+treshold entries and resulting number of pooled regions.)doc";
+
 static const char *__doc_mitsuba_math_clamp = R"doc(Generic range clamping function)doc";
 
 static const char *__doc_mitsuba_math_comp_ellint_1 = R"doc(Complete elliptic integral of the first kind (double precision))doc";

@@ -51,4 +51,10 @@ MTS_PY_EXPORT(math) {
     math.def("roundToPowerOfTwo", &math::roundToPowerOfTwo<uint64_t>, DM(math, roundToPowerOfTwo));
     math.def("gamma", &math::gamma<double>, DM(math, gamma));
     math.def("inverseGamma", &math::inverseGamma<double>, DM(math, inverseGamma));
+
+    math.def("chi2", [](py::array_t<double> obs, py::array_t<double> exp, double thresh) {
+        if (obs.ndim() != 1 || exp.ndim() != 1 || exp.shape(0) != obs.shape(0))
+            throw std::runtime_error("Unsupported input dimensions");
+        return math::chi2(obs.data(), exp.data(), thresh, obs.shape(0));
+    }, DM(math, chi2));
 }

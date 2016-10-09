@@ -443,6 +443,56 @@ extern MTS_EXPORT_CORE double erfinv(double p);
 /// Inverse error function (single precision)
 extern MTS_EXPORT_CORE float erfinv(float p);
 
+/**
+ * \brief Compute the Chi^2 statistic and degrees of freedom of the given
+ * arrays while pooling low-valued entries together
+ *
+ * Given a list of observations counts (``obs[i]``) and expected observation
+ * counts (``exp[i]``), this function accumulates the Chi^2 statistic, that is,
+ * ``(obs-exp)^2 / exp`` for each element ``0, ..., n-1``.
+ *
+ * Minimum expected cell frequency. The Chi^2 test statistic is not useful when
+ * when the expected frequency in a cell is low (e.g. less than 5), because
+ * normality assumptions break down in this case. Therefore, the implementation
+ * will merge such low-frequency cells when they fall below the threshold
+ * specified here. Specifically, low-valued cells with ``exp[i] < poolThreshold``
+ * are pooled into larger groups that are above the threshold before their
+ * contents are added to the Chi^2 statistic.
+ *
+ * The function returns the statistic value, degrees of freedom, below-treshold
+ * entries and resulting number of pooled regions.
+ *
+ */
+template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
+        chi2(const Scalar *obs, const Scalar *exp, Scalar poolThreshold, size_t n) {
+    Scalar chsq = 0, pooledObs = 0, pooledExp = 0;
+    size_t dof = 0, nPooledIn = 0, nPooledOut = 0;
+
+    for (size_t i = 0; i<n; ++i) {
+        if (exp[i] == 0 && obs[i] == 0)
+            continue;
+
+        if (exp[i] < poolThreshold) {
+            pooledObs += obs[i];
+            pooledExp += exp[i];
+            nPooledIn++;
+
+            if (pooledExp > poolThreshold) {
+                Scalar diff = pooledObs - pooledExp;
+                chsq += (diff*diff) / pooledExp;
+                pooledObs = pooledExp = 0;
+                ++nPooledOut; ++dof;
+            }
+        } else {
+            Scalar diff = obs[i] - exp[i];
+            chsq += (diff*diff) / exp[i];
+            ++dof;
+        }
+    }
+
+    return std::make_tuple(chsq, dof - 1, nPooledIn, nPooledOut);
+}
+
 //! @}
 // -----------------------------------------------------------------------
 
