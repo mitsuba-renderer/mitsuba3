@@ -50,8 +50,7 @@ add_library(mitsuba-core-obj OBJECT
   warp.cpp             ${INC_DIR}/warp.h
 
   stream.cpp       ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
-  astream.cpp      ${INC_DIR}/astream.h
-  dstream.cpp      ${INC_DIR}/dstream.h
+  astream.cpp      ${INC_DIR}/astream.h ${INC_DIR}/dstream.h
   fstream.cpp      ${INC_DIR}/fstream.h
   mstream.cpp      ${INC_DIR}/mstream.h
   zstream.cpp      ${INC_DIR}/zstream.h

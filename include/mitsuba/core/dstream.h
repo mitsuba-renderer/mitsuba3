@@ -27,9 +27,6 @@ public:
     /// Whether the stream is closed (no read or write are then permitted).
     virtual bool isClosed() const override { return m_isClosed; };
 
-    /// Returns a string representation
-    std::string toString() const override;
-
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
     // =========================================================================

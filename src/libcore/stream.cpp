@@ -1,4 +1,5 @@
 #include <mitsuba/core/stream.h>
+#include <mitsuba/core/dstream.h>
 #include <sstream>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -37,9 +38,19 @@ void Stream::setByteOrder(EByteOrder value) {
 std::string Stream::toString() const {
     std::ostringstream oss;
 
-    oss << "hostByteOrder=" << m_hostByteOrder
-        << ", byteOrder=" << m_byteOrder
-        << ", isClosed=" << isClosed();
+    oss << class_()->name() << "[" << std::endl;
+    if (isClosed()) {
+        oss << "  closed" << std::endl;
+    } else {
+        oss << "  hostByteOrder = " << m_hostByteOrder << "," << std::endl
+            << "  byteOrder = " << m_byteOrder << "," << std::endl
+            << "  canRead = " << canRead() << "," << std::endl
+            << "  canWrite = " << canRead() << "," << std::endl
+            << "  pos = " << tell() << "," << std::endl
+            << "  size = " << size() << std::endl;
+    }
+
+    oss << "]";
 
     return oss.str();
 }
@@ -79,5 +90,6 @@ std::string Stream::readLine() {
 }
 
 MTS_IMPLEMENT_CLASS(Stream, Object)
+MTS_IMPLEMENT_CLASS(DummyStream, Stream)
 
 NAMESPACE_END(mitsuba)

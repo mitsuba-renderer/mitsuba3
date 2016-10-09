@@ -694,8 +694,6 @@ static const char *__doc_mitsuba_DummyStream_size = R"doc(Returns the size of th
 
 static const char *__doc_mitsuba_DummyStream_tell = R"doc(Returns the current position in the stream.)doc";
 
-static const char *__doc_mitsuba_DummyStream_toString = R"doc(Returns a string representation)doc";
-
 static const char *__doc_mitsuba_DummyStream_truncate =
 R"doc(Simply sets the current size of the stream. The position is updated to
 ``min(old_position, size)``.)doc";
@@ -1067,7 +1065,7 @@ expands as data is written to the stream, à la ``std::vector``.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_MemoryStream =
 R"doc(Creates a new memory stream, initializing the memory buffer with a
-capacity of ``initialSize`` bytes. For best performance, set this
+capacity of ``capacity`` bytes. For best performance, set this
 argument to the estimated size of the content that will be written to
 the stream.)doc";
 
@@ -1084,6 +1082,8 @@ Remark:
 static const char *__doc_mitsuba_MemoryStream_canRead = R"doc(Always returns true, except if the stream is closed.)doc";
 
 static const char *__doc_mitsuba_MemoryStream_canWrite = R"doc(Always returns true, except if the stream is closed.)doc";
+
+static const char *__doc_mitsuba_MemoryStream_capacity = R"doc(Return the current capacity of the underlying memory buffer)doc";
 
 static const char *__doc_mitsuba_MemoryStream_class = R"doc()doc";
 
@@ -1108,6 +1108,8 @@ static const char *__doc_mitsuba_MemoryStream_m_ownsBuffer = R"doc(False if the 
 static const char *__doc_mitsuba_MemoryStream_m_pos = R"doc(Current position inside of the memory buffer)doc";
 
 static const char *__doc_mitsuba_MemoryStream_m_size = R"doc(Current size of the contents written to the memory buffer)doc";
+
+static const char *__doc_mitsuba_MemoryStream_ownsBuffer = R"doc(Return whether or not the memory stream owns the underlying buffer)doc";
 
 static const char *__doc_mitsuba_MemoryStream_read =
 R"doc(Reads a specified amount of data from the stream. Throws an exception
@@ -2919,17 +2921,15 @@ static const char *__doc_mitsuba_ZStream_childStream_2 = R"doc(Returns the child
 static const char *__doc_mitsuba_ZStream_class = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream_close =
-R"doc(Closes the underlying stream. No further read or write operations are
-permitted.
+R"doc(Closes the stream, but not the underlying child stream. No further
+read or write operations are permitted.
 
 This function is idempotent. It is called automatically by the
 destructor.)doc";
 
-static const char *__doc_mitsuba_ZStream_flush = R"doc(Unsupported. Always throws.)doc";
+static const char *__doc_mitsuba_ZStream_flush = R"doc(Flushes any buffered data)doc";
 
-static const char *__doc_mitsuba_ZStream_isClosed =
-R"doc(Whether the underlying stream is closed (no read or write are then
-permitted).)doc";
+static const char *__doc_mitsuba_ZStream_isClosed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
 
 static const char *__doc_mitsuba_ZStream_m_childStream = R"doc()doc";
 
@@ -3352,11 +3352,11 @@ static const char *__doc_mitsuba_operator_Matrix = R"doc(Convert to an Eigen vec
 
 static const char *__doc_mitsuba_operator_Matrix_2 = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 

@@ -9,47 +9,18 @@
 #include <mitsuba/core/logger.h>
 #include "python.h"
 
-namespace {
-struct declare_stream_accessors {
-    using PyClass = pybind11::class_<mitsuba::Stream,
-                                     mitsuba::Object,
-                                     mitsuba::ref<mitsuba::Stream>>;
-
-    template <typename T>
-    static void apply(PyClass &c) {
-        c.def("write", [](Stream& s, const T &value) {
-            s.write(value);
-        }, DM(Stream, write, 2));
-    }
-};
-struct declare_astream_accessors {
-    using PyClass = pybind11::class_<mitsuba::AnnotatedStream,
-                                     mitsuba::Object,
-                                     mitsuba::ref<mitsuba::AnnotatedStream>>;
-
-    template <typename T>
-    static void apply(PyClass &c) {
-        c.def("set", [](AnnotatedStream& s,
-                        const std::string &name, const T &value) {
-            s.set(name, value);
-        }, DM(AnnotatedStream, set));
-    }
-};
-
-/// Use this type alias to list the supported types. Be wary of automatic type conversions.
-// TODO: support all supported types that can occur in Python
-using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
-
-}  // end anonymous namespace
+#define DECLARE_RW(Type, ReadableName) \
+    def("read" ReadableName, [](Stream& s) {                  \
+        Type v;                                               \
+        s.read(v);                                            \
+        return py::cast(v);                                   \
+    }, DM(Stream, read, 2))                                   \
+    .def("write" ReadableName, [](Stream& s, const Type &v) { \
+        s.write(v);                                           \
+        return py::cast(v);                                   \
+    }, DM(Stream, write, 2))
 
 MTS_PY_EXPORT(Stream) {
-#define DECLARE_READ(Type, ReadableName) \
-    def("read" ReadableName, [](Stream& s) {     \
-        Type v;                                  \
-        s.read(v);                               \
-        return py::cast(v);                      \
-    }, DM(Stream, read, 2))
-
     auto c = MTS_PY_CLASS(Stream, Object)
         .mdef(Stream, close)
         .mdef(Stream, setByteOrder)
@@ -62,14 +33,22 @@ MTS_PY_EXPORT(Stream) {
         .mdef(Stream, canRead)
         .mdef(Stream, canWrite)
         .def_static("hostByteOrder", Stream::hostByteOrder, DM(Stream, hostByteOrder))
-        .DECLARE_READ(int64_t, "Long")
-        .DECLARE_READ(Float, "Float")
-        .DECLARE_READ(bool, "Boolean")
-        .DECLARE_READ(std::string, "String")
+        .def("write", [](Stream &s, py::bytes b) {
+            std::string data(b); 
+            s.write(data.c_str(), data.size());
+        }, DM(Stream, write))
+        .def("read", [](Stream &s, size_t size) {
+            std::unique_ptr<char> tmp(new char[size]); 
+            s.read((void *) tmp.get(), size);
+            return py::bytes(tmp.get(), size);
+        }, DM(Stream, write))
+        .DECLARE_RW(int64_t, "Long")
+        .DECLARE_RW(float, "Single")
+        .DECLARE_RW(double, "Double")
+        .DECLARE_RW(Float, "Float")
+        .DECLARE_RW(bool, "Bool")
+        .DECLARE_RW(std::string, "String")
         .def("__repr__", &Stream::toString);
-#undef DECLARE_READ
-
-    methods_declarator::recurse<declare_stream_accessors>(c);
 
     py::enum_<Stream::EByteOrder>(c, "EByteOrder", DM(Stream, EByteOrder))
         .value("EBigEndian", Stream::EBigEndian)
@@ -77,6 +56,8 @@ MTS_PY_EXPORT(Stream) {
         .value("ENetworkByteOrder", Stream::ENetworkByteOrder)
         .export_values();
 }
+
+#undef DECLARE_RW
 
 MTS_PY_EXPORT(DummyStream) {
     MTS_PY_CLASS(DummyStream, Stream)
@@ -92,7 +73,9 @@ MTS_PY_EXPORT(FileStream) {
 MTS_PY_EXPORT(MemoryStream) {
     MTS_PY_CLASS(MemoryStream, Stream)
         .def(py::init<size_t>(), DM(MemoryStream, MemoryStream),
-             py::arg("initialSize") = 512);
+             py::arg("capacity") = 512)
+        .mdef(MemoryStream, capacity)
+        .mdef(MemoryStream, ownsBuffer);
 }
 
 MTS_PY_EXPORT(ZStream) {
@@ -114,6 +97,26 @@ MTS_PY_EXPORT(ZStream) {
 
 
 }
+
+namespace {
+struct declare_astream_accessors {
+    using PyClass = pybind11::class_<mitsuba::AnnotatedStream,
+                                     mitsuba::Object,
+                                     mitsuba::ref<mitsuba::AnnotatedStream>>;
+
+    template <typename T>
+    static void apply(PyClass &c) {
+        c.def("set", [](AnnotatedStream& s,
+                        const std::string &name, const T &value) {
+            s.set(name, value);
+        }, DM(AnnotatedStream, set));
+    }
+};
+/// Use this type alias to list the supported types. Be wary of automatic type conversions.
+// TODO: support all supported types that can occur in Python
+using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
+
+}  // end anonymous namespace
 
 MTS_PY_EXPORT(AnnotatedStream) {
     auto c = MTS_PY_CLASS(AnnotatedStream, Object)

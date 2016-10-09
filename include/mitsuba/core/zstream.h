@@ -33,16 +33,16 @@ public:
     /// Returns a string representation
     std::string toString() const override;
 
-    /** \brief Closes the underlying stream.
+    /** \brief Closes the stream, but not the underlying child stream.
      * No further read or write operations are permitted.
      *
      * This function is idempotent.
      * It is called automatically by the destructor.
      */
-    virtual void close() override { m_childStream->close(); };
+    virtual void close() override;
 
-    /// Whether the underlying stream is closed (no read or write are then permitted).
-    virtual bool isClosed() const override { return m_childStream->isClosed(); };
+    /// Whether the stream is closed (no read or write are then permitted).
+    virtual bool isClosed() const override { return m_childStream && m_childStream->isClosed(); };
 
     // =========================================================================
     //! @{ \name Compression stream-specific features
@@ -75,6 +75,9 @@ public:
      */
     virtual void write(const void *p, size_t size) override;
 
+    /// Flushes any buffered data
+    virtual void flush() override;
+
     /// Unsupported. Always throws.
     virtual void seek(size_t) override {
         Log(EError, "seek(): unsupported in a ZLIB stream!");
@@ -95,11 +98,6 @@ public:
     virtual size_t size() const override {
         Log(EError, "size(): unsupported in a ZLIB stream!");
         return 0;
-    }
-
-    /// Unsupported. Always throws.
-    virtual void flush() override {
-        Log(EError, "flush(): not implemented!");
     }
 
     /// Can we write to the stream?

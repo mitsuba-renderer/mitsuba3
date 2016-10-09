@@ -3,27 +3,24 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MemoryStream::MemoryStream(size_t initialSize)
-    : Stream(), m_capacity(0), m_size(0), m_pos(0)
-    , m_ownsBuffer(true), m_data(nullptr), m_isClosed(false) {
-    resize(initialSize);
+MemoryStream::MemoryStream(size_t capacity)
+    : Stream(), m_capacity(0), m_size(0), m_pos(0), m_ownsBuffer(true),
+      m_data(nullptr), m_isClosed(false) {
+    resize(capacity);
 }
 
 MemoryStream::MemoryStream(void *ptr, size_t size)
-    : Stream(), m_capacity(size), m_size(size), m_pos(0)
-    , m_ownsBuffer(false), m_data(reinterpret_cast<uint8_t *>(ptr))
-    , m_isClosed(false) {
-}
+    : Stream(), m_capacity(size), m_size(size), m_pos(0), m_ownsBuffer(false),
+      m_data(reinterpret_cast<uint8_t *>(ptr)), m_isClosed(false) { }
 
 MemoryStream::~MemoryStream() {
     if (m_data != nullptr && m_ownsBuffer)
-        free(m_data);
+        std::free(m_data);
 }
 
 void MemoryStream::read(void *p, size_t size) {
-    if (isClosed()) {
-        Log(EError, "Attempted to read from a closed stream: %s", toString());
-    }
+    if (isClosed())
+        Throw("Attempted to read from a closed stream: %s", toString());
 
     if (m_pos + size > m_size) {
         const auto old_pos = m_pos;
@@ -43,9 +40,8 @@ void MemoryStream::read(void *p, size_t size) {
 }
 
 void MemoryStream::write(const void *p, size_t size) {
-    if (isClosed()) {
-        Log(EError, "Attempted to write to a closed stream: %s", toString());
-    }
+    if (isClosed())
+        Throw("Attempted to write to a closed stream: %s", toString());
 
     size_t endPos = m_pos + size;
     if (endPos > m_size) {
@@ -62,15 +58,14 @@ void MemoryStream::write(const void *p, size_t size) {
 }
 
 void MemoryStream::resize(size_t size) {
-    if (!m_ownsBuffer) {
-        Log(EError, "Tried to resize a buffer, which doesn't "
-                    "belong to this MemoryStream instance!");
-    }
+    if (!m_ownsBuffer)
+        Throw("Tried to resize a buffer, which doesn't "
+              "belong to this MemoryStream instance!");
 
     if (m_data == nullptr)
-        m_data = reinterpret_cast<uint8_t *>(malloc(size));
+        m_data = reinterpret_cast<uint8_t *>(std::malloc(size));
     else
-        m_data = reinterpret_cast<uint8_t *>(realloc(m_data, size));
+        m_data = reinterpret_cast<uint8_t *>(std::realloc(m_data, size));
 
     if (size > m_capacity)
         memset(m_data + m_capacity, 0, size - m_capacity);
@@ -87,12 +82,23 @@ void MemoryStream::truncate(size_t size) {
 
 std::string MemoryStream::toString() const {
     std::ostringstream oss;
-    oss << "MemoryStream[" << Stream::toString()
-        << ", ownsBuffer=" << m_ownsBuffer
-        << ", capacity=" << m_capacity
-        << ", size=" << m_size
-        << ", pos=" << m_pos
-        << "]";
+
+    oss << class_()->name() << "[" << std::endl;
+    if (isClosed()) {
+        oss << "  closed" << std::endl;
+    } else {
+        oss << "  hostByteOrder = " << hostByteOrder() << "," << std::endl
+            << "  byteOrder = " << byteOrder() << "," << std::endl
+            << "  canRead = " << canRead() << "," << std::endl
+            << "  canWrite = " << canRead() << "," << std::endl
+            << "  ownsBuffer = " << ownsBuffer() << "," << std::endl
+            << "  capacity = " << capacity() << "," << std::endl
+            << "  pos = " << tell() << "," << std::endl
+            << "  size = " << size() << std::endl;
+    }
+
+    oss << "]";
+
     return oss.str();
 }
 

@@ -14,11 +14,11 @@ class MTS_EXPORT_CORE MemoryStream : public Stream {
 public:
 
     /** \brief Creates a new memory stream, initializing the memory buffer
-     * with a capacity of <tt>initialSize</tt> bytes. For best performance,
+     * with a capacity of <tt>capacity</tt> bytes. For best performance,
      * set this argument to the estimated size of the content that
      * will be written to the stream.
      */
-    MemoryStream(size_t initialSize = 512);
+    MemoryStream(size_t capacity = 512);
 
     /**
      * \brief Creates a memory stream, which operates on a pre-allocated buffer.
@@ -101,6 +101,12 @@ public:
 
     /// Always returns true, except if the stream is closed.
     virtual bool canRead() const override { return !isClosed(); }
+
+    /// Return the current capacity of the underlying memory buffer
+    size_t capacity() const { return m_capacity; }
+
+    /// Return whether or not the memory stream owns the underlying buffer
+    bool ownsBuffer() const { return m_ownsBuffer; }
 
     //! @}
     // =========================================================================

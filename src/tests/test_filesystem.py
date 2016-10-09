@@ -9,7 +9,7 @@ import re
 from mitsuba.core import filesystem as fs
 from mitsuba.core.filesystem import preferred_separator as sep
 
-
+@pytest.mark.xdist_same_slave
 class FilesystemTest(unittest.TestCase):
     path_here_relative = fs.path("." + sep)
     path_here = fs.current_path()

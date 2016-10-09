@@ -29,13 +29,28 @@ ZStream::ZStream(Stream *childStream, EStreamType streamType, int level)
 
 std::string ZStream::toString() const {
     std::ostringstream oss;
-    oss << "ZStream[" << std::endl
-        << "childStream = " << m_childStream->toString() << std::endl
-        << "]";
+
+    oss << class_()->name() << "[" << std::endl;
+    if (isClosed()) {
+        oss << "  closed" << std::endl;
+    } else {
+        oss << "  childStream = \"" << string::indent(m_childStream->toString()) << "\"" << "," << std::endl
+            << "  hostByteOrder = " << hostByteOrder() << "," << std::endl
+            << "  byteOrder = " << byteOrder() << "," << std::endl
+            << "  canRead = " << canRead() << "," << std::endl
+            << "  canWrite = " << canRead() << "," << std::endl
+            << "  pos = " << tell() << "," << std::endl
+            << "  size = " << size() << std::endl;
+    }
+
+    oss << "]";
+
     return oss.str();
 }
 
 void ZStream::write(const void *ptr, size_t size) {
+    Assert(m_childStream != nullptr);
+
     m_deflateStream.avail_in = (uInt) size;
     m_deflateStream.next_in = (uint8_t *) ptr;
 
@@ -59,6 +74,8 @@ void ZStream::write(const void *ptr, size_t size) {
 }
 
 void ZStream::read(void *ptr, size_t size) {
+    Assert(m_childStream != nullptr);
+
     uint8_t *targetPtr = (uint8_t *) ptr;
     while (size > 0) {
         if (m_inflateStream.avail_in == 0) {
@@ -94,7 +111,35 @@ void ZStream::read(void *ptr, size_t size) {
     }
 }
 
-ZStream::~ZStream() {
+void ZStream::flush() {
+    Assert(m_childStream != nullptr);
+
+    if (m_didWrite) {
+        m_deflateStream.avail_in = 0;
+        m_deflateStream.next_in = NULL;
+        int outputSize = 0;
+
+        do {
+            m_deflateStream.avail_out = sizeof(m_deflateBuffer);
+            m_deflateStream.next_out = m_deflateBuffer;
+
+            int retval = deflate(&m_deflateStream, Z_FULL_FLUSH);
+            if (retval == Z_STREAM_ERROR)
+                Log(EError, "deflate(): stream error!");
+
+            outputSize = sizeof(m_deflateBuffer) - m_deflateStream.avail_out;
+
+            m_childStream->write(m_deflateBuffer, outputSize);
+        } while (outputSize != 0);
+
+        m_childStream->flush();
+    }
+}
+
+void ZStream::close() {
+    if (!m_childStream)
+        return;
+
     if (m_didWrite) {
         m_deflateStream.avail_in = 0;
         m_deflateStream.next_in = NULL;
@@ -117,6 +162,10 @@ ZStream::~ZStream() {
     deflateEnd(&m_deflateStream);
     inflateEnd(&m_inflateStream);
 
+    m_childStream = nullptr;
+}
+
+ZStream::~ZStream() {
     close();
 }
 

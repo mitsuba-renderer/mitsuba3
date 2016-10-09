@@ -45,18 +45,22 @@ FileStream::~FileStream() {
 
 std::string FileStream::toString() const {
     std::ostringstream oss;
-    oss << "FileStream[" << Stream::toString()
-        << ", path=" << m_path.string();
 
-    // Position and size cannot be determined anymore if the file is closed
+    oss << class_()->name() << "[" << std::endl;
     if (isClosed()) {
-        oss << ", size=?, pos=?";
+        oss << "  closed" << std::endl;
     } else {
-        oss << ", size=" << size()
-            << ", pos=" << tell();
+        oss << "  path = \"" << m_path.string() << "\"" << "," << std::endl
+            << "  hostByteOrder = " << hostByteOrder() << "," << std::endl
+            << "  byteOrder = " << byteOrder() << "," << std::endl
+            << "  canRead = " << canRead() << "," << std::endl
+            << "  canWrite = " << canRead() << "," << std::endl
+            << "  pos = " << tell() << "," << std::endl
+            << "  size = " << size() << std::endl;
     }
-    oss << ", writeEnabled=" << (m_writeEnabled ? "true" : "false")
-        << "]";
+
+    oss << "]";
+
     return oss.str();
 }
 
