@@ -175,6 +175,7 @@ if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clan
       set(CMAKE_CXX_FLAGS "-flto=thin ${CMAKE_CXX_FLAGS}")
       set(CMAKE_C_FLAGS "-flto=thin ${CMAKE_C_FLAGS}")
 
+      file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/.cache)
       if (APPLE)
         set(CMAKE_EXE_LINKER_FLAGS    "-flto=thin -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_EXE_LINKER_FLAGS}")
         set(CMAKE_SHARED_LINKER_FLAGS "-flto=thin -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_SHARED_LINKER_FLAGS}")
