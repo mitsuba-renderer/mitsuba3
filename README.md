@@ -1,5 +1,7 @@
 # Mitsuba Renderer
 
+[![Build Status](https://rglpc1.epfl.ch/jenkins/job/mitsuba2/badge/icon)](https://rglpc1.epfl.ch/jenkins/job/mitsuba2/)
+
 ## Compiling
 
 Compiling from scratch requires CMake and a recent version of XCode on Mac,
