@@ -3,9 +3,9 @@
 #include "python.h"
 
 MTS_PY_EXPORT(xml) {
-    auto m2 = m.def_submodule("xml", "Mitsuba scene XML parser");
+    MTS_PY_IMPORT_MODULE(xml, "mitsuba.core.xml");
 
-    m2.def("loadFile", &xml::loadFile, py::arg("path"), DM(xml, loadFile));
-    m2.def("loadString", &xml::loadString, py::arg("string"), DM(xml, loadString));
+    xml.def("loadFile", &xml::loadFile, py::arg("path"), DM(xml, loadFile));
+    xml.def("loadString", &xml::loadString, py::arg("string"), DM(xml, loadString));
 }
 

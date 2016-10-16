@@ -15,9 +15,6 @@ class WarpVisualizer(Screen):
     Note that this file is mostly responsible for implementing the GUI, whereas
     heavy-lifting is performed by the C++ WarpVisualizationWidget."""
 
-    # Default values for UI controls
-    pointCountDefaultValue = 7.0 / 15.0
-
     # Default values for statistical test
     minExpFrequency = 5.0
     significanceLevel = 0.01

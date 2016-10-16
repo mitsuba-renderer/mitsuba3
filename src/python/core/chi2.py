@@ -80,7 +80,7 @@ class ChiSquareTest(object):
         in this attribute.
     """
     def __init__(self, domain, sample_func, pdf_func, sample_dim=2,
-                 sample_count=100000, res=101, ires=4,
+                 sample_count=1000000, res=101, ires=4,
                  dtype=mitsuba.core.float_dtype):
         self.domain = domain
         self.sample_func = sample_func

@@ -12,6 +12,7 @@ add_subdirectory(shapes)
 
 if (PYTHONLIBS_FOUND)
   add_subdirectory(libpython)
+  add_subdirectory(python)
 
   # Testcases
   add_subdirectory(tests)

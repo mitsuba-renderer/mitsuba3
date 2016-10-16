@@ -2,7 +2,7 @@
 #include "python.h"
 
 MTS_PY_EXPORT(math) {
-    py::module math = m.def_submodule("math", "Mathematical routines, special functions, etc.");
+    MTS_PY_IMPORT_MODULE(math, "mitsuba.core.math");
 
     math.def("signum",          (double(*)(double))                           math::signum, DM(math, signum));
     math.def("safe_acos",       (double(*)(double))                           math::safe_acos, DM(math, safe_acos));

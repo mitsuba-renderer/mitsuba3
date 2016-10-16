@@ -4,11 +4,9 @@
 #include "python.h"
 
 MTS_PY_EXPORT(warp) {
-    auto m2 = m.def_submodule("warp",
-        "Common warping techniques that map from the unit square to other"
-        " domains, such as spheres, hemispheres, etc.");
-
-    m2.def("squareToUniformSphere", vectorize(warp::squareToUniformSphere),
+    MTS_PY_IMPORT_MODULE(warp, "mitsuba.core.warp");
+    warp
+      .def("squareToUniformSphere", vectorize(warp::squareToUniformSphere),
           DM(warp, squareToUniformSphere), py::arg("sample"))
       .def("squareToUniformSpherePdf", vectorize(warp::squareToUniformSpherePdf<true>),
           DM(warp, squareToUniformSpherePdf), py::arg("v"))
