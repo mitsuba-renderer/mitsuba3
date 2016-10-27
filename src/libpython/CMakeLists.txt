@@ -155,5 +155,3 @@ endif()
 
 target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core)
 target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render)
-#target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render mitsuba-ui nanogui)
-
