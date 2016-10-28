@@ -121,11 +121,17 @@ add_mitsuba_python_library(mitsuba_render_ext render
   shape.cpp
 )
 
+add_mitsuba_python_library(mitsuba_ui_ext ui
+  mitsuba_ui_ext.cpp
+)
+add_dependencies(mitsuba_ui_ext nanogui-python)
+
 # Copy nanogui python binding binary to the 'dist/python' directory
 add_custom_command(
-  TARGET mitsuba_core_ext
+  TARGET mitsuba_ui_ext
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nanogui-python> ${CMAKE_BINARY_DIR}/dist/python)
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nanogui-python> ${CMAKE_BINARY_DIR}/dist/python
+)
 
 # Compute compilation flags for 'mkdoc' target, which extracts docstrings from the C++ header files
 string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})

@@ -5,14 +5,14 @@ MTS_PY_EXPORT(ArgParser) {
     py::class_<ArgParser> argp(m, "ArgParser", DM(ArgParser));
 
     argp.def(py::init<>())
-        .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::vector<std::string> &, bool))
-                    &ArgParser::add, py::arg("prefixes"), py::arg("extra") = false,
-                    py::return_value_policy::reference_internal,
-                    DM(ArgParser, add))
         .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::string &, bool))
                     &ArgParser::add, py::arg("prefix"), py::arg("extra") = false,
                     py::return_value_policy::reference_internal,
                     DM(ArgParser, add, 2))
+        .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::vector<std::string> &, bool))
+                    &ArgParser::add, py::arg("prefixes"), py::arg("extra") = false,
+                    py::return_value_policy::reference_internal,
+                    DM(ArgParser, add))
         .def("parse", [](ArgParser &a, std::vector<std::string> args) {
                 std::unique_ptr<const char *[]> args_(new const char *[args.size()]);
                 for (size_t i = 0; i<args.size(); ++i)

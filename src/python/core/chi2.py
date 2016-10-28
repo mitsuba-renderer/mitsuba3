@@ -167,7 +167,7 @@ class ChiSquareTest(object):
         # Evaluate the PDF at all positions
         pdf = np.float64(self.pdf_func(pos))
 
-        # Perform two steps of composite simpson quadrature (X & Y axis) over
+        # Perform two steps of composite Simpson quadrature (X & Y axis) over
         # the cell contents
         dx = (self.bounds[:, 1] - self.bounds[:, 0]) / \
              (self.res[:] * (self.ires - 1))

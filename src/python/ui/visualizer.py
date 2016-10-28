@@ -1,15 +1,37 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
+
 import gc
 import nanogui
 import numpy as np
 
-from ..test.test_chi2 import CHI2_TESTS
-
 from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
-                     Vector2i, Label, Button, TextBox, CheckBox, MessageDialog,
+                     Label, Button, TextBox, CheckBox, MessageDialog,
                      ComboBox, Slider, Alignment, Orientation)
 
 from nanogui import glfw, entypo
+
+from mitsuba.core import warp, pcg32
+from mitsuba.core.chi2 import SphericalDomain
+
+DEFAULT_PARAMETERS = {
+    'sample_dim' : 2
+}
+
+DISTRIBUTIONS = [
+    # ("Uniform square", SphericalDomain(),
+     # lambda x: x,
+     # lambda x: np.ones(x.shape[1])),
+
+    ("Uniform sphere", SphericalDomain(),
+     warp.squareToUniformSphere,
+     warp.squareToUniformSpherePdf,
+     DEFAULT_PARAMETERS),
+
+    ("Uniform hemisphere", SphericalDomain(),
+     warp.squareToUniformHemisphere,
+     warp.squareToUniformHemispherePdf,
+     DEFAULT_PARAMETERS),
+]
 
 
 class WarpVisualizer(Screen):
@@ -21,10 +43,10 @@ class WarpVisualizer(Screen):
 
     def __init__(self):
         super(WarpVisualizer, self).__init__(
-            Vector2i(800, 600), u"Warp visualizer & χ² hypothesis test")
+            [800, 600], u"Warp visualizer & χ² hypothesis test")
 
         window = Window(self, "Warp tester")
-        window.setPosition(Vector2i(15, 15))
+        window.setPosition([15, 15])
         window.setLayout(GroupLayout())
 
         Label(window, "Input point set", "sans-bold")
@@ -35,15 +57,15 @@ class WarpVisualizer(Screen):
             BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
 
         # Point count slider
-        pointCountSlider = Slider(panel)
-        pointCountSlider.setFixedWidth(55)
-        pointCountSlider.setCallback(lambda _: self.refresh())
-        pointCountSlider.setRange((10, 20))
-        pointCountSlider.setValue(10)
+        point_count_slider = Slider(panel)
+        point_count_slider.setFixedWidth(55)
+        point_count_slider.setCallback(lambda _: self.refresh())
+        point_count_slider.setRange((10, 20))
+        point_count_slider.setValue(10)
 
         # Companion text box
-        pointCountBox = TextBox(panel)
-        pointCountBox.setFixedSize(Vector2i(80, 25))
+        point_count_box = TextBox(panel)
+        point_count_box.setFixedSize([80, 25])
 
         # Selection of sampling strategy
         sampleTypeBox = ComboBox(
@@ -51,24 +73,25 @@ class WarpVisualizer(Screen):
         sampleTypeBox.setCallback(lambda _: self.refresh())
 
         Label(window, "Warping method", "sans-bold")
-        warpTypeBox = ComboBox(window, [item[0] for item in CHI2_TESTS])
+        warp_type_box = ComboBox(window, [item[0] for item in DISTRIBUTIONS])
 
         # Chi-2 test button
         Label(window, u"χ² hypothesis test", "sans-bold")
         testButton = Button(window, "Run", entypo.ICON_CHECK)
-        testButton.setBackgroundColor(Color(0, 1., 0., 0.25))
+        testButton.setBackgroundColor(Color(0, 1., 0., 0.10))
 
-        self.pointCountSlider = pointCountSlider
-        self.pointCountBox = pointCountBox
+        self.point_count_slider = point_count_slider
+        self.point_count_box = point_count_box
         self.sampleTypeBox = sampleTypeBox
+        self.warp_type_box = warp_type_box
 
         self.refresh()
         return
 
         Label(window, "Warping method", "sans-bold")
-        warpingNames = map(lambda w: self.warps[w].name, self.warps.keys())
-        warpTypeBox = ComboBox(window, warpingNames)
-        warpTypeBox.setCallback(warpTypeCallback)
+        warping_names = map(lambda w: self.warps[w].name, self.warps.keys())
+        warp_type_box = ComboBox(window, warping_names)
+        warp_type_box.setCallback(warp_typeCallback)
 
         # Option to visualize the warped grid
         warpedGridCheckBox = CheckBox(window, "Visualize warped grid")
@@ -95,7 +118,7 @@ class WarpVisualizer(Screen):
         # angleSlider.setCallback(lambda _: self.refresh())
         # # Companion text box
         # angleBox = TextBox(panel)
-        # angleBox.setFixedSize(Vector2i(80, 25))
+        # angleBox.setFixedSize([80, 25])
         # angleBox.setUnits(u"\u00B0")
         # # Option to visualize the BRDF values
         # brdfValuesCheckBox = CheckBox(window, "Visualize BRDF values")
@@ -112,22 +135,36 @@ class WarpVisualizer(Screen):
 
     def refresh(self):
         # Point count slider input is not linear
-        pointCount = np.power(2.0, self.pointCountSlider.value()).astype(int)
-        self.pointCountSlider.setValue(np.log(pointCount) / np.log(2.0))
+        point_count = np.power(2.0, self.point_count_slider.value()).astype(int)
+        self.point_count_slider.setValue(np.log(point_count) / np.log(2.0))
 
         # Update the companion box
         def formattedPointCount(n):
             if (n >= 1e6):
-                self.pointCountBox.setUnits("M")
+                self.point_count_box.setUnits("M")
                 return "{:.2f}".format(n / (1024 * 1024))
             if (n >= 1e3):
-                self.pointCountBox.setUnits("K")
+                self.point_count_box.setUnits("K")
                 return "{:.2f}".format(n / (1024))
 
-            self.pointCountBox.setUnits(" ")
+            self.point_count_box.setUnits(" ")
             return str(n)
 
-        self.pointCountBox.setValue(formattedPointCount(pointCount))
+        self.point_count_box.setValue(formattedPointCount(point_count))
+
+        distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
+        domain = distr[1]
+        sample_func = distr[2]
+        params = distr[4]
+        print(params)
+
+        # Generate a table of uniform variates
+        print(point_count)
+        print(type(point_count))
+        samples_in = pcg32().nextFloat(params['sample_dim'], point_count)
+        print(samples_in)
+
+
 
 
 if __name__ == "__main__":
@@ -136,5 +173,6 @@ if __name__ == "__main__":
     wv.setVisible(True)
     wv.performLayout()
     nanogui.mainloop()
+    del wv
     gc.collect()
     nanogui.shutdown()
