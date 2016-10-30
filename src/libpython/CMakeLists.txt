@@ -124,6 +124,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
 add_mitsuba_python_library(mitsuba_ui_ext ui
   mitsuba_ui_ext.cpp
 )
+
 add_dependencies(mitsuba_ui_ext nanogui-python)
 
 # Copy nanogui python binding binary to the 'dist/python' directory

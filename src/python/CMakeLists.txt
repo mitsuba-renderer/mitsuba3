@@ -1,6 +1,12 @@
 file(GLOB_RECURSE PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.py)
-foreach(SRC_FILE ${PYTHON_FILES})
-  get_filename_component(SRC_DIR ${SRC_FILE} DIRECTORY)
-  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} DESTINATION ${CMAKE_BINARY_DIR}/dist/python/mitsuba/${SRC_DIR})
+
+foreach(FNAME ${PYTHON_FILES})
+  set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FNAME})
+  set(OUT_FILE ${CMAKE_BINARY_DIR}/dist/python/mitsuba/${FNAME})
+  add_custom_command(
+    OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
+    COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE})
+  list(APPEND PYTHON_FILES_OUT ${OUT_FILE})
 endforeach()
 
+add_custom_target(copy_python_files ALL DEPENDS ${PYTHON_FILES_OUT})
