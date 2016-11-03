@@ -1,13 +1,20 @@
 from __future__ import unicode_literals
-from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain
+from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain, PlanarDomain
 from mitsuba.core import warp
 import pytest
-import numpy as np
 
 CHI2_TESTS = [
     # ("Uniform square", SphericalDomain(),
      # lambda x: x,
      # lambda x: np.ones(x.shape[1])),
+
+    ("Uniform disk", PlanarDomain(),
+     warp.squareToUniformDisk,
+     warp.squareToUniformDiskPdf),
+
+    ("Uniform disk (concentric)", PlanarDomain(),
+     warp.squareToUniformDiskConcentric,
+     warp.squareToUniformDiskConcentricPdf),
 
     ("Uniform sphere", SphericalDomain(),
      warp.squareToUniformSphere,
@@ -16,6 +23,10 @@ CHI2_TESTS = [
     ("Uniform hemisphere", SphericalDomain(),
      warp.squareToUniformHemisphere,
      warp.squareToUniformHemispherePdf),
+
+    ("Cosine hemisphere", SphericalDomain(),
+     warp.squareToCosineHemisphere,
+     warp.squareToCosineHemispherePdf)
 ]
 
 

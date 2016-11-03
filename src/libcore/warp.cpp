@@ -15,11 +15,11 @@ Vector3f squareToUniformSphere(const Point2f &sample) {
 }
 
 Vector3f squareToUniformHemisphere(const Point2f &sample) {
-    Float z = sample.x();
+    Float z = sample.y();
     Float tmp = math::safe_sqrt(1.f - z*z);
 
     Float sinPhi, cosPhi;
-    math::sincos(2.f * math::Pi * sample.y(), &sinPhi, &cosPhi);
+    math::sincos(2.f * math::Pi * sample.x(), &sinPhi, &cosPhi);
 
     return Vector3f(cosPhi * tmp, sinPhi * tmp, z);
 }
@@ -43,9 +43,9 @@ Vector3f squareToUniformCone(const Point2f &sample, Float cosCutoff) {
 }
 
 Point2f squareToUniformDisk(const Point2f &sample) {
-    Float r = std::sqrt(sample.x());
+    Float r = std::sqrt(sample.y());
     Float sinPhi, cosPhi;
-    math::sincos(2.f * math::Pi * sample.y(), &sinPhi, &cosPhi);
+    math::sincos(2.f * math::Pi * sample.x(), &sinPhi, &cosPhi);
 
     return Point2f(cosPhi * r, sinPhi * r);
 }

@@ -11,7 +11,7 @@ from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
 
 from nanogui import glfw, entypo, gl
 from mitsuba.core import warp, pcg32, float_dtype
-from mitsuba.core.chi2 import SphericalDomain
+from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain, PlanarDomain
 
 DEFAULT_PARAMETERS = {
     'sample_dim': 2
@@ -22,6 +22,16 @@ DISTRIBUTIONS = [
     # lambda x: x,
     # lambda x: np.ones(x.shape[1])),
 
+    ('Uniform disk', PlanarDomain(),
+     warp.squareToUniformDisk,
+     warp.squareToUniformDiskPdf,
+     DEFAULT_PARAMETERS),
+
+    ('Uniform disk (concentric)', PlanarDomain(),
+     warp.squareToUniformDiskConcentric,
+     warp.squareToUniformDiskConcentricPdf,
+     DEFAULT_PARAMETERS),
+
     ('Uniform sphere', SphericalDomain(),
      warp.squareToUniformSphere,
      warp.squareToUniformSpherePdf,
@@ -30,6 +40,11 @@ DISTRIBUTIONS = [
     ('Uniform hemisphere', SphericalDomain(),
      warp.squareToUniformHemisphere,
      warp.squareToUniformHemispherePdf,
+     DEFAULT_PARAMETERS),
+
+    ('Cosine hemisphere', SphericalDomain(),
+     warp.squareToCosineHemisphere,
+     warp.squareToCosineHemispherePdf,
      DEFAULT_PARAMETERS),
 ]
 
@@ -43,7 +58,7 @@ class WarpVisualizer(Screen):
 
     def __init__(self):
         super(WarpVisualizer, self).__init__(
-            [800, 600], u'Warp visualizer & χ² hypothesis test')
+            [1024, 768], u'Warp visualizer & χ² hypothesis test')
 
         window = Window(self, 'Warp tester')
         window.setPosition([15, 15])
@@ -87,11 +102,13 @@ class WarpVisualizer(Screen):
         Label(window, u'χ² hypothesis test', 'sans-bold')
         testButton = Button(window, 'Run', entypo.ICON_CHECK)
         testButton.setBackgroundColor(Color(0, 1., 0., 0.10))
+        testButton.setCallback(lambda: self.run_test())
 
         self.point_count_slider = point_count_slider
         self.point_count_box = point_count_box
         self.sample_type_box = sample_type_box
         self.warp_type_box = warp_type_box
+        self.warped_grid_box = warped_grid_box
 
         if False:
 
@@ -148,20 +165,39 @@ class WarpVisualizer(Screen):
             }
             ''')
 
+        self.grid_shader = GLShader()
+        self.grid_shader.init('Sample shader (grids)',
+            # Vertex shader
+            '''
+            #version 330
+            uniform mat4 mvp;
+            in vec3 position;
+            void main() {
+                gl_Position = mvp * vec4(position, 1.0);
+            }
+            ''',
+            # Fragment Shader
+            '''
+            #version 330
+            out vec4 out_color;
+            void main() {
+                out_color = vec4(vec3(1.0), 0.4);
+            }
+            ''')
+
         self.arcball = Arcball()
         self.arcball.setSize(self.size())
 
         self.refresh()
 
     def drawContents(self):
-        view = lookAt([0, 0, 2], [0, 0, 0], [0, 1, 0])
+        view = lookAt([0, 0, 4], [0, 0, 0], [0, 1, 0])
         viewAngle, near, far = 30, 0.01, 100
         fH = np.tan(viewAngle / 360 * np.pi) * near
         fW = fH * self.size()[0] / self.size()[1]
         proj = frustum(-fW, fW, -fH, fH, near, far)
 
-        model = translate([-0.5, -0.5, 0.0])
-        model = np.dot(self.arcball.matrix(), model)
+        model = self.arcball.matrix()
 
         mvp = np.dot(np.dot(proj, view), model)
 
@@ -170,6 +206,11 @@ class WarpVisualizer(Screen):
         self.point_shader.bind()
         self.point_shader.setUniform('mvp', mvp)
         self.point_shader.drawArray(gl.POINTS, 0, self.point_count)
+
+        if self.warped_grid_box.checked():
+            self.grid_shader.bind()
+            self.grid_shader.setUniform('mvp', mvp)
+            self.grid_shader.drawArray(gl.LINES, 0, self.line_count)
 
     def resizeEvent(self, size):
         if not hasattr(self, 'arcball'):
@@ -213,19 +254,19 @@ class WarpVisualizer(Screen):
 
         # Point count slider input is not linear
         point_count = np.power(2, self.point_count_slider.value()).astype(int)
+        sqrt_val = np.int32(np.sqrt(point_count) + 0.5)
 
         if sample_type == 1 or sample_type == 2:  # Point/Grid
-            sqrt_val = np.int32(np.sqrt(point_count) + 0.5)
             point_count = sqrt_val * sqrt_val
 
         self.point_count_slider.setValue(np.log(point_count) / np.log(2.0))
 
         # Update the companion box
         def formattedPointCount(n):
-            if (n >= 1e6):
+            if n >= 1e6:
                 self.point_count_box.setUnits('M')
                 return '{:.2f}'.format(n / (1024 * 1024))
-            if (n >= 1e3):
+            if n >= 1e3:
                 self.point_count_box.setUnits('K')
                 return '{:.2f}'.format(n / (1024))
 
@@ -247,12 +288,13 @@ class WarpVisualizer(Screen):
             x = (x.ravel() + samples_in[0, :]) / sqrt_val
             y = (y.ravel() + samples_in[1, :]) / sqrt_val
             samples_in = np.stack((y, x)).astype(float_dtype)
+        elif sample_type == 3:  # Halton
+            pass
 
         # Perform the warp
         samples = sample_func(samples_in)
-
-        samples *= 0.5
-        samples += np.array([[0.5, 0.5, 0]]).T
+        if samples.shape[0] == 2:
+            samples = np.vstack([samples, np.zeros(samples.shape[1])])
 
         self.point_shader.bind()
         self.point_shader.uploadAttrib('position', samples)
@@ -263,6 +305,41 @@ class WarpVisualizer(Screen):
             .astype(samples.dtype)
         self.point_shader.uploadAttrib('color', colors)
 
+        if self.warped_grid_box.checked():
+            grid            = np.linspace(0, 1, sqrt_val + 1)
+            fine_grid       = np.linspace(0, 1, 16 * sqrt_val)
+            fine_grid       = np.insert(fine_grid, np.arange(len(fine_grid)),
+                                        fine_grid)[1:-1]
+            fine_grid, grid = np.array(
+                np.meshgrid(fine_grid, grid),
+                dtype=float_dtype
+            )
+
+            lines = sample_func(
+                np.hstack([
+                    np.vstack([grid.ravel(), fine_grid.ravel()]),
+                    np.vstack([fine_grid.ravel(), grid.ravel()])
+                ]))
+
+            if lines.shape[0] == 2:
+                lines = np.vstack([lines, np.zeros(lines.shape[1])])
+
+            self.grid_shader.bind()
+            self.grid_shader.uploadAttrib('position', lines)
+            self.line_count = lines.shape[1]
+
+    def run_test(self):
+        distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
+        domain = distr[1]
+        sample_func = distr[2]
+        pdf = distr[3]
+        test = ChiSquareTest(
+            domain,
+            sample_func,
+            pdf
+        )
+        result = test.run(0.01)
+        print(test.messages)
 
 if __name__ == '__main__':
     nanogui.init()

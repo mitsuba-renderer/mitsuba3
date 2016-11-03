@@ -292,6 +292,27 @@ class ChiSquareTest(object):
         return np.repeat(c0, self.ires) + np.tile(c1, res)
 
 
+class PlanarDomain(object):
+    """
+    The identity map on the plane
+    """
+    def __init__(self, bounds=np.array([[-1.0, 1.0], [-1.0, 1.0]])):
+        self.bounds = bounds
+
+    def get_bounds(self):
+        return self.bounds
+
+    def get_aspect(self):
+        size = self.bounds[:, 0] - self.bounds[:, 1]
+        return size[0] / size[1]
+
+    def map_forward(self, p):
+        return p
+
+    def map_backward(self, p):
+        return p
+
+
 class SphericalDomain(object):
     """
     Maps between the unit sphere and a parameterization
