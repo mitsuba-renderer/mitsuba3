@@ -10,8 +10,10 @@ from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
                      Arcball, lookAt, translate, frustum)
 
 from nanogui import glfw, entypo, gl
-from mitsuba.core import warp, pcg32, float_dtype
+from nanogui import nanovg as nvg
+from mitsuba.core import warp, pcg32, float_dtype, Bitmap
 from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain, PlanarDomain
+from . import GLTexture
 
 DEFAULT_PARAMETERS = {
     'sample_dim': 2
@@ -109,9 +111,10 @@ class WarpVisualizer(Screen):
         self.sample_type_box = sample_type_box
         self.warp_type_box = warp_type_box
         self.warped_grid_box = warped_grid_box
+        self.window = window
+        self.test = None
 
         if False:
-
             warpParametersPanel = Widget(window)
             warpParametersPanel.setLayout(
                 BoxLayout(Orientation.Vertical, Alignment.Middle, 0, 20))
@@ -153,7 +156,7 @@ class WarpVisualizer(Screen):
                     frag_color = color;
             }
             ''',
-            # Fragment Shader
+            # Fragment shader
             '''
             #version 330
             in vec3 frag_color;
@@ -176,7 +179,7 @@ class WarpVisualizer(Screen):
                 gl_Position = mvp * vec4(position, 1.0);
             }
             ''',
-            # Fragment Shader
+            # Fragment shader
             '''
             #version 330
             out vec4 out_color;
@@ -185,32 +188,58 @@ class WarpVisualizer(Screen):
             }
             ''')
 
+        self.histogram_shader = GLShader()
+        self.histogram_shader.init('Histogram shader',
+            # Vertex shader
+            '''
+            #version 330
+            uniform mat4 mvp;
+            in vec2 position;
+            out vec2 uv;
+            void main() {
+                gl_Position = mvp * vec4(position, 0.0, 1.0);
+                uv = position;
+            }
+            ''',
+            # Fragment shader
+            '''
+            #version 330
+            out vec4 out_color;
+            uniform sampler2D tex;
+            in vec2 uv;
+            /* http://paulbourke.net/texture_colour/colourspace/ */
+            vec3 colormap(float v, float vmin, float vmax) {
+                vec3 c = vec3(1.0);
+                if (v < vmin)
+                    v = vmin;
+                if (v > vmax)
+                    v = vmax;
+                float dv = vmax - vmin;
+                if (v < (vmin + 0.25 * dv)) {
+                    c.r = 0.0;
+                    c.g = 4.0 * (v - vmin) / dv;
+                } else if (v < (vmin + 0.5 * dv)) {
+                    c.r = 0.0;
+                    c.b = 1.0 + 4.0 * (vmin + 0.25 * dv - v) / dv;
+                } else if (v < (vmin + 0.75 * dv)) {
+                    c.r = 4.0 * (v - vmin - 0.5 * dv) / dv;
+                    c.b = 0.0;
+                } else {
+                    c.g = 1.0 + 4.0 * (vmin + 0.75 * dv - v) / dv;
+                    c.b = 0.0;
+                }
+                return c;
+            }
+            void main() {
+                float value = texture(tex, uv).r;
+                out_color = vec4(colormap(value, 0.0, 1.0), 1.0);
+            }
+            ''')
+
         self.arcball = Arcball()
         self.arcball.setSize(self.size())
 
         self.refresh()
-
-    def drawContents(self):
-        view = lookAt([0, 0, 4], [0, 0, 0], [0, 1, 0])
-        viewAngle, near, far = 30, 0.01, 100
-        fH = np.tan(viewAngle / 360 * np.pi) * near
-        fW = fH * self.size()[0] / self.size()[1]
-        proj = frustum(-fW, fW, -fH, fH, near, far)
-
-        model = self.arcball.matrix()
-
-        mvp = np.dot(np.dot(proj, view), model)
-
-        gl.PointSize(2)
-        gl.Enable(gl.DEPTH_TEST)
-        self.point_shader.bind()
-        self.point_shader.setUniform('mvp', mvp)
-        self.point_shader.drawArray(gl.POINTS, 0, self.point_count)
-
-        if self.warped_grid_box.checked():
-            self.grid_shader.bind()
-            self.grid_shader.setUniform('mvp', mvp)
-            self.grid_shader.drawArray(gl.LINES, 0, self.line_count)
 
     def resizeEvent(self, size):
         if not hasattr(self, 'arcball'):
@@ -234,6 +263,10 @@ class WarpVisualizer(Screen):
         return True
 
     def mouseButtonEvent(self, p, button, down, modifiers):
+        if self.test is not None:
+            self.test = None
+            self.window.setVisible(True)
+            return True
         if button == glfw.MOUSE_BUTTON_1 and not down:
             self.arcball.button(p, down)
         if super(Screen, self).mouseButtonEvent(p, button, down, modifiers):
@@ -243,11 +276,81 @@ class WarpVisualizer(Screen):
             return True
         return False
 
+    def drawContents(self):
+        if self.test:
+            self.draw_test_results()
+        else:
+            self.draw_point_cloud()
+
+    def draw_point_cloud(self):
+        view = lookAt([0, 0, 4], [0, 0, 0], [0, 1, 0])
+        viewAngle, near, far = 30, 0.01, 100
+        fH = np.tan(viewAngle / 360 * np.pi) * near
+        fW = fH * self.size()[0] / self.size()[1]
+        proj = frustum(-fW, fW, -fH, fH, near, far)
+
+        model = self.arcball.matrix()
+
+        mvp = np.dot(np.dot(proj, view), model)
+
+        gl.PointSize(2)
+        gl.Enable(gl.DEPTH_TEST)
+        self.point_shader.bind()
+        self.point_shader.setUniform('mvp', mvp)
+        self.point_shader.drawArray(gl.POINTS, 0, self.point_count)
+
+        if self.warped_grid_box.checked():
+            self.grid_shader.bind()
+            self.grid_shader.setUniform('mvp', mvp)
+            self.grid_shader.drawArray(gl.LINES, 0, self.line_count)
+
+    def draw_test_results(self):
+        spacer = 20
+        hist_width = (self.width() - 3 * spacer) / 2
+        hist_height = hist_width
+        voffset = (self.height() - hist_height) / 2
+
+        ctx = self.nvgContext()
+        ctx.BeginFrame(self.size()[0], self.size()[1], self.pixelRatio())
+        ctx.BeginPath()
+        ctx.Rect(spacer, voffset + hist_height + spacer,
+                 self.width() - 2 * spacer, 70)
+        ctx.FillColor(Color(100, 255, 100, 100)
+                      if self.test_result else Color(255, 100, 100, 100))
+        ctx.Fill()
+        ctx.FontSize(24)
+        ctx.FontFace("sans-bold")
+        ctx.TextAlign(int(nvg.ALIGN_CENTER) | int(nvg.ALIGN_TOP))
+        ctx.FillColor(Color(255, 255))
+        ctx.Text(spacer + hist_width / 2, voffset - 3 * spacer,
+                "Sample histogram")
+        ctx.Text(2 * spacer + (hist_width * 3) / 2, voffset - 3 * spacer,
+                 "Integrated density")
+        ctx.StrokeColor(Color(255, 255))
+        ctx.StrokeWidth(2)
+
+        # self.draw_histogram(Vector2i(spacer, voffset), Vector2i(hist_width, hist_height), m_textures[0]);
+        # self.draw_histogram(Vector2i(2*spacer + hist_width, voffset), Vector2i(hist_width, hist_height), m_textures[1]);
+
+        ctx.BeginPath()
+        ctx.Rect(spacer, voffset, hist_width, hist_height)
+        ctx.Rect(2 * spacer + hist_width, voffset, hist_width, hist_height)
+        ctx.Stroke()
+
+        ctx.FontSize(20)
+        ctx.TextAlign(int(nvg.ALIGN_CENTER) | int(nvg.ALIGN_TOP))
+        bounds = ctx.TextBoxBounds(0, 0, self.width() - 2 * spacer,
+                                   self.test.messages)
+        ctx.TextBox(
+            spacer, voffset + hist_height + spacer + (70 - bounds[3]) / 2,
+            self.width() - 2 * spacer, self.test.messages)
+        ctx.EndFrame()
+
     def refresh(self):
         # Look up configuration
         distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
         sample_type = self.sample_type_box.selectedIndex()
-        domain = distr[1]
+        # domain = distr[1]
         sample_func = distr[2]
         params = distr[4]
         sample_dim = params['sample_dim']
@@ -333,13 +436,13 @@ class WarpVisualizer(Screen):
         domain = distr[1]
         sample_func = distr[2]
         pdf = distr[3]
-        test = ChiSquareTest(
-            domain,
-            sample_func,
-            pdf
-        )
-        result = test.run(0.01)
-        print(test.messages)
+        self.test = ChiSquareTest(domain, sample_func, pdf)
+        self.test_result = self.test.run(0.01)
+        self.window.setVisible(False)
+        self.pdf_texture       = GLTexture(
+            Bitmap(np.float32(self.test.pdf)))
+        self.histogram_texture = GLTexture(
+            Bitmap(np.float32(self.test.histogram)))
 
 if __name__ == '__main__':
     nanogui.init()

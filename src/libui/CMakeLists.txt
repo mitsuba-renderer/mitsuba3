@@ -10,15 +10,16 @@ add_definitions(
 set(INC_DIR "../../include/mitsuba/ui")
 
 add_library(mitsuba-ui SHARED
-  warp_visualizer.cpp     ${INC_DIR}/warp_visualizer.h
+  gltexture.cpp     ${INC_DIR}/gltexture.h
 )
 
 # Link to Mitsuba core library
 target_link_libraries(mitsuba-ui mitsuba-core)
+
 # Link to NanoGUI
 target_link_libraries(mitsuba-ui nanogui)
 
-set(DEPENDENCIES mitsuba-ui mitsuba-core nanogui)
+set(DEPENDENCIES mitsuba-ui nanogui)
 
 # Copy dependencies into the 'dist' directory
 foreach(dep ${DEPENDENCIES})

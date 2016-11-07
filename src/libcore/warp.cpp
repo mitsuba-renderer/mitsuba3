@@ -15,13 +15,19 @@ Vector3f squareToUniformSphere(const Point2f &sample) {
 }
 
 Vector3f squareToUniformHemisphere(const Point2f &sample) {
+#if 0
     Float z = sample.y();
     Float tmp = math::safe_sqrt(1.f - z*z);
-
     Float sinPhi, cosPhi;
     math::sincos(2.f * math::Pi * sample.x(), &sinPhi, &cosPhi);
-
     return Vector3f(cosPhi * tmp, sinPhi * tmp, z);
+#else
+    /* Via concentric disk, less distortion */
+    Point2f p = squareToUniformDiskConcentric(sample);
+    Float z = 1 - simd::squaredNorm(p);
+    p *= std::sqrt(z + 1);
+    return Vector3f(p.x(), p.y(), z);
+#endif
 }
 
 Vector3f squareToCosineHemisphere(const Point2f &sample) {

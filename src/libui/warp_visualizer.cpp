@@ -8,42 +8,6 @@
 
 namespace {
 /// GLSL code (shaders)
-const std::string kPointVertexShader =
-    "#version 330\n"
-    "uniform mat4 mvp;\n"
-    "in vec3 position;\n"
-    "in vec3 color;\n"
-    "out vec3 frag_color;\n"
-    "void main() {\n"
-    "    gl_Position = mvp * vec4(position, 1.0);\n"
-    "    if (isnan(position.r)) /* nan (missing value) */\n"
-    "        frag_color = vec3(0.0);\n"
-    "    else\n"
-    "        frag_color = color;\n"
-    "}";
-const std::string kPointFragmentShader =
-    "#version 330\n"
-    "in vec3 frag_color;\n"
-    "out vec4 out_color;\n"
-    "void main() {\n"
-    "    if (frag_color == vec3(0.0))\n"
-    "        discard;\n"
-    "    out_color = vec4(frag_color, 1.0);\n"
-    "}";
-
-const std::string kGridVertexShader =
-    "#version 330\n"
-    "uniform mat4 mvp;\n"
-    "in vec3 position;\n"
-    "void main() {\n"
-    "    gl_Position = mvp * vec4(position, 1.0);\n"
-    "}";
-const std::string kGridFragmentShader =
-    "#version 330\n"
-    "out vec4 out_color;\n"
-    "void main() {\n"
-    "    out_color = vec4(vec3(1.0), 0.4);\n"
-    "}";
 
 const std::string kArrowVertexShader =
     "#version 330\n"
@@ -59,48 +23,6 @@ const std::string kArrowFragmentShader =
     "    out_color = vec4(vec3(1.0), 0.4);\n"
     "}";
 
-const std::string kHistogramVertexShader =
-    "#version 330\n"
-    "uniform mat4 mvp;\n"
-    "in vec2 position;\n"
-    "out vec2 uv;\n"
-    "void main() {\n"
-    "    gl_Position = mvp * vec4(position, 0.0, 1.0);\n"
-    "    uv = position;\n"
-    "}";
-const std::string kHistogramFragmentShader =
-    "#version 330\n"
-    "out vec4 out_color;\n"
-    "uniform sampler2D tex;\n"
-    "in vec2 uv;\n"
-    "/* http://paulbourke.net/texture_colour/colourspace/ */\n"
-    "vec3 colormap(float v, float vmin, float vmax) {\n"
-    "    vec3 c = vec3(1.0);\n"
-    "    if (v < vmin)\n"
-    "        v = vmin;\n"
-    "    if (v > vmax)\n"
-    "        v = vmax;\n"
-    "    float dv = vmax - vmin;\n"
-    "    \n"
-    "    if (v < (vmin + 0.25 * dv)) {\n"
-    "        c.r = 0.0;\n"
-    "        c.g = 4.0 * (v - vmin) / dv;\n"
-    "    } else if (v < (vmin + 0.5 * dv)) {\n"
-    "        c.r = 0.0;\n"
-    "        c.b = 1.0 + 4.0 * (vmin + 0.25 * dv - v) / dv;\n"
-    "    } else if (v < (vmin + 0.75 * dv)) {\n"
-    "        c.r = 4.0 * (v - vmin - 0.5 * dv) / dv;\n"
-    "        c.b = 0.0;\n"
-    "    } else {\n"
-    "        c.g = 1.0 + 4.0 * (vmin + 0.75 * dv - v) / dv;\n"
-    "        c.b = 0.0;\n"
-    "    }\n"
-    "    return c;\n"
-    "}\n"
-    "void main() {\n"
-    "    float value = texture(tex, uv).r;\n"
-    "    out_color = vec4(colormap(value, 0.0, 1.0), 1.0);\n"
-    "}";
 }  // end anonymous namespace
 
 NAMESPACE_BEGIN(mitsuba)
@@ -154,77 +76,6 @@ WarpVisualizationWidget::mouseButtonEvent(const Vector2i &p, int button,
 }
 
 void WarpVisualizationWidget::refresh() {
-    // Generate the point positions
-    pcg32 sampler;
-    Eigen::MatrixXf positions;
-    std::vector<Float> weights;
-    m_warpAdapter->generateWarpedPoints(&sampler, m_samplingType, m_pointCount,
-                                        positions, weights);
-
-    float valueScale = 0.f;
-    for (size_t i = 0; i < m_pointCount; ++i) {
-        valueScale = std::max(valueScale, weights[i]);
-    }
-    valueScale = 1.f / valueScale;
-
-    if (!m_warpAdapter->isIdentity()) {
-        for (size_t i = 0; i < m_pointCount; ++i) {
-            if (weights[i] == 0.0f) {
-                positions.col(i) = Eigen::Vector3f::Constant(std::numeric_limits<float>::quiet_NaN());
-                continue;
-            }
-            positions.col(i) =
-                ((valueScale == 0 ? 1.0f : (valueScale * weights[i])) *
-                 positions.col(i)) * 0.5f + Eigen::Vector3f(0.5f, 0.5f, 0.0f);
-        }
-    }
-
-    // Generate a color gradient
-    MatrixXf colors(3, m_pointCount);
-    float colorStep = 1.f / m_pointCount;
-    for (size_t i = 0; i < m_pointCount; ++i)
-        colors.col(i) << i * colorStep, 1 - i * colorStep, 0;
-
-    // Upload warped points to the GPU
-    m_pointShader->bind();
-    m_pointShader->uploadAttrib("position", positions);
-    m_pointShader->uploadAttrib("color", colors);
-
-    // Upload warped grid lines to the GPU
-    if (m_drawGrid) {
-        size_t gridRes = static_cast<size_t>(std::sqrt(static_cast<float>(m_pointCount)) + 0.5f);
-        size_t fineGridRes = 16 * gridRes;
-        float coarseScale = 1.f / gridRes;
-        float fineScale = 1.f / fineGridRes;
-
-        size_t idx = 0;
-        m_lineCount = 4 * (gridRes+1) * (fineGridRes+1);
-        positions.resize(3, m_lineCount);
-
-        auto getPoint = [this](float x, float y) {
-            auto r = m_warpAdapter->warpSample(Point2f(x, y));
-            return std::make_pair(static_cast<Eigen::Matrix<float, 3, 1>>(r.first), r.second);
-        };
-        for (size_t i = 0; i <= gridRes; ++i) {
-            for (size_t j = 0; j <= fineGridRes; ++j) {
-                auto pt = getPoint(j * fineScale, i * coarseScale);
-                positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                pt = getPoint((j+1) * fineScale, i * coarseScale);
-                positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                pt = getPoint(i * coarseScale, j * fineScale);
-                positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-                pt = getPoint(i * coarseScale, (j+1) * fineScale);
-                positions.col(idx++) = valueScale == 0.f ? pt.first : (pt.first * pt.second * valueScale);
-            }
-        }
-        if (!m_warpAdapter->isIdentity()) {
-            for (size_t i = 0; i < m_lineCount; ++i) {
-                positions.col(i) = positions.col(i) * 0.5f + Eigen::Vector3f(0.5f, 0.5f, 0.0f);
-            }
-        }
-        m_gridShader->bind();
-        m_gridShader->uploadAttrib("position", positions);
-    }
 
     // BRDF-specific
     // int ctr = 0;

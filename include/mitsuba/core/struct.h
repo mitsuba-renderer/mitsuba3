@@ -309,6 +309,6 @@ protected:
 #endif
 };
 
-extern std::ostream &operator<<(std::ostream &os, Struct::EType value);
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Struct::EType value);
 
 NAMESPACE_END(mitsuba)

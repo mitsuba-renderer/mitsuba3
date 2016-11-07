@@ -47,7 +47,39 @@ MTS_PY_EXPORT(Struct) {
         .value("EFloat32", Struct::EType::EFloat32)
         .value("EFloat64", Struct::EType::EFloat64)
         .value("EFloat", Struct::EType::EFloat)
-        .export_values();
+        .export_values()
+        .def("__init__", [](Struct::EType &et, py::dtype dt) {
+            Struct::EType value = Struct::EInt8;
+            if (dt.kind() == 'i') {
+                switch (dt.itemsize()) {
+                    case 1: value = Struct::EInt8; break;
+                    case 2: value = Struct::EInt16; break;
+                    case 4: value = Struct::EInt32; break;
+                    case 8: value = Struct::EInt64; break;
+                    default: throw py::type_error("Struct::EType(): Invalid integer type!");
+                }
+            } else if (dt.kind() == 'u') {
+                switch (dt.itemsize()) {
+                    case 1: value = Struct::EUInt8; break;
+                    case 2: value = Struct::EUInt16; break;
+                    case 4: value = Struct::EUInt32; break;
+                    case 8: value = Struct::EUInt64; break;
+                    default: throw py::type_error("Struct::EType(): Invalid unsigned integer type!");
+                }
+            } else if (dt.kind() == 'f') {
+                switch (dt.itemsize()) {
+                    case 2: value = Struct::EFloat16; break;
+                    case 4: value = Struct::EFloat32; break;
+                    case 8: value = Struct::EFloat64; break;
+                    default: throw py::type_error("Struct::EType(): Invalid floating point type!");
+                }
+            } else {
+                throw py::type_error("Struct::EType(): Invalid type!");
+            }
+            new (&et) Struct::EType(value);
+        });
+
+    py::implicitly_convertible<py::dtype, Struct::EType>();
 
     py::enum_<Struct::EByteOrder>(c, "EByteOrder")
         .value("ELittleEndian",  Struct::EByteOrder::ELittleEndian)

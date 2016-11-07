@@ -328,7 +328,7 @@ Parameter ``channelCount``:
     ``pFmt`` = EMultiChannel
 
 Parameter ``data``:
-    External pointer to the image data. If set to ``nullptr`` , the
+    External pointer to the image data. If set to ``nullptr``, the
     implementation will allocate memory itself.)doc";
 
 static const char *__doc_mitsuba_Bitmap_Bitmap_2 =
@@ -470,6 +470,10 @@ static const char *__doc_mitsuba_Bitmap_clear = R"doc(Clear the bitmap to zero)d
 
 static const char *__doc_mitsuba_Bitmap_componentFormat = R"doc(Return the component format of this bitmap)doc";
 
+static const char *__doc_mitsuba_Bitmap_data = R"doc(Return a pointer to the underlying bitmap storage)doc";
+
+static const char *__doc_mitsuba_Bitmap_data_2 = R"doc(Return a pointer to the underlying bitmap storage)doc";
+
 static const char *__doc_mitsuba_Bitmap_gamma = R"doc(Return the bitmap's gamma identifier (-1: sRGB))doc";
 
 static const char *__doc_mitsuba_Bitmap_hasAlpha = R"doc(Return whether this image has an alpha channel)doc";
@@ -509,6 +513,8 @@ static const char *__doc_mitsuba_Bitmap_setGamma = R"doc(Set the bitmap's gamma 
 static const char *__doc_mitsuba_Bitmap_setMetadata = R"doc(Set the a Properties object containing the image metaData)doc";
 
 static const char *__doc_mitsuba_Bitmap_size = R"doc(Return the bitmap dimensions in pixels)doc";
+
+static const char *__doc_mitsuba_Bitmap_struct = R"doc(Return a ``Struct`` instance describing the contents of the bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_toString = R"doc(Return a human-readable summary of this bitmap)doc";
 
@@ -937,6 +943,14 @@ static const char *__doc_mitsuba_Frame_toWorld = R"doc(Convert from local coordi
 static const char *__doc_mitsuba_Frame_uv =
 R"doc(Assuming that the given direction is in the local coordinate system,
 return the u and v coordinates of the vector 'v')doc";
+
+static const char *__doc_mitsuba_GLTexture = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_GLTexture = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_class = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_m_bitmap = R"doc()doc";
 
 static const char *__doc_mitsuba_Jit = R"doc()doc";
 
@@ -1587,8 +1601,6 @@ implementation just takes the bounding box returned by bbox(Index
 index) and clips it to *clip*.)doc";
 
 static const char *__doc_mitsuba_Shape_class = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_doSomething = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_primitiveCount =
 R"doc(Returns the number of sub-primitives that make up this shape
@@ -3352,13 +3364,13 @@ static const char *__doc_mitsuba_operator_Matrix = R"doc(Convert to an Eigen vec
 
 static const char *__doc_mitsuba_operator_Matrix_2 = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 

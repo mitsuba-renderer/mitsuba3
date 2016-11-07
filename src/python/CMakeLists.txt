@@ -9,4 +9,4 @@ foreach(FNAME ${PYTHON_FILES})
   list(APPEND PYTHON_FILES_OUT ${OUT_FILE})
 endforeach()
 
-add_custom_target(copy_python_files ALL DEPENDS ${PYTHON_FILES_OUT})
+add_custom_target(copy-python-modules ALL DEPENDS ${PYTHON_FILES_OUT})

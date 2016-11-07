@@ -43,8 +43,9 @@ inline std::vector<std::string> tokenize(const std::string &string,
     std::vector<std::string> tokens;
 
     while (lastPos != std::string::npos) {
-        if (pos != lastPos || includeEmpty)
-            tokens.push_back(string.substr(lastPos, pos - lastPos));
+        std::string substr = string.substr(lastPos, pos - lastPos);
+        if (!substr.empty() || includeEmpty)
+            tokens.push_back(std::move(substr));
         lastPos = pos;
         if (lastPos != std::string::npos) {
             lastPos += 1;

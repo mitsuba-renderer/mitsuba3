@@ -188,7 +188,7 @@ public:
      *    \c pFmt = \ref EMultiChannel
      *
      * \param data
-     *    External pointer to the image data. If set to \c nullptr , the
+     *    External pointer to the image data. If set to \c nullptr, the
      *    implementation will allocate memory itself.
      */
     Bitmap(EPixelFormat pFmt, Struct::EType cFmt, const Vector2s &size,
@@ -213,6 +213,12 @@ public:
 
     /// Return the component format of this bitmap
     Struct::EType componentFormat() const { return m_componentFormat; }
+
+    /// Return a pointer to the underlying bitmap storage
+    void *data() { return m_data.get(); }
+
+    /// Return a pointer to the underlying bitmap storage
+    const void *data() const { return m_data.get(); }
 
     /// Return the bitmap dimensions in pixels
     const Vector2s &size() const { return m_size; }
@@ -259,6 +265,9 @@ public:
     /// Clear the bitmap to zero
     void clear();
 
+    /// Return a \c Struct instance describing the contents of the bitmap
+    const Struct *struct_() const { return m_struct.get(); }
+
     /// Return a human-readable summary of this bitmap
     virtual std::string toString() const override;
 
@@ -283,6 +292,6 @@ protected:
     Properties m_metaData;
 };
 
-std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value);
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value);
 
 NAMESPACE_END(mitsuba)

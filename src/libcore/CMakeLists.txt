@@ -82,7 +82,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist/plugins"
 )
 
-set(DEPENDENCIES mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex nanogui tbb libzmq asmjit)
+set(DEPENDENCIES mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq asmjit)
 if (WIN32)
   list(APPEND DEPENDENCIES png16 zlib jpeg)
 endif()
