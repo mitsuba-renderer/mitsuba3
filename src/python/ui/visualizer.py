@@ -5,9 +5,9 @@ import nanogui
 import numpy as np
 
 from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
-                     Label, Button, TextBox, CheckBox, MessageDialog,
-                     ComboBox, Slider, Alignment, Orientation, GLShader,
-                     Arcball, lookAt, translate, frustum)
+                     Label, Button, TextBox, CheckBox, ComboBox, Slider,
+                     Alignment, Orientation, GLShader, Arcball, lookAt,
+                     frustum)
 
 from nanogui import glfw, entypo, gl
 from nanogui import nanovg as nvg
@@ -60,8 +60,9 @@ class WarpVisualizer(Screen):
 
     def __init__(self):
         super(WarpVisualizer, self).__init__(
-            [1024, 768], u'Warp visualizer & χ² hypothesis test')
+            [1280, 1024], 'Warp visualizer & χ² hypothesis test')
 
+        self.setBackground(Color(0, 0))
         window = Window(self, 'Warp tester')
         window.setPosition([15, 15])
         window.setLayout(GroupLayout())
@@ -101,7 +102,7 @@ class WarpVisualizer(Screen):
         Label(window, 'Method parameters', 'sans-bold')
 
         # Chi-2 test button
-        Label(window, u'χ² hypothesis test', 'sans-bold')
+        Label(window, 'χ² hypothesis test', 'sans-bold')
         testButton = Button(window, 'Run', entypo.ICON_CHECK)
         testButton.setBackgroundColor(Color(0, 1., 0., 0.10))
         testButton.setCallback(lambda: self.run_test())
@@ -125,7 +126,6 @@ class WarpVisualizer(Screen):
             panel.setLayout(
                 BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
 
-            # TODO: BRDF-specific, some of this should be built-in the described args
             # # Angle BSDF parameter
             # angleSlider = Slider(panel)
             # angleSlider.setFixedWidth(55)
@@ -134,7 +134,7 @@ class WarpVisualizer(Screen):
             # # Companion text box
             # angleBox = TextBox(panel)
             # angleBox.setFixedSize([80, 25])
-            # angleBox.setUnits(u'\u00B0')
+            # angleBox.setUnits('\u00B0')
             # # Option to visualize the BRDF values
             # brdfValuesCheckBox = CheckBox(window, 'Visualize BRDF values')
             # brdfValuesCheckBox.setCallback(lambda _: self.refresh())
@@ -235,9 +235,18 @@ class WarpVisualizer(Screen):
                 out_color = vec4(colormap(value, 0.0, 1.0), 1.0);
             }
             ''')
-
+        self.histogram_shader.bind()
+        self.histogram_shader.uploadAttrib(
+            "position",
+            np.array(
+                [[0, 1, 1, 0], [0, 0, 1, 1]], dtype=np.float32))
+        self.histogram_shader.uploadIndices(
+            np.array(
+                [[0, 2], [1, 3], [2, 0]], dtype=np.uint32))
         self.arcball = Arcball()
         self.arcball.setSize(self.size())
+        self.pdf_texture = GLTexture()
+        self.histogram_texture = GLTexture()
 
         self.refresh()
 
@@ -306,45 +315,64 @@ class WarpVisualizer(Screen):
 
     def draw_test_results(self):
         spacer = 20
+        shape = self.test.pdf.shape
         hist_width = (self.width() - 3 * spacer) / 2
-        hist_height = hist_width
+        hist_height = np.int32(shape[0] / shape[1] * hist_width)
         voffset = (self.height() - hist_height) / 2
 
-        ctx = self.nvgContext()
-        ctx.BeginFrame(self.size()[0], self.size()[1], self.pixelRatio())
-        ctx.BeginPath()
-        ctx.Rect(spacer, voffset + hist_height + spacer,
-                 self.width() - 2 * spacer, 70)
-        ctx.FillColor(Color(100, 255, 100, 100)
-                      if self.test_result else Color(255, 100, 100, 100))
-        ctx.Fill()
-        ctx.FontSize(24)
-        ctx.FontFace("sans-bold")
-        ctx.TextAlign(int(nvg.ALIGN_CENTER) | int(nvg.ALIGN_TOP))
-        ctx.FillColor(Color(255, 255))
-        ctx.Text(spacer + hist_width / 2, voffset - 3 * spacer,
-                "Sample histogram")
-        ctx.Text(2 * spacer + (hist_width * 3) / 2, voffset - 3 * spacer,
-                 "Integrated density")
-        ctx.StrokeColor(Color(255, 255))
-        ctx.StrokeWidth(2)
+        self.draw_histogram(np.array([spacer, voffset]),
+                            np.array([hist_width, hist_height]),
+                            self.histogram_texture)
 
-        # self.draw_histogram(Vector2i(spacer, voffset), Vector2i(hist_width, hist_height), m_textures[0]);
-        # self.draw_histogram(Vector2i(2*spacer + hist_width, voffset), Vector2i(hist_width, hist_height), m_textures[1]);
+        self.draw_histogram(np.array([2 * spacer + hist_width, voffset]),
+                            np.array([hist_width, hist_height]),
+                            self.pdf_texture)
 
-        ctx.BeginPath()
-        ctx.Rect(spacer, voffset, hist_width, hist_height)
-        ctx.Rect(2 * spacer + hist_width, voffset, hist_width, hist_height)
-        ctx.Stroke()
+        c = self.nvgContext()
+        c.BeginFrame(self.size()[0], self.size()[1], self.pixelRatio())
+        c.BeginPath()
+        c.Rect(spacer, voffset + hist_height + spacer,
+               self.width() - 2 * spacer, 70)
+        c.FillColor(Color(100, 255, 100, 100)
+                    if self.test_result else Color(255, 100, 100, 100))
+        c.Fill()
+        c.FontSize(24)
+        c.FontFace("sans-bold")
+        c.TextAlign(int(nvg.ALIGN_CENTER) | int(nvg.ALIGN_TOP))
+        c.FillColor(Color(255, 255))
+        c.Text(spacer + hist_width / 2, voffset - 3 * spacer,
+               "Sample histogram")
+        c.Text(2 * spacer + (hist_width * 3) / 2, voffset - 3 * spacer,
+               "Integrated density")
+        c.StrokeColor(Color(255, 255))
+        c.StrokeWidth(2)
 
-        ctx.FontSize(20)
-        ctx.TextAlign(int(nvg.ALIGN_CENTER) | int(nvg.ALIGN_TOP))
-        bounds = ctx.TextBoxBounds(0, 0, self.width() - 2 * spacer,
-                                   self.test.messages)
-        ctx.TextBox(
+        c.BeginPath()
+        c.Rect(spacer, voffset, hist_width, hist_height)
+        c.Rect(2 * spacer + hist_width, voffset, hist_width, hist_height)
+        c.Stroke()
+
+        c.FontSize(20)
+        c.TextAlign(int(nvg.ALIGN_CENTER) | int(nvg.ALIGN_TOP))
+        bounds = c.TextBoxBounds(0, 0, self.width() - 2 * spacer,
+                                 self.test.messages)
+        c.TextBox(
             spacer, voffset + hist_height + spacer + (70 - bounds[3]) / 2,
             self.width() - 2 * spacer, self.test.messages)
-        ctx.EndFrame()
+        c.EndFrame()
+
+    def draw_histogram(self, pos, size, tex):
+        s = -(pos + 0.25) / size
+        e = self.size() / size + s
+        mvp = nanogui.ortho(s[0], e[0], e[1], s[1], -1, 1)
+
+        gl.Disable(gl.DEPTH_TEST)
+        tex.bind(0)
+        self.histogram_shader.bind()
+        self.histogram_shader.setUniform("mvp", mvp)
+        self.histogram_shader.setUniform("tex", 0)
+        self.histogram_shader.drawIndexed(gl.TRIANGLES, 0, 2)
+        tex.release()
 
     def refresh(self):
         # Look up configuration
@@ -397,7 +425,9 @@ class WarpVisualizer(Screen):
         # Perform the warp
         samples = sample_func(samples_in)
         if samples.shape[0] == 2:
-            samples = np.vstack([samples, np.zeros(samples.shape[1])])
+            samples = np.vstack(
+                [samples, np.zeros(
+                    samples.shape[1], dtype=samples.dtype)])
 
         self.point_shader.bind()
         self.point_shader.uploadAttrib('position', samples)
@@ -422,10 +452,13 @@ class WarpVisualizer(Screen):
                 np.hstack([
                     np.vstack([grid.ravel(), fine_grid.ravel()]),
                     np.vstack([fine_grid.ravel(), grid.ravel()])
-                ]))
+                ])
+            )
 
             if lines.shape[0] == 2:
-                lines = np.vstack([lines, np.zeros(lines.shape[1])])
+                lines = np.vstack(
+                    [lines, np.zeros(
+                        lines.shape[1], dtype=lines.dtype)])
 
             self.grid_shader.bind()
             self.grid_shader.uploadAttrib('position', lines)
@@ -439,10 +472,18 @@ class WarpVisualizer(Screen):
         self.test = ChiSquareTest(domain, sample_func, pdf)
         self.test_result = self.test.run(0.01)
         self.window.setVisible(False)
-        self.pdf_texture       = GLTexture(
-            Bitmap(np.float32(self.test.pdf)))
-        self.histogram_texture = GLTexture(
-            Bitmap(np.float32(self.test.histogram)))
+
+        # Convert the histogram & integrated PDF to normalized textures
+        pdf = self.test.pdf
+        histogram = self.test.histogram
+        min_value = np.min([np.min(pdf), np.min(histogram)]) / 2
+        max_value = np.max(pdf) * 1.1
+        pdf = (pdf - min_value) / (max_value - min_value)
+        histogram = (histogram - min_value) / (max_value - min_value)
+        self.pdf_texture.init(Bitmap(np.float32(pdf)))
+        self.pdf_texture.setInterpolation(GLTexture.ENearest)
+        self.histogram_texture.init(Bitmap(np.float32(histogram)))
+        self.histogram_texture.setInterpolation(GLTexture.ENearest)
 
 if __name__ == '__main__':
     nanogui.init()

@@ -946,11 +946,35 @@ return the u and v coordinates of the vector 'v')doc";
 
 static const char *__doc_mitsuba_GLTexture = R"doc()doc";
 
+static const char *__doc_mitsuba_GLTexture_EInterpolation = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_EInterpolation_ELinear = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_EInterpolation_EMipMapLinear = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_EInterpolation_ENearest = R"doc()doc";
+
 static const char *__doc_mitsuba_GLTexture_GLTexture = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_bind = R"doc(Bind the texture to a specific texture unit)doc";
 
 static const char *__doc_mitsuba_GLTexture_class = R"doc()doc";
 
-static const char *__doc_mitsuba_GLTexture_m_bitmap = R"doc()doc";
+static const char *__doc_mitsuba_GLTexture_free = R"doc(Release underlying OpenGL objects)doc";
+
+static const char *__doc_mitsuba_GLTexture_id = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_init = R"doc(Create a new uniform texture)doc";
+
+static const char *__doc_mitsuba_GLTexture_m_id = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_m_index = R"doc()doc";
+
+static const char *__doc_mitsuba_GLTexture_refresh = R"doc(Refresh the texture from the provided bitmap)doc";
+
+static const char *__doc_mitsuba_GLTexture_release = R"doc(Release/unbind the textur)doc";
+
+static const char *__doc_mitsuba_GLTexture_setInterpolation = R"doc(Set the interpolation mode)doc";
 
 static const char *__doc_mitsuba_Jit = R"doc()doc";
 
@@ -3374,9 +3398,9 @@ static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Prints the canonical 
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

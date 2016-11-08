@@ -3,8 +3,21 @@
 #include <mitsuba/ui/gltexture.h>
 
 MTS_PY_EXPORT(GLTexture) {
-    MTS_PY_CLASS(GLTexture, Object)
-        .def(py::init<const Bitmap *>(), DM(GLTexture, GLTexture));
+    auto gltexture = MTS_PY_CLASS(GLTexture, Object)
+        .def(py::init<>(), DM(GLTexture, GLTexture))
+        .mdef(GLTexture, setInterpolation)
+        .mdef(GLTexture, id)
+        .mdef(GLTexture, init)
+        .mdef(GLTexture, free)
+        .mdef(GLTexture, bind)
+        .mdef(GLTexture, release)
+        .mdef(GLTexture, refresh);
+
+    py::enum_<GLTexture::EInterpolation>(gltexture, "EInterpolation")
+        .value("ENearest", GLTexture::ENearest)
+        .value("ELinear", GLTexture::ELinear)
+        .value("EMipMapLinear", GLTexture::EMipMapLinear)
+        .export_values();
 }
 
 PYBIND11_PLUGIN(mitsuba_ui_ext) {
