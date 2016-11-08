@@ -865,7 +865,8 @@ protected:
 
                     /* Merge into global results */
                     Index *targetLeft, *targetRight;
-                    {
+
+                    /* critical section */ {
                         tbb::spin_mutex::scoped_lock lock(mutex);
                         targetLeft = &leftIndices[leftCount];
                         targetRight = &rightIndices[rightCount];

@@ -13,7 +13,7 @@ def test01_custom():
         appenders.append(app)
         logger.removeAppender(app)
 
-    try: 
+    try:
         class MyFormatter(Formatter):
             def format(self, level, theClass, thread, filename, line, msg):
                 return "%i: class=%s, thread=%s, text=%s, filename=%s, ' \

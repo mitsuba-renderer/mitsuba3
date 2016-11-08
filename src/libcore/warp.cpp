@@ -211,8 +211,8 @@ Float squareToVonMisesFisherPdf(const Vector3f &v, Float kappa) {
        https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
 
     assert(kappa >= 0.f);
-	if (kappa == 0.f)
-		return math::InvFourPi;
+    if (kappa == 0.f)
+        return math::InvFourPi;
     else
         return std::exp(kappa * (v.z() - 1)) * kappa /
                (2 * math::Pi * (1 - std::exp(-2 * kappa)));

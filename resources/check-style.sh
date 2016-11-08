@@ -7,6 +7,9 @@
 # 1. use of tabs instead of spaces
 # 2. trailing spaces
 # 3. missing space between keyword and parenthesis, e.g.: for(, if(, while(
+# 4. opening brace on its own line. It should always be on the same line as the
+#    if/while/for/do statment.
+# 5. Missing space between right parenthesis and brace, e.g. 'for (...){'
 # 
 # Invoke as: tools/check-style.sh
 #
@@ -33,6 +36,18 @@ exec 3< <(GREP_COLORS='mt=41' grep '\s\+$' include/**/*.h src/**/*.{cpp,h,py} -r
 while read -u 3 f; do
     if [ -z "$found" ]; then
         echo -e '\e[31m\e[01mError: found trailing spaces in the following files:\e[0m'
+        found=1
+        errors=1
+    fi
+
+    echo "    $f"
+done
+
+found=
+exec 3< <(GREP_COLORS='mt=41' grep '^\s*{\s*$' include/**/*.h src/**/*.{cpp,h} -rn --color=always)
+while read -u 3 f; do
+    if [ -z "$found" ]; then
+        echo -e '\e[31m\e[01mError: braces should occur on the same line as the if/while/.. statement. Found issues in the following files: \e[0m'
         found=1
         errors=1
     fi

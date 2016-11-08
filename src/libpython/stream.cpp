@@ -34,11 +34,11 @@ MTS_PY_EXPORT(Stream) {
         .mdef(Stream, canWrite)
         .def_static("hostByteOrder", Stream::hostByteOrder, DM(Stream, hostByteOrder))
         .def("write", [](Stream &s, py::bytes b) {
-            std::string data(b); 
+            std::string data(b);
             s.write(data.c_str(), data.size());
         }, DM(Stream, write))
         .def("read", [](Stream &s, size_t size) {
-            std::unique_ptr<char> tmp(new char[size]); 
+            std::unique_ptr<char> tmp(new char[size]);
             s.read((void *) tmp.get(), size);
             return py::bytes(tmp.get(), size);
         }, DM(Stream, write))
@@ -149,7 +149,7 @@ MTS_PY_EXPORT(AnnotatedStream) {
             Type v;                            \
             s.get(name, v);                    \
             return py::cast(v);                \
-        } catch(const std::runtime_error &) { }
+        } catch (const std::runtime_error &) { }
 
         TRY_GET_TYPE(bool);
         TRY_GET_TYPE(int64_t);

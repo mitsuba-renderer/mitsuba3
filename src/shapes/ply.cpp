@@ -200,11 +200,9 @@ public:
 
     void write(Stream *stream) const override {
         std::string streamName = "<stream>";
-        {
-            auto fs = dynamic_cast<FileStream *>(stream);
-            if (fs)
-                streamName = fs->path().filename();
-        }
+        auto fs = dynamic_cast<FileStream *>(stream);
+        if (fs)
+            streamName = fs->path().filename();
 
         Log(EInfo, "Writing mesh to \"%s\" ..", streamName);
 

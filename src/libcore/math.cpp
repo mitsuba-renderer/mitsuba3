@@ -201,10 +201,7 @@ template <typename Scalar> Scalar normal_quantile(Scalar p) {
  *   @param  z  The third of three symmetric arguments.
  *   @return  The Carlson elliptic function of the first kind.
  */
-template<typename Type>
-Type
-ellint_rf(const Type x, const Type y, const Type z)
-{
+template<typename Type> Type ellint_rf(const Type x, const Type y, const Type z) {
   const Type min = std::numeric_limits<Type>::min();
   const Type lolim = Type(5) * min;
 
@@ -214,8 +211,7 @@ ellint_rf(const Type x, const Type y, const Type z)
   else if (x + y < lolim || x + z < lolim
         || y + z < lolim)
     throw std::domain_error("Argument too small in ellint_rf");
-  else
-    {
+  else {
       const Type c0 = Type(1) / Type(4);
       const Type c1 = Type(1) / Type(24);
       const Type c2 = Type(1) / Type(10);
@@ -232,8 +228,7 @@ ellint_rf(const Type x, const Type y, const Type z)
       Type xndev, yndev, zndev;
 
       const unsigned int max_iter = 100;
-      for (unsigned int iter = 0; iter < max_iter; ++iter)
-        {
+      for (unsigned int iter = 0; iter < max_iter; ++iter) {
           mu = (xn + yn + zn) / Type(3);
           xndev = 2 - (mu + xn) / mu;
           yndev = 2 - (mu + yn) / mu;
@@ -278,10 +273,7 @@ ellint_rf(const Type x, const Type y, const Type z)
  *   @param  k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the first kind.
  */
-template<typename Type>
-Type
-comp_ellint_1_series(const Type k)
-{
+template<typename Type> Type comp_ellint_1_series(const Type k) {
 
   const Type kk = k * k;
 
@@ -289,8 +281,7 @@ comp_ellint_1_series(const Type k)
   Type sum = Type(1) + term;
 
   const unsigned int max_iter = 1000;
-  for (unsigned int i = 2; i < max_iter; ++i)
-    {
+  for (unsigned int i = 2; i < max_iter; ++i) {
       term *= (2 * i - 1) * kk / (2 * i);
       if (term < std::numeric_limits<Type>::epsilon())
         break;
@@ -316,11 +307,7 @@ comp_ellint_1_series(const Type k)
  *   @param  k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the first kind.
  */
-template<typename Type>
-Type
-comp_ellint_1(const Type k)
-{
-
+template<typename Type> Type comp_ellint_1(const Type k) {
   if (std::isnan(k))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) >= Type(1))
@@ -344,17 +331,12 @@ comp_ellint_1(const Type k)
  *   @param  phi  The integral limit argument of the elliptic function.
  *   @return  The elliptic function of the first kind.
  */
-template<typename Type>
-Type
-ellint_1(const Type k, const Type phi)
-{
-
+template<typename Type> Type ellint_1(const Type k, const Type phi) {
   if (std::isnan(k) || std::isnan(phi))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) > Type(1))
     throw std::domain_error("Bad argument in ellint_1.");
-  else
-    {
+  else {
       //  Reduce phi to -pi/2 < phi < +pi/2.
       const int n = std::floor(phi / Type(math::Pi_d)
                                + Type(0.5L));
@@ -391,19 +373,14 @@ ellint_1(const Type k, const Type phi)
  *   @param  k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the second kind.
  */
-template<typename Type>
-Type
-comp_ellint_2_series(const Type k)
-{
-
+template<typename Type> Type comp_ellint_2_series(const Type k) {
   const Type kk = k * k;
 
   Type term = kk;
   Type sum = term;
 
   const unsigned int max_iter = 1000;
-  for (unsigned int i = 2; i < max_iter; ++i)
-    {
+  for (unsigned int i = 2; i < max_iter; ++i) {
       const Type i2m = 2 * i - 1;
       const Type i2 = 2 * i;
       term *= i2m * i2m * kk / (i2 * i2);
@@ -439,10 +416,7 @@ comp_ellint_2_series(const Type k)
  *   @param  z  The third argument.
  *   @return  The Carlson elliptic function of the second kind.
  */
-template<typename Type>
-Type
-ellint_rd(const Type x, const Type y, const Type z)
-{
+template<typename Type> Type ellint_rd(const Type x, const Type y, const Type z) {
   const Type eps = std::numeric_limits<Type>::epsilon();
   const Type errtol = std::pow(eps / Type(8), Type(1) / Type(6));
   const Type max = std::numeric_limits<Type>::max();
@@ -454,8 +428,7 @@ ellint_rd(const Type x, const Type y, const Type z)
   else if (x + y < lolim || z < lolim)
     throw std::domain_error("Argument too small "
                                   "in ellint_rd.");
-  else
-    {
+  else {
       const Type c0 = Type(1) / Type(4);
       const Type c1 = Type(3) / Type(14);
       const Type c2 = Type(1) / Type(6);
@@ -472,8 +445,7 @@ ellint_rd(const Type x, const Type y, const Type z)
       Type xndev, yndev, zndev;
 
       const unsigned int max_iter = 100;
-      for (unsigned int iter = 0; iter < max_iter; ++iter)
-        {
+      for (unsigned int iter = 0; iter < max_iter; ++iter) {
           mu = (xn + yn + Type(3) * zn) / Type(5);
           xndev = (mu - xn) / mu;
           yndev = (mu - yn) / mu;
@@ -524,19 +496,14 @@ ellint_rd(const Type x, const Type y, const Type z)
  *   @param  k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the second kind.
  */
-template<typename Type>
-Type
-comp_ellint_2(const Type k)
-{
-
+template<typename Type> Type comp_ellint_2(const Type k) {
   if (std::isnan(k))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) == 1)
     return Type(1);
   else if (std::abs(k) > Type(1))
     throw std::domain_error("Bad argument in comp_ellint_2.");
-  else
-    {
+  else {
       const Type kk = k * k;
 
       return ellint_rf(Type(0), Type(1) - kk, Type(1))
@@ -558,17 +525,12 @@ comp_ellint_2(const Type k)
  *   @param  phi  The integral limit argument of the elliptic function.
  *   @return  The elliptic function of the second kind.
  */
-template<typename Type>
-Type
-ellint_2(const Type k, const Type phi)
-{
-
+template<typename Type> Type ellint_2(const Type k, const Type phi) {
   if (std::isnan(k) || std::isnan(phi))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) > Type(1))
     throw std::domain_error("Bad argument in ellint_2.");
-  else
-    {
+  else {
       //  Reduce phi to -pi/2 < phi < +pi/2.
       const int n = (int) std::floor(phi / Type(math::Pi_d)
                                    + Type(0.5L));
@@ -617,18 +579,14 @@ ellint_2(const Type k, const Type phi)
  *   @param  y  The second argument.
  *   @return  The Carlson elliptic function.
  */
-template<typename Type>
-Type
-ellint_rc(const Type x, const Type y)
-{
+template<typename Type> Type ellint_rc(const Type x, const Type y) {
   const Type min = std::numeric_limits<Type>::min();
   const Type lolim = Type(5) * min;
 
   if (x < Type(0) || y < Type(0) || x + y < lolim)
     throw std::domain_error("Argument less than zero "
                                   "in ellint_rc.");
-  else
-    {
+  else {
       const Type c0 = Type(1) / Type(4);
       const Type c1 = Type(1) / Type(7);
       const Type c2 = Type(9) / Type(22);
@@ -644,8 +602,7 @@ ellint_rc(const Type x, const Type y)
       Type sn;
 
       const unsigned int max_iter = 100;
-      for (unsigned int iter = 0; iter < max_iter; ++iter)
-        {
+      for (unsigned int iter = 0; iter < max_iter; ++iter) {
           mu = (xn + Type(2) * yn) / Type(3);
           sn = (yn + mu) / mu - Type(2);
           if (std::abs(sn) < errtol)
@@ -686,10 +643,7 @@ ellint_rc(const Type x, const Type y)
  *   @param  p  The fourth argument.
  *   @return  The Carlson elliptic function of the fourth kind.
  */
-template<typename Type>
-Type
-ellint_rj(const Type x, const Type y, const Type z, const Type p)
-{
+template<typename Type> Type ellint_rj(const Type x, const Type y, const Type z, const Type p) {
   const Type min = std::numeric_limits<Type>::min();
   const Type lolim = std::pow(Type(5) * min, Type(1)/Type(3));
 
@@ -700,8 +654,7 @@ ellint_rj(const Type x, const Type y, const Type z, const Type p)
         || y + z < lolim || p < lolim)
     throw std::domain_error("Argument too small "
                                   "in ellint_rj");
-  else
-    {
+  else {
       const Type c0 = Type(1) / Type(4);
       const Type c1 = Type(3) / Type(14);
       const Type c2 = Type(1) / Type(3);
@@ -722,8 +675,7 @@ ellint_rj(const Type x, const Type y, const Type z, const Type p)
       Type xndev, yndev, zndev, pndev;
 
       const unsigned int max_iter = 100;
-      for (unsigned int iter = 0; iter < max_iter; ++iter)
-        {
+      for (unsigned int iter = 0; iter < max_iter; ++iter) {
           mu = (xn + yn + zn + Type(2) * pn) / Type(5);
           xndev = (mu - xn) / mu;
           yndev = (mu - yn) / mu;
@@ -786,19 +738,14 @@ ellint_rj(const Type x, const Type y, const Type z, const Type p)
  *   @param  nu  The second argument of the elliptic function.
  *   @return  The complete elliptic function of the third kind.
  */
-template<typename Type>
-Type
-comp_ellint_3(const Type k, const Type nu)
-{
-
+template<typename Type> Type comp_ellint_3(const Type k, const Type nu) {
   if (std::isnan(k) || std::isnan(nu))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (nu == Type(1))
     return std::numeric_limits<Type>::infinity();
   else if (std::abs(k) > Type(1))
     throw std::domain_error("Bad argument in comp_ellint_3.");
-  else
-    {
+  else {
       const Type kk = k * k;
 
       return ellint_rf(Type(0), Type(1) - kk, Type(1))
@@ -826,17 +773,12 @@ comp_ellint_3(const Type k, const Type nu)
  *   @param  phi  The integral limit argument of the elliptic function.
  *   @return  The elliptic function of the third kind.
  */
-template<typename Type>
-Type
-ellint_3(const Type k, const Type nu, const Type phi)
-{
-
+template<typename Type> Type ellint_3(const Type k, const Type nu, const Type phi) {
   if (std::isnan(k) || std::isnan(nu) || std::isnan(phi))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) > Type(1))
     throw std::domain_error("Bad argument in ellint_3.");
-  else
-    {
+  else {
       //  Reduce phi to -pi/2 < phi < +pi/2.
       const int n = (int) std::floor(phi / Type(math::Pi_d)
                                    + Type(0.5L));
