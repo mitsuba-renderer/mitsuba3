@@ -146,7 +146,7 @@ template <bool TestDomain = false>
 Float squareToUniformTrianglePdf(const Point2f &p) {
     if (TestDomain && (p.x() < 0 || p.y() < 0 || p.x() + p.y() > 1))
         return 0.f;
-    return 0.5f;
+    return 2.f;
 }
 
 /** \brief Sample a point on a 2D standard normal distribution

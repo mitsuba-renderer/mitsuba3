@@ -15,11 +15,11 @@ MTS_PY_EXPORT(Shape) {
         .def("vertices", [](py::object &o) {
             Mesh &m = py::cast<Mesh&>(o);
             py::dtype dtype = o.attr("vertexStruct")().attr("dtype")();
-            return py::array(dtype, m.vertexCount(), m.vertices());
+            return py::array(dtype, m.vertexCount(), m.vertices(), o);
         })
         .def("faces", [](py::object &o) {
             Mesh &m = py::cast<Mesh&>(o);
             py::dtype dtype = o.attr("faceStruct")().attr("dtype")();
-            return py::array(dtype, m.faceCount(), m.faces());
+            return py::array(dtype, m.faceCount(), m.faces(), o);
         });
 }

@@ -16,13 +16,21 @@ from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain, PlanarDomain
 from . import GLTexture
 
 DEFAULT_PARAMETERS = {
-    'sample_dim': 2
+    'sample_dim': 2,
+    'ires': 6,
+    'res': 101
 }
 
 DISTRIBUTIONS = [
     # ('Uniform square', SphericalDomain(),
     # lambda x: x,
     # lambda x: np.ones(x.shape[1])),
+
+    ('Uniform triangle', PlanarDomain(np.array([[0, 1],
+                                                [0, 1]])),
+     warp.squareToUniformTriangle,
+     warp.squareToUniformTrianglePdf,
+     dict(DEFAULT_PARAMETERS, res=100, ires=10)),
 
     ('Uniform disk', PlanarDomain(),
      warp.squareToUniformDisk,
@@ -92,7 +100,7 @@ class WarpVisualizer(Screen):
 
         Label(window, 'Warping method', 'sans-bold')
         warp_type_box = ComboBox(window, [item[0] for item in DISTRIBUTIONS])
-        warp_type_box.setCallback(lambda _: self.refresh())
+        warp_type_box.setCallback(lambda _: self.refresh_distribution())
 
         # Option to visualize the warped grid
         warped_grid_box = CheckBox(window, 'Visualize warped grid')
@@ -114,6 +122,7 @@ class WarpVisualizer(Screen):
         self.warped_grid_box = warped_grid_box
         self.window = window
         self.test = None
+        self.center = None
 
         if False:
             warpParametersPanel = Widget(window)
@@ -374,6 +383,10 @@ class WarpVisualizer(Screen):
         self.histogram_shader.drawIndexed(gl.TRIANGLES, 0, 2)
         tex.release()
 
+    def refresh_distribution(self):
+        self.center = None
+        self.refresh()
+
     def refresh(self):
         # Look up configuration
         distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
@@ -407,31 +420,35 @@ class WarpVisualizer(Screen):
         self.point_count_box.setValue(formattedPointCount(point_count))
 
         if sample_type == 0:  # Uniform
-            samples_in = pcg32().nextFloat(sample_dim, point_count)
+            samples_in = pcg32().nextFloat(point_count, sample_dim)
         elif sample_type == 1:  # Grid
             x, y = np.mgrid[0:sqrt_val, 0:sqrt_val]
             x = (x.ravel() + 0.5) / sqrt_val
             y = (y.ravel() + 0.5) / sqrt_val
-            samples_in = np.stack((y, x)).astype(float_dtype)
+            samples_in = np.column_stack((y, x)).astype(float_dtype)
         elif sample_type == 2:  # Stratified
             samples_in = pcg32().nextFloat(sample_dim, point_count)
             x, y = np.mgrid[0:sqrt_val, 0:sqrt_val]
             x = (x.ravel() + samples_in[0, :]) / sqrt_val
             y = (y.ravel() + samples_in[1, :]) / sqrt_val
-            samples_in = np.stack((y, x)).astype(float_dtype)
+            samples_in = np.column_stack((y, x)).astype(float_dtype)
         elif sample_type == 3:  # Halton
             pass
 
         # Perform the warp
         samples = sample_func(samples_in)
-        if samples.shape[0] == 2:
-            samples = np.vstack(
+        if samples.shape[1] == 2:
+            samples = np.column_stack(
                 [samples, np.zeros(
-                    samples.shape[1], dtype=samples.dtype)])
+                    samples.shape[0], dtype=samples.dtype)])
 
+        if self.center is None:
+            self.center = samples.mean(axis=0)
+
+        samples -= self.center
         self.point_shader.bind()
-        self.point_shader.uploadAttrib('position', samples)
-        self.point_count = samples.shape[1]
+        self.point_shader.uploadAttrib('position', samples.T)
+        self.point_count = samples.shape[0]
 
         tmp = np.linspace(0, 1, self.point_count)
         colors = np.stack((tmp, 1 - tmp, np.zeros(self.point_count))) \
@@ -449,27 +466,31 @@ class WarpVisualizer(Screen):
             )
 
             lines = sample_func(
-                np.hstack([
-                    np.vstack([grid.ravel(), fine_grid.ravel()]),
-                    np.vstack([fine_grid.ravel(), grid.ravel()])
+                np.column_stack([
+                    np.hstack([grid.ravel(), fine_grid.ravel()]),
+                    np.hstack([fine_grid.ravel(), grid.ravel()])
                 ])
             )
 
-            if lines.shape[0] == 2:
-                lines = np.vstack(
+            if lines.shape[1] == 2:
+                lines = np.column_stack(
                     [lines, np.zeros(
-                        lines.shape[1], dtype=lines.dtype)])
+                        lines.shape[0], dtype=lines.dtype)])
+
+            lines -= self.center
 
             self.grid_shader.bind()
-            self.grid_shader.uploadAttrib('position', lines)
-            self.line_count = lines.shape[1]
+            self.grid_shader.uploadAttrib('position', lines.T)
+            self.line_count = lines.shape[0]
 
     def run_test(self):
         distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
         domain = distr[1]
         sample_func = distr[2]
         pdf = distr[3]
-        self.test = ChiSquareTest(domain, sample_func, pdf)
+        params = distr[4]
+        self.test = ChiSquareTest(
+            domain, sample_func, pdf, res=params['res'], ires=params['ires'])
         self.test_result = self.test.run(0.01)
         self.window.setVisible(False)
 

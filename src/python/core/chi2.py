@@ -80,7 +80,7 @@ class ChiSquareTest(object):
         in this attribute.
     """
     def __init__(self, domain, sample_func, pdf_func, sample_dim=2,
-                 sample_count=1000000, res=101, ires=4,
+                 sample_count=1000000, res=101, ires=6,
                  dtype=mitsuba.core.float_dtype):
         self.domain = domain
         self.sample_func = sample_func
@@ -107,7 +107,7 @@ class ChiSquareTest(object):
         from mitsuba.core import pcg32
 
         # Generate a table of uniform variates
-        samples_in = pcg32().nextFloat(self.sample_dim, self.sample_count)
+        samples_in = pcg32().nextFloat(self.sample_count, self.sample_dim)
 
         # Invoke sampling strategy
         weights_out = None
@@ -122,7 +122,7 @@ class ChiSquareTest(object):
 
         # Compute a histogram of the positions in the parameter domain
         self.histogram = np.histogram2d(
-            xy[1, :], xy[0, :],
+            xy[:, 1], xy[:, 0],
             bins=self.res,
             normed=False,
             weights=weights_out,
@@ -130,8 +130,8 @@ class ChiSquareTest(object):
         )[0] / self.sample_count
 
         # A few sanity checks
-        if not (np.all(xy >= self.bounds[:, 0, None]) and
-                np.all(xy <= self.bounds[:, 1, None])):
+        if not (np.all(xy >= self.bounds[:, 0]) and
+                np.all(xy <= self.bounds[:, 1])):
             self._log("Encountered samples outside of the specified domain")
             self.fail = True
 
@@ -162,7 +162,8 @@ class ChiSquareTest(object):
         )
 
         # Map from parameterization onto the PDF domain
-        pos = self.domain.map_forward(np.vstack((x.ravel(), y.ravel())))
+        pos = self.domain.map_forward(np.column_stack((x.ravel(), y.ravel())))
+        pos = np.array(pos, dtype=self.dtype)
 
         # Evaluate the PDF at all positions
         pdf = np.float64(self.pdf_func(pos))
@@ -296,7 +297,8 @@ class PlanarDomain(object):
     """
     The identity map on the plane
     """
-    def __init__(self, bounds=np.array([[-1.0, 1.0], [-1.0, 1.0]])):
+    def __init__(self, bounds=np.array([[-1.0, 1.0],
+                                        [-1.0, 1.0]])):
         self.bounds = bounds
 
     def get_bounds(self):
@@ -326,17 +328,14 @@ class SphericalDomain(object):
         return 2
 
     def map_forward(self, p):
-        cosTheta = -p[1, :]
+        cosTheta = -p[:, 1]
         sinTheta = np.sqrt(1 - cosTheta * cosTheta)
-        sinPhi, cosPhi = np.sin(p[0, :]), np.cos(p[0, :])
-        return np.vstack(
+        sinPhi, cosPhi = np.sin(p[:, 0]), np.cos(p[:, 0])
+        return np.column_stack(
             (cosPhi * sinTheta,
              sinPhi * sinTheta,
              cosTheta)
         )
 
     def map_backward(self, p):
-        return np.vstack(
-            (np.arctan2(p[1, :], p[0, :]),
-             -p[2, :]))
-
+        return np.column_stack((np.arctan2(p[:, 1], p[:, 0]), -p[:, 2]))

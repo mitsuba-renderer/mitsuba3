@@ -67,8 +67,8 @@ struct type_caster<Type, typename std::enable_if<is_simdarray<Type>::value>::typ
     typedef typename Type::Scalar Scalar;
 
     bool load(handle src, bool) {
-       array_t<Scalar> buffer(src, true);
-       if (!buffer.check())
+       auto buffer = array_t<Scalar>::ensure(src);
+       if (!buffer)
            return false;
 
         buffer_info info = buffer.request();
@@ -129,10 +129,11 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(detail)
 
 template <typename Return, typename... Args, typename Func>
-py::array vectorizeImpl(Func&& f, const py::array_t<typename Args::Scalar, py::array::f_style>&... args) {
-    size_t nElements[] = { (args.ndim() == 2 ? args.shape(1) :
+py::array vectorizeImpl(Func&& f, const py::array_t<typename Args::Scalar, py::array::c_style>&... args) {
+    size_t nElements[] = { (args.ndim() == 2 ? args.shape(0) :
             (args.ndim() == 0 || args.ndim() > 2) ? 0 : 1) ... };
-    bool compat[] = { (args.ndim() > 0 ? (args.shape(0) == Args::Dimension) : false)... };
+
+    bool compat[] = { (args.ndim() > 0 ? (args.shape(1) == Args::Dimension) : false)... };
 
     size_t count = sizeof...(Args) > 0 ? nElements[0] : 0;
     for (size_t i = 0; i<sizeof...(Args); ++i) {
@@ -142,16 +143,16 @@ py::array vectorizeImpl(Func&& f, const py::array_t<typename Args::Scalar, py::a
     using ReturnScalar = typename Return::Scalar;
 
     py::array_t<ReturnScalar> out(
-        { Return::Dimension, count },
-        { sizeof(ReturnScalar), sizeof(ReturnScalar) * Return::Dimension });
+        { count, Return::Dimension },
+        { sizeof(ReturnScalar) * Return::Dimension, sizeof(ReturnScalar) });
 
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0u, count),
         [&](const tbb::blocked_range<size_t> &range) {
             for (size_t i = range.begin(); i < range.end(); ++i) {
                 simd::storeUnaligned(
-                    (ReturnScalar *) out.mutable_data(0, i),
-                    Return(f(Args::LoadUnaligned(args.ndim() == 2 ? args.data(0, i) : args.data())...))
+                    (ReturnScalar *) out.mutable_data(i, 0),
+                    Return(f(Args::LoadUnaligned(args.ndim() == 2 ? args.data(i, 0) : args.data())...))
                 );
             }
         }
@@ -167,7 +168,7 @@ using VecType = typename std::conditional<std::is_arithmetic<T>::value,
 template <typename Func, typename Return, typename... Args>
 auto vectorize(const Func &f, Return (*)(Args...)) {
     return [f](const py::array_t<
-        typename VecType<py::detail::intrinsic_t<Args>>::Scalar, py::array::f_style> &... in) -> py::object {
+        typename VecType<py::detail::intrinsic_t<Args>>::Scalar, py::array::c_style> &... in) -> py::object {
         return vectorizeImpl<VecType<Return>, VecType<py::detail::intrinsic_t<Args>>...>(f, in...);
     };
 }

@@ -7,9 +7,10 @@
 static void PyLog(ELogLevel level, const std::string &msg) {
     PyFrameObject *frame = PyThreadState_Get()->frame;
 
-    std::string name = (std::string) py::str(frame->f_code->co_name, true);
+    std::string name =
+        py::cast<std::string>(py::handle(frame->f_code->co_name));
     std::string filename =
-        (std::string) py::str(frame->f_code->co_filename, true);
+        py::cast<std::string>(py::handle(frame->f_code->co_filename));
     std::string fmt = "%s: %s";
     int lineno = PyFrame_GetLineNumber(frame);
 
