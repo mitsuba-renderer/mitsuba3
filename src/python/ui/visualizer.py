@@ -15,47 +15,81 @@ from mitsuba.core import warp, pcg32, float_dtype, Bitmap
 from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain, PlanarDomain
 from . import GLTexture
 
-DEFAULT_PARAMETERS = {
-    'sample_dim': 2,
-    'ires': 6,
-    'res': 101
-}
+DEFAULT_SETTINGS = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
 
 DISTRIBUTIONS = [
-    # ('Uniform square', SphericalDomain(),
-    # lambda x: x,
-    # lambda x: np.ones(x.shape[1])),
+    ('Uniform square', PlanarDomain(np.array([[0, 1],
+                                              [0, 1]])),
+    lambda x: x,
+    lambda x: np.ones(x.shape[0]),
+     DEFAULT_SETTINGS),
 
     ('Uniform triangle', PlanarDomain(np.array([[0, 1],
                                                 [0, 1]])),
      warp.squareToUniformTriangle,
      warp.squareToUniformTrianglePdf,
-     dict(DEFAULT_PARAMETERS, res=100, ires=10)),
+     dict(DEFAULT_SETTINGS, res=100)),
+
+    ('Tent function', PlanarDomain(np.array([[-1, 1],
+                                             [-1, 1]])),
+     warp.squareToTent,
+     warp.squareToTentPdf,
+     DEFAULT_SETTINGS),
 
     ('Uniform disk', PlanarDomain(),
      warp.squareToUniformDisk,
      warp.squareToUniformDiskPdf,
-     DEFAULT_PARAMETERS),
+     DEFAULT_SETTINGS),
 
     ('Uniform disk (concentric)', PlanarDomain(),
      warp.squareToUniformDiskConcentric,
      warp.squareToUniformDiskConcentricPdf,
-     DEFAULT_PARAMETERS),
+     DEFAULT_SETTINGS),
 
     ('Uniform sphere', SphericalDomain(),
      warp.squareToUniformSphere,
      warp.squareToUniformSpherePdf,
-     DEFAULT_PARAMETERS),
+     DEFAULT_SETTINGS),
 
     ('Uniform hemisphere', SphericalDomain(),
      warp.squareToUniformHemisphere,
      warp.squareToUniformHemispherePdf,
-     DEFAULT_PARAMETERS),
+     DEFAULT_SETTINGS),
 
     ('Cosine hemisphere', SphericalDomain(),
      warp.squareToCosineHemisphere,
      warp.squareToCosineHemispherePdf,
-     DEFAULT_PARAMETERS),
+     DEFAULT_SETTINGS),
+
+    ('Uniform cone', SphericalDomain(),
+    lambda sample, angle:
+        warp.squareToUniformCone(sample, np.cos(angle * np.pi / 180)),
+    lambda v, angle:
+        warp.squareToUniformConePdf(v, np.cos(angle * np.pi / 180)),
+     dict(DEFAULT_SETTINGS,
+         parameters=[
+             ('Cutoff angle', [1e-4, 180, 20])
+         ])),
+
+    ('Beckmann distribution', SphericalDomain(),
+    lambda sample, value:
+        warp.squareToBeckmann(sample,
+            np.exp(np.log(0.05) * (1 - value) + np.log(1) * value)),
+    lambda v, value:
+        warp.squareToBeckmannPdf(v,
+            np.exp(np.log(0.05) * (1 - value) + np.log(1) * value)),
+     dict(DEFAULT_SETTINGS,
+         parameters=[
+             ('Roughness', [0, 1, 0.2])
+         ])),
+
+    ('von Mises-Fisher distribution', SphericalDomain(),
+     warp.squareToVonMisesFisher,
+     warp.squareToVonMisesFisherPdf,
+     dict(DEFAULT_SETTINGS,
+         parameters=[
+             ('Concentration', [0, 30, 1])
+         ]))
 ]
 
 
@@ -106,9 +140,6 @@ class WarpVisualizer(Screen):
         warped_grid_box = CheckBox(window, 'Visualize warped grid')
         warped_grid_box.setCallback(lambda _: self.refresh())
 
-        # ---------- Second panel
-        Label(window, 'Method parameters', 'sans-bold')
-
         # Chi-2 test button
         Label(window, 'χ² hypothesis test', 'sans-bold')
         testButton = Button(window, 'Run', entypo.ICON_CHECK)
@@ -122,34 +153,11 @@ class WarpVisualizer(Screen):
         self.warped_grid_box = warped_grid_box
         self.window = window
         self.test = None
-        self.center = None
-
-        if False:
-            warpParametersPanel = Widget(window)
-            warpParametersPanel.setLayout(
-                BoxLayout(Orientation.Vertical, Alignment.Middle, 0, 20))
-
-            # ---------- Third panel
-            Label(window, 'BSDF parameters', 'sans-bold')
-            panel = Widget(window)
-            panel.setLayout(
-                BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
-
-            # # Angle BSDF parameter
-            # angleSlider = Slider(panel)
-            # angleSlider.setFixedWidth(55)
-            # angleSlider.setValue(WarpVisualizer.angleDefaultValue)
-            # angleSlider.setCallback(lambda _: self.refresh())
-            # # Companion text box
-            # angleBox = TextBox(panel)
-            # angleBox.setFixedSize([80, 25])
-            # angleBox.setUnits('\u00B0')
-            # # Option to visualize the BRDF values
-            # brdfValuesCheckBox = CheckBox(window, 'Visualize BRDF values')
-            # brdfValuesCheckBox.setCallback(lambda _: self.refresh())
+        self.parameter_widgets = []
 
         self.point_shader = GLShader()
-        self.point_shader.init('Sample shader (points)',
+        self.point_shader.init(
+            'Sample shader (points)',
             # Vertex shader
             '''
             #version 330
@@ -178,7 +186,8 @@ class WarpVisualizer(Screen):
             ''')
 
         self.grid_shader = GLShader()
-        self.grid_shader.init('Sample shader (grids)',
+        self.grid_shader.init(
+            'Sample shader (grids)',
             # Vertex shader
             '''
             #version 330
@@ -198,7 +207,8 @@ class WarpVisualizer(Screen):
             ''')
 
         self.histogram_shader = GLShader()
-        self.histogram_shader.init('Histogram shader',
+        self.histogram_shader.init(
+            'Histogram shader',
             # Vertex shader
             '''
             #version 330
@@ -257,7 +267,7 @@ class WarpVisualizer(Screen):
         self.pdf_texture = GLTexture()
         self.histogram_texture = GLTexture()
 
-        self.refresh()
+        self.refresh_distribution()
 
     def resizeEvent(self, size):
         if not hasattr(self, 'arcball'):
@@ -329,21 +339,22 @@ class WarpVisualizer(Screen):
         hist_height = np.int32(shape[0] / shape[1] * hist_width)
         voffset = (self.height() - hist_height) / 2
 
-        self.draw_histogram(np.array([spacer, voffset]),
-                            np.array([hist_width, hist_height]),
-                            self.histogram_texture)
+        self.draw_histogram(
+            np.array([spacer, voffset]),
+            np.array([hist_width, hist_height]), self.histogram_texture)
 
-        self.draw_histogram(np.array([2 * spacer + hist_width, voffset]),
-                            np.array([hist_width, hist_height]),
-                            self.pdf_texture)
+        self.draw_histogram(
+            np.array([2 * spacer + hist_width, voffset]),
+            np.array([hist_width, hist_height]), self.pdf_texture)
 
         c = self.nvgContext()
         c.BeginFrame(self.size()[0], self.size()[1], self.pixelRatio())
         c.BeginPath()
         c.Rect(spacer, voffset + hist_height + spacer,
                self.width() - 2 * spacer, 70)
-        c.FillColor(Color(100, 255, 100, 100)
-                    if self.test_result else Color(255, 100, 100, 100))
+        c.FillColor(
+            Color(100, 255, 100, 100)
+            if self.test_result else Color(255, 100, 100, 100))
         c.Fill()
         c.FontSize(24)
         c.FontFace("sans-bold")
@@ -363,11 +374,11 @@ class WarpVisualizer(Screen):
 
         c.FontSize(20)
         c.TextAlign(int(nvg.ALIGN_CENTER) | int(nvg.ALIGN_TOP))
-        bounds = c.TextBoxBounds(0, 0, self.width() - 2 * spacer,
-                                 self.test.messages)
-        c.TextBox(
-            spacer, voffset + hist_height + spacer + (70 - bounds[3]) / 2,
-            self.width() - 2 * spacer, self.test.messages)
+        bounds = c.TextBoxBounds(0, 0,
+                                 self.width() - 2 * spacer, self.test.messages)
+        c.TextBox(spacer,
+                  voffset + hist_height + spacer + (70 - bounds[3]) / 2,
+                  self.width() - 2 * spacer, self.test.messages)
         c.EndFrame()
 
     def draw_histogram(self, pos, size, tex):
@@ -384,17 +395,50 @@ class WarpVisualizer(Screen):
         tex.release()
 
     def refresh_distribution(self):
-        self.center = None
+        distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
+        settings = distr[4]
+        for widget in self.parameter_widgets:
+            self.window.removeChild(widget)
+        self.parameter_widgets = []
+        self.parameters = []
+        index = 0
+        for name, vrange in settings['parameters']:
+            label = Label(None, name, 'sans-bold')
+            panel = Widget(None)
+            panel.setLayout(
+                BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 10))
+            slider = Slider(panel)
+            slider.setFixedWidth(70)
+            slider.setRange((vrange[0], vrange[1]))
+            slider.setValue(vrange[2])
+            tbox = TextBox(panel)
+            tbox.setFixedSize([80, 25])
+            tbox.setValue("%.2f" % vrange[2])
+            self.parameters.append(vrange[2])
+
+            def slider_callback(value, index=index):
+                tbox.setValue("%.2f" % value)
+                self.parameters[index] = value
+                self.refresh()
+
+            slider.setCallback(slider_callback)
+            self.parameter_widgets += [label, panel]
+            index += 1
+
+        for index, widget in enumerate(self.parameter_widgets):
+            self.window.addChild(6 + index, widget)
+        self.performLayout()
         self.refresh()
 
     def refresh(self):
         # Look up configuration
         distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
         sample_type = self.sample_type_box.selectedIndex()
-        # domain = distr[1]
-        sample_func = distr[2]
-        params = distr[4]
-        sample_dim = params['sample_dim']
+
+        sample_func = lambda *args: distr[2](*(list(args) + self.parameters))
+
+        settings = distr[4]
+        sample_dim = settings['sample_dim']
 
         # Point count slider input is not linear
         point_count = np.power(2, self.point_count_slider.value()).astype(int)
@@ -442,10 +486,6 @@ class WarpVisualizer(Screen):
                 [samples, np.zeros(
                     samples.shape[0], dtype=samples.dtype)])
 
-        if self.center is None:
-            self.center = samples.mean(axis=0)
-
-        samples -= self.center
         self.point_shader.bind()
         self.point_shader.uploadAttrib('position', samples.T)
         self.point_count = samples.shape[0]
@@ -456,28 +496,23 @@ class WarpVisualizer(Screen):
         self.point_shader.uploadAttrib('color', colors)
 
         if self.warped_grid_box.checked():
-            grid            = np.linspace(0, 1, sqrt_val + 1)
-            fine_grid       = np.linspace(0, 1, 16 * sqrt_val)
-            fine_grid       = np.insert(fine_grid, np.arange(len(fine_grid)),
-                                        fine_grid)[1:-1]
+            grid = np.linspace(0, 1, sqrt_val + 1)
+            fine_grid = np.linspace(0, 1, 16 * sqrt_val)
+            fine_grid = np.insert(fine_grid,
+                                  np.arange(len(fine_grid)), fine_grid)[1:-1]
             fine_grid, grid = np.array(
-                np.meshgrid(fine_grid, grid),
-                dtype=float_dtype
-            )
+                np.meshgrid(fine_grid, grid), dtype=float_dtype)
 
             lines = sample_func(
                 np.column_stack([
-                    np.hstack([grid.ravel(), fine_grid.ravel()]),
-                    np.hstack([fine_grid.ravel(), grid.ravel()])
-                ])
-            )
+                    np.hstack([grid.ravel(), fine_grid.ravel()]), np.hstack(
+                        [fine_grid.ravel(), grid.ravel()])
+                ]))
 
             if lines.shape[1] == 2:
                 lines = np.column_stack(
                     [lines, np.zeros(
                         lines.shape[0], dtype=lines.dtype)])
-
-            lines -= self.center
 
             self.grid_shader.bind()
             self.grid_shader.uploadAttrib('position', lines.T)
@@ -486,11 +521,16 @@ class WarpVisualizer(Screen):
     def run_test(self):
         distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
         domain = distr[1]
-        sample_func = distr[2]
-        pdf = distr[3]
-        params = distr[4]
+        settings = distr[4]
+
         self.test = ChiSquareTest(
-            domain, sample_func, pdf, res=params['res'], ires=params['ires'])
+            domain=domain,
+            sample_func=lambda *args: distr[2](
+                *(list(args) + self.parameters)),
+            pdf_func=lambda *args: distr[3](
+                *(list(args) + self.parameters)),
+            res=settings['res'],
+            ires=settings['ires'])
         self.test_result = self.test.run(0.01)
         self.window.setVisible(False)
 
@@ -505,6 +545,7 @@ class WarpVisualizer(Screen):
         self.pdf_texture.setInterpolation(GLTexture.ENearest)
         self.histogram_texture.init(Bitmap(np.float32(histogram)))
         self.histogram_texture.setInterpolation(GLTexture.ENearest)
+
 
 if __name__ == '__main__':
     nanogui.init()

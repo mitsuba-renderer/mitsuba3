@@ -40,15 +40,31 @@ MTS_PY_EXPORT(warp) {
           DM(warp, squareToTent), py::arg("sample"))
       .def("squareToTentPdf", vectorize(warp::squareToTentPdf),
           DM(warp, squareToTentPdf), py::arg("p"))
-      .def("squareToUniformCone", [](const py::array_t<Float, py::array::f_style> &sample, Float cosCutoff) {
+      .def("squareToUniformCone", [](const py::array_t<Float, py::array::c_style> &sample, Float cosCutoff) {
               auto closure = [cosCutoff](const Point2f &sample) { return warp::squareToUniformCone(sample, cosCutoff); };
               return vectorize(closure)(sample);
            }, py::arg("sample"), py::arg("cosCutoff"), DM(warp, squareToUniformCone))
-      .def("squareToUniformConePdf", [](const py::array_t<Float, py::array::f_style> &v, Float cosCutoff) {
-              auto closure = [cosCutoff](const Vector3f &v) { return warp::squareToUniformConePdf(v, cosCutoff); };
+      .def("squareToUniformConePdf", [](const py::array_t<Float, py::array::c_style> &v, Float cosCutoff) {
+              auto closure = [cosCutoff](const Vector3f &v) { return warp::squareToUniformConePdf<true>(v, cosCutoff); };
               return vectorize(closure)(v);
            }, py::arg("v"), py::arg("cosCutoff"), DM(warp, squareToUniformConePdf))
       .def("intervalToNonuniformTent", &warp::intervalToNonuniformTent,
            py::arg("sample"), py::arg("a"), py::arg("b"), py::arg("c"),
-           DM(warp, intervalToNonuniformTent));
+           DM(warp, intervalToNonuniformTent))
+      .def("squareToBeckmann", [](const py::array_t<Float, py::array::c_style> &sample, Float alpha) {
+              auto closure = [alpha](const Point2f &sample) { return warp::squareToBeckmann(sample, alpha); };
+              return vectorize(closure)(sample);
+           }, py::arg("sample"), py::arg("alpha"), DM(warp, squareToBeckmann))
+      .def("squareToBeckmannPdf", [](const py::array_t<Float, py::array::c_style> &v, Float alpha) {
+              auto closure = [alpha](const Vector3f &v) { return warp::squareToBeckmannPdf(v, alpha); };
+              return vectorize(closure)(v);
+           }, py::arg("v"), py::arg("alpha"), DM(warp, squareToBeckmannPdf))
+      .def("squareToVonMisesFisher", [](const py::array_t<Float, py::array::c_style> &sample, Float kappa) {
+              auto closure = [kappa](const Point2f &sample) { return warp::squareToVonMisesFisher(sample, kappa); };
+              return vectorize(closure)(sample);
+           }, py::arg("sample"), py::arg("kappa"), DM(warp, squareToVonMisesFisher))
+      .def("squareToVonMisesFisherPdf", [](const py::array_t<Float, py::array::c_style> &v, Float kappa) {
+              auto closure = [kappa](const Vector3f &v) { return warp::squareToVonMisesFisherPdf(v, kappa); };
+              return vectorize(closure)(v);
+           }, py::arg("v"), py::arg("kappa"), DM(warp, squareToVonMisesFisherPdf));
 }
