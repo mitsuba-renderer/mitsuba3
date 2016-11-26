@@ -12,7 +12,7 @@ from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
 from nanogui import glfw, entypo, gl
 from nanogui import nanovg as nvg
 from mitsuba.core import pcg32, float_dtype, Bitmap
-from mitsuba.core.chi2 import ChiSquareTest
+from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain
 from mitsuba.core.warp.distr import DISTRIBUTIONS
 from . import GLTexture
 
@@ -26,7 +26,7 @@ class WarpVisualizer(Screen):
 
     def __init__(self):
         super(WarpVisualizer, self).__init__(
-            [1280, 1024], 'Warp visualizer & χ² hypothesis test')
+            [800, 600], 'Warp visualizer & χ² hypothesis test')
 
         self.setBackground(Color(0, 0))
         window = Window(self, 'Warp tester')
@@ -64,6 +64,10 @@ class WarpVisualizer(Screen):
         warped_grid_box = CheckBox(window, 'Visualize warped grid')
         warped_grid_box.setCallback(lambda _: self.refresh())
 
+        # Option to scale the grid according to the density function
+        density_box = CheckBox(window, 'Visualize density')
+        density_box.setCallback(lambda _: self.refresh())
+
         # Chi-2 test button
         Label(window, 'χ² hypothesis test', 'sans-bold')
         testButton = Button(window, 'Run', entypo.ICON_CHECK)
@@ -75,8 +79,11 @@ class WarpVisualizer(Screen):
         self.sample_type_box = sample_type_box
         self.warp_type_box = warp_type_box
         self.warped_grid_box = warped_grid_box
+        self.density_box = density_box
         self.window = window
         self.test = None
+        self.center = None
+        self.scale = None
         self.parameter_widgets = []
 
         self.point_shader = GLShader()
@@ -252,9 +259,12 @@ class WarpVisualizer(Screen):
         self.point_shader.drawArray(gl.POINTS, 0, self.point_count)
 
         if self.warped_grid_box.checked():
+            gl.Enable(gl.BLEND)
+            gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
             self.grid_shader.bind()
             self.grid_shader.setUniform('mvp', mvp)
             self.grid_shader.drawArray(gl.LINES, 0, self.line_count)
+            gl.Disable(gl.BLEND)
 
     def draw_test_results(self):
         spacer = 20
@@ -325,6 +335,8 @@ class WarpVisualizer(Screen):
             self.window.removeChild(widget)
         self.parameter_widgets = []
         self.parameters = []
+        self.center = None
+        self.scale = None
         index = 0
         for name, vrange in settings['parameters']:
             label = Label(None, name, 'sans-bold')
@@ -360,7 +372,9 @@ class WarpVisualizer(Screen):
         sample_type = self.sample_type_box.selectedIndex()
 
         sample_func = lambda *args: distr[2](*(list(args) + self.parameters))
+        pdf_func = lambda *args: distr[3](*(list(args) + self.parameters))
 
+        domain = distr[1]
         settings = distr[4]
         sample_dim = settings['sample_dim']
 
@@ -387,6 +401,14 @@ class WarpVisualizer(Screen):
 
         self.point_count_box.setValue(formattedPointCount(point_count))
 
+        self.warped_grid_box.setEnabled(sample_dim == 2)
+        if not self.warped_grid_box.enabled():
+            self.warped_grid_box.setChecked(False)
+
+        self.density_box.setEnabled(self.warped_grid_box.checked())
+        if not self.density_box.enabled():
+            self.density_box.setChecked(False)
+
         if sample_type == 0:  # Uniform
             samples_in = pcg32().nextFloat(point_count, sample_dim)
         elif sample_type == 1:  # Grid
@@ -405,10 +427,27 @@ class WarpVisualizer(Screen):
 
         # Perform the warp
         samples = sample_func(samples_in)
+
+        if self.density_box.checked():
+            pdfs = pdf_func(samples)
+            pdfs /= np.amax(pdfs)
+            samples *= pdfs[..., np.newaxis]
+
         if samples.shape[1] == 2:
             samples = np.column_stack(
                 [samples, np.zeros(
                     samples.shape[0], dtype=samples.dtype)])
+
+        if self.center is None:
+            if isinstance(domain, SphericalDomain):
+                self.center = np.array([0, 0, 0], dtype=float_dtype)
+                self.scale = 1
+            else:
+                self.center = samples.mean(axis=0)
+                self.scale = 2 / (np.amax(samples) - np.amin(samples))
+
+        samples -= self.center
+        samples *= self.scale
 
         self.point_shader.bind()
         self.point_shader.uploadAttrib('position', samples.T)
@@ -433,10 +472,18 @@ class WarpVisualizer(Screen):
                         [fine_grid.ravel(), grid.ravel()])
                 ]))
 
+            if self.density_box.checked():
+                pdfs = pdf_func(lines)
+                pdfs /= np.amax(pdfs)
+                lines *= pdfs[..., np.newaxis]
+
             if lines.shape[1] == 2:
                 lines = np.column_stack(
                     [lines, np.zeros(
                         lines.shape[0], dtype=lines.dtype)])
+
+            lines -= self.center
+            lines *= self.scale
 
             self.grid_shader.bind()
             self.grid_shader.uploadAttrib('position', lines.T)
@@ -463,8 +510,8 @@ class WarpVisualizer(Screen):
         # Convert the histogram & integrated PDF to normalized textures
         pdf = self.test.pdf
         histogram = self.test.histogram
-        min_value = np.min([np.min(pdf), np.min(histogram)]) / 2
-        max_value = np.max(pdf) * 1.1
+        min_value = np.amin([np.amin(pdf), np.amin(histogram)]) / 2
+        max_value = np.amax(pdf) * 1.1
         pdf = (pdf - min_value) / (max_value - min_value)
         histogram = (histogram - min_value) / (max_value - min_value)
         self.pdf_texture.init(Bitmap(np.float32(pdf)))

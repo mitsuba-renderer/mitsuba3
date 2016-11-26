@@ -41,11 +41,11 @@ Vector3f squareToCosineHemisphere(const Point2f &sample) {
 }
 
 Vector3f squareToUniformCone(const Point2f &sample, Float cosCutoff) {
-    Float cosTheta = (1 - sample.x()) + sample.x() * cosCutoff;
+    Float cosTheta = (1 - sample.y()) + sample.y() * cosCutoff;
     Float sinTheta = math::safe_sqrt(1.f - cosTheta * cosTheta);
 
     Float sinPhi, cosPhi;
-    math::sincos(2.f * math::Pi * sample.y(), &sinPhi, &cosPhi);
+    math::sincos(2.f * math::Pi * sample.x(), &sinPhi, &cosPhi);
 
     return Vector3f(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
 }
