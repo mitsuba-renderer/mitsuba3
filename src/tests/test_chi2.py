@@ -1,42 +1,24 @@
 from __future__ import unicode_literals
-from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain, PlanarDomain
-from mitsuba.core import warp
+from mitsuba.core.chi2 import ChiSquareTest
+from mitsuba.core.warp.distr import DISTRIBUTIONS
 import pytest
 
-CHI2_TESTS = [
-    # ("Uniform square", SphericalDomain(),
-     # lambda x: x,
-     # lambda x: np.ones(x.shape[1])),
 
-    ("Uniform disk", PlanarDomain(),
-     warp.squareToUniformDisk,
-     warp.squareToUniformDiskPdf),
+@pytest.mark.parametrize("name, domain, sample, pdf, settings", DISTRIBUTIONS)
+def test_chi2(name, domain, sample, pdf, settings):
+    parameters = [o[1][2] for o in settings['parameters']]
 
-    ("Uniform disk (concentric)", PlanarDomain(),
-     warp.squareToUniformDiskConcentric,
-     warp.squareToUniformDiskConcentricPdf),
-
-    ("Uniform sphere", SphericalDomain(),
-     warp.squareToUniformSphere,
-     warp.squareToUniformSpherePdf),
-
-    ("Uniform hemisphere", SphericalDomain(),
-     warp.squareToUniformHemisphere,
-     warp.squareToUniformHemispherePdf),
-
-    ("Cosine hemisphere", SphericalDomain(),
-     warp.squareToCosineHemisphere,
-     warp.squareToCosineHemispherePdf)
-]
-
-
-@pytest.mark.parametrize("name, domain, sample, pdf", CHI2_TESTS)
-def test_chi2(name, domain, sample, pdf):
     test = ChiSquareTest(
-        domain,
-        sample,
-        pdf
+        domain=domain,
+        sample_func=lambda *args: sample(
+            *(list(args) + parameters)),
+        pdf_func=lambda *args: pdf(
+            *(list(args) + parameters)),
+        res=settings['res'],
+        ires=settings['ires'],
+        sample_dim=settings['sample_dim'],
     )
-    result = test.run(0.01, len(CHI2_TESTS))
+
+    result = test.run(0.01, len(DISTRIBUTIONS))
     print(test.messages)
     assert result
