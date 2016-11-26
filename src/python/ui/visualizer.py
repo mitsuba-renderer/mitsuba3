@@ -17,6 +17,9 @@ from . import GLTexture
 
 DEFAULT_SETTINGS = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
 
+def deg2rad(value):
+    return value * np.pi / 180
+
 DISTRIBUTIONS = [
     ('Uniform square', PlanarDomain(np.array([[0, 1],
                                               [0, 1]])),
@@ -63,9 +66,9 @@ DISTRIBUTIONS = [
 
     ('Uniform cone', SphericalDomain(),
     lambda sample, angle:
-        warp.squareToUniformCone(sample, np.cos(angle * np.pi / 180)),
+        warp.squareToUniformCone(sample, np.cos(deg2rad(angle))),
     lambda v, angle:
-        warp.squareToUniformConePdf(v, np.cos(angle * np.pi / 180)),
+        warp.squareToUniformConePdf(v, np.cos(deg2rad(angle))),
      dict(DEFAULT_SETTINGS,
          parameters=[
              ('Cutoff angle', [1e-4, 180, 20])
@@ -88,7 +91,21 @@ DISTRIBUTIONS = [
      warp.squareToVonMisesFisherPdf,
      dict(DEFAULT_SETTINGS,
          parameters=[
-             ('Concentration', [0, 30, 1])
+             ('Concentration', [0, 100, 10])
+         ])),
+
+    ('Rough fiber distribution', SphericalDomain(),
+     lambda sample, kappa, incl: warp.squareToRoughFiber(
+         sample, [np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))],
+         [1, 0, 0], kappa),
+     lambda v, kappa, incl: warp.squareToRoughFiberPdf(
+         v, [np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))],
+         [1, 0, 0], kappa),
+     dict(DEFAULT_SETTINGS,
+         sample_dim=3,
+         parameters=[
+             ('Concentration', [0, 100, 10]),
+             ('Inclination', [0, 90, 20])
          ]))
 ]
 
@@ -416,7 +433,7 @@ class WarpVisualizer(Screen):
             tbox.setValue("%.2f" % vrange[2])
             self.parameters.append(vrange[2])
 
-            def slider_callback(value, index=index):
+            def slider_callback(value, index=index, tbox=tbox):
                 tbox.setValue("%.2f" % value)
                 self.parameters[index] = value
                 self.refresh()
@@ -530,7 +547,9 @@ class WarpVisualizer(Screen):
             pdf_func=lambda *args: distr[3](
                 *(list(args) + self.parameters)),
             res=settings['res'],
-            ires=settings['ires'])
+            ires=settings['ires'],
+            sample_dim=settings['sample_dim'],
+        )
         self.test_result = self.test.run(0.01)
         self.window.setVisible(False)
 

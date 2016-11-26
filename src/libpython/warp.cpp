@@ -66,5 +66,19 @@ MTS_PY_EXPORT(warp) {
       .def("squareToVonMisesFisherPdf", [](const py::array_t<Float, py::array::c_style> &v, Float kappa) {
               auto closure = [kappa](const Vector3f &v) { return warp::squareToVonMisesFisherPdf(v, kappa); };
               return vectorize(closure)(v);
-           }, py::arg("v"), py::arg("kappa"), DM(warp, squareToVonMisesFisherPdf));
+           }, py::arg("v"), py::arg("kappa"), DM(warp, squareToVonMisesFisherPdf))
+      .def("squareToRoughFiber", [](const py::array_t<Float, py::array::c_style> &sample,
+                                    const Vector3f &wi, const Vector3f &tangent, Float kappa) {
+              auto closure = [wi, tangent, kappa](const Point3f &sample) {
+                  return warp::squareToRoughFiber(sample, wi, tangent, kappa);
+              };
+              return vectorize(closure)(sample);
+           }, py::arg("sample"), py::arg("wi"), py::arg("tangent"), py::arg("kappa"), DM(warp, squareToRoughFiber))
+      .def("squareToRoughFiberPdf", [](const py::array_t<Float, py::array::c_style> &v,
+                                       const Vector3f &wi, const Vector3f &tangent, Float kappa) {
+              auto closure = [wi, tangent, kappa](const Vector3f &v) {
+                  return warp::squareToRoughFiberPdf(v, wi, tangent, kappa);
+              };
+              return vectorize(closure)(v);
+           }, py::arg("v"), py::arg("wi"), py::arg("tangent"), py::arg("kappa"), DM(warp, squareToRoughFiberPdf));
 }
