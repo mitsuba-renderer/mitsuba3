@@ -16,13 +16,14 @@ Vector3f squareToUniformSphere(const Point2f &sample) {
 
 Vector3f squareToUniformHemisphere(const Point2f &sample) {
 #if 0
+    /* Approach 1: standard warping method without concentric disk mapping */
     Float z = sample.y();
     Float tmp = math::safe_sqrt(1.f - z*z);
     Float sinPhi, cosPhi;
     math::sincos(2.f * math::Pi * sample.x(), &sinPhi, &cosPhi);
     return Vector3f(cosPhi * tmp, sinPhi * tmp, z);
 #else
-    /* Via concentric disk, less distortion */
+    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
     Point2f p = squareToUniformDiskConcentric(sample);
     Float z = 1 - simd::squaredNorm(p);
     p *= std::sqrt(z + 1);
@@ -31,6 +32,7 @@ Vector3f squareToUniformHemisphere(const Point2f &sample) {
 }
 
 Vector3f squareToCosineHemisphere(const Point2f &sample) {
+    /* Low-distortion warping technique based on concentric disk mapping */
     Point2f p = squareToUniformDiskConcentric(sample);
     /* Guard against numerical imprecisions */
     Float z = std::max(1e-10f, math::safe_sqrt(1.f - p.x() * p.x() - p.y() * p.y()));
@@ -131,7 +133,7 @@ static Float intervalToTent(Float sample) {
         sample *= 2;
     } else {
         sign = -1;
-        sample = 2 * (sample - 0.5f);
+        sample = 2 - 2 * sample;
     }
 
     return sign * (1 - std::sqrt(sample));
@@ -144,8 +146,7 @@ Point2f squareToTent(const Point2f &sample) {
 Float squareToTentPdf(const Point2f &p) {
     if (p.x() >= -1 && p.x() <= 1 && p.y() >= -1 && p.y() <= 1)
         return (1 - std::abs(p.x())) * (1 - std::abs(p.y()));
-
-    return 0.0;
+    return 0.f;
 }
 
 Float intervalToNonuniformTent(Float a, Float b, Float c, Float sample) {
@@ -163,6 +164,8 @@ Float intervalToNonuniformTent(Float a, Float b, Float c, Float sample) {
 }
 
 Vector3f squareToBeckmann(const Point2f &sample, Float alpha) {
+#if 0
+    /* Approach 1: standard warping method without concentric disk mapping */
     Float sinPhi, cosPhi;
     math::sincos(2.f * math::Pi * sample.x(), &sinPhi, &cosPhi);
 
@@ -171,6 +174,17 @@ Vector3f squareToBeckmann(const Point2f &sample, Float alpha) {
     Float sinThetaM = math::safe_sqrt(1.f - cosThetaM * cosThetaM);
 
     return Vector3f(sinThetaM * cosPhi, sinThetaM * sinPhi, cosThetaM);
+#else
+    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    Point2f p = squareToUniformDiskConcentric(sample);
+    Float r2 = simd::squaredNorm(p);
+
+    Float tanThetaMSqr = -alpha * alpha * std::log(1 - r2);
+    Float cosThetaM = 1.f / math::safe_sqrt(1 + tanThetaMSqr);
+    p *= math::safe_sqrt((1.f - cosThetaM * cosThetaM) / r2);
+
+    return Vector3f(p.x(), p.y(), cosThetaM);
+#endif
 }
 
 Float squareToBeckmannPdf(const Vector3f &m, Float alpha) {
@@ -185,25 +199,43 @@ Float squareToBeckmannPdf(const Vector3f &m, Float alpha) {
 }
 
 Vector3f squareToVonMisesFisher(const Point2f &sample, Float kappa) {
-    /* Stable algorithm for sampling the von Mises Fisher distribution
-       https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
-    assert(kappa >= 0.f);
+	if (kappa == 0)
+		return squareToUniformSphere(sample);
 
-    Float cosTheta;
-    if (kappa == 0.f) {
-        cosTheta = 1.f - 2.f * sample.y();
-    } else if (sample.y() > 0) {
-        cosTheta = 1 + (std::log(sample.y()) + std::log(
-            1 - std::exp(-2*kappa) * ((sample.y()-1) / sample.y()))) / kappa;
-    } else {
-        cosTheta = 1 + std::exp(-2 * kappa) / kappa;
-    }
+    assert(kappa >= 0.f);
+#if 0
+    /* Approach 1: standard warping method without concentric disk mapping */
+#if 0
+    /* Approach 1.1: standard inversion method algorithm for sampling the
+       von Mises Fisher distribution (numerically unstable!) */
+	Float cosTheta = math::fastlog(math::fastexp(-m_kappa) + 2 *
+						sample.y() * std::sinh(m_kappa)) / m_kappa;
+#else
+    /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
+       distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
+    Float sy = std::max(1 - sample.y(), (Float) 1e-6f);
+    Float cosTheta = 1 + std::log(sy +
+        (1 - sy) * std::exp(-2 * kappa)) / kappa;
+#endif
 
     Float sinPhi, cosPhi;
     math::sincos(2.f * math::Pi * sample.x(), &sinPhi, &cosPhi);
 
     Float sinTheta = math::safe_sqrt(1.f - cosTheta * cosTheta);
     return Vector3f(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
+#else
+    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    Point2f p = squareToUniformDiskConcentric(sample);
+    Float r2 = simd::squaredNorm(p);
+    Float sy = std::max(1 - r2, (Float) 1e-6f);
+
+    Float cosTheta = 1 + std::log(sy +
+        (1 - sy) * std::exp(-2 * kappa)) / kappa;
+
+    p *= math::safe_sqrt((1.f - cosTheta * cosTheta) / r2);
+
+    return Vector3f(p.x(), p.y(), cosTheta);
+#endif
 }
 
 Float squareToVonMisesFisherPdf(const Vector3f &v, Float kappa) {
@@ -219,7 +251,7 @@ Float squareToVonMisesFisherPdf(const Vector3f &v, Float kappa) {
 }
 
 Vector3f squareToRoughFiber(const Point3f &sample, const Vector3f &wi_,
-                                  const Vector3f &tangent, Float kappa) {
+                            const Vector3f &tangent, Float kappa) {
     Frame tframe(tangent);
 
     /* Convert to local coordinate frame with Z = fiber tangent */
