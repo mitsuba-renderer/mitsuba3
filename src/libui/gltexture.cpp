@@ -76,7 +76,6 @@ void GLTexture::refresh(const Bitmap *bitmap) {
 
 void GLTexture::bind(int index) {
     glActiveTexture(GL_TEXTURE0 + index);
-    glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, m_id);
     m_index = index;
 }
@@ -105,7 +104,7 @@ void GLTexture::setInterpolation(EInterpolation intp) {
 
 void GLTexture::release() {
     glActiveTexture(GL_TEXTURE0 + m_index);
-    glDisable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 MTS_IMPLEMENT_CLASS(GLTexture, Object)
