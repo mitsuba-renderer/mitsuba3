@@ -73,14 +73,14 @@ struct type_caster<Type, typename std::enable_if<is_simdarray<Type>::value>::typ
 
         buffer_info info = buffer.request();
         if (info.ndim == 1) {
-            if (info.shape[0] != Type::Dimension)
+            if (info.shape[0] != Type::Size)
                 return false;
-            memcpy(value.data(), (Scalar *) info.ptr, Type::Dimension * sizeof(Scalar));
+            memcpy(value.data(), (Scalar *) info.ptr, Type::Size * sizeof(Scalar));
         } else if (info.ndim == 2) {
-            if (!(info.shape[0] == Type::Dimension && info.shape[1] == 1) &&
-                !(info.shape[1] == Type::Dimension && info.shape[0] == 1))
+            if (!(info.shape[0] == Type::Size && info.shape[1] == 1) &&
+                !(info.shape[1] == Type::Size && info.shape[0] == 1))
                 return false;
-            memcpy(value.data(), (Scalar *) info.ptr, Type::Dimension * sizeof(Scalar));
+            memcpy(value.data(), (Scalar *) info.ptr, Type::Size * sizeof(Scalar));
         } else {
             return false;
         }
@@ -102,7 +102,7 @@ struct type_caster<Type, typename std::enable_if<is_simdarray<Type>::value>::typ
             /* Number of dimensions */
             1,
             /* Buffer dimensions */
-            { Type::Dimension },
+            { Type::Size },
             /* Strides (in bytes) for each index */
             { sizeof(Scalar) }
         )).release();
@@ -112,7 +112,7 @@ struct type_caster<Type, typename std::enable_if<is_simdarray<Type>::value>::typ
 
     static PYBIND11_DESCR name() {
         return py::detail::type_descr(_("numpy.ndarray[dtype=") + npy_format_descriptor<Scalar>::name() +
-               _(", shape=(") + _<Type::Dimension>() + _(", 1)]"));
+               _(", shape=(") + _<Type::Size>() + _(", 1)]"));
     }
 
     operator Type*() { return &value; }
@@ -133,7 +133,7 @@ py::array vectorizeImpl(Func&& f, const py::array_t<typename Args::Scalar, py::a
     size_t nElements[] = { (args.ndim() == 2 ? args.shape(0) :
             (args.ndim() == 0 || args.ndim() > 2) ? 0 : 1) ... };
 
-    bool compat[] = { (args.ndim() > 0 ? (args.shape(1) == Args::Dimension) : false)... };
+    bool compat[] = { (args.ndim() > 0 ? (args.shape(1) == Args::Size) : false)... };
 
     size_t count = sizeof...(Args) > 0 ? nElements[0] : 0;
     for (size_t i = 0; i<sizeof...(Args); ++i) {
@@ -143,8 +143,8 @@ py::array vectorizeImpl(Func&& f, const py::array_t<typename Args::Scalar, py::a
     using ReturnScalar = typename Return::Scalar;
 
     py::array_t<ReturnScalar> out(
-        { count, Return::Dimension },
-        { sizeof(ReturnScalar) * Return::Dimension, sizeof(ReturnScalar) });
+        { count, Return::Size },
+        { sizeof(ReturnScalar) * Return::Size, sizeof(ReturnScalar) });
 
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0u, count),

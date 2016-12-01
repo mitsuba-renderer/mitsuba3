@@ -48,12 +48,13 @@ add_library(mitsuba-core-obj OBJECT
   struct.cpp           ${INC_DIR}/struct.h
   bitmap.cpp           ${INC_DIR}/bitmap.h
   warp.cpp             ${INC_DIR}/warp.h
+  qmc.cpp              ${INC_DIR}/qmc.h
 
-  stream.cpp       ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
-  astream.cpp      ${INC_DIR}/astream.h ${INC_DIR}/dstream.h
-  fstream.cpp      ${INC_DIR}/fstream.h
-  mstream.cpp      ${INC_DIR}/mstream.h
-  zstream.cpp      ${INC_DIR}/zstream.h
+  stream.cpp           ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
+  astream.cpp          ${INC_DIR}/astream.h ${INC_DIR}/dstream.h
+  fstream.cpp          ${INC_DIR}/fstream.h
+  mstream.cpp          ${INC_DIR}/mstream.h
+  zstream.cpp          ${INC_DIR}/zstream.h
 )
 
 add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)

@@ -35,9 +35,7 @@ MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Struct);
 MTS_PY_DECLARE(Bitmap);
 MTS_PY_DECLARE(warp);
-
-// libmitsuba-ui
-//MTS_PY_DECLARE(WarpVisualizationWidget);
+MTS_PY_DECLARE(qmc);
 
 PYBIND11_PLUGIN(mitsuba_core_ext) {
     py::module m_("mitsuba_core_ext"); // unused
@@ -78,6 +76,7 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     MTS_PY_IMPORT(Struct);
     MTS_PY_IMPORT(Bitmap);
     MTS_PY_IMPORT(warp);
+    MTS_PY_IMPORT(qmc);
 
     atexit([]() {
         Logger::staticShutdown();

@@ -113,6 +113,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   struct.cpp
   bitmap.cpp
   warp.cpp
+  qmc.cpp
 )
 
 add_mitsuba_python_library(mitsuba_render_ext render
