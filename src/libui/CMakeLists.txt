@@ -19,12 +19,5 @@ target_link_libraries(mitsuba-ui mitsuba-core)
 # Link to NanoGUI
 target_link_libraries(mitsuba-ui nanogui)
 
-set(DEPENDENCIES mitsuba-ui nanogui)
-
-# Copy dependencies into the 'dist' directory
-foreach(dep ${DEPENDENCIES})
-  add_custom_command(
-    TARGET mitsuba-ui
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${dep}> ${CMAKE_BINARY_DIR}/dist)
-endforeach(dep)
+# Copy to 'dist' directory
+add_dist(mitsuba-ui nanogui)

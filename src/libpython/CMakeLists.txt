@@ -5,7 +5,6 @@ include_directories(
   ${TINYFORMAT_INCLUDE_DIRS}
   ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
-  ${HYPOTHESIS_INCLUDE_DIRS}
   ${NANOGUI_INCLUDE_DIRS}
 )
 
@@ -63,18 +62,8 @@ function(add_mitsuba_python_library TARGET_NAME NAME)
     endif()
   endif()
 
-  # Create the 'dist/python' directory
-  add_custom_command(
-    TARGET ${TARGET_NAME}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist/python/mitsuba/${NAME}"
-  )
-
-  # Copy lib${TARGET_NAME} binary to the 'dist/python' directory
-  add_custom_command(
-    TARGET ${TARGET_NAME}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${CMAKE_BINARY_DIR}/dist/python/mitsuba/${NAME})
+  # Copy lib${TARGET_NAME} binary to the 'dist/python/mitsuba/${NAME}' directory
+  add_dist(python/mitsuba/${NAME}/${TARGET_NAME})
 
   if (APPLE)
     set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path/..")
@@ -126,16 +115,8 @@ add_mitsuba_python_library(mitsuba_ui_ext ui
   mitsuba_ui_ext.cpp
 )
 
-cmake_policy(SET CMP0026 OLD)
-get_target_property(fname nanogui-python LOCATION_RELEASE)
-get_filename_component(fname ${fname} NAME)
-
-add_custom_command(
-  OUTPUT ${CMAKE_BINARY_DIR}/dist/python/${fname}
-  DEPENDS $<TARGET_FILE:nanogui-python>
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nanogui-python> ${CMAKE_BINARY_DIR}/dist/python/${fname}
-)
-add_custom_target(copy-nanogui-python ALL DEPENDS ${CMAKE_BINARY_DIR}/dist/python/${fname})
+# Copy nanogui python library to 'dist' folder
+add_dist(python/nanogui-python)
 
 # Compute compilation flags for 'mkdoc' target, which extracts docstrings from the C++ header files
 string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
@@ -166,5 +147,3 @@ endif()
 target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core)
 target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render)
 target_link_libraries(mitsuba_ui_ext PRIVATE mitsuba-core mitsuba-render mitsuba-ui)
-
-add_custom_target(copy_python_files ALL DEPENDS ${PYTHON_FILES_OUT})

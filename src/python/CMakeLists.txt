@@ -6,7 +6,7 @@ foreach(FNAME ${PYTHON_FILES})
   add_custom_command(
     OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
     COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE})
-  list(APPEND PYTHON_FILES_OUT ${OUT_FILE})
+  set(PYTHON_OUTPUT ${PYTHON_OUTPUT} ${OUT_FILE})
 endforeach()
 
-add_custom_target(copy-python-modules ALL DEPENDS ${PYTHON_FILES_OUT})
+add_custom_target(python-copy ALL DEPENDS ${PYTHON_OUTPUT})

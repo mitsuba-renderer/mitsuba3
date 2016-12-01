@@ -27,7 +27,5 @@ target_link_libraries(mitsuba-render PRIVATE tbb)
 # Link to libcore
 target_link_libraries(mitsuba-render PUBLIC mitsuba-core)
 
-add_custom_command(
-  TARGET mitsuba-render
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mitsuba-render> ${CMAKE_BINARY_DIR}/dist)
+# Copy to 'dist' directory
+add_dist(mitsuba-render)

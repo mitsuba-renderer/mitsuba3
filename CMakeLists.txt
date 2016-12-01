@@ -264,27 +264,48 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+# Schedule a file to be copied to the 'dist' directory
+function(add_dist)
+  set(MITSUBA_DIST ${MITSUBA_DIST} ${ARGV} CACHE INTERNAL "")
+endfunction()
+
 # Function for creating Mitsuba plugins
 function(add_plugin)
-  list(GET ARGV 0 target_name)
+  list(GET ARGV 0 TARGET)
   list(REMOVE_AT ARGV 0)
-  add_library(${target_name}-obj OBJECT ${ARGV})
-  add_library(${target_name} SHARED $<TARGET_OBJECTS:${target_name}-obj>)
-  set_property(TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
-  set_property(TARGET ${target_name}-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
-  set_target_properties(${target_name} PROPERTIES PREFIX "")
-  target_link_libraries(${target_name} PRIVATE mitsuba-core mitsuba-render)
-  add_custom_command(
-    TARGET ${target_name}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${target_name}> ${CMAKE_BINARY_DIR}/dist/plugins)
+  add_library(${TARGET}-obj OBJECT ${ARGV})
+  add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-obj>)
+  set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
+  set_property(TARGET ${TARGET}-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+  set_target_properties(${TARGET} PROPERTIES PREFIX "")
+  target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render)
+  add_dist(plugins/${TARGET})
 endfunction(add_plugin)
+
+set(MITSUBA_DIST "" CACHE INTERNAL "")
 
 # For the Mitsuba plugins and libraries, don't set a build/install rpath
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH "")
 
-enable_testing()
-
 # Register the Mitsuba codebase
 add_subdirectory(src)
+
+# Copy dependencies into the 'dist' directory
+cmake_policy(SET CMP0026 OLD)
+foreach(ITEM ${MITSUBA_DIST})
+  get_filename_component(TARGET_NAME ${ITEM} NAME)
+  get_filename_component(TARGET_DIRECTORY ${ITEM} DIRECTORY)
+  get_target_property(TARGET_FILENAME ${TARGET_NAME} LOCATION)
+  get_filename_component(TARGET_FILENAME ${TARGET_FILENAME} NAME)
+  if (TARGET_DIRECTORY STREQUAL "")
+    set(TARGET_DIRECTORY ".")
+  endif()
+  set(OUTPUT_FILE ${CMAKE_BINARY_DIR}/dist/${TARGET_DIRECTORY}/${TARGET_FILENAME})
+  add_custom_command(
+    OUTPUT ${OUTPUT_FILE} DEPENDS ${TARGET_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_FILE})
+  list(APPEND MITSUBA_DIST_OUT ${OUTPUT_FILE})
+endforeach()
+
+add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})

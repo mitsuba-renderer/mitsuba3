@@ -76,22 +76,9 @@ endif()
 # Link to libpng and zlib (either the system version or a version built via cmake)
 target_link_libraries(mitsuba-core PRIVATE ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
 
-# Create the 'dist' and 'dist/plugins' directories
-add_custom_command(
-  TARGET mitsuba-core
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist/plugins"
-)
-
-set(DEPENDENCIES mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq asmjit)
+# Copy to 'dist' directory
+add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq asmjit)
 if (WIN32)
-  list(APPEND DEPENDENCIES png16 zlib jpeg)
+  add_dist(png16 zlib jpeg)
 endif()
 
-# Copy dependencies into the 'dist' directory
-foreach(dep ${DEPENDENCIES})
-  add_custom_command(
-    TARGET mitsuba-core
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${dep}> ${CMAKE_BINARY_DIR}/dist)
-endforeach(dep)
