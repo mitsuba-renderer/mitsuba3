@@ -71,7 +71,7 @@ DISTRIBUTIONS = [
             np.exp(np.log(0.05) * (1 - value) + np.log(1) * value)),
      dict(DEFAULT_SETTINGS,
          parameters=[
-             ('Roughness', [0, 1, 0.2])
+             ('Roughness', [0, 1, 0.6])
          ])),
 
     ('von Mises-Fisher distribution', SphericalDomain(),

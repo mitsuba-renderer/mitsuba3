@@ -130,8 +130,10 @@ class ChiSquareTest(object):
         )[0] / self.sample_count
 
         # A few sanity checks
-        if not (np.all(xy >= self.bounds[:, 0]) and
-                np.all(xy <= self.bounds[:, 1])):
+        eps = 1e-4
+        r = self.bounds[:, 1] - self.bounds[:, 0]
+        if not np.all((xy >= self.bounds[:, 0] - eps*r) &
+                      (xy <= self.bounds[:, 1] + eps*r)):
             self._log("Encountered samples outside of the specified domain")
             self.fail = True
 

@@ -26,7 +26,7 @@ endif()
 # A single command to compile and run the tests
 add_custom_target(pytest 
   COMMAND ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/dist" "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python" ${PYTHON_EXECUTABLE} -m pytest -n ${PROC_COUNT} -rws ${CMAKE_CURRENT_SOURCE_DIR}
-  DEPENDS mitsuba-python 
+  DEPENDS mitsuba-python python-copy
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist
   USES_TERMINAL
 )
