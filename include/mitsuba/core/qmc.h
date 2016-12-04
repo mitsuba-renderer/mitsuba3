@@ -1,9 +1,9 @@
 #pragma once
 
-#include <mitsuba/mitsuba.h>
-#include <simdarray/array.h>
+#include <mitsuba/core/vector.h>
 
 NAMESPACE_BEGIN(mitsuba)
+NAMESPACE_BEGIN(qmc)
 
 /**
  * \brief Calculate the radical inverse function
@@ -22,8 +22,11 @@ NAMESPACE_BEGIN(mitsuba)
  *     Denotes the index that should be mapped through the radical inverse
  *     function
  */
-extern MTS_EXPORT_CORE Float radicalInverse(int primeBase, uint64_t index);
+extern MTS_EXPORT_CORE Float radicalInverse(size_t primeBase, uint64_t index);
 
-extern MTS_EXPORT_CORE simd::Array<Float, 4> radicalInverseVectorized(int primeBase, simd::Array<uint64_t, 4> index);
+/// Vectorized implementation of \ref radicalInverse()
+extern MTS_EXPORT_CORE FloatPacket radicalInverse(size_t primeBase,
+                                                  UInt64Packet index);
 
+NAMESPACE_END(qmc)
 NAMESPACE_END(mitsuba)

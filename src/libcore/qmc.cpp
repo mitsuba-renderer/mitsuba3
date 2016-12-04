@@ -3,6 +3,7 @@
 #include <mitsuba/core/math.h>
 
 NAMESPACE_BEGIN(mitsuba)
+NAMESPACE_BEGIN(qmc)
 
 /* Precomputed magic constants for efficient division by a constant */
 struct Divisor {
@@ -1055,9 +1056,10 @@ alignas(16) Divisor primeDivisors[1024] = {
     { 8161, 12, 0, Float(1.22534003185884081627e-04), 0x00f8f129a05350b7ULL }
 };
 
-Float radicalInverse(int primeBase, uint64_t index) {
+Float radicalInverse(size_t primeBase, uint64_t index) {
     static_assert(sizeof(Divisor) == 16, "Divisor data structure is not packed!");
-    Assert(primeBase >= 0 && primeBase < 1024);
+    if (unlikely(primeBase >= 1024))
+        Throw("radicalInverse(): out of bounds (prime base too large)");
 
     const Divisor div = primeDivisors[primeBase];
 
@@ -1075,35 +1077,32 @@ Float radicalInverse(int primeBase, uint64_t index) {
     return std::min(math::OneMinusEpsilon, (Float) value * factor);
 }
 
-simd::Array<Float, 4> radicalInverseVectorized(int primeBase, simd::Array<uint64_t, 4> index) {
+FloatPacket radicalInverse(size_t primeBase, UInt64Packet index) {
     static_assert(sizeof(Divisor) == 16, "Divisor data structure is not packed!");
+    if (unlikely(primeBase >= 1024))
+        Throw("radicalInverse(): out of bounds (prime base too large)");
 
-    using FloatArray = simd::Array<Float, 4>;
-    using UInt64Array = simd::Array<uint64_t, 4>;
-    using UInt32Array = simd::Array<uint32_t, 4>;
-
-    Assert(primeBase >= 0 && primeBase < 1024);
-
-    UInt64Array::Mask mask = index != UInt64Array::Zero();
+    UInt64Packet::Mask mask = index != UInt64Packet::Zero();
     const Divisor div = primeDivisors[primeBase];
 
-    UInt64Array value = 0;
-    FloatArray factor = FloatArray::Constant(1);
-    FloatArray recip = FloatArray::Constant(div.recip);
+    UInt64Packet value = 0;
+    FloatPacket factor = FloatPacket::Constant(1);
+    FloatPacket recip = FloatPacket::Constant(div.recip);
 
     while (simd::any(mask)) {
-        UInt64Array next = div(index);
+        UInt64Packet next = div(index);
         value = value * div.divisor;
-        factor = factor * (recip & simd::cast<UInt32Array>(UInt64Array(mask)));
+        factor = factor * (recip & simd::cast<UInt32Packet>(UInt64Packet(mask)));
         value = value + (index - next*div.divisor) & mask;
         index = next;
-        mask = index != UInt64Array::Zero();
+        mask = index != UInt64Packet::Zero();
     }
 
     return simd::min(
-        simd::cast<FloatArray>(value) * factor,
-        FloatArray::Constant(math::OneMinusEpsilon)
+        simd::cast<FloatPacket>(value) * factor,
+        FloatPacket::Constant(math::OneMinusEpsilon)
     );
 }
 
+NAMESPACE_END(qmc)
 NAMESPACE_END(mitsuba)

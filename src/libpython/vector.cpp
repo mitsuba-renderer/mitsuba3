@@ -7,6 +7,7 @@ MTS_PY_EXPORT(vector) {
 #else
     m.attr("float_dtype") = py::dtype("d");
 #endif
+    m.attr("PacketSize") = py::cast(PacketSize);
 
     m.def("coordinateSystem", &coordinateSystem, DM(coordinateSystem));
 }

@@ -5,6 +5,26 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+using AlignedAllocator = simd::AlignedAllocator<>;
+
+// =============================================================
+//! @{ \name Packet data types for vectorization
+// =============================================================
+
+/* Packet data types for vectorization */
+constexpr size_t PacketSize = simd::Array<Float>::Size;
+
+using FloatPacket  = simd::Array<Float, PacketSize>;
+using UInt64Packet = simd::Array<uint64_t, PacketSize>;
+using UInt32Packet = simd::Array<uint32_t, PacketSize>;
+
+//! @}
+// =============================================================
+
+// =============================================================
+//! @{ \name Elementary vector, point, and normal data types
+// =============================================================
+
 template <typename> struct TNormal;
 
 /* ===================================================================
@@ -63,6 +83,9 @@ struct TNormal : TVector<Scalar, 3> {
     using Base::Base;
 };
 
+//! @}
+// =============================================================
+
 /// Complete the set {a} to an orthonormal basis {a, b, c}
 inline std::pair<Vector3f, Vector3f> coordinateSystem(const Vector3f &n) {
     Assert(std::abs(norm(n) - 1) < 1e-5f);
@@ -84,7 +107,5 @@ inline std::pair<Vector3f, Vector3f> coordinateSystem(const Vector3f &n) {
         );
     }
 }
-
-using AlignedAllocator = simd::AlignedAllocator<>;
 
 NAMESPACE_END(mitsuba)

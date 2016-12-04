@@ -3388,9 +3388,9 @@ static const char *__doc_mitsuba_operator_Matrix = R"doc(Convert to an Eigen vec
 
 static const char *__doc_mitsuba_operator_Matrix_2 = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
@@ -3401,6 +3401,26 @@ static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
+
+static const char *__doc_mitsuba_qmc_radicalInverse =
+R"doc(Calculate the radical inverse function
+
+This function is used as a building block to construct Halton and
+Hammersley sequences. Roughly, it computes a b-ary representation of
+the input value ``index``, mirrors it along the decimal point, and
+returns the resulting fractional value. The implementation here uses
+prime numbers for 'b'.
+
+Parameter ``primeBase``:
+    Selects the n-th prime that is used as a base when computing the
+    radical inverse function (0 corresponds to 2, 1->3, 2->5, etc.).
+    The value specified here must be between 0 and 1023.
+
+Parameter ``index``:
+    Denotes the index that should be mapped through the radical
+    inverse function)doc";
+
+static const char *__doc_mitsuba_qmc_radicalInverse_2 = R"doc(Vectorized implementation of radicalInverse())doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
