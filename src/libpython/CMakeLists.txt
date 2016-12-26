@@ -76,9 +76,6 @@ add_mitsuba_python_library(mitsuba_core_ext core
   docstr.h
   mitsuba_core_ext.cpp
 
-  # ext
-  pcg32.cpp
-
   # libcore
   appender.cpp
   atomic.cpp
@@ -89,7 +86,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   util.cpp
   object.cpp
   properties.cpp
-  python.h
+  random.cpp
   stream.cpp
   thread.cpp
   argparser.cpp

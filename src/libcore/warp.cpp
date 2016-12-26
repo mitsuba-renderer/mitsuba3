@@ -199,24 +199,24 @@ Float squareToBeckmannPdf(const Vector3f &m, Float alpha) {
 }
 
 Vector3f squareToVonMisesFisher(const Point2f &sample, Float kappa) {
-	if (kappa == 0)
-		return squareToUniformSphere(sample);
+    if (kappa == 0)
+        return squareToUniformSphere(sample);
 
     assert(kappa >= 0.f);
 #if 0
     /* Approach 1: standard warping method without concentric disk mapping */
-#if 0
-    /* Approach 1.1: standard inversion method algorithm for sampling the
-       von Mises Fisher distribution (numerically unstable!) */
-	Float cosTheta = math::fastlog(math::fastexp(-m_kappa) + 2 *
-						sample.y() * std::sinh(m_kappa)) / m_kappa;
-#else
-    /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
-       distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
-    Float sy = std::max(1 - sample.y(), (Float) 1e-6f);
-    Float cosTheta = 1 + std::log(sy +
-        (1 - sy) * std::exp(-2 * kappa)) / kappa;
-#endif
+    #if 0
+        /* Approach 1.1: standard inversion method algorithm for sampling the
+           von Mises Fisher distribution (numerically unstable!) */
+        Float cosTheta = std::log(std::exp(-m_kappa) + 2 *
+                            sample.y() * std::sinh(m_kappa)) / m_kappa;
+    #else
+        /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
+           distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
+        Float sy = std::max(1 - sample.y(), (Float) 1e-6f);
+        Float cosTheta = 1 + std::log(sy +
+            (1 - sy) * std::exp(-2 * kappa)) / kappa;
+    #endif
 
     Float sinPhi, cosPhi;
     math::sincos(2.f * math::Pi * sample.x(), &sinPhi, &cosPhi);

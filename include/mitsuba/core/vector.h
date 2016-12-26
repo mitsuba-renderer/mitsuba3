@@ -14,9 +14,11 @@ using AlignedAllocator = simd::AlignedAllocator<>;
 /* Packet data types for vectorization */
 constexpr size_t PacketSize = simd::Array<Float>::Size;
 
-using FloatPacket  = simd::Array<Float, PacketSize>;
-using UInt64Packet = simd::Array<uint64_t, PacketSize>;
-using UInt32Packet = simd::Array<uint32_t, PacketSize>;
+using FloatPacket   = simd::Array<Float,    PacketSize>;
+using Float32Packet = simd::Array<float,    PacketSize>;
+using Float64Packet = simd::Array<double,   PacketSize>;
+using UInt64Packet  = simd::Array<uint64_t, PacketSize>;
+using UInt32Packet  = simd::Array<uint32_t, PacketSize>;
 
 //! @}
 // =============================================================

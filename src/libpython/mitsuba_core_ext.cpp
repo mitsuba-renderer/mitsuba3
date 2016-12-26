@@ -5,12 +5,10 @@
 #include <mitsuba/core/fresolver.h>
 #include "python.h"
 
-// ext
-MTS_PY_DECLARE(pcg32);
-
 // libmitsuba-core
 MTS_PY_DECLARE(filesystem);
 MTS_PY_DECLARE(atomic);
+MTS_PY_DECLARE(random);
 MTS_PY_DECLARE(util);
 MTS_PY_DECLARE(math);
 MTS_PY_DECLARE(xml);
@@ -46,12 +44,10 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     Thread::staticInitialization();
     Logger::staticInitialization();
 
-    // ext
-    MTS_PY_IMPORT(pcg32);
-
     // libmitsuba-core
     MTS_PY_IMPORT(filesystem);
     MTS_PY_IMPORT(atomic);
+    MTS_PY_IMPORT(random);
     MTS_PY_IMPORT(util);
     MTS_PY_IMPORT(math);
     MTS_PY_IMPORT(xml);

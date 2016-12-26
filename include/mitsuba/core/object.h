@@ -6,7 +6,27 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Reference counted object base class
+/**
+ * \brief Object base class with builtin reference counting
+ *
+ * This class (in conjunction with the 'ref' reference counter) constitutes the
+ * foundation of an efficient reference-counted object hierarchy. The
+ * implementation here is an alternative to standard mechanisms for reference
+ * counting such as ``std::shared_ptr`` from the STL.
+ *
+ * Why not simply use ``std::shared_ptr``? To be spec-compliant, such shared
+ * pointers must associate a special record with every instance, which stores
+ * at least two counters plus a deletion function. Allocating this record
+ * naturally incurs further overheads to maintain data structures within the
+ * memory allocator. In addition to this, the size of an individual
+ * ``shared_ptr`` references is at least two data words. All of this quickly
+ * adds up and leads to significant overheads for large collections of
+ * instances, hence the need for an alternative in Mitsuba.
+ *
+ * In contrast, the ``Object`` class allows for a highly efficient
+ * implementation that only adds 32 bits to the base object (for the counter)
+ * and has no overhead for references.
+ */
 class MTS_EXPORT_CORE Object {
 public:
     /// Default constructor
@@ -16,7 +36,7 @@ public:
     Object(const Object &) { }
 
     /// Return the current reference count
-    int getRefCount() const { return m_refCount; };
+    int refCount() const { return m_refCount; };
 
     /// Increase the object's reference count by one
     void incRef() const { ++m_refCount; }

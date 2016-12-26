@@ -11,7 +11,7 @@
 #include <mitsuba/core/object.h>
 #include <simdarray/array.h>
 
-PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>);
+PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 
 #define D(...) DOC(__VA_ARGS__)
 #define DM(...) DOC(mitsuba, __VA_ARGS__)

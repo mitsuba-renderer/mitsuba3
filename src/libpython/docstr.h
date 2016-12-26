@@ -1284,7 +1284,28 @@ static const char *__doc_mitsuba_NamedReference_operator_eq = R"doc()doc";
 
 static const char *__doc_mitsuba_NamedReference_operator_ne = R"doc()doc";
 
-static const char *__doc_mitsuba_Object = R"doc(Reference counted object base class)doc";
+static const char *__doc_mitsuba_Object =
+R"doc(Object base class with builtin reference counting
+
+This class (in conjunction with the 'ref' reference counter)
+constitutes the foundation of an efficient reference-counted object
+hierarchy. The implementation here is an alternative to standard
+mechanisms for reference counting such as ``std::shared_ptr`` from the
+STL.
+
+Why not simply use ``std::shared_ptr``? To be spec-compliant, such
+shared pointers must associate a special record with every instance,
+which stores at least two counters plus a deletion function.
+Allocating this record naturally incurs further overheads to maintain
+data structures within the memory allocator. In addition to this, the
+size of an individual ``shared_ptr`` references is at least two data
+words. All of this quickly adds up and leads to significant overheads
+for large collections of instances, hence the need for an alternative
+in Mitsuba.
+
+In contrast, the ``Object`` class allows for a highly efficient
+implementation that only adds 32 bits to the base object (for the
+counter) and has no overhead for references.)doc";
 
 static const char *__doc_mitsuba_Object_Object = R"doc(Default constructor)doc";
 
@@ -1303,11 +1324,11 @@ R"doc(Decrease the reference count of the object and possibly deallocate it.
 The object will automatically be deallocated once the reference count
 reaches zero.)doc";
 
-static const char *__doc_mitsuba_Object_getRefCount = R"doc(Return the current reference count)doc";
-
 static const char *__doc_mitsuba_Object_incRef = R"doc(Increase the object's reference count by one)doc";
 
 static const char *__doc_mitsuba_Object_m_refCount = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_refCount = R"doc(Return the current reference count)doc";
 
 static const char *__doc_mitsuba_Object_toString =
 R"doc(Return a human-readable string representation of the object's
@@ -3388,9 +3409,9 @@ static const char *__doc_mitsuba_operator_Matrix = R"doc(Convert to an Eigen vec
 
 static const char *__doc_mitsuba_operator_Matrix_2 = R"doc(Convert to an Eigen vector (definition in transform.h))doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
@@ -3401,6 +3422,52 @@ static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage =
+R"doc(Stores scrambling permutations for Van Der Corput-type sequences with
+prime bases.)doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_PermutationStorage =
+R"doc(Create new permutations
+
+Parameter ``scramble``:
+    Selects the desired permutation type, where ``-1`` denotes the
+    Faure permutations; any other number causes a pseudorandom
+    permutation to be built seeded by the value of ``scramble``.)doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_class = R"doc()doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_computeFaurePermutations =
+R"doc(Compute the Faure permutations using dynamic programming
+
+For reference, see "Good permutations for extreme discrepancy" by
+Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.)doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_inversePermutation =
+R"doc(Return the inverse permutation corresponding to the given prime number
+basis)doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_invertPermutation = R"doc(Invert one of the permutations)doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_m_invPermutations = R"doc()doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_m_invStorage = R"doc()doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_m_permutations = R"doc()doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_m_scramble = R"doc()doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_m_storage = R"doc()doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_permutation = R"doc(Return the permutation corresponding to the given prime number basis)doc";
+
+static const char *__doc_mitsuba_qmc_PermutationStorage_scramble = R"doc(Return the original scramble value)doc";
+
+static const char *__doc_mitsuba_qmc_primeBase =
+R"doc(Returns the n-th prime number from a lookup table
+
+These prime numbers are used as bases in the radical inverse function
+implementation. ``index`` must be less than or equal to 1024.)doc";
 
 static const char *__doc_mitsuba_qmc_radicalInverse =
 R"doc(Calculate the radical inverse function
@@ -3421,6 +3488,17 @@ Parameter ``index``:
     inverse function)doc";
 
 static const char *__doc_mitsuba_qmc_radicalInverse_2 = R"doc(Vectorized implementation of radicalInverse())doc";
+
+static const char *__doc_mitsuba_qmc_scrambledRadicalInverse =
+R"doc(Calculate a scrambled radical inverse function
+
+This function is used as a building block to construct permuted Halton
+and Hammersley sequence variants. It works like the normal radical
+inverse function radicalInverse(), except that every digit is run
+through an extra scrambling permutation specified as array of size
+``base``.)doc";
+
+static const char *__doc_mitsuba_qmc_scrambledRadicalInverse_2 = R"doc(Vectorized implementation of scrambledRadicalInverse())doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -3475,6 +3553,104 @@ static const char *__doc_mitsuba_ref_ref_2 = R"doc(Construct a reference from a 
 static const char *__doc_mitsuba_ref_ref_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
+
+static const char *__doc_mitsuba_sampleTEA32 =
+R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny
+Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
+
+For details, refer to "GPU Random Numbers via the Tiny Encryption
+Algorithm" by Fahad Zafar, Marc Olano, and Aaron Curtis.
+
+Parameter ``v0``:
+    First input value to be encrypted (could be the sample index)
+
+Parameter ``v1``:
+    Second input value to be encrypted (e.g. the requested random
+    number dimension)
+
+Parameter ``rounds``:
+    How many rounds should be executed? The default for random number
+    generation is 4.
+
+Returns:
+    A uniformly distributed 64-bit integer)doc";
+
+static const char *__doc_mitsuba_sampleTEA32_2 = R"doc(Vectorized implementation of sampleTEA32())doc";
+
+static const char *__doc_mitsuba_sampleTEA64 =
+R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny
+Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
+
+For details, refer to "GPU Random Numbers via the Tiny Encryption
+Algorithm" by Fahad Zafar, Marc Olano, and Aaron Curtis.
+
+Parameter ``v0``:
+    First input value to be encrypted (could be the sample index)
+
+Parameter ``v1``:
+    Second input value to be encrypted (e.g. the requested random
+    number dimension)
+
+Parameter ``rounds``:
+    How many rounds should be executed? The default for random number
+    generation is 4.
+
+Returns:
+    A uniformly distributed 64-bit integer)doc";
+
+static const char *__doc_mitsuba_sampleTEA64_2 = R"doc(Vectorized implementation of sampleTEA64())doc";
+
+static const char *__doc_mitsuba_sampleTEADouble =
+R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny
+Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
+
+This function uses sampleTEA to return single precision floating point
+numbers on the interval ``[0, 1)``
+
+Parameter ``v0``:
+    First input value to be encrypted (could be the sample index)
+
+Parameter ``v1``:
+    Second input value to be encrypted (e.g. the requested random
+    number dimension)
+
+Parameter ``rounds``:
+    How many rounds should be executed? The default for random number
+    generation is 4.
+
+Returns:
+    A uniformly distributed floating point number on the interval
+    ``[0, 1)``)doc";
+
+static const char *__doc_mitsuba_sampleTEADouble_2 = R"doc(Vectorized implementation of sampleTEADouble)doc";
+
+static const char *__doc_mitsuba_sampleTEAFloat = R"doc(Alias to sampleTEASingle or sampleTEADouble based on compilation flags)doc";
+
+static const char *__doc_mitsuba_sampleTEAFloat_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_sampleTEASingle =
+R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny
+Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
+
+This function uses sampleTEA to return single precision floating point
+numbers on the interval ``[0, 1)``
+
+Parameter ``v0``:
+    First input value to be encrypted (could be the sample index)
+
+Parameter ``v1``:
+    Second input value to be encrypted (e.g. the requested random
+    number dimension)
+
+Parameter ``rounds``:
+    How many rounds should be executed? The default for random number
+    generation is 4.
+
+Returns:
+    A uniformly distributed floating point number on the interval
+    ``[0, 1)``)doc";
+
+static const char *__doc_mitsuba_sampleTEASingle_2 = R"doc(Vectorized implementation of sampleTEASingle)doc";
 
 static const char *__doc_mitsuba_string_endsWith = R"doc(Check if the given string ends with a specified suffix)doc";
 
