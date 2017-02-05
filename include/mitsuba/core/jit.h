@@ -21,10 +21,10 @@ struct MTS_EXPORT_CORE Jit {
      * processor supports all instruction sets which were selected at compile
      * time. If not, the application is terminated via \c abort().
      */
-    static void staticInitialization();
+    static void static_initialization();
 
     /// Release all memory used by JIT-compiled routines
-    static void staticShutdown();
+    static void static_shutdown();
 
     static Jit *getInstance();
 

@@ -5,17 +5,17 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-void Object::decRef(bool dealloc) const noexcept {
-    --m_refCount;
-    if (m_refCount == 0 && dealloc) {
+void Object::dec_ref(bool dealloc) const noexcept {
+    --m_ref_count;
+    if (m_ref_count == 0 && dealloc) {
         delete this;
-    } else if (m_refCount < 0) {
+    } else if (m_ref_count < 0) {
         fprintf(stderr, "Internal error: Object reference count < 0!\n");
         abort();
     }
 }
 
-std::string Object::toString() const {
+std::string Object::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << (void *) this << "]";
     return oss.str();
@@ -24,7 +24,7 @@ std::string Object::toString() const {
 Object::~Object() { }
 
 std::ostream& operator<<(std::ostream &os, const Object *object) {
-    os << object->toString();
+    os << object->to_string();
     return os;
 }
 

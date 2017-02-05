@@ -6,18 +6,18 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 NAMESPACE_BEGIN(detail)
-void registerClass(const Class *class_);
+void register_class(const Class *class_);
 void cleanup();
 NAMESPACE_END(detail)
 NAMESPACE_END(xml)
 
 static std::map<std::string, Class *> *__classes;
-bool Class::m_isInitialized = false;
+bool Class::m_is_initialized = false;
 const Class *m_class = nullptr;
 
 Class::Class(const std::string &name, const std::string &parent, bool abstract,
              ConstructFunctor constr, UnserializeFunctor unser)
-    : m_name(name), m_parentName(parent), m_abstract(abstract),
+    : m_name(name), m_parent_name(parent), m_abstract(abstract),
       m_constr(constr), m_unser(unser) {
 
     if (!__classes)
@@ -27,10 +27,10 @@ Class::Class(const std::string &name, const std::string &parent, bool abstract,
 
     /* Also register new abstract classes with the XML parser */
     if (abstract || name == "Scene" /* Special case for 'Scene' */)
-        xml::detail::registerClass(this);
+        xml::detail::register_class(this);
 }
 
-const Class *Class::forName(const std::string &name) {
+const Class *Class::for_name(const std::string &name) {
     auto it = __classes->find(name);
     if (it != __classes->end())
         return it->second;
@@ -38,20 +38,20 @@ const Class *Class::forName(const std::string &name) {
     return nullptr;
 }
 
-bool Class::derivesFrom(const Class *class_) const {
-    const Class *mClass = this;
+bool Class::derives_from(const Class *arg) const {
+    const Class *class_ = this;
 
-    while (mClass) {
-        if (class_ == mClass)
+    while (class_) {
+        if (arg == class_)
             return true;
-        mClass = mClass->parent();
+        class_ = class_->parent();
     }
 
     return false;
 }
 
-void Class::initializeOnce(Class *class_) {
-    const std::string &base = class_->m_parentName;
+void Class::initialize_once(Class *class_) {
+    const std::string &base = class_->m_parent_name;
 
     if (!base.empty()) {
         if (__classes->find(base) != __classes->end()) {
@@ -79,18 +79,18 @@ ref<Object> Class::unserialize(Stream *stream) const {
     return m_unser(stream);
 }
 
-void Class::staticInitialization() {
+void Class::static_initialization() {
     for (auto &pair : *__classes)
-        initializeOnce(pair.second);
-    m_isInitialized = true;
+        initialize_once(pair.second);
+    m_is_initialized = true;
 }
 
-void Class::staticShutdown() {
+void Class::static_shutdown() {
     for (auto &pair : *__classes)
         delete pair.second;
     delete __classes;
     __classes = nullptr;
-    m_isInitialized = false;
+    m_is_initialized = false;
     xml::detail::cleanup();
 }
 

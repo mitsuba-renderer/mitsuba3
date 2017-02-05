@@ -25,23 +25,23 @@ static void PyLog(ELogLevel level, const std::string &msg) {
 
 MTS_PY_EXPORT(Logger) {
     MTS_PY_CLASS(Logger, Object)
-        .def(py::init<ELogLevel>(), DM(Logger, Logger))
-        .mdef(Logger, logProgress, py::arg("progress"), py::arg("name"),
-              py::arg("formatted"), py::arg("eta"), py::arg("ptr") = py::none())
-        .mdef(Logger, setLogLevel)
-        .mdef(Logger, logLevel)
-        .mdef(Logger, setErrorLevel)
-        .mdef(Logger, errorLevel)
-        .mdef(Logger, addAppender, py::keep_alive<1, 2>())
-        .mdef(Logger, removeAppender)
-        .mdef(Logger, clearAppenders)
-        .mdef(Logger, appenderCount)
-        .def("appender", (Appender * (Logger::*)(size_t)) &Logger::appender, DM(Logger, appender))
-        .def("formatter", (Formatter * (Logger::*)()) &Logger::formatter, DM(Logger, formatter))
-        .mdef(Logger, setFormatter, py::keep_alive<1, 2>())
-        .mdef(Logger, readLog);
+        .def(py::init<ELogLevel>(), D(Logger, Logger))
+        .mdef(Logger, log_progress, "progress"_a, "name"_a,
+              "formatted"_a, "eta"_a, "ptr"_a = py::none())
+        .mdef(Logger, set_log_level)
+        .mdef(Logger, log_level)
+        .mdef(Logger, set_error_level)
+        .mdef(Logger, error_level)
+        .mdef(Logger, add_appender, py::keep_alive<1, 2>())
+        .mdef(Logger, remove_appender)
+        .mdef(Logger, clear_appenders)
+        .mdef(Logger, appender_count)
+        .def("appender", (Appender * (Logger::*)(size_t)) &Logger::appender, D(Logger, appender))
+        .def("formatter", (Formatter * (Logger::*)()) &Logger::formatter, D(Logger, formatter))
+        .mdef(Logger, set_formatter, py::keep_alive<1, 2>())
+        .mdef(Logger, read_log);
 
-    py::enum_<ELogLevel>(m, "ELogLevel", DM(ELogLevel))
+    py::enum_<ELogLevel>(m, "ELogLevel", D(ELogLevel))
         .value("ETrace", ETrace)
         .value("EDebug", EDebug)
         .value("EInfo", EInfo)
@@ -49,5 +49,5 @@ MTS_PY_EXPORT(Logger) {
         .value("EError", EError)
         .export_values();
 
-    m.def("Log", &PyLog, py::arg("level"), py::arg("msg"));
+    m.def("Log", &PyLog, "level"_a, "msg"_a);
 }

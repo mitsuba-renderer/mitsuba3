@@ -48,13 +48,13 @@ public:
         const Arg *next() const { return m_next; }
 
         /// Return the extra argument associated with this argument
-        const std::string &asString() const { return m_value; }
+        const std::string &as_string() const { return m_value; }
 
         /// Return the extra argument associated with this argument
-        int asInt() const;
+        int as_int() const;
 
         /// Return the extra argument associated with this argument
-        Float asFloat() const;
+        Float as_float() const;
 
         /// Release all memory
         ~Arg() { delete m_next; }
@@ -127,11 +127,11 @@ public:
     }
 
     /// Return the name of the invoked application executable
-    const std::string &executableName() { return m_executableName; }
+    const std::string &executable_name() { return m_executable_name; }
 
 private:
     std::vector<Arg *> m_args;
-    std::string m_executableName;
+    std::string m_executable_name;
 };
 
 NAMESPACE_END(mitsuba)

@@ -14,17 +14,17 @@ NAMESPACE_BEGIN(mitsuba)
 
 struct Logger::LoggerPrivate {
     std::mutex mutex;
-    ELogLevel errorLevel = EError;
+    ELogLevel error_level = EError;
     std::vector<ref<Appender>> appenders;
     ref<Formatter> formatter;
 };
 
-Logger::Logger(ELogLevel logLevel)
-    : m_logLevel(logLevel), d(new LoggerPrivate()) { }
+Logger::Logger(ELogLevel log_level)
+    : m_log_level(log_level), d(new LoggerPrivate()) { }
 
 Logger::~Logger() { }
 
-void Logger::setFormatter(Formatter *formatter) {
+void Logger::set_formatter(Formatter *formatter) {
     std::lock_guard<std::mutex> guard(d->mutex);
     d->formatter = formatter;
 }
@@ -37,18 +37,18 @@ const Formatter *Logger::formatter() const {
     return d->formatter;
 }
 
-void Logger::setLogLevel(ELogLevel level) {
-    Assert(level <= d->errorLevel);
-    m_logLevel = level;
+void Logger::set_log_level(ELogLevel level) {
+    Assert(level <= d->error_level);
+    m_log_level = level;
 }
 
-void Logger::setErrorLevel(ELogLevel level) {
-    Assert(level <= EError && level >= m_logLevel);
-    d->errorLevel = level;
+void Logger::set_error_level(ELogLevel level) {
+    Assert(level <= EError && level >= m_log_level);
+    d->error_level = level;
 }
 
-ELogLevel Logger::errorLevel() const {
-    return d->errorLevel;
+ELogLevel Logger::error_level() const {
+    return d->error_level;
 }
 
 #undef Throw
@@ -56,9 +56,9 @@ ELogLevel Logger::errorLevel() const {
 void Logger::log(ELogLevel level, const Class *class_, const char *file,
                  int line, const std::string &msg) {
 
-    if (level < m_logLevel)
+    if (level < m_log_level)
         return;
-    else if (level >= d->errorLevel)
+    else if (level >= d->error_level)
         detail::Throw(level, class_, file, line, msg);
 
     if (!d->formatter) {
@@ -74,56 +74,56 @@ void Logger::log(ELogLevel level, const Class *class_, const char *file,
         entry->append(level, text);
 }
 
-void Logger::logProgress(Float progress, const std::string &name,
+void Logger::log_progress(Float progress, const std::string &name,
     const std::string &formatted, const std::string &eta, const void *ptr) {
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto entry : d->appenders)
-        entry->logProgress(progress, name, formatted, eta, ptr);
+        entry->log_progress(progress, name, formatted, eta, ptr);
 }
 
-void Logger::addAppender(Appender *appender) {
+void Logger::add_appender(Appender *appender) {
     std::lock_guard<std::mutex> guard(d->mutex);
     d->appenders.push_back(appender);
 }
 
-void Logger::removeAppender(Appender *appender) {
+void Logger::remove_appender(Appender *appender) {
     std::lock_guard<std::mutex> guard(d->mutex);
     d->appenders.erase(std::remove(d->appenders.begin(),
         d->appenders.end(), ref<Appender>(appender)), d->appenders.end());
 }
 
-std::string Logger::readLog() {
+std::string Logger::read_log() {
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto appender: d->appenders) {
-        if (appender->class_()->derivesFrom(MTS_CLASS(StreamAppender))) {
+        if (appender->class_()->derives_from(MTS_CLASS(StreamAppender))) {
             auto sa = static_cast<StreamAppender *>(appender.get());
-            if (sa->logsToFile())
-                return sa->readLog();
+            if (sa->logs_to_file())
+                return sa->read_log();
         }
     }
     Log(EError, "No stream appender with a file attachment could be found");
     return std::string(); /* Don't warn */
 }
 
-void Logger::clearAppenders() {
+void Logger::clear_appenders() {
     std::lock_guard<std::mutex> guard(d->mutex);
     d->appenders.clear();
 }
 
-void Logger::staticInitialization() {
+void Logger::static_initialization() {
     Logger *logger = new Logger(EInfo);
     ref<Appender> appender = new StreamAppender(&std::cout);
     ref<Formatter> formatter = new DefaultFormatter();
-    logger->addAppender(appender);
-    logger->setFormatter(formatter);
-    Thread::thread()->setLogger(logger);
+    logger->add_appender(appender);
+    logger->set_formatter(formatter);
+    Thread::thread()->set_logger(logger);
 }
 
-void Logger::staticShutdown() {
-    Thread::thread()->setLogger(nullptr);
+void Logger::static_shutdown() {
+    Thread::thread()->set_logger(nullptr);
 }
 
-size_t Logger::appenderCount() const {
+size_t Logger::appender_count() const {
     return d->appenders.size();
 }
 
@@ -140,25 +140,25 @@ NAMESPACE_BEGIN(detail)
 void Throw(ELogLevel level, const Class *theClass, const char *file,
            int line, const std::string &msg_) {
     /* Trap if we're running in a debugger to facilitate debugging */
-    util::trapDebugger();
+    util::trap_debugger();
 
     DefaultFormatter formatter;
-    formatter.setHasDate(false);
-    formatter.setHasLogLevel(false);
-    formatter.setHasThread(false);
+    formatter.set_has_date(false);
+    formatter.set_has_log_level(false);
+    formatter.set_has_thread(false);
 
     /* Tag beginning of exception text with UTF8 zero width space */
-    const std::string zeroWidthSpace = "\xe2\x80\x8b";
+    const std::string zerowidth_space = "\xe2\x80\x8b";
 
     /* Separate nested exceptions by a newline */
     std::string msg = msg_;
-    auto it = msg.find(zeroWidthSpace);
+    auto it = msg.find(zerowidth_space);
     if (it != std::string::npos)
         msg = msg.substr(0, it) + "\n  " + msg.substr(it);
 
     std::string text =
         formatter.format(level, theClass, Thread::thread(), file, line, msg);
-    throw std::runtime_error(zeroWidthSpace + text);
+    throw std::runtime_error(zerowidth_space + text);
 }
 
 NAMESPACE_END(detail)

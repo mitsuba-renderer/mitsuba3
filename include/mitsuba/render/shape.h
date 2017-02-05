@@ -42,7 +42,7 @@ public:
      * \brief Returns the number of sub-primitives that make up this shape
      * \remark The default implementation simply returns \c 1
      */
-    virtual Size primitiveCount() const;
+    virtual Size primitive_count() const;
 
     MTS_DECLARE_CLASS()
 

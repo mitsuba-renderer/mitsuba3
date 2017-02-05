@@ -6,23 +6,23 @@
 NAMESPACE_BEGIN(mitsuba)
 
 StreamAppender::StreamAppender(std::ostream *stream)
- : m_stream(stream), m_isFile(false) {
-    m_lastMessageWasProgress = false;
+ : m_stream(stream), m_is_file(false) {
+    m_last_message_was_progress = false;
 }
 
 StreamAppender::StreamAppender(const std::string &filename)
- : m_fileName(filename), m_isFile(true) {
+ : m_fileName(filename), m_is_file(true) {
     std::fstream *stream = new std::fstream();
     stream->open(filename.c_str(),
         std::fstream::in | std::fstream::out | std::fstream::trunc);
     m_stream = stream;
-    m_lastMessageWasProgress = false;
+    m_last_message_was_progress = false;
 }
 
-std::string StreamAppender::readLog() {
+std::string StreamAppender::read_log() {
     std::string result;
 
-    Assert(m_isFile);
+    Assert(m_is_file);
     std::fstream &stream = * ((std::fstream *) m_stream);
     if (!stream.good())
         return result;
@@ -45,27 +45,27 @@ std::string StreamAppender::readLog() {
 
 void StreamAppender::append(ELogLevel, const std::string &text) {
     /* Insert a newline if the last message was a progress message */
-    if (m_lastMessageWasProgress && !m_isFile)
+    if (m_last_message_was_progress && !m_is_file)
         (*m_stream) << std::endl;
     (*m_stream) << text << std::endl;
-    m_lastMessageWasProgress = false;
+    m_last_message_was_progress = false;
 }
 
-void StreamAppender::logProgress(Float, const std::string &,
+void StreamAppender::log_progress(Float, const std::string &,
     const std::string &formatted, const std::string &, const void *) {
-    if (!m_isFile) {
+    if (!m_is_file) {
         (*m_stream) << formatted;
         m_stream->flush();
     }
-    m_lastMessageWasProgress = true;
+    m_last_message_was_progress = true;
 }
 
-std::string StreamAppender::toString() const {
+std::string StreamAppender::to_string() const {
     std::ostringstream oss;
 
     oss << "StreamAppender[stream=";
 
-    if (m_isFile)
+    if (m_is_file)
         oss << "\"" << m_fileName << "\"";
     else
         oss << "<std::ostream>";
@@ -76,7 +76,7 @@ std::string StreamAppender::toString() const {
 }
 
 StreamAppender::~StreamAppender() {
-    if (m_isFile) {
+    if (m_is_file) {
         ((std::fstream *) m_stream)->close();
         delete m_stream;
     }

@@ -39,10 +39,10 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     py::module m_("mitsuba_core_ext"); // unused
     py::module m = py::module::import("mitsuba.core");
 
-    Jit::staticInitialization();
-    Class::staticInitialization();
-    Thread::staticInitialization();
-    Logger::staticInitialization();
+    Jit::static_initialization();
+    Class::static_initialization();
+    Thread::static_initialization();
+    Logger::static_initialization();
 
     // libmitsuba-core
     MTS_PY_IMPORT(filesystem);
@@ -75,15 +75,15 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     MTS_PY_IMPORT(qmc);
 
     atexit([]() {
-        Logger::staticShutdown();
-        Thread::staticShutdown();
-        Class::staticShutdown();
-        Jit::staticShutdown();
+        Logger::static_shutdown();
+        Thread::static_shutdown();
+        Class::static_shutdown();
+        Jit::static_shutdown();
     });
 
     /* Append the mitsuba directory to the FileResolver search path list */
-    ref<FileResolver> fr = Thread::thread()->fileResolver();
-    fs::path basePath = util::libraryPath().parent_path();
+    ref<FileResolver> fr = Thread::thread()->file_resolver();
+    fs::path basePath = util::library_path().parent_path();
     if (!fr->contains(basePath))
         fr->append(basePath);
 

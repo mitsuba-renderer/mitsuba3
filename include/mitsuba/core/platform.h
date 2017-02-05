@@ -96,10 +96,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 /* Processor architecture */
 #if defined(_MSC_VER)
-#  ifdef _M_X86 && !defined(__i386__)
+#  if defined(_M_X86) && !defined(__i386__)
 #    define __i386__
 #  endif
-#  ifdef _M_X64 && !defined(__x86_64__)
+#  if defined(_M_X64) && !defined(__x86_64__)
 #    define __x86_64__
 #  endif
 #endif

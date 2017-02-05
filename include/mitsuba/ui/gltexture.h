@@ -27,7 +27,7 @@ public:
     void bind(int index = 0);
 
     /// Set the interpolation mode
-    void setInterpolation(EInterpolation intp);
+    void set_interpolation(EInterpolation intp);
 
     /// Release/unbind the textur
     void release();

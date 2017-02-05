@@ -7,8 +7,8 @@
 NAMESPACE_BEGIN(mitsuba)
 
 DefaultFormatter::DefaultFormatter()
-    : m_hasDate(true), m_hasLogLevel(true), m_hasThread(true),
-      m_hasClass(true) { }
+    : m_has_date(true), m_has_log_level(true), m_has_thread(true),
+      m_has_class(true) { }
 
 std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
                                      const Thread *thread, const char *file, int line,
@@ -17,14 +17,14 @@ std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
     char buffer[128];
 
     /* Date/Time */
-    if (m_hasDate) {
-        time_t theTime = std::time(nullptr);
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S ", std::localtime(&theTime));
+    if (m_has_date) {
+        time_t time_ = std::time(nullptr);
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S ", std::localtime(&time_));
         oss << buffer;
     }
 
     /* Log level */
-    if (m_hasLogLevel) {
+    if (m_has_log_level) {
         switch (level) {
             case ETrace: oss << "TRACE "; break;
             case EDebug: oss << "DEBUG "; break;
@@ -36,7 +36,7 @@ std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
     }
 
     /* Thread */
-    if (thread && m_hasThread) {
+    if (thread && m_has_thread) {
         oss << thread->name();
 
         for (int i=0; i<(5 - (int) thread->name().size()); i++)
@@ -44,11 +44,11 @@ std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
     }
 
     /* Class */
-    if (m_hasClass) {
+    if (m_has_class) {
         if (class_)
             oss << "[" << class_->name() << "] ";
         else if (line != -1 && file)
-            oss << "[" << fs::path(file).filename() << ":" << line << "] ";
+            oss << "[" << fs::path(fs::path(file).filename()).string() << ":" << line << "] ";
     }
 
     /* Message */

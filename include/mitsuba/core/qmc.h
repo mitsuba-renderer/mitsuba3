@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/random.h>
+#include <mitsuba/core/object.h>
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(qmc)
@@ -11,7 +12,7 @@ NAMESPACE_BEGIN(qmc)
  * These prime numbers are used as bases in the radical inverse
  * function implementation. \c index must be less than 1024.
  */
-extern MTS_EXPORT_CORE size_t primeBase(size_t index);
+extern MTS_EXPORT_CORE size_t prime_base(size_t index);
 
 /**
  * \brief Calculate the radical inverse function
@@ -21,7 +22,7 @@ extern MTS_EXPORT_CORE size_t primeBase(size_t index);
  * \c index, mirrors it along the decimal point, and returns the resulting
  * fractional value. The implementation here uses prime numbers for 'b'.
  *
- * \param primeBase
+ * \param prime_base
  *     Selects the n-th prime that is used as a base when computing the radical
  *     inverse function (0 corresponds to 2, 1->3, 2->5, etc.). The value
  *     specified here must be between 0 and 1023.
@@ -30,29 +31,28 @@ extern MTS_EXPORT_CORE size_t primeBase(size_t index);
  *     Denotes the index that should be mapped through the radical inverse
  *     function
  */
-extern MTS_EXPORT_CORE Float radicalInverse(size_t primeBase, uint64_t index);
+extern MTS_EXPORT_CORE Float radical_inverse(size_t prime_base, uint64_t index);
 
 /**
  * \brief Calculate a scrambled radical inverse function
  *
  * This function is used as a building block to construct permuted
  * Halton and Hammersley sequence variants. It works like the normal
- * radical inverse function \ref radicalInverse(), except that every digit
+ * radical inverse function \ref radical_inverse(), except that every digit
  * is run through an extra scrambling permutation specified as array
  * of size \c base.
  */
-extern MTS_EXPORT_CORE Float scrambledRadicalInverse(size_t primeBase,
-                                                     uint64_t index,
-                                                     const uint16_t *perm);
+extern MTS_EXPORT_CORE Float scrambled_radical_inverse(size_t prime_base,
+                                                       uint64_t index,
+                                                       const uint16_t *perm);
 
-/// Vectorized implementation of \ref radicalInverse()
-extern MTS_EXPORT_CORE FloatPacket radicalInverse(size_t primeBase,
-                                                  UInt64Packet index);
+/// Vectorized implementation of \ref radical_inverse()
+extern MTS_EXPORT_CORE FloatP radical_inverse(size_t prime_base, UInt64P index);
 
-/// Vectorized implementation of \ref scrambledRadicalInverse()
-extern MTS_EXPORT_CORE FloatPacket scrambledRadicalInverse(size_t primeBase,
-                                                           UInt64Packet index,
-                                                           const uint16_t *perm);
+/// Vectorized implementation of \ref scrambled_radical_inverse()
+extern MTS_EXPORT_CORE FloatP scrambled_radical_inverse(size_t prime_base,
+                                                        UInt64P index,
+                                                        const uint16_t *perm);
 
 /**
  * \brief Stores scrambling permutations for Van Der Corput-type
@@ -76,8 +76,8 @@ public:
     }
 
     /// Return the inverse permutation corresponding to the given prime number basis
-    uint16_t *inversePermutation(size_t basis) const {
-        return m_invPermutations[basis];
+    uint16_t *inverse_permutation(size_t basis) const {
+        return m_inv_permutations[basis];
     }
 
     /// Return the original scramble value
@@ -90,19 +90,19 @@ private:
      * For reference, see "Good permutations for extreme discrepancy"
      * by Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.
      */
-    void computeFaurePermutations(uint32_t maxBase, uint16_t **perm);
+    void compute_faure_permutations(uint32_t max_base, uint16_t **perm);
 
     /// Invert one of the permutations
-    void invertPermutation(uint32_t i);
+    void invert_permutation(uint32_t i);
 
     MTS_DECLARE_CLASS()
 protected:
     virtual ~PermutationStorage();
 
 private:
-    uint16_t *m_storage, *m_invStorage;
+    uint16_t *m_storage, *m_inv_storage;
     uint16_t **m_permutations;
-    uint16_t **m_invPermutations;
+    uint16_t **m_inv_permutations;
     int m_scramble;
 };
 

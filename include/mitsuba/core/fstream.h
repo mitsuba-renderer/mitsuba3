@@ -18,17 +18,17 @@ class MTS_EXPORT_CORE FileStream : public Stream {
 public:
 
     /** \brief Constructs a new FileStream by opening the file pointed by <tt>p</tt>.
-     * The file is opened in read-only or read/write mode as specified by <tt>writeEnabled</tt>.
+     * The file is opened in read-only or read/write mode as specified by <tt>write_enabled</tt>.
      *
-     * If <tt>writeEnabled</tt> and the file did not exist before, it is
+     * If <tt>write_enabled</tt> and the file did not exist before, it is
      * created.
      * Throws if trying to open a non-existing file in with write disabled.
      * Throws an exception if the file cannot be opened / created.
      */
-    FileStream(const fs::path &p, bool writeEnabled);
+    FileStream(const fs::path &p, bool write_enabled);
 
     /// Returns a string representation
-    std::string toString() const override;
+    std::string to_string() const override;
 
     /** \brief Closes the stream and the underlying file.
      * No further read or write operations are permitted.
@@ -39,10 +39,10 @@ public:
     virtual void close() override;
 
     /// Whether the stream is closed (no read or write are then permitted).
-    virtual bool isClosed() const override;
+    virtual bool is_closed() const override;
 
     /// Convenience function for reading a line of text from an ASCII file
-    virtual std::string readLine() override;
+    virtual std::string read_line() override;
 
     /// Return the "native" std::fstream associated with this FileStream
     std::fstream *native() { return m_file.get(); }
@@ -91,10 +91,10 @@ public:
     virtual void flush() override;
 
     /// Whether the field was open in write-mode (and was not closed)
-    virtual bool canWrite() const override { return m_writeEnabled && !isClosed(); }
+    virtual bool can_write() const override { return m_write_enabled && !is_closed(); }
 
     /// True except if the stream was closed.
-    virtual bool canRead() const override { return !isClosed(); }
+    virtual bool can_read() const override { return !is_closed(); }
 
     //! @}
     // =========================================================================
@@ -110,7 +110,7 @@ private:
 
     fs::path m_path;
     mutable std::unique_ptr<std::fstream> m_file;
-    bool m_writeEnabled;
+    bool m_write_enabled;
 };
 
 NAMESPACE_END(mitsuba)

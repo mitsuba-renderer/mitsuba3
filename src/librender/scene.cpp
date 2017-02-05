@@ -11,7 +11,7 @@ Scene::Scene(const Properties &props) {
         Shape *shape = dynamic_cast<Shape *>(kv.second.get());
 
         if (shape) {
-            m_kdtree->addShape(shape);
+            m_kdtree->add_shape(shape);
         } else {
             Throw("Tried to add an unsupported object of type %s", kv.second);
         }
@@ -22,11 +22,11 @@ Scene::Scene(const Properties &props) {
 
 Scene::~Scene() { }
 
-std::string Scene::toString() const {
+std::string Scene::to_string() const {
     return tfm::format("Scene[\n"
         "  kdtree = %s\n"
         "]",
-        string::indent(m_kdtree->toString())
+        string::indent(m_kdtree->to_string())
     );
 }
 

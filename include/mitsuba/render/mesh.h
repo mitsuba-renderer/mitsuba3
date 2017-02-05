@@ -8,17 +8,16 @@ NAMESPACE_BEGIN(mitsuba)
 
 class MTS_EXPORT_RENDER Mesh : public Shape {
 public:
-    using Allocator    = simd::AlignedAllocator<>;
-    using FaceHolder   = std::unique_ptr<uint8_t, Allocator>;
-    using VertexHolder = std::unique_ptr<uint8_t, Allocator>;
+    using FaceHolder   = std::unique_ptr<uint8_t, enoki::aligned_deleter>;
+    using VertexHolder = std::unique_ptr<uint8_t, enoki::aligned_deleter>;
 
     struct Vertex { Float x; Float y; Float z; };
 
     /// Return the total number of vertices
-    Size vertexCount() const { return m_vertexCount; }
+    Size vertex_count() const { return m_vertex_count; }
 
     /// Return a \c Struct instance describing the contents of the vertex buffer
-    const Struct *vertexStruct() const { return m_vertexStruct.get(); }
+    const Struct *vertex_struct() const { return m_vertex_struct.get(); }
 
     /// Return a pointer to the raw vertex buffer
     const uint8_t *vertices() const { return m_vertices.get(); }
@@ -27,16 +26,16 @@ public:
     uint8_t *vertices() { return m_vertices.get(); }
 
     /// Return a pointer to the raw vertex buffer (at a specified vertex index)
-    const uint8_t *vertex(Index index) const { return m_vertices.get() + m_vertexSize * index; }
+    const uint8_t *vertex(Index index) const { return m_vertices.get() + m_vertex_size * index; }
 
     /// Return a pointer to the raw vertex buffer (at a specified vertex index)
-    uint8_t *vertex(Index index) { return m_vertices.get() + m_vertexSize * index; }
+    uint8_t *vertex(Index index) { return m_vertices.get() + m_vertex_size * index; }
 
     /// Return the total number of faces
-    Size faceCount() const { return m_faceCount; }
+    Size face_count() const { return m_face_count; }
 
     /// Return a \c Struct instance describing the contents of the face buffer
-    const Struct *faceStruct() const { return m_faceStruct.get(); }
+    const Struct *face_struct() const { return m_face_struct.get(); }
 
     /// Return a pointer to the raw face buffer
     const uint8_t *faces() const { return m_faces.get(); }
@@ -45,10 +44,10 @@ public:
     uint8_t *faces() { return m_faces.get(); }
 
     /// Return a pointer to the raw face buffer (at a specified face index)
-    const uint8_t *face(Index index) const { return m_faces.get() + m_faceSize * index; }
+    const uint8_t *face(Index index) const { return m_faces.get() + m_face_size * index; }
 
     /// Return a pointer to the raw face buffer (at a specified face index)
-    uint8_t *face(Index index) { return m_faces.get() + m_faceSize * index; }
+    uint8_t *face(Index index) { return m_faces.get() + m_face_size * index; }
 
     // =========================================================================
     //! @{ \name Shape interface implementation
@@ -84,13 +83,13 @@ public:
      * \brief Returns the number of sub-primitives (i.e. triangles) that make up
      * this shape
      */
-    virtual Size primitiveCount() const override;
+    virtual Size primitive_count() const override;
 
     /// @}
     // =========================================================================
 
     /// Return a human-readable string representation of the shape contents.
-    virtual std::string toString() const override;
+    virtual std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 
@@ -98,18 +97,18 @@ protected:
     virtual ~Mesh();
 
     VertexHolder m_vertices;
-    Size m_vertexSize = 0;
+    Size m_vertex_size = 0;
     FaceHolder m_faces;
-    Size m_faceSize = 0;
+    Size m_face_size = 0;
 
     std::string m_name;
     BoundingBox3f m_bbox;
 
-    Size m_vertexCount = 0;
-    Size m_faceCount = 0;
+    Size m_vertex_count = 0;
+    Size m_face_count = 0;
 
-    ref<Struct> m_faceStruct;
-    ref<Struct> m_vertexStruct;
+    ref<Struct> m_face_struct;
+    ref<Struct> m_vertex_struct;
 };
 
 NAMESPACE_END(mitsuba)

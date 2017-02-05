@@ -206,7 +206,7 @@ path& path::replace_extension(const path &replacement) {
     }
 
     if (!replacement.empty()) {
-        if (!string::startsWith(replacement.string(), "."))
+        if (!string::starts_with(replacement.string(), "."))
             name = name + NSTR(".");
 
         // TODO: this is a bit weird

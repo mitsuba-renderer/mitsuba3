@@ -14,7 +14,7 @@ public:
     ShapeKDTree *kdtree() { return m_kdtree; }
 
     /// Return a human-readable string representation of the scene contents.
-    virtual std::string toString() const override;
+    virtual std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 protected:

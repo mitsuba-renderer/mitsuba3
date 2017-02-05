@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
  * OpenEXR files, and it supports writing of PNG, JPEG and OpenEXR files.
  *
  * PNG and OpenEXR files are optionally annotated with string-valued
- * metaData, and the gamma setting can be stored as well. Please see
+ * metadata, and the gamma setting can be stored as well. Please see
  * the class methods and enumerations for further detail.
  */
 class MTS_EXPORT_CORE Bitmap : public Object {
@@ -61,7 +61,7 @@ public:
          * <li> Loading and saving of 8/16-bit per component bitmaps for
          *   all pixel formats (ELuminance, ELuminanceAlpha, ERGB, ERGBA)</li>
          * <li> Loading and saving of 1-bit per component mask bitmaps</li>
-         * <li> Loading and saving of string-valued metaData fields</li>
+         * <li> Loading and saving of string-valued metadata fields</li>
          * </ul>
          */
         EPNG = 0,
@@ -76,7 +76,7 @@ public:
          *   EUInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
          *   <li>Loading and saving of spectral bitmaps</tt>
          *   <li>Loading and saving of XYZ tristimulus bitmaps</tt>
-         *   <li>Loading and saving of string-valued metaData fields</li>
+         *   <li>Loading and saving of string-valued metadata fields</li>
          * </ul>
          *
          * The following is <em>not</em> supported:
@@ -164,7 +164,7 @@ public:
         /// Descriptive name of the bitmap layer
         std::string name;
         /// Pixel format of the layer
-        EPixelFormat pixelFormat;
+        EPixelFormat pixel_format;
         /// Data structure listing channels and component formats
         ref<Struct> struct_;
     };
@@ -173,26 +173,26 @@ public:
      * \brief Create a bitmap of the specified type and allocate
      * the necessary amount of memory
      *
-     * \param pFmt
+     * \param pfmt
      *    Specifies the pixel format (e.g. RGBA or Luminance-only)
      *
-     * \param cFmt
+     * \param cfmt
      *    Specifies how the per-pixel components are encoded
      *    (e.g. unsigned 8 bit integers or 32-bit floating point values)
      *
      * \param size
      *    Specifies the horizontal and vertical bitmap size in pixels
      *
-     * \param channelCount
+     * \param channel_count
      *    Channel count of the image. This parameter is only required when
-     *    \c pFmt = \ref EMultiChannel
+     *    \c pfmt = \ref EMultiChannel
      *
      * \param data
      *    External pointer to the image data. If set to \c nullptr, the
      *    implementation will allocate memory itself.
      */
-    Bitmap(EPixelFormat pFmt, Struct::EType cFmt, const Vector2s &size,
-        size_t channelCount = 0, uint8_t *data = nullptr);
+    Bitmap(EPixelFormat pfmt, Struct::EType cfmt, const Vector2s &size,
+        size_t channel_count = 0, uint8_t *data = nullptr);
 
     /**
      * \brief Load a bitmap from an arbitrary stream data source
@@ -209,10 +209,10 @@ public:
     Bitmap(const Bitmap &bitmap);
 
     /// Return the pixel format of this bitmap
-    EPixelFormat pixelFormat() const { return m_pixelFormat; }
+    EPixelFormat pixel_format() const { return m_pixel_format; }
 
     /// Return the component format of this bitmap
-    Struct::EType componentFormat() const { return m_componentFormat; }
+    Struct::EType component_format() const { return m_component_format; }
 
     /// Return a pointer to the underlying bitmap storage
     void *data() { return m_data.get(); }
@@ -230,37 +230,37 @@ public:
     size_t height() const { return m_size.y(); }
 
     /// Return the total number of pixels
-    size_t pixelCount() const { return simd::hprod(m_size); }
+    size_t pixel_count() const { return hprod(m_size); }
 
     /// Return the number of channels used by this bitmap
-    size_t channelCount() const { return m_struct->fieldCount(); }
+    size_t channel_count() const { return m_struct->field_count(); }
 
     /// Return whether this image has an alpha channel
-    bool hasAlpha() const {
-        return m_pixelFormat == ELuminanceAlpha || m_pixelFormat == ERGBA ||
-               m_pixelFormat == EXYZA;
+    bool has_alpha() const {
+        return m_pixel_format == ELuminanceAlpha || m_pixel_format == ERGBA ||
+               m_pixel_format == EXYZA;
     }
 
     /// Return the number bytes of storage used per pixel
-    size_t bytesPerPixel() const;
+    size_t bytes_per_pixel() const;
 
-    /// Return the bitmap size in bytes (excluding metaData)
-    size_t bufferSize() const;
+    /// Return the bitmap size in bytes (excluding metadata)
+    size_t buffer_size() const;
 
     /// Return the bitmap's gamma identifier (-1: sRGB)
     Float gamma() const { return m_gamma; }
 
     /// Set the bitmap's gamma identifier (-1: sRGB)
-    void setGamma(Float gamma) { m_gamma = gamma; }
+    void set_gamma(Float gamma) { m_gamma = gamma; }
 
-    /// Return a \ref Properties object containing the image metaData
-    Properties &metaData() { return m_metaData; }
+    /// Return a \ref Properties object containing the image metadata
+    Properties &metadata() { return m_metadata; }
 
-    /// Return a \ref Properties object containing the image metaData (const version)
-    const Properties &metaData() const { return m_metaData; }
+    /// Return a \ref Properties object containing the image metadata (const version)
+    const Properties &metadata() const { return m_metadata; }
 
-    /// Set the a \ref Properties object containing the image metaData
-    void setMetadata(const Properties &metaData) { m_metaData = metaData; }
+    /// Set the a \ref Properties object containing the image metadata
+    void set_metadata(const Properties &metadata) { m_metadata = metadata; }
 
     /// Clear the bitmap to zero
     void clear();
@@ -269,7 +269,7 @@ public:
     const Struct *struct_() const { return m_struct.get(); }
 
     /// Return a human-readable summary of this bitmap
-    virtual std::string toString() const override;
+    virtual std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 
@@ -279,17 +279,17 @@ protected:
     virtual ~Bitmap();
 
     /// Rebuild the 'm_struct' field based on the pixel format etc.
-    void rebuildStruct(size_t channelCount);
+    void rebuild_struct(size_t channel_count);
 
 protected:
-    std::unique_ptr<uint8_t[], AlignedAllocator> m_data;
-    EPixelFormat m_pixelFormat;
-    Struct::EType m_componentFormat;
+    std::unique_ptr<uint8_t[], enoki::aligned_deleter> m_data;
+    EPixelFormat m_pixel_format;
+    Struct::EType m_component_format;
     Vector2s m_size;
     ref<Struct> m_struct;
     Float m_gamma;
-    bool m_ownsData;
-    Properties m_metaData;
+    bool m_owns_data;
+    Properties m_metadata;
 };
 
 extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value);

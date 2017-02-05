@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/logger.h>
+#include <mitsuba/core/simd.h>
 #include <cmath>
 #include <algorithm>
 
@@ -77,75 +78,6 @@ static const Float  Epsilon           = Float(sizeof(Float) == sizeof(double) ?
 static const Float  MaxFloat          = std::numeric_limits<Float>::max();
 static const Float  Infinity          = std::numeric_limits<Float>::infinity();
 static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 2;
-
-//! @}
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-//! @{ \name "Safe" mathematical functions that avoid domain errors
-// -----------------------------------------------------------------------
-
-/// Arcsine variant that gracefully handles arguments > 1 due to roundoff errors
-template <typename Scalar> Scalar safe_asin(Scalar value) {
-    return std::asin(std::min((Scalar) 1, std::max((Scalar) -1, value)));
-}
-
-/// Arccosine variant that gracefully handles arguments > 1 due to roundoff errors
-template <typename Scalar> Scalar safe_acos(Scalar value) {
-    return std::acos(std::min((Scalar) 1, std::max((Scalar) -1, value)));
-}
-
-/// Square root variant that gracefully handles arguments < 0 due to roundoff errors
-template <typename Scalar> Scalar safe_sqrt(Scalar value) {
-    return std::sqrt(std::max((Scalar) 0, value));
-}
-
-/// sqrt(a^2 + b^2) without range issues (like 'hypot' on compilers that support C99)
-template <typename Scalar> Scalar hypot2(Scalar a, Scalar b) {
-    Scalar r;
-    if (std::abs(a) > std::abs(b)) {
-        r = b / a;
-        r = std::abs(a) * std::sqrt((Scalar) 1 + r*r);
-    } else if (b != (Scalar) 0) {
-        r = a / b;
-        r = std::abs(b) * std::sqrt((Scalar) 1 + r*r);
-    } else {
-        r = (Scalar) 0;
-    }
-    return r;
-}
-
-//! @}
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-//! @{ \name Fast computation of both sin & cos for a given angle,
-//! enabled on Linux.
-// -----------------------------------------------------------------------
-
-#if defined(_GNU_SOURCE)
-    /// Fast computation of both sin & cos for a given angle
-    inline void sincos(float theta, float *sin, float *cos) {
-        ::sincosf(theta, sin, cos);
-    }
-
-    /// Fast computation of both sin & cos for a given angle
-    inline void sincos(double theta, double *sin, double *cos) {
-        ::sincos(theta, sin, cos);
-    }
-#else
-    /// On this platform, equivalent to computing sin and cos separately
-    inline void sincos(float theta, float *_sin, float *_cos) {
-        *_sin = sinf(theta);
-        *_cos = cosf(theta);
-    }
-
-    /// On this platform, equivalent to computing sin and cos separately
-    inline void sincos(double theta, double *_sin, double *_cos) {
-        *_sin = sin(theta);
-        *_cos = cos(theta);
-    }
-#endif
 
 //! @}
 // -----------------------------------------------------------------------
@@ -233,21 +165,10 @@ extern MTS_EXPORT_CORE std::pair<double, double> legendre_pd_diff(int l, double 
 // -----------------------------------------------------------------------
 
 //// Convert radians to degrees
-template <typename T> T radToDeg(T value) { return value * T(180 / Pi_d); }
+template <typename T> T rad_to_deg(T value) { return value * T(180 / Pi_d); }
 
 /// Convert degrees to radians
-template <typename T> T degToRad(T value) { return value * T(Pi_d / 180); }
-
-/// Simple signum function -- note that it returns the FP sign of the input (and never zero)
-template <typename Scalar> Scalar signum(Scalar value) {
-    return std::copysign((Scalar) 1, value);
-}
-
-/// Generic range clamping function
-template <typename Scalar>  Scalar clamp(Scalar value, Scalar min, Scalar max) {
-    return (value < min) ? min :
-           (value > max ? max : value);
-}
+template <typename T> T deg_to_rad(T value) { return value * T(Pi_d / 180); }
 
 /**
  * \brief Compare the difference in ULPs between a reference value and another
@@ -276,70 +197,34 @@ template <typename T> T modulo(T a, T b) {
     return (result < 0) ? result + b : result;
 }
 
-/// Efficiently compute the floor of the base-2 logarithm of an unsigned integer
-template <typename T> T log2i(T value) {
-    Assert(value >= 0);
-#if defined(__GNUC__) && defined(__x86_64__)
-    T result = 0;
-    asm ("bsr %1, %0" : "+r" (result) : "r" (value));
-    return result;
-#elif defined(_WIN32)
-    unsigned long result;
-    if (sizeof(T) <= 4)
-        _BitScanReverse(&result, (unsigned long) value);
-    else
-        _BitScanReverse64(&result, (unsigned __int64) value);
-    return T(result);
-#else
-    T r = 0;
-    while ((value >> r) != 0)
-        r++;
-    return r - 1;
-#endif
-}
-
 /// Check whether the provided integer is a power of two
-template <typename T> bool isPowerOfTwo(T i) {
+template <typename T> bool is_power_of_two(T i) {
     return i > 0 && (i & (i-1)) == 0;
 }
 
 /// Round an unsigned integer to the next integer power of two
-template <typename T> T roundToPowerOfTwo(T i) {
+template <typename T> T round_to_power_of_two(T i) {
     if (i <= 1)
         return 1;
-#if defined(MTS_CLZ) && defined(MTS_CLZLL)
     return T(1) << (log2i<T>(i - 1) + 1);
-#else
-    i--;
-    i |= i >> 1;
-    i |= i >> 2;
-    i |= i >> 4;
-    if (sizeof(T) >= 2)
-        i |= i >> 8;
-    if (sizeof(T) >= 4)
-        i |= i >> 16;
-    if (sizeof(T) >= 8)
-        i |= i >> 32;
-    return i + 1;
-#endif
 }
 
 /// Apply the sRGB gamma curve to a floating point scalar
 template <typename T>
 static T gamma(T value) {
-    if (value <= T(0.0031308))
-        return T(12.92) * value;
-    else
-        return T(1.055) * std::pow(value, T(1.0/2.4)) - T(0.055);
+    auto branch1 = T(12.92) * value;
+    auto branch2 = T(1.055) * pow(value, T(1.0/2.4)) - T(0.055);
+
+    return select(value <= T(0.0031308), branch1, branch2);
 }
 
 /// Apply the inverse of the sRGB gamma curve to a floating point scalar
 template <typename T>
-static T inverseGamma(T value) {
-    if (value <= T(0.04045))
-        return value * T(1.0 / 12.92);
-    else
-        return std::pow((value + T(0.055)) * T(1.0 / 1.055), T(2.4));
+static T inv_gamma(T value) {
+    auto branch1 = value * T(1.0 / 12.92);
+    auto branch2 = pow((value + T(0.055)) * T(1.0 / 1.055), T(2.4));
+
+    return select(value <= T(0.04045), branch1, branch2);
 }
 
 /**
@@ -357,7 +242,7 @@ static T inverseGamma(T value) {
  * right-2]</tt>.
  */
 template <typename Size, typename Predicate>
-size_t findInterval(Size left, Size right, const Predicate &pred) {
+size_t find_interval(Size left, Size right, const Predicate &pred) {
     typedef typename std::make_signed<Size>::type SignedSize;
 
     Size first = left, len = right - left;
@@ -412,7 +297,7 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
             right = middle;
         it++;
         if (it > 100)
-            std::cout << "Now at " << it << " iterations" << std::endl;
+            throw std::runtime_error("Internal error in util::bisect!");
     }
 
     return left;
@@ -431,18 +316,6 @@ extern MTS_EXPORT_CORE double normal_cdf(double p);
 /// Cumulative distribution function of the standard normal distribution (single precision)
 extern MTS_EXPORT_CORE float normal_cdf(float p);
 
-/// Error function (double precision)
-extern MTS_EXPORT_CORE double erf(double p);
-
-/// Error function (single precision)
-extern MTS_EXPORT_CORE float erf(float p);
-
-/// Inverse error function (double precision)
-extern MTS_EXPORT_CORE double erfinv(double p);
-
-/// Inverse error function (single precision)
-extern MTS_EXPORT_CORE float erfinv(float p);
-
 /**
  * \brief Compute the Chi^2 statistic and degrees of freedom of the given
  * arrays while pooling low-valued entries together
@@ -455,7 +328,7 @@ extern MTS_EXPORT_CORE float erfinv(float p);
  * when the expected frequency in a cell is low (e.g. less than 5), because
  * normality assumptions break down in this case. Therefore, the implementation
  * will merge such low-frequency cells when they fall below the threshold
- * specified here. Specifically, low-valued cells with ``exp[i] < poolThreshold``
+ * specified here. Specifically, low-valued cells with ``exp[i] < pool_threshold``
  * are pooled into larger groups that are above the threshold before their
  * contents are added to the Chi^2 statistic.
  *
@@ -464,24 +337,24 @@ extern MTS_EXPORT_CORE float erfinv(float p);
  *
  */
 template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
-        chi2(const Scalar *obs, const Scalar *exp, Scalar poolThreshold, size_t n) {
-    Scalar chsq = 0, pooledObs = 0, pooledExp = 0;
-    size_t dof = 0, nPooledIn = 0, nPooledOut = 0;
+        chi2(const Scalar *obs, const Scalar *exp, Scalar pool_threshold, size_t n) {
+    Scalar chsq = 0, pooled_obs = 0, pooled_exp = 0;
+    size_t dof = 0, n_pooled_in = 0, n_pooled_out = 0;
 
     for (size_t i = 0; i<n; ++i) {
         if (exp[i] == 0 && obs[i] == 0)
             continue;
 
-        if (exp[i] < poolThreshold) {
-            pooledObs += obs[i];
-            pooledExp += exp[i];
-            nPooledIn++;
+        if (exp[i] < pool_threshold) {
+            pooled_obs += obs[i];
+            pooled_exp += exp[i];
+            n_pooled_in++;
 
-            if (pooledExp > poolThreshold) {
-                Scalar diff = pooledObs - pooledExp;
-                chsq += (diff*diff) / pooledExp;
-                pooledObs = pooledExp = 0;
-                ++nPooledOut; ++dof;
+            if (pooled_exp > pool_threshold) {
+                Scalar diff = pooled_obs - pooled_exp;
+                chsq += (diff*diff) / pooled_exp;
+                pooled_obs = pooled_exp = 0;
+                ++n_pooled_out; ++dof;
             }
         } else {
             Scalar diff = obs[i] - exp[i];
@@ -490,7 +363,7 @@ template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
         }
     }
 
-    return std::make_tuple(chsq, dof - 1, nPooledIn, nPooledOut);
+    return std::make_tuple(chsq, dof - 1, n_pooled_in, n_pooled_out);
 }
 
 //! @}

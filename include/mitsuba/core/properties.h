@@ -27,7 +27,7 @@ private:
  * are accessed just like a normal Python map, e.g:
  *
  * \code
- * myProps = mitsuba.core.Properties("pluginName")
+ * myProps = mitsuba.core.Properties("plugin_name")
  * myProps["stringProperty"] = "hello"
  * myProps["spectrumProperty"] = mitsuba.core.Spectrum(1.0)
  * \endcode
@@ -64,7 +64,7 @@ public:
     Properties();
 
     /// Construct an empty property container with a specific plugin name
-    Properties(const std::string &pluginName);
+    Properties(const std::string &plugin_name);
 
     /// Copy constructor
     Properties(const Properties &props);
@@ -76,51 +76,51 @@ public:
     ~Properties();
 
     /// Get the associated plugin name
-    const std::string &pluginName() const;
+    const std::string &plugin_name() const;
 
     /// Set the associated plugin name
-    void setPluginName(const std::string &name);
+    void set_plugin_name(const std::string &name);
 
     /// Verify if a value with the specified name exists
-    bool hasProperty(const std::string &name) const;
+    bool has_property(const std::string &name) const;
 
     /** \brief Returns the type of an existing property.
      * If no property exists under that name, an error is logged
      * and type <tt>void</tt> is returned.
      */
-    EPropertyType propertyType(const std::string &name) const;
+    EPropertyType property_type(const std::string &name) const;
 
     /**
      * \brief Remove a property with the specified name
      * \return \c true upon success
      */
-    bool removeProperty(const std::string &name);
+    bool remove_property(const std::string &name);
 
     /**
      * \brief Manually mark a certain property as queried
      * \return \c true upon success
      */
-    bool markQueried(const std::string &name) const;
+    bool mark_queried(const std::string &name) const;
 
     /// Check if a certain property was queried
-    bool wasQueried(const std::string &name) const;
+    bool was_queried(const std::string &name) const;
 
     /// Returns a unique identifier associated with this instance (or an empty string)
     const std::string &id() const;
 
     /// Set the unique identifier associated with this instance
-    void setID(const std::string &id);
+    void set_id(const std::string &id);
 
     /// Copy a single attribute from another Properties object and potentially rename it
-    void copyAttribute(const Properties &properties,
-                       const std::string &sourceName,
-                       const std::string &targetName);
+    void copy_attribute(const Properties &properties,
+                        const std::string &source_name,
+                        const std::string &targetName);
 
     /// Return an array containing the names of all stored properties
-    std::vector<std::string> propertyNames() const;
+    std::vector<std::string> property_names() const;
 
     /// Return an array containing all named references and their destinations
-    std::vector<std::pair<std::string, NamedReference>> namedReferences() const;
+    std::vector<std::pair<std::string, NamedReference>> named_references() const;
 
     /// Return an array containing names and references for all stored objects and
     std::vector<std::pair<std::string, ref<Object>>> objects() const;
@@ -129,10 +129,10 @@ public:
     std::vector<std::string> unqueried() const;
 
     /// Return one of the parameters (converting it to a string if necessary)
-    std::string asString(const std::string &name) const;
+    std::string as_string(const std::string &name) const;
 
     /// Return one of the parameters (converting it to a string if necessary, with default value)
-    std::string asString(const std::string &name, const std::string &defVal) const;
+    std::string as_string(const std::string &name, const std::string &def_val) const;
 
     /**
      * \brief Merge another properties record into the current one.
@@ -156,72 +156,72 @@ public:
 public:  // Type-specific getters and setters ----------------------------------
 
     /// Store a boolean value in the Properties instance
-    void setBool(const std::string &name, const bool &value, bool warnDuplicates = true);
+    void set_bool(const std::string &name, const bool &value, bool warnDuplicates = true);
     /// Retrieve a boolean value
     const bool& bool_(const std::string &name) const;
     /// Retrieve a boolean value (use default value if no entry exists)
-    const bool& bool_(const std::string &name, const bool &defVal) const;
+    const bool& bool_(const std::string &name, const bool &def_val) const;
 
     /// Set an integer value in the Properties instance
-    void setInt(const std::string &name, const int &value, bool warnDuplicates = true) {
-        setLong(name, (int64_t) value, warnDuplicates);
+    void set_int(const std::string &name, const int &value, bool warnDuplicates = true) {
+        set_long(name, (int64_t) value, warnDuplicates);
     }
 
     /// Retrieve an integer value
     int int_(const std::string &name) const { return (int) long_(name); }
     /// Retrieve a boolean value (use default value if no entry exists)
-    int int_(const std::string &name, const int &defVal) const {
-        return (int) long_(name, (int64_t) defVal);
+    int int_(const std::string &name, const int &def_val) const {
+        return (int) long_(name, (int64_t) def_val);
     }
 
     /// Store an integer value in the Properties instance
-    void setLong(const std::string &name, const int64_t &value, bool warnDuplicates = true);
+    void set_long(const std::string &name, const int64_t &value, bool warnDuplicates = true);
     /// Retrieve an integer value
     const int64_t& long_(const std::string &name) const;
     /// Retrieve an integer value (use default value if no entry exists)
-    const int64_t& long_(const std::string &name, const int64_t &defVal) const;
+    const int64_t& long_(const std::string &name, const int64_t &def_val) const;
 
     /// Store a floating point value in the Properties instance
-    void setFloat(const std::string &name, const Float &value, bool warnDuplicates = true);
+    void set_float(const std::string &name, const Float &value, bool warnDuplicates = true);
     /// Retrieve a floating point value
     const Float& float_(const std::string &name) const;
     /// Retrieve a floating point value (use default value if no entry exists)
-    const Float& float_(const std::string &name, const Float &defVal) const;
+    const Float& float_(const std::string &name, const Float &def_val) const;
 
     /// Store a string in the Properties instance
-    void setString(const std::string &name, const std::string &value, bool warnDuplicates = true);
+    void set_string(const std::string &name, const std::string &value, bool warnDuplicates = true);
     /// Retrieve a string value
     const std::string& string(const std::string &name) const;
     /// Retrieve a string value (use default value if no entry exists)
-    const std::string& string(const std::string &name, const std::string &defVal) const;
+    const std::string& string(const std::string &name, const std::string &def_val) const;
 
     /// Store a named reference in the Properties instance
-    void setNamedReference(const std::string &name, const NamedReference &value, bool warnDuplicates = true);
+    void set_named_reference(const std::string &name, const NamedReference &value, bool warnDuplicates = true);
     /// Retrieve a named reference value
-    const NamedReference& namedReference(const std::string &name) const;
+    const NamedReference& named_reference(const std::string &name) const;
     /// Retrieve a named reference value (use default value if no entry exists)
-    const NamedReference& namedReference(const std::string &name, const NamedReference &defVal) const;
+    const NamedReference& named_reference(const std::string &name, const NamedReference &def_val) const;
 
     /// Store a 3D vector in the Properties instance
-    void setVector3f(const std::string &name, const Vector3f &value, bool warnDuplicates = true);
+    void set_vector3f(const std::string &name, const Vector3f &value, bool warnDuplicates = true);
     /// Retrieve a 3D vector
     const Vector3f& vector3f(const std::string &name) const;
     /// Retrieve a 3D vector (use default value if no entry exists)
-    const Vector3f& vector3f(const std::string &name, const Vector3f &defVal) const;
+    const Vector3f& vector3f(const std::string &name, const Vector3f &def_val) const;
 
     /// Store a 3D point in the Properties instance
-    void setPoint3f(const std::string &name, const Point3f &value, bool warnDuplicates = true);
+    void set_point3f(const std::string &name, const Point3f &value, bool warnDuplicates = true);
     /// Retrieve a 3D point
     const Point3f& point3f(const std::string &name) const;
     /// Retrieve a 3D point (use default value if no entry exists)
-    const Point3f& point3f(const std::string &name, const Point3f &defVal) const;
+    const Point3f& point3f(const std::string &name, const Point3f &def_val) const;
 
     /// Store an arbitrary object in the Properties instance
-    void setObject(const std::string &name, const ref<Object> &value, bool warnDuplicates = true);
+    void set_object(const std::string &name, const ref<Object> &value, bool warnDuplicates = true);
     /// Retrieve an arbitrary object
     const ref<Object>& object(const std::string &name) const;
     /// Retrieve an arbitrary object (use default value if no entry exists)
-    const ref<Object>& object(const std::string &name, const ref<Object> &defVal) const;
+    const ref<Object>& object(const std::string &name, const ref<Object> &def_val) const;
 private:
     struct PropertiesPrivate;
     std::unique_ptr<PropertiesPrivate> d;

@@ -5,47 +5,47 @@
 NAMESPACE_BEGIN(mitsuba)
 
 NAMESPACE_BEGIN(detail)
-static Stream::EByteOrder byteOrder() {
+static Stream::EByteOrder byte_order() {
     union {
-        uint8_t  charValue[2];
-        uint16_t shortValue;
+        uint8_t  char_value[2];
+        uint16_t short_value;
     };
-    charValue[0] = 1;
-    charValue[1] = 0;
+    char_value[0] = 1;
+    char_value[1] = 0;
 
-    if (shortValue == 1)
+    if (short_value == 1)
         return Stream::ELittleEndian;
     else
         return Stream::EBigEndian;
 }
 NAMESPACE_END(detail)
 
-const Stream::EByteOrder Stream::m_hostByteOrder = detail::byteOrder();
+const Stream::EByteOrder Stream::m_host_byte_order = detail::byte_order();
 
 // -----------------------------------------------------------------------------
 
 Stream::Stream()
-    : m_byteOrder(m_hostByteOrder) { }
+    : m_byte_order(m_host_byte_order) { }
 
 Stream::~Stream() { }
 
-void Stream::setByteOrder(EByteOrder value) {
-    m_byteOrder = value;
+void Stream::set_byte_order(EByteOrder value) {
+    m_byte_order = value;
 }
 
 // -----------------------------------------------------------------------------
 
-std::string Stream::toString() const {
+std::string Stream::to_string() const {
     std::ostringstream oss;
 
     oss << class_()->name() << "[" << std::endl;
-    if (isClosed()) {
+    if (is_closed()) {
         oss << "  closed" << std::endl;
     } else {
-        oss << "  hostByteOrder = " << m_hostByteOrder << "," << std::endl
-            << "  byteOrder = " << m_byteOrder << "," << std::endl
-            << "  canRead = " << canRead() << "," << std::endl
-            << "  canWrite = " << canRead() << "," << std::endl
+        oss << "  host_byte_order = " << m_host_byte_order << "," << std::endl
+            << "  byte_order = " << m_byte_order << "," << std::endl
+            << "  can_read = " << can_read() << "," << std::endl
+            << "  can_write = " << can_write() << "," << std::endl
             << "  pos = " << tell() << "," << std::endl
             << "  size = " << size() << std::endl;
     }
@@ -64,12 +64,12 @@ std::ostream &operator<<(std::ostream &os, const Stream::EByteOrder &value) {
     return os;
 }
 
-void Stream::writeLine(const std::string &text) {
+void Stream::write_line(const std::string &text) {
     write(text.data(), text.length());
     write('\n');
 }
 
-std::string Stream::readLine() {
+std::string Stream::read_line() {
     std::string result;
     result.reserve(80);
 

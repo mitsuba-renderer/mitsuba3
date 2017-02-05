@@ -27,7 +27,7 @@ fs::path FileResolver::resolve(const fs::path &path) const {
     return path;
 }
 
-std::string FileResolver::toString() const {
+std::string FileResolver::to_string() const {
     std::ostringstream oss;
     oss << "FileResolver[" << std::endl;
     for (size_t i = 0; i < m_paths.size(); ++i) {

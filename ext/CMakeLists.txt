@@ -77,7 +77,7 @@ set(OPENEXR_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
 add_subdirectory(openexr)
 set_property(TARGET
   IexMath eLut toFloat b44ExpLogTable dwaLookups
-  CopyIlmBaseLibs IlmThread Half Iex Imath IlmImf
+  CopyIlmBaseLibs IlmThread Half Iex Imath IlmImf IlmImf-obj
   PROPERTY FOLDER "dependencies")
 
 if (WIN32)
@@ -116,7 +116,7 @@ set(NANOGUI_BUILD_PYTHON  ON  CACHE BOOL " " FORCE)
 set(NANOGUI_INSTALLL      OFF CACHE BOOL " " FORCE)
 
 add_subdirectory(nanogui)
-set_property(TARGET glfw glfw_objects bin2c nanogui PROPERTY FOLDER "dependencies")
+set_property(TARGET glfw glfw_objects nanogui nanogui-obj PROPERTY FOLDER "dependencies")
 set(EIGEN_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/ext/eigen PARENT_SCOPE)
 set(NANOGUI_INCLUDE_DIRS
    ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/include
@@ -124,7 +124,7 @@ set(NANOGUI_INCLUDE_DIRS
    PARENT_SCOPE)
 
 if (PYTHONLIBS_FOUND)
-  set_property(TARGET nanogui-python PROPERTY FOLDER "dependencies")
+  set_target_properties(nanogui-python nanogui-python-obj PROPERTIES FOLDER "dependencies")
 endif()
 
 # Build the pugixml parser
@@ -146,14 +146,11 @@ set(LIBZMQ_PEDANTIC OFF CACHE BOOL " " FORCE)
 add_subdirectory(zeromq)
 set_property(TARGET libzmq PROPERTY FOLDER "dependencies")
 
-# pcg32 include path
-set(PCG32_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/pcg32 PARENT_SCOPE)
-
 # tinyformat include path
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 
-# SIMDArray include path
-set(SIMDARRAY_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/simdarray/include PARENT_SCOPE)
+# Enoki include path
+set(ENOKI_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/enoki/include PARENT_SCOPE)
 
 # Hypothesis include path
 set(HYPOTHESIS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ext/hypothesis PARENT_SCOPE)

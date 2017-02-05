@@ -883,56 +883,6 @@ template <typename Scalar> Scalar i0e(Scalar x) {
     }
 }
 
-template <typename Scalar> Scalar erfinv(Scalar x) {
-    // Based on "Approximating the erfinv function" by Mark Giles
-    Scalar w = -std::log(((Scalar) 1 - x)*((Scalar) 1 + x));
-    Scalar p;
-    if (w < (Scalar) 5) {
-        w = w - (Scalar) 2.5;
-        p = (Scalar) 2.81022636e-08;
-        p = (Scalar) 3.43273939e-07 + p*w;
-        p = (Scalar) -3.5233877e-06 + p*w;
-        p = (Scalar) -4.39150654e-06 + p*w;
-        p = (Scalar) 0.00021858087 + p*w;
-        p = (Scalar) -0.00125372503 + p*w;
-        p = (Scalar) -0.00417768164 + p*w;
-        p = (Scalar) 0.246640727 + p*w;
-        p = (Scalar) 1.50140941 + p*w;
-    } else {
-        w = std::sqrt(w) - (Scalar) 3;
-        p = (Scalar) -0.000200214257;
-        p = (Scalar) 0.000100950558 + p*w;
-        p = (Scalar) 0.00134934322 + p*w;
-        p = (Scalar) -0.00367342844 + p*w;
-        p = (Scalar) 0.00573950773 + p*w;
-        p = (Scalar) -0.0076224613 + p*w;
-        p = (Scalar) 0.00943887047 + p*w;
-        p = (Scalar) 1.00167406 + p*w;
-        p = (Scalar) 2.83297682 + p*w;
-    }
-    return p*x;
-}
-
-template <typename Scalar> Scalar erf(Scalar x) {
-    const Scalar a1 = Scalar( 0.254829592);
-    const Scalar a2 = Scalar(-0.284496736);
-    const Scalar a3 = Scalar( 1.421413741);
-    const Scalar a4 = Scalar(-1.453152027);
-    const Scalar a5 = Scalar( 1.061405429);
-    const Scalar p  = Scalar( 0.3275911);
-
-    // Save the sign of x
-    Scalar sign = math::signum(x);
-    x = std::abs(x);
-
-    // A&S formula 7.1.26
-    Scalar t = (Scalar) 1.0 / ((Scalar) 1.0 + p*x);
-    Scalar y = (Scalar) 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*std::exp(-x*x);
-
-    return sign*y;
-}
-
-
 /// Evaluate the l-th Legendre polynomial using recurrence
 template <typename Scalar>
 Scalar legendre_p(int l, Scalar x) {
@@ -1058,10 +1008,6 @@ float ellint_3(float k, float nu, float phi) { return detail::ellint_3(k, nu, ph
 
 float i0e(float x) { return detail::i0e(x); }
 double i0e(double x) { return detail::i0e(x); }
-float erf(float x) { return detail::erf(x); }
-double erf(double x) { return detail::erf(x); }
-float erfinv(float x) { return detail::erfinv(x); }
-double erfinv(double x) { return detail::erfinv(x); }
 
 float legendre_p(int l, float x) { return detail::legendre_p(l, x); }
 double legendre_p(int l, double x) { return detail::legendre_p(l, x); }

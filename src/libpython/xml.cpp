@@ -5,7 +5,7 @@
 MTS_PY_EXPORT(xml) {
     MTS_PY_IMPORT_MODULE(xml, "mitsuba.core.xml");
 
-    xml.def("loadFile", &xml::loadFile, py::arg("path"), DM(xml, loadFile));
-    xml.def("loadString", &xml::loadString, py::arg("string"), DM(xml, loadString));
+    xml.def("load_file", &xml::load_file, "path"_a, D(xml, load_file));
+    xml.def("load_string", &xml::load_string, "string"_a, D(xml, load_string));
 }
 

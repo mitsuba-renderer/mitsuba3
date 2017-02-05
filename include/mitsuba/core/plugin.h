@@ -11,11 +11,11 @@ NAMESPACE_BEGIN(mitsuba)
  * instantiating object instances.
  *
  * Ordinarily, this class will be used by making repeated calls to
- * the \ref createObject() methods. The generated instances are then
+ * the \ref create_object() methods. The generated instances are then
  * assembled into a final object graph, such as a scene. One such
  * examples is the \ref SceneHandler class, which parses an XML
  * scene file by esentially translating the XML elements into calls
- * to \ref createObject().
+ * to \ref create_object().
  *
  * Since this kind of construction method can be tiresome when
  * dynamically building scenes from Python, this class has an
@@ -54,10 +54,10 @@ public:
     static PluginManager *instance() { return m_instance; }
 
     /// Ensure that a plugin is loaded and ready
-    void ensurePluginLoaded(const std::string &name);
+    void ensure_plugin_loaded(const std::string &name);
 
     /// Return the list of loaded plugins
-    std::vector<std::string> loadedPlugins() const;
+    std::vector<std::string> loaded_plugins() const;
 
     /**
      * \brief Instantiate a plugin, verify its type, and return the newly
@@ -71,7 +71,7 @@ public:
      *     A \ref Properties instance containing all information required to
      *     find and construct the plugin.
      */
-    ref<Object> createObject(const Class *classType, const Properties &props);
+    ref<Object> create_object(const Class *classType, const Properties &props);
 
     /**
      * \brief Instantiate a plugin and return the new instance (without
@@ -81,7 +81,7 @@ public:
      *    A \ref Properties instance containing all information required to
      *    find and construct the plugin.
      */
-    ref<Object> createObject(const Properties &props);
+    ref<Object> create_object(const Properties &props);
 
     MTS_DECLARE_CLASS()
 protected:

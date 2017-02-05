@@ -3,7 +3,7 @@
 #include "python.h"
 
 /// Conversion between 'Struct' and NumPy 'dtype' data structures
-py::dtype dtypeForStruct(const Struct *s) {
+py::dtype dtype_for_struct(const Struct *s) {
     py::list names, offsets, formats;
 
     for (auto field: *s) {
@@ -94,42 +94,42 @@ MTS_PY_EXPORT(Struct) {
         .value("EDefault", Struct::EFlags::EDefault)
         .export_values();
 
-    c.def(py::init<bool, Struct::EByteOrder>(), py::arg("pack") = false,
-             py::arg("byteOrder") = Struct::EByteOrder::EHostByteOrder,
-             DM(Struct, Struct))
+    c.def(py::init<bool, Struct::EByteOrder>(), "pack"_a = false,
+             "byte_order"_a = Struct::EByteOrder::EHostByteOrder,
+             D(Struct, Struct))
         .def("append", (Struct &(Struct::*)(const std::string&, Struct::EType, uint32_t, double)) &Struct::append,
-             py::arg("name"), py::arg("type"), py::arg("flags") = 0, py::arg("default") = 0.0,
-             DM(Struct, append), py::return_value_policy::reference)
+             "name"_a, "type"_a, "flags"_a = 0, "default"_a = 0.0,
+             D(Struct, append), py::return_value_policy::reference)
         .def("__getitem__", [](const Struct & s, size_t i) {
-            if (i >= s.fieldCount())
+            if (i >= s.field_count())
                 throw py::index_error();
             return s[i];
         })
-        .def("__len__", &Struct::fieldCount)
+        .def("__len__", &Struct::field_count)
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__hash__", [](const Struct &s) { return hash(s); })
         .mdef(Struct, size)
         .mdef(Struct, alignment)
-        .mdef(Struct, byteOrder)
-        .mdef(Struct, fieldCount)
-        .mdef(Struct, hasField)
-        .def("dtype", &dtypeForStruct, "Return a NumPy dtype corresponding to this data structure");
+        .mdef(Struct, byte_order)
+        .mdef(Struct, field_count)
+        .mdef(Struct, has_field)
+        .def("dtype", &dtype_for_struct, "Return a NumPy dtype corresponding to this data structure");
 
-    py::class_<Struct::Field>(c, "Field", DM(Struct, Field))
-        .def("isFloat", &Struct::Field::isFloat, DM(Struct, Field, isFloat))
-        .def("isInteger", &Struct::Field::isInteger, DM(Struct, Field, isInteger))
-        .def("isSigned", &Struct::Field::isSigned, DM(Struct, Field, isSigned))
-        .def("isUnsigned", &Struct::Field::isUnsigned, DM(Struct, Field, isUnsigned))
-        .def("range", &Struct::Field::range, DM(Struct, Field, range))
+    py::class_<Struct::Field>(c, "Field", D(Struct, Field))
+        .def("is_float", &Struct::Field::is_float, D(Struct, Field, is_float))
+        .def("is_integer", &Struct::Field::is_integer, D(Struct, Field, is_integer))
+        .def("is_signed", &Struct::Field::is_signed, D(Struct, Field, is_signed))
+        .def("is_unsigned", &Struct::Field::is_unsigned, D(Struct, Field, is_unsigned))
+        .def("range", &Struct::Field::range, D(Struct, Field, range))
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__hash__", [](const Struct::Field &f) { return hash(f); })
-        .def_readonly("name", &Struct::Field::name, DM(Struct, Field, name))
-        .def_readonly("type", &Struct::Field::type, DM(Struct, Field, type))
-        .def_readonly("size", &Struct::Field::size, DM(Struct, Field, size))
-        .def_readonly("offset", &Struct::Field::offset, DM(Struct, Field, offset))
-        .def_readonly("flags", &Struct::Field::flags, DM(Struct, Field, flags));
+        .def_readonly("name", &Struct::Field::name, D(Struct, Field, name))
+        .def_readonly("type", &Struct::Field::type, D(Struct, Field, type))
+        .def_readonly("size", &Struct::Field::size, D(Struct, Field, size))
+        .def_readonly("offset", &Struct::Field::offset, D(Struct, Field, offset))
+        .def_readonly("flags", &Struct::Field::flags, D(Struct, Field, flags));
 
     MTS_PY_CLASS(StructConverter, Object)
         .def(py::init<const Struct *, const Struct *>())

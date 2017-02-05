@@ -25,7 +25,7 @@ size_t ArgParser::Arg::count() const {
     return nargs;
 }
 
-int ArgParser::Arg::asInt() const {
+int ArgParser::Arg::as_int() const {
     try {
         return std::stoi(m_value);
     } catch (const std::logic_error &) {
@@ -33,7 +33,7 @@ int ArgParser::Arg::asInt() const {
     }
 }
 
-Float ArgParser::Arg::asFloat() const {
+Float ArgParser::Arg::as_float() const {
     try {
         return (Float) std::stod(m_value);
     } catch (const std::logic_error &) {
@@ -47,19 +47,19 @@ void ArgParser::parse(int argc, const char **argv) {
         cmdline[i] = argv[i];
 
     if (!cmdline.empty())
-        m_executableName = cmdline[0];
+        m_executable_name = cmdline[0];
 
     for (size_t i = 1; i < cmdline.size(); ++i) {
         bool found = false;
 
         for (Arg *arg: m_args) {
             for (const std::string &prefix : arg->m_prefixes) {
-                const bool longForm = string::startsWith(prefix, "--");
-                const bool shortForm = string::startsWith(prefix, "-") && !longForm;
+                const bool long_form = string::starts_with(prefix, "--");
+                const bool short_form = string::starts_with(prefix, "-") && !long_form;
                 const bool other = prefix.empty() && arg->m_extra;
-                const bool prefixFound = string::startsWith(cmdline[i], prefix);
+                const bool prefix_found = string::starts_with(cmdline[i], prefix);
 
-                if (shortForm && prefixFound) {
+                if (short_form && prefix_found) {
                     std::string suffix = cmdline[i].substr(prefix.length());
                     if (!suffix.empty()) {
                         if (!arg->m_extra)
@@ -67,16 +67,16 @@ void ArgParser::parse(int argc, const char **argv) {
                         cmdline.insert(cmdline.begin() + i + 1, suffix);
                     }
                     found = true;
-                } else if (longForm && prefixFound) {
+                } else if (long_form && prefix_found) {
                     found = true;
-                } else if (other && !string::startsWith(cmdline[i], "-")) {
+                } else if (other && !string::starts_with(cmdline[i], "-")) {
                     cmdline.insert(cmdline.begin() + i + 1, cmdline[i]);
                     found = true;
                 }
 
                 if (found) {
                     if (arg->m_extra) {
-                        if (i + 1 >= cmdline.size() || string::startsWith(cmdline[i+1], "-"))
+                        if (i + 1 >= cmdline.size() || string::starts_with(cmdline[i+1], "-"))
                             Throw("Missing/invalid argument for argument \"%s\"", prefix);
                         arg->append(cmdline[++i]);
                     } else {

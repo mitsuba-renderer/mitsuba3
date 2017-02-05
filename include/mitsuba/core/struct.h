@@ -106,33 +106,33 @@ public:
             return !operator==(f);
         }
 
-        bool isUnsigned() const {
+        bool is_unsigned() const {
             return type == Struct::EUInt8 ||
                    type == Struct::EUInt16 ||
                    type == Struct::EUInt32 ||
                    type == Struct::EUInt64;
         }
 
-        bool isFloat() const {
+        bool is_float() const {
             return type == Struct::EFloat16 ||
                    type == Struct::EFloat32 ||
                    type == Struct::EFloat64 ||
                    type == Struct::EFloat;
         }
 
-        bool isSigned() const {
-            return !isUnsigned();
+        bool is_signed() const {
+            return !is_unsigned();
         }
 
-        bool isInteger() const {
-            return !isFloat();
+        bool is_integer() const {
+            return !is_float();
         }
 
         std::pair<double, double> range() const;
     };
 
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
-    Struct(bool pack = false, EByteOrder byteOrder = EHostByteOrder);
+    Struct(bool pack = false, EByteOrder byte_order = EHostByteOrder);
 
     /// Copy constructor
     Struct(const Struct &s);
@@ -151,7 +151,7 @@ public:
     Field &operator[](size_t i) { return m_fields[i]; }
 
     /// Check if the \c Struct has a field of the specified name
-    bool hasField(const std::string &name) const;
+    bool has_field(const std::string &name) const;
 
     /// Return the size (in bytes) of the data structure, including padding
     size_t size() const;
@@ -160,13 +160,13 @@ public:
     size_t alignment() const;
 
     /// Return the number of fields
-    size_t fieldCount() const { return m_fields.size(); }
+    size_t field_count() const { return m_fields.size(); }
 
     /// Return the byte order of the \c Struct
-    EByteOrder byteOrder() const { return m_byteOrder; }
+    EByteOrder byte_order() const { return m_byte_order; }
 
     /// Return the byte order of the host machine
-    static EByteOrder hostByteOrder() {
+    static EByteOrder host_byte_order() {
         #if defined(LITTLE_ENDIAN)
             return ELittleEndian;
         #elif defined(BIG_ENDIAN)
@@ -183,7 +183,7 @@ public:
     Field &field(const std::string &name);
 
     /// Return a string representation
-    std::string toString() const override;
+    std::string to_string() const override;
 
     /// Return an iterator associated with the first field
     std::vector<Field>::const_iterator begin() const { return m_fields.cbegin(); }
@@ -197,7 +197,7 @@ public:
     /// Equality operator
     bool operator==(const Struct &s) const {
         return m_fields == s.m_fields && m_pack == s.m_pack &&
-               m_byteOrder == s.m_byteOrder;
+               m_byte_order == s.m_byte_order;
     }
 
     /// Inequality operator
@@ -209,7 +209,7 @@ public:
 protected:
     std::vector<Field> m_fields;
     bool m_pack;
-    EByteOrder m_byteOrder;
+    EByteOrder m_byte_order;
 };
 
 template <typename T> struct struct_traits { };
@@ -298,7 +298,7 @@ public:
     const Struct *target() const { return m_target.get(); }
 
     /// Return a string representation
-    std::string toString() const override;
+    std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 protected:

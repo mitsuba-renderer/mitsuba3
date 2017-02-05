@@ -13,7 +13,7 @@
 
 using namespace mitsuba;
 
-static std::string buildInfo(int threadCount) {
+static std::string build_info(int thread_count) {
     std::ostringstream oss;
     oss << "Mitsuba version " << MTS_VERSION << " (";
     oss << MTS_BRANCH << "[" << MTS_HASH << "], ";
@@ -27,42 +27,42 @@ static std::string buildInfo(int threadCount) {
     oss << "Unknown, ";
 #endif
     oss << (sizeof(size_t) * 8) << "bit, ";
-    oss << threadCount << " thread" << (threadCount > 1 ? "s" : "");
+    oss << thread_count << " thread" << (thread_count > 1 ? "s" : "");
     oss << ")";
 
     return oss.str();
 }
 
-static std::string copyrightInfo() {
+static std::string copyright_info() {
     std::ostringstream oss;
     oss << "Copyright " << MTS_YEAR << " by " << MTS_AUTHORS;
     return oss.str();
 }
 
-static std::string isaInfo() {
+static std::string isa_info() {
     std::ostringstream oss;
 
     oss << "Instruction sets enabled:";
-    if (simd::hasAVX512DQ) oss << " avx512dq";
-    if (simd::hasAVX512BW) oss << " avx512bw";
-    if (simd::hasAVX512VL) oss << " avx512vl";
-    if (simd::hasAVX512ER) oss << " avx512eri";
-    if (simd::hasAVX512PF) oss << " avx512pfi";
-    if (simd::hasAVX512CD) oss << " avx512cdi";
-    if (simd::hasAVX512F)  oss << " avx512f";
-    if (simd::hasAVX2)     oss << " avx2";
-    if (simd::hasAVX)      oss << " avx";
-    if (simd::hasFMA)      oss << " fma";
-    if (simd::hasF16C)     oss << " f16c";
-    if (simd::hasSSE42)    oss << " sse4.2";
+    if (enoki::has_avx512dq) oss << " avx512dq";
+    if (enoki::has_avx512bw) oss << " avx512bw";
+    if (enoki::has_avx512vl) oss << " avx512vl";
+    if (enoki::has_avx512er) oss << " avx512eri";
+    if (enoki::has_avx512pf) oss << " avx512pfi";
+    if (enoki::has_avx512cd) oss << " avx512cdi";
+    if (enoki::has_avx512f)  oss << " avx512f";
+    if (enoki::has_avx2)     oss << " avx2";
+    if (enoki::has_avx)      oss << " avx";
+    if (enoki::has_fma)      oss << " fma";
+    if (enoki::has_f16c)     oss << " f16c";
+    if (enoki::has_sse42)    oss << " sse4.2";
 
     return oss.str();
 }
 
-static void help(int threadCount) {
-    std::cout << buildInfo(threadCount) << std::endl;
-    std::cout << copyrightInfo() << std::endl;
-    std::cout << isaInfo() << std::endl;
+static void help(int thread_count) {
+    std::cout << build_info(thread_count) << std::endl;
+    std::cout << copyright_info() << std::endl;
+    std::cout << isa_info() << std::endl;
     std::cout << R"(
 Usage: mitsuba [options] <One or more scene XML files>
 
@@ -81,16 +81,16 @@ Options:
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
     // Limit instruction set usage in main() to SSE only. This is so that
-    // target<->host mismatches can be caught in Jit::staticInitialization()
+    // target<->host mismatches can be caught in Jit::static_initialization()
     // without running into a segmentation fault before that.
     __attribute__((target("sse")))
 #endif
 
 int main(int argc, char *argv[]) {
-    Jit::staticInitialization();
-    Class::staticInitialization();
-    Thread::staticInitialization();
-    Logger::staticInitialization();
+    Jit::static_initialization();
+    Class::static_initialization();
+    Thread::static_initialization();
+    Logger::static_initialization();
 
     ArgParser parser;
     typedef std::vector<std::string> StringVec;
@@ -106,31 +106,31 @@ int main(int argc, char *argv[]) {
         if (*arg_verbose) {
             auto logger = Thread::thread()->logger();
             if (arg_verbose->next())
-                logger->setLogLevel(ETrace);
+                logger->set_log_level(ETrace);
             else
-                logger->setLogLevel(EDebug);
+                logger->set_log_level(EDebug);
         }
 
         /* Initialize Intel Thread Building Blocks with the requested number of threads */
-        int threadCount = *arg_threads ? arg_threads->asInt() : util::coreCount();
-        tbb::task_scheduler_init init(threadCount);
+        int thread_count = *arg_threads ? arg_threads->as_int() : util::core_count();
+        tbb::task_scheduler_init init(thread_count);
 
         /* Append the mitsuba directory to the FileResolver search path list */
-        ref<FileResolver> fr = Thread::thread()->fileResolver();
-        fs::path basePath = util::libraryPath().parent_path();
-        if (!fr->contains(basePath))
-            fr->append(basePath);
+        ref<FileResolver> fr = Thread::thread()->file_resolver();
+        fs::path base_path = util::library_path().parent_path();
+        if (!fr->contains(base_path))
+            fr->append(base_path);
 
         if (!*arg_extra || *arg_help) {
-            help(threadCount);
+            help(thread_count);
         } else {
-            Log(EInfo, "%s", buildInfo(threadCount));
-            Log(EInfo, "%s", copyrightInfo());
-            Log(EInfo, "%s", isaInfo());
+            Log(EInfo, "%s", build_info(thread_count));
+            Log(EInfo, "%s", copyright_info());
+            Log(EInfo, "%s", isa_info());
         }
 
         while (arg_extra && *arg_extra) {
-            xml::loadFile(arg_extra->asString());
+            xml::load_file(arg_extra->as_string());
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
@@ -141,9 +141,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    Logger::staticShutdown();
-    Thread::staticShutdown();
-    Class::staticShutdown();
-    Jit::staticShutdown();
+    Logger::static_shutdown();
+    Thread::static_shutdown();
+    Class::static_shutdown();
+    Jit::static_shutdown();
     return 0;
 }

@@ -68,6 +68,8 @@ function(add_mitsuba_python_library TARGET_NAME NAME)
   if (APPLE)
     set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path/..")
   endif()
+
+  set_target_properties(${TARGET_NAME} ${TARGET_NAME}-obj PROPERTIES FOLDER mitsuba-python)
 endfunction()
 
 add_mitsuba_python_library(mitsuba_core_ext core
@@ -106,6 +108,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   mitsuba_render_ext.cpp
   scene.cpp
   shape.cpp
+  #spectrum.cpp
 )
 
 add_mitsuba_python_library(mitsuba_ui_ext ui
@@ -134,7 +137,6 @@ add_custom_target(mkdoc COMMAND
   `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
   `find ${PROJECT_SOURCE_DIR}/include/mitsuba/render -name '*.h' ! -name fwd.h -print`
   `find ${PROJECT_SOURCE_DIR}/include/mitsuba/ui -name '*.h' ! -name fwd.h -print`
-  ${PROJECT_SOURCE_DIR}/ext/pcg32/*.h
   > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
 
 if (APPLE)

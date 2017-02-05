@@ -40,7 +40,7 @@ namespace {
         };
     #pragma pack(pop)
 
-    void SetThreadName(const char* threadName, DWORD dwThreadID = -1) {
+    void set_thread_name_(const char* threadName, DWORD dwThreadID = -1) {
         THREADNAME_INFO info;
         info.dwType     = 0x1000;
         info.szName     = threadName;
@@ -87,7 +87,7 @@ struct Thread::ThreadPrivate {
     std::string name;
     bool running = false;
     bool critical = false;
-    int coreAffinity = -1;
+    int core_affinity = -1;
     Thread::EPriority priority;
     ref<Logger> logger;
     ref<Thread> parent;
@@ -104,11 +104,11 @@ Thread::~Thread() {
         Log(EWarn, "Destructor called while thread '%s' was still running", d->name);
 }
 
-void Thread::setCritical(bool critical) {
+void Thread::set_critical(bool critical) {
     d->critical = critical;
 }
 
-bool Thread::isCritical() const {
+bool Thread::is_critical() const {
     return d->critical;
 }
 
@@ -116,11 +116,11 @@ const std::string &Thread::name() const {
     return d->name;
 }
 
-void Thread::setName(const std::string &name) {
+void Thread::set_name(const std::string &name) {
     d->name = name;
 }
 
-void Thread::setLogger(Logger *logger) {
+void Thread::set_logger(Logger *logger) {
     d->logger = logger;
 }
 
@@ -128,15 +128,15 @@ Logger* Thread::logger() {
     return d->logger;
 }
 
-void Thread::setFileResolver(FileResolver *fresolver) {
+void Thread::set_file_resolver(FileResolver *fresolver) {
     d->fresolver = fresolver;
 }
 
-FileResolver* Thread::fileResolver() {
+FileResolver* Thread::file_resolver() {
     return d->fresolver;
 }
 
-const FileResolver* Thread::fileResolver() const {
+const FileResolver* Thread::file_resolver() const {
     return d->fresolver;
 }
 
@@ -144,7 +144,7 @@ Thread* Thread::thread() {
     return *self;
 }
 
-bool Thread::isRunning() const {
+bool Thread::is_running() const {
     return d->running;
 }
 
@@ -160,8 +160,8 @@ Thread::EPriority Thread::priority() const {
     return d->priority;
 }
 
-int Thread::coreAffinity() const {
-    return d->coreAffinity;
+int Thread::core_affinity() const {
+    return d->core_affinity;
 }
 
 uint32_t Thread::id() {
@@ -175,7 +175,7 @@ uint32_t Thread::id() {
 #endif
 }
 
-bool Thread::setPriority(EPriority priority) {
+bool Thread::set_priority(EPriority priority) {
     d->priority = priority;
     if (!d->running)
         return true;
@@ -192,10 +192,10 @@ bool Thread::setPriority(EPriority priority) {
         default: factor = 0.0f; break;
     }
 
-    const pthread_t threadID = d->thread.native_handle();
+    const pthread_t thread_id = d->thread.native_handle();
     struct sched_param param;
     int policy;
-    int retval = pthread_getschedparam(threadID, &policy, &param);
+    int retval = pthread_getschedparam(thread_id, &policy, &param);
     if (retval) {
         Log(EWarn, "pthread_getschedparam(): %s!", strerror(retval));
         return false;
@@ -210,45 +210,45 @@ bool Thread::setPriority(EPriority priority) {
     }
     param.sched_priority = (int) (min + (max-min)*factor);
 
-    retval = pthread_setschedparam(threadID, policy, &param);
+    retval = pthread_setschedparam(thread_id, policy, &param);
     if (retval) {
         Log(EWarn, "Could not adjust the thread priority to %i: %s!",
             param.sched_priority, strerror(retval));
         return false;
     }
 #elif defined(__WINDOWS__)
-    int win32Priority;
+    int win32_priority;
     switch (priority) {
-        case EIdlePriority:     win32Priority = THREAD_PRIORITY_IDLE; break;
-        case ELowestPriority:   win32Priority = THREAD_PRIORITY_LOWEST; break;
-        case ELowPriority:      win32Priority = THREAD_PRIORITY_BELOW_NORMAL; break;
-        case EHighPriority:     win32Priority = THREAD_PRIORITY_ABOVE_NORMAL; break;
-        case EHighestPriority:  win32Priority = THREAD_PRIORITY_HIGHEST; break;
-        case ERealtimePriority: win32Priority = THREAD_PRIORITY_TIME_CRITICAL; break;
-        default:                win32Priority = THREAD_PRIORITY_NORMAL; break;
+        case EIdlePriority:     win32_priority = THREAD_PRIORITY_IDLE; break;
+        case ELowestPriority:   win32_priority = THREAD_PRIORITY_LOWEST; break;
+        case ELowPriority:      win32_priority = THREAD_PRIORITY_BELOW_NORMAL; break;
+        case EHighPriority:     win32_priority = THREAD_PRIORITY_ABOVE_NORMAL; break;
+        case EHighestPriority:  win32_priority = THREAD_PRIORITY_HIGHEST; break;
+        case ERealtimePriority: win32_priority = THREAD_PRIORITY_TIME_CRITICAL; break;
+        default:                win32_priority = THREAD_PRIORITY_NORMAL; break;
     }
 
     // If the function succeeds, the return value is nonzero
     const HANDLE handle = d->thread.native_handle();
-    if (SetThreadPriority(handle, win32Priority) == 0) {
+    if (SetThreadPriority(handle, win32_priority) == 0) {
         Log(EWarn, "Could not adjust the thread priority to %i: %s!",
-            win32Priority, util::lastError());
+            win32_priority, util::last_error());
         return false;
     }
 #endif
     return true;
 }
 
-void Thread::setCoreAffinity(int coreID) {
-    d->coreAffinity = coreID;
+void Thread::set_core_affinity(int coreID) {
+    d->core_affinity = coreID;
     if (!d->running)
         return;
 
 #if defined(__OSX__)
     /* CPU affinity not supported on OSX */
 #elif defined(__LINUX__)
-    int nCores = sysconf(_SC_NPROCESSORS_CONF),
-        nLogicalCores = nCores;
+    int core_count = sysconf(_SC_NPROCESSORS_CONF),
+        logical_core_count = core_count;
 
     size_t size = 0;
     cpu_set_t *cpuset = nullptr;
@@ -258,10 +258,10 @@ void Thread::setCoreAffinity(int coreID) {
        be warranted by the physical core count. Keep querying with increasingly
        larger buffers if the pthread_getaffinity_np operation fails */
     for (int i = 0; i<10; ++i) {
-        size = CPU_ALLOC_SIZE(nLogicalCores);
-        cpuset = CPU_ALLOC(nLogicalCores);
+        size = CPU_ALLOC_SIZE(logical_core_count);
+        cpuset = CPU_ALLOC(logical_core_count);
         if (!cpuset) {
-            Log(EWarn, "Thread::setCoreAffinity(): could not allocate cpu_set_t");
+            Log(EWarn, "Thread::set_core_affinity(): could not allocate cpu_set_t");
             return;
         }
 
@@ -276,59 +276,62 @@ void Thread::setCoreAffinity(int coreID) {
 
         if (retval == EINVAL) {
             /* Retry with a larger cpuset */
-            nLogicalCores *= 2;
+            logical_core_count *= 2;
         } else {
             break;
         }
     }
 
     if (retval) {
-        Log(EWarn, "Thread::setCoreAffinity(): pthread_getaffinity_np(): could "
+        Log(EWarn, "Thread::set_core_affinity(): pthread_getaffinity_np(): could "
             "not read thread affinity map: %s", strerror(retval));
         return;
     }
 
-    int actualCoreID = -1, available = 0;
-    for (int i=0; i<nLogicalCores; ++i) {
+    int actual_core_id = -1, available = 0;
+    for (int i=0; i<logical_core_count; ++i) {
         if (!CPU_ISSET_S(i, size, cpuset))
             continue;
         if (available++ == coreID) {
-            actualCoreID = i;
+            actual_core_id = i;
             break;
         }
     }
 
-    if (actualCoreID == -1) {
-        Log(EWarn, "Thread::setCoreAffinity(): out of bounds: %i/%i cores available, requested #%i!",
-            available, nCores, coreID);
+    if (actual_core_id == -1) {
+        Log(EWarn, "Thread::set_core_affinity(): out of bounds: %i/%i cores "
+                   "available, requested #%i!",
+            available, core_count, coreID);
         CPU_FREE(cpuset);
         return;
     }
 
     CPU_ZERO_S(size, cpuset);
-    CPU_SET_S(actualCoreID, size, cpuset);
+    CPU_SET_S(actual_core_id, size, cpuset);
 
     retval = pthread_setaffinity_np(d->thread.native_handle(), size, cpuset);
     if (retval) {
-        Log(EWarn, "Thread::setCoreAffinity(): pthread_setaffinity_np: failed: %s", strerror(retval));
+        Log(EWarn,
+            "Thread::set_core_affinity(): pthread_setaffinity_np: failed: %s",
+            strerror(retval));
         CPU_FREE(cpuset);
         return;
     }
 
     CPU_FREE(cpuset);
 #elif defined(__WINDOWS__)
-    int nCores = util::coreCount();
+    int core_count = util::core_count();
     const HANDLE handle = d->thread.native_handle();
 
     DWORD_PTR mask;
 
-    if (coreID != -1 && coreID < nCores)
+    if (coreID != -1 && coreID < core_count)
         mask = (DWORD_PTR) 1 << coreID;
     else
-        mask = (1 << nCores) - 1;
+        mask = (1 << core_count) - 1;
 
     if (!SetThreadAffinityMask(handle, mask))
-        Log(EWarn, "Thread::setCoreAffinity(): SetThreadAffinityMask : failed");
+        Log(EWarn, "Thread::set_core_affinity(): SetThreadAffinityMask : failed");
 #endif
 }
 
@@ -348,16 +351,16 @@ void Thread::start() {
 
     /* Inherit the parent thread's file resolver if none was set */
     if (!d->fresolver)
-        d->fresolver = d->parent->fileResolver();
+        d->fresolver = d->parent->file_resolver();
 
     d->running = true;
 
-    incRef();
+    inc_ref();
     d->thread = std::thread(&Thread::dispatch, this);
 }
 
 void Thread::dispatch() {
-    ThreadLocalBase::registerThread();
+    ThreadLocalBase::register_thread();
 
     uint32_t id = thread_id++;
     #if defined(__LINUX__) || defined(__OSX__)
@@ -369,7 +372,7 @@ void Thread::dispatch() {
     *self = this;
 
     if (d->priority != ENormalPriority)
-        setPriority(d->priority);
+        set_priority(d->priority);
 
     if (!d->name.empty()) {
         const std::string threadName = "Mitsuba: " + name();
@@ -379,17 +382,17 @@ void Thread::dispatch() {
         #elif defined(__OSX__)
             pthread_setname_np(threadName.c_str());
         #elif defined(__WINDOWS__)
-            SetThreadName(threadName.c_str());
+            set_thread_name_(threadName.c_str());
         #endif
     }
 
-    if (d->coreAffinity != -1)
-        setCoreAffinity(d->coreAffinity);
+    if (d->core_affinity != -1)
+        set_core_affinity(d->core_affinity);
 
     try {
         run();
     } catch (std::exception &e) {
-        ELogLevel warnLogLevel = logger()->errorLevel() == EError ? EWarn : EInfo;
+        ELogLevel warnLogLevel = logger()->error_level() == EError ? EWarn : EInfo;
         Log(warnLogLevel, "Fatal error: uncaught exception: \"%s\"", e.what());
         if (d->critical)
             abort();
@@ -403,8 +406,8 @@ void Thread::exit() {
     Log(EDebug, "Thread \"%s\" has finished", d->name);
     d->running = false;
     Assert(*self == this);
-    ThreadLocalBase::unregisterThread();
-    decRef();
+    ThreadLocalBase::unregister_thread();
+    dec_ref();
 }
 
 void Thread::join() {
@@ -423,7 +426,7 @@ void Thread::yield() {
     std::this_thread::yield();
 }
 
-std::string Thread::toString() const {
+std::string Thread::to_string() const {
     std::ostringstream oss;
     oss << "Thread[" << std::endl
         << "  name = \"" << d->name << "\"," << std::endl
@@ -441,7 +444,7 @@ public:
     }
 
     void on_scheduler_entry(bool) {
-        if (ThreadLocalBase::registerThread()) {
+        if (ThreadLocalBase::register_thread()) {
             uint32_t id = thread_id++;
             #if defined(__LINUX__) || defined(__OSX__)
                 pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
@@ -453,18 +456,18 @@ public:
     }
 
     void on_scheduler_exit(bool) {
-        ThreadLocalBase::unregisterThread();
+        ThreadLocalBase::unregister_thread();
     }
 };
 
 static std::unique_ptr<Thread::TaskObserver> observer;
 
-void Thread::staticInitialization() {
+void Thread::static_initialization() {
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_key_create(&this_thread_id, nullptr);
     #endif
-    ThreadLocalBase::staticInitialization();
-    ThreadLocalBase::registerThread();
+    ThreadLocalBase::static_initialization();
+    ThreadLocalBase::register_thread();
 
     self = new ThreadLocal<Thread>();
     Thread *mainThread = new MainThread();
@@ -476,13 +479,13 @@ void Thread::staticInitialization() {
         new Thread::TaskObserver());
 }
 
-void Thread::staticShutdown() {
+void Thread::static_shutdown() {
     observer.reset();
     thread()->d->running = false;
-    ThreadLocalBase::unregisterThread();
+    ThreadLocalBase::unregister_thread();
     delete self;
     self = nullptr;
-    ThreadLocalBase::staticShutdown();
+    ThreadLocalBase::static_shutdown();
 
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_key_delete(this_thread_id);
@@ -493,15 +496,15 @@ ThreadEnvironment::ThreadEnvironment(Thread *other) {
     auto thread = Thread::thread();
     Assert(thread);
     m_logger = thread->logger();
-    m_fileResolver = thread->fileResolver();
-    thread->setLogger(other->logger());
-    thread->setFileResolver(other->fileResolver());
+    m_file_resolver = thread->file_resolver();
+    thread->set_logger(other->logger());
+    thread->set_file_resolver(other->file_resolver());
 }
 
 ThreadEnvironment::~ThreadEnvironment() {
     auto thread = Thread::thread();
-    thread->setLogger(m_logger);
-    thread->setFileResolver(m_fileResolver);
+    thread->set_logger(m_logger);
+    thread->set_file_resolver(m_file_resolver);
 }
 
 MTS_IMPLEMENT_CLASS(Thread, Object)

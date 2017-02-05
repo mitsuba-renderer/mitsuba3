@@ -1,81 +1,81 @@
-#include <pcg32.h>
 #include <mitsuba/core/random.h>
 #include "python.h"
 
 MTS_PY_EXPORT(random) {
-    py::class_<pcg32> pcg32_(m, "pcg32", D(pcg32));
-    pcg32_
-        .def(py::init<>(), D(pcg32, pcg32))
-        .def(py::init<uint64_t, uint64_t>(), D(pcg32, pcg32, 2))
-        .def(py::init<const pcg32 &>(), "Copy constructor")
-        .def("seed", &pcg32::seed, py::arg("initstate"), py::arg("initseq") = 1u, D(pcg32, seed))
-        .def("nextUInt", py::overload_cast<>(&pcg32::nextUInt), D(pcg32, nextUInt))
-        .def("nextUInt", py::overload_cast<uint32_t>(&pcg32::nextUInt), py::arg("bound"), D(pcg32, nextUInt, 2))
-        .def("nextSingle", &pcg32::nextFloat, D(pcg32, nextFloat))
-        .def("nextSingle", [](pcg32 &rng, size_t n) {
+    py::class_<PCG32> PCG32_(m, "PCG32", D(TPCG32));
+    PCG32_
+        .def(py::init<uint64_t, uint64_t>(), D(TPCG32, TPCG32),
+             "initstate"_a = PCG32_DEFAULT_STATE,
+             "initseq"_a = index_sequence<uint64_t>())
+        .def(py::init<const PCG32 &>(), "Copy constructor")
+        .def("seed", &PCG32::seed, "initstate"_a, "initseq"_a = 1u, D(TPCG32, seed))
+        .def("next_uint32", py::overload_cast<>(&PCG32::next_uint32), D(TPCG32, next_uint32))
+        .def("next_uint32", py::overload_cast<uint32_t>(&PCG32::next_uint32), "bound"_a, D(TPCG32, next_uint32, 2))
+        .def("next_float32", &PCG32::next_float32, D(TPCG32, next_float32))
+        .def("next_float32", [](PCG32 &rng, size_t n) {
             py::array_t<float> result(n);
             for (size_t i = 0; i < n; ++i)
-                result.mutable_data()[i] = rng.nextFloat();
+                result.mutable_data()[i] = rng.next_float32();
             return result;
-        }, py::arg("n"))
-        .def("nextSingle", [](pcg32 &rng, size_t m, size_t n) {
+        }, "n"_a)
+        .def("next_float32", [](PCG32 &rng, size_t m, size_t n) {
             py::array_t<float> result({m, n});
             for (size_t i = 0; i < n*m; ++i)
-                result.mutable_data()[i] = rng.nextFloat();
+                result.mutable_data()[i] = rng.next_float32();
             return result;
-        }, py::arg("m"), py::arg("n"))
-        .def("nextDouble", &pcg32::nextDouble, D(pcg32, nextDouble))
-        .def("nextDouble", [](pcg32 &rng, size_t n) {
+        }, "m"_a, "n"_a)
+        .def("next_float64", &PCG32::next_float64, D(TPCG32, next_float64))
+        .def("next_float64", [](PCG32 &rng, size_t n) {
             py::array_t<float> result(n);
             for (size_t i = 0; i < n; ++i)
-                result.mutable_data()[i] = rng.nextDouble();
+                result.mutable_data()[i] = rng.next_float64();
             return result;
-        }, py::arg("n"))
-        .def("nextDouble", [](pcg32 &rng, size_t m, size_t n) {
+        }, "n"_a)
+        .def("next_float64", [](PCG32 &rng, size_t m, size_t n) {
             py::array_t<float> result({m, n});
             for (size_t i = 0; i < n*m; ++i)
-                result.mutable_data()[i] = rng.nextDouble();
+                result.mutable_data()[i] = rng.next_float64();
             return result;
-        }, py::arg("m"), py::arg("n"))
-        .def("nextFloat", [p = py::handle(pcg32_)](py::args args, py::kwargs kwargs) -> py::object {
+        }, "m"_a, "n"_a)
+        .def("next_float32", [p = py::handle(PCG32_)](py::args args, py::kwargs kwargs) -> py::object {
             #if defined(SINGLE_PRECISION)
-                return p.attr("nextSingle")(*args, **kwargs);
+                return p.attr("next_float32")(*args, **kwargs);
             #else
-                return p.attr("nextDouble")(*args, **kwargs);
+                return p.attr("next_float64")(*args, **kwargs);
             #endif
         })
-        .def("advance", &pcg32::advance, py::arg("delta"), D(pcg32, advance))
-        .def("shuffle", [](pcg32 &p, py::list l) {
+        .def("advance", &PCG32::advance, "delta"_a, D(TPCG32, advance))
+        .def("shuffle", [](PCG32 &p, py::list l) {
             auto vec = l.cast<std::vector<py::object>>();
             p.shuffle(vec.begin(), vec.end());
             for (size_t i = 0; i < vec.size(); ++i)
                 l[i] = vec[i];
-        }, D(pcg32, shuffle))
-        .def(py::self == py::self, D(pcg32, operator, eq))
-        .def(py::self != py::self, D(pcg32, operator, ne))
-        .def(py::self - py::self, D(pcg32, operator, sub))
-        .def("__repr__", [](const pcg32 &p) {
+        }, D(TPCG32, shuffle))
+        .def(py::self == py::self, D(TPCG32, operator, eq))
+        .def(py::self != py::self, D(TPCG32, operator, ne))
+        .def(py::self - py::self, D(TPCG32, operator, sub))
+        .def("__repr__", [](const PCG32 &p) {
             std::ostringstream oss;
-            oss << "pcg32[state=0x" << std::hex << p.state << ", inc=0x" << std::hex << p.inc << "]";
+            oss << "PCG32[state=0x" << std::hex << p.state << ", inc=0x" << std::hex << p.inc << "]";
             return oss.str();
         });
 
-    m.def("sampleTEASingle",
-          py::overload_cast<uint32_t, uint32_t, int>(&sampleTEASingle),
-          py::arg("v0"), py::arg("v1"), py::arg("rounds") = 4, DM(sampleTEASingle));
+    m.def("sample_tea_float32", sample_tea_float32<uint32_t>,
+          "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float32));
 
-    m.def("sampleTEASingle",
-          py::overload_cast<UInt32Packet, UInt32Packet, int>(&sampleTEASingle),
-          py::arg("v0"), py::arg("v1"), py::arg("rounds") = 4, DM(sampleTEASingle, 2));
+    m.def("sample_tea_float32",
+          [](const UInt32X &v0, const UInt32X &v1, int rounds) {
+              return vectorize_safe(sample_tea_float32<UInt32P>, v0, v1, rounds);
+          }, "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float32));
 
-    m.def("sampleTEADouble",
-          py::overload_cast<uint32_t, uint32_t, int>(&sampleTEADouble),
-          py::arg("v0"), py::arg("v1"), py::arg("rounds") = 4, DM(sampleTEADouble));
+    m.def("sample_tea_float64", sample_tea_float64<uint32_t>,
+          "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float64));
 
-    m.def("sampleTEADouble",
-          py::overload_cast<UInt32Packet, UInt32Packet, int>(&sampleTEADouble),
-          py::arg("v0"), py::arg("v1"), py::arg("rounds") = 4, DM(sampleTEADouble, 2));
+    m.def("sample_tea_float64",
+          [](const UInt32X &v0, const UInt32X &v1, int rounds) {
+              return vectorize_safe(sample_tea_float64<UInt32P>, v0, v1, rounds);
+          }, "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float64));
 
-    m.attr("sampleTEAFloat") = m.attr(
-        sizeof(Float) == sizeof(float) ? "sampleTEASingle" : "sampleTEADouble");
+    m.attr("sample_tea_float") = m.attr(
+        sizeof(Float) == sizeof(float) ? "sample_tea_float32" : "sample_tea_float64");
 }

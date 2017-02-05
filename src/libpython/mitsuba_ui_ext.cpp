@@ -4,8 +4,8 @@
 
 MTS_PY_EXPORT(GLTexture) {
     auto gltexture = MTS_PY_CLASS(GLTexture, Object)
-        .def(py::init<>(), DM(GLTexture, GLTexture))
-        .mdef(GLTexture, setInterpolation)
+        .def(py::init<>(), D(GLTexture, GLTexture))
+        .mdef(GLTexture, set_interpolation)
         .mdef(GLTexture, id)
         .mdef(GLTexture, init)
         .mdef(GLTexture, free)

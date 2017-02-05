@@ -18,8 +18,8 @@ NAMESPACE_END(detail)
  *
  * All read<b>X</b>() and write<b>X</b>() methods support transparent
  * conversion based on the endianness of the underlying system and the
- * value passed to \ref setByteOrder(). Whenever \ref hostByteOrder()
- * and \ref byteOrder() disagree, the endianness is swapped.
+ * value passed to \ref set_byte_order(). Whenever \ref host_byte_order()
+ * and \ref byte_order() disagree, the endianness is swapped.
  *
  * \sa FileStream, MemoryStream, DummyStream
  */
@@ -49,7 +49,7 @@ public:
     Stream();
 
     /// Returns a human-readable desriptor of the stream
-    virtual std::string toString() const override;
+    virtual std::string to_string() const override;
 
     /** \brief Closes the stream.
      *
@@ -61,7 +61,7 @@ public:
     virtual void close() = 0;
 
     /// Whether the stream is closed (no read or write are then permitted).
-    virtual bool isClosed() const = 0;
+    virtual bool is_closed() const = 0;
 
     // =========================================================================
     //! @{ \name Abstract methods that need to be implemented by subclasses
@@ -110,10 +110,10 @@ public:
     virtual void flush() = 0;
 
     /// Can we write to the stream?
-    virtual bool canWrite() const = 0;
+    virtual bool can_write() const = 0;
 
     /// Can we read from the stream?
-    virtual bool canRead() const = 0;
+    virtual bool can_read() const = 0;
 
     /// @}
     // =========================================================================
@@ -131,7 +131,7 @@ public:
     template <typename T>
     void read(T &value) {
         using helper = detail::serialization_helper<T>;
-        helper::read(*this, &value, 1, needsEndiannessSwapping());
+        helper::read(*this, &value, 1, needs_endianness_swap());
     }
 
     /**
@@ -143,14 +143,14 @@ public:
     template <typename T>
     void write(const T &value) {
         using helper = detail::serialization_helper<T>;
-        helper::write(*this, &value, 1, needsEndiannessSwapping());
+        helper::write(*this, &value, 1, needs_endianness_swap());
     }
 
     /// Convenience function for reading a line of text from an ASCII file
-    virtual std::string readLine();
+    virtual std::string read_line();
 
     /// Convenience function for writing a line of text to an ASCII file
-    void writeLine(const std::string &text);
+    void write_line(const std::string &text);
 
     /// @}
     // =========================================================================
@@ -168,18 +168,18 @@ public:
      * performing some read and write operations on the system using a
      * different endianness.
      */
-    void setByteOrder(EByteOrder byteOrder);
+    void set_byte_order(EByteOrder byte_order);
 
     /// Returns the byte order of this stream.
-    EByteOrder byteOrder() const { return m_byteOrder; }
+    EByteOrder byte_order() const { return m_byte_order; }
 
     /// Returns true if we need to perform endianness swapping before writing or reading.
-    bool needsEndiannessSwapping() const {
-        return m_byteOrder != m_hostByteOrder;
+    bool needs_endianness_swap() const {
+        return m_byte_order != m_host_byte_order;
     }
 
     /// Returns the byte order of the underlying machine.
-    static EByteOrder hostByteOrder() { return m_hostByteOrder; }
+    static EByteOrder host_byte_order() { return m_host_byte_order; }
 
 
     /// @}
@@ -196,8 +196,8 @@ protected:
     void operator=(const Stream&) = delete;
 
 private:
-    static const EByteOrder m_hostByteOrder;
-    EByteOrder m_byteOrder;
+    static const EByteOrder m_host_byte_order;
+    EByteOrder m_byte_order;
 };
 
 extern MTS_EXPORT_CORE std::ostream

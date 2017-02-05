@@ -2,12 +2,12 @@
 #include "python.h"
 
 MTS_PY_EXPORT(atomic) {
-    py::class_<AtomicFloat<>>(m, "AtomicFloat", DM(AtomicFloat))
-        .def(py::init<Float>(), DM(AtomicFloat, AtomicFloat))
-        .def(py::self += Float(), DM(AtomicFloat, operator, iadd))
-        .def(py::self -= Float(), DM(AtomicFloat, operator, imul))
-        .def(py::self *= Float(), DM(AtomicFloat, operator, imul))
-        .def(py::self /= Float(), DM(AtomicFloat, operator, idiv))
+    py::class_<AtomicFloat<>>(m, "AtomicFloat", D(AtomicFloat))
+        .def(py::init<Float>(), D(AtomicFloat, AtomicFloat))
+        .def(py::self += Float(), D(AtomicFloat, operator, iadd))
+        .def(py::self -= Float(), D(AtomicFloat, operator, imul))
+        .def(py::self *= Float(), D(AtomicFloat, operator, imul))
+        .def(py::self /= Float(), D(AtomicFloat, operator, idiv))
         .def("__float__", [](const AtomicFloat<> &af) { return (Float) af; },
-             DM(AtomicFloat, operator, T0));
+             D(AtomicFloat, operator, T0));
 }

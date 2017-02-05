@@ -43,32 +43,32 @@ public:
                        const std::string &msg) override;
 
     /// Should date information be included? The default is yes.
-    void setHasDate(bool value) { m_hasDate = value; }
-    /// \sa setHasDate
-    bool hasDate() { return m_hasDate; }
+    void set_has_date(bool value) { m_has_date = value; }
+    /// \sa set_has_date
+    bool has_date() { return m_has_date; }
 
     /// Should thread information be included? The default is yes.
-    void setHasThread(bool value) { m_hasThread = value; }
-    /// \sa setHasThread
-    bool hasThread() { return m_hasThread; }
+    void set_has_thread(bool value) { m_has_thread = value; }
+    /// \sa set_has_thread
+    bool has_thread() { return m_has_thread; }
 
     /// Should log level information be included? The default is yes.
-    void setHasLogLevel(bool value) { m_hasLogLevel = value; }
-    /// \sa setHasLogLevel
-    bool hasLogLevel() { return m_hasLogLevel; }
+    void set_has_log_level(bool value) { m_has_log_level = value; }
+    /// \sa set_has_log_level
+    bool has_log_level() { return m_has_log_level; }
 
     /// Should class information be included? The default is yes.
-    void setHasClass(bool value) { m_hasClass = value; }
-    /// \sa setHasClass
-    bool hasClass() { return m_hasClass; }
+    void set_has_class(bool value) { m_has_class = value; }
+    /// \sa set_has_class
+    bool has_class() { return m_has_class; }
 
     MTS_DECLARE_CLASS()
 
 protected:
-    bool m_hasDate;
-    bool m_hasLogLevel;
-    bool m_hasThread;
-    bool m_hasClass;
+    bool m_has_date;
+    bool m_has_log_level;
+    bool m_has_thread;
+    bool m_has_class;
 };
 
 NAMESPACE_END(mitsuba)

@@ -32,7 +32,7 @@ public:
     MemoryStream(void *ptr, size_t size);
 
     /// Returns a string representation
-    std::string toString() const override;
+    std::string to_string() const override;
 
     /** \brief Closes the stream.
      * No further read or write operations are permitted.
@@ -40,10 +40,10 @@ public:
      * This function is idempotent.
      * It may be called automatically by the destructor.
      */
-    virtual void close() override { m_isClosed = true; };
+    virtual void close() override { m_is_closed = true; };
 
     /// Whether the stream is closed (no read or write are then permitted).
-    virtual bool isClosed() const override { return m_isClosed; };
+    virtual bool is_closed() const override { return m_is_closed; };
 
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
@@ -97,16 +97,16 @@ public:
     virtual void flush() override { };
 
     /// Always returns true, except if the stream is closed.
-    virtual bool canWrite() const override { return !isClosed(); }
+    virtual bool can_write() const override { return !is_closed(); }
 
     /// Always returns true, except if the stream is closed.
-    virtual bool canRead() const override { return !isClosed(); }
+    virtual bool can_read() const override { return !is_closed(); }
 
     /// Return the current capacity of the underlying memory buffer
     size_t capacity() const { return m_capacity; }
 
     /// Return whether or not the memory stream owns the underlying buffer
-    bool ownsBuffer() const { return m_ownsBuffer; }
+    bool owns_buffer() const { return m_owns_buffer; }
 
     //! @}
     // =========================================================================
@@ -128,11 +128,11 @@ private:
     /// Current position inside of the memory buffer
     size_t m_pos;
     /// False if the MemoryStream was created from a pre-allocated buffer
-    bool m_ownsBuffer;
+    bool m_owns_buffer;
     /// Pointer to the memory buffer (might not be owned)
     uint8_t *m_data;
     /// Whether the stream has been closed.
-    bool m_isClosed;
+    bool m_is_closed;
 };
 
 NAMESPACE_END(mitsuba)

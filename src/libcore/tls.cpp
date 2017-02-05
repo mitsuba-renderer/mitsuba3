@@ -103,20 +103,20 @@ void *ThreadLocalBase::get() {
     return entry.data;
 }
 
-void ThreadLocalBase::staticInitialization() {
+void ThreadLocalBase::static_initialization() {
 #if defined(__OSX__)
     pthread_key_create(&ptdLocal, nullptr);
 #endif
 }
 
-void ThreadLocalBase::staticShutdown() {
+void ThreadLocalBase::static_shutdown() {
 #if defined(__OSX__)
     pthread_key_delete(ptdLocal);
     memset(&ptdLocal, 0, sizeof(pthread_key_t));
 #endif
 }
 
-bool ThreadLocalBase::registerThread() {
+bool ThreadLocalBase::register_thread() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
 #if defined(__OSX__)
     PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptdLocal);
@@ -142,7 +142,7 @@ bool ThreadLocalBase::registerThread() {
 }
 
 /// A thread has died -- destroy any remaining TLS entries associated with it
-void ThreadLocalBase::unregisterThread() {
+void ThreadLocalBase::unregister_thread() {
     tbb::mutex::scoped_lock guard(ptdGlobalLock);
 
     #if defined(__OSX__)

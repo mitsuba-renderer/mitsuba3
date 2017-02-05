@@ -50,13 +50,13 @@ public:
      * \brief Return whether or not the class represented
      * by this Class object contains pure virtual methods
      */
-    bool isAbstract() const { return m_abstract; }
+    bool is_abstract() const { return m_abstract; }
 
     /// Does the class support instantiation over RTTI?
-    bool isConstructible() const { return m_constr != nullptr; }
+    bool is_constructible() const { return m_constr != nullptr; }
 
     /// Does the class support serialization?
-    bool isSerializable() const { return m_unser != nullptr; }
+    bool is_serializable() const { return m_unser != nullptr; }
 
     /** \brief Return the Class object associated with the parent
      * class of nullptr if it does not have one.
@@ -64,10 +64,10 @@ public:
     const Class *parent() const { return m_parent; }
 
     /// Check whether this class derives from \a class_
-    bool derivesFrom(const Class *class_) const;
+    bool derives_from(const Class *class_) const;
 
     /// Look up a class by its name
-    static const Class *forName(const std::string &name);
+    static const Class *for_name(const std::string &name);
 
     /**
      * \brief Generate an instance of this class
@@ -86,27 +86,27 @@ public:
     ref<Object> unserialize(Stream *stream) const;
 
     /// Check if the RTTI layer has been initialized
-    static bool rttiIsInitialized() { return m_isInitialized; }
+    static bool rtti_is_initialized() { return m_is_initialized; }
 
     /** \brief Initializes the built-in RTTI and creates
      * a list of all compiled classes
      */
-    static void staticInitialization();
+    static void static_initialization();
 
-    /// Free the memory taken by staticInitialization()
-    static void staticShutdown();
+    /// Free the memory taken by static_initialization()
+    static void static_shutdown();
 private:
     /** \brief Initialize a class - called by
-     * staticInitialization()
+     * static_initialization()
      */
-    static void initializeOnce(Class *class_);
+    static void initialize_once(Class *class_);
 private:
-    std::string m_name, m_parentName;
+    std::string m_name, m_parent_name;
     Class *m_parent;
     bool m_abstract;
     ConstructFunctor m_constr;
     UnserializeFunctor m_unser;
-    static bool m_isInitialized;
+    static bool m_is_initialized;
 };
 
 /**
@@ -174,8 +174,8 @@ NAMESPACE_END(detail)
 #define MTS_IMPLEMENT_CLASS(Name, Parent) \
     Class *Name::m_class = new Class(#Name, #Parent, \
             std::is_abstract<Name>::value, \
-            detail::get_construct_functor<Name>(), \
-            detail::get_unserialize_functor<Name>()); \
+            ::mitsuba::detail::get_construct_functor<Name>(), \
+            ::mitsuba::detail::get_unserialize_functor<Name>()); \
     const Class *Name::class_() const { return m_class; }
 
 extern MTS_EXPORT_CORE const Class *m_class;

@@ -27,11 +27,11 @@ public:
      * This new instance takes ownership of the child stream. The child stream
      * must outlive the ZStream.
      */
-    ZStream(Stream *childStream, EStreamType streamType = EDeflateStream,
+    ZStream(Stream *child_stream, EStreamType stream_type = EDeflateStream,
             int level = Z_DEFAULT_COMPRESSION);
 
     /// Returns a string representation
-    std::string toString() const override;
+    std::string to_string() const override;
 
     /** \brief Closes the stream, but not the underlying child stream.
      * No further read or write operations are permitted.
@@ -42,17 +42,17 @@ public:
     virtual void close() override;
 
     /// Whether the stream is closed (no read or write are then permitted).
-    virtual bool isClosed() const override { return m_childStream && m_childStream->isClosed(); };
+    virtual bool is_closed() const override { return m_child_stream && m_child_stream->is_closed(); };
 
     // =========================================================================
     //! @{ \name Compression stream-specific features
     // =========================================================================
 
     /// Returns the child stream of this compression stream
-    const Stream *childStream() const { return m_childStream.get(); }
+    const Stream *child_stream() const { return m_child_stream.get(); }
 
     /// Returns the child stream of this compression stream
-    Stream *childStream() { return m_childStream; }
+    Stream *child_stream() { return m_child_stream; }
 
     //! @}
     // =========================================================================
@@ -101,13 +101,13 @@ public:
     }
 
     /// Can we write to the stream?
-    virtual bool canWrite() const override {
-        return m_childStream->canWrite();
+    virtual bool can_write() const override {
+        return m_child_stream->can_write();
     }
 
     /// Can we read from the stream?
-    virtual bool canRead() const override {
-        return m_childStream->canRead();
+    virtual bool can_read() const override {
+        return m_child_stream->can_read();
     }
 
     //! @}
@@ -120,10 +120,10 @@ protected:
     virtual ~ZStream();
 
 private:
-    ref<Stream> m_childStream;
-    z_stream m_deflateStream, m_inflateStream;
-    uint8_t m_deflateBuffer[detail::kZStreamBufferSize];
-    uint8_t m_inflateBuffer[detail::kZStreamBufferSize];
+    ref<Stream> m_child_stream;
+    z_stream m_deflate_stream, m_inflate_stream;
+    uint8_t m_deflate_buffer[detail::kZStreamBufferSize];
+    uint8_t m_inflate_buffer[detail::kZStreamBufferSize];
     bool m_didWrite;
 };
 

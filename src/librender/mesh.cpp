@@ -9,18 +9,16 @@ BoundingBox3f Mesh::bbox() const {
 }
 
 BoundingBox3f Mesh::bbox(Index index) const {
-    using simd::min;
-    using simd::max;
-    Assert(index <= m_faceCount);
+    Assert(index <= m_face_count);
 
     auto idx = (const Index *) face(index);
-    Assert(idx[0] < m_vertexCount);
-    Assert(idx[1] < m_vertexCount);
-    Assert(idx[2] < m_vertexCount);
+    Assert(idx[0] < m_vertex_count);
+    Assert(idx[1] < m_vertex_count);
+    Assert(idx[2] < m_vertex_count);
 
-    Point3f v0 = Point3f::LoadUnaligned((float *) vertex(idx[0]));
-    Point3f v1 = Point3f::LoadUnaligned((float *) vertex(idx[1]));
-    Point3f v2 = Point3f::LoadUnaligned((float *) vertex(idx[2]));
+    Point3f v0 = load<Point3f>((float *) vertex(idx[0]));
+    Point3f v1 = load<Point3f>((float *) vertex(idx[1]));
+    Point3f v2 = load<Point3f>((float *) vertex(idx[2]));
 
     return BoundingBox3f(
         min(min(v0, v1), v2),
@@ -82,22 +80,20 @@ namespace {
 }
 
 BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
-    using simd::cast;
-
     /* Reserve room for some additional vertices */
     Point3d vertices1[maxVertices], vertices2[maxVertices];
     size_t nVertices = 3;
 
-    Assert(index <= m_faceCount);
+    Assert(index <= m_face_count);
 
     auto idx = (const Index *) face(index);
-    Assert(idx[0] < m_vertexCount);
-    Assert(idx[1] < m_vertexCount);
-    Assert(idx[2] < m_vertexCount);
+    Assert(idx[0] < m_vertex_count);
+    Assert(idx[1] < m_vertex_count);
+    Assert(idx[2] < m_vertex_count);
 
-    Point3f v0 = Point3f::LoadUnaligned((float *) vertex(idx[0]));
-    Point3f v1 = Point3f::LoadUnaligned((float *) vertex(idx[1]));
-    Point3f v2 = Point3f::LoadUnaligned((float *) vertex(idx[2]));
+    Point3f v0 = load<Point3f>((float *) vertex(idx[0]));
+    Point3f v1 = load<Point3f>((float *) vertex(idx[1]));
+    Point3f v2 = load<Point3f>((float *) vertex(idx[2]));
 
     /* The kd-tree code will frequently call this function with
        almost-collapsed bounding boxes. It's extremely important not to
@@ -105,9 +101,9 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
        incorrectly remove triangles from the associated nodes. Hence, do
        the following computation in double precision! */
 
-    vertices1[0] = cast<Point3d>(v0);
-    vertices1[1] = cast<Point3d>(v1);
-    vertices1[2] = cast<Point3d>(v2);
+    vertices1[0] = Point3d(v0);
+    vertices1[1] = Point3d(v1);
+    vertices1[2] = Point3d(v2);
 
     for (int axis=0; axis<3; ++axis) {
         nVertices = sutherlandHodgman(vertices1, nVertices, vertices2, axis,
@@ -118,36 +114,36 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
 
     BoundingBox3f result;
     for (size_t i = 0; i < nVertices; ++i) {
-        simd::Array<double, 3, false, simd::RoundingMode::Up>   p1Up  (vertices1[i]);
-        simd::Array<double, 3, false, simd::RoundingMode::Down> p1Down(vertices1[i]);
-        result.min = min(result.min, cast<Point3f>(p1Down));
-        result.max = max(result.max, cast<Point3f>(p1Up));
+        Array<double, 3, false, RoundingMode::Up>   p1Up  (vertices1[i]);
+        Array<double, 3, false, RoundingMode::Down> p1Down(vertices1[i]);
+        result.min = min(result.min, Point3f(p1Down));
+        result.max = max(result.max, Point3f(p1Up));
     }
     result.clip(clip);
 
     return result;
 }
 
-Shape::Size Mesh::primitiveCount() const {
-    return faceCount();
+Shape::Size Mesh::primitive_count() const {
+    return face_count();
 }
 
-std::string Mesh::toString() const {
+std::string Mesh::to_string() const {
     return tfm::format("%s[\n"
         "  name = \"%s\",\n"
         "  bbox = %s,\n"
-        "  vertexCount = %i,\n"
-        "  vertexStruct = %s,\n"
-        "  faceCount = %i,\n"
-        "  faceStruct = %s,\n"
+        "  vertex_count = %i,\n"
+        "  vertex_struct = %s,\n"
+        "  face_count = %i,\n"
+        "  face_struct = %s,\n"
         "]",
         class_()->name(),
         m_name,
         m_bbox,
-        m_vertexCount,
-        string::indent(m_vertexStruct->toString()),
-        m_faceCount,
-        string::indent(m_faceStruct->toString())
+        m_vertex_count,
+        string::indent(m_vertex_struct->to_string()),
+        m_face_count,
+        string::indent(m_face_struct->to_string())
     );
 }
 

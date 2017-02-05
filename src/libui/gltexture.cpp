@@ -15,7 +15,7 @@ void GLTexture::init(const Bitmap *bitmap) {
     /* Bind to the texture */
     glBindTexture(GL_TEXTURE_2D, m_id);
 
-    setInterpolation(EMipMapLinear);
+    set_interpolation(EMipMapLinear);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -32,7 +32,7 @@ void GLTexture::free() {
 void GLTexture::refresh(const Bitmap *bitmap) {
     GLenum format, internalFormat, type;
 
-    switch (bitmap->componentFormat()) {
+    switch (bitmap->component_format()) {
         case Struct::EInt8:    type = GL_BYTE; break;
         case Struct::EUInt8:   type = GL_UNSIGNED_BYTE; break;
         case Struct::EInt16:   type = GL_SHORT; break;
@@ -44,27 +44,27 @@ void GLTexture::refresh(const Bitmap *bitmap) {
         case Struct::EFloat64: type = GL_DOUBLE; break;
         default:
             Throw("GLTexture::refresh(): incompatible component format: %s",
-                  bitmap->componentFormat());
+                  bitmap->component_format());
     }
 
-    switch (bitmap->pixelFormat()) {
+    switch (bitmap->pixel_format()) {
         case Bitmap::ELuminance:      format = GL_RED; break;
         case Bitmap::ELuminanceAlpha: format = GL_RG; break;
         case Bitmap::ERGB:            format = GL_RGB; break;
         case Bitmap::ERGBA:           format = GL_RGBA; break;
         default:
             Throw("GLTexture::refresh(): incompatible pixel format: %s",
-                  bitmap->pixelFormat());
+                  bitmap->pixel_format());
     }
     internalFormat = format;
 
-    if (bitmap->gamma() && bitmap->componentFormat() == Struct::EUInt8) {
-        switch (bitmap->pixelFormat()) {
+    if (bitmap->gamma() && bitmap->component_format() == Struct::EUInt8) {
+        switch (bitmap->pixel_format()) {
             case Bitmap::ERGB:            internalFormat = GL_SRGB8;
             case Bitmap::ERGBA:           internalFormat = GL_SRGB8_ALPHA8; break;
             default:
                 Throw("GLTexture::refresh(): incompatible sRGB pixel format: %s",
-                      bitmap->pixelFormat());
+                      bitmap->pixel_format());
         }
     }
 
@@ -80,7 +80,7 @@ void GLTexture::bind(int index) {
     m_index = index;
 }
 
-void GLTexture::setInterpolation(EInterpolation intp) {
+void GLTexture::set_interpolation(EInterpolation intp) {
     switch (intp) {
         case EMipMapLinear:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -98,7 +98,7 @@ void GLTexture::setInterpolation(EInterpolation intp) {
             break;
 
         default:
-            Throw("GLTexture::setInterpolation(): invalid mode!");
+            Throw("GLTexture::set_interpolation(): invalid mode!");
     }
 }
 

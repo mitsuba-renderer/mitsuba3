@@ -23,7 +23,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(util)
 
 #if defined(__WINDOWS__)
-std::string lastError() {
+std::string last_error() {
     DWORD errCode = GetLastError();
     char *errorText = nullptr;
     if (!FormatMessageA(
@@ -46,7 +46,7 @@ std::string lastError() {
 
 static int __cached_core_count = 0;
 
-int coreCount() {
+int core_count() {
     // assumes atomic word size memory access
     if (__cached_core_count)
         return __cached_core_count;
@@ -116,7 +116,7 @@ done:
 #endif
 }
 
-void trapDebugger() {
+void trap_debugger() {
 #if defined(__LINUX__)
     char exePath[PATH_MAX];
     memset(exePath, 0, PATH_MAX);
@@ -151,7 +151,7 @@ void trapDebugger() {
 #endif
 }
 
-std::string timeString(Float value, bool precise) {
+std::string time_string(Float value, bool precise) {
     struct Order { Float factor; const char* suffix; };
     const Order orders[] = {
         { 0,    "ms"}, { 1000, "s"},
@@ -165,7 +165,7 @@ std::string timeString(Float value, bool precise) {
     else if (std::isinf(value))
         return "inf";
     else if (value < 0)
-        return "-" + timeString(-value, precise);
+        return "-" + time_string(-value, precise);
 
     int i = 0;
     for (i = 0; i < 6 && value > orders[i+1].factor; ++i)
@@ -174,7 +174,7 @@ std::string timeString(Float value, bool precise) {
     return tfm::format(precise ? "%.5g%s" : "%.3g%s", value, orders[i].suffix);
 }
 
-std::string memString(size_t size, bool precise) {
+std::string mem_string(size_t size, bool precise) {
     const char *orders[] = {
         "B", "KiB", "MiB", "GiB",
         "TiB", "PiB", "EiB"
@@ -192,7 +192,7 @@ std::string memString(size_t size, bool precise) {
     void MTS_EXPORT __dummySymbol() { }
 #endif
 
-fs::path libraryPath() {
+fs::path library_path() {
     fs::path result;
 #if defined(__LINUX__)
     Dl_info info;
@@ -202,7 +202,7 @@ fs::path libraryPath() {
     uint32_t imageCount = _dyld_image_count();
     for (uint32_t i=0; i<imageCount; ++i) {
         const char *imageName = _dyld_get_image_name(i);
-        if (string::endsWith(imageName, "libmitsuba-core.dylib")) {
+        if (string::ends_with(imageName, "libmitsuba-core.dylib")) {
             result = fs::path(imageName);
             break;
         }

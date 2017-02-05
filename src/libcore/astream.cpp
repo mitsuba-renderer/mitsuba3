@@ -17,23 +17,23 @@ static constexpr auto kSerializedHeaderSize =
     sizeof(uint32_t) + kSerializedHeaderIdLength + sizeof(uint64_t) + sizeof(uint32_t);
 }  // end anonymous namespace
 
-AnnotatedStream::AnnotatedStream(Stream *stream, bool writeMode, bool throwOnMissing)
-    : Object(), m_stream(stream), m_writeMode(writeMode)
-    , m_throwOnMissing(throwOnMissing), m_isClosed(false) {
-    if (!m_writeMode && !m_stream->canRead())
+AnnotatedStream::AnnotatedStream(Stream *stream, bool write_mode, bool throw_on_missing)
+    : Object(), m_stream(stream), m_write_mode(write_mode)
+    , m_throw_on_missing(throw_on_missing), m_is_closed(false) {
+    if (!m_write_mode && !m_stream->can_read())
         Throw("Attempted to create a read-only AnnotatedStream from"
               " a stream without read capabilities: %s",
-              m_stream->toString());
+              m_stream->to_string());
 
-    if (m_writeMode && !m_stream->canWrite())
+    if (m_write_mode && !m_stream->can_write())
         Throw("Attempted to create a write-only AnnotatedStream from"
               " a stream without write capabilities: %s",
-              m_stream->toString());
+              m_stream->to_string());
 
     m_prefixStack.push_back("");
 
-    if (m_stream->canRead() && m_stream->size() > 0)
-        readTOC();
+    if (m_stream->can_read() && m_stream->size() > 0)
+        read_toc();
 
     // Even if the file was initially empty, we need to start any write
     // with an offset, so as to leave space for the header to be written on close.
@@ -45,12 +45,12 @@ AnnotatedStream::~AnnotatedStream() {
 }
 
 void AnnotatedStream::close() {
-    if (m_stream->isClosed())
+    if (m_stream->is_closed())
         return;
 
-    if (canWrite())
-        writeTOC();
-    m_isClosed = true;
+    if (can_write())
+        write_toc();
+    m_is_closed = true;
 }
 
 std::vector<std::string> AnnotatedStream::keys() const {
@@ -71,20 +71,20 @@ void AnnotatedStream::pop() {
     m_prefixStack.pop_back();
 }
 
-bool AnnotatedStream::getBase(const std::string &name, const std::string &type_id) {
-    if (!canRead())
+bool AnnotatedStream::get_base(const std::string &name, const std::string &type_id) {
+    if (!can_read())
         Throw("Attempted to read from write-only stream: %s",
-              m_stream->toString());
-    if (m_isClosed)
+              m_stream->to_string());
+    if (m_is_closed)
         Throw("Attempted to read from a closed annotated stream: %s",
-              toString());
+              to_string());
 
-    std::string fullName = m_prefixStack.back() + name;
-    auto it = m_table.find(fullName);
+    std::string full_name = m_prefixStack.back() + name;
+    auto it = m_table.find(full_name);
     if (it == m_table.end()) {
-        const auto logLevel = (m_throwOnMissing ? EError : EWarn);
+        const auto logLevel = (m_throw_on_missing ? EError : EWarn);
         Log(logLevel, "Unable to find field named \"%s\". Available fields: %s",
-                      fullName, keys());
+                      full_name, keys());
 
         return false;
     }
@@ -92,30 +92,30 @@ bool AnnotatedStream::getBase(const std::string &name, const std::string &type_i
     const auto &record = it->second;
     if (record.first != type_id)
         Throw("Field named \"%s\" has incompatible type: expected %s, found %s",
-              fullName, type_id, record.first);
+              full_name, type_id, record.first);
 
     m_stream->seek(static_cast<size_t>(record.second));
     return true;
 }
 
 void AnnotatedStream::setBase(const std::string &name, const std::string &type_id) {
-    if (!canWrite())
-        Throw("Attempted to write into read-only stream: %s", m_stream->toString());
-    if (m_isClosed)
-        Throw("Attempted to write to a closed annotated stream: %s", toString());
+    if (!can_write())
+        Throw("Attempted to write into read-only stream: %s", m_stream->to_string());
+    if (m_is_closed)
+        Throw("Attempted to write to a closed annotated stream: %s", to_string());
 
-    std::string fullName = m_prefixStack.back() + name;
-    auto it = m_table.find(fullName);
+    std::string full_name = m_prefixStack.back() + name;
+    auto it = m_table.find(full_name);
     if (it != m_table.end())
-        Throw("Field named \"%s\" was already set!", fullName);
+        Throw("Field named \"%s\" was already set!", full_name);
 
     const auto pos = static_cast<uint64_t>(m_stream->tell());
-    m_table[fullName] = std::make_pair(type_id, pos);
+    m_table[full_name] = std::make_pair(type_id, pos);
 }
 
-void AnnotatedStream::readTOC() {
-    uint64_t trailerOffset;
-    uint32_t nItems;
+void AnnotatedStream::read_toc() {
+    uint64_t trailer_offset;
+    uint32_t item_count;
     std::string header;
 
     // Check that sentry is present at the beginning of the stream
@@ -128,14 +128,14 @@ void AnnotatedStream::readTOC() {
     if (header != kSerializedHeaderId)
         Throw("Error trying to read the table of contents, header mismatch"
               " (expected %s, found %s). Underlying stream: %s",
-              kSerializedHeaderId, header, m_stream->toString());
+              kSerializedHeaderId, header, m_stream->to_string());
 
-    m_stream->read(trailerOffset);
-    m_stream->read(nItems);
+    m_stream->read(trailer_offset);
+    m_stream->read(item_count);
 
-    // Read the table of contents (located at offset 'trailerOffset')
-    m_stream->seek(static_cast<size_t>(trailerOffset));
-    for (uint32_t i = 0; i < nItems; ++i) {
+    // Read the table of contents (located at offset 'trailer_offset')
+    m_stream->seek(static_cast<size_t>(trailer_offset));
+    for (uint32_t i = 0; i < item_count; ++i) {
         std::string field_name, type_id;
         uint64_t offset;
         m_stream->read(field_name);
@@ -146,19 +146,19 @@ void AnnotatedStream::readTOC() {
     }
 }
 
-void AnnotatedStream::writeTOC() {
-    const auto trailerOffset = static_cast<uint64_t>(m_stream->tell());
-    const auto nItems = static_cast<uint32_t>(m_table.size());
+void AnnotatedStream::write_toc() {
+    auto trailer_offset = uint64_t(m_stream->tell());
+    auto item_count = uint32_t(m_table.size());
 
     // Write sentry at the very beginning of the stream
     m_stream->seek(0);
     m_stream->write(kSerializedHeaderId);
-    m_stream->write(trailerOffset);
-    m_stream->write(nItems);
+    m_stream->write(trailer_offset);
+    m_stream->write(item_count);
     m_stream->flush();
 
     // Write table of contents at the end of the stream
-    m_stream->seek(static_cast<size_t>(trailerOffset));
+    m_stream->seek(static_cast<size_t>(trailer_offset));
     for (const auto &item : m_table) {
         // For each field, write: field name, field type id, corresponding offset
         m_stream->write(item.first);

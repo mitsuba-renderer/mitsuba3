@@ -4,20 +4,21 @@
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/hash.h>
 #include <mitsuba/core/jit.h>
-#include <simdarray/array.h>
+#include <enoki/array.h>
+#include <enoki/half.h>
 #include <unordered_map>
 #include <ostream>
 
 NAMESPACE_BEGIN(mitsuba)
 
-Struct::Struct(bool pack, EByteOrder byteOrder)
-    : m_pack(pack), m_byteOrder(byteOrder) {
-    if (m_byteOrder == EHostByteOrder)
-        m_byteOrder = hostByteOrder();
+Struct::Struct(bool pack, EByteOrder byte_order)
+    : m_pack(pack), m_byte_order(byte_order) {
+    if (m_byte_order == EHostByteOrder)
+        m_byte_order = host_byte_order();
 }
 
 Struct::Struct(const Struct &s)
-    : m_fields(s.m_fields), m_pack(s.m_pack), m_byteOrder(s.m_byteOrder) { }
+    : m_fields(s.m_fields), m_pack(s.m_pack), m_byte_order(s.m_byte_order) { }
 
 size_t Struct::size() const {
     if (m_fields.empty())
@@ -40,7 +41,7 @@ size_t Struct::alignment() const {
     return size;
 }
 
-bool Struct::hasField(const std::string &name) const {
+bool Struct::has_field(const std::string &name) const {
     for (auto const &field : m_fields)
         if (field.name == name)
             return true;
@@ -96,7 +97,7 @@ std::ostream &operator<<(std::ostream &os, Struct::EType value) {
     }
     return os;
 }
-std::string Struct::toString() const {
+std::string Struct::to_string() const {
     std::ostringstream os;
     os << "Struct[" << std::endl;
     for (size_t i = 0; i < m_fields.size(); ++i) {
@@ -189,7 +190,7 @@ size_t hash(const Struct::Field &f) {
 
 size_t hash(const Struct &s) {
     return hash_combine(hash_combine(hash(s.m_fields), hash(s.m_pack)),
-                        hash(s.m_byteOrder));
+                        hash(s.m_byte_order));
 }
 
 static std::unordered_map<
@@ -244,11 +245,11 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
     c.test(count, count);
     c.jz(loopEnd);
 
-    size_t sourceSize = source->size();
+    size_t source_size = source->size();
 
-    if (sourceSize > 1) {
-        if (math::isPowerOfTwo(sourceSize))
-            c.shl(count, Imm(math::log2i(sourceSize)));
+    if (source_size > 1) {
+        if (math::is_power_of_two(source_size))
+            c.shl(count, Imm(enoki::log2i(source_size)));
         else
             c.imul(count, Imm(source->size()));
     }
@@ -263,7 +264,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
     bool failNeeded = false;
     std::vector<std::string> fields;
     for (Struct::Field f : *source) {
-        if ((f.flags & Struct::EAssert) && !target->hasField(f.name))
+        if ((f.flags & Struct::EAssert) && !target->has_field(f.name))
             fields.push_back(f.name);
     }
     for (Struct::Field f : *target)
@@ -271,7 +272,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
     for (auto const &name : fields) {
         Struct::Field df;
-        if (target->hasField(name))
+        if (target->has_field(name))
             df = target->field(name);
 
         int dfType = df.type;
@@ -287,11 +288,11 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
         try {
             auto sf = source->field(name);
 
-            bool sourceSigned = sf.isSigned();
-            bool sourceSwap = source->byteOrder() == Struct::EBigEndian;
+            bool source_signed = sf.is_signed();
+            bool source_swap = source->byte_order() == Struct::EBigEndian;
 
             uint32_t op;
-            if (sourceSigned) {
+            if (source_signed) {
                 op = sf.size < 4 ? kX86InstIdMovsx : kX86InstIdMovsxd;
             } else {
                 op = sf.size < 4 ? kX86InstIdMovzx : kX86InstIdMov;
@@ -317,10 +318,10 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
                 case Struct::EUInt16:
                 case Struct::EInt16:
-                    if (sourceSwap) {
+                    if (source_swap) {
                         c.movzx(reg, x86::word_ptr(input, sf.offset));
                         c.xchg(reg.r8Lo(), reg.r8Hi());
-                        if (sourceSigned)
+                        if (source_signed)
                             c.emit(op, reg.r64(), reg.r16());
                     } else {
                         c.emit(op, reg, x86::word_ptr(input, sf.offset));
@@ -329,10 +330,10 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
                 case Struct::EUInt32:
                 case Struct::EInt32:
-                    if (sourceSwap) {
+                    if (source_swap) {
                         c.mov(reg.r32(), x86::dword_ptr(input, sf.offset));
                         c.bswap(reg.r32());
-                        if (sourceSigned)
+                        if (source_signed)
                             c.emit(op, reg.r64(), reg.r32());
                     } else {
                         c.emit(op, reg, x86::dword_ptr(input, sf.offset));
@@ -342,16 +343,16 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 case Struct::EUInt64:
                 case Struct::EInt64:
                     c.mov(reg, x86::qword_ptr(input, sf.offset));
-                    if (sourceSwap)
+                    if (source_swap)
                         c.bswap(reg.r64());
                     break;
 
                 case Struct::EFloat16: {
                         c.movzx(reg, x86::word_ptr(input, sf.offset));
-                        if (sourceSwap)
+                        if (source_swap)
                             c.xchg(reg.r8Lo(), reg.r8Hi());
 
-                        auto call = c.call(imm_ptr((void *) simd::half::float16_to_float32),
+                        auto call = c.call(imm_ptr((void *) enoki::half::float16_to_float32),
                             FuncBuilder1<float, uint16_t>(kCallConvHost));
 
                         call->setArg(0, reg);
@@ -361,7 +362,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                     break;
 
                 case Struct::EFloat32:
-                    if (sourceSwap) {
+                    if (source_swap) {
                         c.mov(reg.r32(), x86::dword_ptr(input, sf.offset));
                         c.bswap(reg.r32());
                         c.movd(reg_f, reg.r32());
@@ -371,7 +372,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                     break;
 
                 case Struct::EFloat64:
-                    if (sourceSwap) {
+                    if (source_swap) {
                         c.mov(reg.r64(), x86::qword_ptr(input, sf.offset));
                         c.bswap(reg.r64());
                         c.movq(reg_d, reg.r64());
@@ -384,7 +385,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
             }
 
             if (sf.flags & Struct::EAssert) {
-                if (sf.isInteger()) {
+                if (sf.is_integer()) {
                     auto ref = c.newInt64Const(asmjit::kConstScopeLocal, (int64_t) sf.default_);
                     c.cmp(reg.r64(), ref);
                 } else if (sfType == Struct::EFloat32) {
@@ -400,10 +401,10 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 c.jne(loopFail);
             }
 
-            if (!target->hasField(name))
+            if (!target->has_field(name))
                 continue;
 
-            if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
+            if (sf.is_integer() && (sf.flags & Struct::ENormalized)) {
                 auto range = sf.range();
                 float scale = float(1 / (range.second - range.first));
                 float offset = float(-range.first);
@@ -417,7 +418,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 c.mulss(reg_f, scale_c);
 
                 if (sf.flags & Struct::EGamma) {
-                    auto call = c.call(imm_ptr((void *) math::inverseGamma<float>),
+                    auto call = c.call(imm_ptr((void *) math::inv_gamma<float>),
                         FuncBuilder1<float, float>(kCallConvHost));
                     call->setArg(0, reg_f);
                     call->setRet(0, reg_f);
@@ -426,13 +427,13 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 sfType = Struct::EFloat32;
             }
 
-            if (sf.isInteger() != df.isInteger()) {
-                if (sf.isInteger()) {
+            if (sf.is_integer() != df.is_integer()) {
+                if (sf.is_integer()) {
                     if (dfType == Struct::EFloat16 || dfType == Struct::EFloat32)
                         c.cvtsi2ss(reg_f, reg.r64());
                     else if (dfType == Struct::EFloat64)
                         c.cvtsi2sd(reg_d, reg.r64());
-                } else if (df.isInteger()) {
+                } else if (df.is_integer()) {
                     if (sfType == Struct::EFloat32) {
                         auto range = df.range();
                         auto rbegin = c.newFloatConst(asmjit::kConstScopeLocal, float(range.first));
@@ -491,9 +492,9 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
             if (!(df.flags & Struct::EDefault))
                 Throw("StructConverter(): field \"%s\" is missing in the "
                       "source structure.\nsource = %s,\ntarget = %s",
-                      name, m_source->toString(), m_target->toString());
+                      name, m_source->to_string(), m_target->to_string());
 
-            if (df.isInteger()) {
+            if (df.is_integer()) {
                 if (df.default_ == 0) {
                     c.xor_(reg, reg);
                 } else {
@@ -517,7 +518,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
             }
         }
 
-        bool targetSwap = target->byteOrder() == Struct::EBigEndian;
+        bool target_swap = target->byte_order() == Struct::EBigEndian;
         switch (dfType) {
             case Struct::EUInt8:
             case Struct::EInt8:
@@ -525,12 +526,12 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 break;
 
             case Struct::EFloat16: {
-                    auto call = c.call(imm_ptr((void *) simd::half::float32_to_float16),
+                    auto call = c.call(imm_ptr((void *) enoki::half::float32_to_float16),
                         FuncBuilder1<uint16_t, float>(kCallConvHost));
                     call->setArg(0, reg_f);
                     call->setRet(0, reg);
 
-                    if (targetSwap)
+                    if (target_swap)
                        c.xchg(reg.r8Lo(), reg.r8Hi());
 
                     c.mov(x86::word_ptr(output, df.offset), reg.r16());
@@ -539,7 +540,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
             case Struct::EUInt16:
             case Struct::EInt16:
-                if (targetSwap)
+                if (target_swap)
                    c.xchg(reg.r8Lo(), reg.r8Hi());
 
                 c.mov(x86::word_ptr(output, df.offset), reg.r16());
@@ -547,7 +548,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
             case Struct::EUInt32:
             case Struct::EInt32:
-                if (targetSwap)
+                if (target_swap)
                     c.bswap(reg.r32());
 
                 c.mov(x86::dword_ptr(output, df.offset), reg.r32());
@@ -555,14 +556,14 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
             case Struct::EUInt64:
             case Struct::EInt64:
-                if (targetSwap)
+                if (target_swap)
                     c.bswap(reg.r64());
 
                 c.mov(x86::qword_ptr(output, df.offset), reg.r64());
                 break;
 
             case Struct::EFloat32:
-                if (targetSwap) {
+                if (target_swap) {
                     c.movd(reg.r32(), reg_f);
                     c.bswap(reg.r32());
                     c.mov(x86::dword_ptr(output, df.offset), reg.r32());
@@ -572,7 +573,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 break;
 
             case Struct::EFloat64:
-                if (targetSwap) {
+                if (target_swap) {
                     c.movq(reg.r64(), reg_d);
                     c.bswap(reg.r64());
                     c.mov(x86::qword_ptr(output, df.offset), reg.r64());
@@ -613,17 +614,17 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
 #if MTS_STRUCTCONVERTER_USE_JIT == 0
 bool StructConverter::convert(size_t count, const void *src_, void *dest_) const {
-    size_t sourceSize = m_source->size();
-    size_t targetSize = m_target->size();
+    size_t source_size = m_source->size();
+    size_t target_size = m_target->size();
     using namespace mitsuba::detail;
 
     /* Is swapping needed */
-    bool sourceSwap = m_source->byteOrder() != Struct::hostByteOrder();
-    bool targetSwap = m_target->byteOrder() != Struct::hostByteOrder();
+    bool source_swap = m_source->byte_order() != Struct::host_byte_order();
+    bool target_swap = m_target->byte_order() != Struct::host_byte_order();
 
     std::vector<std::string> fields;
     for (Struct::Field f : *m_source) {
-        if ((f.flags & Struct::EAssert) && !m_target->hasField(f.name))
+        if ((f.flags & Struct::EAssert) && !m_target->has_field(f.name))
             fields.push_back(f.name);
     }
     for (Struct::Field f : *m_target)
@@ -636,7 +637,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
             double reg_d = 0;
 
             Struct::Field df;
-            if (m_target->hasField(name))
+            if (m_target->has_field(name))
                 df = m_target->field(name);
 
             int dfType = df.type;
@@ -651,7 +652,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
             try {
                 auto sf = m_source->field(name);
-                const uint8_t *src = (const uint8_t *) src_ + sf.offset + sourceSize * i;
+                const uint8_t *src = (const uint8_t *) src_ + sf.offset + source_size * i;
 
                 Struct::EType& sfType = sf.type;
                 if (sfType == Struct::EFloat) {
@@ -674,7 +675,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                     case Struct::EUInt16: {
                             uint16_t val = *((const uint16_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap16(val);
                             reg = (int64_t) val;
                         }
@@ -682,7 +683,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                     case Struct::EInt16: {
                             int16_t val = *((const int16_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap16(val);
                             reg = (int64_t) val;
                         }
@@ -690,7 +691,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                     case Struct::EUInt32: {
                             uint32_t val = *((const uint32_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap32(val);
                             reg = (int64_t) val;
                         }
@@ -698,7 +699,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                     case Struct::EInt32: {
                             int32_t val = *((const int32_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap32(val);
                             reg = (int64_t) val;
                         }
@@ -706,7 +707,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                     case Struct::EUInt64: {
                             uint64_t val = *((const uint64_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap64(val);
                             reg = (int64_t) val;
                         }
@@ -714,7 +715,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                     case Struct::EInt64: {
                             int64_t val = *((const int64_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap64(val);
                             reg = val;
                         }
@@ -722,16 +723,16 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                     case Struct::EFloat16: {
                             uint16_t val = *((const uint16_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap16(val);
-                            reg_f = simd::half::float16_to_float32(val);
+                            reg_f = enoki::half::float16_to_float32(val);
                             sfType = Struct::EFloat32;
                         }
                         break;
 
                     case Struct::EFloat32: {
                             uint32_t val = *((const uint32_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap32(val);
                             reg_f = memcpy_cast<float>(val);
                         }
@@ -739,7 +740,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                     case Struct::EFloat64: {
                             uint64_t val = *((const uint64_t *) src);
-                            if (sourceSwap)
+                            if (source_swap)
                                 val = swap64(val);
                             reg_d = memcpy_cast<double>(val);
                         }
@@ -749,7 +750,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                 }
 
                 if (sf.flags & Struct::EAssert) {
-                    if (sf.isInteger() && (int64_t) sf.default_ != reg)
+                    if (sf.is_integer() && (int64_t) sf.default_ != reg)
                         return false;
                     else if (sfType == Struct::EFloat32 && (float) sf.default_ != reg_f)
                         return false;
@@ -757,27 +758,27 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                         return false;
                 }
 
-                if (!m_target->hasField(name))
+                if (!m_target->has_field(name))
                     continue;
 
-                if (sf.isInteger() && (sf.flags & Struct::ENormalized)) {
+                if (sf.is_integer() && (sf.flags & Struct::ENormalized)) {
                     auto range = sf.range();
                     float scale = float(1 / (range.second - range.first));
                     float offset = float(-range.first);
                     reg_f = ((float) reg + offset) * scale;
                     if (sf.flags & Struct::EGamma)
-                        reg_f = math::inverseGamma<float>(reg_f);
+                        reg_f = math::inv_gamma<float>(reg_f);
                     sfType = Struct::EFloat32;
                 }
 
 
-                if (sf.isInteger() != df.isInteger()) {
-                    if (sf.isInteger()) {
+                if (sf.is_integer() != df.is_integer()) {
+                    if (sf.is_integer()) {
                         if (dfType == Struct::EFloat16 || dfType == Struct::EFloat32)
                             reg_f = (float) reg;
                         else if (dfType == Struct::EFloat64)
                             reg_d = (double) reg;
-                    } else if (df.isInteger()) {
+                    } else if (df.is_integer()) {
                         if (sfType == Struct::EFloat32) {
                             auto range = df.range();
 
@@ -816,8 +817,8 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                 if (!(df.flags & Struct::EDefault))
                     Throw("StructConverter(): field \"%s\" is missing in the "
                           "source structure.\nsource = %s,\ntarget = %s",
-                          name, m_source->toString(), m_target->toString());
-                if (df.isInteger())
+                          name, m_source->to_string(), m_target->to_string());
+                if (df.is_integer())
                     reg = (int64_t) df.default_;
                 else if (dfType == Struct::EFloat16 || dfType == Struct::EFloat32)
                     reg_f = (float) df.default_;
@@ -825,7 +826,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                     reg_d = df.default_;
             }
 
-            uint8_t *dst = (uint8_t *) dest_ + df.offset + targetSize * i;
+            uint8_t *dst = (uint8_t *) dest_ + df.offset + target_size * i;
             switch (dfType) {
                 case Struct::EUInt8:
                     *((uint8_t *) dst) = (uint8_t) reg;
@@ -837,7 +838,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 case Struct::EUInt16: {
                         uint16_t val = (uint16_t) reg;
-                        if (targetSwap)
+                        if (target_swap)
                             val = swap16(val);
                         *((uint16_t *) dst) = val;
                     }
@@ -845,7 +846,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 case Struct::EInt16: {
                         int16_t val = (int16_t) reg;
-                        if (targetSwap)
+                        if (target_swap)
                             val = swap16(val);
                         *((int16_t *) dst) = val;
                     }
@@ -853,7 +854,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 case Struct::EUInt32: {
                         uint32_t val = (uint32_t) reg;
-                        if (targetSwap)
+                        if (target_swap)
                             val = swap32(val);
                         *((uint32_t *) dst) = val;
                     }
@@ -861,7 +862,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 case Struct::EInt32: {
                         int32_t val = (int32_t) reg;
-                        if (targetSwap)
+                        if (target_swap)
                             val = swap32(val);
                         *((int32_t *) dst) = val;
                     }
@@ -869,7 +870,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 case Struct::EUInt64: {
                         uint64_t val = (uint64_t) reg;
-                        if (targetSwap)
+                        if (target_swap)
                             val = swap64(val);
                         *((uint64_t *) dst) = val;
                     }
@@ -877,15 +878,15 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 case Struct::EInt64: {
                         int64_t val = (int64_t) reg;
-                        if (targetSwap)
+                        if (target_swap)
                             val = swap64(val);
                         *((int64_t *) dst) = val;
                     }
                     break;
 
                 case Struct::EFloat16: {
-                        uint16_t val = simd::half::float32_to_float16(reg_f);
-                        if (targetSwap)
+                        uint16_t val = enoki::half::float32_to_float16(reg_f);
+                        if (target_swap)
                             val = swap16(val);
                         *((uint16_t *) dst) = val;
                     }
@@ -893,7 +894,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 case Struct::EFloat32: {
                         uint32_t val = (uint32_t) memcpy_cast<uint32_t>(reg_f);
-                        if (targetSwap)
+                        if (target_swap)
                             val = swap32(val);
                         *((uint32_t *) dst) = val;
                     }
@@ -901,7 +902,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                 case Struct::EFloat64: {
                         uint64_t val = (uint64_t) memcpy_cast<uint64_t>(reg_d);
-                        if (targetSwap)
+                        if (target_swap)
                             val = swap64(val);
                         *((uint64_t *) dst) = val;
                     }
@@ -915,11 +916,11 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 }
 #endif
 
-std::string StructConverter::toString() const {
+std::string StructConverter::to_string() const {
     std::ostringstream oss;
     oss << "StructConverter[" << std::endl
-        << "  source = " << string::indent(m_source->toString()) << "," << std::endl
-        << "  target = " << string::indent(m_target->toString()) << std::endl
+        << "  source = " << string::indent(m_source->to_string()) << "," << std::endl
+        << "  target = " << string::indent(m_target->to_string()) << std::endl
         << "]";
     return oss.str();
 }

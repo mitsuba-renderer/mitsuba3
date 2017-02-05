@@ -1,5 +1,5 @@
 #include <mitsuba/core/jit.h>
-#include <simdarray/array.h>
+#include <mitsuba/core/vector.h>
 #include <iostream>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -12,7 +12,7 @@ Jit *Jit::getInstance() { return jit; }
 #if defined(__GNUC__)
     __attribute__((target("sse")))
 #endif
-void Jit::staticInitialization() {
+void Jit::static_initialization() {
     /* Try to detect mismatches in compilation flags and processor
        capabilities early on */
 
@@ -27,23 +27,23 @@ void Jit::staticInitialization() {
             abort(); \
         }
 
-    CHECK(simd::hasAVX512ER, AVX512ER);
-    CHECK(simd::hasAVX512PF, AVX512PF);
-    CHECK(simd::hasAVX512CD, AVX512CD);
-    CHECK(simd::hasAVX512DQ, AVX512DQ);
-    CHECK(simd::hasAVX512VL, AVX512VL);
-    CHECK(simd::hasAVX512BW, AVX512BW);
-    CHECK(simd::hasAVX512F,  AVX512F);
-    CHECK(simd::hasAVX2,     AVX2);
-    CHECK(simd::hasFMA,      FMA3);
-    CHECK(simd::hasF16C,     F16C);
-    CHECK(simd::hasAVX,      AVX);
-    CHECK(simd::hasSSE42,    SSE4_2);
+    CHECK(enoki::has_avx512er, AVX512ER);
+    CHECK(enoki::has_avx512pf, AVX512PF);
+    CHECK(enoki::has_avx512cd, AVX512CD);
+    CHECK(enoki::has_avx512dq, AVX512DQ);
+    CHECK(enoki::has_avx512vl, AVX512VL);
+    CHECK(enoki::has_avx512bw, AVX512BW);
+    CHECK(enoki::has_avx512f,  AVX512F);
+    CHECK(enoki::has_avx2,     AVX2);
+    CHECK(enoki::has_fma,      FMA3);
+    CHECK(enoki::has_f16c,     F16C);
+    CHECK(enoki::has_avx,      AVX);
+    CHECK(enoki::has_sse42,    SSE4_2);
 
     #undef CHECK
     jit = new Jit();
 }
 
-void Jit::staticShutdown() { delete jit; jit = nullptr; }
+void Jit::static_shutdown() { delete jit; jit = nullptr; }
 
 NAMESPACE_END(mitsuba)

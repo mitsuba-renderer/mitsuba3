@@ -15,11 +15,13 @@ add_library(mitsuba-render-obj OBJECT
   mesh.cpp         ${INC_DIR}/mesh.h
   scene.cpp        ${INC_DIR}/scene.h
   kdtree.cpp       ${INC_DIR}/kdtree.h
+  #spectrum.cpp     ${INC_DIR}/spectrum.h
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
 set_property(TARGET mitsuba-render PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET mitsuba-render-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_target_properties(mitsuba-render-obj mitsuba-render PROPERTIES FOLDER mitsuba-render)
 
 # Link to Intel's Thread Building Blocks
 target_link_libraries(mitsuba-render PRIVATE tbb)

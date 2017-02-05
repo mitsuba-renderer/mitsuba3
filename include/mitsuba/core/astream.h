@@ -30,19 +30,19 @@ public:
      * given Stream instance.
      * The given Stream instance should not be destructed before this.
      *
-     * Throws if <tt>writeMode</tt> is enabled (resp. disabled) but the underlying
+     * Throws if <tt>write_mode</tt> is enabled (resp. disabled) but the underlying
      * stream does not have write (resp. read) capabilities.
      *
      * Throws if the underlying stream has read capabilities and is not empty
      * but does not correspond to a valid AnnotatedStream (i.e. it does not
      * start with the \ref kSerializedHeaderId sentry).
      *
-     * @param writeMode Whether to use write mode. The stream is either read-only
+     * @param write_mode Whether to use write mode. The stream is either read-only
      *                  or write-only.
-     * @param throwOnMissing Whether an error should be thrown when \ref get is
+     * @param throw_on_missing Whether an error should be thrown when \ref get is
      *                       called for a missing field.
      */
-    AnnotatedStream(Stream *stream, bool writeMode, bool throwOnMissing = true);
+    AnnotatedStream(Stream *stream, bool write_mode, bool throw_on_missing = true);
 
     /** \brief Closes the annotated stream.
      * No further read or write operations are permitted.
@@ -76,11 +76,11 @@ public:
     /** \brief Retrieve a field from the serialized file (only valid in read mode)
      *
      * Throws if the field exists but has the wrong type.
-     * Throws if the field is not found and <tt>throwOnMissing</tt> is true.
+     * Throws if the field is not found and <tt>throw_on_missing</tt> is true.
      */
     template <typename T> bool get(const std::string &name, T &value) {
         using helper = detail::serialization_helper<T>;
-        if (!getBase(name, helper::type_id()))
+        if (!get_base(name, helper::type_id()))
             return false;
         if (!name.empty())
             push(name);
@@ -102,7 +102,7 @@ public:
     }
 
     /// Whether the stream won't throw when trying to get missing fields.
-    bool compatibilityMode() const { return !m_throwOnMissing; }
+    bool compatibilityMode() const { return !m_throw_on_missing; }
 
     /// @}
     // =========================================================================
@@ -115,13 +115,13 @@ public:
     size_t size() const { return m_stream->size(); }
 
     /// Whether the underlying stream has read capabilities and is not closed.
-    bool canRead() const { return !m_writeMode && !isClosed(); }
+    bool can_read() const { return !m_write_mode && !is_closed(); }
 
     /// Whether the underlying stream has write capabilities and is not closed.
-    bool canWrite() const { return m_writeMode && !isClosed(); }
+    bool can_write() const { return m_write_mode && !is_closed(); }
 
     /// Whether the annotated stream has been closed (no further read or writes permitted)
-    bool isClosed() const { return m_isClosed; }
+    bool is_closed() const { return m_is_closed; }
 
     /// @}
     // =========================================================================
@@ -138,9 +138,9 @@ protected:
      * to the given <tt>name</tt>.
      *
      * Throws if the field exists but has the wrong type.
-     * Throws if the field is not found and <tt>m_throwOnMissing</tt> is true.
+     * Throws if the field is not found and <tt>m_throw_on_missing</tt> is true.
      */
-    bool getBase(const std::string &name, const std::string &type_id);
+    bool get_base(const std::string &name, const std::string &type_id);
 
     /** \brief Attempts to associate the current position of the stream to
      * the given field. The active prefix (from previous \ref push operations)
@@ -158,12 +158,12 @@ protected:
      * Throws if the underlying stream does not have start with the
      * AnnotatedStream sentry (\ref kSerializedHeaderId).
      */
-    void readTOC();
+    void read_toc();
 
     /** \brief Write back the table of contents to the underlying stream.
      * Should be called on destruction.
      */
-    void writeTOC();
+    void write_toc();
 
 private:
 
@@ -178,12 +178,12 @@ private:
      */
     std::vector<std::string> m_prefixStack;
 
-    bool m_writeMode;
+    bool m_write_mode;
 
-    bool m_throwOnMissing;
+    bool m_throw_on_missing;
 
     /// Whether the annotated stream is closed (independent of the underlying stream).
-    bool m_isClosed;
+    bool m_is_closed;
 };
 
 NAMESPACE_END(mitsuba)

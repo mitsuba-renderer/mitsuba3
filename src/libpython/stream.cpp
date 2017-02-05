@@ -14,43 +14,43 @@
         Type v;                                               \
         s.read(v);                                            \
         return py::cast(v);                                   \
-    }, DM(Stream, read, 2))                                   \
+    }, D(Stream, read, 2))                                   \
     .def("write" ReadableName, [](Stream& s, const Type &v) { \
         s.write(v);                                           \
         return py::cast(v);                                   \
-    }, DM(Stream, write, 2))
+    }, D(Stream, write, 2))
 
 MTS_PY_EXPORT(Stream) {
     auto c = MTS_PY_CLASS(Stream, Object)
         .mdef(Stream, close)
-        .mdef(Stream, setByteOrder)
-        .mdef(Stream, byteOrder)
+        .mdef(Stream, set_byte_order)
+        .mdef(Stream, byte_order)
         .mdef(Stream, seek)
         .mdef(Stream, truncate)
         .mdef(Stream, tell)
         .mdef(Stream, size)
         .mdef(Stream, flush)
-        .mdef(Stream, canRead)
-        .mdef(Stream, canWrite)
-        .def_static("hostByteOrder", Stream::hostByteOrder, DM(Stream, hostByteOrder))
+        .mdef(Stream, can_read)
+        .mdef(Stream, can_write)
+        .def_static("host_byte_order", Stream::host_byte_order, D(Stream, host_byte_order))
         .def("write", [](Stream &s, py::bytes b) {
             std::string data(b);
             s.write(data.c_str(), data.size());
-        }, DM(Stream, write))
+        }, D(Stream, write))
         .def("read", [](Stream &s, size_t size) {
             std::unique_ptr<char> tmp(new char[size]);
             s.read((void *) tmp.get(), size);
             return py::bytes(tmp.get(), size);
-        }, DM(Stream, write))
+        }, D(Stream, write))
         .DECLARE_RW(int64_t, "Long")
         .DECLARE_RW(float, "Single")
         .DECLARE_RW(double, "Double")
         .DECLARE_RW(Float, "Float")
         .DECLARE_RW(bool, "Bool")
         .DECLARE_RW(std::string, "String")
-        .def("__repr__", &Stream::toString);
+        .def("__repr__", &Stream::to_string);
 
-    py::enum_<Stream::EByteOrder>(c, "EByteOrder", DM(Stream, EByteOrder))
+    py::enum_<Stream::EByteOrder>(c, "EByteOrder", D(Stream, EByteOrder))
         .value("EBigEndian", Stream::EBigEndian)
         .value("ELittleEndian", Stream::ELittleEndian)
         .value("ENetworkByteOrder", Stream::ENetworkByteOrder)
@@ -61,39 +61,39 @@ MTS_PY_EXPORT(Stream) {
 
 MTS_PY_EXPORT(DummyStream) {
     MTS_PY_CLASS(DummyStream, Stream)
-        .def(py::init<>(), DM(DummyStream, DummyStream));
+        .def(py::init<>(), D(DummyStream, DummyStream));
 }
 
 MTS_PY_EXPORT(FileStream) {
     MTS_PY_CLASS(FileStream, Stream)
-        .def(py::init<const mitsuba::filesystem::path &, bool>(), DM(FileStream, FileStream))
+        .def(py::init<const mitsuba::filesystem::path &, bool>(), D(FileStream, FileStream))
         .mdef(FileStream, path);
 }
 
 MTS_PY_EXPORT(MemoryStream) {
     MTS_PY_CLASS(MemoryStream, Stream)
-        .def(py::init<size_t>(), DM(MemoryStream, MemoryStream),
-             py::arg("capacity") = 512)
+        .def(py::init<size_t>(), D(MemoryStream, MemoryStream),
+             "capacity"_a = 512)
         .mdef(MemoryStream, capacity)
-        .mdef(MemoryStream, ownsBuffer);
+        .mdef(MemoryStream, owns_buffer);
 }
 
 MTS_PY_EXPORT(ZStream) {
     auto c = MTS_PY_CLASS(ZStream, Stream);
 
-    py::enum_<ZStream::EStreamType>(c, "EStreamType", DM(ZStream, EStreamType))
+    py::enum_<ZStream::EStreamType>(c, "EStreamType", D(ZStream, EStreamType))
         .value("EDeflateStream", ZStream::EDeflateStream)
         .value("EGZipStream", ZStream::EGZipStream)
         .export_values();
 
 
-    c.def(py::init<Stream*, ZStream::EStreamType, int>(), DM(ZStream, ZStream),
-          py::arg("childStream"),
-          py::arg("streamType") = ZStream::EDeflateStream,
-          py::arg("level") = Z_DEFAULT_COMPRESSION)
-        .def("childStream", [](ZStream &stream) {
-            return py::cast(stream.childStream());
-        }, DM(ZStream, childStream));
+    c.def(py::init<Stream*, ZStream::EStreamType, int>(), D(ZStream, ZStream),
+          "child_stream"_a,
+          "streamType"_a = ZStream::EDeflateStream,
+          "level"_a = Z_DEFAULT_COMPRESSION)
+        .def("child_stream", [](ZStream &stream) {
+            return py::cast(stream.child_stream());
+        }, D(ZStream, child_stream));
 
 
 }
@@ -109,7 +109,7 @@ struct declare_astream_accessors {
         c.def("set", [](AnnotatedStream& s,
                         const std::string &name, const T &value) {
             s.set(name, value);
-        }, DM(AnnotatedStream, set));
+        }, D(AnnotatedStream, set));
     }
 };
 
@@ -122,16 +122,15 @@ using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
 MTS_PY_EXPORT(AnnotatedStream) {
     auto c = MTS_PY_CLASS(AnnotatedStream, Object)
         .def(py::init<ref<Stream>, bool, bool>(),
-             DM(AnnotatedStream, AnnotatedStream),
-             py::arg("stream"), py::arg("writeMode"), py::arg("throwOnMissing") = true)
+             D(AnnotatedStream, AnnotatedStream),
+             "stream"_a, "write_mode"_a, "throw_on_missing"_a = true)
         .mdef(AnnotatedStream, close)
         .mdef(AnnotatedStream, push)
         .mdef(AnnotatedStream, pop)
         .mdef(AnnotatedStream, keys)
         .mdef(AnnotatedStream, size)
-        .mdef(AnnotatedStream, canRead)
-        .mdef(AnnotatedStream, canWrite)
-        .def("__repr__", &AnnotatedStream::toString);
+        .mdef(AnnotatedStream, can_read)
+        .mdef(AnnotatedStream, can_write);
 
     // Get: we can "infer" the type from type information stored in the ToC.
     // We perform a series of try & catch until we find the right type. This is
@@ -158,7 +157,7 @@ MTS_PY_EXPORT(AnnotatedStream) {
 #undef TRY_GET_TYPE
 
         Throw("Key \"%s\" exists but does not have a supported type.", name);
-    }, DM(AnnotatedStream, get), py::arg("name"));
+    }, D(AnnotatedStream, get), "name"_a);
 
     // get & set declarations for many types
     methods_declarator::recurse<declare_astream_accessors>(c);

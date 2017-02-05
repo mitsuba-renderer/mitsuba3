@@ -20,11 +20,11 @@ template <typename _PointType, typename _VectorType> struct TRay {
     typedef _VectorType                 VectorType;
     typedef typename PointType::Scalar  Scalar;
 
-    PointType o;     ///< Ray origin
-    VectorType d;    ///< Ray direction
-    VectorType dRcp; ///< Componentwise reciprocals of the ray direction
-    Scalar mint;     ///< Minimum position on the ray segment
-    Scalar maxt;     ///< Maximum position on the ray segment
+    PointType o;      ///< Ray origin
+    VectorType d;     ///< Ray direction
+    VectorType d_rcp; ///< Componentwise reciprocals of the ray direction
+    Scalar mint;      ///< Minimum position on the ray segment
+    Scalar maxt;      ///< Maximum position on the ray segment
 
     /// Construct a new ray
     TRay() : mint(math::Epsilon), maxt(math::Infinity) { }
@@ -43,14 +43,14 @@ template <typename _PointType, typename _VectorType> struct TRay {
 
     /// Copy constructor
     TRay(const TRay &ray)
-        : o(ray.o), d(ray.d), dRcp(ray.dRcp), mint(ray.mint), maxt(ray.maxt) { }
+        : o(ray.o), d(ray.d), d_rcp(ray.d_rcp), mint(ray.mint), maxt(ray.maxt) { }
 
     /// Copy a ray, but change the covered segment of the copy
     TRay(const TRay &ray, Scalar mint, Scalar maxt)
-        : o(ray.o), d(ray.d), dRcp(ray.dRcp), mint(mint), maxt(maxt) { }
+        : o(ray.o), d(ray.d), d_rcp(ray.d_rcp), mint(mint), maxt(maxt) { }
 
     /// Update the reciprocal ray directions after changing 'd'
-    void update() { dRcp = Scalar(1.f) / d; }
+    void update() { d_rcp = rcp(d); }
 
     /// Return the position of a point along the ray
     PointType operator() (Scalar t) const { return o + t * d; }
@@ -58,7 +58,7 @@ template <typename _PointType, typename _VectorType> struct TRay {
     /// Return a ray that points into the opposite direction
     TRay reverse() const {
         TRay result;
-        result.o = o; result.d = -d; result.dRcp = -dRcp;
+        result.o = o; result.d = -d; result.d_rcp = -d_rcp;
         result.mint = mint; result.maxt = maxt;
         return result;
     }

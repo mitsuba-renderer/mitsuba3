@@ -5,41 +5,41 @@
 #define SET_ITEM_BINDING(Name, Type)                                   \
     def("__setitem__", [](Properties& p,                               \
                           const std::string &key, const Type &value) { \
-        p.set##Name(key, value, false);                                \
-    }, DM(Properties, set##Name))
+        p.set_##Name(key, value, false);                               \
+    }, D(Properties, set_##Name))
 
 MTS_PY_EXPORT(Properties) {
-    py::class_<Properties>(m, "Properties", DM(Properties))
+    py::class_<Properties>(m, "Properties", D(Properties))
         // Constructors
-        .def(py::init<>(), DM(Properties, Properties))
-        .def(py::init<const std::string &>(), DM(Properties, Properties, 2))
-        .def(py::init<const Properties &>(), DM(Properties, Properties, 3))
+        .def(py::init<>(), D(Properties, Properties))
+        .def(py::init<const std::string &>(), D(Properties, Properties, 2))
+        .def(py::init<const Properties &>(), D(Properties, Properties, 3))
 
         // Methods
-        .mdef(Properties, hasProperty)
-        .mdef(Properties, removeProperty)
-        .mdef(Properties, markQueried)
-        .mdef(Properties, wasQueried)
-        .mdef(Properties, pluginName)
-        .mdef(Properties, setPluginName)
+        .mdef(Properties, has_property)
+        .mdef(Properties, remove_property)
+        .mdef(Properties, mark_queried)
+        .mdef(Properties, was_queried)
+        .mdef(Properties, plugin_name)
+        .mdef(Properties, set_plugin_name)
         .mdef(Properties, id)
-        .mdef(Properties, setID)
-        .mdef(Properties, copyAttribute)
-        .mdef(Properties, propertyNames)
+        .mdef(Properties, set_id)
+        .mdef(Properties, copy_attribute)
+        .mdef(Properties, property_names)
         .mdef(Properties, unqueried)
         .mdef(Properties, merge)
 
         // Getters & setters: used as if it were a simple map
-       .SET_ITEM_BINDING(Float, py::float_)
-       .SET_ITEM_BINDING(Bool, bool)
-       .SET_ITEM_BINDING(Long, int64_t)
-       .SET_ITEM_BINDING(String, std::string)
-       .SET_ITEM_BINDING(Vector3f, Vector3f)
-       .SET_ITEM_BINDING(Object, ref<Object>)
+       .SET_ITEM_BINDING(float, py::float_)
+       .SET_ITEM_BINDING(bool, bool)
+       .SET_ITEM_BINDING(long, int64_t)
+       .SET_ITEM_BINDING(string, std::string)
+       .SET_ITEM_BINDING(vector3f, Vector3f)
+       .SET_ITEM_BINDING(object, ref<Object>)
 
        .def("__getitem__", [](const Properties& p, const std::string &key) {
             // We need to ask for type information to return the right cast
-            auto type = p.propertyType(key);
+            auto type = p.property_type(key);
 
             if (type == Properties::EBool)
                 return py::cast(p.bool_(key));
@@ -61,8 +61,8 @@ MTS_PY_EXPORT(Properties) {
        }, "Retrieve an existing property given its name")
 
         // Operators
-        .def(py::self == py::self, DM(Properties, operator_eq))
-        .def(py::self != py::self, DM(Properties, operator_ne))
+        .def(py::self == py::self, D(Properties, operator_eq))
+        .def(py::self != py::self, D(Properties, operator_ne))
         .def("__repr__", [](const Properties &p) {
             std::ostringstream oss;
             oss << p;

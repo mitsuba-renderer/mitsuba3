@@ -21,38 +21,58 @@ NAMESPACE_BEGIN(warp)
 // =============================================================
 
 /// Uniformly sample a vector on the unit sphere with respect to solid angles
-extern MTS_EXPORT_CORE Vector3f squareToUniformSphere(const Point2f &sample);
-
-/// Density of \ref squareToUniformSphere() with respect to solid angles
-template <bool TestDomain = false>
-Float squareToUniformSpherePdf(const Vector3f &v) {
-    if (TestDomain && std::abs(simd::squaredNorm(v) - 1.f) > math::Epsilon)
-        return 0.f;
-    return math::InvFourPi;
+template <typename Vector3f, typename Point2f>
+Vector3f square_to_uniform_sphere(Point2f sample) {
+    auto z = 1.f - 2.f * sample.y();
+    auto r = safe_sqrt(1.f - z*z);
+    auto sc = sincos(2.f * math::Pi * sample.x());
+    return Vector3f(r * sc.second, r * sc.first, z);
 }
 
-/// Uniformly sample a vector on the unit hemisphere with respect to solid angles
-extern MTS_EXPORT_CORE Vector3f squareToUniformHemisphere(const Point2f &sample);
+extern template MTS_EXPORT_CORE Vector3f  square_to_uniform_sphere(Point2f  sample);
+extern template MTS_EXPORT_CORE Vector3fP square_to_uniform_sphere(Point2fP sample);
 
-/// Density of \ref squareToUniformHemisphere() with respect to solid angles
+/// Density of \ref square_to_uniform_sphere() with respect to solid angles
+template <bool TestDomain = false, typename Vector3f, typename Float = typename Vector3f::Scalar>
+Float square_to_uniform_sphere_pdf(Vector3f v) {
+    if (TestDomain) {
+        return select(abs(squared_norm(v) - 1.f) > math::Epsilon,
+                      Float(0.0f), Float(math::InvFourPi));
+    } else {
+        return math::InvFourPi;
+    }
+}
+
+extern template MTS_EXPORT_CORE Float  square_to_uniform_sphere_pdf<true>(Vector3f  sample);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_sphere_pdf<true>(Vector3fP sample);
+extern template MTS_EXPORT_CORE Float  square_to_uniform_sphere_pdf<false>(Vector3f  sample);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_sphere_pdf<false>(Vector3fP sample);
+
+#if 0
+// ** TO BE DONE **
+
+/// Uniformly sample a vector on the unit hemisphere with respect to solid angles
+extern MTS_EXPORT_CORE Vector3f square_to_uniform_hemisphere(const Point2f &sample);
+
+/// Density of \ref square_to_uniform_hemisphere() with respect to solid angles
 template <bool TestDomain = false>
-Float squareToUniformHemispherePdf(const Vector3f &v) {
-    if (TestDomain && (std::abs(simd::squaredNorm(v) - 1.f) > math::Epsilon ||
-                       Frame::cosTheta(v) < 0))
+Float square_to_uniform_hemisphere_pdf(const Vector3f &v) {
+    if (TestDomain && (std::abs(squared_norm(v) - 1.f) > math::Epsilon ||
+                       Frame3f::cos_theta(v) < 0))
         return 0.f;
     return math::InvTwoPi;
 }
 
 /// Sample a cosine-weighted vector on the unit hemisphere with respect to solid angles
-extern MTS_EXPORT_CORE Vector3f squareToCosineHemisphere(const Point2f &sample);
+extern MTS_EXPORT_CORE Vector3f square_to_cosine_hemisphere(const Point2f &sample);
 
-/// Density of \ref squareToCosineHemisphere() with respect to solid angles
+/// Density of \ref square_to_cosine_hemisphere() with respect to solid angles
 template <bool TestDomain = false>
-Float squareToCosineHemispherePdf(const Vector3f &v) {
-    if (TestDomain && (std::abs(simd::squaredNorm(v) - 1.f) > math::Epsilon ||
-                       Frame::cosTheta(v) < 0))
+Float square_to_cosine_hemisphere_pdf(const Vector3f &v) {
+    if (TestDomain && (std::abs(squared_norm(v) - 1.f) > math::Epsilon ||
+                       Frame3f::cos_theta(v) < 0))
         return 0.f;
-    return math::InvPi * Frame::cosTheta(v);
+    return math::InvPi * Frame3f::cos_theta(v);
 }
 
 /**
@@ -62,46 +82,46 @@ Float squareToCosineHemispherePdf(const Vector3f &v) {
  * \param cosCutoff Cosine of the cutoff angle
  * \param sample A uniformly distributed sample on \f$[0,1]^2\f$
  */
-extern MTS_EXPORT_CORE Vector3f squareToUniformCone(const Point2f &sample, Float cosCutoff);
+extern MTS_EXPORT_CORE Vector3f square_to_uniform_cone(const Point2f &sample, Float cosCutoff);
 
 /**
- * \brief Density of \ref squareToUniformCone per unit area.
+ * \brief Density of \ref square_to_uniform_cone per unit area.
  *
  * \param cosCutoff Cosine of the cutoff angle
  */
 template <bool TestDomain = false>
-inline Float squareToUniformConePdf(const Vector3f &v, Float cosCutoff) {
-    if (TestDomain && (std::abs(simd::squaredNorm(v) - 1.f) > math::Epsilon ||
-                       Frame::cosTheta(v) < cosCutoff))
+inline Float square_to_uniform_cone_pdf(const Vector3f &v, Float cosCutoff) {
+    if (TestDomain && (std::abs(squared_norm(v) - 1.f) > math::Epsilon ||
+                       Frame3f::cos_theta(v) < cosCutoff))
         return 0.0;
     return math::InvTwoPi / (1 - cosCutoff);
 }
 
 /// Warp a uniformly distributed square sample to a Beckmann distribution *
 /// cosine for the given 'alpha' parameter
-extern MTS_EXPORT_CORE Vector3f squareToBeckmann(const Point2f &sample,
+extern MTS_EXPORT_CORE Vector3f square_to_beckmann(const Point2f &sample,
                                                  Float alpha);
 
-/// Probability density of \ref squareToBeckmann()
-extern MTS_EXPORT_CORE Float squareToBeckmannPdf(const Vector3f &m,
+/// Probability density of \ref square_to_beckmann()
+extern MTS_EXPORT_CORE Float square_to_beckmann_pdf(const Vector3f &m,
                                                  Float alpha);
 
 /// Warp a uniformly distributed square sample to a von Mises Fisher distribution
-extern MTS_EXPORT_CORE Vector3f squareToVonMisesFisher(const Point2f &sample,
+extern MTS_EXPORT_CORE Vector3f square_to_von_mises_fisher(const Point2f &sample,
                                                        Float kappa);
 
-/// Probability density of \ref squareToVonMisesFisher()
-extern MTS_EXPORT_CORE Float squareToVonMisesFisherPdf(const Vector3f &v,
+/// Probability density of \ref square_to_von_mises_fisher()
+extern MTS_EXPORT_CORE Float square_to_von_mises_fisher_pdf(const Vector3f &v,
                                                        Float kappa);
 
 /// Warp a uniformly distributed square sample to a rough fiber distribution
-extern MTS_EXPORT_CORE Vector3f squareToRoughFiber(const Point3f &sample,
+extern MTS_EXPORT_CORE Vector3f square_to_rough_fiber(const Point3f &sample,
                                                    const Vector3f &wi,
                                                    const Vector3f &tangent,
                                                    Float kappa);
 
-/// Probability density of \ref squareToRoughFiber()
-extern MTS_EXPORT_CORE Float squareToRoughFiberPdf(const Vector3f &v,
+/// Probability density of \ref square_to_rough_fiber()
+extern MTS_EXPORT_CORE Float square_to_rough_fiber_pdf(const Vector3f &v,
                                                    const Vector3f &wi,
                                                    const Vector3f &tangent,
                                                    Float kappa);
@@ -114,36 +134,36 @@ extern MTS_EXPORT_CORE Float squareToRoughFiberPdf(const Vector3f &v,
 // =============================================================
 
 /// Uniformly sample a vector on a 2D disk
-extern MTS_EXPORT_CORE Point2f squareToUniformDisk(const Point2f &sample);
+extern MTS_EXPORT_CORE Point2f square_to_uniform_disk(const Point2f &sample);
 
-/// Density of \ref squareToUniformDisk per unit area
+/// Density of \ref square_to_uniform_disk per unit area
 template <bool TestDomain = false>
-Float squareToUniformDiskPdf(const Point2f &p) {
-    if (TestDomain && simd::squaredNorm(p) > 1)
+Float square_to_uniform_disk_pdf(const Point2f &p) {
+    if (TestDomain && squared_norm(p) > 1)
         return 0.f;
     return math::InvPi;
 }
 
 /// Low-distortion concentric square to disk mapping by Peter Shirley (PDF: 1/PI)
-extern MTS_EXPORT_CORE Point2f squareToUniformDiskConcentric(const Point2f &sample);
+extern MTS_EXPORT_CORE Point2f square_to_uniform_disk_concentric(const Point2f &sample);
 
-/// Density of \ref squareToUniformDisk per unit area
+/// Density of \ref square_to_uniform_disk per unit area
 template <bool TestDomain = false>
-Float squareToUniformDiskConcentricPdf(const Point2f &p) {
-    if (TestDomain && simd::squaredNorm(p) > 1)
+Float square_to_uniform_disk_concentric_pdf(const Point2f &p) {
+    if (TestDomain && squared_norm(p) > 1)
         return 0.f;
     return math::InvPi;
 }
 
-/// Inverse of the mapping \ref squareToUniformDiskConcentric
-extern MTS_EXPORT_CORE Point2f diskToUniformSquareConcentric(const Point2f &p);
+/// Inverse of the mapping \ref square_to_uniform_disk_concentric
+extern MTS_EXPORT_CORE Point2f disk_to_uniform_square_concentric(const Point2f &p);
 
 /// Convert an uniformly distributed square sample into barycentric coordinates
-extern MTS_EXPORT_CORE Point2f squareToUniformTriangle(const Point2f &sample);
+extern MTS_EXPORT_CORE Point2f square_to_uniform_triangle(const Point2f &sample);
 
-/// Density of \ref squareToUniformTriangle per unit area.
+/// Density of \ref square_to_uniform_triangle per unit area.
 template <bool TestDomain = false>
-Float squareToUniformTrianglePdf(const Point2f &p) {
+Float square_to_uniform_triangle_pdf(const Point2f &p) {
     if (TestDomain && (p.x() < 0 || p.y() < 0 || p.x() + p.y() > 1))
         return 0.f;
     return 2.f;
@@ -151,24 +171,25 @@ Float squareToUniformTrianglePdf(const Point2f &p) {
 
 /** \brief Sample a point on a 2D standard normal distribution
  * Internally uses the Box-Muller transformation */
-extern MTS_EXPORT_CORE Point2f squareToStdNormal(const Point2f &sample);
+extern MTS_EXPORT_CORE Point2f square_to_std_normal(const Point2f &sample);
 
-/// Density of \ref squareToStdNormal per unit area
-extern MTS_EXPORT_CORE Float squareToStdNormalPdf(const Point2f &p);
+/// Density of \ref square_to_std_normal per unit area
+extern MTS_EXPORT_CORE Float square_to_std_normal_pdf(const Point2f &p);
 
 /// Warp a uniformly distributed square sample to a 2D tent distribution
-extern MTS_EXPORT_CORE Point2f squareToTent(const Point2f &sample);
+extern MTS_EXPORT_CORE Point2f square_to_tent(const Point2f &sample);
 
-/// Density of \ref squareToTent per unit area.
-extern MTS_EXPORT_CORE Float squareToTentPdf(const Point2f &p);
+/// Density of \ref square_to_tent per unit area.
+extern MTS_EXPORT_CORE Float square_to_tent_pdf(const Point2f &p);
 
 /** \brief Warp a uniformly distributed sample on [0, 1] to a nonuniform
  * tent distribution with nodes <tt>{a, b, c}</tt>
  */
-extern MTS_EXPORT_CORE Float intervalToNonuniformTent(Float sample, Float a, Float b, Float c);
+extern MTS_EXPORT_CORE Float interval_to_nonuniform_tent(Float sample, Float a, Float b, Float c);
 
 //! @}
 // =============================================================
+#endif
 
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)

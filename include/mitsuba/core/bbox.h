@@ -20,12 +20,10 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \tparam T The underlying point data type (e.g. \c Point2d)
  */
-template <typename _Point> struct TBoundingBox {
-    enum {
-        Dimension = _Point::Dimension
-    };
+template <typename Point_> struct TBoundingBox {
+    static constexpr size_t Size = Point_::Size;
 
-    typedef _Point                         Point;
+    typedef Point_                         Point;
     typedef typename Point::Scalar         Scalar;
     typedef typename Point::Vector         Vector;
 
@@ -83,20 +81,20 @@ template <typename _Point> struct TBoundingBox {
     }
 
     /// Return the dimension index with the largest associated side length
-    int majorAxis() const {
+    int major_axis() const {
         Vector d = max - min;
         int largest = 0;
-        for (int i = 1; i < Dimension; ++i)
+        for (int i = 1; i < (int) Size; ++i)
             if (d[i] > d[largest])
                 largest = i;
         return largest;
     }
 
     /// Return the dimension index with the shortest associated side length
-    int minorAxis() const {
+    int minor_axis() const {
         Vector d = max - min;
         int shortest = 0;
-        for (int i = 1; i < Dimension; ++i)
+        for (int i = 1; i < (int) Size; ++i)
             if (d[i] < d[shortest])
                 shortest = i;
         return shortest;
@@ -118,7 +116,7 @@ template <typename _Point> struct TBoundingBox {
     /// Return the position of a bounding box corner
     Point corner(int index) const {
         Point result;
-        for (int i = 0; i < Dimension; ++i)
+        for (int i = 0; i < (int) Size; ++i)
             result[i] = (index & (1 << i)) ? max[i] : min[i];
         return result;
     }
@@ -129,23 +127,23 @@ template <typename _Point> struct TBoundingBox {
     }
 
     /// Calculate the n-1 dimensional volume of the boundary
-    template <typename T = Point, typename std::enable_if<T::Dimension == 3, int>::type = 0>
-    Scalar surfaceArea() const {
-        /* Optimized implementation for Dimension == 3 */
+    template <typename T = Point, typename std::enable_if<T::Size == 3, int>::type = 0>
+    Scalar surface_area() const {
+        /* Optimized implementation for Size == 3 */
         Vector d = max - min;
-        return hsum(simd::shuffle<1, 2, 0>(d) * d) * Scalar(2);
+        return hsum(enoki::shuffle<1, 2, 0>(d) * d) * Scalar(2);
     }
 
     /// Calculate the n-1 dimensional volume of the boundary
-    template <typename T = Point, typename std::enable_if<T::Dimension != 3, int>::type = 0>
-    Scalar surfaceArea() const {
-        /* Generic implementation for Dimension != 3 */
+    template <typename T = Point, typename std::enable_if<T::Size != 3, int>::type = 0>
+    Scalar surface_area() const {
+        /* Generic implementation for Size != 3 */
         Vector d = max - min;
 
         Scalar result = Scalar(0);
-        for (int i = 0; i < Dimension; ++i) {
+        for (int i = 0; i < (int) Size; ++i) {
             Scalar term = Scalar(1);
-            for (int j = 0; j < Dimension; ++j) {
+            for (int j = 0; j < (int) Size; ++j) {
                 if (i == j)
                     continue;
                 term *= d[j];
@@ -219,9 +217,9 @@ template <typename _Point> struct TBoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Scalar squaredDistance(const Point &p) const {
-        return squaredNorm(((p < min) & (min - p)) +
-                           ((p > max) & (p - max)));
+    Scalar squared_distance(const Point &p) const {
+        return squared_norm(((p < min) & (min - p)) +
+                            ((p > max) & (p - max)));
     }
 
 
@@ -229,9 +227,9 @@ template <typename _Point> struct TBoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar squaredDistance(const TBoundingBox &bbox) const {
-        return squaredNorm(((bbox.max < min) & (min - bbox.max)) +
-                           ((bbox.min > max) & (bbox.min - max)));
+    Scalar squared_distance(const TBoundingBox &bbox) const {
+        return squared_norm(((bbox.max < min) & (min - bbox.max)) +
+                            ((bbox.min > max) & (bbox.min - max)));
     }
 
     /**
@@ -239,7 +237,7 @@ template <typename _Point> struct TBoundingBox {
      * the axis-aligned bounding box and the point \c p.
      */
     Scalar distance(const Point &p) const {
-        return std::sqrt(squaredDistance(p));
+        return std::sqrt(squared_distance(p));
     }
 
     /**
@@ -247,7 +245,7 @@ template <typename _Point> struct TBoundingBox {
      * the axis-aligned bounding box and \c bbox.
      */
     Scalar distance(const TBoundingBox &bbox) const {
-        return std::sqrt(squaredDistance(bbox));
+        return std::sqrt(squared_distance(bbox));
     }
 
     /**
@@ -264,40 +262,39 @@ template <typename _Point> struct TBoundingBox {
 
     /// Clip this bounding box to another bounding box
     void clip(const TBoundingBox &bbox) {
-        this->min = simd::max(this->min, bbox.min);
-        this->max = simd::min(this->max, bbox.max);
+        this->min = enoki::max(this->min, bbox.min);
+        this->max = enoki::min(this->max, bbox.max);
     }
 
     /// Expand the bounding box to contain another point
     void expand(const Point &p) {
-        this->min = simd::min(this->min, p);
-        this->max = simd::max(this->max, p);
+        this->min = enoki::min(this->min, p);
+        this->max = enoki::max(this->max, p);
     }
 
     /// Expand the bounding box to contain another bounding box
     void expand(const TBoundingBox &bbox) {
-        this->min = simd::min(this->min, bbox.min);
-        this->max = simd::max(this->max, bbox.max);
+        this->min = enoki::min(this->min, bbox.min);
+        this->max = enoki::max(this->max, bbox.max);
     }
 
     /// Merge two bounding boxes
     static TBoundingBox merge(const TBoundingBox &bbox1, const TBoundingBox &bbox2) {
         return TBoundingBox(
-            simd::min(bbox1.min, bbox2.min),
-            simd::max(bbox1.max, bbox2.max)
+            enoki::min(bbox1.min, bbox2.min),
+            enoki::max(bbox1.max, bbox2.max)
         );
     }
 
     /// Check if a ray intersects a bounding box
-    bool rayIntersect(const Ray3f &ray, Scalar &nearT, Scalar &farT) const {
+    bool ray_intersect(const Ray3f &ray, Scalar &nearT, Scalar &farT) const {
         /* Early out test */
-        if (any(eq(ray.d, Vector::Zero()) &
-                Vector3f(ray.o < min | ray.o > max)))
+        if (any(eq(ray.d, zero<Vector>()) & (ray.o < min | ray.o > max)))
             return false;
 
         /* Compute intersection intervals for each axis */
-        auto t1 = (min - ray.o) * ray.dRcp;
-        auto t2 = (max - ray.o) * ray.dRcp;
+        auto t1 = (min - ray.o) * ray.d_rcp;
+        auto t2 = (max - ray.o) * ray.d_rcp;
 
         /* Ensure proper ordering */
         auto mask = t1 < t2;
@@ -316,11 +313,12 @@ template <typename _Point> struct TBoundingBox {
 };
 
 /// Print a string representation of the bounding box
-template <typename Point> std::ostream& operator<<(std::ostream &os, const TBoundingBox<Point>& bbox) {
+template <typename Point>
+std::ostream &operator<<(std::ostream &os, const TBoundingBox<Point> &bbox) {
     if (!bbox.valid())
-        os << "BoundingBox" << Point::Dimension << "[invalid]";
+        os << "BoundingBox" << Point::Size << "[invalid]";
     else
-        os << "BoundingBox" << Point::Dimension
+        os << "BoundingBox" << Point::Size
            << "[min = " << bbox.min
            << ", max = " << bbox.max << "]";
     return os;

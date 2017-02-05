@@ -27,9 +27,11 @@ NAMESPACE_BEGIN(filesystem)
  * to use when calling system APIs).
  */
 #if defined(__WINDOWS__)
-    typedef wchar_t value_type;
+    using value_type = wchar_t;
+    using string_type = std::wstring;
 #else
-    typedef char value_type;
+    using value_type = char;
+    using string_type = std::string;
 #endif
 
 /// Type of strings (built from system-specific characters)

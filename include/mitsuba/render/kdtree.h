@@ -38,7 +38,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \code
  * /// Return the total number of primitives
- * Size primitiveCount() const;
+ * Size primitive_count() const;
  *
  * /// Return the axis-aligned bounding box of a certain primitive
  * BoundingBox bbox(Index primIdx) const;
@@ -65,7 +65,7 @@ NAMESPACE_BEGIN(mitsuba)
  * in O(N log N)" by Ingo Wald and Vlastimil Havran. This works even when the
  * tree is not meant to be used for ray tracing. For polygonal meshes, the
  * involved Sutherland-Hodgman iterations can be quite expensive in terms of
- * the overall construction time. The \ref setClipPrimitives() method can be
+ * the overall construction time. The \ref set_clip_primitives() method can be
  * used to deactivate perfect splits at the cost of a lower-quality tree.
  *
  * Because the O(N log N) construction algorithm tends to cause many incoherent
@@ -96,90 +96,88 @@ public:
     using Scalar      = typename Vector::Scalar;
     using IndexVector = std::vector<Index>;
 
-    enum {
-        Dimension = BoundingBox::Dimension
-    };
+    static constexpr size_t Dimension = Vector::Size;
 
     /* ==================================================================== */
     /*                     Public kd-tree interface                         */
     /* ==================================================================== */
 
-    TShapeKDTree(const CostModel &model) : m_costModel(model) { }
+    TShapeKDTree(const CostModel &model) : m_cost_model(model) { }
 
     /// Return the cost model used by the tree construction algorithm
-    CostModel costModel() const { return m_costModel; }
+    CostModel cost_model() const { return m_cost_model; }
 
     /// Return the maximum tree depth (0 == use heuristic)
-    Size maxDepth() const { return m_maxDepth; }
+    Size max_depth() const { return m_max_depth; }
 
     /// Set the maximum tree depth (0 == use heuristic)
-    void setMaxDepth(Size maxDepth) { m_maxDepth = maxDepth; }
+    void set_max_depth(Size max_depth) { m_max_depth = max_depth; }
 
     /// Return the number of bins used for Min-Max binning
-    Size minMaxBins() const { return m_minMaxBins; }
+    Size min_max_bins() const { return m_min_max_bins; }
 
     /// Set the number of bins used for Min-Max binning
-    void setMinMaxBins(Size minMaxBins) { m_minMaxBins = minMaxBins; }
+    void set_min_max_bins(Size value) { m_min_max_bins = value; }
 
     /// Return whether primitive clipping is used during tree construction
-    bool clipPrimitives() const { return m_clipPrimitives; }
+    bool clip_primitives() const { return m_clip_primitives; }
 
     /// Set whether primitive clipping is used during tree construction
-    void setClipPrimitives(bool clip) { m_clipPrimitives = clip; }
+    void set_clip_primitives(bool clip) { m_clip_primitives = clip; }
 
     /// Return whether or not bad splits can be "retracted".
-    bool retractBadSplits() const { return m_retractBadSplits; }
+    bool retract_bad_splits() const { return m_retract_bad_splits; }
 
     /// Specify whether or not bad splits can be "retracted".
-    void setRetractBadSplits(bool retract) { m_retractBadSplits = retract; }
+    void set_retract_bad_splits(bool retract) { m_retract_bad_splits = retract; }
 
     /**
      * \brief Return the number of bad refines allowed to happen
      * in succession before a leaf node will be created.
      */
-    Size maxBadRefines() const { return m_maxBadRefines; }
+    Size max_bad_refines() const { return m_max_bad_refines; }
 
     /**
      * \brief Set the number of bad refines allowed to happen
      * in succession before a leaf node will be created.
      */
-    void setMaxBadRefines(Size maxBadRefines) { m_maxBadRefines = maxBadRefines; }
+    void set_max_bad_refines(Size value) { m_max_bad_refines = value; }
 
     /**
      * \brief Return the number of primitives, at which recursion will
      * stop when building the tree.
      */
-    Size stopPrimitives() const { return m_stopPrimitives; }
+    Size stop_primitives() const { return m_stop_primitives; }
 
     /**
      * \brief Set the number of primitives, at which recursion will
      * stop when building the tree.
      */
-    void setStopPrimitives(Size stopPrimitives) { m_stopPrimitives = stopPrimitives; }
+    void set_stop_primitives(Size value) { m_stop_primitives = value; }
 
     /**
      * \brief Return the number of primitives, at which the builder will switch
      * from (approximate) Min-Max binning to the accurate O(n log n)
      * optimization method.
      */
-    Size exactPrimitiveThreshold() const { return m_exactPrimThreshold; }
+    Size exact_primitive_threshold() const { return m_exact_prim_threshold; }
 
     /**
      * \brief Specify the number of primitives, at which the builder will
      * switch from (approximate) Min-Max binning to the accurate O(n log n)
      * optimization method.
      */
-    void setExactPrimitiveThreshold(Size exactPrimThreshold) {
-        m_exactPrimThreshold = exactPrimThreshold;
+    void set_exact_primitive_threshold(Size value) {
+        m_exact_prim_threshold = value;
     }
 
     /// Return the log level of kd-tree status messages
-    ELogLevel logLevel() const { return m_logLevel; }
+    ELogLevel log_level() const { return m_log_level; }
 
     /// Return the log level of kd-tree status messages
-    void setLogLevel(ELogLevel level) { m_logLevel = level; }
+    void set_log_level(ELogLevel level) { m_log_level = level; }
 
-    bool ready() const { return false; }
+    bool ready() const { return (bool) m_nodes; }
 
     const Derived& derived() const { return (Derived&) *this; }
     Derived& derived() { return (Derived&) *this; }
@@ -203,14 +201,14 @@ protected:
                 unsigned int axis : 3;
 
                 /// Offset to left child (max 512M nodes in between in 32 bit)
-                unsigned int leftOffset : sizeof(Index) * 8 - 3;
+                unsigned int left_offset : sizeof(Index) * 8 - 3;
             } inner;
 
             /// Leaf node
             struct {
                 #if defined(LITTLE_ENDIAN)
                     /// How many primitives does this leaf reference?
-                    unsigned int primCount : 23;
+                    unsigned int prim_count : 23;
 
                     /// Mask bits (all 1s for leaf nodes)
                     unsigned int mask : 9;
@@ -219,11 +217,11 @@ protected:
                     unsigned int mask : 9;
 
                     /// How many primitives does this leaf reference?
-                    unsigned int primCount : 23;
+                    unsigned int prim_count : 23;
                 #endif
 
                 /// Start offset of the primitive list
-                Index primOffset;
+                Index prim_offset;
             } leaf;
         } data;
 
@@ -233,12 +231,12 @@ protected:
          * Returns \c false if the offset or number of primitives is so large
          * that it can't be represented
          */
-        bool setLeafNode(size_t primOffset, size_t primCount) {
-            data.leaf.primCount = (unsigned int) primCount;
+        bool set_leaf_node(size_t prim_offset, size_t prim_count) {
+            data.leaf.prim_count = (unsigned int) prim_count;
             data.leaf.mask      = 0b111111111u;
-            data.leaf.primOffset = (Index) primOffset;
-            return (size_t) data.leaf.primOffset == primOffset &&
-                   (size_t) data.leaf.primCount == primCount;
+            data.leaf.prim_offset = (Index) prim_offset;
+            return (size_t) data.leaf.prim_offset == prim_offset &&
+                   (size_t) data.leaf.prim_count == prim_count;
         }
 
         /**
@@ -247,30 +245,30 @@ protected:
          * Returns \c false if the offset or number of primitives is so large
          * that it can't be represented
          */
-        bool setInnerNode(int axis, Scalar split, size_t leftOffset) {
+        bool set_inner_node(int axis, Scalar split, size_t left_offset) {
             data.inner.split = split;
             data.inner.axis = (unsigned int) axis;
-            data.inner.leftOffset = (Index) leftOffset;
-            return (size_t) data.inner.leftOffset == leftOffset;
+            data.inner.left_offset = (Index) left_offset;
+            return (size_t) data.inner.left_offset == left_offset;
         }
 
         /// Is this a leaf node?
         bool leaf() const { return data.leaf.mask == 0b111111111u; }
 
         /// Assuming this is a leaf node, return the first primitive index
-        Index primitiveOffset() const { return data.leaf.primOffset; }
+        Index primitive_offset() const { return data.leaf.prim_offset; }
 
         /// Assuming this is a leaf node, return the number of primitives
-        Index primitiveCount() const { return data.leaf.primCount; }
+        Index primitive_count() const { return data.leaf.prim_count; }
 
         /// Assuming that this is an inner node, return the relative offset to the left child
-        Index leftOffset() const { return data.inner.leftOffset; }
+        Index left_offset() const { return data.inner.left_offset; }
 
         /// Return the left child (for interior nodes)
-        const KDNode *left() const { return this + data.inner.leftOffset; }
+        const KDNode *left() const { return this + data.inner.left_offset; }
 
         /// Return the left child (for interior nodes)
-        const KDNode *right() const { return this + data.inner.leftOffset + 1; }
+        const KDNode *right() const { return this + data.inner.left_offset + 1; }
 
         /// Return the split plane location (for interior nodes)
         Scalar split() const { return data.inner.split; }
@@ -281,12 +279,12 @@ protected:
         /// Return a string representation
         friend std::ostream& operator<<(std::ostream &os, const KDNode &n) {
             if (n.leaf()) {
-                os << "KDNode[leaf, primitiveOffset=" << n.primitiveOffset()
-                   << ", primitiveCount=" << n.primitiveCount() << "]";
+                os << "KDNode[leaf, primitive_offset=" << n.primitive_offset()
+                   << ", primitive_count=" << n.primitive_count() << "]";
             } else {
                 os << "KDNode[interior, axis=" << n.axis()
                     << ", split=" << n.split()
-                    << ", leftOffset=" << n.leftOffset() << "]";
+                    << ", left_offset=" << n.left_offset() << "]";
             }
             return os;
         }
@@ -361,8 +359,8 @@ protected:
      */
     class OrderedChunkAllocator {
     public:
-        OrderedChunkAllocator(size_t minAllocation = MTS_KD_MIN_ALLOC)
-                : m_minAllocation(minAllocation) {
+        OrderedChunkAllocator(size_t min_allocation = MTS_KD_MIN_ALLOC)
+                : m_min_allocation(min_allocation) {
             m_chunks.reserve(4);
         }
 
@@ -376,7 +374,7 @@ protected:
          * Walks through the list of chunks to find one with enough
          * free memory. If no chunk could be found, a new one is created.
          */
-        template <typename T> T * SIMD_MALLOC allocate(size_t size) {
+        template <typename T> T * ENOKI_MALLOC allocate(size_t size) {
             size *= sizeof(T);
 
             for (auto &chunk : m_chunks) {
@@ -388,11 +386,11 @@ protected:
             }
 
             /* No chunk had enough free memory */
-            size_t allocSize = std::max(size, m_minAllocation);
+            size_t alloc_size = std::max(size, m_min_allocation);
 
-            std::unique_ptr<uint8_t[]> data(new uint8_t[allocSize]);
+            std::unique_ptr<uint8_t[]> data(new uint8_t[alloc_size]);
             uint8_t *start = data.get(), *cur = start + size;
-            m_chunks.emplace_back(std::move(data), cur, allocSize);
+            m_chunks.emplace_back(std::move(data), cur, alloc_size);
 
             return reinterpret_cast<T *>(start);
         }
@@ -420,19 +418,19 @@ protected:
         /**
          * \brief Shrink the size of the last allocated chunk
          */
-        template <typename T> void shrinkAllocation(T *ptr_, size_t newSize) {
+        template <typename T> void shrink_allocation(T *ptr_, size_t new_size) {
             auto ptr = reinterpret_cast<uint8_t *>(ptr_);
-            newSize *= sizeof(T);
+            new_size *= sizeof(T);
 
             for (auto &chunk: m_chunks) {
                 if (chunk.contains(ptr)) {
-                    chunk.cur = ptr + newSize;
+                    chunk.cur = ptr + new_size;
                     return;
                 }
             }
 
             #if !defined(NDEBUG)
-                if (newSize == 0) {
+                if (new_size == 0) {
                     for (auto const &chunk : m_chunks) {
                         if (ptr == chunk.start.get() + chunk.size)
                             return; /* Potentially 0-sized buffer, don't be too stringent */
@@ -444,7 +442,7 @@ protected:
         }
 
         /// Return the currently allocated number of chunks
-        size_t chunkCount() const { return m_chunks.size(); }
+        size_t chunk_count() const { return m_chunks.size(); }
 
         /// Return the total amount of chunk memory in bytes
         size_t size() const {
@@ -492,7 +490,7 @@ protected:
             }
         };
 
-        size_t m_minAllocation;
+        size_t m_min_allocation;
         std::vector<Chunk> m_chunks;
     };
 
@@ -504,17 +502,17 @@ protected:
 
     /// Helper data structure used during tree construction (used by a single thread)
     struct LocalBuildContext {
-        ClassificationStorage classificationStorage;
-        OrderedChunkAllocator leftAlloc;
-        OrderedChunkAllocator rightAlloc;
+        ClassificationStorage classification_storage;
+        OrderedChunkAllocator left_alloc;
+        OrderedChunkAllocator right_alloc;
         BuildContext *ctx = nullptr;
 
         ~LocalBuildContext() {
-            Assert(leftAlloc.used() == 0);
-            Assert(rightAlloc.used() == 0);
+            Assert(left_alloc.used() == 0);
+            Assert(right_alloc.used() == 0);
             if (ctx)
-                ctx->tempStorage += leftAlloc.size() + rightAlloc.size() +
-                                    classificationStorage.size();
+                ctx->temp_storage += left_alloc.size() + right_alloc.size() +
+                                     classification_storage.size();
         }
     };
 
@@ -522,24 +520,23 @@ protected:
     struct BuildContext {
         const Derived &derived;
         Thread *thread;
-        tbb::concurrent_vector<KDNode> nodeStorage;
-        tbb::concurrent_vector<Index> indexStorage;
+        tbb::concurrent_vector<KDNode> node_storage;
+        tbb::concurrent_vector<Index> index_storage;
         ThreadLocal<LocalBuildContext> local;
 
         /* Keep some statistics about the build process */
-        std::atomic<size_t> emptyNodes {0};
-        std::atomic<size_t> badRefines {0};
-        std::atomic<size_t> retractedSplits {0};
+        std::atomic<size_t> bad_refines {0};
+        std::atomic<size_t> retracted_splits {0};
         std::atomic<size_t> pruned {0};
-        std::atomic<size_t> tempStorage {0};
-        std::atomic<size_t> workUnits {0};
-        double expTraversalSteps = 0;
-        double expLeavesVisited = 0;
-        double expPrimitivesQueried = 0;
-        Size maxPrimsInLeaf = 0;
-        Size nonEmptyLeafCount = 0;
-        Size maxDepth = 0;
-        Size primBuckets[16] { };
+        std::atomic<size_t> temp_storage {0};
+        std::atomic<size_t> work_units {0};
+        double exp_traversal_steps = 0;
+        double exp_leaves_visited = 0;
+        double exp_primitives_queried = 0;
+        Size max_prims_in_leaf = 0;
+        Size nonempty_leaf_count = 0;
+        Size max_depth = 0;
+        Size prim_buckets[16] { };
 
         BuildContext(const Derived &derived)
             : derived(derived), thread(Thread::thread()) { }
@@ -551,19 +548,19 @@ protected:
         Scalar cost = std::numeric_limits<Scalar>::infinity();
         Scalar split = 0;
         int axis = 0;
-        Size leftCount = 0, rightCount = 0;
-        Size rightBin = 0;       /* used by min-max binning only */
-        bool planarLeft = false; /* used by the O(n log n) builder only */
+        Size left_count = 0, right_count = 0;
+        Size right_bin = 0;       /* used by min-max binning only */
+        bool planar_left = false; /* used by the O(n log n) builder only */
 
         friend std::ostream& operator<<(std::ostream &os, const SplitCandidate &c) {
             os << "SplitCandidate[" << std::endl
                << "  cost = " << c.cost << "," << std::endl
                << "  split = " << c.split << "," << std::endl
                << "  axis = " << c.axis << "," << std::endl
-               << "  leftCount = " << c.leftCount << "," << std::endl
-               << "  rightCount = " << c.rightCount << "," << std::endl
-               << "  rightBin = " << c.rightBin << "," << std::endl
-               << "  planarLeft = " << (c.planarLeft ? "yes" : "no") << std::endl
+               << "  left_count = " << c.left_count << "," << std::endl
+               << "  right_count = " << c.right_count << "," << std::endl
+               << "  right_bin = " << c.right_bin << "," << std::endl
+               << "  planar_left = " << (c.planar_left ? "yes" : "no") << std::endl
                << "]";
             return os;
         }
@@ -611,7 +608,7 @@ protected:
                    std::tie(other.axis, other.pos, other.type, other.index);
         }
 
-        void setInvalid() { pos = 0; index = 0; type = 0; axis = 7; }
+        void set_invalid() { pos = 0; index = 0; type = 0; axis = 7; }
         bool valid() const { return axis != 7; }
 
         /// Plane position
@@ -638,36 +635,36 @@ protected:
      */
     class MinMaxBins {
     public:
-        MinMaxBins(Size binCount, const BoundingBox &bbox)
-            : m_bins(binCount * Dimension * 2, Size(0)), m_binCount(binCount),
-              m_invBinSize(1 / (bbox.extents() / (Scalar) binCount)),
-              m_maxBin(binCount - 1), m_bbox(bbox) {
+        MinMaxBins(Size bin_count, const BoundingBox &bbox)
+            : m_bins(bin_count * Dimension * 2, Size(0)), m_bin_count(bin_count),
+              m_inv_bin_size(1 / (bbox.extents() / (Scalar) bin_count)),
+              m_max_bin(bin_count - 1), m_bbox(bbox) {
             Assert(bbox.valid());
         }
 
         MinMaxBins(const MinMaxBins &other)
-            : m_bins(other.m_bins), m_binCount(other.m_binCount),
-              m_invBinSize(other.m_invBinSize), m_maxBin(other.m_maxBin),
+            : m_bins(other.m_bins), m_bin_count(other.m_bin_count),
+              m_inv_bin_size(other.m_inv_bin_size), m_max_bin(other.m_max_bin),
               m_bbox(other.m_bbox) { }
 
         MinMaxBins(MinMaxBins &&other)
-            : m_bins(std::move(other.m_bins)), m_binCount(other.m_binCount),
-              m_invBinSize(other.m_invBinSize), m_maxBin(other.m_maxBin),
+            : m_bins(std::move(other.m_bins)), m_bin_count(other.m_bin_count),
+              m_inv_bin_size(other.m_inv_bin_size), m_max_bin(other.m_max_bin),
               m_bbox(other.m_bbox) { }
 
         void operator=(const MinMaxBins &other) {
             m_bins = other.m_bins;
-            m_binCount = other.m_binCount;
-            m_invBinSize = other.m_invBinSize;
-            m_maxBin = other.m_maxBin;
+            m_bin_count = other.m_bin_count;
+            m_inv_bin_size = other.m_inv_bin_size;
+            m_max_bin = other.m_max_bin;
             m_bbox = other.m_bbox;
         }
 
         void operator=(MinMaxBins &&other) {
             m_bins = std::move(other.m_bins);
-            m_binCount = other.m_binCount;
-            m_invBinSize = other.m_invBinSize;
-            m_maxBin = other.m_maxBin;
+            m_bin_count = other.m_bin_count;
+            m_inv_bin_size = other.m_inv_bin_size;
+            m_max_bin = other.m_max_bin;
             m_bbox = other.m_bbox;
         }
 
@@ -679,105 +676,105 @@ protected:
         }
 
         MTS_INLINE void put(BoundingBox bbox) {
-            using IndexArray = simd::Array<Index, 3>;
-            const IndexArray offsetMin = IndexArray(0, 2 * m_binCount, 4 * m_binCount);
-            const IndexArray offsetMax = offsetMin + 1;
+            using IndexArray = Array<Index, 3>;
+            const IndexArray offset_min = IndexArray(0, 2 * m_bin_count, 4 * m_bin_count);
+            const IndexArray offset_max = offset_min + 1;
             Index *ptr = m_bins.data();
 
             Assert(bbox.valid());
-            Vector relMin = (bbox.min - m_bbox.min) * m_invBinSize;
-            Vector relMax = (bbox.max - m_bbox.min) * m_invBinSize;
+            Vector rel_min = (bbox.min - m_bbox.min) * m_inv_bin_size;
+            Vector rel_max = (bbox.max - m_bbox.min) * m_inv_bin_size;
 
-            relMin = min(max(relMin, Vector::Zero()), m_maxBin);
-            relMax = min(max(relMax, Vector::Zero()), m_maxBin);
+            rel_min = min(max(rel_min, zero<Vector>()), m_max_bin);
+            rel_max = min(max(rel_max, zero<Vector>()), m_max_bin);
 
-            IndexArray indexMin = simd::cast<IndexArray>(relMin);
-            IndexArray indexMax = simd::cast<IndexArray>(relMax);
+            IndexArray index_min = IndexArray(rel_min);
+            IndexArray index_max = IndexArray(rel_max);
 
-            Assert(simd::all(indexMin <= indexMax));
-            indexMin = indexMin + indexMin + offsetMin;
-            indexMax = indexMax + indexMax + offsetMax;
+            Assert(simd::all(index_min <= index_max));
+            index_min = index_min + index_min + offset_min;
+            index_max = index_max + index_max + offset_max;
 
-            IndexArray minCounts = IndexArray::Gather(ptr, indexMin),
-                       maxCounts = IndexArray::Gather(ptr, indexMax);
+            IndexArray minCounts = gather<IndexArray>(ptr, index_min),
+                       maxCounts = gather<IndexArray>(ptr, index_max);
 
-            simd::scatter(ptr, minCounts + 1, indexMin);
-            simd::scatter(ptr, maxCounts + 1, indexMax);
+            scatter(ptr, minCounts + 1, index_min);
+            scatter(ptr, maxCounts + 1, index_max);
         }
 
-        SplitCandidate bestCandidate(Size primCount, const CostModel &model) const {
+        SplitCandidate best_candidate(Size prim_count, const CostModel &model) const {
             const Index *bin = m_bins.data();
             SplitCandidate best;
 
-            Vector step = m_bbox.extents() / Scalar(m_binCount);
+            Vector step = m_bbox.extents() / Scalar(m_bin_count);
 
-            for (int axis = 0; axis < Dimension; ++axis) {
+            for (size_t axis = 0; axis < Dimension; ++axis) {
                 SplitCandidate candidate;
 
                 /* Initially: all primitives to the right, none on the left */
-                candidate.leftCount = 0;
-                candidate.rightCount = primCount;
-                candidate.rightBin = 0;
+                candidate.left_count = 0;
+                candidate.right_count = prim_count;
+                candidate.right_bin = 0;
                 candidate.axis = axis;
                 candidate.split = m_bbox.min[axis];
 
-                for (Index i = 0; i < m_binCount; ++i) {
+                for (Index i = 0; i < m_bin_count; ++i) {
                     /* Evaluate the cost model and keep the best candidate */
-                    candidate.cost = model.innerCost(
+                    candidate.cost = model.inner_cost(
                         axis, candidate.split,
-                        model.leafCost(candidate.leftCount),
-                        model.leafCost(candidate.rightCount));
+                        model.leaf_cost(candidate.left_count),
+                        model.leaf_cost(candidate.right_count));
 
                     if (candidate.cost < best.cost)
                         best = candidate;
 
                     /* Move one bin to the right and
 
-                       1. Increase leftCount by the number of primitives which
+                       1. Increase left_count by the number of primitives which
                           started in the bin (thus they at least overlap with
                           the left interval). This information is stored in the MIN
                           bin.
 
-                       2. Reduce rightCount by the number of primitives which
+                       2. Reduce right_count by the number of primitives which
                           ended (thus they are entirely on the left). This
                           information is stored in the MAX bin.
                     */
-                    candidate.leftCount  += *bin++; /* MIN-bin */
-                    candidate.rightCount -= *bin++; /* MAX-bin */
-                    candidate.rightBin++;
+                    candidate.left_count  += *bin++; /* MIN-bin */
+                    candidate.right_count -= *bin++; /* MAX-bin */
+                    candidate.right_bin++;
                     candidate.split += step[axis];
                 }
 
                 /* Evaluate the cost model and keep the best candidate */
-                candidate.cost = model.innerCost(
+                candidate.cost = model.inner_cost(
                     axis, candidate.split,
-                    model.leafCost(candidate.leftCount),
-                    model.leafCost(candidate.rightCount));
+                    model.leaf_cost(candidate.left_count),
+                    model.leaf_cost(candidate.right_count));
 
                 if (candidate.cost < best.cost)
                     best = candidate;
 
-                Assert(candidate.leftCount == primCount);
-                Assert(candidate.rightCount == 0);
+                Assert(candidate.left_count == prim_count);
+                Assert(candidate.right_count == 0);
             }
 
             Assert(bin == m_bins.data() + m_bins.size());
-            Assert(best.leftCount + best.rightCount >= primCount);
+            Assert(best.left_count + best.right_count >= prim_count);
 
-            if (best.rightBin == 0) {
+            if (best.right_bin == 0) {
                 best.split = m_bbox.min[best.axis];
-            } else if (best.rightBin == m_binCount) {
+            } else if (best.right_bin == m_bin_count) {
                 best.split = m_bbox.max[best.axis];
             } else {
                 auto predicate = [
-                    invBinSize = m_invBinSize[best.axis],
+                    inv_bin_size = m_inv_bin_size[best.axis],
                     offset = m_bbox.min[best.axis],
-                    rightBin = best.rightBin
+                    right_bin = best.right_bin
                 ](Scalar value) {
                     /* Predicate which says whether a value falls on the left
                        of the chosen split plane. This function is meant to
                        behave exactly the same way as put() above. */
-                    return Index((value - offset) * invBinSize) < rightBin;
+                    return Index((value - offset) * inv_bin_size) < right_bin;
                 };
 
                 /* Find the last floating point value which is classified as
@@ -802,10 +799,10 @@ protected:
         }
 
         struct Partition {
-            IndexVector leftIndices;
-            IndexVector rightIndices;
-            BoundingBox leftBounds;
-            BoundingBox rightBounds;
+            IndexVector left_indices;
+            IndexVector right_indices;
+            BoundingBox left_bounds;
+            BoundingBox right_bounds;
         };
 
         /**
@@ -818,84 +815,84 @@ protected:
                             const SplitCandidate &split) {
             const int axis = split.axis;
             const Scalar offset = m_bbox.min[axis],
-                         maxBin = m_maxBin[axis],
-                         invBinSize = m_invBinSize[axis];
+                         max_bin = m_max_bin[axis],
+                         inv_bin_size = m_inv_bin_size[axis];
 
             tbb::spin_mutex mutex;
-            IndexVector leftIndices(split.leftCount);
-            IndexVector rightIndices(split.rightCount);
-            Size leftCount = 0, rightCount = 0;
-            BoundingBox leftBounds, rightBounds;
+            IndexVector left_indices(split.left_count);
+            IndexVector right_indices(split.right_count);
+            Size left_count = 0, right_count = 0;
+            BoundingBox left_bounds, right_bounds;
 
             tbb::parallel_for(
                 tbb::blocked_range<Size>(0u, Size(indices.size()), MTS_KD_GRAIN_SIZE),
                 [&](const tbb::blocked_range<Index> &range) {
-                    IndexVector leftIndicesLocal, rightIndicesLocal;
-                    BoundingBox leftBoundsLocal, rightBoundsLocal;
+                    IndexVector left_indices_local, right_indices_local;
+                    BoundingBox left_bounds_local, right_bounds_local;
 
-                    leftIndicesLocal.reserve(range.size());
-                    rightIndicesLocal.reserve(range.size());
+                    left_indices_local.reserve(range.size());
+                    right_indices_local.reserve(range.size());
 
                     for (Size i = range.begin(); i != range.end(); ++i) {
-                        const Index primIndex = indices[i];
-                        const BoundingBox primBBox = derived.bbox(primIndex);
+                        const Index prim_index = indices[i];
+                        const BoundingBox prim_bbox = derived.bbox(prim_index);
 
-                        Scalar relMin = (primBBox.min[axis] - offset) * invBinSize;
-                        Scalar relMax = (primBBox.max[axis] - offset) * invBinSize;
+                        Scalar rel_min = (prim_bbox.min[axis] - offset) * inv_bin_size;
+                        Scalar rel_max = (prim_bbox.max[axis] - offset) * inv_bin_size;
 
-                        relMin = std::min(std::max(relMin, Scalar(0)), maxBin);
-                        relMax = std::min(std::max(relMax, Scalar(0)), maxBin);
+                        rel_min = std::min(std::max(rel_min, Scalar(0)), max_bin);
+                        rel_max = std::min(std::max(rel_max, Scalar(0)), max_bin);
 
-                        const Size indexMin = (Size) relMin,
-                                   indexMax = (Size) relMax;
+                        const Size index_min = (Size) rel_min,
+                                   index_max = (Size) rel_max;
 
-                        if (indexMax < split.rightBin) {
-                            leftIndicesLocal.push_back(primIndex);
-                            leftBoundsLocal.expand(primBBox);
-                        } else if (indexMin >= split.rightBin) {
-                            rightIndicesLocal.push_back(primIndex);
-                            rightBoundsLocal.expand(primBBox);
+                        if (index_max < split.right_bin) {
+                            left_indices_local.push_back(prim_index);
+                            left_bounds_local.expand(prim_bbox);
+                        } else if (index_min >= split.right_bin) {
+                            right_indices_local.push_back(prim_index);
+                            right_bounds_local.expand(prim_bbox);
                         } else {
-                            leftIndicesLocal.push_back(primIndex);
-                            rightIndicesLocal.push_back(primIndex);
-                            leftBoundsLocal.expand(primBBox);
-                            rightBoundsLocal.expand(primBBox);
+                            left_indices_local.push_back(prim_index);
+                            right_indices_local.push_back(prim_index);
+                            left_bounds_local.expand(prim_bbox);
+                            right_bounds_local.expand(prim_bbox);
                         }
                     }
 
                     /* Merge into global results */
-                    Index *targetLeft, *targetRight;
+                    Index *target_left, *target_right;
 
                     /* critical section */ {
                         tbb::spin_mutex::scoped_lock lock(mutex);
-                        targetLeft = &leftIndices[leftCount];
-                        targetRight = &rightIndices[rightCount];
-                        leftCount += leftIndicesLocal.size();
-                        rightCount += rightIndicesLocal.size();
-                        leftBounds.expand(leftBoundsLocal);
-                        rightBounds.expand(rightBoundsLocal);
+                        target_left = &left_indices[left_count];
+                        target_right = &right_indices[right_count];
+                        left_count += left_indices_local.size();
+                        right_count += right_indices_local.size();
+                        left_bounds.expand(left_bounds_local);
+                        right_bounds.expand(right_bounds_local);
                     }
 
-                    memcpy(targetLeft, leftIndicesLocal.data(),
-                           leftIndicesLocal.size() * sizeof(Size));
-                    memcpy(targetRight, rightIndicesLocal.data(),
-                           rightIndicesLocal.size() * sizeof(Size));
+                    memcpy(target_left, left_indices_local.data(),
+                           left_indices_local.size() * sizeof(Size));
+                    memcpy(target_right, right_indices_local.data(),
+                           right_indices_local.size() * sizeof(Size));
                 }
             );
 
 
-            Assert(leftCount == split.leftCount);
-            Assert(rightCount == split.rightCount);
+            Assert(left_count == split.left_count);
+            Assert(right_count == split.right_count);
 
-            return { std::move(leftIndices), std::move(rightIndices),
-                     leftBounds, rightBounds };
+            return { std::move(left_indices), std::move(right_indices),
+                     left_bounds, right_bounds };
         }
 
     protected:
         std::vector<Size> m_bins;
-        Size m_binCount;
-        Vector m_invBinSize;
-        Vector m_maxBin;
+        Size m_bin_count;
+        Vector m_inv_bin_size;
+        Vector m_max_bin;
         BoundingBox m_bbox;
     };
 
@@ -934,47 +931,47 @@ protected:
         BoundingBox m_bbox;
 
         /// Tighter bounding box of the contained primitives
-        BoundingBox m_tightBBox;
+        BoundingBox m_tight_bbox;
 
         /// Depth of the node within the tree
         Size m_depth;
 
         /// Number of "bad refines" so far
-        Size m_badRefines;
+        Size m_bad_refines;
 
         /// This scalar should be set to the final cost when done
         Scalar *m_cost;
 
         BuildTask(BuildContext &ctx, const NodeIterator &node,
                   IndexVector &&indices, const BoundingBox bbox,
-                  const BoundingBox &tightBBox, Index depth, Size badRefines,
+                  const BoundingBox &tight_bbox, Index depth, Size bad_refines,
                   Scalar *cost)
             : m_ctx(ctx), m_node(node), m_indices(std::move(indices)),
-              m_bbox(bbox), m_tightBBox(tightBBox), m_depth(depth),
-              m_badRefines(badRefines), m_cost(cost) {
-            Assert(m_bbox.contains(tightBBox));
+              m_bbox(bbox), m_tight_bbox(tight_bbox), m_depth(depth),
+              m_bad_refines(bad_refines), m_cost(cost) {
+            Assert(m_bbox.contains(tight_bbox));
         }
 
         /// Run one iteration of min-max binning and spawn recursive tasks
         task *execute() {
             ThreadEnvironment env(m_ctx.thread);
-            Size primCount = Size(m_indices.size());
+            Size prim_count = Size(m_indices.size());
             const Derived &derived = m_ctx.derived;
 
-            m_ctx.workUnits++;
+            m_ctx.work_units++;
 
             /* ==================================================================== */
             /*                           Stopping criteria                          */
             /* ==================================================================== */
 
-            if (primCount <= derived.stopPrimitives() ||
-                m_depth >= derived.maxDepth() || m_tightBBox.collapsed()) {
-                makeLeaf(std::move(m_indices));
+            if (prim_count <= derived.stop_primitives() ||
+                m_depth >= derived.max_depth() || m_tight_bbox.collapsed()) {
+                make_leaf(std::move(m_indices));
                 return nullptr;
             }
 
-            if (primCount <= derived.exactPrimitiveThreshold()) {
-                *m_cost = transitionToNLogN();
+            if (prim_count <= derived.exact_primitive_threshold()) {
+                *m_cost = transition_to_nlogn();
                 return nullptr;
             }
 
@@ -984,8 +981,8 @@ protected:
 
             /* Accumulate all shapes into bins */
             MinMaxBins bins = tbb::parallel_reduce(
-                tbb::blocked_range<Size>(0u, primCount, MTS_KD_GRAIN_SIZE),
-                MinMaxBins(derived.minMaxBins(), m_tightBBox),
+                tbb::blocked_range<Size>(0u, prim_count, MTS_KD_GRAIN_SIZE),
+                MinMaxBins(derived.min_max_bins(), m_tight_bbox),
 
                 /* MAP: Bin a number of shapes and return the resulting 'MinMaxBins' data structure */
                 [&](const tbb::blocked_range<Index> &range, MinMaxBins bins) {
@@ -1005,24 +1002,24 @@ protected:
             /*                        Split candidate search                        */
             /* ==================================================================== */
 
-            CostModel model(derived.costModel());
-            model.setBoundingBox(m_bbox);
-            auto best = bins.bestCandidate(primCount, model);
+            CostModel model(derived.cost_model());
+            model.set_bounding_box(m_bbox);
+            auto best = bins.best_candidate(prim_count, model);
 
             Assert(std::isfinite(best.cost));
             Assert(best.split >= m_bbox.min[best.axis]);
             Assert(best.split <= m_bbox.max[best.axis]);
 
             /* Allow a few bad refines in sequence before giving up */
-            Scalar leafCost = model.leafCost(primCount);
-            if (best.cost >= leafCost) {
-                if ((best.cost > 4 * leafCost && primCount < 16)
-                    || m_badRefines >= derived.maxBadRefines()) {
-                    makeLeaf(std::move(m_indices));
+            Scalar leaf_cost = model.leaf_cost(prim_count);
+            if (best.cost >= leaf_cost) {
+                if ((best.cost > 4 * leaf_cost && prim_count < 16)
+                    || m_bad_refines >= derived.max_bad_refines()) {
+                    make_leaf(std::move(m_indices));
                     return nullptr;
                 }
-                ++m_badRefines;
-                m_ctx.badRefines++;
+                ++m_bad_refines;
+                m_ctx.bad_refines++;
             }
 
             /* ==================================================================== */
@@ -1038,78 +1035,78 @@ protected:
             /*                              Recursion                               */
             /* ==================================================================== */
 
-            NodeIterator children = m_ctx.nodeStorage.grow_by(2);
-            Size leftOffset(std::distance(m_node, children));
+            NodeIterator children = m_ctx.node_storage.grow_by(2);
+            Size left_offset(std::distance(m_node, children));
 
-            if (!m_node->setInnerNode(best.axis, best.split, leftOffset))
+            if (!m_node->set_inner_node(best.axis, best.split, left_offset))
                 Throw("Internal error during kd-tree construction: unable to store "
-                      "overly large offset to left child node (%i)", leftOffset);
+                      "overly large offset to left child node (%i)", left_offset);
 
-            BoundingBox leftBounds(m_bbox), rightBounds(m_bbox);
+            BoundingBox left_bounds(m_bbox), right_bounds(m_bbox);
 
-            leftBounds.max[best.axis] = Scalar(best.split);
-            rightBounds.min[best.axis] = Scalar(best.split);
+            left_bounds.max[best.axis] = Scalar(best.split);
+            right_bounds.min[best.axis] = Scalar(best.split);
 
-            partition.leftBounds.clip(leftBounds);
-            partition.rightBounds.clip(rightBounds);
+            partition.left_bounds.clip(left_bounds);
+            partition.right_bounds.clip(right_bounds);
 
-            Scalar leftCost = 0, rightCost = 0;
+            Scalar left_cost = 0, right_cost = 0;
 
-            BuildTask &leftTask = *new (allocate_child()) BuildTask(
-                m_ctx, children, std::move(partition.leftIndices),
-                leftBounds, partition.leftBounds, m_depth+1,
-                m_badRefines, &leftCost);
+            BuildTask &left_task = *new (allocate_child()) BuildTask(
+                m_ctx, children, std::move(partition.left_indices),
+                left_bounds, partition.left_bounds, m_depth+1,
+                m_bad_refines, &left_cost);
 
-            BuildTask &rightTask = *new (allocate_child()) BuildTask(
-                m_ctx, std::next(children), std::move(partition.rightIndices),
-                rightBounds, partition.rightBounds, m_depth + 1,
-                m_badRefines, &rightCost);
+            BuildTask &right_task = *new (allocate_child()) BuildTask(
+                m_ctx, std::next(children), std::move(partition.right_indices),
+                right_bounds, partition.right_bounds, m_depth + 1,
+                m_bad_refines, &right_cost);
 
             set_ref_count(3);
-            spawn(leftTask);
-            spawn(rightTask);
+            spawn(left_task);
+            spawn(right_task);
             wait_for_all();
 
             /* ==================================================================== */
             /*                           Final decision                             */
             /* ==================================================================== */
 
-            *m_cost = model.innerCost(
+            *m_cost = model.inner_cost(
                 best.axis,
                 best.split,
-                leftCost, rightCost
+                left_cost, right_cost
             );
 
             /* Tear up bad (i.e. costly) subtrees and replace them with leaf nodes */
-            if (unlikely(*m_cost > leafCost && derived.retractBadSplits())) {
+            if (unlikely(*m_cost > leaf_cost && derived.retract_bad_splits())) {
                 std::unordered_set<Index> temp;
                 traverse(m_node, temp);
-                m_ctx.retractedSplits++;
-                makeLeaf(std::move(temp));
+                m_ctx.retracted_splits++;
+                make_leaf(std::move(temp));
             }
 
             return nullptr;
         }
 
         /// Recursively run the O(N log N builder)
-        Scalar buildNLogN(NodeIterator node, Size primCount,
-                          EdgeEvent *eventsStart, EdgeEvent *eventsEnd,
-                          const BoundingBox3f &bbox, Size depth,
-                          Size badRefines, bool leftChild = true) {
+        Scalar build_nlogn(NodeIterator node, Size prim_count,
+                           EdgeEvent *events_start, EdgeEvent *events_end,
+                           const BoundingBox3f &bbox, Size depth,
+                           Size bad_refines, bool left_child = true) {
             const Derived &derived = m_ctx.derived;
 
             /* Initialize the tree cost model */
-            CostModel model(derived.costModel());
-            model.setBoundingBox(bbox);
-            Scalar leafCost = model.leafCost(primCount);
+            CostModel model(derived.cost_model());
+            model.set_bounding_box(bbox);
+            Scalar leaf_cost = model.leaf_cost(prim_count);
 
             /* ==================================================================== */
             /*                           Stopping criteria                          */
             /* ==================================================================== */
 
-            if (primCount <= derived.stopPrimitives() || depth >= derived.maxDepth()) {
-                makeLeaf(node, primCount, eventsStart, eventsEnd);
-                return leafCost;
+            if (prim_count <= derived.stop_primitives() || depth >= derived.max_depth()) {
+                make_leaf(node, prim_count, events_start, events_end);
+                return leaf_cost;
             }
 
             /* ==================================================================== */
@@ -1122,83 +1119,83 @@ protected:
 
             /* Initially, the split plane is placed left of the scene
                and thus all geometry is on its right side */
-            Size leftCount[Dimension], rightCount[Dimension];
-            for (int i=0; i<Dimension; ++i) {
-                leftCount[i] = 0;
-                rightCount[i] = primCount;
+            Size left_count[Dimension], right_count[Dimension];
+            for (size_t i = 0; i < Dimension; ++i) {
+                left_count[i] = 0;
+                right_count[i] = prim_count;
             }
 
             /* Keep track of where events for different axes start */
-            EdgeEvent* eventsByDimension[Dimension + 1] { };
-            eventsByDimension[0] = eventsStart;
-            eventsByDimension[Dimension] = eventsEnd;
+            EdgeEvent* events_by_dimension[Dimension + 1] { };
+            events_by_dimension[0] = events_start;
+            events_by_dimension[Dimension] = events_end;
 
             /* Iterate over all events and find the best split plane */
             SplitCandidate best;
-            for (auto event = eventsStart; event != eventsEnd; ) {
+            for (auto event = events_start; event != events_end; ) {
                 /* Record the current position and count the number
                    and type of remaining events that are also here. */
-                Size numStart = 0, numEnd = 0, numPlanar = 0;
+                Size num_start = 0, num_end = 0, num_planar = 0;
                 int axis = event->axis;
                 Scalar pos = event->pos;
 
-                while (event < eventsEnd && event->pos == pos && event->axis == axis) {
+                while (event < events_end && event->pos == pos && event->axis == axis) {
                     switch (event->type) {
-                        case EdgeEvent::EEdgeStart:  ++numStart;  break;
-                        case EdgeEvent::EEdgePlanar: ++numPlanar; break;
-                        case EdgeEvent::EEdgeEnd:    ++numEnd;    break;
+                        case EdgeEvent::EEdgeStart:  ++num_start;  break;
+                        case EdgeEvent::EEdgePlanar: ++num_planar; break;
+                        case EdgeEvent::EEdgeEnd:    ++num_end;    break;
                     }
                     ++event;
                 }
 
                 /* Keep track of the beginning of each dimension */
-                if (event < eventsEnd && event->axis != axis)
-                    eventsByDimension[event->axis] = event;
+                if (event < events_end && event->axis != axis)
+                    events_by_dimension[event->axis] = event;
 
                 /* The split plane can now be moved onto 't'. Accordingly, all planar
                    and ending primitives are removed from the right side */
-                rightCount[axis] -= numPlanar + numEnd;
+                right_count[axis] -= num_planar + num_end;
 
                 /* Check if the edge event is out of bounds -- when primitive
                    clipping is active, this should never happen! */
-                Assert(!(derived.clipPrimitives() &&
+                Assert(!(derived.clip_primitives() &&
                          (pos < bbox.min[axis] || pos > bbox.max[axis])));
 
                 /* Calculate a score using the tree construction heuristic */
                 if (likely(pos > bbox.min[axis] && pos < bbox.max[axis])) {
-                    Size numLeft = leftCount[axis] + numPlanar,
-                         numRight = rightCount[axis];
+                    Size num_left = left_count[axis] + num_planar,
+                         num_right = right_count[axis];
 
-                    Scalar cost = model.innerCost(
-                        axis, pos, model.leafCost(numLeft),
-                        model.leafCost(numRight));
+                    Scalar cost = model.inner_cost(
+                        axis, pos, model.leaf_cost(num_left),
+                        model.leaf_cost(num_right));
 
                     if (cost < best.cost) {
                         best.cost = cost;
                         best.split = pos;
                         best.axis = axis;
-                        best.leftCount = numLeft;
-                        best.rightCount = numRight;
-                        best.planarLeft = true;
+                        best.left_count = num_left;
+                        best.right_count = num_right;
+                        best.planar_left = true;
                     }
 
-                    if (numPlanar != 0) {
+                    if (num_planar != 0) {
                         /* There are planar events here -- also consider
                            placing them on the right side */
-                        numLeft = leftCount[axis];
-                        numRight = rightCount[axis] + numPlanar;
+                        num_left = left_count[axis];
+                        num_right = right_count[axis] + num_planar;
 
-                        cost = model.innerCost(
-                            axis, pos, model.leafCost(numLeft),
-                            model.leafCost(numRight));
+                        cost = model.inner_cost(
+                            axis, pos, model.leaf_cost(num_left),
+                            model.leaf_cost(num_right));
 
                         if (cost < best.cost) {
                             best.cost = cost;
                             best.split = pos;
                             best.axis = axis;
-                            best.leftCount = numLeft;
-                            best.rightCount = numRight;
-                            best.planarLeft = false;
+                            best.left_count = num_left;
+                            best.right_count = num_right;
+                            best.planar_left = false;
                         }
                     }
                 }
@@ -1207,42 +1204,42 @@ protected:
                     which were planar on 't', are moved to the left
                     side. Also, starting prims are now also left of
                     the split plane. */
-                leftCount[axis] += numStart + numPlanar;
+                left_count[axis] += num_start + num_planar;
             }
 
             /* Sanity checks. Everything should now be left of the split plane */
-            for (int i=0; i<Dimension; ++i) {
-                Assert(rightCount[i] == 0 && leftCount[i] == primCount);
-                Assert(eventsByDimension[i] != eventsEnd && eventsByDimension[i]->axis == i);
-                Assert((i == 0) || ((eventsByDimension[i]-1)->axis == i - 1));
+            for (size_t i = 0; i < Dimension; ++i) {
+                Assert(right_count[i] == 0 && left_count[i] == prim_count);
+                Assert(events_by_dimension[i] != events_end && events_by_dimension[i]->axis == i);
+                Assert((i == 0) || ((events_by_dimension[i]-1)->axis == i - 1));
             }
 
             /* Allow a few bad refines in sequence before giving up */
-            if (best.cost >= leafCost) {
-                if ((best.cost > 4 * leafCost && primCount < 16)
-                    || badRefines >= derived.maxBadRefines()
+            if (best.cost >= leaf_cost) {
+                if ((best.cost > 4 * leaf_cost && prim_count < 16)
+                    || bad_refines >= derived.max_bad_refines()
                     || !std::isfinite(best.cost)) {
-                    makeLeaf(node, primCount, eventsStart, eventsEnd);
-                    return leafCost;
+                    make_leaf(node, prim_count, events_start, events_end);
+                    return leaf_cost;
                 }
-                ++badRefines;
-                m_ctx.badRefines++;
+                ++bad_refines;
+                m_ctx.bad_refines++;
             }
 
             /* ==================================================================== */
             /*                      Primitive Classification                        */
             /* ==================================================================== */
 
-            auto &classification = m_local->classificationStorage;
+            auto &classification = m_local->classification_storage;
 
             /* Initially mark all prims as being located on both sides */
-            for (auto event = eventsByDimension[best.axis];
-                 event != eventsByDimension[best.axis + 1]; ++event)
+            for (auto event = events_by_dimension[best.axis];
+                 event != events_by_dimension[best.axis + 1]; ++event)
                 classification.set(event->index, EPrimClassification::EBoth);
 
-            Size primsLeft = 0, primsRight = 0;
-            for (auto event = eventsByDimension[best.axis];
-                 event != eventsByDimension[best.axis + 1]; ++event) {
+            Size prims_left = 0, prims_right = 0;
+            for (auto event = events_by_dimension[best.axis];
+                 event != events_by_dimension[best.axis + 1]; ++event) {
 
                 if (event->type == EdgeEvent::EEdgeEnd &&
                     event->pos <= best.split) {
@@ -1250,86 +1247,86 @@ protected:
                        before (or on) the split plane) */
                     Assert(classification.get(event->index) == EPrimClassification::EBoth);
                     classification.set(event->index, EPrimClassification::ELeft);
-                    primsLeft++;
+                    prims_left++;
                 } else if (event->type == EdgeEvent::EEdgeStart &&
                            event->pos >= best.split) {
                     /* Fully on the right side (the primitive's interval
                        starts after (or on) the split plane) */
                     Assert(classification.get(event->index) == EPrimClassification::EBoth);
                     classification.set(event->index, EPrimClassification::ERight);
-                    primsRight++;
+                    prims_right++;
                 } else if (event->type == EdgeEvent::EEdgePlanar) {
                     /* If the planar primitive is not on the split plane,
                        the classification is easy. Otherwise, place it on
                        the side with the lower cost */
                     Assert(classification.get(event->index) == EPrimClassification::EBoth);
                     if (event->pos < best.split ||
-                        (event->pos == best.split && best.planarLeft)) {
+                        (event->pos == best.split && best.planar_left)) {
                         classification.set(event->index, EPrimClassification::ELeft);
-                        primsLeft++;
+                        prims_left++;
                     } else if (event->pos > best.split ||
-                               (event->pos == best.split && !best.planarLeft)) {
+                               (event->pos == best.split && !best.planar_left)) {
                         classification.set(event->index, EPrimClassification::ERight);
-                        primsRight++;
+                        prims_right++;
                     }
                 }
             }
 
-            Size primsBoth = primCount - primsLeft - primsRight;
+            Size prims_both = prim_count - prims_left - prims_right;
 
             /* Some sanity checks */
-            Assert(primsLeft + primsBoth == best.leftCount);
-            Assert(primsRight + primsBoth == best.rightCount);
+            Assert(prims_left + prims_both == best.left_count);
+            Assert(prims_right + prims_both == best.right_count);
 
             /* ==================================================================== */
             /*                            Partitioning                              */
             /* ==================================================================== */
 
-            BoundingBox leftBBox = bbox, rightBBox = bbox;
-            leftBBox.max[best.axis] = best.split;
-            rightBBox.min[best.axis] = best.split;
+            BoundingBox left_bbox = bbox, right_bbox = bbox;
+            left_bbox.max[best.axis] = best.split;
+            right_bbox.min[best.axis] = best.split;
 
-            Size prunedLeft = 0, prunedRight = 0;
+            Size pruned_left = 0, pruned_right = 0;
 
-            auto &leftAlloc = m_local->leftAlloc;
-            auto &rightAlloc = m_local->rightAlloc;
+            auto &left_alloc = m_local->left_alloc;
+            auto &right_alloc = m_local->right_alloc;
 
-            EdgeEvent *leftEventsStart, *rightEventsStart,
-                      *leftEventsEnd, *rightEventsEnd;
+            EdgeEvent *left_events_start, *right_events_start,
+                      *left_events_end, *right_events_end;
 
             /* First, allocate a conservative amount of scratch space for
                the final event lists and then resize it to the actual used
                amount */
-            if (leftChild) {
-                leftEventsStart = eventsStart;
-                rightEventsStart = rightAlloc.template allocate<EdgeEvent>(
-                    best.rightCount * 2 * Dimension);
+            if (left_child) {
+                left_events_start = events_start;
+                right_events_start = right_alloc.template allocate<EdgeEvent>(
+                    best.right_count * 2 * Dimension);
             } else {
-                leftEventsStart = leftAlloc.template allocate<EdgeEvent>(
-                    best.leftCount * 2 * Dimension);
-                rightEventsStart = eventsStart;
+                left_events_start = left_alloc.template allocate<EdgeEvent>(
+                    best.left_count * 2 * Dimension);
+                right_events_start = events_start;
             }
-            leftEventsEnd = leftEventsStart;
-            rightEventsEnd = rightEventsStart;
+            left_events_end = left_events_start;
+            right_events_end = right_events_start;
 
-            if (primsBoth == 0 || !derived.clipPrimitives()) {
+            if (prims_both == 0 || !derived.clip_primitives()) {
                 /* Fast path: no clipping needed. */
-                for (auto it = eventsStart; it != eventsEnd; ++it) {
+                for (auto it = events_start; it != events_end; ++it) {
                     auto event = *it;
 
                     /* Fetch the classification of the current event */
                     switch (classification.get(event.index)) {
                         case EPrimClassification::ELeft:
-                            *leftEventsEnd++ = event;
+                            *left_events_end++ = event;
                             break;
 
                         case EPrimClassification::ERight:
-                            *rightEventsEnd++ = event;
+                            *right_events_end++ = event;
                             break;
 
                         case EPrimClassification::EBoth:
-                            *leftEventsEnd++ = event;
-                            *rightEventsEnd++ = event;
+                            *left_events_end++ = event;
+                            *right_events_end++ = event;
                             break;
 
                         default:
@@ -1337,89 +1334,89 @@ protected:
                     }
                 }
 
-                Assert((Size) (leftEventsEnd - leftEventsStart) <= best.leftCount* 2 * Dimension);
-                Assert((Size) (rightEventsEnd - rightEventsStart) <= best.rightCount * 2 * Dimension);
+                Assert((Size) (left_events_end - left_events_start) <= best.left_count* 2 * Dimension);
+                Assert((Size) (right_events_end - right_events_start) <= best.right_count * 2 * Dimension);
             } else {
                 /* Slow path: some primitives are straddling the split plane
                    and primitive clipping is enabled. They will generate new
                    events that have to be sorted and merged into the current
                    sorted event lists. Start by allocating some more scratch
                    space for this.. */
-                EdgeEvent *tempLeftEventsStart, *tempLeftEventsEnd,
-                    *tempRightEventsStart, *tempRightEventsEnd,
-                    *newLeftEventsStart, *newLeftEventsEnd,
-                    *newRightEventsStart, *newRightEventsEnd;
+                EdgeEvent *temp_left_events_start, *temp_left_events_end,
+                    *temp_right_events_start, *temp_right_events_end,
+                    *new_left_events_start, *new_left_events_end,
+                    *new_right_events_start, *new_right_events_end;
 
-                tempLeftEventsStart = tempLeftEventsEnd =
-                    leftAlloc.template allocate<EdgeEvent>(primsLeft * 2 * Dimension);
-                tempRightEventsStart = tempRightEventsEnd =
-                    rightAlloc.template allocate<EdgeEvent>(primsRight * 2 * Dimension);
-                newLeftEventsStart = newLeftEventsEnd =
-                    leftAlloc.template allocate<EdgeEvent>(primsBoth * 2 * Dimension);
-                newRightEventsStart = newRightEventsEnd =
-                    rightAlloc.template allocate<EdgeEvent>(primsBoth * 2 * Dimension);
+                temp_left_events_start = temp_left_events_end =
+                    left_alloc.template allocate<EdgeEvent>(prims_left * 2 * Dimension);
+                temp_right_events_start = temp_right_events_end =
+                    right_alloc.template allocate<EdgeEvent>(prims_right * 2 * Dimension);
+                new_left_events_start = new_left_events_end =
+                    left_alloc.template allocate<EdgeEvent>(prims_both * 2 * Dimension);
+                new_right_events_start = new_right_events_end =
+                    right_alloc.template allocate<EdgeEvent>(prims_both * 2 * Dimension);
 
-                for (auto it = eventsStart; it != eventsEnd; ++it) {
+                for (auto it = events_start; it != events_end; ++it) {
                     auto event = *it;
 
                     /* Fetch the classification of the current event */
                     switch (classification.get(event.index)) {
                         case EPrimClassification::ELeft:
-                            *tempLeftEventsEnd++ = event;
+                            *temp_left_events_end++ = event;
                             break;
 
                         case EPrimClassification::ERight:
-                            *tempRightEventsEnd++ = event;
+                            *temp_right_events_end++ = event;
                             break;
 
                         case EPrimClassification::EIgnore:
                             break;
 
                         case EPrimClassification::EBoth: {
-                                BoundingBox clippedLeft  = derived.bbox(event.index, leftBBox);
-                                BoundingBox clippedRight = derived.bbox(event.index, rightBBox);
+                                BoundingBox clippedLeft  = derived.bbox(event.index, left_bbox);
+                                BoundingBox clippedRight = derived.bbox(event.index, right_bbox);
 
-                                Assert(leftBBox.contains(clippedLeft) || !clippedLeft.valid());
-                                Assert(rightBBox.contains(clippedRight) || !clippedRight.valid());
+                                Assert(left_bbox.contains(clippedLeft) || !clippedLeft.valid());
+                                Assert(right_bbox.contains(clippedRight) || !clippedRight.valid());
 
                                 if (clippedLeft.valid() &&
-                                    clippedLeft.surfaceArea() > 0) {
-                                    for (int axis = 0; axis < Dimension; ++axis) {
+                                    clippedLeft.surface_area() > 0) {
+                                    for (size_t axis = 0; axis < Dimension; ++axis) {
                                         Scalar min = clippedLeft.min[axis],
                                                max = clippedLeft.max[axis];
 
                                         if (min != max) {
-                                            *newLeftEventsEnd++ = EdgeEvent(
+                                            *new_left_events_end++ = EdgeEvent(
                                                 EdgeEvent::EEdgeStart, axis, min, event.index);
-                                            *newLeftEventsEnd++ = EdgeEvent(
+                                            *new_left_events_end++ = EdgeEvent(
                                                 EdgeEvent::EEdgeEnd, axis, max, event.index);
                                         } else {
-                                            *newLeftEventsEnd++ = EdgeEvent(
+                                            *new_left_events_end++ = EdgeEvent(
                                                 EdgeEvent::EEdgePlanar, axis, min, event.index);
                                         }
                                     }
                                 } else {
-                                    prunedLeft++;
+                                    pruned_left++;
                                 }
 
                                 if (clippedRight.valid() &&
-                                    clippedRight.surfaceArea() > 0) {
-                                    for (int axis = 0; axis < Dimension; ++axis) {
+                                    clippedRight.surface_area() > 0) {
+                                    for (size_t axis = 0; axis < Dimension; ++axis) {
                                         Scalar min = clippedRight.min[axis],
                                                max = clippedRight.max[axis];
 
                                         if (min != max) {
-                                            *newRightEventsEnd++ = EdgeEvent(
+                                            *new_right_events_end++ = EdgeEvent(
                                                 EdgeEvent::EEdgeStart, axis, min, event.index);
-                                            *newRightEventsEnd++ = EdgeEvent(
+                                            *new_right_events_end++ = EdgeEvent(
                                                 EdgeEvent::EEdgeEnd, axis, max, event.index);
                                         } else {
-                                            *newRightEventsEnd++ = EdgeEvent(
+                                            *new_right_events_end++ = EdgeEvent(
                                                 EdgeEvent::EEdgePlanar, axis, min, event.index);
                                         }
                                     }
                                 } else {
-                                    prunedRight++;
+                                    pruned_right++;
                                 }
 
                                 /* Set classification to 'EIgnore' to ensure that
@@ -1434,136 +1431,136 @@ protected:
                     }
                 }
 
-                Assert((Size) (tempLeftEventsEnd - tempLeftEventsStart) <= primsLeft * 2 * Dimension);
-                Assert((Size) (tempRightEventsEnd - tempRightEventsStart) <= primsRight * 2 * Dimension);
-                Assert((Size) (newLeftEventsEnd - newLeftEventsStart) <= primsBoth * 2 * Dimension);
-                Assert((Size) (newRightEventsEnd - newRightEventsStart) <= primsBoth * 2 * Dimension);
+                Assert((Size) (temp_left_events_end - temp_left_events_start) <= prims_left * 2 * Dimension);
+                Assert((Size) (temp_right_events_end - temp_right_events_start) <= prims_right * 2 * Dimension);
+                Assert((Size) (new_left_events_end - new_left_events_start) <= prims_both * 2 * Dimension);
+                Assert((Size) (new_right_events_end - new_right_events_start) <= prims_both * 2 * Dimension);
 
-                m_ctx.pruned += prunedLeft + prunedRight;
+                m_ctx.pruned += pruned_left + pruned_right;
 
                 /* Sort the events due to primitives which overlap the split plane */
-                std::sort(newLeftEventsStart, newLeftEventsEnd);
-                std::sort(newRightEventsStart, newRightEventsEnd);
+                std::sort(new_left_events_start, new_left_events_end);
+                std::sort(new_right_events_start, new_right_events_end);
 
                 /* Merge the left list */
-                leftEventsEnd = std::merge(tempLeftEventsStart,
-                    tempLeftEventsEnd, newLeftEventsStart, newLeftEventsEnd,
-                    leftEventsStart);
+                left_events_end = std::merge(temp_left_events_start,
+                    temp_left_events_end, new_left_events_start,
+                    new_left_events_end, left_events_start);
 
                 /* Merge the right list */
-                rightEventsEnd = std::merge(tempRightEventsStart,
-                    tempRightEventsEnd, newRightEventsStart, newRightEventsEnd,
-                    rightEventsStart);
+                right_events_end = std::merge(temp_right_events_start,
+                    temp_right_events_end, new_right_events_start,
+                    new_right_events_end, right_events_start);
 
                 /* Release temporary memory */
-                leftAlloc.release(newLeftEventsStart);
-                rightAlloc.release(newRightEventsStart);
-                leftAlloc.release(tempLeftEventsStart);
-                rightAlloc.release(tempRightEventsStart);
+                left_alloc.release(new_left_events_start);
+                right_alloc.release(new_right_events_start);
+                left_alloc.release(temp_left_events_start);
+                right_alloc.release(temp_right_events_start);
             }
 
             /* Shrink the edge event storage now that we know exactly how
                many events are on each side */
-            leftAlloc.shrinkAllocation(leftEventsStart,
-                                       leftEventsEnd - leftEventsStart);
-            rightAlloc.shrinkAllocation(rightEventsStart,
-                                        rightEventsEnd - rightEventsStart);
+            left_alloc.shrink_allocation(left_events_start,
+                                        left_events_end - left_events_start);
+            right_alloc.shrink_allocation(right_events_start,
+                                         right_events_end - right_events_start);
 
             /* ==================================================================== */
             /*                              Recursion                               */
             /* ==================================================================== */
 
-            NodeIterator children = m_ctx.nodeStorage.grow_by(2);
+            NodeIterator children = m_ctx.node_storage.grow_by(2);
 
-            Size leftOffset(std::distance(node, children));
+            Size left_offset(std::distance(node, children));
 
-            if (!node->setInnerNode(best.axis, best.split, leftOffset))
+            if (!node->set_inner_node(best.axis, best.split, left_offset))
                 Throw("Internal error during kd-tree construction: unable "
                       "to store overly large offset to left child node (%i)",
-                      leftOffset);
+                      left_offset);
             if (node->left() == &*node || node->right() == &*node)
                 Throw("Internal error..");
 
-            Scalar leftCost =
-                buildNLogN(children, best.leftCount - prunedLeft,
-                           leftEventsStart, leftEventsEnd, leftBBox,
-                           depth + 1, badRefines, true);
+            Scalar left_cost =
+                build_nlogn(children, best.left_count - pruned_left,
+                            left_events_start, left_events_end, left_bbox,
+                            depth + 1, bad_refines, true);
 
-            Scalar rightCost =
-                buildNLogN(std::next(children), best.rightCount - prunedRight,
-                           rightEventsStart, rightEventsEnd, rightBBox,
-                           depth + 1, badRefines, false);
+            Scalar right_cost =
+                build_nlogn(std::next(children), best.right_count - pruned_right,
+                            right_events_start, right_events_end, right_bbox,
+                            depth + 1, bad_refines, false);
 
             /* Release the index lists not needed by the children anymore */
-            if (leftChild)
-                rightAlloc.release(rightEventsStart);
+            if (left_child)
+                right_alloc.release(right_events_start);
             else
-                leftAlloc.release(leftEventsStart);
+                left_alloc.release(left_events_start);
 
             /* ==================================================================== */
             /*                           Final decision                             */
             /* ==================================================================== */
 
-            Scalar finalCost =
-                model.innerCost(best.axis, best.split, leftCost, rightCost);
+            Scalar final_cost =
+                model.inner_cost(best.axis, best.split, left_cost, right_cost);
 
             /* Tear up bad (i.e. costly) subtrees and replace them with leaf nodes */
-            if (unlikely(finalCost > leafCost && derived.retractBadSplits())) {
+            if (unlikely(final_cost > leaf_cost && derived.retract_bad_splits())) {
                 std::unordered_set<Index> temp;
                 traverse(node, temp);
 
-                auto it = m_ctx.indexStorage.grow_by(temp.begin(), temp.end());
-                Size offset(std::distance(m_ctx.indexStorage.begin(), it));
+                auto it = m_ctx.index_storage.grow_by(temp.begin(), temp.end());
+                Size offset(std::distance(m_ctx.index_storage.begin(), it));
 
-                if (!node->setLeafNode(offset, temp.size()))
+                if (!node->set_leaf_node(offset, temp.size()))
                     Throw("Internal error: could not create leaf node with %i "
                           "primitives -- too much geometry?", m_indices.size());
 
-                m_ctx.retractedSplits++;
-                return leafCost;
+                m_ctx.retracted_splits++;
+                return leaf_cost;
             }
 
-            return finalCost;
+            return final_cost;
         }
 
         /// Create an initial sorted edge event list and start the O(N log N) builder
-        Scalar transitionToNLogN() {
+        Scalar transition_to_nlogn() {
             const auto &derived = m_ctx.derived;
             m_local = &((LocalBuildContext &) m_ctx.local);
 
-            Size primCount = Size(m_indices.size()), finalPrimCount = primCount;
+            Size prim_count = Size(m_indices.size()), final_prim_count = prim_count;
 
             /* We don't yet know how many edge events there will be. Allocate a
                conservative amount and shrink the buffer later on. */
-            Size initialSize = primCount * 2 * Dimension;
+            Size initial_size = prim_count * 2 * Dimension;
 
-            EdgeEvent *eventsStart =
-                m_local->leftAlloc.template allocate<EdgeEvent>(initialSize),
-                *eventsEnd = eventsStart + initialSize;
+            EdgeEvent *events_start =
+                m_local->left_alloc.template allocate<EdgeEvent>(initial_size),
+                *events_end = events_start + initial_size;
 
-            for (Size i = 0; i<primCount; ++i) {
-                Index primIndex = m_indices[i];
-                BoundingBox primBBox = derived.bbox(primIndex, m_bbox);
-                bool valid = primBBox.valid() && primBBox.surfaceArea() > 0;
+            for (Size i = 0; i<prim_count; ++i) {
+                Index prim_index = m_indices[i];
+                BoundingBox prim_bbox = derived.bbox(prim_index, m_bbox);
+                bool valid = prim_bbox.valid() && prim_bbox.surface_area() > 0;
 
                 if (unlikely(!valid)) {
-                    --finalPrimCount;
+                    --final_prim_count;
                     m_ctx.pruned++;
                 }
 
-                for (int axis = 0; axis < Dimension; ++axis) {
-                    Scalar min = primBBox.min[axis], max = primBBox.max[axis];
-                    Index offset = (axis * primCount + i) * 2;
+                for (size_t axis = 0; axis < Dimension; ++axis) {
+                    Scalar min = prim_bbox.min[axis], max = prim_bbox.max[axis];
+                    Index offset = (axis * prim_count + i) * 2;
 
                     if (unlikely(!valid)) {
-                        eventsStart[offset  ].setInvalid();
-                        eventsStart[offset+1].setInvalid();
+                        events_start[offset  ].set_invalid();
+                        events_start[offset+1].set_invalid();
                     } else if (min == max) {
-                        eventsStart[offset  ] = EdgeEvent(EdgeEvent::EEdgePlanar, axis, min, primIndex);
-                        eventsStart[offset+1].setInvalid();
+                        events_start[offset  ] = EdgeEvent(EdgeEvent::EEdgePlanar, axis, min, prim_index);
+                        events_start[offset+1].set_invalid();
                     } else {
-                        eventsStart[offset  ] = EdgeEvent(EdgeEvent::EEdgeStart, axis, min, primIndex);
-                        eventsStart[offset+1] = EdgeEvent(EdgeEvent::EEdgeEnd,   axis, max, primIndex);
+                        events_start[offset  ] = EdgeEvent(EdgeEvent::EEdgeStart, axis, min, prim_index);
+                        events_start[offset+1] = EdgeEvent(EdgeEvent::EEdgeEnd,   axis, max, prim_index);
                     }
                 }
             }
@@ -1572,99 +1569,99 @@ protected:
             IndexVector().swap(m_indices);
 
             /* Sort the events list and remove invalid ones from the end */
-            std::sort(eventsStart, eventsEnd);
-            while (eventsStart != eventsEnd && !(eventsEnd-1)->valid())
-                --eventsEnd;
+            std::sort(events_start, events_end);
+            while (events_start != events_end && !(events_end-1)->valid())
+                --events_end;
 
-            m_local->leftAlloc.template shrinkAllocation<EdgeEvent>(
-                eventsStart, eventsEnd - eventsStart);
-            m_local->classificationStorage.resize(derived.primitiveCount());
+            m_local->left_alloc.template shrink_allocation<EdgeEvent>(
+                events_start, events_end - events_start);
+            m_local->classification_storage.resize(derived.primitive_count());
             m_local->ctx = &m_ctx;
 
-            Float cost = buildNLogN(m_node, finalPrimCount, eventsStart,
-                                    eventsEnd, m_bbox, m_depth, 0);
+            Float cost = build_nlogn(m_node, final_prim_count, events_start,
+                                     events_end, m_bbox, m_depth, 0);
 
-            m_local->leftAlloc.release(eventsStart);
+            m_local->left_alloc.release(events_start);
 
             return cost;
         }
 
         /// Create a leaf node using the given set of indices (called by min-max binning)
-        template <typename T> void makeLeaf(T &&indices) {
-            auto it = m_ctx.indexStorage.grow_by(indices.begin(), indices.end());
-            Size offset(std::distance(m_ctx.indexStorage.begin(), it));
+        template <typename T> void make_leaf(T &&indices) {
+            auto it = m_ctx.index_storage.grow_by(indices.begin(), indices.end());
+            Size offset(std::distance(m_ctx.index_storage.begin(), it));
 
-            if (!m_node->setLeafNode(offset, indices.size()))
+            if (!m_node->set_leaf_node(offset, indices.size()))
                 Throw("Internal error: could not create leaf node with %i "
                       "primitives -- too much geometry?", m_indices.size());
 
-            *m_cost = m_ctx.derived.costModel().leafCost(Size(indices.size()));
+            *m_cost = m_ctx.derived.cost_model().leaf_cost(Size(indices.size()));
         }
 
         /// Create a leaf node using the given edge event list (called by the O(N log N) builder)
-        void makeLeaf(NodeIterator node, Size primCount, EdgeEvent *eventsStart,
-                      EdgeEvent *eventsEnd) const {
-            auto it = m_ctx.indexStorage.grow_by(primCount);
-            Size offset(std::distance(m_ctx.indexStorage.begin(), it));
+        void make_leaf(NodeIterator node, Size prim_count, EdgeEvent *events_start,
+                      EdgeEvent *events_end) const {
+            auto it = m_ctx.index_storage.grow_by(prim_count);
+            Size offset(std::distance(m_ctx.index_storage.begin(), it));
 
-            if (!node->setLeafNode(offset, primCount))
+            if (!node->set_leaf_node(offset, prim_count))
                 Throw("Internal error: could not create leaf node with %i "
-                      "primitives -- too much geometry?", primCount);
+                      "primitives -- too much geometry?", prim_count);
 
-            for (auto event = eventsStart; event != eventsEnd; ++event) {
+            for (auto event = events_start; event != events_end; ++event) {
                 if (event->axis != 0)
                     break;
                 if (event->type == EdgeEvent::EEdgeStart ||
                     event->type == EdgeEvent::EEdgePlanar) {
-                    Assert(--primCount >= 0);
+                    Assert(--prim_count >= 0);
                     *it++ = event->index;
                 }
             }
 
-            Assert(primCount == 0);
+            Assert(prim_count == 0);
         }
 
         /// Traverse a subtree and collect all encountered primitive references in a set
         void traverse(NodeIterator node, std::unordered_set<Index> &result) {
             if (node->leaf()) {
-                for (Size i = 0; i < node->primitiveCount(); ++i)
-                    result.insert(m_ctx.indexStorage[node->primitiveOffset() + i]);
+                for (Size i = 0; i < node->primitive_count(); ++i)
+                    result.insert(m_ctx.index_storage[node->primitive_offset() + i]);
             } else {
-                NodeIterator leftChild = node + node->leftOffset(),
-                             rightChild = leftChild + 1;
-                traverse(leftChild, result);
-                traverse(rightChild, result);
+                NodeIterator left_child = node + node->left_offset(),
+                             right_child = left_child + 1;
+                traverse(left_child, result);
+                traverse(right_child, result);
             }
         }
     };
 
-    void computeStatistics(BuildContext &ctx, const KDNode *node,
-                           const BoundingBox &bbox, Size depth) {
-        if (depth > ctx.maxDepth)
-            ctx.maxDepth = depth;
+    void compute_statistics(BuildContext &ctx, const KDNode *node,
+                            const BoundingBox &bbox, Size depth) {
+        if (depth > ctx.max_depth)
+            ctx.max_depth = depth;
 
         if (node->leaf()) {
-            auto primCount = node->primitiveCount();
+            auto prim_count = node->primitive_count();
             double value = (double) CostModel::eval(bbox);
 
-            ctx.expLeavesVisited += value;
-            ctx.expPrimitivesQueried += value * double(primCount);
-            if (primCount < sizeof(ctx.primBuckets) / sizeof(Size))
-                ctx.primBuckets[primCount]++;
-            if (primCount > ctx.maxPrimsInLeaf)
-                ctx.maxPrimsInLeaf = primCount;
-            if (primCount > 0)
-                ctx.nonEmptyLeafCount++;
+            ctx.exp_leaves_visited += value;
+            ctx.exp_primitives_queried += value * double(prim_count);
+            if (prim_count < sizeof(ctx.prim_buckets) / sizeof(Size))
+                ctx.prim_buckets[prim_count]++;
+            if (prim_count > ctx.max_prims_in_leaf)
+                ctx.max_prims_in_leaf = prim_count;
+            if (prim_count > 0)
+                ctx.nonempty_leaf_count++;
         } else {
-            ctx.expTraversalSteps += (double) CostModel::eval(bbox);
+            ctx.exp_traversal_steps += (double) CostModel::eval(bbox);
 
             int axis = node->axis();
             Scalar split = Scalar(node->split());
-            BoundingBox leftBBox(bbox), rightBBox(bbox);
-            leftBBox.max[axis] = split;
-            rightBBox.min[axis] = split;
-            computeStatistics(ctx, node->left(), leftBBox, depth + 1);
-            computeStatistics(ctx, node->right(), rightBBox, depth + 1);
+            BoundingBox left_bbox(bbox), right_bbox(bbox);
+            left_bbox.max[axis] = split;
+            right_bbox.min[axis] = split;
+            compute_statistics(ctx, node->left(), left_bbox, depth + 1);
+            compute_statistics(ctx, node->right(), right_bbox, depth + 1);
         }
     }
 
@@ -1672,35 +1669,35 @@ protected:
         /* Some sanity checks */
         if (ready())
             Throw("The kd-tree has already been built!");
-        if (m_minMaxBins <= 1)
+        if (m_min_max_bins <= 1)
             Throw("The number of min-max bins must be > 2");
-        if (m_stopPrimitives <= 0)
+        if (m_stop_primitives <= 0)
             Throw("The stopping primitive count must be greater than zero");
-        if (m_exactPrimThreshold <= m_stopPrimitives)
+        if (m_exact_prim_threshold <= m_stop_primitives)
             Throw("The exact primitive threshold must be bigger than the "
                   "stopping primitive count");
 
-        Size primCount = derived().primitiveCount();
-        if (m_maxDepth == 0)
-            m_maxDepth = (int) (8 + 1.3f * math::log2i(primCount));
-        m_maxDepth = std::min(m_maxDepth, (Size) MTS_KD_MAXDEPTH);
+        Size prim_count = derived().primitive_count();
+        if (m_max_depth == 0)
+            m_max_depth = (int) (8 + 1.3f * log2i(prim_count));
+        m_max_depth = std::min(m_max_depth, (Size) MTS_KD_MAXDEPTH);
 
-        Log(m_logLevel, "");
+        Log(m_log_level, "");
 
-        Log(m_logLevel, "kd-tree configuration:");
-        Log(m_logLevel, "   Cost model               : %s", m_costModel);
-        Log(m_logLevel, "   Max. tree depth          : %i", m_maxDepth);
-        Log(m_logLevel, "   Scene bounding box (min) : %s", m_bbox.min);
-        Log(m_logLevel, "   Scene bounding box (max) : %s", m_bbox.max);
-        Log(m_logLevel, "   Min-max bins             : %i", m_minMaxBins);
-        Log(m_logLevel, "   O(n log n) method        : use for <= %i primitives",
-            m_exactPrimThreshold);
-        Log(m_logLevel, "   Stopping primitive count : %i", m_stopPrimitives);
-        Log(m_logLevel, "   Perfect splits           : %s",
-            m_clipPrimitives ? "yes" : "no");
-        Log(m_logLevel, "   Retract bad splits       : %s",
-            m_retractBadSplits ? "yes" : "no");
-        Log(m_logLevel, "");
+        Log(m_log_level, "kd-tree configuration:");
+        Log(m_log_level, "   Cost model               : %s", m_cost_model);
+        Log(m_log_level, "   Max. tree depth          : %i", m_max_depth);
+        Log(m_log_level, "   Scene bounding box (min) : %s", m_bbox.min);
+        Log(m_log_level, "   Scene bounding box (max) : %s", m_bbox.max);
+        Log(m_log_level, "   Min-max bins             : %i", m_min_max_bins);
+        Log(m_log_level, "   O(n log n) method        : use for <= %i primitives",
+            m_exact_prim_threshold);
+        Log(m_log_level, "   Stopping primitive count : %i", m_stop_primitives);
+        Log(m_log_level, "   Perfect splits           : %s",
+            m_clip_primitives ? "yes" : "no");
+        Log(m_log_level, "   Retract bad splits       : %s",
+            m_retract_bad_splits ? "yes" : "no");
+        Log(m_log_level, "");
 
         /* ==================================================================== */
         /*              Create build context and preallocate memory             */
@@ -1708,129 +1705,129 @@ protected:
 
         BuildContext ctx(derived());
 
-        ctx.nodeStorage.reserve(primCount);
-        ctx.indexStorage.reserve(primCount);
+        ctx.node_storage.reserve(prim_count);
+        ctx.index_storage.reserve(prim_count);
 
-        ctx.nodeStorage.grow_by(1);
+        ctx.node_storage.grow_by(1);
 
         /* ==================================================================== */
         /*                      Build the tree in parallel                      */
         /* ==================================================================== */
 
-        Scalar finalCost = 0;
-        if (primCount == 0) {
+        Scalar final_cost = 0;
+        if (prim_count == 0) {
             Log(EWarn, "kd-tree contains no geometry!");
-            ctx.nodeStorage[0].setLeafNode(0, 0);
+            ctx.node_storage[0].set_leaf_node(0, 0);
         } else {
 
-            Log(m_logLevel, "Creating a preliminary index list (%s)",
-                util::memString(primCount * sizeof(Index)).c_str());
+            Log(m_log_level, "Creating a preliminary index list (%s)",
+                util::mem_string(prim_count * sizeof(Index)).c_str());
 
-            IndexVector indices(primCount);
-            for (size_t i = 0; i < primCount; ++i)
+            IndexVector indices(prim_count);
+            for (size_t i = 0; i < prim_count; ++i)
                 indices[i] = i;
 
             BuildTask &task = *new (tbb::task::allocate_root()) BuildTask(
-                ctx, ctx.nodeStorage.begin(), std::move(indices),
-                m_bbox, m_bbox, 0, 0, &finalCost);
+                ctx, ctx.node_storage.begin(), std::move(indices),
+                m_bbox, m_bbox, 0, 0, &final_cost);
 
             tbb::task::spawn_root_and_wait(task);
         }
 
-        Log(m_logLevel, "Structural kd-tree statistics:");
+        Log(m_log_level, "Structural kd-tree statistics:");
 
         /* ==================================================================== */
         /*     Store the node and index lists in a compact contiguous format    */
         /* ==================================================================== */
 
-        m_nodeCount = Size(ctx.nodeStorage.size());
-        m_indexCount = Size(ctx.indexStorage.size());
+        m_node_count = Size(ctx.node_storage.size());
+        m_index_count = Size(ctx.index_storage.size());
 
-        m_indices.reset(AlignedAllocator::alloc<Index>(m_indexCount));
+        m_indices.reset(enoki::alloc<Index>(m_index_count));
         tbb::parallel_for(
-            tbb::blocked_range<Size>(0u, m_indexCount, MTS_KD_GRAIN_SIZE),
+            tbb::blocked_range<Size>(0u, m_index_count, MTS_KD_GRAIN_SIZE),
             [&](const tbb::blocked_range<Size> &range) {
                 for (Size i = range.begin(); i != range.end(); ++i)
-                    m_indices[i] = ctx.indexStorage[i];
+                    m_indices[i] = ctx.index_storage[i];
             }
         );
 
-        tbb::concurrent_vector<Index>().swap(ctx.indexStorage);
+        tbb::concurrent_vector<Index>().swap(ctx.index_storage);
 
-        m_nodes.reset(AlignedAllocator::alloc<KDNode>(m_nodeCount));
+        m_nodes.reset(enoki::alloc<KDNode>(m_node_count));
         tbb::parallel_for(
-            tbb::blocked_range<Size>(0u, m_nodeCount, MTS_KD_GRAIN_SIZE),
+            tbb::blocked_range<Size>(0u, m_node_count, MTS_KD_GRAIN_SIZE),
             [&](const tbb::blocked_range<Size> &range) {
                 for (Size i = range.begin(); i != range.end(); ++i)
-                    m_nodes[i] = ctx.nodeStorage[i];
+                    m_nodes[i] = ctx.node_storage[i];
             }
         );
-        tbb::concurrent_vector<KDNode>().swap(ctx.nodeStorage);
+        tbb::concurrent_vector<KDNode>().swap(ctx.node_storage);
 
         /* ==================================================================== */
         /*         Print various tree statistics if requested by the user       */
         /* ==================================================================== */
 
-        if (Thread::thread()->logger()->logLevel() <= m_logLevel) {
-            computeStatistics(ctx, m_nodes.get(), m_bbox, 0);
+        if (Thread::thread()->logger()->log_level() <= m_log_level) {
+            compute_statistics(ctx, m_nodes.get(), m_bbox, 0);
 
             // Trigger per-thread data release
             ctx.local.clear();
 
-            ctx.expTraversalSteps /= (double) CostModel::eval(m_bbox);
-            ctx.expLeavesVisited /= (double) CostModel::eval(m_bbox);
-            ctx.expPrimitivesQueried /= (double) CostModel::eval(m_bbox);
-            ctx.tempStorage += ctx.nodeStorage.size() * sizeof(KDNode);
-            ctx.tempStorage += ctx.indexStorage.size() * sizeof(Index);
+            ctx.exp_traversal_steps /= (double) CostModel::eval(m_bbox);
+            ctx.exp_leaves_visited /= (double) CostModel::eval(m_bbox);
+            ctx.exp_primitives_queried /= (double) CostModel::eval(m_bbox);
+            ctx.temp_storage += ctx.node_storage.size() * sizeof(KDNode);
+            ctx.temp_storage += ctx.index_storage.size() * sizeof(Index);
 
-            Log(m_logLevel, "   Primitive references        : %i (%s)",
-                m_indexCount, util::memString(m_indexCount * sizeof(Index)));
+            Log(m_log_level, "   Primitive references        : %i (%s)",
+                m_index_count, util::mem_string(m_index_count * sizeof(Index)));
 
-            Log(m_logLevel, "   kd-tree nodes               : %i (%s)",
-                m_nodeCount, util::memString(m_nodeCount * sizeof(KDNode)));
+            Log(m_log_level, "   kd-tree nodes               : %i (%s)",
+                m_node_count, util::mem_string(m_node_count * sizeof(KDNode)));
 
-            Log(m_logLevel, "   kd-tree depth               : %i",
-                ctx.maxDepth);
+            Log(m_log_level, "   kd-tree depth               : %i",
+                ctx.max_depth);
 
-            Log(m_logLevel, "   Temporary storage used      : %s",
-                util::memString(ctx.tempStorage));
+            Log(m_log_level, "   Temporary storage used      : %s",
+                util::mem_string(ctx.temp_storage));
 
-            Log(m_logLevel, "   Parallel work units         : %i",
-                ctx.workUnits);
+            Log(m_log_level, "   Parallel work units         : %i",
+                ctx.work_units);
 
             std::ostringstream oss;
-            Size primBucketCount = sizeof(ctx.primBuckets) / sizeof(Size);
+            Size prim_bucket_count = sizeof(ctx.prim_buckets) / sizeof(Size);
             oss << "   Leaf node histogram         : ";
-            for (Size i = 0; i < primBucketCount; i++) {
-                oss << i << "(" << ctx.primBuckets[i] << ") ";
-                if ((i + 1) % 4 == 0 && i + 1 < primBucketCount) {
-                    Log(m_logLevel, "%s", oss.str());
+            for (Size i = 0; i < prim_bucket_count; i++) {
+                oss << i << "(" << ctx.prim_buckets[i] << ") ";
+                if ((i + 1) % 4 == 0 && i + 1 < prim_bucket_count) {
+                    Log(m_log_level, "%s", oss.str());
                     oss.str("");
                     oss << "                                 ";
                 }
             }
-            Log(m_logLevel, "%s", oss.str().c_str());
-            Log(m_logLevel, "");
+            Log(m_log_level, "%s", oss.str().c_str());
+            Log(m_log_level, "");
 
-            Log(m_logLevel, "Qualitative kd-tree statistics:");
-            Log(m_logLevel, "   Retracted splits            : %i",
-                ctx.retractedSplits);
-            Log(m_logLevel, "   Bad refines                 : %i",
-                ctx.badRefines);
-            Log(m_logLevel, "   Pruned                      : %i",
+            Log(m_log_level, "Qualitative kd-tree statistics:");
+            Log(m_log_level, "   Retracted splits            : %i",
+                ctx.retracted_splits);
+            Log(m_log_level, "   Bad refines                 : %i",
+                ctx.bad_refines);
+            Log(m_log_level, "   Pruned                      : %i",
                 ctx.pruned);
-            Log(m_logLevel, "   Largest leaf node           : %i primitives",
-                ctx.maxPrimsInLeaf);
-            Log(m_logLevel, "   Avg. prims/nonempty leaf    : %.2f",
-                m_indexCount / (Scalar) ctx.nonEmptyLeafCount);
-            Log(m_logLevel, "   Expected traversals/query   : %.2f",
-                ctx.expTraversalSteps);
-            Log(m_logLevel, "   Expected leaf visits/query  : %.2f",
-                ctx.expLeavesVisited);
-            Log(m_logLevel, "   Expected prim. visits/query : %.2f",
-                ctx.expPrimitivesQueried);
-            Log(m_logLevel, "   Final cost                  : %.2f",
-                finalCost);
+            Log(m_log_level, "   Largest leaf node           : %i primitives",
+                ctx.max_prims_in_leaf);
+            Log(m_log_level, "   Avg. prims/nonempty leaf    : %.2f",
+                m_index_count / (Scalar) ctx.nonempty_leaf_count);
+            Log(m_log_level, "   Expected traversals/query   : %.2f",
+                ctx.exp_traversal_steps);
+            Log(m_log_level, "   Expected leaf visits/query  : %.2f",
+                ctx.exp_leaves_visited);
+            Log(m_log_level, "   Expected prim. visits/query : %.2f",
+                ctx.exp_primitives_queried);
+            Log(m_log_level, "   Final cost                  : %.2f",
+                final_cost);
         }
 
         #if defined(__LINUX__)
@@ -1840,20 +1837,20 @@ protected:
     }
 
 protected:
-    std::unique_ptr<KDNode[], AlignedAllocator> m_nodes;
-    std::unique_ptr<Index[],  AlignedAllocator> m_indices;
-    Size m_nodeCount = 0;
-    Size m_indexCount = 0;
+    std::unique_ptr<KDNode[], enoki::aligned_deleter> m_nodes;
+    std::unique_ptr<Index[],  enoki::aligned_deleter> m_indices;
+    Size m_node_count = 0;
+    Size m_index_count = 0;
 
-    CostModel m_costModel;
-    bool m_clipPrimitives = true;
-    bool m_retractBadSplits = true;
-    Size m_maxDepth = 0;
-    Size m_stopPrimitives = 3;
-    Size m_maxBadRefines = 0;
-    Size m_exactPrimThreshold = 65536;
-    Size m_minMaxBins = 128;
-    ELogLevel m_logLevel = EDebug;
+    CostModel m_cost_model;
+    bool m_clip_primitives = true;
+    bool m_retract_bad_splits = true;
+    Size m_max_depth = 0;
+    Size m_stop_primitives = 3;
+    Size m_max_bad_refines = 0;
+    Size m_exact_prim_threshold = 65536;
+    Size m_min_max_bins = 128;
+    ELogLevel m_log_level = EDebug;
     BoundingBox m_bbox;
 };
 
@@ -1870,15 +1867,15 @@ class SurfaceAreaHeuristic3f {
 public:
     using Size = uint32_t;
 
-    SurfaceAreaHeuristic3f(Float queryCost, Float traversalCost,
-                           Float emptySpaceBonus)
-        : m_queryCost(queryCost), m_traversalCost(traversalCost),
-          m_emptySpaceBonus(emptySpaceBonus) {
-        if (m_queryCost <= 0)
+    SurfaceAreaHeuristic3f(Float query_cost, Float traversal_cost,
+                           Float empty_space_bonus)
+        : m_query_cost(query_cost), m_traversal_cost(traversal_cost),
+          m_empty_space_bonus(empty_space_bonus) {
+        if (m_query_cost <= 0)
             Throw("The query cost must be > 0");
-        if (m_traversalCost <= 0)
+        if (m_traversal_cost <= 0)
             Throw("The traveral cost must be > 0");
-        if (m_emptySpaceBonus <= 0 || m_emptySpaceBonus > 1)
+        if (m_empty_space_bonus <= 0 || m_empty_space_bonus > 1)
             Throw("The empty space bonus must be in [0, 1]");
     }
 
@@ -1887,16 +1884,16 @@ public:
      *
      * (This is the average cost for testing a shape against a kd-tree query)
      */
-    Float queryCost() const { return m_queryCost; }
+    Float query_cost() const { return m_query_cost; }
 
     /// Get the cost of a traversal operation used by the tree construction heuristic
-    Float traversalCost() const { return m_traversalCost; }
+    Float traversal_cost() const { return m_traversal_cost; }
 
     /**
      * \brief Return the bonus factor for empty space used by the
      * tree construction heuristic
      */
-    Float emptySpaceBonus() const { return m_emptySpaceBonus; }
+    Float empty_space_bonus() const { return m_empty_space_bonus; }
 
     /**
      * \brief Initialize the surface area heuristic with the bounds of
@@ -1905,11 +1902,11 @@ public:
      * Precomputes some information so that traversal probabilities
      * of potential split planes can be evaluated efficiently
      */
-    void setBoundingBox(const BoundingBox3f &bbox) {
+    void set_bounding_box(const BoundingBox3f &bbox) {
         auto extents = bbox.extents();
-        Float temp = 2.f / bbox.surfaceArea();
-        auto a = simd::shuffle<1, 2, 0>(extents);
-        auto b = simd::shuffle<2, 0, 1>(extents);
+        Float temp = 2.f / bbox.surface_area();
+        auto a = shuffle<1, 2, 0>(extents);
+        auto b = shuffle<2, 0, 1>(extents);
         m_temp0 = m_temp1 = (a * b) * temp;
         m_temp2 = (a + b) * temp;
         m_temp0 -= m_temp2 * Vector3f(bbox.min);
@@ -1917,49 +1914,48 @@ public:
     }
 
     /// \brief Evaluate the cost of a leaf node
-    Float leafCost(Size nElements) const {
-        return m_queryCost * nElements;
+    Float leaf_cost(Size nelem) const {
+        return m_query_cost * nelem;
     }
 
     /**
      * \brief Evaluate the surface area heuristic
      *
-     * Given a split on axis \a axis that produces children having extents \a
-     * leftWidth and \a rightWidth along \a axis, compute the probability of
-     * traversing the left and right child during a typical query operation. In
-     * the case of the surface area heuristic, this is simply the ratio of
-     * surface areas.
+     * Given a split on axis \a axis at position \a split, compute the
+     * probability of traversing the left and right child during a typical
+     * query operation. In the case of the surface area heuristic, this is
+     * simply the ratio of surface areas.
      */
-    Float innerCost(int axis, Float split, Float leftCost, Float rightCost) const {
-        Float leftProb  = m_temp0[axis] + m_temp2[axis] * split;
-        Float rightProb = m_temp1[axis] - m_temp2[axis] * split;
+    Float inner_cost(int axis, Float split, Float left_cost, Float right_cost) const {
+        Float left_prob  = m_temp0[axis] + m_temp2[axis] * split;
+        Float right_prob = m_temp1[axis] - m_temp2[axis] * split;
 
-        Float cost = m_traversalCost +
-            (leftProb * leftCost + rightProb * rightCost);
+        Float cost = m_traversal_cost +
+            (left_prob * left_cost + right_prob * right_cost);
 
-        if (unlikely(leftCost == 0 || rightCost == 0))
-            cost *= m_emptySpaceBonus;
+        if (unlikely(left_cost == 0 || right_cost == 0))
+            cost *= m_empty_space_bonus;
 
         return cost;
     }
 
     static Float eval(const BoundingBox3f &bbox) {
-        return bbox.surfaceArea();
+        return bbox.surface_area();
 
     }
 
     friend std::ostream &operator<<(std::ostream &os, const SurfaceAreaHeuristic3f &sa) {
         os << "SurfaceAreaHeuristic3f["
-           << "queryCost=" << sa.queryCost() << ", "
-           << "traversalCost=" << sa.traversalCost() << ", "
-           << "emptySpaceBonus=" << sa.emptySpaceBonus() << "]";
+           << "query_cost=" << sa.query_cost() << ", "
+           << "traversal_cost=" << sa.traversal_cost() << ", "
+           << "empty_space_bonus=" << sa.empty_space_bonus() << "]";
         return os;
     }
 private:
     Vector3f m_temp0, m_temp1, m_temp2;
-    Float m_queryCost;
-    Float m_traversalCost;
-    Float m_emptySpaceBonus;
+    Float m_query_cost;
+    Float m_traversal_cost;
+    Float m_empty_space_bonus;
 };
 
 class MTS_EXPORT ShapeKDTree
@@ -1969,22 +1965,22 @@ public:
     using Base::Scalar;
 
     ShapeKDTree(const Properties &props);
-    void addShape(Shape *shape);
+    void add_shape(Shape *shape);
 
-    Size primitiveCount() const { return m_primitiveMap.back(); }
-    Size shapeCount() const { return Size(m_shapes.size()); }
+    Size primitive_count() const { return m_primitive_map.back(); }
+    Size shape_count() const { return Size(m_shapes.size()); }
 
     void build() {
         Timer timer;
         Log(EInfo, "Building a SAH kd-tree (%i primitives) ..",
-            primitiveCount());
+            primitive_count());
 
         Base::build();
 
         Log(EInfo, "Finished. (%s of storage, took %s)",
-            util::memString(m_indexCount * sizeof(Index) +
-                            m_nodeCount * sizeof(KDNode)),
-            util::timeString(timer.value())
+            util::mem_string(m_index_count * sizeof(Index) +
+                            m_node_count * sizeof(KDNode)),
+            util::time_string(timer.value())
         );
     }
 
@@ -1996,18 +1992,18 @@ public:
 
     /// Return the bounding box of the i-th primitive
     BoundingBox3f bbox(Index i) const {
-        Index shapeIndex = findShape(i);
-        return m_shapes[shapeIndex]->bbox(i);
+        Index shape_index = find_shape(i);
+        return m_shapes[shape_index]->bbox(i);
     }
 
     /// Return the (clipped) bounding box of the i-th primitive
     BoundingBox3f bbox(Index i, const BoundingBox3f &clip) const {
-        Index shapeIndex = findShape(i);
-        return m_shapes[shapeIndex]->bbox(i, clip);
+        Index shape_index = find_shape(i);
+        return m_shapes[shape_index]->bbox(i, clip);
     }
 
     /// Return a human-readable string representation of the scene contents.
-    virtual std::string toString() const override;
+    virtual std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 protected:
@@ -2018,30 +2014,30 @@ protected:
      * The function returns the shape index and updates the \a idx parameter to
      * point to the primitive index (e.g. triangle ID) within the shape.
      */
-    Index findShape(Index &i) const {
-        Assert(i < primitiveCount());
+    Index find_shape(Index &i) const {
+        Assert(i < primitive_count());
 
-        Index shapeIndex = math::findInterval(
+        Index shape_index = math::find_interval(
             Size(0),
-            Size(m_primitiveMap.size()),
+            Size(m_primitive_map.size()),
             [&](Index k) {
-                return m_primitiveMap[k] <= i;
+                return m_primitive_map[k] <= i;
             }
         );
-        Assert(shapeIndex < shapeCount() &&
-               m_primitiveMap.size() == shapeCount() + 1);
+        Assert(shape_index < shape_count() &&
+               m_primitive_map.size() == shape_count() + 1);
 
-        Assert(i >= m_primitiveMap[shapeIndex]);
-        Assert(i <  m_primitiveMap[shapeIndex + 1]);
+        Assert(i >= m_primitive_map[shape_index]);
+        Assert(i <  m_primitive_map[shape_index + 1]);
 
-        i -= m_primitiveMap[shapeIndex];
+        i -= m_primitive_map[shape_index];
 
-        return shapeIndex;
+        return shape_index;
     }
 
 protected:
     std::vector<ref<Shape>> m_shapes;
-    std::vector<Size> m_primitiveMap;
+    std::vector<Size> m_primitive_map;
 };
 
 NAMESPACE_END(mitsuba)

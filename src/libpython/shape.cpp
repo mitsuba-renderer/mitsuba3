@@ -4,22 +4,22 @@
 
 MTS_PY_EXPORT(Shape) {
     MTS_PY_CLASS(Shape, Object)
-        .def("bbox", (BoundingBox3f (Shape::*)() const) &Shape::bbox, DM(Shape, bbox))
-        .def("bbox", (BoundingBox3f (Shape::*)(Shape::Index) const) &Shape::bbox, DM(Shape, bbox, 2))
-        .mdef(Shape, primitiveCount);
+        .def("bbox", (BoundingBox3f (Shape::*)() const) &Shape::bbox, D(Shape, bbox))
+        .def("bbox", (BoundingBox3f (Shape::*)(Shape::Index) const) &Shape::bbox, D(Shape, bbox, 2))
+        .mdef(Shape, primitive_count);
 
     MTS_PY_CLASS(Mesh, Shape)
-        .mdef(Mesh, vertexStruct)
-        .mdef(Mesh, faceStruct)
+        .mdef(Mesh, vertex_struct)
+        .mdef(Mesh, face_struct)
         .mdef(Mesh, write)
         .def("vertices", [](py::object &o) {
             Mesh &m = py::cast<Mesh&>(o);
-            py::dtype dtype = o.attr("vertexStruct")().attr("dtype")();
-            return py::array(dtype, m.vertexCount(), m.vertices(), o);
+            py::dtype dtype = o.attr("vertex_struct")().attr("dtype")();
+            return py::array(dtype, m.vertex_count(), m.vertices(), o);
         })
         .def("faces", [](py::object &o) {
             Mesh &m = py::cast<Mesh&>(o);
-            py::dtype dtype = o.attr("faceStruct")().attr("dtype")();
-            return py::array(dtype, m.faceCount(), m.faces(), o);
+            py::dtype dtype = o.attr("face_struct")().attr("dtype")();
+            return py::array(dtype, m.face_count(), m.faces(), o);
         });
 }

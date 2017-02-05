@@ -28,7 +28,7 @@ enum ELogLevel : int {
 class MTS_EXPORT_CORE Logger : public Object {
 public:
     /// Construct a new logger with the given minimum log level
-    Logger(ELogLevel logLevel = EDebug);
+    Logger(ELogLevel log_level = EDebug);
 
     /**
      * \brief Process a log message
@@ -54,12 +54,12 @@ public:
      *    context of a progress message. When rendering a scene, it
      *    will usually contain a pointer to the associated \c RenderJob.
      */
-    void logProgress(Float progress, const std::string &name,
+    void log_progress(Float progress, const std::string &name,
         const std::string &formatted, const std::string &eta,
         const void *ptr = nullptr);
 
     /// Set the log level (everything below will be ignored)
-    void setLogLevel(ELogLevel level);
+    void set_log_level(ELogLevel level);
 
     /**
      * \brief Set the error log level (this level and anything above will throw
@@ -69,25 +69,25 @@ public:
      * errors. But \a level must always be less than \ref EError, i.e. it isn't
      * possible to cause errors not to throw an exception.
      */
-    void setErrorLevel(ELogLevel level);
+    void set_error_level(ELogLevel level);
 
     /// Return the current log level
-    ELogLevel logLevel() const { return m_logLevel; }
+    ELogLevel log_level() const { return m_log_level; }
 
     /// Return the current error level
-    ELogLevel errorLevel() const;
+    ELogLevel error_level() const;
 
     /// Add an appender to this logger
-    void addAppender(Appender *appender);
+    void add_appender(Appender *appender);
 
     /// Remove an appender from this logger
-    void removeAppender(Appender *appender);
+    void remove_appender(Appender *appender);
 
     /// Remove all appenders from this logger
-    void clearAppenders();
+    void clear_appenders();
 
     /// Return the number of registered appenders
-    size_t appenderCount() const;
+    size_t appender_count() const;
 
     /// Return one of the appenders
     Appender *appender(size_t index);
@@ -96,7 +96,7 @@ public:
     const Appender *appender(size_t index) const;
 
     /// Set the logger's formatter implementation
-    void setFormatter(Formatter *formatter);
+    void set_formatter(Formatter *formatter);
 
     /// Return the logger's formatter implementation
     Formatter *formatter();
@@ -109,13 +109,13 @@ public:
      *
      * Throws a runtime exception upon failure
      */
-    std::string readLog();
+    std::string read_log();
 
     /// Initialize logging
-    static void staticInitialization();
+    static void static_initialization();
 
     /// Shutdown logging
-    static void staticShutdown();
+    static void static_shutdown();
 
     MTS_DECLARE_CLASS()
 
@@ -125,7 +125,7 @@ protected:
 
 private:
     struct LoggerPrivate;
-    ELogLevel m_logLevel;
+    ELogLevel m_log_level;
     std::unique_ptr<LoggerPrivate> d;
 };
 
@@ -137,9 +137,9 @@ void Throw(ELogLevel level, const Class *class_, const char *file,
 
 template <typename... Args> MTS_INLINE
 static void Log(ELogLevel level, const Class *class_,
-                         const char *filename, int line, Args &&... args) {
+                const char *filename, int line, Args &&... args) {
     auto logger = mitsuba::Thread::thread()->logger();
-    if (logger && level >= logger->logLevel())
+    if (logger && level >= logger->log_level())
         logger->log(level, class_, filename, line, tfm::format(std::forward<Args>(args)...));
 }
 

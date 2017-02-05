@@ -18,6 +18,7 @@ target_link_libraries(mitsuba-ui mitsuba-core)
 
 # Link to NanoGUI
 target_link_libraries(mitsuba-ui nanogui)
+set_target_properties(mitsuba-ui PROPERTIES FOLDER mitsuba-ui)
 
 # Copy to 'dist' directory
 add_dist(mitsuba-ui nanogui)

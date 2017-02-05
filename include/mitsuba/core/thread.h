@@ -17,7 +17,7 @@ class MTS_EXPORT_CORE Thread : public Object {
 public:
     class TaskObserver; /* Used internally to keep track of TBB threads */
 
-    /// Possible priority values for \ref Thread::setPriority()
+    /// Possible priority values for \ref Thread::set_priority()
     enum EPriority {
         EIdlePriority,
         ELowestPriority,
@@ -43,7 +43,7 @@ public:
      *
      * \return \c true upon success.
      */
-    bool setPriority(EPriority priority);
+    bool set_priority(EPriority priority);
 
     /// Return the thread priority
     EPriority priority() const;
@@ -56,10 +56,10 @@ public:
      * default, the parameter is set to -1, which means that there is no
      * affinity.
      */
-    void setCoreAffinity(int core);
+    void set_core_affinity(int core);
 
     /// Return the core affinity
-    int coreAffinity() const;
+    int core_affinity() const;
 
     /**
      * \brief Specify whether or not this thread is critical
@@ -67,10 +67,10 @@ public:
      * When an thread marked critical crashes from an uncaught exception, the
      * whole process is brought down. The default is \c false.
      */
-    void setCritical(bool critical);
+    void set_critical(bool critical);
 
     /// Return the value of the critical flag
-    bool isCritical() const;
+    bool is_critical() const;
 
     /// Return a unique ID that is associated with this thread
     static uint32_t id();
@@ -79,7 +79,7 @@ public:
     const std::string &name() const;
 
     /// Set the name of this thread
-    void setName(const std::string &name);
+    void set_name(const std::string &name);
 
     /// Return the parent thread
     Thread *parent();
@@ -88,16 +88,16 @@ public:
     const Thread *parent() const;
 
     /// Set the file resolver associated with the current thread
-    void setFileResolver(FileResolver *resolver);
+    void set_file_resolver(FileResolver *resolver);
 
     /// Return the file resolver associated with the current thread
-    FileResolver *fileResolver();
+    FileResolver *file_resolver();
 
     /// Return the parent thread (const version)
-    const FileResolver *fileResolver() const;
+    const FileResolver *file_resolver() const;
 
     /// Set the logger instance used to process log messages from this thread
-    void setLogger(Logger *logger);
+    void set_logger(Logger *logger);
 
     /// Return the thread's logger instance
     Logger *logger();
@@ -106,7 +106,7 @@ public:
     static Thread *thread();
 
     /// Is this thread still running?
-    bool isRunning() const;
+    bool is_running() const;
 
     /// Start the thread
     void start();
@@ -124,16 +124,16 @@ public:
     void join();
 
     /// Return a string representation
-    virtual std::string toString() const override;
+    virtual std::string to_string() const override;
 
     /// Sleep for a certain amount of time (in milliseconds)
     static void sleep(uint32_t ms);
 
     /// Initialize the threading system
-    static void staticInitialization();
+    static void static_initialization();
 
     /// Shut down the threading system
-    static void staticShutdown();
+    static void static_shutdown();
 
     MTS_DECLARE_CLASS()
 
@@ -169,7 +169,7 @@ public:
 
 private:
     ref<Logger> m_logger;
-    ref<FileResolver> m_fileResolver;
+    ref<FileResolver> m_file_resolver;
 };
 
 NAMESPACE_END(mitsuba)

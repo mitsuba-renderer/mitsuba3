@@ -1,9 +1,6 @@
 [submodule "ext/openexr"]
 	path = ext/openexr
 	url = https://github.com/mitsuba-renderer/openexr
-[submodule "ext/pcg32"]
-	path = ext/pcg32
-	url = https://github.com/wjakob/pcg32
 [submodule "ext/tbb"]
 	path = ext/tbb
 	url = https://github.com/wjakob/tbb
@@ -34,6 +31,6 @@
 [submodule "ext/asmjit"]
 	path = ext/asmjit
 	url = https://github.com/mitsuba-renderer/asmjit
-[submodule "ext/simdarray"]
-	path = ext/simdarray
-	url = https://github.com/mitsuba-renderer/simdarray
+[submodule "ext/enoki"]
+	path = ext/enoki
+	url = https://github.com/mitsuba-renderer/enoki

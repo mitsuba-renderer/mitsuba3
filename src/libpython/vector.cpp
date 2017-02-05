@@ -9,5 +9,5 @@ MTS_PY_EXPORT(vector) {
 #endif
     m.attr("PacketSize") = py::cast(PacketSize);
 
-    m.def("coordinateSystem", &coordinateSystem, DM(coordinateSystem));
+    m.def("coordinate_system", &coordinate_system<Vector3f>, D(coordinate_system));
 }

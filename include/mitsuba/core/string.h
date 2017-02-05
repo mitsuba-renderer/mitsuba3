@@ -10,27 +10,27 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(string)
 
 /// Check if the given string starts with a specified prefix
-inline bool startsWith(const std::string &string, const std::string &prefix) {
+inline bool starts_with(const std::string &string, const std::string &prefix) {
     if (prefix.size() > string.size())
         return false;
     return std::equal(prefix.begin(), prefix.end(), string.begin());
 }
 
 /// Check if the given string ends with a specified suffix
-inline bool endsWith(const std::string &string, const std::string &suffix) {
+inline bool ends_with(const std::string &string, const std::string &suffix) {
     if (suffix.size() > string.size())
         return false;
     return std::equal(suffix.rbegin(), suffix.rend(), string.rbegin());
 }
 
 /// Return a lower-case version of the given string (warning: not unicode compliant)
-inline std::string toLower(std::string str) {
+inline std::string to_lower(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);
     return str;
 }
 
 /// Return a upper-case version of the given string (warning: not unicode compliant)
-inline std::string toUpper(std::string str) {
+inline std::string to_upper(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(), ::toupper);
     return str;
 }

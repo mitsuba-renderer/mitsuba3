@@ -5,12 +5,13 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
+#include <enoki/half.h>
 #include <unordered_map>
 #include <fstream>
 
 NAMESPACE_BEGIN(mitsuba)
 
-class PLYMesh : public Mesh {
+class PLYMesh final : public Mesh {
 public:
     struct PLYElement {
         std::string name;
@@ -26,21 +27,21 @@ public:
 
     PLYMesh(const Properties &props) {
         /// Process vertex/index records in large batches
-        constexpr size_t nAtOnce = 1024;
+        constexpr size_t packet_size = 1024;
 
-        auto fs = Thread::thread()->fileResolver();
-        fs::path filePath = fs->resolve(props.string("filename"));
-        m_name = filePath.filename();
+        auto fs = Thread::thread()->file_resolver();
+        fs::path file_path = fs->resolve(props.string("filename"));
+        m_name = file_path.filename();
 
         auto fail = [&](const char *descr) {
             Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
         };
 
         Log(EInfo, "Loading mesh from \"%s\" ..", m_name);
-        if (!fs::exists(filePath))
+        if (!fs::exists(file_path))
             fail("file not found");
 
-        ref<Stream> stream = new FileStream(filePath, false);
+        ref<Stream> stream = new FileStream(file_path, false);
         Timer timer;
 
         PLYHeader header;
@@ -55,113 +56,113 @@ public:
         for (auto const &el : header.elements) {
             size_t size = el.struct_->size();
             if (el.name == "vertex") {
-                m_vertexStruct = new Struct(true);
+                m_vertex_struct = new Struct(true);
 
-                m_vertexStruct->append("x", struct_traits<Float>::value);
-                m_vertexStruct->append("y", struct_traits<Float>::value);
-                m_vertexStruct->append("z", struct_traits<Float>::value);
+                m_vertex_struct->append("x", struct_traits<Float>::value);
+                m_vertex_struct->append("y", struct_traits<Float>::value);
+                m_vertex_struct->append("z", struct_traits<Float>::value);
 
-                size_t iStructSize = el.struct_->size();
-                size_t oStructSize = m_vertexStruct->size();
+                size_t i_struct_size = el.struct_->size();
+                size_t o_struct_size = m_vertex_struct->size();
 
                 ref<StructConverter> conv;
                 try {
-                    conv = new StructConverter(el.struct_, m_vertexStruct);
+                    conv = new StructConverter(el.struct_, m_vertex_struct);
                 } catch (const std::exception &e) {
                     fail(e.what());
                 }
 
                 /* Allocate memory for vertices (+1 unused entry) */
                 m_vertices = VertexHolder(
-                    (uint8_t *) Allocator::alloc_((el.count + 1) * oStructSize));
+                    (uint8_t *) enoki::alloc((el.count + 1) * o_struct_size));
 
                 /* Clear unused entry */
-                memset(m_vertices.get() + oStructSize * el.count, 0, oStructSize);
+                memset(m_vertices.get() + o_struct_size * el.count, 0, o_struct_size);
 
-                size_t nPackets      = el.count / nAtOnce;
-                size_t nRemainder    = el.count % nAtOnce;
-                size_t iPacketSize   = iStructSize * nAtOnce;
-                size_t remainderSize = iStructSize * nRemainder;
+                size_t packet_count      = el.count / packet_size;
+                size_t remainder_count    = el.count % packet_size;
+                size_t i_packet_size   = i_struct_size * packet_size;
+                size_t remainder_size = i_struct_size * remainder_count;
 
-                std::unique_ptr<uint8_t[]> buf(new uint8_t[iPacketSize]);
+                std::unique_ptr<uint8_t[]> buf(new uint8_t[i_packet_size]);
                 uint8_t *target = (uint8_t *) m_vertices.get();
 
-                for (size_t i = 0; i < nPackets; ++i) {
-                    stream->read(buf.get(), iPacketSize);
-                    if (unlikely(!conv->convert(nAtOnce, buf.get(), target)))
+                for (size_t i = 0; i < packet_count; ++i) {
+                    stream->read(buf.get(), i_packet_size);
+                    if (unlikely(!conv->convert(packet_size, buf.get(), target)))
                         fail("incompatible contents -- is this a triangle mesh?");
 
-                    for (size_t j = 0; j < nAtOnce; ++j) {
-                        Vector3f p = Vector3f::Load((Float *) target);
+                    for (size_t j = 0; j < packet_size; ++j) {
+                        Vector3f p = enoki::load<Vector3f>((Float *) target);
                         m_bbox.expand(p);
-                        target += oStructSize;
+                        target += o_struct_size;
                     }
                 }
 
-                stream->read(buf.get(), remainderSize);
-                if (unlikely(!conv->convert(nRemainder, buf.get(), target)))
+                stream->read(buf.get(), remainder_size);
+                if (unlikely(!conv->convert(remainder_count, buf.get(), target)))
                     fail("incompatible contents -- is this a triangle mesh?");
 
-                for (size_t j = 0; j < nRemainder; ++j) {
-                    Vector3f p = Vector3f::Load((Float *) target);
+                for (size_t j = 0; j < remainder_count; ++j) {
+                    Vector3f p = enoki::load<Vector3f>((Float *) target);
                     m_bbox.expand(p);
-                    target += oStructSize;
+                    target += o_struct_size;
                 }
 
-                m_vertexCount = el.count;
-                m_vertexSize = oStructSize;
+                m_vertex_count = el.count;
+                m_vertex_size = o_struct_size;
             } else if (el.name == "face") {
-                m_faceStruct = new Struct(true);
+                m_face_struct = new Struct(true);
 
                 std::string fieldName;
-                if (el.struct_->hasField("vertex_index.count"))
+                if (el.struct_->has_field("vertex_index.count"))
                     fieldName = "vertex_index";
-                else if (el.struct_->hasField("vertex_indices.count"))
+                else if (el.struct_->has_field("vertex_indices.count"))
                     fieldName = "vertex_indices";
                 else
                     fail("vertex_index/vertex_indices "
                          "property not found");
 
                 for (int i = 0; i < 3; ++i)
-                    m_faceStruct->append(tfm::format("%s.i%i", fieldName, i),
+                    m_face_struct->append(tfm::format("%s.i%i", fieldName, i),
                                          struct_traits<Index>::value);
 
-                size_t iStructSize = el.struct_->size();
-                size_t oStructSize = m_faceStruct->size();
+                size_t i_struct_size = el.struct_->size();
+                size_t o_struct_size = m_face_struct->size();
 
                 ref<StructConverter> conv;
                 try {
-                    conv = new StructConverter(el.struct_, m_faceStruct);
+                    conv = new StructConverter(el.struct_, m_face_struct);
                 } catch (const std::exception &e) {
                     fail(e.what());
                 }
 
                 m_faces = FaceHolder(
-                    (uint8_t *) Allocator::alloc_(el.count * oStructSize));
+                    (uint8_t *) enoki::alloc(el.count * o_struct_size));
 
-                size_t nPackets      = el.count / nAtOnce;
-                size_t nRemainder    = el.count % nAtOnce;
-                size_t iPacketSize   = iStructSize * nAtOnce;
-                size_t oPacketSize   = oStructSize * nAtOnce;
-                size_t remainderSize = iStructSize * nRemainder;
+                size_t packet_count    = el.count / packet_size;
+                size_t remainder_count = el.count % packet_size;
+                size_t i_packet_size   = i_struct_size * packet_size;
+                size_t o_packet_size   = o_struct_size * packet_size;
+                size_t remainder_size  = i_struct_size * remainder_count;
 
-                std::unique_ptr<uint8_t[]> buf(new uint8_t[iPacketSize]);
+                std::unique_ptr<uint8_t[]> buf(new uint8_t[i_packet_size]);
                 uint8_t *target = (uint8_t *) m_faces.get();
 
-                for (size_t i = 0; i < nPackets; ++i) {
-                    stream->read(buf.get(), iPacketSize);
-                    if (unlikely(!conv->convert(nAtOnce, buf.get(), target)))
+                for (size_t i = 0; i < packet_count; ++i) {
+                    stream->read(buf.get(), i_packet_size);
+                    if (unlikely(!conv->convert(packet_size, buf.get(), target)))
                         fail("incompatible contents -- is this a triangle mesh?");
 
-                    target += oPacketSize;
+                    target += o_packet_size;
                 }
 
-                stream->read(buf.get(), remainderSize);
-                if (unlikely(!conv->convert(nRemainder, buf.get(), target)))
+                stream->read(buf.get(), remainder_size);
+                if (unlikely(!conv->convert(remainder_count, buf.get(), target)))
                     fail("incompatible contents -- is this a triangle mesh?");
 
-                m_faceCount = el.count;
-                m_faceSize = oStructSize;
+                m_face_count = el.count;
+                m_face_size = o_struct_size;
             } else {
                 Log(EWarn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + size * el.count);
@@ -173,11 +174,11 @@ public:
 
         Log(EInfo, "\"%s\": read %i faces, %i vertices (%s in %s)",
             m_name,
-            m_faceCount,
-            m_vertexCount,
-            util::memString(m_faceCount * m_faceStruct->size() +
-                            m_vertexCount * m_vertexStruct->size()),
-            util::timeString(timer.value())
+            m_face_count,
+            m_vertex_count,
+            util::mem_string(m_face_count * m_face_struct->size() +
+                            m_vertex_count * m_vertex_struct->size()),
+            util::time_string(timer.value())
         );
     }
 
@@ -207,71 +208,71 @@ public:
         Log(EInfo, "Writing mesh to \"%s\" ..", streamName);
 
         Timer timer;
-        stream->writeLine("ply");
-        if (Struct::hostByteOrder() == Struct::EBigEndian)
-            stream->writeLine("format binary_big_endian 1.0");
+        stream->write_line("ply");
+        if (Struct::host_byte_order() == Struct::EBigEndian)
+            stream->write_line("format binary_big_endian 1.0");
         else
-            stream->writeLine("format binary_little_endian 1.0");
+            stream->write_line("format binary_little_endian 1.0");
 
-        if (m_vertexStruct->fieldCount() > 0) {
-            stream->writeLine(tfm::format("element vertex %i", m_vertexCount));
-            for (auto const &f : *m_vertexStruct)
-                stream->writeLine(
+        if (m_vertex_struct->field_count() > 0) {
+            stream->write_line(tfm::format("element vertex %i", m_vertex_count));
+            for (auto const &f : *m_vertex_struct)
+                stream->write_line(
                     tfm::format("property %s %s", typeName(f.type), f.name));
         }
 
-        if (m_faceStruct->fieldCount() > 0) {
-            stream->writeLine(tfm::format("element face %i", m_faceCount));
-            stream->writeLine(tfm::format("property list uchar %s vertex_indices",
-                typeName((*m_faceStruct)[0].type)));
+        if (m_face_struct->field_count() > 0) {
+            stream->write_line(tfm::format("element face %i", m_face_count));
+            stream->write_line(tfm::format("property list uchar %s vertex_indices",
+                typeName((*m_face_struct)[0].type)));
         }
 
-        stream->writeLine("end_header");
+        stream->write_line("end_header");
 
-        if (m_vertexStruct->fieldCount() > 0) {
+        if (m_vertex_struct->field_count() > 0) {
             stream->write(
                 m_vertices.get(),
-                m_vertexStruct->size() * m_vertexCount
+                m_vertex_struct->size() * m_vertex_count
             );
         }
 
-        if (m_faceStruct->fieldCount() > 0) {
-            ref<Struct> faceStructOut = new Struct(true);
+        if (m_face_struct->field_count() > 0) {
+            ref<Struct> face_struct_out = new Struct(true);
 
-            faceStructOut->append("__size", Struct::EUInt8, Struct::EDefault, 3.0);
-            for (auto f: *m_faceStruct)
-                faceStructOut->append(f.name, f.type);
+            face_struct_out->append("__size", Struct::EUInt8, Struct::EDefault, 3.0);
+            for (auto f: *m_face_struct)
+                face_struct_out->append(f.name, f.type);
 
             ref<StructConverter> conv =
-                new StructConverter(m_faceStruct, faceStructOut);
+                new StructConverter(m_face_struct, face_struct_out);
 
-            FaceHolder temp((uint8_t *) Allocator::alloc_(
-                faceStructOut->size() * m_faceCount));
+            FaceHolder temp((uint8_t *) enoki::alloc(
+                face_struct_out->size() * m_face_count));
 
-            if (!conv->convert(m_faceCount, m_faces.get(), temp.get()))
+            if (!conv->convert(m_face_count, m_faces.get(), temp.get()))
                 Throw("PLYMesh::write(): internal error during conversion");
 
             stream->write(
                 temp.get(),
-                faceStructOut->size() * m_faceCount
+                face_struct_out->size() * m_face_count
             );
         }
 
         Log(EInfo, "\"%s\": wrote %i faces, %i vertices (%s in %s)",
             m_name,
-            m_faceCount,
-            m_vertexCount,
-            util::memString(m_faceCount * m_faceStruct->size() +
-                            m_vertexCount * m_vertexStruct->size()),
-            util::timeString(timer.value())
+            m_face_count,
+            m_vertex_count,
+            util::mem_string(m_face_count * m_face_struct->size() +
+                             m_vertex_count * m_vertex_struct->size()),
+            util::time_string(timer.value())
         );
     }
 
 private:
     PLYHeader parsePLYHeader(Stream *stream) {
-        Struct::EByteOrder byteOrder = Struct::hostByteOrder();
-        bool plySpecifierProcessed = false;
-        bool headerProcessed = false;
+        Struct::EByteOrder byte_order = Struct::host_byte_order();
+        bool ply_tag_seen = false;
+        bool header_processed = false;
         PLYHeader header;
 
         std::unordered_map<std::string, Struct::EType> fmtMap;
@@ -292,7 +293,7 @@ private:
         ref<Struct> struct_;
 
         while (true) {
-            std::string line = stream->readLine();
+            std::string line = stream->read_line();
             std::istringstream iss(line);
             std::string token;
             if (!(iss >> token))
@@ -303,24 +304,24 @@ private:
                 header.comments.push_back(string::trim(line));
                 continue;
             } else if (token == "ply") {
-                if (plySpecifierProcessed)
+                if (ply_tag_seen)
                     Throw("invalid PLY header: duplicate \"ply\" tag");
-                plySpecifierProcessed = true;
+                ply_tag_seen = true;
                 if (iss >> token)
                     Throw("invalid PLY header: excess tokens after \"ply\"");
             } else if (token == "format") {
-                if (!plySpecifierProcessed)
+                if (!ply_tag_seen)
                     Throw("invalid PLY header: \"format\" before \"ply\" tag");
-                if (headerProcessed)
+                if (header_processed)
                     Throw("invalid PLY header: duplicate \"format\" tag");
                 if (!(iss >> token))
                     Throw("invalid PLY header: missing token after \"format\"");
                 if (token == "ascii")
                     header.ascii = true;
                 else if (token == "binary_little_endian")
-                    byteOrder = Struct::ELittleEndian;
+                    byte_order = Struct::ELittleEndian;
                 else if (token == "binary_big_endian")
-                    byteOrder = Struct::EBigEndian;
+                    byte_order = Struct::EBigEndian;
                 else
                     Throw("invalid PLY header: invalid token after \"format\"");
                 if (!(iss >> token))
@@ -329,7 +330,7 @@ private:
                     Throw("PLY file has unknown version number \"%s\"", token);
                 if (iss >> token)
                     Throw("invalid PLY header: excess tokens after \"format\"");
-                headerProcessed = true;
+                header_processed = true;
             } else if (token == "element") {
                 if (!(iss >> token))
                     Throw("invalid PLY header: missing token after \"element\"");
@@ -339,9 +340,9 @@ private:
                 if (!(iss >> token))
                     Throw("invalid PLY header: missing token after \"element\"");
                 element.count = (size_t) stoull(token);
-                struct_ = element.struct_ = new Struct(true, byteOrder);
+                struct_ = element.struct_ = new Struct(true, byte_order);
             } else if (token == "property") {
-                if (!headerProcessed)
+                if (!header_processed)
                     Throw("invalid PLY header: encountered \"property\" before \"format\"");
                 if (header.elements.empty())
                     Throw("invalid PLY header: encountered \"property\" before \"element\"");
@@ -389,7 +390,7 @@ private:
                 Throw("invalid PLY header: unknown token \"%s\"", token);
             }
         }
-        if (!headerProcessed)
+        if (!header_processed)
             Throw("invalid PLY file: no header information");
         return header;
     }
@@ -464,7 +465,7 @@ private:
                         case Struct::EFloat16: {
                                 float value;
                                 if (!(is >> value)) Throw("Could not parse \"half\" value");
-                                out->write(simd::half::float32_to_float16(value));
+                                out->write(enoki::half::float32_to_float16(value));
                             }
                             break;
 

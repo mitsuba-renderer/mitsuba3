@@ -14,7 +14,7 @@ class MTS_EXPORT_CORE DummyStream : public Stream {
 public:
 
     DummyStream()
-        : Stream(), m_size(0), m_pos(0), m_isClosed(false) { }
+        : Stream(), m_size(0), m_pos(0), m_is_closed(false) { }
 
     /** \brief Closes the stream.
      * No further read or write operations are permitted.
@@ -22,10 +22,10 @@ public:
      * This function is idempotent.
      * It may be called automatically by the destructor.
      */
-    virtual void close() override { m_isClosed = true; };
+    virtual void close() override { m_is_closed = true; };
 
     /// Whether the stream is closed (no read or write are then permitted).
-    virtual bool isClosed() const override { return m_isClosed; };
+    virtual bool is_closed() const override { return m_is_closed; };
 
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
@@ -37,8 +37,8 @@ public:
 
     /// Does not actually write anything, only updates the stream's position and size.
     virtual void write(const void *, size_t size) override {
-        if (isClosed()) {
-            Log(EError, "Attempted to write to a closed stream: %s", toString());
+        if (is_closed()) {
+            Log(EError, "Attempted to write to a closed stream: %s", to_string());
         }
 
         m_size = std::max(m_size, m_pos + size);
@@ -71,12 +71,12 @@ public:
     virtual void flush() override { /* Nothing to do */ }
 
     /// Always returns true, except if the steam is closed.
-    virtual bool canWrite() const override { return !isClosed(); }
+    virtual bool can_write() const override { return !is_closed(); }
 
     /** \brief Always returns false, as nothing written to a
      * <tt>DummyStream</tt> is actually written.
      */
-    virtual bool canRead() const override { return false; }
+    virtual bool can_read() const override { return false; }
 
     //! @}
     // =========================================================================
@@ -96,7 +96,7 @@ private:
      */
     size_t m_pos;
     /// Whether the stream has been closed.
-    bool m_isClosed;
+    bool m_is_closed;
 
 };
 

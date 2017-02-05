@@ -18,48 +18,48 @@ ShapeKDTree::ShapeKDTree(const Properties &props)
 
     /* kd-tree construction: A kd-tree node containing this many or fewer
        primitives will not be split */
-    if (props.hasProperty("kdStopPrims"))
-        setStopPrimitives(props.int_("kdStopPrims"));
+    if (props.has_property("kdStopPrims"))
+        set_stop_primitives(props.int_("kdStopPrims"));
 
     /* kd-tree construction: Maximum tree depth */
-    if (props.hasProperty("kdMaxDepth"))
-        setMaxDepth(props.int_("kdMaxDepth"));
+    if (props.has_property("kdMaxDepth"))
+        set_max_depth(props.int_("kdMaxDepth"));
 
     /* kd-tree construction: Number of bins used by the min-max binning method */
-    if (props.hasProperty("kdMinMaxBins"))
-        setMinMaxBins(props.int_("kdMinMaxBins"));
+    if (props.has_property("kdMinMaxBins"))
+        set_min_max_bins(props.int_("kdMinMaxBins"));
 
     /* kd-tree construction: Enable primitive clipping? Generally leads to a
       significant improvement of the resulting tree. */
-    if (props.hasProperty("kdClip"))
-        setClipPrimitives(props.bool_("kdClip"));
+    if (props.has_property("kdClip"))
+        set_clip_primitives(props.bool_("kdClip"));
 
     /* kd-tree construction: specify whether or not bad splits can be "retracted". */
-    if (props.hasProperty("kdRetractBadSplits"))
-        setRetractBadSplits(props.bool_("kdRetractBadSplits"));
+    if (props.has_property("kdRetractBadSplits"))
+        set_retract_bad_splits(props.bool_("kdRetractBadSplits"));
 
     /* kd-tree construction: Specify the number of primitives, at which the
        builder will switch from (approximate) Min-Max binning to the accurate
        O(n log n) SAH-based optimization method. */
-    if (props.hasProperty("kdExactPrimitiveThreshold"))
-        setExactPrimitiveThreshold(props.int_("kdExactPrimitiveThreshold"));
+    if (props.has_property("kdExactPrimitiveThreshold"))
+        set_exact_primitive_threshold(props.int_("kdExactPrimitiveThreshold"));
 
-    m_primitiveMap.push_back(0);
+    m_primitive_map.push_back(0);
 }
 
-void ShapeKDTree::addShape(Shape *shape) {
+void ShapeKDTree::add_shape(Shape *shape) {
     Assert(!ready());
-    m_primitiveMap.push_back(m_primitiveMap.back() + shape->primitiveCount());
+    m_primitive_map.push_back(m_primitive_map.back() + shape->primitive_count());
     m_shapes.push_back(shape);
     m_bbox.expand(shape->bbox());
 }
 
-std::string ShapeKDTree::toString() const {
+std::string ShapeKDTree::to_string() const {
     std::ostringstream oss;
     oss << "ShapeKDTree[" << std::endl;
     oss << "  shapes = [" << std::endl;
     for (auto shape : m_shapes)
-        oss << "    " << string::indent(shape->toString(), 4) << ", " << std::endl;
+        oss << "    " << string::indent(shape->to_string(), 4) << ", " << std::endl;
     oss << "  ]" << std::endl;
     oss << "]";
     return oss.str();

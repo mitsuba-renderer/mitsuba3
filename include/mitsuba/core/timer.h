@@ -33,7 +33,7 @@ public:
     }
 
     void endStage(const std::string &str = "") {
-        std::cout << "done. (took " << util::timeString(value());
+        std::cout << "done. (took " << util::time_string(value());
         if (!str.empty())
             std::cout << ", " << str;
         std::cout << ")" << std::endl;

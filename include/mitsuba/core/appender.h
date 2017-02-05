@@ -23,7 +23,7 @@ public:
      *    context of a progress message. When rendering a scene, it
      *    will usually contain a pointer to the associated \c RenderJob.
      */
-    virtual void logProgress(Float progress, const std::string &name,
+    virtual void log_progress(Float progress, const std::string &name,
         const std::string &formatted, const std::string &eta,
         const void *ptr = nullptr) = 0;
 
@@ -42,27 +42,27 @@ public:
      * Create a new stream appender
      * \remark This constructor is not exposed in the Python bindings
      */
-    StreamAppender(std::ostream *pStream);
+    StreamAppender(std::ostream *stream);
 
     /// Create a new stream appender logging to a file
     StreamAppender(const std::string &filename);
 
     /// Append a line of text
-    void append(ELogLevel level, const std::string &pText) override;
+    void append(ELogLevel level, const std::string &text) override;
 
     /// Process a progress message
-    void logProgress(Float progress, const std::string &name,
+    void log_progress(Float progress, const std::string &name,
         const std::string &formatted, const std::string &eta,
         const void *ptr) override;
 
     /// Does this appender log to a file
-    bool logsToFile() const { return m_isFile; }
+    bool logs_to_file() const { return m_is_file; }
 
     /// Return the contents of the log file as a string
-    std::string readLog();
+    std::string read_log();
 
     /// Return a string representation
-    std::string toString() const override;
+    std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 protected:
@@ -71,8 +71,8 @@ protected:
 private:
     std::ostream *m_stream;
     std::string m_fileName;
-    bool m_isFile;
-    bool m_lastMessageWasProgress;
+    bool m_is_file;
+    bool m_last_message_was_progress;
 };
 
 NAMESPACE_END(mitsuba)

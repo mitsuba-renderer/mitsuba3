@@ -42,12 +42,12 @@ struct SortKey {
 
 struct Properties::PropertiesPrivate {
     std::map<std::string, Entry, SortKey> entries;
-    std::string id, pluginName;
+    std::string id, plugin_name;
 };
 
 #define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
     void Properties::SetterName(const std::string &name, const Type &value, bool warnDuplicates) { \
-        if (hasProperty(name) && warnDuplicates) \
+        if (has_property(name) && warnDuplicates) \
             Log(EWarn, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
         d->entries[name].queried = false; \
@@ -63,31 +63,31 @@ struct Properties::PropertiesPrivate {
         return (const Type &) it->second.data; \
     } \
     \
-    const Type &Properties::GetterName(const std::string &name, const Type &defVal) const { \
+    const Type &Properties::GetterName(const std::string &name, const Type &def_val) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
-            return defVal; \
+            return def_val; \
         if (!it->second.data.is<Type>()) \
             Throw("The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
         it->second.queried = true; \
         return (const Type &) it->second.data; \
     }
 
-DEFINE_PROPERTY_ACCESSOR(bool,           boolean,   setBool,            bool_)
-DEFINE_PROPERTY_ACCESSOR(int64_t,        integer,   setLong,            long_)
-DEFINE_PROPERTY_ACCESSOR(Float,          float,     setFloat,           float_)
-DEFINE_PROPERTY_ACCESSOR(std::string,    string,    setString,          string)
-DEFINE_PROPERTY_ACCESSOR(Vector3f,       vector,    setVector3f,        vector3f)
-DEFINE_PROPERTY_ACCESSOR(Point3f,        point,     setPoint3f,         point3f)
-DEFINE_PROPERTY_ACCESSOR(NamedReference, ref,       setNamedReference,  namedReference)
-DEFINE_PROPERTY_ACCESSOR(ref<Object>,    object,    setObject,          object)
+DEFINE_PROPERTY_ACCESSOR(bool,           boolean,   set_bool,            bool_)
+DEFINE_PROPERTY_ACCESSOR(int64_t,        integer,   set_long,            long_)
+DEFINE_PROPERTY_ACCESSOR(Float,          float,     set_float,           float_)
+DEFINE_PROPERTY_ACCESSOR(std::string,    string,    set_string,          string)
+DEFINE_PROPERTY_ACCESSOR(Vector3f,       vector,    set_vector3f,        vector3f)
+DEFINE_PROPERTY_ACCESSOR(Point3f,        point,     set_point3f,         point3f)
+DEFINE_PROPERTY_ACCESSOR(NamedReference, ref,       set_named_reference, named_reference)
+DEFINE_PROPERTY_ACCESSOR(ref<Object>,    object,    set_object,          object)
 
 Properties::Properties()
     : d(new PropertiesPrivate()) { }
 
-Properties::Properties(const std::string &pluginName)
+Properties::Properties(const std::string &plugin_name)
     : d(new PropertiesPrivate()) {
-    d->pluginName = pluginName;
+    d->plugin_name = plugin_name;
 }
 
 Properties::Properties(const Properties &props)
@@ -99,7 +99,7 @@ void Properties::operator=(const Properties &props) {
     (*d) = *props.d;
 }
 
-bool Properties::hasProperty(const std::string &name) const {
+bool Properties::has_property(const std::string &name) const {
     return d->entries.find(name) != d->entries.end();
 }
 
@@ -128,19 +128,19 @@ namespace {
         void operator()(const Point3f &v) { os << v; }
         void operator()(const std::string &s) { os << "\"" << s << "\""; }
         void operator()(const NamedReference &nr) { os << "\"" << (const std::string &) nr << "\""; }
-        void operator()(const ref<Object> &o) { os << o->toString(); }
+        void operator()(const ref<Object> &o) { os << o->to_string(); }
     };
 }
 
-Properties::EPropertyType Properties::propertyType(const std::string &name) const {
+Properties::EPropertyType Properties::property_type(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
-        Throw("propertyType(): Could not find property named \"%s\"!", name);
+        Throw("property_type(): Could not find property named \"%s\"!", name);
 
     return it->second.data.visit(PropertyTypeVisitor());
 }
 
-bool Properties::markQueried(const std::string &name) const {
+bool Properties::mark_queried(const std::string &name) const {
     auto it = d->entries.find(name);
     if (it == d->entries.end())
         return false;
@@ -148,14 +148,14 @@ bool Properties::markQueried(const std::string &name) const {
     return true;
 }
 
-bool Properties::wasQueried(const std::string &name) const {
+bool Properties::was_queried(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         Throw("Could not find property named \"%s\"!", name);
     return it->second.queried;
 }
 
-bool Properties::removeProperty(const std::string &name) {
+bool Properties::remove_property(const std::string &name) {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         return false;
@@ -163,39 +163,39 @@ bool Properties::removeProperty(const std::string &name) {
     return true;
 }
 
-const std::string &Properties::pluginName() const {
-    return d->pluginName;
+const std::string &Properties::plugin_name() const {
+    return d->plugin_name;
 }
 
-void Properties::setPluginName(const std::string &name) {
-    d->pluginName = name;
+void Properties::set_plugin_name(const std::string &name) {
+    d->plugin_name = name;
 }
 
 const std::string &Properties::id() const {
     return d->id;
 }
 
-void Properties::setID(const std::string &id) {
+void Properties::set_id(const std::string &id) {
     d->id = id;
 }
 
-void Properties::copyAttribute(const Properties &properties,
-                               const std::string &sourceName,
-                               const std::string &targetName) {
-    const auto it = properties.d->entries.find(sourceName);
+void Properties::copy_attribute(const Properties &properties,
+                                const std::string &source_name,
+                                const std::string &target_name) {
+    const auto it = properties.d->entries.find(source_name);
     if (it == properties.d->entries.end())
-        Throw("copyAttribute(): Could not find parameter \"%s\"!", sourceName);
-    d->entries[targetName] = it->second;
+        Throw("copy_attribute(): Could not find parameter \"%s\"!", source_name);
+    d->entries[target_name] = it->second;
 }
 
-std::vector<std::string> Properties::propertyNames() const {
+std::vector<std::string> Properties::property_names() const {
     std::vector<std::string> result;
     for (const auto &e : d->entries)
         result.push_back(e.first);
     return result;
 }
 
-std::vector<std::pair<std::string, NamedReference>> Properties::namedReferences() const {
+std::vector<std::pair<std::string, NamedReference>> Properties::named_references() const {
     std::vector<std::pair<std::string, NamedReference>> result;
     result.reserve(d->entries.size());
     for (auto &e : d->entries) {
@@ -237,7 +237,7 @@ void Properties::merge(const Properties &p) {
 }
 
 bool Properties::operator==(const Properties &p) const {
-    if (d->pluginName != p.d->pluginName ||
+    if (d->plugin_name != p.d->plugin_name ||
         d->id != p.d->id ||
         d->entries.size() != p.d->entries.size())
         return false;
@@ -253,7 +253,7 @@ bool Properties::operator==(const Properties &p) const {
     return true;
 }
 
-std::string Properties::asString(const std::string &name) const {
+std::string Properties::as_string(const std::string &name) const {
     std::ostringstream oss;
     bool found = false;
     for (auto &e : d->entries) {
@@ -268,7 +268,7 @@ std::string Properties::asString(const std::string &name) const {
     return oss.str();
 }
 
-std::string Properties::asString(const std::string &name, const std::string &defVal) const {
+std::string Properties::as_string(const std::string &name, const std::string &def_val) const {
     std::ostringstream oss;
     bool found = false;
     for (auto &e : d->entries) {
@@ -279,7 +279,7 @@ std::string Properties::asString(const std::string &name, const std::string &def
         break;
     }
     if (!found)
-        return defVal;
+        return def_val;
     return oss.str();
 }
 
@@ -287,7 +287,7 @@ std::ostream &operator<<(std::ostream &os, const Properties &p) {
     auto it = p.d->entries.begin();
 
     os << "Properties[" << std::endl
-       << "  pluginName = \"" << (p.d->pluginName) << "\"," << std::endl
+       << "  plugin_name = \"" << (p.d->plugin_name) << "\"," << std::endl
        << "  id = \"" << p.d->id << "\"," << std::endl
        << "  elements = {" << std::endl;
     while (it != p.d->entries.end()) {

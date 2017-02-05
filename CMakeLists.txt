@@ -1,6 +1,6 @@
 # This is the main CMake build file used to compile Mitsuba
 cmake_minimum_required (VERSION 2.8)
-project(mitsuba)
+project(mitsuba CXX)
 
 option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
 
@@ -29,14 +29,17 @@ else(MSVC)
   # MSVC doesn't have a flag equivalent to -march=native
   # The 'archflags' executable provides this functionality
   try_run(
-    ARCHFLAGS_FLAGS ARCHFLAGS_COMPILE_RESULT
+    ARCHFLAGS_SUCCESS
+    ARCHFLAGS_COMPILE_RESULT
     ${CMAKE_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/archflags.cpp
+    RUN_OUTPUT_VARIABLE ARCHFLAGS_FLAGS
   )
   if(NOT ${ARCHFLAGS_COMPILE_RESULT})
      message(FATAL_ERROR "Failed to compile 'archflags' binary")
   endif()
   add_compile_options(${ARCHFLAGS_FLAGS})
+  message(STATUS "Mitsuba: Compiling with ${ARCHFLAGS_FLAGS}")
 endif()
 
 # Disable overly aggressive FP optimization in the Intel compiler
@@ -45,11 +48,35 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   add_compile_options("-fp-model" "precise")
 endif()
 
+include(CheckCXXSourceRuns)
+
+macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
+  set(CMAKE_REQUIRED_FLAGS ${_CXX_FLAGS})
+  set(CMAKE_REQUIRED_LIBRARIES ${_LINKER_FLAGS})
+  set(CMAKE_REQUIRED_QUIET TRUE)
+  check_cxx_source_runs("int main(int argc, char **argv) { return 0; }" ${_RESULT})
+  set(CMAKE_REQUIRED_FLAGS "")
+  set(CMAKE_REQUIRED_LIBRARIES "")
+endmacro()
+
 # Always use libc++ on Clang
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+  CHECK_CXX_COMPILER_AND_LINKER_FLAGS(HAS_LIBCPP "-stdlib=libc++" "-stdlib=libc++")
+  if (HAS_LIBCPP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
+    CHECK_CXX_COMPILER_AND_LINKER_FLAGS(HAS_LIBCPPABI "-stdlib=libc++" "-stdlib=libc++ -lc++abi")
+    if(HAS_LIBCPPABI)
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lc++abi")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lc++abi")
+      message(STATUS "Mitsuba: using libc++ and libc++abi.")
+    else()
+      message(STATUS "Mitsuba: using libc++.")
+    endif()
+  else()
+    message(STATUS "Mitsuba: NOT using libc++.")
+  endif()
 endif()
 
 # Enable folders for projects in Visual Studio
@@ -65,11 +92,11 @@ endif()
 # Build the dependencies
 add_subdirectory(ext ext_build)
 
-# Always add the include directories for tinyformat, SIMDArray and Eigen
+# Always add the include directories for tinyformat, Enoki and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
-  ${SIMDARRAY_INCLUDE_DIRS}
+  ${ENOKI_INCLUDE_DIRS}
   ${TBB_INCLUDE_DIRS}
 )
 
@@ -91,7 +118,7 @@ else()
   endif()
 endif()
 
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "^(GNU|Clang|Intel)$")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
   # Enable C++11/14
   CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
 
@@ -142,6 +169,9 @@ if (MSVC)
   # Don't complain about not DLL-exporting STL classes
   add_compile_options("/wd4251")
 
+  # Workaround for MSVC 2017
+  add_compile_options("/wd4244")
+
   # Parallel build on MSVC
   add_compile_options("/MP")
 
@@ -152,14 +182,6 @@ if (MSVC)
   string(REPLACE "/GS" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   string(REPLACE "/GS" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
   add_compile_options("$<$<NOT:$<CONFIG:Debug>>:/GS->")
-
-  if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-    # Enable SSE2 instructions on 32-bit builds builds
-    add_compile_options("/arch:SSE2")
-
-    # Disable Eigen vectorization for Windows 32-bit builds (issues with unaligned access segfaults)
-    add_definitions(/D "EIGEN_DONT_ALIGN")
-  endif()
 endif()
 
 # Enable link time optimizatoin in release mode (if possible)
@@ -218,7 +240,6 @@ elseif(MSVC)
     set("CMAKE_CXX_FLAGS_${Configuration}" "${CMAKE_CXX_FLAGS_${Configuration}} /GL")
     foreach(LinkType ${LinkTypes})
       set("CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}" "${CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}} /LTCG")
-      message(STATUS CMAKE_${LinkType}_LINKER_FLAGS_${Configuration})
     endforeach()
   endforeach()
   message(STATUS "Mitsuba: LTO support enabled.")
@@ -280,6 +301,7 @@ function(add_plugin)
   set_target_properties(${TARGET} PROPERTIES PREFIX "")
   target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render)
   add_dist(plugins/${TARGET})
+  set_target_properties(${TARGET} ${TARGET}-obj PROPERTIES FOLDER plugin-${TARGET})
 endfunction(add_plugin)
 
 set(MITSUBA_DIST "" CACHE INTERNAL "")

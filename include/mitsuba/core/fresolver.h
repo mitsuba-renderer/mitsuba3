@@ -64,7 +64,7 @@ public:
     const fs::path &operator[](size_t index) const { return m_paths[index]; }
 
     /// Return a human-readable representation of this instance
-    std::string toString() const override;
+    std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 private:

@@ -27,7 +27,7 @@ public:
             m_handle = LoadLibraryW(path.native().c_str());
             if (!m_handle)
                 Throw("Error while loading plugin \"%s\": %s", path.string(),
-                      util::lastError());
+                      util::last_error());
         #else
             m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
             if (!m_handle)
@@ -36,7 +36,7 @@ public:
         #endif
 
         try {
-            createObject = (CreateObjectFunctor) symbol("CreateObject");
+            create_object = (CreateObjectFunctor) symbol("CreateObject");
         } catch (...) {
             this->~Plugin();
             throw;
@@ -56,7 +56,7 @@ public:
             void *ptr = GetProcAddress(m_handle, name.c_str());
             if (!ptr)
                 Throw("Could not resolve symbol \"%s\" in \"%s\": %s", name,
-                      m_path.string(), util::lastError());
+                      m_path.string(), util::last_error());
         #else
             void *ptr = dlsym(m_handle, name.c_str());
             if (!ptr)
@@ -66,7 +66,7 @@ public:
         return ptr;
     }
 
-    CreateObjectFunctor createObject = nullptr;
+    CreateObjectFunctor create_object = nullptr;
 
 private:
     #if defined(__WINDOWS__)
@@ -100,14 +100,14 @@ struct PluginManager::PluginManagerPrivate {
             filename.replace_extension(".so");
         #endif
 
-        const FileResolver *resolver = Thread::thread()->fileResolver();
+        const FileResolver *resolver = Thread::thread()->file_resolver();
         fs::path resolved = resolver->resolve(filename);
 
         if (fs::exists(resolved)) {
             Log(EInfo, "Loading plugin \"%s\" ..", filename.string());
             Plugin *plugin = new Plugin(resolved);
             /* New classes must be registered within the class hierarchy */
-            Class::staticInitialization();
+            Class::static_initialization();
             ///Statistics::instance()->logPlugin(shortName, description()); XXX
             m_plugins[name] = plugin;
             return plugin;
@@ -128,26 +128,26 @@ PluginManager::~PluginManager() {
         delete pair.second;
 }
 
-ref<Object> PluginManager::createObject(const Class *class_, const Properties &props) {
+ref<Object> PluginManager::create_object(const Class *class_, const Properties &props) {
    if (class_->name() == "Scene")
        return class_->construct(props);
 
-   const Plugin *plugin = d->plugin(props.pluginName());
-   ref<Object> object = plugin->createObject(props);
-   if (!object->class_()->derivesFrom(class_))
+   const Plugin *plugin = d->plugin(props.plugin_name());
+   ref<Object> object = plugin->create_object(props);
+   if (!object->class_()->derives_from(class_))
         Throw("Type mismatch when loading plugin \"%s\": Expected "
-              "an instance of \"%s\"", props.pluginName(),
+              "an instance of \"%s\"", props.plugin_name(),
               class_->name());
 
    return object;
 }
 
-ref<Object> PluginManager::createObject(const Properties &props) {
-    const Plugin *plugin = d->plugin(props.pluginName());
-    return plugin->createObject(props);
+ref<Object> PluginManager::create_object(const Properties &props) {
+    const Plugin *plugin = d->plugin(props.plugin_name());
+    return plugin->create_object(props);
 }
 
-std::vector<std::string> PluginManager::loadedPlugins() const {
+std::vector<std::string> PluginManager::loaded_plugins() const {
     std::vector<std::string> list;
     std::lock_guard<std::mutex> guard(d->m_mutex);
     for (auto const &pair: d->m_plugins)
@@ -155,7 +155,7 @@ std::vector<std::string> PluginManager::loadedPlugins() const {
     return list;
 }
 
-void PluginManager::ensurePluginLoaded(const std::string &name) {
+void PluginManager::ensure_plugin_loaded(const std::string &name) {
     (void) d->plugin(name);
 }
 

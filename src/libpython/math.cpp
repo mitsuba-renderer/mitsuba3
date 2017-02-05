@@ -4,24 +4,18 @@
 MTS_PY_EXPORT(math) {
     MTS_PY_IMPORT_MODULE(math, "mitsuba.core.math");
 
-    math.def("signum",          (double(*)(double))                           math::signum, DM(math, signum));
-    math.def("safe_acos",       (double(*)(double))                           math::safe_acos, DM(math, safe_acos));
-    math.def("safe_asin",       (double(*)(double))                           math::safe_asin, DM(math, safe_asin));
-    math.def("safe_sqrt",       (double(*)(double))                           math::safe_sqrt, DM(math, safe_sqrt));
-    math.def("erf",             (double(*)(double))                           math::erf, DM(math, erf));
-    math.def("erfinv",          (double(*)(double))                           math::erfinv, DM(math, erfinv));
-    math.def("normal_quantile", (double(*)(double))                           math::normal_quantile, DM(math, normal_quantile));
-    math.def("normal_cdf",      (double(*)(double))                           math::normal_cdf, DM(math, normal_cdf));
-    math.def("comp_ellint_1",   (double(*)(double))                           math::comp_ellint_1, DM(math, comp_ellint_1));
-    math.def("comp_ellint_2",   (double(*)(double))                           math::comp_ellint_2, DM(math, comp_ellint_2));
-    math.def("comp_ellint_3",   (double(*)(double, double))                   math::comp_ellint_3, DM(math, comp_ellint_3));
-    math.def("ellint_1",        (double(*)(double, double))                   math::ellint_1, DM(math, ellint_1));
-    math.def("ellint_2",        (double(*)(double, double))                   math::ellint_2, DM(math, ellint_2));
-    math.def("ellint_3",        (double(*)(double, double, double))           math::ellint_3, DM(math, ellint_3));
-    math.def("i0e",             (double(*)(double))                           math::i0e, DM(math, i0e));
-    math.def("legendre_p",      (double(*)(int l, double))                    math::legendre_p, DM(math, legendre_p));
-    math.def("legendre_p",      (double(*)(int, int, double))                 math::legendre_p, DM(math, legendre_p, 2));
-    math.def("legendre_pd",     (std::pair<double, double>(*)(int l, double)) math::legendre_pd, DM(math, legendre_pd));
+    math.def("normal_quantile", (double(*)(double))                           math::normal_quantile, D(math, normal_quantile));
+    math.def("normal_cdf",      (double(*)(double))                           math::normal_cdf, D(math, normal_cdf));
+    math.def("comp_ellint_1",   (double(*)(double))                           math::comp_ellint_1, D(math, comp_ellint_1));
+    math.def("comp_ellint_2",   (double(*)(double))                           math::comp_ellint_2, D(math, comp_ellint_2));
+    math.def("comp_ellint_3",   (double(*)(double, double))                   math::comp_ellint_3, D(math, comp_ellint_3));
+    math.def("ellint_1",        (double(*)(double, double))                   math::ellint_1, D(math, ellint_1));
+    math.def("ellint_2",        (double(*)(double, double))                   math::ellint_2, D(math, ellint_2));
+    math.def("ellint_3",        (double(*)(double, double, double))           math::ellint_3, D(math, ellint_3));
+    math.def("i0e",             (double(*)(double))                           math::i0e, D(math, i0e));
+    math.def("legendre_p",      (double(*)(int l, double))                    math::legendre_p, D(math, legendre_p));
+    math.def("legendre_p",      (double(*)(int, int, double))                 math::legendre_p, D(math, legendre_p, 2));
+    math.def("legendre_pd",     (std::pair<double, double>(*)(int l, double)) math::legendre_pd, D(math, legendre_pd));
 
     math.attr("E")               = py::cast(math::E_d);
     math.attr("Pi")              = py::cast(math::Pi_d);
@@ -41,20 +35,20 @@ MTS_PY_EXPORT(math) {
     math.attr("MaxFloat")        = py::cast(math::MaxFloat);
     math.attr("MachineEpsilon")  = py::cast(math::MachineEpsilon);
 
-    math.def("findInterval", [](size_t start, size_t end, const std::function<bool(size_t)> &pred) {
-        return math::findInterval(start, end, pred);
-    }, DM(math, findInterval));
+    math.def("find_interval", [](size_t start, size_t end, const std::function<bool(size_t)> &pred) {
+        return math::find_interval(start, end, pred);
+    }, D(math, find_interval));
 
-    math.def("ulpdiff", &math::ulpdiff<Float>, DM(math, ulpdiff));
-    math.def("log2i", &math::log2i<uint64_t>, DM(math, log2i));
-    math.def("isPowerOfTwo", &math::isPowerOfTwo<uint64_t>, DM(math, isPowerOfTwo));
-    math.def("roundToPowerOfTwo", &math::roundToPowerOfTwo<uint64_t>, DM(math, roundToPowerOfTwo));
-    math.def("gamma", &math::gamma<double>, DM(math, gamma));
-    math.def("inverseGamma", &math::inverseGamma<double>, DM(math, inverseGamma));
+    math.def("ulpdiff", &math::ulpdiff<Float>, D(math, ulpdiff));
+    math.def("log2i", &enoki::log2i<uint64_t>);
+    math.def("is_power_of_two", &math::is_power_of_two<uint64_t>, D(math, is_power_of_two));
+    math.def("round_to_power_of_two", &math::round_to_power_of_two<uint64_t>, D(math, round_to_power_of_two));
+    math.def("gamma", &math::gamma<double>, D(math, gamma));
+    math.def("inv_gamma", &math::inv_gamma<double>, D(math, inv_gamma));
 
     math.def("chi2", [](py::array_t<double> obs, py::array_t<double> exp, double thresh) {
         if (obs.ndim() != 1 || exp.ndim() != 1 || exp.shape(0) != obs.shape(0))
             throw std::runtime_error("Unsupported input dimensions");
         return math::chi2(obs.data(), exp.data(), thresh, obs.shape(0));
-    }, DM(math, chi2));
+    }, D(math, chi2));
 }

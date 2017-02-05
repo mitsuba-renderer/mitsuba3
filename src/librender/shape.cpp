@@ -15,7 +15,7 @@ BoundingBox3f Shape::bbox(Index index, const BoundingBox3f &clip) const {
     return result;
 }
 
-Shape::Size Shape::primitiveCount() const {
+Shape::Size Shape::primitive_count() const {
     return 1;
 }
 

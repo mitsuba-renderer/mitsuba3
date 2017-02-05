@@ -3,29 +3,34 @@
 #include "python.h"
 
 MTS_PY_EXPORT(Frame) {
-    py::class_<Frame>(m, "Frame", DM(Frame))
-        .def(py::init<>(), DM(Frame, Frame))
-        .def(py::init<const Frame &>(), DM(Frame, Frame))
+    using Frame = Frame3f;
+    py::class_<Frame>(m, "Frame3f", D(TFrame))
+        .def(py::init<>(), D(TFrame, TFrame))
+        .def(py::init<const Frame &>(), "Copy constructor")
         // Omitted because the Vector/Normal distinction doesn't apply in Python
-        // .def(py::init<Vector3f, Vector3f, Normal3f>(), DM(Frame, Frame, 2))
-        .def(py::init<Vector3f, Vector3f, Vector3f>(), DM(Frame, Frame, 3))
-        .def(py::init<Vector3f>(), DM(Frame, Frame, 4))
-        .mdef(Frame, toLocal)
-        .mdef(Frame, toWorld)
-        .def_static("cosTheta", &Frame::cosTheta, DM(Frame, cosTheta))
-        .def_static("cosTheta2", &Frame::cosTheta2, DM(Frame, cosTheta2))
-        .def_static("sinTheta", &Frame::sinTheta, DM(Frame, sinTheta))
-        .def_static("sinTheta2", &Frame::sinTheta2, DM(Frame, sinTheta2))
-        .def_static("tanTheta", &Frame::tanTheta, DM(Frame, tanTheta))
-        .def_static("tanTheta2", &Frame::tanTheta2, DM(Frame, tanTheta2))
-        .def_static("sinPhi", &Frame::sinPhi, DM(Frame, sinPhi))
-        .def_static("sinPhi2", &Frame::sinPhi2, DM(Frame, sinPhi2))
-        .def_static("cosPhi", &Frame::cosPhi, DM(Frame, cosPhi))
-        .def_static("cosPhi2", &Frame::cosPhi2, DM(Frame, cosPhi2))
-        .def_static("uv", &Frame::uv, DM(Frame, uv))
-        .def(py::self == py::self, DM(Frame, operator_eq))
-        .def(py::self != py::self, DM(Frame, operator_ne))
-        .def("__repr__", &Frame::toString)
+        // .def(py::init<Vector3f, Vector3f, Normal3f>(), D(TFrame, Frame, _2))
+        .def(py::init<Vector3f, Vector3f, Vector3f>(), D(TFrame, TFrame, 3))
+        .def(py::init<Vector3f>(), D(TFrame, TFrame, 4))
+        .def("to_local", &Frame::to_local, D(TFrame, to_local))
+        .def("to_world", &Frame::to_world, D(TFrame, to_world))
+        .def_static("cos_theta", &Frame::cos_theta, D(TFrame, cos_theta))
+        .def_static("cos_theta_2", &Frame::cos_theta_2, D(TFrame, cos_theta_2))
+        .def_static("sin_theta", &Frame::sin_theta, D(TFrame, sin_theta))
+        .def_static("sin_theta_2", &Frame::sin_theta_2, D(TFrame, sin_theta_2))
+        .def_static("tan_theta", &Frame::tan_theta, D(TFrame, tan_theta))
+        .def_static("tan_theta_2", &Frame::tan_theta_2, D(TFrame, tan_theta_2))
+        .def_static("sin_phi", &Frame::sin_phi, D(TFrame, sin_phi))
+        .def_static("sin_phi_2", &Frame::sin_phi_2, D(TFrame, sin_phi_2))
+        .def_static("cos_phi", &Frame::cos_phi, D(TFrame, cos_phi))
+        .def_static("cos_phi_2", &Frame::cos_phi_2, D(TFrame, cos_phi_2))
+        .def_static("uv", &Frame::uv, D(TFrame, uv))
+        .def(py::self == py::self, D(TFrame, operator_eq))
+        .def(py::self != py::self, D(TFrame, operator_ne))
+        .def("__repr__", [](const Frame &f) {
+                std::ostringstream oss;
+                oss << f;
+                return oss.str();
+        })
         .def_readwrite("s", &Frame::s)
         .def_readwrite("t", &Frame::t)
         .def_readwrite("n", &Frame::n);

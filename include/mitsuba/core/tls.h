@@ -62,17 +62,17 @@ protected:
     const void *get() const { return const_cast<ThreadLocalBase *>(this)->get(); };
 
     /// Set up core data structures for TLS management
-    static void staticInitialization();
+    static void static_initialization();
 
     /// Destruct core data structures for TLS management
-    static void staticShutdown();
+    static void static_shutdown();
 
     /** \brief A new thread was started -- set up local TLS data structures.
         Returns \c true upon success */
-    static bool registerThread();
+    static bool register_thread();
 
     /// A thread has died -- destroy any remaining TLS entries associated with it
-    static void unregisterThread();
+    static void unregister_thread();
 
 private:
     ConstructFunctor m_constructFunctor;

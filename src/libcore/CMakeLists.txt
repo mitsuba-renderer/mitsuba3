@@ -22,7 +22,6 @@ add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/platform.h
   ${INC_DIR}/variant.h
   ${INC_DIR}/vector.h
-  ${INC_DIR}/transform.h
   ${INC_DIR}/atomic.h
   ${INC_DIR}/string.h
   ${INC_DIR}/frame.h
@@ -48,6 +47,7 @@ add_library(mitsuba-core-obj OBJECT
   struct.cpp           ${INC_DIR}/struct.h
   bitmap.cpp           ${INC_DIR}/bitmap.h
   warp.cpp             ${INC_DIR}/warp.h
+  random.cpp           ${INC_DIR}/random.h
   qmc.cpp              ${INC_DIR}/qmc.h
 
   stream.cpp           ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
@@ -59,6 +59,7 @@ add_library(mitsuba-core-obj OBJECT
 
 add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)
 set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_target_properties(mitsuba-core-obj mitsuba-core PROPERTIES FOLDER mitsuba-core)
 
 # Link to Intel's Thread Building Blocks, the pugixml parser, and asmjit
 target_link_libraries(mitsuba-core PRIVATE tbb pugixml asmjit)

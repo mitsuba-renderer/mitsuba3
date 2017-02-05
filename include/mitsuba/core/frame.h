@@ -12,148 +12,135 @@ NAMESPACE_BEGIN(mitsuba)
  * This class is used to convert between different cartesian coordinate systems
  * and to efficiently evaluate trigonometric functions in a spherical
  * coordinate system whose pole is aligned with the \c n axis (e.g. \ref
- * cosTheta(), \ref sinPhi(), etc.).
- *
- * TODO: serialization support (serialization_traits template specialization)
+ * cos_theta(), \ref sin_phi(), etc.).
  */
-struct Frame {
-    Vector3f s, t;
-    Normal3f n;
+template <typename Vector> struct TFrame {
+    using Scalar = typename Vector::Scalar;
+    using Vector2 = TVector<Scalar, 2>;
+    using Normal = TNormal<Scalar>;
+    Vector s, t;
+    Normal n;
 
     /// Default constructor -- performs no initialization!
-    Frame() { }
+    TFrame() { }
 
     /// Given a normal and tangent vectors, construct a new coordinate frame
-    Frame(const Vector3f &s, const Vector3f &t, const Normal3f &n)
-        : s(s), t(t), n(n) {
-    }
+    TFrame(const Vector &s, const Vector &t, const Normal &n)
+        : s(s), t(t), n(n) { }
 
     /// Construct a frame from the given orthonormal vectors
-    Frame(const Vector3f &x, const Vector3f &y, const Vector3f &z)
-        : s(x), t(y), n(z) {
-    }
+    TFrame(const Vector &x, const Vector &y, const Vector &z)
+        : s(x), t(y), n(z) { }
 
     /// Construct a new coordinate frame from a single vector
-    Frame(const Vector3f &v) : n(v) {
-        std::tie(s, t) = coordinateSystem(v);
+    TFrame(const Vector &v) : n(v) {
+        std::tie(s, t) = coordinate_system(v);
     }
 
     /// Convert from world coordinates to local coordinates
-    Vector3f toLocal(const Vector3f &v) const {
-        return Vector3f(
-            simd::dot(v, s),
-            simd::dot(v, t),
-            simd::dot(v, Vector3f(n))
-        );
+    Vector to_local(const Vector &v) const {
+        return Vector(dot(v, s), dot(v, t), dot(v, n));
     }
 
     /// Convert from local coordinates to world coordinates
-    Vector3f toWorld(const Vector3f &v) const {
+    Vector to_world(const Vector &v) const {
         return s * v.x() + t * v.y() + n * v.z();
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the cosine of the angle between the normal and v */
-    static Float cosTheta(const Vector3f &v) {
-        return v.z();
-    }
+     * system, return the cosine of the angle between the normal and v */
+    static Scalar cos_theta(const Vector &v) { return v.z(); }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the squared cosine of the angle between the normal and v */
-    static Float cosTheta2(const Vector3f &v) {
-        return v.z() * v.z();
-    }
+     * system, return the squared cosine of the angle between the normal and v */
+    static Scalar cos_theta_2(const Vector &v) { return v.z() * v.z(); }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the sine of the angle between the normal and v */
-    static Float sinTheta(const Vector3f &v) {
-        Float temp = sinTheta2(v);
-        if (temp <= 0.0f)
-            return 0.0f;
-        return std::sqrt(temp);
-    }
+     * system, return the sine of the angle between the normal and v */
+    static Scalar sin_theta(const Vector &v) { return safe_sqrt(sin_theta_2(v)); }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the squared sine of the angle between the normal and v */
-    static Float sinTheta2(const Vector3f &v) {
-        return 1.0f - v.z() * v.z();
-    }
+     * system, return the squared sine of the angle between the normal and v */
+    static Scalar sin_theta_2(const Vector &v) { return Scalar(1) - v.z() * v.z(); }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the tangent of the angle between the normal and v */
-    static Float tanTheta(const Vector3f &v) {
-        Float temp = 1 - v.z()*v.z();
-        if (temp <= 0.0f)
-            return 0.0f;
-        return std::sqrt(temp) / v.z();
+     * system, return the tangent of the angle between the normal and v */
+    static Scalar tan_theta(const Vector &v) {
+        Scalar temp = Scalar(1) - v.z() * v.z();
+        return select(temp <= Scalar(0), Scalar(0),
+                      sqrt(temp) / v.z());
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
     * system, return the squared tangent of the angle between the normal and v */
-    static Float tanTheta2(const Vector3f &v) {
-        Float temp = 1 - v.z()*v.z();
-        if (temp <= 0.0f)
-            return 0.0f;
-        return temp / (v.z() * v.z());
+    static Scalar tan_theta_2(const Vector &v) {
+        Scalar temp = 1 - v.z() * v.z();
+        return select(temp <= Scalar(0), Scalar(0),
+                      temp / (v.z() * v.z()));
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
     * system, return the sine of the phi parameter in spherical coordinates */
-    static Float sinPhi(const Vector3f &v) {
-        Float sinTheta = Frame::sinTheta(v);
-        if (sinTheta == 0.0f)
-            return 1.0f;
-        return math::clamp(v.y() / sinTheta, (Float) -1.0f, (Float) 1.0f);
+    static Scalar sin_phi(const Vector &v) {
+        Scalar sin_theta = TFrame::sin_theta(v);
+        return select(eq(sin_theta, Scalar(0)),
+                      Scalar(1),
+                      clamp(v.y() / sin_theta, Scalar(-1), Scalar(1)));
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
     * system, return the squared sine of the phi parameter in  spherical
     * coordinates */
-    static Float sinPhi2(const Vector3f &v) {
-        return math::clamp(v.y() * v.y() / sinTheta2(v), (Float) 0.0f, (Float) 1.0f);
+    static Scalar sin_phi_2(const Vector &v) {
+        Scalar sin_theta_2 = TFrame::sin_theta_2(v);
+        return select(eq(sin_theta_2, Scalar(0)),
+                      Scalar(1),
+                      min((v.y() * v.y()) / sin_theta_2, Scalar(1)));
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
     * system, return the cosine of the phi parameter in spherical coordinates */
-    static Float cosPhi(const Vector3f &v) {
-        Float sinTheta = Frame::sinTheta(v);
-        if (sinTheta == 0.0f)
-            return 1.0f;
-        return math::clamp(v.x() / sinTheta, (Float) -1.0f, (Float) 1.0f);
+    static Float cos_phi(const Vector &v) {
+        Scalar sin_theta = TFrame::sin_theta(v);
+        return select(eq(sin_theta, Scalar(0)),
+                      Scalar(1),
+                      clamp(v.x() / sin_theta, Scalar(-1), Scalar(1)));
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
     * system, return the squared cosine of the phi parameter in  spherical
     * coordinates */
-    static Float cosPhi2(const Vector3f &v) {
-        return math::clamp(v.x() * v.x() / sinTheta2(v), (Float) 0.0f, (Float) 1.0f);
+    static Float cos_phi_2(const Vector &v) {
+        Scalar sin_theta_2 = TFrame::sin_theta_2(v);
+        return select(eq(sin_theta_2, Scalar(0)),
+                      Scalar(1),
+                      min((v.x() * v.x()) / sin_theta_2, Scalar(1)));
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
     * system, return the u and v coordinates of the vector 'v' */
-    static Vector2f uv(const Vector3f &v) {
-        return Vector2f(v.x(), v.y());
+    static Vector2 uv(const Vector &v) {
+        return Vector2(v.x(), v.y());
     }
 
     /// Equality test
-    bool operator==(const Frame &frame) const {
+    bool operator==(const TFrame &frame) const {
         return frame.s == s && frame.t == t && frame.n == n;
     }
 
     /// Inequality test
-    bool operator!=(const Frame &frame) const {
-        return !operator==(frame);
+    bool operator!=(const TFrame &frame) const {
+        return frame.s != s || frame.t != t || frame.n != n;
     }
 
     /// Return a string representation of this frame
-    std::string toString() const {
-        std::ostringstream oss;
-        oss << "Frame["
-            << "  s = " << s << ","
-            << "  t = " << t << ","
-            << "  n = " << n
-            << "]";
-        return oss.str();
+    friend std::ostream &operator<<(std::ostream &os, const TFrame &f) {
+        os << "Frame["
+           << "  s = " << f.s << "," << std::endl
+           << "  t = " << f.t << "," << std::endl
+           << "  n = " << f.n
+           << "]";
+        return os;
     }
 };
 
