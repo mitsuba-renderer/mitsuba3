@@ -16,180 +16,602 @@ NAMESPACE_BEGIN(mitsuba)
  */
 NAMESPACE_BEGIN(warp)
 
+template <typename T> using vector3f_t = Vector<typename T::Value, 3>;
+
 // =============================================================
 //! @{ \name Warping techniques related to spheres and subsets
 // =============================================================
 
 /// Uniformly sample a vector on the unit sphere with respect to solid angles
-template <typename Vector3f, typename Point2f>
-Vector3f square_to_uniform_sphere(Point2f sample) {
+template <typename Point2f>
+vector3f_t<Point2f> square_to_uniform_sphere(Point2f sample) {
     auto z = 1.f - 2.f * sample.y();
     auto r = safe_sqrt(1.f - z*z);
     auto sc = sincos(2.f * math::Pi * sample.x());
-    return Vector3f(r * sc.second, r * sc.first, z);
+    return vector3f_t<Point2f>(r * sc.second, r * sc.first, z);
 }
 
-extern template MTS_EXPORT_CORE Vector3f  square_to_uniform_sphere(Point2f  sample);
-extern template MTS_EXPORT_CORE Vector3fP square_to_uniform_sphere(Point2fP sample);
+extern template MTS_EXPORT_CORE Vector3f  square_to_uniform_sphere(Point2f);
+extern template MTS_EXPORT_CORE Vector3fP square_to_uniform_sphere(Point2fP);
 
 /// Density of \ref square_to_uniform_sphere() with respect to solid angles
-template <bool TestDomain = false, typename Vector3f, typename Float = value_t<Vector3f>>
-Float square_to_uniform_sphere_pdf(Vector3f v) {
-    if (TestDomain) {
+template <bool TestDomain = false, typename Vector3f, typename Scalar = value_t<Vector3f>>
+Scalar square_to_uniform_sphere_pdf(Vector3f v) {
+    if (TestDomain)
         return select(abs(squared_norm(v) - 1.f) > math::Epsilon,
-                      Float(0.0f), Float(math::InvFourPi));
-    } else {
+                      Scalar(0.0f), Scalar(math::InvFourPi));
+    else
         return math::InvFourPi;
-    }
 }
 
-extern template MTS_EXPORT_CORE Float  square_to_uniform_sphere_pdf<true>(Vector3f  sample);
-extern template MTS_EXPORT_CORE FloatP square_to_uniform_sphere_pdf<true>(Vector3fP sample);
-extern template MTS_EXPORT_CORE Float  square_to_uniform_sphere_pdf<false>(Vector3f  sample);
-extern template MTS_EXPORT_CORE FloatP square_to_uniform_sphere_pdf<false>(Vector3fP sample);
+extern template MTS_EXPORT_CORE Float  square_to_uniform_sphere_pdf<true>(Vector3f);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_sphere_pdf<true>(Vector3fP);
+extern template MTS_EXPORT_CORE Float  square_to_uniform_sphere_pdf<false>(Vector3f);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_sphere_pdf<false>(Vector3fP);
 
-#if 0
-// ** TO BE DONE **
+// ------------------------------------------------------------------------------------------
+
+/// Low-distortion concentric square to disk mapping by Peter Shirley (PDF: 1/PI)
+template <typename Point2f>
+Point2f square_to_uniform_disk_concentric(Point2f sample) {
+	using Scalar = value_t<Point2f>;
+    Scalar r1 = 2.f * sample.x() - 1.f;
+    Scalar r2 = 2.f * sample.y() - 1.f;
+
+    /* Modified concencric map code with less branching (by Dave Cline), see
+      http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
+
+      Original non-vectorized version:
+
+        Scalar phi, r;
+        if (r1 == 0 & r2 == 0) {
+            r = phi = 0;
+        } else if (r1 * r1 > r2 * r2) {
+            r = r1;
+            phi = (math::Pi / 4.f) * (r2 / r1);
+        } else {
+            r = r2;
+            phi = (math::Pi / 2.f) - (r1 / r2) * (math::Pi / 4.f);
+        }
+    */
+
+    auto zmask = eq(r1, zero<Scalar>()) & eq(r2, zero<Scalar>());
+    auto mask = r1 * r1 > r2 * r2;
+
+    auto r  = select(mask, r1, r2),
+         rp = select(mask, r2, r1);
+
+    auto phi = rp / r * Scalar(math::Pi / 4.f);
+    phi = select(mask, phi, (math::Pi / 2.f) - phi);
+    phi = select(zmask, zero<Scalar>(), phi);
+
+    auto sc = sincos(phi);
+    return Point2f(r * sc.second, r * sc.first);
+}
+
+extern template MTS_EXPORT_CORE Point2f  square_to_uniform_disk_concentric(Point2f);
+extern template MTS_EXPORT_CORE Point2fP square_to_uniform_disk_concentric(Point2fP);
+
+/// Density of \ref square_to_uniform_disk per unit area
+template <bool TestDomain = false, typename Point2f, typename Scalar = value_t<Point2f>>
+Scalar square_to_uniform_disk_concentric_pdf(Point2f p) {
+    if (TestDomain)
+        return select(squared_norm(p) > 1, Scalar(0.f), Scalar(math::InvPi));
+    else
+        return Scalar(math::InvPi);
+}
+
+extern template MTS_EXPORT_CORE Float  square_to_uniform_disk_concentric_pdf(Point2f);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_disk_concentric_pdf(Point2fP);
+
+// ------------------------------------------------------------------------------------------
 
 /// Uniformly sample a vector on the unit hemisphere with respect to solid angles
-extern MTS_EXPORT_CORE Vector3f square_to_uniform_hemisphere(const Point2f &sample);
+template <typename Point2f>
+vector3f_t<Point2f> square_to_uniform_hemisphere(Point2f sample) {
+#if 0
+    /* Approach 1: standard warping method without concentric disk mapping */
+    auto z = sample.y();
+    auto tmp = safe_sqrt(1.f - z*z);
+    auto sc = sincos(2.f * math::Pi * sample.x());
+    return vector3f_t<Point2f>(sc.second * tmp, sc.first * tmp, z);
+#else
+    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    Point2f p = square_to_uniform_disk_concentric(sample);
+    auto z = 1 - squared_norm(p);
+    p *= sqrt(z + 1);
+    return vector3f_t<Point2f>(p.x(), p.y(), z);
+#endif
+}
+
+extern template MTS_EXPORT_CORE Vector3f  square_to_uniform_hemisphere(Point2f);
+extern template MTS_EXPORT_CORE Vector3fP square_to_uniform_hemisphere(Point2fP);
 
 /// Density of \ref square_to_uniform_hemisphere() with respect to solid angles
-template <bool TestDomain = false>
-Float square_to_uniform_hemisphere_pdf(const Vector3f &v) {
-    if (TestDomain && (std::abs(squared_norm(v) - 1.f) > math::Epsilon ||
-                       Frame3f::cos_theta(v) < 0))
-        return 0.f;
-    return math::InvTwoPi;
+template <bool TestDomain = false, typename Vector3f, typename Scalar = value_t<Vector3f>>
+Scalar square_to_uniform_hemisphere_pdf(Vector3f v) {
+    if (TestDomain)
+        return select(abs(squared_norm(v) - 1.f) > math::Epsilon | Frame<Vector3f>::cos_theta(v) < 0.f,
+                      Scalar(0.0f), Scalar(math::InvFourPi));
+    else
+        return math::InvTwoPi;
 }
+
+extern template MTS_EXPORT_CORE Float  square_to_uniform_hemisphere_pdf<true>(Vector3f);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_hemisphere_pdf<true>(Vector3fP);
+extern template MTS_EXPORT_CORE Float  square_to_uniform_hemisphere_pdf<false>(Vector3f);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_hemisphere_pdf<false>(Vector3fP);
+
+// ------------------------------------------------------------------------------------------
 
 /// Sample a cosine-weighted vector on the unit hemisphere with respect to solid angles
-extern MTS_EXPORT_CORE Vector3f square_to_cosine_hemisphere(const Point2f &sample);
+template <typename Point2f>
+vector3f_t<Point2f> square_to_cosine_hemisphere(Point2f sample) {
+    /* Low-distortion warping technique based on concentric disk mapping */
+    Point2f p = square_to_uniform_disk_concentric(sample);
+    /* Guard against numerical imprecisions */
+    auto z = safe_sqrt(1.f - p.x() * p.x() - p.y() * p.y());
+
+    return vector3f_t<Point2f>(p.x(), p.y(), z);
+}
+
+extern template MTS_EXPORT_CORE Vector3f  square_to_cosine_hemisphere(Point2f);
+extern template MTS_EXPORT_CORE Vector3fP square_to_cosine_hemisphere(Point2fP);
 
 /// Density of \ref square_to_cosine_hemisphere() with respect to solid angles
-template <bool TestDomain = false>
-Float square_to_cosine_hemisphere_pdf(const Vector3f &v) {
-    if (TestDomain && (std::abs(squared_norm(v) - 1.f) > math::Epsilon ||
-                       Frame3f::cos_theta(v) < 0))
-        return 0.f;
-    return math::InvPi * Frame3f::cos_theta(v);
+template <bool TestDomain = false, typename Vector3f, typename Scalar = value_t<Vector3f>>
+Scalar square_to_cosine_hemisphere_pdf(Vector3f v) {
+    if (TestDomain)
+        return select(abs(squared_norm(v) - 1.f) > math::Epsilon | Frame<Vector3f>::cos_theta(v) < 0.f,
+                      Scalar(0.f), math::InvPi * Frame<Vector3f>::cos_theta(v));
+    else
+        return math::InvPi * Frame<Vector3f>::cos_theta(v);
 }
+
+extern template MTS_EXPORT_CORE Float  square_to_cosine_hemisphere_pdf<true>(Vector3f);
+extern template MTS_EXPORT_CORE FloatP square_to_cosine_hemisphere_pdf<true>(Vector3fP);
+extern template MTS_EXPORT_CORE Float  square_to_cosine_hemisphere_pdf<false>(Vector3f);
+extern template MTS_EXPORT_CORE FloatP square_to_cosine_hemisphere_pdf<false>(Vector3fP);
+
+// ------------------------------------------------------------------------------------------
 
 /**
  * \brief Uniformly sample a vector that lies within a given
  * cone of angles around the Z axis
  *
- * \param cosCutoff Cosine of the cutoff angle
+ * \param cos_cutoff Cosine of the cutoff angle
  * \param sample A uniformly distributed sample on \f$[0,1]^2\f$
  */
-extern MTS_EXPORT_CORE Vector3f square_to_uniform_cone(const Point2f &sample, Float cosCutoff);
+template <typename Point2f>
+vector3f_t<Point2f> square_to_uniform_cone(Point2f sample, Float cos_cutoff) {
+    auto cos_theta = (1.f - sample.y()) + sample.y() * cos_cutoff;
+    auto sin_theta = safe_sqrt(1.f - cos_theta * cos_theta);
+
+    auto sc = sincos(2.f * math::Pi * sample.x());
+    return vector3f_t<Point2f>(sc.second * sin_theta, sc.first * sin_theta, cos_theta);
+}
+
+extern template MTS_EXPORT_CORE Vector3f  square_to_uniform_cone(Point2f, Float);
+extern template MTS_EXPORT_CORE Vector3fP square_to_uniform_cone(Point2fP, Float);
+
 
 /**
  * \brief Density of \ref square_to_uniform_cone per unit area.
  *
- * \param cosCutoff Cosine of the cutoff angle
+ * \param cos_cutoff Cosine of the cutoff angle
  */
-template <bool TestDomain = false>
-inline Float square_to_uniform_cone_pdf(const Vector3f &v, Float cosCutoff) {
-    if (TestDomain && (std::abs(squared_norm(v) - 1.f) > math::Epsilon ||
-                       Frame3f::cos_theta(v) < cosCutoff))
-        return 0.0;
-    return math::InvTwoPi / (1 - cosCutoff);
+template <bool TestDomain = false, typename Vector3f, typename Scalar = value_t<Vector3f>>
+Scalar square_to_uniform_cone_pdf(Vector3f v, Float cos_cutoff) {
+    if (TestDomain)
+        return select(abs(squared_norm(v) - 1.f) > math::Epsilon | Frame<Vector3f>::cos_theta(v) < cos_cutoff,
+					  Scalar(0.f), Scalar(math::InvTwoPi / (1.f - cos_cutoff)));
+    else
+        return Scalar(math::InvTwoPi / (1.f - cos_cutoff));
 }
+
+extern template MTS_EXPORT_CORE Float  square_to_uniform_cone_pdf<true>(Vector3f, Float);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_cone_pdf<true>(Vector3fP, Float);
+extern template MTS_EXPORT_CORE Float  square_to_uniform_cone_pdf<false>(Vector3f, Float);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_cone_pdf<false>(Vector3fP, Float);
+
+// ------------------------------------------------------------------------------------------
 
 /// Warp a uniformly distributed square sample to a Beckmann distribution *
 /// cosine for the given 'alpha' parameter
-extern MTS_EXPORT_CORE Vector3f square_to_beckmann(const Point2f &sample,
-                                                 Float alpha);
+template <typename Point2f>
+vector3f_t<Point2f> square_to_beckmann(Point2f sample, Float alpha) {
+	using Scalar = value_t<Point2f>;
+#if 0
+    /* Approach 1: standard warping method without concentric disk mapping */
+    auto sc = sincos(2.f * math::Pi * sample.x());
+
+    Scalar tan_thetaMSqr = -alpha * alpha * log(1.f - sample.y());
+    Scalar cos_thetaM = 1.f / sqrt(1.f + tan_thetaMSqr);
+    Scalar sin_thetaM = safe_sqrt(1.f - cos_thetaM * cos_thetaM);
+
+    return vector3f_t<Point2f>(sin_thetaM * sc.second, sin_thetaM * sc.first, cos_thetaM);
+#else
+    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    Point2f p = square_to_uniform_disk_concentric(sample);
+    Scalar r2 = squared_norm(p);
+
+    Scalar tan_theta_m_sqr = -alpha * alpha * log(1.f - r2);
+    Scalar cos_theta_m = 1.f / safe_sqrt(1.f + tan_theta_m_sqr);
+    p *= safe_sqrt((1.f - cos_theta_m * cos_theta_m) / r2);
+
+    return vector3f_t<Point2f>(p.x(), p.y(), cos_theta_m);
+#endif
+}
+
+extern template MTS_EXPORT_CORE Vector3f  square_to_beckmann(Point2f, Float);
+extern template MTS_EXPORT_CORE Vector3fP square_to_beckmann(Point2fP, Float);
 
 /// Probability density of \ref square_to_beckmann()
-extern MTS_EXPORT_CORE Float square_to_beckmann_pdf(const Vector3f &m,
-                                                 Float alpha);
+template <typename Vector3f, typename Scalar = value_t<Vector3f>>
+Scalar square_to_beckmann_pdf(Vector3f m, Float alpha) {
+    auto mask = m.z() < 1e-9f;
+    if (all(mask))
+        return Scalar(0.f);
+
+    Scalar temp = Frame<Vector3f>::tan_theta(m) / alpha,
+          ct   = Frame<Vector3f>::cos_theta(m),
+          ct2  = ct*ct;
+
+    return select(mask, Scalar(0.f), exp(-temp*temp) / (math::Pi * alpha * alpha * ct2 * ct));
+}
+
+extern template MTS_EXPORT_CORE Float  square_to_beckmann_pdf(Vector3f , Float);
+extern template MTS_EXPORT_CORE FloatP square_to_beckmann_pdf(Vector3fP, Float);
+
+// ------------------------------------------------------------------------------------------
 
 /// Warp a uniformly distributed square sample to a von Mises Fisher distribution
-extern MTS_EXPORT_CORE Vector3f square_to_von_mises_fisher(const Point2f &sample,
-                                                       Float kappa);
+template <typename Point2f>
+vector3f_t<Point2f> square_to_von_mises_fisher(Point2f sample, Float kappa) {
+    using Scalar = value_t<Point2f>;
+    vector3f_t<Point2f> result = square_to_uniform_sphere(sample);
+
+    if(kappa == 0)
+        return result;
+
+    assert(kappa >= 0.f);
+#if 0
+    /* Approach 1: standard warping method without concentric disk mapping */
+    #if 0
+        /* Approach 1.1: standard inversion method algorithm for sampling the
+           von Mises Fisher distribution (numerically unstable!) */
+        Scalar cos_theta = log(exp(-m_kappa) + 2 *
+                            sample.y() * sinh(m_kappa)) / m_kappa;
+    #else
+        /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
+           distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
+        Scalar sy = max(1.f - sample.y(), Scalar(1e-6f));
+        Scalar cos_theta = 1.f + log(sy +
+            (1.f - sy) * exp(-2.f * kappa)) / kappa;
+    #endif
+
+    auto sc = sincos(2.f * math::Pi * sample.x());
+    Scalar sin_theta = safe_sqrt(1.f - cos_theta * cos_theta);
+    return select(mask, result, vector3f_t<Point2f>(sc.second * sin_theta, sc.first * sin_theta, cos_theta));
+#else
+    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    Point2f p = square_to_uniform_disk_concentric(sample);
+    Scalar r2 = squared_norm(p);
+    Scalar sy = max(1.f - r2, (Scalar) 1e-6f);
+
+    Scalar cos_theta = 1.f + log(sy +
+        (1.f - sy) * exp(-2.f * kappa)) / kappa;
+
+    p *= safe_sqrt((1.f - cos_theta * cos_theta) / r2);
+
+    return vector3f_t<Point2f>(p.x(), p.y(), cos_theta);
+#endif
+}
+
+extern template MTS_EXPORT_CORE Vector3f  square_to_von_mises_fisher(Point2f, Float);
+extern template MTS_EXPORT_CORE Vector3fP square_to_von_mises_fisher(Point2fP, Float);
 
 /// Probability density of \ref square_to_von_mises_fisher()
-extern MTS_EXPORT_CORE Float square_to_von_mises_fisher_pdf(const Vector3f &v,
-                                                       Float kappa);
+template <typename Vector3f, typename Scalar = value_t<Vector3f>>
+Scalar square_to_von_mises_fisher_pdf(Vector3f v, Float kappa) {
+    /* Stable algorithm for evaluating the von Mises Fisher distribution
+       https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
+
+    assert(kappa >= 0.f);
+    if (kappa == 0.f)
+        return Scalar(math::InvFourPi);
+    else
+        return exp(kappa * (v.z() - 1.f)) * kappa 
+                  / (2.f * math::Pi * (1.f - exp(-2.f * kappa)));
+}
+
+extern template MTS_EXPORT_CORE Float  square_to_von_mises_fisher_pdf(Vector3f, Float);
+extern template MTS_EXPORT_CORE FloatP square_to_von_mises_fisher_pdf(Vector3fP, Float);
+
+// ------------------------------------------------------------------------------------------
 
 /// Warp a uniformly distributed square sample to a rough fiber distribution
-extern MTS_EXPORT_CORE Vector3f square_to_rough_fiber(const Point3f &sample,
-                                                   const Vector3f &wi,
-                                                   const Vector3f &tangent,
-                                                   Float kappa);
+template <typename Vector3f, typename Point3>
+Vector3f square_to_rough_fiber(Point3 sample, Vector3f wi_, Vector3f tangent, Float kappa) {
+    using Scalar = value_t<Vector3f>;
+    using Point2f  = Point<Scalar, 2>;
+
+    Frame<Vector3f> tframe(tangent);
+
+    /* Convert to local coordinate frame with Z = fiber tangent */
+    Vector3f wi = tframe.to_local(wi_);
+
+    /* Sample a point on the reflection cone */
+    auto sc = sincos(2.f * math::Pi * sample.x());
+
+    Scalar cos_theta = wi.z();
+    Scalar sin_theta = safe_sqrt(1 - cos_theta * cos_theta);
+
+    Vector3f wo(sc.second * sin_theta, sc.first * sin_theta, -cos_theta);
+
+    /* Sample a roughness perturbation from a vMF distribution */
+    Vector3f perturbation =
+        square_to_von_mises_fisher(Point2f(sample.y(), sample.z()), kappa);
+
+    /* Express perturbation relative to 'wo' */
+    wo = Frame<Vector3f>(wo).to_world(perturbation);
+
+    /* Back to global coordinate frame */
+    return tframe.to_world(wo);
+}
+
+extern template MTS_EXPORT_CORE Vector3f  square_to_rough_fiber(Point3f, Vector3f, Vector3f, Float);
+extern template MTS_EXPORT_CORE Vector3fP square_to_rough_fiber(Point3fP, Vector3fP, Vector3fP, Float);
+
+/* Numerical approximations for the modified Bessel function
+   of the first kind (I0) and its logarithm */
+namespace {
+    template <typename Scalar>
+    Scalar i0(Scalar x) {
+        Scalar result = Scalar(1.f), x2 = x * x, xi = x2;
+        Scalar denom = Scalar(4.f);
+        for (int i = 1; i <= 10; ++i) {
+            Scalar factor = Scalar(i + 1.f);
+            result += xi / denom;
+            xi *= x2;
+            denom *= 4.f * factor * factor;
+        }
+        return result;
+    }
+
+    template <typename Scalar>
+    Scalar logI0(Scalar x) {
+        return select(x > 12.f,
+                      x + 0.5f * (log(1.f / (2.f * math::Pi * x)) + 1.f / (8.f * x)),
+                      log(i0(x)));
+    }
+}
 
 /// Probability density of \ref square_to_rough_fiber()
-extern MTS_EXPORT_CORE Float square_to_rough_fiber_pdf(const Vector3f &v,
-                                                   const Vector3f &wi,
-                                                   const Vector3f &tangent,
-                                                   Float kappa);
+template <typename Vector3f, typename Scalar = value_t<Vector3f>>
+Scalar square_to_rough_fiber_pdf(Vector3f v, Vector3f wi, Vector3f tangent, Float kappa) {
+    /**
+     * Analytic density function described in "An Energy-Conserving Hair Reflectance Model"
+     * by Eugene d’Eon, Guillaume Francois, Martin Hill, Joe Letteri, and Jean-Marie Aubry
+     *
+     * Includes modifications for numerical robustness described here:
+     * https://publons.com/publon/2803
+     */
 
+    Scalar cos_theta_i = dot(wi, tangent);
+    Scalar cos_theta_o = dot(v, tangent);
+    Scalar sin_theta_i = safe_sqrt(1 - cos_theta_i * cos_theta_i);
+    Scalar sin_theta_o = safe_sqrt(1 - cos_theta_o * cos_theta_o);
+
+    Scalar c = cos_theta_i * cos_theta_o * kappa;
+    Scalar s = sin_theta_i * sin_theta_o * kappa;
+
+    Scalar result1 = exp(-c + logI0(s) - kappa + 0.6931f + log(kappa / 2.f));
+    Scalar result2 = exp(-c) * i0(s) * kappa / (2.f * sinh(kappa));
+
+    if (kappa > 10.f)
+        return result1 * 1.f / (2.f * math::Pi);
+    else
+        return result2 * 1.f / (2.f * math::Pi);
+}
+
+extern template MTS_EXPORT_CORE Float  square_to_rough_fiber_pdf(Vector3f, Vector3f, Vector3f, Float);
+extern template MTS_EXPORT_CORE FloatP square_to_rough_fiber_pdf(Vector3fP, Vector3fP, Vector3fP, Float);
 //! @}
 // =============================================================
+
 
 // =============================================================
 //! @{ \name Warping techniques that operate in the plane
 // =============================================================
 
 /// Uniformly sample a vector on a 2D disk
-extern MTS_EXPORT_CORE Point2f square_to_uniform_disk(const Point2f &sample);
-
-/// Density of \ref square_to_uniform_disk per unit area
-template <bool TestDomain = false>
-Float square_to_uniform_disk_pdf(const Point2f &p) {
-    if (TestDomain && squared_norm(p) > 1)
-        return 0.f;
-    return math::InvPi;
+template <typename Point2f>
+Point2f square_to_uniform_disk(Point2f sample) {
+    auto r = sqrt(sample.y());
+    auto sc = sincos(2.f * math::Pi * sample.x());
+    return Point2f(sc.second * r, sc.first * r);
 }
 
-/// Low-distortion concentric square to disk mapping by Peter Shirley (PDF: 1/PI)
-extern MTS_EXPORT_CORE Point2f square_to_uniform_disk_concentric(const Point2f &sample);
+extern template MTS_EXPORT_CORE Point2f  square_to_uniform_disk(Point2f);
+extern template MTS_EXPORT_CORE Point2fP square_to_uniform_disk(Point2fP);
 
 /// Density of \ref square_to_uniform_disk per unit area
-template <bool TestDomain = false>
-Float square_to_uniform_disk_concentric_pdf(const Point2f &p) {
-    if (TestDomain && squared_norm(p) > 1)
-        return 0.f;
-    return math::InvPi;
+template <bool TestDomain = false, typename Point2f, typename Scalar = value_t<Point2f>>
+Scalar square_to_uniform_disk_pdf(Point2f p) {
+    if (TestDomain)
+        return select(squared_norm(p) > 1, Scalar(0.f), Scalar(math::InvPi));
+    else
+        return Scalar(math::InvPi);
 }
 
-/// Inverse of the mapping \ref square_to_uniform_disk_concentric
-extern MTS_EXPORT_CORE Point2f disk_to_uniform_square_concentric(const Point2f &p);
+extern template MTS_EXPORT_CORE Point2f  square_to_uniform_disk_pdf(Point2f);
+extern template MTS_EXPORT_CORE Point2fP square_to_uniform_disk_pdf(Point2fP);
+
+// ------------------------------------------------------------------------------------------
 
 /// Convert an uniformly distributed square sample into barycentric coordinates
-extern MTS_EXPORT_CORE Point2f square_to_uniform_triangle(const Point2f &sample);
-
-/// Density of \ref square_to_uniform_triangle per unit area.
-template <bool TestDomain = false>
-Float square_to_uniform_triangle_pdf(const Point2f &p) {
-    if (TestDomain && (p.x() < 0 || p.y() < 0 || p.x() + p.y() > 1))
-        return 0.f;
-    return 2.f;
+template <typename Point2f>
+Point2f square_to_uniform_triangle(Point2f sample) {
+    auto a = safe_sqrt(1.f - sample.x());
+    return Point2f(1.f - a, a * sample.y());
 }
 
-/** \brief Sample a point on a 2D standard normal distribution
- * Internally uses the Box-Muller transformation */
-extern MTS_EXPORT_CORE Point2f square_to_std_normal(const Point2f &sample);
+extern template MTS_EXPORT_CORE Point2f  square_to_uniform_triangle(Point2f);
+extern template MTS_EXPORT_CORE Point2fP square_to_uniform_triangle(Point2fP);
 
-/// Density of \ref square_to_std_normal per unit area
-extern MTS_EXPORT_CORE Float square_to_std_normal_pdf(const Point2f &p);
+/// Density of \ref square_to_uniform_triangle per unit area.
+template <bool TestDomain = false, typename Point2f, typename Scalar = value_t<Point2f>>
+Scalar square_to_uniform_triangle_pdf(Point2f p) {
+    if (TestDomain)
+        return select(p.x() < 0.f | p.y() < 0.f | p.x() + p.y() > 1.f,
+                      Scalar(0.f), Scalar(2.f));
+    else
+        return Scalar(2.f);
+}
+
+extern template MTS_EXPORT_CORE Float  square_to_uniform_triangle_pdf(Point2f);
+extern template MTS_EXPORT_CORE FloatP square_to_uniform_triangle_pdf(Point2fP);
+
+// ------------------------------------------------------------------------------------------
+
+
+/// Sample a point on a 2D standard normal distribution. Internally uses the Box-Muller transformation
+template <typename Point2f>
+Point2f square_to_std_normal(Point2f sample) {
+    auto r   = sqrt(-2.f * log(1.f-sample.x())),
+         phi = 2.f * math::Pi * sample.y();
+    Point2f result;
+    auto sc = sincos(phi);
+    return Point2f(sc.second, sc.first) * r;
+}
+
+extern template MTS_EXPORT_CORE Point2f  square_to_std_normal(Point2f);
+extern template MTS_EXPORT_CORE Point2fP square_to_std_normal(Point2fP);
+
+template <typename Point2f, typename Scalar = value_t<Point2f>>
+Scalar square_to_std_normal_pdf(Point2f p) {
+    return math::InvTwoPi * exp(-(p.x() * p.x() + p.y() * p.y()) / 2.f);
+}
+
+extern template MTS_EXPORT_CORE Float  square_to_std_normal_pdf(Point2f);
+extern template MTS_EXPORT_CORE FloatP square_to_std_normal_pdf(Point2fP);
+
+// ------------------------------------------------------------------------------------------
+
+/// Warp a uniformly distributed sample on [0, 1] to a tent distribution
+template <typename Scalar>
+Scalar interval_to_tent(Scalar sample) {
+    Scalar sign = select(sample < 0.5f, Scalar(1.f), Scalar(-1.f));
+    sample = select(sample < 0.5f, 2.f * sample, 2.f - 2.f * sample);
+    return sign * (1.f - sqrt(sample));
+}
+
+extern template MTS_EXPORT_CORE Float  interval_to_tent(Float);
+extern template MTS_EXPORT_CORE FloatP interval_to_tent(FloatP);
+
+/// Warp a uniformly distributed sample on [0, 1] to a nonuniform tent distribution with nodes <tt>{a, b, c}</tt>
+template <typename Scalar>
+Scalar interval_to_nonuniform_tent(Scalar a, Scalar b, Scalar c, Scalar sample) {
+    auto mask = sample * (c - a) < b - a;
+    Scalar factor = select(mask, a - b, c- b);
+    sample = select(mask, sample * (a - c) / (a - b), (a - c) / (b - c) * (sample - (a - b) / (a - c)));
+
+    return b + factor * (1.f - safe_sqrt(sample));
+}
+
+extern template MTS_EXPORT_CORE Float  interval_to_nonuniform_tent(Float, Float, Float, Float);
+extern template MTS_EXPORT_CORE FloatP interval_to_nonuniform_tent(FloatP, FloatP, FloatP, FloatP);
+
+// ------------------------------------------------------------------------------------------
 
 /// Warp a uniformly distributed square sample to a 2D tent distribution
-extern MTS_EXPORT_CORE Point2f square_to_tent(const Point2f &sample);
+template <typename Point2f>
+Point2f square_to_tent(Point2f sample) {
+    return Point2f(interval_to_tent(sample.x()), interval_to_tent(sample.y()));
+}
+
+extern template MTS_EXPORT_CORE Point2f  square_to_tent(Point2f);
+extern template MTS_EXPORT_CORE Point2fP square_to_tent(Point2fP);
 
 /// Density of \ref square_to_tent per unit area.
-extern MTS_EXPORT_CORE Float square_to_tent_pdf(const Point2f &p);
+template <typename Point2f, typename Scalar = value_t<Point2f>>
+Scalar square_to_tent_pdf(Point2f p) {
+    return select(p.x() >= -1 & p.x() <= 1 & p.y() >= -1 & p.y() <= 1,
+                  (1 - abs(p.x())) * (1 - abs(p.y())),
+                  Scalar(0.f));
+}
 
-/** \brief Warp a uniformly distributed sample on [0, 1] to a nonuniform
- * tent distribution with nodes <tt>{a, b, c}</tt>
- */
-extern MTS_EXPORT_CORE Float interval_to_nonuniform_tent(Float sample, Float a, Float b, Float c);
+extern template MTS_EXPORT_CORE Float  square_to_tent_pdf(Point2f);
+extern template MTS_EXPORT_CORE FloatP square_to_tent_pdf(Point2fP);
+
+#if 0 
+/* 
+*	TODO: This function has way too many branches. Need to implement a shorter version 
+*	similar to David Cline's implementation of \ref square_to_uniform_disk_concentric.
+*	Reference:
+*	http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
+*	https://pdfs.semanticscholar.org/4322/6a3916a85025acbb3a58c17f6dc0756b35ac.pdf
+*/
+/// Inverse of the mapping \ref square_to_uniform_disk_concentric
+template <typename Point2f>
+Point2f disk_to_uniform_square_concentric(Point2f p) {
+	using Scalar = value_t<Point2f>;
+	Scalar r = sqrt(p.x() * p.x() + p.y() * p.y()),
+		phi = atan2(p.y(), p.x()),
+		a, b;
+
+/*
+	Original non - vectorized version :
+
+	if (phi < -math::Pi / 4) {
+		phi += 2 * math::Pi;
+	}
+
+	if (phi < math::Pi / 4) { //region #1
+		a = r;
+		b = phi * a / (math::Pi / 4);
+	}
+	else if (phi < 3 * math::Pi / 4) { //region #2
+		b = r;
+		a = -(phi - math::Pi / 2) * b / (math::Pi / 4);
+	}
+	else if (phi < 5 * math::Pi / 4) { //region #3
+		a = -r;
+		b = (phi - math::Pi) * a / (math::Pi / 4);
+	}
+	else { //region #4
+		b = -r;
+		a = -(phi - 3 * math::Pi / 2) * b / (math::Pi / 4);
+	}
+*/
+
+	Float pi_div_4 = math::Pi / 4.f;
+	Float pi_div_2 = math::Pi / 2.f;
+
+	phi = select(phi < -pi_div_4, phi + 2.f * math::Pi, phi);
+
+	auto mask1 = phi < pi_div_4;
+	auto mask2 = phi < 3.f * pi_div_4;
+	auto mask3 = phi < 5.f * pi_div_4;
+
+	a = select(mask1, r, -(phi - 3 * pi_div_2) * (-r) / pi_div_4);
+	a = select(mask2 & !mask1, -(phi - pi_div_2) * r / pi_div_4, a);
+	a = select(mask3 & !mask2, -r, a);
+
+	b = select(mask1, phi * r / pi_div_4, -r);
+	b = select(mask2 & !mask1, r, b);
+	b = select(mask3 & !mask2, (phi - math::Pi) * (-r) / pi_div_4, b);
+
+	return Point2f(0.5f * (a + 1), 0.5f * (b + 1));
+}
+
+extern template MTS_EXPORT_CORE Point2f  disk_to_uniform_square_concentric(Point2f);
+extern template MTS_EXPORT_CORE Point2fP disk_to_uniform_square_concentric(Point2fP);
+#endif
 
 //! @}
 // =============================================================
-#endif
 
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)

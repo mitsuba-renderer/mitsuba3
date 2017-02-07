@@ -33,3 +33,41 @@ def test_square_to_uniform_sphere_vec():
     from mitsuba.core.warp import square_to_uniform_sphere
     from mitsuba.core.warp import square_to_uniform_sphere_pdf
     check_vectorization(square_to_uniform_sphere, square_to_uniform_sphere_pdf)
+
+
+
+def test_square_to_uniform_hemisphere():
+    from mitsuba.core import square_to_uniform_hemisphere
+
+    assert(np.allclose(square_to_uniform_hemisphere([0, 0]), [1, 0,  0]))
+    assert(np.allclose(square_to_uniform_hemisphere([0, 1]), [0, 0, 1]))
+
+def test_square_to_uniform_hemisphere_vec():
+    from mitsuba.core import square_to_uniform_hemisphere
+    from mitsuba.core import square_to_uniform_hemisphere_pdf
+    check_vectorization(square_to_uniform_hemisphere, square_to_uniform_hemisphere_pdf)
+
+
+
+def test_square_to_uniform_disk_concentric():
+    from mitsuba.core import square_to_uniform_disk_concentric
+    from math import sqrt
+
+    assert(np.allclose(square_to_uniform_disk_concentric([0, 0]), ([-1 / sqrt(2),  -1 / sqrt(2)] )))
+    assert(np.allclose(square_to_uniform_disk_concentric([0.5, .5]), [0, 0]))
+
+
+
+def test_square_to_cosine_hemisphere():
+    from mitsuba.core import square_to_cosine_hemisphere
+
+    assert(np.allclose(square_to_cosine_hemisphere([0.5, 0.5]), [0,  0,  1]))
+    assert(np.allclose(square_to_cosine_hemisphere([0.5,   0]), [0, -1, 0], atol=1e-7))
+    
+
+def test_square_to_uniform_cone():
+    from mitsuba.core import square_to_uniform_cone
+
+    assert(np.allclose(square_to_uniform_cone([0.5, 0.5], 1), [0, 0, 1]))
+    assert(np.allclose(square_to_uniform_cone([0.5, 0],   1), [0, 0, 1], atol=1e-7))
+    assert(np.allclose(square_to_uniform_cone([0.5, 0],   0), [0, 0, 1], atol=1e-7))
