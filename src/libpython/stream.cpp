@@ -9,16 +9,18 @@
 #include <mitsuba/core/logger.h>
 #include "python.h"
 
-#define DECLARE_RW(Type, ReadableName) \
-    def("read" ReadableName, [](Stream& s) {                  \
-        Type v;                                               \
-        s.read(v);                                            \
-        return py::cast(v);                                   \
-    }, D(Stream, read, 2))                                   \
-    .def("write" ReadableName, [](Stream& s, const Type &v) { \
-        s.write(v);                                           \
-        return py::cast(v);                                   \
-    }, D(Stream, write, 2))
+#define DECLARE_RW(Type, ReadableName)                                         \
+    def("read_" ReadableName,                                                  \
+        [](Stream &s) {                                                        \
+            Type v;                                                            \
+            s.read(v);                                                         \
+            return py::cast(v);                                                \
+        }, D(Stream, read, 2))                                                 \
+        .def("write_" ReadableName,                                            \
+             [](Stream &s, const Type &v) {                                    \
+                 s.write(v);                                                   \
+                 return py::cast(v);                                           \
+             }, D(Stream, write, 2))
 
 MTS_PY_EXPORT(Stream) {
     auto c = MTS_PY_CLASS(Stream, Object)
@@ -42,12 +44,12 @@ MTS_PY_EXPORT(Stream) {
             s.read((void *) tmp.get(), size);
             return py::bytes(tmp.get(), size);
         }, D(Stream, write))
-        .DECLARE_RW(int64_t, "Long")
-        .DECLARE_RW(float, "Single")
-        .DECLARE_RW(double, "Double")
-        .DECLARE_RW(Float, "Float")
-        .DECLARE_RW(bool, "Bool")
-        .DECLARE_RW(std::string, "String")
+        .DECLARE_RW(int64_t, "long")
+        .DECLARE_RW(float, "single")
+        .DECLARE_RW(double, "double")
+        .DECLARE_RW(Float, "float")
+        .DECLARE_RW(bool, "bool")
+        .DECLARE_RW(std::string, "string")
         .def("__repr__", &Stream::to_string);
 
     py::enum_<Stream::EByteOrder>(c, "EByteOrder", D(Stream, EByteOrder))

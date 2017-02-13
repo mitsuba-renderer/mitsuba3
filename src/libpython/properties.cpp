@@ -59,6 +59,13 @@ MTS_PY_EXPORT(Properties) {
                 throw std::runtime_error("Unsupported property type");
             }
        }, "Retrieve an existing property given its name")
+       .def("__contains__", [](const Properties& p, const std::string &key) {
+               std::cout << "Checking " << key << std::endl;
+           return p.has_property(key);
+       })
+       .def("__delitem__", [](Properties& p, const std::string &key) {
+           return p.remove_property(key);
+       })
 
         // Operators
         .def(py::self == py::self, D(Properties, operator_eq))

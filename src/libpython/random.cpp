@@ -5,7 +5,7 @@ MTS_PY_EXPORT(random) {
     py::class_<PCG32> PCG32_(m, "PCG32", D(TPCG32));
     PCG32_
         .def(py::init<uint64_t, uint64_t>(), D(TPCG32, TPCG32),
-             "initstate"_a = PCG32_DEFAULT_STATE,
+             "initstate"_a = PCG32_DEFAULT_STATE + PCG32_DEFAULT_STREAM,
              "initseq"_a = index_sequence<uint64_t>())
         .def(py::init<const PCG32 &>(), "Copy constructor")
         .def("seed", &PCG32::seed, "initstate"_a, "initseq"_a = 1u, D(TPCG32, seed))
@@ -37,7 +37,7 @@ MTS_PY_EXPORT(random) {
                 result.mutable_data()[i] = rng.next_float64();
             return result;
         }, "m"_a, "n"_a)
-        .def("next_float32", [p = py::handle(PCG32_)](py::args args, py::kwargs kwargs) -> py::object {
+        .def("next_float", [p = py::handle(PCG32_)](py::args args, py::kwargs kwargs) -> py::object {
             #if defined(SINGLE_PRECISION)
                 return p.attr("next_float32")(*args, **kwargs);
             #else

@@ -1063,7 +1063,7 @@ static const char *__doc_mitsuba_Matrix4f_Matrix4f = R"doc()doc";
 
 static const char *__doc_mitsuba_Matrix4f_Matrix4f_10 = R"doc(Reinterpret another array)doc";
 
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_11 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_Matrix4f_Matrix4f_12 = R"doc()doc";
 
@@ -1571,6 +1571,111 @@ static const char *__doc_mitsuba_Properties_vector3f = R"doc(Retrieve a 3D vecto
 static const char *__doc_mitsuba_Properties_vector3f_2 = R"doc(Retrieve a 3D vector (use default value if no entry exists))doc";
 
 static const char *__doc_mitsuba_Properties_was_queried = R"doc(Check if a certain property was queried)doc";
+
+static const char *__doc_mitsuba_RadicalInverse =
+R"doc(Efficient implementation of a radical inverse function with prime
+bases including scrambled versions.
+
+This class is used to implement Halton and Hammersley sequences for
+QMC integration in Mitsuba.)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_PrimeBase = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_PrimeBase_divisor = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_PrimeBase_recip = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_PrimeBase_unused = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_PrimeBase_value = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_RadicalInverse =
+R"doc(Precompute data structures that are used to evaluate the radical
+inverse and scrambled radical inverse function
+
+Parameter ``max_base``:
+    Sets the value of the largest prime number base. The default
+    interval [2, 8161] contains exactly 1024 prime bases.
+
+Parameter ``scramble``:
+    Selects the desired permutation type, where ``-1`` denotes the
+    Faure permutations; any other number causes a pseudorandom
+    permutation to be built seeded by the value of ``scramble``.)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_base =
+R"doc(Returns the n-th prime base used by the sequence
+
+These prime numbers are used as bases in the radical inverse function
+implementation.)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_bases =
+R"doc(Return the number of prime bases for which precomputed tables are
+available)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_class = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_compute_faure_permutations =
+R"doc(Compute the Faure permutations using dynamic programming
+
+For reference, see "Good permutations for extreme discrepancy" by
+Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_eval =
+R"doc(Calculate the radical inverse function
+
+This function is used as a building block to construct Halton and
+Hammersley sequences. Roughly, it computes a b-ary representation of
+the input value ``index``, mirrors it along the decimal point, and
+returns the resulting fractional value. The implementation here uses
+prime numbers for ``b``.
+
+Parameter ``base_index``:
+    Selects the n-th prime that is used as a base when computing the
+    radical inverse function (0 corresponds to 2, 1->3, 2->5, etc.).
+    The value specified here must be between 0 and 1023.
+
+Parameter ``index``:
+    Denotes the index that should be mapped through the radical
+    inverse function)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_eval_2 = R"doc(Vectorized implementation of eval())doc";
+
+static const char *__doc_mitsuba_RadicalInverse_eval_scrambled =
+R"doc(Calculate a scrambled radical inverse function
+
+This function is used as a building block to construct permuted Halton
+and Hammersley sequence variants. It works like the normal radical
+inverse function radical_inverse(), except that every digit is run
+through an extra scrambling permutation specified as array of size
+``base``.)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_eval_scrambled_2 = R"doc(Vectorized implementation of eval_scrambled())doc";
+
+static const char *__doc_mitsuba_RadicalInverse_inverse_permutation =
+R"doc(Return the inverse permutation corresponding to the given prime number
+basis)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_invert_permutation = R"doc(Invert one of the permutations)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_m_base = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_m_base_count = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_m_inv_permutation_storage = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_m_inv_permutations = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_m_permutation_storage = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_m_permutations = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_m_scramble = R"doc()doc";
+
+static const char *__doc_mitsuba_RadicalInverse_permutation = R"doc(Return the permutation corresponding to the given prime number basis)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_scramble = R"doc(Return the original scramble value)doc";
+
+static const char *__doc_mitsuba_RadicalInverse_to_string = R"doc(Return a human-readable string representation)doc";
 
 static const char *__doc_mitsuba_Scene = R"doc()doc";
 
@@ -3479,9 +3584,9 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
@@ -3492,83 +3597,6 @@ static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage =
-R"doc(Stores scrambling permutations for Van Der Corput-type sequences with
-prime bases.)doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_PermutationStorage =
-R"doc(Create new permutations
-
-Parameter ``scramble``:
-    Selects the desired permutation type, where ``-1`` denotes the
-    Faure permutations; any other number causes a pseudorandom
-    permutation to be built seeded by the value of ``scramble``.)doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_class = R"doc()doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_compute_faure_permutations =
-R"doc(Compute the Faure permutations using dynamic programming
-
-For reference, see "Good permutations for extreme discrepancy" by
-Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.)doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_inverse_permutation =
-R"doc(Return the inverse permutation corresponding to the given prime number
-basis)doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_invert_permutation = R"doc(Invert one of the permutations)doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_m_inv_permutations = R"doc()doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_m_inv_storage = R"doc()doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_m_permutations = R"doc()doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_m_scramble = R"doc()doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_m_storage = R"doc()doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_permutation = R"doc(Return the permutation corresponding to the given prime number basis)doc";
-
-static const char *__doc_mitsuba_qmc_PermutationStorage_scramble = R"doc(Return the original scramble value)doc";
-
-static const char *__doc_mitsuba_qmc_prime_base =
-R"doc(Returns the n-th prime number from a lookup table
-
-These prime numbers are used as bases in the radical inverse function
-implementation. ``index`` must be less than 1024.)doc";
-
-static const char *__doc_mitsuba_qmc_radical_inverse =
-R"doc(Calculate the radical inverse function
-
-This function is used as a building block to construct Halton and
-Hammersley sequences. Roughly, it computes a b-ary representation of
-the input value ``index``, mirrors it along the decimal point, and
-returns the resulting fractional value. The implementation here uses
-prime numbers for 'b'.
-
-Parameter ``prime_base``:
-    Selects the n-th prime that is used as a base when computing the
-    radical inverse function (0 corresponds to 2, 1->3, 2->5, etc.).
-    The value specified here must be between 0 and 1023.
-
-Parameter ``index``:
-    Denotes the index that should be mapped through the radical
-    inverse function)doc";
-
-static const char *__doc_mitsuba_qmc_radical_inverse_2 = R"doc(Vectorized implementation of radical_inverse())doc";
-
-static const char *__doc_mitsuba_qmc_scrambled_radical_inverse =
-R"doc(Calculate a scrambled radical inverse function
-
-This function is used as a building block to construct permuted Halton
-and Hammersley sequence variants. It works like the normal radical
-inverse function radical_inverse(), except that every digit is run
-through an extra scrambling permutation specified as array of size
-``base``.)doc";
-
-static const char *__doc_mitsuba_qmc_scrambled_radical_inverse_2 = R"doc(Vectorized implementation of scrambled_radical_inverse())doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -3796,89 +3824,11 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_disk_to_uniform_square_concentric = R"doc(Inverse of the mapping square_to_uniform_disk_concentric)doc";
-
-static const char *__doc_mitsuba_warp_interval_to_nonuniform_tent =
-R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
-distribution with nodes ``{a, b, c}``)doc";
-
-static const char *__doc_mitsuba_warp_square_to_beckmann =
-R"doc(Warp a uniformly distributed square sample to a Beckmann distribution
-* cosine for the given 'alpha' parameter)doc";
-
-static const char *__doc_mitsuba_warp_square_to_beckmann_pdf = R"doc(Probability density of square_to_beckmann())doc";
-
-static const char *__doc_mitsuba_warp_square_to_cosine_hemisphere =
-R"doc(Sample a cosine-weighted vector on the unit hemisphere with respect to
-solid angles)doc";
-
-static const char *__doc_mitsuba_warp_square_to_cosine_hemisphere_pdf = R"doc(Density of square_to_cosine_hemisphere() with respect to solid angles)doc";
-
-static const char *__doc_mitsuba_warp_square_to_rough_fiber =
-R"doc(Warp a uniformly distributed square sample to a rough fiber
-distribution)doc";
-
-static const char *__doc_mitsuba_warp_square_to_rough_fiber_pdf = R"doc(Probability density of square_to_rough_fiber())doc";
-
-static const char *__doc_mitsuba_warp_square_to_std_normal =
-R"doc(Sample a point on a 2D standard normal distribution Internally uses
-the Box-Muller transformation)doc";
-
-static const char *__doc_mitsuba_warp_square_to_std_normal_pdf = R"doc(Density of square_to_std_normal per unit area)doc";
-
-static const char *__doc_mitsuba_warp_square_to_tent = R"doc(Warp a uniformly distributed square sample to a 2D tent distribution)doc";
-
-static const char *__doc_mitsuba_warp_square_to_tent_pdf = R"doc(Density of square_to_tent per unit area.)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_cone =
-R"doc(Uniformly sample a vector that lies within a given cone of angles
-around the Z axis
-
-Parameter ``cosCutoff``:
-    Cosine of the cutoff angle
-
-Parameter ``sample``:
-    A uniformly distributed sample on $[0,1]^2$)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_cone_pdf =
-R"doc(Density of square_to_uniform_cone per unit area.
-
-Parameter ``cosCutoff``:
-    Cosine of the cutoff angle)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_disk = R"doc(Uniformly sample a vector on a 2D disk)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_disk_concentric =
-R"doc(Low-distortion concentric square to disk mapping by Peter Shirley
-(PDF: 1/PI))doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_disk_concentric_pdf = R"doc(Density of square_to_uniform_disk per unit area)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_disk_pdf = R"doc(Density of square_to_uniform_disk per unit area)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_hemisphere =
-R"doc(Uniformly sample a vector on the unit hemisphere with respect to solid
-angles)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_hemisphere_pdf = R"doc(Density of square_to_uniform_hemisphere() with respect to solid angles)doc";
-
 static const char *__doc_mitsuba_warp_square_to_uniform_sphere =
 R"doc(Uniformly sample a vector on the unit sphere with respect to solid
 angles)doc";
 
 static const char *__doc_mitsuba_warp_square_to_uniform_sphere_pdf = R"doc(Density of square_to_uniform_sphere() with respect to solid angles)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_triangle =
-R"doc(Convert an uniformly distributed square sample into barycentric
-coordinates)doc";
-
-static const char *__doc_mitsuba_warp_square_to_uniform_triangle_pdf = R"doc(Density of square_to_uniform_triangle per unit area.)doc";
-
-static const char *__doc_mitsuba_warp_square_to_von_mises_fisher =
-R"doc(Warp a uniformly distributed square sample to a von Mises Fisher
-distribution)doc";
-
-static const char *__doc_mitsuba_warp_square_to_von_mises_fisher_pdf = R"doc(Probability density of square_to_von_mises_fisher())doc";
 
 static const char *__doc_mitsuba_xml_load_file = R"doc(Load a Mitsuba scene from an XML file)doc";
 

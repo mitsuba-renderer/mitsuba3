@@ -1,5 +1,5 @@
 # This is the main CMake build file used to compile Mitsuba
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 2.8.12)
 project(mitsuba CXX)
 
 option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
@@ -9,6 +9,7 @@ cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
 
 include(CheckCXXCompilerFlag)
 include(TestBigEndian)
+include(CheckCXXSourceRuns)
 
 # Set a default build configuration (Release)
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -47,8 +48,6 @@ endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   add_compile_options("-fp-model" "precise")
 endif()
-
-include(CheckCXXSourceRuns)
 
 macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
   set(CMAKE_REQUIRED_FLAGS ${_CXX_FLAGS})

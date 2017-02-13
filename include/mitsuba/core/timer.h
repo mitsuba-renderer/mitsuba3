@@ -26,13 +26,13 @@ public:
         return (size_t) duration.count();
     }
 
-    void beginStage(const std::string &name) {
+    void begin_stage(const std::string &name) {
         reset();
         std::cout << name << " .. ";
         std::cout.flush();
     }
 
-    void endStage(const std::string &str = "") {
+    void end_stage(const std::string &str = "") {
         std::cout << "done. (took " << util::time_string(value());
         if (!str.empty())
             std::cout << ", " << str;

@@ -1,5 +1,5 @@
 from mitsuba.core import Thread, FileResolver
-from mitsuba.core.xml import loadString
+from mitsuba.core.xml import load_string
 import numpy as np
 import os
 
@@ -9,9 +9,9 @@ def test01_ply_triangle():
     fres_old = thread.fileResolver()
     fres = FileResolver(fres_old)
     fres.append(os.path.dirname(os.path.realpath(__file__)))
-    thread.setFileResolver(fres)
+    thread.set_file_resolver(fres)
 
-    shape = loadString("""
+    shape = load_string("""
         <scene version="0.4.0">
             <shape type="ply">
                 <string name="filename" value="data/triangle.ply"/>
@@ -30,4 +30,4 @@ def test01_ply_triangle():
     assert faces[0]['vertex_index.i0'] == np.uint32(0)
     assert faces[0]['vertex_index.i1'] == np.uint32(1)
     assert faces[0]['vertex_index.i2'] == np.uint32(2)
-    thread.setFileResolver(fres_old)
+    thread.set_file_resolver(fres_old)

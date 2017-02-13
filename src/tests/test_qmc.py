@@ -1,5 +1,4 @@
-from mitsuba.core.qmc import (radicalInverse, scrambledRadicalInverse,
-                              PermutationStorage)
+from mitsuba.core import RadicalInverse
 from mitsuba.core import PacketSize
 from mitsuba.core.math import OneMinusEpsilon
 import numpy as np
@@ -34,38 +33,41 @@ def gen_primes():
         q += 1
 
 
-def test01_radicalInverse():
-    assert(radicalInverse(0, 0) == 0)
-    assert(radicalInverse(0, 1) == 0.5)
-    assert(radicalInverse(0, 2) == 0.25)
-    assert(radicalInverse(0, 3) == 0.75)
+def test01_radical_inverse():
+    v = RadicalInverse()
+    assert(v.eval(0, 0) == 0)
+    assert(v.eval(0, 1) == 0.5)
+    assert(v.eval(0, 2) == 0.25)
+    assert(v.eval(0, 3) == 0.75)
 
     for index, prime in enumerate(gen_primes()):
         if index >= 1024:
             break
         for i in range(10):
-            assert np.abs(r_inv(prime, i) - radicalInverse(index, i)) < 1e-7
+            assert np.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
 
 
-def test02_radicalInverseVectorized():
+def test02_radical_inverse_vectorized():
+    v = RadicalInverse()
     for index, prime in enumerate(gen_primes()):
         if index >= 1024:
             break
-        result = radicalInverse(index, np.arange(PacketSize, dtype=np.uint64))
-        for i in range(PacketSize):
+        result = v.eval(index, np.arange(10, dtype=np.uint64))
+        for i in range(len(result)):
             assert np.abs(r_inv(prime, i) - result[i]) < 1e-7
 
 
-def test03_faurePermutations():
-    ps = PermutationStorage()
-    assert np.all(ps.permutation(0) == [0, 1])
-    assert np.all(ps.permutation(1) == [0, 1, 2])
-    assert np.all(ps.permutation(2) == [0, 3, 2, 1, 4])
-    assert np.all(ps.permutation(3) == [0, 2, 5, 3, 1, 4, 6])
+def test03_faure_permutations():
+    p = RadicalInverse()
+    assert np.all(p.permutation(0) == [0, 1])
+    assert np.all(p.permutation(1) == [0, 1, 2])
+    assert np.all(p.permutation(2) == [0, 3, 2, 1, 4])
+    assert np.all(p.permutation(3) == [0, 2, 5, 3, 1, 4, 6])
 
 
-def test04_scrambledRadicalInverse():
-    p = PermutationStorage().permutation(0)
+def test04_scrambled_radical_inverse():
+    p = RadicalInverse(10, -1)
+    assert np.all(p.permutation(0) == [0, 1])
 
     values = [
         0.0, 0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875, 0.0625, 0.5625,
@@ -73,7 +75,10 @@ def test04_scrambledRadicalInverse():
     ]
 
     for i in range(len(values)):
-        assert(scrambledRadicalInverse(0, i, [0, 1]) == values[i])
+        assert(p.eval_scrambled(0, i) == values[i])
+
+    p = RadicalInverse(10, 3)
+    assert np.all(p.permutation(0) == [1, 0])
 
     values_scrambled = [
         OneMinusEpsilon,
@@ -82,16 +87,12 @@ def test04_scrambledRadicalInverse():
     ]
 
     for i in range(len(values_scrambled)):
-        assert(scrambledRadicalInverse(0, i, [1, 0]) == values_scrambled[i])
+        assert(p.eval_scrambled(0, i) == values_scrambled[i])
 
 
-def test03_scrambledRadicalInverseVectorized():
-    padding = [0, 0, 0]
-
-    result = scrambledRadicalInverse(0, np.arange(PacketSize, dtype=np.uint64), [0, 1] + padding)
-    for i in range(PacketSize):
-        assert np.abs(result[i] - scrambledRadicalInverse(0, i, [0, 1])) < 1e-7
-
-    result = scrambledRadicalInverse(0, np.arange(PacketSize, dtype=np.uint64), [1, 0] + padding)
-    for i in range(PacketSize):
-        assert np.abs(result[i] - scrambledRadicalInverse(0, i, [1, 0])) < 1e-7
+def test02_radical_inverse_vectorized():
+    v = RadicalInverse()
+    for index in range(1024):
+        result = v.eval_scrambled(index, np.arange(10, dtype=np.uint64))
+        for i in range(len(result)):
+            assert np.abs(v.eval_scrambled(index, i) - result[i]) < 1e-7

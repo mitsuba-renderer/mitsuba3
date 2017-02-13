@@ -98,7 +98,7 @@ bool AnnotatedStream::get_base(const std::string &name, const std::string &type_
     return true;
 }
 
-void AnnotatedStream::setBase(const std::string &name, const std::string &type_id) {
+void AnnotatedStream::set_base(const std::string &name, const std::string &type_id) {
     if (!can_write())
         Throw("Attempted to write into read-only stream: %s", m_stream->to_string());
     if (m_is_closed)

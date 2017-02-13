@@ -28,22 +28,22 @@ test_data = {
 
 
 # Writes example contents (with nested names, various types, etc)
-def writeContents(astream, data=test_data):
+def write_contents(astream, data=test_data):
     for (key, val) in sorted(data.items()):
         if type(val) is dict:
             astream.push(key)
-            writeContents(astream, val)
+            write_contents(astream, val)
             astream.pop()
         else:
             astream.set(key, val)
 
 
 # Writes example contents (with nested names, various types, etc)
-def checkContents(astream, data=test_data):
+def check_contents(astream, data=test_data):
     for (key, val) in sorted(data.items()):
         if type(val) is dict:
             astream.push(key)
-            checkContents(astream, val)
+            check_contents(astream, val)
             astream.pop()
         else:
             if type(val) is float:
@@ -73,8 +73,8 @@ def test01_basics(class_, args, request, tmpdir_factory):
             assert astream.size() == 0
 
         # Should have read-only and write-only modes
-        assert astream.canWrite() == write_mode
-        assert astream.canRead() != write_mode
+        assert astream.can_write() == write_mode
+        assert astream.can_read() != write_mode
 
         # Cannot read or write to a closed astream
         astream.close()
@@ -123,7 +123,7 @@ def test03_readback(class_, args, request, tmpdir_factory):
     with pytest.raises(RuntimeError) as e:
         # Need a valid header
         mstream = MemoryStream()
-        mstream.writeLong(123)
+        mstream.write_long(123)
         AnnotatedStream(mstream, False)
     e.match("Error trying to read the table of contents")
 
@@ -133,9 +133,9 @@ def test03_readback(class_, args, request, tmpdir_factory):
             astream.get("test")
         e.match('Key "test" does not exist in AnnotatedStream')
         if write_mode:
-            writeContents(astream)
+            write_contents(astream)
         else:
-            checkContents(astream)
+            check_contents(astream)
         astream.close()
         del astream
 

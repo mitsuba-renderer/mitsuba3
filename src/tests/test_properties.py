@@ -2,7 +2,7 @@ from mitsuba.core import Properties as Prop
 import numpy as np
 
 
-def fillProperties(p):
+def fill_properties(p):
     """Sets up some properties with various types"""
     p['prop_1'] = 1
     p['prop_2'] = '1'
@@ -12,18 +12,18 @@ def fillProperties(p):
 
 def test01_name_and_id():
     p = Prop()
-    p.setID("magic")
-    p.setPluginName("unicorn")
+    p.set_id("magic")
+    p.set_plugin_name("unicorn")
     assert p.id() == "magic"
-    assert p.pluginName() == "unicorn"
+    assert p.plugin_name() == "unicorn"
 
-    p2 = Prop(p.pluginName())
-    assert p.pluginName() == p2.pluginName()
+    p2 = Prop(p.plugin_name())
+    assert p.plugin_name() == p2.plugin_name()
 
 
 def test02_type_is_preserved():
     p = Prop()
-    fillProperties(p)
+    fill_properties(p)
     assert p['prop_1'] == 1
     assert p['prop_2'] == '1'
     assert p['prop_3'] == False
@@ -36,39 +36,42 @@ def test02_type_is_preserved():
 
 def test03_management_of_properties():
     p = Prop()
-    fillProperties(p)
+    fill_properties(p)
     # Existence
-    assert p.hasProperty('prop_1')
-    assert not p.hasProperty('random_unset_property')
+    assert 'prop_1' in p
+    assert p.has_property('prop_1')
+    assert not p.has_property('random_unset_property')
     # Removal
-    assert p.removeProperty('prop_2')
-    assert not p.hasProperty('prop_2')
+    assert p.remove_property('prop_2')
+    assert not p.has_property('prop_2')
     # Update
     p['prop_1'] = 42
-    assert p.hasProperty('prop_1')
+    assert p.has_property('prop_1')
+    del p['prop_1']
+    assert not p.has_property('prop_1')
 
 
 def test04_queried_properties():
     p = Prop()
-    fillProperties(p)
+    fill_properties(p)
     # Make some queries
     _ = p['prop_1']
     _ = p['prop_2']
     # Check queried status
-    assert p.wasQueried('prop_1')
-    assert p.wasQueried('prop_2')
-    assert not p.wasQueried('prop_3')
+    assert p.was_queried('prop_1')
+    assert p.was_queried('prop_2')
+    assert not p.was_queried('prop_3')
     assert p.unqueried(), ['prop_3' == 'prop_4']
 
     # Mark field as queried explicitly
-    p.markQueried('prop_3')
-    assert p.wasQueried('prop_3')
+    p.mark_queried('prop_3')
+    assert p.was_queried('prop_3')
     assert p.unqueried() == ['prop_4']
 
 
 def test05_copy_and_merge():
     p = Prop()
-    fillProperties(p)
+    fill_properties(p)
 
     # Merge with dinstinct sets
     p2 = Prop()
@@ -88,10 +91,10 @@ def test05_copy_and_merge():
 
 def test06_equality():
     p = Prop()
-    fillProperties(p)
+    fill_properties(p)
 
     # Equality should encompass properties, their type,
-    # the instance's pluginName and id properties
+    # the instance's plugin_name and id properties
     p2 = Prop()
     p2['prop_1'] = 1
     p2['prop_2'] = '1'
@@ -101,24 +104,24 @@ def test06_equality():
     p2['prop_4'] = 3.14
     assert p == p2
 
-    p2.setPluginName("some_name")
+    p2.set_plugin_name("some_name")
     assert not p == p2
-    p2.setPluginName("")
-    p2.setID("some_id")
-    p.setID("some_id")
+    p2.set_plugin_name("")
+    p2.set_id("some_id")
+    p.set_id("some_id")
     assert p == p2
 
 
 def test07_printing():
     p = Prop()
-    p.setPluginName('some_plugin')
-    p.setID('some_id')
+    p.set_plugin_name('some_plugin')
+    p.set_id('some_id')
     p['prop_1'] = 1
     p['prop_2'] = 'hello'
 
     assert str(p) == \
 """Properties[
-  pluginName = "some_plugin",
+  plugin_name = "some_plugin",
   id = "some_id",
   elements = {
     "prop_1" -> 1,

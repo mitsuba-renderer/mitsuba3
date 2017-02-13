@@ -1,6 +1,6 @@
 from mitsuba.core.math import log2i
-from mitsuba.core.math import isPowerOfTwo
-from mitsuba.core.math import roundToPowerOfTwo
+from mitsuba.core.math import is_power_of_two
+from mitsuba.core.math import round_to_power_of_two
 
 
 def test01_log2i():
@@ -14,26 +14,26 @@ def test01_log2i():
     assert log2i(8) == 3
 
 
-def test01_isPowerOfTwo():
-    assert not isPowerOfTwo(0)
-    assert isPowerOfTwo(1)
-    assert isPowerOfTwo(2)
-    assert not isPowerOfTwo(3)
-    assert isPowerOfTwo(4)
-    assert not isPowerOfTwo(5)
-    assert not isPowerOfTwo(6)
-    assert not isPowerOfTwo(7)
-    assert isPowerOfTwo(8)
+def test01_is_power_of_two():
+    assert not is_power_of_two(0)
+    assert is_power_of_two(1)
+    assert is_power_of_two(2)
+    assert not is_power_of_two(3)
+    assert is_power_of_two(4)
+    assert not is_power_of_two(5)
+    assert not is_power_of_two(6)
+    assert not is_power_of_two(7)
+    assert is_power_of_two(8)
 
 
-def test01_roundToPowerOfTwo():
-    assert roundToPowerOfTwo(1) == 1
-    assert roundToPowerOfTwo(2) == 2
-    assert roundToPowerOfTwo(3) == 4
-    assert roundToPowerOfTwo(4) == 4
-    assert roundToPowerOfTwo(5) == 8
-    assert roundToPowerOfTwo(6) == 8
-    assert roundToPowerOfTwo(7) == 8
-    assert roundToPowerOfTwo(8) == 8
-    assert roundToPowerOfTwo(0) == 1
+def test01_round_to_power_of_two():
+    assert round_to_power_of_two(0) == 1
+    assert round_to_power_of_two(1) == 1
+    assert round_to_power_of_two(2) == 2
+    assert round_to_power_of_two(3) == 4
+    assert round_to_power_of_two(4) == 4
+    assert round_to_power_of_two(5) == 8
+    assert round_to_power_of_two(6) == 8
+    assert round_to_power_of_two(7) == 8
+    assert round_to_power_of_two(8) == 8
 

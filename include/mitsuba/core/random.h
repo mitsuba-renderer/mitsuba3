@@ -1,3 +1,31 @@
+/*
+ * Tiny self-contained version of the PCG Random Number Generation for C++ put
+ * together from pieces of the much larger C/C++ codebase with vectorization
+ * using Enoki.
+ *
+ * Wenzel Jakob, February 2017
+ *
+ * The PCG random number generator was developed by Melissa O'Neill
+ * <oneill@pcg-random.org>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * For additional information about the PCG random number generation scheme,
+ * including its license and other licensing options, visit
+ *
+ *     http://www.pcg-random.org
+ */
+
 #pragma once
 
 #include <mitsuba/core/simd.h>
@@ -21,7 +49,7 @@ template <typename T> struct MTS_EXPORT_CORE TPCG32 {
 
     /// Initialize the pseudorandom number generator with the \ref seed() function
     TPCG32(UInt64 initstate = PCG32_DEFAULT_STATE,
-           UInt64 initseq = index_sequence<UInt64>()) {
+           UInt64 initseq = index_sequence<UInt64>() + PCG32_DEFAULT_STREAM) {
         seed(initstate, initseq);
     }
 
@@ -50,7 +78,7 @@ template <typename T> struct MTS_EXPORT_CORE TPCG32 {
 
     /// Generate a single precision floating point value on the interval [0, 1)
     Float32 next_float32() {
-        return reinterpret_array<Float32>(sri<9>(next_uint32()) | 0x3f800000) - 1.f;
+        return reinterpret_array<Float32>(sri<9>(next_uint32()) | 0x3f800000u) - 1.f;
     }
 
     /**
@@ -64,7 +92,7 @@ template <typename T> struct MTS_EXPORT_CORE TPCG32 {
         /* Trick from MTGP: generate an uniformly distributed
            double precision number in [1,2) and subtract 1. */
         return reinterpret_array<Float64>(sli<20>(UInt64(next_uint32())) |
-                                          0x3ff0000000000000) - 1.0;
+                                          0x3ff0000000000000ull) - 1.0;
     }
 
     auto next_float() {

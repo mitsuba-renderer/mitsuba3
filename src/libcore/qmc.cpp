@@ -1,22 +1,11 @@
 #include <mitsuba/core/qmc.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
+#include <mitsuba/core/random.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
-#include <tbb/tbb.h>
 
 NAMESPACE_BEGIN(mitsuba)
-NAMESPACE_BEGIN(qmc)
-
-/* Precomputed magic constants for efficient division by a constant.
-   One entry for each of the first 1024 prime numbers -- 16 KiB of data */
-struct PrimeDivisor {
-    enoki::divisor<uint64_t> divisor;
-    uint8_t unused;
-    uint16_t value;
-    float recip;
-};
-
 NAMESPACE_BEGIN(detail)
 
 template <typename T> std::vector<T> sieve(T n) {
@@ -43,192 +32,47 @@ template <typename T> std::vector<T> sieve(T n) {
 
 NAMESPACE_END(detail)
 
-static std::unique_ptr<PrimeDivisor[], enoki::aligned_deleter> prime_divisors;
-static size_t prime_divisor_count = 0;
+RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scramble) {
+    static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
 
-void staticInitialization() {
-    static_assert(sizeof(PrimeDivisor) == 16, "Divisor data structure is not packed!");
-    auto primes = detail::sieve<uint64_t>(8161);
-    Assert(primes.size() == 1024);
+    Timer timer;
+    auto primes = detail::sieve(max_base);
+    Assert(primes.size() > 0);
+    m_base = std::unique_ptr<PrimeBase[], enoki::aligned_deleter>(
+        enoki::alloc<PrimeBase>(primes.size()));
+    m_base_count = primes.size();
 
-    prime_divisor_count = 1024;
-    prime_divisors = std::unique_ptr<PrimeDivisor[], enoki::aligned_deleter>(
-        enoki::alloc<PrimeDivisor>(primes.size()));
+    Log(EDebug, "Precomputing inverses for %i bases (%s)", m_base_count,
+        util::mem_string(sizeof(PrimeBase) * primes.size()));
 
     for (uint64_t i = 0; i< primes.size(); ++i) {
-        PrimeDivisor &d = prime_divisors[i];
+        PrimeBase &d = m_base[i];
         uint64_t value = primes[i];
         d.value = (uint16_t) value;
         d.recip = 1.f / (float) value;
         d.divisor = enoki::divisor<uint64_t>(value);
     }
-}
 
-void staticShutdown() {
-    prime_divisors.reset();
-    prime_divisor_count = 0;
-}
-
-size_t prime_base(size_t index) {
-    if (unlikely(index >= 1024))
-        Throw("prime_base(): out of bounds (prime base too large)");
-    return (size_t) prime_divisors[index].value;
-}
-
-FloatP radicalInverse(size_t primeBase, UInt64P index) {
-    if (unlikely(primeBase >= 1024))
-        Throw("radicalInverse(): out of bounds (prime base too large)");
-    const PrimeDivisor div = prime_divisors[primeBase];
-
-    UInt64P::Mask mask = neq(index, enoki::zero<UInt64P>());
-    UInt64P divisor = UInt64P(div.value);
-    UInt64P value = enoki::zero<UInt64P>();
-    FloatP factor = FloatP(1);
-    FloatP recip = FloatP(div.recip);
-
-    while (any(mask)) {
-        UInt64P next = index / div.divisor;
-        value = value * divisor;
-        auto fmask = reinterpret_array<typename FloatP::Mask>(mask);
-        factor = enoki::select(fmask, factor * recip, factor);
-        value += (index - next*divisor) & mask;
-        index = next;
-        mask = neq(index, enoki::zero<UInt64P>());
-    }
-
-    return min(
-        FloatP(FloatP(value) * factor),
-        FloatP(math::OneMinusEpsilon)
-    );
-}
-
-
-#if 0
-
-
-Float radicalInverse(size_t primeBase, uint64_t index) {
-    static_assert(sizeof(Divisor) == 16, "Divisor data structure is not packed!");
-    if (unlikely(primeBase >= 1024))
-        Throw("radicalInverse(): out of bounds (prime base too large)");
-
-    const Divisor div = prime_divisors[primeBase];
-
-    uint64_t value = 0;
-    Float factor = 1;
-
-    while (index) {
-        uint64_t next  = div(index);
-        value = value * div.divisor;
-        factor *= div.recip;
-        value += index - next*div.divisor;
-        index = next;
-    }
-
-    return std::min(math::OneMinusEpsilon, (Float) value * factor);
-}
-
-FloatP radicalInverse(size_t primeBase, UInt64P index) {
-    if (unlikely(primeBase >= 1024))
-        Throw("radicalInverse(): out of bounds (prime base too large)");
-    const Divisor div = prime_divisors[primeBase];
-
-    UInt64P::Mask mask = neq(index, enoki::zero<UInt64P>());
-    UInt64P divisor = UInt64P(div.divisor);
-    UInt64P value = enoki::zero<UInt64P>();
-    Float64P factor = Float64P(1);
-    Float64P recip = Float64P((double) div.recip);
-
-    while (any(mask)) {
-        UInt64P next = div(index);
-        value = value * divisor;
-        factor = enoki::select(Float64P::Mask(mask), factor * recip, factor);
-        value += (index - next*divisor) & mask;
-        index = next;
-        mask = neq(index, enoki::zero<UInt64P>());
-    }
-
-    return min(
-        FloatP(enoki::cast<Float64P>(value) * factor),
-        FloatP(math::OneMinusEpsilon)
-    );
-}
-
-Float scrambledRadicalInverse(size_t primeBase, uint64_t index, const uint16_t *perm) {
-    static_assert(sizeof(Divisor) == 16, "Divisor data structure is not packed!");
-    if (unlikely(primeBase >= 1024))
-        Throw("radicalInverse(): out of bounds (prime base too large)");
-
-    const Divisor div = prime_divisors[primeBase];
-
-    uint64_t value = 0;
-    Float factor = 1;
-
-    while (index) {
-        uint64_t next  = div(index);
-        value = value * div.divisor;
-        factor *= div.recip;
-        value += perm[index - next*div.divisor];
-        index = next;
-    }
-
-    Float correction = div.recip * perm[0] / (1.0f - div.recip);
-
-    return std::min(math::OneMinusEpsilon,
-                    factor * ((Float) value + correction));
-}
-
-FloatP scrambledRadicalInverse(size_t primeBase, UInt64P index, const uint16_t *perm) {
-    static_assert(sizeof(Divisor) == 16, "Divisor data structure is not packed!");
-    if (unlikely(primeBase >= 1024))
-        Throw("radicalInverse(): out of bounds (prime base too large)");
-    const Divisor div = prime_divisors[primeBase];
-
-    UInt64P::Mask mask = index != enoki::zero<UInt64P>();
-    UInt64P divisor = UInt64P(div.divisor);
-    UInt64P value = enoki::zero<UInt64P>();
-    Float64P factor = Float64P(1);
-    Float64P recip = Float64P((double) div.recip);
-
-    while (enoki::any(mask)) {
-        UInt64P next = div(index);
-        value = value * divisor;
-        factor = enoki::select(Float64P::Mask(mask), factor * recip, factor);
-        UInt64P digit = (index - next*divisor) & mask;
-        digit = enoki::gather<UInt64P>(perm, digit) & UInt64P(0xffff);
-        value += digit;
-        index = next;
-        mask = index != enoki::zero<UInt64P>();
-    }
-
-    Float64P correction = Float64P((double) (div.recip * perm[0] / (1.0f - div.recip)));
-
-    return enoki::min(
-        enoki::cast<FloatP>((enoki::cast<Float64P>(value) + correction) * factor),
-        FloatP(math::OneMinusEpsilon)
-    );
-}
-#endif
-
-PermutationStorage::PermutationStorage(int scramble) : m_scramble(scramble) {
     /* Compute the size of the final permutation table (corresponding to primes) */
     size_t final_size = 0;
-    for (size_t i=0; i<prime_divisor_count; ++i)
-        final_size += prime_divisors[i].value;
+    for (size_t i = 0; i < m_base_count; ++i)
+        final_size += m_base[i].value;
     final_size += 3; /* Padding for 64bit gather operations */
 
     /* Allocate memory for them */
-    m_storage = new uint16_t[final_size];
-    m_permutations = new uint16_t*[prime_divisor_count];
+    m_permutation_storage = std::unique_ptr<uint16_t[]>(new uint16_t[final_size]);
+    m_permutations = std::unique_ptr<uint16_t*[]>(new uint16_t*[m_base_count]);
 
     /* Check whether Faure or random permutations were requested */
-    Timer timer;
     if (scramble == -1) {
         /* Efficiently compute all Faure permutations using dynamic programming */
-        uint16_t initial_bases = prime_divisors[prime_divisor_count-1].value;
-        size_t initial_size = ((size_t) initial_bases * (size_t) (initial_bases + 1))/2;
-        uint16_t *initial_storage = new uint16_t[initial_size];
-        uint16_t **initial_perm = new uint16_t*[initial_bases+1],
-                 *ptr = initial_storage;
+        uint16_t initial_bases = m_base[m_base_count - 1].value;
+        size_t initial_size =
+            ((size_t) initial_bases * (size_t)(initial_bases + 1)) / 2;
+
+        uint16_t *initial_permutation_storage = new uint16_t[initial_size];
+        uint16_t **initial_perm = new uint16_t *[initial_bases + 1],
+                 *ptr = initial_permutation_storage;
 
         Log(EDebug, "Constructing Faure permutations using %s of memory",
             util::mem_string(initial_size * sizeof(uint16_t)));
@@ -243,22 +87,22 @@ PermutationStorage::PermutationStorage(int scramble) : m_scramble(scramble) {
         Log(EDebug, "Compactifying permutations to %s of memory",
             util::mem_string(final_size * sizeof(uint16_t)));
 
-        ptr = m_storage;
-        for (size_t i = 0; i < prime_divisor_count; ++i) {
-            size_t prime = prime_divisors[i].value;
+        ptr = m_permutation_storage.get();
+        for (size_t i = 0; i < m_base_count; ++i) {
+            size_t prime = m_base[i].value;
             memcpy(ptr, initial_perm[prime], prime * sizeof(uint16_t));
             m_permutations[i] = ptr; ptr += prime;
         }
 
-        delete[] initial_storage;
+        delete[] initial_permutation_storage;
         delete[] initial_perm;
     } else {
         Log(EDebug, "Generating random permutations for the seed value = %i", scramble);
 
-        uint16_t *ptr = m_storage;
-        PCG32 p;
-        for (size_t i = 0; i < prime_divisor_count; ++i) {
-            int prime = prime_divisors[i].value;
+        uint16_t *ptr = m_permutation_storage.get();
+        PCG32 p((uint64_t) scramble);
+        for (size_t i = 0; i < m_base_count; ++i) {
+            int prime = m_base[i].value;
             for (int j=0; j<prime; ++j)
                 ptr[j] = (uint16_t) j;
             p.shuffle(ptr, ptr + prime);
@@ -268,19 +112,20 @@ PermutationStorage::PermutationStorage(int scramble) : m_scramble(scramble) {
     Log(EDebug, "Done (took %s)", util::time_string(timer.value()));
 
     /* Invert the first two permutations */
-    m_inv_storage = new uint16_t[5];
-    m_inv_permutations = new uint16_t*[2];
-    m_inv_permutations[0] = m_inv_storage;
-    m_inv_permutations[1] = m_inv_storage + 2;
+    m_inv_permutation_storage = std::unique_ptr<uint16_t[]>(new uint16_t[5]);
+    m_inv_permutations = std::unique_ptr<uint16_t*[]>(new uint16_t*[2]);
+    m_inv_permutations[0] = m_inv_permutation_storage.get();
+    m_inv_permutations[1] = m_inv_permutation_storage.get() + 2;
     invert_permutation(0);
     invert_permutation(1);
 }
 
-PermutationStorage::~PermutationStorage()  {
-    delete[] m_storage;
-    delete[] m_inv_storage;
-    delete[] m_permutations;
-    delete[] m_inv_permutations;
+RadicalInverse::~RadicalInverse() { }
+
+size_t RadicalInverse::base(size_t index) const {
+    if (unlikely(index >= 1024))
+        Throw("RadicalInverse::base(): out of bounds");
+    return (size_t) m_base[index].value;
 }
 
 /**
@@ -289,7 +134,7 @@ PermutationStorage::~PermutationStorage()  {
  * For reference, see "Good permutations for extreme discrepancy"
  * by Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.
  */
-void PermutationStorage::compute_faure_permutations(uint32_t max_base, uint16_t **perm) {
+void RadicalInverse::compute_faure_permutations(uint32_t max_base, uint16_t **perm) {
     Assert(max_base >= 2);
 
     /* Dimension 1 */
@@ -322,13 +167,115 @@ void PermutationStorage::compute_faure_permutations(uint32_t max_base, uint16_t 
     }
 }
 
-void PermutationStorage::invert_permutation(uint32_t i) {
+void RadicalInverse::invert_permutation(uint32_t i) {
     uint16_t *perm    = m_permutations[i],
              *inv_perm = m_inv_permutations[i];
-    for (size_t j = 0; j < prime_divisors[i].value; ++j)
+    for (size_t j = 0; j < m_base[i].value; ++j)
         inv_perm[perm[j]] = j;
 }
 
-MTS_IMPLEMENT_CLASS(PermutationStorage, Object)
-NAMESPACE_END(qmc)
+Float RadicalInverse::eval(size_t base_index, uint64_t index) const {
+    if (unlikely(base_index >= m_base_count))
+        Throw("eval(): out of bounds (prime base too large)");
+
+    const PrimeBase base = m_base[base_index];
+
+    uint64_t value = 0;
+    Float factor = 1;
+
+    while (index) {
+        uint64_t next = base.divisor(index);
+        value = value * base.value;
+        factor *= base.recip;
+        value += index - next * base.value;
+        index = next;
+    }
+
+    return std::min(math::OneMinusEpsilon, (Float) value * factor);
+}
+
+Float RadicalInverse::eval_scrambled(size_t base_index, uint64_t index) const {
+    if (unlikely(base_index >= m_base_count))
+        Throw("eval(): out of bounds (prime base too large)");
+
+    const PrimeBase base = m_base[base_index];
+    const uint16_t *perm = m_permutations[base_index];
+
+    uint64_t value = 0;
+    Float factor = 1;
+
+    while (index) {
+        uint64_t next  = base.divisor(index);
+        value = value * base.value;
+        factor *= base.recip;
+        value += perm[index - next * base.value];
+        index = next;
+    }
+
+    Float correction = base.recip * perm[0] / (1.0f - base.recip);
+
+    return std::min(math::OneMinusEpsilon,
+                    factor * ((Float) value + correction));
+}
+
+FloatP RadicalInverse::eval(size_t base_index, UInt64P index) const {
+    if (unlikely(base_index >= m_base_count))
+        Throw("eval(): out of bounds (prime base too large)");
+
+    const PrimeBase base = m_base[base_index];
+
+    UInt64P value(zero<UInt64P>()),
+            divisor((uint64_t) base.value);
+    FloatP factor = FloatP(1.f),
+           recip(base.recip);
+
+    auto active = neq(index, enoki::zero<UInt64P>());
+
+    while (any(active)) {
+        auto active_f = reinterpret_array<mask_t<FloatP>>(active);
+        UInt64P next = base.divisor(index);
+        factor[active_f] = factor * recip;
+        value[active] = (value - next) * divisor + index;
+        index = next;
+        active = neq(index, enoki::zero<UInt64P>());
+    }
+
+    return min(FloatP(math::OneMinusEpsilon), FloatP(value) * factor);
+}
+
+FloatP RadicalInverse::eval_scrambled(size_t base_index, UInt64P index) const {
+    if (unlikely(base_index >= m_base_count))
+        Throw("eval(): out of bounds (prime base too large)");
+
+    const PrimeBase base = m_base[base_index];
+    const uint16_t *perm = m_permutations[base_index];
+
+    UInt64P value(zero<UInt64P>()),
+            divisor((uint64_t) base.value),
+            mask(0xffffu);
+    FloatP factor(1.f),
+           recip(base.recip);
+
+    auto active = neq(index, enoki::zero<UInt64P>());
+
+    while (any(active)) {
+        auto active_f = reinterpret_array<mask_t<FloatP>>(active);
+        UInt64P next = base.divisor(index);
+        factor[active_f] = factor * recip;
+        UInt64P digit = index - next * divisor;
+        value[active] = value * divisor + (enoki::gather<UInt64P, 2>(perm, digit) & mask);
+        index = next;
+        active = neq(index, enoki::zero<UInt64P>());
+    }
+
+    FloatP correction(base.recip * perm[0] / (1.0f - base.recip));
+    return min(FloatP(math::OneMinusEpsilon), (FloatP(value) + correction) * factor);
+}
+
+std::string RadicalInverse::to_string() const {
+    return tfm::format("RadicalInverse[base_count=%i, scramble=%i]",
+                       m_base_count, m_scramble);
+}
+
+MTS_IMPLEMENT_CLASS(RadicalInverse, Object)
 NAMESPACE_END(mitsuba)

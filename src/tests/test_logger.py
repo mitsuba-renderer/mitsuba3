@@ -8,10 +8,10 @@ def test01_custom():
     logger = Thread.thread().logger()
     formatter = logger.formatter()
     appenders = []
-    while logger.appenderCount() > 0:
+    while logger.appender_count() > 0:
         app = logger.appender(0)
         appenders.append(app)
-        logger.removeAppender(app)
+        logger.remove_appender(app)
 
     try:
         class MyFormatter(Formatter):
@@ -24,8 +24,8 @@ def test01_custom():
             def append(self, level, text):
                 messages.append(text)
 
-        logger.setFormatter(MyFormatter())
-        logger.addAppender(MyAppender())
+        logger.set_formatter(MyFormatter())
+        logger.add_appender(MyAppender())
 
         Log(EInfo, "This is a test message")
         assert len(messages) == 1
@@ -33,7 +33,7 @@ def test01_custom():
                 '200: class=None, thread=main, text=test01_custom(): This is a'
                 ' test message, filename=')
     finally:
-        logger.clearAppenders()
+        logger.clear_appenders()
         for app in appenders:
-            logger.addAppender(app)
-        logger.setFormatter(formatter)
+            logger.add_appender(app)
+        logger.set_formatter(formatter)

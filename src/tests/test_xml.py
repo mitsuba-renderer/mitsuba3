@@ -4,24 +4,24 @@ from mitsuba.core import Thread, EWarn
 import pytest
 
 
-def test01_invalidXML():
+def test01_invalid_xml():
     with pytest.raises(Exception):
         load_string('<?xml version="1.0"?>')
 
 
-def test02_invalidRootNode():
+def test02_invalid_root_node():
     with pytest.raises(Exception):
         load_string('<?xml version="1.0"?><invalid></invalid>')
 
 
-def test03_invalidRootNode():
+def test03_invalid_root_node():
     with pytest.raises(Exception) as e:
         load_string('<?xml version="1.0"?><integer name="a" '
                    'value="10"></integer>')
     e.match('root element "integer" must be an object')
 
 
-def test04_validRootNode():
+def test04_valid_root_node():
     obj1 = load_string('<?xml version="1.0"?>\n<scene version="0.4.0">'
                       '</scene>')
     obj2 = load_string('<scene version="0.4.0"></scene>')
@@ -42,7 +42,7 @@ def test05_duplicateID():
         ' col 14\)')
 
 
-def test06_reservedID():
+def test06_reserved_iD():
     with pytest.raises(Exception) as e:
         load_string('<scene version="0.4.0">' +
                    '<shape type="ply" id="_test"/></scene>')
@@ -50,7 +50,7 @@ def test06_reservedID():
         'are reserved for internal identifiers')
 
 
-def test06_reservedName():
+def test06_reserved_name():
     with pytest.raises(Exception) as e:
         load_string('<scene version="0.4.0">' +
                    '<shape type="ply">' +
@@ -59,7 +59,7 @@ def test06_reservedName():
         'leading underscores are reserved for internal identifiers')
 
 
-def test06_incorrectNesting():
+def test06_incorrect_nesting():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <shape type="ply">
@@ -69,7 +69,7 @@ def test06_incorrectNesting():
     e.match('node "shape" cannot occur as child of a property')
 
 
-def test07_incorrectNesting():
+def test07_incorrect_nesting():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <shape type="ply">
@@ -79,7 +79,7 @@ def test07_incorrectNesting():
     e.match('node "float" cannot occur as child of a property')
 
 
-def test08_incorrectNesting():
+def test08_incorrect_nesting():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <shape type="ply">
@@ -88,7 +88,7 @@ def test08_incorrectNesting():
     e.match('transform operations can only occur in a transform node')
 
 
-def test09_incorrectNesting():
+def test09_incorrect_nesting():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <shape type="ply">
@@ -99,7 +99,7 @@ def test09_incorrectNesting():
     e.match('transform nodes can only contain transform operations')
 
 
-def test10_unknownID():
+def test10_unknown_id():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <ref id="unknown"/>
@@ -107,7 +107,7 @@ def test10_unknownID():
     e.match('reference to unknown object "unknown"')
 
 
-def test11_unknownAttribute():
+def test11_unknown_attribute():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <shape type="ply" param2="abc">
@@ -115,29 +115,29 @@ def test11_unknownAttribute():
     e.match('unexpected attribute "param2" in "shape"')
 
 
-def test12_missingAttribute():
+def test12_missing_attribute():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <integer name="a"/></scene>""")
     e.match('missing attribute "value" in "integer"')
 
 
-def test13_duplicateParameter():
+def test13_duplicate_parameter():
     logger = Thread.thread().logger()
-    l = logger.errorLevel()
+    l = logger.error_level()
     try:
-        logger.setErrorLevel(EWarn)
+        logger.set_error_level(EWarn)
         with pytest.raises(Exception) as e:
             load_string("""<scene version="0.4.0">
                        <integer name="a" value="1"/>
                        <integer name="a" value="1"/>
                        </scene>""")
     finally:
-        logger.setErrorLevel(l)
+        logger.set_error_level(l)
     e.match('Property "a" was specified multiple times')
 
 
-def test14_missingParameter():
+def test14_missing_parameter():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <shape type="ply"/>
@@ -145,7 +145,7 @@ def test14_missingParameter():
     e.match('Property "filename" has not been specified')
 
 
-def test15_incorrectParameterType():
+def test15_incorrect_parameter_type():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <shape type="ply">
@@ -155,7 +155,7 @@ def test15_incorrectParameterType():
         ' \(expected <string>\).')
 
 
-def test16_invalidInteger():
+def test16_invalid_integer():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <integer name="10" value="a"/>
@@ -163,7 +163,7 @@ def test16_invalidInteger():
     e.match('Could not parse integer value "a"')
 
 
-def test17_invalidFloat():
+def test17_invalid_float():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <float name="10" value="a"/>
@@ -171,7 +171,7 @@ def test17_invalidFloat():
     e.match('Could not parse floating point value "a"')
 
 
-def test18_invalidBoolean():
+def test18_invalid_boolean():
     with pytest.raises(Exception) as e:
         load_string("""<scene version="0.4.0">
                    <boolean name="10" value="a"/>
@@ -180,7 +180,7 @@ def test18_invalidBoolean():
             ' -- must be "true" or "false"')
 
 
-def test19_invalidVector():
+def test19_invalid_vector():
     err_str = 'Could not parse floating point value "a"'
     err_str2 = '"value" attribute must have exactly 3 elements'
     err_str3 = 'Can\'t mix and match "value" and "x"/"y"/"z" attributes'

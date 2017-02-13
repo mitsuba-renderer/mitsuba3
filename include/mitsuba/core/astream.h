@@ -93,7 +93,7 @@ public:
     /// Store a field in the serialized file (only valid in write mode)
     template <typename T> void set(const std::string &name, const T &value) {
         using helper = detail::serialization_helper<T>;
-        setBase(name, helper::type_id());
+        set_base(name, helper::type_id());
         if (!name.empty())
             push(name);
         m_stream->write(value);
@@ -148,7 +148,7 @@ protected:
      *
      * Throws if a value was already set with that name (including prefix).
      */
-    void setBase(const std::string &name, const std::string &type_id);
+    void set_base(const std::string &name, const std::string &type_id);
 
     /** \brief Read back the table of contents from the underlying stream and
      * update the in-memory <tt>m_table</tt> accordingly.

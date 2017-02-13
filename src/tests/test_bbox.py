@@ -15,17 +15,17 @@ def test01_basics():
     assert bbox3.valid()
     assert not bbox3.collapsed()
     assert bbox2.volume() == 0
-    assert bbox2.majorAxis() == 0
-    assert bbox2.minorAxis() == 0
+    assert bbox2.major_axis() == 0
+    assert bbox2.minor_axis() == 0
     assert (bbox2.center() == [0, 1, 2]).all()
     assert (bbox2.extents() == [0, 0, 0]).all()
-    assert bbox2.surfaceArea() == 0
+    assert bbox2.surface_area() == 0
     assert bbox3.volume() == 2
-    assert bbox3.surfaceArea() == 10
+    assert bbox3.surface_area() == 10
     assert (bbox3.center() == [1.5, 2.5, 4]).all()
     assert (bbox3.extents() == [1, 1, 2]).all()
-    assert bbox3.majorAxis() == 2
-    assert bbox3.minorAxis() == 0
+    assert bbox3.major_axis() == 2
+    assert bbox3.minor_axis() == 0
     assert (bbox3.min == [1, 2, 3]).all()
     assert (bbox3.max == [2, 3, 5]).all()
     assert (bbox3.corner(0) == [1, 2, 3]).all()

@@ -104,10 +104,10 @@ class ChiSquareTest(object):
         ``(positions, weights)`` instead of just poisitions, the samples are
         considered to be weighted.
         """
-        from mitsuba.core import pcg32
+        from mitsuba.core import PCG32
 
         # Generate a table of uniform variates
-        samples_in = pcg32().nextFloat(self.sample_count, self.sample_dim)
+        samples_in = PCG32().next_float(self.sample_count, self.sample_dim)
 
         # Invoke sampling strategy
         weights_out = None

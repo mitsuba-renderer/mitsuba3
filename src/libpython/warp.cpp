@@ -6,25 +6,23 @@
 MTS_PY_EXPORT(warp) {
     MTS_PY_IMPORT_MODULE(warp, "mitsuba.core.warp");
 
-    m.def("square_to_uniform_sphere",
+    warp.def("square_to_uniform_sphere",
           warp::square_to_uniform_sphere<Vector3f, Point2f>, "sample"_a,
           D(warp, square_to_uniform_sphere));
 
-    m.def("square_to_uniform_sphere",
-          [](const Point2fX &sample) {
-              return vectorize_safe(
-                  warp::square_to_uniform_sphere<Vector3fP, Point2fP>, sample);
-          }, "sample"_a);
+    warp.def(
+        "square_to_uniform_sphere",
+        vectorize_wrapper(warp::square_to_uniform_sphere<Vector3fP, Point2fP>),
+        "sample"_a);
 
-    m.def("square_to_uniform_sphere_pdf",
+    warp.def("square_to_uniform_sphere_pdf",
           warp::square_to_uniform_sphere_pdf<true, Vector3f>, "v"_a,
           D(warp, square_to_uniform_sphere_pdf));
 
-    m.def("square_to_uniform_sphere_pdf",
-          [](const Vector3fX &sample) {
-              return vectorize_safe(
-                  warp::square_to_uniform_sphere_pdf<true, Vector3fP>, sample);
-          }, "sample"_a);
+    warp.def(
+        "square_to_uniform_sphere_pdf",
+        vectorize_wrapper(warp::square_to_uniform_sphere_pdf<true, Vector3fP>),
+        "v"_a);
 
 #if 0
     Old code -- outdated vectorization approach, naming conventions, etc.

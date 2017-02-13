@@ -23,13 +23,13 @@ contents = [82.548, 999, 'some sentence', 424,
 def write_contents(stream):
     for v in contents:
         if type(v) is str:
-            stream.writeString(v)
+            stream.write_string(v)
         elif type(v) is int:
-            stream.writeLong(v)
+            stream.write_long(v)
         elif type(v) is float:
-            stream.writeSingle(v)
+            stream.write_single(v)
         elif type(v) is bool:
-            stream.writeBool(v)
+            stream.write_bool(v)
     stream.flush()
 
 
@@ -38,13 +38,13 @@ def check_contents(stream):
         stream.seek(0)
     for v in contents:
         if type(v) is str:
-            assert v == stream.readString()
+            assert v == stream.read_string()
         elif type(v) is int:
-            assert v == stream.readLong()
+            assert v == stream.read_long()
         elif type(v) is float:
-            assert np.abs(stream.readSingle() - v) / v < 1e-5
+            assert np.abs(stream.read_single() - v) / v < 1e-5
         elif type(v) is bool:
-            assert v == stream.readBool()
+            assert v == stream.read_bool()
 
 
 @pytest.mark.parametrize(*parameters)
@@ -56,14 +56,14 @@ def test01_size_and_pos(class_, args, request, tmpdir_factory):
     assert stream.size() == 0
     assert stream.tell() == 0
 
-    if not stream.canWrite():
+    if not stream.can_write():
         return
 
     stream.write(u'hello'.encode('latin1'))
     stream.flush()
     assert stream.size() == 5
     assert stream.tell() == 5
-    stream.writeLong(42)  # Long (8)
+    stream.write_long(42)  # Long (8)
     stream.flush()
     assert stream.size() == 5 + 8
     assert stream.tell() == 5 + 8
@@ -75,7 +75,7 @@ def test02_truncate(class_, args, request, tmpdir_factory):
                       else arg(request, tmpdir_factory))
                       for arg in args])
 
-    if not stream.canWrite():
+    if not stream.can_write():
         return
     assert stream.size() == 0
     assert stream.tell() == 0
@@ -87,7 +87,7 @@ def test02_truncate(class_, args, request, tmpdir_factory):
     stream.truncate(50)
     assert stream.tell() == 50
     assert stream.size() == 50
-    stream.writeString('hello')
+    stream.write_string('hello')
     stream.flush()
     assert stream.tell() == 50 + 9
     assert stream.size() == 50 + 9
@@ -104,7 +104,7 @@ def test03_seek(class_, args, request, tmpdir_factory):
     assert stream.size() == size
     assert stream.tell() == 0
 
-    if stream.canWrite():
+    if stream.can_write():
         size = 5
         stream.truncate(size)
         assert stream.size() == size
@@ -120,10 +120,10 @@ def test03_seek(class_, args, request, tmpdir_factory):
     assert stream.size() == size
     assert stream.tell() == 20
 
-    if stream.canWrite():
+    if stream.can_write():
         # A subsequent write should start at the correct position
         # and update the size.
-        stream.writeSingle(13.37)
+        stream.write_single(13.37)
         stream.flush()
         assert stream.size() == 20 + 4
         assert stream.tell() == 20 + 4
@@ -135,9 +135,9 @@ def test03_read_back(class_, args, request, tmpdir_factory):
                       else arg(request, tmpdir_factory))
                       for arg in args])
 
-    if stream.canWrite():
+    if stream.can_write():
         write_contents(stream)
-        if stream.canRead():
+        if stream.can_read():
             check_contents(stream)
 
 
@@ -148,18 +148,18 @@ def test04_read_back(class_, args, request, tmpdir_factory):
                       for arg in args])
 
     otherEndianness = Stream.EBigEndian
-    if Stream.hostByteOrder() == otherEndianness:
+    if Stream.host_byte_order() == otherEndianness:
         otherEndianness = Stream.ELittleEndian
 
-    if stream.canWrite():
+    if stream.can_write():
         write_contents(stream)
-        if stream.canRead():
+        if stream.can_read():
             check_contents(stream)
 
     stream.close()
 
-    assert not stream.canRead()
-    assert not stream.canWrite()
+    assert not stream.can_read()
+    assert not stream.can_write()
 
 
 @pytest.mark.parametrize(*parameters)
@@ -170,15 +170,15 @@ def test05_read_back_through_zstream(class_, args, request, tmpdir_factory):
 
     zstream = ZStream(stream)
 
-    assert stream.canRead() == zstream.childStream().canRead()
-    assert stream.canWrite() == zstream.childStream().canWrite()
+    assert stream.can_read() == zstream.child_stream().can_read()
+    assert stream.can_write() == zstream.child_stream().can_write()
 
-    if stream.canWrite():
+    if stream.can_write():
         write_contents(zstream)
         del zstream
         stream.seek(0)
 
-        if stream.canRead():
+        if stream.can_read():
             zstream = ZStream(stream)
             check_contents(zstream)
             del zstream
@@ -186,19 +186,19 @@ def test05_read_back_through_zstream(class_, args, request, tmpdir_factory):
 
 def test06_dummy_stream():
     s = DummyStream()
-    assert s.canWrite()
-    assert not s.canRead()
+    assert s.can_write()
+    assert not s.can_read()
     # string length as a uint32_t (4) + string (11)
-    s.writeString('hello world')
+    s.write_string('hello world')
     s.seek(0)
     with pytest.raises(RuntimeError):
-        s.readLong()
-    s.setByteOrder(Stream.EBigEndian)
+        s.read_long()
+    s.set_byte_order(Stream.EBigEndian)
     assert str(s) == """DummyStream[
-  hostByteOrder = little-endian,
-  byteOrder = big-endian,
-  canRead = 0,
-  canWrite = 0,
+  host_byte_order = little-endian,
+  byte_order = big-endian,
+  can_read = 0,
+  can_write = 1,
   pos = 0,
   size = 15
 ]"""
@@ -207,18 +207,18 @@ def test06_dummy_stream():
 def test07_memory_stream():
     s = MemoryStream(64)
 
-    assert s.canWrite()
-    assert s.canRead()
+    assert s.can_write()
+    assert s.can_read()
 
-    s.writeString('hello world')
-    s.setByteOrder(Stream.EBigEndian)
+    s.write_string('hello world')
+    s.set_byte_order(Stream.EBigEndian)
 
     assert str(s) == """MemoryStream[
-  hostByteOrder = little-endian,
-  byteOrder = big-endian,
-  canRead = 1,
-  canWrite = 1,
-  ownsBuffer = 1,
+  host_byte_order = little-endian,
+  byte_order = big-endian,
+  can_read = 1,
+  can_write = 1,
+  owns_buffer = 1,
   capacity = 64,
   pos = 15,
   size = 15
@@ -229,40 +229,40 @@ def test07_memory_stream():
 def test08_fstream(rw, tmpfile):
         s = FileStream(tmpfile, rw)
 
-        assert s.canRead()
-        assert s.canWrite() == rw
+        assert s.can_read()
+        assert s.can_write() == rw
 
-        if s.canWrite():
-            s.writeLong(42)
+        if s.can_write():
+            s.write_long(42)
             s.flush()
             s.seek(0)
-            assert s.readLong() == 42
+            assert s.read_long() == 42
             s.seek(0)
 
             # Truncating shouldn't change the position if not necessary
             assert s.tell() == 0
             s.truncate(5)
             assert s.tell() == 0
-            s.writeString('hello')
+            s.write_string('hello')
             s.flush()
             assert s.tell() == 0 + 9
             s.truncate(5)
             assert s.tell() == 5
         else:
             with pytest.raises(RuntimeError):
-                s.writeString('hello')
+                s.write_string('hello')
             with pytest.raises(RuntimeError):
                 s.truncate(5)
 
         assert str(s) == """FileStream[
   path = "%s",
-  hostByteOrder = little-endian,
-  byteOrder = little-endian,
-  canRead = 1,
-  canWrite = 1,
+  host_byte_order = little-endian,
+  byte_order = little-endian,
+  can_read = 1,
+  can_write = %i,
   pos = %i,
   size = %i
-]""" % (s.path(), 5 if rw else 0, 5 if rw else 0)
+]""" % (s.path(), 1 if rw else 0, 5 if rw else 0, 5 if rw else 0)
 
         s.close()
 

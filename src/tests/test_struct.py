@@ -5,7 +5,7 @@ import pytest
 import itertools
 
 
-def checkConversion(conv, srcFmt, dstFmt, dataIn, dataOut=None):
+def check_conversion(conv, srcFmt, dstFmt, dataIn, dataOut=None):
     srcData = struct.pack(srcFmt, *dataIn)
     # import binascii
     # print(binascii.hexlify(srcData).decode('utf8'))
@@ -19,22 +19,22 @@ def checkConversion(conv, srcFmt, dstFmt, dataIn, dataOut=None):
 
 def test01_basics():
     s = Struct()
-    assert s.fieldCount() == 0
+    assert s.field_count() == 0
     assert s.alignment() == 1
     assert s.size() == 0
 
     s.append("floatVal", Struct.EFloat32)
-    assert s.fieldCount() == 1
+    assert s.field_count() == 1
     assert s.alignment() == 4
     assert s.size() == 4
 
     s.append("byteVal", Struct.EUInt8)
-    assert s.fieldCount() == 2
+    assert s.field_count() == 2
     assert s.alignment() == 4
     assert s.size() == 8
 
     s.append("halfVal", Struct.EFloat16)
-    assert s.fieldCount() == 3
+    assert s.field_count() == 3
     assert s.alignment() == 4
     assert s.size() == 8
 
@@ -65,9 +65,9 @@ def test01_basics():
 def test02_passthrough(param):
     s = Struct().append("val", param[1])
     ss = StructConverter(s, s)
-    checkConversion(ss, "<" + param[0] + param[0],
-                        "<" + param[0] + param[0],
-                        (100, -101))
+    check_conversion(ss, "<" + param[0] + param[0],
+                         "<" + param[0] + param[0],
+                         (100, -101))
 
 
 @pytest.mark.parametrize('param', itertools.product([
@@ -82,7 +82,7 @@ def test03_convert1(param):
     s1 = Struct().append("val", p1[1])
     s2 = Struct().append("val", p2[1])
     s = StructConverter(s1, s2)
-    checkConversion(s, "<" + p1[0], "<" + p2[0], (1,))
+    check_conversion(s, "<" + p1[0], "<" + p2[0], (1,))
 
 
 @pytest.mark.parametrize('p', [
@@ -96,12 +96,12 @@ def test04_convert_half(p):
         s1 = Struct().append("val", Struct.EFloat16)
         s2 = Struct().append("val", p[1])
         s = StructConverter(s1, s2)
-        checkConversion(s, "<H", "<" + p[0], (15360, ), (1, ))
+        check_conversion(s, "<H", "<" + p[0], (15360, ), (1, ))
 
         s1 = Struct().append("val", p[1])
         s2 = Struct().append("val", Struct.EFloat16)
         s = StructConverter(s1, s2)
-        checkConversion(s, "<" + p[0], "<H", (1, ), (15360, ))
+        check_conversion(s, "<" + p[0], "<H", (1, ), (15360, ))
 
 
 @pytest.mark.parametrize('param', [
@@ -110,16 +110,16 @@ def test04_convert_half(p):
     ("Q", Struct.EUInt64)])
 def test04_bswap(param):
         le = Struct().append("val", param[1])
-        be = Struct(byteOrder=Struct.EBigEndian).append(
+        be = Struct(byte_order=Struct.EBigEndian).append(
                 "val", param[1])
         s1 = StructConverter(le, be)
         s2 = StructConverter(be, le)
-        checkConversion(s1, "<" + param[0] + param[0],
-                        ">" + param[0] + param[0],
-                        (100, 101))
-        checkConversion(s2, ">" + param[0] + param[0],
-                        "<" + param[0] + param[0],
-                        (100, 101))
+        check_conversion(s1, "<" + param[0] + param[0],
+                         ">" + param[0] + param[0],
+                         (100, 101))
+        check_conversion(s2, ">" + param[0] + param[0],
+                         "<" + param[0] + param[0],
+                         (100, 101))
 
 
 @pytest.mark.parametrize('param', [
@@ -131,18 +131,18 @@ def test04_bswap(param):
 def test06_bswap_signed(param):
         # LE -> BE
         le = Struct().append("val", param[1])
-        be = Struct(byteOrder=Struct.EBigEndian).append(
+        be = Struct(byte_order=Struct.EBigEndian).append(
                 "val", param[1])
         s1 = StructConverter(le, be)
-        checkConversion(s1, "<" + param[0] + param[0],
+        check_conversion(s1, "<" + param[0] + param[0],
                         ">" + param[0] + param[0],
                         (100, -101))
         # BE -> LE
         le = Struct().append("val", param[1])
-        be = Struct(byteOrder=Struct.EBigEndian).append(
+        be = Struct(byte_order=Struct.EBigEndian).append(
                 "val", param[1])
         s = StructConverter(be, le)
-        checkConversion(s, ">" + param[0] + param[0],
+        check_conversion(s, ">" + param[0] + param[0],
                         "<" + param[0] + param[0],
                         (100, -101))
 
@@ -154,7 +154,7 @@ def test07_missing():
                  .append("val2", Struct.EInt32, int(Struct.EDefault), 123) \
                  .append("val3", Struct.EInt32)
     s = StructConverter(s1, s2)
-    checkConversion(s, "<ii", "<iii", (1, 3), (1, 123, 3))
+    check_conversion(s, "<ii", "<iii", (1, 3), (1, 123, 3))
 
 
 def test08_remapRange_1():
@@ -162,15 +162,15 @@ def test08_remapRange_1():
         Struct().append("v", Struct.EUInt8, int(Struct.ENormalized)),
         Struct().append("v", Struct.EFloat32)
     )
-    checkConversion(s, "<BBB", "<fff", (0, 1, 255),
-                    (0, np.float32(1.0 / 255.0), 1))
+    check_conversion(s, "<BBB", "<fff", (0, 1, 255),
+                     (0, np.float32(1.0 / 255.0), 1))
 
     s = StructConverter(
         Struct().append("v", Struct.EInt8, int(Struct.ENormalized)),
         Struct().append("v", Struct.EFloat32)
     )
-    checkConversion(s, "<bbb", "<fff", (-128, 0, 127),
-                    (0, np.float32(128 / 255.0), 1))
+    check_conversion(s, "<bbb", "<fff", (-128, 0, 127),
+                     (0, np.float32(128 / 255.0), 1))
 
 
 def test08_remapRange_2():
@@ -178,17 +178,17 @@ def test08_remapRange_2():
         Struct().append("v", Struct.EFloat32),
         Struct().append("v", Struct.EUInt8, int(Struct.ENormalized))
     )
-    checkConversion(s, "<fff", "<BBB",
-                    (0, np.float32(1.0 / 255.0), 1),
-                    (0, 1, 255))
+    check_conversion(s, "<fff", "<BBB",
+                     (0, np.float32(1.0 / 255.0), 1),
+                     (0, 1, 255))
 
     s = StructConverter(
         Struct().append("v", Struct.EFloat32),
         Struct().append("v", Struct.EInt8, int(Struct.ENormalized))
     )
-    checkConversion(s, "<fff", "<bbb",
-                    (0, np.float32(128 / 255.0), 1),
-                    (-128, 0, 127))
+    check_conversion(s, "<fff", "<bbb",
+                     (0, np.float32(128 / 255.0), 1),
+                     (-128, 0, 127))
 
 
 def test08_remapRange_3():
@@ -196,17 +196,17 @@ def test08_remapRange_3():
         Struct().append("v", Struct.EInt16, int(Struct.ENormalized)),
         Struct().append("v", Struct.EUInt8, int(Struct.ENormalized))
     )
-    checkConversion(s, "<hhh", "<BBB",
-                    (-32768, 0, 32767),
-                    (0, 128, 255))
+    check_conversion(s, "<hhh", "<BBB",
+                     (-32768, 0, 32767),
+                     (0, 128, 255))
 
     s = StructConverter(
         Struct().append("v", Struct.EInt8, int(Struct.ENormalized)),
         Struct().append("v", Struct.EUInt16, int(Struct.ENormalized))
     )
-    checkConversion(s, "<bbb", "<HHH",
-                    (-128, 0, 127),
-                    (0, 32896, 65535))
+    check_conversion(s, "<bbb", "<HHH",
+                     (-128, 0, 127),
+                     (0, 32896, 65535))
 
 
 def test09_gamma_0():
@@ -215,9 +215,9 @@ def test09_gamma_0():
                         int(Struct.ENormalized) | int(Struct.EGamma)),
         Struct().append("v", Struct.EFloat32)
     )
-    checkConversion(s, "<BBB", "<fff",
-                    (0, 127, 255),
-                    (0, np.float32(0.212230786), 1))
+    check_conversion(s, "<BBB", "<fff",
+                     (0, 127, 255),
+                     (0, np.float32(0.212230786), 1))
 
 
 def test09_gamma_1():
@@ -226,9 +226,9 @@ def test09_gamma_1():
         Struct().append("v", Struct.EUInt8,
                         int(Struct.ENormalized) | int(Struct.EGamma)),
     )
-    checkConversion(s, "<fff", "<BBB",
-                    (0, np.float32(0.212230786), 1),
-                    (0, 127, 255))
+    check_conversion(s, "<fff", "<BBB",
+                     (0, np.float32(0.212230786), 1),
+                     (0, 127, 255))
 
 
 def test09_fail():
@@ -237,9 +237,9 @@ def test09_fail():
                         flags=int(Struct.EAssert)),
         Struct().append("v", Struct.EInt32)
     )
-    checkConversion(s, "<i", "<i", (10,), (10,))
+    check_conversion(s, "<i", "<i", (10,), (10,))
     with pytest.raises(RuntimeError):
-        checkConversion(s, "<i", "<i", (11,), (11,))
+        check_conversion(s, "<i", "<i", (11,), (11,))
 
 
 def test10_fail():
@@ -248,9 +248,9 @@ def test10_fail():
                         flags=int(Struct.EAssert)),
         Struct().append("v", Struct.EFloat32)
     )
-    checkConversion(s, "<f", "<f", (10,), (10,))
+    check_conversion(s, "<f", "<f", (10,), (10,))
     with pytest.raises(RuntimeError):
-        checkConversion(s, "<f", "<f", (11,), (11,))
+        check_conversion(s, "<f", "<f", (11,), (11,))
 
 
 def test11_fail():
@@ -260,6 +260,6 @@ def test11_fail():
                 .append("v2", Struct.EFloat32),
         Struct().append("v2", Struct.EFloat32)
     )
-    checkConversion(s, "<ff", "<f", (10, 10,), (10,))
+    check_conversion(s, "<ff", "<f", (10, 10,), (10,))
     with pytest.raises(RuntimeError):
-        checkConversion(s, "<ff", "<f", (11, 11), (11,))
+        check_conversion(s, "<ff", "<f", (11, 11), (11,))

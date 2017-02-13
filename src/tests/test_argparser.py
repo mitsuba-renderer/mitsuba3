@@ -18,19 +18,19 @@ def test01_short_args():
     assert c.count() == 0
     assert bool(d)
     assert d.count() == 1
-    assert ap.executableName() == "mitsuba"
+    assert ap.executable_name() == "mitsuba"
 
 
-def test02_parameterValue():
+def test02_parameter_value():
     ap = ArgParser()
     a = ap.add("-a", True)
     ap.parse(['mitsuba', '-a', 'abc', '-axyz'])
     assert bool(a)
     assert a.count() == 2
-    assert a.asString() == 'abc'
+    assert a.as_string() == 'abc'
     with pytest.raises(RuntimeError):
-        a.asInt()
-    assert a.next().asString() == 'xyz'
+        a.as_int()
+    assert a.next().as_string() == 'xyz'
 
 
 def test03_parameterMissing():
@@ -40,13 +40,13 @@ def test03_parameterMissing():
         ap.parse(['mitsuba', '-a'])
 
 
-def test04_parameterFloatAndExtraArgs():
+def test04_parameter_float_and_extraArgs():
     ap = ArgParser()
     f = ap.add("-f", True)
     other = ap.add("", True)
     ap.parse(['mitsuba', 'other', '-f0.25', 'arguments'])
     assert bool(f)
-    assert f.asFloat() == 0.25
+    assert f.as_float() == 0.25
     assert bool(other)
     assert other.count() == 2
 
@@ -59,4 +59,4 @@ def test05_longParametersFailure():
     with pytest.raises(RuntimeError):
         ap.parse(['mitsuba', '--int'])
     ap.parse(['mitsuba', '--int', '34'])
-    assert i.asInt() == 34
+    assert i.as_int() == 34

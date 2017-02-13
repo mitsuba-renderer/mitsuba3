@@ -15,48 +15,55 @@ DISTRIBUTIONS = [
     lambda x: np.ones(x.shape[0]),
      DEFAULT_SETTINGS),
 
+    ('Uniform sphere', SphericalDomain(),
+     warp.square_to_uniform_sphere,
+     warp.square_to_uniform_sphere_pdf,
+     DEFAULT_SETTINGS),
+]
+
+"""
     ('Uniform triangle', PlanarDomain(np.array([[0, 1],
                                                 [0, 1]])),
-     warp.squareToUniformTriangle,
-     warp.squareToUniformTrianglePdf,
+     warp.square_to_uniform_triangle,
+     warp.square_to_uniform_triangle_pdf,
      dict(DEFAULT_SETTINGS, res=100)),
 
     ('Tent function', PlanarDomain(np.array([[-1, 1],
                                              [-1, 1]])),
-     warp.squareToTent,
-     warp.squareToTentPdf,
+     warp.square_to_tent,
+     warp.square_to_tent_pdf,
      DEFAULT_SETTINGS),
 
     ('Uniform disk', PlanarDomain(),
-     warp.squareToUniformDisk,
-     warp.squareToUniformDiskPdf,
+     warp.square_to_uniform_disk,
+     warp.square_to_uniform_disk_pdf,
      DEFAULT_SETTINGS),
 
     ('Uniform disk (concentric)', PlanarDomain(),
-     warp.squareToUniformDiskConcentric,
-     warp.squareToUniformDiskConcentricPdf,
+     warp.square_to_uniform_disk_concentric,
+     warp.square_to_uniform_disk_concentric_pdf,
      DEFAULT_SETTINGS),
 
     ('Uniform sphere', SphericalDomain(),
-     warp.squareToUniformSphere,
-     warp.squareToUniformSpherePdf,
+     warp.square_to_uniform_sphere,
+     warp.square_to_uniform_sphere_pdf,
      DEFAULT_SETTINGS),
 
     ('Uniform hemisphere', SphericalDomain(),
-     warp.squareToUniformHemisphere,
-     warp.squareToUniformHemispherePdf,
+     warp.square_to_uniform_hemisphere,
+     warp.square_to_uniform_hemisphere_pdf,
      DEFAULT_SETTINGS),
 
     ('Cosine hemisphere', SphericalDomain(),
-     warp.squareToCosineHemisphere,
-     warp.squareToCosineHemispherePdf,
+     warp.square_to_cosineHemisphere,
+     warp.square_to_cosineHemisphere_pdf,
      DEFAULT_SETTINGS),
 
     ('Uniform cone', SphericalDomain(),
     lambda sample, angle:
-        warp.squareToUniformCone(sample, np.cos(deg2rad(angle))),
+        warp.square_to_uniform_cone(sample, np.cos(deg2rad(angle))),
     lambda v, angle:
-        warp.squareToUniformConePdf(v, np.cos(deg2rad(angle))),
+        warp.square_to_uniform_cone_pdf(v, np.cos(deg2rad(angle))),
      dict(DEFAULT_SETTINGS,
          parameters=[
              ('Cutoff angle', [1e-4, 180, 20])
@@ -64,10 +71,10 @@ DISTRIBUTIONS = [
 
     ('Beckmann distribution', SphericalDomain(),
     lambda sample, value:
-        warp.squareToBeckmann(sample,
+        warp.square_to_beckmann(sample,
             np.exp(np.log(0.05) * (1 - value) + np.log(1) * value)),
     lambda v, value:
-        warp.squareToBeckmannPdf(v,
+        warp.square_to_beckmann_pdf(v,
             np.exp(np.log(0.05) * (1 - value) + np.log(1) * value)),
      dict(DEFAULT_SETTINGS,
          parameters=[
@@ -75,18 +82,18 @@ DISTRIBUTIONS = [
          ])),
 
     ('von Mises-Fisher distribution', SphericalDomain(),
-     warp.squareToVonMisesFisher,
-     warp.squareToVonMisesFisherPdf,
+     warp.square_to_von_mises_fisher,
+     warp.square_to_von_mises_fisher_pdf,
      dict(DEFAULT_SETTINGS,
          parameters=[
              ('Concentration', [0, 100, 10])
          ])),
 
     ('Rough fiber distribution', SphericalDomain(),
-     lambda sample, kappa, incl: warp.squareToRoughFiber(
+     lambda sample, kappa, incl: warp.square_to_rough_fiber(
          sample, [np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))],
          [1, 0, 0], kappa),
-     lambda v, kappa, incl: warp.squareToRoughFiberPdf(
+     lambda v, kappa, incl: warp.square_to_rough_fiber_pdf(
          v, [np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))],
          [1, 0, 0], kappa),
      dict(DEFAULT_SETTINGS,
@@ -96,4 +103,4 @@ DISTRIBUTIONS = [
              ('Inclination', [0, 90, 20])
          ]))
 ]
-
+"""
