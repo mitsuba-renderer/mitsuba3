@@ -36,40 +36,40 @@ template <typename, typename> class ThreadLocal;
 template <typename> class AtomicFloat;
 
 /* Forward declarations of various vector types */
-template <typename Type, size_t Size>      struct TVector;
-template <typename Type, size_t Size>      struct TPoint;
-template <typename Type>                   struct TNormal;
+template <typename Type, size_t Size>      struct Vector;
+template <typename Type, size_t Size>      struct Point;
+template <typename Type, size_t Size = 3>  struct Normal;
 template <typename Point, typename Vector> struct TRay;
 template <typename Point>                  struct TBoundingBox;
-template <typename Vector>                 struct TFrame;
+template <typename Vector>                 struct Frame;
 
-using Vector1f = TVector<Float, 1>;
-using Vector2f = TVector<Float, 2>;
-using Vector3f = TVector<Float, 3>;
-using Vector4f = TVector<Float, 4>;
+using Vector1f = Vector<Float, 1>;
+using Vector2f = Vector<Float, 2>;
+using Vector3f = Vector<Float, 3>;
+using Vector4f = Vector<Float, 4>;
 
-using Vector1d = TVector<double, 1>;
-using Vector2d = TVector<double, 2>;
-using Vector3d = TVector<double, 3>;
-using Vector4d = TVector<double, 4>;
+using Vector1d = Vector<double, 1>;
+using Vector2d = Vector<double, 2>;
+using Vector3d = Vector<double, 3>;
+using Vector4d = Vector<double, 4>;
 
-using Vector1s = TVector<size_t, 1>;
-using Vector2s = TVector<size_t, 2>;
-using Vector3s = TVector<size_t, 3>;
-using Vector4s = TVector<size_t, 4>;
+using Vector1s = Vector<size_t, 1>;
+using Vector2s = Vector<size_t, 2>;
+using Vector3s = Vector<size_t, 3>;
+using Vector4s = Vector<size_t, 4>;
 
-using Point1f = TPoint<Float, 1>;
-using Point2f = TPoint<Float, 2>;
-using Point3f = TPoint<Float, 3>;
-using Point4f = TPoint<Float, 4>;
+using Point1f = Point<Float, 1>;
+using Point2f = Point<Float, 2>;
+using Point3f = Point<Float, 3>;
+using Point4f = Point<Float, 4>;
 
-using Point1d = TPoint<double, 1>;
-using Point2d = TPoint<double, 2>;
-using Point3d = TPoint<double, 3>;
-using Point4d = TPoint<double, 4>;
+using Point1d = Point<double, 1>;
+using Point2d = Point<double, 2>;
+using Point3d = Point<double, 3>;
+using Point4d = Point<double, 4>;
 
-using Normal3f = TNormal<Float>;
-using Normal3d = TNormal<double>;
+using Normal3f = Normal<Float, 3>;
+using Normal3d = Normal<double, 3>;
 
 using BoundingBox1f = TBoundingBox<Point1f>;
 using BoundingBox2f = TBoundingBox<Point2f>;
@@ -79,7 +79,7 @@ using BoundingBox4f = TBoundingBox<Point4f>;
 using Ray2f = TRay<Point2f, Vector2f>;
 using Ray3f = TRay<Point3f, Vector3f>;
 
-using Frame3f = TFrame<Vector3f>;
+using Frame3f = Frame<Vector3f>;
 
 NAMESPACE_BEGIN(filesystem)
 class path;

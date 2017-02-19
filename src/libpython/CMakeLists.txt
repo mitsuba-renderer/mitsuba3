@@ -97,6 +97,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   vector.cpp
   bbox.cpp
   frame.cpp
+  transform.cpp
   ray.cpp
   struct.cpp
   bitmap.cpp

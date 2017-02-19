@@ -13,14 +13,17 @@ using namespace enoki;
 
 constexpr size_t PacketSize = Array<float>::Size;
 
-using FloatP   = Array<Float,        PacketSize>;
-using Float16P = Array<enoki::half,  PacketSize>;
-using Float32P = Array<float,        PacketSize>;
-using Float64P = Array<double,       PacketSize>;
-using Int32P   = Array<int32_t,      PacketSize>;
-using UInt32P  = Array<uint32_t,     PacketSize>;
-using Int64P   = Array<int64_t,      PacketSize>;
-using UInt64P  = Array<uint64_t,     PacketSize>;
+using FloatP        = Array<Float,        PacketSize, false>;
+using Float16P      = Array<enoki::half,  PacketSize, false>;
+using Float32P      = Array<float,        PacketSize, false>;
+using Float64P      = Array<double,       PacketSize, false>;
+
+using ApproxFloatP  = Array<Float,        PacketSize>;
+
+using Int32P        = Array<int32_t,      PacketSize>;
+using UInt32P       = Array<uint32_t,     PacketSize>;
+using Int64P        = Array<int64_t,      PacketSize>;
+using UInt64P       = Array<uint64_t,     PacketSize>;
 
 //! @}
 // =============================================================
@@ -45,23 +48,23 @@ using UInt64X  = DynamicArray<UInt64P>;
 //! @{ \name Packet types for vectors, points, rays, etc.
 // =============================================================
 
-using Vector2fP = TVector<FloatP, 3>;
-using Vector2fX = TVector<FloatX, 3>;
+using Vector2fP = Vector<FloatP, 3>;
+using Vector2fX = Vector<FloatX, 3>;
 
-using Vector4fP = TVector<FloatP, 4>;
-using Vector4fX = TVector<FloatX, 4>;
+using Vector4fP = Vector<FloatP, 4>;
+using Vector4fX = Vector<FloatX, 4>;
 
-using Vector3fP = TVector<FloatP, 3>;
-using Vector3fX = TVector<FloatX, 3>;
+using Vector3fP = Vector<FloatP, 3>;
+using Vector3fX = Vector<FloatX, 3>;
 
-using Point2fP  = TPoint<FloatP, 2>;
-using Point2fX  = TPoint<FloatX, 2>;
+using Point2fP  = Point<FloatP, 2>;
+using Point2fX  = Point<FloatX, 2>;
 
-using Point3fP  = TPoint<FloatP, 3>;
-using Point3fX  = TPoint<FloatX, 3>;
+using Point3fP  = Point<FloatP, 3>;
+using Point3fX  = Point<FloatX, 3>;
 
-using Normal3fP = TNormal<FloatP>;
-using Normal3fX = TNormal<FloatX>;
+using Normal3fP = Normal<FloatP>;
+using Normal3fX = Normal<FloatX>;
 
 using Ray3fP    = TRay<Point3fP, Vector3fP>;
 using Ray3fX    = TRay<Point3fX, Vector3fX>;

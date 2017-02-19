@@ -133,7 +133,7 @@ AnnotatedStream sentry (kSerializedHeaderId).)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_set = R"doc(Store a field in the serialized file (only valid in write mode))doc";
 
-static const char *__doc_mitsuba_AnnotatedStream_setBase =
+static const char *__doc_mitsuba_AnnotatedStream_set_base =
 R"doc(Attempts to associate the current position of the stream to the given
 field. The active prefix (from previous push operations) is prepended
 to the ``name`` of the field.
@@ -907,6 +907,81 @@ Parameter ``line``:
 Parameter ``msg``:
     Text content associated with the log message)doc";
 
+static const char *__doc_mitsuba_Frame =
+R"doc(Stores a three-dimensional orthonormal coordinate frame
+
+This class is used to convert between different cartesian coordinate
+systems and to efficiently evaluate trigonometric functions in a
+spherical coordinate system whose pole is aligned with the ``n`` axis
+(e.g. cos_theta(), sin_phi(), etc.).)doc";
+
+static const char *__doc_mitsuba_Frame_Frame = R"doc(Default constructor -- performs no initialization!)doc";
+
+static const char *__doc_mitsuba_Frame_Frame_2 = R"doc(Given a normal and tangent vectors, construct a new coordinate frame)doc";
+
+static const char *__doc_mitsuba_Frame_Frame_3 = R"doc(Construct a frame from the given orthonormal vectors)doc";
+
+static const char *__doc_mitsuba_Frame_Frame_4 = R"doc(Construct a new coordinate frame from a single vector)doc";
+
+static const char *__doc_mitsuba_Frame_cos_phi =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the cosine of the phi parameter in spherical coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_cos_phi_2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared cosine of the phi parameter in spherical
+coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_cos_theta =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the cosine of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_cos_theta_2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared cosine of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_n = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_eq = R"doc(Equality test)doc";
+
+static const char *__doc_mitsuba_Frame_operator_ne = R"doc(Inequality test)doc";
+
+static const char *__doc_mitsuba_Frame_s = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_sin_phi =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the sine of the phi parameter in spherical coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_sin_phi_2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared sine of the phi parameter in spherical coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_sin_theta =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the sine of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_sin_theta_2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared sine of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_t = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_tan_theta =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the tangent of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_tan_theta_2 =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the squared tangent of the angle between the normal and v)doc";
+
+static const char *__doc_mitsuba_Frame_to_local = R"doc(Convert from world coordinates to local coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_to_world = R"doc(Convert from local coordinates to world coordinates)doc";
+
+static const char *__doc_mitsuba_Frame_uv =
+R"doc(Assuming that the given direction is in the local coordinate system,
+return the u and v coordinates of the vector 'v')doc";
+
 static const char *__doc_mitsuba_GLTexture = R"doc()doc";
 
 static const char *__doc_mitsuba_GLTexture_EInterpolation = R"doc()doc";
@@ -1057,7 +1132,10 @@ static const char *__doc_mitsuba_Logger_static_initialization = R"doc(Initialize
 
 static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging)doc";
 
-static const char *__doc_mitsuba_Matrix4f = R"doc()doc";
+static const char *__doc_mitsuba_Matrix4f =
+R"doc(Bare-bones 4x4 matrix for homogeneous coordinate transformations
+
+All operations are efficiently mapped onto Enoki arrays)doc";
 
 static const char *__doc_mitsuba_Matrix4f_Matrix4f = R"doc()doc";
 
@@ -1087,9 +1165,9 @@ static const char *__doc_mitsuba_Matrix4f_Matrix4f_9 = R"doc(Construct from a ma
 
 static const char *__doc_mitsuba_Matrix4f_identity = R"doc()doc";
 
-static const char *__doc_mitsuba_Matrix4f_operator_mul = R"doc(Matrix-matrix multiplication)doc";
+static const char *__doc_mitsuba_Matrix4f_inverse = R"doc()doc";
 
-static const char *__doc_mitsuba_Matrix4f_transpose = R"doc()doc";
+static const char *__doc_mitsuba_Matrix4f_operator_mul = R"doc(Matrix-matrix multiplication)doc";
 
 static const char *__doc_mitsuba_MemoryStream =
 R"doc(Simple memory buffer-based stream with automatic memory management. It
@@ -1645,9 +1723,8 @@ R"doc(Calculate a scrambled radical inverse function
 
 This function is used as a building block to construct permuted Halton
 and Hammersley sequence variants. It works like the normal radical
-inverse function radical_inverse(), except that every digit is run
-through an extra scrambling permutation specified as array of size
-``base``.)doc";
+inverse function eval(), except that every digit is run through an
+extra scrambling permutation.)doc";
 
 static const char *__doc_mitsuba_RadicalInverse_eval_scrambled_2 = R"doc(Vectorized implementation of eval_scrambled())doc";
 
@@ -2310,81 +2387,6 @@ holds for each component ``i``.)doc";
 
 static const char *__doc_mitsuba_TBoundingBox_volume = R"doc(Calculate the n-dimensional volume of the bounding box)doc";
 
-static const char *__doc_mitsuba_TFrame =
-R"doc(Stores a three-dimensional orthonormal coordinate frame
-
-This class is used to convert between different cartesian coordinate
-systems and to efficiently evaluate trigonometric functions in a
-spherical coordinate system whose pole is aligned with the ``n`` axis
-(e.g. cos_theta(), sin_phi(), etc.).)doc";
-
-static const char *__doc_mitsuba_TFrame_TFrame = R"doc(Default constructor -- performs no initialization!)doc";
-
-static const char *__doc_mitsuba_TFrame_TFrame_2 = R"doc(Given a normal and tangent vectors, construct a new coordinate frame)doc";
-
-static const char *__doc_mitsuba_TFrame_TFrame_3 = R"doc(Construct a frame from the given orthonormal vectors)doc";
-
-static const char *__doc_mitsuba_TFrame_TFrame_4 = R"doc(Construct a new coordinate frame from a single vector)doc";
-
-static const char *__doc_mitsuba_TFrame_cos_phi =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the cosine of the phi parameter in spherical coordinates)doc";
-
-static const char *__doc_mitsuba_TFrame_cos_phi_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared cosine of the phi parameter in spherical
-coordinates)doc";
-
-static const char *__doc_mitsuba_TFrame_cos_theta =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the cosine of the angle between the normal and v)doc";
-
-static const char *__doc_mitsuba_TFrame_cos_theta_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared cosine of the angle between the normal and v)doc";
-
-static const char *__doc_mitsuba_TFrame_n = R"doc()doc";
-
-static const char *__doc_mitsuba_TFrame_operator_eq = R"doc(Equality test)doc";
-
-static const char *__doc_mitsuba_TFrame_operator_ne = R"doc(Inequality test)doc";
-
-static const char *__doc_mitsuba_TFrame_s = R"doc()doc";
-
-static const char *__doc_mitsuba_TFrame_sin_phi =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the sine of the phi parameter in spherical coordinates)doc";
-
-static const char *__doc_mitsuba_TFrame_sin_phi_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared sine of the phi parameter in spherical coordinates)doc";
-
-static const char *__doc_mitsuba_TFrame_sin_theta =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the sine of the angle between the normal and v)doc";
-
-static const char *__doc_mitsuba_TFrame_sin_theta_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared sine of the angle between the normal and v)doc";
-
-static const char *__doc_mitsuba_TFrame_t = R"doc()doc";
-
-static const char *__doc_mitsuba_TFrame_tan_theta =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the tangent of the angle between the normal and v)doc";
-
-static const char *__doc_mitsuba_TFrame_tan_theta_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared tangent of the angle between the normal and v)doc";
-
-static const char *__doc_mitsuba_TFrame_to_local = R"doc(Convert from world coordinates to local coordinates)doc";
-
-static const char *__doc_mitsuba_TFrame_to_world = R"doc(Convert from local coordinates to world coordinates)doc";
-
-static const char *__doc_mitsuba_TFrame_uv =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the u and v coordinates of the vector 'v')doc";
-
 static const char *__doc_mitsuba_TPCG32 = R"doc()doc";
 
 static const char *__doc_mitsuba_TPCG32_TPCG32 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
@@ -2952,10 +2954,6 @@ static const char *__doc_mitsuba_TShapeKDTree_stop_primitives =
 R"doc(Return the number of primitives, at which recursion will stop when
 building the tree.)doc";
 
-static const char *__doc_mitsuba_TVector = R"doc(//! @{ \name Elementary vector, point, and normal data types)doc";
-
-static const char *__doc_mitsuba_TVector_TVector = R"doc()doc";
-
 static const char *__doc_mitsuba_Thread =
 R"doc(Cross-platform thread implementation
 
@@ -3157,15 +3155,37 @@ static const char *__doc_mitsuba_Timer = R"doc()doc";
 
 static const char *__doc_mitsuba_Timer_Timer = R"doc()doc";
 
-static const char *__doc_mitsuba_Timer_beginStage = R"doc()doc";
+static const char *__doc_mitsuba_Timer_begin_stage = R"doc()doc";
 
-static const char *__doc_mitsuba_Timer_endStage = R"doc()doc";
+static const char *__doc_mitsuba_Timer_end_stage = R"doc()doc";
 
 static const char *__doc_mitsuba_Timer_reset = R"doc()doc";
 
 static const char *__doc_mitsuba_Timer_start = R"doc()doc";
 
 static const char *__doc_mitsuba_Timer_value = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_Transform = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_Transform_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_Transform_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_bla = R"doc(Transform a 3D point)doc";
+
+static const char *__doc_mitsuba_Transform_m_inverse = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_m_value = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul_2 = R"doc(Transform a 3D point)doc";
+
+static const char *__doc_mitsuba_Vector = R"doc(//! @{ \name Elementary vector, point, and normal data types)doc";
+
+static const char *__doc_mitsuba_Vector_Vector = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream =
 R"doc(Transparent compression/decompression stream based on ``zlib``.
@@ -3597,6 +3617,8 @@ static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
+
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

@@ -8,7 +8,7 @@
 #  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
-#include <Eigen/Core>
+//#include <Eigen/Core>
 
 #if defined(__GNUG__)
 #  pragma GCC diagnostic pop
@@ -268,6 +268,7 @@ template <typename T> struct serialization_helper<std::set<T>> {
     }
 };
 
+#if 0
 template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
 struct serialization_helper<Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>> {
     typedef Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> Matrix;
@@ -298,6 +299,7 @@ struct serialization_helper<Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, 
         }
     }
 };
+#endif
 
 NAMESPACE_END(detail)
 NAMESPACE_END(mitsuba)

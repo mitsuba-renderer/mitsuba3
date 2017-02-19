@@ -49,6 +49,7 @@ add_library(mitsuba-core-obj OBJECT
   warp.cpp             ${INC_DIR}/warp.h
   random.cpp           ${INC_DIR}/random.h
   qmc.cpp              ${INC_DIR}/qmc.h
+  transform.cpp        ${INC_DIR}/transform.h
 
   stream.cpp           ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
   astream.cpp          ${INC_DIR}/astream.h ${INC_DIR}/dstream.h
