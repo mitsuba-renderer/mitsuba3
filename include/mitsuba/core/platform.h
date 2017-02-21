@@ -119,4 +119,9 @@ NAMESPACE_BEGIN(mitsuba)
 #  pragma warning (disable: 4127)
 #endif
 
+/* C++ version */
+#if __cplusplus > 201402L
+#  define MTS_CPP17
+#endif
+
 NAMESPACE_END(mitsuba)
