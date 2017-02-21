@@ -18,9 +18,10 @@ def check_vectorization(func, pdf_func, resolution = 10):
 
     # Check against the scalar version
     for i in range(samples.shape[1]):
-        assert np.allclose(result[i, :], func(samples[i, :]))
+        assert np.allclose(result[i, :][2], func(samples[i, :])[2], atol=1e-7)
         pdf_func(result[i, :])
-        assert np.allclose(pdf[i], pdf_func(result[i, :]))
+        assert np.allclose(pdf[i], pdf_func(result[i, :]), atol=1e-7)
+
 
 def test_square_to_uniform_sphere():
     from mitsuba.core.warp import square_to_uniform_sphere
@@ -35,39 +36,100 @@ def test_square_to_uniform_sphere_vec():
     check_vectorization(square_to_uniform_sphere, square_to_uniform_sphere_pdf)
 
 
-
 def test_square_to_uniform_hemisphere():
-    from mitsuba.core import square_to_uniform_hemisphere
+    from mitsuba.core.warp import square_to_uniform_hemisphere
+    assert(np.allclose(square_to_uniform_hemisphere([0.5, 0.5]), [0, 0, 1]))
+    assert(np.allclose(square_to_uniform_hemisphere([0, 0.5]), [-1, 0, 0]))
 
-    assert(np.allclose(square_to_uniform_hemisphere([0, 0]), [1, 0,  0]))
-    assert(np.allclose(square_to_uniform_hemisphere([0, 1]), [0, 0, 1]))
 
 def test_square_to_uniform_hemisphere_vec():
-    from mitsuba.core import square_to_uniform_hemisphere
-    from mitsuba.core import square_to_uniform_hemisphere_pdf
+    from mitsuba.core.warp import square_to_uniform_hemisphere
+    from mitsuba.core.warp import square_to_uniform_hemisphere_pdf
     check_vectorization(square_to_uniform_hemisphere, square_to_uniform_hemisphere_pdf)
 
 
-
 def test_square_to_uniform_disk_concentric():
-    from mitsuba.core import square_to_uniform_disk_concentric
+    from mitsuba.core.warp import square_to_uniform_disk_concentric
     from math import sqrt
-
-    assert(np.allclose(square_to_uniform_disk_concentric([0, 0]), ([-1 / sqrt(2),  -1 / sqrt(2)] )))
+    assert(np.allclose(square_to_uniform_disk_concentric([0, 0]), ([-1 / sqrt(2),  -1 / sqrt(2)])))
     assert(np.allclose(square_to_uniform_disk_concentric([0.5, .5]), [0, 0]))
 
 
-
 def test_square_to_cosine_hemisphere():
-    from mitsuba.core import square_to_cosine_hemisphere
-
+    from mitsuba.core.warp import square_to_cosine_hemisphere
     assert(np.allclose(square_to_cosine_hemisphere([0.5, 0.5]), [0,  0,  1]))
     assert(np.allclose(square_to_cosine_hemisphere([0.5,   0]), [0, -1, 0], atol=1e-7))
     
 
 def test_square_to_uniform_cone():
-    from mitsuba.core import square_to_uniform_cone
-
+    from mitsuba.core.warp import square_to_uniform_cone
     assert(np.allclose(square_to_uniform_cone([0.5, 0.5], 1), [0, 0, 1]))
     assert(np.allclose(square_to_uniform_cone([0.5, 0],   1), [0, 0, 1], atol=1e-7))
     assert(np.allclose(square_to_uniform_cone([0.5, 0],   0), [0, 0, 1], atol=1e-7))
+
+
+def test_square_to_uniform_disk():
+    from mitsuba.core.warp import square_to_uniform_disk
+    assert(np.allclose(square_to_uniform_disk([0.5, 0]), [0, 0]))
+    assert(np.allclose(square_to_uniform_disk([0, 1]),   [1, 0]))
+    assert(np.allclose(square_to_uniform_disk([0.5, 1]), [-1, 0], atol=1e-7))
+    assert(np.allclose(square_to_uniform_disk([1, 1]),   [1, 0], atol=1e-6))
+
+
+def test_disk_to_uniform_square_concentric():
+    from mitsuba.core.warp import square_to_uniform_disk_concentric
+    from mitsuba.core.warp import disk_to_uniform_square_concentric
+    assert(np.allclose(square_to_uniform_disk_concentric(disk_to_uniform_square_concentric([0, 0])),      [0, 0]))
+    assert(np.allclose(square_to_uniform_disk_concentric(disk_to_uniform_square_concentric([0.5, 0.5])),  [0.5, 0.5]))
+    assert(np.allclose(square_to_uniform_disk_concentric(disk_to_uniform_square_concentric([0.25, 0.5])), [0.25, 0.5]))
+    assert(np.allclose(square_to_uniform_disk_concentric(disk_to_uniform_square_concentric([0.5, 0.25])), [0.5, 0.25]))
+
+
+def test_square_to_uniform_triangle():
+    from mitsuba.core.warp import square_to_uniform_triangle
+    assert(np.allclose(square_to_uniform_triangle([0, 0]),   [0, 0]))
+    assert(np.allclose(square_to_uniform_triangle([0, 0.1]), [0, 0.1]))
+    assert(np.allclose(square_to_uniform_triangle([0, 1]),   [0, 1]))
+    assert(np.allclose(square_to_uniform_triangle([1, 0]),   [1, 0]))
+    assert(np.allclose(square_to_uniform_triangle([1, 0.5]), [1, 0]))
+    assert(np.allclose(square_to_uniform_triangle([1, 1]),   [1, 0]))
+
+
+def test_square_to_std_normal_pdf():
+    from mitsuba.core.warp import square_to_std_normal_pdf
+    assert(np.allclose(square_to_std_normal_pdf([0, 0]),   0.16, atol=1e-2))
+    assert(np.allclose(square_to_std_normal_pdf([0, 0.8]), 0.12, atol=1e-2))
+    assert(np.allclose(square_to_std_normal_pdf([0.8, 0]), 0.12, atol=1e-2))
+
+
+def test_interval_to_tent():
+    from mitsuba.core.warp import interval_to_tent
+    assert(np.allclose(interval_to_tent(0.5), 0))
+    assert(np.allclose(interval_to_tent(0),   1))
+    assert(np.allclose(interval_to_tent(1),   -1))
+
+
+def test_interval_to_nonuniform_tent():
+    from mitsuba.core.warp import interval_to_nonuniform_tent
+    assert(np.allclose(interval_to_nonuniform_tent(0, 0.5, 1, 0.499), 0.499, atol=1e-3))
+    assert(np.allclose(interval_to_nonuniform_tent(0, 0.5, 1, 0), 0))
+    assert(np.allclose(interval_to_nonuniform_tent(0, 0.5, 1, 0.5), 1))
+
+
+def test_square_to_tent():
+    from mitsuba.core.warp import square_to_tent
+    assert(np.allclose(square_to_tent([0.5, 0.5]), [0, 0]))
+    assert(np.allclose(square_to_tent([0, 0.5]), [1, 0]))
+    assert(np.allclose(square_to_tent([1, 0]), [-1, 1]))
+
+
+def test_square_to_std_normal():
+    from mitsuba.core.warp import square_to_std_normal
+    assert(np.allclose(square_to_std_normal([0, 0]), [0, 0]))
+    assert(np.allclose(square_to_std_normal([0, 1]), [0, 0]))
+    assert(np.allclose(square_to_std_normal([0.39346, 0]), [1, 0], atol=1e-3))
+
+# TODO Test
+#	square_to_beckmann
+#
+#	pdf functions
