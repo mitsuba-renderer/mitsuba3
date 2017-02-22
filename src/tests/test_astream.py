@@ -83,6 +83,8 @@ def test01_basics(class_, args, request, tmpdir_factory):
         with pytest.raises(RuntimeError):
             astream.set('some_field', 42)
 
+    stream.close()
+
 
 def test02_toc():
     # Build a tree of prefixes
@@ -138,6 +140,7 @@ def test03_readback(class_, args, request, tmpdir_factory):
             check_contents(astream)
         astream.close()
         del astream
+    stream.close()
 
 
 @pytest.mark.skip(reason="Not yet implemented")
