@@ -349,3 +349,4 @@ foreach(ITEM ${MITSUBA_DIST})
 endforeach()
 
 add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})
+set_property(TARGET dist-copy PROPERTY FOLDER misc)

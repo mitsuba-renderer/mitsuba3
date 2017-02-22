@@ -10,3 +10,4 @@ foreach(FNAME ${PYTHON_FILES})
 endforeach()
 
 add_custom_target(python-copy ALL DEPENDS ${PYTHON_OUTPUT})
+set_property(TARGET python-copy PROPERTY FOLDER misc)
