@@ -1,6 +1,8 @@
 #
 # This script adds Mitsuba to the current path.
-# It works with both Bash and Zsh.
+# It works with both Bash and Zsh and assumes that Mitsuba
+# is compiled within the source tree or a subdirectory
+# named 'build'.
 #
 # NOTE: this script must be sourced and not run, i.e.
 #    . setpath.sh        for Bash
