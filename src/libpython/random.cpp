@@ -5,8 +5,8 @@ MTS_PY_EXPORT(random) {
     py::class_<PCG32> PCG32_(m, "PCG32", D(TPCG32));
     PCG32_
         .def(py::init<uint64_t, uint64_t>(), D(TPCG32, TPCG32),
-             "initstate"_a = PCG32_DEFAULT_STATE + PCG32_DEFAULT_STREAM,
-             "initseq"_a = index_sequence<uint64_t>())
+             "initstate"_a = PCG32_DEFAULT_STATE,
+             "initseq"_a = index_sequence<uint64_t>() + PCG32_DEFAULT_STREAM)
         .def(py::init<const PCG32 &>(), "Copy constructor")
         .def("seed", &PCG32::seed, "initstate"_a, "initseq"_a = 1u, D(TPCG32, seed))
         .def("next_uint32", py::overload_cast<>(&PCG32::next_uint32), D(TPCG32, next_uint32))

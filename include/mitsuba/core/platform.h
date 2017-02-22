@@ -30,6 +30,16 @@
 #  define MTS_EXPORT_CORE MTS_IMPORT
 #endif
 
+#if defined(_MSC_VER)
+#  if MTS_BUILD_MODULE == MTS_MODULE_CORE
+#    define MTS_EXPORT_CORE_TEMPLATE extern template struct
+#  else
+#    define MTS_EXPORT_CORE_TEMPLATE extern template struct MTS_IMPORT
+#endif
+#else
+#  define MTS_EXPORT_CORE_TEMPLATE extern template struct MTS_EXPORT_CORE
+#endif
+
 #if MTS_BUILD_MODULE == MTS_MODULE_RENDER
 #  define MTS_EXPORT_RENDER MTS_EXPORT
 #else
@@ -97,11 +107,16 @@ NAMESPACE_BEGIN(mitsuba)
 /* Processor architecture */
 #if defined(_MSC_VER)
 #  if defined(_M_X86) && !defined(__i386__)
-#    define __i386__
+#    error 32-bit builds are not supported. Please run cmake-gui.exe, delete the cache, and \
+           regenerate a new version of the build system that uses a 64 bit version of the compiler
 #  endif
 #  if defined(_M_X64) && !defined(__x86_64__)
 #    define __x86_64__
 #  endif
+#endif
+
+#if defined(_MSC_VER) // warning C4127: conditional expression is constant
+#  pragma warning (disable: 4127)
 #endif
 
 NAMESPACE_END(mitsuba)

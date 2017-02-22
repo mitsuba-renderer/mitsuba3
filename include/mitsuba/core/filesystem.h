@@ -9,9 +9,9 @@
  * This class is just a temporary workaround to avoid the heavy boost
  * dependency until C++17 compiler support picks-up.
  *
- * Copyright (c) 2015-2016 Wenzel Jakob <wenzel@inf.ethz.ch>
+ * Copyright (c) 2017 Wenzel Jakob <wenzel.jakob@epfl.ch>
  * All rights reserved. Use of this source code is governed by a
-    BSD-style license that can be found in the LICENSE file.
+ * BSD-style license that can be found in the LICENSE file.
  */
 
 #include <mitsuba/core/fwd.h>
@@ -124,7 +124,7 @@ public:
     path& replace_extension(const path& replacement = path());
 
     /// Returns the filename component of the path, including the extension.
-    string_type filename() const;
+    path filename() const;
 
     /** \brief Returns the path in the form of a native string, so that it can
      * be passed directly to system APIs. The path is constructed using the

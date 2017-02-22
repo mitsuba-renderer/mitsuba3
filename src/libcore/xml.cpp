@@ -263,10 +263,10 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     Properties props_nested(node.attribute("type").value());
                     props_nested.set_id(id);
 
-                    auto it = ctx.instances.find(id);
-                    if (it != ctx.instances.end())
+                    auto it_inst = ctx.instances.find(id);
+                    if (it_inst != ctx.instances.end())
                         src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
-                            node.name(), id, src.offset(it->second.location));
+                            node.name(), id, src.offset(it_inst->second.location));
 
                     auto it2 = tagClass->find(node.name());
                     if (it2 == tagClass->end())

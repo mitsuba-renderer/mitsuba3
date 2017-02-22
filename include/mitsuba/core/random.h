@@ -37,7 +37,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename T> struct MTS_EXPORT_CORE TPCG32 {
+template <typename T> struct TPCG32 {
     /* Some convenient type aliases for vectorization */
     using  Int64     = int64_array_t<T>;
     using UInt64     = uint64_array_t<T>;
@@ -242,8 +242,8 @@ private:
     }
 };
 
-extern template struct MTS_EXPORT_CORE TPCG32<uint32_t>;
-extern template struct MTS_EXPORT_CORE TPCG32<UInt32P>;
+MTS_EXPORT_CORE_TEMPLATE TPCG32<uint32_t>;
+MTS_EXPORT_CORE_TEMPLATE TPCG32<UInt32P>;
 
 using PCG32  = TPCG32<uint32_t>;
 using PCG32P = TPCG32<UInt32P>;

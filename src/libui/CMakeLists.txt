@@ -5,6 +5,7 @@ include_directories(
 
 add_definitions(
   -DMTS_BUILD_MODULE=MTS_MODULE_UI
+  ${NANOGUI_EXTRA_DEFS}
 )
 
 set(INC_DIR "../../include/mitsuba/ui")

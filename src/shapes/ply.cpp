@@ -31,7 +31,7 @@ public:
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
-        m_name = file_path.filename();
+        m_name = file_path.filename().string();
 
         auto fail = [&](const char *descr) {
             Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
@@ -109,8 +109,8 @@ public:
                     target += o_struct_size;
                 }
 
-                m_vertex_count = el.count;
-                m_vertex_size = o_struct_size;
+                m_vertex_count = (Size) el.count;
+                m_vertex_size = (Size) o_struct_size;
             } else if (el.name == "face") {
                 m_face_struct = new Struct(true);
 
@@ -161,8 +161,8 @@ public:
                 if (unlikely(!conv->convert(remainder_count, buf.get(), target)))
                     fail("incompatible contents -- is this a triangle mesh?");
 
-                m_face_count = el.count;
-                m_face_size = o_struct_size;
+                m_face_count = (Size) el.count;
+                m_face_size = (Size) o_struct_size;
             } else {
                 Log(EWarn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + size * el.count);
@@ -200,12 +200,12 @@ public:
     }
 
     void write(Stream *stream) const override {
-        std::string streamName = "<stream>";
+        std::string stream_name = "<stream>";
         auto fs = dynamic_cast<FileStream *>(stream);
         if (fs)
-            streamName = fs->path().filename();
+            stream_name = fs->path().filename().string();
 
-        Log(EInfo, "Writing mesh to \"%s\" ..", streamName);
+        Log(EInfo, "Writing mesh to \"%s\" ..", stream_name);
 
         Timer timer;
         stream->write_line("ply");

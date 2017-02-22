@@ -48,7 +48,7 @@ std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
         if (class_)
             oss << "[" << class_->name() << "] ";
         else if (line != -1 && file)
-            oss << "[" << fs::path(fs::path(file).filename()).string() << ":" << line << "] ";
+            oss << "[" << fs::path(file).filename() << ":" << line << "] ";
     }
 
     /* Message */

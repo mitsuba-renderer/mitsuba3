@@ -14,6 +14,7 @@ struct MTS_EXPORT_CORE Matrix4f : Array<Array<Float, 4>, 4> {
     using Base::Base;
     using Base::operator=;
 
+    Matrix4f() { }
     Matrix4f(const Array<Array<Float, 4>, 4> &x) : Base(x) { }
 
     /// Matrix-matrix multiplication

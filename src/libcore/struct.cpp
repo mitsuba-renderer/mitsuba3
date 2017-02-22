@@ -313,42 +313,42 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
             switch (sfType) {
                 case Struct::EUInt8:
                 case Struct::EInt8:
-                    c.emit(op, reg, x86::byte_ptr(input, sf.offset));
+                    c.emit(op, reg, x86::byte_ptr(input, (int32_t) sf.offset));
                     break;
 
                 case Struct::EUInt16:
                 case Struct::EInt16:
                     if (source_swap) {
-                        c.movzx(reg, x86::word_ptr(input, sf.offset));
+                        c.movzx(reg, x86::word_ptr(input, (int32_t) sf.offset));
                         c.xchg(reg.r8Lo(), reg.r8Hi());
                         if (source_signed)
                             c.emit(op, reg.r64(), reg.r16());
                     } else {
-                        c.emit(op, reg, x86::word_ptr(input, sf.offset));
+                        c.emit(op, reg, x86::word_ptr(input, (int32_t) sf.offset));
                     }
                     break;
 
                 case Struct::EUInt32:
                 case Struct::EInt32:
                     if (source_swap) {
-                        c.mov(reg.r32(), x86::dword_ptr(input, sf.offset));
+                        c.mov(reg.r32(), x86::dword_ptr(input, (int32_t) sf.offset));
                         c.bswap(reg.r32());
                         if (source_signed)
                             c.emit(op, reg.r64(), reg.r32());
                     } else {
-                        c.emit(op, reg, x86::dword_ptr(input, sf.offset));
+                        c.emit(op, reg, x86::dword_ptr(input, (int32_t) sf.offset));
                     }
                     break;
 
                 case Struct::EUInt64:
                 case Struct::EInt64:
-                    c.mov(reg, x86::qword_ptr(input, sf.offset));
+                    c.mov(reg, x86::qword_ptr(input, (int32_t) sf.offset));
                     if (source_swap)
                         c.bswap(reg.r64());
                     break;
 
                 case Struct::EFloat16: {
-                        c.movzx(reg, x86::word_ptr(input, sf.offset));
+                        c.movzx(reg, x86::word_ptr(input, (int32_t) sf.offset));
                         if (source_swap)
                             c.xchg(reg.r8Lo(), reg.r8Hi());
 
@@ -363,21 +363,21 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
                 case Struct::EFloat32:
                     if (source_swap) {
-                        c.mov(reg.r32(), x86::dword_ptr(input, sf.offset));
+                        c.mov(reg.r32(), x86::dword_ptr(input, (int32_t) sf.offset));
                         c.bswap(reg.r32());
                         c.movd(reg_f, reg.r32());
                     } else {
-                        c.movss(reg_f, x86::dword_ptr(input, sf.offset));
+                        c.movss(reg_f, x86::dword_ptr(input, (int32_t) sf.offset));
                     }
                     break;
 
                 case Struct::EFloat64:
                     if (source_swap) {
-                        c.mov(reg.r64(), x86::qword_ptr(input, sf.offset));
+                        c.mov(reg.r64(), x86::qword_ptr(input, (int32_t) sf.offset));
                         c.bswap(reg.r64());
                         c.movq(reg_d, reg.r64());
                     } else {
-                        c.movsd(reg_d, x86::qword_ptr(input, sf.offset));
+                        c.movsd(reg_d, x86::qword_ptr(input, (int32_t) sf.offset));
                     }
                     break;
 
@@ -522,7 +522,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
         switch (dfType) {
             case Struct::EUInt8:
             case Struct::EInt8:
-                c.mov(x86::byte_ptr(output, df.offset), reg.r8());
+                c.mov(x86::byte_ptr(output, (int32_t) df.offset), reg.r8());
                 break;
 
             case Struct::EFloat16: {
@@ -534,7 +534,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                     if (target_swap)
                        c.xchg(reg.r8Lo(), reg.r8Hi());
 
-                    c.mov(x86::word_ptr(output, df.offset), reg.r16());
+                    c.mov(x86::word_ptr(output, (int32_t) df.offset), reg.r16());
                 }
                 break;
 
@@ -543,7 +543,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 if (target_swap)
                    c.xchg(reg.r8Lo(), reg.r8Hi());
 
-                c.mov(x86::word_ptr(output, df.offset), reg.r16());
+                c.mov(x86::word_ptr(output, (int32_t) df.offset), reg.r16());
                 break;
 
             case Struct::EUInt32:
@@ -551,7 +551,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 if (target_swap)
                     c.bswap(reg.r32());
 
-                c.mov(x86::dword_ptr(output, df.offset), reg.r32());
+                c.mov(x86::dword_ptr(output, (int32_t) df.offset), reg.r32());
                 break;
 
             case Struct::EUInt64:
@@ -559,16 +559,16 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 if (target_swap)
                     c.bswap(reg.r64());
 
-                c.mov(x86::qword_ptr(output, df.offset), reg.r64());
+                c.mov(x86::qword_ptr(output, (int32_t) df.offset), reg.r64());
                 break;
 
             case Struct::EFloat32:
                 if (target_swap) {
                     c.movd(reg.r32(), reg_f);
                     c.bswap(reg.r32());
-                    c.mov(x86::dword_ptr(output, df.offset), reg.r32());
+                    c.mov(x86::dword_ptr(output, (int32_t) df.offset), reg.r32());
                 } else {
-                    c.movss(x86::dword_ptr(output, df.offset), reg_f);
+                    c.movss(x86::dword_ptr(output, (int32_t) df.offset), reg_f);
                 }
                 break;
 
@@ -576,9 +576,9 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                 if (target_swap) {
                     c.movq(reg.r64(), reg_d);
                     c.bswap(reg.r64());
-                    c.mov(x86::qword_ptr(output, df.offset), reg.r64());
+                    c.mov(x86::qword_ptr(output, (int32_t) df.offset), reg.r64());
                 } else {
-                    c.movsd(x86::qword_ptr(output, df.offset), reg_d);
+                    c.movsd(x86::qword_ptr(output, (int32_t) df.offset), reg_d);
                 }
                 break;
 

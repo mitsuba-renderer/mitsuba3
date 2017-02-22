@@ -23,9 +23,16 @@ elseif (PROC_COUNT GREATER 8)
   set(PROC_COUNT 8)
 endif()
 
+if (WIN32)
+  # pytest-xdist does not seem to run reliably on windows
+  set(PYTEST_XDIST "-v")
+else()
+  set(PYTEST_XDIST "-n ${PROC_COUNT}")
+endif()
+
 # A single command to compile and run the tests
 add_custom_target(pytest 
-  COMMAND ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/dist" "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python" ${PYTHON_EXECUTABLE} -m pytest -n ${PROC_COUNT} -rws ${CMAKE_CURRENT_SOURCE_DIR}
+  COMMAND ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/dist" "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python" ${PYTHON_EXECUTABLE} -m pytest ${PYTEST_XDIST} -rws ${CMAKE_CURRENT_SOURCE_DIR}
   DEPENDS mitsuba-python python-copy
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist
   USES_TERMINAL

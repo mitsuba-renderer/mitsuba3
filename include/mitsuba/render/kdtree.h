@@ -245,7 +245,7 @@ protected:
          * Returns \c false if the offset or number of primitives is so large
          * that it can't be represented
          */
-        bool set_inner_node(int axis, Scalar split, size_t left_offset) {
+        bool set_inner_node(Index axis, Scalar split, size_t left_offset) {
             data.inner.split = split;
             data.inner.axis = (unsigned int) axis;
             data.inner.left_offset = (Index) left_offset;
@@ -274,7 +274,7 @@ protected:
         Scalar split() const { return data.inner.split; }
 
         /// Return the split axis (for interior nodes)
-        int axis() const { return (int) data.inner.axis; }
+        Index axis() const { return (Index) data.inner.axis; }
 
         /// Return a string representation
         friend std::ostream& operator<<(std::ostream &os, const KDNode &n) {
@@ -374,7 +374,7 @@ protected:
          * Walks through the list of chunks to find one with enough
          * free memory. If no chunk could be found, a new one is created.
          */
-        template <typename T> T * ENOKI_MALLOC allocate(size_t size) {
+        template <typename T> ENOKI_MALLOC T * allocate(size_t size) {
             size *= sizeof(T);
 
             for (auto &chunk : m_chunks) {
@@ -691,7 +691,7 @@ protected:
             IndexArray index_min = IndexArray(rel_min);
             IndexArray index_max = IndexArray(rel_max);
 
-            Assert(simd::all(index_min <= index_max));
+            Assert(all(index_min <= index_max));
             index_min = index_min + index_min + offset_min;
             index_max = index_max + index_max + offset_max;
 
@@ -708,7 +708,7 @@ protected:
 
             Vector step = m_bbox.extents() / Scalar(m_bin_count);
 
-            for (size_t axis = 0; axis < Dimension; ++axis) {
+            for (Index axis = 0; axis < Dimension; ++axis) {
                 SplitCandidate candidate;
 
                 /* Initially: all primitives to the right, none on the left */
@@ -867,8 +867,8 @@ protected:
                         tbb::spin_mutex::scoped_lock lock(mutex);
                         target_left = &left_indices[left_count];
                         target_right = &right_indices[right_count];
-                        left_count += left_indices_local.size();
-                        right_count += right_indices_local.size();
+                        left_count += (Index) left_indices_local.size();
+                        right_count += (Index) right_indices_local.size();
                         left_bounds.expand(left_bounds_local);
                         right_bounds.expand(right_bounds_local);
                     }
@@ -1381,7 +1381,7 @@ protected:
 
                                 if (clippedLeft.valid() &&
                                     clippedLeft.surface_area() > 0) {
-                                    for (size_t axis = 0; axis < Dimension; ++axis) {
+                                    for (Index axis = 0; axis < Dimension; ++axis) {
                                         Scalar min = clippedLeft.min[axis],
                                                max = clippedLeft.max[axis];
 
@@ -1401,7 +1401,7 @@ protected:
 
                                 if (clippedRight.valid() &&
                                     clippedRight.surface_area() > 0) {
-                                    for (size_t axis = 0; axis < Dimension; ++axis) {
+                                    for (Index axis = 0; axis < Dimension; ++axis) {
                                         Scalar min = clippedRight.min[axis],
                                                max = clippedRight.max[axis];
 
@@ -1548,9 +1548,9 @@ protected:
                     m_ctx.pruned++;
                 }
 
-                for (size_t axis = 0; axis < Dimension; ++axis) {
+                for (Index axis = 0; axis < Dimension; ++axis) {
                     Scalar min = prim_bbox.min[axis], max = prim_bbox.max[axis];
-                    Index offset = (axis * prim_count + i) * 2;
+                    Index offset = (Index) (axis * prim_count + i) * 2;
 
                     if (unlikely(!valid)) {
                         events_start[offset  ].set_invalid();
@@ -1655,7 +1655,7 @@ protected:
         } else {
             ctx.exp_traversal_steps += (double) CostModel::eval(bbox);
 
-            int axis = node->axis();
+            Index axis = node->axis();
             Scalar split = Scalar(node->split());
             BoundingBox left_bbox(bbox), right_bbox(bbox);
             left_bbox.max[axis] = split;
@@ -1725,7 +1725,7 @@ protected:
 
             IndexVector indices(prim_count);
             for (size_t i = 0; i < prim_count; ++i)
-                indices[i] = i;
+                indices[i] = (Index) i;
 
             BuildTask &task = *new (tbb::task::allocate_root()) BuildTask(
                 ctx, ctx.node_storage.begin(), std::move(indices),
@@ -1866,6 +1866,7 @@ const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() cons
 class SurfaceAreaHeuristic3f {
 public:
     using Size = uint32_t;
+    using Index = uint32_t;
 
     SurfaceAreaHeuristic3f(Float query_cost, Float traversal_cost,
                            Float empty_space_bonus)
@@ -1926,7 +1927,7 @@ public:
      * query operation. In the case of the surface area heuristic, this is
      * simply the ratio of surface areas.
      */
-    Float inner_cost(int axis, Float split, Float left_cost, Float right_cost) const {
+    Float inner_cost(Index axis, Float split, Float left_cost, Float right_cost) const {
         Float left_prob  = m_temp0[axis] + m_temp2[axis] * split;
         Float right_prob = m_temp1[axis] - m_temp2[axis] * split;
 
@@ -1958,7 +1959,7 @@ private:
     Float m_empty_space_bonus;
 };
 
-class MTS_EXPORT ShapeKDTree
+class MTS_EXPORT_RENDER ShapeKDTree
     : public TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree> {
 public:
     using Base = TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
@@ -2017,13 +2018,14 @@ protected:
     Index find_shape(Index &i) const {
         Assert(i < primitive_count());
 
-        Index shape_index = math::find_interval(
+        Index shape_index = (Index) math::find_interval(
             Size(0),
             Size(m_primitive_map.size()),
             [&](Index k) {
                 return m_primitive_map[k] <= i;
             }
         );
+
         Assert(shape_index < shape_count() &&
                m_primitive_map.size() == shape_count() + 1);
 

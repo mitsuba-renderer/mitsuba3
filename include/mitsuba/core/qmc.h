@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/simd.h>
+#include <memory>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -110,6 +111,10 @@ protected:
     virtual ~RadicalInverse();
 
 private:
+#if defined(_MSC_VER)
+#  pragma pack(push, 1)
+#endif
+
     /* Precomputed magic constants for efficient division by a constant.
        One entry for each of the first 1024 prime numbers -- 16 KiB of data */
     struct PrimeBase {
@@ -117,7 +122,11 @@ private:
         uint8_t unused;
         uint16_t value;
         float recip;
-    };
+    } ENOKI_PACK;
+
+#if defined(_MSC_VER)
+#  pragma pack(pop)
+#endif
 
     size_t m_base_count = 0;
     std::unique_ptr<PrimeBase[], enoki::aligned_deleter> m_base;

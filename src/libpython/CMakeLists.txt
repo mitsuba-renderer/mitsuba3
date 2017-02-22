@@ -32,7 +32,7 @@ function(add_mitsuba_python_library TARGET_NAME NAME)
     endif()
 
     # Link against the Python shared library
-    target_link_libraries(${TARGET_NAME} ${PYTHON_LIBRARY})
+    target_link_libraries(${TARGET_NAME} PRIVATE ${PYTHON_LIBRARIES})
   elseif (UNIX)
     # It's quite common to have multiple copies of the same Python version
     # installed on one's system. E.g.: one copy from the OS and another copy
@@ -132,18 +132,20 @@ foreach (value ${MKDOC_COMPILE_DEFINITIONS})
   list(APPEND MKDOC_CXX_FLAGS_LIST -D${value})
 endforeach()
 
-add_custom_target(mkdoc COMMAND
-  python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py
-  ${MKDOC_CXX_FLAGS_LIST}
-  `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
-  `find ${PROJECT_SOURCE_DIR}/include/mitsuba/render -name '*.h' ! -name fwd.h -print`
-  `find ${PROJECT_SOURCE_DIR}/include/mitsuba/ui -name '*.h' ! -name fwd.h -print`
-  > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
+if (NOT WIN32)
+  add_custom_target(mkdoc COMMAND
+    python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py
+    ${MKDOC_CXX_FLAGS_LIST}
+    `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
+    `find ${PROJECT_SOURCE_DIR}/include/mitsuba/render -name '*.h' ! -name fwd.h -print`
+    `find ${PROJECT_SOURCE_DIR}/include/mitsuba/ui -name '*.h' ! -name fwd.h -print`
+    > ${CMAKE_CURRENT_SOURCE_DIR}/docstr.h)
+endif()
 
 if (APPLE)
   set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "@loader_path/..")
 endif()
 
-target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core)
-target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render)
+target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core asmjit)
+target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render tbb)
 target_link_libraries(mitsuba_ui_ext PRIVATE mitsuba-core mitsuba-render mitsuba-ui)

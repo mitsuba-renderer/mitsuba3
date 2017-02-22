@@ -72,7 +72,7 @@ public:
     };
 
     /// Field specifier with size and offset
-    struct Field {
+    struct MTS_EXPORT Field {
         /// Name of the field
         std::string name;
 

@@ -6,6 +6,7 @@ include_directories(
   ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
   ${OPENEXR_INCLUDE_DIRS}
+  ${JPEG_INCLUDE_DIRS}
 )
 
 add_definitions(
@@ -62,12 +63,16 @@ add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)
 set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(mitsuba-core-obj mitsuba-core PROPERTIES FOLDER mitsuba-core)
 
-# Link to Intel's Thread Building Blocks, the pugixml parser, and asmjit
-target_link_libraries(mitsuba-core PRIVATE tbb pugixml asmjit)
-
-# Image libraries: link to libjpeg, libpng, OpenEXR
-target_link_libraries(mitsuba-core PRIVATE ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf)
-
+target_link_libraries(mitsuba-core PRIVATE 
+  # Link to libpng and zlib (either the system version or a version built via cmake)
+  ${PNG_LIBRARIES}
+  ${ZLIB_LIBRARY}
+  # Link to Intel's Thread Building Blocks, the pugixml parser, and asmjit
+  tbb pugixml asmjit
+  # Image libraries: link to libjpeg, libpng, OpenEXR
+  ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf
+)
+#
 if (UNIX AND NOT APPLE)
   target_link_libraries(mitsuba-core PUBLIC
     -Wl,-rpath-link=$<TARGET_FILE_DIR:tbb>
@@ -75,12 +80,11 @@ if (UNIX AND NOT APPLE)
     -Wl,-rpath-link=$<TARGET_FILE_DIR:asmjit>)
 endif()
 
-# Link to libpng and zlib (either the system version or a version built via cmake)
-target_link_libraries(mitsuba-core PRIVATE ${PNG_LIBRARIES} ${ZLIB_LIBRARY})
-
 # Copy to 'dist' directory
 add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq asmjit)
+
 if (WIN32)
-  add_dist(png16 zlib jpeg)
+  add_dist(zlib jpeg png16)
+  add_dependencies(mitsuba-core zlib jpeg png16)
 endif()
 

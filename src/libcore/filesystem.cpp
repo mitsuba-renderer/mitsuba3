@@ -198,7 +198,7 @@ path& path::replace_extension(const path &replacement) {
     if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR(".."))
         return *this;
 
-    auto name = filename();
+    string_type name = filename().native();
     const auto &ext = extension();
     if (ext.length() > 0) {
         size_t pos = name.find_last_of(NSTR("."));
@@ -217,11 +217,10 @@ path& path::replace_extension(const path &replacement) {
     return *this;
 }
 
-string_type path::filename() const {
+path path::filename() const {
     if (empty())
-        return NSTR("");
-    const string_type &last = m_path[m_path.size()-1];
-    return last;
+        return path(NSTR(""));
+    return path(m_path.back());
 }
 
 path path::parent_path() const {

@@ -34,7 +34,9 @@ template <typename T> std::vector<T> sieve(T n) {
 NAMESPACE_END(detail)
 
 RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scramble) {
-    static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
+    //static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
+    printf("PROBLEM: %i %i\n", (int) sizeof(PrimeBase), (int) sizeof(PrimeBase::divisor));
+    assert(sizeof(PrimeBase) == 16);
 
     Timer timer;
     auto primes = detail::sieve(max_base);
@@ -172,7 +174,7 @@ void RadicalInverse::invert_permutation(uint32_t i) {
     uint16_t *perm    = m_permutations[i],
              *inv_perm = m_inv_permutations[i];
     for (size_t j = 0; j < m_base[i].value; ++j)
-        inv_perm[perm[j]] = j;
+        inv_perm[perm[j]] = (uint16_t) j;
 }
 
 Float RadicalInverse::eval(size_t base_index, uint64_t index) const {

@@ -13,10 +13,10 @@ template Point3fP MTS_EXPORT_CORE Transform::operator*(Point3fP) const;
 Matrix4f Matrix4f::inverse() const {
     Matrix4f I(*this);
 
-    int ipiv[4] = { 0, 1, 2, 3 };
-    for (int k = 0; k < 4; ++k) {
+    size_t ipiv[4] = { 0, 1, 2, 3 };
+    for (size_t k = 0; k < 4; ++k) {
         Float largest = 0.f;
-        int piv = 0;
+        size_t piv = 0;
 
         /* Find the largest pivot in the current column */
         for (size_t j = k; j < 4; ++j) {
@@ -38,11 +38,11 @@ Matrix4f Matrix4f::inverse() const {
 
         Float scale = 1.f / I[k][k];
         I[k][k] = 1.f;
-        for (int j = 0; j < 4; j++)
+        for (size_t j = 0; j < 4; j++)
             I[k][j] *= scale;
 
         /* Jordan reduction */
-        for (int i = 0; i < 4; i++) {
+        for (size_t i = 0; i < 4; i++) {
             if (i != k) {
                 Float tmp = I[i][k];
                 I[i][k] = 0;
@@ -55,8 +55,8 @@ Matrix4f Matrix4f::inverse() const {
 
     /* Backward permutation */
     Matrix4f out;
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j)
+    for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = 0; j < 4; ++j)
             out[i][ipiv[j]] = I[i][j];
     }
     return out;

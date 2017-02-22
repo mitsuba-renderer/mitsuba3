@@ -35,7 +35,7 @@ void Jit::static_initialization() {
     CHECK(enoki::has_avx512bw, AVX512BW);
     CHECK(enoki::has_avx512f,  AVX512F);
     CHECK(enoki::has_avx2,     AVX2);
-    CHECK(enoki::has_fma,      FMA3);
+//    CHECK(enoki::has_fma,      FMA3);
     CHECK(enoki::has_f16c,     F16C);
     CHECK(enoki::has_avx,      AVX);
     CHECK(enoki::has_sse42,    SSE4_2);

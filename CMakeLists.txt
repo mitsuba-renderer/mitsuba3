@@ -160,13 +160,25 @@ endif()
 
 if (MSVC)
   # Disable annoying MSVC warnings (all targets)
-  add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
+  add_definitions(/D "_CRT_SECURE_NO_WARNINGS" /D "_SCL_SECURE_NO_WARNINGS")
+
+  # Disable secure SCL
+  add_definitions(/D "_SECURE_SCL=0")
 
   # Don't issue implicit linking pragmas for TBB
   add_definitions(/D "__TBB_NO_IMPLICIT_LINKAGE")
 
+  # Disable problematic windows.h min/max macros
+  add_definitions(/D "NOMINMAX")
+
   # Don't complain about not DLL-exporting STL classes
   add_compile_options("/wd4251")
+
+  # Function '..' marked as __forceinline not inlined
+  add_compile_options("/wd4714")
+
+  # unreferenced local function has been removed
+  add_compile_options("/wd4505")
 
   # Workaround for MSVC 2017
   add_compile_options("/wd4244")
@@ -181,9 +193,16 @@ if (MSVC)
   string(REPLACE "/GS" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   string(REPLACE "/GS" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
   add_compile_options("$<$<NOT:$<CONFIG:Debug>>:/GS->")
+
+  # Honor __forceinline statements even in debug mode, needed to avoid internal compiler errors on MSVC
+  string(REPLACE "/Ob0" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+  add_compile_options("$<$<CONFIG:Debug>:/Ob1>")
+
+   # Enable intrinsic functions
+   add_compile_options("$<$<CONFIG:Release>:/Oi>")
 endif()
 
-# Enable link time optimizatoin in release mode (if possible)
+# Enable link time optimization in release mode (if possible)
 if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
   # Enable link time optimization
   if (NOT CMAKE_CXX_FLAGS MATCHES "-flto")
