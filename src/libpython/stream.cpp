@@ -49,8 +49,7 @@ MTS_PY_EXPORT(Stream) {
         .DECLARE_RW(double, "double")
         .DECLARE_RW(Float, "float")
         .DECLARE_RW(bool, "bool")
-        .DECLARE_RW(std::string, "string")
-        .def("__repr__", &Stream::to_string);
+        .DECLARE_RW(std::string, "string");
 
     py::enum_<Stream::EByteOrder>(c, "EByteOrder", D(Stream, EByteOrder))
         .value("EBigEndian", Stream::EBigEndian)

@@ -1,6 +1,5 @@
 # CMake
 /CMakeCache.txt
-/Testing
 CMakeFiles
 Makefile
 *.cmake
@@ -17,8 +16,9 @@ Makefile
 *.dir
 *~
 \.DS_Store
-/Testing
+Testing
 /.cache
+/.ipynb_checkpoints
 
 # Visual studio
 *.vcxproj

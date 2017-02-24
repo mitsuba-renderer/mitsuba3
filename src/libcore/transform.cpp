@@ -2,13 +2,14 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Transform Transform::operator*(const Transform &other) const {
-    return Transform{ m_value * other.m_value, other.m_inverse * m_inverse };
-}
-
-template Point<Float, 3> Transform::bla(Point<Float, 3>) const;
 template Point3f  MTS_EXPORT_CORE Transform::operator*(Point3f) const;
 template Point3fP MTS_EXPORT_CORE Transform::operator*(Point3fP) const;
+
+template Vector3f  MTS_EXPORT_CORE Transform::operator*(Vector3f) const;
+template Vector3fP MTS_EXPORT_CORE Transform::operator*(Vector3fP) const;
+
+template Normal3f  MTS_EXPORT_CORE Transform::operator*(Normal3f) const;
+template Normal3fP MTS_EXPORT_CORE Transform::operator*(Normal3fP) const;
 
 Matrix4f Matrix4f::inverse() const {
     Matrix4f I(*this);
@@ -20,7 +21,7 @@ Matrix4f Matrix4f::inverse() const {
 
         /* Find the largest pivot in the current column */
         for (size_t j = k; j < 4; ++j) {
-            Float value = std::abs(I[j][k]);
+            Float value = std::abs(I(j, k));
             if (value > largest) {
                 largest = value;
                 piv = j;
@@ -32,33 +33,32 @@ Matrix4f Matrix4f::inverse() const {
 
         /* Row exchange */
         if (piv != k) {
-            std::swap(I[k], I[piv]);
+            for (size_t j = 0; j < 4; ++j)
+                std::swap(I(k, j), I(piv, j));
             std::swap(ipiv[k], ipiv[piv]);
         }
 
-        Float scale = 1.f / I[k][k];
-        I[k][k] = 1.f;
+        Float scale = 1.f / I(k, k);
+        I(k, k) = 1.f;
         for (size_t j = 0; j < 4; j++)
-            I[k][j] *= scale;
+            I(k, j) *= scale;
 
         /* Jordan reduction */
         for (size_t i = 0; i < 4; i++) {
             if (i != k) {
-                Float tmp = I[i][k];
-                I[i][k] = 0;
+                Float tmp = I(i, k);
+                I(i, k) = 0;
 
                 for (int j = 0; j < 4; j++)
-                    I[i][j] -= I[k][j] * tmp;
+                    I(i, j) -= I(k, j) * tmp;
             }
         }
     }
 
     /* Backward permutation */
     Matrix4f out;
-    for (size_t i = 0; i < 4; ++i) {
-        for (size_t j = 0; j < 4; ++j)
-            out[i][ipiv[j]] = I[i][j];
-    }
+    for (size_t j = 0; j < 4; ++j)
+        out.col(ipiv[j]) = I.col(j);
     return out;
 }
 
@@ -71,11 +71,8 @@ Matrix4f Matrix4f::identity() {
     );
 }
 
-std::ostream &operator<<(std::ostream &os, const Matrix4f &m) {
-    os << "[" << m.coeff(0) << std::endl
-       << " " << m.coeff(1) << std::endl
-       << " " << m.coeff(2) << std::endl
-       << " " << m.coeff(3) << "]";
+std::ostream &operator<<(std::ostream &os, const Transform &t) {
+    os << t.matrix();
     return os;
 }
 
