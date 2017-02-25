@@ -23,6 +23,86 @@
 #endif
 
 
+static const char *__doc_enoki_dynamic_resize = R"doc()doc";
+
+static const char *__doc_enoki_dynamic_resize_2 = R"doc()doc";
+
+static const char *__doc_enoki_dynamic_resize_3 = R"doc()doc";
+
+static const char *__doc_enoki_dynamic_resize_4 = R"doc()doc";
+
+static const char *__doc_enoki_dynamic_size = R"doc()doc";
+
+static const char *__doc_enoki_dynamic_size_2 = R"doc()doc";
+
+static const char *__doc_enoki_dynamic_size_3 = R"doc()doc";
+
+static const char *__doc_enoki_dynamic_size_4 = R"doc()doc";
+
+static const char *__doc_enoki_packet = R"doc()doc";
+
+static const char *__doc_enoki_packet_10 = R"doc()doc";
+
+static const char *__doc_enoki_packet_11 = R"doc()doc";
+
+static const char *__doc_enoki_packet_12 = R"doc()doc";
+
+static const char *__doc_enoki_packet_13 = R"doc()doc";
+
+static const char *__doc_enoki_packet_14 = R"doc()doc";
+
+static const char *__doc_enoki_packet_2 = R"doc()doc";
+
+static const char *__doc_enoki_packet_3 = R"doc()doc";
+
+static const char *__doc_enoki_packet_4 = R"doc()doc";
+
+static const char *__doc_enoki_packet_5 = R"doc()doc";
+
+static const char *__doc_enoki_packet_6 = R"doc()doc";
+
+static const char *__doc_enoki_packet_7 = R"doc()doc";
+
+static const char *__doc_enoki_packet_8 = R"doc()doc";
+
+static const char *__doc_enoki_packet_9 = R"doc()doc";
+
+static const char *__doc_enoki_packets = R"doc()doc";
+
+static const char *__doc_enoki_packets_2 = R"doc()doc";
+
+static const char *__doc_enoki_packets_3 = R"doc()doc";
+
+static const char *__doc_enoki_packets_4 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_10 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_11 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_12 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_13 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_14 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_2 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_3 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_4 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_5 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_6 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_7 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_8 = R"doc()doc";
+
+static const char *__doc_enoki_ref_wrap_9 = R"doc()doc";
+
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds Table of Contents capabilities to an
 underlying stream. A Stream instance must first be created and passed
@@ -519,6 +599,154 @@ static const char *__doc_mitsuba_Bitmap_struct = R"doc(Return a ``Struct`` insta
 static const char *__doc_mitsuba_Bitmap_to_string = R"doc(Return a human-readable summary of this bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_width = R"doc(Return the bitmap's width in pixels)doc";
+
+static const char *__doc_mitsuba_BoundingBox =
+R"doc(Generic n-dimensional bounding box data structure
+
+Maintains a minimum and maximum position along each dimension and
+provides various convenience functions for querying and modifying
+them.
+
+This class is parameterized by the underlying point data structure,
+which permits the use of different scalar types and dimensionalities,
+e.g.
+
+```
+BoundingBox<Vector3i> integerBBox(Point3i(0, 1, 3), Point3i(4, 5, 6));
+BoundingBox<Vector2d> doubleBBox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
+```
+
+Template parameter ``T``:
+    The underlying point data type (e.g. ``Point2d``))doc";
+
+static const char *__doc_mitsuba_BoundingBox_BoundingBox =
+R"doc(Create a new invalid bounding box
+
+Initializes the components of the minimum and maximum position to
+$\infty$ and $-\infty$, respectively.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_BoundingBox_2 = R"doc(Create a collapsed bounding box from a single point)doc";
+
+static const char *__doc_mitsuba_BoundingBox_BoundingBox_3 = R"doc(Create a bounding box from two positions)doc";
+
+static const char *__doc_mitsuba_BoundingBox_center = R"doc(Return the center point)doc";
+
+static const char *__doc_mitsuba_BoundingBox_clip = R"doc(Clip this bounding box to another bounding box)doc";
+
+static const char *__doc_mitsuba_BoundingBox_collapsed =
+R"doc(Check whether this bounding box has collapsed to a point, line, or
+plane)doc";
+
+static const char *__doc_mitsuba_BoundingBox_contains =
+R"doc(Check whether a point lies *on* or *inside* the bounding box
+
+Parameter ``p``:
+    The point to be tested
+
+Template parameter ``Strict``:
+    Set this parameter to ``True`` if the bounding box boundary should
+    be excluded in the test
+
+Remark:
+    In the Python bindings, the 'Strict' argument is a normal function
+    parameter with default value ``False``.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_contains_2 =
+R"doc(Check whether a specified bounding box lies *on* or *within* the
+current bounding box
+
+Note that by definition, an 'invalid' bounding box (where min=$\infty$
+and max=$-\infty$) does not cover any space. Hence, this method will
+always return *true* when given such an argument.
+
+Template parameter ``Strict``:
+    Set this parameter to ``True`` if the bounding box boundary should
+    be excluded in the test
+
+Remark:
+    In the Python bindings, the 'Strict' argument is a normal function
+    parameter with default value ``False``.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_corner = R"doc(Return the position of a bounding box corner)doc";
+
+static const char *__doc_mitsuba_BoundingBox_distance =
+R"doc(Calculate the shortest distance between the axis-aligned bounding box
+and the point ``p``.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_distance_2 =
+R"doc(Calculate the shortest distance between the axis-aligned bounding box
+and ``bbox``.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_expand = R"doc(Expand the bounding box to contain another point)doc";
+
+static const char *__doc_mitsuba_BoundingBox_expand_2 = R"doc(Expand the bounding box to contain another bounding box)doc";
+
+static const char *__doc_mitsuba_BoundingBox_extents =
+R"doc(Calculate the bounding box extents
+
+Returns:
+    max-min)doc";
+
+static const char *__doc_mitsuba_BoundingBox_major_axis = R"doc(Return the dimension index with the largest associated side length)doc";
+
+static const char *__doc_mitsuba_BoundingBox_max = R"doc(< Component-wise maximum)doc";
+
+static const char *__doc_mitsuba_BoundingBox_merge = R"doc(Merge two bounding boxes)doc";
+
+static const char *__doc_mitsuba_BoundingBox_min = R"doc(< Component-wise minimum)doc";
+
+static const char *__doc_mitsuba_BoundingBox_minor_axis = R"doc(Return the dimension index with the shortest associated side length)doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_eq = R"doc(Test for equality against another bounding box)doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_ne = R"doc(Test for inequality against another bounding box)doc";
+
+static const char *__doc_mitsuba_BoundingBox_overlaps =
+R"doc(Check two axis-aligned bounding boxes for possible overlap.
+
+Parameter ``Strict``:
+    Set this parameter to ``True`` if the bounding box boundary should
+    be excluded in the test
+
+Remark:
+    In the Python bindings, the 'Strict' argument is a normal function
+    parameter with default value ``False``.
+
+Returns:
+    ``True`` If overlap was detected.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_ray_intersect = R"doc(Check if a ray intersects a bounding box)doc";
+
+static const char *__doc_mitsuba_BoundingBox_reset =
+R"doc(Mark the bounding box as invalid.
+
+This operation sets the components of the minimum and maximum position
+to $\infty$ and $-\infty$, respectively.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_squared_distance =
+R"doc(Calculate the shortest squared distance between the axis-aligned
+bounding box and the point ``p``.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_squared_distance_2 =
+R"doc(Calculate the shortest squared distance between the axis-aligned
+bounding box and ``bbox``.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_surface_area = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
+
+static const char *__doc_mitsuba_BoundingBox_surface_area_2 = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
+
+static const char *__doc_mitsuba_BoundingBox_valid =
+R"doc(Check whether this is a valid bounding box
+
+A bounding box ``bbox`` is considered to be valid when
+
+```
+bbox.min[i] <= bbox.max[i]
+```
+
+holds for each component ``i``.)doc";
+
+static const char *__doc_mitsuba_BoundingBox_volume = R"doc(Calculate the n-dimensional volume of the bounding box)doc";
 
 static const char *__doc_mitsuba_Class =
 R"doc(Stores meta-information about Object instances.
@@ -1134,38 +1362,54 @@ static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging
 
 static const char *__doc_mitsuba_Matrix4f =
 R"doc(Bare-bones 4x4 matrix for homogeneous coordinate transformations
+stored in *column-major* form
 
-All operations are efficiently mapped onto Enoki arrays)doc";
+The storage order is intentional, since allows permits an efficient
+vectorizable mapping of the key operations onto Enoki arrays.)doc";
 
-static const char *__doc_mitsuba_Matrix4f_Matrix4f = R"doc()doc";
+static const char *__doc_mitsuba_Matrix4f_Matrix4f = R"doc(Create an unitialized 4x4 matrix)doc";
 
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_10 = R"doc(Reinterpret another array)doc";
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_10 = R"doc(Convert a compatible array type (const))doc";
 
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_11 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_12 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_3 = R"doc(Initialize all components from a scalar)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_4 = R"doc(Initialize all components from a scalar)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_6 = R"doc(Initialize the individual components)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_7 = R"doc(Convert a compatible array type (const))doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_8 =
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_11 =
 R"doc(Convert a compatible array type (non-const, useful when storing
 references))doc";
 
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_9 = R"doc(Construct from a mask)doc";
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_12 = R"doc(Construct from a mask)doc";
 
-static const char *__doc_mitsuba_Matrix4f_identity = R"doc()doc";
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_13 = R"doc(Reinterpret another array)doc";
 
-static const char *__doc_mitsuba_Matrix4f_inverse = R"doc()doc";
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_14 = R"doc()doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_15 = R"doc()doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_2 = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_3 = R"doc(Construct from a set of coefficients)doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_6 = R"doc(Initialize all components from a scalar)doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_7 = R"doc(Initialize all components from a scalar)doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_8 = R"doc()doc";
+
+static const char *__doc_mitsuba_Matrix4f_Matrix4f_9 = R"doc(Initialize the individual components)doc";
+
+static const char *__doc_mitsuba_Matrix4f_col = R"doc(Return the j-th row)doc";
+
+static const char *__doc_mitsuba_Matrix4f_col_2 = R"doc(Return the j-th row (const))doc";
+
+static const char *__doc_mitsuba_Matrix4f_identity = R"doc(Return the identity matrix)doc";
+
+static const char *__doc_mitsuba_Matrix4f_inverse = R"doc(Compute the inverse of this matrix)doc";
+
+static const char *__doc_mitsuba_Matrix4f_operator_call = R"doc(Return a reference to the (i, j) element)doc";
+
+static const char *__doc_mitsuba_Matrix4f_operator_call_2 = R"doc(Return a reference to the (i, j) element (const))doc";
 
 static const char *__doc_mitsuba_Matrix4f_operator_mul = R"doc(Matrix-matrix multiplication)doc";
 
@@ -1754,6 +1998,51 @@ static const char *__doc_mitsuba_RadicalInverse_scramble = R"doc(Return the orig
 
 static const char *__doc_mitsuba_RadicalInverse_to_string = R"doc(Return a human-readable string representation)doc";
 
+static const char *__doc_mitsuba_Ray =
+R"doc(Simple n-dimensional ray segment data structure
+
+Along with the ray origin and direction, this data structure
+additionally stores a ray segment [mint, maxt] (whose entries may
+include positive/negative infinity), as well as the componentwise
+reciprocals of the ray direction. That is just done for convenience,
+as these values are frequently required.
+
+Remark:
+    Important: be careful when changing the ray direction. You must
+    call update() to compute the componentwise reciprocals as well, or
+    Mitsuba's ray-triangle intersection code will produce undefined
+    results.)doc";
+
+static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray)doc";
+
+static const char *__doc_mitsuba_Ray_Ray_2 = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_Ray_Ray_3 = R"doc(Conversion from other Ray types)doc";
+
+static const char *__doc_mitsuba_Ray_Ray_4 = R"doc(Construct a new ray)doc";
+
+static const char *__doc_mitsuba_Ray_Ray_5 = R"doc(Construct a new ray)doc";
+
+static const char *__doc_mitsuba_Ray_Ray_6 = R"doc(Construct a new ray)doc";
+
+static const char *__doc_mitsuba_Ray_Ray_7 = R"doc(Copy a ray, but change the covered segment of the copy)doc";
+
+static const char *__doc_mitsuba_Ray_d = R"doc(< Ray direction)doc";
+
+static const char *__doc_mitsuba_Ray_d_rcp = R"doc(< Componentwise reciprocals of the ray direction)doc";
+
+static const char *__doc_mitsuba_Ray_maxt = R"doc(< Maximum position on the ray segment)doc";
+
+static const char *__doc_mitsuba_Ray_mint = R"doc(< Minimum position on the ray segment)doc";
+
+static const char *__doc_mitsuba_Ray_o = R"doc(< Ray origin)doc";
+
+static const char *__doc_mitsuba_Ray_operator_call = R"doc(Return the position of a point along the ray)doc";
+
+static const char *__doc_mitsuba_Ray_reverse = R"doc(Return a ray that points into the opposite direction)doc";
+
+static const char *__doc_mitsuba_Ray_update = R"doc(Update the reciprocal ray directions after changing 'd')doc";
+
 static const char *__doc_mitsuba_Scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc()doc";
@@ -2239,154 +2528,6 @@ static const char *__doc_mitsuba_SurfaceAreaHeuristic3f_traversal_cost =
 R"doc(Get the cost of a traversal operation used by the tree construction
 heuristic)doc";
 
-static const char *__doc_mitsuba_TBoundingBox =
-R"doc(Generic n-dimensional bounding box data structure
-
-Maintains a minimum and maximum position along each dimension and
-provides various convenience functions for querying and modifying
-them.
-
-This class is parameterized by the underlying point data structure,
-which permits the use of different scalar types and dimensionalities,
-e.g.
-
-```
-TBoundingBox<Vector3i> integerBBox(Point3i(0, 1, 3), Point3i(4, 5, 6));
-TBoundingBox<Vector2d> doubleBBox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
-```
-
-Template parameter ``T``:
-    The underlying point data type (e.g. ``Point2d``))doc";
-
-static const char *__doc_mitsuba_TBoundingBox_TBoundingBox =
-R"doc(Create a new invalid bounding box
-
-Initializes the components of the minimum and maximum position to
-$\infty$ and $-\infty$, respectively.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_TBoundingBox_2 = R"doc(Create a collapsed bounding box from a single point)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_TBoundingBox_3 = R"doc(Create a bounding box from two positions)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_center = R"doc(Return the center point)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_clip = R"doc(Clip this bounding box to another bounding box)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_collapsed =
-R"doc(Check whether this bounding box has collapsed to a point, line, or
-plane)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_contains =
-R"doc(Check whether a point lies *on* or *inside* the bounding box
-
-Parameter ``p``:
-    The point to be tested
-
-Template parameter ``Strict``:
-    Set this parameter to ``True`` if the bounding box boundary should
-    be excluded in the test
-
-Remark:
-    In the Python bindings, the 'Strict' argument is a normal function
-    parameter with default value ``False``.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_contains_2 =
-R"doc(Check whether a specified bounding box lies *on* or *within* the
-current bounding box
-
-Note that by definition, an 'invalid' bounding box (where min=$\infty$
-and max=$-\infty$) does not cover any space. Hence, this method will
-always return *true* when given such an argument.
-
-Template parameter ``Strict``:
-    Set this parameter to ``True`` if the bounding box boundary should
-    be excluded in the test
-
-Remark:
-    In the Python bindings, the 'Strict' argument is a normal function
-    parameter with default value ``False``.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_corner = R"doc(Return the position of a bounding box corner)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_distance =
-R"doc(Calculate the shortest distance between the axis-aligned bounding box
-and the point ``p``.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_distance_2 =
-R"doc(Calculate the shortest distance between the axis-aligned bounding box
-and ``bbox``.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_expand = R"doc(Expand the bounding box to contain another point)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_expand_2 = R"doc(Expand the bounding box to contain another bounding box)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_extents =
-R"doc(Calculate the bounding box extents
-
-Returns:
-    max-min)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_major_axis = R"doc(Return the dimension index with the largest associated side length)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_max = R"doc(< Component-wise maximum)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_merge = R"doc(Merge two bounding boxes)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_min = R"doc(< Component-wise minimum)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_minor_axis = R"doc(Return the dimension index with the shortest associated side length)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_operator_eq = R"doc(Test for equality against another bounding box)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_operator_ne = R"doc(Test for inequality against another bounding box)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_overlaps =
-R"doc(Check two axis-aligned bounding boxes for possible overlap.
-
-Parameter ``Strict``:
-    Set this parameter to ``True`` if the bounding box boundary should
-    be excluded in the test
-
-Remark:
-    In the Python bindings, the 'Strict' argument is a normal function
-    parameter with default value ``False``.
-
-Returns:
-    ``True`` If overlap was detected.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_ray_intersect = R"doc(Check if a ray intersects a bounding box)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_reset =
-R"doc(Mark the bounding box as invalid.
-
-This operation sets the components of the minimum and maximum position
-to $\infty$ and $-\infty$, respectively.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_squared_distance =
-R"doc(Calculate the shortest squared distance between the axis-aligned
-bounding box and the point ``p``.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_squared_distance_2 =
-R"doc(Calculate the shortest squared distance between the axis-aligned
-bounding box and ``bbox``.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_surface_area = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_surface_area_2 = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_valid =
-R"doc(Check whether this is a valid bounding box
-
-A bounding box ``bbox`` is considered to be valid when
-
-```
-bbox.min[i] <= bbox.max[i]
-```
-
-holds for each component ``i``.)doc";
-
-static const char *__doc_mitsuba_TBoundingBox_volume = R"doc(Calculate the n-dimensional volume of the bounding box)doc";
-
 static const char *__doc_mitsuba_TPCG32 = R"doc()doc";
 
 static const char *__doc_mitsuba_TPCG32_TPCG32 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
@@ -2445,46 +2586,6 @@ container
 From: Knuth, TAoCP Vol. 2 (3rd 3d), Section 3.4.2)doc";
 
 static const char *__doc_mitsuba_TPCG32_state = R"doc()doc";
-
-static const char *__doc_mitsuba_TRay =
-R"doc(Simple n-dimensional ray segment data structure
-
-Along with the ray origin and direction, this data structure
-additionally stores a ray segment [mint, maxt] (whose entries may
-include positive/negative infinity), as well as the componentwise
-reciprocals of the ray direction. That is just done for convenience,
-as these values are frequently required.
-
-Remark:
-    Important: be careful when changing the ray direction. You must
-    call update() to compute the componentwise reciprocals as well, or
-    Mitsuba's ray-triangle intersection code will go haywire.)doc";
-
-static const char *__doc_mitsuba_TRay_TRay = R"doc(Construct a new ray)doc";
-
-static const char *__doc_mitsuba_TRay_TRay_2 = R"doc(Construct a new ray)doc";
-
-static const char *__doc_mitsuba_TRay_TRay_3 = R"doc(Construct a new ray)doc";
-
-static const char *__doc_mitsuba_TRay_TRay_4 = R"doc(Copy constructor)doc";
-
-static const char *__doc_mitsuba_TRay_TRay_5 = R"doc(Copy a ray, but change the covered segment of the copy)doc";
-
-static const char *__doc_mitsuba_TRay_d = R"doc(< Ray direction)doc";
-
-static const char *__doc_mitsuba_TRay_d_rcp = R"doc(< Componentwise reciprocals of the ray direction)doc";
-
-static const char *__doc_mitsuba_TRay_maxt = R"doc(< Maximum position on the ray segment)doc";
-
-static const char *__doc_mitsuba_TRay_mint = R"doc(< Minimum position on the ray segment)doc";
-
-static const char *__doc_mitsuba_TRay_o = R"doc(< Ray origin)doc";
-
-static const char *__doc_mitsuba_TRay_operator_call = R"doc(Return the position of a point along the ray)doc";
-
-static const char *__doc_mitsuba_TRay_reverse = R"doc(Return a ray that points into the opposite direction)doc";
-
-static const char *__doc_mitsuba_TRay_update = R"doc(Update the reciprocal ray directions after changing 'd')doc";
 
 static const char *__doc_mitsuba_TShapeKDTree =
 R"doc(Optimized KD-tree acceleration data structure for n-dimensional (n<=4)
@@ -3165,23 +3266,101 @@ static const char *__doc_mitsuba_Timer_start = R"doc()doc";
 
 static const char *__doc_mitsuba_Timer_value = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform = R"doc()doc";
+static const char *__doc_mitsuba_Transform =
+R"doc(Encapsulates a 4x4 homogeneous coordinate transformation and its
+inverse
 
-static const char *__doc_mitsuba_Transform_Transform = R"doc()doc";
+This class provides a set of overloaded matrix-vector multiplication
+operators for vectors, points, and normals (all of them transform
+differently under homogeneous coordinate transformations))doc";
 
-static const char *__doc_mitsuba_Transform_Transform_2 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_Transform = R"doc(Create the identity transformation)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_3 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_Transform_2 =
+R"doc(Initialize the transformation from the given matrix (and compute its
+inverse))doc";
 
-static const char *__doc_mitsuba_Transform_bla = R"doc(Transform a 3D point)doc";
+static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(Initialize the transformation from the given matrix and inverse)doc";
+
+static const char *__doc_mitsuba_Transform_inverse =
+R"doc(Compute the inverse of this transformation (for free, since it is
+already known))doc";
+
+static const char *__doc_mitsuba_Transform_inverse_matrix = R"doc(Return the underlying 4x4 inverse matrix)doc";
+
+static const char *__doc_mitsuba_Transform_look_at =
+R"doc(Create a look-at camera transformation
+
+Parameter ``p``:
+    Camera position
+
+Parameter ``t``:
+    Target vector
+
+Parameter ``u``:
+    Up vector)doc";
 
 static const char *__doc_mitsuba_Transform_m_inverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_m_value = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_operator_mul = R"doc()doc";
+static const char *__doc_mitsuba_Transform_matrix = R"doc(Return the underlying 4x4 matrix)doc";
+
+static const char *__doc_mitsuba_Transform_operator_eq = R"doc(Equality comparison operator)doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul = R"doc(Concatenate transformations)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul_2 = R"doc(Transform a 3D point)doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul_3 = R"doc(Transform a 3D vector)doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul_4 = R"doc(Transform a 3D normal)doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul_5 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
+
+static const char *__doc_mitsuba_Transform_operator_ne = R"doc(Inequality comparison operator)doc";
+
+static const char *__doc_mitsuba_Transform_orthographic =
+R"doc(Create an orthographic transformation, which maps Z to [0,1] and
+leaves the X and Y coordinates untouched.
+
+Parameter ``clip_near``:
+    Near clipping plane
+
+Parameter ``clip_far``:
+    Far clipping plane)doc";
+
+static const char *__doc_mitsuba_Transform_perspective =
+R"doc(Create a perspective transformation. (Maps [near, far] to [0, 1])
+
+Parameter ``fov``:
+    Field of view in degrees
+
+Parameter ``clip_near``:
+    Near clipping plane
+
+Parameter ``clip_far``:
+    Far clipping plane)doc";
+
+static const char *__doc_mitsuba_Transform_rotate =
+R"doc(Create a rotation transformation around an arbitrary axis. The angle
+is specified in degrees)doc";
+
+static const char *__doc_mitsuba_Transform_scale = R"doc(Create a scale transformation)doc";
+
+static const char *__doc_mitsuba_Transform_transform_affine = R"doc(Transform a 3D point (for affine/non-perspective transformations))doc";
+
+static const char *__doc_mitsuba_Transform_transform_affine_2 = R"doc(Transform a 3D vector (for affine/non-perspective transformations))doc";
+
+static const char *__doc_mitsuba_Transform_transform_affine_3 = R"doc(Transform a 3D normal (for affine/non-perspective transformations))doc";
+
+static const char *__doc_mitsuba_Transform_transform_affine_4 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
+
+static const char *__doc_mitsuba_Transform_translate = R"doc(Create a translation transformation)doc";
+
+static const char *__doc_mitsuba_Transform_truncate_3d = R"doc(Truncate a 4D vector/point/normal to a 3D vector/point/normal)doc";
+
+static const char *__doc_mitsuba_Transform_truncate_3d_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Vector = R"doc(//! @{ \name Elementary vector, point, and normal data types)doc";
 
@@ -3606,11 +3785,11 @@ static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that hav
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
@@ -3789,6 +3968,10 @@ static const char *__doc_mitsuba_string_trim = R"doc()doc";
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 
 static const char *__doc_mitsuba_tuple_hasher_operator_call = R"doc()doc";
+
+static const char *__doc_mitsuba_type_suffix =
+R"doc(Convenience function which computes an array size/type suffix (like
+'2u' or '3fP'))doc";
 
 static const char *__doc_mitsuba_util_core_count = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 

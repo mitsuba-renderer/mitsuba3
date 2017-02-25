@@ -36,7 +36,8 @@ NAMESPACE_END(detail)
 RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scramble) {
     //static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
     printf("PROBLEM: %i %i\n", (int) sizeof(PrimeBase), (int) sizeof(PrimeBase::divisor));
-    assert(sizeof(PrimeBase) == 16);
+    if (sizeof(PrimeBase) != 16)
+        Assert("Problem!");
 
     Timer timer;
     auto primes = detail::sieve(max_base);

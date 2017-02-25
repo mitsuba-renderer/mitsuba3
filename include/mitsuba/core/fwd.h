@@ -39,8 +39,8 @@ template <typename> class AtomicFloat;
 template <typename Type, size_t Size>      struct Vector;
 template <typename Type, size_t Size>      struct Point;
 template <typename Type, size_t Size = 3>  struct Normal;
-template <typename Point, typename Vector> struct TRay;
-template <typename Point>                  struct TBoundingBox;
+template <typename Point>                  struct Ray;
+template <typename Point>                  struct BoundingBox;
 template <typename Vector>                 struct Frame;
 
 using Vector1f = Vector<Float, 1>;
@@ -71,13 +71,13 @@ using Point4d = Point<double, 4>;
 using Normal3f = Normal<Float, 3>;
 using Normal3d = Normal<double, 3>;
 
-using BoundingBox1f = TBoundingBox<Point1f>;
-using BoundingBox2f = TBoundingBox<Point2f>;
-using BoundingBox3f = TBoundingBox<Point3f>;
-using BoundingBox4f = TBoundingBox<Point4f>;
+using BoundingBox1f = BoundingBox<Point1f>;
+using BoundingBox2f = BoundingBox<Point2f>;
+using BoundingBox3f = BoundingBox<Point3f>;
+using BoundingBox4f = BoundingBox<Point4f>;
 
-using Ray2f = TRay<Point2f, Vector2f>;
-using Ray3f = TRay<Point3f, Vector3f>;
+using Ray2f = Ray<Point2f>;
+using Ray3f = Ray<Point3f>;
 
 using Frame3f = Frame<Vector3f>;
 

@@ -66,10 +66,37 @@ using Point3fX  = Point<FloatX, 3>;
 using Normal3fP = Normal<FloatP>;
 using Normal3fX = Normal<FloatX>;
 
-using Ray3fP    = TRay<Point3fP, Vector3fP>;
-using Ray3fX    = TRay<Point3fX, Vector3fX>;
+using Ray3fP    = Ray<Point3fP>;
+using Ray3fX    = Ray<Point3fX>;
 
 //! @}
 // =============================================================
+
+/// Convenience function which computes an array size/type suffix (like '2u' or '3fP')
+template <typename T> std::string type_suffix() {
+    using B = scalar_t<T>;
+
+    std::string id = std::to_string(array_size<T>::value);
+
+    if (std::is_floating_point<B>::value) {
+        if (std::is_same<B, double>::value)
+            id += 'd';
+        else
+            id += 'f';
+    } else {
+        if (std::is_signed<B>::value)
+            id += 'i';
+        else
+            id += 'u';
+    }
+
+    if (is_sarray<value_t<T>>::value)
+        id += 'P';
+    else if (is_sarray<value_t<T>>::value)
+        id += 'X';
+
+    return id;
+}
+
 
 NAMESPACE_END(mitsuba)

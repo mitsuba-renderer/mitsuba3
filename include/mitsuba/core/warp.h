@@ -33,7 +33,7 @@ extern template MTS_EXPORT_CORE Vector3f  square_to_uniform_sphere(Point2f  samp
 extern template MTS_EXPORT_CORE Vector3fP square_to_uniform_sphere(Point2fP sample);
 
 /// Density of \ref square_to_uniform_sphere() with respect to solid angles
-template <bool TestDomain = false, typename Vector3f, typename Float = typename Vector3f::Scalar>
+template <bool TestDomain = false, typename Vector3f, typename Float = value_t<Vector3f>>
 Float square_to_uniform_sphere_pdf(Vector3f v) {
     if (TestDomain) {
         return select(abs(squared_norm(v) - 1.f) > math::Epsilon,

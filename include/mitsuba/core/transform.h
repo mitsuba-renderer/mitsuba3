@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mitsuba/core/vector.h>
+#include <mitsuba/core/ray.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -73,6 +73,7 @@ struct MTS_EXPORT_CORE Matrix4f : Array<Vector4f, 4> {
  * differently under homogeneous coordinate transformations)
  */
 class MTS_EXPORT_CORE Transform {
+    using Column = value_t<Matrix4f>;
 public:
     /// Create the identity transformation
     Transform()
@@ -111,10 +112,10 @@ public:
     MTS_INLINE Point<Scalar, 3> operator*(Point<Scalar, 3> vec) const {
         using Point3 = Point<Scalar, 3>;
 
-        auto result = outer_product(m_value.col(0), vec.x()) +
-                      outer_product(m_value.col(1), vec.y()) +
-                      outer_product(m_value.col(2), vec.z()) +
-                                    m_value.col(3);
+        auto result = m_value.col(0) * broadcast<Column>(vec.x()) +
+                      m_value.col(1) * broadcast<Column>(vec.y()) +
+                      m_value.col(2) * broadcast<Column>(vec.z()) +
+                      m_value.col(3);
 
         Scalar w = result.w();
         if (unlikely(w != 1.f))
@@ -123,15 +124,15 @@ public:
         return truncate_3d<Point3>(result);
     }
 
-    /// Transform a 3D point (for non-perspective transformations)
+    /// Transform a 3D point (for affine/non-perspective transformations)
     template <typename Scalar>
-    MTS_INLINE Point<Scalar, 3> linear_transform(Point<Scalar, 3> vec) const {
+    MTS_INLINE Point<Scalar, 3> transform_affine(Point<Scalar, 3> vec) const {
         using Point3 = Point<Scalar, 3>;
 
-        auto result = outer_product(m_value.col(0), vec.x()) +
-                      outer_product(m_value.col(1), vec.y()) +
-                      outer_product(m_value.col(2), vec.z()) +
-                                    m_value.col(3);
+        auto result = m_value.col(0) * broadcast<Column>(vec.x()) +
+                      m_value.col(1) * broadcast<Column>(vec.y()) +
+                      m_value.col(2) * broadcast<Column>(vec.z()) +
+                      m_value.col(3);
 
         return truncate_3d<Point3>(result);
     }
@@ -139,9 +140,20 @@ public:
     /// Transform a 3D vector
     template <typename Scalar>
     MTS_INLINE Vector<Scalar, 3> operator*(Vector<Scalar, 3> vec) const {
-        auto result = outer_product(m_value.col(0), vec.x()) +
-                      outer_product(m_value.col(1), vec.y()) +
-                      outer_product(m_value.col(2), vec.z());
+        auto result = m_value.col(0) * broadcast<Column>(vec.x()) +
+                      m_value.col(1) * broadcast<Column>(vec.y()) +
+                      m_value.col(2) * broadcast<Column>(vec.z());
+
+        return truncate_3d<Vector<Scalar, 3>>(result);
+    }
+
+    /// Transform a 3D vector (for affine/non-perspective transformations)
+    template <typename Scalar>
+    MTS_INLINE Vector<Scalar, 3> transform_affine(Vector<Scalar, 3> vec) const {
+        /// Identical to operator*(Vector)
+        auto result = m_value.col(0) * broadcast<Column>(vec.x()) +
+                      m_value.col(1) * broadcast<Column>(vec.y()) +
+                      m_value.col(2) * broadcast<Column>(vec.z());
 
         return truncate_3d<Vector<Scalar, 3>>(result);
     }
@@ -151,12 +163,72 @@ public:
     MTS_INLINE Normal<Scalar, 3> operator*(Normal<Scalar, 3> vec) const {
         Matrix4f inv_t = enoki::transpose(m_inverse);
 
-        auto result = outer_product(inv_t.col(0), vec.x()) +
-                      outer_product(inv_t.col(1), vec.y()) +
-                      outer_product(inv_t.col(2), vec.z());
+        auto result = inv_t.col(0) * broadcast<Column>(vec.x()) +
+                      inv_t.col(1) * broadcast<Column>(vec.y()) +
+                      inv_t.col(2) * broadcast<Column>(vec.z());
 
         return truncate_3d<Normal<Scalar, 3>>(result);
     }
+
+    /// Transform a 3D normal (for affine/non-perspective transformations)
+    template <typename Scalar>
+    MTS_INLINE Normal<Scalar, 3> transform_affine(Normal<Scalar, 3> vec) const {
+        /// Identical to operator*(Normal)
+        Matrix4f inv_t = enoki::transpose(m_inverse);
+
+        auto result = inv_t.col(0) * broadcast<Column>(vec.x()) +
+                      inv_t.col(1) * broadcast<Column>(vec.y()) +
+                      inv_t.col(2) * broadcast<Column>(vec.z());
+
+        return truncate_3d<Normal<Scalar, 3>>(result);
+    }
+
+    /// Transform a ray (for affine/non-perspective transformations)
+    template <typename Point>
+    MTS_INLINE Ray<Point> operator*(Ray<Point> ray) const {
+        return Ray<Point>(operator*(ray.o),
+                          operator*(ray.d),
+                          ray.mint, ray.maxt);
+    }
+
+    /// Transform a ray (for affine/non-perspective transformations)
+    template <typename Point>
+    MTS_INLINE Ray<Point> transform_affine(Ray<Point> ray) const {
+        return Ray<Point>(transform_affine(ray.o),
+                          transform_affine(ray.d),
+                          ray.mint, ray.maxt);
+    }
+
+    /// Create a translation transformation
+    static Transform translate(const Vector3f &v);
+
+    /// Create a rotation transformation around an arbitrary axis. The angle is specified in degrees
+    static Transform rotate(const Vector3f &axis, Float angle);
+
+    /// Create a scale transformation
+    static Transform scale(const Vector3f &v);
+
+    /** \brief Create a perspective transformation.
+     *   (Maps [near, far] to [0, 1])
+     * \param fov Field of view in degrees
+     * \param clip_near Near clipping plane
+     * \param clip_far Far clipping plane
+     */
+    static Transform perspective(Float fov, Float clip_near, Float clip_far);
+
+    /** \brief Create an orthographic transformation, which maps Z to [0,1]
+     * and leaves the X and Y coordinates untouched.
+     * \param clip_near Near clipping plane
+     * \param clip_far Far clipping plane
+     */
+    static Transform orthographic(Float clip_near, Float clip_far);
+
+    /** \brief Create a look-at camera transformation
+     * \param p Camera position
+     * \param t Target vector
+     * \param u Up vector
+     */
+    static Transform look_at(const Point3f &p, const Point3f &t, const Vector3f &u);
 
 private:
     /// Truncate a 4D vector/point/normal to a 3D vector/point/normal

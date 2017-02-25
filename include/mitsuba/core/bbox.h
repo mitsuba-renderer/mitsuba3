@@ -14,18 +14,18 @@ NAMESPACE_BEGIN(mitsuba)
  * This class is parameterized by the underlying point data structure,
  * which permits the use of different scalar types and dimensionalities, e.g.
  * \code
- * TBoundingBox<Vector3i> integerBBox(Point3i(0, 1, 3), Point3i(4, 5, 6));
- * TBoundingBox<Vector2d> doubleBBox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
+ * BoundingBox<Vector3i> integerBBox(Point3i(0, 1, 3), Point3i(4, 5, 6));
+ * BoundingBox<Vector2d> doubleBBox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
  * \endcode
  *
  * \tparam T The underlying point data type (e.g. \c Point2d)
  */
-template <typename Point_> struct TBoundingBox {
+template <typename Point_> struct BoundingBox {
     static constexpr size_t Size = Point_::Size;
 
-    typedef Point_                         Point;
-    typedef typename Point::Scalar         Scalar;
-    typedef typename Point::Vector         Vector;
+    using Point  = Point_;
+    using Scalar = typename Point::Scalar;
+    using Vector = typename Point::Vector;
 
     /**
      * \brief Create a new invalid bounding box
@@ -34,31 +34,23 @@ template <typename Point_> struct TBoundingBox {
      * and maximum position to \f$\infty\f$ and \f$-\infty\f$,
      * respectively.
      */
-    TBoundingBox() {
-        reset();
-    }
-
-    /// Unserialize a bounding box from a binary data stream
-    //TBoundingBox(Stream *stream) { // XXX
-        //min = Point(stream);
-        //max = Point(stream);
-    //}
+    BoundingBox() { reset(); }
 
     /// Create a collapsed bounding box from a single point
-    TBoundingBox(const Point &p)
+    BoundingBox(const Point &p)
         : min(p), max(p) { }
 
     /// Create a bounding box from two positions
-    TBoundingBox(const Point &min, const Point &max)
+    BoundingBox(const Point &min, const Point &max)
         : min(min), max(max) { }
 
     /// Test for equality against another bounding box
-    bool operator==(const TBoundingBox &bbox) const {
+    bool operator==(const BoundingBox &bbox) const {
         return all(eq(min, bbox.min) & eq(max, bbox.max));
     }
 
     /// Test for inequality against another bounding box
-    bool operator!=(const TBoundingBox &bbox) const {
+    bool operator!=(const BoundingBox &bbox) const {
         return any(neq(min, bbox.min) | neq(max, bbox.max));
     }
 
@@ -122,9 +114,7 @@ template <typename Point_> struct TBoundingBox {
     }
 
     /// Calculate the n-dimensional volume of the bounding box
-    Scalar volume() const {
-        return hprod(max - min);
-    }
+    Scalar volume() const { return hprod(max - min); }
 
     /// Calculate the n-1 dimensional volume of the boundary
     template <typename T = Point, typename std::enable_if<T::Size == 3, int>::type = 0>
@@ -187,7 +177,7 @@ template <typename Point_> struct TBoundingBox {
      *         function parameter with default value \c False.
      */
     template <bool Strict = false>
-    bool contains(const TBoundingBox &bbox) const {
+    bool contains(const BoundingBox &bbox) const {
         if (Strict)
             return all(bbox.min > min & bbox.max < max);
         else
@@ -206,7 +196,7 @@ template <typename Point_> struct TBoundingBox {
      * \return \c true If overlap was detected.
      */
     template <bool Strict = false>
-    bool overlaps(const TBoundingBox &bbox) const {
+    bool overlaps(const BoundingBox &bbox) const {
         if (Strict)
             return all(bbox.min < max & bbox.max > min);
         else
@@ -227,7 +217,7 @@ template <typename Point_> struct TBoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar squared_distance(const TBoundingBox &bbox) const {
+    Scalar squared_distance(const BoundingBox &bbox) const {
         return squared_norm(((bbox.max < min) & (min - bbox.max)) +
                             ((bbox.min > max) & (bbox.min - max)));
     }
@@ -244,7 +234,7 @@ template <typename Point_> struct TBoundingBox {
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar distance(const TBoundingBox &bbox) const {
+    Scalar distance(const BoundingBox &bbox) const {
         return std::sqrt(squared_distance(bbox));
     }
 
@@ -261,7 +251,7 @@ template <typename Point_> struct TBoundingBox {
     }
 
     /// Clip this bounding box to another bounding box
-    void clip(const TBoundingBox &bbox) {
+    void clip(const BoundingBox &bbox) {
         this->min = enoki::max(this->min, bbox.min);
         this->max = enoki::min(this->max, bbox.max);
     }
@@ -273,39 +263,46 @@ template <typename Point_> struct TBoundingBox {
     }
 
     /// Expand the bounding box to contain another bounding box
-    void expand(const TBoundingBox &bbox) {
+    void expand(const BoundingBox &bbox) {
         this->min = enoki::min(this->min, bbox.min);
         this->max = enoki::max(this->max, bbox.max);
     }
 
     /// Merge two bounding boxes
-    static TBoundingBox merge(const TBoundingBox &bbox1, const TBoundingBox &bbox2) {
-        return TBoundingBox(
+    static BoundingBox merge(const BoundingBox &bbox1, const BoundingBox &bbox2) {
+        return BoundingBox(
             enoki::min(bbox1.min, bbox2.min),
             enoki::max(bbox1.max, bbox2.max)
         );
     }
 
     /// Check if a ray intersects a bounding box
-    bool ray_intersect(const Ray3f &ray, Scalar &nearT, Scalar &farT) const {
-        /* Early out test */
-        if (any(eq(ray.d, zero<Vector>()) & (ray.o < min | ray.o > max)))
-            return false;
+    template <typename Ray>
+    MTS_INLINE auto ray_intersect(const Ray &ray) const {
+        using Vector = typename Ray::Vector;
+        using Point = typename Ray::Point;
+        using Scalar = value_t<Point>;
+        using Mask = mask_t<Scalar>;
+
+        /* First, ensure that the ray either has a nonzero slope on each axis,
+           or that its origin on a zero-valued axis is within the box bounds */
+        Mask active = all(neq(ray.d, zero<Vector>()) | (ray.o > min | ray.o < max));
 
         /* Compute intersection intervals for each axis */
-        auto t1 = (min - ray.o) * ray.d_rcp;
-        auto t2 = (max - ray.o) * ray.d_rcp;
+        Vector t1 = (min - ray.o) * ray.d_rcp;
+        Vector t2 = (max - ray.o) * ray.d_rcp;
 
         /* Ensure proper ordering */
-        auto mask = t1 < t2;
-        auto t1p = select(mask, t1, t2);
-        auto t2p = select(mask, t2, t1);
+        Vector t1p = enoki::min(t1, t2);
+        Vector t2p = enoki::max(t1, t2);
 
         /* Intersect intervals */
-        nearT = hmax(t1p);
-        farT  = hmin(t2p);
+        Scalar nearT = hmax(t1p);
+        Scalar farT  = hmin(t2p);
 
-        return ray.mint <= farT && nearT <= ray.maxt;
+        active &= ray.mint <= farT & nearT <= ray.maxt;
+
+        return std::make_tuple(active, nearT, farT);
     }
 
     Point min; ///< Component-wise minimum
@@ -314,13 +311,12 @@ template <typename Point_> struct TBoundingBox {
 
 /// Print a string representation of the bounding box
 template <typename Point>
-std::ostream &operator<<(std::ostream &os, const TBoundingBox<Point> &bbox) {
+std::ostream &operator<<(std::ostream &os, const BoundingBox<Point> &bbox) {
+    os << "BoundingBox" << type_suffix<Point>();
     if (!bbox.valid())
-        os << "BoundingBox" << Point::Size << "[invalid]";
+        os << "[invalid]";
     else
-        os << "BoundingBox" << Point::Size
-           << "[min = " << bbox.min
-           << ", max = " << bbox.max << "]";
+        os << "[min = " << bbox.min << ", max = " << bbox.max << "]";
     return os;
 }
 

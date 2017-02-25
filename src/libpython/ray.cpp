@@ -1,28 +1,26 @@
 #include <mitsuba/core/ray.h>
 #include "python.h"
 
-template <typename Type> void bind_ray(py::module &m, const char *name) {
-    typedef typename Type::PointType PointType;
-    typedef typename Type::VectorType VectorType;
-    typedef typename Type::Scalar Scalar;
-
-    py::class_<Type>(m, name, D(TRay))
-        .def(py::init<>(), D(TRay, TRay))
-        .def(py::init<const Type &>(), D(TRay, TRay))
-        .def(py::init<PointType, VectorType>(), D(TRay, TRay, 2))
-        .def(py::init<PointType, VectorType, Scalar, Scalar>(), D(TRay, TRay, 3))
-        .def(py::init<const Type &, Scalar, Scalar>(), D(TRay, TRay, 4))
-        .def("update", &Type::update, D(TRay, update))
-        .def("reverse", &Type::reverse, D(TRay, reverse))
-        .def("__call__", &Type::operator(), D(TRay, operator, call))
-        .def_readwrite("o", &Type::o, D(TRay, o))
-        .def_readwrite("d", &Type::d, D(TRay, d))
-        .def_readwrite("d_rcp", &Type::d_rcp, D(TRay, d_rcp))
-        .def_readwrite("mint", &Type::mint, D(TRay, mint))
-        .def_readwrite("maxt", &Type::maxt, D(TRay, maxt));
+template <typename Type> auto bind_ray(py::module &m, const char *name) {
+    return py::class_<Type>(m, name, D(Ray))
+        .def(py::init<>(), D(Ray, Ray))
+        .def(py::init<const Type &>(), D(Ray, Ray, 2))
+        .def_readwrite("o", &Type::o, D(Ray, o))
+        .def_readwrite("d", &Type::d, D(Ray, d))
+        .def_readwrite("d_rcp", &Type::d_rcp, D(Ray, d_rcp))
+        .def_readwrite("mint", &Type::mint, D(Ray, mint))
+        .def_readwrite("maxt", &Type::maxt, D(Ray, maxt));
 }
 
 MTS_PY_EXPORT(Ray) {
-    bind_ray<Ray3f>(m, "Ray3f");
+    bind_ray<Ray3f>(m, "Ray3f")
+        .def(py::init<Point3f, Vector3f>(), D(Ray, Ray, 4))
+        .def(py::init<Point3f, Vector3f, Float, Float>(), D(Ray, Ray, 5))
+        .def(py::init<const Ray3f &, Float, Float>(), D(Ray, Ray, 7))
+        .def("update", &Ray3f::update, D(Ray, update))
+        .def("reverse", &Ray3f::reverse, D(Ray, reverse))
+        .def("__call__", &Ray3f::operator(), D(Ray, operator, call));
+
+    bind_ray<Ray3fX>(m, "Ray3fX");
 }
 
