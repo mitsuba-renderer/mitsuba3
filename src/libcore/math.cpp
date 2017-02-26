@@ -1018,5 +1018,8 @@ std::pair<double, double> legendre_pd(int l, double x) { return detail::legendre
 std::pair<float, float> legendre_pd_diff(int l, float x) { return detail::legendre_pd_diff(l, x); }
 std::pair<double, double> legendre_pd_diff(int l, double x) { return detail::legendre_pd_diff(l, x); }
 
+template MTS_EXPORT_CORE std::tuple<mask_t<Float>, Float, Float> solve_quadratic(Float, Float, Float);
+template MTS_EXPORT_CORE std::tuple<mask_t<FloatP>, FloatP, FloatP> solve_quadratic(FloatP, FloatP, FloatP);
+
 NAMESPACE_END(math)
 NAMESPACE_END(mitsuba)

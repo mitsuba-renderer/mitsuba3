@@ -12,7 +12,7 @@ def test01_ply_triangle():
     thread.set_file_resolver(fres)
 
     shape = load_string("""
-        <scene version="0.4.0">
+        <scene version="0.5.0">
             <shape type="ply">
                 <string name="filename" value="data/triangle.ply"/>
             </shape>

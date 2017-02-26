@@ -1569,6 +1569,39 @@ static const char *__doc_mitsuba_Mesh_primitive_count =
 R"doc(Returns the number of sub-primitives (i.e. triangles) that make up
 this shape)doc";
 
+static const char *__doc_mitsuba_Mesh_ray_intersect =
+R"doc(Ray-triangle intersection test
+
+Uses the algorithm by Moeller and Trumbore discussed at
+``http://www.acm.org/jgt/papers/MollerTrumbore97/code.html``.
+
+Parameter ``p0``:
+    Position of the first vertex
+
+Parameter ``p1``:
+    Position of the second vertex
+
+Parameter ``p2``:
+    Position of the third vertex
+
+Parameter ``ray``:
+    The ray segment to be used for the intersection query
+
+Parameter ``t``:
+    Upon success, *t* contains the distance from the ray origin to the
+    intersection point,
+
+Parameter ``u``:
+    Upon success, ``u`` will contain the 'U' component of the
+    intersection in barycentric coordinates
+
+Parameter ``v``:
+    Upon success, ``v`` will contain the 'V' component of the
+    intersection in barycentric coordinates
+
+Returns:
+    ``True`` if an intersection has been detected)doc";
+
 static const char *__doc_mitsuba_Mesh_to_string = R"doc(Return a human-readable string representation of the shape contents.)doc";
 
 static const char *__doc_mitsuba_Mesh_vertex =
@@ -3777,17 +3810,23 @@ static const char *__doc_mitsuba_math_rad_to_deg = R"doc(/ Convert radians to de
 
 static const char *__doc_mitsuba_math_round_to_power_of_two = R"doc(Round an unsigned integer to the next integer power of two)doc";
 
+static const char *__doc_mitsuba_math_solve_quadratic =
+R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
+
+Returns:
+    ``True`` if a solution could be found)doc";
+
 static const char *__doc_mitsuba_math_ulpdiff =
 R"doc(Compare the difference in ULPs between a reference value and another
 given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 

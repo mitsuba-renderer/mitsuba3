@@ -51,4 +51,19 @@ MTS_PY_EXPORT(math) {
             throw std::runtime_error("Unsupported input dimensions");
         return math::chi2(obs.data(), exp.data(), thresh, obs.shape(0));
     }, D(math, chi2));
+
+    math.def("solve_quadratic", &math::solve_quadratic<float>,
+             D(math, solve_quadratic), "a"_a, "b"_a, "c"_a);
+
+    auto solve_quadratic = [](FloatP a, FloatP b, FloatP c) {
+        auto result = math::solve_quadratic(a, b, c);
+        return std::make_tuple(
+            reinterpret_array<bool_array_t<FloatP>>(std::get<0>(result)),
+            std::get<1>(result),
+            std::get<2>(result)
+        );
+    };
+
+    math.def("solve_quadratic", vectorize_wrapper(solve_quadratic),
+             "a"_a, "b"_a, "c"_a);
 }

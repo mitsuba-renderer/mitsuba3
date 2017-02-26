@@ -1,9 +1,5 @@
-from mitsuba.core.math import log2i
-from mitsuba.core.math import is_power_of_two
-from mitsuba.core.math import round_to_power_of_two
-
-
 def test01_log2i():
+    from mitsuba.core.math import log2i
     assert log2i(1) == 0
     assert log2i(2) == 1
     assert log2i(3) == 1
@@ -14,7 +10,8 @@ def test01_log2i():
     assert log2i(8) == 3
 
 
-def test01_is_power_of_two():
+def test02_is_power_of_two():
+    from mitsuba.core.math import is_power_of_two
     assert not is_power_of_two(0)
     assert is_power_of_two(1)
     assert is_power_of_two(2)
@@ -26,7 +23,8 @@ def test01_is_power_of_two():
     assert is_power_of_two(8)
 
 
-def test01_round_to_power_of_two():
+def test03_round_to_power_of_two():
+    from mitsuba.core.math import round_to_power_of_two
     assert round_to_power_of_two(0) == 1
     assert round_to_power_of_two(1) == 1
     assert round_to_power_of_two(2) == 2
@@ -37,3 +35,9 @@ def test01_round_to_power_of_two():
     assert round_to_power_of_two(7) == 8
     assert round_to_power_of_two(8) == 8
 
+def test04_solve_quadratic():
+    from mitsuba.core.math import solve_quadratic
+    assert solve_quadratic(1, 4, -5) == (True, -5, 1)
+    assert solve_quadratic([1], [4], [-5]) == ([True], [-5], [1])
+    assert solve_quadratic(0, 5, -10) == (True, 2, 2)
+    assert solve_quadratic([0], [5], [-10]) == ([True], [2], [2])

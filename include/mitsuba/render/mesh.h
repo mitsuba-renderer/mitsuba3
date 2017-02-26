@@ -85,6 +85,53 @@ public:
      */
     virtual Size primitive_count() const override;
 
+    /** \brief Ray-triangle intersection test
+     *
+     * Uses the algorithm by Moeller and Trumbore discussed at
+     * <tt>http://www.acm.org/jgt/papers/MollerTrumbore97/code.html</tt>.
+     *
+     * \param index
+     *    Index of the triangle to be intersected
+     * \param ray
+     *    The ray segment to be used for the intersection query. The
+     *    ray's minimum and maximum extent values are not considered.
+     * \return
+     *    Returns an ordered tuple <tt>(mask, u, v, t)</tt>, where \c mask
+     *    indicates whether an intersection was found, \c t contains the
+     *    distance from the ray origin to the intersection point, and \c u and
+     *    \c v contains the first two components of the intersection in
+     *    barycentric coordinates
+     */
+    template <typename Ray3>
+    auto ray_intersect(size_t index, const Ray3 &ray) {
+        using Vector3 = typename Ray3::Vector;
+        using Float = value_t<Vector3>;
+
+        auto idx = (const Index *) face(index);
+        Assert(idx[0] < m_vertex_count);
+        Assert(idx[1] < m_vertex_count);
+        Assert(idx[2] < m_vertex_count);
+
+        Point3f v0 = load<Point3f>((float *) vertex(idx[0]));
+        Point3f v1 = load<Point3f>((float *) vertex(idx[1]));
+        Point3f v2 = load<Point3f>((float *) vertex(idx[2]));
+
+        Vector3 edge1 = v1 - v0, edge2 = v2 - v0;
+        Vector3 pvec = cross(ray.d, edge2);
+        Float inv_det = rcp(dot(edge1, pvec));
+
+        Vector3 tvec = ray.o - v0;
+        Float u = dot(tvec, pvec) * inv_det;
+        auto mask = u >= 0.f & u <= 1.f;
+
+        auto qvec = cross(tvec, edge1);
+        Float v = dot(ray.d, qvec) * inv_det;
+        mask &= v >= 0.f & u + v <= 1.f;
+
+        Float t = dot(edge2, qvec) * inv_det;
+        return std::make_tuple(mask, u, v, t);
+    }
+
     /// @}
     // =========================================================================
 

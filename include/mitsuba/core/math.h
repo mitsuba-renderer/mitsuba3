@@ -366,6 +366,53 @@ template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
     return std::make_tuple(chsq, dof - 1, n_pooled_in, n_pooled_out);
 }
 
+/**
+ * \brief Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
+ * \return \c true if a solution could be found
+ */
+template <typename Float>
+std::tuple<mask_t<Float>, Float, Float> solve_quadratic(Float a, Float b, Float c) {
+    using Mask = mask_t<Float>;
+
+    /* Is this perhaps a linear equation? */
+    Mask linear_case = eq(a, Float(0));
+
+    /* If so, we require b > 0 */
+    Mask active = !linear_case | b > 0;
+
+    /* Initialize solution with that of linear equation */
+    Float x0, x1;
+    x0 = x1 = -c * rcp(b);
+
+    /* Check if the quadratic equation is solvable */
+    Float discrim = b * b - 4.0f * a * c;
+    active &= linear_case | discrim >= 0;
+
+    if (likely(any(active))) {
+        Float sqrt_discrim = sqrt(discrim);
+
+        /* Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)
+         *
+         * Based on the observation that one solution is always
+         * accurate while the other is not. Finds the solution of
+         * greater magnitude which does not suffer from loss of
+         * precision and then uses the identity x1 * x2 = c / a
+         */
+        Float temp = -0.5f * (b + copysign(sqrt_discrim, b));
+        Float x0p = temp * rcp(a);
+        Float x1p = c * rcp(temp);
+
+        /* Order the results so that x0 < x1 */
+        Float x0m = enoki::min(x0p, x1p);
+        Float x1m = enoki::max(x0p, x1p);
+
+        x0 = select(linear_case, x0, x0m);
+        x1 = select(linear_case, x0, x1m);
+    }
+
+    return std::make_tuple(active, x0, x1);
+}
+
 //! @}
 // -----------------------------------------------------------------------
 

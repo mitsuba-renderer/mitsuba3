@@ -2,6 +2,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3f &);
+template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3fP &);
+
 Mesh::~Mesh() { }
 
 BoundingBox3f Mesh::bbox() const {
@@ -28,60 +31,60 @@ BoundingBox3f Mesh::bbox(Index index) const {
 
 
 namespace {
-    constexpr size_t maxVertices = 10;
+    constexpr size_t max_vertices = 10;
 
-    size_t sutherlandHodgman(Point3d *input, size_t inCount, Point3d *output,
-                                    int axis, double splitPos, bool isMinimum) {
-        if (inCount < 3)
+    size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output,
+                              int axis, double split_pos, bool is_minimum) {
+        if (in_count < 3)
             return 0;
 
-        Point3d cur       = input[0];
-        double sign       = isMinimum ? 1.0 : -1.0;
-        double distance   = sign * (cur[axis] - splitPos);
-        bool  curIsInside = (distance >= 0);
-        size_t outCount    = 0;
+        Point3d cur        = input[0];
+        double sign        = is_minimum ? 1.0 : -1.0;
+        double distance    = sign * (cur[axis] - split_pos);
+        bool  cur_is_inside = (distance >= 0);
+        size_t out_count    = 0;
 
-        for (size_t i=0; i<inCount; ++i) {
-            size_t nextIdx = i+1;
-            if (nextIdx == inCount)
-                nextIdx = 0;
+        for (size_t i=0; i<in_count; ++i) {
+            size_t next_idx = i+1;
+            if (next_idx == in_count)
+                next_idx = 0;
 
-            Point3d next = input[nextIdx];
-            distance = sign * (next[axis] - splitPos);
-            bool nextIsInside = (distance >= 0);
+            Point3d next = input[next_idx];
+            distance = sign * (next[axis] - split_pos);
+            bool next_is_inside = (distance >= 0);
 
-            if (curIsInside && nextIsInside) {
+            if (cur_is_inside && next_is_inside) {
                 /* Both this and the next vertex are inside, add to the list */
-                Assert(outCount + 1 < maxVertices);
-                output[outCount++] = next;
-            } else if (curIsInside && !nextIsInside) {
+                Assert(out_count + 1 < max_vertices);
+                output[out_count++] = next;
+            } else if (cur_is_inside && !next_is_inside) {
                 /* Going outside -- add the intersection */
-                double t = (splitPos - cur[axis]) / (next[axis] - cur[axis]);
-                Assert(outCount + 1 < maxVertices);
+                double t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
+                Assert(out_count + 1 < max_vertices);
                 Point3d p = cur + (next - cur) * t;
-                p[axis] = splitPos; // Avoid roundoff errors
-                output[outCount++] = p;
-            } else if (!curIsInside && nextIsInside) {
+                p[axis] = split_pos; // Avoid roundoff errors
+                output[out_count++] = p;
+            } else if (!cur_is_inside && next_is_inside) {
                 /* Coming back inside -- add the intersection + next vertex */
-                double t = (splitPos - cur[axis]) / (next[axis] - cur[axis]);
-                Assert(outCount + 2 < maxVertices);
+                double t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
+                Assert(out_count + 2 < max_vertices);
                 Point3d p = cur + (next - cur) * t;
-                p[axis] = splitPos; // Avoid roundoff errors
-                output[outCount++] = p;
-                output[outCount++] = next;
+                p[axis] = split_pos; // Avoid roundoff errors
+                output[out_count++] = p;
+                output[out_count++] = next;
             } else {
                 /* Entirely outside - do not add anything */
             }
             cur = next;
-            curIsInside = nextIsInside;
+            cur_is_inside = next_is_inside;
         }
-        return outCount;
+        return out_count;
     }
 }
 
 BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
     /* Reserve room for some additional vertices */
-    Point3d vertices1[maxVertices], vertices2[maxVertices];
+    Point3d vertices1[max_vertices], vertices2[max_vertices];
     size_t nVertices = 3;
 
     Assert(index <= m_face_count);
@@ -106,14 +109,15 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
     vertices1[2] = Point3d(v2);
 
     for (int axis=0; axis<3; ++axis) {
-        nVertices = sutherlandHodgman(vertices1, nVertices, vertices2, axis,
+        nVertices = sutherland_hodgman(vertices1, nVertices, vertices2, axis,
                                       (double) clip.min[axis], true);
-        nVertices = sutherlandHodgman(vertices2, nVertices, vertices1, axis,
+        nVertices = sutherland_hodgman(vertices2, nVertices, vertices1, axis,
                                       (double) clip.max[axis], false);
     }
 
     BoundingBox3f result;
     for (size_t i = 0; i < nVertices; ++i) {
+        /* Convert back into floats (with conservative custom rounding modes) */
         Array<double, 3, false, RoundingMode::Up>   p1Up  (vertices1[i]);
         Array<double, 3, false, RoundingMode::Down> p1Down(vertices1[i]);
         result.min = min(result.min, Point3f(p1Down));
