@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
  * cos_theta(), \ref sin_phi(), etc.).
  */
 template <typename Vector3> struct Frame {
-    using Scalar  = typename Vector3::Scalar;
+    using Scalar  = value_t<Vector3>;
     using Vector2 = Vector<Scalar, 2>;
     using Normal  = mitsuba::Normal<Scalar>;
     Vector3 s, t;

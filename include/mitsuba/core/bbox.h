@@ -24,7 +24,7 @@ template <typename Point_> struct BoundingBox {
     static constexpr size_t Size = Point_::Size;
 
     using Point  = Point_;
-    using Scalar = typename Point::Scalar;
+    using Scalar = value_t<Point>;
     using Vector = typename Point::Vector;
 
     /**
