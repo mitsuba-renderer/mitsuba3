@@ -5,15 +5,15 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-// =============================================================
+// =======================================================================
 //! @{ \name Elementary vector, point, and normal data types
-// =============================================================
+// =======================================================================
 
 template <typename Type_, size_t Size_>
-struct Vector : enoki::StaticArrayImpl<Type_, Size_, false,
+struct Vector : enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
                                        RoundingMode::Default,
                                        Vector<Type_, Size_>> {
-    using Base = enoki::StaticArrayImpl<Type_, Size_, false,
+    using Base = enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
                                         RoundingMode::Default,
                                         Vector<Type_, Size_>>;
     using Base::Base;
@@ -26,10 +26,10 @@ struct Vector : enoki::StaticArrayImpl<Type_, Size_, false,
 
 
 template <typename Type_, size_t Size_>
-struct Point : enoki::StaticArrayImpl<Type_, Size_, false,
+struct Point : enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
                                       RoundingMode::Default,
                                       Point<Type_, Size_>> {
-    using Base = enoki::StaticArrayImpl<Type_, Size_, false,
+    using Base = enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
                                         RoundingMode::Default,
                                         Point<Type_, Size_>>;
     using Base::Base;
@@ -47,7 +47,21 @@ struct Normal : Vector<Type, Size_> {
 };
 
 //! @}
-// =============================================================
+// =======================================================================
+
+// =======================================================================
+//! @{ \name Convenient point/vector type aliases that use the value
+//           type underlying another given point or vector type
+// =======================================================================
+
+template <typename T> using vector3_t = Vector<value_t<T>, 3>;
+template <typename T> using vector2_t = Vector<value_t<T>, 2>;
+template <typename T> using point3_t  = Point<value_t<T>, 3>;
+template <typename T> using point2_t  = Point<value_t<T>, 2>;
+
+//! @}
+// =======================================================================
+
 
 /// Complete the set {a} to an orthonormal basis {a, b, c}
 template <typename Vector3>
@@ -73,9 +87,9 @@ std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
 
 NAMESPACE_END(mitsuba)
 
-// -----------------------------------------------------------------------
+// =======================================================================
 //! @{ \name Enoki accessors for static & dynamic vectorization
-// -----------------------------------------------------------------------
+// =======================================================================
 
 #define MITSUBA_VECTOR_TYPE(Name)                                              \
     NAMESPACE_BEGIN(enoki)                                                     \
@@ -162,4 +176,4 @@ MITSUBA_VECTOR_TYPE(mitsuba::Point)
 MITSUBA_VECTOR_TYPE(mitsuba::Normal)
 
 //! @}
-// -----------------------------------------------------------------------
+// =======================================================================

@@ -208,53 +208,54 @@ extern template MTS_EXPORT_CORE Float i0e(Float);
 // -----------------------------------------------------------------------
 
 /// Evaluate the l-th Legendre polynomial using recurrence
-template <typename Scalar>
-Scalar legendre_p(int l, Scalar x) {
+template <typename Value>
+Value legendre_p(int l, Value x) {
+    using Scalar = scalar_t<Value>;
+    Value l_cur = 0.f;
+
     assert(l >= 0);
 
-    if (l == 0) {
-        return 1;
-    } else if (l == 1) {
-        return x;
-    } else {
-        Scalar l_p_pred = 1.f, l_pred = x, l_cur = 0.f;
+    if (likely(l > 1)) {
+        Value l_p_pred = 1.f, l_pred = x;
+        Scalar k0 = 3, k1 = 2, k2 = 1;
 
-        for (int k = 2; k <= l; ++k) {
-            l_cur = ((2*k-1) * x * l_pred - (k - 1) * l_p_pred) / k;
+        for (int ki = 2; ki <= l; ++ki) {
+            l_cur = (k0 * x * l_pred - k2  * l_p_pred) / k1;
             l_p_pred = l_pred; l_pred = l_cur;
+            k2 = k1; k0 += 2; k1 += 1;
         }
 
         return l_cur;
+    } else {
+        l_cur = (l == 0) ? 1 : x;
     }
+    return l_cur;
 }
-
-extern template MTS_EXPORT_CORE Float  legendre_p(int, Float);
-extern template MTS_EXPORT_CORE FloatP legendre_p(int, FloatP);
 
 /// Evaluate an associated Legendre polynomial using recurrence
 template <typename Scalar>
 Scalar legendre_p(int l, int m, Scalar x) {
     Scalar p_mm = 1.f;
 
-    if (m > 0) {
-        Scalar somx2 =sqrt((1.f - x) * (1.f + x));
+    if (likely(m > 0)) {
+        Scalar somx2 = sqrt((1.f - x) * (1.f + x));
         Scalar fact = 1.f;
-        for (int i=1; i<=m; i++) {
+        for (int i = 1; i <= m; i++) {
             p_mm *= (-fact) * somx2;
             fact += 2.f;
         }
     }
 
-    if (l == m)
+    if (unlikely(l == m))
         return p_mm;
 
-    Scalar p_mmp1 = x * (2*m + 1.f) * p_mm;
-    if (l == m+1)
+    Scalar p_mmp1 = x * (2 * m + 1.f) * p_mm;
+    if (unlikely(l == m + 1))
         return p_mmp1;
 
     Scalar p_ll = 0.f;
-    for (int ll=m+2; ll <= l; ++ll) {
-        p_ll = ((2*ll-1)*x*p_mmp1 - (ll+m-1) * p_mm) / (ll-m);
+    for (int ll = m + 2; ll <= l; ++ll) {
+        p_ll = ((2 * ll - 1) * x * p_mmp1 - (ll + m - 1) * p_mm) / (ll - m);
         p_mm = p_mmp1;
         p_mmp1 = p_ll;
     }
@@ -262,64 +263,64 @@ Scalar legendre_p(int l, int m, Scalar x) {
     return p_ll;
 }
 
-extern template MTS_EXPORT_CORE Float  legendre_p(int, int, Float);
-extern template MTS_EXPORT_CORE FloatP legendre_p(int, int, FloatP);
-
 /// Evaluate the l-th Legendre polynomial and its derivative using recurrence
-template <typename Scalar>
-std::pair<Scalar, Scalar> legendre_pd(int l, Scalar x) {
+template <typename Value>
+std::pair<Value, Value> legendre_pd(int l, Value x) {
+    using Scalar = scalar_t<Value>;
+
     assert(l >= 0);
+    Value l_cur = 0.f, d_cur = 0.f;
 
-    if (l == 0) {
-        return std::make_pair(Scalar(1), Scalar(0));
-    } else if (l == 1) {
-        return std::make_pair(x, Scalar (1));
-    } else {
-        Scalar l_p_pred = 1.f, l_pred = x, l_cur = 0.f,
-               d_p_pred = 0.f, d_pred = 1.f, d_cur = 0.f;
+    if (likely(l > 1)) {
+        Value l_p_pred = 1.f, l_pred = x,
+              d_p_pred = 0.f, d_pred = 1.f;
+        Scalar k0 = 3, k1 = 2, k2 = 1;
 
-        for (int k = 2; k <= l; ++k) {
-            l_cur = ((2*k-1) * x * l_pred - (k - 1) * l_p_pred) / k;
-            d_cur = d_p_pred + (2*k-1) * l_pred;
+        for (int ki = 2; ki <= l; ++ki) {
+            l_cur = (k0 * x * l_pred - k2 * l_p_pred) / k1;
+            d_cur = d_p_pred + k0 * l_pred;
             l_p_pred = l_pred; l_pred = l_cur;
             d_p_pred = d_pred; d_pred = d_cur;
+            k2 = k1; k0 += 2; k1 += 1;
         }
-
-        return std::make_pair(l_cur, d_cur);
+    } else {
+        if (l == 0) {
+            l_cur = 1.f; d_cur = 0.f;
+        } else {
+            l_cur = x; d_cur = 1.f;
+        }
     }
+
+    return std::make_pair(l_cur, d_cur);
 }
-
-
-extern template MTS_EXPORT_CORE std::pair<Float, Float>   legendre_pd(int, Float);
-extern template MTS_EXPORT_CORE std::pair<FloatP, FloatP> legendre_pd(int, FloatP);
 
 /// Evaluate the function legendre_pd(l+1, x) - legendre_pd(l-1, x)
-template <typename Scalar>
-std::pair<Scalar, Scalar> legendre_pd_diff(int l, Scalar x) {
+template <typename Value>
+std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
+    using Scalar = scalar_t<Value>;
     assert(l >= 1);
 
-    if (l == 1) {
-        return std::make_pair(Scalar(0.5f) * (3.f*x*x-1.f) - 1.f, 3.f*x);
-    } else {
-        Scalar l_p_pred = 1.f, l_pred = x, l_cur = 0.f,
-               d_p_pred = 0.f, d_pred = 1.f, d_cur = 0.f;
+    if (likely(l > 1)) {
+        Value l_p_pred = 1.f, l_pred = x, l_cur = 0.f,
+              d_p_pred = 0.f, d_pred = 1.f, d_cur = 0.f;
+        Scalar k0 = 3, k1 = 2, k2 = 1;
 
-        for (int k = 2; k <= l; ++k) {
-            l_cur = ((2*k-1) * x * l_pred - (k-1) * l_p_pred) / k;
-            d_cur = d_p_pred + (2*k-1) * l_pred;
+        for (int ki = 2; ki <= l; ++ki) {
+            l_cur = (k0 * x * l_pred - k2 * l_p_pred) / k1;
+            d_cur = d_p_pred + k0 * l_pred;
             l_p_pred = l_pred; l_pred = l_cur;
             d_p_pred = d_pred; d_pred = d_cur;
+            k2 = k1; k0 += 2; k1 += 1;
         }
 
-        Scalar l_next = ((2*l+1) * x * l_pred - l * l_p_pred) / (l+1);
-        Scalar d_next = d_p_pred + (2*l+1) * l_pred;
+        Value l_next = (k0 * x * l_pred - k2 * l_p_pred) / k1;
+        Value d_next = d_p_pred + k0 * l_pred;
 
         return std::make_pair(l_next - l_p_pred, d_next - d_p_pred);
+    } else {
+        return std::make_pair(Scalar(0.5f) * (3.f*x*x-1.f) - 1.f, 3.f*x);
     }
 }
-
-extern template MTS_EXPORT_CORE std::pair<Float, Float>   legendre_pd_diff(int, Float);
-extern template MTS_EXPORT_CORE std::pair<FloatP, FloatP> legendre_pd_diff(int, FloatP);
 
 //! @}
 // -----------------------------------------------------------------------

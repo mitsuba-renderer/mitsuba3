@@ -49,19 +49,19 @@ def test03_round_to_power_of_two():
 
 def test04_solve_quadratic():
     from mitsuba.core.math import solve_quadratic
-    assert solve_quadratic(1, 4, -5) == (True, -5, 1)
-    assert solve_quadratic([1], [4], [-5]) == ([True], [-5], [1])
-    assert solve_quadratic(0, 5, -10) == (True, 2, 2)
-    assert solve_quadratic([0], [5], [-10]) == ([True], [2], [2])
+    assert np.allclose(solve_quadratic(1, 4, -5), (True, -5, 1))
+    assert np.allclose(solve_quadratic([1], [4], [-5]), ([True], [-5], [1]))
+    assert np.allclose(solve_quadratic(0, 5, -10), (True, 2, 2))
+    assert np.allclose(solve_quadratic([0], [5], [-10]), ([True], [2], [2]))
 
 
 def test_legendre_p():
-	assert(np.allclose(legendre_p(0, 0), 1))
-	assert(np.allclose(legendre_p(1, 0), 0))
-	assert(np.allclose(legendre_p(1, 1), 1))
-	assert(np.allclose(legendre_p(2, 0), -0.5))
-	assert(np.allclose(legendre_p(2, 1), 1))
-	assert(np.allclose(legendre_p(3, 0), 0))
+        assert(np.allclose(legendre_p(0, 0), 1))
+        assert(np.allclose(legendre_p(1, 0), 0))
+        assert(np.allclose(legendre_p(1, 1), 1))
+        assert(np.allclose(legendre_p(2, 0), -0.5))
+        assert(np.allclose(legendre_p(2, 1), 1))
+        assert(np.allclose(legendre_p(3, 0), 0))
 
 
 def test_legendre_pd():
@@ -72,7 +72,7 @@ def test_legendre_pd():
 
 
 def test_legendre_pd_diff():
-	assert(np.allclose(legendre_pd_diff(1, 1),   np.array(legendre_pd(1+1, 1))   - np.array(legendre_pd(1-1, 1))))
-	assert(np.allclose(legendre_pd_diff(2, 1),   np.array(legendre_pd(2+1, 1))   - np.array(legendre_pd(2-1, 1))))
-	assert(np.allclose(legendre_pd_diff(3, 0),   np.array(legendre_pd(3+1, 0))   - np.array(legendre_pd(3-1, 0))))
-	assert(np.allclose(legendre_pd_diff(4, 0.1), np.array(legendre_pd(4+1, 0.1)) - np.array(legendre_pd(4-1, 0.1))))
+        assert(np.allclose(legendre_pd_diff(1, 1),   np.array(legendre_pd(1+1, 1))   - np.array(legendre_pd(1-1, 1))))
+        assert(np.allclose(legendre_pd_diff(2, 1),   np.array(legendre_pd(2+1, 1))   - np.array(legendre_pd(2-1, 1))))
+        assert(np.allclose(legendre_pd_diff(3, 0),   np.array(legendre_pd(3+1, 0))   - np.array(legendre_pd(3-1, 0))))
+        assert(np.allclose(legendre_pd_diff(4, 0.1), np.array(legendre_pd(4+1, 0.1)) - np.array(legendre_pd(4-1, 0.1))))

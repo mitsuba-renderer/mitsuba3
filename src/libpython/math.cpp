@@ -13,16 +13,39 @@ MTS_PY_EXPORT(math) {
     math.def("ellint_2",        (double(*)(double, double))                   math::ellint_2, D(math, ellint_2));
     math.def("ellint_3",        (double(*)(double, double, double))           math::ellint_3, D(math, ellint_3));
 
-    math.def("i0e", math::i0e<Float>, "x"_a);//, D(math, i0e));
+    math.def("i0e", math::i0e<Float>, "x"_a, D(math, i0e));
 
-    math.def("legendre_p", py::overload_cast<int, Float>(math::legendre_p<Float>), "l"_a, "x"_a);//, D(math, legendre_p));
-    math.def("legendre_p", vectorize_wrapper(py::overload_cast<int, FloatP>(math::legendre_p<FloatP>)), "l"_a, "x"_a);
-    math.def("legendre_p", py::overload_cast<int, int, Float>(math::legendre_p<Float>), "l"_a, "m"_a, "x"_a);//, D(math, legendre_p));
-    math.def("legendre_p", vectorize_wrapper(py::overload_cast<int, int, FloatP>(math::legendre_p<FloatP>)), "l"_a, "m"_a, "x"_a);
-    math.def("legendre_pd", math::legendre_pd<Float>, "l"_a, "x"_a);//, D(math, legendre_pd));
-    math.def("legendre_pd", vectorize_wrapper(math::legendre_pd<FloatP>), "l"_a, "x"_a);    
-    math.def("legendre_pd_diff", math::legendre_pd_diff<Float>, "l"_a, "x"_a);//, D(math, legendre_pd_diff));
-    math.def("legendre_pd_diff", vectorize_wrapper(math::legendre_pd_diff<FloatP>), "l"_a, "x"_a);
+    math.def("legendre_p",
+             py::overload_cast<int, Float>(math::legendre_p<Float>), "l"_a,
+             "x"_a, D(math, legendre_p));
+
+    math.def("legendre_p",
+             vectorize_wrapper(py::overload_cast<int, FloatP>(math::legendre_p<FloatP>)),
+             "l"_a, "x"_a);
+
+    math.def("legendre_p",
+             py::overload_cast<int, int, Float>(math::legendre_p<Float>), "l"_a,
+             "m"_a, "x"_a, D(math, legendre_p));
+
+    math.def("legendre_p",
+             vectorize_wrapper(py::overload_cast<int, int, FloatP>(math::legendre_p<FloatP>)),
+             "l"_a, "m"_a, "x"_a);
+
+    math.def("legendre_pd",
+             math::legendre_pd<Float>,
+             "l"_a, "x"_a, D(math, legendre_pd));
+
+    math.def("legendre_pd",
+            vectorize_wrapper(math::legendre_pd<FloatP>),
+            "l"_a, "x"_a);
+
+    math.def("legendre_pd_diff",
+             math::legendre_pd_diff<Float>,
+             "l"_a, "x"_a, D(math, legendre_pd_diff));
+
+    math.def("legendre_pd_diff",
+             vectorize_wrapper(math::legendre_pd_diff<FloatP>),
+             "l"_a, "x"_a);
 
     math.attr("E")               = py::cast(math::E_d);
     math.attr("Pi")              = py::cast(math::Pi_d);

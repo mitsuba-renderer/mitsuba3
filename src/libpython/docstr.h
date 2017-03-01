@@ -1575,32 +1575,19 @@ R"doc(Ray-triangle intersection test
 Uses the algorithm by Moeller and Trumbore discussed at
 ``http://www.acm.org/jgt/papers/MollerTrumbore97/code.html``.
 
-Parameter ``p0``:
-    Position of the first vertex
-
-Parameter ``p1``:
-    Position of the second vertex
-
-Parameter ``p2``:
-    Position of the third vertex
+Parameter ``index``:
+    Index of the triangle to be intersected
 
 Parameter ``ray``:
-    The ray segment to be used for the intersection query
-
-Parameter ``t``:
-    Upon success, *t* contains the distance from the ray origin to the
-    intersection point,
-
-Parameter ``u``:
-    Upon success, ``u`` will contain the 'U' component of the
-    intersection in barycentric coordinates
-
-Parameter ``v``:
-    Upon success, ``v`` will contain the 'V' component of the
-    intersection in barycentric coordinates
+    The ray segment to be used for the intersection query. The ray's
+    minimum and maximum extent values are not considered.
 
 Returns:
-    ``True`` if an intersection has been detected)doc";
+    Returns an ordered tuple ``(mask, u, v, t)``, where ``mask``
+    indicates whether an intersection was found, ``t`` contains the
+    distance from the ray origin to the intersection point, and ``u``
+    and ``v`` contains the first two components of the intersection in
+    barycentric coordinates)doc";
 
 static const char *__doc_mitsuba_Mesh_to_string = R"doc(Return a human-readable string representation of the shape contents.)doc";
 
@@ -3681,6 +3668,8 @@ splitting the input interval. The number of iterations is roughly
 bounded by the number of bits of the underlying floating point
 representation.)doc";
 
+static const char *__doc_mitsuba_math_chbevl = R"doc(//! @{ \name Bessel functions)doc";
+
 static const char *__doc_mitsuba_math_chi2 =
 R"doc(Compute the Chi^2 statistic and degrees of freedom of the given arrays
 while pooling low-valued entries together
@@ -3744,67 +3733,27 @@ clamped to the range ``[left, right-2]``.)doc";
 
 static const char *__doc_mitsuba_math_gamma = R"doc(Apply the sRGB gamma curve to a floating point scalar)doc";
 
-static const char *__doc_mitsuba_math_i0e =
-R"doc(Exponentially scaled modified Bessel function of the first kind (order
-0), double precision)doc";
-
-static const char *__doc_mitsuba_math_i0e_2 =
-R"doc(Exponentially scaled modified Bessel function of the first kind (order
-0), single precision)doc";
+static const char *__doc_mitsuba_math_i0e = R"doc()doc";
 
 static const char *__doc_mitsuba_math_inv_gamma = R"doc(Apply the inverse of the sRGB gamma curve to a floating point scalar)doc";
 
 static const char *__doc_mitsuba_math_is_power_of_two = R"doc(Check whether the provided integer is a power of two)doc";
 
-static const char *__doc_mitsuba_math_legendre_p =
-R"doc(Evaluate the l-th Legendre polynomial using recurrence, single
-precision)doc";
+static const char *__doc_mitsuba_math_legendre_p = R"doc(Evaluate the l-th Legendre polynomial using recurrence)doc";
 
-static const char *__doc_mitsuba_math_legendre_p_2 =
-R"doc(Evaluate the l-th Legendre polynomial using recurrence, double
-precision)doc";
-
-static const char *__doc_mitsuba_math_legendre_p_3 =
-R"doc(Evaluate the an associated Legendre polynomial using recurrence,
-single precision)doc";
-
-static const char *__doc_mitsuba_math_legendre_p_4 =
-R"doc(Evaluate the an associated Legendre polynomial using recurrence,
-double precision)doc";
+static const char *__doc_mitsuba_math_legendre_p_2 = R"doc(Evaluate an associated Legendre polynomial using recurrence)doc";
 
 static const char *__doc_mitsuba_math_legendre_pd =
 R"doc(Evaluate the l-th Legendre polynomial and its derivative using
-recurrence, single precision)doc";
+recurrence)doc";
 
-static const char *__doc_mitsuba_math_legendre_pd_2 =
-R"doc(Evaluate the l-th Legendre polynomial and its derivative using
-recurrence, double precision)doc";
-
-static const char *__doc_mitsuba_math_legendre_pd_diff =
-R"doc(Evaluate the function ``legendre_pd(l+1, x) - legendre_pd(l-1, x)``,
-single precision)doc";
-
-static const char *__doc_mitsuba_math_legendre_pd_diff_2 =
-R"doc(Evaluate the function ``legendre_pd(l+1, x) - legendre_pd(l-1, x)``,
-double precision)doc";
+static const char *__doc_mitsuba_math_legendre_pd_diff = R"doc(Evaluate the function legendre_pd(l+1, x) - legendre_pd(l-1, x))doc";
 
 static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo function)doc";
 
-static const char *__doc_mitsuba_math_normal_cdf =
-R"doc(Cumulative distribution function of the standard normal distribution
-(double precision))doc";
+static const char *__doc_mitsuba_math_normal_cdf = R"doc()doc";
 
-static const char *__doc_mitsuba_math_normal_cdf_2 =
-R"doc(Cumulative distribution function of the standard normal distribution
-(single precision))doc";
-
-static const char *__doc_mitsuba_math_normal_quantile =
-R"doc(Quantile function of the standard normal distribution (double
-precision))doc";
-
-static const char *__doc_mitsuba_math_normal_quantile_2 =
-R"doc(Quantile function of the standard normal distribution (single
-precision))doc";
+static const char *__doc_mitsuba_math_normal_quantile = R"doc()doc";
 
 static const char *__doc_mitsuba_math_rad_to_deg = R"doc(/ Convert radians to degrees)doc";
 
@@ -3826,9 +3775,9 @@ static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical st
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
@@ -4068,11 +4017,93 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
+static const char *__doc_mitsuba_warp_i0 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_interval_to_nonuniform_tent =
+R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
+distribution with nodes ``{a, b, c}``)doc";
+
+static const char *__doc_mitsuba_warp_interval_to_tent = R"doc(Warp a uniformly distributed sample on [0, 1] to a tent distribution)doc";
+
+static const char *__doc_mitsuba_warp_logI0 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_square_to_beckmann =
+R"doc(Warp a uniformly distributed square sample to a Beckmann distribution
+* cosine for the given 'alpha' parameter)doc";
+
+static const char *__doc_mitsuba_warp_square_to_beckmann_pdf = R"doc(Probability density of square_to_beckmann())doc";
+
+static const char *__doc_mitsuba_warp_square_to_cosine_hemisphere =
+R"doc(Sample a cosine-weighted vector on the unit hemisphere with respect to
+solid angles)doc";
+
+static const char *__doc_mitsuba_warp_square_to_cosine_hemisphere_pdf = R"doc(Density of square_to_cosine_hemisphere() with respect to solid angles)doc";
+
+static const char *__doc_mitsuba_warp_square_to_rough_fiber =
+R"doc(Warp a uniformly distributed square sample to a rough fiber
+distribution)doc";
+
+static const char *__doc_mitsuba_warp_square_to_rough_fiber_pdf = R"doc(Probability density of square_to_rough_fiber())doc";
+
+static const char *__doc_mitsuba_warp_square_to_std_normal =
+R"doc(Sample a point on a 2D standard normal distribution. Internally uses
+the Box-Muller transformation)doc";
+
+static const char *__doc_mitsuba_warp_square_to_std_normal_pdf = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_square_to_tent = R"doc(Warp a uniformly distributed square sample to a 2D tent distribution)doc";
+
+static const char *__doc_mitsuba_warp_square_to_tent_pdf = R"doc(Density of square_to_tent per unit area.)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_cone =
+R"doc(Uniformly sample a vector that lies within a given cone of angles
+around the Z axis
+
+Parameter ``cos_cutoff``:
+    Cosine of the cutoff angle
+
+Parameter ``sample``:
+    A uniformly distributed sample on $[0,1]^2$)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_cone_pdf =
+R"doc(Density of square_to_uniform_cone per unit area.
+
+Parameter ``cos_cutoff``:
+    Cosine of the cutoff angle)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_disk = R"doc(Uniformly sample a vector on a 2D disk)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_disk_concentric =
+R"doc(Low-distortion concentric square to disk mapping by Peter Shirley
+(PDF: 1/PI))doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_disk_concentric_pdf = R"doc(Density of square_to_uniform_disk per unit area)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_disk_pdf = R"doc(Density of square_to_uniform_disk per unit area)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_hemisphere =
+R"doc(Uniformly sample a vector on the unit hemisphere with respect to solid
+angles)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_hemisphere_pdf = R"doc(Density of square_to_uniform_hemisphere() with respect to solid angles)doc";
+
 static const char *__doc_mitsuba_warp_square_to_uniform_sphere =
 R"doc(Uniformly sample a vector on the unit sphere with respect to solid
 angles)doc";
 
 static const char *__doc_mitsuba_warp_square_to_uniform_sphere_pdf = R"doc(Density of square_to_uniform_sphere() with respect to solid angles)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_triangle =
+R"doc(Convert an uniformly distributed square sample into barycentric
+coordinates)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_triangle_pdf = R"doc(Density of square_to_uniform_triangle per unit area.)doc";
+
+static const char *__doc_mitsuba_warp_square_to_von_mises_fisher =
+R"doc(Warp a uniformly distributed square sample to a von Mises Fisher
+distribution)doc";
+
+static const char *__doc_mitsuba_warp_square_to_von_mises_fisher_pdf = R"doc(Probability density of square_to_von_mises_fisher())doc";
 
 static const char *__doc_mitsuba_xml_load_file = R"doc(Load a Mitsuba scene from an XML file)doc";
 

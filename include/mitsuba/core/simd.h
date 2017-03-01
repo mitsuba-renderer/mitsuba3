@@ -13,12 +13,10 @@ using namespace enoki;
 
 constexpr size_t PacketSize = Array<float>::Size;
 
-using FloatP        = Array<Float,        PacketSize, false>;
-using Float16P      = Array<enoki::half,  PacketSize, false>;
-using Float32P      = Array<float,        PacketSize, false>;
-using Float64P      = Array<double,       PacketSize, false>;
-
-using ApproxFloatP  = Array<Float,        PacketSize>;
+using FloatP        = Array<Float,        PacketSize>;
+using Float16P      = Array<enoki::half,  PacketSize>;
+using Float32P      = Array<float,        PacketSize>;
+using Float64P      = Array<double,       PacketSize>;
 
 using Int32P        = Array<int32_t,      PacketSize>;
 using UInt32P       = Array<uint32_t,     PacketSize>;
