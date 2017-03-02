@@ -217,12 +217,12 @@ Value legendre_p(int l, Value x) {
 
     if (likely(l > 1)) {
         Value l_p_pred = 1.f, l_pred = x;
-        Scalar k0 = 3, k1 = 2, k2 = 1;
+        Scalar k0 = 3.f, k1 = 2.f, k2 = 1.f;
 
         for (int ki = 2; ki <= l; ++ki) {
             l_cur = (k0 * x * l_pred - k2  * l_p_pred) / k1;
             l_p_pred = l_pred; l_pred = l_cur;
-            k2 = k1; k0 += 2; k1 += 1;
+            k2 = k1; k0 += 2.f; k1 += 1.f;
         }
 
         return l_cur;
@@ -274,14 +274,14 @@ std::pair<Value, Value> legendre_pd(int l, Value x) {
     if (likely(l > 1)) {
         Value l_p_pred = 1.f, l_pred = x,
               d_p_pred = 0.f, d_pred = 1.f;
-        Scalar k0 = 3, k1 = 2, k2 = 1;
+        Scalar k0 = 3.f, k1 = 2.f, k2 = 1.f;
 
         for (int ki = 2; ki <= l; ++ki) {
             l_cur = (k0 * x * l_pred - k2 * l_p_pred) / k1;
             d_cur = d_p_pred + k0 * l_pred;
             l_p_pred = l_pred; l_pred = l_cur;
             d_p_pred = d_pred; d_pred = d_cur;
-            k2 = k1; k0 += 2; k1 += 1;
+            k2 = k1; k0 += 2.f; k1 += 1.f;
         }
     } else {
         if (l == 0) {
@@ -303,14 +303,14 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
     if (likely(l > 1)) {
         Value l_p_pred = 1.f, l_pred = x, l_cur = 0.f,
               d_p_pred = 0.f, d_pred = 1.f, d_cur = 0.f;
-        Scalar k0 = 3, k1 = 2, k2 = 1;
+        Scalar k0 = 3.f, k1 = 2.f, k2 = 1.f;
 
         for (int ki = 2; ki <= l; ++ki) {
             l_cur = (k0 * x * l_pred - k2 * l_p_pred) / k1;
             d_cur = d_p_pred + k0 * l_pred;
             l_p_pred = l_pred; l_pred = l_cur;
             d_p_pred = d_pred; d_pred = d_cur;
-            k2 = k1; k0 += 2; k1 += 1;
+            k2 = k1; k0 += 2.f; k1 += 1.f;
         }
 
         Value l_next = (k0 * x * l_pred - k2 * l_p_pred) / k1;
@@ -340,7 +340,7 @@ template <typename T> T deg_to_rad(T value) { return value * T(Pi_d / 180); }
  * given floating point number
  */
 template <typename T> T ulpdiff(T ref, T val) {
-    const T eps = std::numeric_limits<T>::epsilon() / 2;
+    constexpr T eps = std::numeric_limits<T>::epsilon() / 2;
 
     /* Express mantissa wrt. same exponent */
     int e_ref, e_val;
@@ -359,7 +359,7 @@ template <typename T> T ulpdiff(T ref, T val) {
 /// Always-positive modulo function
 template <typename T> T modulo(T a, T b) {
     T result = a - (a / b) * b;
-    return (result < 0) ? result + b : result;
+    return select(result < 0, result + b, result);
 }
 
 /// Check whether the provided integer is a power of two

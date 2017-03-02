@@ -5,6 +5,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/// Declare ssize_t, which does not exist on some platforms
+using ssize_t = std::make_signed_t<size_t>;
+
 using namespace enoki;
 
 // =============================================================
@@ -22,6 +25,9 @@ using Int32P        = Array<int32_t,      PacketSize>;
 using UInt32P       = Array<uint32_t,     PacketSize>;
 using Int64P        = Array<int64_t,      PacketSize>;
 using UInt64P       = Array<uint64_t,     PacketSize>;
+
+using SizeP         = Array<size_t,       PacketSize>;
+using SSizeP        = Array<ssize_t,      PacketSize>;
 
 //! @}
 // =============================================================
