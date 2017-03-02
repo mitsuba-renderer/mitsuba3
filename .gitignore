@@ -29,6 +29,7 @@ mitsuba.VC.VC.opendb
 mitsuba.VC.db
 Debug
 Release
+*.user
 *.filters
 /.vs
 /x64
