@@ -13,6 +13,7 @@ add_library(mitsuba-render-obj OBJECT
   kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h
   mesh.cpp         ${INC_DIR}/mesh.h
+  rt.cpp           ${INC_DIR}/rt.h
   sampler.cpp      ${INC_DIR}/sampler.h
   scene.cpp        ${INC_DIR}/scene.h
   sensor.cpp       ${INC_DIR}/sensor.h

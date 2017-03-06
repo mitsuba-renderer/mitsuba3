@@ -119,7 +119,7 @@ public:
      *    barycentric coordinates
      */
     template <typename Ray3>
-    auto ray_intersect(size_t index, const Ray3 &ray) {
+    auto ray_intersect(size_t index, const Ray3 &ray) const {
         using Vector3 = typename Ray3::Vector;
         using Float = value_t<Vector3>;
 

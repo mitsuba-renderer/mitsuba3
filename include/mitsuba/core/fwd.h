@@ -127,6 +127,11 @@ using Vector2i = Vector<int32_t, 2>;
 using Vector3i = Vector<int32_t, 3>;
 using Vector4i = Vector<int32_t, 4>;
 
+using Vector1u = Vector<uint32_t, 1>;
+using Vector2u = Vector<uint32_t, 2>;
+using Vector3u = Vector<uint32_t, 3>;
+using Vector4u = Vector<uint32_t, 4>;
+
 using Vector1s = Vector<size_t, 1>;
 using Vector2s = Vector<size_t, 2>;
 using Vector3s = Vector<size_t, 3>;
@@ -170,8 +175,8 @@ using BoundingBox4f = BoundingBox<Point4f>;
 
 using BoundingSphere3f = BoundingSphere<Point3f>;
 
-using Ray2f  = Ray<Point2f>;
-using Ray3f  = Ray<Point3f>;
+using Ray2f = Ray<Point2f>;
+using Ray3f = Ray<Point3f>;
 using Ray3fP = Ray<Point3fP>;
 using Ray3fX = Ray<Point3fX>;
 

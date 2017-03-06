@@ -26,6 +26,19 @@ Scene::Scene(const Properties &props) {
 
 Scene::~Scene() { }
 
+template MTS_EXPORT_CORE std::pair<bool, Float> Scene::ray_intersect_dummy<true>(const Ray3f, Float, Float) const;
+template MTS_EXPORT_CORE std::pair<bool, Float> Scene::ray_intersect_dummy<false>(const Ray3f, Float, Float) const;
+template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> Scene::ray_intersect_dummy<true>(const Ray3fP, FloatP, FloatP) const;
+template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> Scene::ray_intersect_dummy<false>(const Ray3fP, FloatP, FloatP) const;
+
+template MTS_EXPORT_CORE std::pair<bool, Float> Scene::ray_intersect_pbrt<true>(const Ray3f, Float, Float) const;
+template MTS_EXPORT_CORE std::pair<bool, Float> Scene::ray_intersect_pbrt<false>(const Ray3f, Float, Float) const;
+template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> Scene::ray_intersect_pbrt<true>(const Ray3fP, FloatP, FloatP) const;
+template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> Scene::ray_intersect_pbrt<false>(const Ray3fP, FloatP, FloatP) const;
+
+template MTS_EXPORT_CORE std::pair<bool, Float> Scene::ray_intersect_havran<true>(const Ray3f, Float, Float) const;
+template MTS_EXPORT_CORE std::pair<bool, Float> Scene::ray_intersect_havran<false>(const Ray3f, Float, Float) const;
+
 std::string Scene::to_string() const {
     return tfm::format("Scene[\n"
         "  kdtree = %s\n"

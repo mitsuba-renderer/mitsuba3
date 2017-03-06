@@ -19,9 +19,15 @@ MTS_PY_EXPORT(ShapeKDTree) {
                 return py::cast(static_cast<Mesh *>(s.shape(i)));
             else
                 return py::cast(s.shape(i));
-        })
+    })
         .def("__len__", &ShapeKDTree::primitive_count)
-        .mdef(ShapeKDTree, build);
+        .def("bbox", [] (ShapeKDTree &s) { return s.bbox(); })
+        .mdef(ShapeKDTree, build)
+        .def("ray_intersect_havran",       &ShapeKDTree::ray_intersect_havran<false>)
+        .def("ray_intersect_dummy_scalar", &ShapeKDTree::ray_intersect_dummy<false, Ray3f>)
+        .def("ray_intersect_dummy_packet", vectorize_wrapper(&ShapeKDTree::ray_intersect_dummy<false, Ray3fP>))
+        .def("ray_intersect_pbrt_scalar",  &ShapeKDTree::ray_intersect_pbrt<false, Ray3f>)
+        .def("ray_intersect_pbrt_packet",  vectorize_wrapper(&ShapeKDTree::ray_intersect_pbrt<false, Ray3fP>));
 }
 
 MTS_PY_EXPORT(Scene) {

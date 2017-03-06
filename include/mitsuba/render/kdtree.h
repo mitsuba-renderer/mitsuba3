@@ -7,7 +7,9 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/tls.h>
+#include <mitsuba/core/ray.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/mesh.h>
 #include <unordered_set>
 #include <tbb/tbb.h>
 
@@ -178,6 +180,9 @@ public:
     void set_log_level(ELogLevel level) { m_log_level = level; }
 
     bool ready() const { return (bool) m_nodes; }
+
+    /// Return the bounding box of the entire kd-tree
+    const BoundingBox bbox() const { return m_bbox; }
 
     const Derived& derived() const { return (Derived&) *this; }
     Derived& derived() { return (Derived&) *this; }
@@ -1994,6 +1999,8 @@ public:
     /// Return the i-th shape
     Shape *shape(size_t i) { Assert(i < m_shapes.size()); return m_shapes[i]; }
 
+    using Base::bbox;
+
     /// Return the bounding box of the i-th primitive
     BoundingBox3f bbox(Index i) const {
         Index shape_index = find_shape(i);
@@ -2004,6 +2011,409 @@ public:
     BoundingBox3f bbox(Index i, const BoundingBox3f &clip) const {
         Index shape_index = find_shape(i);
         return m_shapes[shape_index]->bbox(i, clip);
+    }
+
+    /**
+    * \brief Ray tracing kd-tree traversal loop (Havran variant)
+    *
+    * This is generally the most robust and fastest traversal routine
+    * of the methods implemented in this class. However, this method is only
+    * implemented for scalar rays.
+    */
+    template<bool IsShadowRay = false>
+    std::pair<bool, Float> ray_intersect_havran(const Ray3f &ray, Float mint, Float maxt) const {
+        /// Ray traversal stack entry
+        struct KDStackEntry {
+            // Pointer to the far child
+            const KDNode *node;
+            // Distance traveled along the ray (entry or exit)
+            Float t;
+            // Previous stack item
+            uint32_t prev;
+            // Associated point
+            Point3f p;
+        };
+
+        // Allocate the node stack
+        KDStackEntry stack[MTS_KD_MAXDEPTH];
+
+        // True if an intersection has been found along the ray
+        bool its_found(false);
+
+        // Set up the entry point
+        uint32_t en_pt = 0;
+        stack[en_pt].t = mint;
+        stack[en_pt].p = ray(mint);
+
+        // Set up the exit point
+        uint32_t ex_pt = 1;
+        stack[ex_pt].t = maxt;
+        stack[ex_pt].p = ray(maxt);
+        stack[ex_pt].node = nullptr;
+
+        const KDNode *current_node = m_nodes.get();
+
+        while (current_node != nullptr) {
+            while (!current_node->leaf()) {
+                const Float split_val = current_node->split();
+                const uint32_t axis   = current_node->axis();
+                const KDNode *far_child;
+
+                bool entry_before_sp = stack[en_pt].p[axis] <= split_val;
+                bool exit_before_sp  = stack[ex_pt].p[axis] <= split_val;
+                bool entry_on_sp     = stack[en_pt].p[axis] == split_val;
+                bool exit_after_sp   = stack[ex_pt].p[axis] >  split_val;
+
+                // N4 and P4 cases from Havran's thesis
+                bool n4 = entry_before_sp  && !exit_before_sp && !entry_on_sp;
+                bool p4 = !entry_before_sp && !exit_after_sp;
+
+                bool explore_both = n4 || p4;
+
+                bool left_first  = (entry_before_sp && exit_before_sp) || n4;
+                bool right_first = !left_first;
+
+                if (likely(!explore_both)) {
+                    int visit_right = right_first ? 1 : 0;
+                    current_node = current_node->left() + visit_right;
+                    continue;
+                }
+
+                // At this point, we will visit both nodes.
+                int far_child_offset = left_first ? 1 : 0;
+
+                far_child    = current_node->left() + far_child_offset;
+                current_node = current_node->left() + (1 - far_child_offset);
+
+                // Calculate the distance to the split plane
+                Float dist_to_split = (split_val - ray.o[axis]) * ray.d_rcp[axis];
+
+                // Set up a new exit point
+                const uint32_t tmp = ex_pt++;
+                if (ex_pt == en_pt) /* Do not overwrite the entry point */
+                    ++ex_pt;
+
+                stack[ex_pt].prev    = tmp;
+                stack[ex_pt].t       = dist_to_split;
+                stack[ex_pt].node    = far_child;
+                stack[ex_pt].p       = ray(dist_to_split);
+                stack[ex_pt].p[axis] = split_val;
+            }
+
+            // Arrived at a leaf node
+            const Index prim_start = current_node->primitive_offset();
+            const Index prim_end = prim_start + current_node->primitive_count();
+            for (Index i = prim_start; i < prim_end; i++) {
+                Index prim_index   = m_indices[i];
+                Index shape_index  = find_shape(prim_index);
+                const Shape *shape = this->shape(shape_index);
+                const Mesh *mesh   = dynamic_cast<const Mesh *>(shape);
+
+                auto result = mesh->ray_intersect(prim_index, ray);
+
+                bool its_found_result  = std::get<0>(result);
+                Scalar t_result        = std::get<3>(result);
+
+                if (its_found_result) {
+                    if (IsShadowRay)
+                        return std::make_pair(true, t_result);
+                    maxt = min(t_result, maxt);
+                    its_found = true;
+                }
+            }
+
+            if (stack[ex_pt].t > maxt)
+                break;
+
+            // Pop from the stack and advance to the next node on the interval
+            en_pt = ex_pt;
+            current_node = stack[ex_pt].node;
+            ex_pt = stack[en_pt].prev;
+        }
+        return std::make_pair(its_found, maxt);
+    }
+
+    /**
+    * \brief Scalar implementation of the ray tracing kd-tree traversal loop (PBRT variant).
+    */
+    template<bool IsShadowRay = false,
+        typename Ray,
+        typename Point = typename Ray::Point,
+        typename Scalar = value_t<Point>,
+        enable_if_not_array_t<Scalar> = 0>
+        std::pair<bool, Scalar> ray_intersect_pbrt(const Ray &ray, Scalar mint_, Scalar maxt_) const {
+
+        /// Ray traversal stack entry
+        struct KDStackEntry {
+            // Distance traveled along the ray to the entry and exit of this node
+            Float mint, maxt;
+            // Pointer to the far child
+            const KDNode *node;
+        };
+
+        // Allocate the node stack
+        KDStackEntry stack[MTS_KD_MAXDEPTH];
+        int32_t stack_index = 0;
+
+        // True if the earliest intersection has been found
+        bool its_found(false);
+
+        const KDNode *current_node = m_nodes.get();
+        Scalar mint = Scalar(mint_), maxt = Scalar(maxt_);
+
+        if (!(maxt_ >= mint))
+            return std::make_pair(its_found, maxt_);
+
+        while (current_node != nullptr) {
+            if (mint > maxt_)
+                break;
+
+            if (likely(!current_node->leaf())) {
+                const Float split   = current_node->split();
+                const uint32_t axis = current_node->axis();
+
+                // Compute parametric distance along the rays to the split plane
+                Scalar t_plane = (split - ray.o[axis]) * ray.d_rcp[axis];
+
+                bool left_first  = (ray.o[axis] < split) || (ray.o[axis] == split && ray.d[axis] <= 0.f);
+                bool right_first = !left_first;
+
+                bool start_after = t_plane < mint;
+                bool end_before  = t_plane > maxt || !(t_plane > 0.f); // Also handles t_plane == NaN
+
+                bool visit_single_node = (start_after || end_before);
+
+                // if we only need to visit one node, just pick the correct one and continue
+                if (likely(visit_single_node)) {
+                    int visit_left = ((end_before && left_first) || (!end_before && start_after && right_first)) ? 0 : 1;
+                    current_node   = current_node->left() + visit_left;
+                    continue;
+                }
+
+                // At this point, we will visit both nodes.
+                int second_node_offset = left_first ? 1 : 0;
+                const KDNode *second_node = current_node->left() + second_node_offset;
+                current_node = current_node->left() + (1 - second_node_offset);
+
+                KDStackEntry& entry = stack[stack_index];
+                entry.node = second_node;
+                entry.mint = t_plane;
+                entry.maxt = maxt;
+                maxt = t_plane;
+
+                ++stack_index;
+            } else { // Arrived at a leaf node
+                const Index prim_start = current_node->primitive_offset();
+                const Index prim_end = prim_start + current_node->primitive_count();
+                for (Index i = prim_start; i < prim_end; i++) {
+                    Index prim_index   = m_indices[i];
+                    Index shape_index  = find_shape(prim_index);
+                    const Shape *shape = this->shape(shape_index);
+                    const Mesh *mesh   = dynamic_cast<const Mesh *>(shape);
+
+                    auto result = mesh->ray_intersect(prim_index, ray);
+
+                    bool its_found_result  = std::get<0>(result);
+                    Scalar t_result        = std::get<3>(result);
+
+                    if (its_found_result) {
+                        if (IsShadowRay)
+                            return std::make_pair(true, t_result);
+                        maxt_ = min(t_result, maxt_);
+                        its_found = true;
+                    }
+                }
+
+                if (stack_index > 0) {
+                    --stack_index;
+                    KDStackEntry& entry = stack[stack_index];
+                    current_node = entry.node;
+                    mint = entry.mint;
+                    maxt = entry.maxt;
+                } else {
+                    break;
+                }
+            }
+        }
+        return std::make_pair(its_found, maxt_);
+    }
+
+    /**
+    * \brief Vectorized implementation of the ray tracing kd-tree traversal loop (PBRT variant).
+    */
+    template<bool IsShadowRay = false,
+        typename Ray,
+        typename Point = typename Ray::Point,
+        typename Scalar = value_t<Point>,
+        typename Mask = mask_t<Scalar>,
+        enable_if_static_array_t<Scalar> = 0>
+        std::pair<Mask, Scalar> ray_intersect_pbrt(const Ray &ray, const Scalar &mint_, Scalar maxt_) const {
+        /// Ray traversal stack entry
+        struct KDStackEntry {
+            // Distance traveled along the rays to the entry and exit of this node
+            Scalar mint, maxt;
+            // Pointer to the far child
+            const KDNode *node;
+            // Track rays that should not be traversing the node.
+            Mask currently_inactive;
+        };
+
+        // Allocate the node stack
+        KDStackEntry stack[MTS_KD_MAXDEPTH];
+        uint32_t stack_index = 0;
+
+        // True if the earliest intersection has been found
+        Mask its_found(false);
+
+        // True is a ray is inactive
+        Mask inactive(false);
+
+        // Track rays that should not be traversing the current node. "inactive" is always a subset of currently_inactive.
+        Mask currently_inactive(false);
+
+        // Records the intersection time for the earliest intersection along the ray
+        Scalar t(std::numeric_limits<scalar_t<Scalar>>::infinity());
+
+        const KDNode *current_node = m_nodes.get();
+        Scalar mint = Scalar(mint_), maxt = Scalar(maxt_);
+        inactive |= !(maxt_ >= mint);
+        currently_inactive |= inactive;
+
+        while (current_node != nullptr && !all(inactive)) {
+            if (likely(!current_node->leaf())) {
+                const Float split   = current_node->split();
+                const uint32_t axis = current_node->axis();
+
+                // Compute parametric distance along the rays to the split plane
+                Scalar t_plane = (split - ray.o[axis]) * ray.d_rcp[axis];
+
+                Mask left_of_split  = (ray.o[axis] < split) | (eq(ray.o[axis], split) & ray.d[axis] <= 0.f);
+                Mask right_of_split = !left_of_split;
+
+                Mask start_after = t_plane < mint;
+                Mask end_before  = t_plane > maxt | !(t_plane > 0.f); // Also handles t_plane == NaN
+
+                // Track if we are in N4/P4 case
+                Mask need_visit_both = !start_after & !end_before;
+
+                // For any cases, this mask tracks if the ray needs to traverse the left node first.
+                Mask left_first = (need_visit_both & left_of_split) |
+                                  (!need_visit_both & ((end_before & left_of_split) | (!end_before & start_after & right_of_split)));
+
+                Mask right_first = !left_first | currently_inactive;
+                left_first |= currently_inactive;
+
+                bool all_left_first  = all(left_first);
+                bool all_right_first = all(right_first);
+                bool none_visit_both = all(!need_visit_both | currently_inactive);
+
+                bool visit_single_node = none_visit_both && (all_left_first || all_right_first);
+
+                // if we only need to visit one node, just pick the correct one and continue
+                if (likely(visit_single_node)) {
+                    int visit_left = all_left_first ? 0 : 1;
+                    current_node   = current_node->left() + visit_left;
+                    continue;
+                }
+
+                // Vote to choose which node to traverse first
+                bool visit_left_first = count(left_first) >= count(right_first);
+
+                int second_node_offset = visit_left_first ? 1 : 0;
+
+                const KDNode *second_node = current_node->left() + second_node_offset;
+                current_node = current_node->left() + (1 - second_node_offset);
+
+                // Records which ray will traverse the nodes in the right order
+                Mask correct_order = left_first ^ Mask(!visit_left_first);
+
+                KDStackEntry& entry = stack[stack_index++];
+                entry.node = second_node;
+                entry.mint = select(correct_order & need_visit_both, t_plane, mint);
+                entry.maxt = select(!correct_order & need_visit_both, t_plane, maxt);
+                // Record nodes which don't want to traverse the second_node
+                entry.currently_inactive = (currently_inactive | (correct_order & !need_visit_both));
+
+                maxt = select(correct_order & need_visit_both, t_plane, maxt);
+
+                // Record nodes that didn't want to traverse the current_node
+                currently_inactive |= (!correct_order & !need_visit_both);
+            } else { // Arrived at a leaf node
+                const Index prim_start = current_node->primitive_offset();
+                const Index prim_end = prim_start + current_node->primitive_count();
+                for (Index i = prim_start; i < prim_end; i++) {
+                    Index prim_index   = m_indices[i];
+                    Index shape_index  = find_shape(prim_index);
+                    const Shape *shape = this->shape(shape_index);
+                    const Mesh *mesh   = dynamic_cast<const Mesh *>(shape);
+
+                    auto result = mesh->ray_intersect(prim_index, ray);
+
+                    Mask its_found_result  = std::get<0>(result);
+                    Scalar t_result        = std::get<3>(result);
+
+                    its_found |= its_found_result;
+                    t     = select(its_found_result, min(t, t_result), t);
+                    maxt_ = select(its_found_result, min(maxt_, t), maxt_);
+
+                    if (IsShadowRay && (all(its_found | inactive)))
+                        return std::make_pair(its_found, t);
+                }
+
+                // Ensure that there is still active rays that want to visit the poped node
+                do {
+                    if (stack_index > 0) {
+                        --stack_index;
+                        KDStackEntry& entry = stack[stack_index];
+                        current_node = entry.node;
+                        mint = entry.mint;
+                        maxt = entry.maxt;
+                        currently_inactive = entry.currently_inactive;
+                        inactive |= (mint > maxt_) & !currently_inactive;
+                        currently_inactive |= inactive;
+                    } else {
+                        return std::make_pair(its_found, t);
+                    }
+                } while (all(currently_inactive));
+            }
+        }
+        return std::make_pair(its_found, t);
+    }
+
+    /// Intersection routine which doesn't rely on the kd-tree. Should only be used for debug/test purpuses
+    template<bool IsShadowRay = false,
+             typename Ray,
+             typename Point = typename Ray::Point,
+             typename Scalar = value_t<Point>,
+             typename Mask = mask_t<Scalar>>
+    std::pair<Mask, Scalar> ray_intersect_dummy(const Ray &ray, const Scalar &mint_, Scalar maxt_) const {
+        Mask its_found(false);
+        Scalar t(maxt_);
+
+        for (size_t s = 0; s < m_shapes.size(); s++) {
+            const Shape *shape = this->shape(s);
+            if (shape->class_()->derives_from(MTS_CLASS(Mesh))) {
+                const Mesh *mesh = dynamic_cast<const Mesh *>(shape);
+
+                for (size_t i = 0; i < mesh->face_count(); i++) {
+                    auto result = mesh->ray_intersect(i, ray);
+
+                    Mask its_found_result  = std::get<0>(result);
+                    Scalar its_time_result = std::get<3>(result);
+
+                    its_found_result &= (its_time_result > mint_ & its_time_result < maxt_);
+
+                    its_found |= its_found_result;
+                    t = select(its_found_result, min(t, its_time_result), t);
+
+                    if (IsShadowRay) {
+                        if (all(its_found))
+                            return std::make_pair(its_found, t);
+                    }
+                }
+            }
+        }
+        return std::make_pair(its_found, t);
     }
 
     /// Return a human-readable string representation of the scene contents.
@@ -2021,6 +2431,8 @@ protected:
     Index find_shape(Index &i) const {
         Assert(i < primitive_count());
 
+        if (i >= primitive_count()) std::cout << "Assert(i < primitive_count()) == false :" << i << std::endl;
+
         Index shape_index = (Index) math::find_interval(
             Size(0),
             Size(m_primitive_map.size()),
@@ -2034,7 +2446,6 @@ protected:
 
         Assert(i >= m_primitive_map[shape_index]);
         Assert(i <  m_primitive_map[shape_index + 1]);
-
         i -= m_primitive_map[shape_index];
 
         return shape_index;
