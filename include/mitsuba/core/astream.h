@@ -7,11 +7,13 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** \brief An AnnotatedStream adds Table of Contents capabilities to an
- * underlying stream. A Stream instance must first be created and passed to
- * to the constructor. The underlying stream should either be empty or a
- * stream that was previously written with an AnnotatedStream, so that it
- * contains a proper Table of Contents.
+/** \brief An AnnotatedStream adds a table of contents to an underlying stream
+ * that can later be used to selectively read specific items.
+ *
+ * A Stream instance must first be created and passed to to the constructor.
+ * The underlying stream should either be empty or a stream that was previously
+ * written with an AnnotatedStream, so that it contains a proper Table of
+ * Contents.
  *
  * Table of Contents: objects and variables written to the stream are
  * prepended by a field name. Contents can then be queried by field name, as
@@ -37,9 +39,9 @@ public:
      * but does not correspond to a valid AnnotatedStream (i.e. it does not
      * start with the \ref kSerializedHeaderId sentry).
      *
-     * @param write_mode Whether to use write mode. The stream is either read-only
+     * \param write_mode Whether to use write mode. The stream is either read-only
      *                  or write-only.
-     * @param throw_on_missing Whether an error should be thrown when \ref get is
+     * \param throw_on_missing Whether an error should be thrown when \ref get is
      *                       called for a missing field.
      */
     AnnotatedStream(Stream *stream, bool write_mode, bool throw_on_missing = true);
@@ -174,9 +176,9 @@ private:
     std::unordered_map<std::string, std::pair<std::string, uint64_t>> m_table;
 
     /** \brief Stack of accumulated prefixes,
-     * i.e. <tt>m_prefixStack.back</tt> is the full prefix path currently applied.
+     * i.e. <tt>m_prefix_stack.back</tt> is the full prefix path currently applied.
      */
-    std::vector<std::string> m_prefixStack;
+    std::vector<std::string> m_prefix_stack;
 
     bool m_write_mode;
 

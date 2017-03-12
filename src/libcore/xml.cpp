@@ -136,7 +136,7 @@ struct XMLObject {
 
 struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
-    Matrix4f transform = Matrix4f::identity();
+    Transform transform;
     size_t idCounter = 0;
 };
 
@@ -229,7 +229,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
             node.append_attribute("type") = "scene";
             node.remove_attribute("version");
         } else if (tag == ETransform) {
-            ctx.transform = Matrix4f::identity();
+            ctx.transform = Transform();
         }
 
         if (node.attribute("name")) {
@@ -423,8 +423,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     Matrix4f matrix;
                     for (int i = 0; i < 4; ++i)
                         for (int j = 0; j < 4; ++j)
-                            matrix[i][j] = std::stof(tokens[i*4+j]);
-                    ctx.transform = matrix * ctx.transform;
+                            matrix(i, j) = std::stof(tokens[i*4+j]);
+                    ctx.transform = Transform(matrix) * ctx.transform;
                 }
                 break;
 

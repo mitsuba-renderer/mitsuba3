@@ -79,9 +79,6 @@ public:
     /// Vectorized implementation of \ref eval_scrambled()
     FloatP eval_scrambled(size_t base_index, UInt64P index) const;
 
-    /// Vectorized implementation of \ref scrambled_eval()
-    //FloatP scrambled_eval(size_t base_index, UInt64P index);
-
     /// Return the permutation corresponding to the given prime number basis
     uint16_t *permutation(size_t basis) const {
         return m_permutations[basis];

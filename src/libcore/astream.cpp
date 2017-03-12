@@ -30,7 +30,7 @@ AnnotatedStream::AnnotatedStream(Stream *stream, bool write_mode, bool throw_on_
               " a stream without write capabilities: %s",
               m_stream->to_string());
 
-    m_prefixStack.push_back("");
+    m_prefix_stack.push_back("");
 
     if (m_stream->can_read() && m_stream->size() > 0)
         read_toc();
@@ -54,7 +54,7 @@ void AnnotatedStream::close() {
 }
 
 std::vector<std::string> AnnotatedStream::keys() const {
-    const std::string &prefix = m_prefixStack.back();
+    const std::string &prefix = m_prefix_stack.back();
     std::vector<std::string> result;
     for (auto const &kv : m_table) {
         if (kv.first.substr(0, prefix.length()) == prefix)
@@ -64,11 +64,11 @@ std::vector<std::string> AnnotatedStream::keys() const {
 }
 
 void AnnotatedStream::push(const std::string &name) {
-    m_prefixStack.push_back(m_prefixStack.back() + name + ".");
+    m_prefix_stack.push_back(m_prefix_stack.back() + name + ".");
 }
 
 void AnnotatedStream::pop() {
-    m_prefixStack.pop_back();
+    m_prefix_stack.pop_back();
 }
 
 bool AnnotatedStream::get_base(const std::string &name, const std::string &type_id) {
@@ -79,7 +79,7 @@ bool AnnotatedStream::get_base(const std::string &name, const std::string &type_
         Throw("Attempted to read from a closed annotated stream: %s",
               to_string());
 
-    std::string full_name = m_prefixStack.back() + name;
+    std::string full_name = m_prefix_stack.back() + name;
     auto it = m_table.find(full_name);
     if (it == m_table.end()) {
         const auto logLevel = (m_throw_on_missing ? EError : EWarn);
@@ -104,7 +104,7 @@ void AnnotatedStream::set_base(const std::string &name, const std::string &type_
     if (m_is_closed)
         Throw("Attempted to write to a closed annotated stream: %s", to_string());
 
-    std::string full_name = m_prefixStack.back() + name;
+    std::string full_name = m_prefix_stack.back() + name;
     auto it = m_table.find(full_name);
     if (it != m_table.end())
         Throw("Field named \"%s\" was already set!", full_name);

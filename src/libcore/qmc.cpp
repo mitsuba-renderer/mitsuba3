@@ -267,21 +267,12 @@ FloatP RadicalInverse::eval_scrambled(size_t base_index, UInt64P index) const {
         UInt64P next = base.divisor(index);
         factor[active_f] = factor * recip;
         UInt64P digit = index - next * divisor;
-        value[active] = value * divisor + (enoki::gather<UInt64P, 2>(perm, digit) & mask);
+        value[active] = value * divisor + (enoki::gather<UInt64P, 2>(perm, digit, active) & mask);
         index = next;
         active = neq(index, enoki::zero<UInt64P>());
     }
-    std::cout << is_dynamic<Vector3f>::value << std::endl;
-    std::cout << is_dynamic<Vector3fP>::value << std::endl;
-    std::cout << is_dynamic<Vector3fX>::value << std::endl;
 
-#if 0
-    std::cout << typeid(dynamic_t<Vector3f>).name() << std::endl;
-    std::cout << typeid(dynamic_t<Vector3fP>).name() << std::endl;
-    std::cout << typeid(dynamic_t<Vector3fX>).name() << std::endl;
-#endif
-
-    FloatP correction(base.recip * perm[0] / (1.0f - base.recip));
+    FloatP correction(base.recip * (Float) perm[0] / ((Float) 1 - base.recip));
     return min(FloatP(math::OneMinusEpsilon), (FloatP(value) + correction) * factor);
 }
 

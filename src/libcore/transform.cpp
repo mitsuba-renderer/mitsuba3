@@ -2,15 +2,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Matrix4f Matrix4f::identity() {
-    return Matrix4f(
-        Vector4f(1.f, 0.f, 0.f, 0.f),
-        Vector4f(0.f, 1.f, 0.f, 0.f),
-        Vector4f(0.f, 0.f, 1.f, 0.f),
-        Vector4f(0.f, 0.f, 0.f, 1.f)
-    );
-}
-
 Transform Transform::translate(const Vector3f &v) {
     Matrix4f trafo(
         1, 0, 0, v.x(),
@@ -144,8 +135,8 @@ Transform Transform::look_at(const Point3f &p, const Point3f &t, const Vector3f 
     return Transform(result, inverse);
 }
 
-Matrix4f Matrix4f::inverse() const {
-    Matrix4f I(*this);
+Matrix4f inv(const Matrix4f &m) {
+    Matrix4f I(m);
 
     size_t ipiv[4] = { 0, 1, 2, 3 };
     for (size_t k = 0; k < 4; ++k) {
@@ -191,7 +182,7 @@ Matrix4f Matrix4f::inverse() const {
     /* Backward permutation */
     Matrix4f out;
     for (size_t j = 0; j < 4; ++j)
-        out.col(ipiv[j]) = I.col(j);
+        out.coeff(ipiv[j]) = I.coeff(j);
     return out;
 }
 

@@ -94,9 +94,9 @@ template <typename T> std::string type_suffix() {
             id += 'u';
     }
 
-    if (is_sarray<value_t<T>>::value)
+    if (is_static_array<value_t<T>>::value)
         id += 'P';
-    else if (is_sarray<value_t<T>>::value)
+    else if (is_dynamic_array<value_t<T>>::value)
         id += 'X';
 
     return id;
