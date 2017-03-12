@@ -209,7 +209,7 @@ template <bool TestDomain = false, typename Vector3f, typename Scalar = value_t<
 MTS_INLINE Scalar square_to_uniform_hemisphere_pdf(Vector3f v) {
     if (TestDomain)
         return select(abs(squared_norm(v) - 1.f) > math::Epsilon | Frame<Vector3f>::cos_theta(v) < 0.f,
-                      Scalar(0.0f), Scalar(math::InvFourPi));
+                      Scalar(0.0f), Scalar(math::InvTwoPi));
     else
         return math::InvTwoPi;
 }
@@ -253,7 +253,9 @@ MTS_INLINE vector3_t<Point2f> square_to_uniform_cone(Point2f sample, Float cos_c
     auto sin_theta = safe_sqrt(1.f - cos_theta * cos_theta);
 
     auto sc = sincos(2.f * math::Pi * sample.x());
-    return vector3_t<Point2f>(sc.second * sin_theta, sc.first * sin_theta, cos_theta);
+    return vector3_t<Point2f>(sc.second * sin_theta,
+                              sc.first * sin_theta,
+                              cos_theta);
 }
 
 /**
@@ -354,7 +356,7 @@ MTS_INLINE vector3_t<Point2f> square_to_von_mises_fisher(Point2f sample, Float k
     Scalar sy = max(1.f - r2, (Scalar) 1e-6f);
 
     Scalar cos_theta = 1.f + log(sy +
-        (1.f - sy) * exp(-2.f * kappa)) / kappa;
+        (1.f - sy) * exp(Scalar(-2.f * kappa))) / kappa;
 
     p *= safe_sqrt((1.f - cos_theta * cos_theta) / r2);
 

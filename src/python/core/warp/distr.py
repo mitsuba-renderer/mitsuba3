@@ -2,7 +2,6 @@ from mitsuba.core import warp
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain
 import numpy as np
 
-
 def deg2rad(value):
     return value * np.pi / 180
 
@@ -15,13 +14,6 @@ DISTRIBUTIONS = [
     lambda x: np.ones(x.shape[0]),
      DEFAULT_SETTINGS),
 
-    ('Uniform sphere', SphericalDomain(),
-     warp.square_to_uniform_sphere,
-     warp.square_to_uniform_sphere_pdf,
-     DEFAULT_SETTINGS),
-]
-
-"""
     ('Uniform triangle', PlanarDomain(np.array([[0, 1],
                                                 [0, 1]])),
      warp.square_to_uniform_triangle,
@@ -55,8 +47,8 @@ DISTRIBUTIONS = [
      DEFAULT_SETTINGS),
 
     ('Cosine hemisphere', SphericalDomain(),
-     warp.square_to_cosineHemisphere,
-     warp.square_to_cosineHemisphere_pdf,
+     warp.square_to_cosine_hemisphere,
+     warp.square_to_cosine_hemisphere_pdf,
      DEFAULT_SETTINGS),
 
     ('Uniform cone', SphericalDomain(),
@@ -91,11 +83,11 @@ DISTRIBUTIONS = [
 
     ('Rough fiber distribution', SphericalDomain(),
      lambda sample, kappa, incl: warp.square_to_rough_fiber(
-         sample, [np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))],
-         [1, 0, 0], kappa),
+         sample, np.tile([np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))], [sample.shape[0], 1]),
+         np.tile([1, 0, 0], [sample.shape[0], 1]), kappa),
      lambda v, kappa, incl: warp.square_to_rough_fiber_pdf(
-         v, [np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))],
-         [1, 0, 0], kappa),
+         v, np.tile([np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))], [v.shape[0], 1]),
+         np.tile([1, 0, 0], [v.shape[0], 1]), kappa),
      dict(DEFAULT_SETTINGS,
          sample_dim=3,
          parameters=[
@@ -103,4 +95,3 @@ DISTRIBUTIONS = [
              ('Inclination', [0, 90, 20])
          ]))
 ]
-"""

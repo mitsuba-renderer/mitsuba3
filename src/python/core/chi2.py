@@ -88,6 +88,7 @@ class ChiSquareTest(object):
         self.sample_dim = sample_dim
         self.sample_count = sample_count
         self.res = np.array([res, res * domain.get_aspect()], dtype=np.int64)
+        self.res = np.maximum(self.res, 1)
         self.ires = ires
         self.dtype = dtype
         self.bounds = domain.get_bounds()
@@ -266,8 +267,11 @@ class ChiSquareTest(object):
             return False
         elif self.p_value < significance_level \
                 or not np.isfinite(self.p_value):
+            np.save('chi2_pdf.npy', self.pdf)
+            np.save('chi2_histogram.npy', self.histogram)
             self._log('***** Rejected ***** the null hypothesis (p-value'
-                    ' = %f, significance level = %f)' %
+                    ' = %f, significance level = %f). Target density and histogram '
+                    ' were written to "chi2_pdf.npy" and "chi2_histogram.npy".' %
                     (self.p_value, significance_level))
             return False
 
