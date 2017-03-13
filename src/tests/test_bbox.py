@@ -74,7 +74,7 @@ def test02_contains_variants():
                              strict=True)
 
 
-def test03_distanceTo():
+def test03_distance():
     assert BBox([1, 2, 3], [2, 3, 5]).distance(
         BBox([4, 2, 3], [5, 3, 5])) == 2
 

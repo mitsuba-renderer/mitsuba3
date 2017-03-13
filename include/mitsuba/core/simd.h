@@ -29,6 +29,9 @@ using UInt64P       = Array<uint64_t,     PacketSize>;
 using SizeP         = Array<size_t,       PacketSize>;
 using SSizeP        = Array<ssize_t,      PacketSize>;
 
+/// Caution, boolean arrays are not vectorized (use masks!)
+using BoolP         = Array<bool,         PacketSize>;
+
 //! @}
 // =============================================================
 
