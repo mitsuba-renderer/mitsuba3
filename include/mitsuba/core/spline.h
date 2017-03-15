@@ -51,30 +51,32 @@ NAMESPACE_BEGIN(spline)
         d1 = f1 - f0;
 */
 
-#define GET_SPLINE_UNIFORM(idx) \
-    auto mask_low_idx = reinterpret_array<mask_t<Scalar>>(idx > 0); \
-    auto mask_up_idx  = reinterpret_array<mask_t<Scalar>>(idx + 2 < size); \
-    Scalar f_1 = gather<Scalar>(values, idx-1, mask_low_idx); \
-    Scalar f0  = gather<Scalar>(values, idx); \
-    Scalar f1  = gather<Scalar>(values, idx+1); \
-    Scalar f2  = gather<Scalar>(values, idx+2, mask_up_idx); \
-    Scalar d0 = select(mask_low_idx, 0.5f * (f1 - f_1), f1 - f0); \
-    Scalar d1 = select(mask_up_idx,  0.5f * (f2 - f0),  f1 - f0);
+#define GET_SPLINE_UNIFORM(idx)                                                \
+    auto mask_low_idx = reinterpret_array<mask_t<Scalar>>(idx > 0);            \
+    auto mask_up_idx  = reinterpret_array<mask_t<Scalar>>(idx + 2 < size);     \
+    Scalar f_1        = gather<Scalar>(values, idx - 1, mask_low_idx);         \
+    Scalar f0         = gather<Scalar>(values, idx);                           \
+    Scalar f1         = gather<Scalar>(values, idx + 1);                       \
+    Scalar f2         = gather<Scalar>(values, idx + 2, mask_up_idx);          \
+    Scalar d0         = select(mask_low_idx, 0.5f * (f1 - f_1), f1 - f0);      \
+    Scalar d1         = select(mask_up_idx, 0.5f * (f2 - f0), f1 - f0);
 
-#define GET_SPLINE_NONUNIFORM(idx) \
-    auto mask_low_idx = reinterpret_array<mask_t<Scalar>>(idx > 0); \
-    auto mask_up_idx  = reinterpret_array<mask_t<Scalar>>(idx + 2 < size); \
-    Scalar f_1 = gather<Scalar>(values, idx-1, mask_low_idx); \
-    Scalar f0  = gather<Scalar>(values, idx); \
-    Scalar f1  = gather<Scalar>(values, idx+1); \
-    Scalar f2  = gather<Scalar>(values, idx+2, mask_up_idx); \
-    Scalar x_1 = gather<Scalar>(nodes,  idx-1, mask_low_idx); \
-    Scalar x0  = gather<Scalar>(nodes,  idx); \
-    Scalar x1  = gather<Scalar>(nodes,  idx+1); \
-    Scalar x2  = gather<Scalar>(nodes,  idx+2, mask_up_idx); \
-    Scalar width = x1 - x0; \
-    Scalar d0 = select(mask_low_idx, width * (f1 - f_1) / (x1 - x_1), f1 - f0); \
-    Scalar d1 = select(mask_up_idx,  width * (f2 - f0) / (x2 - x0),  f1 - f0);
+#define GET_SPLINE_NONUNIFORM(idx)                                             \
+    auto mask_low_idx = reinterpret_array<mask_t<Scalar>>(idx > 0);            \
+    auto mask_up_idx  = reinterpret_array<mask_t<Scalar>>(idx + 2 < size);     \
+    Scalar f_1        = gather<Scalar>(values, idx - 1, mask_low_idx);         \
+    Scalar f0         = gather<Scalar>(values, idx);                           \
+    Scalar f1         = gather<Scalar>(values, idx + 1);                       \
+    Scalar f2         = gather<Scalar>(values, idx + 2, mask_up_idx);          \
+    Scalar x_1        = gather<Scalar>(nodes, idx - 1, mask_low_idx);          \
+    Scalar x0         = gather<Scalar>(nodes, idx);                            \
+    Scalar x1         = gather<Scalar>(nodes, idx + 1);                        \
+    Scalar x2         = gather<Scalar>(nodes, idx + 2, mask_up_idx);           \
+    Scalar width      = x1 - x0;                                               \
+    Scalar d0         = select(mask_low_idx, width * (f1 - f_1) /              \
+                                                     (x1 - x_1), f1 - f0);     \
+    Scalar d1         = select(mask_up_idx, width * (f2 - f0) /                \
+                                                    (x2 - x0), f1 - f0);
 
 // =======================================================================
 //! @{ \name Functions for evaluating and sampling cubic Catmull-Rom splines
@@ -112,7 +114,7 @@ Scalar eval_spline(Scalar f0, Scalar f1, Scalar d0, Scalar d1, Scalar t) {
  * \brief Compute the value and derivative of a cubic spline that is
  * parameterized by the function values and derivatives of the
  * interval <tt>[0, 1]</tt>.
- *  
+ *
  * \param f0
  *      The function value at the left position
  * \param f1
@@ -148,9 +150,9 @@ std::pair<Scalar, Scalar> eval_spline_d(Scalar f0, Scalar f1, Scalar d0,
 
 /**
  * \brief Compute the definite integral and value of a cubic spline
- * that is parameterized by the function values and derivatives of 
+ * that is parameterized by the function values and derivatives of
  * the interval <tt>[0, 1]</tt>.
- *  
+ *
  * \param f0
  *      The function value at the left position
  * \param f1
@@ -193,7 +195,7 @@ std::pair<Scalar, Scalar> eval_spline_i(Scalar f0, Scalar f1, Scalar d0,
  * differences to approximate the derivatives at the endpoints of each spline
  * segment.
  *
- * \param Extrapolate
+ * \tparam Extrapolate
  *      Extrapolate values when \c x is out of range? (default: \c false)
  * \param min
  *      Position of the first node
@@ -218,18 +220,19 @@ std::pair<Scalar, Scalar> eval_spline_i(Scalar f0, Scalar f1, Scalar d0,
  */
 template <bool Extrapolate = false, typename Scalar, typename Float>
 Scalar eval_1d(Float min, Float max, const Float *values,
-               size_t size, Scalar x) {
-    using Mask = enoki::mask_t<Scalar>;
+               uint32_t size, Scalar x) {
+    using Mask = mask_t<Scalar>;
+    using Index = uint32_array_t<Scalar>;
+
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= min & x <= max);
-        
+
     if (unlikely(!Extrapolate && none(mask_valid)))
         return zero<Scalar>();
 
     /* Transform 'x' so that nodes lie at integer positions */
-    Scalar t = ((x - min) * (size - 1)) / (max - min);
+    Scalar t = (x - min) * (Float(size - 1) / (max - min));
 
-    using Index = size_array_t<Scalar>;
     /* Find the index of the left node in the queried subinterval */
     Index idx = enoki::max(Index(0), enoki::min(Index(t), Index(size - 2)));
 
@@ -251,7 +254,7 @@ Scalar eval_1d(Float min, Float max, const Float *values,
  * differences to approximate the derivatives at the endpoints of each spline
  * segment.
  *
- * \param Extrapolate
+ * \tparam Extrapolate
  *      Extrapolate values when \c x is out of range? (default: \c false)
  * \param nodes
  *      Array containing \c size non-uniformly spaced values denoting positions
@@ -275,19 +278,22 @@ Scalar eval_1d(Float min, Float max, const Float *values,
  *      and \c x lies outside of \a [\c min, \c max]
  */
 template <bool Extrapolate = false, typename Scalar, typename Float>
-Scalar eval_1d(const Float *nodes, const Float *values, 
-               size_t size, Scalar x) {
-    using Mask = enoki::mask_t<Scalar>;
+Scalar eval_1d(const Float *nodes, const Float *values,
+               uint32_t size, Scalar x) {
+    using Mask = mask_t<Scalar>;
+    using Index = uint32_array_t<Scalar>;
+
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= nodes[0] & x <= nodes[size-1]);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
         return zero<Scalar>();
 
-    using Index = size_array_t<Scalar>;
     /* Find the index of the left node in the queried subinterval */
-    Index idx = math::find_interval(size, 
-        [&](Index idx, Mask active) { return gather<Scalar>(nodes, idx) <= x; },
+    Index idx = math::find_interval(size,
+        [&](Index idx, Mask active) -> mask_t<Scalar> {
+            return gather<Scalar>(nodes, idx, active) <= x;
+        },
         mask_valid
     );
 
@@ -322,17 +328,17 @@ Scalar eval_1d(const Float *nodes, const Float *values,
  *      An array with \c size entries, which will be used to store the
  *      prefix sum
  * \remark
- *      The Python API lacks the \c size and \c out parameters. The former 
+ *      The Python API lacks the \c size and \c out parameters. The former
  *      is inferred automatically from the size of the input array, and \c out
  *      is returned as a list.
  */
 template <typename Scalar>
 void integrate_1d(Scalar min, Scalar max, const Scalar *values,
-                  size_t size, Scalar *out) {
+                  uint32_t size, Scalar *out) {
     const Scalar width = (max - min) / (size - 1);
     Scalar sum = 0;
     store(out, 0);
-    for (size_t idx = 0; idx < size - 1; ++idx) {
+    for (uint32_t idx = 0; idx < size - 1; ++idx) {
         GET_SPLINE_UNIFORM(idx);
 
         sum += ((d0 - d1) * (Scalar) (1.0 / 12.0) +
@@ -362,16 +368,16 @@ void integrate_1d(Scalar min, Scalar max, const Scalar *values,
  *      An array with \c size entries, which will be used to store the
  *      prefix sum
  * \remark
- *      The Python API lacks the \c size and \c out parameters. The former 
+ *      The Python API lacks the \c size and \c out parameters. The former
  *      is inferred automatically from the size of the input array, and \c out
  *      is returned as a list.
  */
 template <typename Scalar>
 void integrate_1d(const Scalar *nodes, const Scalar *values,
-                  size_t size, Scalar *out) {
+                  uint32_t size, Scalar *out) {
     Scalar sum = 0;
     store(out, 0);
-    for (size_t idx = 0; idx < size - 1; ++idx) {
+    for (uint32_t idx = 0; idx < size - 1; ++idx) {
         GET_SPLINE_NONUNIFORM(idx);
 
         sum += ((d0 - d1) * (Scalar) (1.0 / 12.0) +
@@ -400,23 +406,27 @@ void integrate_1d(const Scalar *nodes, const Scalar *values,
  *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
  */
 template <typename Scalar, typename Float>
-Scalar invert_1d(Float min, Float max, const Float *values, size_t size, Scalar y) {
-    using Mask = enoki::mask_t<Scalar>;
-    /* Give up when given an out-of-range or NaN argument */
-    Mask out_of_bounds_low = !(y > values[0]),
-         out_of_bounds_high = !(y < values[size - 1]),
-         in_bounds = !(out_of_bounds_low | out_of_bounds_high);
+Scalar invert_1d(Float min, Float max, const Float *values, uint32_t size, Scalar y) {
+    using Mask = mask_t<Scalar>;
+    using Index = uint32_array_t<Scalar>;
 
-    Scalar out_of_bounds_value = select(out_of_bounds_low, Scalar(min), Scalar(max));
+    /* Give up when given an out-of-range or NaN argument */
+    Mask in_bounds_low  = y > values[0],
+         in_bounds_high = y < values[size - 1],
+         in_bounds      = in_bounds_low & in_bounds_high;
+
+    /* Assuming that the lookup is out of bounds */
+    Scalar out_of_bounds_value = select(in_bounds_high, Scalar(min), Scalar(max));
 
     if (unlikely(none(in_bounds)))
         return out_of_bounds_value;
 
-    using Index = size_array_t<Scalar>;
     /* Map y to a spline interval by searching through the
        'values' array (which is assumed to be monotonic) */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) { return gather<Scalar>(values, idx) <= y; },
+        [&](Index idx, Mask active) {
+            return gather<Scalar>(values, idx, active) <= y;
+        },
         in_bounds
     );
 
@@ -427,11 +437,11 @@ Scalar invert_1d(Float min, Float max, const Float *values, size_t size, Scalar 
     Scalar a = zero<Scalar>(), b = Scalar(1.f), t = Scalar(0.5f);
 
     /* Keep track all which lane is still active */
-    Mask mask_active(true);
-    
+    Mask active(true);
+
     do {
         /* Fall back to a bisection step when t is out of bounds */
-        t = select(!(t > a & t < b) & mask_active, 0.5f * (a + b), t);
+        t = select(!(t > a & t < b) & active, 0.5f * (a + b), t);
 
         /* Evaluate the spline and its derivative */
         Scalar value, deriv;
@@ -440,17 +450,18 @@ Scalar invert_1d(Float min, Float max, const Float *values, size_t size, Scalar 
         value -= y;
 
         /* Update which lane is still active*/
-        mask_active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
+        active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
 
         /* Update the bisection bounds */
         b = select(value > 0, t, b);
         a = select(value <= 0, t, a);
 
         /* Perform a Newton step */
-        t = select(mask_active, t - value / deriv, t);
-    } while (any(mask_active));
-    
+        t = select(active, t - value / deriv, t);
+    } while (any(active));
+
     Scalar result = min + (idx + t) * width;
+
     return select(in_bounds, result, out_of_bounds_value);
 }
 
@@ -473,24 +484,30 @@ Scalar invert_1d(Float min, Float max, const Float *values, size_t size, Scalar 
  *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
  */
 template <typename Scalar, typename Float>
-Scalar invert_1d(const Float *nodes, const Float *values, size_t size, Scalar y) {
-    using Mask = enoki::mask_t<Scalar>;
-    /* Give up when given an out-of-range or NaN argument */
-    Mask out_of_bounds_low = !(y > values[0]),
-         out_of_bounds_high = !(y < values[size-1]),
-         in_bounds = !(out_of_bounds_low | out_of_bounds_high);
+Scalar invert_1d(const Float *nodes, const Float *values, uint32_t size, Scalar y) {
+    using Mask = mask_t<Scalar>;
+    using Index = uint32_array_t<Scalar>;
 
-    Scalar out_of_bounds_value = select(out_of_bounds_low, Scalar(nodes[0]), Scalar(nodes[size-1]));
+    /* Give up when given an out-of-range or NaN argument */
+    Mask in_bounds_low  = y > values[0],
+         in_bounds_high = y < values[size - 1],
+         in_bounds      = in_bounds_low & in_bounds_high;
+
+    /* Assuming that the lookup is out of bounds */
+    Scalar out_of_bounds_value =
+        select(in_bounds_high, Scalar(nodes[0]), Scalar(nodes[size - 1]));
 
     if (unlikely(none(in_bounds)))
         return out_of_bounds_value;
 
     Scalar result;
-    using Index = size_array_t<Scalar>;
+
     /* Map y to a spline interval by searching through the
        'values' array (which is assumed to be monotonic) */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) { return gather<Scalar>(values, idx) <= y; },
+        [&](Index idx, Mask active) {
+            return gather<Scalar>(values, idx, active) <= y;
+        },
         in_bounds
     );
 
@@ -501,10 +518,10 @@ Scalar invert_1d(const Float *nodes, const Float *values, size_t size, Scalar y)
     Scalar value, deriv;
 
     /* Keep track all which lane is still active */
-    Mask mask_active(true);
+    Mask active(true);
     do {
         /* Fall back to a bisection step when t is out of bounds */
-        t = select(!(t > a & t < b) & mask_active, 0.5f * (a + b), t);
+        t = select(!(t > a & t < b) & active, 0.5f * (a + b), t);
 
         /* Evaluate the spline and its derivative */
         std::tie(value, deriv)
@@ -512,17 +529,18 @@ Scalar invert_1d(const Float *nodes, const Float *values, size_t size, Scalar y)
         value -= y;
 
         /* Update which lane is still active*/
-        mask_active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
+        active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
 
         /* Update the bisection bounds */
         b = select(value > 0, t, b);
         a = select(value <= 0, t, a);
 
         /* Perform a Newton step */
-        t = select(mask_active, t - value / deriv, t);
-    } while (any(mask_active));
-    
+        t = select(active, t - value / deriv, t);
+    } while (any(active));
+
     result = x0 + t * width;
+
     return select(in_bounds, result, out_of_bounds_value);
 }
 
@@ -561,18 +579,21 @@ Scalar invert_1d(const Float *nodes, const Float *values, size_t size, Scalar y)
  */
 template <typename Scalar, typename Float>
 Scalar sample_1d(Float min, Float max, const Float *values, const Float *cdf,
-                 size_t size, Scalar sample, Scalar *fval, Scalar *pdf) {
-    using Mask = enoki::mask_t<Scalar>;
+                 uint32_t size, Scalar sample, Scalar *fval, Scalar *pdf) {
+    using Mask = mask_t<Scalar>;
+    using Index = uint32_array_t<Scalar>;
+
     /* Scale by the definite integral of the function (in case
        it is not normalized) */
     Scalar last = Scalar(cdf[size - 1]);
     sample *= last;
 
-    using Index = size_array_t<Scalar>;
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
     Index idx = math::find_interval(size,
-        [&](Index idx) { return gather<Scalar>(cdf, idx) <= sample; }
+        [&](Index idx) {
+            return gather<Scalar>(cdf, idx) <= sample;
+        }
     );
 
     const Float width = Float(max - min) / (size - 1);
@@ -582,16 +603,15 @@ Scalar sample_1d(Float min, Float max, const Float *values, const Float *cdf,
     sample = (sample - gather<Scalar>(cdf, idx)) / width;
 
     /* Importance sample linear interpolant as initial guess for 't'*/
-    Mask mask = neq(f0, f1);
-    Scalar t = select(mask,
-                      (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1),
-                      sample / f0);
+    Scalar t_linear = (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
+    Scalar t_const  = sample / f0;
+    Scalar t = select(neq(f0, f1), t_linear, t_const);
 
     Scalar a = 0, b = 1, value, deriv;
-    Mask mask_active(true);
+    Mask active(true);
     do {
         /* Fall back to a bisection step when t is out of bounds */
-        t = select(!(t > a & t < b) & mask_active, 0.5f * (a + b), t);
+        t = select(!(t > a & t < b) & active, 0.5f * (a + b), t);
 
         /* Evaluate the definite integral and its derivative
            (i.e. the spline) */
@@ -600,15 +620,15 @@ Scalar sample_1d(Float min, Float max, const Float *values, const Float *cdf,
         value -= sample;
 
         /* Stop the iteration if converged */
-        mask_active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
+        active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
 
         /* Update the bisection bounds */
         b = select(value > 0, t, b);
         a = select(value <= 0, t, a);
 
         /* Perform a Newton step */
-        t = select(mask_active, t - value / deriv, t);
-    } while (any(mask_active));
+        t = select(active, t - value / deriv, t);
+    } while (any(active));
 
     /* Return the value and PDF if requested */
     if (fval)
@@ -654,36 +674,38 @@ Scalar sample_1d(Float min, Float max, const Float *values, const Float *cdf,
  */
 template <typename Scalar, typename Float>
 Scalar sample_1d(const Float *nodes, const Float *values, const Float *cdf,
-                 size_t size, Scalar sample, Scalar *fval, Scalar *pdf) {
-    using Mask = enoki::mask_t<Scalar>;
+                 uint32_t size, Scalar sample, Scalar *fval, Scalar *pdf) {
+    using Mask = mask_t<Scalar>;
+    using Index = uint32_array_t<Scalar>;
+
     /* Scale by the definite integral of the function (in case
        it is not normalized) */
-    Scalar last = Scalar(cdf[size-1]);
+    Scalar last = Scalar(cdf[size - 1]);
     sample *= last;
-    
-    using Index = size_array_t<Scalar>;
+
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
     Index idx = math::find_interval(size,
-        [&](Index idx) { return gather<Scalar>(cdf, idx) <= sample; }
+        [&](Index idx) {
+            return gather<Scalar>(cdf, idx) <= sample;
+        }
     );
-    
+
     GET_SPLINE_NONUNIFORM(idx);
 
     // Re-scale the sample after having choosen the interval
     sample = (sample - gather<Scalar>(cdf, idx)) / width;
 
     /* Importance sample linear interpolant as initial guess for 't'*/
-    Mask mask = neq(f0, f1);
-    Scalar t = select(mask,
-                      (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1),
-                      sample / f0);
+    Scalar t_linear = (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
+    Scalar t_const  = sample / f0;
+    Scalar t = select(neq(f0, f1), t_linear, t_const);
 
     Scalar a = 0, b = 1, value, deriv;
-    Mask mask_active(true);
+    Mask active(true);
     do {
         /* Fall back to a bisection step when t is out of bounds */
-        t = select(!(t > a & t < b) & mask_active, 0.5f * (a + b), t);
+        t = select(!(t > a & t < b) & active, 0.5f * (a + b), t);
 
         /* Evaluate the definite integral and its derivative
            (i.e. the spline) */
@@ -692,15 +714,15 @@ Scalar sample_1d(const Float *nodes, const Float *values, const Float *cdf,
         value -= sample;
 
         /* Stop the iteration if converged */
-        mask_active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
+        active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
 
         /* Update the bisection bounds */
         b = select(value > 0, t, b);
         a = select(value <= 0, t, a);
 
         /* Perform a Newton step */
-        t = select(mask_active, t - value / deriv, t);
-    } while (any(mask_active));
+        t = select(active, t - value / deriv, t);
+    } while (any(active));
 
     /* Return the value and PDF if requested */
     if (fval)
@@ -720,7 +742,7 @@ Scalar sample_1d(const Float *nodes, const Float *values, const Float *cdf,
  * segment. The resulting weights are identical those internally used by \ref
  * sample_1d().
  *
- * \param Extrapolate
+ * \tparam Extrapolate
  *      Extrapolate values when \c x is out of range? (default: \c false)
  * \param min
  *      Position of the first node
@@ -740,21 +762,22 @@ Scalar sample_1d(const Float *nodes, const Float *values, const Float *cdf,
  *      and \c x lies outside of [\c min, \c max] and an offset into the function samples
  *      associated with weights[0]
  */
-template <bool Extrapolate = false, 
-          typename Scalar, typename Float, 
-          typename SSize = ssize_array_t<Scalar>,
+template <bool Extrapolate = false,
+          typename Scalar, typename Float,
+          typename Int32 = int32_array_t<Scalar>,
           typename Mask = mask_t<Scalar>>
-std::pair<Mask, SSize> eval_spline_weights(Float min, Float max, size_t size,
-                                         Scalar x, Scalar *weights) {
-    using Index = size_array_t<Scalar>;
+std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
+                                           Scalar x, Scalar *weights) {
+    using Index = uint32_array_t<Scalar>;
+
     /* Give up when given an out-of-range or NaN argument */
-    auto mask_valid = (x >= min & x <= max);
-    
+    auto mask_valid = x >= min & x <= max;
+
     if (unlikely(!Extrapolate && none(mask_valid)))
-        return std::make_pair(Mask(false), zero<SSize>());
+        return std::make_pair(Mask(false), zero<Int32>());
 
     /* Transform 'x' so that nodes lie at integer positions */
-    Scalar t = (x - min) * (size - 1) / (max - min);
+    Scalar t = (x - min) * (Float(size - 1) / (max - min));
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = enoki::max(Index(0), enoki::min(Index(t), Index(size - 2)));
@@ -770,7 +793,7 @@ std::pair<Mask, SSize> eval_spline_weights(Float min, Float max, size_t size,
     w1 =  2 * t3 - 3 * t2 + 1;
     w2 = -2 * t3 + 3 * t2;
     w3 = zero<Scalar>();
-    SSize offset = (SSize) idx - 1;
+    Int32 offset = (Int32) idx - 1;
 
     /* Turn derivative weights into node weights using
        an appropriate chosen finite differences stencil */
@@ -806,7 +829,7 @@ std::pair<Mask, SSize> eval_spline_weights(Float min, Float max, size_t size,
  * segment. The resulting weights are identical those internally used by \ref
  * sample_1d().
  *
- * \param Extrapolate
+ * \tparam Extrapolate
  *      Extrapolate values when \c x is out of range? (default: \c false)
  * \param nodes
  *      Array containing \c size non-uniformly spaced values denoting positions
@@ -828,26 +851,29 @@ std::pair<Mask, SSize> eval_spline_weights(Float min, Float max, size_t size,
  *      and \c x lies outside of [\c min, \c max] and an offset into the function samples
  *      associated with weights[0]
  */
-template <bool Extrapolate = false, 
-          typename Scalar, 
-          typename Float, 
-          typename SSize = ssize_array_t<Scalar>,
+template <bool Extrapolate = false,
+          typename Scalar,
+          typename Float,
+          typename Int32 = int32_array_t<Scalar>,
           typename Mask = mask_t<Scalar>>
-std::pair<Mask, SSize> eval_spline_weights(const Float* nodes, size_t size, 
-                                         Scalar x, Scalar *weights) {
-    using Index = size_array_t<Scalar>;
+std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
+                                           Scalar x, Scalar *weights) {
+    using Index = uint32_array_t<Scalar>;
+
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= nodes[0] && x <= nodes[size-1]);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
-        return std::make_pair(Mask(false), zero<SSize>());
+        return std::make_pair(Mask(false), zero<Int32>());
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) { return gather<Scalar>(nodes, idx) <= x; },
+        [&](Index idx, Mask active) {
+            return gather<Scalar>(nodes, idx, active) <= x;
+        },
         mask_valid
     );
-    
+
     Scalar x0 = gather<Scalar>(nodes, idx),
            x1 = gather<Scalar>(nodes, idx + 1),
            width = x1 - x0;
@@ -864,20 +890,21 @@ std::pair<Mask, SSize> eval_spline_weights(const Float* nodes, size_t size,
     w2 = -2*t3 + 3*t2;
     w3 = zero<Scalar>();
 
-    SSize offset = (SSize) idx - 1;
-    
+    Int32 offset = (Int32) idx - 1;
+
     /* Turn derivative weights into node weights using
        an appropriate chosen finite differences stencil */
     Scalar d0 = t3 - 2*t2 + t, d1 = t3 - t2;
 
     auto valide_boundary_left = idx > 0;
-    Scalar width_nodes_1 = gather<Scalar>(nodes, idx + 1) - gather<Scalar>(nodes, idx - 1, valide_boundary_left);
+    Scalar width_nodes_1 =
+        gather<Scalar>(nodes, idx + 1) - gather<Scalar>(nodes, idx - 1, valide_boundary_left);
     Scalar factor = width / width_nodes_1;
     w0 = select(valide_boundary_left, w0 - (d0 * factor), w0);
     w1 = select(valide_boundary_left, w1, w1 - d0);
     w2 = select(valide_boundary_left, w2 + d0 * factor, w2 + d0);
 
-    auto valid_boundary_right = idx + 2 < size; 
+    auto valid_boundary_right = idx + 2 < size;
     Scalar width_nodes_2 = gather<Scalar>(nodes, idx + 2, valid_boundary_right) - gather<Scalar>(nodes, idx);
     factor = width / width_nodes_2;
     w1 = select(valid_boundary_right, w1 - (d1 * factor), w1 - d1);
@@ -888,7 +915,7 @@ std::pair<Mask, SSize> eval_spline_weights(const Float* nodes, size_t size,
     store(weights + 1, w1);
     store(weights + 2, w2);
     store(weights + 3, w3);
-    
+
     if (!Extrapolate)
         return std::make_pair(mask_valid, offset);
     else
@@ -902,17 +929,17 @@ std::pair<Mask, SSize> eval_spline_weights(const Float* nodes, size_t size,
  * it uses finite differences to approximate the derivatives for each dimension
  * at the endpoints of spline patches.
  *
- * \param Extrapolate
+ * \tparam Extrapolate
  *      Extrapolate values when \c p is out of range? (default: \c false)
  * \param nodes1
  *      Arrays containing \c size1 non-uniformly spaced values denoting
- *      positions the where the function to be interpolated was evaluated 
+ *      positions the where the function to be interpolated was evaluated
  *      on the \c X axis (in increasing order)
  * \param size1
  *      Denotes the size of the \c nodes1 array
  * \param nodes
  *      Arrays containing \c size2 non-uniformly spaced values denoting
- *      positions the where the function to be interpolated was evaluated 
+ *      positions the where the function to be interpolated was evaluated
  *      on the \c Y axis (in increasing order)
  * \param size2
  *      Denotes the size of the \c nodes2 array
@@ -933,39 +960,43 @@ std::pair<Mask, SSize> eval_spline_weights(const Float* nodes, size_t size,
  *      <tt>(x,y)</tt> lies outside of the node range
  */
 template <bool Extrapolate = false, typename Scalar, typename Float>
-Scalar eval_2d(const Float *nodes1, size_t size1, const Float *nodes2,
-               size_t size2, const Float *values, Scalar x, Scalar y) {
-    using SSize = ssize_array_t<Scalar>;
+Scalar eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
+               uint32_t size2, const Float *values, Scalar x, Scalar y) {
     using Mask = mask_t<Scalar>;
-    using Index = size_array_t<Scalar>;
-    Scalar weights[2][4];
-    SSize offset[2];
+    using Index = int32_array_t<Scalar>;
 
-    Mask mask_weight_x, mask_weight_y;
-    std::tie(mask_weight_x, offset[0]) = eval_spline_weights<Extrapolate>(nodes1, size1, x, weights[0]);
-    std::tie(mask_weight_y, offset[1]) = eval_spline_weights<Extrapolate>(nodes2, size2, y, weights[1]);
+    Scalar weights[2][4];
+    Index offset[2];
+
+    Mask valid_x, valid_y;
+    std::tie(valid_x, offset[0]) = eval_spline_weights<Extrapolate>(nodes1, size1, x, weights[0]);
+    std::tie(valid_y, offset[1]) = eval_spline_weights<Extrapolate>(nodes2, size2, y, weights[1]);
 
     /* Compute interpolation weights separately for each dimension */
-    Mask mask_weights = (!mask_weight_x | !mask_weight_y);
-    
-    if (all(mask_weights))
+    if (unlikely(none(valid_x & valid_y)))
         return zero<Scalar>();
 
+    Index index = offset[1] * size1 + offset[0];
     Scalar result = 0.f;
-    for (int yi=0; yi<=3; ++yi) {
-        Scalar wy = weights[1][yi];
-        for (int xi=0; xi<=3; ++xi) {
-            Scalar wxy = weights[0][xi] * wy;
-            Mask valid = neq(wxy, zero<Scalar>());
-            if (none(valid))
-                continue;
 
-            SSize pos = (offset[1] + yi) * size1 + offset[0] + xi;
+    for (int yi = 0; yi < 4; ++yi) {
+        Scalar weight_y = weights[1][yi];
 
-            result = select(mask_weights, result, result + gather<Scalar>(values, pos, valid) * wxy);
+        for (int xi = 0; xi < 4; ++xi) {
+            Scalar weight_x  = weights[0][xi];
+            Scalar weight_xy = weight_x * weight_y;
+
+            Mask weight_valid = neq(weight_xy, zero<Scalar>());
+            Scalar value = gather<Scalar>(values, index, weight_valid);
+
+            result = fmadd(value, weight_xy, result);
+            index += 1;
         }
+
+        index += size1 - 4;
     }
-    return select(mask_weights, zero<Scalar>(), result);
+
+    return result;
 }
 
 // =======================================================================

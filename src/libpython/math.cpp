@@ -97,13 +97,13 @@ MTS_PY_EXPORT(math) {
     math.def("solve_quadratic", vectorize_wrapper(solve_quadratic),
              "a"_a, "b"_a, "c"_a);
 
-	math.def("find_interval", [](const py::array_t<Float> &arr, Float x) {
-		if (arr.ndim() != 1)
+    math.def("find_interval", [](const py::array_t<Float> &arr, Float x) {
+        if (arr.ndim() != 1)
             throw std::runtime_error("'arr' must be a one-dimentional array!");
-		return math::find_interval(arr.shape(0),
-			[&](size_t idx) { 
-				return arr.at(idx) <= x; 
-			}
-		);
-	});
+        return math::find_interval(arr.shape(0),
+            [&](size_t idx) {
+                return arr.at(idx) <= x;
+            }
+        );
+    });
 }

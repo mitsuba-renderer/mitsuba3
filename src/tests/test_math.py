@@ -78,18 +78,18 @@ def test_legendre_pd_diff():
 
 
 def test_find_interval():
-	from mitsuba.core.math import find_interval
-	values = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
-	assert(np.allclose(find_interval(values, 0.05), 0))
-	assert(np.allclose(find_interval(values, 0.45), 1))
-	assert(np.allclose(find_interval(values, 0.55), 2))
-	assert(np.allclose(find_interval(values, 0.85), 3))
-	assert(np.allclose(find_interval(values, 0.75), 3))
-	# edge cases
-	assert(np.allclose(find_interval(values, -1), 3))
-	assert(np.allclose(find_interval(values,  0), 0))
-	assert(np.allclose(find_interval(values, 1.75),  3))
-	# repeated item in the nodes
-	valuesR = np.array([0.0, 0.25, 0.25, 0.5, 0.75, 1.0])	
-	assert(np.allclose(find_interval(valuesR, 0.45), 2))
-	assert(np.allclose(find_interval(valuesR, 0.25), 2))
+        from mitsuba.core.math import find_interval
+        values = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
+        assert(np.allclose(find_interval(values, 0.05), 0))
+        assert(np.allclose(find_interval(values, 0.45), 1))
+        assert(np.allclose(find_interval(values, 0.55), 2))
+        assert(np.allclose(find_interval(values, 0.85), 3))
+        assert(np.allclose(find_interval(values, 0.75), 3))
+        # edge cases
+        assert(np.allclose(find_interval(values, -1), 3))
+        assert(np.allclose(find_interval(values,  0), 0))
+        assert(np.allclose(find_interval(values, 1.75),  3))
+        # repeated item in the nodes
+        valuesR = np.array([0.0, 0.25, 0.25, 0.5, 0.75, 1.0])
+        assert(np.allclose(find_interval(valuesR, 0.45), 2))
+        assert(np.allclose(find_interval(valuesR, 0.25), 2))

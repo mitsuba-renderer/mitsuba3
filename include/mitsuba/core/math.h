@@ -409,24 +409,33 @@ static T inv_gamma(T value) {
 */
 
 template <typename Size, typename Predicate,
-    typename Args = typename function_traits<Predicate>::Args,
-    typename Index = std::tuple_element_t<0, Args>,
-    typename Mask = enoki::mask_t<Index>>
-    Index find_interval(Size left, Size right, const Predicate &pred) {
-    Index first = Index(left);
-    Index len = Index(right - left);
+          typename Args = typename function_traits<Predicate>::Args,
+          typename Index = std::tuple_element_t<0, Args>,
+          typename IndexMask = mask_t<Index>>
+Index find_interval(Size left, Size right, const Predicate &pred) {
+    Size initial_size = right - left;
 
-    if (unlikely(len == 0))
+    if (unlikely(initial_size == 0))
         return zero<Index>();
 
-    Mask active(true);
+    IndexMask active(true);
+    Index first(left), size(initial_size);
+
     do {
-        Index half = len >> 1;
-        Index middle = first + half;
-        Mask pred_result = pred(middle);
-        first = select(active & pred_result, middle + 1, first);
-        len = select(active, select(pred_result, len - (half + 1), half), len);
-        active &= Mask(len > 0);
+        Index half   = size >> 1,
+              middle = first + half;
+
+        /* Evaluate the predicate */
+        IndexMask pred_result = reinterpret_array<IndexMask>(pred(middle)) & active;
+
+        /* .. and recurse into the left or right */
+        first = select(pred_result, middle + 1, first);
+
+        /* Update the remaining interval size */
+        size = select(pred_result, size - (half + 1), half);
+
+        /* Disable converged entries */
+        active &= size > 0;
     } while (any(active));
 
     return clamp(
@@ -437,12 +446,13 @@ template <typename Size, typename Predicate,
 }
 
 template <typename Size, typename Predicate,
-    typename Args = typename function_traits<Predicate>::Args,
-    typename Index = std::tuple_element_t<0, Args>,
-    typename Mask = enoki::mask_t<Index>>
-    Index find_interval(Size size, const Predicate &pred) {
+          typename Args = typename function_traits<Predicate>::Args,
+          typename Index = std::tuple_element_t<0, Args>,
+          typename Mask = enoki::mask_t<Index>>
+Index find_interval(Size size, const Predicate &pred) {
     return find_interval(Size(0), size, pred);
 }
+
 /**
  * \brief Find an interval in an ordered set
  *
@@ -457,28 +467,42 @@ template <typename Size, typename Predicate,
  * domain, the returned left interval index is clamped to the range <tt>[left,
  * right-2]</tt>.
  *
- * This function also takes a Mask argument, which is used, when operating over 
- * arrays, to define which elements of the array it should operate on.
+ * \remark This function is intended for vectorized predicates and additionally
+ * accepts a mask as an input. This mask can be used to disable some of the
+ * array entries. The mask is passed to the predicate as a second parameter.
  */
 
 template <typename Size, typename Predicate,
-    typename Args = typename function_traits<Predicate>::Args,
-    typename Index = std::tuple_element_t<0, Args>,
-    typename Mask = enoki::mask_t<Index>>
-    Index find_interval(Size left, Size right, const Predicate &pred, Mask active) {
-    Index first = Index(left);
-    Index len = Index(right - left);
+          typename Args = typename function_traits<Predicate>::Args,
+          typename Index = std::tuple_element_t<0, Args>,
+          typename Mask = std::tuple_element_t<1, Args>>
+Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in) {
+    using IndexMask = mask_t<Index>;
 
-    if (unlikely(len == 0))
+    Size initial_size = right - left;
+
+    if (initial_size == 0)
         return zero<Index>();
 
+    Index first(left), size(initial_size);
+    IndexMask active = reinterpret_array<IndexMask>(active_in);
+
     do {
-        Index half = len >> 1;
-        Index middle = first + half;
-        Mask pred_result = pred(middle, active);
-        first = select(active & pred_result, middle + 1, first);
-        len = select(active, select(pred_result, len - (half + 1), half), len);
-        active &= Mask(len > 0);
+        Index half   = size >> 1,
+              middle = first + half;
+
+        /* Evaluate the predicate */
+        IndexMask pred_result = reinterpret_array<IndexMask>(
+            pred(middle, reinterpret_array<Mask>(active))) & active;
+
+        /* .. and recurse into the left or right */
+        first = select(pred_result, middle + 1, first);
+
+        /* Update the remaining interval size */
+        size = select(pred_result, size - (half + 1), half);
+
+        /* Disable converged entries */
+        active &= size > 0;
     } while (any(active));
 
     return clamp(
@@ -489,9 +513,9 @@ template <typename Size, typename Predicate,
 }
 
 template <typename Size, typename Predicate,
-    typename Args = typename function_traits<Predicate>::Args,
-    typename Index = std::tuple_element_t<0, Args>,
-    typename Mask = enoki::mask_t<Index>>
+          typename Args = typename function_traits<Predicate>::Args,
+          typename Index = std::tuple_element_t<0, Args>,
+          typename Mask = enoki::mask_t<Index>>
 Index find_interval(Size size, const Predicate &pred, Mask active) {
     return find_interval(Size(0), size, pred, active);
 }
