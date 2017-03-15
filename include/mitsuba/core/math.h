@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/simd.h>
+#include <mitsuba/core/traits.h>
 #include <cmath>
 #include <algorithm>
 
@@ -391,7 +392,57 @@ static T inv_gamma(T value) {
 
     return select(value <= T(0.04045), branch1, branch2);
 }
+/**
+* \brief Find an interval in an ordered set
+*
+* This function is very similar to \c std::upper_bound, but it uses a functor
+* rather than an actual array to permit working with procedurally defined
+* data. It returns the index \c i such that pred(i) is \c true and pred(i+1)
+* is \c false.
+*
+* This function is primarily used to locate an interval (i, i+1) for linear
+* interpolation, hence its name. To avoid issues out of bounds accesses, and
+* to deal with predicates that evaluate to \c true or \c false on the entire
+* domain, the returned left interval index is clamped to the range <tt>[left,
+* right-2]</tt>.
+*
+*/
 
+template <typename Size, typename Predicate,
+    typename Args = typename function_traits<Predicate>::Args,
+    typename Index = std::tuple_element_t<0, Args>,
+    typename Mask = enoki::mask_t<Index>>
+    Index find_interval(Size left, Size right, const Predicate &pred) {
+    Index first = Index(left);
+    Index len = Index(right - left);
+
+    if (unlikely(len == 0))
+        return zero<Index>();
+
+    Mask active(true);
+    do {
+        Index half = len >> 1;
+        Index middle = first + half;
+        Mask pred_result = pred(middle);
+        first = select(active & pred_result, middle + 1, first);
+        len = select(active, select(pred_result, len - (half + 1), half), len);
+        active &= Mask(len > 0);
+    } while (any(active));
+
+    return clamp(
+        first - 1,
+        Index(left),
+        Index(right - 2)
+    );
+}
+
+template <typename Size, typename Predicate,
+    typename Args = typename function_traits<Predicate>::Args,
+    typename Index = std::tuple_element_t<0, Args>,
+    typename Mask = enoki::mask_t<Index>>
+    Index find_interval(Size size, const Predicate &pred) {
+    return find_interval(Size(0), size, pred);
+}
 /**
  * \brief Find an interval in an ordered set
  *
@@ -405,29 +456,44 @@ static T inv_gamma(T value) {
  * to deal with predicates that evaluate to \c true or \c false on the entire
  * domain, the returned left interval index is clamped to the range <tt>[left,
  * right-2]</tt>.
+ *
+ * This function also takes a Mask argument, which is used, when operating over 
+ * arrays, to define which elements of the array it should operate on.
  */
-template <typename Size, typename Predicate>
-size_t find_interval(Size left, Size right, const Predicate &pred) {
-    typedef typename std::make_signed<Size>::type SignedSize;
 
-    Size first = left, len = right - left;
-    while (len > 0) {
-        Size half = len >> 1,
-             middle = first + half;
+template <typename Size, typename Predicate,
+    typename Args = typename function_traits<Predicate>::Args,
+    typename Index = std::tuple_element_t<0, Args>,
+    typename Mask = enoki::mask_t<Index>>
+    Index find_interval(Size left, Size right, const Predicate &pred, Mask active) {
+    Index first = Index(left);
+    Index len = Index(right - left);
 
-        if (pred(middle)) {
-            first = middle + 1;
-            len -= half + 1;
-        } else {
-            len = half;
-        }
-    }
+    if (unlikely(len == 0))
+        return zero<Index>();
 
-    return (Size) clamp<SignedSize>(
-        (SignedSize) first - 1,
-        (SignedSize) left,
-        (SignedSize) right - 2
+    do {
+        Index half = len >> 1;
+        Index middle = first + half;
+        Mask pred_result = pred(middle, active);
+        first = select(active & pred_result, middle + 1, first);
+        len = select(active, select(pred_result, len - (half + 1), half), len);
+        active &= Mask(len > 0);
+    } while (any(active));
+
+    return clamp(
+        first - 1,
+        Index(left),
+        Index(right - 2)
     );
+}
+
+template <typename Size, typename Predicate,
+    typename Args = typename function_traits<Predicate>::Args,
+    typename Index = std::tuple_element_t<0, Args>,
+    typename Mask = enoki::mask_t<Index>>
+Index find_interval(Size size, const Predicate &pred, Mask active) {
+    return find_interval(Size(0), size, pred, active);
 }
 
 /**

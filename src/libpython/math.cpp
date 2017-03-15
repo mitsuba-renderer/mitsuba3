@@ -82,7 +82,7 @@ MTS_PY_EXPORT(math) {
         return math::chi2(obs.data(), exp.data(), thresh, obs.shape(0));
     }, D(math, chi2));
 
-    math.def("solve_quadratic", &math::solve_quadratic<float>,
+	math.def("solve_quadratic", &math::solve_quadratic<float>,
              D(math, solve_quadratic), "a"_a, "b"_a, "c"_a);
 
     auto solve_quadratic = [](FloatP a, FloatP b, FloatP c) {
@@ -96,4 +96,14 @@ MTS_PY_EXPORT(math) {
 
     math.def("solve_quadratic", vectorize_wrapper(solve_quadratic),
              "a"_a, "b"_a, "c"_a);
+
+	math.def("find_interval", [](const py::array_t<Float> &arr, Float x) {
+		if (arr.ndim() != 1)
+            throw std::runtime_error("'arr' must be a one-dimentional array!");
+		return math::find_interval(arr.shape(0),
+			[&](size_t idx) { 
+				return arr.at(idx) <= x; 
+			}
+		);
+	});
 }

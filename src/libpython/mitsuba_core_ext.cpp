@@ -35,6 +35,7 @@ MTS_PY_DECLARE(Struct);
 MTS_PY_DECLARE(Bitmap);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(qmc);
+MTS_PY_DECLARE(spline);
 
 PYBIND11_PLUGIN(mitsuba_core_ext) {
     py::module m_("mitsuba_core_ext"); // unused
@@ -75,6 +76,7 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     MTS_PY_IMPORT(Bitmap);
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(qmc);
+    MTS_PY_IMPORT(spline);
 
     atexit([]() {
         Logger::static_shutdown();
