@@ -22,8 +22,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Class {
 public:
-    typedef Object *(*ConstructFunctor)(const Properties &props);
-    typedef Object *(*UnserializeFunctor)(Stream *stream);
+    using ConstructFunctor   = Object *(*)(const Properties &props);
+    using UnserializeFunctor = Object *(*)(Stream *stream);
 
     /**
      * \brief Construct a new class descriptor
@@ -31,11 +31,20 @@ public:
      * This method should never be called manually. Instead, use
      * the \ref MTS_IMPLEMENT_CLASS macro to automatically do this for you.
      *
-     * \param name Name of the class
-     * \param parent Name of the parent class
-     * \param abstract \c true if the class contains pure virtual methods
-     * \param constr Pointer to a default construction function
-     * \param unser Pointer to a unserialization construction function
+     * \param name
+     *     Name of the class
+     *
+     * \param parent
+     *     Name of the parent class
+     *
+     * \param abstract
+     *     \c true if the class contains pure virtual methods
+     *
+     * \param constr
+     *     Pointer to a default construction function
+     *
+     * \param unser
+     *     Pointer to a unserialization construction function
      */
     Class(const std::string &name,
           const std::string &parent,
@@ -43,8 +52,46 @@ public:
           ConstructFunctor constr = nullptr,
           UnserializeFunctor unser = nullptr);
 
+    /**
+     * \brief Construct a new class descriptor
+     *
+     * This constructor additionally takes an alias name that is used to refer
+     * to instances of this type in Mitsuba's scene specification language.
+     *
+     * This method should never be called manually. Instead, use the \ref
+     * MTS_IMPLEMENT_CLASS_ALIAS macro to automatically do this for you.
+     *
+     * \param name
+     *     Name of the class
+     *
+     * \param alias
+     *     Name used to refer to instances of this type in Mitsuba's
+     *     scene description language (usually the same as \c name)
+     *
+     * \param parent
+     *     Name of the parent class
+     *
+     * \param abstract
+     *     \c true if the class contains pure virtual methods
+     *
+     * \param constr
+     *     Pointer to a default construction function
+     *
+     * \param unser
+     *     Pointer to a unserialization construction function
+     */
+    Class(const std::string &name,
+          const std::string &alias,
+          const std::string &parent,
+          bool abstract = false,
+          ConstructFunctor constr = nullptr,
+          UnserializeFunctor unser = nullptr);
+
     /// Return the name of the represented class
     const std::string &name() const { return m_name; }
+
+    /// Return the scene description-specific alias
+    const std::string &alias() const { return m_alias; }
 
     /**
      * \brief Return whether or not the class represented
@@ -101,7 +148,7 @@ private:
      */
     static void initialize_once(Class *class_);
 private:
-    std::string m_name, m_parent_name;
+    std::string m_name, m_alias, m_parent_name;
     Class *m_parent;
     bool m_abstract;
     ConstructFunctor m_constr;
@@ -164,15 +211,21 @@ NAMESPACE_END(detail)
  * documentation of \ref MTS_DECLARE_CLASS might look like this:
  *
  * \code
- * MTS_IMPLEMENT_CLASS(MyObject, false, Object)
+ * MTS_IMPLEMENT_CLASS(MyObject, Object)
  * \endcode
  *
- * \param name Name of the class
- * \param abstract \c true if the class contains pure virtual methods
- * \param super Name of the parent class
+ * \param Name Name of the class
+ * \param Parent Name of the parent class
  */
 #define MTS_IMPLEMENT_CLASS(Name, Parent) \
     Class *Name::m_class = new Class(#Name, #Parent, \
+            std::is_abstract<Name>::value, \
+            ::mitsuba::detail::get_construct_functor<Name>(), \
+            ::mitsuba::detail::get_unserialize_functor<Name>()); \
+    const Class *Name::class_() const { return m_class; }
+
+#define MTS_IMPLEMENT_CLASS_ALIAS(Name, Alias, Parent) \
+    Class *Name::m_class = new Class(#Name, Alias, #Parent, \
             std::is_abstract<Name>::value, \
             ::mitsuba::detail::get_construct_functor<Name>(), \
             ::mitsuba::detail::get_unserialize_functor<Name>()); \

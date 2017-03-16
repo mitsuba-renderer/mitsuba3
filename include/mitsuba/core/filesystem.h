@@ -35,7 +35,7 @@ NAMESPACE_BEGIN(filesystem)
 #endif
 
 /// Type of strings (built from system-specific characters)
-typedef std::basic_string<value_type> string_type;
+using string_type = std::basic_string<value_type>;
 
 /// System-specific separator used to write paths.
 #if defined(__WINDOWS__)

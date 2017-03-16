@@ -118,7 +118,7 @@ else()
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
-  # Enable C++11/14
+  # Enable 14
   CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
 
   if (HAS_CPP14_FLAG)

@@ -6,8 +6,10 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 NAMESPACE_BEGIN(detail)
+
 void register_class(const Class *class_);
 void cleanup();
+
 NAMESPACE_END(detail)
 NAMESPACE_END(xml)
 
@@ -15,10 +17,16 @@ static std::map<std::string, Class *> *__classes;
 bool Class::m_is_initialized = false;
 const Class *m_class = nullptr;
 
-Class::Class(const std::string &name, const std::string &parent, bool abstract,
+Class::Class(const std::string &name, const std::string &parent,
+             bool abstract, ConstructFunctor constr,
+             UnserializeFunctor unser)
+    : Class(name, name, parent, abstract, constr, unser) { }
+
+Class::Class(const std::string &name, const std::string &alias,
+             const std::string &parent, bool abstract,
              ConstructFunctor constr, UnserializeFunctor unser)
-    : m_name(name), m_parent_name(parent), m_abstract(abstract),
-      m_constr(constr), m_unser(unser) {
+    : m_name(name), m_alias(alias), m_parent_name(parent),
+      m_abstract(abstract), m_constr(constr), m_unser(unser) {
 
     if (!__classes)
         __classes = new std::map<std::string, Class *>();

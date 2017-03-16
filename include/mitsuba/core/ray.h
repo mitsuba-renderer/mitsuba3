@@ -99,11 +99,12 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
         : Base(r), o_x(r.o_x), o_y(r.o_y), d_x(r.d_x), d_y(r.d_y),
           has_differentials(r.has_differentials) { }
 
-    RayDifferential(const Point &o, const Vector &d, const Vector &d_rcp, Value mint, Value maxt,
-                    const Point &o_x, const Point &o_y, const Vector &d_x, const Vector &d_y,
+    RayDifferential(const Point &o, const Vector &d, const Vector &d_rcp,
+                    Value mint, Value maxt, const Point &o_x, const Point &o_y,
+                    const Vector &d_x, const Vector &d_y,
                     bool has_differentials)
-        : Base(o, d, d_rcp, mint, maxt), o_x(o_x), o_y(o_y), d_x(d_x), d_y(d_y),
-          has_differentials(has_differentials) { }
+        : Base(o, d, d_rcp, mint, maxt), o_x(o_x), o_y(o_y), d_x(d_x),
+          d_y(d_y), has_differentials(has_differentials) { }
 
     void scale(Float amount) {
         o_x = o + (o_x - o) * amount;

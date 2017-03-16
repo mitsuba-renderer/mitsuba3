@@ -23,92 +23,14 @@
 #endif
 
 
-static const char *__doc_enoki_dynamic_resize = R"doc()doc";
-
-static const char *__doc_enoki_dynamic_resize_2 = R"doc()doc";
-
-static const char *__doc_enoki_dynamic_resize_3 = R"doc()doc";
-
-static const char *__doc_enoki_dynamic_resize_4 = R"doc()doc";
-
-static const char *__doc_enoki_dynamic_size = R"doc()doc";
-
-static const char *__doc_enoki_dynamic_size_2 = R"doc()doc";
-
-static const char *__doc_enoki_dynamic_size_3 = R"doc()doc";
-
-static const char *__doc_enoki_dynamic_size_4 = R"doc()doc";
-
-static const char *__doc_enoki_packet = R"doc()doc";
-
-static const char *__doc_enoki_packet_10 = R"doc()doc";
-
-static const char *__doc_enoki_packet_11 = R"doc()doc";
-
-static const char *__doc_enoki_packet_12 = R"doc()doc";
-
-static const char *__doc_enoki_packet_13 = R"doc()doc";
-
-static const char *__doc_enoki_packet_14 = R"doc()doc";
-
-static const char *__doc_enoki_packet_2 = R"doc()doc";
-
-static const char *__doc_enoki_packet_3 = R"doc()doc";
-
-static const char *__doc_enoki_packet_4 = R"doc()doc";
-
-static const char *__doc_enoki_packet_5 = R"doc()doc";
-
-static const char *__doc_enoki_packet_6 = R"doc()doc";
-
-static const char *__doc_enoki_packet_7 = R"doc()doc";
-
-static const char *__doc_enoki_packet_8 = R"doc()doc";
-
-static const char *__doc_enoki_packet_9 = R"doc()doc";
-
-static const char *__doc_enoki_packets = R"doc()doc";
-
-static const char *__doc_enoki_packets_2 = R"doc()doc";
-
-static const char *__doc_enoki_packets_3 = R"doc()doc";
-
-static const char *__doc_enoki_packets_4 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_10 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_11 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_12 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_13 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_14 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_2 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_3 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_4 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_5 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_6 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_7 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_8 = R"doc()doc";
-
-static const char *__doc_enoki_ref_wrap_9 = R"doc()doc";
-
 static const char *__doc_mitsuba_AnnotatedStream =
-R"doc(An AnnotatedStream adds Table of Contents capabilities to an
-underlying stream. A Stream instance must first be created and passed
-to to the constructor. The underlying stream should either be empty or
-a stream that was previously written with an AnnotatedStream, so that
-it contains a proper Table of Contents.
+R"doc(An AnnotatedStream adds a table of contents to an underlying stream
+that can later be used to selectively read specific items.
+
+A Stream instance must first be created and passed to to the
+constructor. The underlying stream should either be empty or a stream
+that was previously written with an AnnotatedStream, so that it
+contains a proper Table of Contents.
 
 Table of Contents: objects and variables written to the stream are
 prepended by a field name. Contents can then be queried by field name,
@@ -132,9 +54,13 @@ Throws if the underlying stream has read capabilities and is not empty
 but does not correspond to a valid AnnotatedStream (i.e. it does not
 start with the kSerializedHeaderId sentry).
 
-@param write_mode Whether to use write mode. The stream is either
-read-only or write-only. @param throw_on_missing Whether an error
-should be thrown when get is called for a missing field.)doc";
+Parameter ``write_mode``:
+    Whether to use write mode. The stream is either read-only or
+    write-only.
+
+Parameter ``throw_on_missing``:
+    Whether an error should be thrown when get is called for a missing
+    field.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_can_read = R"doc(Whether the underlying stream has read capabilities and is not closed.)doc";
 
@@ -182,9 +108,9 @@ static const char *__doc_mitsuba_AnnotatedStream_m_is_closed =
 R"doc(Whether the annotated stream is closed (independent of the underlying
 stream).)doc";
 
-static const char *__doc_mitsuba_AnnotatedStream_m_prefixStack =
-R"doc(Stack of accumulated prefixes, i.e. ``m_prefixStack.back`` is the full
-prefix path currently applied.)doc";
+static const char *__doc_mitsuba_AnnotatedStream_m_prefix_stack =
+R"doc(Stack of accumulated prefixes, i.e. ``m_prefix_stack.back`` is the
+full prefix path currently applied.)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream_m_stream = R"doc(Underlying stream where the names and contents are written)doc";
 
@@ -786,6 +712,37 @@ Parameter ``constr``:
 Parameter ``unser``:
     Pointer to a unserialization construction function)doc";
 
+static const char *__doc_mitsuba_Class_Class_2 =
+R"doc(Construct a new class descriptor
+
+This constructor additionally takes an alias name that is used to
+refer to instances of this type in Mitsuba's scene specification
+language.
+
+This method should never be called manually. Instead, use the
+MTS_IMPLEMENT_CLASS_ALIAS macro to automatically do this for you.
+
+Parameter ``name``:
+    Name of the class
+
+Parameter ``alias``:
+    Name used to refer to instances of this type in Mitsuba's scene
+    description language (usually the same as ``name``)
+
+Parameter ``parent``:
+    Name of the parent class
+
+Parameter ``abstract``:
+    ``True`` if the class contains pure virtual methods
+
+Parameter ``constr``:
+    Pointer to a default construction function
+
+Parameter ``unser``:
+    Pointer to a unserialization construction function)doc";
+
+static const char *__doc_mitsuba_Class_alias = R"doc(Return the scene description-specific alias)doc";
+
 static const char *__doc_mitsuba_Class_construct =
 R"doc(Generate an instance of this class
 
@@ -810,6 +767,8 @@ static const char *__doc_mitsuba_Class_is_constructible = R"doc(Does the class s
 static const char *__doc_mitsuba_Class_is_serializable = R"doc(Does the class support serialization?)doc";
 
 static const char *__doc_mitsuba_Class_m_abstract = R"doc()doc";
+
+static const char *__doc_mitsuba_Class_m_alias = R"doc()doc";
 
 static const char *__doc_mitsuba_Class_m_constr = R"doc()doc";
 
@@ -855,34 +814,45 @@ Remark:
 static const char *__doc_mitsuba_ContinuousSpectrum_class = R"doc()doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_eval =
-R"doc(Evaluate the value of the spectral power distribution at a set of
-wavelengths.
+R"doc(Evaluate the value of the spectral power distribution for a single
+wavelength
 
 Parameter ``lambda``:
-    Packet with wavelengths in nanometers)doc";
+    Wavelength specified in nanometers)doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_2 =
+R"doc(Evaluate the value of the spectral power distribution at a set of
+wavelengths
+
+Parameter ``lambda``:
+    List of wavelengths specified in nanometers)doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_3 = R"doc(Vectorized version of eval())doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_pdf =
 R"doc(Return the probability distribution of the sample() method as a
-probability per unit wavelength)doc";
+probability per unit wavelength (in nm).
+
+Not all implementations provide this function; the default
+implementation throws an exception.)doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_pdf_2 = R"doc(Vectorized version of pdf())doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_sample =
 R"doc(Importance sample the spectral power distribution
 
-Not all implementations may provide this function; the default
+Not all implementations provide this function; the default
 implementation throws an exception.
 
 Parameter ``sample``:
-    Packet of uniform variates
-
-Parameter ``lambda``:
-    Sampled wavelengths in nanometers
-
-Parameter ``pdf``:
-    Sample probability per unit wavelength (in units of 1/nm)
+    A uniform variate
 
 Returns:
-    The Monte Carlo sampling weight (SPD value divided by the sampling
-    density))doc";
+    1. Set of sampled wavelengths specified in nanometers 2. Sample
+    probability per unit wavelength (in units of 1/nm) 2. The Monte
+    Carlo sampling weight (SPD value divided by the sampling density))doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_sample_2 = R"doc(Vectorized version of sample())doc";
 
 static const char *__doc_mitsuba_DefaultFormatter =
 R"doc(The default formatter used to turn log messages into a human-readable
@@ -1359,59 +1329,6 @@ static const char *__doc_mitsuba_Logger_set_log_level = R"doc(Set the log level 
 static const char *__doc_mitsuba_Logger_static_initialization = R"doc(Initialize logging)doc";
 
 static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging)doc";
-
-static const char *__doc_mitsuba_Matrix4f =
-R"doc(Bare-bones 4x4 matrix for homogeneous coordinate transformations
-stored in *column-major* form
-
-The storage order is intentional, since allows permits an efficient
-vectorizable mapping of the key operations onto Enoki arrays.)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f = R"doc(Create an unitialized 4x4 matrix)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_10 = R"doc(Convert a compatible array type (const))doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_11 =
-R"doc(Convert a compatible array type (non-const, useful when storing
-references))doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_12 = R"doc(Construct from a mask)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_13 = R"doc(Reinterpret another array)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_14 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_15 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_2 = R"doc(Copy constructor)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_3 = R"doc(Construct from a set of coefficients)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_6 = R"doc(Initialize all components from a scalar)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_7 = R"doc(Initialize all components from a scalar)doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_8 = R"doc()doc";
-
-static const char *__doc_mitsuba_Matrix4f_Matrix4f_9 = R"doc(Initialize the individual components)doc";
-
-static const char *__doc_mitsuba_Matrix4f_col = R"doc(Return the j-th row)doc";
-
-static const char *__doc_mitsuba_Matrix4f_col_2 = R"doc(Return the j-th row (const))doc";
-
-static const char *__doc_mitsuba_Matrix4f_identity = R"doc(Return the identity matrix)doc";
-
-static const char *__doc_mitsuba_Matrix4f_inverse = R"doc(Compute the inverse of this matrix)doc";
-
-static const char *__doc_mitsuba_Matrix4f_operator_call = R"doc(Return a reference to the (i, j) element)doc";
-
-static const char *__doc_mitsuba_Matrix4f_operator_call_2 = R"doc(Return a reference to the (i, j) element (const))doc";
-
-static const char *__doc_mitsuba_Matrix4f_operator_mul = R"doc(Matrix-matrix multiplication)doc";
 
 static const char *__doc_mitsuba_MemoryStream =
 R"doc(Simple memory buffer-based stream with automatic memory management. It
@@ -2033,6 +1950,28 @@ Remark:
     Mitsuba's ray-triangle intersection code will produce undefined
     results.)doc";
 
+static const char *__doc_mitsuba_RayDifferential =
+R"doc(%Ray differential -- enhances the basic ray class with information
+about the rays of adjacent pixels on the view plane)doc";
+
+static const char *__doc_mitsuba_RayDifferential_RayDifferential = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_RayDifferential_RayDifferential_2 = R"doc(Conversion from other Ray types)doc";
+
+static const char *__doc_mitsuba_RayDifferential_RayDifferential_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_d_x = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_d_y = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_has_differentials = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_o_x = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_o_y = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_scale = R"doc()doc";
+
 static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray)doc";
 
 static const char *__doc_mitsuba_Ray_Ray_2 = R"doc(Copy constructor)doc";
@@ -2060,6 +1999,8 @@ static const char *__doc_mitsuba_Ray_o = R"doc(< Ray origin)doc";
 static const char *__doc_mitsuba_Ray_operator_call = R"doc(Return the position of a point along the ray)doc";
 
 static const char *__doc_mitsuba_Ray_reverse = R"doc(Return a ray that points into the opposite direction)doc";
+
+static const char *__doc_mitsuba_Ray_time = R"doc(< Time value associated with this ray)doc";
 
 static const char *__doc_mitsuba_Ray_update = R"doc(Update the reciprocal ray directions after changing 'd')doc";
 
@@ -3378,10 +3319,6 @@ static const char *__doc_mitsuba_Transform_transform_affine_4 = R"doc(Transform 
 
 static const char *__doc_mitsuba_Transform_translate = R"doc(Create a translation transformation)doc";
 
-static const char *__doc_mitsuba_Transform_truncate_3d = R"doc(Truncate a 4D vector/point/normal to a 3D vector/point/normal)doc";
-
-static const char *__doc_mitsuba_Transform_truncate_3d_2 = R"doc()doc";
-
 static const char *__doc_mitsuba_Vector = R"doc(//! @{ \name Elementary vector, point, and normal data types)doc";
 
 static const char *__doc_mitsuba_Vector_Vector = R"doc()doc";
@@ -3645,6 +3582,8 @@ static const char *__doc_mitsuba_hasher = R"doc()doc";
 
 static const char *__doc_mitsuba_hasher_operator_call = R"doc()doc";
 
+static const char *__doc_mitsuba_inv = R"doc(Compute the inverse of a matrix)doc";
+
 static const char *__doc_mitsuba_is_constructible =
 R"doc(Replacement for std::is_constructible which also works when the
 destructor is not accessible)doc";
@@ -3731,6 +3670,30 @@ accesses, and to deal with predicates that evaluate to ``True`` or
 ``False`` on the entire domain, the returned left interval index is
 clamped to the range ``[left, right-2]``.)doc";
 
+static const char *__doc_mitsuba_math_find_interval_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_math_find_interval_3 =
+R"doc(Find an interval in an ordered set
+
+This function is very similar to ``std::upper_bound``, but it uses a
+functor rather than an actual array to permit working with
+procedurally defined data. It returns the index ``i`` such that
+pred(i) is ``True`` and pred(i+1) is ``False``.
+
+This function is primarily used to locate an interval (i, i+1) for
+linear interpolation, hence its name. To avoid issues out of bounds
+accesses, and to deal with predicates that evaluate to ``True`` or
+``False`` on the entire domain, the returned left interval index is
+clamped to the range ``[left, right-2]``.
+
+Remark:
+    This function is intended for vectorized predicates and
+    additionally accepts a mask as an input. This mask can be used to
+    disable some of the array entries. The mask is passed to the
+    predicate as a second parameter.)doc";
+
+static const char *__doc_mitsuba_math_find_interval_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_math_gamma = R"doc(Apply the sRGB gamma curve to a floating point scalar)doc";
 
 static const char *__doc_mitsuba_math_i0e = R"doc()doc";
@@ -3771,11 +3734,11 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
 
@@ -3931,6 +3894,460 @@ Returns:
     A uniformly distributed floating point number on the interval
     ``[0, 1)``)doc";
 
+static const char *__doc_mitsuba_spline_eval_1d =
+R"doc(Evaluate a cubic spline interpolant of a *uniformly* sampled 1D
+function
+
+The implementation relies on Catmull-Rom splines, i.e. it uses finite
+differences to approximate the derivatives at the endpoints of each
+spline segment.
+
+Template parameter ``Extrapolate``:
+    Extrapolate values when ``x`` is out of range? (default:
+    ``False``)
+
+Parameter ``min``:
+    Position of the first node
+
+Parameter ``max``:
+    Position of the last node
+
+Parameter ``values``:
+    Array containing ``size`` regularly spaced evaluations in the
+    range [``min``, ``max``] of the approximated function.
+
+Parameter ``size``:
+    Denotes the size of the ``values`` array
+
+Parameter ``x``:
+    Evaluation point
+
+Remark:
+    The Python API lacks the ``size`` parameter, which is inferred
+    automatically from the size of the input array.
+
+Remark:
+    The Python API provides a vectorized version which evaluates the
+    function for many arguments ``x``.
+
+Returns:
+    The interpolated value or zero when ``extrapolate=false`` and
+    ``x`` lies outside of [``min``, ``max``])doc";
+
+static const char *__doc_mitsuba_spline_eval_1d_2 =
+R"doc(Evaluate a cubic spline interpolant of a *non*-uniformly sampled 1D
+function
+
+The implementation relies on Catmull-Rom splines, i.e. it uses finite
+differences to approximate the derivatives at the endpoints of each
+spline segment.
+
+Template parameter ``Extrapolate``:
+    Extrapolate values when ``x`` is out of range? (default:
+    ``False``)
+
+Parameter ``nodes``:
+    Array containing ``size`` non-uniformly spaced values denoting
+    positions the where the function to be interpolated was evaluated.
+    They must be provided in *increasing* order.
+
+Parameter ``values``:
+    Array containing function evaluations matched to the entries of
+    ``nodes``.
+
+Parameter ``size``:
+    Denotes the size of the ``nodes`` and ``values`` array
+
+Parameter ``x``:
+    Evaluation point
+
+Remark:
+    The Python API lacks the ``size`` parameter, which is inferred
+    automatically from the size of the input array
+
+Remark:
+    The Python API provides a vectorized version which evaluates the
+    function for many arguments ``x``.
+
+Returns:
+    The interpolated value or zero when ``extrapolate=false`` and
+    ``x`` lies outside of \a [``min``, ``max``])doc";
+
+static const char *__doc_mitsuba_spline_eval_2d =
+R"doc(Evaluate a cubic spline interpolant of a uniformly sampled 2D function
+
+This implementation relies on a tensor product of Catmull-Rom splines,
+i.e. it uses finite differences to approximate the derivatives for
+each dimension at the endpoints of spline patches.
+
+Template parameter ``Extrapolate``:
+    Extrapolate values when ``p`` is out of range? (default:
+    ``False``)
+
+Parameter ``nodes1``:
+    Arrays containing ``size1`` non-uniformly spaced values denoting
+    positions the where the function to be interpolated was evaluated
+    on the ``X`` axis (in increasing order)
+
+Parameter ``size1``:
+    Denotes the size of the ``nodes1`` array
+
+Parameter ``nodes``:
+    Arrays containing ``size2`` non-uniformly spaced values denoting
+    positions the where the function to be interpolated was evaluated
+    on the ``Y`` axis (in increasing order)
+
+Parameter ``size2``:
+    Denotes the size of the ``nodes2`` array
+
+Parameter ``values``:
+    A 2D floating point array of ``size1*size2`` cells containing
+    irregularly spaced evaluations of the function to be interpolated.
+    Consecutive entries of this array correspond to increments in the
+    ``X`` coordinate.
+
+Parameter ``x``:
+    ``X`` coordinate of the evaluation point
+
+Parameter ``y``:
+    ``Y`` coordinate of the evaluation point
+
+Remark:
+    The Python API lacks the ``size1`` and ``size2`` parameters, which
+    are inferred automatically from the size of the input arrays.
+
+Returns:
+    The interpolated value or zero when ``extrapolate=false``tt> and
+    ``(x,y)`` lies outside of the node range)doc";
+
+static const char *__doc_mitsuba_spline_eval_spline =
+R"doc(Compute the definite integral and derivative of a cubic spline that is
+parameterized by the function values and derivatives at the endpoints
+of the interval ``[0, 1]``.
+
+Parameter ``f0``:
+    The function value at the left position
+
+Parameter ``f1``:
+    The function value at the right position
+
+Parameter ``d0``:
+    The function derivative at the left position
+
+Parameter ``d1``:
+    The function derivative at the right position
+
+Parameter ``t``:
+    The parameter variable
+
+Returns:
+    The interpolated function value at ``t``)doc";
+
+static const char *__doc_mitsuba_spline_eval_spline_d =
+R"doc(Compute the value and derivative of a cubic spline that is
+parameterized by the function values and derivatives of the interval
+``[0, 1]``.
+
+Parameter ``f0``:
+    The function value at the left position
+
+Parameter ``f1``:
+    The function value at the right position
+
+Parameter ``d0``:
+    The function derivative at the left position
+
+Parameter ``d1``:
+    The function derivative at the right position
+
+Parameter ``t``:
+    The parameter variable
+
+Returns:
+    The interpolated function value and its derivative at ``t``)doc";
+
+static const char *__doc_mitsuba_spline_eval_spline_i =
+R"doc(Compute the definite integral and value of a cubic spline that is
+parameterized by the function values and derivatives of the interval
+``[0, 1]``.
+
+Parameter ``f0``:
+    The function value at the left position
+
+Parameter ``f1``:
+    The function value at the right position
+
+Parameter ``d0``:
+    The function derivative at the left position
+
+Parameter ``d1``:
+    The function derivative at the right position
+
+Returns:
+    The definite integral and the interpolated function value at ``t``)doc";
+
+static const char *__doc_mitsuba_spline_eval_spline_weights =
+R"doc(Compute weights to perform a spline-interpolated lookup on a
+*uniformly* sampled 1D function.
+
+The implementation relies on Catmull-Rom splines, i.e. it uses finite
+differences to approximate the derivatives at the endpoints of each
+spline segment. The resulting weights are identical those internally
+used by sample_1d().
+
+Template parameter ``Extrapolate``:
+    Extrapolate values when ``x`` is out of range? (default:
+    ``False``)
+
+Parameter ``min``:
+    Position of the first node
+
+Parameter ``max``:
+    Position of the last node
+
+Parameter ``size``:
+    Denotes the number of function samples
+
+Parameter ``x``:
+    Evaluation point
+
+Parameter ``weights``:
+    Pointer to a weight array of size 4 that will be populated
+
+Remark:
+    In the Python API, the ``offset`` and ``weights`` parameters are
+    returned as the second and third elements of a triple.
+
+Returns:
+    A boolean set to ``True`` on success and ``False`` when
+    ``extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
+    and an offset into the function samples associated with weights[0])doc";
+
+static const char *__doc_mitsuba_spline_eval_spline_weights_2 =
+R"doc(Compute weights to perform a spline-interpolated lookup on a
+*non*-uniformly sampled 1D function.
+
+The implementation relies on Catmull-Rom splines, i.e. it uses finite
+differences to approximate the derivatives at the endpoints of each
+spline segment. The resulting weights are identical those internally
+used by sample_1d().
+
+Template parameter ``Extrapolate``:
+    Extrapolate values when ``x`` is out of range? (default:
+    ``False``)
+
+Parameter ``nodes``:
+    Array containing ``size`` non-uniformly spaced values denoting
+    positions the where the function to be interpolated was evaluated.
+    They must be provided in *increasing* order.
+
+Parameter ``size``:
+    Denotes the size of the ``nodes`` array
+
+Parameter ``x``:
+    Evaluation point
+
+Parameter ``weights``:
+    Pointer to a weight array of size 4 that will be populated
+
+Remark:
+    The Python API lacks the ``size`` parameter, which is inferred
+    automatically from the size of the input array. The ``offset`` and
+    ``weights`` parameters are returned as the second and third
+    elements of a triple.
+
+Returns:
+    A boolean set to ``True`` on success and ``False`` when
+    ``extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
+    and an offset into the function samples associated with weights[0])doc";
+
+static const char *__doc_mitsuba_spline_integrate_1d =
+R"doc(Computes a prefix sum of integrals over segments of a *uniformly*
+sampled 1D Catmull-Rom spline interpolant
+
+This is useful for sampling spline segments as part of an importance
+sampling scheme (in conjunction with sample_1d)
+
+Parameter ``min``:
+    Position of the first node
+
+Parameter ``max``:
+    Position of the last node
+
+Parameter ``values``:
+    Array containing ``size`` regularly spaced evaluations in the
+    range [``min``, ``max``] of the approximated function.
+
+Parameter ``size``:
+    Denotes the size of the ``values`` array
+
+Parameter ``out``:
+    An array with ``size`` entries, which will be used to store the
+    prefix sum
+
+Remark:
+    The Python API lacks the ``size`` and ``out`` parameters. The
+    former is inferred automatically from the size of the input array,
+    and ``out`` is returned as a list.)doc";
+
+static const char *__doc_mitsuba_spline_integrate_1d_2 =
+R"doc(Computes a prefix sum of integrals over segments of a *non*-uniformly
+sampled 1D Catmull-Rom spline interpolant
+
+This is useful for sampling spline segments as part of an importance
+sampling scheme (in conjunction with sample_1d)
+
+Parameter ``nodes``:
+    Array containing ``size`` non-uniformly spaced values denoting
+    positions the where the function to be interpolated was evaluated.
+    They must be provided in *increasing* order.
+
+Parameter ``values``:
+    Array containing function evaluations matched to the entries of
+    ``nodes``.
+
+Parameter ``size``:
+    Denotes the size of the ``values`` array
+
+Parameter ``out``:
+    An array with ``size`` entries, which will be used to store the
+    prefix sum
+
+Remark:
+    The Python API lacks the ``size`` and ``out`` parameters. The
+    former is inferred automatically from the size of the input array,
+    and ``out`` is returned as a list.)doc";
+
+static const char *__doc_mitsuba_spline_invert_1d =
+R"doc(Invert a cubic spline interpolant of a *uniformly* sampled 1D
+function. The spline interpolant must be *monotonically increasing*.
+
+Parameter ``min``:
+    Position of the first node
+
+Parameter ``max``:
+    Position of the last node
+
+Parameter ``values``:
+    Array containing ``size`` regularly spaced evaluations in the
+    range [``min``, ``max``] of the approximated function.
+
+Parameter ``size``:
+    Denotes the size of the ``values`` array
+
+Parameter ``y``:
+    Input parameter for the inversion
+
+Returns:
+    The spline parameter ``t`` such that ``eval_1d(..., t)=y``)doc";
+
+static const char *__doc_mitsuba_spline_invert_1d_2 =
+R"doc(Invert a cubic spline interpolant of a *non*-uniformly sampled 1D
+function. The spline interpolant must be *monotonically increasing*.
+
+Parameter ``nodes``:
+    Array containing ``size`` non-uniformly spaced values denoting
+    positions the where the function to be interpolated was evaluated.
+    They must be provided in *increasing* order.
+
+Parameter ``values``:
+    Array containing function evaluations matched to the entries of
+    ``nodes``.
+
+Parameter ``size``:
+    Denotes the size of the ``values`` array
+
+Parameter ``y``:
+    Input parameter for the inversion
+
+Returns:
+    The spline parameter ``t`` such that ``eval_1d(..., t)=y``)doc";
+
+static const char *__doc_mitsuba_spline_sample_1d =
+R"doc(Importance sample a segment of a *uniformly* sampled 1D Catmull-Rom
+spline interpolant
+
+Parameter ``min``:
+    Position of the first node
+
+Parameter ``max``:
+    Position of the last node
+
+Parameter ``values``:
+    Array containing ``size`` regularly spaced evaluations in the
+    range [``min``, ``max``] of the approximated function.
+
+Parameter ``cdf``:
+    Array containing a cumulative distribution function computed by
+    integrate_1d().
+
+Parameter ``size``:
+    Denotes the size of the ``values`` array
+
+Parameter ``sample``:
+    A uniformly distributed random sample in the interval ``[0,1]``
+
+Parameter ``fval``:
+    If set to a non-null pointer, this argument will be used to return
+    the value of the spline at the sampled position
+
+Parameter ``pdf``:
+    If set to a non-null pointer, this argument will be used to return
+    the probability density at the sampled position (which only
+    differs from ``fval`` when the function does not integrate to 1)
+
+Remark:
+    The Python API lacks the ``size``, ``fval`` and ``pdf``
+    parameters. The first is automatically inferred from the size of
+    the input array, and ``fval`` and ``pdf`` are returned as the
+    second and third element of the return value, which is now a
+    tuple.
+
+Returns:
+    The sampled position)doc";
+
+static const char *__doc_mitsuba_spline_sample_1d_2 =
+R"doc(Importance sample a segment of a *non*-uniformly sampled 1D Catmull-
+Rom spline interpolant
+
+Parameter ``nodes``:
+    Array containing ``size`` non-uniformly spaced values denoting
+    positions the where the function to be interpolated was evaluated.
+    They must be provided in *increasing* order.
+
+Parameter ``values``:
+    Array containing function evaluations matched to the entries of
+    ``nodes``.
+
+Parameter ``cdf``:
+    Array containing a cumulative distribution function computed by
+    integrate_1d().
+
+Parameter ``size``:
+    Denotes the size of the ``values`` array
+
+Parameter ``sample``:
+    A uniformly distributed random sample in the interval ``[0,1]``
+
+Parameter ``fval``:
+    If set to a non-null pointer, this argument will be used to return
+    the value of the spline at the sampled position
+
+Parameter ``pdf``:
+    If set to a non-null pointer, this argument will be used to return
+    the probability density at the sampled position (which only
+    differs from ``fval`` when the function does not integrate to 1)
+
+Remark:
+    The Python API lacks the ``size``, ``fval`` and ``pdf``
+    parameters. The first is automatically inferred from the size of
+    the input array, and ``fval`` and ``pdf`` are returned as the
+    second and third element of the return value, which is now a
+    tuple.
+
+Returns:
+    The sampled position)doc";
+
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 
 static const char *__doc_mitsuba_string_indent = R"doc(Indent every line of a string by some number of spaces)doc";
@@ -4017,15 +4434,15 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_i0 = R"doc()doc";
+static const char *__doc_mitsuba_warp_detail_i0 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_detail_log_i0 = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_interval_to_nonuniform_tent =
 R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
 distribution with nodes ``{a, b, c}``)doc";
 
 static const char *__doc_mitsuba_warp_interval_to_tent = R"doc(Warp a uniformly distributed sample on [0, 1] to a tent distribution)doc";
-
-static const char *__doc_mitsuba_warp_logI0 = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_square_to_beckmann =
 R"doc(Warp a uniformly distributed square sample to a Beckmann distribution

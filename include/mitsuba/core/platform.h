@@ -75,9 +75,9 @@ NAMESPACE_BEGIN(mitsuba)
 
 /* Define a 'Float' data type with customizable precision */
 #if defined(DOUBLE_PRECISION)
-    typedef double Float;
+    using Float = double;
 #elif defined(SINGLE_PRECISION)
-    typedef float Float;
+    using Float = float;
 #else
 #  error No precision flag was defined!
 #endif

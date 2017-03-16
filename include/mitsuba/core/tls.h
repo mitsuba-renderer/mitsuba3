@@ -35,9 +35,9 @@ class MTS_EXPORT_CORE ThreadLocalBase {
     friend class Thread;
 public:
     /// Functor to allocate memory for a TLS object
-    typedef void *(*ConstructFunctor)();
+    using ConstructFunctor = void *(*)();
     /// Functor to release memory of a TLS object
-    typedef void (*DestructFunctor)(void *);
+    using DestructFunctor = void (*)(void *);
 
     /// Construct a new thread local storage object
     ThreadLocalBase(const ConstructFunctor &constructFunctor,

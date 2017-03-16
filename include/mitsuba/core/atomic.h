@@ -16,8 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename Type = Float> class AtomicFloat {
 private:
-    typedef typename std::conditional<sizeof(Type) == 4,
-                                      uint32_t, uint64_t>::type Storage;
+    using Storage = std::conditional_t<sizeof(Type) == 4, uint32_t, uint64_t>;
 
 public:
     /// Initialize the AtomicFloat with a given floating point value

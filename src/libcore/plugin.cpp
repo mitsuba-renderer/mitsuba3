@@ -21,7 +21,6 @@ extern "C" {
 
 class Plugin {
 public:
-
     Plugin(const fs::path &path) : m_path(path) {
         #if defined(__WINDOWS__)
             m_handle = LoadLibraryW(path.native().c_str());
@@ -108,7 +107,7 @@ struct PluginManager::PluginManagerPrivate {
             Plugin *plugin = new Plugin(resolved);
             /* New classes must be registered within the class hierarchy */
             Class::static_initialization();
-            ///Statistics::instance()->logPlugin(shortName, description()); XXX
+            ///Statistics::instance()->log_plugin(shortName, description()); XXX
             m_plugins[name] = plugin;
             return plugin;
         }
@@ -134,10 +133,15 @@ ref<Object> PluginManager::create_object(const Class *class_, const Properties &
 
    const Plugin *plugin = d->plugin(props.plugin_name());
    ref<Object> object = plugin->create_object(props);
-   if (!object->class_()->derives_from(class_))
+   if (!object->class_()->derives_from(class_)) {
+        const Class *oc = object->class_();
+        if (oc->parent())
+            oc = oc->parent();
+
         Throw("Type mismatch when loading plugin \"%s\": Expected "
-              "an instance of \"%s\"", props.plugin_name(),
-              class_->name());
+              "an instance of type \"%s\", got an instance of type \"%s\"",
+              props.plugin_name(), class_->name(), oc->name());
+    }
 
    return object;
 }
