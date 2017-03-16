@@ -41,7 +41,7 @@ class ChiSquareTest(object):
 
     res: int, optional
        Vertical resolution of the generated histograms. The horizontal
-       resolution will be calculated as ``res * domain.get_aspect()``. The
+       resolution will be calculated as ``res * domain.aspect()``. The
        default value of ``101`` is intentionally an odd number to prevent
        issues with floating point precision at sharp boundaries that may
        separate the domain into two parts (e.g. top hemisphere of a sphere
@@ -87,11 +87,14 @@ class ChiSquareTest(object):
         self.pdf_func = pdf_func
         self.sample_dim = sample_dim
         self.sample_count = sample_count
-        self.res = np.array([res, res * domain.get_aspect()], dtype=np.int64)
-        self.res = np.maximum(self.res, 1)
+        if domain.aspect() == 0:
+            self.res = [1, res]
+        else:
+            self.res = [res, res*domain.aspect()]
+        self.res = np.array(self.res, dtype=np.int64)
         self.ires = ires
         self.dtype = dtype
-        self.bounds = domain.get_bounds()
+        self.bounds = domain.bounds()
         self.pdf = None
         self.histogram = None
         self.p_value = None
@@ -109,6 +112,9 @@ class ChiSquareTest(object):
 
         # Generate a table of uniform variates
         samples_in = PCG32().next_float(self.sample_count, self.sample_dim)
+
+        if self.sample_dim == 1:
+            samples_in = samples_in.ravel()
 
         # Invoke sampling strategy
         weights_out = None
@@ -299,19 +305,39 @@ class ChiSquareTest(object):
         return np.repeat(c0, self.ires) + np.tile(c1, res)
 
 
+class LineDomain(object):
+    """
+    The identity map on the plane
+    """
+    def __init__(self, bounds=np.array([-1.0, 1.0])):
+        self._bounds = np.vstack((bounds, [-0.5, 0.5]))
+
+    def bounds(self):
+        return self._bounds
+
+    def aspect(self):
+        return 0
+
+    def map_forward(self, p):
+        return p[:, 0]
+
+    def map_backward(self, p):
+        return np.column_stack((p, np.zeros(p.shape[0])))
+
+
 class PlanarDomain(object):
     """
     The identity map on the plane
     """
     def __init__(self, bounds=np.array([[-1.0, 1.0],
                                         [-1.0, 1.0]])):
-        self.bounds = bounds
+        self._bounds = bounds
 
-    def get_bounds(self):
-        return self.bounds
+    def bounds(self):
+        return self._bounds
 
-    def get_aspect(self):
-        size = self.bounds[:, 0] - self.bounds[:, 1]
+    def aspect(self):
+        size = self._bounds[:, 0] - self._bounds[:, 1]
         return size[0] / size[1]
 
     def map_forward(self, p):
@@ -326,11 +352,11 @@ class SphericalDomain(object):
     Maps between the unit sphere and a parameterization
     based on azimuth & the z coordinate
     """
-    def get_bounds(self):
+    def bounds(self):
         return np.array(
             [[-np.pi, np.pi], [-1, 1]])
 
-    def get_aspect(self):
+    def aspect(self):
         return 2
 
     def map_forward(self, p):

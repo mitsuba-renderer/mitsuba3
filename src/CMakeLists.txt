@@ -7,7 +7,7 @@ add_subdirectory(libui)
 add_subdirectory(mitsuba)
 
 # Plugins
-#add_subdirectory(spectra)
+add_subdirectory(spectra)
 add_subdirectory(bsdfs)
 add_subdirectory(shapes)
 

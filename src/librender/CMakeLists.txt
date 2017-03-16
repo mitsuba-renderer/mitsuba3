@@ -15,7 +15,6 @@ add_library(mitsuba-render-obj OBJECT
   mesh.cpp         ${INC_DIR}/mesh.h
   scene.cpp        ${INC_DIR}/scene.h
   kdtree.cpp       ${INC_DIR}/kdtree.h
-  #spectrum.cpp     ${INC_DIR}/spectrum.h
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)

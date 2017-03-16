@@ -1,11 +1,24 @@
 from mitsuba.core import warp
-from mitsuba.core.chi2 import SphericalDomain, PlanarDomain
+from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
 import numpy as np
 
 def deg2rad(value):
     return value * np.pi / 180
 
 DEFAULT_SETTINGS = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
+
+def SpectrumAdapter(xml_string):
+    from mitsuba.core.xml import load_string
+    plugin = load_string(xml_string)
+
+    def sample_functor(sample):
+        wavelength, weight, _ = plugin.sample(sample)
+        return wavelength[:, 0], weight[:, 0]
+
+    def pdf_functor(pdf):
+        return plugin.pdf(pdf)
+
+    return sample_functor, pdf_functor
 
 DISTRIBUTIONS = [
     ('Uniform square', PlanarDomain(np.array([[0, 1],
@@ -93,5 +106,10 @@ DISTRIBUTIONS = [
          parameters=[
              ('Concentration', [0, 100, 10]),
              ('Inclination', [0, 90, 20])
-         ]))
+         ])
+    ),
+
+    ('Spectrum[importance]', LineDomain([360.0, 830.0]),
+     *SpectrumAdapter('<spectrum version="2.0.0" type="importance"/>'),
+     dict(DEFAULT_SETTINGS, sample_dim=1))
 ]

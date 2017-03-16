@@ -33,6 +33,7 @@ MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Transform);
 MTS_PY_DECLARE(Struct);
 MTS_PY_DECLARE(Bitmap);
+MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(spline);
@@ -74,6 +75,7 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     MTS_PY_IMPORT(Transform);
     MTS_PY_IMPORT(Struct);
     MTS_PY_IMPORT(Bitmap);
+    MTS_PY_IMPORT(Spectrum);
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(qmc);
     MTS_PY_IMPORT(spline);

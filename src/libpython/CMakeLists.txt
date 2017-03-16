@@ -101,16 +101,17 @@ add_mitsuba_python_library(mitsuba_core_ext core
   ray.cpp
   struct.cpp
   bitmap.cpp
+  spectrum.cpp
   warp.cpp
   qmc.cpp
   spline.cpp
+  cast.cpp
 )
 
 add_mitsuba_python_library(mitsuba_render_ext render
   mitsuba_render_ext.cpp
   scene.cpp
   shape.cpp
-  #spectrum.cpp
 )
 
 add_mitsuba_python_library(mitsuba_ui_ext ui
@@ -147,6 +148,6 @@ if (APPLE)
   set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "@loader_path/..")
 endif()
 
-target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core asmjit)
+target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core mitsuba-render asmjit)
 target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render tbb)
 target_link_libraries(mitsuba_ui_ext PRIVATE mitsuba-core mitsuba-render mitsuba-ui)
