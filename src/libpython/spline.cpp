@@ -18,7 +18,7 @@ MTS_PY_EXPORT(spline) {
     spline.def("eval_1d", [](Float min, Float max, const py::array_t<Float> &values, Float x) {
         if (values.ndim() != 1)
             throw std::runtime_error("'values' must be a one-dimensional array!");
-        return spline::eval_1d(min, max, values.data(), values.shape(0), x);
+        return spline::eval_1d(min, max, values.data(), (uint32_t) values.shape(0), x);
     });
 
     spline.def("eval_1d",
@@ -26,7 +26,7 @@ MTS_PY_EXPORT(spline) {
             [](Float min, Float max, const py::array_t<Float> &values, FloatP x) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
-                return spline::eval_1d(min, max, values.data(), values.shape(0), x);
+                return spline::eval_1d(min, max, values.data(), (uint32_t) values.shape(0), x);
             }
         ), "min"_a, "max"_a, "values"_a, "x"_a
     );
@@ -38,7 +38,7 @@ MTS_PY_EXPORT(spline) {
             throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
         if (nodes.shape(0) != values.shape(0))
             throw std::runtime_error("'nodes' and 'values' must have a matching size!");
-        return spline::eval_1d(nodes.data(), values.data(), values.shape(0), x);
+        return spline::eval_1d(nodes.data(), values.data(), (uint32_t) values.shape(0), x);
     });
 
     spline.def("eval_1d",
@@ -48,7 +48,7 @@ MTS_PY_EXPORT(spline) {
                     throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
                 if (nodes.shape(0) != values.shape(0))
                     throw std::runtime_error("'nodes' and 'values' must have a matching size!");
-                return spline::eval_1d(nodes.data(), values.data(), values.shape(0), x);
+                return spline::eval_1d(nodes.data(), values.data(), (uint32_t) values.shape(0), x);
             }
         ), "nodes"_a, "values"_a, "x"_a
     );
@@ -59,7 +59,7 @@ MTS_PY_EXPORT(spline) {
         if (values.ndim() != 1)
             throw std::runtime_error("'values' must be a one-dimensional array!");
         py::array_t<Float> result(values.size());
-        spline::integrate_1d(min, max, values.data(), values.size(), result.mutable_data());
+        spline::integrate_1d(min, max, values.data(), (uint32_t) values.size(), result.mutable_data());
         return result;
     });
 
@@ -70,7 +70,7 @@ MTS_PY_EXPORT(spline) {
             if (nodes.shape(0) != values.shape(0))
                 throw std::runtime_error("'nodes' and 'values' must have a matching size!");
             py::array_t<Float> result(values.size());
-            spline::integrate_1d(nodes.data(), values.data(), values.size(), result.mutable_data());
+            spline::integrate_1d(nodes.data(), values.data(), (uint32_t) values.size(), result.mutable_data());
             return result;
         }
     );
@@ -80,7 +80,7 @@ MTS_PY_EXPORT(spline) {
     spline.def("invert_1d", [](Float min, Float max, const py::array_t<Float> &values, Float y) {
         if (values.ndim() != 1)
             throw std::runtime_error("'values' must be a one-dimensional array!");
-        return spline::invert_1d(min, max, values.data(), values.shape(0), y);
+        return spline::invert_1d(min, max, values.data(), (uint32_t) values.shape(0), y);
     });
 
     spline.def("invert_1d",
@@ -88,7 +88,7 @@ MTS_PY_EXPORT(spline) {
             [](Float min, Float max, const py::array_t<Float> &values, FloatP y) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
-                return spline::invert_1d(min, max, values.data(), values.shape(0), y);
+                return spline::invert_1d(min, max, values.data(), (uint32_t) values.shape(0), y);
             }
         ), "min"_a, "max"_a, "values"_a, "y"_a
     );
@@ -100,7 +100,7 @@ MTS_PY_EXPORT(spline) {
             throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
         if (nodes.shape(0) != values.shape(0))
             throw std::runtime_error("'nodes' and 'values' must have a matching size!");
-        return spline::invert_1d(nodes.data(), values.data(), values.shape(0), y);
+        return spline::invert_1d(nodes.data(), values.data(), (uint32_t) values.shape(0), y);
     });
 
     spline.def("invert_1d",
@@ -110,7 +110,7 @@ MTS_PY_EXPORT(spline) {
                     throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
                 if (nodes.shape(0) != values.shape(0))
                     throw std::runtime_error("'nodes' and 'values' must have a matching size!");
-                return spline::invert_1d(nodes.data(), values.data(), values.shape(0), y);
+                return spline::invert_1d(nodes.data(), values.data(), (uint32_t) values.shape(0), y);
             }
         ), "nodes"_a, "values"_a, "y"_a
     );
@@ -126,7 +126,7 @@ MTS_PY_EXPORT(spline) {
         if (values.size() != cdf.size())
             throw std::runtime_error("'values' and 'cdf' must have a matching size!");
         Float pos, fval, pdf;
-        pos = spline::sample_1d(min, max, values.data(), cdf.data(), values.shape(0),
+        pos = spline::sample_1d(min, max, values.data(), cdf.data(), (uint32_t) values.shape(0),
                                  sample, &fval, &pdf);
         return std::make_tuple(pos, fval, pdf);
     });
@@ -142,7 +142,7 @@ MTS_PY_EXPORT(spline) {
                 if (values.size() != cdf.size())
                     throw std::runtime_error("'values' and 'cdf' must have a matching size!");
                 FloatP pos, fval, pdf;
-                pos = spline::sample_1d(min, max, values.data(), cdf.data(), values.shape(0),
+                pos = spline::sample_1d(min, max, values.data(), cdf.data(), (uint32_t) values.shape(0),
                     sample, &fval, &pdf);
                 return std::make_tuple(pos, fval, pdf);
             }
@@ -160,7 +160,7 @@ MTS_PY_EXPORT(spline) {
         if (values.size() != cdf.size())
             throw std::runtime_error("'values' and 'cdf' must have a matching size!");
         Float pos, fval, pdf;
-        pos = spline::sample_1d(nodes.data(), values.data(), cdf.data(), values.shape(0),
+        pos = spline::sample_1d(nodes.data(), values.data(), cdf.data(), (uint32_t) values.shape(0),
             sample, &fval, &pdf);
         return std::make_tuple(pos, fval, pdf);
     });
@@ -176,7 +176,7 @@ MTS_PY_EXPORT(spline) {
                 if (values.size() != cdf.size())
                     throw std::runtime_error("'values' and 'cdf' must have a matching size!");
                 FloatP pos, fval, pdf;
-                pos = spline::sample_1d(nodes.data(), values.data(), cdf.data(), values.shape(0),
+                pos = spline::sample_1d(nodes.data(), values.data(), cdf.data(), (uint32_t) values.shape(0),
                     sample, &fval, &pdf);
                 return std::make_tuple(pos, fval, pdf);
             }
@@ -185,11 +185,12 @@ MTS_PY_EXPORT(spline) {
 
     // ------------------------------------------------------------------------------------------
 
-    spline.def("eval_spline_weights", [](Float min, Float max, size_t size, Float x) {
+    spline.def("eval_spline_weights", [](Float min, Float max, uint32_t size, Float x) {
         py::array_t<Float, 4> weight;
-        ssize_t offset;
+        int32_t offset;
         bool result;
-        std::tie<bool, ssize_t>(result, offset) = spline::eval_spline_weights(min, max, size, x, weight.mutable_data());
+        std::tie(result, offset) = spline::eval_spline_weights(
+            min, max, size, x, weight.mutable_data());
         return std::make_tuple(result, offset, weight);
     });
 
@@ -208,7 +209,8 @@ MTS_PY_EXPORT(spline) {
         py::array_t<Float, 4> weight;
         ssize_t offset;
         bool result;
-        std::tie<bool, ssize_t>(result, offset) = spline::eval_spline_weights(nodes.data(), nodes.shape(0), x, weight.mutable_data());
+        std::tie<bool, ssize_t>(result, offset) = spline::eval_spline_weights(
+            nodes.data(), (uint32_t) nodes.shape(0), x, weight.mutable_data());
         return std::make_tuple(result, offset, weight);
     });
 
@@ -225,8 +227,8 @@ MTS_PY_EXPORT(spline) {
 
     spline.def("eval_2d", [](const py::array_t<Float> &nodes1,
         const py::array_t<Float> &nodes2, const py::array_t<Float> &values, Float x, Float y) {
-            return spline::eval_2d(nodes1.data(), nodes1.shape(0),
-                                   nodes2.data(), nodes2.shape(0), values.data(), x, y);
+            return spline::eval_2d(nodes1.data(), (uint32_t) nodes1.shape(0),
+                                   nodes2.data(), (uint32_t) nodes2.shape(0), values.data(), x, y);
     });
 
     spline.def("eval_2d",
@@ -235,8 +237,8 @@ MTS_PY_EXPORT(spline) {
                const py::array_t<Float> &nodes2,
                const py::array_t<Float> &values,
                FloatP x, FloatP y) {
-                return spline::eval_2d(nodes1.data(), nodes1.shape(0),
-                                       nodes2.data(), nodes2.shape(0), values.data(), x, y);
+                return spline::eval_2d(nodes1.data(), (uint32_t) nodes1.shape(0),
+                                       nodes2.data(), (uint32_t) nodes2.shape(0), values.data(), x, y);
             }
         ), "nodes1"_a, "nodes2"_a, "values"_a, "x"_a, "y"_a
     );

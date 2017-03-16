@@ -180,6 +180,12 @@ if (MSVC)
   # unreferenced local function has been removed
   add_compile_options("/wd4505")
 
+  # Declaration of type hides class member
+  add_compile_options("/wd4458" "/wd4459")
+
+  # Check operator precedence for possible error
+  add_compile_options("/wd4554")
+
   # Workaround for MSVC 2017
   add_compile_options("/wd4244")
 
