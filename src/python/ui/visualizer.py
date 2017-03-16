@@ -11,7 +11,7 @@ from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
 
 from nanogui import glfw, entypo, gl
 from nanogui import nanovg as nvg
-from mitsuba.core import pcg32, float_dtype, Bitmap
+from mitsuba.core import PCG32, float_dtype, Bitmap, RadicalInverse
 from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain
 from mitsuba.core.warp.distr import DISTRIBUTIONS
 from . import GLTexture
@@ -330,7 +330,7 @@ class WarpVisualizer(Screen):
 
     def refresh_distribution(self):
         distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
-        settings = distr[4]
+        settings = distr[3]
         for widget in self.parameter_widgets:
             self.window.removeChild(widget)
         self.parameter_widgets = []
@@ -370,12 +370,13 @@ class WarpVisualizer(Screen):
         # Look up configuration
         distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
         sample_type = self.sample_type_box.selectedIndex()
+        sample, pdf = distr[2]
 
-        sample_func = lambda *args: distr[2](*(list(args) + self.parameters))
-        pdf_func = lambda *args: distr[3](*(list(args) + self.parameters))
+        sample_func = lambda *args: sample(*(list(args) + self.parameters))
+        pdf_func = lambda *args: pdf(*(list(args) + self.parameters))
 
         domain = distr[1]
-        settings = distr[4]
+        settings = distr[3]
         sample_dim = settings['sample_dim']
 
         # Point count slider input is not linear
@@ -410,28 +411,42 @@ class WarpVisualizer(Screen):
             self.density_box.setChecked(False)
 
         if sample_type == 0:  # Uniform
-            samples_in = pcg32().nextFloat(point_count, sample_dim)
+            samples_in = PCG32().next_float(point_count, sample_dim)
         elif sample_type == 1:  # Grid
             x, y = np.mgrid[0:sqrt_val, 0:sqrt_val]
             x = (x.ravel() + 0.5) / sqrt_val
             y = (y.ravel() + 0.5) / sqrt_val
             samples_in = np.column_stack((y, x)).astype(float_dtype)
         elif sample_type == 2:  # Stratified
-            samples_in = pcg32().nextFloat(sample_dim, point_count)
+            samples_in = PCG32().next_float(sample_dim, point_count)
             x, y = np.mgrid[0:sqrt_val, 0:sqrt_val]
             x = (x.ravel() + samples_in[0, :]) / sqrt_val
             y = (y.ravel() + samples_in[1, :]) / sqrt_val
             samples_in = np.column_stack((y, x)).astype(float_dtype)
         elif sample_type == 3:  # Halton
-            pass
+            ri = RadicalInverse()
+            indices = np.arange(1, point_count + 1, dtype = np.uint64)
+            samples_in = np.column_stack(
+                [ri.eval_scrambled(dim, indices) for dim in range(sample_dim)]
+            ).astype(float_dtype)
+
+        if sample_dim == 1:
+            samples_in = samples_in.ravel()
 
         # Perform the warp
         samples = sample_func(samples_in)
+        if type(samples) is tuple:
+            samples = samples[0]
 
         if self.density_box.checked():
             pdfs = pdf_func(samples)
             pdfs /= np.amax(pdfs)
             samples *= pdfs[..., np.newaxis]
+
+        if samples.ndim == 1:
+            samples = np.column_stack(
+                [samples, np.zeros(
+                    samples.shape[0], dtype=samples.dtype)])
 
         if samples.shape[1] == 2:
             samples = np.column_stack(
@@ -492,13 +507,14 @@ class WarpVisualizer(Screen):
     def run_test(self):
         distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
         domain = distr[1]
-        settings = distr[4]
+        sample, pdf = distr[2]
+        settings = distr[3]
 
         self.test = ChiSquareTest(
             domain=domain,
-            sample_func=lambda *args: distr[2](
+            sample_func=lambda *args: sample(
                 *(list(args) + self.parameters)),
-            pdf_func=lambda *args: distr[3](
+            pdf_func=lambda *args: pdf(
                 *(list(args) + self.parameters)),
             res=settings['res'],
             ires=settings['ires'],
@@ -515,9 +531,9 @@ class WarpVisualizer(Screen):
         pdf = (pdf - min_value) / (max_value - min_value)
         histogram = (histogram - min_value) / (max_value - min_value)
         self.pdf_texture.init(Bitmap(np.float32(pdf)))
-        self.pdf_texture.setInterpolation(GLTexture.ENearest)
+        self.pdf_texture.set_interpolation(GLTexture.ENearest)
         self.histogram_texture.init(Bitmap(np.float32(histogram)))
-        self.histogram_texture.setInterpolation(GLTexture.ENearest)
+        self.histogram_texture.set_interpolation(GLTexture.ENearest)
 
 
 if __name__ == '__main__':

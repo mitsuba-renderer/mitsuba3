@@ -4,9 +4,10 @@ from mitsuba.core.warp.distr import DISTRIBUTIONS
 import pytest
 
 
-@pytest.mark.parametrize("name, domain, sample, pdf, settings", DISTRIBUTIONS)
-def test_chi2(name, domain, sample, pdf, settings):
+@pytest.mark.parametrize("name, domain, adapter, settings", DISTRIBUTIONS)
+def test_chi2(name, domain, adapter, settings):
     parameters = [o[1][2] for o in settings['parameters']]
+    sample, pdf = adapter
 
     test = ChiSquareTest(
         domain=domain,

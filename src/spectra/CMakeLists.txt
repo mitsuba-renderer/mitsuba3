@@ -1,1 +1,1 @@
-add_plugin(importance importance.cpp)
+add_plugin(rgb_importance rgb_importance.cpp)

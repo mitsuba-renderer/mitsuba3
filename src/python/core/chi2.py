@@ -371,3 +371,22 @@ class SphericalDomain(object):
 
     def map_backward(self, p):
         return np.column_stack((np.arctan2(p[:, 1], p[:, 0]), -p[:, 2]))
+
+
+def SpectrumAdapter(xml_string):
+    """
+    Adapter which permits testing 1D spectral power
+    distributions using the Chi^2 test
+    """
+    from mitsuba.core.xml import load_string
+    plugin = load_string(xml_string)
+
+    def sample_functor(sample):
+        wavelength, weight, _ = plugin.sample(sample)
+        return wavelength[:, 0], weight[:, 0]
+
+    def pdf_functor(pdf):
+        return plugin.pdf(pdf)
+
+    return sample_functor, pdf_functor
+
