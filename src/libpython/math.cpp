@@ -82,7 +82,7 @@ MTS_PY_EXPORT(math) {
         return math::chi2(obs.data(), exp.data(), thresh, obs.shape(0));
     }, D(math, chi2));
 
-	math.def("solve_quadratic", &math::solve_quadratic<float>,
+    math.def("solve_quadratic", &math::solve_quadratic<float>,
              D(math, solve_quadratic), "a"_a, "b"_a, "c"_a);
 
     auto solve_quadratic = [](FloatP a, FloatP b, FloatP c) {
