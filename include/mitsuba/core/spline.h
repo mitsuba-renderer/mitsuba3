@@ -75,8 +75,8 @@ NAMESPACE_BEGIN(spline)
     Scalar width      = x1 - x0;                                               \
     Scalar d0         = select(mask_low_idx, width * (f1 - f_1) /              \
                                                      (x1 - x_1), f1 - f0);     \
-    Scalar d1         = select(mask_up_idx, width * (f2 - f0) /                \
-                                                    (x2 - x0), f1 - f0);
+    Scalar d1         = select(mask_up_idx,  width * (f2 - f0) /               \
+                                                     (x2 - x0), f1 - f0);
 
 // =======================================================================
 //! @{ \name Functions for evaluating and sampling cubic Catmull-Rom splines
@@ -215,7 +215,7 @@ std::pair<Scalar, Scalar> eval_spline_i(Scalar f0, Scalar f1, Scalar d0,
  *      The Python API provides a vectorized version which evaluates
  *      the function for many arguments \c x.
  * \return
- *      The interpolated value or zero when <tt>extrapolate=false</tt>
+ *      The interpolated value or zero when <tt>Extrapolate=false</tt>
  *      and \c x lies outside of [\c min, \c max]
  */
 template <bool Extrapolate = false, typename Scalar, typename Float>
@@ -274,7 +274,7 @@ Scalar eval_1d(Float min, Float max, const Float *values,
  *      The Python API provides a vectorized version which evaluates
  *      the function for many arguments \c x.
  * \return
- *      The interpolated value or zero when <tt>extrapolate=false</tt>
+ *      The interpolated value or zero when <tt>Extrapolate=false</tt>
  *      and \c x lies outside of \a [\c min, \c max]
  */
 template <bool Extrapolate = false, typename Scalar, typename Float>
@@ -291,7 +291,7 @@ Scalar eval_1d(const Float *nodes, const Float *values,
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) -> mask_t<Scalar> {
+        [&](Index idx, Mask active) {
             return gather<Scalar>(nodes, idx, active) <= x;
         },
         mask_valid
@@ -402,11 +402,14 @@ void integrate_1d(const Scalar *nodes, const Scalar *values,
  *      Denotes the size of the \c values array
  * \param y
  *      Input parameter for the inversion
+ * \param eps
+ *      Error tolerance (default: 1e-6f)
  * \return
  *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
  */
 template <typename Scalar, typename Float>
-Scalar invert_1d(Float min, Float max, const Float *values, uint32_t size, Scalar y) {
+Scalar invert_1d(Float min, Float max, const Float *values, uint32_t size,
+                 Scalar y, Float eps = 1e-6f) {
     using Mask = mask_t<Scalar>;
     using Index = uint32_array_t<Scalar>;
 
@@ -416,7 +419,8 @@ Scalar invert_1d(Float min, Float max, const Float *values, uint32_t size, Scala
          in_bounds      = in_bounds_low & in_bounds_high;
 
     /* Assuming that the lookup is out of bounds */
-    Scalar out_of_bounds_value = select(in_bounds_high, Scalar(min), Scalar(max));
+    Scalar out_of_bounds_value =
+        select(in_bounds_high, Scalar(min), Scalar(max));
 
     if (unlikely(none(in_bounds)))
         return out_of_bounds_value;
@@ -439,26 +443,32 @@ Scalar invert_1d(Float min, Float max, const Float *values, uint32_t size, Scala
     /* Keep track all which lane is still active */
     Mask active(true);
 
+    const Float eps_domain = eps,
+                eps_value  = eps * values[size - 1];
+
     do {
         /* Fall back to a bisection step when t is out of bounds */
         t = select(!(t > a & t < b) & active, 0.5f * (a + b), t);
 
         /* Evaluate the spline and its derivative */
         Scalar value, deriv;
-        std::tie(value, deriv)
-            = eval_spline_d(f0, f1, d0, d1, t);
+        std::tie(value, deriv) = eval_spline_d(f0, f1, d0, d1, t);
         value -= y;
 
-        /* Update which lane is still active*/
-        active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
+        /* Update which lanes are still active */
+        active &= (abs(value) > eps_value) & (b - a > eps_domain);
+
+        /* Stop the iteration if converged */
+        if (none_nested(active))
+            break;
 
         /* Update the bisection bounds */
-        b = select(value > 0, t, b);
         a = select(value <= 0, t, a);
+        b = select(value >  0, t, b);
 
         /* Perform a Newton step */
         t = select(active, t - value / deriv, t);
-    } while (any(active));
+    } while (true);
 
     Scalar result = min + (idx + t) * width;
 
@@ -480,11 +490,14 @@ Scalar invert_1d(Float min, Float max, const Float *values, uint32_t size, Scala
  *      Denotes the size of the \c values array
  * \param y
  *      Input parameter for the inversion
+ * \param eps
+ *      Error tolerance (default: 1e-6f)
  * \return
  *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
  */
 template <typename Scalar, typename Float>
-Scalar invert_1d(const Float *nodes, const Float *values, uint32_t size, Scalar y) {
+Scalar invert_1d(const Float *nodes, const Float *values, uint32_t size,
+                 Scalar y, Float eps = 1e-6f) {
     using Mask = mask_t<Scalar>;
     using Index = uint32_array_t<Scalar>;
 
@@ -519,25 +532,31 @@ Scalar invert_1d(const Float *nodes, const Float *values, uint32_t size, Scalar 
 
     /* Keep track all which lane is still active */
     Mask active(true);
+
+    const Float eps_domain = eps,
+                eps_value  = eps * values[size - 1];
     do {
         /* Fall back to a bisection step when t is out of bounds */
         t = select(!(t > a & t < b) & active, 0.5f * (a + b), t);
 
         /* Evaluate the spline and its derivative */
-        std::tie(value, deriv)
-            = eval_spline_d(f0, f1, d0, d1, t);
+        std::tie(value, deriv) = eval_spline_d(f0, f1, d0, d1, t);
         value -= y;
 
-        /* Update which lane is still active*/
-        active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
+        /* Update which lanes are still active */
+        active &= (abs(value) > eps_value) & (b - a > eps_domain);
+
+        /* Stop the iteration if converged */
+        if (none_nested(active))
+            break;
 
         /* Update the bisection bounds */
-        b = select(value > 0, t, b);
         a = select(value <= 0, t, a);
+        b = select(value >  0, t, b);
 
         /* Perform a Newton step */
         t = select(active, t - value / deriv, t);
-    } while (any(active));
+    } while (true);
 
     result = x0 + t * width;
 
@@ -562,48 +581,50 @@ Scalar invert_1d(const Float *nodes, const Float *values, uint32_t size, Scalar 
  *      Denotes the size of the \c values array
  * \param sample
  *      A uniformly distributed random sample in the interval <tt>[0,1]</tt>
- * \param[out] fval
- *      If set to a non-null pointer, this argument will be used to return
- *      the value of the spline at the sampled position
- * \param[out] pdf
- *      If set to a non-null pointer, this argument will be used to return
- *      the probability density at the sampled position (which only differs
- *      from \c fval when the function does not integrate to 1)
- * \remark
- *      The Python API lacks the \c size, \c fval and \c pdf parameters. The
- *      first is automatically inferred from the size of the input array, and
- *      \c fval and \c pdf are returned as the second and third element of the
- *      return value, which is now a tuple.
+ * \param eps
+ *      Error tolerance (default: 1e-6f)
  * \return
- *      The sampled position
+ *      1. The sampled position
+ *      2. The value of the spline evaluated at the sampled position
+ *      3. The probability density at the sampled position (which only differs
+ *         from item 2. when the function does not integrate to one)
  */
 template <typename Scalar, typename Float>
-Scalar sample_1d(Float min, Float max, const Float *values, const Float *cdf,
-                 uint32_t size, Scalar sample, Scalar *fval, Scalar *pdf) {
+std::tuple<Scalar, Scalar, Scalar>
+sample_1d(Float min, Float max, const Float *values, const Float *cdf,
+                 uint32_t size, Scalar sample, Float eps = 1e-6f) {
     using Mask = mask_t<Scalar>;
     using Index = uint32_array_t<Scalar>;
 
+    const Float full_width = max - min,
+                width      = full_width / (size - 1),
+                inv_width  = (size - 1) / full_width,
+                last       = cdf[size - 1],
+                eps_domain = eps * full_width,
+                eps_value  = eps * last,
+                last_rcp   = (Float) 1 / last;
+
     /* Scale by the definite integral of the function (in case
        it is not normalized) */
-    Scalar last = Scalar(cdf[size - 1]);
     sample *= last;
 
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
     Index idx = math::find_interval(size,
-        [&](Index idx) {
-            return gather<Scalar>(cdf, idx) <= sample;
-        }
+        [&](Index idx, Mask active) {
+            return gather<Scalar>(cdf, idx, active) <= sample;
+        },
+        Mask(true)
     );
 
-    const Float width = Float(max - min) / (size - 1);
     GET_SPLINE_UNIFORM(idx);
 
     // Re-scale the sample after having choosen the interval
-    sample = (sample - gather<Scalar>(cdf, idx)) / width;
+    sample = (sample - gather<Scalar>(cdf, idx)) * inv_width;
 
     /* Importance sample linear interpolant as initial guess for 't'*/
-    Scalar t_linear = (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
+    Scalar t_linear =
+        (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
     Scalar t_const  = sample / f0;
     Scalar t = select(neq(f0, f1), t_linear, t_const);
 
@@ -615,28 +636,28 @@ Scalar sample_1d(Float min, Float max, const Float *values, const Float *cdf,
 
         /* Evaluate the definite integral and its derivative
            (i.e. the spline) */
-        std::tie(value, deriv)
-            = eval_spline_i(f0, f1, d0, d1, t);
+        std::tie(value, deriv) = eval_spline_i(f0, f1, d0, d1, t);
         value -= sample;
 
+        /* Update which lanes are still active */
+        active &= (abs(value) > eps_value) & (b - a > eps_domain);
+
         /* Stop the iteration if converged */
-        active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
+        if (none_nested(active))
+            break;
 
         /* Update the bisection bounds */
-        b = select(value > 0, t, b);
         a = select(value <= 0, t, a);
+        b = select(value >  0, t, b);
 
         /* Perform a Newton step */
         t = select(active, t - value / deriv, t);
-    } while (any(active));
+    } while (true);
 
-    /* Return the value and PDF if requested */
-    if (fval)
-        *fval = deriv;
-    if (pdf)
-        *pdf = deriv / last;
-
-    return min + (idx + t) * width;
+    return std::make_tuple(
+        min + (idx + t) * width,
+        deriv,
+        deriv * last_rcp);
 }
 
 /**
@@ -648,8 +669,8 @@ Scalar sample_1d(Float min, Float max, const Float *values, const Float *cdf,
  *      the where the function to be interpolated was evaluated. They must be
  *      provided in \a increasing order.
  * \param values
- *      Array containing function evaluations matched to
- *      the entries of \c nodes.
+ *      Array containing function evaluations matched to the entries of \c
+ *      nodes.
  * \param cdf
  *      Array containing a cumulative distribution function computed by \ref
  *      integrate_1d().
@@ -657,38 +678,37 @@ Scalar sample_1d(Float min, Float max, const Float *values, const Float *cdf,
  *      Denotes the size of the \c values array
  * \param sample
  *      A uniformly distributed random sample in the interval <tt>[0,1]</tt>
- * \param[out] fval
- *      If set to a non-null pointer, this argument will be used to return
- *      the value of the spline at the sampled position
- * \param[out] pdf
- *      If set to a non-null pointer, this argument will be used to return
- *      the probability density at the sampled position (which only differs
- *      from \c fval when the function does not integrate to 1)
- * \remark
- *      The Python API lacks the \c size, \c fval and \c pdf parameters. The
- *      first is automatically inferred from the size of the input array, and
- *      \c fval and \c pdf are returned as the second and third element of the
- *      return value, which is now a tuple.
+ * \param eps
+ *      Error tolerance (default: 1e-6f)
  * \return
- *      The sampled position
+ *      1. The sampled position
+ *      2. The value of the spline evaluated at the sampled position
+ *      3. The probability density at the sampled position (which only differs
+ *         from item 2. when the function does not integrate to one)
  */
 template <typename Scalar, typename Float>
-Scalar sample_1d(const Float *nodes, const Float *values, const Float *cdf,
-                 uint32_t size, Scalar sample, Scalar *fval, Scalar *pdf) {
+std::tuple<Scalar, Scalar, Scalar>
+sample_1d(const Float *nodes, const Float *values, const Float *cdf,
+          uint32_t size, Scalar sample, Float eps = 1e-6f) {
     using Mask = mask_t<Scalar>;
     using Index = uint32_array_t<Scalar>;
 
+    const Float last = cdf[size - 1],
+                eps_domain = eps * (nodes[size - 1] - nodes[0]),
+                eps_value  = eps * last,
+                last_rcp   = (Float) 1 / last;
+
     /* Scale by the definite integral of the function (in case
        it is not normalized) */
-    Scalar last = Scalar(cdf[size - 1]);
     sample *= last;
 
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
     Index idx = math::find_interval(size,
-        [&](Index idx) {
-            return gather<Scalar>(cdf, idx) <= sample;
-        }
+        [&](Index idx, Mask active) {
+            return gather<Scalar>(cdf, idx, active) <= sample;
+        },
+        Mask(true)
     );
 
     GET_SPLINE_NONUNIFORM(idx);
@@ -697,7 +717,8 @@ Scalar sample_1d(const Float *nodes, const Float *values, const Float *cdf,
     sample = (sample - gather<Scalar>(cdf, idx)) / width;
 
     /* Importance sample linear interpolant as initial guess for 't'*/
-    Scalar t_linear = (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
+    Scalar t_linear =
+        (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
     Scalar t_const  = sample / f0;
     Scalar t = select(neq(f0, f1), t_linear, t_const);
 
@@ -709,28 +730,30 @@ Scalar sample_1d(const Float *nodes, const Float *values, const Float *cdf,
 
         /* Evaluate the definite integral and its derivative
            (i.e. the spline) */
-        std::tie(value, deriv)
-            = eval_spline_i(f0, f1, d0, d1, t);
+        std::tie(value, deriv) = eval_spline_i(f0, f1, d0, d1, t);
         value -= sample;
 
+        /* Update which lanes are still active */
+        active &= (abs(value) > eps_value) & (b - a > eps_domain);
+
         /* Stop the iteration if converged */
-        active &= !(abs(value) < 1e-6f | b - a < 1e-6f);
+        if (none_nested(active))
+            break;
 
         /* Update the bisection bounds */
-        b = select(value > 0, t, b);
         a = select(value <= 0, t, a);
+        b = select(value >  0, t, b);
 
         /* Perform a Newton step */
         t = select(active, t - value / deriv, t);
-    } while (any(active));
+    } while (true);
 
     /* Return the value and PDF if requested */
-    if (fval)
-        *fval = deriv;
-    if (pdf)
-        *pdf = deriv / last;
 
-    return x0 + width * t;
+    return std::make_tuple(
+        x0 + width * t,
+        deriv,
+        deriv * last_rcp);
 }
 
 /**
@@ -758,7 +781,7 @@ Scalar sample_1d(const Float *nodes, const Float *values, const Float *cdf,
  *      In the Python API, the \c offset and \c weights parameters are returned
  *      as the second and third elements of a triple.
  * \return
- *      A boolean set to \c true on success and \c false when <tt>extrapolate=false</tt>
+ *      A boolean set to \c true on success and \c false when <tt>Extrapolate=false</tt>
  *      and \c x lies outside of [\c min, \c max] and an offset into the function samples
  *      associated with weights[0]
  */
@@ -847,7 +870,7 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
  *      and \c weights parameters are returned as the second and third
  *      elements of a triple.
  * \return
- *      A boolean set to \c true on success and \c false when <tt>extrapolate=false</tt>
+ *      A boolean set to \c true on success and \c false when <tt>Extrapolate=false</tt>
  *      and \c x lies outside of [\c min, \c max] and an offset into the function samples
  *      associated with weights[0]
  */
@@ -898,14 +921,19 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
 
     auto valide_boundary_left = idx > 0;
     Scalar width_nodes_1 =
-        gather<Scalar>(nodes, idx + 1) - gather<Scalar>(nodes, idx - 1, valide_boundary_left);
+        gather<Scalar>(nodes, idx + 1) -
+        gather<Scalar>(nodes, idx - 1, valide_boundary_left);
+
     Scalar factor = width / width_nodes_1;
     w0 = select(valide_boundary_left, w0 - (d0 * factor), w0);
     w1 = select(valide_boundary_left, w1, w1 - d0);
     w2 = select(valide_boundary_left, w2 + d0 * factor, w2 + d0);
 
     auto valid_boundary_right = idx + 2 < size;
-    Scalar width_nodes_2 = gather<Scalar>(nodes, idx + 2, valid_boundary_right) - gather<Scalar>(nodes, idx);
+    Scalar width_nodes_2 =
+        gather<Scalar>(nodes, idx + 2, valid_boundary_right) -
+        gather<Scalar>(nodes, idx);
+
     factor = width / width_nodes_2;
     w1 = select(valid_boundary_right, w1 - (d1 * factor), w1 - d1);
     w2 = select(valid_boundary_right, w2, w2 + d1);
@@ -956,7 +984,7 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
  *      The Python API lacks the \c size1 and \c size2 parameters, which are
  *      inferred automatically from the size of the input arrays.
  * \return
- *      The interpolated value or zero when <tt>extrapolate=false</tt>tt> and
+ *      The interpolated value or zero when <tt>Extrapolate=false</tt>tt> and
  *      <tt>(x,y)</tt> lies outside of the node range
  */
 template <bool Extrapolate = false, typename Scalar, typename Float>
@@ -967,10 +995,12 @@ Scalar eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
 
     Scalar weights[2][4];
     Index offset[2];
-
     Mask valid_x, valid_y;
-    std::tie(valid_x, offset[0]) = eval_spline_weights<Extrapolate>(nodes1, size1, x, weights[0]);
-    std::tie(valid_y, offset[1]) = eval_spline_weights<Extrapolate>(nodes2, size2, y, weights[1]);
+
+    std::tie(valid_x, offset[0]) =
+        eval_spline_weights<Extrapolate>(nodes1, size1, x, weights[0]);
+    std::tie(valid_y, offset[1]) =
+        eval_spline_weights<Extrapolate>(nodes2, size2, y, weights[1]);
 
     /* Compute interpolation weights separately for each dimension */
     if (unlikely(none(valid_x & valid_y)))

@@ -436,7 +436,7 @@ Index find_interval(Size left, Size right, const Predicate &pred) {
 
         /* Disable converged entries */
         active &= size > 0;
-    } while (any(active));
+    } while (any_nested(active));
 
     return clamp(
         first - 1,
@@ -503,7 +503,7 @@ Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in
 
         /* Disable converged entries */
         active &= size > 0;
-    } while (any(active));
+    } while (any_nested(active));
 
     return clamp(
         first - 1,

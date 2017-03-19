@@ -822,11 +822,20 @@ Parameter ``lambda``:
 
 static const char *__doc_mitsuba_ContinuousSpectrum_eval_2 = R"doc(Vectorized version of eval())doc";
 
+static const char *__doc_mitsuba_ContinuousSpectrum_integral =
+R"doc(Return the integral over the spectrum over its support
+
+Not every implementation may provide this function; the default
+implementation throws an exception.
+
+Even if the operation is provided, it may only return an
+approximation.)doc";
+
 static const char *__doc_mitsuba_ContinuousSpectrum_pdf =
 R"doc(Return the probability distribution of the sample() method as a
 probability per unit wavelength (in nm).
 
-Not all implementations provide this function; the default
+Not every implementation may provide this function; the default
 implementation throws an exception.)doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_pdf_2 = R"doc(Vectorized version of pdf())doc";
@@ -834,7 +843,7 @@ static const char *__doc_mitsuba_ContinuousSpectrum_pdf_2 = R"doc(Vectorized ver
 static const char *__doc_mitsuba_ContinuousSpectrum_sample =
 R"doc(Importance sample the spectral power distribution
 
-Not all implementations provide this function; the default
+Not every implementation may provide this function; the default
 implementation throws an exception.
 
 Parameter ``sample``:
@@ -1204,6 +1213,48 @@ static const char *__doc_mitsuba_GLTexture_refresh = R"doc(Refresh the texture f
 static const char *__doc_mitsuba_GLTexture_release = R"doc(Release/unbind the textur)doc";
 
 static const char *__doc_mitsuba_GLTexture_set_interpolation = R"doc(Set the interpolation mode)doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum = R"doc(Linear interpolant of a regularly sampled spectrum)doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_InterpolatedSpectrum = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_class = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_eval = R"doc(//! @{ \name Implementation of the ContinuousSpectrum interface)doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_eval_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_eval_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_integral = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_cdf = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_data = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_integral = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_interval_size = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_inv_interval_size = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_lambda_max = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_lambda_min = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_normalization = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_m_size_minus_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_pdf = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_pdf_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_sample = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_sample_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_InterpolatedSpectrum_sample_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Jit = R"doc()doc";
 
@@ -3391,14 +3442,16 @@ R"doc(Compute the CIE 1931 XYZ color matching functions given a wavelength
 in nanometers
 
 Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
-Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley)doc";
+Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley Journal
+of Computer Graphics Techniques Vol 2, No 2, 2013)doc";
 
 static const char *__doc_mitsuba_cie1931_y =
 R"doc(Compute the CIE 1931 Y color matching function given a wavelength in
 nanometers
 
 Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
-Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley)doc";
+Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley Journal
+of Computer Graphics Techniques Vol 2, No 2, 2013)doc";
 
 static const char *__doc_mitsuba_class = R"doc()doc";
 
@@ -3741,13 +3794,13 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
@@ -4245,6 +4298,9 @@ Parameter ``size``:
 Parameter ``y``:
     Input parameter for the inversion
 
+Parameter ``eps``:
+    Error tolerance (default: 1e-6f)
+
 Returns:
     The spline parameter ``t`` such that ``eval_1d(..., t)=y``)doc";
 
@@ -4266,6 +4322,9 @@ Parameter ``size``:
 
 Parameter ``y``:
     Input parameter for the inversion
+
+Parameter ``eps``:
+    Error tolerance (default: 1e-6f)
 
 Returns:
     The spline parameter ``t`` such that ``eval_1d(..., t)=y``)doc";
@@ -4294,24 +4353,14 @@ Parameter ``size``:
 Parameter ``sample``:
     A uniformly distributed random sample in the interval ``[0,1]``
 
-Parameter ``fval``:
-    If set to a non-null pointer, this argument will be used to return
-    the value of the spline at the sampled position
-
-Parameter ``pdf``:
-    If set to a non-null pointer, this argument will be used to return
-    the probability density at the sampled position (which only
-    differs from ``fval`` when the function does not integrate to 1)
-
-Remark:
-    The Python API lacks the ``size``, ``fval`` and ``pdf``
-    parameters. The first is automatically inferred from the size of
-    the input array, and ``fval`` and ``pdf`` are returned as the
-    second and third element of the return value, which is now a
-    tuple.
+Parameter ``eps``:
+    Error tolerance (default: 1e-6f)
 
 Returns:
-    The sampled position)doc";
+    1. The sampled position 2. The value of the spline evaluated at
+    the sampled position 3. The probability density at the sampled
+    position (which only differs from item 2. when the function does
+    not integrate to one))doc";
 
 static const char *__doc_mitsuba_spline_sample_1d_2 =
 R"doc(Importance sample a segment of a *non*-uniformly sampled 1D Catmull-
@@ -4336,24 +4385,14 @@ Parameter ``size``:
 Parameter ``sample``:
     A uniformly distributed random sample in the interval ``[0,1]``
 
-Parameter ``fval``:
-    If set to a non-null pointer, this argument will be used to return
-    the value of the spline at the sampled position
-
-Parameter ``pdf``:
-    If set to a non-null pointer, this argument will be used to return
-    the probability density at the sampled position (which only
-    differs from ``fval`` when the function does not integrate to 1)
-
-Remark:
-    The Python API lacks the ``size``, ``fval`` and ``pdf``
-    parameters. The first is automatically inferred from the size of
-    the input array, and ``fval`` and ``pdf`` are returned as the
-    second and third element of the return value, which is now a
-    tuple.
+Parameter ``eps``:
+    Error tolerance (default: 1e-6f)
 
 Returns:
-    The sampled position)doc";
+    1. The sampled position 2. The value of the spline evaluated at
+    the sampled position 3. The probability density at the sampled
+    position (which only differs from item 2. when the function does
+    not integrate to one))doc";
 
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 
