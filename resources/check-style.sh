@@ -1,7 +1,7 @@
 #!/bin/bash
-# 
+#
 # Script to check include/test code for common code style errors.
-# 
+#
 # This script currently checks for
 #
 # 1. use of tabs instead of spaces
@@ -10,10 +10,13 @@
 # 4. opening brace on its own line. It should always be on the same line as the
 #    if/while/for/do statment.
 # 5. Missing space between right parenthesis and brace, e.g. 'for (...){'
-# 
+#
 # Invoke as: tools/check-style.sh
 #
-shopt -s globstar
+
+if [ -n "$BASH_VERSION" ]; then
+    shopt -s globstar
+fi
 
 errors=0
 IFS=$'\n'
