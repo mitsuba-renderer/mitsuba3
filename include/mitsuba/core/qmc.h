@@ -104,8 +104,9 @@ private:
     void invert_permutation(uint32_t i);
 
     MTS_DECLARE_CLASS()
+
 protected:
-    virtual ~RadicalInverse();
+    virtual ~RadicalInverse() = default;
 
 private:
 #if defined(_MSC_VER)

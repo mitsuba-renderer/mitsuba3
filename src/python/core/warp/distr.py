@@ -27,6 +27,7 @@ Each entry of the DISTRIBUTIONS table is a tuple with the following entries:
 
 """
 
+import mitsuba
 from mitsuba.core import warp
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
 from mitsuba.core.chi2 import SpectrumAdapter
@@ -121,12 +122,31 @@ DISTRIBUTIONS = [
      dict(DEFAULT_SETTINGS,
          sample_dim=3,
          parameters=[
-             ('Concentration', [0, 100, 10]),
+             ('Concentration', [0, 500, 10]),
              ('Inclination', [0, 90, 20])
          ])
     ),
 
+    ('Spectrum: test', LineDomain([300.0, 700.0]),
+     SpectrumAdapter(mitsuba.core.InterpolatedSpectrum(400, 650, [1, 5, 3, 6])),
+     dict(DEFAULT_SETTINGS, sample_dim=1)),
+
     ('Spectrum: rgb_importance', LineDomain([360.0, 830.0]),
      SpectrumAdapter('<spectrum version="2.0.0" type="rgb_importance"/>'),
-     dict(DEFAULT_SETTINGS, sample_dim=1))
+     dict(DEFAULT_SETTINGS, sample_dim=1)),
+
+    ('Spectrum: d65', LineDomain([360.0, 830.0]),
+     SpectrumAdapter('<spectrum version="2.0.0" type="d65"/>'),
+     dict(DEFAULT_SETTINGS, sample_dim=1)),
+
+    ('Spectrum: blackbody', LineDomain([360.0, 830.0]),
+     SpectrumAdapter('<spectrum version="2.0.0" type="blackbody">'
+                     '   <float name="temperature" value="%f"/>'
+                     '</spectrum>'),
+     dict(DEFAULT_SETTINGS,
+          sample_dim=1,
+          parameters=[
+              ('Temperature', [0, 8000, 3000]),
+          ])
+    )
 ]

@@ -11,10 +11,8 @@ def test_chi2(name, domain, adapter, settings):
 
     test = ChiSquareTest(
         domain=domain,
-        sample_func=lambda *args: sample(
-            *(list(args) + parameters)),
-        pdf_func=lambda *args: pdf(
-            *(list(args) + parameters)),
+        sample_func=lambda *args: sample(*(list(args) + parameters)),
+        pdf_func=lambda *args: pdf(*(list(args) + parameters)),
         res=settings['res'],
         ires=settings['ires'],
         sample_dim=settings['sample_dim'],

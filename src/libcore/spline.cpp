@@ -27,17 +27,17 @@ template MTS_EXPORT_CORE FloatP eval_1d<false>(const Float*, const Float*, uint3
 template MTS_EXPORT_CORE void integrate_1d(Float, Float, const Float*, uint32_t, Float*);
 template MTS_EXPORT_CORE void integrate_1d(const Float*, const Float*, uint32_t, Float*);
 
-template MTS_EXPORT_CORE Float  invert_1d(Float, Float, const Float*, uint32_t, Float);
-template MTS_EXPORT_CORE FloatP invert_1d(Float, Float, const Float*, uint32_t, FloatP);
+template MTS_EXPORT_CORE Float  invert_1d(Float, Float, const Float*, uint32_t, Float, Float);
+template MTS_EXPORT_CORE FloatP invert_1d(Float, Float, const Float*, uint32_t, FloatP, Float);
 
-template MTS_EXPORT_CORE Float  invert_1d(const Float*, const Float*, uint32_t, Float);
-template MTS_EXPORT_CORE FloatP invert_1d(const Float*, const Float*, uint32_t, FloatP);
+template MTS_EXPORT_CORE Float  invert_1d(const Float*, const Float*, uint32_t, Float, Float);
+template MTS_EXPORT_CORE FloatP invert_1d(const Float*, const Float*, uint32_t, FloatP, Float);
 
-template MTS_EXPORT_CORE Float  sample_1d(Float, Float, const Float*, const Float*, uint32_t, Float,  Float*,  Float*);
-template MTS_EXPORT_CORE FloatP sample_1d(Float, Float, const Float*, const Float*, uint32_t, FloatP, FloatP*, FloatP*);
+template MTS_EXPORT_CORE std::tuple<Float, Float, Float>    sample_1d(Float, Float, const Float*, const Float*, uint32_t, Float,  Float);
+template MTS_EXPORT_CORE std::tuple<FloatP, FloatP, FloatP> sample_1d(Float, Float, const Float*, const Float*, uint32_t, FloatP, Float);
 
-template MTS_EXPORT_CORE Float  sample_1d(const Float*, const Float*, const Float*, uint32_t, Float,  Float*,  Float*);
-template MTS_EXPORT_CORE FloatP sample_1d(const Float*, const Float*, const Float*, uint32_t, FloatP, FloatP*, FloatP*);
+template MTS_EXPORT_CORE std::tuple<Float, Float, Float>    sample_1d(const Float*, const Float*, const Float*, uint32_t, Float,  Float);
+template MTS_EXPORT_CORE std::tuple<FloatP, FloatP, FloatP> sample_1d(const Float*, const Float*, const Float*, uint32_t, FloatP, Float);
 
 template MTS_EXPORT_CORE std::pair<bool, int32_t> eval_spline_weights(Float, Float, uint32_t, Float, Float*);
 template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, Int32P> eval_spline_weights(Float, Float, uint32_t, FloatP, FloatP*);

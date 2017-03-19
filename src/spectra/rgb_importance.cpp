@@ -17,8 +17,14 @@ public:
 
     template <typename T>
     MTS_INLINE T eval_impl(T lambda) const {
+        auto mask_valid = lambda >= T(360) & lambda <= T(830);
+
         T tmp = sech(Float(0.0072) * (lambda - Float(538)));
-        return Float(0.003939804229326285) * tmp * tmp;
+
+        return select(mask_valid,
+            Float(0.003939804229326285) * tmp * tmp,
+            zero<T>()
+        );
     }
 
     template <typename T, typename Sample>
@@ -33,19 +39,23 @@ public:
         return std::make_tuple(lambda, T(Float(1)), pdf);
     }
 
-    DiscreteSpectrum eval(DiscreteSpectrum  lambda) const override { return eval_impl(lambda); }
+    DiscreteSpectrum  eval(DiscreteSpectrum  lambda) const override { return eval_impl(lambda); }
     DiscreteSpectrumP eval(DiscreteSpectrumP lambda) const override { return eval_impl(lambda); }
 
-    DiscreteSpectrum pdf(DiscreteSpectrum  lambda) const override { return eval_impl(lambda); }
+    DiscreteSpectrum  pdf(DiscreteSpectrum  lambda) const override { return eval_impl(lambda); }
     DiscreteSpectrumP pdf(DiscreteSpectrumP lambda) const override { return eval_impl(lambda); }
 
-    std::tuple<DiscreteSpectrum, DiscreteSpectrum, DiscreteSpectrum> sample(Float sample) const override {
+    std::tuple<DiscreteSpectrum, DiscreteSpectrum, DiscreteSpectrum>
+    sample(Float sample) const override {
         return sample_impl<DiscreteSpectrum>(sample);
     }
 
-    std::tuple<DiscreteSpectrumP, DiscreteSpectrumP, DiscreteSpectrumP> sample(FloatP sample) const override {
+    std::tuple<DiscreteSpectrumP, DiscreteSpectrumP, DiscreteSpectrumP>
+    sample(FloatP sample) const override {
         return sample_impl<DiscreteSpectrumP>(sample);
     }
+
+    Float integral() const override { return 1.0f; }
 
     MTS_DECLARE_CLASS()
 };

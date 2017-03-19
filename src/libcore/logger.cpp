@@ -22,8 +22,6 @@ struct Logger::LoggerPrivate {
 Logger::Logger(ELogLevel log_level)
     : m_log_level(log_level), d(new LoggerPrivate()) { }
 
-Logger::~Logger() { }
-
 void Logger::set_formatter(Formatter *formatter) {
     std::lock_guard<std::mutex> guard(d->mutex);
     d->formatter = formatter;

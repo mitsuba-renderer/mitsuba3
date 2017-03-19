@@ -9,7 +9,7 @@
 #include "docstr.h"
 #include <mitsuba/core/object.h>
 #include <enoki/python.h>
-#include <enoki/tuple.h>
+#include <enoki/stl.h>
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 

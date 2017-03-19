@@ -123,8 +123,6 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
     invert_permutation(1);
 }
 
-RadicalInverse::~RadicalInverse() { }
-
 size_t RadicalInverse::base(size_t index) const {
     if (unlikely(index >= 1024))
         Throw("RadicalInverse::base(): out of bounds");

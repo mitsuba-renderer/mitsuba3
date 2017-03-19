@@ -269,7 +269,11 @@ class ChiSquareTest(object):
             (1.0 - significance_level) ** (1.0 / test_count)
 
         if self.fail:
-            self._log("Not running the test for reasons listed above.")
+            np.save('chi2_pdf.npy', self.pdf)
+            np.save('chi2_histogram.npy', self.histogram)
+            self._log('Not running the test for reasons listed above. Target '
+                    'density and histogram were written to "chi2_pdf.npy" and '
+                    '"chi2_histogram.npy ')
             return False
         elif self.p_value < significance_level \
                 or not np.isfinite(self.p_value):
@@ -373,19 +377,26 @@ class SphericalDomain(object):
         return np.column_stack((np.arctan2(p[:, 1], p[:, 0]), -p[:, 2]))
 
 
-def SpectrumAdapter(xml_string):
+def SpectrumAdapter(value):
     """
     Adapter which permits testing 1D spectral power
     distributions using the Chi^2 test
     """
-    from mitsuba.core.xml import load_string
-    plugin = load_string(xml_string)
 
-    def sample_functor(sample):
-        wavelength, weight, _ = plugin.sample(sample)
-        return wavelength[:, 0], weight[:, 0]
+    def instantiate(args):
+        if hasattr(value, 'sample'):
+            return value
+        else:
+            from mitsuba.core.xml import load_string
+            return load_string(value % args)
 
-    def pdf_functor(pdf):
+    def sample_functor(sample, *args):
+        plugin = instantiate(args)
+        wavelength, weight, pp = plugin.sample(sample)
+        return wavelength[:, 0]
+
+    def pdf_functor(pdf, *args):
+        plugin = instantiate(args)
         return plugin.pdf(pdf)
 
     return sample_functor, pdf_functor

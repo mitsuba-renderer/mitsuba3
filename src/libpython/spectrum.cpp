@@ -26,8 +26,19 @@ MTS_PY_EXPORT(Spectrum) {
         .def("sample",
              vectorize_wrapper(py::overload_cast<FloatP>(
                  &ContinuousSpectrum::sample, py::const_)),
-             "lambda"_a, D(ContinuousSpectrum, sample, 2));
+             "lambda"_a, D(ContinuousSpectrum, sample, 2))
+        .def("integral", &ContinuousSpectrum::integral,
+             D(ContinuousSpectrum, integral));
 
-    m.def("cie1931_xyz", &cie1931_xyz, "lambda"_a, D(cie1931_y));
-    m.def("cie1931_y", &cie1931_y, "lambda"_a, D(cie1931_y));
+    MTS_PY_CLASS(InterpolatedSpectrum, ContinuousSpectrum)
+        .def("__init__", [](InterpolatedSpectrum &s, Float min, Float max, const std::vector<Float> &values) {
+                new (&s) InterpolatedSpectrum(min, max, values.size(), values.data());
+        });
+
+    m.def("cie1931_xyz", &cie1931_xyz<DiscreteSpectrum>, "lambda"_a, D(cie1931_y));
+    m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<DiscreteSpectrumP>), "lambda"_a);
+    m.def("cie1931_y", &cie1931_y<DiscreteSpectrum>, "lambda"_a, D(cie1931_y));
+    m.def("cie1931_y", vectorize_wrapper(&cie1931_y<DiscreteSpectrumP>), "lambda"_a);
+
+    m.attr("MTS_WAVELENGTH_SAMPLES") = MTS_WAVELENGTH_SAMPLES;
 }

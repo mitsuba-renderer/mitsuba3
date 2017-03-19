@@ -121,7 +121,7 @@ public:
 
 protected:
     /// Protected destructor
-    virtual ~Logger();
+    virtual ~Logger() = default;
 
 private:
     struct LoggerPrivate;
