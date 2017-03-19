@@ -814,20 +814,13 @@ Remark:
 static const char *__doc_mitsuba_ContinuousSpectrum_class = R"doc()doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_eval =
-R"doc(Evaluate the value of the spectral power distribution for a single
-wavelength
-
-Parameter ``lambda``:
-    Wavelength specified in nanometers)doc";
-
-static const char *__doc_mitsuba_ContinuousSpectrum_eval_2 =
 R"doc(Evaluate the value of the spectral power distribution at a set of
 wavelengths
 
 Parameter ``lambda``:
     List of wavelengths specified in nanometers)doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_eval_3 = R"doc(Vectorized version of eval())doc";
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_2 = R"doc(Vectorized version of eval())doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_pdf =
 R"doc(Return the probability distribution of the sample() method as a
@@ -848,9 +841,9 @@ Parameter ``sample``:
     A uniform variate
 
 Returns:
-    1. Set of sampled wavelengths specified in nanometers 2. Sample
-    probability per unit wavelength (in units of 1/nm) 2. The Monte
-    Carlo sampling weight (SPD value divided by the sampling density))doc";
+    1. Set of sampled wavelengths specified in nanometers 2. The Monte
+    Carlo sampling weight (SPD value divided by the sampling density)
+    3. Sample probability per unit wavelength (in units of 1/nm))doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_sample_2 = R"doc(Vectorized version of sample())doc";
 
@@ -3393,6 +3386,20 @@ R"doc(Writes a specified amount of data into the stream, compressing it
 first using ZLib. Throws an exception when not all data could be
 written.)doc";
 
+static const char *__doc_mitsuba_cie1931_xyz =
+R"doc(Compute the CIE 1931 XYZ color matching functions given a wavelength
+in nanometers
+
+Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
+Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley)doc";
+
+static const char *__doc_mitsuba_cie1931_y =
+R"doc(Compute the CIE 1931 Y color matching function given a wavelength in
+nanometers
+
+Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
+Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley)doc";
+
 static const char *__doc_mitsuba_class = R"doc()doc";
 
 static const char *__doc_mitsuba_comparator = R"doc()doc";
@@ -3734,13 +3741,13 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 

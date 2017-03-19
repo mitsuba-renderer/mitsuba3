@@ -88,4 +88,22 @@ public:
     MTS_DECLARE_CLASS()
 };
 
+/**
+ * \brief Compute the CIE 1931 XYZ color matching functions given a wavelength
+ * in nanometers
+ *
+ * Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
+ * Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley
+ */
+extern MTS_EXPORT_CORE std::array<DiscreteSpectrum, 3> cie1931_xyz(DiscreteSpectrum lambda);
+
+/**
+ * \brief Compute the CIE 1931 Y color matching function given a wavelength
+ * in nanometers
+ *
+ * Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
+ * Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley
+ */
+extern MTS_EXPORT_CORE DiscreteSpectrum cie1931_y(DiscreteSpectrum lambda);
+
 NAMESPACE_END(mitsuba)

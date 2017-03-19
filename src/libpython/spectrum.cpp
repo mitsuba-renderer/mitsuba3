@@ -27,4 +27,7 @@ MTS_PY_EXPORT(Spectrum) {
              vectorize_wrapper(py::overload_cast<FloatP>(
                  &ContinuousSpectrum::sample, py::const_)),
              "lambda"_a, D(ContinuousSpectrum, sample, 2));
+
+    m.def("cie1931_xyz", &cie1931_xyz, "lambda"_a, D(cie1931_y));
+    m.def("cie1931_y", &cie1931_y, "lambda"_a, D(cie1931_y));
 }
