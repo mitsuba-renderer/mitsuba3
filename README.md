@@ -46,5 +46,6 @@ to stay in sync.
 This project was created by [Wenzel Jakob](http://rgl.epfl.ch/people/wjakob)
 Significant features and/or improvements to the code were contributed by
 Merlin Nimier-David,
+Sébastien Speierer
 ...
 TBD
