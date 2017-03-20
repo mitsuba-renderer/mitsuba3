@@ -268,6 +268,57 @@ public:
     /// Return a \c Struct instance describing the contents of the bitmap
     const Struct *struct_() const { return m_struct.get(); }
 
+    void read_open_exr(Stream *stream);
+
+    /**
+    * Write an encoded form of the bitmap to a file using the specified file format
+    *
+    * \param format
+    *    Target file format (\ref EOpenEXR, \ref EPNG, or \ref EOpenEXR)
+    *
+    * \param stream
+    *    Target stream that will receive the encoded output
+    *
+    * \param compression
+    *    For PNG images, this parameter can be used to control how
+    *    strongly libpng will try to compress the output (with 1 being
+    *    the lowest and 9 denoting the highest compression). Note that
+    *    saving files with the highest compression will be very slow.
+    *    For JPEG files, this denotes the desired quality (between 0 and 100,
+    *    the latter being best). The default argument (-1) uses compression
+    *    5 for PNG and 100 for JPEG files.
+    */
+    void write(EFileFormat format, const fs::path &path, int compression = -1) const;
+
+    /**
+    * Write an encoded form of the bitmap to a stream using the specified file format
+    *
+    * \param format
+    *    Target file format (\ref EOpenEXR, \ref EPNG, or \ref EOpenEXR)
+    *
+    * \param stream
+    *    Target stream that will receive the encoded output
+    *
+    * \param compression
+    *    For PNG images, this parameter can be used to control how
+    *    strongly libpng will try to compress the output (with 1 being
+    *    the lowest and 9 denoting the highest compression). Note that
+    *    saving files with the highest compression will be very slow.
+    *    For JPEG files, this denotes the desired quality (between 0 and 100,
+    *    the latter being best). The default argument (-1) uses compression
+    *    5 for PNG and 100 for JPEG files.
+    */
+    void write(EFileFormat format, Stream *stream, int compression = -1) const;
+
+    /// Save a file using the JPEG file format
+    void write_jpeg(Stream *stream, int quality) const;
+
+    /// Save a file using the JPEG file format
+    // void write_png(Stream *stream, int quality) const;
+
+    /// Write a file using the OpenEXR file format
+    void write_openexr(Stream *stream) const;
+
     /// Return a human-readable summary of this bitmap
     virtual std::string to_string() const override;
 
