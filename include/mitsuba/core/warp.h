@@ -287,7 +287,7 @@ MTS_INLINE vector3_t<Point2f> square_to_beckmann(Point2f sample, Float alpha) {
     auto sc = sincos(2.f * math::Pi * sample.x());
 
     Scalar tan_thetaMSqr = -alpha * alpha * log(1.f - sample.y());
-    Scalar cos_thetaM = 1.f / sqrt(1.f + tan_thetaMSqr);
+    Scalar cos_thetaM = rsqrt(1.f + tan_thetaMSqr);
     Scalar sin_thetaM = safe_sqrt(1.f - cos_thetaM * cos_thetaM);
 
     return Vector3f(sin_thetaM * sc.second, sin_thetaM * sc.first, cos_thetaM);
@@ -297,7 +297,7 @@ MTS_INLINE vector3_t<Point2f> square_to_beckmann(Point2f sample, Float alpha) {
     Scalar r2 = squared_norm(p);
 
     Scalar tan_theta_m_sqr = -alpha * alpha * log(1.f - r2);
-    Scalar cos_theta_m = 1.f / safe_sqrt(1.f + tan_theta_m_sqr);
+    Scalar cos_theta_m = rsqrt(1.f + tan_theta_m_sqr);
     p *= safe_sqrt((1.f - cos_theta_m * cos_theta_m) / r2);
 
     return Vector3f(p.x(), p.y(), cos_theta_m);

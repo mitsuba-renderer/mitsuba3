@@ -161,7 +161,10 @@ private:
 };
 
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
-extern MTS_EXPORT_CORE const Float cie1931_data[7][4];
+extern MTS_EXPORT_CORE const Float cie1931_fits[7][4];
+extern MTS_EXPORT_CORE const Float cie1931_x_data[95];
+extern MTS_EXPORT_CORE const Float cie1931_y_data[95];
+extern MTS_EXPORT_CORE const Float cie1931_z_data[95];
 
 /**
  * \brief Compute the CIE 1931 XYZ color matching functions given a wavelength
@@ -173,12 +176,13 @@ extern MTS_EXPORT_CORE const Float cie1931_data[7][4];
  */
 template <typename T, typename Expr = expr_t<T>>
 std::tuple<Expr, Expr, Expr> cie1931_xyz(T lambda) {
+#if 0
     Expr result[7];
 
     for (int i=0; i<7; ++i) {
         /* Coefficients of Gaussian fits */
-        Float alpha(cie1931_data[i][0]), beta (cie1931_data[i][1]),
-              gamma(cie1931_data[i][2]), delta(cie1931_data[i][3]);
+        Float alpha(cie1931_fits[i][0]), beta (cie1931_fits[i][1]),
+              gamma(cie1931_fits[i][2]), delta(cie1931_fits[i][3]);
 
         Expr tmp = select(lambda < beta, Expr(gamma),
                                          Expr(delta)) * (lambda - beta);
@@ -189,6 +193,32 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(T lambda) {
     return { result[0] + result[1] + result[2],
              result[3] + result[4],
              result[5] + result[6] };
+#else
+    using Mask = mask_t<Expr>;
+    using Index = int_array_t<Expr>;
+
+    Expr t = (lambda - 360.f) * 0.2f;
+    Mask mask_valid = lambda >= 360.f & lambda <= 830.f;
+
+    Index i0 = min(max(Index(t), zero<Index>()), Index(95-2));
+    Index i1 = i0 + 1;
+
+    Expr v0_x = gather<Expr>(cie1931_x_data, i0, mask_valid);
+    Expr v1_x = gather<Expr>(cie1931_x_data, i1, mask_valid);
+    Expr v0_y = gather<Expr>(cie1931_y_data, i0, mask_valid);
+    Expr v1_y = gather<Expr>(cie1931_y_data, i1, mask_valid);
+    Expr v0_z = gather<Expr>(cie1931_z_data, i0, mask_valid);
+    Expr v1_z = gather<Expr>(cie1931_z_data, i1, mask_valid);
+
+    Expr w1 = t - Expr(i0);
+    Expr w0 = (Float) 1 - w1;
+
+    return {
+        (w0 * v0_x + w1 * v1_x) & mask_valid,
+        (w0 * v0_y + w1 * v1_y) & mask_valid,
+        (w0 * v0_z + w1 * v1_z) & mask_valid
+    };
+#endif
 }
 
 /**
@@ -201,13 +231,14 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(T lambda) {
  */
 template <typename T, typename Expr = expr_t<T>>
 Expr cie1931_y(T lambda) {
+#if 0
     Expr result[2];
 
     for (int i=0; i<2; ++i) {
         /* Coefficients of Gaussian fits */
         int j = 3 + i;
-        Float alpha(cie1931_data[j][0]), beta (cie1931_data[j][1]),
-              gamma(cie1931_data[j][2]), delta(cie1931_data[j][3]);
+        Float alpha(cie1931_fits[j][0]), beta (cie1931_fits[j][1]),
+              gamma(cie1931_fits[j][2]), delta(cie1931_fits[j][3]);
 
         Expr tmp = select(lambda < beta, T(gamma),
                                          T(delta)) * (lambda - beta);
@@ -216,6 +247,25 @@ Expr cie1931_y(T lambda) {
     }
 
     return result[0] + result[1];
+#else
+    using Mask = mask_t<Expr>;
+    using Index = int_array_t<Expr>;
+
+    Expr t = (lambda - 360.f) * 0.2f;
+    Mask mask_valid = lambda >= 360.f & lambda <= 830.f;
+
+    Index i0 = min(max(Index(t), zero<Index>()), Index(95-2));
+    Index i1 = i0 + 1;
+
+    Expr v0 = gather<Expr>(cie1931_y_data, i0, mask_valid);
+    Expr v1 = gather<Expr>(cie1931_y_data, i1, mask_valid);
+
+    Expr w1 = t - Expr(i0);
+    Expr w0 = (Float) 1 - w1;
+
+    return (w0 * v0 + w1 * v1) & mask_valid;
+#endif
 }
+
 
 NAMESPACE_END(mitsuba)

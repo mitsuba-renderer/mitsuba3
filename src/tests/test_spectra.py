@@ -7,14 +7,13 @@ n_samples = mitsuba.core.MTS_WAVELENGTH_SAMPLES
 
 # CIE 1931 observer
 def test01_cie1931():
-    X, Y, Z = mitsuba.core.cie1931_xyz([600]*n_samples)
-    # Actual values: 1.0622, 0.631, 0.0008
-    assert np.allclose(X[0], 1.05593)
-    assert np.allclose(Y[0], 0.634136)
-    assert np.allclose(Z[0], 4.23136e-05)
+    X, Y, Z = mitsuba.core.cie1931_xyz([600])
+    assert np.allclose(X[0], 1.0622)
+    assert np.allclose(Y[0], 0.631)
+    assert np.allclose(Z[0], 0.0008)
 
-    Y = mitsuba.core.cie1931_y([600]*n_samples)
-    assert np.allclose(Y[0], 0.634136)
+    Y = mitsuba.core.cie1931_y([600])
+    assert np.allclose(Y[0], 0.631)
 
 # rgb_importance: Spot check the model in a few places, the chi^2 test will ensure that sampling works
 def test02_rgb_importance():

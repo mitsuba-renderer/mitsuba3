@@ -36,9 +36,9 @@ MTS_PY_EXPORT(Spectrum) {
         });
 
     m.def("cie1931_xyz", &cie1931_xyz<DiscreteSpectrum>, "lambda"_a, D(cie1931_y));
-    m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<DiscreteSpectrumP>), "lambda"_a);
+    m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<FloatP>), "lambda"_a);
     m.def("cie1931_y", &cie1931_y<DiscreteSpectrum>, "lambda"_a, D(cie1931_y));
-    m.def("cie1931_y", vectorize_wrapper(&cie1931_y<DiscreteSpectrumP>), "lambda"_a);
+    m.def("cie1931_y", vectorize_wrapper(&cie1931_y<FloatP>), "lambda"_a);
 
     m.attr("MTS_WAVELENGTH_SAMPLES") = MTS_WAVELENGTH_SAMPLES;
 }
