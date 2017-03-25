@@ -438,11 +438,13 @@ Index find_interval(Size left, Size right, const Predicate &pred) {
         active &= size > 0;
     } while (any_nested(active));
 
-    return clamp(
-        first - 1,
-        Index(left),
-        Index(right - 2)
-    );
+    using SignedIndex = signed_array_t<Index>;
+
+    return Index(clamp(
+        SignedIndex(first - 1),
+        SignedIndex(left),
+        SignedIndex(right - 2)
+    ));
 }
 
 template <typename Size, typename Predicate,
@@ -505,11 +507,13 @@ Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in
         active &= size > 0;
     } while (any_nested(active));
 
-    return clamp(
-        first - 1,
-        Index(left),
-        Index(right - 2)
-    );
+    using SignedIndex = signed_array_t<Index>;
+
+    return Index(clamp(
+        SignedIndex(first - 1),
+        SignedIndex(left),
+        SignedIndex(right - 2)
+    ));
 }
 
 template <typename Size, typename Predicate,
