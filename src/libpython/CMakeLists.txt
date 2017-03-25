@@ -8,6 +8,9 @@ include_directories(
   ${NANOGUI_INCLUDE_DIRS}
 )
 
+# The mitsuba-python target depends on all the mitsuba_*_ext
+add_custom_target(mitsuba-python)
+
 function(add_mitsuba_python_library TARGET_NAME NAME)
   set(TARGET_NAME mitsuba_${NAME}_ext)
   add_library(${TARGET_NAME}-obj OBJECT ${ARGN})
@@ -15,6 +18,8 @@ function(add_mitsuba_python_library TARGET_NAME NAME)
   add_library(${TARGET_NAME} SHARED $<TARGET_OBJECTS:${TARGET_NAME}-obj>)
   set_property(TARGET ${TARGET_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET ${TARGET_NAME}-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+  add_dependencies(mitsuba-python ${TARGET_NAME})
 
   # The prefix and extension are provided by FindPythonLibsNew.cmake
   set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
