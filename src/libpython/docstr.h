@@ -898,6 +898,108 @@ static const char *__doc_mitsuba_DefaultFormatter_set_has_log_level = R"doc(Shou
 
 static const char *__doc_mitsuba_DefaultFormatter_set_has_thread = R"doc(Should thread information be included? The default is yes.)doc";
 
+static const char *__doc_mitsuba_DiscreteDistribution =
+R"doc(Discrete probability distribution
+
+This data structure can be used to transform uniformly distributed
+samples to a stored discrete probability distribution.)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Allocate memory for a distribution with the given number of entries)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_append =
+R"doc(Append an entry with the specified discrete probability. Must be non-
+negative.)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_cdf =
+R"doc(Return the cdf entries.
+
+Note that if n values have been appended, there will be (n+1) entries
+in this CDF (the first one being 0).)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_clear = R"doc(Clear all entries)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_m_cdf = R"doc()doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_m_normalization = R"doc()doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_m_normalized = R"doc()doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_m_range_end = R"doc()doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_m_range_start = R"doc()doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_m_sum = R"doc()doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_normalization =
+R"doc(Return the normalization factor (i.e. the inverse of get_sum())
+
+This assumes that normalize() has previously been called)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_normalize =
+R"doc(Normalize the distribution
+
+Throws when the distribution is empty.
+
+Returns:
+    Sum of the (previously unnormalized) entries)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_normalized = R"doc(Have the probability densities been normalized?)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_operator_array = R"doc(Access an entry by its index)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_reserve = R"doc(Reserve memory for a certain number of entries)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_sample =
+R"doc(%Transform a uniformly distributed sample to the stored distribution
+
+Parameter ``sample_value``:
+    A uniformly distributed sample on [0,1]
+
+Returns:
+    The discrete index associated with the sample)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_sample_pdf =
+R"doc(%Transform a uniformly distributed sample to the stored distribution
+
+Parameter ``sample_value``:
+    A uniformly distributed sample on [0,1]
+
+Returns:
+    A pair with (the discrete index associated with the sample,
+    probability value of the sample).)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_sample_reuse =
+R"doc(%Transform a uniformly distributed sample to the stored distribution
+
+The original sample is value adjusted so that it can be "reused".
+
+\param[in,out] sample_value A uniformly distributed sample on [0,1]
+
+Returns:
+    The discrete index associated with the sample
+
+\note In the Python API, the rescaled sample value is returned in
+second position.)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_sample_reuse_pdf =
+R"doc(%Transform a uniformly distributed sample to the stored distribution.
+
+The original sample is value adjusted so that it can be "reused".
+
+\param[in,out] sample_value A uniformly distributed sample on [0,1]
+
+Returns:
+    A pair with (the discrete index associated with the sample,
+    probability value of the sample). \note In the Python API, the
+    rescaled sample value is returned in third position.)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_size = R"doc(Return the number of entries so far)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_sum =
+R"doc(Return the original (unnormalized) sum of all PDF entries
+
+This assumes that normalize() has previously been called.)doc";
+
 static const char *__doc_mitsuba_DummyStream =
 R"doc(Stream implementation that never writes to disk, but keeps track of
 the size of the content being written. It can be used, for example, to
@@ -3738,13 +3840,16 @@ R"doc(Find an interval in an ordered set
 This function is very similar to ``std::upper_bound``, but it uses a
 functor rather than an actual array to permit working with
 procedurally defined data. It returns the index ``i`` such that
-pred(i) is ``True`` and pred(i+1) is ``False``.
+pred(i) is ``True`` and pred(i+1) is ``False``. See below for special
+cases.
 
 This function is primarily used to locate an interval (i, i+1) for
 linear interpolation, hence its name. To avoid issues out of bounds
 accesses, and to deal with predicates that evaluate to ``True`` or
 ``False`` on the entire domain, the returned left interval index is
-clamped to the range ``[left, right-2]``.
+clamped to the range ``[left, right-2]``. In particular: If there is
+no index such that pred(i) is true, we return (left). If there is no
+index such that pred(i+1) is false, we return (right-2).
 
 Remark:
     This function is intended for vectorized predicates and
@@ -3794,21 +3899,25 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
+
+static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Return a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Turns a vector into a human-readable representation.)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -3991,7 +4100,7 @@ Remark:
     function for many arguments ``x``.
 
 Returns:
-    The interpolated value or zero when ``extrapolate=false`` and
+    The interpolated value or zero when ``Extrapolate=false`` and
     ``x`` lies outside of [``min``, ``max``])doc";
 
 static const char *__doc_mitsuba_spline_eval_1d_2 =
@@ -4030,7 +4139,7 @@ Remark:
     function for many arguments ``x``.
 
 Returns:
-    The interpolated value or zero when ``extrapolate=false`` and
+    The interpolated value or zero when ``Extrapolate=false`` and
     ``x`` lies outside of \a [``min``, ``max``])doc";
 
 static const char *__doc_mitsuba_spline_eval_2d =
@@ -4077,7 +4186,7 @@ Remark:
     are inferred automatically from the size of the input arrays.
 
 Returns:
-    The interpolated value or zero when ``extrapolate=false``tt> and
+    The interpolated value or zero when ``Extrapolate=false``tt> and
     ``(x,y)`` lies outside of the node range)doc";
 
 static const char *__doc_mitsuba_spline_eval_spline =
@@ -4180,7 +4289,7 @@ Remark:
 
 Returns:
     A boolean set to ``True`` on success and ``False`` when
-    ``extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
+    ``Extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
     and an offset into the function samples associated with weights[0])doc";
 
 static const char *__doc_mitsuba_spline_eval_spline_weights_2 =
@@ -4218,7 +4327,7 @@ Remark:
 
 Returns:
     A boolean set to ``True`` on success and ``False`` when
-    ``extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
+    ``Extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
     and an offset into the function samples associated with weights[0])doc";
 
 static const char *__doc_mitsuba_spline_integrate_1d =
@@ -4398,8 +4507,6 @@ static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given str
 
 static const char *__doc_mitsuba_string_indent = R"doc(Indent every line of a string by some number of spaces)doc";
 
-static const char *__doc_mitsuba_string_operator_lshift = R"doc(Turns a vector of elements into a human-readable representation)doc";
-
 static const char *__doc_mitsuba_string_starts_with = R"doc(Check if the given string starts with a specified prefix)doc";
 
 static const char *__doc_mitsuba_string_to_lower =
@@ -4572,7 +4679,7 @@ static const char *__doc_mitsuba_xml_load_file = R"doc(Load a Mitsuba scene from
 
 static const char *__doc_mitsuba_xml_load_string = R"doc(Load a Mitsuba scene from an XML string)doc";
 
-static const char *__doc_operator_lshift = R"doc(Turns an array into a human-readable representation)doc";
+static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into a human-readable representation)doc";
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop

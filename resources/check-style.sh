@@ -11,7 +11,7 @@
 #    if/while/for/do statment.
 # 5. Missing space between right parenthesis and brace, e.g. 'for (...){'
 #
-# Invoke as: tools/check-style.sh
+# Invoke as: resources/check-style.sh
 #
 
 if [ -n "$BASH_VERSION" ]; then

@@ -177,7 +177,7 @@ NAMESPACE_END(detail)
                 MTS_VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
 #else
 #define Assert(...) ((void) 0)
-#endif
+#endif  // !defined(NDEBUG)
 
 /// Throw an exception reporting that the given function is not implemented
 #define NotImplementedError(funcName) \

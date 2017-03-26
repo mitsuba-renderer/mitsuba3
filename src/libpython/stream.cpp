@@ -16,11 +16,11 @@
             s.read(v);                                                         \
             return py::cast(v);                                                \
         }, D(Stream, read, 2))                                                 \
-        .def("write_" ReadableName,                                            \
-             [](Stream &s, const Type &v) {                                    \
-                 s.write(v);                                                   \
-                 return py::cast(v);                                           \
-             }, D(Stream, write, 2))
+    .def("write_" ReadableName,                                                \
+         [](Stream &s, const Type &v) {                                        \
+             s.write(v);                                                       \
+             return py::cast(v);                                               \
+         }, D(Stream, write, 2))
 
 MTS_PY_EXPORT(Stream) {
     auto c = MTS_PY_CLASS(Stream, Object)

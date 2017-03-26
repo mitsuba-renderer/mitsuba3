@@ -6,7 +6,28 @@
 #include <algorithm>
 #include <ostream>
 
+/// Turns a vector of elements into a human-readable representation
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
+    auto it = v.begin();
+    while (it != v.end()) {
+        os << *it;
+        it++;
+        if (it != v.end())
+            os << ", ";
+    }
+    return os;
+}
+
 NAMESPACE_BEGIN(mitsuba)
+
+/// Turns a vector into a human-readable representation.
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
+    ::operator<<(os, v);
+    return os;
+}
+
 NAMESPACE_BEGIN(string)
 
 /// Check if the given string starts with a specified prefix
@@ -71,19 +92,6 @@ inline std::string indent(const std::string &string, int amount = 2) {
     return result;
 }
 
-/// Turns a vector of elements into a human-readable representation
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
-    auto it = v.begin();
-    while (it != v.end()) {
-        os << *it;
-        it++;
-        if (it != v.end())
-            os << ", ";
-    }
-    return os;
-}
-
 inline std::string trim(const std::string &str,
                         const std::string &whitespace = " \t") {
     auto it1 = str.find_first_not_of(whitespace);
@@ -95,17 +103,3 @@ inline std::string trim(const std::string &str,
 
 NAMESPACE_END(string)
 NAMESPACE_END(mitsuba)
-
-/// Turns an array into a human-readable representation
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
-    auto it = v.begin();
-    while (it != v.end()) {
-        os << *it;
-        it++;
-        if (it != v.end())
-            os << ", ";
-    }
-    return os;
-}
-

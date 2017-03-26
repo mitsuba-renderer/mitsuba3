@@ -407,7 +407,6 @@ static T inv_gamma(T value) {
 * right-2]</tt>.
 *
 */
-
 template <typename Size, typename Predicate,
           typename Args = typename function_traits<Predicate>::Args,
           typename Index = std::tuple_element_t<0, Args>,
@@ -461,19 +460,21 @@ Index find_interval(Size size, const Predicate &pred) {
  * This function is very similar to \c std::upper_bound, but it uses a functor
  * rather than an actual array to permit working with procedurally defined
  * data. It returns the index \c i such that pred(i) is \c true and pred(i+1)
- * is \c false.
+ * is \c false. See below for special cases.
  *
  * This function is primarily used to locate an interval (i, i+1) for linear
  * interpolation, hence its name. To avoid issues out of bounds accesses, and
  * to deal with predicates that evaluate to \c true or \c false on the entire
  * domain, the returned left interval index is clamped to the range <tt>[left,
  * right-2]</tt>.
+ * In particular:
+ * If there is no index such that pred(i) is true, we return (left).
+ * If there is no index such that pred(i+1) is false, we return (right-2).
  *
  * \remark This function is intended for vectorized predicates and additionally
  * accepts a mask as an input. This mask can be used to disable some of the
  * array entries. The mask is passed to the predicate as a second parameter.
  */
-
 template <typename Size, typename Predicate,
           typename Args = typename function_traits<Predicate>::Args,
           typename Index = std::tuple_element_t<0, Args>,
