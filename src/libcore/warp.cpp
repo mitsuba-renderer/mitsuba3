@@ -28,6 +28,9 @@ template MTS_EXPORT_CORE FloatP square_to_uniform_hemisphere_pdf<false>(Vector3f
 template MTS_EXPORT_CORE Point2f  square_to_uniform_disk_concentric(Point2f);
 template MTS_EXPORT_CORE Point2fP square_to_uniform_disk_concentric(Point2fP);
 
+template MTS_EXPORT_CORE Point2f  uniform_disk_to_square_concentric(Point2f);
+template MTS_EXPORT_CORE Point2fP uniform_disk_to_square_concentric(Point2fP);
+
 template MTS_EXPORT_CORE Float  square_to_uniform_disk_concentric_pdf(Point2f);
 template MTS_EXPORT_CORE FloatP square_to_uniform_disk_concentric_pdf(Point2fP);
 
@@ -70,11 +73,9 @@ template MTS_EXPORT_CORE FloatP square_to_von_mises_fisher_pdf(Vector3fP, Float)
 // ------------------------------------------------------------------------------------------
 
 template MTS_EXPORT_CORE Vector3f  square_to_rough_fiber(Point3f, Vector3f, Vector3f, Float);
-
 template MTS_EXPORT_CORE Vector3fP square_to_rough_fiber(Point3fP, Vector3fP, Vector3fP, Float);
 
 template MTS_EXPORT_CORE Float  square_to_rough_fiber_pdf(Vector3f, Vector3f, Vector3f, Float);
-
 template MTS_EXPORT_CORE FloatP square_to_rough_fiber_pdf(Vector3fP, Vector3fP, Vector3fP, Float);
 
 // ------------------------------------------------------------------------------------------

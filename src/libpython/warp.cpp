@@ -77,6 +77,17 @@ MTS_PY_EXPORT(warp) {
     // =======================================================================
 
     warp.def(
+        "uniform_disk_to_square_concentric",
+        warp::uniform_disk_to_square_concentric<Point2f>, "sample"_a,
+        D(warp, uniform_disk_to_square_concentric));
+
+    warp.def(
+        "uniform_disk_to_square_concentric",
+        vectorize_wrapper(warp::uniform_disk_to_square_concentric<Point2fP>),
+        "sample"_a);
+
+    // =======================================================================
+    warp.def(
         "square_to_uniform_disk_concentric",
         warp::square_to_uniform_disk_concentric<Point2f>, "sample"_a,
         D(warp, square_to_uniform_disk_concentric));

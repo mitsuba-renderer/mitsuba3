@@ -76,13 +76,20 @@ def test_square_to_uniform_disk():
     assert(np.allclose(square_to_uniform_disk([1, 1]),   [1, 0], atol=1e-6))
 
 
-# def test_disk_to_uniform_square_concentric():
-    # from mitsuba.core.warp import square_to_uniform_disk_concentric
-    # from mitsuba.core.warp import disk_to_uniform_square_concentric
-    # assert(np.allclose(square_to_uniform_disk_concentric(disk_to_uniform_square_concentric([0, 0])),      [0, 0]))
-    # assert(np.allclose(square_to_uniform_disk_concentric(disk_to_uniform_square_concentric([0.5, 0.5])),  [0.5, 0.5]))
-    # assert(np.allclose(square_to_uniform_disk_concentric(disk_to_uniform_square_concentric([0.25, 0.5])), [0.25, 0.5]))
-    # assert(np.allclose(square_to_uniform_disk_concentric(disk_to_uniform_square_concentric([0.5, 0.25])), [0.5, 0.25]))
+def test_uniform_disk_to_square_concentric():
+    from mitsuba.core.warp import square_to_uniform_disk_concentric
+    from mitsuba.core.warp import uniform_disk_to_square_concentric
+    assert(np.allclose(square_to_uniform_disk_concentric(uniform_disk_to_square_concentric([0, 0])),      [0, 0]))
+    assert(np.allclose(square_to_uniform_disk_concentric(uniform_disk_to_square_concentric([0.5, 0.5])),  [0.5, 0.5]))
+    assert(np.allclose(square_to_uniform_disk_concentric(uniform_disk_to_square_concentric([0.25, 0.5])), [0.25, 0.5]))
+    assert(np.allclose(square_to_uniform_disk_concentric(uniform_disk_to_square_concentric([0.5, 0.25])), [0.5, 0.25]))
+
+    for x in np.linspace(0, 1, 10):
+        for y in np.linspace(0, 1, 10):
+            p1 = np.array([x, y])
+            p2 = square_to_uniform_disk_concentric(p1)
+            p3 = uniform_disk_to_square_concentric(p2)
+            assert(np.allclose(p1, p3, atol=1e-6))
 
 
 def test_square_to_uniform_triangle():

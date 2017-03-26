@@ -39,42 +39,71 @@ MTS_INLINE Scalar square_to_uniform_disk_pdf(Point2f p) {
 
 // =======================================================================
 
-/// Low-distortion concentric square to disk mapping by Peter Shirley (PDF: 1/PI)
-template <typename Point2f>
-MTS_INLINE Point2f square_to_uniform_disk_concentric(Point2f sample) {
-    using Scalar = value_t<Point2f>;
-    Scalar r1 = 2.f * sample.x() - 1.f;
-    Scalar r2 = 2.f * sample.y() - 1.f;
+/// Low-distortion concentric square to disk mapping by Peter Shirley
+template <typename Point2>
+MTS_INLINE Point2 square_to_uniform_disk_concentric(Point2 sample) {
+    using Value  = value_t<Point2>;
+    using Mask   = mask_t<Value>;
+    using Scalar = scalar_t<Value>;
+
+    Value x = Scalar(2) * sample.x() - Scalar(1);
+    Value y = Scalar(2) * sample.y() - Scalar(1);
 
     /* Modified concencric map code with less branching (by Dave Cline), see
-      http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
+       http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
 
       Original non-vectorized version:
 
-        Scalar phi, r;
-        if (r1 == 0 & r2 == 0) {
+        Value phi, r;
+        if (x == 0 & y == 0) {
             r = phi = 0;
-        } else if (r1 * r1 > r2 * r2) {
-            r = r1;
-            phi = (math::Pi / 4.f) * (r2 / r1);
+        } else if (x * x > y * y) {
+            r = x;
+            phi = (math::Pi / 4.f) * (y / x);
         } else {
-            r = r2;
-            phi = (math::Pi / 2.f) - (r1 / r2) * (math::Pi / 4.f);
+            r = y;
+            phi = (math::Pi / 2.f) - (x / y) * (math::Pi / 4.f);
         }
     */
 
-    auto zmask = eq(r1, zero<Scalar>()) & eq(r2, zero<Scalar>());
-    auto mask = r1 * r1 > r2 * r2;
+    Mask is_zero = eq(x, zero<Value>()) &
+                   eq(y, zero<Value>());
 
-    auto r  = select(mask, r1, r2),
-         rp = select(mask, r2, r1);
+    Mask quadrant_0_or_2 = abs(x) > abs(y);
 
-    auto phi = rp / r * Scalar(math::Pi / 4.f);
-    phi = select(mask, phi, (math::Pi / 2.f) - phi);
-    phi = select(zmask, zero<Scalar>(), phi);
+    Value r  = select(quadrant_0_or_2, x, y),
+          rp = select(quadrant_0_or_2, y, x);
+
+    Value phi = rp / r * Scalar(math::Pi / 4);
+    phi = select(quadrant_0_or_2, phi, Scalar(math::Pi / 2) - phi);
+    phi = select(is_zero, zero<Value>(), phi);
 
     auto sc = sincos(phi);
-    return Point2f(r * sc.second, r * sc.first);
+    return Point2(r * sc.second, r * sc.first);
+}
+
+/// Inverse of the mapping \ref square_to_uniform_disk_concentric
+template <typename Point2>
+MTS_INLINE Point2 uniform_disk_to_square_concentric(Point2 p) {
+    using Value  = value_t<Point2>;
+    using Mask   = mask_t<Value>;
+    using Scalar = scalar_t<Value>;
+
+    Mask quadrant_0_or_2 = abs(p.x()) > abs(p.y());
+    Value r_sign = select(quadrant_0_or_2, p.x(), p.y());
+    Value r = copysign(norm(p), r_sign);
+
+    Value phi = atan2(mulsign(p.y(), r_sign),
+                      mulsign(p.x(), r_sign));
+
+    Value t = phi * Scalar(4 / math::Pi);
+    t = select(quadrant_0_or_2, t, Scalar(2) - t) * r;
+
+    Value a = select(quadrant_0_or_2, r, t);
+    Value b = select(quadrant_0_or_2, t, r);
+
+    return Point2((a + Scalar(1)) * Scalar(.5),
+                  (b + Scalar(1)) * Scalar(.5));
 }
 
 /// Density of \ref square_to_uniform_disk per unit area
@@ -461,70 +490,6 @@ Scalar square_to_rough_fiber_pdf(Vector3f v, Vector3f wi, Vector3f tangent, Floa
 
 //! @}
 // =============================================================
-
-
-
-#if 0
-/*
-*   TODO: This function has way too many branches. Need to implement a shorter version
-*   similar to David Cline's implementation of \ref square_to_uniform_disk_concentric.
-*   Reference:
-*   http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
-*   https://pdfs.semanticscholar.org/4322/6a3916a85025acbb3a58c17f6dc0756b35ac.pdf
-*/
-/// Inverse of the mapping \ref square_to_uniform_disk_concentric
-template <typename Point2f>
-Point2f disk_to_uniform_square_concentric(Point2f p) {
-    using Scalar = value_t<Point2f>;
-    Scalar r = sqrt(p.x() * p.x() + p.y() * p.y()),
-        phi = atan2(p.y(), p.x()),
-        a, b;
-
-/*
-    Original non - vectorized version :
-
-    if (phi < -math::Pi / 4) {
-        phi += 2 * math::Pi;
-    }
-
-    if (phi < math::Pi / 4) { //region #1
-        a = r;
-        b = phi * a / (math::Pi / 4);
-    }
-    else if (phi < 3 * math::Pi / 4) { //region #2
-        b = r;
-        a = -(phi - math::Pi / 2) * b / (math::Pi / 4);
-    }
-    else if (phi < 5 * math::Pi / 4) { //region #3
-        a = -r;
-        b = (phi - math::Pi) * a / (math::Pi / 4);
-    }
-    else { //region #4
-        b = -r;
-        a = -(phi - 3 * math::Pi / 2) * b / (math::Pi / 4);
-    }
-*/
-
-    Float pi_div_4 = math::Pi / 4.f;
-    Float pi_div_2 = math::Pi / 2.f;
-
-    phi = select(phi < -pi_div_4, phi + 2.f * math::Pi, phi);
-
-    auto mask1 = phi < pi_div_4;
-    auto mask2 = phi < 3.f * pi_div_4;
-    auto mask3 = phi < 5.f * pi_div_4;
-
-    a = select(mask1, r, -(phi - 3 * pi_div_2) * (-r) / pi_div_4);
-    a = select(mask2 & !mask1, -(phi - pi_div_2) * r / pi_div_4, a);
-    a = select(mask3 & !mask2, -r, a);
-
-    b = select(mask1, phi * r / pi_div_4, -r);
-    b = select(mask2 & !mask1, r, b);
-    b = select(mask3 & !mask2, (phi - math::Pi) * (-r) / pi_div_4, b);
-
-    return Point2f(0.5f * (a + 1), 0.5f * (b + 1));
-}
-#endif
 
 
 NAMESPACE_END(warp)
