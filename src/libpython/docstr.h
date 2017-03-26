@@ -1588,9 +1588,7 @@ static const char *__doc_mitsuba_Mesh_bbox_3 =
 R"doc(Return an axis aligned box that bounds a single triangle after it has
 been clipped to another bounding box.
 
-This is extremely important to construct decent kd-trees. The default
-implementation just takes the bounding box returned by bbox(Index
-index) and clips it to *clip*.)doc";
+This is extremely important to construct decent kd-trees.)doc";
 
 static const char *__doc_mitsuba_Mesh_class = R"doc()doc";
 
@@ -1685,6 +1683,18 @@ static const char *__doc_mitsuba_NamedReference_operator_const_std_1_basic_strin
 static const char *__doc_mitsuba_NamedReference_operator_eq = R"doc()doc";
 
 static const char *__doc_mitsuba_NamedReference_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_Normal = R"doc()doc";
+
+static const char *__doc_mitsuba_Normal_Normal = R"doc()doc";
+
+static const char *__doc_mitsuba_Normal_Normal_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Normal_Normal_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Normal_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Normal_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Object =
 R"doc(Object base class with builtin reference counting
@@ -1813,6 +1823,18 @@ static const char *__doc_mitsuba_PluginManager_ensure_plugin_loaded = R"doc(Ensu
 static const char *__doc_mitsuba_PluginManager_instance = R"doc(Return the global plugin manager)doc";
 
 static const char *__doc_mitsuba_PluginManager_loaded_plugins = R"doc(Return the list of loaded plugins)doc";
+
+static const char *__doc_mitsuba_Point = R"doc()doc";
+
+static const char *__doc_mitsuba_Point_Point = R"doc()doc";
+
+static const char *__doc_mitsuba_Point_Point_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Point_Point_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Point_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Point_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties =
 R"doc(Associative parameter map for constructing subclasses of Object.
@@ -3469,6 +3491,14 @@ static const char *__doc_mitsuba_Vector = R"doc(//! @{ \name Elementary vector, 
 
 static const char *__doc_mitsuba_Vector_Vector = R"doc()doc";
 
+static const char *__doc_mitsuba_Vector_Vector_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Vector_Vector_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Vector_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Vector_operator_assign_2 = R"doc()doc";
+
 static const char *__doc_mitsuba_ZStream =
 R"doc(Transparent compression/decompression stream based on ``zlib``.
 
@@ -3972,6 +4002,8 @@ static const char *__doc_mitsuba_ref_ref_2 = R"doc(Construct a reference from a 
 static const char *__doc_mitsuba_ref_ref_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
+
+static const char *__doc_mitsuba_rgb_spectrum = R"doc()doc";
 
 static const char *__doc_mitsuba_sample_tea_32 =
 R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny
@@ -4643,9 +4675,7 @@ Parameter ``cos_cutoff``:
 
 static const char *__doc_mitsuba_warp_square_to_uniform_disk = R"doc(Uniformly sample a vector on a 2D disk)doc";
 
-static const char *__doc_mitsuba_warp_square_to_uniform_disk_concentric =
-R"doc(Low-distortion concentric square to disk mapping by Peter Shirley
-(PDF: 1/PI))doc";
+static const char *__doc_mitsuba_warp_square_to_uniform_disk_concentric = R"doc(Low-distortion concentric square to disk mapping by Peter Shirley)doc";
 
 static const char *__doc_mitsuba_warp_square_to_uniform_disk_concentric_pdf = R"doc(Density of square_to_uniform_disk per unit area)doc";
 
@@ -4674,6 +4704,8 @@ R"doc(Warp a uniformly distributed square sample to a von Mises Fisher
 distribution)doc";
 
 static const char *__doc_mitsuba_warp_square_to_von_mises_fisher_pdf = R"doc(Probability density of square_to_von_mises_fisher())doc";
+
+static const char *__doc_mitsuba_warp_uniform_disk_to_square_concentric = R"doc(Inverse of the mapping square_to_uniform_disk_concentric)doc";
 
 static const char *__doc_mitsuba_xml_load_file = R"doc(Load a Mitsuba scene from an XML file)doc";
 

@@ -219,7 +219,7 @@ MTS_INLINE Scalar square_to_uniform_sphere_pdf(Vector3f v) {
 template <typename Point2f>
 MTS_INLINE vector3_t<Point2f> square_to_uniform_hemisphere(Point2f sample) {
 #if 0
-    /* Approach 1: standard warping method without concentric disk mapping */
+    /* Approach 1: warping method based on standard disk mapping */
     auto z = sample.y();
     auto tmp = safe_sqrt(1.f - z*z);
     auto sc = sincos(2.f * math::Pi * sample.x());
@@ -312,7 +312,7 @@ MTS_INLINE vector3_t<Point2f> square_to_beckmann(Point2f sample, Float alpha) {
     using Vector3f = vector3_t<Point2f>;
 
 #if 0
-    /* Approach 1: standard warping method without concentric disk mapping */
+    /* Approach 1: warping method based on standard disk mapping */
     auto sc = sincos(2.f * math::Pi * sample.x());
 
     Scalar tan_thetaMSqr = -alpha * alpha * log(1.f - sample.y());
@@ -358,9 +358,10 @@ MTS_INLINE vector3_t<Point2f> square_to_von_mises_fisher(Point2f sample, Float k
         return square_to_uniform_sphere(sample);
 
     assert(kappa > 0.f);
-#if 0
 
-    /* Approach 1: standard warping method without concentric disk mapping */
+#if 0
+    /* Approach 1: warping method based on standard disk mapping */
+
     #if 0
         /* Approach 1.1: standard inversion method algorithm for sampling the
            von Mises Fisher distribution (numerically unstable!) */
@@ -396,6 +397,7 @@ MTS_INLINE vector3_t<Point2f> square_to_von_mises_fisher(Point2f sample, Float k
 /// Probability density of \ref square_to_von_mises_fisher()
 template <typename Vector3f, typename Scalar = value_t<Vector3f>>
 MTS_INLINE Scalar square_to_von_mises_fisher_pdf(Vector3f v, Float kappa) {
+
     /* Stable algorithm for evaluating the von Mises Fisher distribution
        https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
 
