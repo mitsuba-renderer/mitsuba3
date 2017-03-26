@@ -54,6 +54,7 @@ add_library(mitsuba-core-obj OBJECT
   bbox.cpp             ${INC_DIR}/bbox.h
   spline.cpp           ${INC_DIR}/spline.h
   spectrum.cpp         ${INC_DIR}/spectrum.h
+  ddistribution.cpp    ${INC_DIR}/ddistribution.h
 
   stream.cpp           ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
   astream.cpp          ${INC_DIR}/astream.h ${INC_DIR}/dstream.h
