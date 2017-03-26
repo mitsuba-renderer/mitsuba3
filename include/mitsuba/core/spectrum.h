@@ -19,6 +19,44 @@ NAMESPACE_BEGIN(mitsuba)
 #endif
 
 // =======================================================================
+//! @{ \name Data types for RGB data
+// =======================================================================
+
+template <typename Type_, size_t Size_>
+struct Color : enoki::StaticArrayImpl<Type_, Size_, true,
+                                       RoundingMode::Default,
+                                       Color<Type_, Size_>> {
+
+    using Base = enoki::StaticArrayImpl<Type_, Size_, true,
+                                        RoundingMode::Default,
+                                        Color<Type_, Size_>>;
+
+    ENOKI_DECLARE_CUSTOM_ARRAY(Base, Color)
+
+    /// Helper alias used to transition between vector types (used by enoki::vectorize)
+    template <typename T> using ReplaceType = Color<T, Size_>;
+
+    using typename Base::Scalar;
+
+    const Scalar &r() const { return Base::x(); }
+    Scalar &r() { return Base::x(); }
+
+    const Scalar &g() const { return Base::y(); }
+    Scalar &g() { return Base::y(); }
+
+    const Scalar &b() const { return Base::z(); }
+    Scalar &b() { return Base::z(); }
+};
+
+
+using Color3f  = Color<Float,  3>;
+using Color3fP = Color<FloatP, 3>;
+using Color3fX = Color<FloatX, 3>;
+
+//! @}
+// =======================================================================
+
+// =======================================================================
 //! @{ \name Data types for discretized spectral data
 // =======================================================================
 

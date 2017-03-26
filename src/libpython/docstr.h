@@ -800,6 +800,30 @@ R"doc(Unserialize an instance of the class
 Remark:
     Throws an exception if the class is not unserializable)doc";
 
+static const char *__doc_mitsuba_Color = R"doc(//! @{ \name Data types for RGB data)doc";
+
+static const char *__doc_mitsuba_Color_Color = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_Color_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_Color_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_b = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_b_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_g = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_g_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_r = R"doc()doc";
+
+static const char *__doc_mitsuba_Color_r_2 = R"doc()doc";
+
 static const char *__doc_mitsuba_ContinuousSpectrum =
 R"doc(Abstract continuous spectral power distribution data type, which
 supports evaluation at arbitrary wavelengths.
