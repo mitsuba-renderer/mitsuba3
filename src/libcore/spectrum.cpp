@@ -256,6 +256,9 @@ cie1931_xyz(DiscreteSpectrumP lambda);
 template MTS_EXPORT_CORE DiscreteSpectrum cie1931_y(DiscreteSpectrum lambda);
 template MTS_EXPORT_CORE DiscreteSpectrumP cie1931_y(DiscreteSpectrumP lambda);
 
+template MTS_EXPORT_CORE DiscreteSpectrum  rgb_spectrum(const Color3f &, DiscreteSpectrum lambda);
+template MTS_EXPORT_CORE DiscreteSpectrumP rgb_spectrum(const Color3f &, DiscreteSpectrumP lambda);
+
 //! @}
 // =======================================================================
 
