@@ -43,6 +43,7 @@ MTS_PY_EXPORT(DiscreteDistribution) {
             const auto res = d.sample_reuse(&s);
             return std::make_pair(res, s);
         }, "sample_value"_a, D(DiscreteDistribution, sample_reuse))
+
         .def("sample_reuse", vectorize_wrapper(
             [](const DiscreteDistribution &d, FloatP s) {
                 const auto res = d.sample_reuse(&s);
@@ -54,6 +55,7 @@ MTS_PY_EXPORT(DiscreteDistribution) {
             const auto res = d.sample_reuse_pdf(&s);
             return std::make_tuple(res.first, s, res.second);
         }, "sample_value"_a, D(DiscreteDistribution, sample_reuse_pdf))
+
         .def("sample_reuse_pdf", vectorize_wrapper(
             [](const DiscreteDistribution &d, FloatP s) {
                 const auto res = d.sample_reuse_pdf(&s);

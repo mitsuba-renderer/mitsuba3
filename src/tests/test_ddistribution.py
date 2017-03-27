@@ -61,7 +61,7 @@ def test03_empty():
     assert(d.size() == 3)
     assert(d.normalize() == 0.0)
     assert(d.sum() == 0.0)
-    assert(d.normalization() == 0.0)
+    assert(d.normalization() == np.inf)
     assert(d.sample(0.00) == 0)
     assert(d.sample(0.50) == 0)
     assert(d.sample(0.99) == 0)
@@ -149,7 +149,7 @@ def test06_print():
     d = DiscreteDistribution(2)
     d.append(0.5)
     d.append(1.5)
-    assert(str(d) == "DiscreteDistribution[sum=nan, normalized=0, cdf={0, 0.5, 2}]")
+    assert(str(d) == "DiscreteDistribution[sum=2, normalized=0, cdf={0, 0.5, 2}]")
     d.normalize()
     assert(str(d) == "DiscreteDistribution[sum=2, normalized=1, cdf={0, 0.25, 1}]")
 
