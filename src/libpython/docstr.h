@@ -931,8 +931,10 @@ samples to a stored discrete probability distribution.)doc";
 static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Allocate memory for a distribution with the given number of entries)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_append =
-R"doc(Append an entry with the specified discrete probability. Must be non-
-negative.)doc";
+R"doc(Append an entry with the specified discrete probability.
+
+Remark:
+    ``pdf_value`` must be non-negative.)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_cdf =
 R"doc(Return the cdf entries.
@@ -962,7 +964,9 @@ This assumes that normalize() has previously been called)doc";
 static const char *__doc_mitsuba_DiscreteDistribution_normalize =
 R"doc(Normalize the distribution
 
-Throws when the distribution is empty.
+Throws an exception when the distribution contains no elements. The
+distribution is not considered to be normalized if the sum of
+probabilities equals zero.
 
 Returns:
     Sum of the (previously unnormalized) entries)doc";
@@ -3953,25 +3957,25 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Turns a vector into a human-readable representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Turns a vector into a human-readable representation.)doc";
+static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -4643,6 +4647,10 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
+static const char *__doc_mitsuba_warp_beckmann_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
+
+static const char *__doc_mitsuba_warp_cosine_hemisphere_to_square = R"doc(Inverse of the mapping square_to_cosine_hemisphere)doc";
+
 static const char *__doc_mitsuba_warp_detail_i0 = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_detail_log_i0 = R"doc()doc";
@@ -4653,9 +4661,7 @@ distribution with nodes ``{a, b, c}``)doc";
 
 static const char *__doc_mitsuba_warp_interval_to_tent = R"doc(Warp a uniformly distributed sample on [0, 1] to a tent distribution)doc";
 
-static const char *__doc_mitsuba_warp_square_to_beckmann =
-R"doc(Warp a uniformly distributed square sample to a Beckmann distribution
-* cosine for the given 'alpha' parameter)doc";
+static const char *__doc_mitsuba_warp_square_to_beckmann = R"doc(Warp a uniformly distributed square sample to a Beckmann distribution)doc";
 
 static const char *__doc_mitsuba_warp_square_to_beckmann_pdf = R"doc(Probability density of square_to_beckmann())doc";
 
@@ -4729,7 +4735,23 @@ distribution)doc";
 
 static const char *__doc_mitsuba_warp_square_to_von_mises_fisher_pdf = R"doc(Probability density of square_to_von_mises_fisher())doc";
 
+static const char *__doc_mitsuba_warp_tent_to_interval = R"doc(Warp a uniformly distributed sample on [0, 1] to a tent distribution)doc";
+
+static const char *__doc_mitsuba_warp_tent_to_square = R"doc(Warp a uniformly distributed square sample to a 2D tent distribution)doc";
+
+static const char *__doc_mitsuba_warp_uniform_cone_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
+
+static const char *__doc_mitsuba_warp_uniform_disk_to_square = R"doc(Inverse of the mapping square_to_uniform_disk)doc";
+
 static const char *__doc_mitsuba_warp_uniform_disk_to_square_concentric = R"doc(Inverse of the mapping square_to_uniform_disk_concentric)doc";
+
+static const char *__doc_mitsuba_warp_uniform_hemisphere_to_square = R"doc(Inverse of the mapping square_to_uniform_hemisphere)doc";
+
+static const char *__doc_mitsuba_warp_uniform_sphere_to_square = R"doc(Inverse of the mapping square_to_uniform_sphere)doc";
+
+static const char *__doc_mitsuba_warp_uniform_triangle_to_square = R"doc(Inverse of the mapping square_to_uniform_triangle)doc";
+
+static const char *__doc_mitsuba_warp_von_mises_fisher_to_square = R"doc(Inverse of the mapping von_mises_fisher_to_square)doc";
 
 static const char *__doc_mitsuba_xml_load_file = R"doc(Load a Mitsuba scene from an XML file)doc";
 

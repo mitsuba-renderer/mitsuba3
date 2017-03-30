@@ -197,6 +197,7 @@ class WarpVisualizer(Screen):
         self.arcball.setSize(self.size())
         self.pdf_texture = GLTexture()
         self.histogram_texture = GLTexture()
+        self.ri = RadicalInverse()
 
         self.refresh_distribution()
 
@@ -424,10 +425,9 @@ class WarpVisualizer(Screen):
             y = (y.ravel() + samples_in[1, :]) / sqrt_val
             samples_in = np.column_stack((y, x)).astype(float_dtype)
         elif sample_type == 3:  # Halton
-            ri = RadicalInverse()
             indices = np.arange(1, point_count + 1, dtype = np.uint64)
             samples_in = np.column_stack(
-                [ri.eval_scrambled(dim, indices) for dim in range(sample_dim)]
+                [self.ri.eval_scrambled(dim, indices) for dim in range(sample_dim)]
             ).astype(float_dtype)
 
         if sample_dim == 1:

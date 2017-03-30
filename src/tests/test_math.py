@@ -86,10 +86,10 @@ def test08_find_interval():
     assert(np.allclose(find_interval(values,  0), 0))
     assert(np.allclose(find_interval(values, 1.75),  3))
     # Repeated item in the nodes: the last occurence should be selected.
-    valuesR = np.array([0.0, 0.25, 0.25, 0.5, 0.75, 0.75, 1.0])
-    assert(np.allclose(find_interval(valuesR, 0.45), 2))
-    assert(np.allclose(find_interval(valuesR, 0.25), 2))
-    assert(np.allclose(find_interval(valuesR, 0.75), 5))
+    values_r = np.array([0.0, 0.25, 0.25, 0.5, 0.75, 0.75, 1.0])
+    assert(np.allclose(find_interval(values_r, 0.45), 2))
+    assert(np.allclose(find_interval(values_r, 0.25), 2))
+    assert(np.allclose(find_interval(values_r, 0.75), 5))
 
 
 def test09_find_interval_edge_cases():

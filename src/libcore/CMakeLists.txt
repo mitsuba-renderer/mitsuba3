@@ -22,13 +22,14 @@ add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/essentials.h
   ${INC_DIR}/platform.h
   ${INC_DIR}/variant.h
-  ${INC_DIR}/vector.h
   ${INC_DIR}/atomic.h
   ${INC_DIR}/string.h
   ${INC_DIR}/frame.h
   ${INC_DIR}/hash.h
   ${INC_DIR}/jit.h
+  ${INC_DIR}/simd.h
 
+  vector.cpp           ${INC_DIR}/vector.h
   appender.cpp         ${INC_DIR}/appender.h
   class.cpp            ${INC_DIR}/class.h
   filesystem.cpp       ${INC_DIR}/filesystem.h

@@ -5,7 +5,7 @@
 ## Compiling
 
 Compiling from scratch requires CMake and a recent version of XCode on Mac,
-Visual Studio 2015 on Windows, and GCC on Linux.
+Visual Studio 2017 on Windows, and GCC on Linux.
 
 On Linux and MacOS, compiling should be as simple as
 

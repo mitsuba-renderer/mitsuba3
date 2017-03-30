@@ -3,6 +3,7 @@
 #include <mitsuba/core/jit.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/simd.h>
 #include "python.h"
 
 // libmitsuba-core
@@ -42,21 +43,29 @@ MTS_PY_DECLARE(DiscreteDistribution);
 PYBIND11_PLUGIN(mitsuba_core_ext) {
     // Expose some constants in the main `mitsuba` module
     py::module m_parent = py::module::import("mitsuba");
-    m_parent.attr("MTS_VERSION") = MTS_VERSION;
     m_parent.attr("__version__") = MTS_VERSION;
+    m_parent.attr("MTS_VERSION") = MTS_VERSION;
     m_parent.attr("MTS_YEAR")    = MTS_YEAR;
     m_parent.attr("MTS_AUTHORS") = MTS_AUTHORS;
-    #if defined(NDEBUG)
+
+#if defined(NDEBUG)
     m_parent.attr("DEBUG")  = false;
     m_parent.attr("NDEBUG") = true;
-    #else    // NDEBUG
+#else    // NDEBUG
     m_parent.attr("DEBUG")  = true;
     m_parent.attr("NDEBUG") = false;
-    #endif   // NDEBUG
+#endif   // NDEBUG
 
     // Import submodules of `mitsuba.core`
     py::module m_("mitsuba_core_ext"); // unused
     py::module m = py::module::import("mitsuba.core");
+
+#if defined(SINGLE_PRECISION)
+    m.attr("float_dtype") = py::dtype("f");
+#else
+    m.attr("float_dtype") = py::dtype("d");
+#endif
+    m.attr("PacketSize") = py::cast(PacketSize);
 
     Jit::static_initialization();
     Class::static_initialization();

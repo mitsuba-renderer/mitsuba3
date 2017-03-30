@@ -23,33 +23,33 @@ def test01_basics():
     assert s.alignment() == 1
     assert s.size() == 0
 
-    s.append("floatVal", Struct.EFloat32)
+    s.append("float_val", Struct.EFloat32)
     assert s.field_count() == 1
     assert s.alignment() == 4
     assert s.size() == 4
 
-    s.append("byteVal", Struct.EUInt8)
+    s.append("byte_val", Struct.EUInt8)
     assert s.field_count() == 2
     assert s.alignment() == 4
     assert s.size() == 8
 
-    s.append("halfVal", Struct.EFloat16)
+    s.append("half_val", Struct.EFloat16)
     assert s.field_count() == 3
     assert s.alignment() == 4
     assert s.size() == 8
 
     assert len(s) == 3
-    assert s[0].name == 'floatVal'
+    assert s[0].name == 'float_val'
     assert s[0].offset == 0
     assert s[0].size == 4
     assert s[0].type == Struct.EFloat32
 
-    assert s[1].name == 'byteVal'
+    assert s[1].name == 'byte_val'
     assert s[1].offset == 4
     assert s[1].size == 1
     assert s[1].type == Struct.EUInt8
 
-    assert s[2].name == 'halfVal'
+    assert s[2].name == 'half_val'
     assert s[2].offset == 6
     assert s[2].size == 2
     assert s[2].type == Struct.EFloat16
