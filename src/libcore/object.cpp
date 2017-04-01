@@ -24,7 +24,7 @@ std::string Object::to_string() const {
 Object::~Object() { }
 
 std::ostream& operator<<(std::ostream &os, const Object *object) {
-    os << object->to_string();
+    os << ((object != nullptr) ? object->to_string() : "nullptr");
     return os;
 }
 

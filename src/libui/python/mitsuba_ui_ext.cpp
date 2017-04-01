@@ -20,11 +20,9 @@ MTS_PY_EXPORT(GLTexture) {
         .export_values();
 }
 
-PYBIND11_PLUGIN(mitsuba_ui_ext) {
-    py::module m_("mitsuba_ui_ext"); // unused
+PYBIND11_MODULE(mitsuba_ui_ext, m_) {
+    (void) m_; /* unused */
     py::module m = py::module::import("mitsuba.ui");
 
     MTS_PY_IMPORT(GLTexture);
-
-    return m_.ptr();
 }

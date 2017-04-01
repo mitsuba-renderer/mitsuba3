@@ -2,77 +2,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Transform Transform::translate(const Vector3f &v) {
-    Matrix4f trafo(
-        1, 0, 0, v.x(),
-        0, 1, 0, v.y(),
-        0, 0, 1, v.z(),
-        0, 0, 0, 1
-    );
-
-    Matrix4f inv_trafo(
-        1, 0, 0, -v.x(),
-        0, 1, 0, -v.y(),
-        0, 0, 1, -v.z(),
-        0, 0, 0, 1
-    );
-
-    return Transform(trafo, inv_trafo);
-}
-
-Transform Transform::scale(const Vector3f &v) {
-    Vector3f v_rcp = rcp(v);
-
-    Matrix4f trafo(
-        v.x(), 0,     0,     0,
-        0,     v.y(), 0,     0,
-        0,     0,     v.z(), 0,
-        0,     0,     0,     1
-    );
-
-    Matrix4f inv_trafo(
-        v_rcp.x(), 0,         0,         0,
-        0,         v_rcp.y(), 0,         0,
-        0,         0,         v_rcp.z(), 0,
-        0,         0,         0,         1
-    );
-
-    return Transform(trafo, inv_trafo);
-}
-
-Transform Transform::rotate(const Vector3f &axis, Float angle) {
-    Float sin_theta, cos_theta;
-
-    /* Make sure that the axis is normalized */
-    Vector3f naxis = normalize(axis);
-    std::tie(sin_theta, cos_theta) = sincos(math::deg_to_rad(angle));
-
-    Matrix4f result;
-    result(0, 0) = naxis.x() * naxis.x() + (1.0f - naxis.x() * naxis.x()) * cos_theta;
-    result(0, 1) = naxis.x() * naxis.y() * (1.0f - cos_theta) - naxis.z() * sin_theta;
-    result(0, 2) = naxis.x() * naxis.z() * (1.0f - cos_theta) + naxis.y() * sin_theta;
-    result(0, 3) = 0;
-
-    result(1, 0) = naxis.x() * naxis.y() * (1.0f - cos_theta) + naxis.z() * sin_theta;
-    result(1, 1) = naxis.y() * naxis.y() + (1.0f - naxis.y() * naxis.y()) * cos_theta;
-    result(1, 2) = naxis.y() * naxis.z() * (1.0f - cos_theta) - naxis.x() * sin_theta;
-    result(1, 3) = 0;
-
-    result(2, 0) = naxis.x() * naxis.z() * (1.0f - cos_theta) - naxis.y() * sin_theta;
-    result(2, 1) = naxis.y() * naxis.z() * (1.0f - cos_theta) + naxis.x() * sin_theta;
-    result(2, 2) = naxis.z() * naxis.z() + (1.0f - naxis.z() * naxis.z()) * cos_theta;
-    result(2, 3) = 0;
-
-    result(3, 0) = 0;
-    result(3, 1) = 0;
-    result(3, 2) = 0;
-    result(3, 3) = 1;
-
-    /* The matrix is orthonormal */
-    return Transform(result, enoki::transpose(result));
-}
-
-Transform Transform::perspective(Float fov, Float clip_near, Float clip_far) {
+Transform Transform::perspective(Float fov, Float near, Float far) {
     /* Project vectors in camera space onto a plane at z=1:
      *
      *  x_proj = x / z
@@ -81,109 +11,58 @@ Transform Transform::perspective(Float fov, Float clip_near, Float clip_far) {
      *
      *  Camera-space depths are not mapped linearly!
      */
-    Float recip = 1.0f / (clip_far - clip_near);
+    Float recip = 1.f / (far - near);
 
     /* Perform a scale so that the field of view is mapped
-     * to the interval [-1, 1] */
-    Float cot = 1.0f / std::tan(math::deg_to_rad(fov / 2.0f));
+       to the interval [-1, 1] */
+    Float tan = enoki::tan(deg_to_rad(fov * .5f)),
+          cot = 1.f / tan;
 
-    Matrix4f trafo(
-        cot,  0,    0,   0,
-        0,    cot,  0,   0,
-        0,    0,    clip_far * recip, -clip_near * clip_far * recip,
-        0,    0,    1,   0
-    );
+    Matrix4f trafo = diag<Matrix4f>(Vector4f(cot, cot, far * recip, -near * far * recip));
+    trafo(3, 2) = 1.f;
 
-    return Transform(trafo);
+    Matrix4f inv_trafo = diag<Matrix4f>(Vector4f(tan, tan, 0.f, rcp(near)));
+    trafo(2, 3) = 1.f;
+    trafo(3, 2) = (near - far) / (far * near);
+
+    return Transform(trafo, inv_trafo);
 }
 
-Transform Transform::orthographic(Float clip_near, Float clip_far) {
-    return scale(Vector3f(1.0f, 1.0f, 1.0f / (clip_far - clip_near))) *
-           translate(Vector3f(0.0f, 0.0f, -clip_near));
+Transform Transform::orthographic(Float near, Float far) {
+    return scale(Vector3f(1.f, 1.f, 1.f / (far - near))) *
+           translate(Vector3f(0.f, 0.f, -near));
 }
 
-Transform Transform::look_at(const Point3f &p, const Point3f &t, const Vector3f &up) {
-    Vector3f dir = t-p;
-    if (t - p == zero<Vector3f>())
+Transform Transform::look_at(const Point3f &origin, const Point3f &target, const Vector3f &up) {
+    Vector3f dir = target - origin;
+    if (unlikely(target - origin == zero<Vector3f>()))
         Throw("look_at(): 'origin' and 'target' coincide!");
     dir = normalize(dir);
 
     Vector3f left = cross(up, dir);
-    if (left == zero<Vector3f>())
+    if (unlikely(left == zero<Vector3f>()))
         Throw("look_at(): the forward and upward direction must be linearly independent!");
     left = normalize(left);
 
-    Vector3f new_u = cross(dir, left);
+    Vector3f new_up = cross(dir, left);
 
-    Matrix4f result, inverse;
-    result(0, 0)  = left.x();  result(1, 0)  = left.y();  result(2, 0)  = left.z();  result(3, 0)  = 0;
-    result(0, 1)  = new_u.x(); result(1, 1)  = new_u.y(); result(2, 1)  = new_u.z(); result(3, 1)  = 0;
-    result(0, 2)  = dir.x();   result(1, 2)  = dir.y();   result(2, 2)  = dir.z();   result(3, 2)  = 0;
-    result(0, 3)  = p.x();     result(1, 3)  = p.y();     result(2, 3)  = p.z();     result(3, 3)  = 1;
+    Matrix4f result = Matrix4f::from_cols(
+        concat(left, 0.f),
+        concat(new_up, 0.f),
+        concat(dir, 0.f),
+        concat(origin, 1.f)
+    );
 
-    /* The inverse is simple to compute for this matrix, so do it directly here */
-    Vector3f q(
-        result(0, 0) * p.x() + result(1, 0) * p.y() + result(2, 0) * p.z(),
-        result(0, 1) * p.x() + result(1, 1) * p.y() + result(2, 1) * p.z(),
-        result(0, 2) * p.x() + result(1, 2) * p.y() + result(2, 2) * p.z());
+    Matrix4f inverse = Matrix4f::from_rows(
+        concat(left, 0.f),
+        concat(new_up, 0.f),
+        concat(dir, 0.f),
+        Vector4f(0.f, 0.f, 0.f, 1.f)
+    );
 
-    inverse(0, 0) = left.x(); inverse(1, 0) = new_u.x(); inverse(2, 0) = dir.x(); inverse(3, 0) = 0;
-    inverse(0, 1) = left.y(); inverse(1, 1) = new_u.y(); inverse(2, 1) = dir.y(); inverse(3, 1) = 0;
-    inverse(0, 2) = left.z(); inverse(1, 2) = new_u.z(); inverse(2, 2) = dir.z(); inverse(3, 2) = 0;
-    inverse(0, 3) = -q.x();   inverse(1, 3) = -q.y();    inverse(2, 3) = -q.z();  inverse(3, 3) = 1;
+    inverse[3] = inverse * concat(-origin, 1.f);
 
     return Transform(result, inverse);
-}
-
-Matrix4f inv(const Matrix4f &m) {
-    Matrix4f I(m);
-
-    size_t ipiv[4] = { 0, 1, 2, 3 };
-    for (size_t k = 0; k < 4; ++k) {
-        Float largest = 0.f;
-        size_t piv = 0;
-
-        /* Find the largest pivot in the current column */
-        for (size_t j = k; j < 4; ++j) {
-            Float value = std::abs(I(j, k));
-            if (value > largest) {
-                largest = value;
-                piv = j;
-            }
-        }
-
-        if (largest == 0.f)
-            throw std::runtime_error("Singular matrix!");
-
-        /* Row exchange */
-        if (piv != k) {
-            for (size_t j = 0; j < 4; ++j)
-                std::swap(I(k, j), I(piv, j));
-            std::swap(ipiv[k], ipiv[piv]);
-        }
-
-        Float scale = 1.f / I(k, k);
-        I(k, k) = 1.f;
-        for (size_t j = 0; j < 4; j++)
-            I(k, j) *= scale;
-
-        /* Jordan reduction */
-        for (size_t i = 0; i < 4; i++) {
-            if (i != k) {
-                Float tmp = I(i, k);
-                I(i, k) = 0;
-
-                for (int j = 0; j < 4; j++)
-                    I(i, j) -= I(k, j) * tmp;
-            }
-        }
-    }
-
-    /* Backward permutation */
-    Matrix4f out;
-    for (size_t j = 0; j < 4; ++j)
-        out.coeff(ipiv[j]) = I.coeff(j);
-    return out;
 }
 
 std::ostream &operator<<(std::ostream &os, const Transform &t) {

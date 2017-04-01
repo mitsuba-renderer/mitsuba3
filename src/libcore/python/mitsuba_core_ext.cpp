@@ -7,7 +7,6 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/python/python.h>
 
-// libmitsuba-core
 MTS_PY_DECLARE(filesystem);
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(random);
@@ -42,7 +41,9 @@ MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(DiscreteDistribution);
 
-PYBIND11_PLUGIN(mitsuba_core_ext) {
+PYBIND11_MODULE(mitsuba_core_ext, m_) {
+    (void) m_; /* unused */;
+
     // Expose some constants in the main `mitsuba` module
     py::module m_parent = py::module::import("mitsuba");
     m_parent.attr("__version__") = MTS_VERSION;
@@ -59,7 +60,6 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
 #endif   // NDEBUG
 
     // Import submodules of `mitsuba.core`
-    py::module m_("mitsuba_core_ext"); // unused
     py::module m = py::module::import("mitsuba.core");
 
 #if defined(SINGLE_PRECISION)
@@ -125,6 +125,4 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     fs::path basePath = util::library_path().parent_path();
     if (!fr->contains(basePath))
         fr->append(basePath);
-
-    return m_.ptr();
 }

@@ -42,6 +42,7 @@ template <typename Type, size_t Size>  struct Vector;
 template <typename Type, size_t Size>  struct Point;
 template <typename Type, size_t Size>  struct Normal;
 template <typename Point>              struct Ray;
+template <typename Point>              struct RayDifferential;
 template <typename Point>              struct BoundingBox;
 template <typename Vector>             struct Frame;
 
@@ -85,6 +86,8 @@ using BoundingBox4f = BoundingBox<Point4f>;
 
 using Ray2f = Ray<Point2f>;
 using Ray3f = Ray<Point3f>;
+
+using RayDifferential3f = RayDifferential<Point3f>;
 
 using Frame3f = Frame<Vector3f>;
 

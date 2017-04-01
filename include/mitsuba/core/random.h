@@ -234,7 +234,7 @@ private:
      */
     UInt32 next_uint32_masked(UInt32Mask mask) {
         UInt64 oldstate = state;
-        state = select(reinterpret_array<mask_t<UInt64>>(mask),
+        state = select(mask_t<UInt64>(mask),
                        oldstate * uint64_t(PCG32_MULT) + inc, oldstate);
         UInt32 xorshifted = UInt32(sri<27>(sri<18>(oldstate) ^ oldstate));
         UInt32 rot_offset = UInt32(sri<59>(oldstate));

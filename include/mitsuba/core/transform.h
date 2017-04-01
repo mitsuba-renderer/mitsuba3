@@ -1,14 +1,11 @@
 #pragma once
 
 #include <mitsuba/core/ray.h>
-#include <enoki/matrix.h>
+#include <enoki/homogeneous.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 using Matrix4f = enoki::Matrix<Float, 4>;
-
-/// Compute the inverse of a matrix
-extern MTS_EXPORT_CORE Matrix4f inv(const Matrix4f &m);
 
 /**
  * \brief Encapsulates a 4x4 homogeneous coordinate transformation and its inverse
@@ -25,7 +22,7 @@ public:
         : m_value(identity<Matrix4f>()), m_inverse(identity<Matrix4f>()) { }
 
     /// Initialize the transformation from the given matrix (and compute its inverse)
-    Transform(Matrix4f value) : m_value(value), m_inverse(mitsuba::inv(value)) { }
+    Transform(Matrix4f value) : m_value(value), m_inverse(enoki::invert(value)) { }
 
     /// Initialize the transformation from the given matrix and inverse
     Transform(Matrix4f value, Matrix4f inverse) : m_value(value), m_inverse(inverse) { }
@@ -141,38 +138,46 @@ public:
     }
 
     /// Create a translation transformation
-    static Transform translate(const Vector3f &v);
-
-    /// Create a rotation transformation around an arbitrary axis. The angle is specified in degrees
-    static Transform rotate(const Vector3f &axis, Float angle);
+    static Transform translate(const Vector3f &v) {
+        return Transform(enoki::translate<Matrix4f>(v), enoki::translate<Matrix4f>(-v));
+    }
 
     /// Create a scale transformation
-    static Transform scale(const Vector3f &v);
+    static Transform scale(const Vector3f &v) {
+        return Transform(enoki::scale<Matrix4f>(v), enoki::scale<Matrix4f>(rcp(v)));
+    }
+
+    /// Create a rotation transformation around an arbitrary axis. The angle is specified in degrees
+    static Transform rotate(const Vector3f &axis, Float angle) {
+        Matrix4f matrix = enoki::rotate<Matrix4f>(axis, angle);
+        return Transform(matrix, transpose(matrix));
+    }
 
     /** \brief Create a perspective transformation.
      *   (Maps [near, far] to [0, 1])
      *
      * \param fov Field of view in degrees
-     * \param clip_near Near clipping plane
-     * \param clip_far Far clipping plane
+     * \param near Near clipping plane
+     * \param far  Far clipping plane
      */
-    static Transform perspective(Float fov, Float clip_near, Float clip_far);
+    static Transform perspective(Float fov, Float near, Float far);
 
     /** \brief Create an orthographic transformation, which maps Z to [0,1]
      * and leaves the X and Y coordinates untouched.
      *
-     * \param clip_near Near clipping plane
-     * \param clip_far Far clipping plane
+     * \param near Near clipping plane
+     * \param far  Far clipping plane
      */
-    static Transform orthographic(Float clip_near, Float clip_far);
+    static Transform orthographic(Float near, Float far);
 
     /** \brief Create a look-at camera transformation
      *
-     * \param p Camera position
-     * \param t Target vector
-     * \param u Up vector
+     * \param origin Camera position
+     * \param target Target vector
+     * \param up     Up vector
      */
-    static Transform look_at(const Point3f &p, const Point3f &t, const Vector3f &u);
+    static Transform look_at(const Point3f &origin, const Point3f &target,
+                             const Vector3f &up);
 
     ENOKI_ALIGNED_OPERATOR_NEW()
 

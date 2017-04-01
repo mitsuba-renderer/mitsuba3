@@ -244,12 +244,6 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
 //! @{ \name Miscellaneous mathematical helper functions
 // -----------------------------------------------------------------------
 
-//// Convert radians to degrees
-template <typename T> T rad_to_deg(T value) { return value * T(180 / Pi_d); }
-
-/// Convert degrees to radians
-template <typename T> T deg_to_rad(T value) { return value * T(Pi_d / 180); }
-
 /**
  * \brief Compare the difference in ULPs between a reference value and another
  * given floating point number
@@ -342,7 +336,7 @@ Index find_interval(Size left, Size right, const Predicate &pred) {
               middle = first + half;
 
         /* Evaluate the predicate */
-        IndexMask pred_result = reinterpret_array<IndexMask>(pred(middle)) & active;
+        IndexMask pred_result = IndexMask(pred(middle)) & active;
 
         /* .. and recurse into the left or right */
         first = select(pred_result, middle + 1, first);
@@ -354,7 +348,7 @@ Index find_interval(Size left, Size right, const Predicate &pred) {
         active &= size > 0;
     } while (any_nested(active));
 
-    using SignedIndex = signed_array_t<Index>;
+    using SignedIndex = int_array_t<Index>;
     using SignedIndexScalar = scalar_t<SignedIndex>;
 
     return Index(clamp(
@@ -409,15 +403,14 @@ Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in
     Index first((IndexScalar) left);
     Index size((IndexScalar) initial_size);
 
-    IndexMask active = reinterpret_array<IndexMask>(active_in);
+    IndexMask active(active_in);
 
     do {
         Index half   = size >> 1,
               middle = first + half;
 
         /* Evaluate the predicate */
-        IndexMask pred_result = reinterpret_array<IndexMask>(
-            pred(middle, reinterpret_array<Mask>(active))) & active;
+        IndexMask pred_result = IndexMask(pred(middle, Mask(active))) & active;
 
         /* .. and recurse into the left or right */
         first = select(pred_result, middle + 1, first);
@@ -429,7 +422,7 @@ Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in
         active &= size > 0;
     } while (any_nested(active));
 
-    using SignedIndex = signed_array_t<Index>;
+    using SignedIndex = int_array_t<Index>;
     using SignedIndexScalar = scalar_t<SignedIndex>;
 
     return Index(clamp(

@@ -1147,6 +1147,171 @@ static const char *__doc_mitsuba_DefaultFormatter_set_has_log_level = R"doc(Shou
 
 static const char *__doc_mitsuba_DefaultFormatter_set_has_thread = R"doc(Should thread information be included? The default is yes.)doc";
 
+static const char *__doc_mitsuba_DirectSample =
+R"doc(Record for solid-angle based area sampling techniques
+
+This sampling record is used to implement techniques that randomly
+pick a position on the surface of an object with the goal of
+importance sampling a quantity that is defined over the sphere seen
+from a given reference point.
+
+This general approach for sampling positions is named "direct"
+sampling throughout Mitsuba, motivated by direct illumination
+rendering techniques, which represent the most important application.
+
+This record inherits all fields from PositionSample and extends it
+with two useful quantities that are cached so that they don't need to
+be recomputed many times: the unit direction and length from the
+reference position to the sampled point.)doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample =
+R"doc(Create an new direct sampling record for a reference point ``ref``
+located somewhere in space (i.e. *not* on a surface)
+
+Parameter ``ref_p``:
+    The reference point
+
+Parameter ``time``:
+    An associated time value)doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample_2 =
+R"doc(Create an new direct sampling record for a reference point ``ref``
+located on a surface.
+
+Parameter ``its``:
+    The reference point specified using an intersection record)doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample_3 =
+R"doc(Create an new direct sampling record for a reference point ``ref``
+located in a medium
+
+Parameter ``ms``:
+    The reference point specified using an medium sampling record)doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample_4 =
+R"doc(Create a direct sampling record, which can be used to *query* the
+density of a surface position (where the reference point lies on a
+*surface*)
+
+Parameter ``ray``:
+    Reference to the ray that generated the intersection ``its``. The
+    ray origin must be located at ``ref_its``.p
+
+Parameter ``its``:
+    A surface intersection record (usually on an emitter))doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample_5 = R"doc(Element-by-element constructor)doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample_8 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_DirectSample_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_d = R"doc(Unit direction from the reference point to the target direction)doc";
+
+static const char *__doc_mitsuba_DirectSample_dist = R"doc(Distance from the reference point to the target direction)doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_operator_new_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectSample_ref_n =
+R"doc(Optional: normal vector associated with the reference point
+
+When nonzero, the direct sampling method can use the normal vector to
+sample according to the projected solid angle at ``ref``.)doc";
+
+static const char *__doc_mitsuba_DirectSample_ref_p = R"doc(Reference point for direct sampling)doc";
+
+static const char *__doc_mitsuba_DirectionSample =
+R"doc(Generic sampling record for directions
+
+This sampling record is used to implement techniques that randomly
+draw a unit vector from a subset of the sphere and furthermore provide
+auxilary information about the sample.
+
+Apart from returning the sampled direction, the responsible sampling
+method must annotate the record with the associated probability
+density and measure.)doc";
+
+static const char *__doc_mitsuba_DirectionSample_DirectionSample =
+R"doc(Create a direction sampling record filled with a specified direction.
+
+The resulting data structure is meant to be used to query the density
+of a direction sampling technique.
+
+See also:
+    Emitter::pdf_direction)doc";
+
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_2 =
+R"doc(Create a direction sampling record from a surface intersection
+
+This is useful to determine the hypothetical sampling density of a
+direction after hitting it using standard ray tracing. This happens
+for instance when hitting the camera aperture in bidirectional
+rendering techniques.)doc";
+
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_d = R"doc(Sampled direction)doc";
+
+static const char *__doc_mitsuba_DirectionSample_measure = R"doc(Measure associated with the density function)doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_new_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_pdf = R"doc(Probability density at the sample)doc";
+
 static const char *__doc_mitsuba_DiscreteDistribution =
 R"doc(Discrete probability distribution
 
@@ -1318,6 +1483,27 @@ static const char *__doc_mitsuba_ELogLevel_ETrace = R"doc(< Trace message, for e
 
 static const char *__doc_mitsuba_ELogLevel_EWarn = R"doc(< Warning message)doc";
 
+static const char *__doc_mitsuba_EMeasure =
+R"doc(A list of measures that are associated with various sampling methods
+in Mitsuba.
+
+Every now and then, sampling densities consist of a sum of several
+terms defined on spaces that have different associated measures. In
+this case, one of the constants in EMeasure can be specified to
+clarify the component in question when performing query operations.)doc";
+
+static const char *__doc_mitsuba_EMeasure_EArea = R"doc(Area measure)doc";
+
+static const char *__doc_mitsuba_EMeasure_EDiscrete = R"doc(Discrete measure)doc";
+
+static const char *__doc_mitsuba_EMeasure_EInvalidMeasure = R"doc(Invalid measure)doc";
+
+static const char *__doc_mitsuba_EMeasure_ELength = R"doc(Length measure)doc";
+
+static const char *__doc_mitsuba_EMeasure_EMeasureCount = R"doc(Specifies the number of supported measures)doc";
+
+static const char *__doc_mitsuba_EMeasure_ESolidAngle = R"doc(Solid angle measure)doc";
+
 static const char *__doc_mitsuba_EOFException = R"doc()doc";
 
 static const char *__doc_mitsuba_EOFException_EOFException = R"doc()doc";
@@ -1325,6 +1511,16 @@ static const char *__doc_mitsuba_EOFException_EOFException = R"doc()doc";
 static const char *__doc_mitsuba_EOFException_gcount = R"doc()doc";
 
 static const char *__doc_mitsuba_EOFException_m_gcount = R"doc()doc";
+
+static const char *__doc_mitsuba_ETransportMode =
+R"doc(Specifies the transport mode when sampling or evaluating a scattering
+function)doc";
+
+static const char *__doc_mitsuba_ETransportMode_EImportance = R"doc(Importance transport)doc";
+
+static const char *__doc_mitsuba_ETransportMode_ERadiance = R"doc(Radiance transport)doc";
+
+static const char *__doc_mitsuba_ETransportMode_ETransportModes = R"doc(Specifies the number of supported transport modes)doc";
 
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
@@ -1487,13 +1683,15 @@ systems and to efficiently evaluate trigonometric functions in a
 spherical coordinate system whose pole is aligned with the ``n`` axis
 (e.g. cos_theta(), sin_phi(), etc.).)doc";
 
-static const char *__doc_mitsuba_Frame_Frame = R"doc(Default constructor -- performs no initialization!)doc";
+static const char *__doc_mitsuba_Frame_Frame = R"doc(Construct a new coordinate frame from a single vector)doc";
 
-static const char *__doc_mitsuba_Frame_Frame_2 = R"doc(Given a normal and tangent vectors, construct a new coordinate frame)doc";
+static const char *__doc_mitsuba_Frame_Frame_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Frame_Frame_3 = R"doc(Construct a frame from the given orthonormal vectors)doc";
+static const char *__doc_mitsuba_Frame_Frame_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Frame_Frame_4 = R"doc(Construct a new coordinate frame from a single vector)doc";
+static const char *__doc_mitsuba_Frame_Frame_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_Frame_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_cos_phi =
 R"doc(Assuming that the given direction is in the local coordinate system,
@@ -1513,6 +1711,10 @@ R"doc(Assuming that the given direction is in the local coordinate system,
 return the squared cosine of the angle between the normal and v)doc";
 
 static const char *__doc_mitsuba_Frame_n = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_operator_delete = R"doc()doc";
 
@@ -1648,6 +1850,8 @@ static const char *__doc_mitsuba_InterpolatedSpectrum_sample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_InterpolatedSpectrum_sample_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Intersection = R"doc()doc";
+
 static const char *__doc_mitsuba_Jit = R"doc()doc";
 
 static const char *__doc_mitsuba_Jit_Jit = R"doc()doc";
@@ -1767,6 +1971,8 @@ static const char *__doc_mitsuba_Logger_set_log_level = R"doc(Set the log level 
 static const char *__doc_mitsuba_Logger_static_initialization = R"doc(Initialize logging)doc";
 
 static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging)doc";
+
+static const char *__doc_mitsuba_MediumSample = R"doc()doc";
 
 static const char *__doc_mitsuba_MemoryStream =
 R"doc(Simple memory buffer-based stream with automatic memory management. It
@@ -2152,6 +2358,94 @@ static const char *__doc_mitsuba_Point_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Point_operator_assign_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_PositionSample =
+R"doc(Generic sampling record for positions
+
+This sampling record is used to implement techniques that draw a
+position from a point, line, surface, or volume domain in 3D and
+furthermore provide auxilary information about the sample.
+
+Apart from returning the position and (optionally) the surface normal,
+the responsible sampling method must annotate the record with the
+associated probability density and measure.)doc";
+
+static const char *__doc_mitsuba_PositionSample_PositionSample =
+R"doc(Create a new position sampling record that can be passed e.g. to
+Shape::sample_position
+
+Parameter ``time``:
+    Specifies the time that should be associated with the position
+    sample. This only matters when things are in motion)doc";
+
+static const char *__doc_mitsuba_PositionSample_PositionSample_2 =
+R"doc(Create a position sampling record from a surface intersection
+
+This is useful to determine the hypothetical sampling density on a
+surface after hitting it using standard ray tracing. This happens for
+instance in path tracing with multiple importance sampling.)doc";
+
+static const char *__doc_mitsuba_PositionSample_PositionSample_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_PositionSample_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_PositionSample_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_PositionSample_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_measure =
+R"doc(Denotes the measure associated with the sample.
+
+This is necessary to deal with quantities that are defined on unusual
+spaces, e.g. areas that have collapsed to a point or a line.)doc";
+
+static const char *__doc_mitsuba_PositionSample_n = R"doc(Sampled surface normal (if applicable))doc";
+
+static const char *__doc_mitsuba_PositionSample_object =
+R"doc(Optional: Pointer to an associated object
+
+In some uses of this record, sampling a position also involves
+choosing one of several objects (shapes, emitters, ..) on which the
+position lies. In that case, the ``object`` attribute stores a pointer
+to this object.)doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_operator_new_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_p = R"doc(Sampled position)doc";
+
+static const char *__doc_mitsuba_PositionSample_pdf = R"doc(Probability density at the sample)doc";
+
+static const char *__doc_mitsuba_PositionSample_time = R"doc(Associated time value)doc";
+
+static const char *__doc_mitsuba_PositionSample_uv =
+R"doc(Optional: 2D sample position associated with the record
+
+In some uses of this record, a sampled position may be associated with
+an important 2D quantity, such as the texture coordinates on a
+triangle mesh or a position on the aperture of a sensor. When
+applicable, such positions are stored in the ``uv`` attribute.)doc";
+
 static const char *__doc_mitsuba_Properties =
 R"doc(Associative parameter map for constructing subclasses of Object.
 
@@ -2452,11 +2746,15 @@ static const char *__doc_mitsuba_RayDifferential =
 R"doc(%Ray differential -- enhances the basic ray class with information
 about the rays of adjacent pixels on the view plane)doc";
 
-static const char *__doc_mitsuba_RayDifferential_RayDifferential = R"doc(Copy constructor)doc";
+static const char *__doc_mitsuba_RayDifferential_RayDifferential = R"doc()doc";
 
-static const char *__doc_mitsuba_RayDifferential_RayDifferential_2 = R"doc(Conversion from other Ray types)doc";
+static const char *__doc_mitsuba_RayDifferential_RayDifferential_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_RayDifferential_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_RayDifferential_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_RayDifferential_5 = R"doc(Element-by-element constructor)doc";
 
 static const char *__doc_mitsuba_RayDifferential_d_x = R"doc()doc";
 
@@ -2468,15 +2766,19 @@ static const char *__doc_mitsuba_RayDifferential_o_x = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_o_y = R"doc()doc";
 
+static const char *__doc_mitsuba_RayDifferential_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_operator_assign_2 = R"doc()doc";
+
 static const char *__doc_mitsuba_RayDifferential_scale = R"doc()doc";
 
-static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray)doc";
+static const char *__doc_mitsuba_Ray_Ray = R"doc()doc";
 
-static const char *__doc_mitsuba_Ray_Ray_2 = R"doc(Copy constructor)doc";
+static const char *__doc_mitsuba_Ray_Ray_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Ray_Ray_3 = R"doc(Conversion from other Ray types)doc";
+static const char *__doc_mitsuba_Ray_Ray_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Ray_Ray_4 = R"doc(Construct a new ray)doc";
+static const char *__doc_mitsuba_Ray_Ray_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_Ray_5 = R"doc(Construct a new ray)doc";
 
@@ -2494,11 +2796,11 @@ static const char *__doc_mitsuba_Ray_mint = R"doc(< Minimum position on the ray 
 
 static const char *__doc_mitsuba_Ray_o = R"doc(< Ray origin)doc";
 
-static const char *__doc_mitsuba_Ray_operator_assign = R"doc(Conversion from other Ray types)doc";
+static const char *__doc_mitsuba_Ray_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_operator_call = R"doc(Return the position of a point along the ray)doc";
-
-static const char *__doc_mitsuba_Ray_reverse = R"doc(Return a ray that points into the opposite direction)doc";
 
 static const char *__doc_mitsuba_Ray_time = R"doc(< Time value associated with this ray)doc";
 
@@ -3943,13 +4245,13 @@ static const char *__doc_mitsuba_Transform_inverse_matrix = R"doc(Return the und
 static const char *__doc_mitsuba_Transform_look_at =
 R"doc(Create a look-at camera transformation
 
-Parameter ``p``:
+Parameter ``origin``:
     Camera position
 
-Parameter ``t``:
+Parameter ``target``:
     Target vector
 
-Parameter ``u``:
+Parameter ``up``:
     Up vector)doc";
 
 static const char *__doc_mitsuba_Transform_m_inverse = R"doc()doc";
@@ -3996,10 +4298,10 @@ static const char *__doc_mitsuba_Transform_orthographic =
 R"doc(Create an orthographic transformation, which maps Z to [0,1] and
 leaves the X and Y coordinates untouched.
 
-Parameter ``clip_near``:
+Parameter ``near``:
     Near clipping plane
 
-Parameter ``clip_far``:
+Parameter ``far``:
     Far clipping plane)doc";
 
 static const char *__doc_mitsuba_Transform_perspective =
@@ -4008,10 +4310,10 @@ R"doc(Create a perspective transformation. (Maps [near, far] to [0, 1])
 Parameter ``fov``:
     Field of view in degrees
 
-Parameter ``clip_near``:
+Parameter ``near``:
     Near clipping plane
 
-Parameter ``clip_far``:
+Parameter ``far``:
     Far clipping plane)doc";
 
 static const char *__doc_mitsuba_Transform_rotate =
@@ -4338,8 +4640,6 @@ static const char *__doc_mitsuba_hasher = R"doc()doc";
 
 static const char *__doc_mitsuba_hasher_operator_call = R"doc()doc";
 
-static const char *__doc_mitsuba_inv = R"doc(Compute the inverse of a matrix)doc";
-
 static const char *__doc_mitsuba_is_constructible =
 R"doc(Replacement for std::is_constructible which also works when the
 destructor is not accessible)doc";
@@ -4395,8 +4695,6 @@ static const char *__doc_mitsuba_math_comp_ellint_2_2 = R"doc(Complete elliptic 
 static const char *__doc_mitsuba_math_comp_ellint_3 = R"doc(Complete elliptic integral of the third kind (double precision))doc";
 
 static const char *__doc_mitsuba_math_comp_ellint_3_2 = R"doc(Complete elliptic integral of the third kind (single precision))doc";
-
-static const char *__doc_mitsuba_math_deg_to_rad = R"doc(Convert degrees to radians)doc";
 
 static const char *__doc_mitsuba_math_ellint_1 = R"doc(Incomplete elliptic integral of the first kind (double precision))doc";
 
@@ -4469,8 +4767,6 @@ static const char *__doc_mitsuba_math_legendre_pd_diff = R"doc(Evaluate the func
 
 static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo function)doc";
 
-static const char *__doc_mitsuba_math_rad_to_deg = R"doc(/ Convert radians to degrees)doc";
-
 static const char *__doc_mitsuba_math_round_to_power_of_two = R"doc(Round an unsigned integer to the next integer power of two)doc";
 
 static const char *__doc_mitsuba_math_solve_quadratic =
@@ -4506,6 +4802,16 @@ static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_11 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_12 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_13 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_14 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -5096,6 +5402,10 @@ Returns:
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 
 static const char *__doc_mitsuba_string_indent = R"doc(Indent every line of a string by some number of spaces)doc";
+
+static const char *__doc_mitsuba_string_indent_2 =
+R"doc(Turn a type into a string representation and indent every line by some
+number of spaces)doc";
 
 static const char *__doc_mitsuba_string_starts_with = R"doc(Check if the given string starts with a specified prefix)doc";
 

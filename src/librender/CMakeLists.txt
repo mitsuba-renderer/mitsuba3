@@ -2,11 +2,14 @@ set(INC_DIR "../../include/mitsuba/render")
 
 add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/fwd.h
+  ${INC_DIR}/records.h
+
   bsdf.cpp         ${INC_DIR}/bsdf.h
-  shape.cpp        ${INC_DIR}/shape.h
+  common.cpp       ${INC_DIR}/common.h
+  kdtree.cpp       ${INC_DIR}/kdtree.h
   mesh.cpp         ${INC_DIR}/mesh.h
   scene.cpp        ${INC_DIR}/scene.h
-  kdtree.cpp       ${INC_DIR}/kdtree.h
+  shape.cpp        ${INC_DIR}/shape.h
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)

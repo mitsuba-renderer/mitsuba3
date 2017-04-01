@@ -4,7 +4,8 @@ import numpy as np
 import numpy.linalg as la
 
 def test01_basics():
-    assert(Transform() == Transform(np.eye(4, 4)))
+    assert(np.allclose(Transform().matrix(), Transform(np.eye(4, 4)).matrix()))
+    assert(np.allclose(Transform().inverse_matrix(), Transform(np.eye(4, 4)).inverse_matrix()))
     assert(
         repr(Transform([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12],
                        [13, 14, 15, 16]])) ==
@@ -19,7 +20,7 @@ def test02_inverse():
         trafo = Transform(mtx)
         inv_val = trafo.inverse_matrix()
         assert np.all(trafo.matrix() == mtx)
-        assert la.norm(inv_ref-inv_val, 'fro') / la.norm(inv_val, 'fro') < 1e-4
+        assert la.norm(inv_ref-inv_val, 'fro') / la.norm(inv_val, 'fro') < 5e-4
 
 def test03_matmul():
     A = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12],

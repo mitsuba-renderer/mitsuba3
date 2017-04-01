@@ -21,17 +21,6 @@ template <typename Vector3> struct Frame {
     Vector3 s, t;
     Normal3 n;
 
-    /// Default constructor -- performs no initialization!
-    Frame() { }
-
-    /// Given a normal and tangent vectors, construct a new coordinate frame
-    Frame(const Vector3 &s, const Vector3 &t, const Normal3 &n)
-        : s(s), t(t), n(n) { }
-
-    /// Construct a frame from the given orthonormal vectors
-    Frame(const Vector3 &x, const Vector3 &y, const Vector3 &z)
-        : s(x), t(y), n(z) { }
-
     /// Construct a new coordinate frame from a single vector
     Frame(const Vector3 &v) : n(v) {
         std::tie(s, t) = coordinate_system(v);
@@ -143,7 +132,10 @@ template <typename Vector3> struct Frame {
         return os;
     }
 
+    ENOKI_STRUCT(Frame, s, t, n)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 NAMESPACE_END(mitsuba)
+
+ENOKI_STRUCT_DYNAMIC(mitsuba::Frame, s, t, n)

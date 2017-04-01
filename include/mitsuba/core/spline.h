@@ -51,8 +51,8 @@ NAMESPACE_BEGIN(spline)
 */
 
 #define GET_SPLINE_UNIFORM(idx)                                                \
-    auto mask_low_idx = reinterpret_array<mask_t<Scalar>>(idx > 0);            \
-    auto mask_up_idx  = reinterpret_array<mask_t<Scalar>>(idx + 2 < size);     \
+    auto mask_low_idx = mask_t<Scalar>(idx > 0);                               \
+    auto mask_up_idx  = mask_t<Scalar>(idx + 2 < size);                        \
     Scalar f_1        = gather<Scalar>(values, idx - 1, mask_low_idx);         \
     Scalar f0         = gather<Scalar>(values, idx);                           \
     Scalar f1         = gather<Scalar>(values, idx + 1);                       \
@@ -61,8 +61,8 @@ NAMESPACE_BEGIN(spline)
     Scalar d1         = select(mask_up_idx, 0.5f * (f2 - f0), f1 - f0);
 
 #define GET_SPLINE_NONUNIFORM(idx)                                             \
-    auto mask_low_idx = reinterpret_array<mask_t<Scalar>>(idx > 0);            \
-    auto mask_up_idx  = reinterpret_array<mask_t<Scalar>>(idx + 2 < size);     \
+    auto mask_low_idx = mask_t<Scalar>(idx > 0);                               \
+    auto mask_up_idx  = mask_t<Scalar>(idx + 2 < size);                        \
     Scalar f_1        = gather<Scalar>(values, idx - 1, mask_low_idx);         \
     Scalar f0         = gather<Scalar>(values, idx);                           \
     Scalar f1         = gather<Scalar>(values, idx + 1);                       \

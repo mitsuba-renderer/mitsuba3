@@ -29,7 +29,6 @@ using UInt64P       = Array<uint64_t,     PacketSize>;
 using SizeP         = Array<size_t,       PacketSize>;
 using SSizeP        = Array<ssize_t,      PacketSize>;
 
-/// Caution, boolean arrays are not vectorized (use masks!)
 using BoolP         = Array<bool,         PacketSize>;
 
 //! @}
@@ -73,8 +72,14 @@ using Point3fX  = Point<FloatX, 3>;
 using Normal3fP = Normal<FloatP, 3>;
 using Normal3fX = Normal<FloatX, 3>;
 
+using Frame3fP  = Frame<Point3fP>;
+using Frame3fX  = Frame<Point3fX>;
+
 using Ray3fP    = Ray<Point3fP>;
 using Ray3fX    = Ray<Point3fX>;
+
+using RayDifferential3fP    = RayDifferential<Point3fP>;
+using RayDifferential3fX    = RayDifferential<Point3fX>;
 
 //! @}
 // =============================================================

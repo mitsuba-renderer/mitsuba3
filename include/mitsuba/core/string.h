@@ -3,6 +3,7 @@
 #include <mitsuba/mitsuba.h>
 #include <string>
 #include <vector>
+#include <sstream>
 #include <algorithm>
 #include <ostream>
 
@@ -73,14 +74,32 @@ inline std::vector<std::string> tokenize(const std::string &string,
 }
 
 /// Indent every line of a string by some number of spaces
-inline std::string indent(const std::string &string, int amount = 2) {
+inline std::string indent(const std::string &string, size_t amount = 2) {
     std::string result;
     result.reserve(string.size());
     for (size_t i = 0; i<string.length(); ++i) {
         char ch = string[i];
         result += ch;
         if (ch == '\n') {
-            for (int j = 0; j < amount; ++j)
+            for (size_t j = 0; j < amount; ++j)
+                result += ' ';
+        }
+    }
+    return result;
+}
+
+/// Turn a type into a string representation and indent every line by some number of spaces
+template <typename T>
+inline std::string indent(const T &value, size_t amount = 2) {
+    std::ostringstream oss;
+    oss << value;
+    std::string string = oss.str(), result;
+    result.reserve(string.size());
+    for (size_t i = 0; i<string.length(); ++i) {
+        char ch = string[i];
+        result += ch;
+        if (ch == '\n') {
+            for (size_t j = 0; j < amount; ++j)
                 result += ' ';
         }
     }
