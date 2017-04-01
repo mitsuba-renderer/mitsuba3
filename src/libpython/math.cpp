@@ -1,5 +1,6 @@
 #include <mitsuba/core/math.h>
 #include "python.h"
+#include <bitset>
 
 MTS_PY_EXPORT(math) {
     MTS_PY_IMPORT_MODULE(math, "mitsuba.core.math");
@@ -106,4 +107,14 @@ MTS_PY_EXPORT(math) {
             }
         );
     });
+
+    math.def("morton_to_array2", &math::morton_to_array<2, uint32_t>, "m"_a); // , D(math, morton_to_array));
+    math.def("morton_to_array2", vectorize_wrapper(math::morton_to_array<2, UInt32P>), "m"_a); // , D(math, morton_to_array));
+    math.def("morton_to_array3", &math::morton_to_array<3, uint32_t>, "m"_a); // , D(math, morton_to_array));
+    math.def("morton_to_array3", vectorize_wrapper(math::morton_to_array<3, UInt32P>), "m"_a); // , D(math, morton_to_array));
+
+    math.def("array2_to_morton", &math::array_to_morton<2, uint32_t>, "v"_a); // , D(math, array_to_morton));
+    math.def("array2_to_morton", vectorize_wrapper(math::array_to_morton<2, UInt32P>), "v"_a); // , D(math, array_to_morton));
+    math.def("array3_to_morton", &math::array_to_morton<3, uint32_t>, "v"_a); // , D(math, array_to_morton));
+    math.def("array3_to_morton", vectorize_wrapper(math::array_to_morton<3, UInt32P>), "v"_a); // , D(math, array_to_morton));
 }

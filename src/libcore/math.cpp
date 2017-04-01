@@ -697,6 +697,7 @@ float ellint_2(float k, float phi) { return detail::ellint_2(k, phi); }
 float comp_ellint_3(float k, float nu) { return detail::comp_ellint_3(k, nu); }
 float ellint_3(float k, float nu, float phi) { return detail::ellint_3(k, nu, phi); }
 
+
 template MTS_EXPORT_CORE Float  i0e(Float);
 template MTS_EXPORT_CORE Float  legendre_p(int, Float);
 template MTS_EXPORT_CORE FloatP legendre_p(int, FloatP);
@@ -710,5 +711,18 @@ template MTS_EXPORT_CORE std::pair<FloatP, FloatP> legendre_pd_diff(int, FloatP)
 template MTS_EXPORT_CORE std::tuple<mask_t<Float>,  Float,  Float>  solve_quadratic(Float,  Float,  Float);
 template MTS_EXPORT_CORE std::tuple<mask_t<FloatP>, FloatP, FloatP> solve_quadratic(FloatP, FloatP, FloatP);
 
+
+template MTS_EXPORT_CORE uint32_t array_to_morton(Array<uint32_t, 2>);
+template MTS_EXPORT_CORE UInt32P  array_to_morton(Array<UInt32P, 2>);
+template MTS_EXPORT_CORE uint32_t array_to_morton(Array<uint32_t, 3>);
+template MTS_EXPORT_CORE UInt32P  array_to_morton(Array<UInt32P, 3>);
+
+template MTS_EXPORT_CORE Array<uint32_t, 2> morton_to_array<2>(uint32_t);
+template MTS_EXPORT_CORE Array<UInt32P,  2> morton_to_array<2>(UInt32P);
+template MTS_EXPORT_CORE Array<uint32_t, 3> morton_to_array<3>(uint32_t);
+template MTS_EXPORT_CORE Array<UInt32P,  3> morton_to_array<3>(UInt32P);
+
 NAMESPACE_END(math)
 NAMESPACE_END(mitsuba)
+
+

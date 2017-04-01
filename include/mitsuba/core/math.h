@@ -802,6 +802,85 @@ std::tuple<mask_t<Value>, Value, Value> solve_quadratic(Value a, Value b, Value 
     return std::make_tuple(active, x0, x1);
 }
 
+/// generate bit masks for the scatter_bits and gather_bits functions
+template <typename T> constexpr T morton_magic(size_t level, size_t dim) {
+    T value(0);
+
+    size_t n_bits = sizeof(T) * 8;
+    size_t max_block_size = n_bits / dim;
+    size_t block_size = std::min(size_t(1) << (level-1), max_block_size);
+
+    size_t count = 0;
+
+    T mask = T(1) << (n_bits - 1);
+
+    for (size_t i = 0; i < n_bits; ++i) {
+        value >>= 1;
+
+        if (count < max_block_size && (i / block_size) % dim == 0) {
+            count++;
+            value |= mask;
+        }
+    }
+    return value;
+}
+
+/// bit-wise scatter function. Dimension defines the final distance between two bits.
+template<size_t Dimension, typename Index> Index scatter_bits(Index x) {
+    size_t t_size = sizeof(Index)*8;
+    assert(t_size == 32 || t_size == 64);
+
+    // Hardcoded log2i(t_size)
+    size_t max_level = (t_size == 32 ? 5 : 6);
+    
+    x = x & morton_magic<Index>(max_level, Dimension);
+
+    for (size_t i = max_level - 1; i > 0; i--) {
+        // size of a block * number of blocks in between
+        size_t block_shift = (1 << (i-1)) * (Dimension - 1);
+        x = (x | (x << block_shift))  & morton_magic<Index>(i, Dimension);
+    }
+
+    return x;
+}
+
+/// bit-wise gather function. Dimension defines the distance between two bits in the input bit-chain.
+template<size_t Dimension, typename Index> Index gather_bits(Index x) {
+    size_t t_size = sizeof(Index)*8;
+    assert(t_size == 32 || t_size == 64);
+
+    // Hardcoded log2i(t_size)
+    size_t max_level = (t_size == 32 ? 5 : 6);
+    
+    x = x & morton_magic<Index>(1, Dimension);
+
+    for (size_t i = 2; i <= max_level; i++) {
+        // size of a block * number of blocks in between
+        size_t block_shift = (1 << (i-2)) * (Dimension - 1);
+        x = (x | (x >> block_shift)) & morton_magic<Index>(i, Dimension);
+    }
+
+    return x;
+}
+
+/// encode the array values into a single morton code
+template <size_t Dimension, typename Index>
+Index array_to_morton(Array<Index, Dimension> a) {
+    Index res = zero<Index>();
+    for (size_t i = 0; i < Dimension; i++)
+        res |= scatter_bits<Dimension>(a[i]) << i;
+    return res;
+}
+
+/// decode a morton code into an array of a given dimension
+template <size_t Dimension, typename Index>
+Array<Index, Dimension> morton_to_array(Index m) {
+    Array<Index, Dimension> res;
+    for (size_t i = 0; i < Dimension; i++)
+        res[i] = gather_bits<Dimension>(m >> i);
+    return res;
+}
+
 //! @}
 // -----------------------------------------------------------------------
 

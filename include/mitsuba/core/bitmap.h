@@ -270,7 +270,7 @@ public:
 
     void read_open_exr(Stream *stream);
 
-    /**
+  /**
     * Write an encoded form of the bitmap to a file using the specified file format
     *
     * \param format
