@@ -832,7 +832,7 @@ template<size_t Dimension, typename Index> Index scatter_bits(Index x) {
 
     // Hardcoded log2i(t_size)
     size_t max_level = (t_size == 32 ? 5 : 6);
-    
+
     x = x & morton_magic<Index>(max_level, Dimension);
 
     for (size_t i = max_level - 1; i > 0; i--) {
@@ -851,7 +851,7 @@ template<size_t Dimension, typename Index> Index gather_bits(Index x) {
 
     // Hardcoded log2i(t_size)
     size_t max_level = (t_size == 32 ? 5 : 6);
-    
+
     x = x & morton_magic<Index>(1, Dimension);
 
     for (size_t i = 2; i <= max_level; i++) {
