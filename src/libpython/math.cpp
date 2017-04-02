@@ -1,4 +1,5 @@
 #include <mitsuba/core/math.h>
+#include <enoki/morton.h>
 #include "python.h"
 #include <bitset>
 
@@ -108,13 +109,13 @@ MTS_PY_EXPORT(math) {
         );
     });
 
-    math.def("morton_to_array2", &math::morton_to_array<2, uint32_t>, "m"_a); // , D(math, morton_to_array));
-    math.def("morton_to_array2", vectorize_wrapper(math::morton_to_array<2, UInt32P>), "m"_a); // , D(math, morton_to_array));
-    math.def("morton_to_array3", &math::morton_to_array<3, uint32_t>, "m"_a); // , D(math, morton_to_array));
-    math.def("morton_to_array3", vectorize_wrapper(math::morton_to_array<3, UInt32P>), "m"_a); // , D(math, morton_to_array));
+    math.def("morton_decode2", &enoki::morton_decode<Array<uint32_t, 2>>, "m"_a);
+    math.def("morton_decode2", vectorize_wrapper(enoki::morton_decode<Array<UInt32P, 2>>), "m"_a);
+    math.def("morton_decode3", &enoki::morton_decode<Array<uint32_t, 3>>, "m"_a);
+    math.def("morton_decode3", vectorize_wrapper(enoki::morton_decode<Array<UInt32P, 3>>), "m"_a);
 
-    math.def("array2_to_morton", &math::array_to_morton<2, uint32_t>, "v"_a); // , D(math, array_to_morton));
-    math.def("array2_to_morton", vectorize_wrapper(math::array_to_morton<2, UInt32P>), "v"_a); // , D(math, array_to_morton));
-    math.def("array3_to_morton", &math::array_to_morton<3, uint32_t>, "v"_a); // , D(math, array_to_morton));
-    math.def("array3_to_morton", vectorize_wrapper(math::array_to_morton<3, UInt32P>), "v"_a); // , D(math, array_to_morton));
+    math.def("morton_encode2", &enoki::morton_encode<Array<uint32_t, 2>>, "v"_a);
+    math.def("morton_encode2", vectorize_wrapper(enoki::morton_encode<Array<UInt32P, 2>>), "v"_a);
+    math.def("morton_encode3", &enoki::morton_encode<Array<uint32_t, 3>>, "v"_a);
+    math.def("morton_encode3", vectorize_wrapper(enoki::morton_encode<Array<UInt32P, 3>>), "v"_a);
 }

@@ -109,3 +109,17 @@ def test09_find_interval_edge_cases():
     assert(find_interval(0, 2, always_false) == 0)
     assert(find_interval(0, 11, always_true) == 9)
     assert(find_interval(0, 11, always_false) == 0)
+
+def test10_morton2():
+    from mitsuba.core.math import morton_encode2, morton_decode2
+    v0 = [123, 456]
+    v1 = morton_encode2(v0)
+    v2 = morton_decode2(v1)
+    assert np.all(v0 == v2)
+
+def test11_morton3():
+    from mitsuba.core.math import morton_encode3, morton_decode3
+    v0 = [123, 456, 789]
+    v1 = morton_encode3(v0)
+    v2 = morton_decode3(v1)
+    assert np.all(v0 == v2)
