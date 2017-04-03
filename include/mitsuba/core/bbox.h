@@ -76,7 +76,7 @@ template <typename Point_> struct BoundingBox {
     int major_axis() const {
         Vector d = max - min;
         int largest = 0;
-        for (size_t i = 1; i < Size; ++i)
+        for (int i = 1; i < int(Size); ++i)
             if (d[i] > d[largest])
                 largest = i;
         return largest;
@@ -86,7 +86,7 @@ template <typename Point_> struct BoundingBox {
     int minor_axis() const {
         Vector d = max - min;
         int shortest = 0;
-        for (size_t i = 1; i < Size; ++i)
+        for (int i = 1; i < int(Size); ++i)
             if (d[i] < d[shortest])
                 shortest = i;
         return shortest;
@@ -108,8 +108,8 @@ template <typename Point_> struct BoundingBox {
     /// Return the position of a bounding box corner
     Point corner(size_t index) const {
         Point result;
-        for (size_t i = 0; i < Size; ++i)
-            result[i] = ((size_t) index & (1 << i)) ? max[i] : min[i];
+        for (int i = 0; i < int(Size); ++i)
+            result[i] = ((int) index & (1 << i)) ? max[i] : min[i];
         return result;
     }
 

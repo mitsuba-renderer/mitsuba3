@@ -7,8 +7,8 @@
 #include <ostream>
 
 /// Turns a vector of elements into a human-readable representation
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
+template <typename T, typename Alloc>
+std::ostream &operator<<(std::ostream &os, const std::vector<T, Alloc> &v) {
     auto it = v.begin();
     while (it != v.end()) {
         os << *it;
@@ -21,12 +21,7 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Turns a vector into a human-readable representation.
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
-    ::operator<<(os, v);
-    return os;
-}
+using ::operator<<;
 
 NAMESPACE_BEGIN(string)
 

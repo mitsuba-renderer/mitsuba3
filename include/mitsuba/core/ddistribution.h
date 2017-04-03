@@ -6,7 +6,6 @@
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
-#include <mitsuba/core/string.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -227,12 +226,6 @@ private:
 };
 
 // Print the string representation of the discrete distribution.
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os,
-                                                const DiscreteDistribution &distribution) {
-    os << "DiscreteDistribution[sum=" << distribution.sum() << ", normalized="
-       << static_cast<int>(distribution.normalized())
-       << ", cdf={" << distribution.cdf() << "}]";
-    return os;
-}
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, const DiscreteDistribution &distribution);
 
 NAMESPACE_END(mitsuba)

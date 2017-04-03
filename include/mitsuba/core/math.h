@@ -488,6 +488,7 @@ Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in
         return zero<Index>();
 
     Index first(left), size(initial_size);
+
     IndexMask active = reinterpret_array<IndexMask>(active_in);
 
     do {
