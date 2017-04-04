@@ -2,12 +2,12 @@
 if (NOT MITSUBA_PYTEST_FOUND)
   execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pytest --version --noconftest OUTPUT_QUIET ERROR_QUIET
                   RESULT_VARIABLE MITSUBA_EXEC_PYTHON_ERR_1)
-  if(MITSUBA_EXEC_PYTHON_ERR_1)
+  if (MITSUBA_EXEC_PYTHON_ERR_1)
     message(FATAL_ERROR "Running the tests requires pytest.  Please install it manually (try: ${PYTHON_EXECUTABLE} -m pip install 'pytest>=3.0.0' pytest-xdist)")
   endif()
   execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pytest --version -n 1 --noconftest OUTPUT_QUIET ERROR_QUIET
                   RESULT_VARIABLE MITSUBA_EXEC_PYTHON_ERR_2)
-  if(MITSUBA_EXEC_PYTHON_ERR_2)
+  if (NOT WIN32 AND MITSUBA_EXEC_PYTHON_ERR_2)
     message(FATAL_ERROR "Running the tests requires pytest-xdist (in addition to pytest).  Please install it manually (try: ${PYTHON_EXECUTABLE} -m pip install pytest-xdist)")
   endif()
   set(MITSUBA_PYTEST_FOUND TRUE CACHE INTERNAL "")
