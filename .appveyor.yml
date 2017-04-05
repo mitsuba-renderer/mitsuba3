@@ -31,8 +31,10 @@ install:
       $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
       conda install -y -q pytest numpy scipy
 build_script:
+- set PATH = "%MINICONDA%;%MINICONDA%\Scripts;%PATH%"
 - cmake -G "Visual Studio 15 2017" -A "x64"
 - set MSBuildLogger="C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 - cmake --build . --config %BUILD_MODE% -- /v:m /m /logger:%MSBuildLogger%
 - setpath.bat
-- %MINICONDA%/python -m pytest
+- python -c "import sys; print('\n'.join(sys.path))"
+- python -m pytest

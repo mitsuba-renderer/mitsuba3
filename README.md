@@ -1,4 +1,4 @@
-# Mitsuba Render er
+# Mitsuba Renderer
 
 [![Build Status](https://rglpc1.epfl.ch/jenkins/job/mitsuba2/badge/icon)](https://rglpc1.epfl.ch/jenkins/job/mitsuba2/)
 [![Build status](https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true)](https://ci.appveyor.com/project/wjakob/mitsuba2/branch/master)
