@@ -512,6 +512,8 @@ static const char *__doc_mitsuba_Bitmap_pixel_count = R"doc(Return the total num
 
 static const char *__doc_mitsuba_Bitmap_pixel_format = R"doc(Return the pixel format of this bitmap)doc";
 
+static const char *__doc_mitsuba_Bitmap_read_open_exr = R"doc()doc";
+
 static const char *__doc_mitsuba_Bitmap_rebuild_struct = R"doc(Rebuild the 'm_struct' field based on the pixel format etc.)doc";
 
 static const char *__doc_mitsuba_Bitmap_set_gamma = R"doc(Set the bitmap's gamma identifier (-1: sRGB))doc";
@@ -525,6 +527,48 @@ static const char *__doc_mitsuba_Bitmap_struct = R"doc(Return a ``Struct`` insta
 static const char *__doc_mitsuba_Bitmap_to_string = R"doc(Return a human-readable summary of this bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_width = R"doc(Return the bitmap's width in pixels)doc";
+
+static const char *__doc_mitsuba_Bitmap_write =
+R"doc(Write an encoded form of the bitmap to a file using the specified file
+format
+
+Parameter ``format``:
+    Target file format (EOpenEXR, EPNG, or EOpenEXR)
+
+Parameter ``stream``:
+    Target stream that will receive the encoded output
+
+Parameter ``compression``:
+    For PNG images, this parameter can be used to control how strongly
+    libpng will try to compress the output (with 1 being the lowest
+    and 9 denoting the highest compression). Note that saving files
+    with the highest compression will be very slow. For JPEG files,
+    this denotes the desired quality (between 0 and 100, the latter
+    being best). The default argument (-1) uses compression 5 for PNG
+    and 100 for JPEG files.)doc";
+
+static const char *__doc_mitsuba_Bitmap_write_2 =
+R"doc(Write an encoded form of the bitmap to a stream using the specified
+file format
+
+Parameter ``format``:
+    Target file format (EOpenEXR, EPNG, or EOpenEXR)
+
+Parameter ``stream``:
+    Target stream that will receive the encoded output
+
+Parameter ``compression``:
+    For PNG images, this parameter can be used to control how strongly
+    libpng will try to compress the output (with 1 being the lowest
+    and 9 denoting the highest compression). Note that saving files
+    with the highest compression will be very slow. For JPEG files,
+    this denotes the desired quality (between 0 and 100, the latter
+    being best). The default argument (-1) uses compression 5 for PNG
+    and 100 for JPEG files.)doc";
+
+static const char *__doc_mitsuba_Bitmap_write_jpeg = R"doc(Save a file using the JPEG file format)doc";
+
+static const char *__doc_mitsuba_Bitmap_write_openexr = R"doc(Write a file using the OpenEXR file format)doc";
 
 static const char *__doc_mitsuba_BoundingBox =
 R"doc(Generic n-dimensional bounding box data structure
@@ -3959,8 +4003,6 @@ static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that hav
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
-
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
@@ -3973,9 +4015,9 @@ static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Turns a vector into a human-readable representation.)doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
