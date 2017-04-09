@@ -1,5 +1,5 @@
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/vector.h>
+#include <mitsuba/core/transform.h>
 #include "python.h"
 
 #define SET_ITEM_BINDING(Name, Type)                                   \
@@ -35,6 +35,7 @@ MTS_PY_EXPORT(Properties) {
        .SET_ITEM_BINDING(long, int64_t)
        .SET_ITEM_BINDING(string, std::string)
        .SET_ITEM_BINDING(vector3f, Vector3f)
+       .SET_ITEM_BINDING(transform, Transform)
        .SET_ITEM_BINDING(object, ref<Object>)
 
        .def("__getitem__", [](const Properties& p, const std::string &key) {
@@ -53,6 +54,8 @@ MTS_PY_EXPORT(Properties) {
                 return py::cast(p.vector3f(key));
             else if (type == Properties::EPoint3f)
                 return py::cast(p.point3f(key));
+            else if (type == Properties::ETransform)
+                return py::cast(p.transform(key));
             else if (type == Properties::EObject)
                 return py::cast(p.object(key));
             else {

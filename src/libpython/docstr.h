@@ -2057,11 +2057,21 @@ static const char *__doc_mitsuba_Properties_set_point3f = R"doc(Store a 3D point
 
 static const char *__doc_mitsuba_Properties_set_string = R"doc(Store a string in the Properties instance)doc";
 
+static const char *__doc_mitsuba_Properties_set_transform =
+R"doc(Store a 4x4 homogeneous coordinate transformation in the Properties
+instance)doc";
+
 static const char *__doc_mitsuba_Properties_set_vector3f = R"doc(Store a 3D vector in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_string = R"doc(Retrieve a string value)doc";
 
 static const char *__doc_mitsuba_Properties_string_2 = R"doc(Retrieve a string value (use default value if no entry exists))doc";
+
+static const char *__doc_mitsuba_Properties_transform = R"doc(Retrieve a 4x4 homogeneous coordinate transformation)doc";
+
+static const char *__doc_mitsuba_Properties_transform_2 =
+R"doc(Retrieve a 4x4 homogeneous coordinate transformation (use default
+value if no entry exists))doc";
 
 static const char *__doc_mitsuba_Properties_unqueried = R"doc(Return the list of un-queried attributed)doc";
 
@@ -4009,17 +4019,17 @@ static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical st
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 

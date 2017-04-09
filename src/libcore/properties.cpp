@@ -1,7 +1,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/variant.h>
-#include <mitsuba/core/vector.h>
+#include <mitsuba/core/transform.h>
 #include <iostream>
 
 #include <map>
@@ -16,6 +16,7 @@ using VariantType = variant<
     Vector3f,
     Point3f,
     std::string,
+    Transform,
     NamedReference,
     ref<Object>
 >;
@@ -80,6 +81,7 @@ DEFINE_PROPERTY_ACCESSOR(std::string,    string,    set_string,          string)
 DEFINE_PROPERTY_ACCESSOR(Vector3f,       vector,    set_vector3f,        vector3f)
 DEFINE_PROPERTY_ACCESSOR(Point3f,        point,     set_point3f,         point3f)
 DEFINE_PROPERTY_ACCESSOR(NamedReference, ref,       set_named_reference, named_reference)
+DEFINE_PROPERTY_ACCESSOR(Transform,      transform, set_transform,       transform)
 DEFINE_PROPERTY_ACCESSOR(ref<Object>,    object,    set_object,          object)
 
 Properties::Properties()
@@ -114,6 +116,7 @@ namespace {
         Result operator()(const Point3f &) { return Properties::EPoint3f; }
         Result operator()(const std::string &) { return Properties::EString; }
         Result operator()(const NamedReference &) { return Properties::ENamedReference; }
+        Result operator()(const Transform &) { return Properties::ETransform; }
         Result operator()(const ref<Object> &) { return Properties::EObject; }
     };
 
@@ -126,6 +129,7 @@ namespace {
         void operator()(const Float &f) { os << f; }
         void operator()(const Vector3f &v) { os << v; }
         void operator()(const Point3f &v) { os << v; }
+        void operator()(const Transform &t) { os << t; }
         void operator()(const std::string &s) { os << "\"" << s << "\""; }
         void operator()(const NamedReference &nr) { os << "\"" << (const std::string &) nr << "\""; }
         void operator()(const ref<Object> &o) { os << o->to_string(); }
