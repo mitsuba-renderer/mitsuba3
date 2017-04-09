@@ -285,7 +285,7 @@ private:
                            Scalar *target, uint32_t target_stride,
                            uint32_t channels) const {
         const uint32_t taps = m_taps, half_taps = m_taps / 2;
-        const Float *weights = m_weights.get();
+        const Scalar *weights = m_weights.get();
         const int32_t *start = m_start.get();
         const Scalar min = std::get<0>(m_clamp);
         const Scalar max = std::get<1>(m_clamp);

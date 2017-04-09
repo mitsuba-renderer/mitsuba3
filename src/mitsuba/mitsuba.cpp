@@ -7,6 +7,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/jit.h>
+#include <mitsuba/core/bitmap.h>
 #include <tbb/task_scheduler_init.h>
 
 #include <mitsuba/render/shape.h>
@@ -91,6 +92,7 @@ int main(int argc, char *argv[]) {
     Class::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
+    Bitmap::static_initialization();
 
     ArgParser parser;
     typedef std::vector<std::string> StringVec;
@@ -141,6 +143,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    Bitmap::static_shutdown();
     Logger::static_shutdown();
     Thread::static_shutdown();
     Class::static_shutdown();

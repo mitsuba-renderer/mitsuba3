@@ -127,7 +127,7 @@ PluginManager::~PluginManager() {
         delete pair.second;
 }
 
-ref<Object> PluginManager::create_object(const Class *class_, const Properties &props) {
+ref<Object> PluginManager::create_object(const Properties &props, const Class *class_) {
    if (class_->name() == "Scene")
        return class_->construct(props);
 

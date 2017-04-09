@@ -523,7 +523,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, std::string id) {
     );
 
     try {
-        inst.object = PluginManager::instance()->create_object(inst.class_, props);
+        inst.object = PluginManager::instance()->create_object(props, inst.class_);
     } catch (const std::exception &e) {
         Throw("Error while loading \"%s\" (near %s): could not instantiate "
               "%s plugin of type \"%s\": %s", inst.src_id, inst.offset(inst.location),

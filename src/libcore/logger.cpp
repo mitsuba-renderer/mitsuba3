@@ -117,6 +117,11 @@ void Logger::static_initialization() {
     logger->add_appender(appender);
     logger->set_formatter(formatter);
     Thread::thread()->set_logger(logger);
+#if defined(NDEBUG)
+    logger->set_log_level(EInfo);
+#else
+    logger->set_log_level(EDebug);
+#endif
 }
 
 void Logger::static_shutdown() {

@@ -18,7 +18,7 @@ static void PyLog(ELogLevel level, const std::string &msg) {
         fmt.insert(2, "()");
 
     Thread::thread()->logger()->log(
-        level, nullptr, /* theClass */
+        level, nullptr, /* class_ */
         filename.c_str(), lineno,
         tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
 }

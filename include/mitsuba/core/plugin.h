@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** /// XXX update
+/**
  * \brief The object factory is responsible for loading plugin modules and
  * instantiating object instances.
  *
@@ -24,13 +24,13 @@ NAMESPACE_BEGIN(mitsuba)
  * \code
  * from mitsuba.core import *
  *
- * pmgr = PluginManager.getInstance()
+ * pmgr = PluginManager.instance()
  * camera = pmgr.create({
  *     "type" : "perspective",
- *     "toWorld" : Transform.lookAt(
- *         Point(0, 0, -10),
- *         Point(0, 0, 0),
- *         Vector(0, 1, 0)
+ *     "to_world" : Transform.look_at(
+ *         Point3f(0, 0, -10),
+ *         Point3f(0, 0, 0),
+ *         Vector3f(0, 1, 0)
  *     ),
  *     "film" : {
  *         "type" : "ldrfilm",
@@ -63,15 +63,20 @@ public:
      * \brief Instantiate a plugin, verify its type, and return the newly
      * created object instance.
      *
-     * \param classType
-     *     Expected type of the instance. An exception will be thrown if it
-     *     turns out not to derive from this class.
-     *
      * \param props
      *     A \ref Properties instance containing all information required to
      *     find and construct the plugin.
+     *
+     * \param class_type
+     *     Expected type of the instance. An exception will be thrown if it
+     *     turns out not to derive from this class.
      */
-    ref<Object> create_object(const Class *classType, const Properties &props);
+    ref<Object> create_object(const Properties &props, const Class *class_);
+
+    /// Convenience template wrapper around \ref create_object()
+    template <typename T> ref<T> create_object(const Properties &props) {
+        return static_cast<T *>(create_object(props, MTS_CLASS(T)).get());
+    }
 
     /**
      * \brief Instantiate a plugin and return the new instance (without

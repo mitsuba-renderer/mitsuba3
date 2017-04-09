@@ -1,29 +1,35 @@
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/filesystem.h>
+#include <mitsuba/core/stream.h>
 #include "python.h"
 
 MTS_PY_EXPORT(Bitmap) {
     auto bitmap = MTS_PY_CLASS(Bitmap, Object)
         .def(py::init<Bitmap::EPixelFormat, Struct::EType, const Vector2s &, size_t>(),
-             "pfmt"_a, "cfmt"_a, "size"_a, "channel_count"_a = 0,
-             D(Bitmap, Bitmap))
+             "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, D(Bitmap, Bitmap))
+
         .def("__init__", [](Bitmap &bitmap, py::array obj) {
-            Bitmap::EPixelFormat pFmt = Bitmap::ELuminance;
-            Struct::EType cFmt = py::module::import("mitsuba.core").attr("Struct").attr("EType")(obj.dtype()).cast<Struct::EType>();
+            auto struct_ = py::module::import("mitsuba.core").attr("Struct");
+            Struct::EType component_format = struct_.attr("EType")(obj.dtype()).cast<Struct::EType>();
             size_t channel_count = 0;
             if (obj.ndim() != 2 && obj.ndim() != 3)
                 throw py::type_error("Expected an array of size 2 or 3");
+
+            Bitmap::EPixelFormat pixel_format = Bitmap::ELuminance;
             if (obj.ndim() == 3) {
                 channel_count = obj.shape()[2];
                 switch (channel_count) {
-                    case 1: pFmt = Bitmap::ELuminance; break;
-                    case 2: pFmt = Bitmap::ELuminanceAlpha; break;
-                    case 3: pFmt = Bitmap::ERGB; break;
-                    case 4: pFmt = Bitmap::ERGBA; break;
-                    default: pFmt = Bitmap::EMultiChannel; break;
+                    case 1: pixel_format = Bitmap::ELuminance; break;
+                    case 2: pixel_format = Bitmap::ELuminanceAlpha; break;
+                    case 3: pixel_format = Bitmap::ERGB; break;
+                    case 4: pixel_format = Bitmap::ERGBA; break;
+                    default: pixel_format = Bitmap::EMultiChannel; break;
                 }
             }
+
             obj = py::array::ensure(obj, py::array::c_style);
-            new (&bitmap) Bitmap(pFmt, cFmt, Vector2s(obj.shape()[1], obj.shape()[0]), channel_count);
+            Vector2s size(obj.shape()[1], obj.shape()[0]);
+            new (&bitmap) Bitmap(pixel_format, component_format, size, channel_count);
             memcpy(bitmap.data(), obj.data(), bitmap.buffer_size());
         })
         .def(py::init<const Bitmap &>())
@@ -40,6 +46,27 @@ MTS_PY_EXPORT(Bitmap) {
         .mdef(Bitmap, gamma)
         .mdef(Bitmap, set_gamma)
         .mdef(Bitmap, clear)
+        .def("resample", py::overload_cast<Bitmap *, const ReconstructionFilter *,
+            const std::pair<Bitmap::EBoundaryCondition, Bitmap::EBoundaryCondition> &,
+            const std::pair<Float, Float> &, Bitmap *>(&Bitmap::resample, py::const_),
+            "target"_a, "rfilter"_a = py::none(),
+            "bc"_a = std::make_pair(Bitmap::EBoundaryCondition::EClamp,
+                                    Bitmap::EBoundaryCondition::EClamp),
+            "clamp"_a = std::make_pair(-std::numeric_limits<Float>::infinity(),
+                                        std::numeric_limits<Float>::infinity()),
+            "temp"_a = py::none(),
+            D(Bitmap, resample)
+        )
+        .def("resample", py::overload_cast<const Vector2s &, const ReconstructionFilter *,
+            const std::pair<Bitmap::EBoundaryCondition, Bitmap::EBoundaryCondition> &,
+            const std::pair<Float, Float> &>(&Bitmap::resample, py::const_),
+            "res"_a, "rfilter"_a = py::none(),
+            "bc"_a = std::make_pair(Bitmap::EBoundaryCondition::EClamp,
+                                    Bitmap::EBoundaryCondition::EClamp),
+            "clamp"_a = std::make_pair(-std::numeric_limits<Float>::infinity(),
+                                        std::numeric_limits<Float>::infinity()),
+            D(Bitmap, resample, 2)
+        )
         .def("struct_", &Bitmap::struct_, D(Bitmap, struct));
 
     py::enum_<Bitmap::EPixelFormat>(bitmap, "EPixelFormat", D(Bitmap, EPixelFormat))
@@ -62,4 +89,20 @@ MTS_PY_EXPORT(Bitmap) {
         .value("ETGA", Bitmap::ETGA)
         .value("EBMP", Bitmap::EBMP)
         .value("EAuto", Bitmap::EAuto);
+
+    bitmap
+        .def(py::init<const fs::path &, Bitmap::EFileFormat>(), "path"_a,
+             "format"_a = Bitmap::EAuto)
+        .def(py::init<Stream *, Bitmap::EFileFormat>(), "stream"_a,
+             "format"_a = Bitmap::EAuto)
+        .def("write",
+             py::overload_cast<Stream *, Bitmap::EFileFormat, int>(
+                 &Bitmap::write, py::const_),
+             "stream"_a, "format"_a = Bitmap::EAuto, "quality"_a = -1,
+             D(Bitmap, write))
+        .def("write",
+             py::overload_cast<const fs::path &, Bitmap::EFileFormat, int>(
+                 &Bitmap::write, py::const_),
+             "path"_a, "format"_a = Bitmap::EAuto, "quality"_a = -1,
+             D(Bitmap, write, 2));
 }

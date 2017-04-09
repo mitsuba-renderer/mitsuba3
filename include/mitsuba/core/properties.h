@@ -26,6 +26,7 @@ private:
  * the various type-dependent getters and setters. Instead, they
  * are accessed just like a normal Python map, e.g:
  *
+ * XXX update
  * \code
  * myProps = mitsuba.core.Properties("plugin_name")
  * myProps["stringProperty"] = "hello"

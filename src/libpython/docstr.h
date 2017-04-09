@@ -319,10 +319,10 @@ static const char *__doc_mitsuba_Bitmap_Bitmap =
 R"doc(Create a bitmap of the specified type and allocate the necessary
 amount of memory
 
-Parameter ``pfmt``:
+Parameter ``pixel_format``:
     Specifies the pixel format (e.g. RGBA or Luminance-only)
 
-Parameter ``cfmt``:
+Parameter ``component_format``:
     Specifies how the per-pixel components are encoded (e.g. unsigned
     8 bit integers or 32-bit floating point values)
 
@@ -346,7 +346,16 @@ Parameter ``stream``:
 Parameter ``format``:
     File format to be read (PNG/EXR/Auto-detect ...))doc";
 
-static const char *__doc_mitsuba_Bitmap_Bitmap_3 = R"doc(Copy constructor (copies the image contents))doc";
+static const char *__doc_mitsuba_Bitmap_Bitmap_3 =
+R"doc(Load a bitmap from a given filename
+
+Parameter ``path``:
+    Name of the file to be loaded
+
+Parameter ``format``:
+    File format to be read (PNG/EXR/Auto-detect ...))doc";
+
+static const char *__doc_mitsuba_Bitmap_Bitmap_4 = R"doc(Copy constructor (copies the image contents))doc";
 
 static const char *__doc_mitsuba_Bitmap_EFileFormat = R"doc(Supported file formats)doc";
 
@@ -452,18 +461,6 @@ static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZ = R"doc(XYZ tristimulu
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZA = R"doc(XYZ tristimulus + alpha channel)doc";
 
-static const char *__doc_mitsuba_Bitmap_Layer =
-R"doc(Describes a sub-layer of a multilayer bitmap (e.g. OpenEXR)
-
-A layer is defined as a named collection of bitmap channels along with
-a pixel format. This data structure is used by Bitmap::getLayers().)doc";
-
-static const char *__doc_mitsuba_Bitmap_Layer_name = R"doc(Descriptive name of the bitmap layer)doc";
-
-static const char *__doc_mitsuba_Bitmap_Layer_pixel_format = R"doc(Pixel format of the layer)doc";
-
-static const char *__doc_mitsuba_Bitmap_Layer_struct = R"doc(Data structure listing channels and component formats)doc";
-
 static const char *__doc_mitsuba_Bitmap_buffer_size = R"doc(Return the bitmap size in bytes (excluding metadata))doc";
 
 static const char *__doc_mitsuba_Bitmap_bytes_per_pixel = R"doc(Return the number bytes of storage used per pixel)doc";
@@ -512,9 +509,72 @@ static const char *__doc_mitsuba_Bitmap_pixel_count = R"doc(Return the total num
 
 static const char *__doc_mitsuba_Bitmap_pixel_format = R"doc(Return the pixel format of this bitmap)doc";
 
-static const char *__doc_mitsuba_Bitmap_read_open_exr = R"doc()doc";
+static const char *__doc_mitsuba_Bitmap_read = R"doc(Read a file from a stream)doc";
+
+static const char *__doc_mitsuba_Bitmap_read_openexr = R"doc(Read a file encoded using the OpenEXR file format)doc";
 
 static const char *__doc_mitsuba_Bitmap_rebuild_struct = R"doc(Rebuild the 'm_struct' field based on the pixel format etc.)doc";
+
+static const char *__doc_mitsuba_Bitmap_resample =
+R"doc(Up- or down-sample this image to a different resolution
+
+Uses the provided reconstruction filter and accounts for the requested
+horizontal and vertical boundary conditions when looking up data
+outside of the input domain.
+
+A minimum and maximum image value can be specified to prevent to
+prevent out-of-range values that are created by the resampling
+process.
+
+The optional ``temp`` parameter can be used to pass an image of
+resolution ``Vector2s(target->width(), this->height())`` to avoid
+intermediate memory allocations.
+
+Parameter ``target``:
+    Pre-allocated bitmap of the desired target resolution
+
+Parameter ``rfilter``:
+    A separable image reconstruction filter (default: 2-lobe Lanczos
+    filter)
+
+Parameter ``bch``:
+    Horizontal and vertical boundary conditions (default: clamp)
+
+Parameter ``clamp``:
+    Filtered image pixels will be clamped to the following range.
+    Default: -infinity..infinity (i.e. no clamping is used)
+
+Parameter ``temp``:
+    Optional: image for intermediate computations)doc";
+
+static const char *__doc_mitsuba_Bitmap_resample_2 =
+R"doc(Up- or down-sample this image to a different resolution
+
+This version is similar to the above resample() function -- the main
+difference is that it does not work with preallocated bitmaps and
+takes the desired output resolution as first argument.
+
+Uses the provided reconstruction filter and accounts for the requested
+horizontal and vertical boundary conditions when looking up data
+outside of the input domain.
+
+A minimum and maximum image value can be specified to prevent to
+prevent out-of-range values that are created by the resampling
+process.
+
+Parameter ``res``:
+    Desired output resolution
+
+Parameter ``rfilter``:
+    A separable image reconstruction filter (default: 2-lobe Lanczos
+    filter)
+
+Parameter ``bch``:
+    Horizontal and vertical boundary conditions (default: clamp)
+
+Parameter ``clamp``:
+    Filtered image pixels will be clamped to the following range.
+    Default: -infinity..infinity (i.e. no clamping is used))doc";
 
 static const char *__doc_mitsuba_Bitmap_set_gamma = R"doc(Set the bitmap's gamma identifier (-1: sRGB))doc";
 
@@ -522,49 +582,77 @@ static const char *__doc_mitsuba_Bitmap_set_metadata = R"doc(Set the a Propertie
 
 static const char *__doc_mitsuba_Bitmap_size = R"doc(Return the bitmap dimensions in pixels)doc";
 
+static const char *__doc_mitsuba_Bitmap_static_initialization =
+R"doc(Static initialization of bitmap-related data structures (thread pools,
+etc.))doc";
+
+static const char *__doc_mitsuba_Bitmap_static_shutdown = R"doc(Free the resources used by static_initialization())doc";
+
 static const char *__doc_mitsuba_Bitmap_struct = R"doc(Return a ``Struct`` instance describing the contents of the bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_to_string = R"doc(Return a human-readable summary of this bitmap)doc";
 
+static const char *__doc_mitsuba_Bitmap_uint8_data = R"doc(Return a pointer to the underlying data)doc";
+
+static const char *__doc_mitsuba_Bitmap_uint8_data_2 = R"doc(Return a pointer to the underlying data (const))doc";
+
 static const char *__doc_mitsuba_Bitmap_width = R"doc(Return the bitmap's width in pixels)doc";
 
 static const char *__doc_mitsuba_Bitmap_write =
-R"doc(Write an encoded form of the bitmap to a file using the specified file
-format
-
-Parameter ``format``:
-    Target file format (EOpenEXR, EPNG, or EOpenEXR)
-
-Parameter ``stream``:
-    Target stream that will receive the encoded output
-
-Parameter ``compression``:
-    For PNG images, this parameter can be used to control how strongly
-    libpng will try to compress the output (with 1 being the lowest
-    and 9 denoting the highest compression). Note that saving files
-    with the highest compression will be very slow. For JPEG files,
-    this denotes the desired quality (between 0 and 100, the latter
-    being best). The default argument (-1) uses compression 5 for PNG
-    and 100 for JPEG files.)doc";
-
-static const char *__doc_mitsuba_Bitmap_write_2 =
 R"doc(Write an encoded form of the bitmap to a stream using the specified
 file format
 
+Parameter ``stream``:
+    Target stream that will receive the encoded output
+
 Parameter ``format``:
-    Target file format (EOpenEXR, EPNG, or EOpenEXR)
+    Target file format (EOpenEXR, EPNG, EOpenEXR, etc.) Detected from
+    the filename by default.
+
+Parameter ``quality``:
+    Depending on the file format, this parameter takes on a slightly
+    different meaning:
+
+* PNG images: Controls how much libpng will attempt to compress the
+output (with 1 being the lowest and 9 denoting the highest
+compression). The default argument uses the compression level 5.
+
+* JPEG images: denotes the desired quality (between 0 and 100). The
+default argument (-1) uses the highest quality (100).
+
+* OpenEXR images: denotes the quality level of the DWAB compressor,
+with higher values corresponding to a lower quality. A value of 45 is
+recommended as the default for lossy compression. The default argument
+(-1) causes the implementation to switch to the lossless PIZ
+compressor.)doc";
+
+static const char *__doc_mitsuba_Bitmap_write_2 =
+R"doc(Write an encoded form of the bitmap to a file using the specified file
+format
 
 Parameter ``stream``:
     Target stream that will receive the encoded output
 
-Parameter ``compression``:
-    For PNG images, this parameter can be used to control how strongly
-    libpng will try to compress the output (with 1 being the lowest
-    and 9 denoting the highest compression). Note that saving files
-    with the highest compression will be very slow. For JPEG files,
-    this denotes the desired quality (between 0 and 100, the latter
-    being best). The default argument (-1) uses compression 5 for PNG
-    and 100 for JPEG files.)doc";
+Parameter ``format``:
+    Target file format (EOpenEXR, EPNG, EOpenEXR, etc.) Detected from
+    the filename by default.
+
+Parameter ``quality``:
+    Depending on the file format, this parameter takes on a slightly
+    different meaning:
+
+* PNG images: Controls how much libpng will attempt to compress the
+output (with 1 being the lowest and 9 denoting the highest
+compression). The default argument uses the compression level 5.
+
+* JPEG images: denotes the desired quality (between 0 and 100). The
+default argument (-1) uses the highest quality (100).
+
+* OpenEXR images: denotes the quality level of the DWAB compressor,
+with higher values corresponding to a lower quality. A value of 45 is
+recommended as the default for lossy compression. The default argument
+(-1) causes the implementation to switch to the lossless PIZ
+compressor.)doc";
 
 static const char *__doc_mitsuba_Bitmap_write_jpeg = R"doc(Save a file using the JPEG file format)doc";
 
@@ -1833,8 +1921,8 @@ simply returns ``MyObject[<address of 'this' pointer>]``, where
 ``MyObject`` is the name of the class.)doc";
 
 static const char *__doc_mitsuba_PluginManager =
-R"doc(/// XXX update The object factory is responsible for loading plugin
-modules and instantiating object instances.
+R"doc(The object factory is responsible for loading plugin modules and
+instantiating object instances.
 
 Ordinarily, this class will be used by making repeated calls to the
 create_object() methods. The generated instances are then assembled
@@ -1849,13 +1937,13 @@ Python-only method ``create``(), which works as follows:
 ```
 from mitsuba.core import *
 
-pmgr = PluginManager.getInstance()
+pmgr = PluginManager.instance()
 camera = pmgr.create({
     "type" : "perspective",
-    "toWorld" : Transform.lookAt(
-        Point(0, 0, -10),
-        Point(0, 0, 0),
-        Vector(0, 1, 0)
+    "to_world" : Transform.look_at(
+        Point3f(0, 0, -10),
+        Point3f(0, 0, 0),
+        Vector3f(0, 1, 0)
     ),
     "film" : {
         "type" : "ldrfilm",
@@ -1881,15 +1969,17 @@ static const char *__doc_mitsuba_PluginManager_create_object =
 R"doc(Instantiate a plugin, verify its type, and return the newly created
 object instance.
 
-Parameter ``classType``:
-    Expected type of the instance. An exception will be thrown if it
-    turns out not to derive from this class.
-
 Parameter ``props``:
     A Properties instance containing all information required to find
-    and construct the plugin.)doc";
+    and construct the plugin.
 
-static const char *__doc_mitsuba_PluginManager_create_object_2 =
+Parameter ``class_type``:
+    Expected type of the instance. An exception will be thrown if it
+    turns out not to derive from this class.)doc";
+
+static const char *__doc_mitsuba_PluginManager_create_object_2 = R"doc(Convenience template wrapper around create_object())doc";
+
+static const char *__doc_mitsuba_PluginManager_create_object_3 =
 R"doc(Instantiate a plugin and return the new instance (without verifying
 its type).
 
@@ -1923,6 +2013,8 @@ R"doc(Associative parameter map for constructing subclasses of Object.
 Note that the Python bindings for this class do not implement the
 various type-dependent getters and setters. Instead, they are accessed
 just like a normal Python map, e.g:
+
+XXX update
 
 ```
 myProps = mitsuba.core.Properties("plugin_name")
@@ -4169,23 +4261,23 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_10 = R"doc(Return a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
 

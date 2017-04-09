@@ -4,6 +4,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/simd.h>
+#include <mitsuba/core/bitmap.h>
 #include "python.h"
 
 // libmitsuba-core
@@ -33,12 +34,12 @@ MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Transform);
 MTS_PY_DECLARE(Struct);
+MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(Bitmap);
 MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(spline);
-MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(DiscreteDistribution);
 
 PYBIND11_PLUGIN(mitsuba_core_ext) {
@@ -72,6 +73,7 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     Class::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
+    Bitmap::static_initialization();
 
     // libmitsuba-core
     MTS_PY_IMPORT(filesystem);
@@ -100,15 +102,16 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     MTS_PY_IMPORT(Frame);
     MTS_PY_IMPORT(Transform);
     MTS_PY_IMPORT(Struct);
+    MTS_PY_IMPORT(rfilter);
     MTS_PY_IMPORT(Bitmap);
     MTS_PY_IMPORT(Spectrum);
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(qmc);
     MTS_PY_IMPORT(spline);
-    MTS_PY_IMPORT(rfilter);
     MTS_PY_IMPORT(DiscreteDistribution);
 
     auto cleanup_callback = []() {
+        Bitmap::static_shutdown();
         Logger::static_shutdown();
         Thread::static_shutdown();
         Class::static_shutdown();

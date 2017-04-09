@@ -2,8 +2,11 @@
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/util.h>
-
+#include <mitsuba/core/plugin.h>
+#include <mitsuba/core/rfilter.h>
+#include <mitsuba/core/transform.h>
 #include <mitsuba/core/fstream.h>
+#include <tbb/tbb.h>
 
 /* libpng */
 #include <png.h>
@@ -30,6 +33,7 @@ extern "C" {
 #include <ImfIntAttribute.h>
 #include <ImfFloatAttribute.h>
 #include <ImfDoubleAttribute.h>
+#include <ImfCompressionAttribute.h>
 #include <ImfVecAttribute.h>
 #include <ImfMatrixAttribute.h>
 #include <ImfVersion.h>
@@ -42,10 +46,10 @@ extern "C" {
 
 NAMESPACE_BEGIN(mitsuba)
 
-Bitmap::Bitmap(EPixelFormat pfmt, Struct::EType cfmt,
+Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
                const Vector2s &size, size_t channel_count, uint8_t *data)
-    : m_data(data), m_pixel_format(pfmt), m_component_format(cfmt),
-      m_size(size), m_owns_data(false) {
+    : m_data(data), m_pixel_format(pixel_format),
+      m_component_format(component_format), m_size(size), m_owns_data(false) {
 
     if (m_component_format == Struct::EUInt8)
         m_gamma = -1.0f; // sRGB by default
@@ -55,7 +59,6 @@ Bitmap::Bitmap(EPixelFormat pfmt, Struct::EType cfmt,
     rebuild_struct(channel_count);
 
     if (!m_data) {
-
         m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
             enoki::alloc<uint8_t>(buffer_size()));
 
@@ -75,36 +78,12 @@ Bitmap::Bitmap(const Bitmap &bitmap)
 }
 
 Bitmap::Bitmap(Stream *stream, EFileFormat format) {
-    if (format == EAuto) {
-        /* Try to automatically detect the file format */
-        size_t pos = stream->tell();
-        uint8_t start[8];
-        stream->read(start, 8);
+    read(stream, format);
+}
 
-        if (start[0] == 'B' && start[1] == 'M') {
-            format = EBMP;
-        } else if (start[0] == '#' && start[1] == '?') {
-            format = ERGBE;
-        } else if (start[0] == 'P' && (start[1] == 'F' || start[1] == 'f')) {
-            format = EPFM;
-        } else if (start[0] == 'P' && start[1] == '6') {
-            format = EPPM;
-        } else if (start[0] == 0xFF && start[1] == 0xD8) {
-            format = EJPEG;
-        } else if (png_sig_cmp(start, 0, 8) == 0) {
-            format = EPNG;
-        } else if (Imf::isImfMagic((const char *) start)) {
-            format = EOpenEXR;
-        } else {
-            /* Check for a TGAv2 file */
-            char footer[18];
-            stream->seek(stream->size() - 18);
-            stream->read(footer, 18);
-            if (footer[17] == 0 && strncmp(footer, "TRUEVISION-XFILE.", 17) == 0)
-                format = ETGA;
-        }
-        stream->seek(pos);
-    }
+Bitmap::Bitmap(const fs::path &filename, EFileFormat format) {
+    ref<FileStream> fs = new FileStream(filename);
+    read(fs, format);
 }
 
 Bitmap::~Bitmap() {
@@ -160,19 +139,233 @@ size_t Bitmap::bytes_per_pixel() const {
     return result * channel_count();
 }
 
-std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value) {
-    switch (value) {
-        case Bitmap::ELuminance: os << "luminance"; break;
-        case Bitmap::ELuminanceAlpha: os << "luminanceAlpha"; break;
-        case Bitmap::ERGB: os << "rgb"; break;
-        case Bitmap::ERGBA: os << "rgba"; break;
-        case Bitmap::EXYZ: os << "xyz"; break;
-        case Bitmap::EXYZA: os << "xyza"; break;
-        case Bitmap::EMultiChannel: os << "multiChannel"; break;
-        default: os << "invalid"; break;
+template <typename Scalar, bool Filter>
+static void
+resample(Bitmap *target, const Bitmap *source,
+         const ReconstructionFilter *rfilter_,
+         const std::pair<Bitmap::EBoundaryCondition, Bitmap::EBoundaryCondition> bc,
+         const std::pair<Scalar, Scalar> &clamp, ref<Bitmap> temp) {
+    ref<const ReconstructionFilter> rfilter(rfilter_);
+
+    if (!rfilter) {
+        /* Upsample using a 2-lobed Lanczos reconstruction filter */
+        Properties props("lanczos");
+        props.set_int("lobes", 2);
+        rfilter = PluginManager::instance()->create_object<ReconstructionFilter>(props);
     }
-    return os;
+
+    if (source->height() == target->height() &&
+        source->width() == target->width() && !Filter) {
+        memcpy(target->uint8_data(), source->uint8_data(), source->buffer_size());
+        return;
+    }
+
+    uint32_t channels = source->channel_count();
+
+    if (source->width() != target->width() || Filter) {
+        /* Re-sample horizontally */
+        Resampler<Scalar> r(rfilter, source->width(), target->width());
+        r.set_boundary_condition(bc.first);
+        r.set_clamp(clamp);
+
+        /* Create a bitmap for intermediate storage */
+        if (!temp) {
+            if (source->height() == target->height() && !Filter) {
+                // write directly to the output bitmap
+                temp = target;
+            } else {
+                // otherwise: write to a temporary bitmap
+                temp = new Bitmap(
+                    source->pixel_format(), source->component_format(),
+                    Vector2s(target->width(), source->height()), channels);
+            }
+        }
+
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, source->height(), 100),
+            [&](const tbb::blocked_range<size_t> &range) {
+                for (auto y = range.begin(); y != range.end(); ++y) {
+                    const Scalar *s = (const Scalar *) source->uint8_data() +
+                                      y * source->width() * channels;
+                    Scalar *t       = (Scalar *) temp->uint8_data() +
+                                      y * target->width() * channels;
+                    r.resample(s, 1, t, 1, channels);
+                }
+            }
+        );
+
+        /* Now, read from the temporary bitmap */
+        source = temp;
+    }
+
+    if (source->height() != target->height() || Filter) {
+        /* Re-sample vertically */
+        Resampler<Scalar> r(rfilter, source->height(), target->height());
+        r.set_boundary_condition(bc.second);
+        r.set_clamp(clamp);
+
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, source->width(), 100),
+            [&](const tbb::blocked_range<size_t> &range) {
+                for (auto x = range.begin(); x != range.end(); ++x) {
+                    const Scalar *s = (const Scalar *) source->uint8_data() +
+                                      x * channels;
+                    Scalar *t       = (Scalar *) target->uint8_data() +
+                                      x * channels;
+                    r.resample(s, source->width(), t, target->width(), channels);
+                }
+            }
+        );
+    }
 }
+
+void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
+                      const std::pair<EBoundaryCondition, EBoundaryCondition> &bc,
+                      const std::pair<Float, Float> &clamp, Bitmap *temp) const {
+
+    if (pixel_format() != target->pixel_format() ||
+        component_format() != target->component_format() ||
+        channel_count() != target->channel_count())
+        Throw("Bitmap::resample(): Incompatible source and target bitmaps!");
+
+    if (temp && (pixel_format() != temp->pixel_format() ||
+                 component_format() != temp->component_format() ||
+                 channel_count() != temp->channel_count() ||
+                 temp->size() != Vector2s(target->width(), height())))
+        Throw("Bitmap::resample(): Incompatible temporary bitmap specified!");
+
+    switch (m_component_format) {
+        case Struct::EFloat16:
+            mitsuba::resample<enoki::half, false>(target, this, rfilter, bc,
+                                                  clamp, temp);
+            break;
+
+        case Struct::EFloat32:
+            mitsuba::resample<float, false>(target, this, rfilter, bc,
+                                            clamp, temp);
+            break;
+
+        case Struct::EFloat64:
+            mitsuba::resample<double, false>(target, this, rfilter, bc,
+                                             clamp, temp);
+            break;
+
+        default:
+            Log(EError, "resample(): Unsupported component type! (must be float16/32/64)");
+    }
+}
+
+ref<Bitmap> Bitmap::resample(const Vector2s &res, const ReconstructionFilter *rfilter,
+                             const std::pair<EBoundaryCondition, EBoundaryCondition> &bc,
+                             const std::pair<Float, Float> &bound) const {
+    ref<Bitmap> result =
+        new Bitmap(m_pixel_format, m_component_format, res, channel_count());
+    result->m_struct = m_struct;
+    result->m_metadata = m_metadata;
+    resample(result, rfilter, bc, bound);
+    return result;
+}
+
+void Bitmap::read(Stream *stream, EFileFormat format) {
+    if (format == EAuto) {
+        /* Try to automatically detect the file format */
+        size_t pos = stream->tell();
+        uint8_t start[8];
+        stream->read(start, 8);
+
+        if (start[0] == 'B' && start[1] == 'M') {
+            format = EBMP;
+        } else if (start[0] == '#' && start[1] == '?') {
+            format = ERGBE;
+        } else if (start[0] == 'P' && (start[1] == 'F' || start[1] == 'f')) {
+            format = EPFM;
+        } else if (start[0] == 'P' && start[1] == '6') {
+            format = EPPM;
+        } else if (start[0] == 0xFF && start[1] == 0xD8) {
+            format = EJPEG;
+        } else if (png_sig_cmp(start, 0, 8) == 0) {
+            format = EPNG;
+        } else if (Imf::isImfMagic((const char *) start)) {
+            format = EOpenEXR;
+        } else {
+            /* Check for a TGAv2 file */
+            char footer[18];
+            stream->seek(stream->size() - 18);
+            stream->read(footer, 18);
+            if (footer[17] == 0 && strncmp(footer, "TRUEVISION-XFILE.", 17) == 0)
+                format = ETGA;
+        }
+        stream->seek(pos);
+    }
+    switch (format) {
+        //case EBMP:     read_bmp(stream); break;
+        //case EJPEG:    read_jpeg(stream); break;
+        case EOpenEXR: read_openexr(stream); break;
+        //case ERGBE:    read_rgbe(stream); break;
+        //case EPFM:     read_pfm(stream); break;
+        //case EPPM:     read_ppm(stream); break;
+        //case ETGA:     read_tga(stream); break;
+        //case EPNG:     read_png(stream); break;
+        default:
+            Throw("Bitmap: Invalid file format!");
+    }
+}
+
+void Bitmap::write(const fs::path &path, EFileFormat format, int quality) const {
+    ref<FileStream> fs = new FileStream(path, FileStream::ETruncReadWrite);
+    write(fs, format, quality);
+}
+
+void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
+    auto fs = dynamic_cast<FileStream *>(stream);
+
+    if (format == EAuto) {
+        if (!fs)
+            Throw("Bitmap::write(): can't decide file format based on filename "
+                  "since the target stream is not a file stream");
+        std::string extension = string::to_lower(fs->path().extension());
+        if (extension == ".exr")
+            format = EOpenEXR;
+        else if (extension == ".png")
+            format = EPNG;
+        else if (extension == ".jpg" || extension == ".jpeg")
+            format = EJPEG;
+        else if (extension == ".hdr" || extension == ".rgbe")
+            format = ERGBE;
+        else if (extension == ".pfm")
+            format = EPFM;
+        else if (extension == ".ppm")
+            format = EPPM;
+        else
+            Throw("Bitmap::write(): unsupported bitmap file extension \"%s\"",
+                  extension);
+    }
+
+    Log(EDebug, "Writing %s file \"%s\" .. (%ix%i, %s, %s)",
+        format, fs ? fs->path().string() : "<stream>",
+        m_size.x(), m_size.y(),
+        m_pixel_format, m_component_format
+    );
+
+    switch (format) {
+        case EJPEG:
+            if (quality == -1)
+                quality = 100;
+            write_jpeg(stream, quality);
+            break;
+#if 0
+        case EPNG:
+            if (quality == -1)
+                quality = 5;
+            write_png(stream, quality);
+            break;
+#endif
+        case EOpenEXR:  write_openexr(stream, quality); break;
+        default:
+            Log(EError, "Bitmap::write(): Invalid file format!");
+    }
+}
+
 
 std::string Bitmap::to_string() const {
     std::ostringstream oss;
@@ -185,9 +378,9 @@ std::string Bitmap::to_string() const {
     std::vector<std::string> keys = m_metadata.property_names();
     if (!keys.empty()) {
         oss << "  metadata = {" << std::endl;
-        for (std::vector<std::string>::const_iterator it = keys.begin(); it != keys.end(); ) {
+        for (auto it = keys.begin(); it != keys.end(); ) {
             std::string value = m_metadata.as_string(*it);
-            if (value.size() > 50)
+            if (value.length() > 50)
                 value = value.substr(0, 50) + ".. [truncated]";
 
             oss << "    \"" << *it << "\" => \"" << value << "\"";
@@ -216,20 +409,20 @@ public:
         m_size = stream->size();
     }
 
-    bool read(char *c, int n) {
+    bool read(char *c, int n) override {
         m_stream->read(c, n);
         return m_stream->tell() == m_size;
     }
 
-    Imf::Int64 tellg() {
+    Imf::Int64 tellg() override {
         return m_stream->tell()-m_offset;
     }
 
-    void seekg(Imf::Int64 pos) {
+    void seekg(Imf::Int64 pos) override {
         m_stream->seek((size_t) pos + m_offset);
     }
 
-    void clear() { }
+    void clear() override { }
 private:
     ref<Stream> m_stream;
     size_t m_offset, m_size;
@@ -238,171 +431,378 @@ private:
 class EXROStream : public Imf::OStream {
 public:
     EXROStream(Stream *stream) : OStream(stream->to_string().c_str()),
-        m_stream(stream) {
-    }
+        m_stream(stream) { }
 
-    void write(const char *c, int n) { m_stream->write(c, n); }
-    Imf::Int64 tellp() { return m_stream->tell(); }
-    void seekp(Imf::Int64 pos) { m_stream->seek((size_t) pos); }
-
-    void clear() { }
+    void write(const char *c, int n) override { m_stream->write(c, n); }
+    Imf::Int64 tellp() override { return m_stream->tell(); }
+    void seekp(Imf::Int64 pos) override { m_stream->seek((size_t) pos); }
 private:
     ref<Stream> m_stream;
 };
 
-#if 0
 void Bitmap::read_openexr(Stream *stream) {
+    if (Imf::globalThreadCount() == 0)
+        Imf::setGlobalThreadCount(std::min(8, util::core_count()));
+
     EXRIStream istr(stream);
     Imf::InputFile file(istr);
 
     const Imf::Header &header = file.header();
+    const Imf::ChannelList &channels = header.channels();
+
+    if (channels.begin() == channels.end())
+        Throw("read_openexr(): Image does not contain any channels!");
 
     /* Load metadata if present */
-    for (Imf::Header::ConstIterator it = header.begin(); it != header.end(); ++it) {
-        std::string name = it.name(), typeName = it.attribute().typeName();
-        const Imf::StringAttribute *sattr;
-        const Imf::IntAttribute *iattr;
-        const Imf::FloatAttribute *fattr;
-        const Imf::DoubleAttribute *dattr;
-        const Imf::V3fAttribute *vattr;
-        const Imf::M44fAttribute *mattr;
+    for (auto it = header.begin(); it != header.end(); ++it) {
+        const char *name = it.name();
+        const Imf::Attribute *attr = &it.attribute();
 
-        if (typeName == "string" &&
-            (sattr = header.findTypedAttribute<Imf::StringAttribute>(name.c_str())))
-            m_metadata.set_string(name, sattr->value());
-        else if (typeName == "int" &&
-            (iattr = header.findTypedAttribute<Imf::IntAttribute>(name.c_str())))
-            m_metadata.set_long(name, iattr->value());
-        else if (typeName == "float" &&
-            (fattr = header.findTypedAttribute<Imf::FloatAttribute>(name.c_str())))
-            m_metadata.set_float(name, (Float) fattr->value());
-        else if (typeName == "double" &&
-            (dattr = header.findTypedAttribute<Imf::DoubleAttribute>(name.c_str())))
-            m_metadata.set_float(name, (Float) dattr->value());
-        else if (typeName == "v3f" &&
-            (vattr = header.findTypedAttribute<Imf::V3fAttribute>(name.c_str()))) {
-            Imath::V3f vec = vattr->value();
-            m_metadata.set_vector3f(name, Vector3f(vec.x, vec.y, vec.z));
-        } else if (typeName == "m44f" &&
-            (mattr = header.findTypedAttribute<Imf::M44fAttribute>(name.c_str()))) {
-            Throw("read_openexr(): m44f type is not handled yet");
-/*
-            Matrix4x4 M;
-            for (int i=0; i<4; ++i)
-                for (int j=0; j<4; ++j)
-                    M(i, j) = mattr->value().x[i][j];
-            m_metadata.setTransform(name, Transform(M));
-            */
+        /* StringAttribute */ {
+            auto v = dynamic_cast<const Imf::StringAttribute *>(attr);
+            if (v) m_metadata.set_string(name, v->value());
+        }
+        /* IntAttribute */ {
+            auto v = dynamic_cast<const Imf::IntAttribute *>(attr);
+            if (v) m_metadata.set_long(name, v->value());
+        }
+        /* FloatAttribute */ {
+            auto v = dynamic_cast<const Imf::FloatAttribute *>(attr);
+            if (v) m_metadata.set_float(name, Float(v->value()));
+        }
+        /* DoubleAttribute */ {
+            auto v = dynamic_cast<const Imf::DoubleAttribute *>(attr);
+            if (v) m_metadata.set_float(name, Float(v->value()));
+        }
+        /* V3fAttribute */ {
+            auto v = dynamic_cast<const Imf::V3fAttribute *>(attr);
+            if (v) {
+                Imath::V3f vec = v->value();
+                m_metadata.set_vector3f(name, Vector3f(vec.x, vec.y, vec.z));
+            }
+        }
+        /* M44fAttribute */ {
+            auto v = dynamic_cast<const Imf::M44fAttribute *>(attr);
+            if (v) {
+                Matrix4f M;
+                for (size_t i = 0; i < 4; ++i)
+                    for (size_t j = 0; j < 4; ++j)
+                        M(i, j) = v->value().x[i][j];
+                m_metadata.set_transform(name, Transform(M));
+            }
         }
     }
 
-    const Imf::ChannelList &channels = header.channels();
+    bool process_colors = false;
     m_gamma = 1.0f;
+    m_pixel_format = EMultiChannel;
     m_struct = new Struct();
+    Imf::PixelType pixel_type = channels.begin().channel().type;
 
-    for (auto it = channels.begin(); it != channels.end(); ++it) {
-        switch (it.channel().type) {
-            case Imf::HALF: break;
-            case Imf::FLOAT: break;
-            case Imf::UINT: break;
-            default:
-        Throw("read_openexr(): Invalid component type (must be "
-            "float16, float32, or uint32)");
-
-        }
-
+    switch (pixel_type) {
+        case Imf::HALF:  m_component_format = Struct::EFloat16; break;
+        case Imf::FLOAT: m_component_format = Struct::EFloat32; break;
+        case Imf::UINT:  m_component_format = Struct::EUInt32;  break;
+        default: Throw("read_openexr(): Invalid component type (must be "
+                       "float16, float32, or uint32)");
     }
-    /* Just how big is this image? */
-    Imath::Box2i dataWindow = file.header().dataWindow();
 
-    m_size = Vector2s(dataWindow.max.x - dataWindow.min.x + 1,
-                      dataWindow.max.y - dataWindow.min.y + 1);
+    enum { Unknown, R, G, B, X, Y, Z, A, RY, BY, NumClasses };
+
+    /* Classification scheme for color channels */
+    auto channel_class = [](std::string name) -> uint8_t {
+        auto it = name.rfind(".");
+        if (it != std::string::npos)
+            name = name.substr(it + 1);
+        name = string::to_lower(name);
+        if (name == "r") return R;
+        if (name == "g") return G;
+        if (name == "b") return B;
+        if (name == "x") return X;
+        if (name == "y") return Y;
+        if (name == "z") return Z;
+        if (name == "ry") return RY;
+        if (name == "by") return BY;
+        if (name == "a") return A;
+        return Unknown;
+    };
+
+    /* Assign a sorting key to color channels */
+    auto channel_key = [&](std::string name) -> std::string {
+        uint8_t class_ = channel_class(name);
+        if (class_ == Unknown)
+            return name;
+        auto it = name.rfind(".");
+        char suffix('0' + class_);
+        if (it != std::string::npos)
+            name = name.substr(0, it) + "." + suffix;
+        else
+            name = suffix;
+        return name;
+    };
+
+    bool found[NumClasses] = { false };
+    std::vector<std::string> channels_sorted;
+    for (auto it = channels.begin(); it != channels.end(); ++it) {
+        std::string name(it.name());
+        found[channel_class(name)] = true;
+        channels_sorted.push_back(name);
+    }
+
+    std::sort(
+        channels_sorted.begin(), channels_sorted.end(),
+        [&](auto const &v0, auto const &v1) {
+            return channel_key(v0) < channel_key(v1);
+        }
+    );
+
+    /* Order channel names based on RGB/XYZ[A] suffix */
+    for (auto const &name: channels_sorted)
+        m_struct->append(name, m_component_format);
+
+    /* Attempt to detect a standard combination of color channels */
+    m_pixel_format = EMultiChannel;
+    bool luminance_chroma_format = false;
+    if (found[R] && found[G] && found[B]) {
+        if (m_struct->field_count() == 3)
+            m_pixel_format = ERGB;
+        else if (found[A] && m_struct->field_count() == 4)
+            m_pixel_format = ERGBA;
+    } else if (found[X] && found[Y] && found[Z]) {
+        if (m_struct->field_count() == 3)
+            m_pixel_format = EXYZ;
+        else if (found[A] && m_struct->field_count() == 4)
+            m_pixel_format = EXYZA;
+    } else if (found[Y] && found[RY] && found[BY]) {
+        if (m_struct->field_count() == 3)
+            m_pixel_format = ERGB;
+        else if (found[A] && m_struct->field_count() == 4)
+            m_pixel_format = ERGBA;
+        luminance_chroma_format = true;
+    } else if (found[Y]) {
+        if (m_struct->field_count() == 1)
+            m_pixel_format = ELuminance;
+        else if (found[A] && m_struct->field_count() == 2)
+            m_pixel_format = ELuminanceAlpha;
+    }
+
+    /* Check if there is a chromaticity header entry */
+    Imf::Chromaticities file_chroma = Imf::chromaticities(file.header());
+
+    auto chroma_eq = [](const Imf::Chromaticities &a,
+                        const Imf::Chromaticities &b) {
+        return (a.red  - b.red).length2()  + (a.green - b.green).length2() +
+               (a.blue - b.blue).length2() + (a.white - b.white).length2() < 1e-6f;
+    };
+
+    auto set_suffix = [](std::string name, const std::string &suffix) {
+        auto it = name.rfind(".");
+        if (it != std::string::npos)
+            name = name.substr(0, it) + "." + suffix;
+        else
+            name = suffix;
+        return name;
+    };
+
+    Imath::Box2i data_window = file.header().dataWindow();
+    m_size = Vector2s(data_window.max.x - data_window.min.x + 1,
+                      data_window.max.y - data_window.min.y + 1);
 
     /* Compute pixel / row strides */
-    size_t pixelStride = compSize * channel_count(),
-           rowStride = pixelStride * m_size.x;
+    size_t pixel_stride = bytes_per_pixel(),
+           row_stride = pixel_stride * m_size.x(),
+           pixel_count = hprod(m_size);
 
     /* Finally, allocate memory for it */
-    m_data = static_cast<uint8_t *>(allocAligned(getBufferSize()));
+    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
+        enoki::alloc<uint8_t>(row_stride * m_size.y()));
     m_owns_data = true;
-    char *ptr = (char *) m_data;
 
-    ptr -= (dataWindow.min.x + dataWindow.min.y * m_size.x) * pixelStride;
+    using ResampleBuffer = std::pair<std::string, ref<Bitmap>>;
+    std::vector<ResampleBuffer> resample_buffers;
 
-    ref_vector<Bitmap> resampleBuffers((size_t) m_channel_count);
-    ref<ReconstructionFilter> rfilter;
+    uint8_t *ptr = m_data.get() -
+        (data_window.min.x + data_window.min.y * m_size.x()) * pixel_stride;
 
     /* Tell OpenEXR where the image data should be put */
-    Imf::FrameBuffer frameBuffer;
-    for (size_t i=0; i<sourceChannels.size(); ++i) {
-        const char *channel_name = sourceChannels[i];
-        const Imf::Channel &channel = channels[channel_name];
+    Imf::FrameBuffer framebuffer;
+    for (auto const &field: *m_struct) {
+        const Imf::Channel &channel = channels[field.name];
         Vector2i sampling(channel.xSampling, channel.ySampling);
-        m_channel_names.push_back(channel_name);
-
-        if (channel.type != pxType)
-            Log(EError, "read_openexr(): file has multiple channel formats, this is unsupported!");
+        Imf::Slice slice;
 
         if (sampling == Vector2i(1)) {
             /* This is a full resolution channel. Load the ordinary way */
-            frameBuffer.insert(channel_name, Imf::Slice(pxType, ptr, pixelStride, rowStride));
-            ptr += compSize;
+            slice = Imf::Slice(pixel_type, (char *) (ptr + field.offset),
+                               pixel_stride, row_stride);
         } else {
-            /* Uh oh, this is a sub-sampled channel. We will need to scale it up */
-            Vector2i channelSize(m_size.x / sampling.x, m_size.y / sampling.y);
-            resampleBuffers[i] = new Bitmap(Bitmap::ELuminance, m_component_format, channelSize);
-            uint8_t *resamplePtr = resampleBuffers[i]->getUInt8Data();
-            resamplePtr -= (dataWindow.min.x/sampling.x + dataWindow.min.y/sampling.x * channelSize.x) * compSize;
-            frameBuffer.insert(channel_name, Imf::Slice(pxType, (char *) resamplePtr,
-                compSize, compSize*channelSize.x, sampling.x, sampling.y));
-            ptr += compSize;
+            /* Uh oh, this is a sub-sampled channel. We will need to scale it */
+            Vector2s channel_size = m_size / sampling;
+
+            ref<Bitmap> bitmap = new Bitmap(Bitmap::ELuminance,
+                                            m_component_format, channel_size);
+
+            uint8_t *ptr_nested = bitmap->uint8_data() -
+                (data_window.min.x / sampling.x() +
+                 data_window.min.y / sampling.y() * channel_size.x()) * field.size;
+
+            slice = Imf::Slice(pixel_type, (char *) ptr_nested, field.size,
+                               field.size * channel_size.x(), sampling.x(),
+                               sampling.y());
+
+            resample_buffers.emplace_back(field.name, std::move(bitmap));
+        }
+
+        framebuffer.insert(field.name, slice);
+    }
+
+    auto fs = dynamic_cast<FileStream *>(stream);
+
+    Log(EDebug, "Loading OpenEXR file \"%s\" (%ix%i, %s, %s) ..",
+        fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
+        m_pixel_format, m_component_format);
+
+    file.setFrameBuffer(framebuffer);
+    file.readPixels(data_window.min.y, data_window.max.y);
+
+    for (auto &buf: resample_buffers) {
+        Log(EDebug, "Upsampling layer \"%s\" from %ix%i to %ix%i pixels",
+            buf.first, buf.second->width(), buf.second->height(),
+            m_size.x(), m_size.y());
+
+        buf.second = buf.second->resample(m_size);
+        const Struct::Field &field = m_struct->field(buf.first);
+
+        size_t comp_size = field.size;
+        uint8_t *dst = uint8_data() + field.offset;
+        uint8_t *src = buf.second->uint8_data();
+
+        for (size_t j=0; j<pixel_count; ++j) {
+            memcpy(dst, src, comp_size);
+            src += comp_size;
+            dst += pixel_stride;
+        }
+
+        buf.second = nullptr;
+    }
+
+    if (luminance_chroma_format) {
+        Log(EDebug, "Converting from Luminance-Chroma to RGB format ..");
+        Imath::V3f yw = Imf::RgbaYca::computeYw(file_chroma);
+
+        auto convert = [&](auto *data) {
+            using T = std::decay_t<decltype(*data)>;
+
+            for (size_t j = 0; j < pixel_count; ++j) {
+                Float Y  = (Float) data[0],
+                      RY = (Float) data[1],
+                      BY = (Float) data[2];
+
+                if (std::is_integral<T>::value) {
+                    Float scale = Float(1) / std::numeric_limits<T>::max();
+                    Y *= scale; RY *= scale; BY *= scale;
+                }
+
+                Float R = (RY + 1) * Y,
+                      B = (BY + 1) * Y,
+                      G = ((Y - R * yw.x - B * yw.z) / yw.y);
+
+                if (std::is_integral<T>::value) {
+                    Float scale = std::numeric_limits<T>::max();
+                    R *= R * scale + 0.5f;
+                    G *= G * scale + 0.5f;
+                    B *= B * scale + 0.5f;
+                }
+
+                data[0] = T(R); data[1] = T(G); data[2] = T(B);
+                data += channel_count();
+            }
+        };
+
+        switch (m_component_format) {
+            case Struct::EFloat16: convert((enoki::half *) m_data.get()); break;
+            case Struct::EFloat32: convert((float *)       m_data.get()); break;
+            case Struct::EUInt32:  convert((uint32_t*)     m_data.get()); break;
+            default: Throw("Internal error!");
+        }
+
+        for (int i = 0; i < 3; ++i) {
+            std::string &name = m_struct->operator[](i).name;
+            name = set_suffix(name, std::string(1, "RGB"[i]));
         }
     }
 
-    Log(EDebug, "Loading a %ix%i OpenEXR file (%s format, %s encoding)",
-        m_size.x, m_size.y, tfm::format.c_str(), encodingString.c_str());
+    if (Imf::hasChromaticities(file.header()) &&
+        (m_pixel_format == ERGB || m_pixel_format == ERGBA)) {
 
-    file.setFrameBuffer(frameBuffer);
-    file.readPixels(dataWindow.min.y, dataWindow.max.y);
-}
-#endif
+        Imf::Chromaticities itu_rec_b_709;
+        Imf::Chromaticities xyz(Imath::V2f(1.0f, 0.0f), Imath::V2f(0.0f, 1.0f),
+                                Imath::V2f(0.0f, 0.0f), Imath::V2f(1.0f / 3.0f, 1.0f / 3.0f));
 
+        if (chroma_eq(file_chroma, itu_rec_b_709)) {
+            /* Already in the right space -- do nothing. */
+        } else if (chroma_eq(file_chroma, xyz)) {
+            /* This is an XYZ image */
+            m_pixel_format = m_pixel_format == ERGB ? EXYZ : EXYZA;
+            for (int i = 0; i < 3; ++i) {
+                std::string &name = m_struct->operator[](i).name;
+                name = set_suffix(name, std::string(1, "XYZ"[i]));
+            }
+        } else {
+            /* Non-standard chromaticities. Special processing is required.. */
+            process_colors = true;
+        }
+    }
 
-void Bitmap::write(EFileFormat format, const fs::path &path, int compression) const {
-    ref<FileStream> fs = new FileStream(path, true);
-    write(format, fs, compression);
-}
+    if (process_colors) {
+        /* Convert ITU-R Rec. BT.709 linear RGB */
+        Imath::M44f M = Imf::RGBtoXYZ(file_chroma, 1) *
+                        Imf::XYZtoRGB(Imf::Chromaticities(), 1);
 
-void Bitmap::write(EFileFormat format, Stream *stream, int compression) const {
-    switch (format) {
-        case EJPEG:
-            if (compression == -1)
-                compression = 100;
-            write_jpeg(stream, compression);
-            break;
-#if 0
-        case EPNG:
-            if (compression == -1)
-                compression = 5;
-            write_png(stream, compression);
-            break;
-#endif
-        case EOpenEXR:  write_openexr(stream); break;
-        default:
-            Log(EError, "Bitmap::write(): Invalid file format!");
+        Log(EDebug, "Converting to sRGB color space ..");
+
+        auto convert = [&](auto *data) {
+            using T = std::decay_t<decltype(*data)>;
+
+            for (size_t j = 0; j < pixel_count; ++j) {
+                Float R = (Float) data[0],
+                      G = (Float) data[1],
+                      B = (Float) data[2];
+
+                if (std::is_integral<T>::value) {
+                    Float scale = Float(1) / std::numeric_limits<T>::max();
+                    R *= scale; G *= scale; B *= scale;
+                }
+
+                Imath::V3f rgb = Imath::V3f(float(R), float(G), float(B)) * M;
+                R = Float(rgb[0]); G = Float(rgb[1]); B = Float(rgb[2]);
+
+                if (std::is_integral<T>::value) {
+                    Float scale = std::numeric_limits<T>::max();
+                    R *= R * scale + 0.5f;
+                    G *= G * scale + 0.5f;
+                    B *= B * scale + 0.5f;
+                }
+
+                data[0] = T(R); data[1] = T(G); data[2] = T(B);
+                data += channel_count();
+            }
+        };
+
+        switch (m_component_format) {
+            case Struct::EFloat16: convert((enoki::half *) m_data.get()); break;
+            case Struct::EFloat32: convert((float *)       m_data.get()); break;
+            case Struct::EUInt32:  convert((uint32_t*)     m_data.get()); break;
+            default: Throw("Internal error!");
+        }
     }
 }
 
-void Bitmap::write_openexr(Stream *stream) const {
-    Log(EDebug, "Writing a %ix%i OpenEXR file", m_size.x(), m_size.y());
-    EPixelFormat pixel_format = m_pixel_format;
+void Bitmap::write_openexr(Stream *stream, int quality) const {
+    if (Imf::globalThreadCount() == 0)
+        Imf::setGlobalThreadCount(std::min(8, util::core_count()));
 
-#if SPECTRUM_SAMPLES == 3
-    if (pixel_format == ESpectrum)
-        pixel_format = ERGB;
-    if (pixel_format == ESpectrumAlpha)
-        pixel_format = ERGBA;
-#endif
+    EPixelFormat pixel_format = m_pixel_format;
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generated_by"))
@@ -410,8 +810,20 @@ void Bitmap::write_openexr(Stream *stream) const {
 
     std::vector<std::string> keys = metadata.property_names();
 
-    Imf::Header header(m_size.x(), m_size.y());
-    for (std::vector<std::string>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+    Imf::Header header(
+        m_size.x(), // width
+        m_size.y(), // height,
+        1.f, // pixelAspectRatio
+        Imath::V2f(0, 0), // screenWindowCenter,
+        1.f, // screenWindowWidth
+        Imf::INCREASING_Y, // lineOrder
+        quality <= 0 ? Imf::PIZ_COMPRESSION : Imf::DWAB_COMPRESSION // compression
+    );
+
+    if (quality > 0)
+        Imf::addDwaCompressionLevel(header, float(quality));
+
+    for (auto it = keys.begin(); it != keys.end(); ++it) {
         Properties::EPropertyType type = metadata.property_type(*it);
 
         switch (type) {
@@ -425,23 +837,20 @@ void Bitmap::write_openexr(Stream *stream) const {
                 header.insert(it->c_str(), Imf::FloatAttribute((float) metadata.float_(*it)));
                 break;
             case Properties::EPoint3f: {
-                Point3f val = metadata.point3f(*it);
-                header.insert(it->c_str(), Imf::V3fAttribute(
-                    Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
-            }
-            break;
+                    Point3f val = metadata.point3f(*it);
+                    header.insert(it->c_str(), Imf::V3fAttribute(
+                        Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
+                }
+                break;
             case Properties::ETransform: {
-                Throw("write_openexr(): m44f type is not handled yet");
-#if 0 // TODO
-                Matrix4x4 val = metadata.transform(*it).getMatrix();
-                header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
-                    (float) val(0, 0), (float) val(0, 1), (float) val(0, 2), (float) val(0, 3),
-                    (float) val(1, 0), (float) val(1, 1), (float) val(1, 2), (float) val(1, 3),
-                    (float) val(2, 0), (float) val(2, 1), (float) val(2, 2), (float) val(2, 3),
-                    (float) val(3, 0), (float) val(3, 1), (float) val(3, 2), (float) val(3, 3))));
-#endif
-            }
-            break;
+                    Matrix4f val = metadata.transform(*it).matrix();
+                    header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
+                        (float) val(0, 0), (float) val(0, 1), (float) val(0, 2), (float) val(0, 3),
+                        (float) val(1, 0), (float) val(1, 1), (float) val(1, 2), (float) val(1, 3),
+                        (float) val(2, 0), (float) val(2, 1), (float) val(2, 2), (float) val(2, 3),
+                        (float) val(3, 0), (float) val(3, 1), (float) val(3, 2), (float) val(3, 3))));
+                }
+                break;
             default:
                 header.insert(it->c_str(), Imf::StringAttribute(metadata.as_string(*it)));
                 break;
@@ -454,21 +863,19 @@ void Bitmap::write_openexr(Stream *stream) const {
             Imath::V2f(0.0f, 1.0f),
             Imath::V2f(0.0f, 0.0f),
             Imath::V2f(1.0f / 3.0f, 1.0f / 3.0f)));
-    } else if (pixel_format == ERGB || pixel_format == ERGBA) {
-        Imf::addChromaticities(header, Imf::Chromaticities());
     }
 
-    Imf::PixelType compType;
-    size_t compStride;
-    if (m_component_format == Struct::EType::EFloat16) {
-        compType = Imf::HALF;
-        compStride = 2;
-    } else if (m_component_format == Struct::EType::EFloat32) {
-        compType = Imf::FLOAT;
-        compStride = 4;
-    } else if (m_component_format == Struct::EType::EUInt32) {
-        compType = Imf::UINT;
-        compStride = 4;
+    Imf::PixelType comp_type;
+    size_t comp_stride;
+    if (m_component_format == Struct::EFloat16) {
+        comp_type = Imf::HALF;
+        comp_stride = 2;
+    } else if (m_component_format == Struct::EFloat32) {
+        comp_type = Imf::FLOAT;
+        comp_stride = 4;
+    } else if (m_component_format == Struct::EUInt32) {
+        comp_type = Imf::UINT;
+        comp_stride = 4;
     } else {
         Log(EError, "writeOpenEXR(): Invalid component type (must be "
             "float16, float32, or uint32)");
@@ -484,25 +891,19 @@ void Bitmap::write_openexr(Stream *stream) const {
     //if (m_channel_names.size() == channel_count()) {
     if ((channel_count() > 0)) {
         for (auto it = m_struct->begin(); it != m_struct->end(); ++it)
-            channels.insert(it->name.c_str(), Imf::Channel(compType));
+            channels.insert(it->name.c_str(), Imf::Channel(comp_type));
         explicit_channel_names = true;
     } else if (pixel_format == ELuminance || pixel_format == ELuminanceAlpha) {
-        channels.insert("Y", Imf::Channel(compType));
+        channels.insert("Y", Imf::Channel(comp_type));
     } else if (pixel_format == ERGB || pixel_format == ERGBA ||
                pixel_format == EXYZ || pixel_format == EXYZA) {
-        channels.insert("R", Imf::Channel(compType));
-        channels.insert("G", Imf::Channel(compType));
-        channels.insert("B", Imf::Channel(compType));
+        channels.insert("R", Imf::Channel(comp_type));
+        channels.insert("G", Imf::Channel(comp_type));
+        channels.insert("B", Imf::Channel(comp_type));
 #if 0 // TODO
-    } else if (pixel_format == ESpectrum || pixel_format == ESpectrumAlpha) {
-        for (int i = 0; i<SPECTRUM_SAMPLES; ++i) {
-            std::pair<Float, Float> coverage = Spectrum::getBinCoverage(i);
-            std::string name = tfm::format("%.2f-%.2fnm", coverage.first, coverage.second);
-            channels.insert(name.c_str(), Imf::Channel(compType));
-        }
     } else if (pixel_format == EMultiChannel) {
         for (int i = 0; i<getChannelCount(); ++i)
-            channels.insert(tfm::format("%i", i).c_str(), Imf::Channel(compType));
+            channels.insert(tfm::format("%i", i).c_str(), Imf::Channel(comp_type));
 #endif
     } else {
         Log(EError, "writeOpenEXR(): Invalid pixel format!");
@@ -511,50 +912,52 @@ void Bitmap::write_openexr(Stream *stream) const {
 
     if ((pixel_format == ELuminanceAlpha || pixel_format == ERGBA ||
          pixel_format == EXYZA /*|| pixel_format == ESpectrumAlpha*/) && !explicit_channel_names)
-        channels.insert("A", Imf::Channel(compType));
+        channels.insert("A", Imf::Channel(comp_type));
 
-    size_t pixelStride = channel_count() * compStride,
-        rowStride = pixelStride * m_size.x();
+    size_t pixel_stride = channel_count() * comp_stride,
+        row_stride = pixel_stride * m_size.x();
     char *ptr = (char *) m_data.get();
 
-    Imf::FrameBuffer frameBuffer;
+    Imf::FrameBuffer framebuffer;
 
     if (explicit_channel_names) {
         for (auto it = m_struct->begin(); it != m_struct->end(); ++it) {
-            frameBuffer.insert(it->name.c_str(), Imf::Slice(compType, ptr, pixelStride, rowStride));
+            framebuffer.insert(it->name.c_str(), Imf::Slice(comp_type, ptr, pixel_stride, row_stride));
 
-            ptr += compStride;
+            ptr += comp_stride;
         }
     } else if (pixel_format == ELuminance || pixel_format == ELuminanceAlpha) {
-        frameBuffer.insert("Y", Imf::Slice(compType, ptr, pixelStride, rowStride)); ptr += compStride;
+        framebuffer.insert("Y", Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
     } else if (pixel_format == ERGB || pixel_format == ERGBA || pixel_format == EXYZ || pixel_format == EXYZA) {
-        frameBuffer.insert("R", Imf::Slice(compType, ptr, pixelStride, rowStride)); ptr += compStride;
-        frameBuffer.insert("G", Imf::Slice(compType, ptr, pixelStride, rowStride)); ptr += compStride;
-        frameBuffer.insert("B", Imf::Slice(compType, ptr, pixelStride, rowStride)); ptr += compStride;
+        framebuffer.insert("R", Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
+        framebuffer.insert("G", Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
+        framebuffer.insert("B", Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
 #if 0 // TODO
     } else if (pixel_format == ESpectrum || pixel_format == ESpectrumAlpha) {
         for (int i = 0; i<SPECTRUM_SAMPLES; ++i) {
             std::pair<Float, Float> coverage = Spectrum::getBinCoverage(i);
             std::string name = tfm::format("%.2f-%.2fnm", coverage.first, coverage.second);
-            frameBuffer.insert(name.c_str(), Imf::Slice(compType, ptr, pixelStride, rowStride)); ptr += compStride;
+            framebuffer.insert(name.c_str(), Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
         }
     } else if (pixel_format == EMultiChannel) {
         for (int i = 0; i<getChannelCount(); ++i) {
-            frameBuffer.insert(tfm::format("%i", i).c_str(), Imf::Slice(compType, ptr, pixelStride, rowStride));
-            ptr += compStride;
+            framebuffer.insert(tfm::format("%i", i).c_str(), Imf::Slice(comp_type, ptr, pixel_stride, row_stride));
+            ptr += comp_stride;
         }
 #endif
     }
 
     if ((pixel_format == ELuminanceAlpha || pixel_format == ERGBA ||
          pixel_format == EXYZA /*|| pixel_format == ESpectrumAlpha*/) && !explicit_channel_names)
-        frameBuffer.insert("A", Imf::Slice(compType, ptr, pixelStride, rowStride));
+        framebuffer.insert("A", Imf::Slice(comp_type, ptr, pixel_stride, row_stride));
 
     EXROStream ostr(stream);
     Imf::OutputFile file(ostr, header);
-    file.setFrameBuffer(frameBuffer);
+    file.setFrameBuffer(framebuffer);
     file.writePixels(m_size.y());
 }
+
+// -----------------------------------------------------------------------------
 
 /* ========================== *
 *   JPEG helper functions    *
@@ -575,52 +978,51 @@ extern "C" {
         Stream *stream;
     } jbuf_out_t;
 
-    METHODDEF(void) jpeg_init_source(j_decompress_ptr cinfo) {
-        jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
-        p->buffer = new JOCTET[jpeg_bufferSize];
-    }
+    //METHODDEF(void) jpeg_init_source(j_decompress_ptr cinfo) {
+        //jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
+        //p->buffer = new JOCTET[jpeg_bufferSize];
+    //}
 
-    METHODDEF(boolean) jpeg_fill_input_buffer(j_decompress_ptr cinfo) {
-        jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
-        size_t nBytes;
+    //METHODDEF(boolean) jpeg_fill_input_buffer(j_decompress_ptr cinfo) {
+        //jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
+        //size_t nBytes;
 
-        p->stream->read(p->buffer, jpeg_bufferSize);
-        nBytes = jpeg_bufferSize;
+        //p->stream->read(p->buffer, jpeg_bufferSize);
+        //nBytes = jpeg_bufferSize;
 
-#if 0
-        try {
-            p->stream->read(p->buffer, jpeg_bufferSize);
-            nBytes = jpeg_bufferSize;
-        } catch (const EOFException &e) {
-            nBytes = e.getCompleted();
-            if (nBytes == 0) {
-                /* Insert a fake EOI marker */
-                p->buffer[0] = (JOCTET) 0xFF;
-                p->buffer[1] = (JOCTET) JPEG_EOI;
-                nBytes = 2;
-            }
-        }
-#endif
-        cinfo->src->bytes_in_buffer = nBytes;
-        cinfo->src->next_input_byte = p->buffer;
-        return TRUE;
-    }
+        //try {
+            //p->stream->read(p->buffer, jpeg_bufferSize);
+            //nBytes = jpeg_bufferSize;
+        //} catch (const EOFException &e) {
+            //nBytes = e.getCompleted();
+            //if (nBytes == 0) {
+                //[> Insert a fake EOI marker <]
+                //p->buffer[0] = (JOCTET) 0xFF;
+                //p->buffer[1] = (JOCTET) JPEG_EOI;
+                //nBytes = 2;
+            //}
+        //}
 
-    METHODDEF(void) jpeg_skip_input_data(j_decompress_ptr cinfo, long num_bytes) {
-        if (num_bytes > 0) {
-            while (num_bytes > (long) cinfo->src->bytes_in_buffer) {
-                num_bytes -= (long) cinfo->src->bytes_in_buffer;
-                jpeg_fill_input_buffer(cinfo);
-            }
-            cinfo->src->next_input_byte += (size_t) num_bytes;
-            cinfo->src->bytes_in_buffer -= (size_t) num_bytes;
-        }
-    }
+        //cinfo->src->bytes_in_buffer = nBytes;
+        //cinfo->src->next_input_byte = p->buffer;
+        //return TRUE;
+    //}
 
-    METHODDEF(void) jpeg_term_source(j_decompress_ptr cinfo) {
-        jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
-        delete[] p->buffer;
-    }
+    //METHODDEF(void) jpeg_skip_input_data(j_decompress_ptr cinfo, long num_bytes) {
+        //if (num_bytes > 0) {
+            //while (num_bytes > (long) cinfo->src->bytes_in_buffer) {
+                //num_bytes -= (long) cinfo->src->bytes_in_buffer;
+                //jpeg_fill_input_buffer(cinfo);
+            //}
+            //cinfo->src->next_input_byte += (size_t) num_bytes;
+            //cinfo->src->bytes_in_buffer -= (size_t) num_bytes;
+        //}
+    //}
+
+    //METHODDEF(void) jpeg_term_source(j_decompress_ptr cinfo) {
+        //jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
+        //delete[] p->buffer;
+    //}
 
     METHODDEF(void) jpeg_init_destination(j_compress_ptr cinfo) {
         jbuf_out_t *p = (jbuf_out_t *) cinfo->dest;
@@ -664,10 +1066,10 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     else if (m_pixel_format == ERGB)
         components = 3;
     else
-        Log(EError, "writeJPEG(): Invalid pixel format!");
+        Log(EError, "write_jpeg(): Unsupported pixel format!");
 
-    if (m_component_format != Struct::EType::EUInt8)
-        Log(EError, "writeJPEG(): Invalid component format!");
+    if (m_component_format != Struct::EUInt8)
+        Log(EError, "write_jpeg(): Unsupported component format!");
 
     memset(&jbuf, 0, sizeof(jbuf_out_t));
     cinfo.err = jpeg_std_error(&jerr);
@@ -692,8 +1094,9 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     Log(ETrace, "Writing a %ix%i JPEG file", m_size.x(), m_size.y());
 
     /* Write scanline by scanline */
-    for (int i = 0; i<m_size.y(); ++i) {
-        uint8_t *source = m_data.get() + i*m_size.x()*cinfo.input_components;
+    for (size_t i = 0; i < m_size.y(); ++i) {
+        uint8_t *source =
+            m_data.get() + i * m_size.x() * cinfo.input_components;
         jpeg_write_scanlines(&cinfo, &source, 1);
     }
 
@@ -752,9 +1155,9 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     }
 
     switch (m_component_format) {
-        //case Struct::EType::EBitmask: bitDepth = 1; break;
-        case Struct::EType::EUInt8: bitDepth = 8; break;
-        case Struct::EType::EUInt16: bitDepth = 16; break;
+        //case Struct::EBitmask: bitDepth = 1; break;
+        case Struct::EUInt8: bitDepth = 8; break;
+        case Struct::EUInt16: bitDepth = 16; break;
         default:
             Log(EError, "writePNG(): Unsupported component type!");
             return;
@@ -805,7 +1208,7 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     else
         png_set_gAMA(png_ptr, info_ptr, 1 / m_gamma);
 
-    if (m_component_format == Struct::EType::EUInt16 && Stream::host_byte_order() == Stream::ELittleEndian)
+    if (m_component_format == Struct::EUInt16 && Stream::host_byte_order() == Stream::ELittleEndian)
         png_set_swap(png_ptr); // Swap the byte order on little endian machines
 
     png_set_IHDR(png_ptr, info_ptr, m_size.x(), m_size.y(), bitDepth,
@@ -830,6 +1233,45 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     delete[] rows;
 }
 #endif
+
+
+std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value) {
+    switch (value) {
+        case Bitmap::ELuminance:      os << "luminance"; break;
+        case Bitmap::ELuminanceAlpha: os << "luminance-alpha"; break;
+        case Bitmap::ERGB:            os << "rgb"; break;
+        case Bitmap::ERGBA:           os << "rgba"; break;
+        case Bitmap::EXYZ:            os << "xyz"; break;
+        case Bitmap::EXYZA:           os << "xyza"; break;
+        case Bitmap::EMultiChannel:   os << "multichannel"; break;
+        default: Throw("Unknown pixel format!");
+    }
+    return os;
+}
+
+
+std::ostream &operator<<(std::ostream &os, Bitmap::EFileFormat value) {
+    switch (value) {
+        case Bitmap::EPNG:     os << "PNG"; break;
+        case Bitmap::EOpenEXR: os << "OpenEXR"; break;
+        case Bitmap::EJPEG:    os << "JPEG"; break;
+        case Bitmap::EBMP:     os << "BMP"; break;
+        case Bitmap::EPFM:     os << "PFM"; break;
+        case Bitmap::EPPM:     os << "PPM"; break;
+        case Bitmap::ERGBE:    os << "RGBE"; break;
+        case Bitmap::EAuto:    os << "Auto"; break;
+        default: Throw("Unknown file format!");
+    }
+    return os;
+}
+
+void Bitmap::static_initialization() {
+    /* No-op */
+}
+
+void Bitmap::static_shutdown() {
+    Imf::setGlobalThreadCount(0);
+}
 
 MTS_IMPLEMENT_CLASS(Bitmap, Object)
 NAMESPACE_END(mitsuba)

@@ -182,9 +182,6 @@ public:
     /// Look up a field by name. Throws an exception if not found
     Field &field(const std::string &name);
 
-    /// Return a string representation
-    std::string to_string() const override;
-
     /// Return an iterator associated with the first field
     std::vector<Field>::const_iterator begin() const { return m_fields.cbegin(); }
 
@@ -211,6 +208,9 @@ public:
     bool operator!=(const Struct &s) const {
         return !operator==(s);
     }
+
+    /// Return a string representation
+    std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 protected:

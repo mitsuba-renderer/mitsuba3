@@ -3,6 +3,7 @@
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/rfilter.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -19,6 +20,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Bitmap : public Object {
 public:
+    using EBoundaryCondition = ReconstructionFilter::EBoundaryCondition;
+
     // ======================================================================
     //! @{ \name Constructors and Enumerations
     // ======================================================================
@@ -30,25 +33,25 @@ public:
      */
     enum EPixelFormat {
         /// Single-channel luminance bitmap
-        ELuminance                = 0x00,
+        ELuminance,
 
         /// Two-channel luminance + alpha bitmap
-        ELuminanceAlpha           = 0x01,
+        ELuminanceAlpha,
 
         /// RGB bitmap
-        ERGB                      = 0x02,
+        ERGB,
 
         /// RGB bitmap + alpha channel
-        ERGBA                     = 0x03,
+        ERGBA,
 
         /// XYZ tristimulus bitmap
-        EXYZ                      = 0x04,
+        EXYZ,
 
         /// XYZ tristimulus + alpha channel
-        EXYZA                     = 0x05,
+        EXYZA,
 
         /// Arbitrary multi-channel bitmap without a fixed interpretation
-        EMultiChannel             = 0x10
+        EMultiChannel
     };
 
     /// Supported file formats
@@ -64,7 +67,7 @@ public:
          * <li> Loading and saving of string-valued metadata fields</li>
          * </ul>
          */
-        EPNG = 0,
+        EPNG,
 
         /**
          * \brief OpenEXR high dynamic range file format developed by
@@ -155,28 +158,13 @@ public:
     };
 
     /**
-     * \brief Describes a sub-layer of a multilayer bitmap (e.g. OpenEXR)
-     *
-     * A layer is defined as a named collection of bitmap channels along with a
-     * pixel format. This data structure is used by \ref Bitmap::getLayers().
-     */
-    struct Layer {
-        /// Descriptive name of the bitmap layer
-        std::string name;
-        /// Pixel format of the layer
-        EPixelFormat pixel_format;
-        /// Data structure listing channels and component formats
-        ref<Struct> struct_;
-    };
-
-    /**
      * \brief Create a bitmap of the specified type and allocate
      * the necessary amount of memory
      *
-     * \param pfmt
+     * \param pixel_format
      *    Specifies the pixel format (e.g. RGBA or Luminance-only)
      *
-     * \param cfmt
+     * \param component_format
      *    Specifies how the per-pixel components are encoded
      *    (e.g. unsigned 8 bit integers or 32-bit floating point values)
      *
@@ -191,8 +179,9 @@ public:
      *    External pointer to the image data. If set to \c nullptr, the
      *    implementation will allocate memory itself.
      */
-    Bitmap(EPixelFormat pfmt, Struct::EType cfmt, const Vector2s &size,
-        size_t channel_count = 0, uint8_t *data = nullptr);
+    Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
+           const Vector2s &size, size_t channel_count = 0,
+           uint8_t *data = nullptr);
 
     /**
      * \brief Load a bitmap from an arbitrary stream data source
@@ -204,6 +193,17 @@ public:
      *    File format to be read (PNG/EXR/Auto-detect ...)
      */
     Bitmap(Stream *stream, EFileFormat format = EAuto);
+
+    /**
+     * \brief Load a bitmap from a given filename
+     *
+     * \param path
+     *    Name of the file to be loaded
+     *
+     * \param format
+     *    File format to be read (PNG/EXR/Auto-detect ...)
+     */
+    Bitmap(const fs::path &path, EFileFormat = EAuto);
 
     /// Copy constructor (copies the image contents)
     Bitmap(const Bitmap &bitmap);
@@ -268,81 +268,191 @@ public:
     /// Return a \c Struct instance describing the contents of the bitmap
     const Struct *struct_() const { return m_struct.get(); }
 
-    void read_open_exr(Stream *stream);
-
-  /**
-    * Write an encoded form of the bitmap to a file using the specified file format
-    *
-    * \param format
-    *    Target file format (\ref EOpenEXR, \ref EPNG, or \ref EOpenEXR)
-    *
-    * \param stream
-    *    Target stream that will receive the encoded output
-    *
-    * \param compression
-    *    For PNG images, this parameter can be used to control how
-    *    strongly libpng will try to compress the output (with 1 being
-    *    the lowest and 9 denoting the highest compression). Note that
-    *    saving files with the highest compression will be very slow.
-    *    For JPEG files, this denotes the desired quality (between 0 and 100,
-    *    the latter being best). The default argument (-1) uses compression
-    *    5 for PNG and 100 for JPEG files.
-    */
-    void write(EFileFormat format, const fs::path &path, int compression = -1) const;
+    /**
+     * Write an encoded form of the bitmap to a stream using the specified file format
+     *
+     * \param stream
+     *    Target stream that will receive the encoded output
+     *
+     * \param format
+     *    Target file format (\ref EOpenEXR, \ref EPNG, \ref EOpenEXR, etc.)
+     *    Detected from the filename by default.
+     *
+     * \param quality
+     *    Depending on the file format, this parameter takes on a slightly
+     *    different meaning:
+     *    <ul>
+     *        <li>PNG images: Controls how much libpng will attempt to compress
+     *            the output (with 1 being the lowest and 9 denoting the
+     *            highest compression). The default argument uses the
+     *            compression level 5. </li>
+     *        <li>JPEG images: denotes the desired quality (between 0 and 100).
+     *            The default argument (-1) uses the highest quality (100).</li>
+     *        <li>OpenEXR images: denotes the quality level of the DWAB
+     *            compressor, with higher values corresponding to a lower quality.
+     *            A value of 45 is recommended as the default for lossy compression.
+     *            The default argument (-1) causes the implementation to switch
+     *            to the lossless PIZ compressor.</li>
+     *    </ul>
+     */
+    void write(Stream *stream, EFileFormat format = EAuto,
+               int quality = -1) const;
 
     /**
-    * Write an encoded form of the bitmap to a stream using the specified file format
-    *
-    * \param format
-    *    Target file format (\ref EOpenEXR, \ref EPNG, or \ref EOpenEXR)
-    *
-    * \param stream
-    *    Target stream that will receive the encoded output
-    *
-    * \param compression
-    *    For PNG images, this parameter can be used to control how
-    *    strongly libpng will try to compress the output (with 1 being
-    *    the lowest and 9 denoting the highest compression). Note that
-    *    saving files with the highest compression will be very slow.
-    *    For JPEG files, this denotes the desired quality (between 0 and 100,
-    *    the latter being best). The default argument (-1) uses compression
-    *    5 for PNG and 100 for JPEG files.
-    */
-    void write(EFileFormat format, Stream *stream, int compression = -1) const;
+     * Write an encoded form of the bitmap to a file using the specified file format
+     *
+     * \param stream
+     *    Target stream that will receive the encoded output
+     *
+     * \param format
+     *    Target file format (\ref EOpenEXR, \ref EPNG, \ref EOpenEXR, etc.)
+     *    Detected from the filename by default.
+     *
+     * \param quality
+     *    Depending on the file format, this parameter takes on a slightly
+     *    different meaning:
+     *    <ul>
+     *        <li>PNG images: Controls how much libpng will attempt to compress
+     *            the output (with 1 being the lowest and 9 denoting the
+     *            highest compression). The default argument uses the
+     *            compression level 5. </li>
+     *        <li>JPEG images: denotes the desired quality (between 0 and 100).
+     *            The default argument (-1) uses the highest quality (100).</li>
+     *        <li>OpenEXR images: denotes the quality level of the DWAB
+     *            compressor, with higher values corresponding to a lower quality.
+     *            A value of 45 is recommended as the default for lossy compression.
+     *            The default argument (-1) causes the implementation to switch
+     *            to the lossless PIZ compressor.</li>
+     *    </ul>
+     */
+    void write(const fs::path &path, EFileFormat format = EAuto,
+               int quality = -1) const;
 
-    /// Save a file using the JPEG file format
-    void write_jpeg(Stream *stream, int quality) const;
+    /**
+     * \brief Up- or down-sample this image to a different resolution
+     *
+     * Uses the provided reconstruction filter and accounts for the requested
+     * horizontal and vertical boundary conditions when looking up data outside
+     * of the input domain.
+     *
+     * A minimum and maximum image value can be specified to prevent to prevent
+     * out-of-range values that are created by the resampling process.
+     *
+     * The optional \c temp parameter can be used to pass an image of
+     * resolution <tt>Vector2s(target->width(), this->height())</tt> to avoid
+     * intermediate memory allocations.
+     *
+     * \param target
+     *     Pre-allocated bitmap of the desired target resolution
+     *
+     * \param rfilter
+     *     A separable image reconstruction filter (default: 2-lobe Lanczos filter)
+     *
+     * \param bch
+     *     Horizontal and vertical boundary conditions (default: clamp)
+     *
+     * \param clamp
+     *     Filtered image pixels will be clamped to the following
+     *     range. Default: -infinity..infinity (i.e. no clamping is used)
+     *
+     * \param temp
+     *     Optional: image for intermediate computations
+     */
+    void resample(Bitmap *target,
+                  const ReconstructionFilter *rfilter = nullptr,
+                  const std::pair<EBoundaryCondition, EBoundaryCondition> &bc =
+                      { EBoundaryCondition::EClamp, EBoundaryCondition::EClamp },
+                  const std::pair<Float, Float> &bound =
+                      { -std::numeric_limits<Float>::infinity(),
+                         std::numeric_limits<Float>::infinity() },
+                  Bitmap *temp = nullptr) const;
 
-    /// Save a file using the JPEG file format
-    // void write_png(Stream *stream, int quality) const;
-
-    /// Write a file using the OpenEXR file format
-    void write_openexr(Stream *stream) const;
+    /**
+     * \brief Up- or down-sample this image to a different resolution
+     *
+     * This version is similar to the above \ref resample() function -- the
+     * main difference is that it does not work with preallocated bitmaps and
+     * takes the desired output resolution as first argument.
+     *
+     * Uses the provided reconstruction filter and accounts for the requested
+     * horizontal and vertical boundary conditions when looking up data outside
+     * of the input domain.
+     *
+     * A minimum and maximum image value can be specified to prevent to prevent
+     * out-of-range values that are created by the resampling process.
+     *
+     * \param res
+     *     Desired output resolution
+     *
+     * \param rfilter
+     *     A separable image reconstruction filter (default: 2-lobe Lanczos filter)
+     *
+     * \param bch
+     *     Horizontal and vertical boundary conditions (default: clamp)
+     *
+     * \param clamp
+     *     Filtered image pixels will be clamped to the following
+     *     range. Default: -infinity..infinity (i.e. no clamping is used)
+     */
+    ref<Bitmap> resample(const Vector2s &res,
+                         const ReconstructionFilter *rfilter = nullptr,
+                         const std::pair<EBoundaryCondition, EBoundaryCondition> &bc =
+                             { EBoundaryCondition::EClamp, EBoundaryCondition::EClamp },
+                         const std::pair<Float, Float> &bound =
+                             { -std::numeric_limits<Float>::infinity(),
+                                std::numeric_limits<Float>::infinity() }) const;
 
     /// Return a human-readable summary of this bitmap
     virtual std::string to_string() const override;
 
+    /// Return a pointer to the underlying data
+    uint8_t *uint8_data() { return m_data.get(); }
+
+    /// Return a pointer to the underlying data (const)
+    const uint8_t *uint8_data() const { return m_data.get(); }
+
+    /// Static initialization of bitmap-related data structures (thread pools, etc.)
+    static void static_initialization();
+
+    /// Free the resources used by static_initialization()
+    static void static_shutdown();
+
     MTS_DECLARE_CLASS()
 
-protected:
+ protected:
+     /// Protected destructor
+     virtual ~Bitmap();
 
-    /// Protected destructor
-    virtual ~Bitmap();
+     /// Rebuild the 'm_struct' field based on the pixel format etc.
+     void rebuild_struct(size_t channel_count);
 
-    /// Rebuild the 'm_struct' field based on the pixel format etc.
-    void rebuild_struct(size_t channel_count);
+     /// Read a file from a stream
+     void read(Stream *stream, EFileFormat format);
 
-protected:
-    std::unique_ptr<uint8_t[], enoki::aligned_deleter> m_data;
-    EPixelFormat m_pixel_format;
-    Struct::EType m_component_format;
-    Vector2s m_size;
-    ref<Struct> m_struct;
-    Float m_gamma;
-    bool m_owns_data;
-    Properties m_metadata;
+     /// Read a file encoded using the OpenEXR file format
+     void read_openexr(Stream *stream);
+
+     /// Write a file using the OpenEXR file format
+     void write_openexr(Stream *stream, int compression = -1) const;
+
+     /// Save a file using the JPEG file format
+     void write_jpeg(Stream *stream, int quality) const;
+
+     /// Save a file using the JPEG file format
+     // void write_png(Stream *stream, int quality) const;
+
+ protected:
+     std::unique_ptr<uint8_t[], enoki::aligned_deleter> m_data;
+     EPixelFormat m_pixel_format;
+     Struct::EType m_component_format;
+     Vector2s m_size;
+     ref<Struct> m_struct;
+     Float m_gamma;
+     bool m_owns_data;
+     Properties m_metadata;
 };
 
 extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value);
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::EFileFormat value);
 
 NAMESPACE_END(mitsuba)
