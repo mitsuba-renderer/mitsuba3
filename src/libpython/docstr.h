@@ -2254,6 +2254,151 @@ static const char *__doc_mitsuba_Ray_time = R"doc(< Time value associated with t
 
 static const char *__doc_mitsuba_Ray_update = R"doc(Update the reciprocal ray directions after changing 'd')doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter =
+R"doc(Generic interface to separable image reconstruction filters
+
+When resampling bitmaps or adding samples to a rendering in progress,
+Mitsuba first convolves them with a image reconstruction filter.
+Various kinds are implemented as subclasses of this interface.
+
+Because image filters are generally too expensive to evaluate for each
+sample, the implementation of this class internally precomputes an
+discrete representation, whose resolution given by
+MTS_FILTER_RESOLUTION.)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_EBoundaryCondition =
+R"doc(When resampling data to a different resolution using
+Resampler::resample(), this enumeration specifies how lookups
+*outside* of the input domain are handled.
+
+See also:
+    Resampler)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_EBoundaryCondition_EClamp = R"doc(Clamp to the outermost sample position (default))doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_EBoundaryCondition_EMirror = R"doc(Assume that the input is mirrored along the boundary)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_EBoundaryCondition_EOne =
+R"doc(Assume that the input function is equal to one outside of the defined
+domain)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_EBoundaryCondition_ERepeat = R"doc(Assume that the input repeats in a periodic fashion)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_EBoundaryCondition_EZero = R"doc(Assume that the input function is zero outside of the defined domain)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_class = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_eval = R"doc(Evaluate the filter function)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_eval_discretized = R"doc(Perform a lookup into the discretized version)doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_init_discretization = R"doc(Mandatory initialization prior to calls to eval_discretized())doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_m_border_size = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_m_radius = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_m_scale_factor = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_m_values = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_radius = R"doc(Return the filter's width)doc";
+
+static const char *__doc_mitsuba_Resampler =
+R"doc(Utility class for efficiently resampling discrete datasets to
+different resolutions
+
+Template parameter ``Scalar``:
+    Denotes the underlying floating point data type (i.e. ``half``,
+    ``float``, or ``double``))doc";
+
+static const char *__doc_mitsuba_Resampler_Resampler =
+R"doc(Create a new Resampler object that transforms between the specified
+resolutions
+
+This constructor precomputes all information needed to efficiently
+perform the desired resampling operation. For that reason, it is most
+efficient if it can be used over and over again (e.g. to resample the
+equal-sized rows of a bitmap)
+
+Parameter ``source_res``:
+    Source resolution
+
+Parameter ``target_res``:
+    Desired target resolution)doc";
+
+static const char *__doc_mitsuba_Resampler_boundary_condition =
+R"doc(Return the boundary condition that should be used when looking up
+samples outside of the defined input domain)doc";
+
+static const char *__doc_mitsuba_Resampler_clamp =
+R"doc(Returns the range to which resampled values will be clamped
+
+The default is -infinity to infinity (i.e. no clamping is used))doc";
+
+static const char *__doc_mitsuba_Resampler_lookup = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_bc = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_clamp = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_fast_end = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_fast_start = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_source_res = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_start = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_taps = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_target_res = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_m_weights = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_resample =
+R"doc(Resample a multi-channel array and clamp the results to a specified
+valid range
+
+Parameter ``source``:
+    Source array of samples
+
+Parameter ``target``:
+    Target array of samples
+
+Parameter ``source_stride``:
+    Stride of samples in the source array. A value of '1' implies that
+    they are densely packed.
+
+Parameter ``target_stride``:
+    Stride of samples in the source array. A value of '1' implies that
+    they are densely packed.
+
+Parameter ``channels``:
+    Number of channels to be resampled)doc";
+
+static const char *__doc_mitsuba_Resampler_resample_internal = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_set_boundary_condition =
+R"doc(Set the boundary condition that should be used when looking up samples
+outside of the defined input domain
+
+The default is EBoundaryCondition::EClamp)doc";
+
+static const char *__doc_mitsuba_Resampler_set_clamp = R"doc(If specified, resampled values will be clamped to the given range)doc";
+
+static const char *__doc_mitsuba_Resampler_source_resolution = R"doc(Return the reconstruction filter's source resolution)doc";
+
+static const char *__doc_mitsuba_Resampler_taps = R"doc(Return the number of taps used by the reconstruction filter)doc";
+
+static const char *__doc_mitsuba_Resampler_target_resolution = R"doc(Return the reconstruction filter's target resolution)doc";
+
+static const char *__doc_mitsuba_Resampler_to_string = R"doc(Return a human-readable summary)doc";
+
 static const char *__doc_mitsuba_Scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc()doc";
@@ -4015,11 +4160,13 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
 
@@ -4027,9 +4174,9 @@ static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 

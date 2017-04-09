@@ -38,6 +38,7 @@ MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(spline);
+MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(DiscreteDistribution);
 
 PYBIND11_PLUGIN(mitsuba_core_ext) {
@@ -104,6 +105,7 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(qmc);
     MTS_PY_IMPORT(spline);
+    MTS_PY_IMPORT(rfilter);
     MTS_PY_IMPORT(DiscreteDistribution);
 
     auto cleanup_callback = []() {

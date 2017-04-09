@@ -10,6 +10,7 @@ add_subdirectory(mitsuba)
 add_subdirectory(spectra)
 add_subdirectory(bsdfs)
 add_subdirectory(shapes)
+add_subdirectory(rfilters)
 
 if (PYTHONLIBS_FOUND)
   add_subdirectory(libpython)

@@ -111,6 +111,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   spline.cpp
   cast.cpp
   ddistribution.cpp
+  rfilter.cpp
 )
 
 add_mitsuba_python_library(mitsuba_render_ext render
