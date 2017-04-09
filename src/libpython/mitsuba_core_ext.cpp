@@ -106,12 +106,14 @@ PYBIND11_PLUGIN(mitsuba_core_ext) {
     MTS_PY_IMPORT(spline);
     MTS_PY_IMPORT(DiscreteDistribution);
 
-    atexit([]() {
+    auto cleanup_callback = []() {
         Logger::static_shutdown();
         Thread::static_shutdown();
         Class::static_shutdown();
         Jit::static_shutdown();
-    });
+    };
+
+    m.add_object("_cleanup", py::capsule(cleanup_callback));
 
     /* Append the mitsuba directory to the FileResolver search path list */
     ref<FileResolver> fr = Thread::thread()->file_resolver();

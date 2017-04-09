@@ -188,15 +188,22 @@ public:
     /// Return an iterator associated with the first field
     std::vector<Field>::const_iterator begin() const { return m_fields.cbegin(); }
 
+    /// Return an iterator associated with the first field
+    std::vector<Field>::iterator begin() { return m_fields.begin(); }
+
     /// Return an iterator associated with the end of the data structure
     std::vector<Field>::const_iterator end() const { return m_fields.cend(); }
+
+    /// Return an iterator associated with the end of the data structure
+    std::vector<Field>::iterator end() { return m_fields.end(); }
 
     /// Return a hash code associated with this \c Struct
     friend MTS_EXPORT_CORE size_t hash(const Struct &s);
 
     /// Equality operator
     bool operator==(const Struct &s) const {
-        return m_fields == s.m_fields && m_pack == s.m_pack &&
+        return m_fields == s.m_fields &&
+               m_pack == s.m_pack &&
                m_byte_order == s.m_byte_order;
     }
 
@@ -261,12 +268,12 @@ MTS_STRUCT_TRAITS(double, EFloat64);
  *
  * This class provides a routine \ref convert() which
  * <ol>
- * <li>reorders entries</li>
- * <li>converts between many different formats (u[int]8-64, float16-64)</li>
- * <li>performs endianness conversion</li>
- * <li>applies or removes gamma correction</li>
- * <li>optionally checks that certain entries have expected default values</li>
- * <li>substitutes missing values with specified defaults</li>
+ *   <li>reorders entries</li>
+ *   <li>converts between many different formats (u[int]8-64, float16-64)</li>
+ *   <li>performs endianness conversion</li>
+ *   <li>applies or removes gamma correction</li>
+ *   <li>optionally checks that certain entries have expected default values</li>
+ *   <li>substitutes missing values with specified defaults</li>
  * </ol>
  *
  * On x86_64 platforms, the implementation of this class relies on a JIT

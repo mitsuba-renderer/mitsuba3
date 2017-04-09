@@ -2648,11 +2648,15 @@ static const char *__doc_mitsuba_Struct_append_2 = R"doc(Append a new field to t
 
 static const char *__doc_mitsuba_Struct_begin = R"doc(Return an iterator associated with the first field)doc";
 
+static const char *__doc_mitsuba_Struct_begin_2 = R"doc(Return an iterator associated with the first field)doc";
+
 static const char *__doc_mitsuba_Struct_byte_order = R"doc(Return the byte order of the ``Struct``)doc";
 
 static const char *__doc_mitsuba_Struct_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_end = R"doc(Return an iterator associated with the end of the data structure)doc";
+
+static const char *__doc_mitsuba_Struct_end_2 = R"doc(Return an iterator associated with the end of the data structure)doc";
 
 static const char *__doc_mitsuba_Struct_field = R"doc(Look up a field by name (throws an exception if not found))doc";
 
@@ -4013,9 +4017,9 @@ static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 

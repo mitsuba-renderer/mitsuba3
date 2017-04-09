@@ -16,16 +16,16 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename Vector3> struct Frame {
     using Scalar  = value_t<Vector3>;
-    using Vector2 = Vector<Scalar, 2>;
-    using Normal  = mitsuba::Normal<Scalar>;
+    using Vector2 = mitsuba::Vector<Scalar, 2>;
+    using Normal3 = mitsuba::Normal<Scalar, 3>;
     Vector3 s, t;
-    Normal n;
+    Normal3 n;
 
     /// Default constructor -- performs no initialization!
     Frame() { }
 
     /// Given a normal and tangent vectors, construct a new coordinate frame
-    Frame(const Vector3 &s, const Vector3 &t, const Normal &n)
+    Frame(const Vector3 &s, const Vector3 &t, const Normal3 &n)
         : s(s), t(t), n(n) { }
 
     /// Construct a frame from the given orthonormal vectors

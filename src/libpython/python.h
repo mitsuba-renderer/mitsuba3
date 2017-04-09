@@ -50,4 +50,4 @@ namespace py = pybind11;
 
 using namespace py::literals;
 
-extern py::dtype dtypeForStruct(const Struct *s);
+extern py::dtype dtype_for_struct(const Struct *s);

@@ -70,8 +70,8 @@ using Point2fX  = Point<FloatX, 2>;
 using Point3fP  = Point<FloatP, 3>;
 using Point3fX  = Point<FloatX, 3>;
 
-using Normal3fP = Normal<FloatP>;
-using Normal3fX = Normal<FloatX>;
+using Normal3fP = Normal<FloatP, 3>;
+using Normal3fX = Normal<FloatX, 3>;
 
 using Ray3fP    = Ray<Point3fP>;
 using Ray3fX    = Ray<Point3fX>;

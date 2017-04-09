@@ -1,6 +1,5 @@
 include_directories(
   ${NANOGUI_INCLUDE_DIRS}
-  ${PCG32_INCLUDE_DIRS}
 )
 
 add_definitions(

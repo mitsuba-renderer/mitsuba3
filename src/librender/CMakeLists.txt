@@ -1,6 +1,4 @@
-include_directories(
-  ${PCG32_INCLUDE_DIRS}
-)
+#include_directories(..)
 
 add_definitions(
   -DMTS_BUILD_MODULE=MTS_MODULE_RENDER

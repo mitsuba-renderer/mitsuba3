@@ -190,8 +190,13 @@ string_type path::extension() const {
     const string_type &name = filename();
     size_t pos = name.find_last_of(NSTR("."));
     if (pos == string_type::npos)
-        return NSTR("");
-    return name.substr(pos);  // Including the . character!
+        return "";
+    string_type result = name.substr(pos);  // Including the . character!
+#if !defined(__WINDOWS__)
+    return result;
+#else
+    return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(result);
+#endif
 }
 
 path& path::replace_extension(const path &replacement) {

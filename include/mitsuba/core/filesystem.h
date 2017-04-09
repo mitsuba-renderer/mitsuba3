@@ -108,7 +108,7 @@ public:
     /** \brief Returns the extension of the filename component of the path (the
      * substring starting at the rightmost period, including the period).
      * Special paths '.' and '..' have an empty extension. */
-    string_type extension() const;
+    std::string extension() const;
 
     /** \brief Replaces the substring starting at the rightmost '.' symbol
      * by the provided string. A '.' symbol is automatically inserted

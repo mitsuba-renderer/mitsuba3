@@ -549,18 +549,19 @@ MTS_INLINE Point2 von_mises_fisher_to_square(Vector3 v, Float kappa) {
 }
 
 /// Probability density of \ref square_to_von_mises_fisher()
-template <typename Vector3, typename Scalar = value_t<Vector3>>
-MTS_INLINE Scalar square_to_von_mises_fisher_pdf(Vector3 v, Float kappa) {
+template <typename Vector3, typename Value = value_t<Vector3>>
+MTS_INLINE Value square_to_von_mises_fisher_pdf(Vector3 v, Float kappa) {
+    using Scalar = scalar_t<Vector3>;
 
     /* Stable algorithm for evaluating the von Mises Fisher distribution
        https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
 
-    assert(kappa >= 0.f);
-    if (unlikely(kappa == 0.f))
-        return Scalar(math::InvFourPi);
+    assert(kappa >= 0);
+    if (unlikely(kappa == 0))
+        return Value(Scalar(math::InvFourPi));
     else
-        return exp(kappa * (v.z() - 1.f)) * kappa
-                  / (2.f * math::Pi * (1.f - exp(-2.f * kappa)));
+        return exp(kappa * (v.z() - Scalar(1))) * Scalar(kappa * math::InvTwoPi) *
+               (Scalar(1) - exp(Scalar(-2 * kappa)));
 }
 
 // =======================================================================

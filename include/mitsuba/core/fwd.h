@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/platform.h>
 #include <cstddef>
+#include <cstdint>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -26,6 +27,7 @@ class Stream;
 class StreamAppender;
 class Struct;
 class StructConverter;
+class Transform;
 class Thread;
 class ThreadLocalBase;
 class ThreadLocalBase;
@@ -36,12 +38,12 @@ template <typename, typename> class ThreadLocal;
 template <typename> class AtomicFloat;
 
 /* Forward declarations of various vector types */
-template <typename Type, size_t Size>      struct Vector;
-template <typename Type, size_t Size>      struct Point;
-template <typename Type, size_t Size = 3>  struct Normal;
-template <typename Point>                  struct Ray;
-template <typename Point>                  struct BoundingBox;
-template <typename Vector>                 struct Frame;
+template <typename Type, size_t Size>  struct Vector;
+template <typename Type, size_t Size>  struct Point;
+template <typename Type, size_t Size>  struct Normal;
+template <typename Point>              struct Ray;
+template <typename Point>              struct BoundingBox;
+template <typename Vector>             struct Frame;
 
 using Vector1f = Vector<Float, 1>;
 using Vector2f = Vector<Float, 2>;
@@ -52,6 +54,11 @@ using Vector1d = Vector<double, 1>;
 using Vector2d = Vector<double, 2>;
 using Vector3d = Vector<double, 3>;
 using Vector4d = Vector<double, 4>;
+
+using Vector1i = Vector<int32_t, 1>;
+using Vector2i = Vector<int32_t, 2>;
+using Vector3i = Vector<int32_t, 3>;
+using Vector4i = Vector<int32_t, 4>;
 
 using Vector1s = Vector<size_t, 1>;
 using Vector2s = Vector<size_t, 2>;
