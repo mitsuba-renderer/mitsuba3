@@ -2,7 +2,16 @@
 cmake_minimum_required (VERSION 2.8.12)
 project(mitsuba CXX)
 
-option(MTS_DOUBLE_PRECISION "Compile renderer in double precision?" FALSE)
+option(MTS_DOUBLE_PRECISION  "Compile renderer in double precision?" OFF)
+
+# Use GCC/Clang address sanitizer?
+# NOTE: To use this in conjunction with Python plugin, you will need to call
+# On OSX:
+#   export DYLD_INSERT_LIBRARIES=<path to libclang_rt.asan_osx_dynamic.dylib>
+# On Linux:
+#   export LD_LIBRARY_PATH=<path to libasan.so>
+
+option(MTS_ADDRESS_SANITIZER "Enable GCC/Clang address sanitizer?" OFF)
 
 cmake_policy(SET CMP0022 NEW) # New-style link interface
 cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
@@ -130,11 +139,13 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
   # Enable link time optimization and set the default symbol
   # visibility to hidden (very important to obtain small binaries)
   if (U_CMAKE_BUILD_TYPE MATCHES REL)
-    # Don't use stack security features in release mode
-    add_compile_options("-fno-stack-protector")
+    if (NOT MTS_ADDRESS_SANITIZER)
+      # Don't use stack security features in release mode
+      add_compile_options("-fno-stack-protector")
 
-    # In release mode, don't keep the frame pointer in a special register unless needed
-    add_compile_options("-fomit-frame-pointer")
+      # In release mode, don't keep the frame pointer in a special register unless needed
+      add_compile_options("-fomit-frame-pointer")
+    endif()
 
     # Don't update the 'errno' global when encountering domain errors in math functions
     add_compile_options("-fno-math-errno")
@@ -149,11 +160,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
     if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
       add_compile_options("-ffp-contract=fast")
     endif()
-  endif()
 
-  # Set the default symbol visibility to hidden
-  if (U_CMAKE_BUILD_TYPE MATCHES RELEASE OR
-      U_CMAKE_BUILD_TYPE MATCHES MINSIZEREL)
+    # Set the default symbol visibility to hidden
     add_compile_options("-fvisibility=hidden")
   endif()
 endif()
@@ -268,6 +276,22 @@ elseif(MSVC)
   endforeach()
   message(STATUS "Mitsuba: LTO support enabled.")
 endif()
+
+# Clang/GCC Memory sanitizer
+if (MTS_ADDRESS_SANITIZER AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+  # Don't optimize too heavily
+  if (U_CMAKE_BUILD_TYPE MATCHES REL)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O1")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -O1")
+    add_compile_options("-O1")
+  endif()
+
+  add_compile_options("-fno-omit-frame-pointer")
+  add_compile_options("-fsanitize=address")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+endif()
+
 
 # Set platform-specific flags
 if (WIN32)
