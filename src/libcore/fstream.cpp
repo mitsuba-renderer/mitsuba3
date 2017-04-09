@@ -7,65 +7,44 @@
 namespace fs = mitsuba::filesystem;
 
 NAMESPACE_BEGIN(mitsuba)
+NAMESPACE_BEGIN(detail)
 
-namespace {
-inline void open_stream(std::fstream &f, const fs::path &p, bool write_enabled, bool file_exists) {
-    auto mode = std::ios::binary | std::ios::in;
-    if (write_enabled) {
-        mode |= std::ios::out;
-        // If the file doesn't exist, add truncate mode to create it
-        if (!file_exists) {
-            mode |= std::ios::trunc;
-        }
+inline std::ios::openmode ios_flag(FileStream::EMode mode) {
+    switch (mode) {
+        case FileStream::ERead:
+            return std::ios::binary | std::ios::in;
+        case FileStream::EReadWrite:
+            return std::ios::binary | std::ios::in | std::ios::out;
+        case FileStream::ETruncReadWrite:
+            return std::ios::binary | std::ios::in | std::ios::out | std::ios::trunc;
+        default:
+            Throw("Internal error");
     }
-
-    f.open(p.string(), mode);
 }
-}  // end anonymous namespace
 
-FileStream::FileStream(const fs::path &p, bool write_enabled)
-    : Stream(), m_path(p), m_file(new std::fstream), m_write_enabled(write_enabled) {
-    const bool file_exists = fs::exists(p);
-    if (!m_write_enabled && !file_exists) {
-        Log(EError, "\"%s\": tried to open a read-only FileStream pointing to"
-                    " a file that cannot be opened.", m_path.string());
-    }
+NAMESPACE_END(detail)
 
-    open_stream(*m_file, m_path, m_write_enabled, file_exists);
+FileStream::FileStream(const fs::path &p, EMode mode)
+    : Stream(), m_mode(mode), m_path(p), m_file(new std::fstream) {
 
-    if (!m_file->good()) {
-        Log(EError, "\"%s\": I/O error while attempting to open the file.",
-            m_path.string());
-    }
+    m_file->open(p.string(), detail::ios_flag(mode));
+
+    if (!m_file->good())
+        Throw("\"%s\": I/O error while attempting to open file: %s",
+              m_path.string(), strerror(errno));
 }
 
 FileStream::~FileStream() {
     close();
 }
 
-std::string FileStream::to_string() const {
-    std::ostringstream oss;
-
-    oss << class_()->name() << "[" << std::endl;
-    if (is_closed()) {
-        oss << "  closed" << std::endl;
-    } else {
-        oss << "  path = \"" << m_path.string() << "\"" << "," << std::endl
-            << "  host_byte_order = " << host_byte_order() << "," << std::endl
-            << "  byte_order = " << byte_order() << "," << std::endl
-            << "  can_read = " << can_read() << "," << std::endl
-            << "  can_write = " << can_write() << "," << std::endl
-            << "  pos = " << tell() << "," << std::endl
-            << "  size = " << size() << std::endl;
-    }
-
-    oss << "]";
-
-    return oss.str();
-}
-
 void FileStream::close() {
-    m_file->close();
+    try {
+        m_file->close();
+    } catch (const std::system_error &e) {
+        Log(EWarn, "\"%s\": I/O error while attempting to close file: %s",
+            m_path.string(), strerror(errno));
+    }
 };
 
 bool FileStream::is_closed() const {
@@ -73,53 +52,33 @@ bool FileStream::is_closed() const {
 };
 
 void FileStream::read(void *p, size_t size) {
-    if (!can_read()) {
-        Log(EError, "\"%s\": attempted to read from a write-only FileStream",
-            m_path.string());
-    }
-
     m_file->read((char *)p, size);
 
-    if (!m_file->good()) {
-        Log(EError, "\"%s\": I/O error while attempting to read %llu bytes",
-            m_path.string(), size);
+    if (unlikely(!m_file->good())) {
+        m_file->clear();
+        Throw("\"%s\": I/O error while attempting to read %zu bytes: %s",
+              m_path.string(), size, strerror(errno));
     }
 }
 
 void FileStream::write(const void *p, size_t size) {
-    if (!can_write()) {
-        Log(EError, "\"%s\": attempted to write to a read-only FileStream",
-            m_path.string());
-    }
-
     m_file->write((char *) p, size);
 
-    if (!m_file->good()) {
-        Log(EError, "\"%s\": I/O error while attempting to write %llu bytes",
-            m_path.string(), size);
-    }
-}
-
-void FileStream::seek(size_t pos) {
-    if (m_write_enabled)
-        m_file->seekg(static_cast<std::streamoff>(pos));
-    else
-        m_file->seekp(static_cast<std::streamoff>(pos));
-
-    if (!m_file->good()) {
-        Log(EError, "\"%s\": I/O error while attempting to seek to offset %llu",
-            m_path.string(), pos);
+    if (unlikely(!m_file->good())) {
+        m_file->clear();
+        Throw("\"%s\": I/O error while attempting to write %zu bytes: %s",
+              m_path.string(), size, strerror(errno));
     }
 }
 
 void FileStream::truncate(size_t size) {
-    if (!m_write_enabled) {
+    if (m_mode == ERead) {
         Log(EError, "\"%s\": attempting to truncate a read-only FileStream",
             m_path.string());
     }
 
     flush();
-    const auto old_pos = tell();
+    const size_t old_pos = tell();
 #if defined(__WINDOWS__)
     // Windows won't allow a resize if the file is open
     m_file->close();
@@ -130,28 +89,38 @@ void FileStream::truncate(size_t size) {
     fs::resize_file(m_path, size);
 
 #if defined(__WINDOWS__)
-    open_stream(*m_file, m_path, m_write_enabled, true);
+    m_file->open(p.string(), EReadWrite);
+    if (!m_file->good())
+        Throw("\"%s\": I/O error while attempting to open file: %s",
+              m_path.string(), strerror(errno));
 #endif
 
     seek(std::min(old_pos, size));
+}
 
-    if (!m_file->good()) {
-        Log(EError, "\"%s\": I/O error while attempting to truncate file to size %llu",
-            m_path.string(), size);
-    }
+void FileStream::seek(size_t pos) {
+    m_file->seekg(static_cast<std::ios::pos_type>(pos));
+
+    if (unlikely(!m_file->good()))
+        Throw("\"%s\": I/O error while attempting to seek to offset %zu: %s",
+              m_path.string(), pos, strerror(errno));
 }
 
 size_t FileStream::tell() const {
-    const auto pos = (m_write_enabled ? m_file->tellg() : m_file->tellp());
-    if (pos < 0) {
-        Log(EError, "\"%s\": I/O error while attempting to determine position in file",
-            m_path.string());
-    }
+    std::ios::pos_type pos = m_file->tellg();
+    if (unlikely(pos == std::ios::pos_type(-1)))
+        Log(EError, "\"%s\": I/O error while attempting to determine "
+            "position in file", m_path.string());
     return static_cast<size_t>(pos);
 }
 
 void FileStream::flush() {
     m_file->flush();
+    if (unlikely(!m_file->good())) {
+        m_file->clear();
+        Log(EError, "\"%s\": I/O error while attempting flush "
+            "file stream: %s", m_path.string(), strerror(errno));
+    }
 }
 
 size_t FileStream::size() const {
@@ -161,11 +130,33 @@ size_t FileStream::size() const {
 std::string FileStream::read_line() {
     std::string result;
     if (!std::getline(*m_file, result))
-        Log(EError, "\"%s\": I/O error while attempting to read a line of text",
-            m_path.string());
+        Log(EError, "\"%s\": I/O error while attempting to read"
+            " a line of text: %s", m_path.string(), strerror(errno));
     return result;
 }
 
-MTS_IMPLEMENT_CLASS(FileStream, Stream)
+std::string FileStream::to_string() const {
+    std::ostringstream oss;
 
+    oss << class_()->name() << "[" << std::endl;
+    if (is_closed()) {
+        oss << "  closed" << std::endl;
+    } else {
+        size_t pos = -1;
+        try { pos = tell(); } catch (...) { }
+        oss << "  path = \"" << m_path.string() << "\"" << "," << std::endl
+            << "  host_byte_order = " << host_byte_order() << "," << std::endl
+            << "  byte_order = " << byte_order() << "," << std::endl
+            << "  can_read = " << can_read() << "," << std::endl
+            << "  can_write = " << can_write() << "," << std::endl
+            << "  pos = " << pos << "," << std::endl
+            << "  size = " << size() << std::endl;
+    }
+
+    oss << "]";
+
+    return oss.str();
+}
+
+MTS_IMPLEMENT_CLASS(FileStream, Stream)
 NAMESPACE_END(mitsuba)

@@ -1185,16 +1185,25 @@ static const char *__doc_mitsuba_FileResolver_size = R"doc(Return the number of 
 static const char *__doc_mitsuba_FileResolver_to_string = R"doc(Return a human-readable representation of this instance)doc";
 
 static const char *__doc_mitsuba_FileStream =
-R"doc(Simple Stream implementation backed-up by a file. The underlying file
-abstraction is std::fstream, and so most operations can be expected to
-behave similarly.)doc";
+R"doc(Simple Stream implementation backed-up by a file.
+
+The underlying file abstraction is std::fstream, and so most
+operations can be expected to behave similarly.)doc";
+
+static const char *__doc_mitsuba_FileStream_EMode = R"doc()doc";
+
+static const char *__doc_mitsuba_FileStream_EMode_ERead = R"doc(Opens a file in (binary) read-only mode)doc";
+
+static const char *__doc_mitsuba_FileStream_EMode_EReadWrite = R"doc(Opens (but never creates) a file in (binary) read-write mode)doc";
+
+static const char *__doc_mitsuba_FileStream_EMode_ETruncReadWrite = R"doc(Opens (and truncates) a file in (binary) read-write mode)doc";
 
 static const char *__doc_mitsuba_FileStream_FileStream =
-R"doc(Constructs a new FileStream by opening the file pointed by ``p``. The
-file is opened in read-only or read/write mode as specified by
-``write_enabled``.
+R"doc(Constructs a new FileStream by opening the file pointed by ``p``.
 
-If ``write_enabled`` and the file did not exist before, it is created.
+The file is opened in read-only or read/write mode as specified by
+``mode``.
+
 Throws if trying to open a non-existing file in with write disabled.
 Throws an exception if the file cannot be opened / created.)doc";
 
@@ -1217,9 +1226,9 @@ static const char *__doc_mitsuba_FileStream_is_closed = R"doc(Whether the stream
 
 static const char *__doc_mitsuba_FileStream_m_file = R"doc()doc";
 
-static const char *__doc_mitsuba_FileStream_m_path = R"doc()doc";
+static const char *__doc_mitsuba_FileStream_m_mode = R"doc()doc";
 
-static const char *__doc_mitsuba_FileStream_m_write_enabled = R"doc()doc";
+static const char *__doc_mitsuba_FileStream_m_path = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_native = R"doc(Return the "native" std::fstream associated with this FileStream)doc";
 
@@ -4164,13 +4173,15 @@ static const char *__doc_mitsuba_operator_lshift = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 

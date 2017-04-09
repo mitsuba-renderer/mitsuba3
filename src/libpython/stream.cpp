@@ -66,9 +66,17 @@ MTS_PY_EXPORT(DummyStream) {
 }
 
 MTS_PY_EXPORT(FileStream) {
-    MTS_PY_CLASS(FileStream, Stream)
-        .def(py::init<const mitsuba::filesystem::path &, bool>(), D(FileStream, FileStream))
+    auto fs = MTS_PY_CLASS(FileStream, Stream)
         .mdef(FileStream, path);
+
+    py::enum_<FileStream::EMode>(fs, "EMode", D(FileStream, EMode))
+        .value("ERead", FileStream::ERead)
+        .value("EReadWrite", FileStream::EReadWrite)
+        .value("ETruncReadWrite", FileStream::ETruncReadWrite)
+        .export_values();
+
+    fs.def(py::init<const mitsuba::filesystem::path &, FileStream::EMode>(),
+           "p"_a, "mode"_a = FileStream::ERead, D(FileStream, FileStream));
 }
 
 MTS_PY_EXPORT(MemoryStream) {

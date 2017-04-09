@@ -9,8 +9,8 @@ parameters = [
     [
         (DummyStream, ()),
         (MemoryStream, (64,)),
-        (FileStream, (tmpfile, False)),
-        (FileStream, (tmpfile, True))
+        (FileStream, (tmpfile, FileStream.ERead)),
+        (FileStream, (tmpfile, FileStream.ETruncReadWrite))
     ]
 ]
 
@@ -227,34 +227,30 @@ def test07_memory_stream():
 
 @pytest.mark.parametrize('rw', [True, False])
 def test08_fstream(rw, tmpfile):
-        s = FileStream(tmpfile, rw)
+    s = FileStream(tmpfile, FileStream.ETruncReadWrite
+                   if rw else FileStream.ERead)
 
-        assert s.can_read()
-        assert s.can_write() == rw
+    assert s.can_read()
+    assert s.can_write() == rw
 
-        if s.can_write():
-            s.write_long(42)
-            s.flush()
-            s.seek(0)
-            assert s.read_long() == 42
-            s.seek(0)
+    if s.can_write():
+        s.write_long(42)
+        s.flush()
+        s.seek(0)
+        assert s.read_long() == 42
+        s.seek(0)
 
-            # Truncating shouldn't change the position if not necessary
-            assert s.tell() == 0
-            s.truncate(5)
-            assert s.tell() == 0
-            s.write_string('hello')
-            s.flush()
-            assert s.tell() == 0 + 9
-            s.truncate(5)
-            assert s.tell() == 5
-        else:
-            with pytest.raises(RuntimeError):
-                s.write_string('hello')
-            with pytest.raises(RuntimeError):
-                s.truncate(5)
+        # Truncating shouldn't change the position if not necessary
+        assert s.tell() == 0
+        s.truncate(5)
+        assert s.tell() == 0
+        s.write_string('hello')
+        s.flush()
+        assert s.tell() == 0 + 9
+        s.truncate(5)
+        assert s.tell() == 5
 
-        assert str(s) == """FileStream[
+    assert str(s) == """FileStream[
   path = "%s",
   host_byte_order = little-endian,
   byte_order = little-endian,
@@ -264,14 +260,20 @@ def test08_fstream(rw, tmpfile):
   size = %i
 ]""" % (s.path(), 1 if rw else 0, 5 if rw else 0, 5 if rw else 0)
 
-        s.close()
+    if not s.can_write():
+        with pytest.raises(RuntimeError):
+            s.write_string('hello')
+        with pytest.raises(RuntimeError):
+            s.truncate(5)
 
-        # File should only be created when opening in write mode
-        new_name = tmpfile + "_2"
-        if rw:
-            s = FileStream(new_name, rw)
-            s.close()
-            assert os.path.exists(new_name)
-        else:
-            with pytest.raises(RuntimeError):
-                FileStream(new_name, rw)
+    s.close()
+
+    # File should only be created when opening in write mode
+    new_name = tmpfile + "_2"
+    if rw:
+        s = FileStream(new_name, FileStream.ETruncReadWrite)
+        s.close()
+        assert os.path.exists(new_name)
+    else:
+        with pytest.raises(RuntimeError):
+            FileStream(new_name)

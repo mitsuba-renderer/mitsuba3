@@ -41,7 +41,7 @@ public:
         if (!fs::exists(file_path))
             fail("file not found");
 
-        ref<Stream> stream = new FileStream(file_path, false);
+        ref<Stream> stream = new FileStream(file_path);
         Timer timer;
 
         PLYHeader header;

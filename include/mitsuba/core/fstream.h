@@ -11,24 +11,31 @@ using path = fs::path;
 NAMESPACE_BEGIN(mitsuba)
 
 /** \brief Simple \ref Stream implementation backed-up by a file.
+ *
  * The underlying file abstraction is std::fstream, and so most
  * operations can be expected to behave similarly.
  */
 class MTS_EXPORT_CORE FileStream : public Stream {
 public:
+    enum EMode {
+        /// Opens a file in (binary) read-only mode
+        ERead,
+
+        /// Opens (but never creates) a file in (binary) read-write mode
+        EReadWrite,
+
+        /// Opens (and truncates) a file in (binary) read-write mode
+        ETruncReadWrite
+    };
 
     /** \brief Constructs a new FileStream by opening the file pointed by <tt>p</tt>.
-     * The file is opened in read-only or read/write mode as specified by <tt>write_enabled</tt>.
      *
-     * If <tt>write_enabled</tt> and the file did not exist before, it is
-     * created.
+     * The file is opened in read-only or read/write mode as specified by \c mode.
+     *
      * Throws if trying to open a non-existing file in with write disabled.
      * Throws an exception if the file cannot be opened / created.
      */
-    FileStream(const fs::path &p, bool write_enabled);
-
-    /// Returns a string representation
-    std::string to_string() const override;
+    FileStream(const fs::path &p, EMode mode = ERead);
 
     /** \brief Closes the stream and the underlying file.
      * No further read or write operations are permitted.
@@ -91,10 +98,13 @@ public:
     virtual void flush() override;
 
     /// Whether the field was open in write-mode (and was not closed)
-    virtual bool can_write() const override { return m_write_enabled && !is_closed(); }
+    virtual bool can_write() const override { return m_mode != ERead && !is_closed(); }
 
     /// True except if the stream was closed.
     virtual bool can_read() const override { return !is_closed(); }
+
+    /// Returns a string representation
+    virtual std::string to_string() const override;
 
     //! @}
     // =========================================================================
@@ -107,10 +117,9 @@ protected:
     virtual ~FileStream();
 
 private:
-
+    EMode m_mode;
     fs::path m_path;
     mutable std::unique_ptr<std::fstream> m_file;
-    bool m_write_enabled;
 };
 
 NAMESPACE_END(mitsuba)

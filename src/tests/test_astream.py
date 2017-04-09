@@ -56,7 +56,7 @@ parameters = [
     'class_,args',
     [
         (MemoryStream, (64,)),
-        (FileStream, (tmpfile, True))
+        (FileStream, (tmpfile, FileStream.ETruncReadWrite))
     ]
 ]
 
