@@ -4,11 +4,11 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/common.h>
+#include <mitsuba/render/intersection.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-// TODO: port these structures
-struct Intersection { };
+// TODO: port this structure
 struct MediumSample { };
 
 // -----------------------------------------------------------------------------
@@ -25,12 +25,12 @@ struct MediumSample { };
  * probability density and measure.
  */
 template <typename Point3> struct PositionSample {
-    using Point2        = point2_t<Point3>;
-    using Normal3       = normal3_t<Point3>;
+    using Point2 = point2_t<Point3>;
+    using Normal3 = normal3_t<Point3>;
     using Value         = value_t<Point3>;
     using Measure       = like_t<Value, EMeasure>;
     using ObjectPointer = like_t<Value, const Object *>;
-    using Intersection  = mitsuba::Intersection; // TODO: support packets of Intersections
+    using Intersection  = mitsuba::Intersection<Point3>;
 
     // -------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ template <typename Point3> struct PositionSample {
      */
     Measure measure;
 
-     /**
+    /**
       * \brief Optional: Pointer to an associated object
       *
       * In some uses of this record, sampling a position also involves
@@ -122,7 +122,7 @@ template <typename Vector3>
 struct DirectionSample {
     using Value         = value_t<Vector3>;
     using Measure      = like_t<Value, EMeasure>;
-    using Intersection = mitsuba::Intersection; // TODO: support packets of Intersections
+    using Intersection = mitsuba::Intersection<Point3>;
 
     // -------------------------------------------------------------------------
 
@@ -190,7 +190,7 @@ struct DirectionSample {
  */
 template <typename Point3>
 struct DirectSample : public PositionSample<Point3> {
-    using Base         = PositionSample<Point3>;
+    using Base = PositionSample<Point3>;
     using Vector3      = vector3_t<Point3>;
     using Ray3         = Ray<Point3>;
     using MediumSample = mitsuba::MediumSample; // TODO: support packets of MediumSamples
@@ -301,17 +301,17 @@ struct DirectSample : public PositionSample<Point3> {
 // -----------------------------------------------------------------------------
 /// Common type aliases (non-vectorized, packet, dynamic).
 
-using PositionSample3f   = PositionSample<Point3f>;
-using PositionSample3fP  = PositionSample<Point3fP>;
-using PositionSample3fX  = PositionSample<Point3fX>;
+using PositionSample3f  = PositionSample<Point3f>;
+using PositionSample3fP = PositionSample<Point3fP>;
+using PositionSample3fX = PositionSample<Point3fX>;
 
 using DirectionSample3f  = DirectionSample<Vector3f>;
 using DirectionSample3fP = DirectionSample<Vector3fP>;
 using DirectionSample3fX = DirectionSample<Vector3fX>;
 
-using DirectSample3f     = DirectSample<Point3f>;
-using DirectSample3fP    = DirectSample<Point3fP>;
-using DirectSample3fX    = DirectSample<Point3fX>;
+using DirectSample3f  = DirectSample<Point3f>;
+using DirectSample3fP = DirectSample<Point3fP>;
+using DirectSample3fX = DirectSample<Point3fX>;
 
 // -----------------------------------------------------------------------------
 

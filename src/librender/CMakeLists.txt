@@ -10,6 +10,7 @@ add_library(mitsuba-render-obj OBJECT
   mesh.cpp         ${INC_DIR}/mesh.h
   scene.cpp        ${INC_DIR}/scene.h
   shape.cpp        ${INC_DIR}/shape.h
+  intersection.cpp        ${INC_DIR}/intersection.h
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)

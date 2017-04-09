@@ -23,6 +23,26 @@
 #endif
 
 
+static const char *__doc_enoki_call_helper = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_call_helper = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_is_emitter = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_is_emitter_masked = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_is_emitter_masked_2 = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_is_sensor = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_is_sensor_masked = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_is_sensor_masked_2 = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_operator_sub = R"doc()doc";
+
+static const char *__doc_enoki_call_helper_self = R"doc()doc";
+
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds a table of contents to an underlying stream
 that can later be used to selectively read specific items.
@@ -303,6 +323,10 @@ static const char *__doc_mitsuba_BSDF = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_class = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_dummy = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_m_uses_ray_differentials = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_uses_ray_differentials = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap =
 R"doc(General-purpose bitmap class with read and write support for several
@@ -1550,6 +1574,8 @@ static const char *__doc_mitsuba_ETransportMode_ERadiance = R"doc(Radiance trans
 
 static const char *__doc_mitsuba_ETransportMode_ETransportModes = R"doc(Specifies the number of supported transport modes)doc";
 
+static const char *__doc_mitsuba_Emitter = R"doc()doc";
+
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
 
@@ -1892,7 +1918,116 @@ static const char *__doc_mitsuba_InterpolatedSpectrum_sample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_InterpolatedSpectrum_sample_impl = R"doc()doc";
 
-static const char *__doc_mitsuba_Intersection = R"doc()doc";
+static const char *__doc_mitsuba_Intersection =
+R"doc(Container for all information related to a surface intersection.
+
+Supports Structure of Array-style vectorization.)doc";
+
+static const char *__doc_mitsuba_Intersection_Intersection = R"doc()doc";
+
+static const char *__doc_mitsuba_Intersection_Intersection_2 = R"doc(Conversion from other data types)doc";
+
+static const char *__doc_mitsuba_Intersection_Le =
+R"doc(Returns radiance emitted into direction d.
+
+Remark:
+    This function should only be called if the intersected shape is
+    actually an emitter.)doc";
+
+static const char *__doc_mitsuba_Intersection_Lo_sub =
+R"doc(Returns radiance from a subsurface integrator emitted into direction
+d.
+
+Remark:
+    Should only be called if the intersected shape is actually a
+    subsurface integrator.)doc";
+
+static const char *__doc_mitsuba_Intersection_adjust_time = R"doc(Move the intersection forward or backward through time)doc";
+
+static const char *__doc_mitsuba_Intersection_bsdf =
+R"doc(Returns the BSDF of the intersected shape.
+
+The parameter ray must match the one used to create the intersection
+record. This function computes texture coordinate partials if this is
+required by the BSDF (e.g. for texture filtering).
+
+Remark:
+    This function should only be called if there is a valid
+    intersection!)doc";
+
+static const char *__doc_mitsuba_Intersection_bsdf_2 = R"doc(Returns the BSDF of the intersected shape)doc";
+
+static const char *__doc_mitsuba_Intersection_color = R"doc(Interpolated vertex color)doc";
+
+static const char *__doc_mitsuba_Intersection_compute_partials = R"doc(Computes texture coordinate partials)doc";
+
+static const char *__doc_mitsuba_Intersection_dpdu = R"doc(Position partials wrt. the UV parameterization)doc";
+
+static const char *__doc_mitsuba_Intersection_dpdv = R"doc(Position partials wrt. the UV parameterization)doc";
+
+static const char *__doc_mitsuba_Intersection_dudx = R"doc(UV partials wrt. changes in screen-space)doc";
+
+static const char *__doc_mitsuba_Intersection_dudy = R"doc(UV partials wrt. changes in screen-space)doc";
+
+static const char *__doc_mitsuba_Intersection_dvdx = R"doc(UV partials wrt. changes in screen-space)doc";
+
+static const char *__doc_mitsuba_Intersection_dvdy = R"doc(UV partials wrt. changes in screen-space)doc";
+
+static const char *__doc_mitsuba_Intersection_geo_frame = R"doc(Geometry frame)doc";
+
+static const char *__doc_mitsuba_Intersection_has_subsurface = R"doc(Does the intersected shape have a subsurface integrator?)doc";
+
+static const char *__doc_mitsuba_Intersection_has_uv_partials =
+R"doc(Have texture coordinate partials been computed? They are always
+computed for all slots at once, so we can make this a single boolean
+regardless of the underlying Point3 type.)doc";
+
+static const char *__doc_mitsuba_Intersection_instance = R"doc(Stores a pointer to the parent instance, if applicable)doc";
+
+static const char *__doc_mitsuba_Intersection_is_emitter = R"doc(Is the intersected shape also a emitter?)doc";
+
+static const char *__doc_mitsuba_Intersection_is_medium_transition = R"doc(Does the surface mark a transition between two media?)doc";
+
+static const char *__doc_mitsuba_Intersection_is_sensor = R"doc(Is the intersected shape also a sensor?)doc";
+
+static const char *__doc_mitsuba_Intersection_is_valid = R"doc(Is the current intersection valid?)doc";
+
+static const char *__doc_mitsuba_Intersection_normal_derivative = R"doc(Calls the suitable implementation of Shape::normal_derivative())doc";
+
+static const char *__doc_mitsuba_Intersection_operator_assign = R"doc(Conversion from other data types)doc";
+
+static const char *__doc_mitsuba_Intersection_p = R"doc()doc";
+
+static const char *__doc_mitsuba_Intersection_prim_index = R"doc(Primitive index, e.g. the triangle ID (if applicable))doc";
+
+static const char *__doc_mitsuba_Intersection_sh_frame = R"doc(Shading frame)doc";
+
+static const char *__doc_mitsuba_Intersection_shape = R"doc(Pointer to the associated shape)doc";
+
+static const char *__doc_mitsuba_Intersection_t = R"doc(Distance traveled along the ray)doc";
+
+static const char *__doc_mitsuba_Intersection_target_medium =
+R"doc(Determine the target medium
+
+When ``is_medium_transition``() = ``True``, determine the medium that
+contains the ray (``this``->p, ``d``))doc";
+
+static const char *__doc_mitsuba_Intersection_target_medium_2 =
+R"doc(Determine the target medium based on the cosine of the angle between
+the geometric normal and a direction
+
+Returns the exterior medium when ``cos_theta`` > 0 and the interior
+medium when ``cos_theta`` <= 0.)doc";
+
+static const char *__doc_mitsuba_Intersection_time = R"doc(Time value associated with the intersection)doc";
+
+static const char *__doc_mitsuba_Intersection_to_local = R"doc(Convert a world-space vector into local shading coordinates)doc";
+
+static const char *__doc_mitsuba_Intersection_to_world = R"doc(Convert a local shading-space vector into world space)doc";
+
+static const char *__doc_mitsuba_Intersection_uv = R"doc(UV surface coordinates)doc";
+
+static const char *__doc_mitsuba_Intersection_wi = R"doc(Incident direction in the local shading frame)doc";
 
 static const char *__doc_mitsuba_Jit = R"doc()doc";
 
@@ -2013,6 +2148,8 @@ static const char *__doc_mitsuba_Logger_set_log_level = R"doc(Set the log level 
 static const char *__doc_mitsuba_Logger_static_initialization = R"doc(Initialize logging)doc";
 
 static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging)doc";
+
+static const char *__doc_mitsuba_Medium = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumSample = R"doc()doc";
 
@@ -2993,6 +3130,8 @@ static const char *__doc_mitsuba_Resampler_target_resolution = R"doc(Return the 
 
 static const char *__doc_mitsuba_Resampler_to_string = R"doc(Return a human-readable summary)doc";
 
+static const char *__doc_mitsuba_Sampler = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc()doc";
@@ -3006,6 +3145,8 @@ static const char *__doc_mitsuba_Scene_kdtree_2 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_kdtree = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
+
+static const char *__doc_mitsuba_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape = R"doc()doc";
 
@@ -3063,25 +3204,54 @@ This is extremely important to construct decent kd-trees. The default
 implementation just takes the bounding box returned by bbox(Index
 index) and clips it to *clip*.)doc";
 
+static const char *__doc_mitsuba_Shape_bsdf = R"doc(Return the shape's BSDF)doc";
+
+static const char *__doc_mitsuba_Shape_bsdf_2 = R"doc(Return the shape's BSDF)doc";
+
 static const char *__doc_mitsuba_Shape_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_effective_primitive_count =
+R"doc(Return the number of primitives (triangles, hairs, ..) contributed to
+the scene by this shape
+
+Includes instanced geometry. The default implementation simply returns
+`primitive_count()`.)doc";
+
+static const char *__doc_mitsuba_Shape_emitter = R"doc(Return the associated emitter (if any))doc";
+
+static const char *__doc_mitsuba_Shape_emitter_2 = R"doc(Return the associated emitter (if any))doc";
+
+static const char *__doc_mitsuba_Shape_exterior_medium =
+R"doc(Return the medium that lies on the exterior of this shape (``nullptr``
+== vacuum))doc";
+
+static const char *__doc_mitsuba_Shape_exterior_medium_2 =
+R"doc(Return the medium that lies on the exterior of this shape (``nullptr``
+== vacuum, const version))doc";
+
+static const char *__doc_mitsuba_Shape_has_bsdf = R"doc(Does the shape have a BSDF?)doc";
+
+static const char *__doc_mitsuba_Shape_has_subsurface = R"doc(Does this shape have a sub-surface integrator?)doc";
+
+static const char *__doc_mitsuba_Shape_interior_medium =
+R"doc(Return the medium that lies on the interior of this shape (``nullptr``
+== vacuum))doc";
+
+static const char *__doc_mitsuba_Shape_interior_medium_2 =
+R"doc(Return the medium that lies on the interior of this shape (``nullptr``
+== vacuum, const version))doc";
+
+static const char *__doc_mitsuba_Shape_is_emitter = R"doc(Is this shape also an area emitter?)doc";
+
+static const char *__doc_mitsuba_Shape_is_medium_transition = R"doc(Does the surface of this shape mark a medium transition?)doc";
+
+static const char *__doc_mitsuba_Shape_is_sensor = R"doc(Is this shape also an area sensor?)doc";
 
 static const char *__doc_mitsuba_Shape_primitive_count =
 R"doc(Returns the number of sub-primitives that make up this shape
 
 Remark:
     The default implementation simply returns ``1``)doc";
-
-static const char *__doc_mitsuba_Spectrum = R"doc(//! @{ \name Data types for discretized spectral data)doc";
-
-static const char *__doc_mitsuba_Spectrum_Spectrum = R"doc()doc";
-
-static const char *__doc_mitsuba_Spectrum_Spectrum_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Spectrum_Spectrum_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Spectrum_operator_assign = R"doc()doc";
-
-static const char *__doc_mitsuba_Spectrum_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream =
 R"doc(Abstract seekable stream class
@@ -3476,6 +3646,8 @@ static const char *__doc_mitsuba_Struct_operator_ne = R"doc(Inequality operator)
 static const char *__doc_mitsuba_Struct_size = R"doc(Return the size (in bytes) of the data structure, including padding)doc";
 
 static const char *__doc_mitsuba_Struct_to_string = R"doc(Return a string representation)doc";
+
+static const char *__doc_mitsuba_Subsurface = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceAreaHeuristic3f = R"doc()doc";
 
@@ -4814,6 +4986,12 @@ static const char *__doc_mitsuba_math_legendre_pd_diff = R"doc(Evaluate the func
 static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo function)doc";
 
 static const char *__doc_mitsuba_math_round_to_power_of_two = R"doc(Round an unsigned integer to the next integer power of two)doc";
+
+static const char *__doc_mitsuba_math_solve_linear_2x2 =
+R"doc(Solve a 2x2 linear system Ax = b.
+
+Returns:
+    ``True`` if a solution could be found, and the result in ``x``.)doc";
 
 static const char *__doc_mitsuba_math_solve_quadratic =
 R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.

@@ -529,6 +529,25 @@ template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
 }
 
 /**
+ * \brief Solve a 2x2 linear system Ax = b.
+ * \return \c true if a solution could be found, and the result in \c x.
+ */
+// TODO: vectorize
+MTS_INLINE bool solve_linear_2x2(const Float a[2][2], const Float b[2], Float x[2]) {
+    Float det = a[0][0] * a[1][1] - a[0][1] * a[1][0];
+
+    if (std::abs(det) <= RecipOverflow)
+        return false;
+
+    Float inverse = (Float)1.0f / det;
+
+    x[0] = (a[1][1] * b[0] - a[0][1] * b[1]) * inverse;
+    x[1] = (a[0][0] * b[1] - a[1][0] * b[0]) * inverse;
+
+    return true;
+}
+
+/**
  * \brief Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
  * \return \c true if a solution could be found
  */

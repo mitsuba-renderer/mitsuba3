@@ -94,6 +94,8 @@ using BoundingSphere4f = BoundingSphere<Point4f>;
 
 using Ray2f = Ray<Point2f>;
 using Ray3f = Ray<Point3f>;
+using RayDifferential2f = RayDifferential<Point2f>;
+using RayDifferential3f = RayDifferential<Point3f>;
 
 using RayDifferential3f = RayDifferential<Point3f>;
 
