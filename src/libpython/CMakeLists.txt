@@ -9,6 +9,7 @@ include_directories(
 
 # The mitsuba-python target depends on all the mitsuba_*_ext
 add_custom_target(mitsuba-python)
+set_target_properties(mitsuba-python PROPERTIES FOLDER mitsuba-python)
 
 function(add_mitsuba_python_library TARGET_NAME NAME)
   set(TARGET_NAME mitsuba_${NAME}_ext)

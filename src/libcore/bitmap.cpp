@@ -160,7 +160,7 @@ resample(Bitmap *target, const Bitmap *source,
         return;
     }
 
-    uint32_t channels = source->channel_count();
+    size_t channels = source->channel_count();
 
     if (source->width() != target->width() || Filter) {
         /* Re-sample horizontally */
@@ -323,7 +323,7 @@ void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
         if (!fs)
             Throw("Bitmap::write(): can't decide file format based on filename "
                   "since the target stream is not a file stream");
-        std::string extension = string::to_lower(fs->path().extension());
+        std::string extension = string::to_lower(fs->path().extension().string());
         if (extension == ".exr")
             format = EOpenEXR;
         else if (extension == ".png")

@@ -33,11 +33,26 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(filesystem)
 
+inline string_type to_native(const std::string &str) {
 #if defined(__WINDOWS__)
-path::path(const std::string &string) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    set(converter.from_bytes(string));
+    return converter.from_bytes(str);
+#else
+    return str;
+#endif
 }
+
+inline std::string from_native(const string_type &str) {
+#if defined(__WINDOWS__)
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    return converter.to_bytes(str);
+#else
+    return str;
+#endif
+}
+
+#if defined(__WINDOWS__)
+path::path(const std::string &string) { set(to_native(string)); }
 #endif
 
 path current_path() {
@@ -183,7 +198,7 @@ bool remove(const path& p) {
 
 // -----------------------------------------------------------------------------
 
-string_type path::extension() const {
+fs::path path::extension() const {
     if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR(".."))
         return NSTR("");
 
@@ -191,31 +206,26 @@ string_type path::extension() const {
     size_t pos = name.find_last_of(NSTR("."));
     if (pos == string_type::npos)
         return "";
-    string_type result = name.substr(pos);  // Including the . character!
-#if !defined(__WINDOWS__)
-    return result;
-#else
-    return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(result);
-#endif
+    return name.substr(pos);  // Including the . character!
 }
 
-path& path::replace_extension(const path &replacement) {
+path& path::replace_extension(const fs::path &replacement_) {
     if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR(".."))
         return *this;
 
-    string_type name = filename().native();
-    const auto &ext = extension();
-    if (ext.length() > 0) {
-        size_t pos = name.find_last_of(NSTR("."));
+    string_type name = filename();
+    size_t pos = name.find_last_of(NSTR("."));
+
+    if (pos != string_type::npos)
         name = name.substr(0, pos);
-    }
 
+    string_type replacement(replacement_);
     if (!replacement.empty()) {
-        if (!string::starts_with(replacement.string(), "."))
-            name = name + NSTR(".");
-
-        // TODO: this is a bit weird
-        name += static_cast<string_type>(replacement);
+        string_type period(NSTR("."));
+        if (std::equal(period.begin(), period.end(), replacement.begin()))
+            name += replacement;
+        else
+            name += period + replacement;
     }
 
     m_path.back() = name;
@@ -246,13 +256,7 @@ path path::parent_path() const {
 // -----------------------------------------------------------------------------
 
 std::string path::string() const {
-#if !defined(__WINDOWS__)
-    return str();
-#else
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    string_type wstring = str();
-    return(converter.to_bytes(wstring));
-#endif
+    return from_native(str());
 }
 
 // -----------------------------------------------------------------------------

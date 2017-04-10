@@ -34,9 +34,6 @@ NAMESPACE_BEGIN(filesystem)
     using string_type = std::string;
 #endif
 
-/// Type of strings (built from system-specific characters)
-using string_type = std::basic_string<value_type>;
-
 /// System-specific separator used to write paths.
 #if defined(__WINDOWS__)
     constexpr value_type preferred_separator = L'\\';
@@ -108,20 +105,19 @@ public:
     /** \brief Returns the extension of the filename component of the path (the
      * substring starting at the rightmost period, including the period).
      * Special paths '.' and '..' have an empty extension. */
-    std::string extension() const;
+    path extension() const;
 
     /** \brief Replaces the substring starting at the rightmost '.' symbol
-     * by the provided string. A '.' symbol is automatically inserted
-     * if the replacement does not start with a dot.
+     * by the provided string.
      *
-     * Removes the extension altogether if the empty path is passed.
-     * If there is no extension, appends a '.' followed by the replacement.
-     *
-     * If the path is empty, '.' or '..': does nothing.
+     * A '.' symbol is automatically inserted if the replacement does not start
+     * with a dot. Removes the extension altogether if the empty path is
+     * passed. If there is no extension, appends a '.' followed by the
+     * replacement. If the path is empty, '.' or '..', the method does nothing.
      *
      * Returns *this.
      */
-    path& replace_extension(const path& replacement = path());
+    path& replace_extension(const path &replacement = path());
 
     /// Returns the filename component of the path, including the extension.
     path filename() const;

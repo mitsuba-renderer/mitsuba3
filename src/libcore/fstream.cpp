@@ -39,12 +39,7 @@ FileStream::~FileStream() {
 }
 
 void FileStream::close() {
-    try {
-        m_file->close();
-    } catch (const std::system_error &e) {
-        Log(EWarn, "\"%s\": I/O error while attempting to close file: %s",
-            m_path.string(), strerror(errno));
-    }
+    m_file->close();
 };
 
 bool FileStream::is_closed() const {
@@ -89,7 +84,7 @@ void FileStream::truncate(size_t size) {
     fs::resize_file(m_path, size);
 
 #if defined(__WINDOWS__)
-    m_file->open(p.string(), EReadWrite);
+    m_file->open(m_path, EReadWrite);
     if (!m_file->good())
         Throw("\"%s\": I/O error while attempting to open file: %s",
               m_path.string(), strerror(errno));
@@ -142,7 +137,7 @@ std::string FileStream::to_string() const {
     if (is_closed()) {
         oss << "  closed" << std::endl;
     } else {
-        size_t pos = -1;
+        size_t pos = (size_t) -1;
         try { pos = tell(); } catch (...) { }
         oss << "  path = \"" << m_path.string() << "\"" << "," << std::endl
             << "  host_byte_order = " << host_byte_order() << "," << std::endl

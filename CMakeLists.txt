@@ -349,7 +349,7 @@ function(add_plugin)
   set_target_properties(${TARGET} PROPERTIES PREFIX "")
   target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render)
   add_dist(plugins/${TARGET})
-  set_target_properties(${TARGET} ${TARGET}-obj PROPERTIES FOLDER plugin-${TARGET})
+  set_target_properties(${TARGET} ${TARGET}-obj PROPERTIES FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET})
 endfunction(add_plugin)
 
 set(MITSUBA_DIST "" CACHE INTERNAL "")
