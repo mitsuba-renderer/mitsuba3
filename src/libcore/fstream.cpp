@@ -68,15 +68,15 @@ void FileStream::write(const void *p, size_t size) {
 
 void FileStream::truncate(size_t size) {
     if (m_mode == ERead) {
-        Log(EError, "\"%s\": attempting to truncate a read-only FileStream",
-            m_path.string());
+        Throw("\"%s\": attempting to truncate a read-only FileStream",
+              m_path.string());
     }
 
     flush();
     const size_t old_pos = tell();
 #if defined(__WINDOWS__)
     // Windows won't allow a resize if the file is open
-    m_file->close();
+    close();
 #else
     seek(0);
 #endif
@@ -84,7 +84,7 @@ void FileStream::truncate(size_t size) {
     fs::resize_file(m_path, size);
 
 #if defined(__WINDOWS__)
-    m_file->open(m_path, EReadWrite);
+    m_file->open(m_path, detail::ios_flag(EReadWrite));
     if (!m_file->good())
         Throw("\"%s\": I/O error while attempting to open file: %s",
               m_path.string(), strerror(errno));
@@ -104,8 +104,8 @@ void FileStream::seek(size_t pos) {
 size_t FileStream::tell() const {
     std::ios::pos_type pos = m_file->tellg();
     if (unlikely(pos == std::ios::pos_type(-1)))
-        Log(EError, "\"%s\": I/O error while attempting to determine "
-            "position in file", m_path.string());
+        Throw("\"%s\": I/O error while attempting to determine "
+              "position in file", m_path.string());
     return static_cast<size_t>(pos);
 }
 
@@ -113,8 +113,8 @@ void FileStream::flush() {
     m_file->flush();
     if (unlikely(!m_file->good())) {
         m_file->clear();
-        Log(EError, "\"%s\": I/O error while attempting flush "
-            "file stream: %s", m_path.string(), strerror(errno));
+        Throw("\"%s\": I/O error while attempting flush "
+              "file stream: %s", m_path.string(), strerror(errno));
     }
 }
 

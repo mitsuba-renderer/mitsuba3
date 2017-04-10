@@ -57,6 +57,7 @@ def test01_size_and_pos(class_, args, request, tmpdir_factory):
     assert stream.tell() == 0
 
     if not stream.can_write():
+        stream.close()
         return
 
     stream.write(u'hello'.encode('latin1'))
@@ -67,6 +68,7 @@ def test01_size_and_pos(class_, args, request, tmpdir_factory):
     stream.flush()
     assert stream.size() == 5 + 8
     assert stream.tell() == 5 + 8
+    stream.close()
 
 
 @pytest.mark.parametrize(*parameters)
