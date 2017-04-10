@@ -164,7 +164,8 @@ resample(Bitmap *target, const Bitmap *source,
 
     if (source->width() != target->width() || Filter) {
         /* Re-sample horizontally */
-        Resampler<Scalar> r(rfilter, source->width(), target->width());
+        Resampler<Scalar> r(rfilter, (uint32_t) source->width(),
+                                     (uint32_t) target->width());
         r.set_boundary_condition(bc.first);
         r.set_clamp(clamp);
 
@@ -200,7 +201,8 @@ resample(Bitmap *target, const Bitmap *source,
 
     if (source->height() != target->height() || Filter) {
         /* Re-sample vertically */
-        Resampler<Scalar> r(rfilter, source->height(), target->height());
+        Resampler<Scalar> r(rfilter, (uint32_t) source->height(),
+                                     (uint32_t) target->height());
         r.set_boundary_condition(bc.second);
         r.set_clamp(clamp);
 
@@ -212,7 +214,8 @@ resample(Bitmap *target, const Bitmap *source,
                                       x * channels;
                     Scalar *t       = (Scalar *) target->uint8_data() +
                                       x * channels;
-                    r.resample(s, source->width(), t, target->width(), channels);
+                    r.resample(s, (uint32_t) source->width(), t,
+                                  (uint32_t) target->width(), channels);
                 }
             }
         );

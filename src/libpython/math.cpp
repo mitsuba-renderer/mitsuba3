@@ -6,8 +6,6 @@
 MTS_PY_EXPORT(math) {
     MTS_PY_IMPORT_MODULE(math, "mitsuba.core.math");
 
-    math.def("normal_quantile", (double(*)(double))                           math::normal_quantile, D(math, normal_quantile));
-    math.def("normal_cdf",      (double(*)(double))                           math::normal_cdf, D(math, normal_cdf));
     math.def("comp_ellint_1",   (double(*)(double))                           math::comp_ellint_1, D(math, comp_ellint_1));
     math.def("comp_ellint_2",   (double(*)(double))                           math::comp_ellint_2, D(math, comp_ellint_2));
     math.def("comp_ellint_3",   (double(*)(double, double))                   math::comp_ellint_3, D(math, comp_ellint_3));

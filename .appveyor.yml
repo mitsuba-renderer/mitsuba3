@@ -36,6 +36,4 @@ build_script:
 - set MSBuildLogger="C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 - cmake --build . --config %BUILD_MODE% -- /v:m /m /logger:%MSBuildLogger%
 - setpath.bat
-- python -c "import sys; print('\n'.join(sys.path))"
-- python -m mitsuba
 - python -m pytest

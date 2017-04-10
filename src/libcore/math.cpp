@@ -679,11 +679,6 @@ template<typename Type> Type ellint_3(const Type k, const Type nu, const Type ph
 
 NAMESPACE_END(detail)
 
-template MTS_EXPORT_CORE double normal_cdf(double v);
-template MTS_EXPORT_CORE float  normal_cdf(float v);
-template MTS_EXPORT_CORE double normal_quantile(double v);
-template MTS_EXPORT_CORE float  normal_quantile(float v);
-
 double comp_ellint_1(double k) { return detail::comp_ellint_1(k); }
 double ellint_1(double k, double phi) { return detail::ellint_1(k, phi); }
 double comp_ellint_2(double k) { return detail::comp_ellint_2(k); }
