@@ -9,10 +9,6 @@ build:
 cache:
 - C:\Miniconda-x64\pkgs
 - C:\Miniconda36-x64\pkgs
-matrix:
-  fast_finish: true
-  allow_failures:
-    - PYTHON_VERSION: 2.7
 environment:
   matrix:
     - PYTHON_VERSION: 2.7

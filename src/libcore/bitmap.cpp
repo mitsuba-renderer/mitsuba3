@@ -190,7 +190,7 @@ resample(Bitmap *target, const Bitmap *source,
                                       y * source->width() * channels;
                     Scalar *t       = (Scalar *) temp->uint8_data() +
                                       y * target->width() * channels;
-                    r.resample(s, 1, t, 1, channels);
+                    r.resample(s, 1, t, 1, (uint32_t) channels);
                 }
             }
         );
@@ -215,7 +215,7 @@ resample(Bitmap *target, const Bitmap *source,
                     Scalar *t       = (Scalar *) target->uint8_data() +
                                       x * channels;
                     r.resample(s, (uint32_t) source->width(), t,
-                                  (uint32_t) target->width(), channels);
+                                  (uint32_t) target->width(), (uint32_t) channels);
                 }
             }
         );

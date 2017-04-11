@@ -27,6 +27,7 @@ Each entry of the DISTRIBUTIONS table is a tuple with the following entries:
 
 """
 
+from __future__ import division
 import mitsuba
 from mitsuba.core import warp
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain

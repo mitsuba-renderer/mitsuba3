@@ -694,7 +694,6 @@ float comp_ellint_3(float k, float nu) { return detail::comp_ellint_3(k, nu); }
 float ellint_3(float k, float nu, float phi) { return detail::ellint_3(k, nu, phi); }
 
 
-template MTS_EXPORT_CORE Float  i0e(Float);
 template MTS_EXPORT_CORE Float  legendre_p(int, Float);
 template MTS_EXPORT_CORE FloatP legendre_p(int, FloatP);
 template MTS_EXPORT_CORE Float  legendre_p(int, int, Float);

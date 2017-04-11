@@ -34,10 +34,7 @@ template <typename T> std::vector<T> sieve(T n) {
 NAMESPACE_END(detail)
 
 RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scramble) {
-    // TODO: investigate this on Windows
-    //static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
-    if (sizeof(PrimeBase) != 16)
-        printf("QMC data structures not packed!: %i %i\n", (int) sizeof(PrimeBase), (int) sizeof(PrimeBase::divisor));
+    static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
 
     Timer timer;
     auto primes = detail::sieve(max_base);

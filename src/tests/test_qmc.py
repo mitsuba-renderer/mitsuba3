@@ -7,7 +7,7 @@ import numpy as np
 def r_inv(divisor, index):
     factor = 1
     value = 0
-    recip = 1 / divisor
+    recip = 1.0 / divisor
 
     while index != 0:
         next_val = index // divisor

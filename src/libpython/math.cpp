@@ -1,5 +1,6 @@
 #include <mitsuba/core/math.h>
 #include <enoki/morton.h>
+#include <enoki/special.h>
 #include "python.h"
 #include <bitset>
 
@@ -13,7 +14,7 @@ MTS_PY_EXPORT(math) {
     math.def("ellint_2",        (double(*)(double, double))                   math::ellint_2, D(math, ellint_2));
     math.def("ellint_3",        (double(*)(double, double, double))           math::ellint_3, D(math, ellint_3));
 
-    math.def("i0e", math::i0e<Float>, "x"_a, D(math, i0e));
+    math.def("i0e", enoki::i0e<Float>, "x"_a, D(math, i0e));
 
     math.def("legendre_p",
              py::overload_cast<int, Float>(math::legendre_p<Float>), "l"_a,
