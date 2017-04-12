@@ -1557,6 +1557,8 @@ information to every registered Appender.)doc";
 
 static const char *__doc_mitsuba_Logger_Logger = R"doc(Construct a new logger with the given minimum log level)doc";
 
+static const char *__doc_mitsuba_Logger_LoggerPrivate = R"doc()doc";
+
 static const char *__doc_mitsuba_Logger_add_appender = R"doc(Add an appender to this logger)doc";
 
 static const char *__doc_mitsuba_Logger_appender = R"doc(Return one of the appenders)doc";
@@ -1963,6 +1965,8 @@ called.)doc";
 
 static const char *__doc_mitsuba_PluginManager_PluginManager = R"doc()doc";
 
+static const char *__doc_mitsuba_PluginManager_PluginManagerPrivate = R"doc()doc";
+
 static const char *__doc_mitsuba_PluginManager_class = R"doc()doc";
 
 static const char *__doc_mitsuba_PluginManager_create_object =
@@ -2051,6 +2055,8 @@ static const char *__doc_mitsuba_Properties_Properties = R"doc(Construct an empt
 static const char *__doc_mitsuba_Properties_Properties_2 = R"doc(Construct an empty property container with a specific plugin name)doc";
 
 static const char *__doc_mitsuba_Properties_Properties_3 = R"doc(Copy constructor)doc";
+
+static const char *__doc_mitsuba_Properties_PropertiesPrivate = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_as_string = R"doc(Return one of the parameters (converting it to a string if necessary))doc";
 
@@ -2991,6 +2997,10 @@ heuristic)doc";
 
 static const char *__doc_mitsuba_TPCG32 = R"doc()doc";
 
+static const char *__doc_mitsuba_TPCG32_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_TPCG32_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_TPCG32_TPCG32 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
 
 static const char *__doc_mitsuba_TPCG32_advance =
@@ -3113,6 +3123,10 @@ parameters for these different methods can be accessed and configured
 via getters and setters of this class.)doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_BuildContext =
+R"doc(Helper data structure used during tree construction (shared by all
+threads))doc";
+
+static const char *__doc_mitsuba_TShapeKDTree_BuildContext_2 =
 R"doc(Helper data structure used during tree construction (shared by all
 threads))doc";
 
@@ -3622,12 +3636,16 @@ static const char *__doc_mitsuba_Thread_EPriority_ENormalPriority = R"doc()doc";
 
 static const char *__doc_mitsuba_Thread_EPriority_ERealtimePriority = R"doc()doc";
 
+static const char *__doc_mitsuba_Thread_TaskObserver = R"doc()doc";
+
 static const char *__doc_mitsuba_Thread_Thread =
 R"doc(Create a new thread object
 
 Parameter ``name``:
     An identifying name of this thread (will be shown in debug
     messages))doc";
+
+static const char *__doc_mitsuba_Thread_ThreadPrivate = R"doc()doc";
 
 static const char *__doc_mitsuba_Thread_class = R"doc()doc";
 
@@ -3937,7 +3955,21 @@ static const char *__doc_mitsuba_detail_get_unserialize_functor = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_get_unserialize_functor_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_detail_serialization_helper =
+R"doc(The serialization_helper<T> implementations for new types should in
+general be implemented as a series of calls to the lower-level
+serialization_helper::{read,write} functions. This way, endianness
+swapping needs only be handled at the lowest level.)doc";
+
+static const char *__doc_mitsuba_detail_static_max =
+R"doc(Basic C++11 variant data structure
+
+Significantly redesigned version of the approach described at
+http://www.ojdip.net/2013/10/implementing-a-variant-type-in-cpp)doc";
+
 static const char *__doc_mitsuba_detail_variant_helper = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_variant_helper_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_copy = R"doc()doc";
 
@@ -4055,13 +4087,13 @@ can use both '/' or '\\' as a delimiter.)doc";
 
 static const char *__doc_mitsuba_filesystem_path_replace_extension =
 R"doc(Replaces the substring starting at the rightmost '.' symbol by the
-provided string. A '.' symbol is automatically inserted if the
-replacement does not start with a dot.
+provided string.
 
-Removes the extension altogether if the empty path is passed. If there
-is no extension, appends a '.' followed by the replacement.
-
-If the path is empty, '.' or '..': does nothing.
+A '.' symbol is automatically inserted if the replacement does not
+start with a dot. Removes the extension altogether if the empty path
+is passed. If there is no extension, appends a '.' followed by the
+replacement. If the path is empty, '.' or '..', the method does
+nothing.
 
 Returns *this.)doc";
 
@@ -4084,9 +4116,16 @@ R"doc(Changes the size of the regular file named by ``p`` as if ``truncate``
 was called. If the file was larger than ``target_length``, the
 remainder is discarded. The file must exist.)doc";
 
-static const char *__doc_mitsuba_for_each_type = R"doc(Base case)doc";
+static const char *__doc_mitsuba_for_each_type =
+R"doc(The following is used to ensure that the getters and setters for all
+the same types are available for both Stream implementations and
+\AnnotatedStream.)doc";
+
+static const char *__doc_mitsuba_for_each_type_2 = R"doc(Base case)doc";
 
 static const char *__doc_mitsuba_for_each_type_recurse = R"doc()doc";
+
+static const char *__doc_mitsuba_function_traits = R"doc(Type trait to inspect the return and argument types of functions)doc";
 
 static const char *__doc_mitsuba_hash = R"doc()doc";
 
@@ -4130,8 +4169,6 @@ The bisection search then finds and returns ``t`` by repeatedly
 splitting the input interval. The number of iterations is roughly
 bounded by the number of bits of the underlying floating point
 representation.)doc";
-
-static const char *__doc_mitsuba_math_chbevl = R"doc(//! @{ \name Bessel functions)doc";
 
 static const char *__doc_mitsuba_math_chi2 =
 R"doc(Compute the Chi^2 statistic and degrees of freedom of the given arrays
@@ -4223,8 +4260,6 @@ static const char *__doc_mitsuba_math_find_interval_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_math_gamma = R"doc(Apply the sRGB gamma curve to a floating point scalar)doc";
 
-static const char *__doc_mitsuba_math_i0e = R"doc()doc";
-
 static const char *__doc_mitsuba_math_inv_gamma = R"doc(Apply the inverse of the sRGB gamma curve to a floating point scalar)doc";
 
 static const char *__doc_mitsuba_math_is_power_of_two = R"doc(Check whether the provided integer is a power of two)doc";
@@ -4240,10 +4275,6 @@ recurrence)doc";
 static const char *__doc_mitsuba_math_legendre_pd_diff = R"doc(Evaluate the function legendre_pd(l+1, x) - legendre_pd(l-1, x))doc";
 
 static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo function)doc";
-
-static const char *__doc_mitsuba_math_normal_cdf = R"doc()doc";
-
-static const char *__doc_mitsuba_math_normal_quantile = R"doc()doc";
 
 static const char *__doc_mitsuba_math_rad_to_deg = R"doc(/ Convert radians to degrees)doc";
 
@@ -4261,27 +4292,27 @@ given floating point number)doc";
 
 static const char *__doc_mitsuba_memcpy_cast = R"doc(Cast between types that have an identical binary representation.)doc";
 
-static const char *__doc_mitsuba_operator_lshift = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_10 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_11 = R"doc()doc";
-
-static const char *__doc_mitsuba_operator_lshift_2 = R"doc(Prints the canonical string representation of an object instance)doc";
-
-static const char *__doc_mitsuba_operator_lshift_3 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -4888,6 +4919,28 @@ R"doc(Chop up the string given a set of delimiters (warning: not unicode
 compliant))doc";
 
 static const char *__doc_mitsuba_string_trim = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_8 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_10 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 

@@ -142,7 +142,7 @@ foreach (value ${MKDOC_COMPILE_DEFINITIONS})
 endforeach()
 
 if (NOT WIN32)
-  add_custom_target(mkdoc COMMAND
+  add_custom_target(mkdoc USES_TERMINAL COMMAND
     python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py
     ${MKDOC_CXX_FLAGS_LIST}
     `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
