@@ -2802,8 +2802,6 @@ static const char *__doc_mitsuba_StructConverter_class = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_convert = R"doc()doc";
 
-static const char *__doc_mitsuba_StructConverter_m_func = R"doc()doc";
-
 static const char *__doc_mitsuba_StructConverter_m_source = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_m_target = R"doc()doc";
@@ -2858,6 +2856,8 @@ static const char *__doc_mitsuba_Struct_EType_EInt64 = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_EType_EInt8 = R"doc()doc";
 
+static const char *__doc_mitsuba_Struct_EType_EInvalid = R"doc()doc";
+
 static const char *__doc_mitsuba_Struct_EType_EUInt16 = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_EType_EUInt32 = R"doc()doc";
@@ -2867,6 +2867,14 @@ static const char *__doc_mitsuba_Struct_EType_EUInt64 = R"doc()doc";
 static const char *__doc_mitsuba_Struct_EType_EUInt8 = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_Field = R"doc(Field specifier with size and offset)doc";
+
+static const char *__doc_mitsuba_Struct_Field_blend =
+R"doc(For use with StructConverter::convert()
+
+Specifies a pair of weights and source field names that will be
+linearly blended to obtain the output field value. Note that this only
+works for floating point fields or integer fields with the ENormalized
+flag. Gamma-corrected fields will be blended in linear space.)doc";
 
 static const char *__doc_mitsuba_Struct_Field_default = R"doc(Default value)doc";
 

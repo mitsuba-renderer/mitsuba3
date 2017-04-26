@@ -24,6 +24,7 @@ py::dtype dtype_for_struct(const Struct *s) {
             case Struct::EFloat64: format = "float64";  break;
             case Struct::EFloat:   format = "float"
                 + std::to_string(sizeof(Float) * 8);  break;
+            case Struct::EInvalid: format = "invalid";  break;
             default: Throw("Internal error.");
         }
         formats.append(py::str(format));
@@ -47,6 +48,7 @@ MTS_PY_EXPORT(Struct) {
         .value("EFloat32", Struct::EType::EFloat32)
         .value("EFloat64", Struct::EType::EFloat64)
         .value("EFloat", Struct::EType::EFloat)
+        .value("EInvalid", Struct::EType::EInvalid)
         .export_values()
         .def("__init__", [](Struct::EType &et, py::dtype dt) {
             Struct::EType value = Struct::EInt8;
@@ -87,7 +89,7 @@ MTS_PY_EXPORT(Struct) {
         .value("EHostByteOrder",  Struct::EByteOrder::EHostByteOrder)
         .export_values();
 
-    py::enum_<Struct::EFlags>(c, "EFlags")
+    py::enum_<Struct::EFlags>(c, "EFlags", py::arithmetic())
         .value("ENormalized", Struct::EFlags::ENormalized)
         .value("EGamma", Struct::EFlags::EGamma)
         .value("EAssert", Struct::EFlags::EAssert)
@@ -100,11 +102,13 @@ MTS_PY_EXPORT(Struct) {
         .def("append", (Struct &(Struct::*)(const std::string&, Struct::EType, uint32_t, double)) &Struct::append,
              "name"_a, "type"_a, "flags"_a = 0, "default"_a = 0.0,
              D(Struct, append), py::return_value_policy::reference)
-        .def("__getitem__", [](const Struct & s, size_t i) {
+        .def("field", py::overload_cast<const std::string &>(&Struct::field), D(Struct, field),
+             py::return_value_policy::reference_internal)
+        .def("__getitem__", [](Struct & s, size_t i) -> Struct::Field& {
             if (i >= s.field_count())
                 throw py::index_error();
             return s[i];
-        })
+        }, py::return_value_policy::reference_internal)
         .def("__len__", &Struct::field_count)
         .def(py::self == py::self)
         .def(py::self != py::self)
@@ -129,7 +133,8 @@ MTS_PY_EXPORT(Struct) {
         .def_readonly("type", &Struct::Field::type, D(Struct, Field, type))
         .def_readonly("size", &Struct::Field::size, D(Struct, Field, size))
         .def_readonly("offset", &Struct::Field::offset, D(Struct, Field, offset))
-        .def_readonly("flags", &Struct::Field::flags, D(Struct, Field, flags));
+        .def_readonly("flags", &Struct::Field::flags, D(Struct, Field, flags))
+        .def_readwrite("blend", &Struct::Field::blend, D(Struct, Field, blend));
 
     MTS_PY_CLASS(StructConverter, Object)
         .def(py::init<const Struct *, const Struct *>())

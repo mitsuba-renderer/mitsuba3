@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if defined(__x86_64__) || defined(_WIN64)
+#if (defined(__x86_64__) || defined(_WIN64)) && defined(NDEBUG)
 #  define MTS_STRUCTCONVERTER_USE_JIT 1
 #else
 #  define MTS_STRUCTCONVERTER_USE_JIT 0
@@ -33,7 +33,10 @@ public:
         EFloat16, EFloat32, EFloat64,
 
         /* Compile-time float precision */
-        EFloat
+        EFloat,
+
+        /* Invalid/unspecified */
+        EInvalid
     };
 
     /// Byte order of the fields in the \c Struct
@@ -90,6 +93,9 @@ public:
 
         /// Default value
         double default_;
+
+        /// Can be used to perform a
+        std::vector<std::pair<double, std::string>> blend;
 
         /// Return a hash code associated with this \c Field
         friend MTS_EXPORT_CORE size_t hash(const Field &f);

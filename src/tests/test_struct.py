@@ -263,3 +263,91 @@ def test11_fail():
     check_conversion(s, "<ff", "<f", (10, 10,), (10,))
     with pytest.raises(RuntimeError):
         check_conversion(s, "<ff", "<f", (11, 11), (11,))
+
+def test12_blend():
+    src = Struct()
+    src.append("a", Struct.EFloat32)
+    src.append("b", Struct.EFloat32)
+
+    target = Struct()
+    target.append("v", Struct.EFloat32)
+    target.field("v").blend = [(3.0, "a"), (4.0, "b")]
+
+    s = StructConverter(
+        src,
+        target
+    )
+    check_conversion(s, "<ff", "<f",
+                     (1.0, 2.0),
+                     (3.0 + 8.0,))
+
+    src = Struct()
+    src.append("a", Struct.EUInt8, Struct.ENormalized)
+    src.append("b", Struct.EUInt8, Struct.ENormalized)
+
+    target = Struct()
+    target.append("v", Struct.EFloat32)
+    target.field("v").blend = [(3.0, "a"), (4.0, "b")]
+
+    s = StructConverter(
+        src,
+        target
+    )
+
+    check_conversion(s, "<BB", "<f",
+                     (255, 127),
+                     (3.0 + 4.0 * (127.0/255.0),))
+
+def test13_blend_gamma():
+    def to_srgb(value):
+        if value <= 0.0031308:
+            return 12.92 * value
+        return 1.055 * (value ** (1.0/2.4)) - 0.055
+
+    def from_srgb(value):
+        if value <= 0.04045:
+            return value * 1.0 / 12.92
+        return ((value + 0.055) * (1.0 / 1.055)) ** 2.4
+
+    src = Struct()
+    src.append("a", Struct.EUInt8, Struct.ENormalized | Struct.EGamma)
+    src.append("b", Struct.EUInt8, Struct.ENormalized | Struct.EGamma)
+
+    target = Struct()
+    target.append("v", Struct.EUInt8, Struct.ENormalized | Struct.EGamma)
+    target.field("v").blend = [(1, "a"), (1, "b")]
+
+    s = StructConverter(src, target)
+    ref = int(np.round(to_srgb(from_srgb(100/255.0) + from_srgb(200/255.0)) * 255))
+
+    check_conversion(s, "<BB", "<B", (100, 200), (ref,))
+
+def test14_blend_fail():
+    src = Struct()
+    src.append("a", Struct.EUInt8)
+    src.append("b", Struct.EUInt8)
+
+    target = Struct()
+    target.append("v", Struct.EFloat32)
+    target.field("v").blend = [(3.0, "a"), (4.0, "b")]
+
+    with pytest.raises(RuntimeError):
+        s = StructConverter(src, target)
+        check_conversion(s, "<BB", "<f",
+                         (255, 127),
+                         (3.0 + 4.0 * (127.0/255.0),))
+
+def test15_blend_fail_2():
+    src = Struct(pack=True)
+    src.append("a", Struct.EFloat32)
+    src.append("b", Struct.EFloat64)
+
+    target = Struct()
+    target.append("v", Struct.EFloat32)
+    target.field("v").blend = [(3.0, "a"), (4.0, "b")]
+
+    with pytest.raises(RuntimeError):
+        s = StructConverter(src, target)
+        check_conversion(s, "<fd", "<f",
+                         (1.0, 2.0),
+                         (3.0 + 8.0,))
