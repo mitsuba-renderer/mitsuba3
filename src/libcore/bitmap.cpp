@@ -52,9 +52,9 @@ Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
       m_component_format(component_format), m_size(size), m_owns_data(false) {
 
     if (m_component_format == Struct::EUInt8)
-        m_gamma = -1.0f; // sRGB by default
+        m_srgb_gamma = true;  // sRGB by default
     else
-        m_gamma = 1.0f; // Linear by default
+        m_srgb_gamma = false; // Linear by default
 
     rebuild_struct(channel_count);
 
@@ -68,13 +68,26 @@ Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
 
 Bitmap::Bitmap(const Bitmap &bitmap)
     : m_pixel_format(bitmap.m_pixel_format),
-      m_component_format(bitmap.m_component_format), m_size(bitmap.m_size),
-      m_struct(new Struct(*bitmap.m_struct)), m_gamma(bitmap.m_gamma),
+      m_component_format(bitmap.m_component_format),
+      m_size(bitmap.m_size),
+      m_struct(new Struct(*bitmap.m_struct)),
+      m_srgb_gamma(bitmap.m_srgb_gamma),
       m_owns_data(true) {
     size_t size = buffer_size();
     m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
         enoki::alloc<uint8_t>(size));
     memcpy(m_data.get(), bitmap.m_data.get(), size);
+}
+
+
+Bitmap::Bitmap(Bitmap &&bitmap)
+    : m_data(std::move(bitmap.m_data)),
+      m_pixel_format(bitmap.m_pixel_format),
+      m_component_format(bitmap.m_component_format),
+      m_size(bitmap.m_size),
+      m_struct(std::move(bitmap.m_struct)),
+      m_srgb_gamma(bitmap.m_srgb_gamma),
+      m_owns_data(bitmap.m_owns_data) {
 }
 
 Bitmap::Bitmap(Stream *stream, EFileFormat format) {
@@ -91,6 +104,22 @@ Bitmap::~Bitmap() {
         m_data.release();
 }
 
+void Bitmap::set_srgb_gamma(bool value) {
+    m_srgb_gamma = value;
+    for (auto &field : *m_struct) {
+        std::string suffix = field.name;
+        auto it = suffix.rfind(".");
+        if (it != std::string::npos)
+            suffix = suffix.substr(it + 1);
+        if (suffix != "A") {
+            if (value)
+                field.flags |= Struct::EGamma;
+            else
+                field.flags &= ~Struct::EGamma;
+        }
+    }
+}
+
 void Bitmap::clear() {
     memset(m_data.get(), 0, buffer_size());
 }
@@ -99,12 +128,12 @@ void Bitmap::rebuild_struct(size_t channel_count) {
     std::vector<std::string> channels;
 
     switch (m_pixel_format) {
-        case ELuminance:      channels = { "y" };               break;
-        case ELuminanceAlpha: channels = { "y", "a" };          break;
-        case ERGB:            channels = { "r", "g", "b"};      break;
-        case ERGBA:           channels = { "r", "g", "b", "a"}; break;
-        case EXYZ:            channels = { "x", "y", "z"};      break;
-        case EXYZA:           channels = { "x", "y", "z", "a"}; break;
+        case EY:    channels = { "Y" };               break;
+        case EYA:   channels = { "Y", "A" };          break;
+        case ERGB:  channels = { "R", "G", "B"};      break;
+        case ERGBA: channels = { "R", "G", "B", "A"}; break;
+        case EXYZ:  channels = { "X", "Y", "Z"};      break;
+        case EXYZA: channels = { "X", "Y", "Z", "A"}; break;
         case EMultiChannel: {
             for (size_t i = 0; i < channel_count; ++i)
                 channels.push_back(tfm::format("ch%i", i));
@@ -113,9 +142,19 @@ void Bitmap::rebuild_struct(size_t channel_count) {
         default: Throw("Unknown pixel format!");
     }
 
+    if (channel_count != 0 && channel_count != channels.size())
+        Throw("Bitmap::rebuild_struct(): channel count (%i) does not match "
+              "pixel format (%s)!", channel_count, m_pixel_format);
+
     m_struct = new Struct();
-    for (auto ch: channels)
-        m_struct->append(ch, m_component_format);
+    for (auto ch: channels) {
+        uint32_t flags = 0;
+        if (ch == "A")
+            flags |= Struct::ENormalized;
+        else if (m_srgb_gamma)
+            flags |= Struct::EGamma | Struct::ENormalized;
+        m_struct->append(ch, m_component_format, flags);
+    }
 }
 
 size_t Bitmap::buffer_size() const {
@@ -269,6 +308,130 @@ ref<Bitmap> Bitmap::resample(const Vector2s &res, const ReconstructionFilter *rf
     return result;
 }
 
+ref<Bitmap> Bitmap::convert(EPixelFormat pixel_format,
+                            Struct::EType component_format,
+                            bool srgb_gamma) const {
+    ref<Bitmap> result = new Bitmap(
+        pixel_format, component_format, m_size,
+        m_pixel_format == EMultiChannel ? m_struct->field_count() : 0);
+
+    result->m_metadata = m_metadata;
+    result->set_srgb_gamma(srgb_gamma);
+    convert(result);
+    return result;
+}
+
+void Bitmap::convert(Bitmap *target) const {
+    if (m_size != target->size())
+        Throw("Bitmap::convert(): Incompatible target size!");
+
+    ref<Struct> target_struct = new Struct(*(target->struct_()));
+
+    bool source_is_rgb = m_pixel_format == ERGB || m_pixel_format == ERGBA;
+    bool source_is_xyz = m_pixel_format == EXYZ || m_pixel_format == EXYZA;
+    bool source_is_y   = m_pixel_format == EY || m_pixel_format == EYA;
+
+    for (auto &field: *target_struct) {
+        if (m_struct->has_field(field.name))
+            continue;
+
+        std::string prefix = "";
+        std::string suffix = field.name;
+        auto it = suffix.rfind(".");
+        if (it != std::string::npos) {
+            prefix = suffix.substr(0, it + 1);
+            suffix = suffix.substr(it + 1);
+        }
+
+        /* Set alpha to 1.0 by default */
+        if (suffix == "A") {
+            field.default_ = 1.0;
+            field.flags |= Struct::EDefault;
+            continue;
+        }
+
+        if (suffix == "R") {
+            if (source_is_xyz) {
+                field.blend = {
+                    {  3.240479f, prefix + "X" },
+                    { -1.537150f, prefix + "Y" },
+                    { -0.498535f, prefix + "Z" }
+                };
+                continue;
+            } else if (source_is_y) {
+                field.name = prefix + "Y";
+                continue;
+            }
+        } else if (suffix == "G") {
+            if (source_is_xyz) {
+                field.blend = {
+                    { -0.969256f, prefix + "X" },
+                    {  1.875991f, prefix + "Y" },
+                    {  0.041556f, prefix + "Z" }
+                };
+                continue;
+            } else if (source_is_y) {
+                field.name = prefix + "Y";
+                continue;
+            }
+        } else if (suffix == "B") {
+            if (source_is_xyz) {
+                field.blend = {
+                    {  0.055648f, prefix + "X" },
+                    { -0.204043f, prefix + "Y" },
+                    {  1.057311f, prefix + "Z" }
+                };
+                continue;
+            } else if (source_is_y) {
+                field.name = prefix + "Y";
+                continue;
+            }
+        } else if (suffix == "X") {
+            if (source_is_rgb) {
+                field.blend = {
+                    { 0.412453, prefix + "R" },
+                    { 0.357580, prefix + "G" },
+                    { 0.180423, prefix + "B" }
+                };
+                continue;
+            } else if (source_is_y) {
+                field.blend = {{ 0.950456, prefix + "Y" }};
+                continue;
+            }
+        } else if (suffix == "Y") {
+            if (source_is_rgb) {
+                field.blend = {
+                    { 0.212671, prefix + "R" },
+                    { 0.715160, prefix + "G" },
+                    { 0.072169, prefix + "B" }
+                };
+                continue;
+            } else if (source_is_y) {
+                field.blend = {{ 1.0, prefix + "Y" }};
+                continue;
+            }
+        } else if (suffix == "Z") {
+            if (source_is_rgb) {
+                field.blend = {
+                    { 0.019334, prefix + "R" },
+                    { 0.119193, prefix + "G" },
+                    { 0.950227, prefix + "B" }
+                };
+                continue;
+            } else if (source_is_y) {
+                field.blend = {{ 1.08875, prefix + "Y" }};
+                continue;
+            }
+        }
+
+        Throw("Unable to convert %s to %s: don't know how to obtain channel \"%s\"",
+            m_struct->to_string(), target_struct->to_string(), field.name);
+    }
+
+    StructConverter conv(m_struct, target_struct);
+    conv.convert(hprod(m_size), uint8_data(), target->uint8_data());
+}
+
 void Bitmap::read(Stream *stream, EFileFormat format) {
     if (format == EAuto) {
         /* Try to automatically detect the file format */
@@ -310,7 +473,7 @@ void Bitmap::read(Stream *stream, EFileFormat format) {
         //case ETGA:     read_tga(stream); break;
         //case EPNG:     read_png(stream); break;
         default:
-            Throw("Bitmap: Invalid file format!");
+            Throw("Bitmap: Unknown file format!");
     }
 }
 
@@ -363,12 +526,25 @@ void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
             write_png(stream, quality);
             break;
 #endif
-        case EOpenEXR:  write_openexr(stream, quality); break;
+        case EOpenEXR:
+            write_openexr(stream, quality);
+            break;
+
         default:
             Log(EError, "Bitmap::write(): Invalid file format!");
     }
 }
 
+bool Bitmap::operator==(const Bitmap &bitmap) const {
+    if (m_pixel_format != bitmap.m_pixel_format ||
+        m_component_format != bitmap.m_component_format ||
+        m_size != bitmap.m_size ||
+        m_srgb_gamma != bitmap.m_srgb_gamma ||
+        *m_struct != *bitmap.m_struct ||
+        m_metadata != bitmap.m_metadata)
+        return false;
+    return memcmp(uint8_data(), bitmap.uint8_data(), buffer_size()) == 0;
+}
 
 std::string Bitmap::to_string() const {
     std::ostringstream oss;
@@ -376,6 +552,7 @@ std::string Bitmap::to_string() const {
         << "  type = " << m_pixel_format << "," << std::endl
         << "  component_format = " << m_component_format << "," << std::endl
         << "  size = " << m_size << "," << std::endl
+        << "  srgb_gamma = " << m_srgb_gamma << "," << std::endl
         << "  struct = " << string::indent(m_struct->to_string()) << "," << std::endl;
 
     std::vector<std::string> keys = m_metadata.property_names();
@@ -385,8 +562,7 @@ std::string Bitmap::to_string() const {
             std::string value = m_metadata.as_string(*it);
             if (value.length() > 50)
                 value = value.substr(0, 50) + ".. [truncated]";
-
-            oss << "    \"" << *it << "\" => \"" << value << "\"";
+            oss << "    " << *it << " => " << value;
             if (++it != keys.end())
                 oss << ",";
             oss << std::endl;
@@ -394,8 +570,7 @@ std::string Bitmap::to_string() const {
         oss << "  }," << std::endl;
     }
 
-    oss << "  gamma = " << m_gamma << "," << std::endl
-        << "  data = [ " << util::mem_string(buffer_size()) << " of image data ]" << std::endl
+    oss << "  data = [ " << util::mem_string(buffer_size()) << " of image data ]" << std::endl
         << "]";
     return oss.str();
 }
@@ -458,46 +633,38 @@ void Bitmap::read_openexr(Stream *stream) {
 
     /* Load metadata if present */
     for (auto it = header.begin(); it != header.end(); ++it) {
-        const char *name = it.name();
+        std::string name = it.name();
         const Imf::Attribute *attr = &it.attribute();
+        std::string typeName = attr->typeName();
 
-        /* StringAttribute */ {
-            auto v = dynamic_cast<const Imf::StringAttribute *>(attr);
-            if (v) m_metadata.set_string(name, v->value());
-        }
-        /* IntAttribute */ {
-            auto v = dynamic_cast<const Imf::IntAttribute *>(attr);
-            if (v) m_metadata.set_long(name, v->value());
-        }
-        /* FloatAttribute */ {
-            auto v = dynamic_cast<const Imf::FloatAttribute *>(attr);
-            if (v) m_metadata.set_float(name, Float(v->value()));
-        }
-        /* DoubleAttribute */ {
-            auto v = dynamic_cast<const Imf::DoubleAttribute *>(attr);
-            if (v) m_metadata.set_float(name, Float(v->value()));
-        }
-        /* V3fAttribute */ {
-            auto v = dynamic_cast<const Imf::V3fAttribute *>(attr);
-            if (v) {
-                Imath::V3f vec = v->value();
-                m_metadata.set_vector3f(name, Vector3f(vec.x, vec.y, vec.z));
-            }
-        }
-        /* M44fAttribute */ {
-            auto v = dynamic_cast<const Imf::M44fAttribute *>(attr);
-            if (v) {
-                Matrix4f M;
-                for (size_t i = 0; i < 4; ++i)
-                    for (size_t j = 0; j < 4; ++j)
-                        M(i, j) = v->value().x[i][j];
-                m_metadata.set_transform(name, Transform(M));
-            }
+        if (typeName == "string") {
+            auto v = static_cast<const Imf::StringAttribute *>(attr);
+            m_metadata.set_string(name, v->value());
+        } else if (typeName == "int") {
+            auto v = static_cast<const Imf::IntAttribute *>(attr);
+            m_metadata.set_long(name, v->value());
+        } else if (typeName == "float") {
+            auto v = static_cast<const Imf::FloatAttribute *>(attr);
+            m_metadata.set_float(name, Float(v->value()));
+        } else if (typeName == "double") {
+            auto v = static_cast<const Imf::DoubleAttribute *>(attr);
+            m_metadata.set_float(name, Float(v->value()));
+        } else if (typeName == "v3f") {
+            auto v = static_cast<const Imf::V3fAttribute *>(attr);
+            Imath::V3f vec = v->value();
+            m_metadata.set_vector3f(name, Vector3f(vec.x, vec.y, vec.z));
+        } else if (typeName == "m44f") {
+            auto v = static_cast<const Imf::M44fAttribute *>(attr);
+            Matrix4f M;
+            for (size_t i = 0; i < 4; ++i)
+                for (size_t j = 0; j < 4; ++j)
+                    M(i, j) = v->value().x[i][j];
+            m_metadata.set_transform(name, Transform(M));
         }
     }
 
     bool process_colors = false;
-    m_gamma = 1.0f;
+    m_srgb_gamma = false;
     m_pixel_format = EMultiChannel;
     m_struct = new Struct();
     Imf::PixelType pixel_type = channels.begin().channel().type;
@@ -584,13 +751,15 @@ void Bitmap::read_openexr(Stream *stream) {
         luminance_chroma_format = true;
     } else if (found[Y]) {
         if (m_struct->field_count() == 1)
-            m_pixel_format = ELuminance;
+            m_pixel_format = EY;
         else if (found[A] && m_struct->field_count() == 2)
-            m_pixel_format = ELuminanceAlpha;
+            m_pixel_format = EYA;
     }
 
     /* Check if there is a chromaticity header entry */
-    Imf::Chromaticities file_chroma = Imf::chromaticities(file.header());
+    Imf::Chromaticities file_chroma;
+    if (Imf::hasChromaticities(file.header()))
+        file_chroma = Imf::chromaticities(file.header());
 
     auto chroma_eq = [](const Imf::Chromaticities &a,
                         const Imf::Chromaticities &b) {
@@ -642,7 +811,7 @@ void Bitmap::read_openexr(Stream *stream) {
             /* Uh oh, this is a sub-sampled channel. We will need to scale it */
             Vector2s channel_size = m_size / sampling;
 
-            ref<Bitmap> bitmap = new Bitmap(Bitmap::ELuminance,
+            ref<Bitmap> bitmap = new Bitmap(Bitmap::EY,
                                             m_component_format, channel_size);
 
             uint8_t *ptr_nested = bitmap->uint8_data() -
@@ -808,17 +977,17 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
     EPixelFormat pixel_format = m_pixel_format;
 
     Properties metadata(m_metadata);
-    if (!metadata.has_property("generated_by"))
-        metadata.set_string("generated_by", "Mitsuba version " MTS_VERSION);
+    if (!metadata.has_property("generatedBy"))
+        metadata.set_string("generatedBy", "Mitsuba version " MTS_VERSION);
 
     std::vector<std::string> keys = metadata.property_names();
 
     Imf::Header header(
-        m_size.x(), // width
-        m_size.y(), // height,
-        1.f, // pixelAspectRatio
-        Imath::V2f(0, 0), // screenWindowCenter,
-        1.f, // screenWindowWidth
+        m_size.x(),        // width
+        m_size.y(),        // height,
+        1.f,               // pixelAspectRatio
+        Imath::V2f(0, 0),  // screenWindowCenter,
+        1.f,               // screenWindowWidth
         Imf::INCREASING_Y, // lineOrder
         quality <= 0 ? Imf::PIZ_COMPRESSION : Imf::DWAB_COMPRESSION // compression
     );
@@ -837,7 +1006,17 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
                 header.insert(it->c_str(), Imf::IntAttribute(metadata.int_(*it)));
                 break;
             case Properties::EFloat:
-                header.insert(it->c_str(), Imf::FloatAttribute((float) metadata.float_(*it)));
+                #if defined(SINGLE_PRECISION)
+                    header.insert(it->c_str(), Imf::FloatAttribute(metadata.float_(*it)));
+                #else
+                    header.insert(it->c_str(), Imf::DoubleAttribute(metadata.float_(*it)));
+                #endif
+                break;
+            case Properties::EVector3f: {
+                    Vector3f val = metadata.vector3f(*it);
+                    header.insert(it->c_str(), Imf::V3fAttribute(
+                        Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
+                }
                 break;
             case Properties::EPoint3f: {
                     Point3f val = metadata.point3f(*it);
@@ -848,10 +1027,14 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
             case Properties::ETransform: {
                     Matrix4f val = metadata.transform(*it).matrix();
                     header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
-                        (float) val(0, 0), (float) val(0, 1), (float) val(0, 2), (float) val(0, 3),
-                        (float) val(1, 0), (float) val(1, 1), (float) val(1, 2), (float) val(1, 3),
-                        (float) val(2, 0), (float) val(2, 1), (float) val(2, 2), (float) val(2, 3),
-                        (float) val(3, 0), (float) val(3, 1), (float) val(3, 2), (float) val(3, 3))));
+                        (float) val(0, 0), (float) val(0, 1),
+                        (float) val(0, 2), (float) val(0, 3),
+                        (float) val(1, 0), (float) val(1, 1),
+                        (float) val(1, 2), (float) val(1, 3),
+                        (float) val(2, 0), (float) val(2, 1),
+                        (float) val(2, 2), (float) val(2, 3),
+                        (float) val(3, 0), (float) val(3, 1),
+                        (float) val(3, 2), (float) val(3, 3))));
                 }
                 break;
             default:
@@ -868,91 +1051,25 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
             Imath::V2f(1.0f / 3.0f, 1.0f / 3.0f)));
     }
 
-    Imf::PixelType comp_type;
-    size_t comp_stride;
-    if (m_component_format == Struct::EFloat16) {
-        comp_type = Imf::HALF;
-        comp_stride = 2;
-    } else if (m_component_format == Struct::EFloat32) {
-        comp_type = Imf::FLOAT;
-        comp_stride = 4;
-    } else if (m_component_format == Struct::EUInt32) {
-        comp_type = Imf::UINT;
-        comp_stride = 4;
-    } else {
-        Log(EError, "writeOpenEXR(): Invalid component type (must be "
-            "float16, float32, or uint32)");
-        return;
-    }
-    /*
-    if ((channel_count() > 0) && m_channel_names.size() != channel_count())
-        Log(EWarn, "write_openexr(): 'channel_names' has the wrong number of entries (%i, expected %i), ignoring..!",
-        (int) m_channel_names.size(), (int) channel_count());
-    */
-    bool explicit_channel_names = false;
+    size_t pixel_stride = m_struct->size(),
+           row_stride = pixel_stride * m_size.x();
+
     Imf::ChannelList &channels = header.channels();
-    //if (m_channel_names.size() == channel_count()) {
-    if ((channel_count() > 0)) {
-        for (auto it = m_struct->begin(); it != m_struct->end(); ++it)
-            channels.insert(it->name.c_str(), Imf::Channel(comp_type));
-        explicit_channel_names = true;
-    } else if (pixel_format == ELuminance || pixel_format == ELuminanceAlpha) {
-        channels.insert("Y", Imf::Channel(comp_type));
-    } else if (pixel_format == ERGB || pixel_format == ERGBA ||
-               pixel_format == EXYZ || pixel_format == EXYZA) {
-        channels.insert("R", Imf::Channel(comp_type));
-        channels.insert("G", Imf::Channel(comp_type));
-        channels.insert("B", Imf::Channel(comp_type));
-#if 0 // TODO
-    } else if (pixel_format == EMultiChannel) {
-        for (int i = 0; i<getChannelCount(); ++i)
-            channels.insert(tfm::format("%i", i).c_str(), Imf::Channel(comp_type));
-#endif
-    } else {
-        Log(EError, "writeOpenEXR(): Invalid pixel format!");
-        return;
-    }
-
-    if ((pixel_format == ELuminanceAlpha || pixel_format == ERGBA ||
-         pixel_format == EXYZA /*|| pixel_format == ESpectrumAlpha*/) && !explicit_channel_names)
-        channels.insert("A", Imf::Channel(comp_type));
-
-    size_t pixel_stride = channel_count() * comp_stride,
-        row_stride = pixel_stride * m_size.x();
-    char *ptr = (char *) m_data.get();
-
     Imf::FrameBuffer framebuffer;
+    const uint8_t *ptr = uint8_data();
+    for (auto field : *m_struct) {
+        Imf::PixelType comp_type;
+        switch (field.type) {
+            case Struct::EFloat32: comp_type = Imf::FLOAT; break;
+            case Struct::EFloat16: comp_type = Imf::HALF; break;
+            case Struct::EUInt32: comp_type = Imf::UINT; break;
+            default: Throw("Unexpected field type!");
+        }
 
-    if (explicit_channel_names) {
-        for (auto it = m_struct->begin(); it != m_struct->end(); ++it) {
-            framebuffer.insert(it->name.c_str(), Imf::Slice(comp_type, ptr, pixel_stride, row_stride));
-
-            ptr += comp_stride;
-        }
-    } else if (pixel_format == ELuminance || pixel_format == ELuminanceAlpha) {
-        framebuffer.insert("Y", Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
-    } else if (pixel_format == ERGB || pixel_format == ERGBA || pixel_format == EXYZ || pixel_format == EXYZA) {
-        framebuffer.insert("R", Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
-        framebuffer.insert("G", Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
-        framebuffer.insert("B", Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
-#if 0 // TODO
-    } else if (pixel_format == ESpectrum || pixel_format == ESpectrumAlpha) {
-        for (int i = 0; i<SPECTRUM_SAMPLES; ++i) {
-            std::pair<Float, Float> coverage = Spectrum::getBinCoverage(i);
-            std::string name = tfm::format("%.2f-%.2fnm", coverage.first, coverage.second);
-            framebuffer.insert(name.c_str(), Imf::Slice(comp_type, ptr, pixel_stride, row_stride)); ptr += comp_stride;
-        }
-    } else if (pixel_format == EMultiChannel) {
-        for (int i = 0; i<getChannelCount(); ++i) {
-            framebuffer.insert(tfm::format("%i", i).c_str(), Imf::Slice(comp_type, ptr, pixel_stride, row_stride));
-            ptr += comp_stride;
-        }
-#endif
+        Imf::Slice slice(comp_type, (char *) (ptr + field.offset), pixel_stride, row_stride);
+        channels.insert(field.name, Imf::Channel(comp_type));
+        framebuffer.insert(field.name, slice);
     }
-
-    if ((pixel_format == ELuminanceAlpha || pixel_format == ERGBA ||
-         pixel_format == EXYZA /*|| pixel_format == ESpectrumAlpha*/) && !explicit_channel_names)
-        framebuffer.insert("A", Imf::Slice(comp_type, ptr, pixel_stride, row_stride));
 
     EXROStream ostr(stream);
     Imf::OutputFile file(ostr, header);
@@ -967,7 +1084,7 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
 * ========================== */
 
 extern "C" {
-    static const size_t jpeg_bufferSize = 0x8000;
+    static const size_t jpeg_buffer_size = 0x8000;
 
     typedef struct {
         struct jpeg_source_mgr mgr;
@@ -983,19 +1100,19 @@ extern "C" {
 
     //METHODDEF(void) jpeg_init_source(j_decompress_ptr cinfo) {
         //jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
-        //p->buffer = new JOCTET[jpeg_bufferSize];
+        //p->buffer = new JOCTET[jpeg_buffer_size];
     //}
 
     //METHODDEF(boolean) jpeg_fill_input_buffer(j_decompress_ptr cinfo) {
         //jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
         //size_t nBytes;
 
-        //p->stream->read(p->buffer, jpeg_bufferSize);
-        //nBytes = jpeg_bufferSize;
+        //p->stream->read(p->buffer, jpeg_buffer_size);
+        //nBytes = jpeg_buffer_size;
 
         //try {
-            //p->stream->read(p->buffer, jpeg_bufferSize);
-            //nBytes = jpeg_bufferSize;
+            //p->stream->read(p->buffer, jpeg_buffer_size);
+            //nBytes = jpeg_buffer_size;
         //} catch (const EOFException &e) {
             //nBytes = e.getCompleted();
             //if (nBytes == 0) {
@@ -1030,23 +1147,23 @@ extern "C" {
     METHODDEF(void) jpeg_init_destination(j_compress_ptr cinfo) {
         jbuf_out_t *p = (jbuf_out_t *) cinfo->dest;
 
-        p->buffer = new JOCTET[jpeg_bufferSize];
+        p->buffer = new JOCTET[jpeg_buffer_size];
         p->mgr.next_output_byte = p->buffer;
-        p->mgr.free_in_buffer = jpeg_bufferSize;
+        p->mgr.free_in_buffer = jpeg_buffer_size;
     }
 
     METHODDEF(boolean) jpeg_empty_output_buffer(j_compress_ptr cinfo) {
         jbuf_out_t *p = (jbuf_out_t *) cinfo->dest;
-        p->stream->write(p->buffer, jpeg_bufferSize);
+        p->stream->write(p->buffer, jpeg_buffer_size);
         p->mgr.next_output_byte = p->buffer;
-        p->mgr.free_in_buffer = jpeg_bufferSize;
+        p->mgr.free_in_buffer = jpeg_buffer_size;
         return 1;
     }
 
     METHODDEF(void) jpeg_term_destination(j_compress_ptr cinfo) {
         jbuf_out_t *p = (jbuf_out_t *) cinfo->dest;
         p->stream->write(p->buffer,
-                         jpeg_bufferSize - p->mgr.free_in_buffer);
+                         jpeg_buffer_size - p->mgr.free_in_buffer);
         delete[] p->buffer;
         p->mgr.free_in_buffer = 0;
     }
@@ -1064,7 +1181,7 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     jbuf_out_t jbuf;
 
     int components = 0;
-    if (m_pixel_format == ELuminance)
+    if (m_pixel_format == EY)
         components = 1;
     else if (m_pixel_format == ERGB)
         components = 3;
@@ -1148,8 +1265,8 @@ void Bitmap::write_png(Stream *stream, int compression) const {
 
     int colorType, bitDepth;
     switch (m_pixel_format) {
-        case ELuminance: colorType = PNG_COLOR_TYPE_GRAY; break;
-        case ELuminanceAlpha: colorType = PNG_COLOR_TYPE_GRAY_ALPHA; break;
+        case EY: colorType = PNG_COLOR_TYPE_GRAY; break;
+        case EYA: colorType = PNG_COLOR_TYPE_GRAY_ALPHA; break;
         case ERGB: colorType = PNG_COLOR_TYPE_RGB; break;
         case ERGBA: colorType = PNG_COLOR_TYPE_RGBA; break;
         default:
@@ -1206,10 +1323,8 @@ void Bitmap::write_png(Stream *stream, int compression) const {
 
     png_set_text(png_ptr, info_ptr, text, (int) keys.size());
 
-    if (m_gamma == -1)
+    if (m_srgb_gamma)
         png_set_sRGB_gAMA_and_cHRM(png_ptr, info_ptr, PNG_sRGB_INTENT_ABSOLUTE);
-    else
-        png_set_gAMA(png_ptr, info_ptr, 1 / m_gamma);
 
     if (m_component_format == Struct::EUInt16 && Stream::host_byte_order() == Stream::ELittleEndian)
         png_set_swap(png_ptr); // Swap the byte order on little endian machines
@@ -1240,13 +1355,13 @@ void Bitmap::write_png(Stream *stream, int compression) const {
 
 std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value) {
     switch (value) {
-        case Bitmap::ELuminance:      os << "luminance"; break;
-        case Bitmap::ELuminanceAlpha: os << "luminance-alpha"; break;
-        case Bitmap::ERGB:            os << "rgb"; break;
-        case Bitmap::ERGBA:           os << "rgba"; break;
-        case Bitmap::EXYZ:            os << "xyz"; break;
-        case Bitmap::EXYZA:           os << "xyza"; break;
-        case Bitmap::EMultiChannel:   os << "multichannel"; break;
+        case Bitmap::EY:            os << "y"; break;
+        case Bitmap::EYA:           os << "ya"; break;
+        case Bitmap::ERGB:          os << "rgb"; break;
+        case Bitmap::ERGBA:         os << "rgba"; break;
+        case Bitmap::EXYZ:          os << "xyz"; break;
+        case Bitmap::EXYZA:         os << "xyza"; break;
+        case Bitmap::EMultiChannel: os << "multichannel"; break;
         default: Throw("Unknown pixel format!");
     }
     return os;

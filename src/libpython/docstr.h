@@ -357,6 +357,8 @@ Parameter ``format``:
 
 static const char *__doc_mitsuba_Bitmap_Bitmap_4 = R"doc(Copy constructor (copies the image contents))doc";
 
+static const char *__doc_mitsuba_Bitmap_Bitmap_5 = R"doc(Move constructor)doc";
+
 static const char *__doc_mitsuba_Bitmap_EFileFormat = R"doc(Supported file formats)doc";
 
 static const char *__doc_mitsuba_Bitmap_EFileFormat_EAuto =
@@ -415,7 +417,7 @@ R"doc(Portable network graphics
 The following is supported:
 
 * Loading and saving of 8/16-bit per component bitmaps for all pixel
-formats (ELuminance, ELuminanceAlpha, ERGB, ERGBA)
+formats (EY, EYA, ERGB, ERGBA)
 
 * Loading and saving of 1-bit per component mask bitmaps
 
@@ -447,10 +449,6 @@ R"doc(This enumeration lists all pixel format types supported by the Bitmap
 class. This both determines the number of channels, and how they
 should be interpreted)doc";
 
-static const char *__doc_mitsuba_Bitmap_EPixelFormat_ELuminance = R"doc(Single-channel luminance bitmap)doc";
-
-static const char *__doc_mitsuba_Bitmap_EPixelFormat_ELuminanceAlpha = R"doc(Two-channel luminance + alpha bitmap)doc";
-
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EMultiChannel = R"doc(Arbitrary multi-channel bitmap without a fixed interpretation)doc";
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGB = R"doc(RGB bitmap)doc";
@@ -460,6 +458,10 @@ static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGBA = R"doc(RGB bitmap + 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZ = R"doc(XYZ tristimulus bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZA = R"doc(XYZ tristimulus + alpha channel)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_EY = R"doc(Single-channel luminance bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_EYA = R"doc(Two-channel luminance + alpha bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_buffer_size = R"doc(Return the bitmap size in bytes (excluding metadata))doc";
 
@@ -473,11 +475,52 @@ static const char *__doc_mitsuba_Bitmap_clear = R"doc(Clear the bitmap to zero)d
 
 static const char *__doc_mitsuba_Bitmap_component_format = R"doc(Return the component format of this bitmap)doc";
 
+static const char *__doc_mitsuba_Bitmap_convert =
+R"doc(Convert the bitmap into another pixel and/or component format
+
+This helper function can be used to efficiently convert a bitmap
+between different underlying representations. For instance, it can
+translate a uint8 sRGB bitmap to a linear float32 XYZ bitmap based on
+half-, single- or double-precision floating point-backed storage.
+
+This function roughly does the following:
+
+* For each pixel and channel, it converts the associated value into a
+normalized linear-space form (any gamma of the source bitmap is
+removed)
+
+* The multiplier and gamma correction specified in ``targetGamma`` is
+applied
+
+* The corrected value is clamped against the representable range of
+the desired component format.
+
+* The clamped gamma-corrected value is then written to the new bitmap
+
+If the pixel formats differ, this function will also perform basic
+conversions (e.g. spectrum to rgb, luminance to uniform spectrum
+values, etc.)
+
+Note that the alpha channel is assumed to be linear in both the source
+and target bitmap, hence it won't be affected by any gamma-related
+transformations.
+
+Remark:
+    This ``convert()`` variant usually returns a new bitmap instance.
+    When the conversion would just involve copying the original
+    bitmap, the function becomes a no-op and returns the current
+    instance.
+
+pixelFormat Specifies the desired pixel format componentFormat
+Specifies the desired component format gamma Specifies the desired
+gamma value. Special values: ``1``.0 denotes a linear space, and \c
+-1.0 corresponds to sRGB.)doc";
+
+static const char *__doc_mitsuba_Bitmap_convert_2 = R"doc()doc";
+
 static const char *__doc_mitsuba_Bitmap_data = R"doc(Return a pointer to the underlying bitmap storage)doc";
 
 static const char *__doc_mitsuba_Bitmap_data_2 = R"doc(Return a pointer to the underlying bitmap storage)doc";
-
-static const char *__doc_mitsuba_Bitmap_gamma = R"doc(Return the bitmap's gamma identifier (-1: sRGB))doc";
 
 static const char *__doc_mitsuba_Bitmap_has_alpha = R"doc(Return whether this image has an alpha channel)doc";
 
@@ -487,8 +530,6 @@ static const char *__doc_mitsuba_Bitmap_m_component_format = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap_m_data = R"doc()doc";
 
-static const char *__doc_mitsuba_Bitmap_m_gamma = R"doc()doc";
-
 static const char *__doc_mitsuba_Bitmap_m_metadata = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap_m_owns_data = R"doc()doc";
@@ -496,6 +537,8 @@ static const char *__doc_mitsuba_Bitmap_m_owns_data = R"doc()doc";
 static const char *__doc_mitsuba_Bitmap_m_pixel_format = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap_m_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Bitmap_m_srgb_gamma = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap_m_struct = R"doc()doc";
 
@@ -576,11 +619,13 @@ Parameter ``clamp``:
     Filtered image pixels will be clamped to the following range.
     Default: -infinity..infinity (i.e. no clamping is used))doc";
 
-static const char *__doc_mitsuba_Bitmap_set_gamma = R"doc(Set the bitmap's gamma identifier (-1: sRGB))doc";
-
 static const char *__doc_mitsuba_Bitmap_set_metadata = R"doc(Set the a Properties object containing the image metadata)doc";
 
+static const char *__doc_mitsuba_Bitmap_set_srgb_gamma = R"doc(Specify whether the bitmap uses an sRGB gamma encoding)doc";
+
 static const char *__doc_mitsuba_Bitmap_size = R"doc(Return the bitmap dimensions in pixels)doc";
+
+static const char *__doc_mitsuba_Bitmap_srgb_gamma = R"doc(Return whether the bitmap uses an sRGB gamma encoding)doc";
 
 static const char *__doc_mitsuba_Bitmap_static_initialization =
 R"doc(Static initialization of bitmap-related data structures (thread pools,

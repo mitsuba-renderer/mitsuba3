@@ -34,3 +34,6 @@
 [submodule "ext/enoki"]
 	path = ext/enoki
 	url = https://github.com/mitsuba-renderer/enoki
+[submodule "resources/data"]
+	path = resources/data
+	url = https://github.com/mitsuba-renderer/mitsuba-data

@@ -48,17 +48,17 @@ void GLTexture::refresh(const Bitmap *bitmap) {
     }
 
     switch (bitmap->pixel_format()) {
-        case Bitmap::ELuminance:      format = GL_RED; break;
-        case Bitmap::ELuminanceAlpha: format = GL_RG; break;
-        case Bitmap::ERGB:            format = GL_RGB; break;
-        case Bitmap::ERGBA:           format = GL_RGBA; break;
+        case Bitmap::EY:    format = GL_RED; break;
+        case Bitmap::EYA:   format = GL_RG; break;
+        case Bitmap::ERGB:  format = GL_RGB; break;
+        case Bitmap::ERGBA: format = GL_RGBA; break;
         default:
             Throw("GLTexture::refresh(): incompatible pixel format: %s",
                   bitmap->pixel_format());
     }
     internalFormat = format;
 
-    if (bitmap->gamma() && bitmap->component_format() == Struct::EUInt8) {
+    if (bitmap->srgb_gamma() && bitmap->component_format() == Struct::EUInt8) {
         switch (bitmap->pixel_format()) {
             case Bitmap::ERGB:            internalFormat = GL_SRGB8;
             case Bitmap::ERGBA:           internalFormat = GL_SRGB8_ALPHA8; break;

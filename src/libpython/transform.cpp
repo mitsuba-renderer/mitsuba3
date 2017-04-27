@@ -29,4 +29,5 @@ MTS_PY_EXPORT(Transform) {
             oss << t;
             return oss.str();
         });
+    py::implicitly_convertible<Matrix4f, Transform>();
 }

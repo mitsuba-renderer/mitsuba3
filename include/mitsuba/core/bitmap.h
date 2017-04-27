@@ -20,6 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Bitmap : public Object {
 public:
+    /// Boundary conditions for image resampling
     using EBoundaryCondition = ReconstructionFilter::EBoundaryCondition;
 
     // ======================================================================
@@ -33,10 +34,10 @@ public:
      */
     enum EPixelFormat {
         /// Single-channel luminance bitmap
-        ELuminance,
+        EY,
 
         /// Two-channel luminance + alpha bitmap
-        ELuminanceAlpha,
+        EYA,
 
         /// RGB bitmap
         ERGB,
@@ -62,7 +63,7 @@ public:
          * The following is supported:
          * <ul>
          * <li> Loading and saving of 8/16-bit per component bitmaps for
-         *   all pixel formats (ELuminance, ELuminanceAlpha, ERGB, ERGBA)</li>
+         *   all pixel formats (EY, EYA, ERGB, ERGBA)</li>
          * <li> Loading and saving of 1-bit per component mask bitmaps</li>
          * <li> Loading and saving of string-valued metadata fields</li>
          * </ul>
@@ -208,6 +209,9 @@ public:
     /// Copy constructor (copies the image contents)
     Bitmap(const Bitmap &bitmap);
 
+    /// Move constructor
+    Bitmap(Bitmap &&bitmap);
+
     /// Return the pixel format of this bitmap
     EPixelFormat pixel_format() const { return m_pixel_format; }
 
@@ -237,7 +241,7 @@ public:
 
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
-        return m_pixel_format == ELuminanceAlpha || m_pixel_format == ERGBA ||
+        return m_pixel_format == EYA || m_pixel_format == ERGBA ||
                m_pixel_format == EXYZA;
     }
 
@@ -247,11 +251,11 @@ public:
     /// Return the bitmap size in bytes (excluding metadata)
     size_t buffer_size() const;
 
-    /// Return the bitmap's gamma identifier (-1: sRGB)
-    Float gamma() const { return m_gamma; }
+    /// Return whether the bitmap uses an sRGB gamma encoding
+    bool srgb_gamma() const { return m_srgb_gamma; }
 
-    /// Set the bitmap's gamma identifier (-1: sRGB)
-    void set_gamma(Float gamma) { m_gamma = gamma; }
+    /// Specify whether the bitmap uses an sRGB gamma encoding
+    void set_srgb_gamma(bool value);
 
     /// Return a \ref Properties object containing the image metadata
     Properties &metadata() { return m_metadata; }
@@ -402,6 +406,61 @@ public:
                              { -std::numeric_limits<Float>::infinity(),
                                 std::numeric_limits<Float>::infinity() }) const;
 
+    /**
+     * \brief Convert the bitmap into another pixel and/or component format
+     *
+     * This helper function can be used to efficiently convert a bitmap
+     * between different underlying representations. For instance, it can
+     * translate a uint8 sRGB bitmap to a linear float32 XYZ bitmap
+     * based on half-, single- or double-precision floating point-backed storage.
+     *
+     * This function roughly does the following:
+     *
+     * <ul>
+     * <li>For each pixel and channel, it converts the associated value
+     *   into a normalized linear-space form (any gamma of the source
+     *   bitmap is removed)</li>
+     * <li>The multiplier and gamma correction specified in
+     *      \c targetGamma is applied</li>
+     * <li>The corrected value is clamped against the representable range
+     *   of the desired component format.</li>
+     * <li>The clamped gamma-corrected value is then written to
+     *   the new bitmap</li>
+     *
+     * If the pixel formats differ, this function will also perform basic
+     * conversions (e.g. spectrum to rgb, luminance to uniform spectrum
+     * values, etc.)
+     *
+     * Note that the alpha channel is assumed to be linear in both
+     * the source and target bitmap, hence it won't be affected by
+     * any gamma-related transformations.
+     *
+     * \remark This <tt>convert()</tt> variant usually returns a new
+     * bitmap instance. When the conversion would just involve copying
+     * the original bitmap, the function becomes a no-op and returns
+     * the current instance.
+     *
+     * \ref pixelFormat
+     *      Specifies the desired pixel format
+     * \ref componentFormat
+     *      Specifies the desired component format
+     * \ref gamma
+     *      Specifies the desired gamma value.
+     *      Special values: \c 1.0 denotes a linear space, and
+     *      \c -1.0 corresponds to sRGB.
+     */
+    ref<Bitmap> convert(EPixelFormat pixel_format,
+                        Struct::EType component_format,
+                        bool srgb_gamma) const;
+
+    void convert(Bitmap *target) const;
+
+    /// Equality comparison operator
+    bool operator==(const Bitmap &bitmap) const;
+
+    /// Inequality comparison operator
+    bool operator!=(const Bitmap &bitmap) const { return !operator==(bitmap); }
+
     /// Return a human-readable summary of this bitmap
     virtual std::string to_string() const override;
 
@@ -447,7 +506,7 @@ public:
      Struct::EType m_component_format;
      Vector2s m_size;
      ref<Struct> m_struct;
-     Float m_gamma;
+     bool m_srgb_gamma;
      bool m_owns_data;
      Properties m_metadata;
 };

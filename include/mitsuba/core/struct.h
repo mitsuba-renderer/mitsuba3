@@ -94,7 +94,15 @@ public:
         /// Default value
         double default_;
 
-        /// Can be used to perform a
+        /**
+         * \brief For use with \ref StructConverter::convert()
+         *
+         * Specifies a pair of weights and source field names that will be
+         * linearly blended to obtain the output field value. Note that this
+         * only works for floating point fields or integer fields with the \ref
+         * ENormalized flag. Gamma-corrected fields will be blended in linear
+         * space.
+         */
         std::vector<std::pair<double, std::string>> blend;
 
         /// Return a hash code associated with this \c Field

@@ -129,11 +129,11 @@ MTS_PY_EXPORT(Struct) {
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__hash__", [](const Struct::Field &f) { return hash(f); })
-        .def_readonly("name", &Struct::Field::name, D(Struct, Field, name))
-        .def_readonly("type", &Struct::Field::type, D(Struct, Field, type))
-        .def_readonly("size", &Struct::Field::size, D(Struct, Field, size))
-        .def_readonly("offset", &Struct::Field::offset, D(Struct, Field, offset))
-        .def_readonly("flags", &Struct::Field::flags, D(Struct, Field, flags))
+        .def_readwrite("type", &Struct::Field::type, D(Struct, Field, type))
+        .def_readwrite("size", &Struct::Field::size, D(Struct, Field, size))
+        .def_readwrite("offset", &Struct::Field::offset, D(Struct, Field, offset))
+        .def_readwrite("flags", &Struct::Field::flags, D(Struct, Field, flags))
+        .def_readwrite("name", &Struct::Field::name, D(Struct, Field, name))
         .def_readwrite("blend", &Struct::Field::blend, D(Struct, Field, blend));
 
     MTS_PY_CLASS(StructConverter, Object)

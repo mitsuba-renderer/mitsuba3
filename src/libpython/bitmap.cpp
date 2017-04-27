@@ -8,30 +8,34 @@ MTS_PY_EXPORT(Bitmap) {
         .def(py::init<Bitmap::EPixelFormat, Struct::EType, const Vector2s &, size_t>(),
              "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, D(Bitmap, Bitmap))
 
-        .def("__init__", [](Bitmap &bitmap, py::array obj) {
+        .def("__init__", [](Bitmap &bitmap, py::array obj, py::object pixel_format_) {
             auto struct_ = py::module::import("mitsuba.core").attr("Struct");
             Struct::EType component_format = struct_.attr("EType")(obj.dtype()).cast<Struct::EType>();
-            size_t channel_count = 0;
             if (obj.ndim() != 2 && obj.ndim() != 3)
                 throw py::type_error("Expected an array of size 2 or 3");
 
-            Bitmap::EPixelFormat pixel_format = Bitmap::ELuminance;
+            Bitmap::EPixelFormat pixel_format = Bitmap::EY;
+            size_t channel_count = 1;
             if (obj.ndim() == 3) {
                 channel_count = obj.shape()[2];
                 switch (channel_count) {
-                    case 1: pixel_format = Bitmap::ELuminance; break;
-                    case 2: pixel_format = Bitmap::ELuminanceAlpha; break;
+                    case 1: pixel_format = Bitmap::EY; break;
+                    case 2: pixel_format = Bitmap::EYA; break;
                     case 3: pixel_format = Bitmap::ERGB; break;
                     case 4: pixel_format = Bitmap::ERGBA; break;
                     default: pixel_format = Bitmap::EMultiChannel; break;
                 }
             }
 
+            if (!pixel_format_.is_none())
+                pixel_format = pixel_format_.cast<Bitmap::EPixelFormat>();
+
             obj = py::array::ensure(obj, py::array::c_style);
             Vector2s size(obj.shape()[1], obj.shape()[0]);
             new (&bitmap) Bitmap(pixel_format, component_format, size, channel_count);
             memcpy(bitmap.data(), obj.data(), bitmap.buffer_size());
-        })
+        }, "array"_a, "pixel_format"_a = py::none(),
+           "Initialize a Bitmap from a NumPy array")
         .def(py::init<const Bitmap &>())
         .mdef(Bitmap, pixel_format)
         .mdef(Bitmap, component_format)
@@ -43,9 +47,11 @@ MTS_PY_EXPORT(Bitmap) {
         .mdef(Bitmap, has_alpha)
         .mdef(Bitmap, bytes_per_pixel)
         .mdef(Bitmap, buffer_size)
-        .mdef(Bitmap, gamma)
-        .mdef(Bitmap, set_gamma)
+        .mdef(Bitmap, srgb_gamma)
+        .mdef(Bitmap, set_srgb_gamma)
         .mdef(Bitmap, clear)
+        .def("metadata", py::overload_cast<>(&Bitmap::metadata), D(Bitmap, metadata),
+             py::return_value_policy::reference_internal)
         .def("resample", py::overload_cast<Bitmap *, const ReconstructionFilter *,
             const std::pair<Bitmap::EBoundaryCondition, Bitmap::EBoundaryCondition> &,
             const std::pair<Float, Float> &, Bitmap *>(&Bitmap::resample, py::const_),
@@ -67,11 +73,18 @@ MTS_PY_EXPORT(Bitmap) {
                                         std::numeric_limits<Float>::infinity()),
             D(Bitmap, resample, 2)
         )
-        .def("struct_", &Bitmap::struct_, D(Bitmap, struct));
+        .def("convert", py::overload_cast<Bitmap::EPixelFormat, Struct::EType, bool>(
+             &Bitmap::convert, py::const_), D(Bitmap, convert),
+             "pixel_format"_a, "component_format"_a, "srgb_gamma"_a)
+        .def("convert", py::overload_cast<Bitmap *>(&Bitmap::convert, py::const_),
+             D(Bitmap, convert, 2), "target"_a)
+        .def("struct_", &Bitmap::struct_, D(Bitmap, struct))
+        .def(py::self == py::self)
+        .def(py::self != py::self);
 
     py::enum_<Bitmap::EPixelFormat>(bitmap, "EPixelFormat", D(Bitmap, EPixelFormat))
-        .value("ELuminance", Bitmap::ELuminance)
-        .value("ELuminanceAlpha", Bitmap::ELuminanceAlpha)
+        .value("EY", Bitmap::EY)
+        .value("EYA", Bitmap::EYA)
         .value("ERGB", Bitmap::ERGB)
         .value("ERGBA", Bitmap::ERGBA)
         .value("EXYZ", Bitmap::EXYZ)

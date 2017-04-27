@@ -125,7 +125,7 @@ namespace {
         StreamVisitor(std::ostream &os) : os(os) { }
         void operator()(const std::nullptr_t &) { throw std::runtime_error("Internal error"); }
         void operator()(const int64_t &i) { os << i; }
-        void operator()(const bool &b) { os << b; }
+        void operator()(const bool &b) { os << (b ? "true" : "false"); }
         void operator()(const Float &f) { os << f; }
         void operator()(const Vector3f &v) { os << v; }
         void operator()(const Point3f &v) { os << v; }
