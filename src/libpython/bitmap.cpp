@@ -104,5 +104,37 @@ MTS_PY_EXPORT(Bitmap) {
              py::overload_cast<const fs::path &, Bitmap::EFileFormat, int>(
                  &Bitmap::write, py::const_),
              "path"_a, "format"_a = Bitmap::EAuto, "quality"_a = -1,
-             D(Bitmap, write, 2));
+             D(Bitmap, write, 2))
+        .def_property_readonly("__array_interface__", [](Bitmap &bitmap) -> py::object {
+            if (bitmap.struct_()->size() == 0)
+                return py::none();
+            auto field = bitmap.struct_()->operator[](0);
+            py::dict result;
+            result["shape"] = py::make_tuple(bitmap.height(), bitmap.width(),
+                                             bitmap.channel_count());
+
+            std::string code(3, '\0');
+            #if defined(LITTLE_ENDIAN)
+                code[0] = '<';
+            #else
+                code[0] = '>';
+            #endif
+
+            if (field.is_integer()) {
+                if (field.is_signed())
+                    code[1] = 'i';
+                else
+                    code[1] = 'u';
+            } else if (field.is_float()) {
+                code[1] = 'f';
+            } else {
+                Throw("Internal error: unknown component type!");
+            }
+
+            code[2] = '0' + field.size;
+            result["typestr"] = code;
+            result["data"] = py::make_tuple(size_t(bitmap.uint8_data()), false);
+            result["version"] = 3;
+            return result;
+        });
 }
