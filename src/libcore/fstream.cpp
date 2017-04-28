@@ -47,12 +47,18 @@ bool FileStream::is_closed() const {
 };
 
 void FileStream::read(void *p, size_t size) {
-    m_file->read((char *)p, size);
+    m_file->read((char *) p, size);
 
     if (unlikely(!m_file->good())) {
+        bool eof = m_file->eof();
+        size_t gcount = m_file->gcount();
         m_file->clear();
-        Throw("\"%s\": I/O error while attempting to read %zu bytes: %s",
-              m_path.string(), size, strerror(errno));
+        if (eof)
+            throw EOFException(tfm::format("\"%s\": read %zu out of %zu bytes",
+                                           m_path.string(), gcount, size), gcount);
+        else
+            Throw("\"%s\": I/O error while attempting to read %zu bytes: %s",
+                  m_path.string(), size, strerror(errno));
     }
 }
 

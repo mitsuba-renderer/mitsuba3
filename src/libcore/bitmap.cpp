@@ -293,7 +293,7 @@ void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
             break;
 
         default:
-            Log(EError, "resample(): Unsupported component type! (must be float16/32/64)");
+            Throw("resample(): Unsupported component type! (must be float16/32/64)");
     }
 }
 
@@ -465,7 +465,7 @@ void Bitmap::read(Stream *stream, EFileFormat format) {
     }
     switch (format) {
         //case EBMP:     read_bmp(stream); break;
-        //case EJPEG:    read_jpeg(stream); break;
+        case EJPEG:    read_jpeg(stream);    break;
         case EOpenEXR: read_openexr(stream); break;
         //case ERGBE:    read_rgbe(stream); break;
         //case EPFM:     read_pfm(stream); break;
@@ -531,7 +531,7 @@ void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
             break;
 
         default:
-            Log(EError, "Bitmap::write(): Invalid file format!");
+            Throw("Bitmap::write(): Invalid file format!");
     }
 }
 
@@ -1078,10 +1078,8 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
 }
 
 // -----------------------------------------------------------------------------
-
-/* ========================== *
-*   JPEG helper functions    *
-* ========================== */
+//   JPEG bitmap I/O
+// -----------------------------------------------------------------------------
 
 extern "C" {
     static const size_t jpeg_buffer_size = 0x8000;
@@ -1098,51 +1096,48 @@ extern "C" {
         Stream *stream;
     } jbuf_out_t;
 
-    //METHODDEF(void) jpeg_init_source(j_decompress_ptr cinfo) {
-        //jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
-        //p->buffer = new JOCTET[jpeg_buffer_size];
-    //}
+    METHODDEF(void) jpeg_init_source(j_decompress_ptr cinfo) {
+        jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
+        p->buffer = new JOCTET[jpeg_buffer_size];
+    }
 
-    //METHODDEF(boolean) jpeg_fill_input_buffer(j_decompress_ptr cinfo) {
-        //jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
-        //size_t nBytes;
+    METHODDEF(boolean) jpeg_fill_input_buffer(j_decompress_ptr cinfo) {
+        jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
+        size_t bytes_read = 0;
 
-        //p->stream->read(p->buffer, jpeg_buffer_size);
-        //nBytes = jpeg_buffer_size;
+        try {
+            p->stream->read(p->buffer, jpeg_buffer_size);
+            bytes_read = jpeg_buffer_size;
+        } catch (const EOFException &e) {
+            bytes_read = e.gcount();
+            if (bytes_read == 0) {
+                /* Insert a fake EOI marker */
+                p->buffer[0] = (JOCTET) 0xFF;
+                p->buffer[1] = (JOCTET) JPEG_EOI;
+                bytes_read = 2;
+            }
+        }
 
-        //try {
-            //p->stream->read(p->buffer, jpeg_buffer_size);
-            //nBytes = jpeg_buffer_size;
-        //} catch (const EOFException &e) {
-            //nBytes = e.getCompleted();
-            //if (nBytes == 0) {
-                //[> Insert a fake EOI marker <]
-                //p->buffer[0] = (JOCTET) 0xFF;
-                //p->buffer[1] = (JOCTET) JPEG_EOI;
-                //nBytes = 2;
-            //}
-        //}
+        cinfo->src->bytes_in_buffer = bytes_read;
+        cinfo->src->next_input_byte = p->buffer;
+        return TRUE;
+    }
 
-        //cinfo->src->bytes_in_buffer = nBytes;
-        //cinfo->src->next_input_byte = p->buffer;
-        //return TRUE;
-    //}
+    METHODDEF(void) jpeg_skip_input_data(j_decompress_ptr cinfo, long num_bytes) {
+        if (num_bytes > 0) {
+            while (num_bytes > (long) cinfo->src->bytes_in_buffer) {
+                num_bytes -= (long) cinfo->src->bytes_in_buffer;
+                jpeg_fill_input_buffer(cinfo);
+            }
+            cinfo->src->next_input_byte += (size_t) num_bytes;
+            cinfo->src->bytes_in_buffer -= (size_t) num_bytes;
+        }
+    }
 
-    //METHODDEF(void) jpeg_skip_input_data(j_decompress_ptr cinfo, long num_bytes) {
-        //if (num_bytes > 0) {
-            //while (num_bytes > (long) cinfo->src->bytes_in_buffer) {
-                //num_bytes -= (long) cinfo->src->bytes_in_buffer;
-                //jpeg_fill_input_buffer(cinfo);
-            //}
-            //cinfo->src->next_input_byte += (size_t) num_bytes;
-            //cinfo->src->bytes_in_buffer -= (size_t) num_bytes;
-        //}
-    //}
-
-    //METHODDEF(void) jpeg_term_source(j_decompress_ptr cinfo) {
-        //jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
-        //delete[] p->buffer;
-    //}
+    METHODDEF(void) jpeg_term_source(j_decompress_ptr cinfo) {
+        jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
+        delete[] p->buffer;
+    }
 
     METHODDEF(void) jpeg_init_destination(j_compress_ptr cinfo) {
         jbuf_out_t *p = (jbuf_out_t *) cinfo->dest;
@@ -1171,9 +1166,67 @@ extern "C" {
     METHODDEF(void) jpeg_error_exit(j_common_ptr cinfo) throw(std::runtime_error) {
         char msg[JMSG_LENGTH_MAX];
         (*cinfo->err->format_message) (cinfo, msg);
-        Log(EError, "Critcal libjpeg error: %s", msg);
+        Throw("Critcal libjpeg error: %s", msg);
     }
 };
+
+void Bitmap::read_jpeg(Stream *stream) {
+    struct jpeg_decompress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    jbuf_in_t jbuf;
+
+    memset(&jbuf, 0, sizeof(jbuf_in_t));
+
+    cinfo.err = jpeg_std_error(&jerr);
+    jerr.error_exit = jpeg_error_exit;
+    jpeg_create_decompress(&cinfo);
+    cinfo.src = (struct jpeg_source_mgr *) &jbuf;
+    jbuf.mgr.init_source = jpeg_init_source;
+    jbuf.mgr.fill_input_buffer = jpeg_fill_input_buffer;
+    jbuf.mgr.skip_input_data = jpeg_skip_input_data;
+    jbuf.mgr.term_source = jpeg_term_source;
+    jbuf.mgr.resync_to_restart = jpeg_resync_to_restart;
+    jbuf.stream = stream;
+
+    jpeg_read_header(&cinfo, TRUE);
+    jpeg_start_decompress(&cinfo);
+
+    m_size = Vector2s(cinfo.output_width, cinfo.output_height);
+    m_component_format = Struct::EUInt8;
+    m_srgb_gamma = 1;
+
+    switch (cinfo.output_components) {
+        case 1: m_pixel_format = EY; break;
+        case 3: m_pixel_format = ERGB; break;
+        default: Throw("read_jpeg(): Unsupported number of components!");
+    }
+
+    rebuild_struct();
+
+    Log(EDebug, "Loading a %ix%i JPEG file", m_size.x(), m_size.y());
+
+    size_t row_stride =
+        (size_t) cinfo.output_width * (size_t) cinfo.output_components;
+
+    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
+        enoki::alloc<uint8_t>(buffer_size()));
+    m_owns_data = true;
+
+    std::unique_ptr<uint8_t*[]> scanlines(new uint8_t*[m_size.y()]);
+
+    for (size_t i = 0; i < m_size.y(); ++i)
+        scanlines[i] = uint8_data() + row_stride*i;
+
+    /* Process scanline by scanline */
+    int counter = 0;
+    while (cinfo.output_scanline < cinfo.output_height)
+        counter += jpeg_read_scanlines(&cinfo, scanlines.get() + counter,
+            m_size.y() - cinfo.output_scanline);
+
+    /* Release the libjpeg data structures */
+    jpeg_finish_decompress(&cinfo);
+    jpeg_destroy_decompress(&cinfo);
+}
 
 void Bitmap::write_jpeg(Stream *stream, int quality) const {
     struct jpeg_compress_struct cinfo;
@@ -1186,10 +1239,10 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     else if (m_pixel_format == ERGB)
         components = 3;
     else
-        Log(EError, "write_jpeg(): Unsupported pixel format!");
+        Throw("write_jpeg(): Unsupported pixel format!");
 
     if (m_component_format != Struct::EUInt8)
-        Log(EError, "write_jpeg(): Unsupported component format!");
+        Throw("write_jpeg(): Unsupported component format!");
 
     memset(&jbuf, 0, sizeof(jbuf_out_t));
     cinfo.err = jpeg_std_error(&jerr);
@@ -1225,9 +1278,9 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     jpeg_destroy_compress(&cinfo);
 }
 
-/* ========================== *
-*    PNG helper functions    *
-* ========================== */
+// -----------------------------------------------------------------------------
+//   PNG bitmap I/O
+// -----------------------------------------------------------------------------
 
 #if 0
 static void png_flush_data(png_structp png_ptr) {
@@ -1246,7 +1299,7 @@ static void png_write_data(png_structp png_ptr, png_bytep data, png_size_t lengt
 }
 
 static void png_error_func(png_structp png_ptr, png_const_charp msg) {
-    Log(EError, "Fatal libpng error: %s\n", msg);
+    Throw("Fatal libpng error: %s\n", msg);
     exit(-1);
 }
 
@@ -1270,7 +1323,7 @@ void Bitmap::write_png(Stream *stream, int compression) const {
         case ERGB: colorType = PNG_COLOR_TYPE_RGB; break;
         case ERGBA: colorType = PNG_COLOR_TYPE_RGBA; break;
         default:
-            Log(EError, "writePNG(): Unsupported bitmap type!");
+            Throw("writePNG(): Unsupported bitmap type!");
             return;
     }
 
@@ -1279,24 +1332,24 @@ void Bitmap::write_png(Stream *stream, int compression) const {
         case Struct::EUInt8: bitDepth = 8; break;
         case Struct::EUInt16: bitDepth = 16; break;
         default:
-            Log(EError, "writePNG(): Unsupported component type!");
+            Throw("writePNG(): Unsupported component type!");
             return;
     }
 
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, &png_error_func, &png_warn_func);
     if (png_ptr == NULL)
-        Log(EError, "Error while creating PNG data structure");
+        Throw("Error while creating PNG data structure");
 
     info_ptr = png_create_info_struct(png_ptr);
     if (info_ptr == NULL) {
         png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
-        Log(EError, "Error while creating PNG information structure");
+        Throw("Error while creating PNG information structure");
     }
 
     /* Error handling */
     if (setjmp(png_jmpbuf(png_ptr))) {
         png_destroy_write_struct(&png_ptr, &info_ptr);
-        Log(EError, "Error writing the PNG file");
+        Throw("Error writing the PNG file");
     }
 
     png_set_write_fn(png_ptr, stream, (png_rw_ptr) png_write_data, (png_flush_ptr) png_flush_data);

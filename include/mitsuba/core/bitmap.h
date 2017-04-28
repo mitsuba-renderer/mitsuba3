@@ -483,7 +483,7 @@ public:
      virtual ~Bitmap();
 
      /// Rebuild the 'm_struct' field based on the pixel format etc.
-     void rebuild_struct(size_t channel_count);
+     void rebuild_struct(size_t channel_count = 0);
 
      /// Read a file from a stream
      void read(Stream *stream, EFileFormat format);
@@ -493,6 +493,9 @@ public:
 
      /// Write a file using the OpenEXR file format
      void write_openexr(Stream *stream, int compression = -1) const;
+
+     /// Read a file encoded using the JPEG file format
+     void read_jpeg(Stream *stream);
 
      /// Save a file using the JPEG file format
      void write_jpeg(Stream *stream, int quality) const;

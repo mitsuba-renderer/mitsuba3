@@ -1,4 +1,4 @@
-from mitsuba.core import (Bitmap, Struct, ReconstructionFilter, float_dtype)
+from mitsuba.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, PCG32)
 from mitsuba.core.xml import load_string
 import numpy as np
 import os
@@ -91,7 +91,6 @@ def test_convert_rgb_y_gamma(tmpdir):
     b3 = np.array(b1.convert(Bitmap.EY, Struct.EUInt8, False)).ravel()
     assert np.allclose(b3, [0.212671*255, 0.715160*255, 0.072169*255], atol=1)
 
-
     # Tests RGBA(float64) -> Y (uint8_t, gamma) conversion
     b1 = Bitmap(Bitmap.ERGBA, Struct.EFloat64, [3, 1])
     b2 = np.array(b1, copy=False)
@@ -99,3 +98,12 @@ def test_convert_rgb_y_gamma(tmpdir):
     b3 = np.array(b1.convert(Bitmap.EY, Struct.EUInt8, True)).ravel()
     assert np.allclose(b3, [to_srgb(0.212671)*255, to_srgb(0.715160)*255, to_srgb(0.072169)*255], atol=1)
 
+def test_read_write_jpeg(tmpdir):
+    b = Bitmap(Bitmap.EY, Struct.EUInt8, [10, 10])
+    tmp_file = os.path.join(str(tmpdir), "out.jpg")
+    ref = np.uint8(PCG32().next_float(10, 10)*255)
+    np.array(b, copy=False)[:] = ref[..., np.newaxis]
+    b.write(tmp_file, quality=50)
+    b2 = Bitmap(tmp_file)
+    assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) / (10*10*255) < 0.07
+    os.remove(tmp_file)

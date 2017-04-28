@@ -10,6 +10,16 @@ using path = fs::path;
 
 NAMESPACE_BEGIN(mitsuba)
 
+class MTS_EXPORT_CORE EOFException : public std::runtime_error {
+public:
+    EOFException(const std::string &what, size_t gcount)
+        : std::runtime_error(what), m_gcount(gcount) { }
+
+    size_t gcount() const { return m_gcount; }
+private:
+    size_t m_gcount;
+};
+
 /** \brief Simple \ref Stream implementation backed-up by a file.
  *
  * The underlying file abstraction is std::fstream, and so most

@@ -101,7 +101,8 @@ MTS_PY_EXPORT(Bitmap) {
         .value("EJPEG", Bitmap::EJPEG)
         .value("ETGA", Bitmap::ETGA)
         .value("EBMP", Bitmap::EBMP)
-        .value("EAuto", Bitmap::EAuto);
+        .value("EAuto", Bitmap::EAuto)
+        .export_values();
 
     bitmap
         .def(py::init<const fs::path &, Bitmap::EFileFormat>(), "path"_a,
