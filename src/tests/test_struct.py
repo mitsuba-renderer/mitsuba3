@@ -219,6 +219,15 @@ def test09_gamma_0():
                      (0, 127, 255),
                      (0, np.float32(0.212230786), 1))
 
+    s = StructConverter(
+        Struct().append("v", Struct.EUInt8,
+                        int(Struct.ENormalized) | int(Struct.EGamma)),
+        Struct().append("v", Struct.EFloat64)
+    )
+    check_conversion(s, "<BBB", "<ddd",
+                     (0, 127, 255),
+                     (0, np.float64(0.212230786), 1))
+
 
 def test09_gamma_1():
     s = StructConverter(
@@ -227,6 +236,15 @@ def test09_gamma_1():
                         int(Struct.ENormalized) | int(Struct.EGamma)),
     )
     check_conversion(s, "<fff", "<BBB",
+                     (0, np.float32(0.212230786), 1),
+                     (0, 127, 255))
+
+    s = StructConverter(
+        Struct().append("v", Struct.EFloat64),
+        Struct().append("v", Struct.EUInt8,
+                        int(Struct.ENormalized) | int(Struct.EGamma)),
+    )
+    check_conversion(s, "<ddd", "<BBB",
                      (0, np.float32(0.212230786), 1),
                      (0, 127, 255))
 

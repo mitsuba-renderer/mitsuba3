@@ -145,7 +145,11 @@ MTS_PY_EXPORT(Bitmap) {
             }
 
             code[2] = '0' + field.size;
-            result["typestr"] = code;
+            #if PY_MAJOR_VERSION > 3
+                result["typestr"] = code;
+            #else
+                result["typestr"] = py::bytes(code);
+            #endif
             result["data"] = py::make_tuple(size_t(bitmap.uint8_data()), false);
             result["version"] = 3;
             return result;

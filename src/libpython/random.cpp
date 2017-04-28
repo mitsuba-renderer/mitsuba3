@@ -19,7 +19,7 @@ MTS_PY_EXPORT(random) {
             return result;
         }, "n"_a)
         .def("next_float32", [](PCG32 &rng, size_t m, size_t n) {
-            py::array_t<float> result({m, n});
+            py::array_t<float> result(std::vector<ssize_t>{(ssize_t) m, (ssize_t) n});
             for (size_t i = 0; i < n*m; ++i)
                 result.mutable_data()[i] = rng.next_float32();
             return result;
@@ -32,7 +32,7 @@ MTS_PY_EXPORT(random) {
             return result;
         }, "n"_a)
         .def("next_float64", [](PCG32 &rng, size_t m, size_t n) {
-            py::array_t<float> result({m, n});
+            py::array_t<float> result(std::vector<ssize_t>{(ssize_t) m, (ssize_t) n});
             for (size_t i = 0; i < n*m; ++i)
                 result.mutable_data()[i] = rng.next_float64();
             return result;

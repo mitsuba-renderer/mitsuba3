@@ -727,15 +727,14 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
             int64_t reg = 0;
             float reg_f = 0, accum_f = 0;
             double reg_d = 0, accum_d = 0;
+            Struct::EType sf_type_final = Struct::EInvalid;
+            Struct::Field sf;
+            Struct::EType &sf_type = sf.type;
 
             try {
                 auto sources = df.blend;
                 if (sources.empty())
                     sources.push_back(std::make_pair(1.0, name));
-
-                Struct::EType sf_type_final = Struct::EInvalid;
-                Struct::Field sf;
-                Struct::EType &sf_type = sf.type;
 
                 for (size_t j = 0; j < sources.size(); ++j) {
                     double weight = sources[j].first;
@@ -860,42 +859,6 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                         sf_type = Struct::EFloat32;
                     }
 
-                    if (sf.is_integer() != df.is_integer()) {
-                        if (sf.is_integer()) {
-                            if (df_type == Struct::EFloat16 || df_type == Struct::EFloat32)
-                                reg_f = (float) reg;
-                            else if (df_type == Struct::EFloat64)
-                                reg_d = (double) reg;
-                        } else if (df.is_integer()) {
-                            if (sf_type == Struct::EFloat32) {
-                                auto range = df.range();
-
-                                if (df.flags & Struct::ENormalized) {
-                                    if (df.flags & Struct::EGamma)
-                                        reg_f = math::gamma<float>(reg_f);
-                                    reg_f = reg_f * (float) (range.second - range.first) + (float) range.first;
-                                }
-
-                                reg_f = std::round(reg_f);
-                                reg_f = std::max(reg_f, (float) range.first);
-                                reg_f = std::min(reg_f, (float) range.second);
-                                reg = (int64_t) reg_f;
-                            } else if (sf_type == Struct::EFloat64) {
-                                auto range = df.range();
-
-                                if (df.flags & Struct::ENormalized) {
-                                    reg_d = math::gamma<double>(reg_d);
-                                    reg_d = reg_d * (range.second - range.first) + range.first;
-                                }
-
-                                reg_d = std::round(reg_d);
-                                reg_d = std::max(reg_d, range.first);
-                                reg_d = std::min(reg_d, range.second);
-                                reg = (int64_t) reg_d;
-                            }
-                        }
-                    }
-
                     accum_f += reg_f * (float) weight;
                     accum_d += reg_d * weight;
 
@@ -937,6 +900,43 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                     reg_f = (float) df.default_;
                 else if (df_type == Struct::EFloat64)
                     reg_d = df.default_;
+            }
+
+            if (sf.is_integer() != df.is_integer()) {
+                if (sf.is_integer()) {
+                    if (df_type == Struct::EFloat16 || df_type == Struct::EFloat32)
+                        reg_f = (float) reg;
+                    else if (df_type == Struct::EFloat64)
+                        reg_d = (double) reg;
+                } else if (df.is_integer()) {
+                    if (sf_type == Struct::EFloat32) {
+                        auto range = df.range();
+
+                        if (df.flags & Struct::ENormalized) {
+                            if (df.flags & Struct::EGamma)
+                                reg_f = math::gamma<float>(reg_f);
+                            reg_f = reg_f * (float) (range.second - range.first) + (float) range.first;
+                        }
+
+                        reg_f = std::rint(reg_f);
+                        reg_f = std::max(reg_f, (float) range.first);
+                        reg_f = std::min(reg_f, (float) range.second);
+                        reg = (int64_t) reg_f;
+                    } else if (sf_type == Struct::EFloat64) {
+                        auto range = df.range();
+
+                        if (df.flags & Struct::ENormalized) {
+                            if (df.flags & Struct::EGamma)
+                                reg_d = math::gamma<double>(reg_d);
+                            reg_d = reg_d * (range.second - range.first) + range.first;
+                        }
+
+                        reg_d = std::rint(reg_d);
+                        reg_d = std::max(reg_d, range.first);
+                        reg_d = std::min(reg_d, range.second);
+                        reg = (int64_t) reg_d;
+                    }
+                }
             }
 
             uint8_t *dst = (uint8_t *) dest_ + df.offset + target_size * i;

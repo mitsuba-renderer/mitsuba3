@@ -88,8 +88,6 @@ def test_convert_rgb_y_gamma(tmpdir):
     b1 = Bitmap(Bitmap.ERGBA, Struct.EFloat64, [3, 1])
     b2 = np.array(b1, copy=False)
     b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
-    print(b1.convert(Bitmap.EY, Struct.EUInt8, False))
-    print(b1.convert(Bitmap.EY, Struct.EUInt8, True))
     b3 = np.array(b1.convert(Bitmap.EY, Struct.EUInt8, False)).ravel()
     assert np.allclose(b3, [0.212671*255, 0.715160*255, 0.072169*255], atol=1)
 

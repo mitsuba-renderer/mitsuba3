@@ -1,6 +1,7 @@
 #include "python.h"
 
 MTS_PY_EXPORT(Object) {
+    py::class_<Class>(m, "Class", D(Class));
     py::class_<Object, ref<Object>>(m, "Object", D(Object))
         .def(py::init<>(), D(Object, Object))
         .def(py::init<const Object &>(), D(Object, Object, 2))
