@@ -333,9 +333,14 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# Schedule a file to be copied to the 'dist' directory
+# Schedules a file to be copied to the 'dist' directory
 function(add_dist)
   set(MITSUBA_DIST ${MITSUBA_DIST} ${ARGV} CACHE INTERNAL "")
+endfunction()
+
+# Registers a test directory to be run by the `pytest` command
+function(add_tests)
+  set(MITSUBA_TEST_DIRECTORIES ${MITSUBA_TEST_DIRECTORIES} ${ARGV} CACHE INTERNAL "")
 endfunction()
 
 # Function for creating Mitsuba plugins
@@ -352,7 +357,9 @@ function(add_plugin)
   set_target_properties(${TARGET} ${TARGET}-obj PROPERTIES FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET})
 endfunction(add_plugin)
 
+# Initialize variables
 set(MITSUBA_DIST "" CACHE INTERNAL "")
+set(MITSUBA_TEST_DIRECTORIES "" CACHE INTERNAL "")
 
 # For the Mitsuba plugins and libraries, don't set a build/install rpath
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)

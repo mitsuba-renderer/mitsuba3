@@ -87,6 +87,10 @@ endif()
 # Copy to 'dist' directory
 add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq asmjit)
 
+# Register the test directory
+add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+
+# Windows-only dependencies
 if (WIN32)
   add_dist(zlib jpeg png16)
   add_dependencies(mitsuba-core zlib jpeg png16)

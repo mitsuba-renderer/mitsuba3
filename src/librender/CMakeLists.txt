@@ -28,3 +28,6 @@ target_link_libraries(mitsuba-render PUBLIC mitsuba-core)
 
 # Copy to 'dist' directory
 add_dist(mitsuba-render)
+
+# Register the test directory
+add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)
