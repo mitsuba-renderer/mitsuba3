@@ -1,5 +1,3 @@
-#include_directories(..)
-
 add_definitions(
   -DMTS_BUILD_MODULE=MTS_MODULE_RENDER
 )
@@ -28,6 +26,9 @@ target_link_libraries(mitsuba-render PUBLIC mitsuba-core)
 
 # Copy to 'dist' directory
 add_dist(mitsuba-render)
+
+# Python bindings
+add_subdirectory(python)
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)
