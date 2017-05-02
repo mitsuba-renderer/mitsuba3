@@ -2,8 +2,8 @@
 
 # Make sure pytest and the pytest-xdist plugin are both found or produce a fatal error
 if (NOT MITSUBA_PYTEST_FOUND)
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pytest --version --noconftest OUTPUT_QUIET ERROR_QUIET
-                RESULT_VARIABLE MITSUBA_EXEC_PYTHON_ERR_1)
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pytest --version --noconftest OUTPUT_QUIET ERROR_QUIET
+                  RESULT_VARIABLE MITSUBA_EXEC_PYTHON_ERR_1)
   if (MITSUBA_EXEC_PYTHON_ERR_1)
     message(FATAL_ERROR "Running the tests requires pytest.  Please install it manually (try: ${PYTHON_EXECUTABLE} -m pip install 'pytest>=3.0.0' pytest-xdist)")
   endif()
@@ -35,7 +35,7 @@ endif()
 # A single command to compile and run the tests
 add_custom_target(pytest
   COMMAND ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/dist" "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python" ${PYTHON_EXECUTABLE} -m pytest ${PYTEST_XDIST} -rws ${MITSUBA_TEST_DIRECTORIES}
-  DEPENDS mitsuba-python python-copy
+  DEPENDS mitsuba-python python-copy dist-copy
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist
   USES_TERMINAL
 )
