@@ -21,7 +21,7 @@ using VariantType = variant<
     ref<Object>
 >;
 
-struct Entry {
+struct alignas(16) Entry {
     VariantType data;
     bool queried;
 };
