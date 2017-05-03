@@ -119,9 +119,9 @@ std::string Struct::to_string() const {
             os << ", assert=" << f.default_;
         if (!f.blend.empty()) {
             os << ", blend = <";
-            for (size_t i = 0; i < f.blend.size(); ++i) {
-                os << f.blend[i].second << " * " << f.blend[i].first;
-                if (i + 1 < f.blend.size())
+            for (size_t j = 0; j < f.blend.size(); ++j) {
+                os << f.blend[j].second << " * " << f.blend[j].first;
+                if (j + 1 < f.blend.size())
                     os << " + ";
             }
             os << ">";

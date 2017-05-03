@@ -10,7 +10,7 @@ using path = fs::path;
 
 NAMESPACE_BEGIN(mitsuba)
 
-class MTS_EXPORT_CORE EOFException : public std::runtime_error {
+class EOFException : public std::runtime_error {
 public:
     EOFException(const std::string &what, size_t gcount)
         : std::runtime_error(what), m_gcount(gcount) { }

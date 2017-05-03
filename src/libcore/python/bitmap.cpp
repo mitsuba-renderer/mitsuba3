@@ -145,7 +145,7 @@ MTS_PY_EXPORT(Bitmap) {
                 Throw("Internal error: unknown component type!");
             }
 
-            code[2] = '0' + field.size;
+            code[2] = (char) ('0' + field.size);
             #if PY_MAJOR_VERSION > 3
                 result["typestr"] = code;
             #else
