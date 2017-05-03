@@ -7,11 +7,6 @@ include_directories(
   ${JPEG_INCLUDE_DIRS}
 )
 
-add_definitions(
-  ${PNG_DEFINES}
-  -DMTS_BUILD_MODULE=MTS_MODULE_CORE
-)
-
 set(INC_DIR "../../include/mitsuba/core")
 
 add_library(mitsuba-core-obj OBJECT
@@ -66,6 +61,7 @@ add_library(mitsuba-core-obj OBJECT
 add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)
 set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(mitsuba-core-obj mitsuba-core PROPERTIES FOLDER mitsuba-core)
+target_compile_definitions(mitsuba-core-obj PRIVATE ${PNG_DEFINES} -DMTS_BUILD_MODULE=MTS_MODULE_CORE)
 
 target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)

@@ -1,7 +1,3 @@
-add_definitions(
-  -DMTS_BUILD_MODULE=MTS_MODULE_RENDER
-)
-
 set(INC_DIR "../../include/mitsuba/render")
 
 add_library(mitsuba-render-obj OBJECT
@@ -14,9 +10,9 @@ add_library(mitsuba-render-obj OBJECT
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
-set_property(TARGET mitsuba-render PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET mitsuba-render-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(mitsuba-render-obj mitsuba-render PROPERTIES FOLDER mitsuba-render)
+target_compile_definitions(mitsuba-render-obj PRIVATE -DMTS_BUILD_MODULE=MTS_MODULE_RENDER)
 
 # Link to Intel's Thread Building Blocks
 target_link_libraries(mitsuba-render PRIVATE tbb)
