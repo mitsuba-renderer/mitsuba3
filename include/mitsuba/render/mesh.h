@@ -11,7 +11,10 @@ public:
     using FaceHolder   = std::unique_ptr<uint8_t, enoki::aligned_deleter>;
     using VertexHolder = std::unique_ptr<uint8_t, enoki::aligned_deleter>;
 
-    struct Vertex { Float x; Float y; Float z; };
+    /// Create a new mesh with the given vertex and face data structures
+    Mesh(const std::string &name,
+         Struct *vertex_struct, Size vertex_count,
+         Struct *face_struct, Size face_count);
 
     /// Return the total number of vertices
     Size vertex_count() const { return m_vertex_count; }
@@ -49,12 +52,15 @@ public:
     /// Return a pointer to the raw face buffer (at a specified face index)
     uint8_t *face(Index index) { return m_faces.get() + m_face_size * index; }
 
+    /// Recompute the bounding box (must be called following changes to vertex positions)
+    void recompute_bbox();
+
     // =========================================================================
     //! @{ \name Shape interface implementation
     // =========================================================================
 
     /// Export mesh using the file format implemented by the subclass
-    virtual void write(Stream *stream) const = 0;
+    virtual void write(Stream *stream) const;
 
     /**
      * \brief Return an axis aligned box that bounds the set of triangles
@@ -139,6 +145,7 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
+    inline Mesh() { }
     virtual ~Mesh();
 
     VertexHolder m_vertices;
@@ -152,8 +159,8 @@ protected:
     Size m_vertex_count = 0;
     Size m_face_count = 0;
 
-    ref<Struct> m_face_struct;
     ref<Struct> m_vertex_struct;
+    ref<Struct> m_face_struct;
 };
 
 NAMESPACE_END(mitsuba)

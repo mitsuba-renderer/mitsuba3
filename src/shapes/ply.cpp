@@ -46,9 +46,9 @@ public:
 
         PLYHeader header;
         try {
-            header = parsePLYHeader(stream);
+            header = parse_ply_header(stream);
             if (header.ascii)
-                stream = parseASCII((FileStream *) stream.get(), header.elements);
+                stream = parse_ascii((FileStream *) stream.get(), header.elements);
         } catch (const std::exception &e) {
             fail(e.what());
         }
@@ -79,10 +79,10 @@ public:
                 /* Clear unused entry */
                 memset(m_vertices.get() + o_struct_size * el.count, 0, o_struct_size);
 
-                size_t packet_count      = el.count / packet_size;
-                size_t remainder_count    = el.count % packet_size;
+                size_t packet_count    = el.count / packet_size;
+                size_t remainder_count = el.count % packet_size;
                 size_t i_packet_size   = i_struct_size * packet_size;
-                size_t remainder_size = i_struct_size * remainder_count;
+                size_t remainder_size  = i_struct_size * remainder_count;
 
                 std::unique_ptr<uint8_t[]> buf(new uint8_t[i_packet_size]);
                 uint8_t *target = (uint8_t *) m_vertices.get();
@@ -114,17 +114,16 @@ public:
             } else if (el.name == "face") {
                 m_face_struct = new Struct(true);
 
-                std::string fieldName;
+                std::string field_name;
                 if (el.struct_->has_field("vertex_index.count"))
-                    fieldName = "vertex_index";
+                    field_name = "vertex_index";
                 else if (el.struct_->has_field("vertex_indices.count"))
-                    fieldName = "vertex_indices";
+                    field_name = "vertex_indices";
                 else
-                    fail("vertex_index/vertex_indices "
-                         "property not found");
+                    fail("vertex_index/vertex_indices property not found");
 
                 for (int i = 0; i < 3; ++i)
-                    m_face_struct->append(tfm::format("%s.i%i", fieldName, i),
+                    m_face_struct->append(tfm::format("i%i", i),
                                          struct_traits<Index>::value);
 
                 size_t i_struct_size = el.struct_->size();
@@ -182,7 +181,7 @@ public:
         );
     }
 
-    std::string typeName(const Struct::EType type) const {
+    std::string type_name(const Struct::EType type) const {
         switch (type) {
             case Struct::EInt8:    return "char";
             case Struct::EUInt8:   return "uchar";
@@ -218,13 +217,13 @@ public:
             stream->write_line(tfm::format("element vertex %i", m_vertex_count));
             for (auto const &f : *m_vertex_struct)
                 stream->write_line(
-                    tfm::format("property %s %s", typeName(f.type), f.name));
+                    tfm::format("property %s %s", type_name(f.type), f.name));
         }
 
         if (m_face_struct->field_count() > 0) {
             stream->write_line(tfm::format("element face %i", m_face_count));
             stream->write_line(tfm::format("property list uchar %s vertex_indices",
-                typeName((*m_face_struct)[0].type)));
+                type_name((*m_face_struct)[0].type)));
         }
 
         stream->write_line("end_header");
@@ -269,26 +268,26 @@ public:
     }
 
 private:
-    PLYHeader parsePLYHeader(Stream *stream) {
+    PLYHeader parse_ply_header(Stream *stream) {
         Struct::EByteOrder byte_order = Struct::host_byte_order();
         bool ply_tag_seen = false;
         bool header_processed = false;
         PLYHeader header;
 
-        std::unordered_map<std::string, Struct::EType> fmtMap;
-        fmtMap["char"]   = Struct::EInt8;
-        fmtMap["uchar"]  = Struct::EUInt8;
-        fmtMap["short"]  = Struct::EInt16;
-        fmtMap["ushort"] = Struct::EUInt16;
-        fmtMap["int"]    = Struct::EInt32;
-        fmtMap["uint"]   = Struct::EUInt32;
-        fmtMap["float"]  = Struct::EFloat32;
-        fmtMap["double"] = Struct::EFloat64;
+        std::unordered_map<std::string, Struct::EType> fmt_map;
+        fmt_map["char"]   = Struct::EInt8;
+        fmt_map["uchar"]  = Struct::EUInt8;
+        fmt_map["short"]  = Struct::EInt16;
+        fmt_map["ushort"] = Struct::EUInt16;
+        fmt_map["int"]    = Struct::EInt32;
+        fmt_map["uint"]   = Struct::EUInt32;
+        fmt_map["float"]  = Struct::EFloat32;
+        fmt_map["double"] = Struct::EFloat64;
 
         /* Unofficial extensions :) */
-        fmtMap["long"]   = Struct::EInt64;
-        fmtMap["ulong"]  = Struct::EUInt64;
-        fmtMap["half"]   = Struct::EFloat16;
+        fmt_map["long"]   = Struct::EInt64;
+        fmt_map["ulong"]  = Struct::EUInt64;
+        fmt_map["half"]   = Struct::EFloat16;
 
         ref<Struct> struct_;
 
@@ -352,14 +351,14 @@ private:
                 if (token == "list") {
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property list\"");
-                    auto it1 = fmtMap.find(token);
-                    if (it1 == fmtMap.end())
+                    auto it1 = fmt_map.find(token);
+                    if (it1 == fmt_map.end())
                         Throw("invalid PLY header: unknown format type \"%s\"", token);
 
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property list\"");
-                    auto it2 = fmtMap.find(token);
-                    if (it2 == fmtMap.end())
+                    auto it2 = fmt_map.find(token);
+                    if (it2 == fmt_map.end())
                         Throw("invalid PLY header: unknown format type \"%s\"", token);
 
                     if (!(iss >> token))
@@ -367,10 +366,10 @@ private:
 
                     struct_->append(token + ".count", it1->second, Struct::EAssert, 3);
                     for (int i = 0; i<3; ++i)
-                        struct_->append(tfm::format("%s.i%i", token, i), it2->second);
+                        struct_->append(tfm::format("i%i", i), it2->second);
                 } else {
-                    auto it = fmtMap.find(token);
-                    if (it == fmtMap.end())
+                    auto it = fmt_map.find(token);
+                    if (it == fmt_map.end())
                         Throw("invalid PLY header: unknown format type \"%s\"", token);
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property\"");
@@ -395,7 +394,7 @@ private:
         return header;
     }
 
-    ref<Stream> parseASCII(FileStream *in, const std::vector<PLYElement> &elements) {
+    ref<Stream> parse_ascii(FileStream *in, const std::vector<PLYElement> &elements) {
         ref<Stream> out = new MemoryStream();
         std::fstream &is = *in->native();
         for (auto const &el : elements) {

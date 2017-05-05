@@ -548,11 +548,17 @@ static const char *__doc_mitsuba_Bitmap_metadata_2 =
 R"doc(Return a Properties object containing the image metadata (const
 version))doc";
 
+static const char *__doc_mitsuba_Bitmap_operator_eq = R"doc(Equality comparison operator)doc";
+
+static const char *__doc_mitsuba_Bitmap_operator_ne = R"doc(Inequality comparison operator)doc";
+
 static const char *__doc_mitsuba_Bitmap_pixel_count = R"doc(Return the total number of pixels)doc";
 
 static const char *__doc_mitsuba_Bitmap_pixel_format = R"doc(Return the pixel format of this bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_read = R"doc(Read a file from a stream)doc";
+
+static const char *__doc_mitsuba_Bitmap_read_jpeg = R"doc(Read a file encoded using the JPEG file format)doc";
 
 static const char *__doc_mitsuba_Bitmap_read_openexr = R"doc(Read a file encoded using the OpenEXR file format)doc";
 
@@ -1270,6 +1276,14 @@ static const char *__doc_mitsuba_ELogLevel_ETrace = R"doc(< Trace message, for e
 
 static const char *__doc_mitsuba_ELogLevel_EWarn = R"doc(< Warning message)doc";
 
+static const char *__doc_mitsuba_EOFException = R"doc()doc";
+
+static const char *__doc_mitsuba_EOFException_EOFException = R"doc()doc";
+
+static const char *__doc_mitsuba_EOFException_gcount = R"doc()doc";
+
+static const char *__doc_mitsuba_EOFException_m_gcount = R"doc()doc";
+
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
 
@@ -1784,13 +1798,9 @@ of the memory buffer is extended if necessary.)doc";
 
 static const char *__doc_mitsuba_Mesh = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_Vertex = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
-static const char *__doc_mitsuba_Mesh_Vertex_x = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_Vertex_y = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_Vertex_z = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_bbox =
 R"doc(Return an axis aligned box that bounds the set of triangles (including
@@ -1865,6 +1875,10 @@ Returns:
     distance from the ray origin to the intersection point, and ``u``
     and ``v`` contains the first two components of the intersection in
     barycentric coordinates)doc";
+
+static const char *__doc_mitsuba_Mesh_recompute_bbox =
+R"doc(Recompute the bounding box (must be called following changes to vertex
+positions))doc";
 
 static const char *__doc_mitsuba_Mesh_to_string = R"doc(Return a human-readable string representation of the shape contents.)doc";
 

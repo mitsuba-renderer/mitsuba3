@@ -1,9 +1,44 @@
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/core/util.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3f &);
 template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3fP &);
+
+Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
+           Struct *face_struct, Size face_count)
+    : m_name(name), m_vertex_count(vertex_count), m_face_count(face_count),
+      m_vertex_struct(vertex_struct), m_face_struct(face_struct) {
+    auto check_field = [](const Struct *s, size_t idx,
+                          const std::string &suffix_exp,
+                          Struct::EType type_exp) {
+        if (idx >= s->field_count())
+            Throw("Mesh::Mesh(): Incompatible data structure %s", s->to_string());
+        auto field = s->operator[](idx);
+        std::string suffix = field.name;
+        auto it = suffix.rfind(".");
+        if (it != std::string::npos)
+            suffix = suffix.substr(it + 1);
+        if (suffix != suffix_exp || field.type != type_exp)
+            Throw("Mesh::Mesh(): Incompatible data structure %s", s->to_string());
+    };
+
+    check_field(vertex_struct, 0, "x",  struct_traits<Float>::value);
+    check_field(vertex_struct, 1, "y",  struct_traits<Float>::value);
+    check_field(vertex_struct, 2, "z",  struct_traits<Float>::value);
+    check_field(face_struct,   0, "i0", struct_traits<Index>::value);
+    check_field(face_struct,   1, "i1", struct_traits<Index>::value);
+    check_field(face_struct,   2, "i2", struct_traits<Index>::value);
+
+    m_vertex_size = m_vertex_struct->size();
+    m_face_size = m_face_struct->size();
+
+    m_vertices = VertexHolder(
+        (uint8_t *) enoki::alloc((vertex_count + 1) * m_vertex_size));
+    m_faces = FaceHolder(
+        (uint8_t *) enoki::alloc((face_count + 1) * m_face_size));
+}
 
 Mesh::~Mesh() { }
 
@@ -19,9 +54,9 @@ BoundingBox3f Mesh::bbox(Index index) const {
     Assert(idx[1] < m_vertex_count);
     Assert(idx[2] < m_vertex_count);
 
-    Point3f v0 = load<Point3f>((float *) vertex(idx[0]));
-    Point3f v1 = load<Point3f>((float *) vertex(idx[1]));
-    Point3f v2 = load<Point3f>((float *) vertex(idx[2]));
+    Point3f v0 = load<Point3f>((Float *) vertex(idx[0]));
+    Point3f v1 = load<Point3f>((Float *) vertex(idx[1]));
+    Point3f v2 = load<Point3f>((Float *) vertex(idx[2]));
 
     return BoundingBox3f(
         min(min(v0, v1), v2),
@@ -29,6 +64,11 @@ BoundingBox3f Mesh::bbox(Index index) const {
     );
 }
 
+void Mesh::recompute_bbox() {
+    m_bbox.reset();
+    for (Size i = 0; i < m_vertex_count; ++i)
+        m_bbox.expand(load<Point3f>((Float *) vertex(i)));
+}
 
 namespace {
     constexpr size_t max_vertices = 10;
@@ -94,9 +134,9 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
     Assert(idx[1] < m_vertex_count);
     Assert(idx[2] < m_vertex_count);
 
-    Point3f v0 = load<Point3f>((float *) vertex(idx[0]));
-    Point3f v1 = load<Point3f>((float *) vertex(idx[1]));
-    Point3f v2 = load<Point3f>((float *) vertex(idx[2]));
+    Point3f v0 = load<Point3f>((Float *) vertex(idx[0]));
+    Point3f v1 = load<Point3f>((Float *) vertex(idx[1]));
+    Point3f v2 = load<Point3f>((Float *) vertex(idx[2]));
 
     /* The kd-tree code will frequently call this function with
        almost-collapsed bounding boxes. It's extremely important not to
@@ -132,22 +172,30 @@ Shape::Size Mesh::primitive_count() const {
     return face_count();
 }
 
+void Mesh::write(Stream *) const {
+    NotImplementedError("write");
+}
+
 std::string Mesh::to_string() const {
     return tfm::format("%s[\n"
         "  name = \"%s\",\n"
         "  bbox = %s,\n"
-        "  vertex_count = %i,\n"
         "  vertex_struct = %s,\n"
-        "  face_count = %i,\n"
+        "  vertex_count = %u,\n"
+        "  vertices = [%s of vertex data],\n"
         "  face_struct = %s,\n"
+        "  face_count = %u,\n"
+        "  faces = [%s of vertex data]\n"
         "]",
         class_()->name(),
         m_name,
         m_bbox,
-        m_vertex_count,
         string::indent(m_vertex_struct->to_string()),
+        m_vertex_count,
+        util::mem_string(m_vertex_size * m_vertex_count),
+        string::indent(m_face_struct->to_string()),
         m_face_count,
-        string::indent(m_face_struct->to_string())
+        util::mem_string(m_face_size * m_face_count)
     );
 }
 
