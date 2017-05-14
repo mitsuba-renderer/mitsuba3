@@ -9,9 +9,9 @@ def find_resource(fname):
         full = os.path.join(path, fname)
         if os.path.exists(full):
             return full
-        path = os.path.dirname(path)
-        if path == '':
+        if path == '' or path == '/':
             raise Exception("find_resource(): could not find \"%s\"" % fname);
+        path = os.path.dirname(path)
 
 
 def test_read_convert_yc(tmpdir):

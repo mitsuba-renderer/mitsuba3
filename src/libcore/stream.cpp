@@ -1,6 +1,7 @@
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/dstream.h>
 #include <sstream>
+#include <cctype>
 
 NAMESPACE_BEGIN(mitsuba)
 

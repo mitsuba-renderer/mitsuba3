@@ -11,7 +11,6 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/vector.h>
-#include <iostream>
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(spline)
