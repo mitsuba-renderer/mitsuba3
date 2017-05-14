@@ -54,18 +54,18 @@ inline std::string to_upper(std::string str) {
 /// Chop up the string given a set of delimiters (warning: not unicode compliant)
 inline std::vector<std::string> tokenize(const std::string &string,
                                          const std::string &delim = ", ",
-                                         bool includeEmpty = false) {
-    std::string::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
+                                         bool include_empty = false) {
+    std::string::size_type last_pos = 0, pos = string.find_first_of(delim, last_pos);
     std::vector<std::string> tokens;
 
-    while (lastPos != std::string::npos) {
-        std::string substr = string.substr(lastPos, pos - lastPos);
-        if (!substr.empty() || includeEmpty)
+    while (last_pos != std::string::npos) {
+        std::string substr = string.substr(last_pos, pos - last_pos);
+        if (!substr.empty() || include_empty)
             tokens.push_back(std::move(substr));
-        lastPos = pos;
-        if (lastPos != std::string::npos) {
-            lastPos += 1;
-            pos = string.find_first_of(delim, lastPos);
+        last_pos = pos;
+        if (last_pos != std::string::npos) {
+            last_pos += 1;
+            pos = string.find_first_of(delim, last_pos);
         }
     }
 
@@ -87,13 +87,13 @@ inline std::string indent(const std::string &string, int amount = 2) {
     return result;
 }
 
-inline std::string trim(const std::string &str,
+inline std::string trim(const std::string &s,
                         const std::string &whitespace = " \t") {
-    auto it1 = str.find_first_not_of(whitespace);
+    auto it1 = s.find_first_not_of(whitespace);
     if (it1 == std::string::npos)
         return "";
-    auto it2 = str.find_last_not_of(whitespace);
-    return str.substr(it1, it2 - it1 + 1);
+    auto it2 = s.find_last_not_of(whitespace);
+    return s.substr(it1, it2 - it1 + 1);
 }
 
 NAMESPACE_END(string)

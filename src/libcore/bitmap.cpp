@@ -178,6 +178,19 @@ size_t Bitmap::bytes_per_pixel() const {
     return result * channel_count();
 }
 
+void Bitmap::vflip() {
+    size_t row_size = buffer_size() / m_size.y();
+    size_t half_height = m_size.y() / 2;
+    uint8_t *temp = (uint8_t *) alloca(row_size);
+    uint8_t *data = uint8_data();
+    for (size_t i = 0, j = m_size.y() - 1; i < half_height; ++i) {
+        memcpy(temp, data + i * row_size, row_size);
+        memcpy(data + i * row_size, data + j * row_size, row_size);
+        memcpy(data + j * row_size, temp, row_size);
+        j--;
+    }
+}
+
 template <typename Scalar, bool Filter>
 static void
 resample(Bitmap *target, const Bitmap *source,
@@ -464,14 +477,14 @@ void Bitmap::read(Stream *stream, EFileFormat format) {
         stream->seek(pos);
     }
     switch (format) {
-        //case EBMP:     read_bmp(stream); break;
+        case EBMP:     read_bmp(stream);     break;
         case EJPEG:    read_jpeg(stream);    break;
         case EOpenEXR: read_openexr(stream); break;
-        //case ERGBE:    read_rgbe(stream); break;
-        //case EPFM:     read_pfm(stream); break;
-        //case EPPM:     read_ppm(stream); break;
-        //case ETGA:     read_tga(stream); break;
-        //case EPNG:     read_png(stream); break;
+        case ERGBE:    read_rgbe(stream);    break;
+        case EPFM:     read_pfm(stream);     break;
+        case EPPM:     read_ppm(stream);     break;
+        case ETGA:     read_tga(stream);     break;
+        case EPNG:     read_png(stream);     break;
         default:
             Throw("Bitmap: Unknown file format!");
     }
@@ -514,20 +527,32 @@ void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
     );
 
     switch (format) {
-        case EJPEG:
-            if (quality == -1)
-                quality = 100;
-            write_jpeg(stream, quality);
+        case EOpenEXR:
+            write_openexr(stream, quality);
             break;
-#if 0
+
         case EPNG:
             if (quality == -1)
                 quality = 5;
             write_png(stream, quality);
             break;
-#endif
-        case EOpenEXR:
-            write_openexr(stream, quality);
+
+        case EJPEG:
+            if (quality == -1)
+                quality = 100;
+            write_jpeg(stream, quality);
+            break;
+
+        case EPPM:
+            write_ppm(stream);
+            break;
+
+        case ERGBE:
+            write_rgbe(stream);
+            break;
+
+        case EPFM:
+            write_pfm(stream);
             break;
 
         default:
@@ -829,7 +854,6 @@ void Bitmap::read_openexr(Stream *stream) {
     }
 
     auto fs = dynamic_cast<FileStream *>(stream);
-
     Log(EDebug, "Loading OpenEXR file \"%s\" (%ix%i, %s, %s) ..",
         fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
         m_pixel_format, m_component_format);
@@ -1193,7 +1217,7 @@ void Bitmap::read_jpeg(Stream *stream) {
 
     m_size = Vector2s(cinfo.output_width, cinfo.output_height);
     m_component_format = Struct::EUInt8;
-    m_srgb_gamma = 1;
+    m_srgb_gamma = true;
 
     switch (cinfo.output_components) {
         case 1: m_pixel_format = EY; break;
@@ -1203,7 +1227,10 @@ void Bitmap::read_jpeg(Stream *stream) {
 
     rebuild_struct();
 
-    Log(EDebug, "Loading a %ix%i JPEG file", m_size.x(), m_size.y());
+    auto fs = dynamic_cast<FileStream *>(stream);
+    Log(EDebug, "Loading JPEG file \"%s\" (%ix%i, %s, %s) ..",
+        fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
+        m_pixel_format, m_component_format);
 
     size_t row_stride =
         (size_t) cinfo.output_width * (size_t) cinfo.output_components;
@@ -1262,9 +1289,14 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
 
     jpeg_set_defaults(&cinfo);
     jpeg_set_quality(&cinfo, quality, TRUE);
-    jpeg_start_compress(&cinfo, TRUE);
 
-    Log(ETrace, "Writing a %ix%i JPEG file", m_size.x(), m_size.y());
+    if (quality == 100) {
+        /* Disable chroma subsampling */
+        cinfo.comp_info[0].v_samp_factor = 1;
+        cinfo.comp_info[0].h_samp_factor = 1;
+    }
+
+    jpeg_start_compress(&cinfo, TRUE);
 
     /* Write scanline by scanline */
     for (size_t i = 0; i < m_size.y(); ++i) {
@@ -1282,7 +1314,6 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
 //   PNG bitmap I/O
 // -----------------------------------------------------------------------------
 
-#if 0
 static void png_flush_data(png_structp png_ptr) {
     png_voidp flush_io_ptr = png_get_io_ptr(png_ptr);
     ((Stream *) flush_io_ptr)->flush();
@@ -1298,51 +1329,150 @@ static void png_write_data(png_structp png_ptr, png_bytep data, png_size_t lengt
     ((Stream *) write_io_ptr)->write(data, length);
 }
 
-static void png_error_func(png_structp png_ptr, png_const_charp msg) {
+static void png_error_func(png_structp, png_const_charp msg) {
     Throw("Fatal libpng error: %s\n", msg);
     exit(-1);
 }
 
-static void png_warn_func(png_structp png_ptr, png_const_charp msg) {
-    if (strstr(msg, "iCCP: known incorrect sRGB profile") != NULL)
+static void png_warn_func(png_structp, png_const_charp msg) {
+    if (strstr(msg, "iCCP: known incorrect sRGB profile") != nullptr)
         return;
     Log(EWarn, "libpng warning: %s\n", msg);
+}
+
+void Bitmap::read_png(Stream *stream) {
+    png_bytepp rows = nullptr;
+
+    /* Create buffers */
+    png_structp png_ptr = png_create_read_struct(
+        PNG_LIBPNG_VER_STRING, nullptr, &png_error_func, &png_warn_func);
+    if (png_ptr == nullptr)
+        Throw("read_png(): Unable to create PNG data structure");
+
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (info_ptr == nullptr) {
+        png_destroy_read_struct(&png_ptr, nullptr, nullptr);
+        Throw("read_png(): Unable to create PNG information structure");
+    }
+
+    /* Error handling */
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+        delete[] rows;
+        Throw("read_png(): Error reading the PNG file!");
+    }
+
+    /* Set read helper function */
+    png_set_read_fn(png_ptr, stream, (png_rw_ptr) png_read_data);
+
+    int bit_depth, color_type, interlace_type, compression_type, filter_type;
+    png_read_info(png_ptr, info_ptr);
+    png_uint_32 width = 0, height = 0;
+    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
+                 &interlace_type, &compression_type, &filter_type);
+
+    if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+        png_set_expand_gray_1_2_4_to_8(png_ptr); // Expand 1-, 2- and 4-bit grayscale
+
+    if (color_type == PNG_COLOR_TYPE_PALETTE)
+        png_set_palette_to_rgb(png_ptr); // Always expand indexed files
+
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+        png_set_tRNS_to_alpha(png_ptr); // Expand transparency to a proper alpha channel
+
+    /* Request various transformations from libpng as necessary */
+    #if defined(LITTLE_ENDIAN)
+        if (bit_depth == 16)
+            png_set_swap(png_ptr); // Swap the byte order on little endian machines
+    #endif
+
+    /* Update the information based on the transformations */
+    png_read_update_info(png_ptr, info_ptr);
+    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth,
+        &color_type, &interlace_type, &compression_type, &filter_type);
+    m_size = Vector2i(width, height);
+
+    switch (color_type) {
+        case PNG_COLOR_TYPE_GRAY: m_pixel_format = EY; break;
+        case PNG_COLOR_TYPE_GRAY_ALPHA: m_pixel_format = EYA; break;
+        case PNG_COLOR_TYPE_RGB: m_pixel_format = ERGB; break;
+        case PNG_COLOR_TYPE_RGB_ALPHA: m_pixel_format = ERGBA; break;
+        default: Throw("read_png(): Unknown color type %i", color_type); break;
+    }
+
+    switch (bit_depth) {
+        case 8: m_component_format = Struct::EUInt8; break;
+        case 16: m_component_format = Struct::EUInt16; break;
+        default: Throw("read_png(): Unsupported bit depth: %i", bit_depth);
+    }
+
+    m_srgb_gamma = true;
+
+    rebuild_struct();
+
+    /* Load any string-valued metadata */
+    int text_idx = 0;
+    png_textp text_ptr;
+    png_get_text(png_ptr, info_ptr, &text_ptr, &text_idx);
+
+    for (int i = 0; i < text_idx; ++i, text_ptr++)
+        m_metadata.set_string(text_ptr->key, text_ptr->text);
+
+    auto fs = dynamic_cast<FileStream *>(stream);
+    Log(EDebug, "Loading PNG file \"%s\" (%ix%i, %s, %s) ..",
+        fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
+        m_pixel_format, m_component_format);
+
+    size_t size = buffer_size();
+    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
+        enoki::alloc<uint8_t>(size));
+    m_owns_data = true;
+
+    rows = new png_bytep[m_size.y()];
+    size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+    Assert(row_bytes == size / m_size.y());
+
+    for (size_t i = 0; i < m_size.y(); i++)
+        rows[i] = uint8_data() + i * row_bytes;
+
+    png_read_image(png_ptr, rows);
+    png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+
+    delete[] rows;
 }
 
 void Bitmap::write_png(Stream *stream, int compression) const {
     png_structp png_ptr;
     png_infop info_ptr;
-    volatile png_bytepp rows = NULL;
+    volatile png_bytepp rows = nullptr;
 
-    Log(EDebug, "Writing a %ix%i PNG file", m_size.x(), m_size.y());
-
-    int colorType, bitDepth;
+    int color_type, bit_depth;
     switch (m_pixel_format) {
-        case EY: colorType = PNG_COLOR_TYPE_GRAY; break;
-        case EYA: colorType = PNG_COLOR_TYPE_GRAY_ALPHA; break;
-        case ERGB: colorType = PNG_COLOR_TYPE_RGB; break;
-        case ERGBA: colorType = PNG_COLOR_TYPE_RGBA; break;
+        case EY: color_type = PNG_COLOR_TYPE_GRAY; break;
+        case EYA: color_type = PNG_COLOR_TYPE_GRAY_ALPHA; break;
+        case ERGB: color_type = PNG_COLOR_TYPE_RGB; break;
+        case ERGBA: color_type = PNG_COLOR_TYPE_RGBA; break;
         default:
-            Throw("writePNG(): Unsupported bitmap type!");
+            Throw("write_png(): Unsupported pixel format!");
             return;
     }
 
     switch (m_component_format) {
-        //case Struct::EBitmask: bitDepth = 1; break;
-        case Struct::EUInt8: bitDepth = 8; break;
-        case Struct::EUInt16: bitDepth = 16; break;
+        case Struct::EUInt8: bit_depth = 8; break;
+        case Struct::EUInt16: bit_depth = 16; break;
         default:
-            Throw("writePNG(): Unsupported component type!");
+            Throw("write_png(): Unsupported component type!");
             return;
     }
 
-    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, &png_error_func, &png_warn_func);
-    if (png_ptr == NULL)
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr,
+                                      &png_error_func, &png_warn_func);
+    if (png_ptr == nullptr)
         Throw("Error while creating PNG data structure");
 
     info_ptr = png_create_info_struct(png_ptr);
-    if (info_ptr == NULL) {
-        png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
+    if (info_ptr == nullptr) {
+        png_destroy_write_struct(&png_ptr, nullptr);
         Throw("Error while creating PNG information structure");
     }
 
@@ -1352,10 +1482,11 @@ void Bitmap::write_png(Stream *stream, int compression) const {
         Throw("Error writing the PNG file");
     }
 
-    png_set_write_fn(png_ptr, stream, (png_rw_ptr) png_write_data, (png_flush_ptr) png_flush_data);
+    png_set_write_fn(png_ptr, stream, (png_rw_ptr) png_write_data,
+                     (png_flush_ptr) png_flush_data);
     png_set_compression_level(png_ptr, compression);
 
-    png_text *text = NULL;
+    png_text *text = nullptr;
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generated_by"))
@@ -1379,32 +1510,645 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     if (m_srgb_gamma)
         png_set_sRGB_gAMA_and_cHRM(png_ptr, info_ptr, PNG_sRGB_INTENT_ABSOLUTE);
 
-    if (m_component_format == Struct::EUInt16 && Stream::host_byte_order() == Stream::ELittleEndian)
-        png_set_swap(png_ptr); // Swap the byte order on little endian machines
+    #if defined(LITTLE_ENDIAN)
+        if (m_component_format == Struct::EUInt16)
+            png_set_swap(png_ptr); // Swap the byte order on little endian machines
+    #endif
 
-    png_set_IHDR(png_ptr, info_ptr, m_size.x(), m_size.y(), bitDepth,
-                 colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
+    png_set_IHDR(png_ptr, info_ptr, m_size.x(), m_size.y(), bit_depth,
+                 color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
                  PNG_FILTER_TYPE_BASE);
 
     png_write_info(png_ptr, info_ptr);
 
     rows = new png_bytep[m_size.y()];
 
-    size_t rowBytes = png_get_rowbytes(png_ptr, info_ptr);
-    Assert(rowBytes == getBufferSize() / m_size.y());
-    for (int i = 0; i<m_size.y(); i++)
-        rows[i] = &m_data[rowBytes * i];
+    size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+    Assert(row_bytes == buffer_size() / m_size.y());
+    for (size_t i = 0; i < m_size.y(); i++)
+        rows[i] = &m_data[row_bytes * i];
 
     png_write_image(png_ptr, rows);
     png_write_end(png_ptr, info_ptr);
     png_destroy_write_struct(&png_ptr, &info_ptr);
 
-    if (text)
-        delete[] text;
+    delete[] text;
     delete[] rows;
 }
+
+// -----------------------------------------------------------------------------
+//   PNG bitmap I/O
+// -----------------------------------------------------------------------------
+
+void Bitmap::read_ppm(Stream *stream) {
+    int field = 0, n_chars = 0;
+
+    std::string fields[4];
+
+    while (field < 4) {
+        char c;
+        stream->read(c);
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+            if (n_chars != 0) {
+                n_chars = 0;
+                ++field;
+            }
+        } else {
+            fields[field] += c;
+            ++n_chars;
+        }
+    }
+
+    if (fields[0] != "P6")
+        Throw("read_ppm(): invalid format!");
+
+    unsigned long long int_values[3];
+    for (int i = 0; i < 3; ++i) {
+        char *end_ptr = NULL;
+        int_values[i]  = strtoull(fields[i + 1].c_str(), &end_ptr, 10);
+        if (*end_ptr != '\0')
+            Throw("read_ppm(): unable to parse the file header!");
+    }
+
+    m_size = Vector2s(int_values[0], int_values[1]);
+    m_pixel_format = ERGB;
+    m_srgb_gamma = true;
+    m_component_format = int_values[2] <= 0xFF ? Struct::EUInt8 : Struct::EUInt16;
+    rebuild_struct();
+
+    auto fs = dynamic_cast<FileStream *>(stream);
+    Log(EDebug, "Loading PPM file \"%s\" (%ix%i, %s, %s) ..",
+        fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
+        m_pixel_format, m_component_format);
+
+    size_t size = buffer_size();
+    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(enoki::alloc<uint8_t>(size));
+    m_owns_data = true;
+    stream->read(uint8_data(), size);
+}
+
+void Bitmap::write_ppm(Stream *stream) const {
+    if (m_pixel_format != ERGB || (m_component_format != Struct::EUInt8 &&
+                                   m_component_format != Struct::EUInt16))
+        Throw("write_ppm(): Only 8 or 16-bit RGB images are supported");
+    stream->write_line(
+        tfm::format("P6\n%i\n%i\n%i", m_size.x(), m_size.y(),
+                    m_component_format == Struct::EUInt8 ? 0xFF : 0xFFFF));
+    stream->write(uint8_data(), buffer_size());
+}
+
+// -----------------------------------------------------------------------------
+//   RGBE bitmap I/O
+// -----------------------------------------------------------------------------
+
+/* The following is based on code by Bruce Walter */
+namespace {
+    inline void rgbe_from_float(float *data, uint8_t rgbe[4]) {
+        /* Find the largest contribution */
+        float max = std::max(std::max(data[0], data[1]), data[2]);
+        if (max < 1e-32f) {
+            rgbe[0] = rgbe[1] = rgbe[2] = rgbe[3] = 0;
+        } else {
+            int e;
+            /* Extract exponent and convert the fractional part into
+               the [0..255] range. Afterwards, divide by max so that
+               any color component multiplied by the result will be in [0,255] */
+            max = std::frexp(max, &e) * 256.f / max;
+            rgbe[0] = (uint8_t) (data[0] * max);
+            rgbe[1] = (uint8_t) (data[1] * max);
+            rgbe[2] = (uint8_t) (data[2] * max);
+            rgbe[3] = e+128; /* Exponent value in bias format */
+        }
+    }
+
+    inline void rgbe_to_float(uint8_t rgbe[4], float *data) {
+        if (rgbe[3]) { /* nonzero pixel */
+            float f = std::ldexp(1.0f, (int) rgbe[3] - (128 + 8));
+            for (int i  = 0; i < 3; ++i)
+                data[i] = rgbe[i] * f;
+        } else {
+            memset(data, 0, sizeof(float) * 3);
+        }
+    }
+
+    /* The code below is only needed for the run-length encoded files.
+       Run length encoding adds considerable complexity but does
+       save some space.  For each scanline, each channel (r,g,b,e) is
+       encoded separately for better compression. */
+    inline void rgbe_write_rle(Stream *stream, uint8_t *data, int num_bytes) {
+        int cur = 0;
+        uint8_t buf[2];
+
+        while (cur < num_bytes) {
+            int beg_run = cur;
+            /* find next run of length at least 4 if one exists */
+            int run_count = 0, old_run_count = 0;
+            while (run_count < 4 && beg_run < num_bytes) {
+                beg_run += run_count;
+                old_run_count = run_count;
+                run_count = 1;
+                while ((beg_run + run_count < num_bytes) && (run_count < 127) &&
+                       (data[beg_run] == data[beg_run + run_count]))
+                    run_count++;
+            }
+            /* if data before next big run is a short run then write it as such */
+            if (old_run_count > 1 && old_run_count == beg_run - cur) {
+                buf[0] = 128 + old_run_count;   /*write short run*/
+                buf[1] = data[cur];
+                stream->write(buf, 2);
+                cur = beg_run;
+            }
+            /* write out bytes until we reach the start of the next run */
+            while (cur < beg_run) {
+                int nonrun_count = beg_run - cur;
+                if (nonrun_count > 128)
+                    nonrun_count = 128;
+                buf[0] = nonrun_count;
+                stream->write(buf, 1);
+                stream->write(&data[cur], nonrun_count);
+                cur += nonrun_count;
+            }
+            /* write out next run if one was found */
+            if (run_count >= 4) {
+                buf[0] = 128 + run_count;
+                buf[1] = data[beg_run];
+                stream->write(buf, 2);
+                cur += run_count;
+            }
+        }
+    }
+
+    /* simple read routine.  will not correctly handle run length encoding */
+    inline void rgbe_read_pixels(Stream *stream, float *data, size_t num_pixels) {
+        while (num_pixels-- > 0) {
+            uint8_t rgbe[4];
+            stream->read(rgbe, 4);
+            rgbe_to_float(rgbe, data);
+            data += 3;
+        }
+    }
+}
+
+void Bitmap::read_rgbe(Stream *stream) {
+    std::string line = stream->read_line();
+
+    if (line.length() < 2 || line[0] != '#' || line[1] != '?')
+        Throw("read_rgbe(): Invalid header!");
+
+    bool format_recognized = false;
+    while (true) {
+        line = stream->read_line();
+        if (string::starts_with(line, "FORMAT=32-bit_rle_rgbe")) {
+            format_recognized = true;
+            m_pixel_format = ERGB;
+        } else if (string::starts_with(line, "FORMAT=32-bit_rle_xyze")) {
+            format_recognized = true;
+            m_pixel_format = EXYZ;
+        } else {
+            auto tokens = string::tokenize(line);
+            if (tokens.size() == 4 && tokens[0] == "-Y" && tokens[2] == "+X") {
+                m_size.y() = (size_t) std::stoull(tokens[1]);
+                m_size.x() = (size_t) std::stoull(tokens[3]);
+                break;
+            }
+        }
+    }
+
+    if (!format_recognized)
+        Throw("read_rgbe(): unrecognized format!");
+
+    m_component_format = Struct::EFloat32;
+    m_srgb_gamma = false;
+    rebuild_struct();
+    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
+        enoki::alloc<uint8_t>(buffer_size()));
+    m_owns_data = true;
+
+    auto fs = dynamic_cast<FileStream *>(stream);
+    Log(EDebug, "Loading RGBE file \"%s\" (%ix%i, %s, %s) ..",
+        fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
+        m_pixel_format, m_component_format);
+
+    float *data = (float *) m_data.get();
+
+    if (m_size.x() < 8 || m_size.x() > 0x7fff) {
+        /* Run length encoding is not allowed, so write uncompressed contents */
+        rgbe_read_pixels(stream, data, hprod(m_size));
+        return;
+    }
+
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[4 * m_size.x()]);
+
+    /* Read in each successive scanline */
+    for (size_t y = 0; y < m_size.y(); ++y) {
+        uint8_t rgbe[4];
+        stream->read(rgbe, 4);
+
+        if (rgbe[0] != 2 || rgbe[1] != 2 || rgbe[2] & 0x80) {
+            /* this file is not run length encoded */
+            rgbe_to_float(rgbe, data);
+            rgbe_read_pixels(stream, data + 3, hprod(m_size) - 1);
+            return;
+        }
+
+        if (size_t(((int) rgbe[2]) << 8 | rgbe[3]) != m_size.x())
+            Throw("read_rgbe(): wrong scanline width!");
+
+        uint8_t *ptr = buffer.get();
+
+        /* read each of the four channels for the scanline into the buffer */
+        for (size_t i = 0; i < 4; i++) {
+            uint8_t *ptr_end = buffer.get() + (i + 1) * m_size.x();
+
+            while (ptr < ptr_end) {
+                uint8_t buf[2];
+                stream->read(buf, 2);
+
+                if (buf[0] > 128) {
+                    /* a run of the same value */
+                    int count = buf[0] - 128;
+                    if (count == 0 || count > ptr_end - ptr)
+                        Throw("read_rgbe(): bad scanline data!");
+
+                    while (count-- > 0)
+                        *ptr++ = buf[1];
+                } else {
+                    /* a non-run */
+                    int count = buf[0];
+                    if (count == 0 || count > ptr_end - ptr)
+                        Throw("read_rgbe(): bad scanline data!");
+                    *ptr++ = buf[1];
+                    if (--count > 0)
+                        stream->read(ptr, count);
+                    ptr += count;
+                }
+            }
+        }
+        /* now convert data from buffer into floats */
+        for (size_t i = 0; i < m_size.x(); i++) {
+            rgbe[0] = buffer[i];
+            rgbe[1] = buffer[m_size.x() + i];
+            rgbe[2] = buffer[2 * m_size.x() + i];
+            rgbe[3] = buffer[3 * m_size.x() + i];
+            rgbe_to_float(rgbe, data);
+            data += 3;
+        }
+    }
+}
+
+void Bitmap::write_rgbe(Stream *stream) const {
+    if (m_component_format != Struct::EFloat32)
+        Throw("write_rgbe(): component format must be EFloat32!");
+
+    std::string format_name;
+    if (m_pixel_format == ERGB ||  m_pixel_format == ERGBA)
+        format_name = "32-bit_rle_rgbe";
+    else if (m_pixel_format == EXYZ ||  m_pixel_format == EXYZA)
+        format_name = "32-bit_rle_xyze";
+    else
+        Throw("write_rgbe(): pixel format must be ERGB[A] or EXYZ[A]!");
+
+    stream->write_line("#?RGBE");
+
+    std::vector<std::string> keys = m_metadata.property_names();
+    for (auto key : keys) {
+        stream->write_line(tfm::format("# Metadata [%s]:", key));
+        std::istringstream iss(m_metadata.as_string(key));
+        std::string buf;
+        while (std::getline(iss, buf))
+            stream->write_line(tfm::format("#   %s", buf));
+    }
+
+    stream->write_line(tfm::format("FORMAT=%s\n", format_name));
+    stream->write_line(tfm::format("-Y %i +X %i", m_size.y(), m_size.x()));
+
+    float *data = (float *) m_data.get();
+    if (m_size.x() < 8 || m_size.x() > 0x7fff) {
+        /* Run length encoding is not allowed, so write uncompressed contents */
+        uint8_t rgbe[4];
+        for (size_t i = 0, size = hprod(m_size); i < size; ++i) {
+            rgbe_from_float(data, rgbe);
+            data += (m_pixel_format == ERGB) ? 3 : 4;
+            stream->write(rgbe, 4);
+        }
+        return;
+    }
+
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[4 * m_size.x()]);
+    for (size_t y = 0; y < m_size.y(); ++y) {
+        uint8_t rgbe[4] = { 2, 2, (uint8_t)(m_size.x() >> 8),
+                                  (uint8_t)(m_size.x() & 0xFF) };
+        stream->write(rgbe, 4);
+
+        for (size_t x=0; x<m_size.x(); x++) {
+            rgbe_from_float(data, rgbe);
+
+            buffer[x]              = rgbe[0];
+            buffer[m_size.x()+x]   = rgbe[1];
+            buffer[2*m_size.x()+x] = rgbe[2];
+            buffer[3*m_size.x()+x] = rgbe[3];
+
+            data += m_pixel_format == ERGB ? 3 : 4;
+        }
+
+        /* Write out each of the four channels separately run length encoded.
+           First red, then green, then blue, then exponent */
+        for (int i = 0; i < 4; i++)
+            rgbe_write_rle(stream, buffer.get() + i * m_size.x(), m_size.x());
+    }
+}
+
+// -----------------------------------------------------------------------------
+//   PFM bitmap I/O
+// -----------------------------------------------------------------------------
+
+void Bitmap::read_pfm(Stream *stream) {
+    char header[3];
+    stream->read(header, 3);
+    if (header[0] != 'P' || !(header[1] == 'F' || header[1] == 'f'))
+        Throw("read_pfm(): Invalid header!");
+
+    bool color = header[1] == 'F';
+    m_pixel_format = color ? ERGB : EY;
+    m_component_format = Struct::EFloat32;
+    m_srgb_gamma = false;
+
+    Float scale_and_order;
+
+    try {
+        m_size.x() = std::stoull(stream->read_token());
+        m_size.y() = std::stoull(stream->read_token());
+        scale_and_order = Float(std::stod(stream->read_token()));
+    } catch (const std::logic_error &) {
+        Throw("Could not parse PFM header!");
+    }
+
+    rebuild_struct();
+
+    size_t size_in_bytes = buffer_size();
+    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
+        enoki::alloc<uint8_t>(size_in_bytes));
+    m_owns_data = true;
+
+    auto fs = dynamic_cast<FileStream *>(stream);
+    Log(EDebug, "Loading PFM file \"%s\" (%ix%i, %s, %s) ..",
+        fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
+        m_pixel_format, m_component_format);
+
+    size_t size = size_in_bytes / sizeof(float);
+    float *data = (float *) uint8_data();
+
+    auto byte_order = stream->byte_order();
+    stream->set_byte_order(scale_and_order <= 0.f ? Stream::ELittleEndian : Stream::EBigEndian);
+
+    try {
+        stream->read_array(data, size);
+    } catch (...) {
+        stream->set_byte_order(byte_order);
+        throw;
+    }
+    stream->set_byte_order(byte_order);
+
+    float scale = std::abs(scale_and_order);
+    if (scale != 1) {
+        for (size_t i = 0; i < size; ++i)
+            data[i] *= scale;
+    }
+    vflip();
+}
+
+void Bitmap::write_pfm(Stream *stream) const {
+    if (m_component_format != Struct::EFloat32)
+        Throw("write_pfm(): component format must be EFloat32!");
+    if (m_pixel_format != ERGB && m_pixel_format != ERGBA && m_pixel_format != EY)
+        Throw("write_pfm(): pixel format must be ERGB, ERGBA, EY, or EYA!");
+
+    /* Write the header */
+    std::ostringstream oss;
+    stream->write_line(tfm::format("P%c", (m_pixel_format == ERGB || m_pixel_format == ERGBA) ? 'F' : 'f'));
+    stream->write_line(tfm::format("%u %u", m_size.x(), m_size.y()));
+
+#if defined(LITTLE_ENDIAN)
+    stream->write_line("-1");
+#else
+    stream->write_line("1");
 #endif
 
+    float *data = (float *) m_data.get();
+    size_t ch = channel_count();
+
+    if (m_pixel_format == ERGB || m_pixel_format == EY) {
+        size_t scanline = (size_t) m_size.x() * ch;
+
+        for (size_t y = 0; y < m_size.y(); ++y)
+            stream->write(data + scanline * (m_size.y() - 1 - y),
+                          scanline * sizeof(float));
+    } else {
+        /* For convenience: also handle images with an alpha
+           channel, but strip it out while saving the data */
+        size_t scanline = (size_t) m_size.x() * ch;
+        float *temp = (float *) alloca(scanline * sizeof(float));
+
+        for (size_t y = 0; y < m_size.y(); ++y) {
+            const float *source = data + scanline * (m_size.y() - 1 - y);
+            float *dest         = temp;
+
+            for (size_t x = 0; x < m_size.x(); ++x) {
+                for (size_t j = 0; j < ch - 1; ++j)
+                    *dest++ = *source++;
+                source++;
+            }
+
+            stream->write(temp, sizeof(float) * m_size.x() * (ch - 1));
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+//   BMP bitmap I/O
+// -----------------------------------------------------------------------------
+
+void Bitmap::read_bmp(Stream *stream) {
+    uint32_t bmp_offset, header_size;
+    int32_t width, height;
+    uint16_t nplanes, bpp;
+    uint32_t compression_type;
+    char magic[2];
+
+    auto byte_order = stream->byte_order();
+    stream->set_byte_order(Stream::ELittleEndian);
+    try {
+        stream->read(magic, 2);
+
+        if (magic[0] != 'B' || magic[1] != 'M')
+            Throw("read_bmp(): Invalid header identifier!");
+
+        stream->skip(8);
+        stream->read(bmp_offset);
+        stream->read(header_size);
+        stream->read(width);
+        stream->read(height);
+        stream->read(nplanes);
+        stream->read(bpp);
+        stream->read(compression_type);
+        stream->skip(bmp_offset-34);
+
+        if (header_size != 40 || nplanes != 1 || width <= 0)
+            Throw("read_bmp(): Unsupported BMP format encountered!");
+
+        if (compression_type != 0)
+            Throw("read_bmp(): Compressed files are currently not supported!");
+
+        m_size = Vector2s((size_t) width, (size_t) std::abs(height));
+        m_component_format = Struct::EUInt8;
+        m_srgb_gamma = true;
+
+        switch (bpp) {
+            case 8: m_pixel_format = EY; break;
+            case 16: m_pixel_format = EYA; break;
+            case 24: m_pixel_format = ERGB; break;
+            case 32: m_pixel_format = ERGBA; break;
+            default:
+                Throw("read_bmp(): Invalid bit depth (%i)!", bpp);
+        }
+
+        rebuild_struct();
+
+        size_t size = buffer_size();
+        m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
+            enoki::alloc<uint8_t>(size));
+        m_owns_data = true;
+
+        auto fs = dynamic_cast<FileStream *>(stream);
+        Log(EDebug, "Loading BMP file \"%s\" (%ix%i, %s, %s) ..",
+            fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
+            m_pixel_format, m_component_format);
+
+        size_t row_size = size / m_size.y();
+        size_t padding = -row_size & 3;
+        bool do_vflip = height > 0;
+        uint8_t *ptr = uint8_data();
+
+        for (size_t y = 0; y < m_size.y(); ++y) {
+            size_t target_y = do_vflip ? (m_size.y() - y - 1) : y;
+            stream->read(ptr + row_size * target_y, row_size);
+            stream->skip(padding);
+        }
+
+        if (m_pixel_format == ERGB || m_pixel_format == ERGBA) {
+            int channels = channel_count();
+            for (size_t i = 0; i < size; i += channels)
+                std::swap(ptr[i], ptr[i+2]);
+        }
+        stream->set_byte_order(byte_order);
+    } catch (...) {
+        stream->set_byte_order(byte_order);
+        throw;
+    }
+}
+
+void Bitmap::read_tga(Stream *stream) {
+    auto byte_order = stream->byte_order();
+    stream->set_byte_order(Stream::ELittleEndian);
+    try {
+        uint8_t header_size, image_type, color_type;
+        stream->read(header_size);
+        stream->read(image_type);
+        stream->read(color_type);
+
+        if (image_type != 0)
+            Throw("read_tga(): indexed files are not supported!");
+        if (color_type != 2 && color_type != 3 && color_type != 10 && color_type != 11)
+            Throw("read_tga(): only grayscale & RGB[A] files are supported!");
+
+        stream->skip(9);
+        int16_t width, height;
+        uint8_t bpp, descriptor;
+
+        stream->read(width);
+        stream->read(height);
+        stream->read(bpp);
+        stream->read(descriptor);
+        stream->skip(header_size);
+
+        m_size = Vector2s((size_t) width, (size_t) height);
+        m_srgb_gamma = true;
+        m_component_format = Struct::EUInt8;
+
+        bool do_vflip = !(descriptor & (1 << 5));
+        bool greyscale = color_type == 3 || color_type == 11;
+        bool rle = color_type & 8;
+
+        if ((bpp == 8 && !greyscale) || (bpp != 8 && greyscale))
+            Throw("read_tga(): Invalid bit depth!");
+
+        switch (bpp) {
+            case 8: m_pixel_format = EY; break;
+            case 24: m_pixel_format = ERGB; break;
+            case 32: m_pixel_format = ERGBA; break;
+            default:
+                Throw("read_tga(): Invalid bit depth!");
+        }
+
+        rebuild_struct();
+
+        auto fs = dynamic_cast<FileStream *>(stream);
+        Log(EDebug, "Loading TGA file \"%s\" (%ix%i, %s, %s) ..",
+            fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
+            m_pixel_format, m_component_format);
+
+        size_t size = buffer_size(),
+               row_size = size / m_size.y();
+
+        m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
+            enoki::alloc<uint8_t>(size));
+        m_owns_data = true;
+        size_t channel_count = bpp / 8;
+
+        if (!rle) {
+            for (size_t y = 0; y < m_size.y(); ++y) {
+                size_t target_y = do_vflip ? (m_size.y() - y - 1) : y;
+                stream->read(uint8_data() + target_y * row_size, row_size);
+            }
+        } else {
+            /* Decode an RLE-encoded image */
+            uint8_t temp[4], *ptr = uint8_data(), *end = ptr + size;
+
+            while (ptr != end) {
+                uint8_t value;
+                stream->read(value);
+
+                if (value & 0x80) {
+                    /* Run length packet */
+                    size_t count = (value & 0x7F) + 1;
+                    stream->read(temp, channel_count);
+                    for (size_t i = 0; i < count; ++i)
+                        for (size_t j = 0; j < channel_count; ++j)
+                            *ptr++ = temp[j];
+                } else {
+                    /* Raw packet */
+                    size_t count = channel_count * (value + 1);
+                    stream->read(ptr, count);
+                    ptr += count;
+                }
+            }
+            if (do_vflip)
+                vflip();
+        }
+
+        if (!greyscale) {
+            uint8_t *ptr = uint8_data();
+            /* Convert BGR to RGB */
+            for (size_t i = 0; i < size; i += channel_count)
+                std::swap(ptr[i], ptr[i + 2]);
+        }
+
+        stream->set_byte_order(byte_order);
+    } catch (...) {
+        stream->set_byte_order(byte_order);
+        throw;
+    }
+}
 
 std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value) {
     switch (value) {
@@ -1419,7 +2163,6 @@ std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value) {
     }
     return os;
 }
-
 
 std::ostream &operator<<(std::ostream &os, Bitmap::EFileFormat value) {
     switch (value) {

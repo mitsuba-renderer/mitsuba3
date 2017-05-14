@@ -455,6 +455,9 @@ public:
 
     void convert(Bitmap *target) const;
 
+    /// Vertically flip the bitmap
+    void vflip();
+
     /// Equality comparison operator
     bool operator==(const Bitmap &bitmap) const;
 
@@ -500,9 +503,35 @@ public:
      /// Save a file using the JPEG file format
      void write_jpeg(Stream *stream, int quality) const;
 
-     /// Save a file using the JPEG file format
-     // void write_png(Stream *stream, int quality) const;
+     /// Read a file encoded using the PNG file format
+     void read_png(Stream *stream);
 
+     /// Save a file using the PNG file format
+     void write_png(Stream *stream, int quality) const;
+
+     /// Read a file encoded using the PPM file format
+     void read_ppm(Stream *stream);
+
+     /// Save a file using the PPM file format
+     void write_ppm(Stream *stream) const;
+
+     /// Read a file encoded using the BMP file format
+     void read_bmp(Stream *stream);
+
+     /// Read a file encoded using the TGA file format
+     void read_tga(Stream *stream);
+
+     /// Read a file encoded using the RGBE file format
+     void read_rgbe(Stream *stream);
+
+     /// Save a file using the RGBE file format
+     void write_rgbe(Stream *stream) const;
+
+     /// Read a file encoded using the PFM file format
+     void read_pfm(Stream *stream);
+
+     /// Save a file using the PFM file format
+     void write_pfm(Stream *stream) const;
  protected:
      std::unique_ptr<uint8_t[], enoki::aligned_deleter> m_data;
      EPixelFormat m_pixel_format;

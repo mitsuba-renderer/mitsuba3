@@ -65,7 +65,7 @@ std::ostream &operator<<(std::ostream &os, const Stream::EByteOrder &value) {
 }
 
 void Stream::write_line(const std::string &text) {
-    write(text.data(), text.length());
+    write(text.data(), text.length() * sizeof(char));
     write('\n');
 }
 
@@ -83,10 +83,40 @@ std::string Stream::read_line() {
                 result += data;
         } while (true);
     } catch (...) {
-        if (tell() != size() || result.empty())
-            throw;
+        if (tell() == size() && !result.empty())
+            return result;
+        throw;
     }
+
     return result;
+}
+
+std::string Stream::read_token() {
+    std::string result;
+
+    try {
+        do {
+            char data;
+            read(&data, sizeof(char));
+            if (std::isspace(data)) {
+                if (result.empty())
+                    continue;
+                else
+                    break;
+            }
+            result += data;
+        } while (true);
+    } catch (...) {
+        if (tell() == size() && !result.empty())
+            return result;
+        throw;
+    }
+
+    return result;
+}
+
+void Stream::skip(size_t amount) {
+    seek(tell() + amount);
 }
 
 MTS_IMPLEMENT_CLASS(Stream, Object)

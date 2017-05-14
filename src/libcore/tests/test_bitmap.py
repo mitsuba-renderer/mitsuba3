@@ -99,11 +99,80 @@ def test_convert_rgb_y_gamma(tmpdir):
     assert np.allclose(b3, [to_srgb(0.212671)*255, to_srgb(0.715160)*255, to_srgb(0.072169)*255], atol=1)
 
 def test_read_write_jpeg(tmpdir):
-    b = Bitmap(Bitmap.EY, Struct.EUInt8, [10, 10])
     tmp_file = os.path.join(str(tmpdir), "out.jpg")
+
+    b = Bitmap(Bitmap.EY, Struct.EUInt8, [10, 10])
     ref = np.uint8(PCG32().next_float(10, 10)*255)
     np.array(b, copy=False)[:] = ref[..., np.newaxis]
     b.write(tmp_file, quality=50)
     b2 = Bitmap(tmp_file)
     assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) / (10*10*255) < 0.07
+
+    b = Bitmap(Bitmap.ERGB, Struct.EUInt8, [10, 10])
+    ref = np.uint8(PCG32().next_float(10, 10*3)*255).reshape(10, 10, 3)
+    np.array(b, copy=False)[:] = ref
+    b.write(tmp_file, quality=100)
+    b2 = Bitmap(tmp_file)
+    assert np.sum(np.abs(np.float32(np.array(b2))-ref)) / (3*10*10*255) < 0.2
+
     os.remove(tmp_file)
+
+def test_read_write_png(tmpdir):
+    tmp_file = os.path.join(str(tmpdir), "out.png")
+
+    b = Bitmap(Bitmap.EY, Struct.EUInt8, [10, 10])
+    ref = np.uint8(PCG32().next_float(10, 10)*255)
+    np.array(b, copy=False)[:] = ref[..., np.newaxis]
+    b.write(tmp_file)
+    b2 = Bitmap(tmp_file)
+    assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) == 0
+
+    b = Bitmap(Bitmap.ERGBA, Struct.EUInt8, [10, 10])
+    ref = np.uint8(PCG32().next_float(10, 10*4)*255).reshape((10, 10, 4))
+    np.array(b, copy=False)[:] = ref
+    b.write(tmp_file)
+    b2 = Bitmap(tmp_file)
+    assert np.sum(np.abs(np.float32(np.array(b2))-ref)) == 0
+
+    os.remove(tmp_file)
+
+def test_read_write_hdr(tmpdir):
+    b = Bitmap(Bitmap.ERGB, Struct.EFloat32, [10, 20])
+    ref = np.float32(PCG32().next_float(20, 10*3).reshape((20, 10, 3)))
+    np.array(b, copy=False)[:] = ref[...]
+    tmp_file = os.path.join(str(tmpdir), "out.hdr")
+    b.write(tmp_file)
+    b2 = Bitmap(tmp_file)
+    assert np.abs(np.mean(np.array(b2)-ref)) < 1e-2
+    os.remove(tmp_file)
+
+def test_read_write_pfm(tmpdir):
+    b = Bitmap(Bitmap.ERGB, Struct.EFloat32, [10, 20])
+    ref = np.float32(PCG32().next_float(20, 10*3).reshape((20, 10, 3)))
+    np.array(b, copy=False)[:] = ref[...]
+    tmp_file = os.path.join(str(tmpdir), "out.pfm")
+    b.write(tmp_file)
+    b2 = Bitmap(tmp_file)
+    assert np.abs(np.mean(np.array(b2)-ref)) == 0
+    os.remove(tmp_file)
+
+def test_read_write_ppm(tmpdir):
+    b = Bitmap(Bitmap.ERGB, Struct.EUInt8, [10, 20])
+    ref = np.uint8(PCG32().next_float(20, 10*3).reshape((20, 10, 3))*255)
+    np.array(b, copy=False)[:] = ref[...]
+    tmp_file = os.path.join(str(tmpdir), "out.ppm")
+    b.write(tmp_file)
+    b2 = Bitmap(tmp_file)
+    assert np.abs(np.mean(np.array(b2)-ref)) == 0
+    os.remove(tmp_file)
+
+def test_read_bmp():
+    b = Bitmap(find_resource('ext/zeromq/branding.bmp'))
+    ref = [ 255., 145.02502924, 144.45052632]
+    assert np.allclose(np.mean(b, axis=(0, 1)), ref)
+
+def test_read_tga():
+    b1 = Bitmap(find_resource('resources/data/tests/bitmap/tga_uncompressed.tga'))
+    b2 = Bitmap(find_resource('resources/data/tests/bitmap/tga_compressed.tga'))
+    assert b1 == b2
+

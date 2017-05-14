@@ -135,6 +135,18 @@ public:
     }
 
     /**
+     * \brief Reads multiple objects of type T from the stream at the current position
+     * by delegating to the appropriate <tt>serialization_helper</tt>.
+     *
+     * Endianness swapping is handled automatically if needed.
+     */
+    template <typename T>
+    void read_array(T *value, size_t count) {
+        using helper = detail::serialization_helper<T>;
+        helper::read(*this, value, count, needs_endianness_swap());
+    }
+
+    /**
      * \brief Reads one object of type T from the stream at the current position
      * by delegating to the appropriate <tt>serialization_helper</tt>.
      *
@@ -146,11 +158,41 @@ public:
         helper::write(*this, &value, 1, needs_endianness_swap());
     }
 
+    /**
+     * \brief Reads one object of type T from the stream at the current position
+     * by delegating to the appropriate <tt>serialization_helper</tt>.
+     *
+     * Endianness swapping is handled automatically if needed.
+     */
+    template <typename T>
+    void write_temp(const T *value) {
+        using helper = detail::serialization_helper<T>;
+        helper::write(*this, value, 1, needs_endianness_swap());
+    }
+
+    /**
+     * \brief Reads multiple objects of type T from the stream at the current position
+     * by delegating to the appropriate <tt>serialization_helper</tt>.
+     *
+     * Endianness swapping is handled automatically if needed.
+     */
+    template <typename T>
+    void write_array(const T *value, size_t count) {
+        using helper = detail::serialization_helper<T>;
+        helper::write(*this, value, count, needs_endianness_swap());
+    }
+
     /// Convenience function for reading a line of text from an ASCII file
     virtual std::string read_line();
 
+    /// Convenience function for reading a contiguous token from an ASCII file
+    virtual std::string read_token();
+
     /// Convenience function for writing a line of text to an ASCII file
     void write_line(const std::string &text);
+
+    /// Skip ahead by a given number of bytes
+    void skip(size_t amount);
 
     /// @}
     // =========================================================================

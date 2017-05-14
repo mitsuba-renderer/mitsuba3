@@ -44,6 +44,9 @@ MTS_PY_EXPORT(Stream) {
             s.read((void *) tmp.get(), size);
             return py::bytes(tmp.get(), size);
         }, D(Stream, write))
+        .mdef(Stream, skip)
+        .mdef(Stream, read_line)
+        .mdef(Stream, write_line)
         .DECLARE_RW(int64_t, "long")
         .DECLARE_RW(float, "single")
         .DECLARE_RW(double, "double")

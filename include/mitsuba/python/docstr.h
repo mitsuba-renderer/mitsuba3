@@ -562,6 +562,10 @@ static const char *__doc_mitsuba_Bitmap_read_jpeg = R"doc(Read a file encoded us
 
 static const char *__doc_mitsuba_Bitmap_read_openexr = R"doc(Read a file encoded using the OpenEXR file format)doc";
 
+static const char *__doc_mitsuba_Bitmap_read_png = R"doc(Read a file encoded using the PNG file format)doc";
+
+static const char *__doc_mitsuba_Bitmap_read_ppm = R"doc(Read a file encoded using the PPM file format)doc";
+
 static const char *__doc_mitsuba_Bitmap_rebuild_struct = R"doc(Rebuild the 'm_struct' field based on the pixel format etc.)doc";
 
 static const char *__doc_mitsuba_Bitmap_resample =
@@ -708,6 +712,10 @@ compressor.)doc";
 static const char *__doc_mitsuba_Bitmap_write_jpeg = R"doc(Save a file using the JPEG file format)doc";
 
 static const char *__doc_mitsuba_Bitmap_write_openexr = R"doc(Write a file using the OpenEXR file format)doc";
+
+static const char *__doc_mitsuba_Bitmap_write_png = R"doc(Save a file using the PNG file format)doc";
+
+static const char *__doc_mitsuba_Bitmap_write_ppm = R"doc(Save a file using the PPM file format)doc";
 
 static const char *__doc_mitsuba_BoundingBox =
 R"doc(Generic n-dimensional bounding box data structure
@@ -2768,6 +2776,8 @@ some read and write operations on the system using a different
 endianness.)doc";
 
 static const char *__doc_mitsuba_Stream_size = R"doc(Returns the size of the stream)doc";
+
+static const char *__doc_mitsuba_Stream_skip = R"doc(Skip ahead by a given number of bytes)doc";
 
 static const char *__doc_mitsuba_Stream_tell = R"doc(Gets the current position inside the stream)doc";
 
