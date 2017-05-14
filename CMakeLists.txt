@@ -67,7 +67,7 @@ macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES "")
 endmacro()
 
-# Always use libc++ on Clang
+# Prefer libc++ in conjunction with Clang
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   CHECK_CXX_COMPILER_AND_LINKER_FLAGS(HAS_LIBCPP "-stdlib=libc++" "-stdlib=libc++")
   if (HAS_LIBCPP)
@@ -126,8 +126,9 @@ else()
   endif()
 endif()
 
+# Language and optimization flags that are used to compile Mitsuba
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
-  # Enable 14
+  # Enable C++14
   CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
 
   if (HAS_CPP14_FLAG)

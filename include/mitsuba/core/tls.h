@@ -75,8 +75,8 @@ protected:
     static void unregister_thread();
 
 private:
-    ConstructFunctor m_constructFunctor;
-    DestructFunctor m_destructFunctor;
+    ConstructFunctor m_construct_functor;
+    DestructFunctor m_destruct_functor;
 };
 
 /**

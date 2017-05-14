@@ -1,6 +1,12 @@
 # CMake
 /CMakeCache.txt
+/CPackConfig.cmake
+/CPackSourceConfig.cmake
 CMakeFiles
+cmake_install.cmake
+CTestTestfile.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
 Makefile
 
 # Ninja
