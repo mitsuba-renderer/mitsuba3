@@ -35,7 +35,9 @@ python3.4 -m pytest'''
         stage('Build [debug, double precision]') {
             steps {
                 sh '''export PATH=$PATH:/usr/local/bin
-ninja clean
+rm -Rf build
+mkdir -p build
+cd build
 cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DMTS_DOUBLE_PRECISION=ON ..
 ninja'''
             }

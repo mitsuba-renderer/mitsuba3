@@ -48,8 +48,8 @@ struct Properties::PropertiesPrivate {
 };
 
 #define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
-    void Properties::SetterName(const std::string &name, const Type &value, bool warnDuplicates) { \
-        if (has_property(name) && warnDuplicates) \
+    void Properties::SetterName(const std::string &name, const Type &value, bool warn_duplicates) { \
+        if (has_property(name) && warn_duplicates) \
             Log(EWarn, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
         d->entries[name].queried = false; \

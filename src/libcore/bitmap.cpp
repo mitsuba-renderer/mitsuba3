@@ -660,25 +660,25 @@ void Bitmap::read_openexr(Stream *stream) {
     for (auto it = header.begin(); it != header.end(); ++it) {
         std::string name = it.name();
         const Imf::Attribute *attr = &it.attribute();
-        std::string typeName = attr->typeName();
+        std::string type_name = attr->typeName();
 
-        if (typeName == "string") {
+        if (type_name == "string") {
             auto v = static_cast<const Imf::StringAttribute *>(attr);
             m_metadata.set_string(name, v->value());
-        } else if (typeName == "int") {
+        } else if (type_name == "int") {
             auto v = static_cast<const Imf::IntAttribute *>(attr);
             m_metadata.set_long(name, v->value());
-        } else if (typeName == "float") {
+        } else if (type_name == "float") {
             auto v = static_cast<const Imf::FloatAttribute *>(attr);
             m_metadata.set_float(name, Float(v->value()));
-        } else if (typeName == "double") {
+        } else if (type_name == "double") {
             auto v = static_cast<const Imf::DoubleAttribute *>(attr);
             m_metadata.set_float(name, Float(v->value()));
-        } else if (typeName == "v3f") {
+        } else if (type_name == "v3f") {
             auto v = static_cast<const Imf::V3fAttribute *>(attr);
             Imath::V3f vec = v->value();
             m_metadata.set_vector3f(name, Vector3f(vec.x, vec.y, vec.z));
-        } else if (typeName == "m44f") {
+        } else if (type_name == "m44f") {
             auto v = static_cast<const Imf::M44fAttribute *>(attr);
             Matrix4f M;
             for (size_t i = 0; i < 4; ++i)

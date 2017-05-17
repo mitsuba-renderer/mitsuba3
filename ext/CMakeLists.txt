@@ -1,5 +1,5 @@
 # Add a CMake parameter for choosing a desired Python version
-set(MITSUBA_PYTHON_VERSION "" CACHE STRING "Python version to use for compiling the mitsuba-python library")
+set(MTS_PYTHON_VERSION "" CACHE STRING "Python version to use for compiling the mitsuba-python library")
 
 if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/openexr/OpenEXR")
   message(FATAL_ERROR "The Mitsuba dependencies are missing! "
@@ -10,7 +10,7 @@ endif()
 # Try to autodetect Python (can be overridden manually if needed)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/pybind11/tools")
 set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6 3.7)
-find_package(PythonLibsNew ${MITSUBA_PYTHON_VERSION})
+find_package(PythonLibsNew ${MTS_PYTHON_VERSION})
 
 # Find a matching Python interpreter
 if (PYTHONLIBS_FOUND)
@@ -181,5 +181,6 @@ mark_as_advanced(
   WITH_MILITANT WITH_OPENPGM WITH_PERF_TOOL WITH_SODIUM BUILD_SHARED_LIBS
   WITH_TWEETNACL WITH_VMCI ZEROMQ_BUILD_STATIC ZEROMQ_CMAKECONFIG_INSTALL_DIR
   ZEROMQ_INSTALL ZEROMQ_LIBRARY ZMQ_BUILD_FRAMEWORK ZMQ_BUILD_TESTS
-  cocoa_library corevideo_library iokit_library opengl_library
+  SODIUM_FOUND ZEROMQ_BUILD_PERTOOLS cocoa_library corevideo_library
+  iokit_library opengl_library
 )
