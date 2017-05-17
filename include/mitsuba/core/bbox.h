@@ -307,6 +307,8 @@ template <typename Point_> struct BoundingBox {
 
     Point min; ///< Component-wise minimum
     Point max; ///< Component-wise maximum
+
+    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /// Print a string representation of the bounding box

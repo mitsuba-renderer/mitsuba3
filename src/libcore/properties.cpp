@@ -21,7 +21,7 @@ using VariantType = variant<
     ref<Object>
 >;
 
-struct alignas(16) Entry {
+struct alignas(alignof(Transform)) Entry {
     VariantType data;
     bool queried;
 };
@@ -42,7 +42,8 @@ struct SortKey {
 };
 
 struct Properties::PropertiesPrivate {
-    std::map<std::string, Entry, SortKey> entries;
+    using Alloc = enoki::aligned_allocator<std::pair<const std::string, Entry>>;
+    std::map<std::string, Entry, SortKey, Alloc> entries;
     std::string id, plugin_name;
 };
 

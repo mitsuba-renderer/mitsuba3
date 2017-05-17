@@ -1,4 +1,5 @@
 from mitsuba.core import BoundingBox3f as BBox
+from mitsuba.core import float_dtype
 import numpy as np
 
 
@@ -36,9 +37,9 @@ def test01_basics():
     assert (bbox3.corner(5) == [2, 2, 5]).all()
     assert (bbox3.corner(6) == [1, 3, 5]).all()
     assert (bbox3.corner(7) == [2, 3, 5]).all()
-    assert str(bbox1) == "BoundingBox3f[invalid]"
-    assert str(bbox3) == "BoundingBox3f[min = [1, 2, 3]," \
-                         " max = [2, 3, 5]]"
+    assert str(bbox1) == "BoundingBox3%s[invalid]" % float_dtype.char
+    assert str(bbox3) == "BoundingBox3%s[min = [1, 2, 3]," \
+                         " max = [2, 3, 5]]" % float_dtype.char
     bbox4 = BBox.merge(bbox2, bbox3)
     assert (bbox4.min == [0, 1, 2]).all()
     assert (bbox4.max == [2, 3, 5]).all()
@@ -87,6 +88,3 @@ def test03_distance():
     assert BBox([1, 2, 3], [2, 3, 5]).distance([1.5, 2.5, 3.5]) == 0
 
     assert BBox([1, 2, 3], [2, 3, 5]).distance([3, 2.5, 3.5]) == 1
-
-    assert np.abs(BBox([1, 2, 3], [2, 3, 5]).distance(
-        [3, 4, 6]) == np.sqrt(3)) < 1e-6

@@ -33,14 +33,14 @@ def test02_parameter_value():
     assert a.next().as_string() == 'xyz'
 
 
-def test03_parameterMissing():
+def test03_parameter_missing():
     ap = ArgParser()
     ap.add("-a", True)
     with pytest.raises(RuntimeError):
         ap.parse(['mitsuba', '-a'])
 
 
-def test04_parameter_float_and_extraArgs():
+def test04_parameter_float_and_extra_args():
     ap = ArgParser()
     f = ap.add("-f", True)
     other = ap.add("", True)
@@ -51,7 +51,7 @@ def test04_parameter_float_and_extraArgs():
     assert other.count() == 2
 
 
-def test05_longParametersFailure():
+def test05_long_parameters_failure():
     ap = ArgParser()
     i = ap.add("--int", True)
     with pytest.raises(RuntimeError):

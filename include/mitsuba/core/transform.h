@@ -174,6 +174,8 @@ public:
      */
     static Transform look_at(const Point3f &p, const Point3f &t, const Vector3f &u);
 
+    ENOKI_ALIGNED_OPERATOR_NEW()
+
 private:
     Matrix4f m_value, m_inverse;
 };

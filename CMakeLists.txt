@@ -120,7 +120,8 @@ else()
   if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     # Quench inlining-related remarks
     add_compile_options("-wd11074" "-wd11076")
-  else()
+  endif()
+  if (NOT MTS_DOUBLE_PRECISION)
     # Be extra noisy about unintended float->double conversions
     add_compile_options("-Wdouble-promotion")
   endif()
@@ -255,6 +256,7 @@ if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clan
     try_compile(HAS_LTO
       ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp
       ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c)
+    set(HAS_LTO OFF)
 
     if (HAS_LTO)
       message(STATUS "Mitsuba: LTO support enabled.")
@@ -314,8 +316,10 @@ endif()
 
 if (MTS_DOUBLE_PRECISION)
   add_definitions(-DDOUBLE_PRECISION)
+  message(STATUS "Mitsuba: Compiling using double precision.")
 else()
   add_definitions(-DSINGLE_PRECISION)
+  message(STATUS "Mitsuba: Compiling using single precision.")
 endif()
 
 # Get the current working branch

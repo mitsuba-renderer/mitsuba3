@@ -23,11 +23,11 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 template <typename Type_, size_t Size_>
-struct Color : enoki::StaticArrayImpl<Type_, Size_, true,
+struct Color : enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
                                        RoundingMode::Default,
                                        Color<Type_, Size_>> {
 
-    using Base = enoki::StaticArrayImpl<Type_, Size_, true,
+    using Base = enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
                                         RoundingMode::Default,
                                         Color<Type_, Size_>>;
 
@@ -68,9 +68,9 @@ using Color3fX = Color<FloatX, 3>;
  * sampling weights often need to be expressed in a spectrally varying manner,
  * and this type also applies to these situations.
  */
-using DiscreteSpectrum  = enoki::Array<Float,  MTS_WAVELENGTH_SAMPLES, true>;
-using DiscreteSpectrumP = enoki::Array<FloatP, MTS_WAVELENGTH_SAMPLES, true>;
-using DiscreteSpectrumX = enoki::Array<FloatX, MTS_WAVELENGTH_SAMPLES, true>;
+using DiscreteSpectrum  = enoki::Array<Float,  MTS_WAVELENGTH_SAMPLES>;
+using DiscreteSpectrumP = enoki::Array<FloatP, MTS_WAVELENGTH_SAMPLES>;
+using DiscreteSpectrumX = enoki::Array<FloatX, MTS_WAVELENGTH_SAMPLES>;
 
 //! @}
 // =======================================================================
@@ -307,7 +307,7 @@ Expr cie1931_y(T lambda) {
 
 template <typename T, typename Expr = expr_t<T>>
 Expr rgb_spectrum(const Color3f &rgb, T lambda) {
-    const float data[54] = {
+    const Float data[54] = {
         0.424537460743542f,  66.59311145791196f,  0.560757618949125f, /* 0: Cyan */
         0.246400896854156f,  79.07867913610922f,  0.216116362841135f,
         0.067666394964209f,  6.865886967165104f,  0.890716186803857f,
@@ -334,7 +334,7 @@ Expr rgb_spectrum(const Color3f &rgb, T lambda) {
         { 1, 0, 2,  9, 45 }, { 0, 2, 1,  0, 36 }
     };
 
-    float diff[6] = { rgb.r() - rgb.g(), rgb.g() - rgb.b(), rgb.b() - rgb.r() };
+    Float diff[6] = { rgb.r() - rgb.g(), rgb.g() - rgb.b(), rgb.b() - rgb.r() };
     diff[3] = -diff[0]; diff[4] = -diff[1]; diff[5] = -diff[2];
 
     const uint8_t *e = cases[
@@ -344,13 +344,13 @@ Expr rgb_spectrum(const Color3f &rgb, T lambda) {
 
     Expr t = (lambda - 380.f) * (1.f / (780.f - 380.f));
 
-    const float *g0 = data + e[3];
+    const Float *g0 = data + e[3];
     Expr g0_0 = g0[2] * exp(-(t - g0[0]) * (t - g0[0]) * g0[1]);
     Expr g0_1 = g0[5] * exp(-(t - g0[3]) * (t - g0[3]) * g0[4]);
     Expr g0_2 = g0[8] * exp(-(t - g0[6]) * (t - g0[6]) * g0[7]);
     Expr g0_s = min(g0_0 + g0_1 + g0_2, Expr(1.f));
 
-    const float *g1 = data + e[4];
+    const Float *g1 = data + e[4];
     Expr g1_0 = g1[2] * exp(-(t - g1[0]) * (t - g1[0]) * g1[1]);
     Expr g1_1 = g1[5] * exp(-(t - g1[3]) * (t - g1[3]) * g1[4]);
     Expr g1_2 = g1[8] * exp(-(t - g1[6]) * (t - g1[6]) * g1[7]);

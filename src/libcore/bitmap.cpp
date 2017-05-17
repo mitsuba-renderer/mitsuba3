@@ -1021,6 +1021,9 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
 
     for (auto it = keys.begin(); it != keys.end(); ++it) {
         Properties::EPropertyType type = metadata.property_type(*it);
+        if (*it == "pixelAspectRatio" || *it == "screenWindowWidth" ||
+            *it == "screenWindowCenter")
+            continue;
 
         switch (type) {
             case Properties::EString:

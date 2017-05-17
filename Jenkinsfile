@@ -16,16 +16,31 @@ pipeline {
                 sh 'mv .gitmodules.bak .gitmodules'
             }
         }
-        stage('Build [release]') {
+        stage('Build [release, single precision]') {
             steps {
                 sh '''export PATH=$PATH:/usr/local/bin
+rm -Rf build
 mkdir -p build
 cd build
-cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DMTS_DOUBLE_PRECISION=OFF ..
 ninja'''
             }
         }
-        stage('Run tests') {
+        stage('Run tests [release, single precision]') {
+            steps {
+                sh '''source ./setpath.sh
+python3.4 -m pytest'''
+            }
+        }
+        stage('Build [debug, double precision]') {
+            steps {
+                sh '''export PATH=$PATH:/usr/local/bin
+ninja clean
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DMTS_DOUBLE_PRECISION=ON ..
+ninja'''
+            }
+        }
+        stage('Run tests [debug, double precision]') {
             steps {
                 sh '''source ./setpath.sh
 python3.4 -m pytest'''

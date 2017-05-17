@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/class.h>
+#include <enoki/alloc.h>
 #include <atomic>
 #include <stdexcept>
 
@@ -66,6 +67,8 @@ public:
      * <tt>MyObject</tt> is the name of the class.
      */
     virtual std::string to_string() const;
+
+    ENOKI_ALIGNED_OPERATOR_NEW()
 
 protected:
     /** \brief Virtual protected deconstructor.

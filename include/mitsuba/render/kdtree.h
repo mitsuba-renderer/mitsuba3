@@ -290,8 +290,10 @@ protected:
         }
     };
 
+#if defined(SINGLE_PRECISION)
     static_assert(sizeof(KDNode) == sizeof(Size) + sizeof(Scalar),
                   "kd-tree node has unexpected size. Padding issue?");
+#endif
 
 protected:
     /// Enumeration representing the state of a classified primitive in the O(N log N) builder

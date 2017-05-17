@@ -142,6 +142,8 @@ template <typename Vector3> struct Frame {
            << "]";
         return os;
     }
+
+    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 NAMESPACE_END(mitsuba)

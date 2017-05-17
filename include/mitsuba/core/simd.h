@@ -14,7 +14,7 @@ using namespace enoki;
 //! @{ \name Static packet data types for vectorization
 // =============================================================
 
-constexpr size_t PacketSize = Array<float>::Size;
+constexpr size_t PacketSize = Array<Float>::Size;
 
 using FloatP        = Array<Float,        PacketSize>;
 using Float16P      = Array<enoki::half,  PacketSize>;

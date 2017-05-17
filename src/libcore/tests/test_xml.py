@@ -29,20 +29,20 @@ def test04_valid_root_node():
     assert type(obj2) is Scene
 
 
-def test05_duplicateID():
+def test05_duplicate_id():
     with pytest.raises(Exception) as e:
         load_string("""
         <scene version="0.4.0">
-            <shape type="ply" id="myID"/>
-            <shape type="ply" id="myID"/>
+            <shape type="ply" id="my_id"/>
+            <shape type="ply" id="my_id"/>
         </scene>
         """)
     e.match('Error while loading "<string>" \(at line 4, col 14\):'
-        ' "shape" has duplicate id "myID" \(previous was at line 3,'
+        ' "shape" has duplicate id "my_id" \(previous was at line 3,'
         ' col 14\)')
 
 
-def test06_reserved_iD():
+def test06_reserved_id():
     with pytest.raises(Exception) as e:
         load_string('<scene version="0.4.0">' +
                    '<shape type="ply" id="_test"/></scene>')

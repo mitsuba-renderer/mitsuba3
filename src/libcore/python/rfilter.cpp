@@ -41,10 +41,10 @@ MTS_PY_EXPORT(rfilter) {
              [](Resampler &resampler, const py::array &source,
                 uint32_t source_stride, py::array &target,
                 uint32_t target_stride, uint32_t channels) {
-                 if (source.dtype() != py::dtype::of<Float>())
+                 if (!source.dtype().is(py::dtype::of<Float>()))
                      throw std::runtime_error(
                          "'source' has an incompatible type!");
-                 if (target.dtype() != py::dtype::of<Float>())
+                 if (!target.dtype().is(py::dtype::of<Float>()))
                      throw std::runtime_error(
                          "'target' has an incompatible type!");
                  if (resampler.source_resolution() * source_stride != source.size())
