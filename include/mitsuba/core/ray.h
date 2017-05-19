@@ -40,6 +40,17 @@ template <typename Point_> struct Ray {
     template <typename T> Ray(const Ray<T> &r)
         : o(r.o), d(r.d), d_rcp(r.d_rcp), mint(r.mint), maxt(r.maxt), time(r.time) { }
 
+    /// Conversion from other Ray types
+    template <typename T> Ray &operator=(const Ray<T> &r) {
+        o = r.o;
+        d = r.d;
+        d_rcp = r.d_rcp;
+        mint = r.mint;
+        maxt = r.maxt;
+        time = r.time;
+        return *this;
+    }
+
     /// Construct a new ray
     Ray(const Point &o, const Vector &d) : o(o), d(d) {
         update();
@@ -118,7 +129,7 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
 template <typename Point>
 std::ostream &operator<<(std::ostream &os,
                          const Ray<Point> &r) {
-    os << "Ray" << type_suffix<typename Point::Value>() << "[\n"
+    os << "Ray" << type_suffix<Point>() << "[\n"
        << "  o = " << r.o << ","
        << "  d = " << r.d << ","
        << "  mint = " << r.mint << ","
