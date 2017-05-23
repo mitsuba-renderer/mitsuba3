@@ -558,13 +558,21 @@ static const char *__doc_mitsuba_Bitmap_pixel_format = R"doc(Return the pixel fo
 
 static const char *__doc_mitsuba_Bitmap_read = R"doc(Read a file from a stream)doc";
 
+static const char *__doc_mitsuba_Bitmap_read_bmp = R"doc(Read a file encoded using the BMP file format)doc";
+
 static const char *__doc_mitsuba_Bitmap_read_jpeg = R"doc(Read a file encoded using the JPEG file format)doc";
 
 static const char *__doc_mitsuba_Bitmap_read_openexr = R"doc(Read a file encoded using the OpenEXR file format)doc";
 
+static const char *__doc_mitsuba_Bitmap_read_pfm = R"doc(Read a file encoded using the PFM file format)doc";
+
 static const char *__doc_mitsuba_Bitmap_read_png = R"doc(Read a file encoded using the PNG file format)doc";
 
 static const char *__doc_mitsuba_Bitmap_read_ppm = R"doc(Read a file encoded using the PPM file format)doc";
+
+static const char *__doc_mitsuba_Bitmap_read_rgbe = R"doc(Read a file encoded using the RGBE file format)doc";
+
+static const char *__doc_mitsuba_Bitmap_read_tga = R"doc(Read a file encoded using the TGA file format)doc";
 
 static const char *__doc_mitsuba_Bitmap_rebuild_struct = R"doc(Rebuild the 'm_struct' field based on the pixel format etc.)doc";
 
@@ -651,6 +659,8 @@ static const char *__doc_mitsuba_Bitmap_uint8_data = R"doc(Return a pointer to t
 
 static const char *__doc_mitsuba_Bitmap_uint8_data_2 = R"doc(Return a pointer to the underlying data (const))doc";
 
+static const char *__doc_mitsuba_Bitmap_vflip = R"doc(Vertically flip the bitmap)doc";
+
 static const char *__doc_mitsuba_Bitmap_width = R"doc(Return the bitmap's width in pixels)doc";
 
 static const char *__doc_mitsuba_Bitmap_write =
@@ -713,9 +723,13 @@ static const char *__doc_mitsuba_Bitmap_write_jpeg = R"doc(Save a file using the
 
 static const char *__doc_mitsuba_Bitmap_write_openexr = R"doc(Write a file using the OpenEXR file format)doc";
 
+static const char *__doc_mitsuba_Bitmap_write_pfm = R"doc(Save a file using the PFM file format)doc";
+
 static const char *__doc_mitsuba_Bitmap_write_png = R"doc(Save a file using the PNG file format)doc";
 
 static const char *__doc_mitsuba_Bitmap_write_ppm = R"doc(Save a file using the PPM file format)doc";
+
+static const char *__doc_mitsuba_Bitmap_write_rgbe = R"doc(Save a file using the RGBE file format)doc";
 
 static const char *__doc_mitsuba_BoundingBox =
 R"doc(Generic n-dimensional bounding box data structure
@@ -814,9 +828,29 @@ static const char *__doc_mitsuba_BoundingBox_min = R"doc(< Component-wise minimu
 
 static const char *__doc_mitsuba_BoundingBox_minor_axis = R"doc(Return the dimension index with the shortest associated side length)doc";
 
+static const char *__doc_mitsuba_BoundingBox_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_delete_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_BoundingBox_operator_eq = R"doc(Test for equality against another bounding box)doc";
 
 static const char *__doc_mitsuba_BoundingBox_operator_ne = R"doc(Test for inequality against another bounding box)doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingBox_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BoundingBox_overlaps =
 R"doc(Check two axis-aligned bounding boxes for possible overlap.
@@ -1480,9 +1514,29 @@ return the squared cosine of the angle between the normal and v)doc";
 
 static const char *__doc_mitsuba_Frame_n = R"doc()doc";
 
+static const char *__doc_mitsuba_Frame_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_delete_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Frame_operator_eq = R"doc(Equality test)doc";
 
 static const char *__doc_mitsuba_Frame_operator_ne = R"doc(Inequality test)doc";
+
+static const char *__doc_mitsuba_Frame_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_s = R"doc()doc";
 
@@ -1978,6 +2032,26 @@ static const char *__doc_mitsuba_Object_inc_ref = R"doc(Increase the object's re
 
 static const char *__doc_mitsuba_Object_m_ref_count = R"doc()doc";
 
+static const char *__doc_mitsuba_Object_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Object_operator_new_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_Object_ref_count = R"doc(Return the current reference count)doc";
 
 static const char *__doc_mitsuba_Object_to_string =
@@ -2420,6 +2494,8 @@ static const char *__doc_mitsuba_Ray_mint = R"doc(< Minimum position on the ray 
 
 static const char *__doc_mitsuba_Ray_o = R"doc(< Ray origin)doc";
 
+static const char *__doc_mitsuba_Ray_operator_assign = R"doc(Conversion from other Ray types)doc";
+
 static const char *__doc_mitsuba_Ray_operator_call = R"doc(Return the position of a point along the ray)doc";
 
 static const char *__doc_mitsuba_Ray_reverse = R"doc(Return a ray that points into the opposite direction)doc";
@@ -2756,7 +2832,15 @@ delegating to the appropriate ``serialization_helper``.
 
 Endianness swapping is handled automatically if needed.)doc";
 
+static const char *__doc_mitsuba_Stream_read_array =
+R"doc(Reads multiple objects of type T from the stream at the current
+position by delegating to the appropriate ``serialization_helper``.
+
+Endianness swapping is handled automatically if needed.)doc";
+
 static const char *__doc_mitsuba_Stream_read_line = R"doc(Convenience function for reading a line of text from an ASCII file)doc";
+
+static const char *__doc_mitsuba_Stream_read_token = R"doc(Convenience function for reading a contiguous token from an ASCII file)doc";
 
 static const char *__doc_mitsuba_Stream_seek =
 R"doc(Seeks to a position inside the stream.
@@ -2802,7 +2886,19 @@ delegating to the appropriate ``serialization_helper``.
 
 Endianness swapping is handled automatically if needed.)doc";
 
+static const char *__doc_mitsuba_Stream_write_array =
+R"doc(Reads multiple objects of type T from the stream at the current
+position by delegating to the appropriate ``serialization_helper``.
+
+Endianness swapping is handled automatically if needed.)doc";
+
 static const char *__doc_mitsuba_Stream_write_line = R"doc(Convenience function for writing a line of text to an ASCII file)doc";
+
+static const char *__doc_mitsuba_Stream_write_temp =
+R"doc(Reads one object of type T from the stream at the current position by
+delegating to the appropriate ``serialization_helper``.
+
+Endianness swapping is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_Struct =
 R"doc(Descriptor for specifying the contents and in-memory layout of a POD-
@@ -3671,9 +3767,9 @@ static const char *__doc_mitsuba_ThreadLocalBase_get_2 =
 R"doc(Return the data value associated with the current thread (const
 version))doc";
 
-static const char *__doc_mitsuba_ThreadLocalBase_m_constructFunctor = R"doc()doc";
+static const char *__doc_mitsuba_ThreadLocalBase_m_construct_functor = R"doc()doc";
 
-static const char *__doc_mitsuba_ThreadLocalBase_m_destructFunctor = R"doc()doc";
+static const char *__doc_mitsuba_ThreadLocalBase_m_destruct_functor = R"doc()doc";
 
 static const char *__doc_mitsuba_ThreadLocalBase_register_thread =
 R"doc(A new thread was started -- set up local TLS data structures. Returns
@@ -3862,6 +3958,18 @@ static const char *__doc_mitsuba_Transform_m_value = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_matrix = R"doc(Return the underlying 4x4 matrix)doc";
 
+static const char *__doc_mitsuba_Transform_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_delete_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Transform_operator_eq = R"doc(Equality comparison operator)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul = R"doc(Concatenate transformations)doc";
@@ -3875,6 +3983,14 @@ static const char *__doc_mitsuba_Transform_operator_mul_4 = R"doc(Transform a 3D
 static const char *__doc_mitsuba_Transform_operator_mul_5 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
 
 static const char *__doc_mitsuba_Transform_operator_ne = R"doc(Inequality comparison operator)doc";
+
+static const char *__doc_mitsuba_Transform_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_orthographic =
 R"doc(Create an orthographic transformation, which maps Z to [0,1] and
