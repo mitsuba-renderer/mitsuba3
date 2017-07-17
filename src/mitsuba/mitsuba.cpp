@@ -102,6 +102,17 @@ int main(int argc, char *argv[]) {
     auto arg_help = parser.add(StringVec { "-h", "--help" });
     auto arg_extra = parser.add("", true);
 
+#if defined(__AVX512ER__) && defined(__LINUX__)
+    if (getenv("LD_PREFER_MAP_32BIT_EXEC") == nullptr) {
+        std::cerr << "Warning: It is strongly recommended that you set the LD_PREFER_MAP_32BIT_EXEC" << std::endl
+                  << "environment variable on Xeon Phi machines to avoid misprediction penalties" << std::endl
+                  << "involving function calls across module boundaries (e.g. to plugins)." << std::endl
+                  << "To do so, enter" << std::endl << std::endl
+                  << "   $ export LD_PREFER_MAP_32BIT_EXEC = 1" << std::endl << std::endl
+                  << "before launching Mitsuba." << std::endl << std::endl;
+    }
+#endif
+
     try {
         /* Parse all command line options */
         parser.parse(argc, argv);
