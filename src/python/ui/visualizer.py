@@ -6,8 +6,8 @@ import numpy as np
 
 from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
                      Label, Button, TextBox, CheckBox, ComboBox, Slider,
-                     Alignment, Orientation, GLShader, Arcball, lookAt,
-                     frustum)
+                     Alignment, Orientation, GLShader, Arcball, look_at,
+                     frustum, ortho)
 
 from nanogui import glfw, entypo, gl
 from nanogui import nanovg as nvg
@@ -28,51 +28,51 @@ class WarpVisualizer(Screen):
         super(WarpVisualizer, self).__init__(
             [800, 600], 'Warp visualizer & χ² hypothesis test')
 
-        self.setBackground(Color(0, 0))
+        self.set_background(Color(0, 0))
         window = Window(self, 'Warp tester')
-        window.setPosition([15, 15])
-        window.setLayout(GroupLayout())
+        window.set_position([15, 15])
+        window.set_layout(GroupLayout())
 
         Label(window, 'Input point set', 'sans-bold')
 
         # ---------- First panel
         panel = Widget(window)
-        panel.setLayout(
+        panel.set_layout(
             BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 20))
 
         # Point count slider
         point_count_slider = Slider(panel)
-        point_count_slider.setFixedWidth(55)
-        point_count_slider.setCallback(lambda _: self.refresh())
-        point_count_slider.setRange((10, 20))
-        point_count_slider.setValue(10)
+        point_count_slider.set_fixed_width(55)
+        point_count_slider.set_callback(lambda _: self.refresh())
+        point_count_slider.set_range((10, 20))
+        point_count_slider.set_value(10)
 
         # Companion text box
         point_count_box = TextBox(panel)
-        point_count_box.setFixedSize([80, 25])
+        point_count_box.set_fixed_size([80, 25])
 
         # Selection of sampling strategy
         sample_type_box = ComboBox(
             window, ['Independent', 'Grid', 'Stratified', 'Halton'])
-        sample_type_box.setCallback(lambda _: self.refresh())
+        sample_type_box.set_callback(lambda _: self.refresh())
 
         Label(window, 'Warping method', 'sans-bold')
         warp_type_box = ComboBox(window, [item[0] for item in DISTRIBUTIONS])
-        warp_type_box.setCallback(lambda _: self.refresh_distribution())
+        warp_type_box.set_callback(lambda _: self.refresh_distribution())
 
         # Option to visualize the warped grid
         warped_grid_box = CheckBox(window, 'Visualize warped grid')
-        warped_grid_box.setCallback(lambda _: self.refresh())
+        warped_grid_box.set_callback(lambda _: self.refresh())
 
         # Option to scale the grid according to the density function
         density_box = CheckBox(window, 'Visualize density')
-        density_box.setCallback(lambda _: self.refresh())
+        density_box.set_callback(lambda _: self.refresh())
 
         # Chi-2 test button
         Label(window, 'χ² hypothesis test', 'sans-bold')
         testButton = Button(window, 'Run', entypo.ICON_CHECK)
-        testButton.setBackgroundColor(Color(0, 1., 0., 0.10))
-        testButton.setCallback(lambda: self.run_test())
+        testButton.set_background_color(Color(0, 1., 0., 0.10))
+        testButton.set_callback(lambda: self.run_test())
 
         self.point_count_slider = point_count_slider
         self.point_count_box = point_count_box
@@ -186,66 +186,66 @@ class WarpVisualizer(Screen):
             }
             ''')
         self.histogram_shader.bind()
-        self.histogram_shader.uploadAttrib(
+        self.histogram_shader.upload_attrib(
             "position",
             np.array(
                 [[0, 1, 1, 0], [0, 0, 1, 1]], dtype=np.float32))
-        self.histogram_shader.uploadIndices(
+        self.histogram_shader.upload_indices(
             np.array(
                 [[0, 2], [1, 3], [2, 0]], dtype=np.uint32))
         self.arcball = Arcball()
-        self.arcball.setSize(self.size())
+        self.arcball.set_size(self.size())
         self.pdf_texture = GLTexture()
         self.histogram_texture = GLTexture()
         self.ri = RadicalInverse()
 
         self.refresh_distribution()
 
-    def resizeEvent(self, size):
+    def resize_event(self, size):
         if not hasattr(self, 'arcball'):
             return False
-        self.arcball.setSize(size)
+        self.arcball.set_size(size)
         return True
 
-    def keyboardEvent(self, key, scancode, action, modifiers):
-        if super(WarpVisualizer, self).keyboardEvent(key, scancode, action,
-                                                     modifiers):
+    def keyboard_event(self, key, scancode, action, modifiers):
+        if super(WarpVisualizer, self).keyboard_event(key, scancode, action,
+                                                      modifiers):
             return True
         if key == glfw.KEY_ESCAPE and action == glfw.PRESS:
-            self.setVisible(False)
+            self.set_visible(False)
             return True
         return False
 
-    def mouseMotionEvent(self, p, rel, button, modifiers):
-        if super(Screen, self).mouseMotionEvent(p, rel, button, modifiers):
+    def mouse_motion_event(self, p, rel, button, modifiers):
+        if super(Screen, self).mouse_motion_event(p, rel, button, modifiers):
             return True
         self.arcball.motion(p)
         return True
 
-    def mouseButtonEvent(self, p, button, down, modifiers):
+    def mouse_button_event(self, p, button, down, modifiers):
         if self.test is not None:
             self.test = None
-            self.window.setVisible(True)
+            self.window.set_visible(True)
             return True
         if button == glfw.MOUSE_BUTTON_1 and not down:
             self.arcball.button(p, down)
-        if super(Screen, self).mouseButtonEvent(p, button, down, modifiers):
+        if super(Screen, self).mouse_button_event(p, button, down, modifiers):
             return True
         if button == glfw.MOUSE_BUTTON_1:
             self.arcball.button(p, down)
             return True
         return False
 
-    def drawContents(self):
+    def draw_contents(self):
         if self.test:
             self.draw_test_results()
         else:
             self.draw_point_cloud()
 
     def draw_point_cloud(self):
-        view = lookAt([0, 0, 4], [0, 0, 0], [0, 1, 0])
-        viewAngle, near, far = 30, 0.01, 100
-        fH = np.tan(viewAngle / 360 * np.pi) * near
+        view = look_at([0, 0, 4], [0, 0, 0], [0, 1, 0])
+        view_angle, near, far = 30, 0.01, 100
+        fH = np.tan(view_angle / 360 * np.pi) * near
         fW = fH * self.size()[0] / self.size()[1]
         proj = frustum(-fW, fW, -fH, fH, near, far)
 
@@ -256,15 +256,15 @@ class WarpVisualizer(Screen):
         gl.PointSize(2)
         gl.Enable(gl.DEPTH_TEST)
         self.point_shader.bind()
-        self.point_shader.setUniform('mvp', mvp)
-        self.point_shader.drawArray(gl.POINTS, 0, self.point_count)
+        self.point_shader.set_uniform('mvp', mvp)
+        self.point_shader.draw_array(gl.POINTS, 0, self.point_count)
 
         if self.warped_grid_box.checked():
             gl.Enable(gl.BLEND)
             gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
             self.grid_shader.bind()
-            self.grid_shader.setUniform('mvp', mvp)
-            self.grid_shader.drawArray(gl.LINES, 0, self.line_count)
+            self.grid_shader.set_uniform('mvp', mvp)
+            self.grid_shader.draw_array(gl.LINES, 0, self.line_count)
             gl.Disable(gl.BLEND)
 
     def draw_test_results(self):
@@ -282,8 +282,8 @@ class WarpVisualizer(Screen):
             np.array([2 * spacer + hist_width, voffset]),
             np.array([hist_width, hist_height]), self.pdf_texture)
 
-        c = self.nvgContext()
-        c.BeginFrame(self.size()[0], self.size()[1], self.pixelRatio())
+        c = self.nvg_context()
+        c.BeginFrame(self.size()[0], self.size()[1], self.pixel_ratio())
         c.BeginPath()
         c.Rect(spacer, voffset + hist_height + spacer,
                self.width() - 2 * spacer, 70)
@@ -319,21 +319,21 @@ class WarpVisualizer(Screen):
     def draw_histogram(self, pos, size, tex):
         s = -(pos + 0.25) / size
         e = self.size() / size + s
-        mvp = nanogui.ortho(s[0], e[0], e[1], s[1], -1, 1)
+        mvp = ortho(s[0], e[0], e[1], s[1], -1, 1)
 
         gl.Disable(gl.DEPTH_TEST)
         tex.bind(0)
         self.histogram_shader.bind()
-        self.histogram_shader.setUniform("mvp", mvp)
-        self.histogram_shader.setUniform("tex", 0)
-        self.histogram_shader.drawIndexed(gl.TRIANGLES, 0, 2)
+        self.histogram_shader.set_uniform("mvp", mvp)
+        self.histogram_shader.set_uniform("tex", 0)
+        self.histogram_shader.draw_indexed(gl.TRIANGLES, 0, 2)
         tex.release()
 
     def refresh_distribution(self):
-        distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
+        distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
         settings = distr[3]
         for widget in self.parameter_widgets:
-            self.window.removeChild(widget)
+            self.window.remove_child(widget)
         self.parameter_widgets = []
         self.parameters = []
         self.center = None
@@ -342,35 +342,35 @@ class WarpVisualizer(Screen):
         for name, vrange in settings['parameters']:
             label = Label(None, name, 'sans-bold')
             panel = Widget(None)
-            panel.setLayout(
+            panel.set_layout(
                 BoxLayout(Orientation.Horizontal, Alignment.Middle, 0, 10))
             slider = Slider(panel)
-            slider.setFixedWidth(70)
-            slider.setRange((vrange[0], vrange[1]))
-            slider.setValue(vrange[2])
+            slider.set_fixed_width(70)
+            slider.set_range((vrange[0], vrange[1]))
+            slider.set_value(vrange[2])
             tbox = TextBox(panel)
-            tbox.setFixedSize([80, 25])
-            tbox.setValue("%.2f" % vrange[2])
+            tbox.set_fixed_size([80, 25])
+            tbox.set_value("%.2f" % vrange[2])
             self.parameters.append(vrange[2])
 
             def slider_callback(value, index=index, tbox=tbox):
-                tbox.setValue("%.2f" % value)
+                tbox.set_value("%.2f" % value)
                 self.parameters[index] = value
                 self.refresh()
 
-            slider.setCallback(slider_callback)
+            slider.set_callback(slider_callback)
             self.parameter_widgets += [label, panel]
             index += 1
 
         for index, widget in enumerate(self.parameter_widgets):
-            self.window.addChild(6 + index, widget)
-        self.performLayout()
+            self.window.add_child(6 + index, widget)
+        self.perform_layout()
         self.refresh()
 
     def refresh(self):
         # Look up configuration
-        distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
-        sample_type = self.sample_type_box.selectedIndex()
+        distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
+        sample_type = self.sample_type_box.selected_index()
         sample, pdf = distr[2]
 
         sample_func = lambda *args: sample(*(list(args) + self.parameters))
@@ -387,29 +387,29 @@ class WarpVisualizer(Screen):
         if sample_type == 1 or sample_type == 2:  # Point/Grid
             point_count = sqrt_val * sqrt_val
 
-        self.point_count_slider.setValue(np.log(point_count) / np.log(2.0))
+        self.point_count_slider.set_value(np.log(point_count) / np.log(2.0))
 
         # Update the companion box
-        def formattedPointCount(n):
+        def formatted_point_count(n):
             if n >= 1e6:
-                self.point_count_box.setUnits('M')
+                self.point_count_box.set_units('M')
                 return '{:.2f}'.format(n / (1024 * 1024))
             if n >= 1e3:
-                self.point_count_box.setUnits('K')
+                self.point_count_box.set_units('K')
                 return '{:.2f}'.format(n / (1024))
 
-            self.point_count_box.setUnits(' ')
+            self.point_count_box.set_units(' ')
             return str(n)
 
-        self.point_count_box.setValue(formattedPointCount(point_count))
+        self.point_count_box.set_value(formatted_point_count(point_count))
 
-        self.warped_grid_box.setEnabled(sample_dim == 2)
+        self.warped_grid_box.set_enabled(sample_dim == 2)
         if not self.warped_grid_box.enabled():
-            self.warped_grid_box.setChecked(False)
+            self.warped_grid_box.set_checked(False)
 
-        self.density_box.setEnabled(self.warped_grid_box.checked())
+        self.density_box.set_enabled(self.warped_grid_box.checked())
         if not self.density_box.enabled():
-            self.density_box.setChecked(False)
+            self.density_box.set_checked(False)
 
         if sample_type == 0:  # Uniform
             samples_in = PCG32().next_float(point_count, sample_dim)
@@ -465,13 +465,13 @@ class WarpVisualizer(Screen):
         samples *= self.scale
 
         self.point_shader.bind()
-        self.point_shader.uploadAttrib('position', samples.T)
+        self.point_shader.upload_attrib('position', samples.T)
         self.point_count = samples.shape[0]
 
         tmp = np.linspace(0, 1, self.point_count)
         colors = np.stack((tmp, 1 - tmp, np.zeros(self.point_count))) \
             .astype(samples.dtype)
-        self.point_shader.uploadAttrib('color', colors)
+        self.point_shader.upload_attrib('color', colors)
 
         if self.warped_grid_box.checked():
             grid = np.linspace(0, 1, sqrt_val + 1)
@@ -501,11 +501,11 @@ class WarpVisualizer(Screen):
             lines *= self.scale
 
             self.grid_shader.bind()
-            self.grid_shader.uploadAttrib('position', lines.T)
+            self.grid_shader.upload_attrib('position', lines.T)
             self.line_count = lines.shape[0]
 
     def run_test(self):
-        distr = DISTRIBUTIONS[self.warp_type_box.selectedIndex()]
+        distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
         domain = distr[1]
         sample, pdf = distr[2]
         settings = distr[3]
@@ -521,7 +521,7 @@ class WarpVisualizer(Screen):
             sample_dim=settings['sample_dim'],
         )
         self.test_result = self.test.run(0.01)
-        self.window.setVisible(False)
+        self.window.set_visible(False)
 
         # Convert the histogram & integrated PDF to normalized textures
         pdf = self.test.pdf
@@ -539,8 +539,8 @@ class WarpVisualizer(Screen):
 if __name__ == '__main__':
     nanogui.init()
     wv = WarpVisualizer()
-    wv.setVisible(True)
-    wv.performLayout()
+    wv.set_visible(True)
+    wv.perform_layout()
     nanogui.mainloop()
     del wv
     gc.collect()

@@ -59,7 +59,7 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
             [](const BBox & bbox, const Ray3fP &ray) {
                 auto result = bbox.ray_intersect(ray);
                 return std::make_tuple(
-                    BoolP(std::get<0>(result)),
+                    std::get<0>(result),
                     std::get<1>(result),
                     std::get<2>(result)
                 );

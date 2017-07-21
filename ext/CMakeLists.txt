@@ -112,11 +112,13 @@ add_subdirectory(tbb)
 set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
 set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include PARENT_SCOPE)
 
-# Build NanoGUI
+# Build nanogui
 set(NANOGUI_BUILD_EXAMPLE OFF CACHE BOOL " " FORCE)
 set(NANOGUI_BUILD_SHARED  ON  CACHE BOOL " " FORCE)
 set(NANOGUI_BUILD_PYTHON  ON  CACHE BOOL " " FORCE)
 set(NANOGUI_INSTALL       OFF CACHE BOOL " " FORCE)
+set(NANOGUI_PYBIND11_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/pybind11" CACHE BOOL " " FORCE)
+set(NANOGUI_ENOKI_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/enoki" CACHE BOOL " " FORCE)
 
 add_subdirectory(nanogui)
 set_property(TARGET glfw glfw_objects nanogui nanogui-obj PROPERTY FOLDER "dependencies")

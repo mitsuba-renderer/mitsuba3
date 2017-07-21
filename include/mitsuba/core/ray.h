@@ -20,7 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Point_> struct Ray {
     using Point                  = Point_;
     using Vector                 = typename Point::Vector;
-    using Value                  = type_t<Point>;
+    using Value                  = value_t<Point>;
     static constexpr size_t Size = Point::Size;
 
     Point o;                     ///< Ray origin
@@ -51,7 +51,7 @@ template <typename Point_> struct Ray {
     void update() { d_rcp = rcp(d); }
 
     /// Return the position of a point along the ray
-    Point operator() (Value t) const { return o + t * d; }
+    Point operator() (Value t) const { return fmadd(d, t, o); }
 };
 
 /** \brief %Ray differential -- enhances the basic ray class with

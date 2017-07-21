@@ -24,10 +24,10 @@ auto bind_position_sample(py::module &m, const char *name) {
 
 MTS_PY_EXPORT(PositionSample) {
     bind_position_sample<Point3f>(m, "PositionSample3f")
-        .def(py::init<>(), D(PositionSample, PositionSample))
-        .def(py::init<Float>(), D(PositionSample, PositionSample, 2))
+        .def(py::init<>())
+        .def(py::init<Float>(), D(PositionSample, PositionSample))
         .def(py::init<const Intersection &, EMeasure>(),
-             D(PositionSample, PositionSample, 3),
+             D(PositionSample, PositionSample, 2),
              "intersection"_a, "measure"_a=ESolidAngle);
 
     bind_position_sample<Point3fX>(m, "PositionSample3fX")
@@ -69,12 +69,12 @@ template <typename Vector3> auto bind_direction_sample(py::module &m, const char
 
 MTS_PY_EXPORT(DirectionSample) {
     bind_direction_sample<Vector3f>(m, "DirectionSample3f")
-        .def(py::init<>(), D(DirectionSample, DirectionSample))
+        .def(py::init<>())
         .def(py::init<const Vector3f &, EMeasure>(),
-             D(DirectionSample, DirectionSample, 2),
+             D(DirectionSample, DirectionSample),
              "d"_a, "measure"_a=ESolidAngle)
         .def(py::init<const Intersection &, EMeasure>(),
-             D(DirectionSample, DirectionSample, 3),
+             D(DirectionSample, DirectionSample, 2),
              "intersection"_a, "measure"_a=ESolidAngle);
 
     bind_direction_sample<Vector3fX>(m, "DirectionSample3fX")
@@ -117,13 +117,11 @@ auto bind_direct_sample(py::module &m, const char *name) {
 
 MTS_PY_EXPORT(DirectSample) {
     bind_direct_sample<Point3f, PositionSample3f>(m, "DirectSample3f")
-        .def(py::init<>(), D(DirectSample, DirectSample))
-        .def(py::init<const Point3f &, Float>(),
-             D(DirectSample, DirectSample, 2))
-        .def(py::init<const Intersection &>(), D(DirectSample, DirectSample, 3))
-        .def(py::init<const MediumSample &>(), D(DirectSample, DirectSample, 4))
-        .def(py::init<const Ray3f &, const Intersection, EMeasure>(),
-             D(DirectSample, DirectSample, 4),
+        .def(py::init<>())
+        .def(py::init<const Point3f &, Float>(), D(DirectSample, DirectSample))
+        .def(py::init<const Intersection &>(), D(DirectSample, DirectSample, 2))
+        .def(py::init<const MediumSample &>(), D(DirectSample, DirectSample, 3))
+        .def(py::init<const Ray3f &, const Intersection, EMeasure>(), D(DirectSample, DirectSample, 4),
              "ray"_a, "intersection"_a, "measure"_a=ESolidAngle);
 
     bind_direct_sample<Point3fX, PositionSample3fX>(m, "DirectSample3fX")

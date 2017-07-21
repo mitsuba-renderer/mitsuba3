@@ -72,12 +72,12 @@ struct Normal : enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_defau
 //           type underlying another given point or vector type
 // =======================================================================
 
-template <typename T> using vector2_t = Vector<type_t<T>, 2>;
-template <typename T> using vector3_t = Vector<type_t<T>, 3>;
-template <typename T> using point2_t  = Point <type_t<T>, 2>;
-template <typename T> using point3_t  = Point <type_t<T>, 3>;
-template <typename T> using normal2_t = Normal<type_t<T>, 2>;
-template <typename T> using normal3_t = Normal<type_t<T>, 3>;
+template <typename T> using vector2_t = Vector<value_t<T>, 2>;
+template <typename T> using vector3_t = Vector<value_t<T>, 3>;
+template <typename T> using point2_t  = Point <value_t<T>, 2>;
+template <typename T> using point3_t  = Point <value_t<T>, 3>;
+template <typename T> using normal2_t = Normal<value_t<T>, 2>;
+template <typename T> using normal3_t = Normal<value_t<T>, 3>;
 
 //! @}
 // =======================================================================

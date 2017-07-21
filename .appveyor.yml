@@ -26,6 +26,8 @@ install:
     $fileContent += "`n-----END RSA PRIVATE KEY-----`n"
     Set-Content c:\users\appveyor\.ssh\id_rsa $fileContent
     (Get-Content .gitmodules).replace('https://github.com/mitsuba-renderer/enoki', 'git@github.com:mitsuba-renderer/enoki.git') | Set-Content .gitmodules
+    git submodule -q update --init
+    (Get-Content ext/nanogui/.gitmodules).replace('https://github.com/mitsuba-renderer/enoki', 'git@github.com:mitsuba-renderer/enoki.git') | Set-Content ext/nanogui/.gitmodules
     git submodule -q update --init --recursive
 - ps: |
       $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"

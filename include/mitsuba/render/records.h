@@ -27,7 +27,7 @@ struct MediumSample { };
 template <typename Point3> struct PositionSample {
     using Point2        = point2_t<Point3>;
     using Normal3       = normal3_t<Point3>;
-    using Value         = type_t<Point3>;
+    using Value         = value_t<Point3>;
     using Measure       = like_t<Value, EMeasure>;
     using ObjectPointer = like_t<Value, const Object *>;
     using Intersection  = mitsuba::Intersection; // TODO: support packets of Intersections
@@ -120,7 +120,7 @@ template <typename Point3> struct PositionSample {
  */
 template <typename Vector3>
 struct DirectionSample {
-    using Value         = type_t<Vector3>;
+    using Value         = value_t<Vector3>;
     using Measure      = like_t<Value, EMeasure>;
     using Intersection = mitsuba::Intersection; // TODO: support packets of Intersections
 

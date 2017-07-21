@@ -24,6 +24,10 @@ extern "C" {
 #  pragma clang diagnostic ignored "-Wunused-parameter"
 #endif
 
+#if defined(_MSC_VER)
+#   pragma warning(disable : 4611) // interaction between '_setjmp' and C++ object destruction is non-portable
+#endif
+
 #include <ImfInputFile.h>
 #include <ImfStandardAttributes.h>
 #include <ImfRgbaYca.h>
@@ -2028,7 +2032,7 @@ void Bitmap::read_bmp(Stream *stream) {
             m_pixel_format, m_component_format);
 
         size_t row_size = size / m_size.y();
-        size_t padding = -row_size & 3;
+        size_t padding = (size_t) (-(ssize_t) row_size & 3);
         bool do_vflip = height > 0;
         uint8_t *ptr = uint8_data();
 
@@ -2039,7 +2043,7 @@ void Bitmap::read_bmp(Stream *stream) {
         }
 
         if (m_pixel_format == ERGB || m_pixel_format == ERGBA) {
-            int channels = channel_count();
+            size_t channels = channel_count();
             for (size_t i = 0; i < size; i += channels)
                 std::swap(ptr[i], ptr[i+2]);
         }

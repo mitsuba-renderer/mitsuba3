@@ -1,8 +1,5 @@
 #include <mitsuba/core/spline.h>
-#include <Eigen/Core>
 #include <mitsuba/python/python.h>
-/* Dynamic vectors */
-typedef Eigen::Matrix<Float, Eigen::Dynamic, 1> VectorX;
 
 MTS_PY_EXPORT(spline) {
     MTS_PY_IMPORT_MODULE(spline, "mitsuba.core.spline");

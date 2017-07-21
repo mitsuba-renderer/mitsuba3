@@ -91,10 +91,15 @@ template <typename T> std::string type_suffix() {
     std::string id = std::to_string(array_size<T>::value);
 
     if (std::is_floating_point<B>::value) {
-        if (std::is_same<B, double>::value)
-            id += 'd';
-        else
-            id += 'f';
+        if (std::is_same<B, enoki::half>::value) {
+            id += 'h';
+        } else {
+            #if defined(SINGLE_PRECISION)
+                id += std::is_same<B, float>::value ? 'f' : 'd';
+            #else
+                id += std::is_same<B, double>::value ? 'f' : 's';
+            #endif
+        }
     } else {
         if (std::is_signed<B>::value)
             id += 'i';

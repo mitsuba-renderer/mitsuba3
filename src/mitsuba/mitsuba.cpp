@@ -44,18 +44,19 @@ static std::string isa_info() {
     std::ostringstream oss;
 
     oss << "Instruction sets enabled:";
-    if (enoki::has_avx512dq) oss << " avx512dq";
-    if (enoki::has_avx512bw) oss << " avx512bw";
-    if (enoki::has_avx512vl) oss << " avx512vl";
-    if (enoki::has_avx512er) oss << " avx512eri";
-    if (enoki::has_avx512pf) oss << " avx512pfi";
-    if (enoki::has_avx512cd) oss << " avx512cdi";
-    if (enoki::has_avx512f)  oss << " avx512f";
-    if (enoki::has_avx2)     oss << " avx2";
-    if (enoki::has_avx)      oss << " avx";
-    if (enoki::has_fma)      oss << " fma";
-    if (enoki::has_f16c)     oss << " f16c";
-    if (enoki::has_sse42)    oss << " sse4.2";
+    if (enoki::has_avx512f)         oss << " avx512f";
+    if (enoki::has_avx512cd)        oss << " avx512cd";
+    if (enoki::has_avx512dq)        oss << " avx512dq";
+    if (enoki::has_avx512vl)        oss << " avx512vl";
+    if (enoki::has_avx512bw)        oss << " avx512bw";
+    if (enoki::has_avx512pf)        oss << " avx512pf";
+    if (enoki::has_avx512er)        oss << " avx512er";
+    if (enoki::has_avx512vpopcntdq) oss << " avx512vpopcntdq";
+    if (enoki::has_avx2)            oss << " avx2";
+    if (enoki::has_avx)             oss << " avx";
+    if (enoki::has_fma)             oss << " fma";
+    if (enoki::has_f16c)            oss << " f16c";
+    if (enoki::has_sse42)           oss << " sse4.2";
 
     return oss.str();
 }

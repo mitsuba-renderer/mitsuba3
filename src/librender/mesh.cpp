@@ -31,8 +31,8 @@ Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
     check_field(face_struct,   1, "i1", struct_traits<Index>::value);
     check_field(face_struct,   2, "i2", struct_traits<Index>::value);
 
-    m_vertex_size = m_vertex_struct->size();
-    m_face_size = m_face_struct->size();
+    m_vertex_size = (Size) m_vertex_struct->size();
+    m_face_size = (Size) m_face_struct->size();
 
     m_vertices = VertexHolder(
         (uint8_t *) enoki::alloc((vertex_count + 1) * m_vertex_size));

@@ -12,6 +12,8 @@ pipeline {
         stage('Clone dependencies') {
             steps {
                 sh 'sed -i.bak "s/https:\\/\\/github.com\\/mitsuba-renderer\\/enoki/git@github.com:mitsuba-renderer\\/enoki.git/g" .gitmodules'
+                sh 'git submodule update --init'
+                sh 'sed -i.bak "s/https:\\/\\/github.com\\/mitsuba-renderer\\/enoki/git@github.com:mitsuba-renderer\\/enoki.git/g" ext/nanogui/.gitmodules'
                 sh 'git submodule update --init --recursive'
                 sh 'mv .gitmodules.bak .gitmodules'
             }
