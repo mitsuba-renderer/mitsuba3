@@ -142,7 +142,7 @@ public:
     template <typename Scalar,
               typename Index = uint_array_t<Scalar>,
               typename Mask = mask_t<Scalar>>
-    Index sample(Scalar sample_value) const {
+    Index sample(Scalar sample_value, Mask active = Mask(true)) const {
         // Note that the search range is adjusted to exclude entries at the
         // beginning and end of the distribution that have probability 0.0.
         // Otherwise we might return a indices that have no probability mass (in
@@ -152,7 +152,7 @@ public:
             [this, sample_value](Index indices, Mask active) {
                return gather<Scalar>(m_cdf.data(), indices, active) <= sample_value;
             },
-            Mask(true)
+            active
         );
     }
 
@@ -165,10 +165,12 @@ public:
      *     A pair with (the discrete index associated with the sample, probability
      *     value of the sample).
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>>
-    std::pair<Index, Scalar> sample_pdf(Scalar sample_value) const {
-        Index index = sample(sample_value);
-        return std::make_pair(index, operator[](index));
+    template <typename Scalar, typename Index = uint_array_t<Scalar>,
+              typename Mask = mask_t<Scalar>>
+    std::pair<Index, Scalar> sample_pdf(Scalar sample_value, Mask active = Mask(true)) const {
+        Index index = sample(sample_value, active);
+        return std::make_pair(index, gather<Scalar>(m_cdf.data(), index + 1, active) -
+                                     gather<Scalar>(m_cdf.data(), index, active));
     }
 
     /**
@@ -176,21 +178,20 @@ public:
      *
      * The original sample is value adjusted so that it can be "reused".
      *
-     * \param[in,out] sample_value
+     * \param sample_value
      *     A uniformly distributed sample on [0,1]
-     * \return
-     *     The discrete index associated with the sample
      *
-     * \note In the Python API, the rescaled sample value is returned in second position.
+     * \return
+     *     The discrete index associated with the sample and the re-scaled sample value
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>>
-    Index sample_reuse(Scalar *sample_value) const {
-        const auto s = *sample_value;
-        const auto index = sample(s);
-        const auto cdf_value = gather<Scalar>(m_cdf.data(), index);
-        *sample_value = (s - cdf_value) /
-                        (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value);
-        return index;
+    template <typename Scalar, typename Index = uint_array_t<Scalar>,
+              typename Mask = mask_t<Scalar>>
+    std::pair<Index, Scalar> sample_reuse(Scalar sample_value, Mask active = Mask(true)) const {
+        Index index = sample(sample_value, active);
+        Scalar cdf_value = gather<Scalar>(m_cdf.data(), index);
+        return std::make_pair(
+            index, (sample_value - cdf_value) /
+                       (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value));
     }
 
     /**
@@ -198,22 +199,29 @@ public:
      *
      * The original sample is value adjusted so that it can be "reused".
      *
-     * \param[in,out] sample_value
+     * \param sample_value
      *     A uniformly distributed sample on [0,1]
      *
      * \return
-     *     A pair with (the discrete index associated with the sample, probability
-     *     value of the sample).
-     * \note In the Python API, the rescaled sample value is returned in third position.
+     *     A tuple containing
+     *
+     *     1. the discrete index associated with the sample
+     *     2. the probability value of the sample
+     *     3. the re-scaled sample value
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>>
-    std::pair<Index, Scalar> sample_reuse_pdf(Scalar *sample_value) const {
-        const auto s = *sample_value;
-        const auto res = sample_pdf(s);
-        const auto cdf_value = gather<Scalar>(m_cdf.data(), res.first);
-        *sample_value = (s - cdf_value) /
-                        (gather<Scalar>(m_cdf.data(), res.first + 1) - cdf_value);
-        return res;
+    template <typename Scalar, typename Index = uint_array_t<Scalar>,
+              typename Mask = mask_t<Scalar>>
+    std::tuple<Index, Scalar, Scalar>
+    sample_reuse_pdf(Scalar sample_value, Mask active = Mask(true)) const {
+        Index index;
+        Scalar pdf;
+        std::tie(index, pdf) = sample_pdf(sample_value, active);
+        Scalar cdf_value = gather<Scalar>(m_cdf.data(), index);
+
+        return std::make_tuple(
+            index, pdf,
+            (sample_value - cdf_value) /
+                (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value));
     }
 
 private:

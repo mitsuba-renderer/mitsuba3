@@ -115,15 +115,15 @@ def test05_sample_reuse_pdf():
         _get_example_distribution(True, pdf_values)]
     for d in distributions:
         assert(d.size() == len(pdf_values))
-        assert(d.sample_reuse_pdf(0.00) == (2, 0.00, 0.25))
-        assert(d.sample_reuse_pdf(0.10) == (2, approx(0.10 / 0.25), 0.25))
-        assert(d.sample_reuse_pdf(0.26) == (3, approx(0.01 / 0.25), 0.25))
-        assert(d.sample_reuse_pdf(0.49) == (3, approx(0.24 / 0.25), 0.25))
-        assert(d.sample_reuse_pdf(0.50) == (6, 0.0, 0.50))
-        assert(d.sample_reuse_pdf(0.51) == (6, approx(0.01 / 0.50), 0.50))
-        assert(d.sample_reuse_pdf(0.99) == (6, approx(0.49 / 0.50), 0.50))
-        assert(d.sample_reuse_pdf(0.9999999) == (6, approx(0.4999999 / 0.50), 0.50))
-        assert(d.sample_reuse_pdf(1.0) == (6, approx(1.0), 0.50))
+        assert(d.sample_reuse_pdf(0.00) == (2, 0.25, 0.00))
+        assert(d.sample_reuse_pdf(0.10) == (2, 0.25, approx(0.10 / 0.25)))
+        assert(d.sample_reuse_pdf(0.26) == (3, 0.25, approx(0.01 / 0.25)))
+        assert(d.sample_reuse_pdf(0.49) == (3, 0.25, approx(0.24 / 0.25)))
+        assert(d.sample_reuse_pdf(0.50) == (6, 0.50, 0.0))
+        assert(d.sample_reuse_pdf(0.51) == (6, 0.50, approx(0.01 / 0.50)))
+        assert(d.sample_reuse_pdf(0.99) == (6, 0.50, approx(0.49 / 0.50)))
+        assert(d.sample_reuse_pdf(0.9999999) == (6, 0.50, approx(0.4999999 / 0.50)))
+        assert(d.sample_reuse_pdf(1.0) == (6, 0.50, approx(1.0)))
 
     # Less problematic values (represents common use-case).
     pdf_values = [0.25, 0.30, 0.45]
@@ -132,18 +132,18 @@ def test05_sample_reuse_pdf():
         _get_example_distribution(True, pdf_values)]
     for d in distributions:
         assert(d.size() == len(pdf_values))
-        assert(d.sample_reuse_pdf(0.00) == (0, 0.00, 0.25))
-        assert(d.sample_reuse_pdf(0.10) == (0, approx(0.10 / 0.25), 0.25))
-        assert(d.sample_reuse_pdf(0.25) == (1, approx(0.0), approx(0.30)))
-        assert(d.sample_reuse_pdf(0.26) == (1, approx(0.01 / 0.30), approx(0.30)))
-        assert(d.sample_reuse_pdf(0.49) == (1, approx(0.24 / 0.30), approx(0.30)))
-        assert(d.sample_reuse_pdf(0.50) == (1, approx(0.25 / 0.30), approx(0.30)))
-        assert(d.sample_reuse_pdf(0.51) == (1, approx(0.26 / 0.30), approx(0.30)))
-        assert(d.sample_reuse_pdf(0.55) == (2, approx(0.0), approx(0.45)))
-        assert(d.sample_reuse_pdf(0.56) == (2, approx(0.01 / 0.45), approx(0.45)))
-        assert(d.sample_reuse_pdf(0.99) == (2, approx(0.44 / 0.45), approx(0.45)))
-        assert(d.sample_reuse_pdf(0.9999999) == (2, approx(0.4499999 / 0.45), approx(0.45)))
-        assert(d.sample_reuse_pdf(1.0) == (2, approx(1.0), approx(0.45)))
+        assert(d.sample_reuse_pdf(0.00) == (0, 0.25, 0.00))
+        assert(d.sample_reuse_pdf(0.10) == (0, 0.25,         approx(0.10 / 0.25)))
+        assert(d.sample_reuse_pdf(0.25) == (1, approx(0.30), approx(0.0)))
+        assert(d.sample_reuse_pdf(0.26) == (1, approx(0.30), approx(0.01 / 0.30)))
+        assert(d.sample_reuse_pdf(0.49) == (1, approx(0.30), approx(0.24 / 0.30)))
+        assert(d.sample_reuse_pdf(0.50) == (1, approx(0.30), approx(0.25 / 0.30)))
+        assert(d.sample_reuse_pdf(0.51) == (1, approx(0.30), approx(0.26 / 0.30)))
+        assert(d.sample_reuse_pdf(0.55) == (2, approx(0.45), approx(0.0)))
+        assert(d.sample_reuse_pdf(0.56) == (2, approx(0.45), approx(0.01 / 0.45)))
+        assert(d.sample_reuse_pdf(0.99) == (2, approx(0.45), approx(0.44 / 0.45)))
+        assert(d.sample_reuse_pdf(0.9999999) == (2, approx(0.45), approx(0.4499999 / 0.45)))
+        assert(d.sample_reuse_pdf(1.0) == (2, approx(0.45), approx(1.0)))
 
 def test06_print():
     d = DiscreteDistribution(2)
@@ -173,6 +173,9 @@ def test09_vectorized_sample_pdf():
     pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
     d = _get_example_distribution(False, pdf_values)
 
+    print(d)
+    print(d.sample_pdf([0.0, 0.49, 1.0]))
+
     assert(np.allclose(d.sample_pdf([0.0, 0.49, 1.0]),
                        ([   2,    3,   5],
                         [0.25, 0.25, 0.5])))
@@ -186,11 +189,11 @@ def test10_vectorized_sample_reuse_pdf():
 
     assert(np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0]),
                        ([   2,    3,   5],
-                        [0.00, 0.96, 1.0],
-                        [0.25, 0.25, 0.5])))
-    assert(np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0, 0.24, 0.51]),
+                        [0.25, 0.25, 0.5],
+                        [0.00, 0.96, 1.0])))
+    assert(np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0, 0.24, 0.51], True),
                        ([   2,    3,   5,    2,    5],
-                        [0.00, 0.96, 1.0, 0.96, 0.02],
-                        [0.25, 0.25, 0.5, 0.25, 0.50])))
+                        [0.25, 0.25, 0.5, 0.25, 0.50],
+                        [0.00, 0.96, 1.0, 0.96, 0.02])))
 
 

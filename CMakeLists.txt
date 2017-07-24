@@ -138,6 +138,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
     message(FATAL_ERROR "Unsupported compiler -- Mitsuba requires C++14 support!")
   endif()
 
+  # Disable strict aliasing (causes issues with Enoki)
+  add_compile_options(-fno-strict-aliasing)
+
   # Enable link time optimization and set the default symbol
   # visibility to hidden (very important to obtain small binaries)
   if (U_CMAKE_BUILD_TYPE MATCHES REL)
@@ -295,6 +298,18 @@ if (MTS_ADDRESS_SANITIZER AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
 endif()
 
+# Use memkind library (high-bandwidth memory on Xeon Phi) if available
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/ext/enoki/resources")
+find_package(Memkind QUIET)
+
+if (MEMKIND_FOUND)
+  message(STATUS "Mitsuba: Using memkind library for Enoki heap memory allocation.")
+  include_directories(${MEMKIND_INCLUDE_DIRS})
+  set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} ${MEMKIND_LIBRARIES}")
+  add_definitions(-DENOKI_USE_MEMKIND)
+else()
+  message(STATUS "Mitsuba: Using C library for Enoki heap memory allocation.")
+endif()
 
 # Set platform-specific flags
 if (WIN32)

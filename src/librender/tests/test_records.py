@@ -15,14 +15,15 @@ from mitsuba.render import DirectSample3f, DirectSample3fX
 def test01_position_sample_construction_single():
     record = PositionSample3f()
     record.p = [0, 42, 0]
-    assert np.allclose(record.p, [0, 42, 0])
+    assert np.array_equal(record.p, [0, 42, 0])
     record.n = [0, 0, 0.4]
+    record.uv = [1, 2]
     record.pdf = 0.002
     record.measure = EArea
     assert str(record) == """PositionSample3f[
   p = [0, 42, 0],
   n = [0, 0, 0.4],
-  uv = [0, 0],
+  uv = [1, 2],
   time = 0,
   pdf = 0.002,
   measure = area,
@@ -31,7 +32,7 @@ def test01_position_sample_construction_single():
 
     # Time constructor
     record = PositionSample3f(50.5)
-    assert record.time == 50.5 and np.allclose(record.uv, [0, 0])
+    assert record.time == 50.5 and np.array_equal(record.uv, [0, 0])
 
     # TODO: test (Intersection, Measure) constructor
 

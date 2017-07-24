@@ -30,7 +30,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   qmc.cpp
   spline.cpp
   cast.cpp
-  ddistribution.cpp
+  ddistr.cpp
   rfilter.cpp
 )
 

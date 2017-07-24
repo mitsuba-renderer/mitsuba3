@@ -1,4 +1,4 @@
-#include <mitsuba/core/ddistribution.h>
+#include <mitsuba/core/ddistr.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(DiscreteDistribution) {
@@ -27,41 +27,31 @@ MTS_PY_EXPORT(DiscreteDistribution) {
 
         // ---------------------------------------------------------------------
 
-        .def("sample", &DiscreteDistribution::sample<Float>,
+        .def("sample", [](const DiscreteDistribution &d, Float arg) { return d.sample(arg); },
              "sample_value"_a, D(DiscreteDistribution, sample))
         .def("sample", vectorize_wrapper(&DiscreteDistribution::sample<FloatP>),
-             "sample_value"_a)
-
-        .def("sample_pdf", &DiscreteDistribution::sample_pdf<Float>,
-             "sample_value"_a, D(DiscreteDistribution, sample_pdf))
-        .def("sample_pdf", vectorize_wrapper(&DiscreteDistribution::sample_pdf<FloatP>),
-             "sample_value"_a)
+             "sample_value"_a, "active"_a = true)
 
         // ---------------------------------------------------------------------
 
-        .def("sample_reuse", [](const DiscreteDistribution &d, Float s) {
-            const auto res = d.sample_reuse(&s);
-            return std::make_pair(res, s);
-        }, "sample_value"_a, D(DiscreteDistribution, sample_reuse))
+        .def("sample_pdf", [](const DiscreteDistribution &d, Float arg) { return d.sample_pdf(arg); },
+             "sample_value"_a, D(DiscreteDistribution, sample_pdf))
+        .def("sample_pdf", vectorize_wrapper(&DiscreteDistribution::sample_pdf<FloatP>),
+             "sample_value"_a, "active"_a = true)
 
-        .def("sample_reuse", vectorize_wrapper(
-            [](const DiscreteDistribution &d, FloatP s) {
-                const auto res = d.sample_reuse(&s);
-                return std::make_pair(res, s);
-            }
-        ), "sample_value"_a)
+        // ---------------------------------------------------------------------
 
-        .def("sample_reuse_pdf", [](const DiscreteDistribution &d, Float s) {
-            const auto res = d.sample_reuse_pdf(&s);
-            return std::make_tuple(res.first, s, res.second);
-        }, "sample_value"_a, D(DiscreteDistribution, sample_reuse_pdf))
+        .def("sample_reuse", [](const DiscreteDistribution &d, Float arg) { return d.sample_reuse(arg); },
+             "sample_value"_a, D(DiscreteDistribution, sample_reuse))
+        .def("sample_reuse", vectorize_wrapper(&DiscreteDistribution::sample_reuse<FloatP>),
+             "sample_value"_a, "active"_a = true)
 
-        .def("sample_reuse_pdf", vectorize_wrapper(
-            [](const DiscreteDistribution &d, FloatP s) {
-                const auto res = d.sample_reuse_pdf(&s);
-                return std::make_tuple(res.first, s, res.second);
-            }
-        ), "sample_value"_a)
+        // ---------------------------------------------------------------------
+
+        .def("sample_reuse_pdf", [](const DiscreteDistribution &d, Float arg) { return d.sample_reuse_pdf(arg); },
+             "sample_value"_a, D(DiscreteDistribution, sample_reuse_pdf))
+        .def("sample_reuse_pdf", vectorize_wrapper(&DiscreteDistribution::sample_reuse_pdf<FloatP>),
+             "sample_value"_a, "active"_a = true)
 
         // ---------------------------------------------------------------------
 

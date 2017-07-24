@@ -32,12 +32,10 @@ MTS_PY_EXPORT(math) {
              vectorize_wrapper(py::overload_cast<int, int, FloatP>(math::legendre_p<FloatP>)),
              "l"_a, "m"_a, "x"_a);
 
-    math.def("legendre_pd",
-             math::legendre_pd<Float>,
+    math.def("legendre_pd", math::legendre_pd<Float>,
              "l"_a, "x"_a, D(math, legendre_pd));
 
-    math.def("legendre_pd",
-            vectorize_wrapper(math::legendre_pd<FloatP>),
+    math.def("legendre_pd", vectorize_wrapper(math::legendre_pd<FloatP>),
             "l"_a, "x"_a);
 
     math.def("legendre_pd_diff",

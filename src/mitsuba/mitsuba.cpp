@@ -58,6 +58,10 @@ static std::string isa_info() {
     if (enoki::has_f16c)            oss << " f16c";
     if (enoki::has_sse42)           oss << " sse4.2";
 
+#if defined(ENOKI_USE_MEMKIND)
+    if (hbw_check_available())      oss << " hbw";
+#endif
+
     return oss.str();
 }
 

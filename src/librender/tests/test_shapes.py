@@ -43,7 +43,7 @@ def test01_create_mesh():
     else:
         assert str(m) == """Mesh[
   name = "MyMesh",
-  bbox = BoundingBox3d[min = [0, 0, 0], max = [0, 1, 1]],
+  bbox = BoundingBox3f[min = [0, 0, 0], max = [0, 1, 1]],
   vertex_struct = Struct[
     float64 x; // @0
     float64 y; // @8

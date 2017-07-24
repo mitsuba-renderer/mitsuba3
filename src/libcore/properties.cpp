@@ -1,3 +1,7 @@
+#if defined(_MSC_VER)
+#  pragma warning (disable: 4324) // warning C4324: 'std::pair<const std::string,mitsuba::Entry>': structure was padded due to alignment specifier
+#endif
+
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/variant.h>
