@@ -84,6 +84,7 @@ std::atomic<uint32_t> WorkerThread::idx{0};
 
 struct Thread::ThreadPrivate {
     std::thread thread;
+    std::thread::native_handle_type native_handle;
     std::string name;
     bool running = false;
     bool critical = false;
@@ -192,7 +193,7 @@ bool Thread::set_priority(EPriority priority) {
         default: factor = 0.0f; break;
     }
 
-    const pthread_t thread_id = d->thread.native_handle();
+    const pthread_t thread_id = d->native_handle;
     struct sched_param param;
     int policy;
     int retval = pthread_getschedparam(thread_id, &policy, &param);
@@ -229,7 +230,7 @@ bool Thread::set_priority(EPriority priority) {
     }
 
     // If the function succeeds, the return value is nonzero
-    const HANDLE handle = d->thread.native_handle();
+    const HANDLE handle = d->native_handle;
     if (SetThreadPriority(handle, win32_priority) == 0) {
         Log(EWarn, "Could not adjust the thread priority to %i: %s!",
             win32_priority, util::last_error());
@@ -254,9 +255,9 @@ void Thread::set_core_affinity(int coreID) {
     cpu_set_t *cpuset = nullptr;
     int retval = 0;
 
-    /* The kernel may expect a larger cpu_set_t than would
-       be warranted by the physical core count. Keep querying with increasingly
-       larger buffers if the pthread_getaffinity_np operation fails */
+    /* The kernel may expect a larger cpu_set_t than would be warranted by the
+       physical core count. Keep querying with increasingly larger buffers if
+       the pthread_getaffinity_np operation fails */
     for (int i = 0; i<10; ++i) {
         size = CPU_ALLOC_SIZE(logical_core_count);
         cpuset = CPU_ALLOC(logical_core_count);
@@ -267,7 +268,7 @@ void Thread::set_core_affinity(int coreID) {
 
         CPU_ZERO_S(size, cpuset);
 
-        int retval = pthread_getaffinity_np(d->thread.native_handle(), size, cpuset);
+        int retval = pthread_getaffinity_np(d->native_handle, size, cpuset);
         if (retval == 0)
             break;
 
@@ -309,7 +310,7 @@ void Thread::set_core_affinity(int coreID) {
     CPU_ZERO_S(size, cpuset);
     CPU_SET_S(actual_core_id, size, cpuset);
 
-    retval = pthread_setaffinity_np(d->thread.native_handle(), size, cpuset);
+    retval = pthread_setaffinity_np(d->native_handle, size, cpuset);
     if (retval) {
         Log(EWarn,
             "Thread::set_core_affinity(): pthread_setaffinity_np: failed: %s",
@@ -321,7 +322,7 @@ void Thread::set_core_affinity(int coreID) {
     CPU_FREE(cpuset);
 #elif defined(__WINDOWS__)
     int core_count = util::core_count();
-    const HANDLE handle = d->thread.native_handle();
+    const HANDLE handle = d->native_handle;
 
     DWORD_PTR mask;
 
@@ -360,6 +361,8 @@ void Thread::start() {
 }
 
 void Thread::dispatch() {
+    d->native_handle = d->thread.native_handle();
+
     ThreadLocalBase::register_thread();
 
     uint32_t id = thread_id++;
@@ -446,18 +449,25 @@ public:
     void on_scheduler_entry(bool) {
         if (ThreadLocalBase::register_thread()) {
             uint32_t id = thread_id++;
+            WorkerThread *thr = new WorkerThread();
             #if defined(__LINUX__) || defined(__OSX__)
+                thr->d->native_handle = pthread_self();
                 pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
             #elif defined(__WINDOWS__)
+                thr->d->native_handle = GetCurrentThread();
                 this_thread_id = id;
             #endif
-            *self = new WorkerThread();
+            thr->d->running = true;
+            *self = thr;
+            thr->set_core_affinity(counter++);
         }
     }
 
     void on_scheduler_exit(bool) {
         ThreadLocalBase::unregister_thread();
     }
+private:
+    std::atomic<uint32_t> counter{0};
 };
 
 static std::unique_ptr<Thread::TaskObserver> observer;
