@@ -396,7 +396,7 @@ def SpectrumAdapter(value):
     def sample_functor(sample, *args):
         plugin = instantiate(args)
         wavelength, weight, pp = plugin.sample(sample)
-        return wavelength[:, 0]
+        return wavelength
 
     def pdf_functor(pdf, *args):
         plugin = instantiate(args)

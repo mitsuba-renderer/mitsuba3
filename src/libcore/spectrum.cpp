@@ -6,30 +6,20 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name DiscreteSpectrum implementation
+//! @{ \name Spectrum implementation (just throws exceptions)
 // =======================================================================
 
-std::tuple<DiscreteSpectrum, DiscreteSpectrum, DiscreteSpectrum>
-ContinuousSpectrum::sample(Float) const {
-    NotImplementedError("sample");
-}
+std::tuple<Spectrumf, Spectrumf, Spectrumf>
+ContinuousSpectrum::sample(const Spectrumf &) const { NotImplementedError("sample"); }
 
-std::tuple<DiscreteSpectrumP, DiscreteSpectrumP, DiscreteSpectrumP>
-ContinuousSpectrum::sample(FloatP) const {
-    NotImplementedError("sample");
-}
+std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
+ContinuousSpectrum::sample(const SpectrumfP &, const Mask &) const { NotImplementedError("sample"); }
 
-DiscreteSpectrum ContinuousSpectrum::pdf(DiscreteSpectrum) const {
-    NotImplementedError("pdf");
-}
+Spectrumf ContinuousSpectrum::pdf(const Spectrumf &) const { NotImplementedError("pdf"); }
 
-DiscreteSpectrumP ContinuousSpectrum::pdf(DiscreteSpectrumP) const {
-    NotImplementedError("pdf");
-}
+SpectrumfP ContinuousSpectrum::pdf(const SpectrumfP &, const Mask &) const { NotImplementedError("pdf"); }
 
-Float ContinuousSpectrum::integral() const {
-    NotImplementedError("integral");
-}
+Float ContinuousSpectrum::integral() const { NotImplementedError("integral"); }
 
 //! @}
 // =======================================================================
@@ -63,42 +53,47 @@ InterpolatedSpectrum::InterpolatedSpectrum(Float lambda_min, Float lambda_max,
     m_normalization = Float(1.0 / accum);
 }
 
-template <typename Value> auto InterpolatedSpectrum::eval(Value lambda) const {
-    using Mask = mask_t<Value>;
-    using Index = int_array_t<Value>;
+template <typename Value>
+ENOKI_INLINE auto InterpolatedSpectrum::eval_impl(Value lambda,
+                                                  mask_t<Value> active) const {
+    using Index = uint_array_t<Value>;
 
     Value t = (lambda - m_lambda_min) * m_inv_interval_size;
-    Mask mask_valid = lambda >= m_lambda_min & lambda <= m_lambda_max;
+    active &= (lambda >= m_lambda_min) & (lambda <= m_lambda_max);
 
     Index i0 = min(max(Index(t), zero<Index>()), Index(m_size_minus_2));
     Index i1 = i0 + 1;
 
-    Value v0 = gather<Value>(m_data.data(), i0, mask_valid);
-    Value v1 = gather<Value>(m_data.data(), i1, mask_valid);
+    Value v0 = gather<Value>(m_data.data(), i0, active);
+    Value v1 = gather<Value>(m_data.data(), i1, active);
 
     Value w1 = t - Value(i0);
     Value w0 = (Float) 1 - w1;
 
-    return (w0 * v0 + w1 * v1) & mask_valid;
+    auto r1 = (w0 * v0 + w1 * v1);
+    auto r2 = r1 & active;
+    return r2;
 }
 
-template <typename Value, typename Float>
-auto InterpolatedSpectrum::sample(Float sample_) const {
+template <typename Value>
+ENOKI_INLINE auto InterpolatedSpectrum::sample_impl(Value sample,
+                                                    mask_t<Value> active) const {
     using Index = int_array_t<Value>;
     using Mask = mask_t<Value>;
 
-    Value sample = sample_shifted<Value>(sample_) * m_cdf[m_cdf.size() - 1];
+    sample *= m_cdf[m_cdf.size() - 1];
 
     Index i0 = math::find_interval(m_cdf.size(),
         [&](Index idx, Mask active) {
             return gather<Value>(m_cdf.data(), idx, active) <= sample;
         },
-        Mask(true)
+        active
     );
+
     Index i1 = i0 + 1;
 
-    Value f0 = gather<Value>(m_data.data(), i0);
-    Value f1 = gather<Value>(m_data.data(), i1);
+    Value f0 = gather<Value>(m_data.data(), i0, active);
+    Value f1 = gather<Value>(m_data.data(), i1, active);
 
     /* Reuse the sample */
     sample = (sample - gather<Value>(m_cdf.data(), i0)) * m_inv_interval_size;
@@ -107,39 +102,39 @@ auto InterpolatedSpectrum::sample(Float sample_) const {
     Value t_linear =
         (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
     Value t_const  = sample / f0;
-    Value t = select(neq(f0, f1), t_linear, t_const);
+    Value t = select(eq(f0, f1), t_const, t_linear);
 
     return std::make_tuple(
         m_lambda_min + (Value(i0) + t) * m_interval_size,
         Value(m_integral),
-        (1 - t) * f0 + t * f1
+        ((1 - t) * f0 + t * f1) * m_normalization
     );
 }
 
-DiscreteSpectrum InterpolatedSpectrum::eval(DiscreteSpectrum lambda) const {
-    return eval<DiscreteSpectrum>(lambda);
+Spectrumf InterpolatedSpectrum::eval(const Spectrumf &lambda) const {
+    return eval_impl(lambda);
 }
 
-DiscreteSpectrumP InterpolatedSpectrum::eval(DiscreteSpectrumP lambda) const {
-    return eval<DiscreteSpectrumP>(lambda);
+SpectrumfP InterpolatedSpectrum::eval(const SpectrumfP &lambda, const Mask &active) const {
+    return eval_impl(lambda, active);
 }
 
-DiscreteSpectrum InterpolatedSpectrum::pdf(DiscreteSpectrum lambda) const {
-    return eval<DiscreteSpectrum>(lambda) * m_normalization;
+Spectrumf InterpolatedSpectrum::pdf(const Spectrumf &lambda) const {
+    return eval_impl(lambda) * m_normalization;
 }
 
-DiscreteSpectrumP InterpolatedSpectrum::pdf(DiscreteSpectrumP lambda) const {
-    return eval<DiscreteSpectrumP>(lambda) * m_normalization;
+SpectrumfP InterpolatedSpectrum::pdf(const SpectrumfP &lambda, const Mask &active) const {
+    return eval_impl(lambda, active) * m_normalization;
 }
 
-std::tuple<DiscreteSpectrum, DiscreteSpectrum, DiscreteSpectrum>
-InterpolatedSpectrum::sample(Float sample_) const {
-    return sample<DiscreteSpectrum>(sample_);
+std::tuple<Spectrumf, Spectrumf, Spectrumf>
+InterpolatedSpectrum::sample(const Spectrumf &sample) const {
+    return sample_impl(sample);
 }
 
-std::tuple<DiscreteSpectrumP, DiscreteSpectrumP, DiscreteSpectrumP>
-InterpolatedSpectrum::sample(FloatP sample_) const {
-    return sample<DiscreteSpectrumP>(sample_);
+std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
+InterpolatedSpectrum::sample(const SpectrumfP &sample, const Mask &active) const {
+    return sample_impl(sample, active);
 }
 
 Float InterpolatedSpectrum::integral() const {
@@ -234,30 +229,16 @@ const Float cie1931_z_data[95] = {
     0.000000000000f, 0.000000000000f, 0.000000000000f
 };
 
-/**
- * Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
- * Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley
- */
-const Float cie1931_fits[7][4] = {
-    {  0.362f, 442.0f, 0.0624f, 0.0374f }, // x0
-    {  1.056f, 599.8f, 0.0264f, 0.0323f }, // x1
-    { -0.065f, 501.1f, 0.0490f, 0.0382f }, // x2
-    {  0.821f, 568.8f, 0.0213f, 0.0247f }, // y0
-    {  0.286f, 530.9f, 0.0613f, 0.0322f }, // y1
-    {  1.217f, 437.0f, 0.0845f, 0.0278f }, // z0
-    {  0.681f, 459.0f, 0.0385f, 0.0725f }  // z1
-};
+template MTS_EXPORT_CORE std::tuple<Spectrumf, Spectrumf, Spectrumf>
+cie1931_xyz(const Spectrumf &lambda, const mask_t<Spectrumf> &);
+template MTS_EXPORT_CORE std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
+cie1931_xyz(const SpectrumfP &lambda, const mask_t<SpectrumfP> &);
 
-template MTS_EXPORT_CORE std::tuple<DiscreteSpectrum, DiscreteSpectrum, DiscreteSpectrum>
-cie1931_xyz(DiscreteSpectrum lambda);
-template MTS_EXPORT_CORE std::tuple<DiscreteSpectrumP, DiscreteSpectrumP, DiscreteSpectrumP>
-cie1931_xyz(DiscreteSpectrumP lambda);
+template MTS_EXPORT_CORE Spectrumf  cie1931_y(const Spectrumf  &lambda, const mask_t<Spectrumf> &);
+template MTS_EXPORT_CORE SpectrumfP cie1931_y(const SpectrumfP &lambda, const mask_t<SpectrumfP> &);
 
-template MTS_EXPORT_CORE DiscreteSpectrum cie1931_y(DiscreteSpectrum lambda);
-template MTS_EXPORT_CORE DiscreteSpectrumP cie1931_y(DiscreteSpectrumP lambda);
-
-template MTS_EXPORT_CORE DiscreteSpectrum  rgb_spectrum(const Color3f &, DiscreteSpectrum lambda);
-template MTS_EXPORT_CORE DiscreteSpectrumP rgb_spectrum(const Color3f &, DiscreteSpectrumP lambda);
+template MTS_EXPORT_CORE Spectrumf  rgb_spectrum(const Color3f &, const Spectrumf  &lambda);
+template MTS_EXPORT_CORE SpectrumfP rgb_spectrum(const Color3f &, const SpectrumfP &lambda);
 
 //! @}
 // =======================================================================

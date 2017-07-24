@@ -83,11 +83,9 @@ public:
         return std::make_pair(cdf, pdf);
     }
 
-    template <typename T, typename Sample>
-    std::tuple<T, T, T> sample_impl(Sample sample_) const {
-        using Mask = mask_t<T>;
-
-        T sample = sample_shifted<T>(sample_) * m_integral + m_integral_min;
+    template <typename T>
+    std::tuple<T, T, T> sample_impl(T sample, mask_t<T> active = true) const {
+        sample = fmadd(sample, m_integral, m_integral_min);
 
         const Float eps        = 1e-5f,
                     eps_domain = eps * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN),
@@ -98,7 +96,6 @@ public:
           t = 0.5f * (MTS_WAVELENGTH_MIN + MTS_WAVELENGTH_MAX),
           value, deriv;
 
-        Mask active(true);
         do {
             /* Fall back to a bisection step when t is out of bounds */
             t = select(!(t > a & t < b) & active, 0.5f * (a + b), t);
@@ -125,23 +122,33 @@ public:
 
         auto pdf = deriv / m_integral;
 
-        return std::make_tuple(t, eval(t) / pdf, pdf);
+        return std::make_tuple(t, eval_impl(t) / pdf, pdf);
     }
 
-    DiscreteSpectrum  eval(DiscreteSpectrum  lambda) const override { return eval_impl(lambda); }
-    DiscreteSpectrumP eval(DiscreteSpectrumP lambda) const override { return eval_impl(lambda); }
-
-    DiscreteSpectrum  pdf(DiscreteSpectrum  lambda) const override { return pdf_impl(lambda); }
-    DiscreteSpectrumP pdf(DiscreteSpectrumP lambda) const override { return pdf_impl(lambda); }
-
-    std::tuple<DiscreteSpectrum, DiscreteSpectrum, DiscreteSpectrum>
-    sample(Float sample) const override {
-        return sample_impl<DiscreteSpectrum>(sample);
+    Spectrumf eval(const Spectrumf &lambda) const override {
+        return eval_impl(lambda);
     }
 
-    std::tuple<DiscreteSpectrumP, DiscreteSpectrumP, DiscreteSpectrumP>
-    sample(FloatP sample) const override {
-        return sample_impl<DiscreteSpectrumP>(sample);
+    SpectrumfP eval(const SpectrumfP &lambda, const Mask &) const override {
+        return eval_impl(lambda);
+    }
+
+    Spectrumf pdf(const Spectrumf &lambda) const override {
+        return pdf_impl(lambda);
+    }
+
+    SpectrumfP pdf(const SpectrumfP &lambda, const Mask &) const override {
+        return pdf_impl(lambda);
+    }
+
+    std::tuple<Spectrumf, Spectrumf, Spectrumf>
+    sample(const Spectrumf &sample) const override {
+        return sample_impl<Spectrumf>(sample);
+    }
+
+    std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
+    sample(const SpectrumfP &sample, const Mask &active) const override {
+        return sample_impl<SpectrumfP>(sample, active);
     }
 
     Float integral() const override { return m_integral; }

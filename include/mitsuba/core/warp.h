@@ -476,7 +476,7 @@ MTS_INLINE Value square_to_beckmann_pdf(Vector3 m, Float alpha) {
 
     Value temp = Frame<Vector3>::tan_theta(m) / alpha,
           ct   = Frame<Vector3>::cos_theta(m),
-          ct2  = ct*ct;
+          ct2  = ct * ct;
 
     Value result =
         exp(-temp * temp) / (Scalar(math::Pi * alpha * alpha) * ct2 * ct);

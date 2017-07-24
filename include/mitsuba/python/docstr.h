@@ -1074,34 +1074,37 @@ static const char *__doc_mitsuba_ContinuousSpectrum_eval_2 = R"doc(Vectorized ve
 static const char *__doc_mitsuba_ContinuousSpectrum_integral =
 R"doc(Return the integral over the spectrum over its support
 
-Not every implementation may provide this function; the default
-implementation throws an exception.
+Not every implementation necessarily provides this function. The
+default implementation throws an exception.
 
 Even if the operation is provided, it may only return an
 approximation.)doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_pdf =
 R"doc(Return the probability distribution of the sample() method as a
-probability per unit wavelength (in nm).
+probability per unit wavelength (in units of 1/nm).
 
-Not every implementation may provide this function; the default
-implementation throws an exception.)doc";
+Not every implementation necessarily provides this function. The
+default implementation throws an exception.)doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_pdf_2 = R"doc(Vectorized version of pdf())doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_sample =
 R"doc(Importance sample the spectral power distribution
 
-Not every implementation may provide this function; the default
-implementation throws an exception.
+Not every implementation necessarily provides this function. The
+default implementation throws an exception.
 
 Parameter ``sample``:
     A uniform variate
 
 Returns:
-    1. Set of sampled wavelengths specified in nanometers 2. The Monte
-    Carlo sampling weight (SPD value divided by the sampling density)
-    3. Sample probability per unit wavelength (in units of 1/nm))doc";
+    1. Set of sampled wavelengths specified in nanometers
+
+2. The Monte Carlo sampling weight (SPD value divided by the sampling
+density)
+
+3. Sample probability per unit wavelength (in units of 1/nm))doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_sample_2 = R"doc(Vectorized version of sample())doc";
 
@@ -1391,25 +1394,26 @@ R"doc(%Transform a uniformly distributed sample to the stored distribution
 
 The original sample is value adjusted so that it can be "reused".
 
-\param[in,out] sample_value A uniformly distributed sample on [0,1]
+Parameter ``sample_value``:
+    A uniformly distributed sample on [0,1]
 
 Returns:
-    The discrete index associated with the sample
-
-\note In the Python API, the rescaled sample value is returned in
-second position.)doc";
+    The discrete index associated with the sample and the re-scaled
+    sample value)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_sample_reuse_pdf =
 R"doc(%Transform a uniformly distributed sample to the stored distribution.
 
 The original sample is value adjusted so that it can be "reused".
 
-\param[in,out] sample_value A uniformly distributed sample on [0,1]
+Parameter ``sample_value``:
+    A uniformly distributed sample on [0,1]
 
 Returns:
-    A pair with (the discrete index associated with the sample,
-    probability value of the sample). \note In the Python API, the
-    rescaled sample value is returned in third position.)doc";
+    A tuple containing
+
+1. the discrete index associated with the sample 2. the probability
+value of the sample 3. the re-scaled sample value)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_size = R"doc(Return the number of entries so far)doc";
 
@@ -1810,7 +1814,21 @@ static const char *__doc_mitsuba_GLTexture_set_interpolation = R"doc(Set the int
 
 static const char *__doc_mitsuba_InterpolatedSpectrum = R"doc(Linear interpolant of a regularly sampled spectrum)doc";
 
-static const char *__doc_mitsuba_InterpolatedSpectrum_InterpolatedSpectrum = R"doc()doc";
+static const char *__doc_mitsuba_InterpolatedSpectrum_InterpolatedSpectrum =
+R"doc(Construct a linearly interpolated spectrum
+
+Parameter ``lambda_min``:
+    Lowest wavelength value associated with a sample
+
+Parameter ``lambda_max``:
+    Largest wavelength value associated with a sample
+
+Parameter ``size``:
+    Number of sample values
+
+Parameter ``data``:
+    Pointer to the sample values. The data is copied, hence there is
+    no need to keep 'data' alive.)doc";
 
 static const char *__doc_mitsuba_InterpolatedSpectrum_class = R"doc()doc";
 
@@ -1818,7 +1836,7 @@ static const char *__doc_mitsuba_InterpolatedSpectrum_eval = R"doc(//! @{ \name 
 
 static const char *__doc_mitsuba_InterpolatedSpectrum_eval_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_InterpolatedSpectrum_eval_3 = R"doc()doc";
+static const char *__doc_mitsuba_InterpolatedSpectrum_eval_impl = R"doc()doc";
 
 static const char *__doc_mitsuba_InterpolatedSpectrum_integral = R"doc()doc";
 
@@ -1848,7 +1866,7 @@ static const char *__doc_mitsuba_InterpolatedSpectrum_sample = R"doc()doc";
 
 static const char *__doc_mitsuba_InterpolatedSpectrum_sample_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_InterpolatedSpectrum_sample_3 = R"doc()doc";
+static const char *__doc_mitsuba_InterpolatedSpectrum_sample_impl = R"doc()doc";
 
 static const char *__doc_mitsuba_Intersection = R"doc()doc";
 
@@ -3028,6 +3046,18 @@ R"doc(Returns the number of sub-primitives that make up this shape
 
 Remark:
     The default implementation simply returns ``1``)doc";
+
+static const char *__doc_mitsuba_Spectrum = R"doc(//! @{ \name Data types for discretized spectral data)doc";
+
+static const char *__doc_mitsuba_Spectrum_Spectrum = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_Spectrum_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_Spectrum_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream =
 R"doc(Abstract seekable stream class
@@ -4415,20 +4445,12 @@ first using ZLib. Throws an exception when not all data could be
 written.)doc";
 
 static const char *__doc_mitsuba_cie1931_xyz =
-R"doc(Compute the CIE 1931 XYZ color matching functions given a wavelength
-in nanometers
-
-Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
-Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley Journal
-of Computer Graphics Techniques Vol 2, No 2, 2013)doc";
+R"doc(Evaluate the CIE 1931 XYZ color matching functions given a wavelength
+in nanometers)doc";
 
 static const char *__doc_mitsuba_cie1931_y =
-R"doc(Compute the CIE 1931 Y color matching function given a wavelength in
-nanometers
-
-Based on "Simple Analytic Approximations to the CIE XYZ Color Matching
-Functions" by Chris Wyman, Peter-Pike Sloan, and Peter Shirley Journal
-of Computer Graphics Techniques Vol 2, No 2, 2013)doc";
+R"doc(Evaluate the CIE 1931 Y color matching function given a wavelength in
+nanometers)doc";
 
 static const char *__doc_mitsuba_class = R"doc()doc";
 

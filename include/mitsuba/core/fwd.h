@@ -45,6 +45,8 @@ template <typename Point>              struct Ray;
 template <typename Point>              struct RayDifferential;
 template <typename Point>              struct BoundingBox;
 template <typename Vector>             struct Frame;
+template <typename Type, size_t Size>  struct Color;
+template <typename Type>               struct Spectrum;
 
 using Vector1f = Vector<Float, 1>;
 using Vector2f = Vector<Float, 2>;

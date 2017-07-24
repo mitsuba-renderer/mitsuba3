@@ -3,9 +3,15 @@ file(GLOB_RECURSE PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURR
 foreach(FNAME ${PYTHON_FILES})
   set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FNAME})
   set(OUT_FILE ${CMAKE_BINARY_DIR}/dist/python/mitsuba/${FNAME})
-  add_custom_command(
-    OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
-    COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE})
+  if (UNIX)
+    add_custom_command(
+      OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
+      COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE} && chmod a=r ${OUT_FILE})
+  else()
+    add_custom_command(
+      OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
+      COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE})
+  endif()
   set(PYTHON_OUTPUT ${PYTHON_OUTPUT} ${OUT_FILE})
 endforeach()
 

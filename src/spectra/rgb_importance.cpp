@@ -27,11 +27,11 @@ public:
         );
     }
 
-    template <typename T, typename Sample>
-    std::tuple<T, T, T> sample_impl(Sample sample) const {
+    template <typename T>
+    std::tuple<T, T, T> sample_impl(T sample) const {
         T lambda = Float(538) -
                    atanh(Float(0.8569106254698279) -
-                         Float(1.8275019724092267) * sample_shifted<T>(sample)) *
+                         Float(1.8275019724092267) * sample) *
                    Float(138.88888888888889);
 
         T pdf = eval_impl(lambda);
@@ -39,20 +39,20 @@ public:
         return std::make_tuple(lambda, T(Float(1)), pdf);
     }
 
-    DiscreteSpectrum  eval(DiscreteSpectrum  lambda) const override { return eval_impl(lambda); }
-    DiscreteSpectrumP eval(DiscreteSpectrumP lambda) const override { return eval_impl(lambda); }
+    Spectrumf  eval(const Spectrumf  &lambda) const override { return eval_impl(lambda); }
+    SpectrumfP eval(const SpectrumfP &lambda, const Mask &) const override { return eval_impl(lambda); }
 
-    DiscreteSpectrum  pdf(DiscreteSpectrum  lambda) const override { return eval_impl(lambda); }
-    DiscreteSpectrumP pdf(DiscreteSpectrumP lambda) const override { return eval_impl(lambda); }
+    Spectrumf  pdf(const Spectrumf  &lambda) const override { return eval_impl(lambda); }
+    SpectrumfP pdf(const SpectrumfP &lambda, const Mask &) const override { return eval_impl(lambda); }
 
-    std::tuple<DiscreteSpectrum, DiscreteSpectrum, DiscreteSpectrum>
-    sample(Float sample) const override {
-        return sample_impl<DiscreteSpectrum>(sample);
+    std::tuple<Spectrumf, Spectrumf, Spectrumf>
+    sample(const Spectrumf &sample) const override {
+        return sample_impl<Spectrumf>(sample);
     }
 
-    std::tuple<DiscreteSpectrumP, DiscreteSpectrumP, DiscreteSpectrumP>
-    sample(FloatP sample) const override {
-        return sample_impl<DiscreteSpectrumP>(sample);
+    std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
+    sample(const SpectrumfP &sample, const Mask &) const override {
+        return sample_impl<SpectrumfP>(sample);
     }
 
     Float integral() const override { return 1.0f; }
