@@ -37,7 +37,7 @@ struct PerThreadData {
 static std::unordered_set<PerThreadData *> ptd_global;
 
 /// Lock to protect ptd_global
-static tbb::mutex pdg_global_lock;
+static tbb::mutex ptd_global_lock;
 
 ThreadLocalBase::ThreadLocalBase(const ConstructFunctor &construct_functor,
                                  const DestructFunctor &destruct_functor)
@@ -48,7 +48,7 @@ ThreadLocalBase::~ThreadLocalBase() {
 }
 
 void ThreadLocalBase::clear() {
-    tbb::mutex::scoped_lock guard(pdg_global_lock);
+    tbb::mutex::scoped_lock guard(ptd_global_lock);
 
     /* For every thread */
     for (auto ptd : ptd_global) {
@@ -117,7 +117,7 @@ void ThreadLocalBase::static_shutdown() {
 }
 
 bool ThreadLocalBase::register_thread() {
-    tbb::mutex::scoped_lock guard(pdg_global_lock);
+    tbb::mutex::scoped_lock guard(ptd_global_lock);
 #if defined(__OSX__)
     PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptd_local);
     if (!ptd) {
@@ -142,14 +142,17 @@ bool ThreadLocalBase::register_thread() {
 }
 
 /// A thread has died -- destroy any remaining TLS entries associated with it
-void ThreadLocalBase::unregister_thread() {
-    tbb::mutex::scoped_lock guard(pdg_global_lock);
+bool ThreadLocalBase::unregister_thread() {
+    tbb::mutex::scoped_lock guard(ptd_global_lock);
 
     #if defined(__OSX__)
         PerThreadData *ptd = (PerThreadData *) pthread_getspecific(ptd_local);
     #else
         PerThreadData *ptd = ptd_local;
     #endif
+    if (!ptd)
+        return false;
+
     ptd->ref_count--;
 
     if (ptd->ref_count == 0) {
@@ -168,6 +171,7 @@ void ThreadLocalBase::unregister_thread() {
             ptd_local = nullptr;
         #endif
     }
+    return true;
 }
 
 NAMESPACE_END(mitsuba)

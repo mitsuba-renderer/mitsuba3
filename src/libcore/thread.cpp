@@ -4,6 +4,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
 #include <tbb/task_scheduler_observer.h>
+#include <condition_variable>
 #include <thread>
 #include <sstream>
 #include <chrono>
@@ -40,11 +41,11 @@ namespace {
         };
     #pragma pack(pop)
 
-    void set_thread_name_(const char* threadName, DWORD dwThreadID = -1) {
+    void set_thread_name_(const char* thread_name, DWORD thread_id = -1) {
         THREADNAME_INFO info;
         info.dwType     = 0x1000;
-        info.szName     = threadName;
-        info.dwThreadID = dwThreadID;
+        info.szName     = thread_name;
+        info.dwThreadID = thread_id;
         info.dwFlags    = 0;
         __try {
             const DWORD MS_VC_EXCEPTION = 0x406D1388;
@@ -87,6 +88,7 @@ struct Thread::ThreadPrivate {
     std::thread::native_handle_type native_handle;
     std::string name;
     bool running = false;
+    bool tbb_thread = false;
     bool critical = false;
     int core_affinity = -1;
     Thread::EPriority priority;
@@ -378,14 +380,13 @@ void Thread::dispatch() {
         set_priority(d->priority);
 
     if (!d->name.empty()) {
-        const std::string threadName = "Mitsuba: " + name();
+        const std::string thread_name = "Mitsuba: " + name();
         #if defined(__LINUX__)
-            pthread_setname_np(pthread_self(), threadName.c_str());
-            // prctl(PR_SET_NAME, threadName.c_str());
+            pthread_setname_np(pthread_self(), thread_name.c_str());
         #elif defined(__OSX__)
-            pthread_setname_np(threadName.c_str());
+            pthread_setname_np(thread_name.c_str());
         #elif defined(__WINDOWS__)
-            set_thread_name_(threadName.c_str());
+            set_thread_name_(thread_name.c_str());
         #endif
     }
 
@@ -458,16 +459,51 @@ public:
                 this_thread_id = id;
             #endif
             thr->d->running = true;
+            thr->d->tbb_thread = true;
             *self = thr;
-            thr->set_core_affinity(counter++);
+
+            uint32_t worker_id;
+            /* critical section */ {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                worker_id = m_started_counter++;
+            }
+
+            const std::string thread_name = tfm::format("tbb_%03i", worker_id);
+            #if defined(__LINUX__)
+                pthread_setname_np(pthread_self(), thread_name.c_str());
+            #elif defined(__OSX__)
+                pthread_setname_np(thread_name.c_str());
+            #elif defined(__WINDOWS__)
+                set_thread_name_(thread_name.c_str());
+            #endif
+
+            thr->set_core_affinity(worker_id);
         }
     }
 
     void on_scheduler_exit(bool) {
+        Thread *thr = *self;
+        if (!thr || !thr->d->tbb_thread)
+            return;
+        thr->d->running = false;
         ThreadLocalBase::unregister_thread();
+        /* critical section */ {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_stopped_counter++;
+            m_cv.notify_all();
+        }
+    }
+
+    void wait() {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        while (m_started_counter != m_stopped_counter)
+            m_cv.wait(lock);
     }
 private:
-    std::atomic<uint32_t> counter{0};
+    uint32_t m_started_counter{0};
+    uint32_t m_stopped_counter{0};
+    std::condition_variable m_cv;
+    std::mutex m_mutex;
 };
 
 static std::unique_ptr<Thread::TaskObserver> observer;
@@ -490,6 +526,7 @@ void Thread::static_initialization() {
 }
 
 void Thread::static_shutdown() {
+    observer->wait();
     observer.reset();
     thread()->d->running = false;
     ThreadLocalBase::unregister_thread();

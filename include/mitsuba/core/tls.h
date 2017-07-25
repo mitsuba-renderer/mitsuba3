@@ -72,7 +72,7 @@ protected:
     static bool register_thread();
 
     /// A thread has died -- destroy any remaining TLS entries associated with it
-    static void unregister_thread();
+    static bool unregister_thread();
 
 private:
     ConstructFunctor m_construct_functor;

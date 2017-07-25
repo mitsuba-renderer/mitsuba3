@@ -6,6 +6,7 @@
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/python/python.h>
+#include <tbb/task_scheduler_init.h>
 
 MTS_PY_DECLARE(filesystem);
 MTS_PY_DECLARE(atomic);
@@ -40,6 +41,8 @@ MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(DiscreteDistribution);
+
+static tbb::task_scheduler_init *tbb_scheduler = nullptr;
 
 PYBIND11_MODULE(mitsuba_core_ext, m_) {
     (void) m_; /* unused */;
@@ -110,7 +113,10 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     MTS_PY_IMPORT(spline);
     MTS_PY_IMPORT(DiscreteDistribution);
 
+    tbb_scheduler = new tbb::task_scheduler_init();
+
     auto cleanup_callback = []() {
+        delete tbb_scheduler;
         Bitmap::static_shutdown();
         Logger::static_shutdown();
         Thread::static_shutdown();
