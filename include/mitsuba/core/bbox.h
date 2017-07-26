@@ -24,8 +24,10 @@ template <typename Point_> struct BoundingBox {
     static constexpr size_t Size = Point_::Size;
 
     using Point  = Point_;
-    using Scalar = value_t<Point>;
+    using Value = value_t<Point>;
     using Vector = typename Point::Vector;
+    using UInt32 = uint32_array_t<Value>;
+    using Mask = mask_t<Value>;
 
     /**
      * \brief Create a new invalid bounding box
@@ -46,12 +48,12 @@ template <typename Point_> struct BoundingBox {
 
     /// Test for equality against another bounding box
     bool operator==(const BoundingBox &bbox) const {
-        return all(eq(min, bbox.min) & eq(max, bbox.max));
+        return all_nested(eq(min, bbox.min) & eq(max, bbox.max));
     }
 
     /// Test for inequality against another bounding box
     bool operator!=(const BoundingBox &bbox) const {
-        return any(neq(min, bbox.min) | neq(max, bbox.max));
+        return any_nested(neq(min, bbox.min) | neq(max, bbox.max));
     }
 
     /**
@@ -63,47 +65,55 @@ template <typename Point_> struct BoundingBox {
      * \endcode
      * holds for each component \c i.
      */
-    bool valid() const {
+    Mask valid() const {
         return all(max >= min);
     }
 
     /// Check whether this bounding box has collapsed to a point, line, or plane
-    bool collapsed() const {
+    Mask collapsed() const {
         return any(eq(min, max));
     }
 
-    /// Return the dimension index with the largest associated side length
-    int major_axis() const {
+    /// Return the dimension index with the index associated side length
+    UInt32 major_axis() const {
         Vector d = max - min;
-        int largest = 0;
-        for (int i = 1; i < int(Size); ++i)
-            if (d[i] > d[largest])
-                largest = i;
-        return largest;
+        UInt32 index(0);
+        expr_t<Value> value = d[0];
+
+        for (uint32_t i = 1; i < Size; ++i) {
+            auto mask = d[i] > value;
+            index = select(mask, i, index);
+            value = select(mask, d[i], value);
+        }
+
+        return index;
     }
 
     /// Return the dimension index with the shortest associated side length
-    int minor_axis() const {
+    UInt32 minor_axis() const {
         Vector d = max - min;
-        int shortest = 0;
-        for (int i = 1; i < int(Size); ++i)
-            if (d[i] < d[shortest])
-                shortest = i;
-        return shortest;
+        UInt32 index(0);
+        Value value = d[0];
+
+        for (uint32_t i = 1; i < Size; ++i) {
+            Mask mask = d[i] < value;
+            index = select(mask, i, index);
+            value = select(mask, d[i], value);
+        }
+
+        return index;
     }
 
     /// Return the center point
     Point center() const {
-        return (max + min) * Scalar(0.5);
+        return (max + min) * Value(0.5);
     }
 
     /**
      * \brief Calculate the bounding box extents
-     * \return max-min
+     * \return <tt>max - min</tt>
      */
-    Vector extents() const {
-        return max - min;
-    }
+    Vector extents() const { return max - min; }
 
     /// Return the position of a bounding box corner
     Point corner(size_t index) const {
@@ -114,25 +124,24 @@ template <typename Point_> struct BoundingBox {
     }
 
     /// Calculate the n-dimensional volume of the bounding box
-    Scalar volume() const { return hprod(max - min); }
+    Value volume() const { return hprod(max - min); }
 
-    /// Calculate the n-1 dimensional volume of the boundary
+    /// Calculate the 2-dimensional surface area of a 3D bounding box
     template <typename T = Point, typename std::enable_if<T::Size == 3, int>::type = 0>
-    Scalar surface_area() const {
-        /* Optimized implementation for Size == 3 */
+    Value surface_area() const {
         Vector d = max - min;
-        return hsum(enoki::shuffle<1, 2, 0>(d) * d) * Scalar(2);
+        return hsum(enoki::shuffle<1, 2, 0>(d) * d) * Value(2);
     }
 
-    /// Calculate the n-1 dimensional volume of the boundary
+    /// General case: calculate the n-1 dimensional volume of the boundary
     template <typename T = Point, typename std::enable_if<T::Size != 3, int>::type = 0>
-    Scalar surface_area() const {
+    Value surface_area() const {
         /* Generic implementation for Size != 3 */
         Vector d = max - min;
 
-        Scalar result = Scalar(0);
+        Value result = Value(0);
         for (size_t i = 0; i <  Size; ++i) {
-            Scalar term = Scalar(1);
+            Value term = Value(1);
             for (size_t j = 0; j < Size; ++j) {
                 if (i == j)
                     continue;
@@ -140,7 +149,7 @@ template <typename Point_> struct BoundingBox {
             }
             result += term;
         }
-        return Scalar(2) * result;
+        return Value(2) * result;
     }
 
     /**
@@ -155,7 +164,7 @@ template <typename Point_> struct BoundingBox {
      *         function parameter with default value \c False.
      */
     template <bool Strict = false>
-    bool contains(const Point &p) const {
+    Mask contains(const Point &p) const {
         if (Strict)
             return all(p > min & p < max);
         else
@@ -207,7 +216,7 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Scalar squared_distance(const Point &p) const {
+    Value squared_distance(const Point &p) const {
         return squared_norm(((p < min) & (min - p)) +
                             ((p > max) & (p - max)));
     }
@@ -217,7 +226,7 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar squared_distance(const BoundingBox &bbox) const {
+    Value squared_distance(const BoundingBox &bbox) const {
         return squared_norm(((bbox.max < min) & (min - bbox.max)) +
                             ((bbox.min > max) & (bbox.min - max)));
     }
@@ -226,7 +235,7 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Scalar distance(const Point &p) const {
+    Value distance(const Point &p) const {
         return std::sqrt(squared_distance(p));
     }
 
@@ -234,7 +243,7 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Scalar distance(const BoundingBox &bbox) const {
+    Value distance(const BoundingBox &bbox) const {
         return std::sqrt(squared_distance(bbox));
     }
 
@@ -246,8 +255,8 @@ template <typename Point_> struct BoundingBox {
      * respectively.
      */
     void reset() {
-        min =  std::numeric_limits<Scalar>::infinity();
-        max = -std::numeric_limits<Scalar>::infinity();
+        min =  std::numeric_limits<Value>::infinity();
+        max = -std::numeric_limits<Value>::infinity();
     }
 
     /// Clip this bounding box to another bounding box
@@ -281,8 +290,8 @@ template <typename Point_> struct BoundingBox {
     MTS_INLINE auto ray_intersect(const Ray &ray) const {
         using Vector = typename Ray::Vector;
         using Point = typename Ray::Point;
-        using Scalar = value_t<Point>;
-        using Mask = mask_t<Scalar>;
+        using Value = value_t<Point>;
+        using Mask = mask_t<Value>;
 
         /* First, ensure that the ray either has a nonzero slope on each axis,
            or that its origin on a zero-valued axis is within the box bounds */
@@ -297,8 +306,8 @@ template <typename Point_> struct BoundingBox {
         Vector t2p = enoki::max(t1, t2);
 
         /* Intersect intervals */
-        Scalar nearT = hmax(t1p);
-        Scalar farT  = hmin(t2p);
+        Value nearT = hmax(t1p);
+        Value farT  = hmin(t2p);
 
         active &= ray.mint <= farT & nearT <= ray.maxt;
 

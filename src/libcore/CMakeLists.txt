@@ -46,6 +46,7 @@ add_library(mitsuba-core-obj OBJECT
   qmc.cpp              ${INC_DIR}/qmc.h
   transform.cpp        ${INC_DIR}/transform.h
   bbox.cpp             ${INC_DIR}/bbox.h
+  bsphere.cpp          ${INC_DIR}/bsphere.h
   spline.cpp           ${INC_DIR}/spline.h
   spectrum.cpp         ${INC_DIR}/spectrum.h
   ddistr.cpp           ${INC_DIR}/ddistr.h

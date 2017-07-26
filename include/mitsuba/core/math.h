@@ -545,10 +545,10 @@ std::tuple<mask_t<Value>, Value, Value> solve_quadratic(Value a, Value b, Value 
 
     /* Initialize solution with that of linear equation */
     Value x0, x1;
-    x0 = x1 = -c * rcp(b);
+    x0 = x1 = -c / b;
 
     /* Check if the quadratic equation is solvable */
-    Value discrim = b * b - Scalar(4) * a * c;
+    Value discrim = fmsub(b, b, Scalar(4) * a * c);
     active &= linear_case | discrim >= 0;
 
     if (likely(any(active))) {
@@ -562,12 +562,13 @@ std::tuple<mask_t<Value>, Value, Value> solve_quadratic(Value a, Value b, Value 
          * precision and then uses the identity x1 * x2 = c / a
          */
         Value temp = -Scalar(0.5) * (b + copysign(sqrt_discrim, b));
-        Value x0p = temp * rcp(a);
-        Value x1p = c * rcp(temp);
+
+        Value x0p = temp / a,
+              x1p = c / temp;
 
         /* Order the results so that x0 < x1 */
-        Value x0m = enoki::min(x0p, x1p);
-        Value x1m = enoki::max(x0p, x1p);
+        Value x0m = min(x0p, x1p),
+              x1m = max(x0p, x1p);
 
         x0 = select(linear_case, x0, x0m);
         x1 = select(linear_case, x0, x1m);

@@ -899,6 +899,30 @@ holds for each component ``i``.)doc";
 
 static const char *__doc_mitsuba_BoundingBox_volume = R"doc(Calculate the n-dimensional volume of the bounding box)doc";
 
+static const char *__doc_mitsuba_BoundingSphere = R"doc(Generic n-dimensional bounding sphere data structure)doc";
+
+static const char *__doc_mitsuba_BoundingSphere_BoundingSphere = R"doc(Construct bounding sphere(s) at the origin having radius zero)doc";
+
+static const char *__doc_mitsuba_BoundingSphere_BoundingSphere_2 =
+R"doc(Create bounding sphere(s) from given center point(s) with given
+size(s))doc";
+
+static const char *__doc_mitsuba_BoundingSphere_center = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_contains = R"doc(Check whether the specified point is inside or on the sphere)doc";
+
+static const char *__doc_mitsuba_BoundingSphere_empty = R"doc(Return whether this bounding sphere has a radius of zero or less.)doc";
+
+static const char *__doc_mitsuba_BoundingSphere_expand = R"doc(Expand the bounding sphere radius to contain another point.)doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_eq = R"doc(Equality test against another bounding sphere)doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_ne = R"doc(Inequality test against another bounding sphere)doc";
+
+static const char *__doc_mitsuba_BoundingSphere_radius = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_ray_intersect = R"doc(Check if ray(s) intersect bounding sphere(s))doc";
+
 static const char *__doc_mitsuba_Class =
 R"doc(Stores meta-information about Object instances.
 
@@ -4809,15 +4833,15 @@ static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 
@@ -4834,6 +4858,8 @@ static const char *__doc_mitsuba_operator_lshift_14 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

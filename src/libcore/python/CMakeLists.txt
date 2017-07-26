@@ -20,6 +20,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   fresolver.cpp
   vector.cpp
   bbox.cpp
+  bsphere.cpp
   frame.cpp
   transform.cpp
   ray.cpp

@@ -44,6 +44,7 @@ template <typename Type, size_t Size>  struct Normal;
 template <typename Point>              struct Ray;
 template <typename Point>              struct RayDifferential;
 template <typename Point>              struct BoundingBox;
+template <typename Point>              struct BoundingSphere;
 template <typename Vector>             struct Frame;
 template <typename Type, size_t Size>  struct Color;
 template <typename Type>               struct Spectrum;
@@ -85,6 +86,11 @@ using BoundingBox1f = BoundingBox<Point1f>;
 using BoundingBox2f = BoundingBox<Point2f>;
 using BoundingBox3f = BoundingBox<Point3f>;
 using BoundingBox4f = BoundingBox<Point4f>;
+
+using BoundingSphere1f = BoundingSphere<Point1f>;
+using BoundingSphere2f = BoundingSphere<Point2f>;
+using BoundingSphere3f = BoundingSphere<Point3f>;
+using BoundingSphere4f = BoundingSphere<Point4f>;
 
 using Ray2f = Ray<Point2f>;
 using Ray3f = Ray<Point3f>;
