@@ -85,6 +85,7 @@ class WarpVisualizer(Screen):
         self.center = None
         self.scale = None
         self.parameter_widgets = []
+        self.pending_refresh = 0
 
         self.point_shader = GLShader()
         self.point_shader.init(
@@ -219,8 +220,7 @@ class WarpVisualizer(Screen):
     def mouse_motion_event(self, p, rel, button, modifiers):
         if super(Screen, self).mouse_motion_event(p, rel, button, modifiers):
             return True
-        self.arcball.motion(p)
-        return True
+        return self.arcball.motion(p)
 
     def mouse_button_event(self, p, button, down, modifiers):
         if self.test is not None:
@@ -241,6 +241,14 @@ class WarpVisualizer(Screen):
             self.draw_test_results()
         else:
             self.draw_point_cloud()
+
+        missed_refreshes = self.pending_refresh > 1
+        self.pending_refresh = 0
+        if missed_refreshes:
+            self.refresh()
+            self.redraw()
+
+
 
     def draw_point_cloud(self):
         view = look_at([0, 0, 4], [0, 0, 0], [0, 1, 0])
@@ -363,12 +371,15 @@ class WarpVisualizer(Screen):
             index += 1
 
         for index, widget in enumerate(self.parameter_widgets):
-            self.window.add_child(6 + index, widget)
+            self.window.add_child(7 + index, widget)
         self.perform_layout()
         self.refresh()
 
     def refresh(self):
-        # Look up configuration
+        self.pending_refresh += 1
+        if self.pending_refresh > 1:
+            return
+
         distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
         sample_type = self.sample_type_box.selected_index()
         sample, pdf = distr[2]
@@ -541,7 +552,7 @@ if __name__ == '__main__':
     wv = WarpVisualizer()
     wv.set_visible(True)
     wv.perform_layout()
-    nanogui.mainloop()
+    nanogui.mainloop(refresh=0)
     del wv
     gc.collect()
     nanogui.shutdown()

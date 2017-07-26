@@ -29,7 +29,7 @@ Each entry of the DISTRIBUTIONS table is a tuple with the following entries:
 
 from __future__ import division
 import mitsuba
-from mitsuba.core import warp
+from mitsuba.core import warp, float_dtype
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
 from mitsuba.core.chi2 import SpectrumAdapter
 import numpy as np
@@ -115,8 +115,8 @@ DISTRIBUTIONS = [
 
     ('Rough fiber distribution', SphericalDomain(),
      (lambda sample, kappa, incl: warp.square_to_rough_fiber(
-          sample, np.tile([np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))], [sample.shape[0], 1]),
-          np.tile([1, 0, 0], [sample.shape[0], 1]), kappa),
+          sample, np.tile(np.array([np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))], dtype=float_dtype), [sample.shape[0], 1]),
+          np.tile(np.array([1, 0, 0], dtype=float_dtype), [sample.shape[0], 1]), kappa),
       lambda v, kappa, incl: warp.square_to_rough_fiber_pdf(
           v, np.tile([np.sin(deg2rad(incl)), 0, np.cos(deg2rad(incl))], [v.shape[0], 1]),
           np.tile([1, 0, 0], [v.shape[0], 1]), kappa)),
