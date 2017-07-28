@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mitsuba/core/fwd.h>
+#include <mitsuba/render/fwd.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/simd.h>
 
@@ -10,7 +10,7 @@ class MTS_EXPORT_RENDER BSDF : public Object {
 public:
     virtual void dummy() = 0;
 
-    virtual bool uses_ray_differentials() const {
+    bool uses_ray_differentials() const {
         return m_uses_ray_differentials;
     };
 
@@ -19,26 +19,20 @@ public:
 protected:
     virtual ~BSDF() { }
 
+private:
     bool m_uses_ray_differentials;
 };
 
-using BSDFPointer = Array<const BSDF*, PacketSize>;
-
 NAMESPACE_END(mitsuba)
 
-
 // -----------------------------------------------------------------------
-//! @{ \name Enoki support for packets of Shape pointers
+//! @{ \name Enoki support for packets of BSDF pointers
 // -----------------------------------------------------------------------
 
 // Enable usage of array pointers for our types
-ENOKI_CALL_SUPPORT_BEGIN(mitsuba::BSDFPointer)
+ENOKI_CALL_SUPPORT_BEGIN(mitsuba::BSDFP)
 ENOKI_CALL_SUPPORT_SCALAR(uses_ray_differentials)
-ENOKI_CALL_SUPPORT_END(mitsuba::BSDFPointer)
-
-ENOKI_CALL_SUPPORT_BEGIN(const mitsuba::BSDFPointer)
-ENOKI_CALL_SUPPORT_SCALAR(uses_ray_differentials)
-ENOKI_CALL_SUPPORT_END(const mitsuba::BSDFPointer)
+ENOKI_CALL_SUPPORT_END(mitsuba::BSDFP)
 
 //! @}
 // -----------------------------------------------------------------------

@@ -8,6 +8,7 @@ MTS_PY_DECLARE(ShapeKDTree);
 MTS_PY_DECLARE(PositionSample);
 MTS_PY_DECLARE(DirectionSample);
 MTS_PY_DECLARE(DirectSample);
+MTS_PY_DECLARE(SurfaceInteraction);
 
 PYBIND11_MODULE(mitsuba_render_ext, m_) {
     (void) m_; /* unused */
@@ -22,4 +23,5 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(PositionSample);
     MTS_PY_IMPORT(DirectionSample);
     MTS_PY_IMPORT(DirectSample);
+    MTS_PY_IMPORT(SurfaceInteraction);
 }

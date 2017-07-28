@@ -138,9 +138,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
     message(FATAL_ERROR "Unsupported compiler -- Mitsuba requires C++14 support!")
   endif()
 
-  # Disable strict aliasing (causes issues with Enoki)
-  add_compile_options(-fno-strict-aliasing)
-
   # Enable link time optimization and set the default symbol
   # visibility to hidden (very important to obtain small binaries)
   if (U_CMAKE_BUILD_TYPE MATCHES REL)

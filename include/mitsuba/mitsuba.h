@@ -4,7 +4,7 @@
 #define MTS_VERSION "2.0.dev0"
 
 /// Year of the current release
-#define MTS_YEAR "2016"
+#define MTS_YEAR "2017"
 
 /// Authors list
 #define MTS_AUTHORS "Wenzel Jakob and others (see README.md)"

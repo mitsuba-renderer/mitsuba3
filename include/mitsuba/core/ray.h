@@ -64,7 +64,6 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
     using typename Base::Point;
     using typename Base::Vector;
     using typename Base::Value;
-    using Bool = bool_array_t<Value>;
     using Base::o;
     using Base::d;
     using Base::d_rcp;
@@ -74,7 +73,7 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
 
     Point o_x, o_y;
     Vector d_x, d_y;
-    Bool has_differentials = false;
+    bool has_differentials = false;
 
     ENOKI_DERIVED_STRUCT(RayDifferential, Base, o_x, o_y, d_x, d_y,
                          has_differentials)
@@ -83,7 +82,7 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
     RayDifferential(const Point &o, const Vector &d, const Vector &d_rcp,
                     const Value &mint, const Value &maxt, const Value &time,
                     const Point &o_x, const Point &o_y, const Vector &d_x,
-                    const Vector &d_y, const Bool &has_differentials)
+                    const Vector &d_y, const bool &has_differentials)
         : Base(o, d, d_rcp, mint, maxt, time), o_x(o_x), o_y(o_y),
           d_x(d_x), d_y(d_y), has_differentials(has_differentials) { }
 

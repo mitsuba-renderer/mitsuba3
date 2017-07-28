@@ -26,29 +26,12 @@ MTS_PY_EXPORT(PositionSample) {
     bind_position_sample<Point3f>(m, "PositionSample3f")
         .def(py::init<>(), D(PositionSample, PositionSample))
         .def(py::init<Float>(), D(PositionSample, PositionSample, 2))
-        .def(py::init<const Intersection3f &, EMeasure>(),
+        .def(py::init<const SurfaceInteraction3f &, EMeasure>(),
              D(PositionSample, PositionSample, 3),
-             "intersection"_a, "measure"_a=ESolidAngle);
+             "intersection"_a, "measure"_a = ESolidAngle);
 
-    bind_position_sample<Point3fX>(m, "PositionSample3fX")
-        .def("__init__",
-             [](PositionSample3fX &ps, size_t n) {
-                 new (&ps) PositionSample3fX();
-                 enoki::set_slices(ps, n);
-                 ps.object = zero<PositionSample3fX::ObjectPointer>(n);
-             })
-        .def("__getitem__",
-             [](PositionSample3fX &ps, size_t i) {
-                 if (i >= slices(ps))
-                     throw py::index_error();
-                 return PositionSample3f(enoki::slice(ps, i));
-             })
-        .def("__setitem__", [](PositionSample3fX &ps, size_t i,
-                               const PositionSample3f &ps2) {
-            if (i >= slices(ps))
-                throw py::index_error();
-            enoki::slice(ps, i) = ps2;
-        });
+    auto ps3fx = bind_position_sample<Point3fX>(m, "PositionSample3fX");
+    bind_slicing_operators<PositionSample3fX, PositionSample3f>(ps3fx);
 }
 
 // -----------------------------------------------------------------------------
@@ -73,28 +56,12 @@ MTS_PY_EXPORT(DirectionSample) {
         .def(py::init<const Vector3f &, EMeasure>(),
              D(DirectionSample, DirectionSample),
              "d"_a, "measure"_a=ESolidAngle)
-        .def(py::init<const Intersection3f &, EMeasure>(),
+        .def(py::init<const SurfaceInteraction3f &, EMeasure>(),
              D(DirectionSample, DirectionSample, 3),
              "intersection"_a, "measure"_a=ESolidAngle);
 
-    bind_direction_sample<Vector3fX>(m, "DirectionSample3fX")
-        .def("__init__",
-             [](DirectionSample3fX &ds, size_t n) {
-                 new (&ds) DirectionSample3fX();
-                 enoki::set_slices(ds, n);
-             })
-        .def("__getitem__",
-             [](DirectionSample3fX &ds, size_t i) {
-                 if (i >= slices(ds))
-                     throw py::index_error();
-                 return DirectionSample3f(enoki::slice(ds, i));
-             })
-        .def("__setitem__", [](DirectionSample3fX &ds, size_t i,
-                               const DirectionSample3f &ds2) {
-            if (i >= slices(ds))
-                throw py::index_error();
-            enoki::slice(ds, i) = ds2;
-        });
+    auto ds3fx = bind_direction_sample<Vector3fX>(m, "DirectionSample3fX");
+    bind_slicing_operators<DirectionSample3fX, DirectionSample3f>(ds3fx);
 }
 
 // -----------------------------------------------------------------------------
@@ -120,29 +87,12 @@ MTS_PY_EXPORT(DirectSample) {
         .def(py::init<>(), D(DirectSample, DirectSample))
         .def(py::init<const Point3f &, Float>(),
              D(DirectSample, DirectSample, 2))
-        .def(py::init<const Intersection3f &>(), D(DirectSample, DirectSample, 3))
-        .def(py::init<const MediumSample3f &>(), D(DirectSample, DirectSample, 4))
-        .def(py::init<const Ray3f &, const Intersection, EMeasure>(),
+        .def(py::init<const SurfaceInteraction3f &>(), D(DirectSample, DirectSample, 3))
+        //.def(py::init<const MediumInteraction3f &>(), D(DirectSample, DirectSample, 4))
+        .def(py::init<const Ray3f &, const SurfaceInteraction3f, EMeasure>(),
              D(DirectSample, DirectSample, 4),
              "ray"_a, "intersection"_a, "measure"_a=ESolidAngle);
 
-    bind_direct_sample<Point3fX, PositionSample3fX>(m, "DirectSample3fX")
-        .def("__init__",
-             [](DirectSample3fX &ds, size_t n) {
-                 new (&ds) DirectSample3fX();
-                 enoki::set_slices(ds, n);
-                 ds.object = zero<PositionSample3fX::ObjectPointer>(n);
-             })
-        .def("__getitem__",
-             [](DirectSample3fX &ds, size_t i) {
-                 if (i >= slices(ds))
-                     throw py::index_error();
-                 return DirectSample3f(enoki::slice(ds, i));
-             })
-        .def("__setitem__", [](DirectSample3fX &ds, size_t i,
-                               const DirectSample3f &ds2) {
-            if (i >= slices(ds))
-                throw py::index_error();
-            enoki::slice(ds, i) = ds2;
-        });
+    auto ds3fx = bind_direct_sample<Point3fX, PositionSample3fX>(m, "DirectSample3fX");
+    bind_slicing_operators<DirectSample3fX, DirectSample3f>(ds3fx);
 }

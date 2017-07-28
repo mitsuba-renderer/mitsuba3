@@ -4,7 +4,7 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/common.h>
-#include <mitsuba/render/intersection.h>
+#include <mitsuba/render/interaction.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -25,12 +25,15 @@ struct MediumSample { };
  * probability density and measure.
  */
 template <typename Point3> struct PositionSample {
-    using Point2 = point2_t<Point3>;
-    using Normal3 = normal3_t<Point3>;
-    using Value         = value_t<Point3>;
-    using Measure       = like_t<Value, EMeasure>;
-    using ObjectPointer = like_t<Value, const Object *>;
-    using Intersection  = mitsuba::Intersection<Point3>;
+
+    // -------------------------------------------------------------------------
+
+    using Point2             = point2_t<Point3>;
+    using Normal3            = normal3_t<Point3>;
+    using Value              = value_t<Point3>;
+    using Measure            = like_t<Value, EMeasure>;
+    using ObjectPointer      = like_t<Value, const Object *>;
+    using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
 
     // -------------------------------------------------------------------------
 
@@ -95,10 +98,10 @@ template <typename Point3> struct PositionSample {
      * surface after hitting it using standard ray tracing. This happens for
      * instance in path tracing with multiple importance sampling.
      */
-    PositionSample(const Intersection &/*its*/,
+    PositionSample(const SurfaceInteraction &/*its*/,
                    Measure /*measure = Measure(EArea)*/) {
-        // TODO: implement when Intersection is available
-        Throw("Not implemented: PositionSample(Intersection, Measure)");
+        // TODO: implement when SurfaceInteraction is available
+        Throw("Not implemented: PositionSample(SurfaceInteraction, Measure)");
     }
 
     ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, measure, object)
@@ -118,11 +121,14 @@ template <typename Point3> struct PositionSample {
  * must annotate the record with the associated probability density
  * and measure.
  */
-template <typename Vector3>
-struct DirectionSample {
-    using Value         = value_t<Vector3>;
-    using Measure      = like_t<Value, EMeasure>;
-    using Intersection = mitsuba::Intersection<Point3>;
+template <typename Vector3> struct DirectionSample {
+
+    // -------------------------------------------------------------------------
+
+    using Value              = value_t<Vector3>;
+    using Measure            = like_t<Value, EMeasure>;
+    using Point3             = point3_t<Vector3>;
+    using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
 
     // -------------------------------------------------------------------------
 
@@ -159,10 +165,10 @@ struct DirectionSample {
      * the camera aperture in bidirectional rendering
      * techniques.
      */
-    DirectionSample(const Intersection &/*its*/,
+    DirectionSample(const SurfaceInteraction &/*its*/,
                     Measure /*measure = ESolidAngle*/) {
-        // TODO: implement when Intersection is available
-        Throw("Not implemented: DirectionSample(Intersection, Measure)");
+        // TODO: implement when SurfaceInteraction is available
+        Throw("Not implemented: DirectionSample(SurfaceInteraction, Measure)");
     }
 
     ENOKI_STRUCT(DirectionSample, d, pdf, measure)
@@ -188,19 +194,22 @@ struct DirectionSample {
  * need to be recomputed many times: the unit direction and length from the
  * reference position to the sampled point.
  */
-template <typename Point3>
-struct DirectSample : public PositionSample<Point3> {
-    using Base = PositionSample<Point3>;
-    using Vector3      = vector3_t<Point3>;
-    using Ray3         = Ray<Point3>;
-    using MediumSample = mitsuba::MediumSample; // TODO: support packets of MediumSamples
+template <typename Point3> struct DirectSample : public PositionSample<Point3> {
+
+    // -------------------------------------------------------------------------
+
+    using Base    = PositionSample<Point3>;
+    using Vector3 = vector3_t<Point3>;
+    using Ray3    = Ray<Point3>;
+    using MediumSample =
+        mitsuba::MediumSample; // TODO: support packets of MediumSamples
 
     using typename Base::Point2;
     using typename Base::ObjectPointer;
     using typename Base::Normal3;
     using typename Base::Value;
     using typename Base::Measure;
-    using typename Base::Intersection;
+    using typename Base::SurfaceInteraction;
 
     // Make parent fields visible
     using Base::p;
@@ -251,9 +260,9 @@ struct DirectSample : public PositionSample<Point3> {
      * \param its
      *     The reference point specified using an intersection record
      */
-    DirectSample(const Intersection &/*ref_its*/) {
-        // TODO: implement when Intersection is available
-        Throw("Not implemented: DirectSample(Intersection)");
+    DirectSample(const SurfaceInteraction &/*ref_its*/) {
+        // TODO: implement when SurfaceInteraction is available
+        Throw("Not implemented: DirectSample(SurfaceInteraction)");
     }
 
     /**
@@ -280,10 +289,10 @@ struct DirectSample : public PositionSample<Point3> {
      * \param its
      *     A surface intersection record (usually on an emitter)
      */
-    DirectSample(const Ray3 &/*ray*/, const Intersection &/*its*/,
+    DirectSample(const Ray3 &/*ray*/, const SurfaceInteraction &/*its*/,
                  Measure /*measure = ESolidAngle*/) {
-        // TODO: implement when Intersection is available
-        Throw("Not implemented: DirectSample(Ray3, Intersection, Measure)");
+        // TODO: implement when SurfaceInteraction is available
+        Throw("Not implemented: DirectSample(Ray3, SurfaceInteraction, Measure)");
     }
 
     /// Element-by-element constructor
@@ -297,21 +306,6 @@ struct DirectSample : public PositionSample<Point3> {
     ENOKI_DERIVED_STRUCT(DirectSample, Base, ref_p, ref_n, d, dist)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
-
-// -----------------------------------------------------------------------------
-/// Common type aliases (non-vectorized, packet, dynamic).
-
-using PositionSample3f  = PositionSample<Point3f>;
-using PositionSample3fP = PositionSample<Point3fP>;
-using PositionSample3fX = PositionSample<Point3fX>;
-
-using DirectionSample3f  = DirectionSample<Vector3f>;
-using DirectionSample3fP = DirectionSample<Vector3fP>;
-using DirectionSample3fX = DirectionSample<Vector3fX>;
-
-using DirectSample3f  = DirectSample<Point3f>;
-using DirectSample3fP = DirectSample<Point3fP>;
-using DirectSample3fX = DirectSample<Point3fX>;
 
 // -----------------------------------------------------------------------------
 
@@ -363,7 +357,7 @@ std::ostream &operator<<(std::ostream &os,
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enoki accessors for static & dynamic vectorization
+//! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
 // Support for static & dynamic vectorization

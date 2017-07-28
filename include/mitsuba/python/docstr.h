@@ -23,25 +23,29 @@
 #endif
 
 
-static const char *__doc_enoki_call_helper = R"doc()doc";
+static const char *__doc_enoki_call_support = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_call_helper = R"doc()doc";
+static const char *__doc_enoki_call_support_2 = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_is_emitter = R"doc()doc";
+static const char *__doc_enoki_call_support_bsdf = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_is_emitter_masked = R"doc()doc";
+static const char *__doc_enoki_call_support_exterior_medium = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_is_emitter_masked_2 = R"doc()doc";
+static const char *__doc_enoki_call_support_has_subsurface = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_is_sensor = R"doc()doc";
+static const char *__doc_enoki_call_support_interior_medium = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_is_sensor_masked = R"doc()doc";
+static const char *__doc_enoki_call_support_is_emitter = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_is_sensor_masked_2 = R"doc()doc";
+static const char *__doc_enoki_call_support_is_medium_transition = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_operator_sub = R"doc()doc";
+static const char *__doc_enoki_call_support_is_sensor = R"doc()doc";
 
-static const char *__doc_enoki_call_helper_self = R"doc()doc";
+static const char *__doc_enoki_call_support_operator_sub = R"doc()doc";
+
+static const char *__doc_enoki_call_support_operator_sub_2 = R"doc()doc";
+
+static const char *__doc_enoki_call_support_uses_ray_differentials = R"doc()doc";
 
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds a table of contents to an underlying stream
@@ -840,9 +844,9 @@ static const char *__doc_mitsuba_BoundingBox_extents =
 R"doc(Calculate the bounding box extents
 
 Returns:
-    max-min)doc";
+    ``max - min``)doc";
 
-static const char *__doc_mitsuba_BoundingBox_major_axis = R"doc(Return the dimension index with the largest associated side length)doc";
+static const char *__doc_mitsuba_BoundingBox_major_axis = R"doc(Return the dimension index with the index associated side length)doc";
 
 static const char *__doc_mitsuba_BoundingBox_max = R"doc(< Component-wise maximum)doc";
 
@@ -906,9 +910,9 @@ static const char *__doc_mitsuba_BoundingBox_squared_distance_2 =
 R"doc(Calculate the shortest squared distance between the axis-aligned
 bounding box and ``bbox``.)doc";
 
-static const char *__doc_mitsuba_BoundingBox_surface_area = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
+static const char *__doc_mitsuba_BoundingBox_surface_area = R"doc(Calculate the 2-dimensional surface area of a 3D bounding box)doc";
 
-static const char *__doc_mitsuba_BoundingBox_surface_area_2 = R"doc(Calculate the n-1 dimensional volume of the boundary)doc";
+static const char *__doc_mitsuba_BoundingBox_surface_area_2 = R"doc(General case: calculate the n-1 dimensional volume of the boundary)doc";
 
 static const char *__doc_mitsuba_BoundingBox_valid =
 R"doc(Check whether this is a valid bounding box
@@ -933,7 +937,19 @@ size(s))doc";
 
 static const char *__doc_mitsuba_BoundingSphere_center = R"doc()doc";
 
-static const char *__doc_mitsuba_BoundingSphere_contains = R"doc(Check whether the specified point is inside or on the sphere)doc";
+static const char *__doc_mitsuba_BoundingSphere_contains =
+R"doc(Check whether a point lies *on* or *inside* the bounding sphere
+
+Parameter ``p``:
+    The point to be tested
+
+Template parameter ``Strict``:
+    Set this parameter to ``True`` if the bounding sphere boundary
+    should be excluded in the test
+
+Remark:
+    In the Python bindings, the 'Strict' argument is a normal function
+    parameter with default value ``False``.)doc";
 
 static const char *__doc_mitsuba_BoundingSphere_empty = R"doc(Return whether this bounding sphere has a radius of zero or less.)doc";
 
@@ -945,7 +961,7 @@ static const char *__doc_mitsuba_BoundingSphere_operator_ne = R"doc(Inequality t
 
 static const char *__doc_mitsuba_BoundingSphere_radius = R"doc()doc";
 
-static const char *__doc_mitsuba_BoundingSphere_ray_intersect = R"doc(Check if ray(s) intersect bounding sphere(s))doc";
+static const char *__doc_mitsuba_BoundingSphere_ray_intersect = R"doc(Check if a ray intersects a bounding box)doc";
 
 static const char *__doc_mitsuba_Class =
 R"doc(Stores meta-information about Object instances.
@@ -1574,8 +1590,6 @@ static const char *__doc_mitsuba_ETransportMode_ERadiance = R"doc(Radiance trans
 
 static const char *__doc_mitsuba_ETransportMode_ETransportModes = R"doc(Specifies the number of supported transport modes)doc";
 
-static const char *__doc_mitsuba_Emitter = R"doc()doc";
-
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
 
@@ -1918,117 +1932,6 @@ static const char *__doc_mitsuba_InterpolatedSpectrum_sample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_InterpolatedSpectrum_sample_impl = R"doc()doc";
 
-static const char *__doc_mitsuba_Intersection =
-R"doc(Container for all information related to a surface intersection.
-
-Supports Structure of Array-style vectorization.)doc";
-
-static const char *__doc_mitsuba_Intersection_Intersection = R"doc()doc";
-
-static const char *__doc_mitsuba_Intersection_Intersection_2 = R"doc(Conversion from other data types)doc";
-
-static const char *__doc_mitsuba_Intersection_Le =
-R"doc(Returns radiance emitted into direction d.
-
-Remark:
-    This function should only be called if the intersected shape is
-    actually an emitter.)doc";
-
-static const char *__doc_mitsuba_Intersection_Lo_sub =
-R"doc(Returns radiance from a subsurface integrator emitted into direction
-d.
-
-Remark:
-    Should only be called if the intersected shape is actually a
-    subsurface integrator.)doc";
-
-static const char *__doc_mitsuba_Intersection_adjust_time = R"doc(Move the intersection forward or backward through time)doc";
-
-static const char *__doc_mitsuba_Intersection_bsdf =
-R"doc(Returns the BSDF of the intersected shape.
-
-The parameter ray must match the one used to create the intersection
-record. This function computes texture coordinate partials if this is
-required by the BSDF (e.g. for texture filtering).
-
-Remark:
-    This function should only be called if there is a valid
-    intersection!)doc";
-
-static const char *__doc_mitsuba_Intersection_bsdf_2 = R"doc(Returns the BSDF of the intersected shape)doc";
-
-static const char *__doc_mitsuba_Intersection_color = R"doc(Interpolated vertex color)doc";
-
-static const char *__doc_mitsuba_Intersection_compute_partials = R"doc(Computes texture coordinate partials)doc";
-
-static const char *__doc_mitsuba_Intersection_dpdu = R"doc(Position partials wrt. the UV parameterization)doc";
-
-static const char *__doc_mitsuba_Intersection_dpdv = R"doc(Position partials wrt. the UV parameterization)doc";
-
-static const char *__doc_mitsuba_Intersection_dudx = R"doc(UV partials wrt. changes in screen-space)doc";
-
-static const char *__doc_mitsuba_Intersection_dudy = R"doc(UV partials wrt. changes in screen-space)doc";
-
-static const char *__doc_mitsuba_Intersection_dvdx = R"doc(UV partials wrt. changes in screen-space)doc";
-
-static const char *__doc_mitsuba_Intersection_dvdy = R"doc(UV partials wrt. changes in screen-space)doc";
-
-static const char *__doc_mitsuba_Intersection_geo_frame = R"doc(Geometry frame)doc";
-
-static const char *__doc_mitsuba_Intersection_has_subsurface = R"doc(Does the intersected shape have a subsurface integrator?)doc";
-
-static const char *__doc_mitsuba_Intersection_has_uv_partials =
-R"doc(Have texture coordinate partials been computed? They are always
-computed for all slots at once, so we can make this a single boolean
-regardless of the underlying Point3 type.)doc";
-
-static const char *__doc_mitsuba_Intersection_instance = R"doc(Stores a pointer to the parent instance, if applicable)doc";
-
-static const char *__doc_mitsuba_Intersection_is_emitter = R"doc(Is the intersected shape also a emitter?)doc";
-
-static const char *__doc_mitsuba_Intersection_is_medium_transition = R"doc(Does the surface mark a transition between two media?)doc";
-
-static const char *__doc_mitsuba_Intersection_is_sensor = R"doc(Is the intersected shape also a sensor?)doc";
-
-static const char *__doc_mitsuba_Intersection_is_valid = R"doc(Is the current intersection valid?)doc";
-
-static const char *__doc_mitsuba_Intersection_normal_derivative = R"doc(Calls the suitable implementation of Shape::normal_derivative())doc";
-
-static const char *__doc_mitsuba_Intersection_operator_assign = R"doc(Conversion from other data types)doc";
-
-static const char *__doc_mitsuba_Intersection_p = R"doc()doc";
-
-static const char *__doc_mitsuba_Intersection_prim_index = R"doc(Primitive index, e.g. the triangle ID (if applicable))doc";
-
-static const char *__doc_mitsuba_Intersection_sh_frame = R"doc(Shading frame)doc";
-
-static const char *__doc_mitsuba_Intersection_shape = R"doc(Pointer to the associated shape)doc";
-
-static const char *__doc_mitsuba_Intersection_t = R"doc(Distance traveled along the ray)doc";
-
-static const char *__doc_mitsuba_Intersection_target_medium =
-R"doc(Determine the target medium
-
-When ``is_medium_transition``() = ``True``, determine the medium that
-contains the ray (``this``->p, ``d``))doc";
-
-static const char *__doc_mitsuba_Intersection_target_medium_2 =
-R"doc(Determine the target medium based on the cosine of the angle between
-the geometric normal and a direction
-
-Returns the exterior medium when ``cos_theta`` > 0 and the interior
-medium when ``cos_theta`` <= 0.)doc";
-
-static const char *__doc_mitsuba_Intersection_time = R"doc(Time value associated with the intersection)doc";
-
-static const char *__doc_mitsuba_Intersection_to_local = R"doc(Convert a world-space vector into local shading coordinates)doc";
-
-static const char *__doc_mitsuba_Intersection_to_world = R"doc(Convert a local shading-space vector into world space)doc";
-
-static const char *__doc_mitsuba_Intersection_uv = R"doc(UV surface coordinates)doc";
-
-static const char *__doc_mitsuba_Intersection_wi = R"doc(Incident direction in the local shading frame)doc";
-
 static const char *__doc_mitsuba_Jit = R"doc()doc";
 
 static const char *__doc_mitsuba_Jit_Jit = R"doc()doc";
@@ -2148,8 +2051,6 @@ static const char *__doc_mitsuba_Logger_set_log_level = R"doc(Set the log level 
 static const char *__doc_mitsuba_Logger_static_initialization = R"doc(Initialize logging)doc";
 
 static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging)doc";
-
-static const char *__doc_mitsuba_Medium = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumSample = R"doc()doc";
 
@@ -3130,8 +3031,6 @@ static const char *__doc_mitsuba_Resampler_target_resolution = R"doc(Return the 
 
 static const char *__doc_mitsuba_Resampler_to_string = R"doc(Return a human-readable summary)doc";
 
-static const char *__doc_mitsuba_Sampler = R"doc()doc";
-
 static const char *__doc_mitsuba_Scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc()doc";
@@ -3145,8 +3044,6 @@ static const char *__doc_mitsuba_Scene_kdtree_2 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_kdtree = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
-
-static const char *__doc_mitsuba_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape = R"doc()doc";
 
@@ -3184,6 +3081,8 @@ static const char *__doc_mitsuba_ShapeKDTree_shape_2 = R"doc(Return the i-th sha
 static const char *__doc_mitsuba_ShapeKDTree_shape_count = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
+
+static const char *__doc_mitsuba_Shape_adjust_time = R"doc(Adjust an intersection record to a different time value)doc";
 
 static const char *__doc_mitsuba_Shape_bbox =
 R"doc(Return an axis aligned box that bounds all shape primitives (including
@@ -3247,11 +3146,59 @@ static const char *__doc_mitsuba_Shape_is_medium_transition = R"doc(Does the sur
 
 static const char *__doc_mitsuba_Shape_is_sensor = R"doc(Is this shape also an area sensor?)doc";
 
+static const char *__doc_mitsuba_Shape_m_bsdf = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_normal_derivative =
+R"doc(Return the derivative of the normal vector with respect to the UV
+parameterization
+
+This can be used to compute Gaussian and principal curvatures, amongst
+other things.
+
+Parameter ``its``:
+    Intersection record associated with the query
+
+Parameter ``dndu``:
+    Parameter used to store the partial derivative of the normal
+    vector with respect to ``u``
+
+Parameter ``dndv``:
+    Parameter used to store the partial derivative of the normal
+    vector with respect to ``v``
+
+Parameter ``shading_frame``:
+    Specifies whether to compute the derivative of the geometric
+    normal *or* the shading normal of the surface)doc";
+
 static const char *__doc_mitsuba_Shape_primitive_count =
 R"doc(Returns the number of sub-primitives that make up this shape
 
 Remark:
     The default implementation simply returns ``1``)doc";
+
+static const char *__doc_mitsuba_Shape_sensor = R"doc(Return the associated sensor (if any))doc";
+
+static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the associated sensor (if any))doc";
+
+static const char *__doc_mitsuba_Shape_set_bsdf = R"doc(Set the BSDF of this shape)doc";
+
+static const char *__doc_mitsuba_Shape_set_emitter = R"doc(Set the emitter of this shape)doc";
+
+static const char *__doc_mitsuba_Shape_subsurface = R"doc(Return the associated sub-surface integrator)doc";
+
+static const char *__doc_mitsuba_Shape_subsurface_2 = R"doc(Return the associated sub-surface integrator)doc";
+
+static const char *__doc_mitsuba_Spectrum = R"doc(//! @{ \name Data types for discretized spectral data)doc";
+
+static const char *__doc_mitsuba_Spectrum_Spectrum = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_Spectrum_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_Spectrum_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream =
 R"doc(Abstract seekable stream class
@@ -3647,8 +3594,6 @@ static const char *__doc_mitsuba_Struct_size = R"doc(Return the size (in bytes) 
 
 static const char *__doc_mitsuba_Struct_to_string = R"doc(Return a string representation)doc";
 
-static const char *__doc_mitsuba_Subsurface = R"doc()doc";
-
 static const char *__doc_mitsuba_SurfaceAreaHeuristic3f = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceAreaHeuristic3f_SurfaceAreaHeuristic3f = R"doc()doc";
@@ -3695,6 +3640,114 @@ potential split planes can be evaluated efficiently)doc";
 static const char *__doc_mitsuba_SurfaceAreaHeuristic3f_traversal_cost =
 R"doc(Get the cost of a traversal operation used by the tree construction
 heuristic)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction = R"doc(Container for all information related to a surface intersection.)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
+R"doc(Returns the BSDF of the intersected shape.
+
+The parameter ``ray`` must match the one used to create the
+intersection record. This function computes texture coordinate
+partials if this is required by the BSDF (e.g. for texture filtering).
+
+Remark:
+    This function should only be called if there is a valid
+    intersection!)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_bsdf_2 = R"doc(Returns the BSDF of the intersected shape)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_color = R"doc(Interpolated vertex color)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_compute_partials = R"doc(Computes texture coordinate partials)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_dp_du = R"doc(Position partials wrt. the UV parameterization)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_dp_dv = R"doc(Position partials wrt. the UV parameterization)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_duv_dx = R"doc(UV partials wrt. changes in screen-space)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_duv_dy = R"doc(UV partials wrt. changes in screen-space)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_has_subsurface = R"doc(Does the intersected shape have a subsurface integrator?)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_has_uv_partials = R"doc(Have texture coordinate partials been computed?)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_is_emitter = R"doc(Is the intersected shape also a emitter?)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_is_medium_transition = R"doc(Does the surface mark a transition between two media?)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_is_sensor = R"doc(Is the intersected shape also a sensor?)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_is_valid = R"doc(Is the current intersection valid?)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_n = R"doc(Geometric normal)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_new_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_p = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_prim_index = R"doc(Primitive index, e.g. the triangle ID (if applicable))doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_sh_frame = R"doc(Shading frame)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_shape = R"doc(Pointer to the associated shape)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_t = R"doc(Distance traveled along the ray)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_target_medium =
+R"doc(Determine the target medium
+
+When ``is_medium_transition``() = ``True``, determine the medium that
+contains the ray (``this``->p, ``d``))doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_target_medium_2 =
+R"doc(Determine the target medium based on the cosine of the angle between
+the geometric normal and a direction
+
+Returns the exterior medium when ``cos_theta`` > 0 and the interior
+medium when ``cos_theta`` <= 0.)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_time = R"doc(Time value associated with the intersection)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_to_local = R"doc(Convert a world-space vector into local shading coordinates)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_to_world = R"doc(Convert a local shading-space vector into world space)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_uv = R"doc(UV surface coordinates)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_wi = R"doc(Incident direction in the local shading frame)doc";
 
 static const char *__doc_mitsuba_TPCG32 = R"doc()doc";
 
@@ -4987,12 +5040,6 @@ static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo func
 
 static const char *__doc_mitsuba_math_round_to_power_of_two = R"doc(Round an unsigned integer to the next integer power of two)doc";
 
-static const char *__doc_mitsuba_math_solve_linear_2x2 =
-R"doc(Solve a 2x2 linear system Ax = b.
-
-Returns:
-    ``True`` if a solution could be found, and the result in ``x``.)doc";
-
 static const char *__doc_mitsuba_math_solve_quadratic =
 R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
 
@@ -5011,7 +5058,7 @@ static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding sphere)doc";
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
@@ -5038,6 +5085,8 @@ static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

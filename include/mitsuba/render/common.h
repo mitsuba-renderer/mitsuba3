@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ostream>
-#include <mitsuba/core/fwd.h>
+#include <mitsuba/render/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

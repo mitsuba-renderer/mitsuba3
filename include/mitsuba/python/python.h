@@ -51,3 +51,22 @@ namespace py = pybind11;
 using namespace py::literals;
 
 extern py::dtype dtype_for_struct(const Struct *s);
+
+template <typename VectorClass, typename ScalarClass, typename ClassBinding>
+void bind_slicing_operators(ClassBinding &c) {
+    c.def("__init__", [](VectorClass &r, size_t n) {
+        new (&r) VectorClass();
+        set_slices(r, n);
+    })
+    .def("__getitem__", [](VectorClass &r, size_t i) {
+        if (i >= slices(r))
+            throw py::index_error();
+        return ScalarClass(enoki::slice(r, i));
+    })
+    .def("__setitem__", [](VectorClass &r, size_t i, const ScalarClass &r2) {
+        if (i >= slices(r))
+            throw py::index_error();
+        enoki::slice(r, i) = r2;
+    });
+}
+

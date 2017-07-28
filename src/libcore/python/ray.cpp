@@ -1,8 +1,8 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/python/python.h>
 
-template <typename Type, typename... Args> auto bind_ray(py::module &m, const char *name) {
-    return py::class_<Type, Args...>(m, name, D(Ray))
+template <typename Type, typename... Args, typename... Args2> auto bind_ray(py::module &m, const char *name, Args2&&... args2) {
+    return py::class_<Type, Args...>(m, name, D(Ray), args2...)
         .def_readwrite("o", &Type::o, D(Ray, o))
         .def_readwrite("d", &Type::d, D(Ray, d))
         .def_readwrite("d_rcp", &Type::d_rcp, D(Ray, d_rcp))
@@ -16,13 +16,13 @@ template <typename Type, typename... Args> auto bind_ray(py::module &m, const ch
 }
 
 template <typename Type, typename... Args> auto bind_ray_differential(py::module &m, const char *name) {
-    auto r = bind_ray<Type, Args...>(m, name)
+    return bind_ray<Type, Args...>(m, name, D(RayDifferential))
         .def_readwrite("o_x", &Type::o_x, D(RayDifferential, o_x))
         .def_readwrite("o_y", &Type::o_y, D(RayDifferential, o_y))
         .def_readwrite("d_x", &Type::d_x, D(RayDifferential, d_x))
-        .def_readwrite("d_y", &Type::d_y, D(RayDifferential, d_y));
-    r.attr("__doc__") = D(RayDifferential);
-    return r;
+        .def_readwrite("d_y", &Type::d_y, D(RayDifferential, d_y))
+        .def_readwrite("has_differentials", &Type::has_differentials,
+                       D(RayDifferential, has_differentials));
 }
 
 MTS_PY_EXPORT(Ray) {
@@ -43,38 +43,9 @@ MTS_PY_EXPORT(Ray) {
         .def(py::init<const RayDifferential3f &, Float, Float>(), D(Ray, Ray, 7))
         .def("__call__", &RayDifferential3f::operator(), D(Ray, operator, call));
 
-    bind_ray<Ray3fX>(m, "Ray3fX")
-        .def(py::init<>(), D(Ray, Ray))
-        .def("__init__", [](Ray3fX &r, size_t n) {
-            new (&r) Ray3fX();
-            set_slices(r, n);
-        })
-        .def("__getitem__", [](Ray3fX &r, size_t i) {
-            if (i >= slices(r))
-                throw py::index_error();
-            return Ray3f(enoki::slice(r, i));
-        })
-        .def("__setitem__", [](Ray3fX &r, size_t i, const Ray3f &r2) {
-            if (i >= slices(r))
-                throw py::index_error();
-            enoki::slice(r, i) = r2;
-        });
+    auto r3fx = bind_ray<Ray3fX>(m, "Ray3fX");
+    bind_slicing_operators<Ray3fX, Ray3f>(r3fx);
 
-    bind_ray_differential<RayDifferential3fX>(m, "RayDifferential3fX")
-        .def(py::init<>(), D(RayDifferential, RayDifferential))
-        .def("__init__", [](RayDifferential3fX &r, size_t n) {
-            new (&r) RayDifferential3fX();
-            set_slices(r, n);
-        })
-        .def("__getitem__", [](RayDifferential3fX &r, size_t i) {
-            if (i >= slices(r))
-                throw py::index_error();
-            return RayDifferential3f(enoki::slice(r, i));
-        })
-        .def("__setitem__", [](RayDifferential3fX &r, size_t i, const RayDifferential3f &r2) {
-            if (i >= slices(r))
-                throw py::index_error();
-            enoki::slice(r, i) = r2;
-        });
+    auto rd3fx = bind_ray_differential<RayDifferential3fX>(m, "RayDifferential3fX");
+    bind_slicing_operators<Ray3fX, Ray3f>(rd3fx);
 }
-
