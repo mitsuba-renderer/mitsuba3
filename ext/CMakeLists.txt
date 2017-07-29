@@ -36,20 +36,26 @@ if (WIN32)
   set_property(TARGET zlib PROPERTY FOLDER "dependencies")
   include_directories(${ZLIB_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/zlib")
 
-  # Build libpng 1.6 (only on Windows)
+endif()
+
+if (WIN32 OR APPLE)
+  # Build libpng 1.6 (on Windows & MacOS)
   set(PNG_SHARED ON CACHE BOOL " " FORCE)
   set(PNG_STATIC OFF CACHE BOOL " " FORCE)
   set(PNG_TESTS OFF CACHE BOOL " " FORCE)
   set(PNG_SKIP_INSTALL_ALL TRUE)
   add_subdirectory(libpng)
   set_property(TARGET png16 PROPERTY FOLDER "dependencies")
-  add_dependencies(png16 zlib)
+
+  if (WIN32)
+    add_dependencies(png16 zlib)
+  endif()
 
   set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
   set(PNG_LIBRARIES    "$<TARGET_LINKER_FILE:png16>" PARENT_SCOPE)
   set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
 
-  # Build libjpeg 7 (only on Windows)
+  # Build libjpeg 7 (on Windows & MacOS)
   set(LIBJPEG_BUILD_SHARED ON CACHE BOOL " " FORCE)
   set(LIBJPEG_BUILD_EXECUTABLES OFF CACHE BOOL " " FORCE)
   add_subdirectory(libjpeg)
@@ -59,6 +65,11 @@ if (WIN32)
   set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg;${CMAKE_CURRENT_BINARY_DIR}/libjpeg" PARENT_SCOPE)
   set(JPEG_LIBRARIES    "$<TARGET_LINKER_FILE:jpeg>" PARENT_SCOPE)
   set(JPEG_DEFINES      -DMTS_HAS_LIBJPEG PARENT_SCOPE)
+
+  # Give libpng & libjpeg a name that's guaranteeed not to match other
+  # libraries that may already be loaded (e.g. into a Python interpreter)
+  set_property(TARGET png16 PROPERTY OUTPUT_NAME "png16-mitsuba")
+  set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
 else()
   # Find system libpng
   find_package(PNG REQUIRED)
@@ -185,5 +196,8 @@ mark_as_advanced(
   ZEROMQ_INSTALL ZEROMQ_LIBRARY ZMQ_BUILD_FRAMEWORK ZMQ_BUILD_TESTS
   SODIUM_FOUND ZEROMQ_BUILD_PERTOOLS cocoa_library corevideo_library
   iokit_library opengl_library ENOKI_TEST CMAKE_OSX_ARCHITECTURES
-  CMAKE_OSX_DEPLOYMENT_TARGET CMAKE_OSX_SYSROOT
+  CMAKE_OSX_DEPLOYMENT_TARGET CMAKE_OSX_SYSROOT CMAKE_BACKWARDS_COMPATIBILITY
+  EXECUTABLE_OUTPUT_PATH LIBJPEG_BUILD_EXECUTABLES LIBJPEG_BUILD_SHARED
+  LIBRARY_OUTPUT_PATH M_LIBRARY PNGARG PNG_DEBUG PNG_FRAMEWORK PNG_SHARED
+  PNG_STATIC PNG_TESTS
 )

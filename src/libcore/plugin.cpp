@@ -36,6 +36,25 @@ public:
 
         try {
             create_object = (CreateObjectFunctor) symbol("CreateObject");
+#if defined(__AVX512ER__) && defined(__LINUX__)
+            static bool knl_warning_once = true;
+            auto p0 = (uintptr_t) create_object     & 0xffffffff00000000ull;
+            auto p1 = (uintptr_t) &util::core_count & 0xffffffff00000000ull;
+            if (p0 != p1 && knl_warning_once) {
+                if (getenv("LD_PREFER_MAP_32BIT_EXEC") == nullptr) {
+                    std::cerr << "Warning: It is strongly recommended that you set the LD_PREFER_MAP_32BIT_EXEC" << std::endl
+                              << "environment variable on Xeon Phi machines to avoid misprediction penalties" << std::endl
+                              << "involving function calls across 64 bit boundaries, e.g. to Mitsuba plugins." << std::endl
+                              << "To do so, enter" << std::endl << std::endl
+                              << "   $ export LD_PREFER_MAP_32BIT_EXEC = 1" << std::endl << std::endl
+                              << "before launching Mitsuba (you'll want to put this into your .bashrc as well)." << std::endl << std::endl;
+                } else {
+                    std::cerr << "Warning: Your version of ld.so doesn't respect the LD_PREFER_MAP_32BIT_EXEC" << std::endl
+                              << "flag -- potentially it is too old? (version >= 2.23 is needed)" << std::endl;
+                }
+                knl_warning_once = false;
+            }
+#endif
         } catch (...) {
             this->~Plugin();
             throw;

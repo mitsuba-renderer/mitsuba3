@@ -59,7 +59,7 @@ static std::string isa_info() {
     if (enoki::has_sse42)           oss << " sse4.2";
 
 #if defined(ENOKI_USE_MEMKIND)
-    if (hbw_check_available())      oss << " hbw";
+    if (hbw_check_available() == 0) oss << " hbw";
 #endif
 
     return oss.str();
@@ -85,13 +85,6 @@ Options:
 )";
 }
 
-#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
-    // Limit instruction set usage in main() to SSE only. This is so that
-    // target<->host mismatches can be caught in Jit::static_initialization()
-    // without running into a segmentation fault before that.
-    __attribute__((target("sse")))
-#endif
-
 int main(int argc, char *argv[]) {
     Jit::static_initialization();
     Class::static_initialization();
@@ -110,10 +103,10 @@ int main(int argc, char *argv[]) {
     if (getenv("LD_PREFER_MAP_32BIT_EXEC") == nullptr) {
         std::cerr << "Warning: It is strongly recommended that you set the LD_PREFER_MAP_32BIT_EXEC" << std::endl
                   << "environment variable on Xeon Phi machines to avoid misprediction penalties" << std::endl
-                  << "involving function calls across module boundaries (e.g. to plugins)." << std::endl
+                  << "involving function calls across 64 bit boundaries, e.g. to Mitsuba plugins." << std::endl
                   << "To do so, enter" << std::endl << std::endl
                   << "   $ export LD_PREFER_MAP_32BIT_EXEC = 1" << std::endl << std::endl
-                  << "before launching Mitsuba." << std::endl << std::endl;
+                  << "before launching Mitsuba (you'll want to put this into your .bashrc as well)." << std::endl << std::endl;
     }
 #endif
 

@@ -96,3 +96,9 @@ if (WIN32)
   add_dependencies(mitsuba-core zlib jpeg png16)
 endif()
 
+# Windows & Mac dependencies
+if (WIN32 OR APPLE)
+  add_dist(jpeg png16)
+  add_dependencies(mitsuba-core jpeg png16)
+endif()
+
