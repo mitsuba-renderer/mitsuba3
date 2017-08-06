@@ -11,6 +11,8 @@ add_library(mitsuba-render-obj OBJECT
   scene.cpp        ${INC_DIR}/scene.h
   shape.cpp        ${INC_DIR}/shape.h
   medium.cpp       ${INC_DIR}/medium.h
+  emitter.cpp      ${INC_DIR}/emitter.h
+  sensor.cpp       ${INC_DIR}/sensor.h
   interaction.cpp  ${INC_DIR}/interaction.h
 )
 

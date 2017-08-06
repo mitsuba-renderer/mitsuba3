@@ -17,6 +17,7 @@ add_subdirectory(spectra)
 add_subdirectory(bsdfs)
 add_subdirectory(shapes)
 add_subdirectory(rfilters)
+add_subdirectory(sensors)
 
 if (PYTHONLIBS_FOUND)
   add_subdirectory(python)

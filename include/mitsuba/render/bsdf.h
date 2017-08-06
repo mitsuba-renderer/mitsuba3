@@ -123,7 +123,7 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
-    virtual ~BSDF() { }
+    virtual ~BSDF();
 
 protected:
     bool m_needs_differentials = false;
