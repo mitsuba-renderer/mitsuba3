@@ -5,12 +5,9 @@ NAMESPACE_BEGIN(mitsuba)
 class SmoothDiffuse : public BSDF {
 public:
     SmoothDiffuse(const Properties &) {
-
+        m_flags = EDiffuseReflection | EFrontSide;
     }
 
-    void dummy() override {
-
-    }
 
     MTS_DECLARE_CLASS()
 };

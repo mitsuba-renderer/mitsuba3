@@ -31,8 +31,6 @@ static const char *__doc_enoki_call_support_bsdf = R"doc()doc";
 
 static const char *__doc_enoki_call_support_exterior_medium = R"doc()doc";
 
-static const char *__doc_enoki_call_support_has_subsurface = R"doc()doc";
-
 static const char *__doc_enoki_call_support_interior_medium = R"doc()doc";
 
 static const char *__doc_enoki_call_support_is_emitter = R"doc()doc";
@@ -322,7 +320,83 @@ static const char *__doc_mitsuba_AtomicFloat_operator_imul = R"doc(Atomically mu
 
 static const char *__doc_mitsuba_AtomicFloat_operator_isub = R"doc(Atomically subtract a floating point value)doc";
 
-static const char *__doc_mitsuba_BSDF = R"doc()doc";
+static const char *__doc_mitsuba_BSDF =
+R"doc(Abstract %BSDF base-class.
+
+This class implements an abstract interface to all BSDF plugins in
+Mitsuba. It exposes functions for evaluating and sampling the model,
+and it allows querying the probability density of the sampling method.
+Smooth two-dimensional density functions, as well as degenerate one-
+dimensional and discrete densities are all handled within the same
+framework.
+
+For improved flexibility with respect to the various rendering
+algorithms, this class can sample and evaluate a complete BSDF, but it
+also allows to pick and choose individual components of multi-lobed
+BSDFs based on their properties and component indices. This selection
+is specified using a special record that is provided along with every
+query.
+
+BSDFSample)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType =
+R"doc(This list of flags is used to classify the different types of lobes
+that are implemented in a BSDF instance.
+
+They are also useful for picking out individual components by setting
+combinations in BSDFSamplingRecord::typeMask.)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EAnisotropic = R"doc(The lobe is not invariant to rotation around the normal)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EBackSide = R"doc(Supports interactions on the back-facing side)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EDelta1DReflection = R"doc(Reflection into a 1D space of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EDelta1DTransmission = R"doc(Transmission into a 1D space of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EDeltaReflection = R"doc(Reflection into a discrete set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EDeltaTransmission = R"doc(Transmission into a discrete set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EDiffuseReflection = R"doc(Ideally diffuse reflection)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EDiffuseTransmission = R"doc(Ideally diffuse transmission)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EFrontSide = R"doc(Supports interactions on the front-facing side)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EGlossyReflection = R"doc(Glossy reflection)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EGlossyTransmission = R"doc(Glossy transmission)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_ENonSymmetric = R"doc(Flags non-symmetry (e.g. transmission in dielectric materials))doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_ENull = R"doc('null' scattering event, i.e. particles do not undergo deflection)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_ESpatiallyVarying = R"doc(The BSDF depends on the UV coordinates)doc";
+
+static const char *__doc_mitsuba_BSDF_EBSDFType_EUsesSampler = R"doc(Uses extra random numbers from the supplied sampler instance)doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations = R"doc(Convenient combinations of flags from EBSDFType)doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations_EAll = R"doc(Any kind of scattering)doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations_EDelta = R"doc(Scattering into a discrete set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations_EDelta1D = R"doc(Scattering into a 1D space of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations_EDiffuse = R"doc(Diffuse scattering into a 2D set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations_EGlossy = R"doc(Non-diffuse scattering into a 2D set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations_EReflection =
+R"doc(Any reflection component (scattering into discrete, 1D, or 2D set of
+directions))doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations_ESmooth = R"doc(Scattering into a 2D set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_ETypeCombinations_ETransmission =
+R"doc(Any transmission component (scattering into discrete, 1D, or 2D set of
+directions))doc";
 
 static const char *__doc_mitsuba_BSDF_class = R"doc()doc";
 
@@ -1245,7 +1319,7 @@ static const char *__doc_mitsuba_DirectSample_DirectSample_2 =
 R"doc(Create an new direct sampling record for a reference point ``ref``
 located on a surface.
 
-Parameter ``its``:
+Parameter ``ref_si``:
     The reference point specified using an intersection record)doc";
 
 static const char *__doc_mitsuba_DirectSample_DirectSample_3 =
@@ -1261,10 +1335,10 @@ density of a surface position (where the reference point lies on a
 *surface*)
 
 Parameter ``ray``:
-    Reference to the ray that generated the intersection ``its``. The
-    ray origin must be located at ``ref_its``.p
+    Reference to the ray that generated the intersection ``ref_si``.
+    The ray origin must be located at ``ref_si``.p
 
-Parameter ``its``:
+Parameter ``ref_si``:
     A surface intersection record (usually on an emitter))doc";
 
 static const char *__doc_mitsuba_DirectSample_DirectSample_5 = R"doc(Element-by-element constructor)doc";
@@ -2052,8 +2126,6 @@ static const char *__doc_mitsuba_Logger_static_initialization = R"doc(Initialize
 
 static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging)doc";
 
-static const char *__doc_mitsuba_MediumSample = R"doc()doc";
-
 static const char *__doc_mitsuba_MemoryStream =
 R"doc(Simple memory buffer-based stream with automatic memory management. It
 always has read & write capabilities.
@@ -2481,7 +2553,7 @@ spaces, e.g. areas that have collapsed to a point or a line.)doc";
 static const char *__doc_mitsuba_PositionSample_n = R"doc(Sampled surface normal (if applicable))doc";
 
 static const char *__doc_mitsuba_PositionSample_object =
-R"doc(Optional: Pointer to an associated object
+R"doc(Optional: Ptr to an associated object
 
 In some uses of this record, sampling a position also involves
 choosing one of several objects (shapes, emitters, ..) on which the
@@ -2823,10 +2895,10 @@ Remark:
     results.)doc";
 
 static const char *__doc_mitsuba_RayDifferential =
-R"doc(%Ray differential -- enhances the basic ray class with information
-about the rays of adjacent pixels on the view plane)doc";
+R"doc(%Ray differential -- enhances the basic ray class with offset rays for
+two adjacent pixels on the view plane)doc";
 
-static const char *__doc_mitsuba_RayDifferential_RayDifferential = R"doc()doc";
+static const char *__doc_mitsuba_RayDifferential_RayDifferential = R"doc(Element-by-element constructor)doc";
 
 static const char *__doc_mitsuba_RayDifferential_RayDifferential_2 = R"doc()doc";
 
@@ -2834,7 +2906,7 @@ static const char *__doc_mitsuba_RayDifferential_RayDifferential_3 = R"doc()doc"
 
 static const char *__doc_mitsuba_RayDifferential_RayDifferential_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_RayDifferential_RayDifferential_5 = R"doc(Element-by-element constructor)doc";
+static const char *__doc_mitsuba_RayDifferential_RayDifferential_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_d_x = R"doc()doc";
 
@@ -2852,19 +2924,19 @@ static const char *__doc_mitsuba_RayDifferential_operator_assign_2 = R"doc()doc"
 
 static const char *__doc_mitsuba_RayDifferential_scale = R"doc()doc";
 
-static const char *__doc_mitsuba_Ray_Ray = R"doc()doc";
+static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray)doc";
 
-static const char *__doc_mitsuba_Ray_Ray_2 = R"doc()doc";
+static const char *__doc_mitsuba_Ray_Ray_2 = R"doc(Construct a new ray)doc";
 
-static const char *__doc_mitsuba_Ray_Ray_3 = R"doc()doc";
+static const char *__doc_mitsuba_Ray_Ray_3 = R"doc(Copy a ray, but change the covered segment of the copy)doc";
 
 static const char *__doc_mitsuba_Ray_Ray_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Ray_Ray_5 = R"doc(Construct a new ray)doc";
+static const char *__doc_mitsuba_Ray_Ray_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_Ray_Ray_6 = R"doc(Construct a new ray)doc";
+static const char *__doc_mitsuba_Ray_Ray_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Ray_Ray_7 = R"doc(Copy a ray, but change the covered segment of the copy)doc";
+static const char *__doc_mitsuba_Ray_Ray_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_d = R"doc(< Ray direction)doc";
 
@@ -2881,6 +2953,26 @@ static const char *__doc_mitsuba_Ray_operator_assign = R"doc()doc";
 static const char *__doc_mitsuba_Ray_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_operator_call = R"doc(Return the position of a point along the ray)doc";
+
+static const char *__doc_mitsuba_Ray_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_time = R"doc(< Time value associated with this ray)doc";
 
@@ -3130,8 +3222,6 @@ R"doc(Return the medium that lies on the exterior of this shape (``nullptr``
 
 static const char *__doc_mitsuba_Shape_has_bsdf = R"doc(Does the shape have a BSDF?)doc";
 
-static const char *__doc_mitsuba_Shape_has_subsurface = R"doc(Does this shape have a sub-surface integrator?)doc";
-
 static const char *__doc_mitsuba_Shape_interior_medium =
 R"doc(Return the medium that lies on the interior of this shape (``nullptr``
 == vacuum))doc";
@@ -3183,10 +3273,6 @@ static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the associated se
 static const char *__doc_mitsuba_Shape_set_bsdf = R"doc(Set the BSDF of this shape)doc";
 
 static const char *__doc_mitsuba_Shape_set_emitter = R"doc(Set the emitter of this shape)doc";
-
-static const char *__doc_mitsuba_Shape_subsurface = R"doc(Return the associated sub-surface integrator)doc";
-
-static const char *__doc_mitsuba_Shape_subsurface_2 = R"doc(Return the associated sub-surface integrator)doc";
 
 static const char *__doc_mitsuba_Spectrum = R"doc(//! @{ \name Data types for discretized spectral data)doc";
 
@@ -3651,6 +3737,8 @@ static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_adjust_time = R"doc(Move the intersection forward or backward through time)doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
 
@@ -3691,6 +3779,8 @@ static const char *__doc_mitsuba_SurfaceInteraction_is_sensor = R"doc(Is the int
 static const char *__doc_mitsuba_SurfaceInteraction_is_valid = R"doc(Is the current intersection valid?)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_n = R"doc(Geometric normal)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_normal_derivative = R"doc(Calls the suitable implementation of Shape::normal_derivative())doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_assign = R"doc()doc";
 
@@ -5062,13 +5152,13 @@ static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string repres
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Return a string representation of a frame)doc";
 
 static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of the bounding box)doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Return a string representation of the ray)doc";
 
 static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
@@ -5087,6 +5177,8 @@ static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_19 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper

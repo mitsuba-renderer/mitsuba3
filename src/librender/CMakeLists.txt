@@ -10,6 +10,7 @@ add_library(mitsuba-render-obj OBJECT
   mesh.cpp         ${INC_DIR}/mesh.h
   scene.cpp        ${INC_DIR}/scene.h
   shape.cpp        ${INC_DIR}/shape.h
+  medium.cpp       ${INC_DIR}/medium.h
   interaction.cpp  ${INC_DIR}/interaction.h
 )
 

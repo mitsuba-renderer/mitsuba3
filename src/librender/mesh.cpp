@@ -1,10 +1,9 @@
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/interaction.h>
 #include <mitsuba/core/util.h>
+#include <enoki/stl.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
-template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3f &);
-template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3fP &);
 
 Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
            Struct *face_struct, Size face_count)
@@ -168,6 +167,84 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
     return result;
 }
 
+template <typename SurfaceInteraction, typename Mask>
+ENOKI_INLINE auto Mesh::normal_derivative_impl(const SurfaceInteraction &si,
+                                               bool shading_frame,
+                                               const Mask &active) const {
+    using Value   = typename SurfaceInteraction::Value;
+    using Index   = typename SurfaceInteraction::Index;
+    using Point3  = typename SurfaceInteraction::Point3;
+    using Vector3 = typename SurfaceInteraction::Vector3;
+    using Normal3 = typename SurfaceInteraction::Normal3;
+
+    if (!shading_frame)
+        return std::make_pair(zero<Vector3>(), zero<Vector3>());
+
+    auto face_ptr = faces();
+    auto prim_index = si.prim_index * m_face_size;
+
+    auto i0 = gather<Index>(face_ptr,   prim_index, active) * m_vertex_size;
+    auto i1 = gather<Index>(face_ptr+1, prim_index, active) * m_vertex_size;
+    auto i2 = gather<Index>(face_ptr+2, prim_index, active) * m_vertex_size;
+
+    auto vertex_ptr = vertices(),
+         normal_ptr = vertex_ptr + sizeof(Vector3f);
+
+    /// These gathers should turn into loads
+    Point3 p0 = gather<Point3>(vertex_ptr, i0, active),
+           p1 = gather<Point3>(vertex_ptr, i1, active),
+           p2 = gather<Point3>(vertex_ptr, i2, active);
+
+    Normal3 n0 = gather<Normal3>(normal_ptr, i0, active),
+            n1 = gather<Normal3>(normal_ptr, i1, active),
+            n2 = gather<Normal3>(normal_ptr, i2, active);
+
+    Vector3 rel = si.p - p0,
+            du  = p1   - p0,
+            dv  = p2   - p0;
+
+    /* Solve a least squares problem to determine
+       the UV coordinates within the current triangle */
+    Value b1  = dot(du, rel), b2 = dot(dv, rel),
+          a11 = dot(du, du), a12 = dot(du, dv),
+          a22 = dot(dv, dv),
+          inv_det = rcp(a11 * a22 - a12 * a12);
+
+    Value u = ( a22 * b1 - a12 * b2) * inv_det,
+          v = (-a12 * b1 + a11 * b2) * inv_det,
+          w = 1.f - u - v;
+
+    /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
+       with respect to [u, v] in the local triangle parameterization.
+
+       Since d/du [f(u)/|f(u)|] = [d/du f(u)]/|f(u)|
+         - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in
+    */
+
+    Normal3 N(u * n1 + v * n2 + w * n0);
+    Value il = rsqrt<true>(squared_norm(N));
+    N *= il;
+
+    Vector3 dndu = (n1 - n0) * il;
+    Vector3 dndv = (n2 - n0) * il;
+
+    dndu -= N * dot(N, dndu);
+    dndv -= N * dot(N, dndv);
+
+    return std::make_pair(dndu, dndv);
+}
+
+std::pair<Vector3f, Vector3f>
+Mesh::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame, bool /* active */) const {
+    return normal_derivative_impl<SurfaceInteraction3f>(si, shading_frame, true);
+}
+
+std::pair<Vector3fP, Vector3fP>
+Mesh::normal_derivative(const SurfaceInteraction3fP &si, bool shading_frame,
+                        const mask_t<FloatP> &active) const {
+    return normal_derivative_impl<SurfaceInteraction3fP>(si, shading_frame, active);
+}
+
 Shape::Size Mesh::primitive_count() const {
     return face_count();
 }
@@ -177,27 +254,24 @@ void Mesh::write(Stream *) const {
 }
 
 std::string Mesh::to_string() const {
-    return tfm::format("%s[\n"
-        "  name = \"%s\",\n"
-        "  bbox = %s,\n"
-        "  vertex_struct = %s,\n"
-        "  vertex_count = %u,\n"
-        "  vertices = [%s of vertex data],\n"
-        "  face_struct = %s,\n"
-        "  face_count = %u,\n"
-        "  faces = [%s of vertex data]\n"
-        "]",
-        class_()->name(),
-        m_name,
-        m_bbox,
-        string::indent(m_vertex_struct->to_string()),
-        m_vertex_count,
-        util::mem_string(m_vertex_size * m_vertex_count),
-        string::indent(m_face_struct->to_string()),
-        m_face_count,
-        util::mem_string(m_face_size * m_face_count)
-    );
+    std::ostringstream oss;
+    oss << class_()->name() << "[" << std::endl
+        << "  name = \"" << m_name << "\"," << std::endl
+        << "  bbox = " << m_bbox << "," << std::endl
+        << "  vertex_struct = " << string::indent(m_vertex_struct) << "," << std::endl
+        << "  vertex_count = " << m_vertex_count << "," << std::endl
+        << "  vertex_struct = " << string::indent(m_vertex_struct) << "," << std::endl
+        << "  vertex_count = " << m_vertex_count << "," << std::endl
+        << "  vertices = [" << util::mem_string(m_vertex_size * m_vertex_count) << " of vertex data]," << std::endl
+        << "  face_struct = " << string::indent(m_face_struct) << "," << std::endl
+        << "  face_count = " << m_face_count << "," << std::endl
+        << "  faces = [" << util::mem_string(m_face_size * m_face_count) << " of face data]," << std::endl
+        << "]";
+    return oss.str();
 }
+
+template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3f &);
+template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3fP &);
 
 MTS_IMPLEMENT_CLASS(Mesh, Shape)
 NAMESPACE_END(mitsuba)

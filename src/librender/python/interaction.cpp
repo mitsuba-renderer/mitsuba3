@@ -1,42 +1,38 @@
+#include <mitsuba/python/python.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
-#include <mitsuba/python/python.h>
-
-using namespace pybind11::literals;
+#include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/medium.h>
+#include <enoki/stl.h>
 
 template <typename Point3>
 auto bind_interaction(py::module &m, const char *name) {
     using Type = SurfaceInteraction<Point3>;
+    using Vector3 = typename Type::Vector3;
+    using RayDifferential3 = typename Type::RayDifferential3;
+    using Value = typename Type::Value;
 
     return py::class_<Type>(m, name, D(SurfaceInteraction))
-        // Methods
-        //.def("to_world", &Type::to_world, D(SurfaceInteraction, to_world))
-        //.def("to_local", &Type::to_local, D(SurfaceInteraction, to_local))
-        //.def("is_valid", &Type::is_valid, D(SurfaceInteraction, is_valid))
-        //.def("is_emitter", &Type::is_emitter, D(SurfaceInteraction, is_emitter))
-        //.def("is_sensor", &Type::is_sensor, D(SurfaceInteraction, is_sensor))
-        //.def("has_subsurface", &Type::has_subsurface, D(SurfaceInteraction, has_subsurface))
-        //.def("is_medium_transition", &Type::is_medium_transition, D(SurfaceInteraction, is_medium_transition))
-        //.def("target_medium",
-             //py::overload_cast<const typename Type::Vector3 &>(
-                //&Type::target_medium, py::const_),
-             //D(SurfaceInteraction, target_medium))
-        //.def("target_medium",
-             //py::overload_cast<typename Type::Type>(&Type::target_medium, py::const_),
-             //D(SurfaceInteraction, target_medium, 2))
-        //.def("bsdf",
-             //py::overload_cast<const typename Type::RayDifferential3 &>(&Type::bsdf),
-             //D(SurfaceInteraction, bsdf))
-        //.def("bsdf",
-             //py::overload_cast<>(&Type::bsdf, py::const_),
-             //D(SurfaceInteraction, bsdf))
-        //.def("Le", &Type::Le, D(SurfaceInteraction, Le))
-        //.def("Lo_sub", &Type::Lo_sub, D(SurfaceInteraction, Lo_sub),
-             //"scene"_a, "sampler"_a, "d"_a, "depth"_a=0)
-        //.def("adjust_time", &Type::adjust_time, D(SurfaceInteraction, adjust_time))
-        //.def("normal_derivative", &Type::normal_derivative,
-             //D(SurfaceInteraction, normal_derivative),
-             //"dndu"_a, "dndv"_a, "shading_frame"_a=typename Type::Mask(true))
+        .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
+        .def("compute_partials", &Type::compute_partials, "ray"_a,
+             D(SurfaceInteraction, compute_partials))
+        .def("to_world", &Type::to_world, D(SurfaceInteraction, to_world))
+        .def("to_local", &Type::to_local, D(SurfaceInteraction, to_local))
+        .def("is_valid", &Type::is_valid, D(SurfaceInteraction, is_valid))
+        .def("is_emitter", &Type::is_emitter, D(SurfaceInteraction, is_emitter))
+        .def("is_sensor", &Type::is_sensor, D(SurfaceInteraction, is_sensor))
+        .def("is_medium_transition", &Type::is_medium_transition,
+             D(SurfaceInteraction, is_medium_transition))
+        .def("target_medium",
+             py::overload_cast<const Vector3 &>(&Type::target_medium, py::const_),
+             "d"_a, D(SurfaceInteraction, target_medium))
+        .def("target_medium",
+             py::overload_cast<Value>(&Type::target_medium, py::const_),
+             "cos_theta"_a, D(SurfaceInteraction, target_medium, 2))
+        .def("bsdf", py::overload_cast<const RayDifferential3 &>(&Type::bsdf),
+             "ray"_a, D(SurfaceInteraction, bsdf))
+        .def("bsdf", py::overload_cast<>(&Type::bsdf, py::const_),
+             D(SurfaceInteraction, bsdf, 2))
 
         // Members
         .def_readwrite("shape", &Type::shape, D(SurfaceInteraction, shape))
@@ -65,10 +61,12 @@ auto bind_interaction(py::module &m, const char *name) {
 
 MTS_PY_EXPORT(SurfaceInteraction) {
     bind_interaction<Point3f>(m, "SurfaceInteraction3f")
-        .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
-        .def("compute_partials", &SurfaceInteraction3f::compute_partials,
-             D(SurfaceInteraction, compute_partials), "ray"_a);
+        .def("adjust_time", &SurfaceInteraction3f::adjust_time,
+             "time"_a, D(SurfaceInteraction, adjust_time))
+        .def("normal_derivative", &SurfaceInteraction3f::normal_derivative,
+             "shading_frame"_a = true, "active"_a = true,
+             D(SurfaceInteraction, normal_derivative));
 
-    auto si3fx = bind_interaction<Point3f>(m, "SurfaceInteraction3fX");
+    auto si3fx = bind_interaction<Point3fX>(m, "SurfaceInteraction3fX");
     bind_slicing_operators<SurfaceInteraction3fX, SurfaceInteraction3f>(si3fx);
 }

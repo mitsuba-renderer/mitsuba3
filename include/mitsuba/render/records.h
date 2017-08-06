@@ -5,13 +5,10 @@
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/common.h>
 #include <mitsuba/render/interaction.h>
+#include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/emitter.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
-// TODO: port this structure
-struct MediumSample { };
-
-// -----------------------------------------------------------------------------
 
 /**
  * \brief Generic sampling record for positions
@@ -24,18 +21,26 @@ struct MediumSample { };
  * responsible sampling method must annotate the record with the associated
  * probability density and measure.
  */
-template <typename Point3> struct PositionSample {
+template <typename Point3_> struct PositionSample {
 
-    // -------------------------------------------------------------------------
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
 
-    using Point2             = point2_t<Point3>;
-    using Normal3            = normal3_t<Point3>;
-    using Value              = value_t<Point3>;
-    using Measure            = like_t<Value, EMeasure>;
-    using ObjectPointer      = like_t<Value, const Object *>;
-    using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
+    using Point3               = Point3_;
+    using Point2               = point2_t<Point3>;
+    using Normal3              = normal3_t<Point3>;
+    using Value                = value_t<Point3>;
+    using Measure              = like_t<Value, EMeasure>;
+    using ObjectPtr            = like_t<Value, const Object *>;
+    using SurfaceInteraction   = mitsuba::SurfaceInteraction<Point3>;
 
-    // -------------------------------------------------------------------------
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
 
     /// Sampled position
     Point3 p;
@@ -46,10 +51,10 @@ template <typename Point3> struct PositionSample {
     /**
      * \brief Optional: 2D sample position associated with the record
      *
-     * In some uses of this record, a sampled position may be associated
-     * with an important 2D quantity, such as the texture coordinates on
-     * a triangle mesh or a position on the aperture of a sensor. When
-     * applicable, such positions are stored in the \c uv attribute.
+     * In some uses of this record, a sampled position may be associated with
+     * an important 2D quantity, such as the texture coordinates on a triangle
+     * mesh or a position on the aperture of a sensor. When applicable, such
+     * positions are stored in the \c uv attribute.
      */
     Point2 uv;
 
@@ -62,31 +67,35 @@ template <typename Point3> struct PositionSample {
     /**
      * \brief Denotes the measure associated with the sample.
      *
-     * This is necessary to deal with quantities that are defined on
-     * unusual spaces, e.g. areas that have collapsed to a point
-     * or a line.
+     * This is necessary to deal with quantities that are defined on unusual
+     * spaces, e.g. areas that have collapsed to a point or a line.
      */
     Measure measure;
 
     /**
-      * \brief Optional: Pointer to an associated object
+      * \brief Optional: pointer to an associated object
       *
-      * In some uses of this record, sampling a position also involves
-      * choosing one of several objects (shapes, emitters, ..) on which
-      * the position lies. In that case, the \c object attribute stores
-      * a pointer to this object.
+      * In some uses of this record, sampling a position also involves choosing
+      * one of several objects (shapes, emitters, ..) on which the position
+      * lies. In that case, the \c object attribute stores a pointer to this
+      * object.
       */
-    ObjectPointer object = nullptr;
+    ObjectPtr object = nullptr;
 
-    // -------------------------------------------------------------------------
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Constructors, methods, etc.
+    // =============================================================
 
     /**
-     * \brief Create a new position sampling record that can be
-     * passed e.g. to \ref Shape::sample_position
+     * \brief Create a new position sampling record that can be passed e.g. to
+     * \ref Shape::sample_position
      *
      * \param time
-     *    Specifies the time that should be associated with the
-     *    position sample. This only matters when things are in motion
+     *    Specifies the time that should be associated with the position
+     *    sample. This only matters when things are in motion
      */
     PositionSample(Value time)
         : uv(zero<Point2f>()), time(time) { }
@@ -98,11 +107,12 @@ template <typename Point3> struct PositionSample {
      * surface after hitting it using standard ray tracing. This happens for
      * instance in path tracing with multiple importance sampling.
      */
-    PositionSample(const SurfaceInteraction &/*its*/,
-                   Measure /*measure = Measure(EArea)*/) {
-        // TODO: implement when SurfaceInteraction is available
-        Throw("Not implemented: PositionSample(SurfaceInteraction, Measure)");
-    }
+    PositionSample(const SurfaceInteraction &si, Measure measure = EArea)
+        : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time),
+          measure(measure) { }
+
+    //! @}
+    // =============================================================
 
     ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, measure, object)
     ENOKI_ALIGNED_OPERATOR_NEW()
@@ -114,23 +124,31 @@ template <typename Point3> struct PositionSample {
  * \brief Generic sampling record for directions
  *
  * This sampling record is used to implement techniques that randomly draw a
- * unit vector from a subset of the sphere and furthermore provide
- * auxilary information about the sample.
+ * unit vector from a subset of the sphere and furthermore provide auxilary
+ * information about the sample.
  *
  * Apart from returning the sampled direction, the responsible sampling method
- * must annotate the record with the associated probability density
- * and measure.
+ * must annotate the record with the associated probability density and
+ * measure.
  */
-template <typename Vector3> struct DirectionSample {
+template <typename Vector3_> struct DirectionSample {
 
-    // -------------------------------------------------------------------------
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
 
-    using Value              = value_t<Vector3>;
-    using Measure            = like_t<Value, EMeasure>;
-    using Point3             = point3_t<Vector3>;
-    using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
+    using Vector3               = Vector3_;
+    using Value                 = value_t<Vector3>;
+    using Measure               = like_t<Value, EMeasure>;
+    using Point3                = point3_t<Vector3>;
+    using SurfaceInteraction    = mitsuba::SurfaceInteraction<Point3>;
 
-    // -------------------------------------------------------------------------
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
 
     /// Sampled direction
     Vector3 d;
@@ -141,7 +159,12 @@ template <typename Vector3> struct DirectionSample {
     /// Measure associated with the density function
     Measure measure;
 
-    // -------------------------------------------------------------------------
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Constructors, methods, etc.
+    // =============================================================
 
     /**
      * \brief Create a direction sampling record filled with a specified
@@ -156,25 +179,23 @@ template <typename Vector3> struct DirectionSample {
         : d(d), measure(measure) { }
 
     /**
-     * \brief Create a direction sampling record
-     * from a surface intersection
+     * \brief Create a direction sampling record from a surface intersection
      *
-     * This is useful to determine the hypothetical sampling
-     * density of a direction after hitting it using standard
-     * ray tracing. This happens for instance when hitting
-     * the camera aperture in bidirectional rendering
+     * This is useful to determine the hypothetical sampling density of a
+     * direction after hitting it using standard ray tracing. This happens for
+     * instance when hitting the camera aperture in bidirectional rendering
      * techniques.
      */
-    DirectionSample(const SurfaceInteraction &/*its*/,
-                    Measure /*measure = ESolidAngle*/) {
-        // TODO: implement when SurfaceInteraction is available
-        Throw("Not implemented: DirectionSample(SurfaceInteraction, Measure)");
-    }
+    DirectionSample(const SurfaceInteraction &its,
+                    Measure measure = ESolidAngle)
+        : d(its.to_world(its.wi)), measure(measure) { }
+
+    //! @}
+    // =============================================================
 
     ENOKI_STRUCT(DirectionSample, d, pdf, measure)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
-
 
 // -----------------------------------------------------------------------------
 
@@ -185,31 +206,41 @@ template <typename Vector3> struct DirectionSample {
  * a position on the surface of an object with the goal of importance sampling
  * a quantity that is defined over the sphere seen from a given reference point.
  *
- * This general approach for sampling positions is named "direct" sampling
- * throughout Mitsuba, motivated by direct illumination rendering techniques,
- * which represent the most important application.
+ * This overall approach for sampling positions is named \a direct sampling
+ * throughout Mitsuba as in <em>direct illumination</em> rendering techniques,
+ * which represent the most important use case. However, the concept is used in
+ * a wider bidirectional sense, e.g. to sample positions on a sensor.
  *
- * This record inherits all fields from \ref PositionSample and
- * extends it with two useful quantities that are cached so that they don't
- * need to be recomputed many times: the unit direction and length from the
- * reference position to the sampled point.
+ * This record inherits all fields from \ref PositionSample and extends it with
+ * two useful quantities that are cached so that they don't need to be
+ * recomputed many times: the unit direction and length from the reference
+ * position to the sampled point.
  */
-template <typename Point3> struct DirectSample : public PositionSample<Point3> {
+template <typename Point3_> struct DirectSample : public PositionSample<Point3_> {
 
-    // -------------------------------------------------------------------------
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
 
-    using Base    = PositionSample<Point3>;
-    using Vector3 = vector3_t<Point3>;
-    using Ray3    = Ray<Point3>;
-    using MediumSample =
-        mitsuba::MediumSample; // TODO: support packets of MediumSamples
+    using Base                 = PositionSample<Point3_>;
+    using Vector3              = vector3_t<Point3_>;
+    using Ray3                 = Ray<Point3_>;
+    using MediumInteraction    = mitsuba::MediumInteraction<Point3_>;
 
     using typename Base::Point2;
-    using typename Base::ObjectPointer;
+    using typename Base::Point3;
+    using typename Base::ObjectPtr;
     using typename Base::Normal3;
     using typename Base::Value;
     using typename Base::Measure;
     using typename Base::SurfaceInteraction;
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
 
     // Make parent fields visible
     using Base::p;
@@ -219,8 +250,6 @@ template <typename Point3> struct DirectSample : public PositionSample<Point3> {
     using Base::pdf;
     using Base::measure;
     using Base::object;
-
-    // -------------------------------------------------------------------------
 
     /// Reference point for direct sampling
     Point3 ref_p;
@@ -239,7 +268,12 @@ template <typename Point3> struct DirectSample : public PositionSample<Point3> {
     /// Distance from the reference point to the target direction
     Value dist;
 
-    // -------------------------------------------------------------------------
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Constructors, methods, etc.
+    // =============================================================
 
     /**
      * \brief Create an new direct sampling record for a reference point
@@ -257,12 +291,14 @@ template <typename Point3> struct DirectSample : public PositionSample<Point3> {
      * \brief Create an new direct sampling record for a reference point
      * \c ref located on a surface.
      *
-     * \param its
+     * \param ref_si
      *     The reference point specified using an intersection record
      */
-    DirectSample(const SurfaceInteraction &/*ref_its*/) {
-        // TODO: implement when SurfaceInteraction is available
-        Throw("Not implemented: DirectSample(SurfaceInteraction)");
+    DirectSample(const SurfaceInteraction &ref_si)
+        : Base(ref_si), ref_p(ref_si.p) {
+        auto front_only_material = eq(
+            ref_si.bsdf()->flags() & (BSDF::ETransmission | BSDF::EBackSide), 0u);
+        ref_n = select(front_only_material, ref_si.sh_frame.n, Normal3(0.f));
     }
 
     /**
@@ -272,36 +308,39 @@ template <typename Point3> struct DirectSample : public PositionSample<Point3> {
      * \param ms
      *     The reference point specified using an medium sampling record
      */
-    DirectSample(const MediumSample &/*ms*/) {
-        // TODO: implement when MediumSample is available
-        Throw("Not implemented: DirectSample(MediumSample)");
+    DirectSample(const MediumInteraction &/*ms*/) {
+        // TODO: implement when MediumInteraction is available
+        Throw("Not implemented: DirectSample(MediumInteraction)");
     }
 
     /**
      * \brief Create a direct sampling record, which can be used to \a query
-     * the density of a surface position (where the reference point lies on
-     * a \a surface)
+     * the density of a surface position (where the reference point lies on a
+     * \a surface)
      *
      * \param ray
-     *     Reference to the ray that generated the intersection \c its.
-     *     The ray origin must be located at \c ref_its.p
+     *     Reference to the ray that generated the intersection \c ref_si.
+     *     The ray origin must be located at \c ref_si.p
      *
-     * \param its
+     * \param ref_si
      *     A surface intersection record (usually on an emitter)
      */
-    DirectSample(const Ray3 &/*ray*/, const SurfaceInteraction &/*its*/,
-                 Measure /*measure = ESolidAngle*/) {
-        // TODO: implement when SurfaceInteraction is available
-        Throw("Not implemented: DirectSample(Ray3, SurfaceInteraction, Measure)");
+    DirectSample(const Ray3 &ray, const SurfaceInteraction &si,
+                 Measure measure = ESolidAngle)
+    : Base(si, measure), d(ray.d), dist(si.t) {
+        object = si.shape->emitter();
     }
 
     /// Element-by-element constructor
     DirectSample(const Point3 &p, const Normal3 &n, const Point2 &uv,
                  const Value &time, const Value &pdf, const Measure &measure,
-                 const ObjectPointer &object, const Point3 &ref_p,
+                 const ObjectPtr &object, const Point3 &ref_p,
                  const Normal3 &ref_n, const Vector3 &d, const Value &dist)
         : Base(p, n, uv, time, pdf, measure, object), ref_p(ref_p),
           ref_n(ref_n), d(d), dist(dist) { }
+
+    //! @}
+    // =============================================================
 
     ENOKI_DERIVED_STRUCT(DirectSample, Base, ref_p, ref_n, d, dist)
     ENOKI_ALIGNED_OPERATOR_NEW()

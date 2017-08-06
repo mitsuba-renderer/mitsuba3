@@ -30,8 +30,6 @@ template <typename Point_> struct Ray {
     Value maxt = math::Infinity; ///< Maximum position on the ray segment
     Value time = 0;              ///< Time value associated with this ray
 
-    ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time)
-
     /// Construct a new ray
     Ray(const Point &o, const Vector &d) : o(o), d(d) {
         update();
@@ -52,11 +50,13 @@ template <typename Point_> struct Ray {
 
     /// Return the position of a point along the ray
     Point operator() (Value t) const { return fmadd(d, t, o); }
+
+    ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time)
+    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /** \brief %Ray differential -- enhances the basic ray class with
-   information about the rays of adjacent pixels on the view plane
-*/
+    offset rays for two adjacent pixels on the view plane */
 template <typename Point_> struct RayDifferential : Ray<Point_> {
     using Base = Ray<Point_>;
     using Base::Base;
@@ -75,9 +75,6 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
     Vector d_x, d_y;
     bool has_differentials = false;
 
-    ENOKI_DERIVED_STRUCT(RayDifferential, Base, o_x, o_y, d_x, d_y,
-                         has_differentials)
-
     /// Element-by-element constructor
     RayDifferential(const Point &o, const Vector &d, const Vector &d_rcp,
                     const Value &mint, const Value &maxt, const Value &time,
@@ -92,9 +89,12 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
         d_x = d + (d_x - d) * amount;
         d_y = d + (d_y - d) * amount;
     }
+
+    ENOKI_DERIVED_STRUCT(RayDifferential, Base, o_x, o_y,
+                         d_x, d_y, has_differentials)
 };
 
-/// Return a string representation of the bounding box
+/// Return a string representation of the ray
 template <typename Point>
 std::ostream &operator<<(std::ostream &os, const Ray<Point> &r) {
     os << "Ray" << type_suffix<Point>() << "[" << std::endl
@@ -102,7 +102,7 @@ std::ostream &operator<<(std::ostream &os, const Ray<Point> &r) {
        << "  d = " << string::indent(r.d, 6) << "," << std::endl
        << "  mint = " << r.mint << "," << std::endl
        << "  maxt = " << r.maxt << "," << std::endl
-       << "  time = " << r.time
+       << "  time = " << r.time << std::endl
        << "]";
     return os;
 }

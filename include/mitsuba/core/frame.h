@@ -122,19 +122,20 @@ template <typename Vector3> struct Frame {
         return frame.s != s || frame.t != t || frame.n != n;
     }
 
-    /// Return a string representation of this frame
-    friend std::ostream &operator<<(std::ostream &os, const Frame &f) {
-        os << "Frame["
-           << "  s = " << f.s << "," << std::endl
-           << "  t = " << f.t << "," << std::endl
-           << "  n = " << f.n
-           << "]";
-        return os;
-    }
-
     ENOKI_STRUCT(Frame, s, t, n)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
+
+/// Return a string representation of a frame
+template <typename Vector3>
+std::ostream &operator<<(std::ostream &os, const Frame<Vector3> &f) {
+    os << "Frame[" << std::endl
+       << "  s = " << string::indent(f.s, 6) << "," << std::endl
+       << "  t = " << string::indent(f.t, 6) << "," << std::endl
+       << "  n = " << string::indent(f.n, 6) << std::endl
+       << "]";
+    return os;
+}
 
 NAMESPACE_END(mitsuba)
 

@@ -10,6 +10,7 @@ class MTS_EXPORT_RENDER Shape : public Object {
 public:
     /// Use 32 bit indices to keep track of indices to conserve memory
     using Index = uint32_t;
+
     /// Use 32 bit indices to keep track of sizes to conserve memory
     using Size  = uint32_t;
 
@@ -43,12 +44,18 @@ public:
     // =============================================================
 
     /**
-     * Adjust an intersection record to a different time value
+     * \brief Move an intersection record to a different time value
+     *
+     * Conceptually, the point remains firmly attached to the underlying
+     * object, which is moved forward or backward in time. The method updates
+     * all relevant SurfaceInteraction fields.
      */
-    template <typename Intersection>
-    /*virtual*/ void adjust_time(Intersection &/*its*/, Float /*time*/) const {
-        Throw("Not implemented yet");
-    }
+    virtual void adjust_time(SurfaceInteraction3f &si,
+                             const Float &time) const;
+
+    /// Statically vectorized version of \ref adjust_time()
+    virtual void adjust_time(SurfaceInteraction3fP &si, const FloatP &time,
+                             const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Return the derivative of the normal vector with
@@ -57,23 +64,27 @@ public:
      * This can be used to compute Gaussian and principal curvatures,
      * amongst other things.
      *
-     * \param its
-     *     Intersection record associated with the query
-     * \param dndu
-     *     Parameter used to store the partial derivative of the
-     *     normal vector with respect to \c u
-     * \param dndv
-     *     Parameter used to store the partial derivative of the
-     *     normal vector with respect to \c v
+     * \param si
+     *     Surface interaction associated with the query
+     *
      * \param shading_frame
      *     Specifies whether to compute the derivative of the
      *     geometric normal \a or the shading normal of the surface
+     *
+     * \return
+     *     The partial derivatives of the normal vector with
+     *     respect to \c u and \c v.
      */
-    template <typename Intersection, typename Vector>
-    /*virtual*/ std::pair<Vector, Vector> normal_derivative(const Intersection &/*its*/,
-        bool /*shading_frame*/ = true) const {
-        Throw("Not implemented yet");
-    }
+    virtual std::pair<Vector3f, Vector3f>
+    normal_derivative(const SurfaceInteraction3f &si,
+                      bool shading_frame = true,
+                      bool active = true) const = 0;
+
+    /// Vectorized version of \ref normal_derivative()
+    virtual std::pair<Vector3fP, Vector3fP>
+    normal_derivative(const SurfaceInteraction3fP &si,
+                      bool shading_frame           = true,
+                      const mask_t<FloatP> &active = true) const = 0;
 
     //! @}
     // =============================================================
@@ -109,79 +120,39 @@ public:
         // return m_exterior_medium.get();
     }
 
-    /// Does this shape have a sub-surface integrator?
-    bool has_subsurface() const {
-        Throw("Not implemented yet");
-        // return m_subsurface.get() != nullptr;
-    }
-    /// Return the associated sub-surface integrator
-    Subsurface *subsurface() {
-        Throw("Not implemented yet");
-        // return m_subsurface;
-    }
-    /// Return the associated sub-surface integrator
-    const Subsurface *subsurface() const {
-        Throw("Not implemented yet");
-        // return m_subsurface.get();
-    }
+    /// Return the shape's BSDF (const version)
+    const BSDF *bsdf() const { return m_bsdf.get(); }
+
+    /// Return the shape's BSDF
+    BSDF *bsdf() { return m_bsdf.get(); }
+
+    /// Set the BSDF of this shape
+    void set_bsdf(BSDF * bsdf) { m_bsdf = bsdf; }
 
     /// Is this shape also an area emitter?
-    bool is_emitter() const {
-        Throw("Not implemented yet");
-        // return m_emitter.get() != nullptr;
-    }
-    /// Return the associated emitter (if any)
-    Emitter *emitter() {
-        Throw("Not implemented yet");
-        // return m_emitter;
-    }
-    /// Return the associated emitter (if any)
-    const Emitter *emitter() const {
-        Throw("Not implemented yet");
-        // return m_emitter.get();
-    }
-    /// Set the emitter of this shape
-    void set_emitter(Emitter * /*emitter*/) {
-        Throw("Not implemented yet");
-        // m_emitter = emitter;
-    }
+    bool is_emitter() const { return m_emitter.get() != nullptr; }
+
+    /// Return the area emitter associated with this shape (if any, const version)
+    const Emitter *emitter() const { return m_emitter.get(); }
+
+    /// Return the area emitter associated with this shape (if any)
+    Emitter *emitter() { return m_emitter.get(); }
+
+    /// Set the area emitter associated with this shape
+    void set_emitter(Emitter * emitter) { m_emitter = emitter; }
 
     /// Is this shape also an area sensor?
-    bool is_sensor() const {
-        Throw("Not implemented yet");
-        // return m_sensor.get() != nullptr;
-    }
-    /// Return the associated sensor (if any)
-    Sensor *sensor() {
-        Throw("Not implemented yet");
-        // return m_sensor;
-    }
-    /// Return the associated sensor (if any)
-    const Sensor *sensor() const {
-        Throw("Not implemented yet");
-        // return m_sensor.get();
-    }
+    bool is_sensor() const { return m_sensor.get() != nullptr; }
 
-    /// Does the shape have a BSDF?
-    bool has_bsdf() const {
-        Throw("Not implemented yet");
-        // return m_bsdf.get() != nullptr;
-    }
-    /// Return the shape's BSDF
-    const BSDF *bsdf() const {
-        Throw("Not implemented yet");
-        // return m_bsdf.get();
-    }
-    /// Return the shape's BSDF
-    BSDF *bsdf() {
-        Throw("Not implemented yet");
-        // return m_bsdf.get();
-    }
-    /// Set the BSDF of this shape
-    void set_bsdf(BSDF * /*bsdf*/) {
-        Throw("Not implemented yet");
-        // m_bsdf = bsdf;
-    }
+    /// Return the area sensor associated with this shape (if any, const version)
+    const Sensor *sensor() const { return m_sensor.get(); }
+
+    /// Return the area sensor associated with this shape (if any)
+    Sensor *sensor() { return m_sensor.get(); }
+
+    /// Set the area sensor associated with this shape
+    void set_sensor(Sensor * sensor) { m_sensor = sensor; }
+
 
     /**
      * \brief Returns the number of sub-primitives that make up this shape
@@ -210,6 +181,8 @@ protected:
 
 private:
     ref<BSDF> m_bsdf;
+    ref<Emitter> m_emitter;
+    ref<Sensor> m_sensor;
 };
 
 NAMESPACE_END(mitsuba)
@@ -221,13 +194,17 @@ NAMESPACE_END(mitsuba)
 // Enable usage of array pointers for our types
 ENOKI_CALL_SUPPORT_BEGIN(mitsuba::ShapeP)
 ENOKI_CALL_SUPPORT_SCALAR(is_emitter)
+ENOKI_CALL_SUPPORT_SCALAR(emitter)
 ENOKI_CALL_SUPPORT_SCALAR(is_sensor)
-ENOKI_CALL_SUPPORT_SCALAR(has_subsurface)
+ENOKI_CALL_SUPPORT_SCALAR(sensor)
+ENOKI_CALL_SUPPORT_SCALAR(bsdf)
 ENOKI_CALL_SUPPORT_SCALAR(is_medium_transition)
 ENOKI_CALL_SUPPORT_SCALAR(exterior_medium)
 ENOKI_CALL_SUPPORT_SCALAR(interior_medium)
-ENOKI_CALL_SUPPORT_SCALAR(bsdf)
+ENOKI_CALL_SUPPORT(normal_derivative)
+ENOKI_CALL_SUPPORT(adjust_time)
 ENOKI_CALL_SUPPORT_END(mitsuba::ShapeP)
 
 //! @}
 // -----------------------------------------------------------------------
+

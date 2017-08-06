@@ -44,13 +44,13 @@ public:
     const uint8_t *faces() const { return m_faces.get(); }
 
     /// Return a pointer to the raw face buffer
-    uint8_t *faces() { return m_faces.get(); }
+    uint8_t *faces() { return (uint8_t *) m_faces.get(); }
 
     /// Return a pointer to the raw face buffer (at a specified face index)
-    const uint8_t *face(Index index) const { return m_faces.get() + m_face_size * index; }
+    const uint8_t *face(uint8_t index) const { return m_faces.get() + m_face_size * index; }
 
     /// Return a pointer to the raw face buffer (at a specified face index)
-    uint8_t *face(Index index) { return m_faces.get() + m_face_size * index; }
+    uint8_t *face(uint8_t index) { return m_faces.get() + m_face_size * index; }
 
     /// Recompute the bounding box (must be called following changes to vertex positions)
     void recompute_bbox();
@@ -83,11 +83,18 @@ public:
     virtual BoundingBox3f bbox(Index index,
                                const BoundingBox3f &clip) const override;
 
-    /**
-     * \brief Returns the number of sub-primitives (i.e. triangles) that make up
-     * this shape
-     */
+    /// Returns the number of sub-primitives (i.e. triangles) that make up this shape
     virtual Size primitive_count() const override;
+
+    /// Returns the derivative of the normal vector with respect to the UV parameterization
+    virtual std::pair<Vector3f, Vector3f>
+    normal_derivative(const SurfaceInteraction3f &si,
+                      bool shading_frame = true,
+                      bool active = true) const override;
+
+    virtual std::pair<Vector3fP, Vector3fP>
+    normal_derivative(const SurfaceInteraction3fP &si, bool shading_frame = true,
+                      const mask_t<FloatP> &active = true) const override;
 
     /** \brief Ray-triangle intersection test
      *
@@ -147,6 +154,10 @@ public:
 protected:
     inline Mesh() { }
     virtual ~Mesh();
+
+    template <typename SurfaceInteraction, typename Mask>
+    auto normal_derivative_impl(const SurfaceInteraction &si,
+                                bool shading_frame, const Mask &active) const;
 
     VertexHolder m_vertices;
     Size m_vertex_size = 0;

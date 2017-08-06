@@ -1,3 +1,4 @@
+#include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/core/bbox.h>
 
@@ -17,6 +18,15 @@ BoundingBox3f Shape::bbox(Index index, const BoundingBox3f &clip) const {
 
 Shape::Size Shape::primitive_count() const {
     return 1;
+}
+
+void Shape::adjust_time(SurfaceInteraction3f &si, const Float &time) const {
+    si.time = time;
+}
+
+void Shape::adjust_time(SurfaceInteraction3fP &si, const FloatP &time,
+                        const mask_t<FloatP> &active) const {
+    si.time[active] = time;
 }
 
 MTS_IMPLEMENT_CLASS(Shape, Object)

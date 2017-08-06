@@ -1,36 +1,47 @@
 #pragma once
 
-// TODO: move as many includes as possible to the .cpp
-#include <mitsuba/render/common.h>
+#include <mitsuba/render/shape.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/ray.h>
-#include <mitsuba/core/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 /** \brief Container for all information related to a surface intersection.
  */
-template <typename Point3> struct SurfaceInteraction {
-    using Value            = value_t<Point3>;
-    using Index            = uint32_array_t<Value>;
-    using Mask             = mask_t<Value>;
+template <typename Point3_> struct SurfaceInteraction {
 
-    using Point2           = point2_t<Point3>;
-    using Vector2          = vector2_t<Point3>;
-    using Vector3          = vector3_t<Point3>;
-    using Normal3          = normal3_t<Point3>;
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
+    //
+    using Point3              = Point3_;
 
-    using Frame3           = Frame<Vector3>;
-    using Color3           = Color<Value, 3>;
-    using RayDifferential3 = RayDifferential<Point3>;
+    using Value               = value_t<Point3>;
+    using Index               = uint32_array_t<Value>;
+    using Mask                = mask_t<Value>;
 
-    using BSDFPtr          = like_t<Value, const BSDF *>;
-    using MediumPtr        = like_t<Value, const Medium *>;
-    using ShapePtr         = like_t<Value, const Shape *>;
+    using Point2              = point2_t<Point3>;
+    using Vector2             = vector2_t<Point3>;
+    using Vector3             = vector3_t<Point3>;
+    using Normal3             = normal3_t<Point3>;
 
-    // -------------------------------------------------------------------------
+    using Frame3              = Frame<Vector3>;
+    using Color3              = Color<Value, 3>;
+    using RayDifferential3    = RayDifferential<Point3>;
+
+    using BSDFPtr             = like_t<Value, const BSDF *>;
+    using MediumPtr           = like_t<Value, const Medium *>;
+    using ShapePtr            = like_t<Value, const Shape *>;
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
 
     /// Pointer to the associated shape
     ShapePtr shape = nullptr;
@@ -45,10 +56,10 @@ template <typename Point3> struct SurfaceInteraction {
     Point3 p;
 
     /// Geometric normal
-    Normal3f n;
+    Normal3 n;
 
     /// UV surface coordinates
-    Point2f uv;
+    Point2 uv;
 
     /// Shading frame
     Frame3 sh_frame;
@@ -74,7 +85,12 @@ template <typename Point3> struct SurfaceInteraction {
     /// Have texture coordinate partials been computed?
     bool has_uv_partials;
 
-    // -------------------------------------------------------------------------
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Methods
+    // =============================================================
 
     /// Convert a local shading-space vector into world space
     Vector3 to_world(const Vector3 &v) const {
@@ -147,19 +163,17 @@ template <typename Point3> struct SurfaceInteraction {
     const BSDFPtr bsdf(const RayDifferential3 &ray) {
         const BSDFPtr bsdf = shape->bsdf();
 
-        if (!has_uv_partials && any(bsdf->uses_ray_differentials()))
+        if (!has_uv_partials && any(bsdf->needs_differentials()))
             compute_partials(ray);
 
         return bsdf;
     }
 
     /// Returns the BSDF of the intersected shape
-    const BSDFPtr bsdf() const {
-        return shape->bsdf();
-    }
+    const BSDFPtr bsdf() const { return shape->bsdf(); }
 
 #if 0
-    /** TODO
+    /**
      * \brief Returns radiance emitted into direction d.
      *
      * \remark This function should only be called if the
@@ -170,40 +184,20 @@ template <typename Point3> struct SurfaceInteraction {
         // return shape->emitter()->eval(*this, d);
         return Spectrum();
     }
-
-    /**
-     * \brief Returns radiance from a subsurface integrator
-     * emitted into direction d.
-     *
-     * \remark Should only be called if the intersected
-     * shape is actually a subsurface integrator.
-     */
-    // TODO: should we take vectorized samplers, or a single one that we use
-    // in a vectorized way?
-    Spectrum Lo_sub(const ShapePtr /*scene*/, Sampler */*sampler*/,
-                           const Vector3 &/*d*/, int /*depth = 0*/) const {
-        Log(EError, "Not implemented yet");
-        // return shape->subsurface()->Lo(scene, sampler, *this, d, depth);
-        return Spectrum();
-    }
+#endif
 
     /// Move the intersection forward or backward through time
-    void adjust_time(Value /*time*/) {
-        Log(EError, "Not implemented yet");
-        // if (instance)
-        //     instance->adjust_time(*this, time);
-        // else if (shape)
-        //     shape->adjust_time(*this, time);
-        // else
-        //     this->time = time;
+    void adjust_time(Value time) {
+        ShapePtr target = select(neq(instance, nullptr), instance, shape);
+        target->adjust_time(*this, time);
     }
 
     /// Calls the suitable implementation of \ref Shape::normal_derivative()
-    std::pair<Vector3, Vector3> normal_derivative(bool shading_frame = true) const {
+    std::pair<Vector3, Vector3> normal_derivative(bool shading_frame = true,
+                                                  mask_t<Value> active = true) const {
         ShapePtr target = select(neq(instance, nullptr), instance, shape);
-        return target->normal_derivative(*this);
+        return target->normal_derivative(*this, shading_frame, active);
     }
-#endif
 
     /// Computes texture coordinate partials
     void compute_partials(const RayDifferential3 &ray) {
@@ -233,11 +227,17 @@ template <typename Point3> struct SurfaceInteraction {
         /* Set the UV partials to zero if dpdu and/or dpdv == 0 */
         inv_det = select(enoki::isfinite(inv_det), inv_det, 0.f);
 
-        duv_dx = Vector2(fmsub(a11, b0x, a01 * b1x) * inv_det, fmsub(a00, b1x, a01 * b0x) * inv_det);
-        duv_dy = Vector2(fmsub(a11, b0y, a01 * b1y) * inv_det, fmsub(a00, b1y, a01 * b0y) * inv_det);
+        duv_dx = Vector2(fmsub(a11, b0x, a01 * b1x) * inv_det,
+                         fmsub(a00, b1x, a01 * b0x) * inv_det);
+
+        duv_dy = Vector2(fmsub(a11, b0y, a01 * b1y) * inv_det,
+                         fmsub(a00, b1y, a01 * b0y) * inv_det);
 
         has_uv_partials = true;
     }
+
+    //! @}
+    // =============================================================
 
     ENOKI_STRUCT(SurfaceInteraction, shape, t, time, p, n, uv, sh_frame,
                  dp_du, dp_dv, duv_dx, duv_dy, color, wi, prim_index, instance,
@@ -257,19 +257,19 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Point3> &it)
            << "  shape = " << it.shape << std::endl
            << "  t = " << it.t << "," << std::endl
            << "  time = " << it.time << "," << std::endl
-           << "  p = " << it.p << "," << std::endl
-           << "  n = " << it.n << "," << std::endl
-           << "  uv = " << it.uv << "," << std::endl
-           << "  sh_frame = " << it.sh_frame << "," << std::endl
-           << "  dp_du = " << it.dp_du << "," << std::endl
-           << "  dp_dv = " << it.dp_dv << "," << std::endl;
+           << "  p = " << string::indent(it.p, 6) << "," << std::endl
+           << "  n = " << string::indent(it.n, 6) << "," << std::endl
+           << "  uv = " << string::indent(it.uv, 7) << "," << std::endl
+           << "  sh_frame = " << string::indent(it.sh_frame, 2) << "," << std::endl
+           << "  dp_du = " << string::indent(it.dp_du, 10) << "," << std::endl
+           << "  dp_dv = " << string::indent(it.dp_dv, 10) << "," << std::endl;
 
         if (it.has_uv_partials)
             os << "  duv_dx = " << it.duv_dx << "," << std::endl
                << "  duv_dy = " << it.duv_dy << "," << std::endl;
 
-        os << "  color = " << it.color << "," << std::endl
-           << "  wi = " << it.wi << "," << std::endl
+        os << "  color = " << string::indent(it.color, 10) << "," << std::endl
+           << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl
            << "  instance = " << it.instance << "," << std::endl
            << "  has_uv_partials = " << it.has_uv_partials << "," << std::endl
