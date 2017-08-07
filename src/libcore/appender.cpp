@@ -43,11 +43,20 @@ std::string StreamAppender::read_log() {
     return result;
 }
 
-void StreamAppender::append(ELogLevel, const std::string &text) {
+void StreamAppender::append(ELogLevel level, const std::string &text) {
     /* Insert a newline if the last message was a progress message */
     if (m_last_message_was_progress && !m_is_file)
         (*m_stream) << std::endl;
+#if !defined(__WINDOWS__)
+    if (level == EWarn || level == EError)
+        (*m_stream) << "\x1b[31m";
+    else if (level == EDebug)
+        (*m_stream) << "\x1b[38;5;245m";
+#endif
     (*m_stream) << text << std::endl;
+#if !defined(__WINDOWS)
+    (*m_stream) << "\x1b[0m";
+#endif
     m_last_message_was_progress = false;
 }
 
