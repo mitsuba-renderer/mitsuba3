@@ -1,7 +1,7 @@
 #pragma once
 
 /// Current release of Mitsuba
-#define MTS_VERSION "2.0.dev0"
+#define MTS_VERSION "2.0.0"
 
 /// Year of the current release
 #define MTS_YEAR "2017"

@@ -225,10 +225,17 @@ extern MTS_EXPORT_CORE bool create_directory(const path& p) noexcept;
  * the remainder is discarded. The file must exist.
  */
 extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
+
 /** \brief Removes a file or empty directory. Returns true if removal was
  * successful, false if there was an error (e.g. the file did not exist).
  */
 extern MTS_EXPORT_CORE bool remove(const path& p);
+
+
+/** \brief Renames a file or directory. Returns true if renaming was
+ * successful, false if there was an error (e.g. the file did not exist).
+ */
+extern MTS_EXPORT_CORE bool rename(const path& src, const path &dst);
 
 NAMESPACE_END(filesystem)
 

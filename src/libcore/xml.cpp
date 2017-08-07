@@ -27,6 +27,44 @@ enum ETag {
     EInclude, EInvalid
 };
 
+struct Version {
+    unsigned int major, minor, patch;
+
+    Version() = default;
+
+    Version(int major, int minor, int patch)
+        : major(major), minor(minor), patch(patch) { }
+
+    Version(const char *value) {
+        auto list = string::tokenize(value, " .");
+        if (list.size() != 3)
+            Throw("Version number must consist of three period-separated parts!");
+        major = std::stoul(list[0]);
+        minor = std::stoul(list[1]);
+        patch = std::stoul(list[2]);
+    }
+
+    bool operator==(const Version &v) const {
+        return std::tie(major, minor, patch) ==
+               std::tie(v.major, v.minor, v.patch);
+    }
+
+    bool operator!=(const Version &v) const {
+        return std::tie(major, minor, patch) !=
+               std::tie(v.major, v.minor, v.patch);
+    }
+
+    bool operator<(const Version &v) const {
+        return std::tie(major, minor, patch) <
+               std::tie(v.major, v.minor, v.patch);
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const Version &v) {
+        os << v.major << "." << v.minor << "." << v.patch;
+        return os;
+    }
+};
+
 NAMESPACE_BEGIN(detail)
 
 static std::unordered_map<std::string, ETag> *tags = nullptr;
@@ -118,6 +156,7 @@ struct XMLSource {
     const pugi::xml_document &doc;
     std::function<std::string(ptrdiff_t)> offset;
     size_t depth = 0;
+    bool modified = false;
 
     template <typename... Args>
     [[noreturn]]
@@ -187,6 +226,32 @@ Vector3f parse_vector(XMLSource &src, pugi::xml_node &node) {
     }
 }
 
+void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) {
+    if (version == Version(MTS_VERSION))
+        return;
+
+    Log(EInfo, "\"%s\": upgrading document from v%s to v%s ..", src.id, version,
+        Version(MTS_VERSION));
+
+    if (version < Version(2, 0, 0)) {
+        /* Upgrade all attribute names from camelCase to underscore_case */
+        for (pugi::xpath_node result: node.select_nodes("//@name")) {
+            pugi::xml_attribute name_attrib = result.attribute();
+            std::string name = name_attrib.value();
+            for (size_t i = 0; i < name.length() - 1; ++i) {
+                if (std::islower(name[i]) && std::isupper(name[i + 1])) {
+                    name = name.substr(0, i + 1) + std::string("_") +
+                           (char) std::tolower(name[i + 1]) + name.substr(i + 2);
+                    ++i;
+                }
+            }
+            name_attrib.set_value(name.c_str());
+        }
+    }
+
+    src.modified = true;
+}
+
 static std::pair<std::string, std::string>
 parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
          ETag parent_tag, Properties &props, size_t &arg_counter, int depth) {
@@ -230,10 +295,20 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         if (has_parent && !parent_is_object && !(parent_is_transform && current_is_transform_op))
             src.throw_error(node, "node \"%s\" cannot occur as child of a property", node.name());
 
-        if (depth == 0) {
-            if (!node.attribute("version"))
-                src.throw_error(node, "missing version attribute in root element \"%s\"", node.name());
-            node.remove_attribute("version");
+        auto version_attr = node.attribute("version");
+
+        if (depth == 0 && !version_attr)
+            src.throw_error(node, "missing version attribute in root element \"%s\"", node.name());
+
+        if (version_attr) {
+            Version version;
+            try {
+                version = version_attr.value();
+            } catch (const std::exception &e) {
+                src.throw_error(node, "could not parse version number \"%s\"", version_attr.value());
+            }
+            upgrade_tree(src, node, version);
+            node.remove_attribute(version_attr);
         }
 
         if (std::string(node.name()) == "scene") {
@@ -558,8 +633,9 @@ NAMESPACE_END(detail)
 
 ref<Object> load_string(const std::string &string) {
     pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length());
-
+    pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
+                                                    pugi::parse_default |
+                                                    pugi::parse_comments);
     detail::XMLSource src{
         "<string>", doc,
         [&](ptrdiff_t pos) { return detail::string_offset(string, pos); }
@@ -569,21 +645,25 @@ ref<Object> load_string(const std::string &string) {
         Throw("Error while loading \"%s\" (at %s): %s", src.id,
               src.offset(result.offset), result.description());
 
+    pugi::xml_node root = doc.document_element();
     detail::XMLParseContext ctx;
     Properties prop; size_t arg_counter; /* Unused */
-    auto scene_id = detail::parse_xml(src, ctx, *doc.begin(), EInvalid, prop,
-                                     arg_counter, 0).second;
+    auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
+                                      arg_counter, 0).second;
     return detail::instantiate_node(ctx, scene_id);
 }
 
-ref<Object> load_file(const fs::path &filename) {
+ref<Object> load_file(const fs::path &filename_) {
+    fs::path filename = filename_;
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);
 
     Log(EInfo, "Loading XML file \"%s\" ..", filename);
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file(filename.native().c_str());
+    pugi::xml_parse_result result = doc.load_file(filename.native().c_str(),
+                                                  pugi::parse_default |
+                                                  pugi::parse_comments);
 
     detail::XMLSource src {
         filename.string(), doc,
@@ -594,10 +674,37 @@ ref<Object> load_file(const fs::path &filename) {
         Throw("Error while loading \"%s\" (at %s): %s", src.id,
               src.offset(result.offset), result.description());
 
+    pugi::xml_node root = doc.document_element();
+
     detail::XMLParseContext ctx;
     Properties prop; size_t arg_counter; /* Unused */
-    auto scene_id = detail::parse_xml(src, ctx, *doc.begin(), EInvalid, prop,
-                                     arg_counter, 0).second;
+    auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
+                                      arg_counter, 0).second;
+
+    if (src.modified) {
+        fs::path backup = filename;
+        backup.replace_extension(".bak");
+        Log(EInfo, "Writing updated \"%s\" .. (backup at \"%s\")", filename, backup);
+        if (!fs::rename(filename, backup))
+            Throw("Unable to rename file \"%s\" to \"%s\"!", filename, backup);
+
+        /* Update version number */
+        root.prepend_attribute("version").set_value(MTS_VERSION);
+        if (root.attribute("type").value() == std::string("scene"))
+            root.remove_attribute("type");
+
+        /* Strip anonymous IDs/names */
+        for (pugi::xpath_node result: doc.select_nodes("//*[starts-with(@id, '_unnamed_')]"))
+            result.node().remove_attribute("id");
+        for (pugi::xpath_node result: doc.select_nodes("//*[starts-with(@name, '_arg_')]"))
+            result.node().remove_attribute("name");
+
+        doc.save_file(filename.native().c_str(), "    ");
+
+        /* Update for detail::file_offset */
+        filename = backup;
+    }
+
     return detail::instantiate_node(ctx, scene_id);
 }
 

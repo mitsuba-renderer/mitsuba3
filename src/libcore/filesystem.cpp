@@ -196,6 +196,14 @@ bool remove(const path& p) {
 #endif
 }
 
+bool rename(const path& src, const path &dst) {
+#if !defined(__WINDOWS__)
+    return std::rename(src.native().c_str(), dst.native().c_str()) == 0;
+#else
+    return MoveFileW(src.native().c_str(), dst.native().c_str()) != 0;
+#endif
+}
+
 // -----------------------------------------------------------------------------
 
 fs::path path::extension() const {
