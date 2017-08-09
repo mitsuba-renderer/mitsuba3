@@ -260,12 +260,10 @@ std::string Mesh::to_string() const {
         << "  bbox = " << m_bbox << "," << std::endl
         << "  vertex_struct = " << string::indent(m_vertex_struct) << "," << std::endl
         << "  vertex_count = " << m_vertex_count << "," << std::endl
-        << "  vertex_struct = " << string::indent(m_vertex_struct) << "," << std::endl
-        << "  vertex_count = " << m_vertex_count << "," << std::endl
         << "  vertices = [" << util::mem_string(m_vertex_size * m_vertex_count) << " of vertex data]," << std::endl
         << "  face_struct = " << string::indent(m_face_struct) << "," << std::endl
         << "  face_count = " << m_face_count << "," << std::endl
-        << "  faces = [" << util::mem_string(m_face_size * m_face_count) << " of face data]," << std::endl
+        << "  faces = [" << util::mem_string(m_face_size * m_face_count) << " of face data]" << std::endl
         << "]";
     return oss.str();
 }

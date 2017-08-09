@@ -161,7 +161,7 @@ struct XMLSource {
     template <typename... Args>
     [[noreturn]]
     void throw_error(const pugi::xml_node &n, const std::string &msg_, Args&&... args) {
-        std::string msg = "Error while loading \"%s\" (at %s): " + msg_;
+        std::string msg = "Error while loading \"%s\" (at %s): " + msg_ + ".";
         Throw(msg.c_str(), id, offset(n.offset_debug()), args...);
     }
 };
@@ -188,11 +188,11 @@ static void check_attributes(XMLSource &src, const pugi::xml_node &node, std::se
     for (auto attr : node.attributes()) {
         auto it = attrs.find(attr.name());
         if (it == attrs.end())
-            src.throw_error(node, "unexpected attribute \"%s\" in \"%s\"", attr.name(), node.name());
+            src.throw_error(node, "unexpected attribute \"%s\" in element \"%s\"", attr.name(), node.name());
         attrs.erase(it);
     }
     if (!attrs.empty())
-        src.throw_error(node, "missing attribute \"%s\" in \"%s\"", *attrs.begin(), node.name());
+        src.throw_error(node, "missing attribute \"%s\" in element \"%s\"", *attrs.begin(), node.name());
 }
 
 /// Helper function to split the 'value' attribute into X/Y/Z components
@@ -200,9 +200,9 @@ void expand_value_to_xyz(XMLSource &src, pugi::xml_node &node) {
     if (node.attribute("value")) {
         auto list = string::tokenize(node.attribute("value").value());
         if (list.size() != 3)
-            src.throw_error(node, "\"value\" attribute must have exactly 3 elements.");
+            src.throw_error(node, "\"value\" attribute must have exactly 3 elements");
         else if (node.attribute("x") || node.attribute("y") || node.attribute("z"))
-            src.throw_error(node, "Can't mix and match \"value\" and \"x\"/\"y\"/\"z\" attributes");
+            src.throw_error(node, "can't mix and match \"value\" and \"x\"/\"y\"/\"z\" attributes");
         node.append_attribute("x") = list[0].c_str();
         node.append_attribute("y") = list[1].c_str();
         node.append_attribute("z") = list[2].c_str();
@@ -222,7 +222,7 @@ Vector3f parse_vector(XMLSource &src, pugi::xml_node &node) {
         if (!value.empty()) z = Float(std::stod(value));
         return Vector3f(x, y, z);
     } catch (const std::logic_error &) {
-        src.throw_error(node, "Could not parse floating point value \"%s\"", value);
+        src.throw_error(node, "could not parse floating point value \"%s\"", value);
     }
 }
 
@@ -321,8 +321,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
             auto name = node.attribute("name").value();
             if (string::starts_with(name, "_"))
                 src.throw_error(
-                    node, "invalid parameter name \"%s\" in \"%s\": leading "
-                          "underscores are reserved for internal identifiers",
+                    node, "invalid parameter name \"%s\" in element \"%s\": leading "
+                          "underscores are reserved for internal identifiers.",
                     name, node.name());
         } else if (current_is_object || tag == ENamedReference) {
             node.append_attribute("name") = tfm::format("_arg_%i", arg_counter++).c_str();
@@ -332,8 +332,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
             auto id = node.attribute("id").value();
             if (string::starts_with(id, "_"))
                 src.throw_error(
-                    node, "invalid id \"%s\" in \"%s\": leading "
-                          "underscores are reserved for internal identifiers",
+                    node, "invalid id \"%s\" in element \"%s\": leading "
+                          "underscores are reserved for internal identifiers.",
                     id, node.name());
         } else if (current_is_object) {
             node.append_attribute("id") = tfm::format("_unnamed_%i", ctx.id_counter++).c_str();
@@ -408,7 +408,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                               MTS_XML_INCLUDE_MAX_RECURSION);
 
                     if (!result) /* There was a parser / file IO error */
-                        src.throw_error(node, "Error while loading \"%s\" (at %s): %s",
+                        src.throw_error(node, "error while loading \"%s\" (at %s): %s",
                             nested_src.id, nested_src.offset(result.offset),
                             result.description());
 
@@ -433,7 +433,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     try {
                         props.set_float(node.attribute("name").value(), Float(std::stod(value)));
                     } catch (const std::logic_error &) {
-                        src.throw_error(node, "Could not parse floating point value \"%s\"", value);
+                        src.throw_error(node, "could not parse floating point value \"%s\"", value);
                     }
                 }
                 break;
@@ -444,7 +444,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     try {
                         props.set_long(node.attribute("name").value(), int64_t(std::stoll(value)));
                     } catch (const std::logic_error &) {
-                        src.throw_error(node, "Could not parse integer value \"%s\"", value);
+                        src.throw_error(node, "could not parse integer value \"%s\"", value);
                     }
                 }
                 break;
@@ -458,7 +458,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     else if (value == "false")
                         result = false;
                     else
-                        src.throw_error(node, "Could not parse boolean value "
+                        src.throw_error(node, "could not parse boolean value "
                                              "\"%s\" -- must be \"true\" or "
                                              "\"false\"", value);
                     props.set_bool(node.attribute("name").value(), result);
@@ -489,42 +489,45 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
             case ETransform: {
                     check_attributes(src, node, { "name" });
-                    //props.setTransform(node.attribute("name").value(), transform.matrix());
-                }
-                break;
-
-            case ETranslate: {
-                    check_attributes(src, node, { "value" });
-                    //Eigen::Vector3f v = to_vector3f(node.attribute("value").value());
-                    //transform = Eigen::Translation<float, 3>(v.x(), v.y(), v.z()) * transform;
-                }
-                break;
-
-            case EMatrix: {
-                    check_attributes(src, node, { "value" });
-                    std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
-                    if (tokens.size() != 16)
-                        Throw("matrix: expected 16 values");
-                    Matrix4f matrix;
-                    for (int i = 0; i < 4; ++i)
-                        for (int j = 0; j < 4; ++j)
-                            matrix(i, j) = std::stof(tokens[i*4+j]);
-                    ctx.transform = Transform(matrix) * ctx.transform;
-                }
-                break;
-
-            case EScale: {
-                    check_attributes(src, node, { "value" });
-                    //Eigen::Vector3f v = to_vector3f(node.attribute("value").value());
-                    //transform = Eigen::DiagonalMatrix<float, 3>(v) * transform;
+                    ctx.transform = Transform();
                 }
                 break;
 
             case ERotate: {
-                    check_attributes(src, node, { "angle", "axis" });
-                    //float angle = math::degToRad(std::stof(node.attribute("angle").value()));
-                    //Eigen::Vector3f axis = to_vector3f(node.attribute("axis").value());
-                    //transform = Eigen::AngleAxis<float>(angle, axis) * transform;
+                    detail::expand_value_to_xyz(src, node);
+                    if (!node.attribute("x")) node.append_attribute("x").set_value("0");
+                    if (!node.attribute("y")) node.append_attribute("y").set_value("0");
+                    if (!node.attribute("z")) node.append_attribute("z").set_value("0");
+                    check_attributes(src, node, { "angle", "x", "y", "z" });
+                    Vector3f vec = detail::parse_vector(src, node);
+                    std::string angle = node.attribute("angle").value();
+                    try {
+                        ctx.transform = Transform::rotate(vec, (Float) std::stod(angle)) * ctx.transform;
+                    } catch (const std::logic_error &) {
+                        src.throw_error(node, "could not parse floating point value \"%s\"", angle);
+                    }
+                }
+                break;
+
+            case ETranslate: {
+                    detail::expand_value_to_xyz(src, node);
+                    if (!node.attribute("x")) node.append_attribute("x").set_value("0");
+                    if (!node.attribute("y")) node.append_attribute("y").set_value("0");
+                    if (!node.attribute("z")) node.append_attribute("z").set_value("0");
+                    check_attributes(src, node, { "x", "y", "z" });
+                    Vector3f vec = detail::parse_vector(src, node);
+                    ctx.transform = Transform::translate(vec) * ctx.transform;
+                }
+                break;
+
+            case EScale: {
+                    detail::expand_value_to_xyz(src, node);
+                    if (!node.attribute("x")) node.append_attribute("x").set_value("0");
+                    if (!node.attribute("y")) node.append_attribute("y").set_value("0");
+                    if (!node.attribute("z")) node.append_attribute("z").set_value("0");
+                    check_attributes(src, node, { "x", "y", "z" });
+                    Vector3f vec = detail::parse_vector(src, node);
+                    ctx.transform = Transform::scale(vec) * ctx.transform;
                 }
                 break;
 
@@ -546,11 +549,33 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
+            case EMatrix: {
+                    check_attributes(src, node, { "value" });
+                    std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
+                    if (tokens.size() != 16)
+                        Throw("matrix: expected 16 values");
+                    Matrix4f matrix;
+                    for (int i = 0; i < 4; ++i) {
+                        for (int j = 0; j < 4; ++j) {
+                            try {
+                                matrix(i, j) = (Float) std::stod(tokens[i * 4 + j]);
+                            } catch (const std::logic_error &) {
+                                src.throw_error(node, "could not parse floating point value \"%s\"", tokens[i*4 + j]);
+                            }
+                        }
+                    }
+                    ctx.transform = Transform(matrix) * ctx.transform;
+                }
+                break;
+
             default: Throw("Unhandled element \"%s\"", node.name());
         }
 
         for (pugi::xml_node &ch: node.children())
             parse_xml(src, ctx, ch, tag, props, arg_counter, depth + 1);
+
+        if (tag == ETransform)
+            props.set_transform(node.attribute("name").value(), ctx.transform);
     } catch (const std::exception &e) {
         if (strstr(e.what(), "Error while loading") == nullptr)
             src.throw_error(node, "%s", e.what());

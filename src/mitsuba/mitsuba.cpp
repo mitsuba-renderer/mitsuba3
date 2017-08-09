@@ -145,10 +145,22 @@ int main(int argc, char *argv[]) {
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
+        #if !defined(__WINDOWS)
+            std::cerr << "\x1b[31m";
+        #endif
         std::cerr << "\nCaught a critical exception: " << e.what() << std::endl;
+        #if !defined(__WINDOWS)
+            std::cerr << "\x1b[0m";
+        #endif
         return -1;
     } catch (...) {
+        #if !defined(__WINDOWS)
+            std::cerr << "\x1b[31m";
+        #endif
         std::cerr << "\nCaught a critical exception of unknown type!" << std::endl;
+        #if !defined(__WINDOWS)
+            std::cerr << "\x1b[0m";
+        #endif
         return -1;
     }
 

@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
  * to match the Catmull-Rom spline. It usually does a better job at at preserving sharp
  * features at the cost of more ringing.
  */
-class CatmullRomFilter : public ReconstructionFilter {
+class CatmullRomFilter final : public ReconstructionFilter {
 public:
     CatmullRomFilter(const Properties &props) : ReconstructionFilter(props) {
         m_radius = 2.0f;

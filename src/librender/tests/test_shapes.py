@@ -38,7 +38,7 @@ def test01_create_mesh():
     uint32 i2; // @8
   ],
   face_count = 2,
-  faces = [24 B of vertex data]
+  faces = [24 B of face data]
 ]"""
     else:
         assert str(m) == """Mesh[
@@ -57,7 +57,7 @@ def test01_create_mesh():
     uint32 i2; // @8
   ],
   face_count = 2,
-  faces = [24 B of vertex data]
+  faces = [24 B of face data]
 ]"""
 
 def test02_ply_triangle():

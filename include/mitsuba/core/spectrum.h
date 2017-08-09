@@ -262,7 +262,7 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &lambda, const mask_t<Expr> &ac
     Expr t = (lambda - 360.f) * 0.2f;
     active &= lambda >= 360.f & lambda <= 830.f;
 
-    Index i0 = min(max(Index(t), zero<Index>()), Index(95-2));
+    Index i0 = min(max(Index(t), zero<Index>()), Index(95 - 2));
     Index i1 = i0 + 1;
 
     Expr v0_x = gather<Expr>(cie1931_x_data, i0, active);
@@ -275,9 +275,9 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &lambda, const mask_t<Expr> &ac
     Expr w1 = t - Expr(i0);
     Expr w0 = (Float) 1 - w1;
 
-    return { (w0 * v0_x + w1 * v1_x) & active,
-             (w0 * v0_y + w1 * v1_y) & active,
-             (w0 * v0_z + w1 * v1_z) & active };
+    return { fmadd(w0, v0_x, w1 * v1_x) & active,
+             fmadd(w0, v0_y, w1 * v1_y) & active,
+             fmadd(w0, v0_z, w1 * v1_z) & active };
 }
 
 /**

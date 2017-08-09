@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  * bright objects with sharp edges (a directly visible light source will for
  * instance have black fringing artifacts around it).
  */
-class LanczosSincFilter : public ReconstructionFilter {
+class LanczosSincFilter final : public ReconstructionFilter {
 public:
     LanczosSincFilter(const Properties &props)
         : ReconstructionFilter(props) {

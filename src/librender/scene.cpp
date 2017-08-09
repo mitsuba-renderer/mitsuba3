@@ -1,5 +1,6 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/kdtree.h>
+#include <mitsuba/render/sensor.h>
 #include <mitsuba/core/properties.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -9,9 +10,12 @@ Scene::Scene(const Properties &props) {
 
     for (auto &kv : props.objects()) {
         Shape *shape = dynamic_cast<Shape *>(kv.second.get());
+        Sensor *sensor = dynamic_cast<Sensor *>(kv.second.get());
 
         if (shape) {
             m_kdtree->add_shape(shape);
+        } else if (sensor) {
+            m_sensors.push_back(sensor);
         } else {
             Throw("Tried to add an unsupported object of type %s", kv.second);
         }

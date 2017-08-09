@@ -70,24 +70,24 @@ std::ostream &operator<<(std::ostream &os, const Transform &t) {
     return os;
 }
 
-template Point3f   MTS_EXPORT_CORE Transform::operator*(Point3f) const;
-template Point3fP  MTS_EXPORT_CORE Transform::operator*(Point3fP) const;
-template Point3f   MTS_EXPORT_CORE Transform::transform_affine(Point3f) const;
-template Point3fP  MTS_EXPORT_CORE Transform::transform_affine(Point3fP) const;
+template Point3f   MTS_EXPORT_CORE Transform::operator*(const Point3f&) const;
+template Point3fP  MTS_EXPORT_CORE Transform::operator*(const Point3fP&) const;
+template Point3f   MTS_EXPORT_CORE Transform::transform_affine(const Point3f&) const;
+template Point3fP  MTS_EXPORT_CORE Transform::transform_affine(const Point3fP&) const;
 
-template Vector3f  MTS_EXPORT_CORE Transform::operator*(Vector3f) const;
-template Vector3fP MTS_EXPORT_CORE Transform::operator*(Vector3fP) const;
-template Vector3f  MTS_EXPORT_CORE Transform::transform_affine(Vector3f) const;
-template Vector3fP MTS_EXPORT_CORE Transform::transform_affine(Vector3fP) const;
+template Vector3f  MTS_EXPORT_CORE Transform::operator*(const Vector3f&) const;
+template Vector3fP MTS_EXPORT_CORE Transform::operator*(const Vector3fP&) const;
+template Vector3f  MTS_EXPORT_CORE Transform::transform_affine(const Vector3f&) const;
+template Vector3fP MTS_EXPORT_CORE Transform::transform_affine(const Vector3fP&) const;
 
-template Normal3f  MTS_EXPORT_CORE Transform::operator*(Normal3f) const;
-template Normal3fP MTS_EXPORT_CORE Transform::operator*(Normal3fP) const;
-template Normal3f  MTS_EXPORT_CORE Transform::transform_affine(Normal3f) const;
-template Normal3fP MTS_EXPORT_CORE Transform::transform_affine(Normal3fP) const;
+template Normal3f  MTS_EXPORT_CORE Transform::operator*(const Normal3f&) const;
+template Normal3fP MTS_EXPORT_CORE Transform::operator*(const Normal3fP&) const;
+template Normal3f  MTS_EXPORT_CORE Transform::transform_affine(const Normal3f&) const;
+template Normal3fP MTS_EXPORT_CORE Transform::transform_affine(const Normal3fP&) const;
 
-template Ray3f     MTS_EXPORT_CORE Transform::operator*(Ray3f) const;
-template Ray3fP    MTS_EXPORT_CORE Transform::operator*(Ray3fP) const;
-template Ray3f     MTS_EXPORT_CORE Transform::transform_affine(Ray3f) const;
-template Ray3fP    MTS_EXPORT_CORE Transform::transform_affine(Ray3fP) const;
+template Ray3f     MTS_EXPORT_CORE Transform::operator*(const Ray3f&) const;
+template Ray3fP    MTS_EXPORT_CORE Transform::operator*(const Ray3fP&) const;
+template Ray3f     MTS_EXPORT_CORE Transform::transform_affine(const Ray3f&) const;
+template Ray3fP    MTS_EXPORT_CORE Transform::transform_affine(const Ray3fP&) const;
 
 NAMESPACE_END(mitsuba)

@@ -22,9 +22,9 @@ def test03_invalid_root_node():
 
 
 def test04_valid_root_node():
-    obj1 = load_string('<?xml version="1.0"?>\n<scene version="0.4.0">'
+    obj1 = load_string('<?xml version="1.0"?>\n<scene version="2.0.0">'
                       '</scene>')
-    obj2 = load_string('<scene version="0.4.0"></scene>')
+    obj2 = load_string('<scene version="2.0.0"></scene>')
     assert type(obj1) is Scene
     assert type(obj2) is Scene
 
@@ -32,7 +32,7 @@ def test04_valid_root_node():
 def test05_duplicate_id():
     with pytest.raises(Exception) as e:
         load_string("""
-        <scene version="0.4.0">
+        <scene version="2.0.0">
             <shape type="ply" id="my_id"/>
             <shape type="ply" id="my_id"/>
         </scene>
@@ -44,24 +44,24 @@ def test05_duplicate_id():
 
 def test06_reserved_id():
     with pytest.raises(Exception) as e:
-        load_string('<scene version="0.4.0">' +
+        load_string('<scene version="2.0.0">' +
                    '<shape type="ply" id="_test"/></scene>')
-    e.match('invalid id "_test" in "shape": leading underscores '
-        'are reserved for internal identifiers')
+    e.match('invalid id "_test" in element "shape": leading underscores '
+        'are reserved for internal identifiers.')
 
 
 def test06_reserved_name():
     with pytest.raises(Exception) as e:
-        load_string('<scene version="0.4.0">' +
+        load_string('<scene version="2.0.0">' +
                    '<shape type="ply">' +
                    '<integer name="_test" value="1"/></shape></scene>')
-    e.match('invalid parameter name "_test" in "integer": '
-        'leading underscores are reserved for internal identifiers')
+    e.match('invalid parameter name "_test" in element "integer": '
+        'leading underscores are reserved for internal identifiers.')
 
 
 def test06_incorrect_nesting():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <shape type="ply">
                    <integer name="value" value="1">
                    <shape type="ply"/>
@@ -71,7 +71,7 @@ def test06_incorrect_nesting():
 
 def test07_incorrect_nesting():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <shape type="ply">
                    <integer name="value" value="1">
                    <float name="value" value="1"/>
@@ -81,7 +81,7 @@ def test07_incorrect_nesting():
 
 def test08_incorrect_nesting():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <shape type="ply">
                    <translate name="value" x="0" y="1" z="2"/>
                    </shape></scene>""")
@@ -90,7 +90,7 @@ def test08_incorrect_nesting():
 
 def test09_incorrect_nesting():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <shape type="ply">
                    <transform name="toWorld">
                    <integer name="value" value="10"/>
@@ -101,7 +101,7 @@ def test09_incorrect_nesting():
 
 def test10_unknown_id():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <ref id="unknown"/>
                    </scene>""")
     e.match('reference to unknown object "unknown"')
@@ -109,17 +109,17 @@ def test10_unknown_id():
 
 def test11_unknown_attribute():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <shape type="ply" param2="abc">
                    </shape></scene>""")
-    e.match('unexpected attribute "param2" in "shape"')
+    e.match('unexpected attribute "param2" in element "shape".')
 
 
 def test12_missing_attribute():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <integer name="a"/></scene>""")
-    e.match('missing attribute "value" in "integer"')
+    e.match('missing attribute "value" in element "integer".')
 
 
 def test13_duplicate_parameter():
@@ -128,7 +128,7 @@ def test13_duplicate_parameter():
     try:
         logger.set_error_level(EWarn)
         with pytest.raises(Exception) as e:
-            load_string("""<scene version="0.4.0">
+            load_string("""<scene version="2.0.0">
                        <integer name="a" value="1"/>
                        <integer name="a" value="1"/>
                        </scene>""")
@@ -139,7 +139,7 @@ def test13_duplicate_parameter():
 
 def test14_missing_parameter():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <shape type="ply"/>
                    </scene>""")
     e.match('Property "filename" has not been specified')
@@ -147,7 +147,7 @@ def test14_missing_parameter():
 
 def test15_incorrect_parameter_type():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <shape type="ply">
                       <float name="filename" value="1.0"/>
                    </shape></scene>""")
@@ -157,54 +157,54 @@ def test15_incorrect_parameter_type():
 
 def test16_invalid_integer():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <integer name="10" value="a"/>
                    </scene>""")
-    e.match('Could not parse integer value "a"')
+    e.match('could not parse integer value "a".')
 
 
 def test17_invalid_float():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <float name="10" value="a"/>
                    </scene>""")
-    e.match('Could not parse floating point value "a"')
+    e.match('could not parse floating point value "a".')
 
 
 def test18_invalid_boolean():
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <boolean name="10" value="a"/>
                    </scene>""")
-    e.match('Could not parse boolean value "a"'
-            ' -- must be "true" or "false"')
+    e.match('could not parse boolean value "a"'
+            ' -- must be "true" or "false".')
 
 
 def test19_invalid_vector():
-    err_str = 'Could not parse floating point value "a"'
+    err_str = 'could not parse floating point value "a"'
     err_str2 = '"value" attribute must have exactly 3 elements'
-    err_str3 = 'Can\'t mix and match "value" and "x"/"y"/"z" attributes'
+    err_str3 = 'can\'t mix and match "value" and "x"/"y"/"z" attributes'
 
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <vector name="10" x="a" y="b" z="c"/>
                    </scene>""")
     e.match(err_str)
 
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <vector name="10" value="a, b, c"/>
                    </scene>""")
     e.match(err_str)
 
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <vector name="10" value="1, 2"/>
                    </scene>""")
     e.match(err_str2)
 
     with pytest.raises(Exception) as e:
-        load_string("""<scene version="0.4.0">
+        load_string("""<scene version="2.0.0">
                    <vector name="10" value="1, 2, 3" x="4"/>
                    </scene>""")
     e.match(err_str3)

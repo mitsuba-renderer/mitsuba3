@@ -2,7 +2,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class SmoothDiffuse : public BSDF {
+class SmoothDiffuse final : public BSDF {
 public:
     SmoothDiffuse(const Properties &) {
         m_flags = EDiffuseReflection | EFrontSide;

@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
  * otherwise, negative-lobed filters may be preferable (e.g. Mitchell-Netravali
  * or Lanczos Sinc)
  */
-class TentFilter : public ReconstructionFilter {
+class TentFilter final : public ReconstructionFilter {
 public:
     TentFilter(const Properties &props) : ReconstructionFilter(props) {
         m_radius = 1.0f;

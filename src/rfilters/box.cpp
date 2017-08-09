@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * It is included mainly for completeness, though some rare situations
  * may warrant its use.
  */
-class BoxFilter : public ReconstructionFilter {
+class BoxFilter final : public ReconstructionFilter {
 public:
     BoxFilter(const Properties &props) : ReconstructionFilter(props) {
         /* Filter radius in pixels. A tiny epsilon is added, since some

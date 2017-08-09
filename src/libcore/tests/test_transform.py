@@ -32,26 +32,26 @@ def test03_matmul():
     assert np.allclose(np.dot(A, B), (At*Bt).matrix())
     assert np.allclose(np.dot(B, A), (Bt*At).matrix())
 
-def test04_mul_point():
+def test04_transform_point():
     A = np.eye(4)
     A[3, 3] = 2
-    assert np.allclose(Transform(A).mul_point([2, 4, 6]), [1, 2, 3])
+    assert np.allclose(Transform(A).transform_point([2, 4, 6]), [1, 2, 3])
     assert np.allclose(
-        Transform(A).mul_point([[2, 4, 6], [4, 6, 8]]), [[1, 2, 3], [2, 3, 4]])
+        Transform(A).transform_point([[2, 4, 6], [4, 6, 8]]), [[1, 2, 3], [2, 3, 4]])
 
-def test04_mul_vector():
+def test04_transform_vector():
     A = np.eye(4)
     A[3, 3] = 2
     A[1, 1] = .5
-    assert np.allclose(Transform(A).mul_vector([2, 4, 6]), [2, 2, 6])
+    assert np.allclose(Transform(A).transform_vector([2, 4, 6]), [2, 2, 6])
     assert np.allclose(
-        Transform(A).mul_vector([[2, 4, 6], [4, 6, 8]]), [[2, 2, 6], [4, 3, 8]])
+        Transform(A).transform_vector([[2, 4, 6], [4, 6, 8]]), [[2, 2, 6], [4, 3, 8]])
 
-def test04_mul_normal():
+def test04_transform_normal():
     A = np.eye(4)
     A[3, 3] = 2
     A[1, 2] = .5
     A[1, 1] = .5
-    assert np.allclose(Transform(A).mul_normal([2, 4, 6]), [2, 8, 2])
+    assert np.allclose(Transform(A).transform_normal([2, 4, 6]), [2, 8, 2])
     assert np.allclose(
-        Transform(A).mul_normal([[2, 4, 6], [4, 6, 8]]), [[2, 8, 2], [4, 12, 2]])
+        Transform(A).transform_normal([[2, 4, 6], [4, 6, 8]]), [[2, 8, 2], [4, 12, 2]])

@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * When no reconstruction filter is explicitly requested, this is the default
  * choice in Mitsuba.
  */
-class GaussianFilter : public ReconstructionFilter {
+class GaussianFilter final : public ReconstructionFilter {
 public:
     GaussianFilter(const Properties &props) : ReconstructionFilter(props) {
         /* Standard deviation */

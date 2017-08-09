@@ -21,6 +21,7 @@ protected:
     virtual ~Scene();
 
     ref<ShapeKDTree> m_kdtree;
+    std::vector<ref<Sensor>> m_sensors;
 };
 
 NAMESPACE_END(mitsuba)

@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * D. Mitchell, A. Netravali, Reconstruction filters for computer graphics,
  * Proceedings of SIGGRAPH 88, Computer Graphics 22(4), pp. 221-228, 1988.
  */
-class MitchellNetravaliFilter : public ReconstructionFilter {
+class MitchellNetravaliFilter final : public ReconstructionFilter {
 public:
     MitchellNetravaliFilter(const Properties &props) : ReconstructionFilter(props) {
         /* Filter radius */
