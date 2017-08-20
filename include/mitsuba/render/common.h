@@ -55,4 +55,7 @@ extern MTS_EXPORT_RENDER std::ostream &operator<<(
 extern MTS_EXPORT_RENDER std::ostream &operator<<(
     std::ostream &os, const EMeasure &measure);
 
+/// Dummy function which can be called to ensure that the librender shared library is loaded
+extern MTS_EXPORT_RENDER void librender_nop();
+
 NAMESPACE_END(mitsuba)

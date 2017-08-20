@@ -1,7 +1,17 @@
 #pragma once
 
+#define MTS_VERSION_MAJOR 2
+#define MTS_VERSION_MINOR 0
+#define MTS_VERSION_PATCH 0
+
+#define MTS_STRINGIFY(x) #x
+#define MTS_TOSTRING(x)  MTS_STRINGIFY(x)
+
 /// Current release of Mitsuba
-#define MTS_VERSION "2.0.0"
+#define MTS_VERSION                                                       \
+    MTS_TOSTRING(MTS_VERSION_MAJOR) "."                                   \
+    MTS_TOSTRING(MTS_VERSION_MINOR) "."                                   \
+    MTS_TOSTRING(MTS_VERSION_PATCH)
 
 /// Year of the current release
 #define MTS_YEAR "2017"

@@ -25,4 +25,6 @@ std::ostream &operator<<(std::ostream &os, const EMeasure &measure) {
     return os;
 }
 
+void librender_nop() { }
+
 NAMESPACE_END(mitsuba)

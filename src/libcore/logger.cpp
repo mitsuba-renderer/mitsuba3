@@ -159,7 +159,7 @@ void Throw(ELogLevel level, const Class *theClass, const char *file,
     std::string msg = msg_;
     auto it = msg.find(zerowidth_space);
     if (it != std::string::npos)
-        msg = msg.substr(0, it) + "\n  " + msg.substr(it);
+        msg = msg.substr(0, it) + "\n  " + msg.substr(it + 3);
 
     std::string text =
         formatter.format(level, theClass, Thread::thread(), file, line, msg);

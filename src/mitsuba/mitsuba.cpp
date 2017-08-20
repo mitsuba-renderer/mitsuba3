@@ -8,9 +8,10 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/jit.h>
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/render/common.h>
 #include <tbb/task_scheduler_init.h>
 
-#include <mitsuba/render/shape.h>
+#include <mitsuba/render/records.h>
 
 using namespace mitsuba;
 
@@ -57,9 +58,13 @@ static std::string isa_info() {
     if (enoki::has_fma)             oss << " fma";
     if (enoki::has_f16c)            oss << " f16c";
     if (enoki::has_sse42)           oss << " sse4.2";
+    if (enoki::has_x86_64)          oss << " x86_64";
+    if (enoki::has_x86_32)          oss << " x86_32";
+    if (enoki::has_neon)            oss << " neon";
+    if (enoki::has_aarch64)         oss << " aarch64";
 
 #if defined(ENOKI_USE_MEMKIND)
-    if (hbw_check_available() == 0) oss << " hbw";
+    if (hbw_check_available() == 0) oss << " hbm";
 #endif
 
     return oss.str();
@@ -92,12 +97,16 @@ int main(int argc, char *argv[]) {
     Logger::static_initialization();
     Bitmap::static_initialization();
 
+    /* Ensure that the mitsuba-render shared library is loaded */
+    librender_nop();
+
     ArgParser parser;
     typedef std::vector<std::string> StringVec;
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
     auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
     auto arg_help = parser.add(StringVec { "-h", "--help" });
     auto arg_extra = parser.add("", true);
+    std::string error_msg;
 
 #if defined(__AVX512ER__) && defined(__LINUX__)
     if (getenv("LD_PREFER_MAP_32BIT_EXEC") == nullptr) {
@@ -145,23 +154,36 @@ int main(int argc, char *argv[]) {
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
-        #if !defined(__WINDOWS)
-            std::cerr << "\x1b[31m";
-        #endif
-        std::cerr << "\nCaught a critical exception: " << e.what() << std::endl;
-        #if !defined(__WINDOWS)
-            std::cerr << "\x1b[0m";
-        #endif
-        return -1;
+        error_msg = std::string("Caught a critical exception: ") + e.what();
     } catch (...) {
-        #if !defined(__WINDOWS)
-            std::cerr << "\x1b[31m";
-        #endif
-        std::cerr << "\nCaught a critical exception of unknown type!" << std::endl;
-        #if !defined(__WINDOWS)
-            std::cerr << "\x1b[0m";
-        #endif
-        return -1;
+        error_msg = std::string("Caught a critical exception of unknown type!");
+    }
+
+    if (!error_msg.empty()) {
+        /* Strip zero-width spaces from the message (Mitsuba uses these
+           to properly format chains of multiple exceptions) */
+        const std::string zerowidth_space = "\xe2\x80\x8b";
+        while (true) {
+            auto it = error_msg.find(zerowidth_space);
+            if (it == std::string::npos)
+                break;
+            error_msg = error_msg.substr(0, it) + error_msg.substr(it + 3);
+        }
+
+#if defined(__WINDOWS__)
+        HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+        CONSOLE_SCREEN_BUFFER_INFO console_info;
+        GetConsoleScreenBufferInfo(console, &console_info);
+        SetConsoleTextAttribute(console, FOREGROUND_RED | FOREGROUND_INTENSITY);
+#else
+        std::cerr << "\x1b[31m";
+#endif
+        std::cerr << std::endl << error_msg << std::endl;
+#if defined(__WINDOWS__)
+        SetConsoleTextAttribute(console, console_info.wAttributes);
+#else
+        std::cerr << "\x1b[0m";
+#endif
     }
 
     Bitmap::static_shutdown();
@@ -169,5 +191,5 @@ int main(int argc, char *argv[]) {
     Thread::static_shutdown();
     Class::static_shutdown();
     Jit::static_shutdown();
-    return 0;
+    return error_msg.empty() ? 0 : -1;
 }

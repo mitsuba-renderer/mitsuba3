@@ -1011,8 +1011,8 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
     std::vector<std::string> keys = metadata.property_names();
 
     Imf::Header header(
-        m_size.x(),        // width
-        m_size.y(),        // height,
+        (int) m_size.x(),  // width
+        (int) m_size.y(),  // height,
         1.f,               // pixelAspectRatio
         Imath::V2f(0, 0),  // screenWindowCenter,
         1.f,               // screenWindowWidth
@@ -1105,7 +1105,7 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
     EXROStream ostr(stream);
     Imf::OutputFile file(ostr, header);
     file.setFrameBuffer(framebuffer);
-    file.writePixels(m_size.y());
+    file.writePixels((int) m_size.y());
 }
 
 // -----------------------------------------------------------------------------
@@ -1255,7 +1255,7 @@ void Bitmap::read_jpeg(Stream *stream) {
     int counter = 0;
     while (cinfo.output_scanline < cinfo.output_height)
         counter += jpeg_read_scanlines(&cinfo, scanlines.get() + counter,
-            m_size.y() - cinfo.output_scanline);
+            (JDIMENSION) (m_size.y() - cinfo.output_scanline));
 
     /* Release the libjpeg data structures */
     jpeg_finish_decompress(&cinfo);
@@ -1289,8 +1289,8 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     jbuf.mgr.term_destination = jpeg_term_destination;
     jbuf.stream = stream;
 
-    cinfo.image_width = m_size.x();
-    cinfo.image_height = m_size.y();
+    cinfo.image_width = (JDIMENSION) m_size.x();
+    cinfo.image_height = (JDIMENSION) m_size.y();
     cinfo.input_components = components;
     cinfo.in_color_space = components == 1 ? JCS_GRAYSCALE : JCS_RGB;
 
@@ -1522,25 +1522,26 @@ void Bitmap::write_png(Stream *stream, int compression) const {
             png_set_swap(png_ptr); // Swap the byte order on little endian machines
     #endif
 
-    png_set_IHDR(png_ptr, info_ptr, m_size.x(), m_size.y(), bit_depth,
-                 color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
-                 PNG_FILTER_TYPE_BASE);
+        png_set_IHDR(png_ptr, info_ptr, (uint32_t) m_size.x(),
+                     (uint32_t) m_size.y(), bit_depth, color_type,
+                     PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
+                     PNG_FILTER_TYPE_BASE);
 
-    png_write_info(png_ptr, info_ptr);
+        png_write_info(png_ptr, info_ptr);
 
-    rows = new png_bytep[m_size.y()];
+        rows = new png_bytep[m_size.y()];
 
-    size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-    Assert(row_bytes == buffer_size() / m_size.y());
-    for (size_t i = 0; i < m_size.y(); i++)
-        rows[i] = &m_data[row_bytes * i];
+        size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+        Assert(row_bytes == buffer_size() / m_size.y());
+        for (size_t i = 0; i < m_size.y(); i++)
+            rows[i] = &m_data[row_bytes * i];
 
-    png_write_image(png_ptr, rows);
-    png_write_end(png_ptr, info_ptr);
-    png_destroy_write_struct(&png_ptr, &info_ptr);
+        png_write_image(png_ptr, rows);
+        png_write_end(png_ptr, info_ptr);
+        png_destroy_write_struct(&png_ptr, &info_ptr);
 
-    delete[] text;
-    delete[] rows;
+        delete[] text;
+        delete[] rows;
 }
 
 // -----------------------------------------------------------------------------
@@ -1642,14 +1643,14 @@ namespace {
        Run length encoding adds considerable complexity but does
        save some space.  For each scanline, each channel (r,g,b,e) is
        encoded separately for better compression. */
-    inline void rgbe_write_rle(Stream *stream, uint8_t *data, int num_bytes) {
-        int cur = 0;
+    inline void rgbe_write_rle(Stream *stream, uint8_t *data, size_t num_bytes) {
+        size_t cur = 0;
         uint8_t buf[2];
 
         while (cur < num_bytes) {
-            int beg_run = cur;
+            size_t beg_run = cur;
             /* find next run of length at least 4 if one exists */
-            int run_count = 0, old_run_count = 0;
+            size_t run_count = 0, old_run_count = 0;
             while (run_count < 4 && beg_run < num_bytes) {
                 beg_run += run_count;
                 old_run_count = run_count;
@@ -1660,24 +1661,24 @@ namespace {
             }
             /* if data before next big run is a short run then write it as such */
             if (old_run_count > 1 && old_run_count == beg_run - cur) {
-                buf[0] = 128 + old_run_count;   /*write short run*/
+                buf[0] = (uint8_t) (128 + old_run_count);  /* write short run */
                 buf[1] = data[cur];
                 stream->write(buf, 2);
                 cur = beg_run;
             }
             /* write out bytes until we reach the start of the next run */
             while (cur < beg_run) {
-                int nonrun_count = beg_run - cur;
+                size_t nonrun_count = beg_run - cur;
                 if (nonrun_count > 128)
                     nonrun_count = 128;
-                buf[0] = nonrun_count;
+                buf[0] = (uint8_t) nonrun_count;
                 stream->write(buf, 1);
                 stream->write(&data[cur], nonrun_count);
                 cur += nonrun_count;
             }
             /* write out next run if one was found */
             if (run_count >= 4) {
-                buf[0] = 128 + run_count;
+                buf[0] = (uint8_t) (128 + run_count);
                 buf[1] = data[beg_run];
                 stream->write(buf, 2);
                 cur += run_count;
@@ -1847,7 +1848,7 @@ void Bitmap::write_rgbe(Stream *stream) const {
                                   (uint8_t)(m_size.x() & 0xFF) };
         stream->write(rgbe, 4);
 
-        for (size_t x=0; x<m_size.x(); x++) {
+        for (size_t x = 0; x < m_size.x(); x++) {
             rgbe_from_float(data, rgbe);
 
             buffer[x]              = rgbe[0];
@@ -1860,7 +1861,7 @@ void Bitmap::write_rgbe(Stream *stream) const {
 
         /* Write out each of the four channels separately run length encoded.
            First red, then green, then blue, then exponent */
-        for (int i = 0; i < 4; i++)
+        for (size_t i = 0; i < 4; i++)
             rgbe_write_rle(stream, buffer.get() + i * m_size.x(), m_size.x());
     }
 }

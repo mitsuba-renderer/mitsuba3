@@ -257,7 +257,7 @@ public:
         /* Interpolate the rotation quaternion */
         Quaternion4 quat0 = gather<Quaternion4>((Float *) m_keyframes.data() + quat_offset, idx0, active);
         Quaternion4 quat1 = gather<Quaternion4>((Float *) m_keyframes.data() + quat_offset, idx1, active);
-        Quaternion4 quat = quat0 * (1 - t) + quat1 * t;
+        Quaternion4 quat = enoki::slerp(quat0, quat1, t);
 
         /* Interpolate the translation component */
         Vector3 trans0 = gather<Vector3>((Float *) m_keyframes.data() + trans_offset, idx0, active);

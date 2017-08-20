@@ -3,6 +3,10 @@
 #include <fstream>
 #include <sstream>
 
+#if defined(__WINDOWS__)
+#  include <windows.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 StreamAppender::StreamAppender(std::ostream *stream)
@@ -44,19 +48,40 @@ std::string StreamAppender::read_log() {
 }
 
 void StreamAppender::append(ELogLevel level, const std::string &text) {
-    /* Insert a newline if the last message was a progress message */
-    if (m_last_message_was_progress && !m_is_file)
-        (*m_stream) << std::endl;
-#if !defined(__WINDOWS__)
-    if (level == EWarn || level == EError)
-        (*m_stream) << "\x1b[31m";
-    else if (level == EDebug)
-        (*m_stream) << "\x1b[38;5;245m";
+#if defined(__WINDOWS__)
+    HANDLE console = nullptr;
+    CONSOLE_SCREEN_BUFFER_INFO console_info;
+    memset(&console_info, 0, sizeof(CONSOLE_SCREEN_BUFFER_INFO));
 #endif
+    if (!m_is_file) {
+        /* Insert a newline if the last message was a progress message */
+        if (m_last_message_was_progress)
+            (*m_stream) << std::endl;
+        if (level == EDebug || level == EWarn || level == EError) {
+#if defined(__WINDOWS__)
+            console = GetStdHandle(STD_OUTPUT_HANDLE);
+            GetConsoleScreenBufferInfo(console, &console_info);
+            if (level == EWarn || level == EError)
+                SetConsoleTextAttribute(console, FOREGROUND_RED | FOREGROUND_INTENSITY);
+            else if (level == EDebug)
+                SetConsoleTextAttribute(console, FOREGROUND_INTENSITY);
+#else
+            if (level == EWarn || level == EError)
+                (*m_stream) << "\x1b[31m";
+            else
+                (*m_stream) << "\x1b[38;5;245m";
+#endif
+        }
+    }
     (*m_stream) << text << std::endl;
-#if !defined(__WINDOWS)
-    (*m_stream) << "\x1b[0m";
+    if (!m_is_file && (level == EDebug || level == EWarn || level == EError)) {
+        // Reset text color
+#if defined(__WINDOWS__)
+        SetConsoleTextAttribute(console, console_info.wAttributes);
+#else
+        (*m_stream) << "\x1b[0m";
 #endif
+    }
     m_last_message_was_progress = false;
 }
 

@@ -86,9 +86,29 @@ R"doc(Vectorized version of next_uint64_bounded
 This function keeps track of which SIMD lanes have already finished
 and stops advancing the associated PRNGs)doc";
 
+static const char *__doc_enoki_PCG32_operator_delete = R"doc()doc";
+
+static const char *__doc_enoki_PCG32_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_enoki_PCG32_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_enoki_PCG32_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_enoki_PCG32_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_enoki_PCG32_operator_delete_6 = R"doc()doc";
+
 static const char *__doc_enoki_PCG32_operator_eq = R"doc(Equality operator)doc";
 
 static const char *__doc_enoki_PCG32_operator_ne = R"doc(Inequality operator)doc";
+
+static const char *__doc_enoki_PCG32_operator_new = R"doc()doc";
+
+static const char *__doc_enoki_PCG32_operator_new_2 = R"doc()doc";
+
+static const char *__doc_enoki_PCG32_operator_new_3 = R"doc()doc";
+
+static const char *__doc_enoki_PCG32_operator_new_4 = R"doc()doc";
 
 static const char *__doc_enoki_PCG32_operator_sub = R"doc(Compute the distance between two PCG32 pseudorandom number generators)doc";
 
@@ -107,15 +127,27 @@ static const char *__doc_enoki_PCG32_state = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform = R"doc()doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_m_quat = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform = R"doc()doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_m_scale = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc()doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_m_times = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_quat = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_scale = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_time = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_trans = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_append_keyframe = R"doc(Append a keyframe to the current animated transform)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_lookup = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_keyframes = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_m_transform = R"doc()doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_m_translate = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_size = R"doc()doc";
 
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds a table of contents to an underlying stream
@@ -1268,10 +1300,10 @@ R"doc(Abstract continuous spectral power distribution data type, which
 supports evaluation at arbitrary wavelengths.
 
 Remark:
-    The term 'continuous' doesn't necessarily mean that the underlying
-    spectrum is continuous, but rather emphasizes the fact that it is
-    a function over the reals (as opposed to the discretely sampled
-    spectrum, which only stores samples at a finite set of
+    The term 'continuous' does not imply that the underlying spectrum
+    must be continuous, but rather emphasizes that it is a function
+    defined on the set of real numbers (as opposed to the discretely
+    sampled spectrum, which only stores samples at a finite set of
     wavelengths).)doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_class = R"doc()doc";
@@ -3934,7 +3966,9 @@ static const char *__doc_mitsuba_SurfaceAreaHeuristic3f_traversal_cost =
 R"doc(Get the cost of a traversal operation used by the tree construction
 heuristic)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction = R"doc(Container for all information related to a surface intersection.)doc";
+static const char *__doc_mitsuba_SurfaceInteraction =
+R"doc(Container for all information related to a scattering event on a
+surface)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction = R"doc()doc";
 
@@ -4013,7 +4047,7 @@ static const char *__doc_mitsuba_SurfaceInteraction_operator_new_3 = R"doc()doc"
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_new_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_p = R"doc()doc";
+static const char *__doc_mitsuba_SurfaceInteraction_p = R"doc(Position of the surface interaction in world coordinates)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_prim_index = R"doc(Primitive index, e.g. the triangle ID (if applicable))doc";
 

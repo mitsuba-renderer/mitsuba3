@@ -16,6 +16,16 @@
 #include <fstream>
 #include <set>
 #include <unordered_map>
+#include <cctype>
+
+/// Linux <sys/sysmacros.h> defines these as macros .. :(
+#if defined(major)
+#  undef major
+#endif
+
+#if defined(minor)
+#  undef minor
+#endif
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
@@ -304,7 +314,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
             Version version;
             try {
                 version = version_attr.value();
-            } catch (const std::exception &e) {
+            } catch (const std::exception &) {
                 src.throw_error(node, "could not parse version number \"%s\"", version_attr.value());
             }
             upgrade_tree(src, node, version);
@@ -719,10 +729,10 @@ ref<Object> load_file(const fs::path &filename_) {
             root.remove_attribute("type");
 
         /* Strip anonymous IDs/names */
-        for (pugi::xpath_node result: doc.select_nodes("//*[starts-with(@id, '_unnamed_')]"))
-            result.node().remove_attribute("id");
-        for (pugi::xpath_node result: doc.select_nodes("//*[starts-with(@name, '_arg_')]"))
-            result.node().remove_attribute("name");
+        for (pugi::xpath_node result2: doc.select_nodes("//*[starts-with(@id, '_unnamed_')]"))
+            result2.node().remove_attribute("id");
+        for (pugi::xpath_node result2: doc.select_nodes("//*[starts-with(@name, '_arg_')]"))
+            result2.node().remove_attribute("name");
 
         doc.save_file(filename.native().c_str(), "    ");
 
