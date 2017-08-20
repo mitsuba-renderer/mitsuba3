@@ -1,9 +1,9 @@
 #include <mitsuba/core/random.h>
 
-NAMESPACE_BEGIN(mitsuba)
+template struct MTS_EXPORT_CORE enoki::PCG32<uint32_t>;
+template struct MTS_EXPORT_CORE enoki::PCG32<mitsuba::UInt32P>;
 
-template struct MTS_EXPORT_CORE TPCG32<uint32_t>;
-template struct MTS_EXPORT_CORE TPCG32<UInt32P>;
+NAMESPACE_BEGIN(mitsuba)
 
 template MTS_EXPORT_CORE uint32_t                  sample_tea_32(uint32_t, uint32_t, int);
 template MTS_EXPORT_CORE UInt32P                   sample_tea_32(UInt32P,  UInt32P,  int);

@@ -28,15 +28,16 @@ struct Color
                              enoki::detail::approx_default<Type_>::value,
                              RoundingMode::Default, Color<Type_, Size_>> {
 
-    using Base =
-        enoki::StaticArrayImpl<Type_, Size_,
-                               enoki::detail::approx_default<Type_>::value,
-                               RoundingMode::Default, Color<Type_, Size_>>;
+    static constexpr bool Approx = enoki::detail::approx_default<Type_>::value;
 
-    ENOKI_DECLARE_CUSTOM_ARRAY(Base, Color)
+    using Base = enoki::StaticArrayImpl<Type_, Size_, Approx, RoundingMode::Default,
+                                        Color<Type_, Size_>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
     template <typename T> using ReplaceType = Color<T, Size_>;
+
+    using ArrayType = Color;
+    using MaskType = enoki::Mask<Type_, Size_, Approx, RoundingMode::Default>;
 
     using typename Base::Scalar;
 
@@ -48,6 +49,8 @@ struct Color
 
     const Scalar &b() const { return Base::z(); }
     Scalar &b() { return Base::z(); }
+
+    ENOKI_DECLARE_ARRAY(Base, Color)
 };
 
 using Color3f  = Color<Float,  3>;
@@ -67,15 +70,19 @@ struct Spectrum
                              enoki::detail::approx_default<Type_>::value,
                              RoundingMode::Default, Spectrum<Type_>> {
 
-    using Base =
-        enoki::StaticArrayImpl<Type_, MTS_WAVELENGTH_SAMPLES,
-                               enoki::detail::approx_default<Type_>::value,
-                               RoundingMode::Default, Spectrum<Type_>>;
+    static constexpr bool Approx = enoki::detail::approx_default<Type_>::value;
 
-    ENOKI_DECLARE_CUSTOM_ARRAY(Base, Spectrum)
+    using Base = enoki::StaticArrayImpl<Type_, MTS_WAVELENGTH_SAMPLES, Approx,
+                                        RoundingMode::Default, Spectrum<Type_>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
     template <typename T> using ReplaceType = Spectrum<T>;
+
+    using ArrayType = Spectrum;
+    using MaskType = enoki::Mask<Type_, MTS_WAVELENGTH_SAMPLES,
+                                 Approx, RoundingMode::Default>;
+
+    ENOKI_DECLARE_ARRAY(Base, Spectrum)
 };
 
 /**
@@ -97,10 +104,10 @@ using SpectrumfX = Spectrum<FloatX>;
  * \brief Abstract continuous spectral power distribution data type,
  * which supports evaluation at arbitrary wavelengths.
  *
- * \remark The term 'continuous' doesn't necessarily mean that the underlying
- * spectrum is continuous, but rather emphasizes the fact that it is a function
- * over the reals (as opposed to the discretely sampled spectrum, which only
- * stores samples at a finite set of wavelengths).
+ * \remark The term 'continuous' does not imply that the underlying spectrum
+ * must be continuous, but rather emphasizes that it is a function defined on
+ * the set of real numbers (as opposed to the discretely sampled spectrum,
+ * which only stores samples at a finite set of wavelengths).
  */
 class MTS_EXPORT_CORE ContinuousSpectrum : public Object {
 public:

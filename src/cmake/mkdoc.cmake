@@ -20,5 +20,6 @@ if (NOT WIN32)
     `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
     `find ${PROJECT_SOURCE_DIR}/include/mitsuba/render -name '*.h' ! -name fwd.h -print`
     `find ${PROJECT_SOURCE_DIR}/include/mitsuba/ui -name '*.h' ! -name fwd.h -print`
+    ${PROJECT_SOURCE_DIR}/ext/enoki/include/enoki/random.h
     > ${PROJECT_SOURCE_DIR}/include/mitsuba/python/docstr.h)
 endif()

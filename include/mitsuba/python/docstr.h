@@ -23,27 +23,99 @@
 #endif
 
 
-static const char *__doc_enoki_call_support = R"doc()doc";
+static const char *__doc_enoki_PCG32 = R"doc(PCG32 pseudorandom number generator proposed by Melissa O'Neill)doc";
 
-static const char *__doc_enoki_call_support_2 = R"doc()doc";
+static const char *__doc_enoki_PCG32_PCG32 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
 
-static const char *__doc_enoki_call_support_bsdf = R"doc()doc";
+static const char *__doc_enoki_PCG32_advance =
+R"doc(Multi-step advance function (jump-ahead, jump-back)
 
-static const char *__doc_enoki_call_support_exterior_medium = R"doc()doc";
+The method used here is based on Brown, "Random Number Generation with
+Arbitrary Stride", Transactions of the American Nuclear Society (Nov.
+1994). The algorithm is very similar to fast exponentiation.)doc";
 
-static const char *__doc_enoki_call_support_interior_medium = R"doc()doc";
+static const char *__doc_enoki_PCG32_inc = R"doc()doc";
 
-static const char *__doc_enoki_call_support_is_emitter = R"doc()doc";
+static const char *__doc_enoki_PCG32_next_float32 =
+R"doc(Generate a single precision floating point value on the interval [0,
+1))doc";
 
-static const char *__doc_enoki_call_support_is_medium_transition = R"doc()doc";
+static const char *__doc_enoki_PCG32_next_float32_2 = R"doc(Masked version of next_float32)doc";
 
-static const char *__doc_enoki_call_support_is_sensor = R"doc()doc";
+static const char *__doc_enoki_PCG32_next_float64 =
+R"doc(Generate a double precision floating point value on the interval [0,
+1)
 
-static const char *__doc_enoki_call_support_operator_sub = R"doc()doc";
+Remark:
+    Since the underlying random number generator produces 32 bit
+    output, only the first 32 mantissa bits will be filled (however,
+    the resolution is still finer than in next_float(), which only
+    uses 23 mantissa bits))doc";
 
-static const char *__doc_enoki_call_support_operator_sub_2 = R"doc()doc";
+static const char *__doc_enoki_PCG32_next_float64_2 =
+R"doc(Generate a double precision floating point value on the interval [0,
+1)
 
-static const char *__doc_enoki_call_support_uses_ray_differentials = R"doc()doc";
+Remark:
+    Since the underlying random number generator produces 32 bit
+    output, only the first 32 mantissa bits will be filled (however,
+    the resolution is still finer than in next_float(), which only
+    uses 23 mantissa bits))doc";
+
+static const char *__doc_enoki_PCG32_next_uint32 = R"doc(Generate a uniformly distributed unsigned 32-bit random number)doc";
+
+static const char *__doc_enoki_PCG32_next_uint32_2 = R"doc(Masked version of next_uint32)doc";
+
+static const char *__doc_enoki_PCG32_next_uint32_bounded = R"doc(Generate a uniformly distributed number, r, where 0 <= r < bound)doc";
+
+static const char *__doc_enoki_PCG32_next_uint32_bounded_2 =
+R"doc(Vectorized version of next_uint32_bounded
+
+This function keeps track of which SIMD lanes have already finished
+and stops advancing the associated PRNGs)doc";
+
+static const char *__doc_enoki_PCG32_next_uint64 = R"doc(Generate a uniformly distributed unsigned 64-bit random number)doc";
+
+static const char *__doc_enoki_PCG32_next_uint64_2 = R"doc(Masked version of next_uint64)doc";
+
+static const char *__doc_enoki_PCG32_next_uint64_bounded = R"doc(Generate a uniformly distributed number, r, where 0 <= r < bound)doc";
+
+static const char *__doc_enoki_PCG32_next_uint64_bounded_2 =
+R"doc(Vectorized version of next_uint64_bounded
+
+This function keeps track of which SIMD lanes have already finished
+and stops advancing the associated PRNGs)doc";
+
+static const char *__doc_enoki_PCG32_operator_eq = R"doc(Equality operator)doc";
+
+static const char *__doc_enoki_PCG32_operator_ne = R"doc(Inequality operator)doc";
+
+static const char *__doc_enoki_PCG32_operator_sub = R"doc(Compute the distance between two PCG32 pseudorandom number generators)doc";
+
+static const char *__doc_enoki_PCG32_seed =
+R"doc(Seed the pseudorandom number generator
+
+Specified in two parts: a state initializer and a sequence selection
+constant (a.k.a. stream id))doc";
+
+static const char *__doc_enoki_PCG32_shuffle =
+R"doc(Draw uniformly distributed permutation and permute the given container
+
+From: Knuth, TAoCP Vol. 2 (3rd 3d), Section 3.4.2)doc";
+
+static const char *__doc_enoki_PCG32_state = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_quat = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_scale = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_times = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_transform = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_translate = R"doc()doc";
 
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds a table of contents to an underlying stream
@@ -339,72 +411,74 @@ query.
 
 BSDFSample)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType =
+static const char *__doc_mitsuba_BSDF_EFlagCombinations = R"doc(Convenient combinations of flags from EBSDFType)doc";
+
+static const char *__doc_mitsuba_BSDF_EFlagCombinations_EAll = R"doc(Any kind of scattering)doc";
+
+static const char *__doc_mitsuba_BSDF_EFlagCombinations_EDelta = R"doc(Scattering into a discrete set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EFlagCombinations_EDelta1D = R"doc(Scattering into a 1D space of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EFlagCombinations_EDiffuse = R"doc(Diffuse scattering into a 2D set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EFlagCombinations_EGlossy = R"doc(Non-diffuse scattering into a 2D set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EFlagCombinations_EReflection =
+R"doc(Any reflection component (scattering into discrete, 1D, or 2D set of
+directions))doc";
+
+static const char *__doc_mitsuba_BSDF_EFlagCombinations_ESmooth = R"doc(Scattering into a 2D set of directions)doc";
+
+static const char *__doc_mitsuba_BSDF_EFlagCombinations_ETransmission =
+R"doc(Any transmission component (scattering into discrete, 1D, or 2D set of
+directions))doc";
+
+static const char *__doc_mitsuba_BSDF_EFlags =
 R"doc(This list of flags is used to classify the different types of lobes
 that are implemented in a BSDF instance.
 
 They are also useful for picking out individual components by setting
 combinations in BSDFSamplingRecord::typeMask.)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EAnisotropic = R"doc(The lobe is not invariant to rotation around the normal)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EAnisotropic = R"doc(The lobe is not invariant to rotation around the normal)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EBackSide = R"doc(Supports interactions on the back-facing side)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EBackSide = R"doc(Supports interactions on the back-facing side)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EDelta1DReflection = R"doc(Reflection into a 1D space of directions)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EDelta1DReflection = R"doc(Reflection into a 1D space of directions)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EDelta1DTransmission = R"doc(Transmission into a 1D space of directions)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EDelta1DTransmission = R"doc(Transmission into a 1D space of directions)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EDeltaReflection = R"doc(Reflection into a discrete set of directions)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EDeltaReflection = R"doc(Reflection into a discrete set of directions)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EDeltaTransmission = R"doc(Transmission into a discrete set of directions)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EDeltaTransmission = R"doc(Transmission into a discrete set of directions)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EDiffuseReflection = R"doc(Ideally diffuse reflection)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EDiffuseReflection = R"doc(Ideally diffuse reflection)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EDiffuseTransmission = R"doc(Ideally diffuse transmission)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EDiffuseTransmission = R"doc(Ideally diffuse transmission)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EFrontSide = R"doc(Supports interactions on the front-facing side)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EFrontSide = R"doc(Supports interactions on the front-facing side)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EGlossyReflection = R"doc(Glossy reflection)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EGlossyReflection = R"doc(Glossy reflection)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EGlossyTransmission = R"doc(Glossy transmission)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EGlossyTransmission = R"doc(Glossy transmission)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_ENonSymmetric = R"doc(Flags non-symmetry (e.g. transmission in dielectric materials))doc";
+static const char *__doc_mitsuba_BSDF_EFlags_ENonSymmetric = R"doc(Flags non-symmetry (e.g. transmission in dielectric materials))doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_ENull = R"doc('null' scattering event, i.e. particles do not undergo deflection)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_ENull = R"doc('null' scattering event, i.e. particles do not undergo deflection)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_ESpatiallyVarying = R"doc(The BSDF depends on the UV coordinates)doc";
+static const char *__doc_mitsuba_BSDF_EFlags_ESpatiallyVarying = R"doc(The BSDF depends on the UV coordinates)doc";
 
-static const char *__doc_mitsuba_BSDF_EBSDFType_EUsesSampler = R"doc(Uses extra random numbers from the supplied sampler instance)doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations = R"doc(Convenient combinations of flags from EBSDFType)doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations_EAll = R"doc(Any kind of scattering)doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations_EDelta = R"doc(Scattering into a discrete set of directions)doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations_EDelta1D = R"doc(Scattering into a 1D space of directions)doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations_EDiffuse = R"doc(Diffuse scattering into a 2D set of directions)doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations_EGlossy = R"doc(Non-diffuse scattering into a 2D set of directions)doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations_EReflection =
-R"doc(Any reflection component (scattering into discrete, 1D, or 2D set of
-directions))doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations_ESmooth = R"doc(Scattering into a 2D set of directions)doc";
-
-static const char *__doc_mitsuba_BSDF_ETypeCombinations_ETransmission =
-R"doc(Any transmission component (scattering into discrete, 1D, or 2D set of
-directions))doc";
+static const char *__doc_mitsuba_BSDF_EFlags_EUsesSampler = R"doc(Uses extra random numbers from the supplied sampler instance)doc";
 
 static const char *__doc_mitsuba_BSDF_class = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_dummy = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_flags = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_m_uses_ray_differentials = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_m_flags = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_uses_ray_differentials = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_m_needs_differentials = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_needs_differentials = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap =
 R"doc(General-purpose bitmap class with read and write support for several
@@ -1183,6 +1257,8 @@ static const char *__doc_mitsuba_Color_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_operator_assign_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Color_operator_assign_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_Color_r = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_r_2 = R"doc()doc";
@@ -1296,9 +1372,11 @@ pick a position on the surface of an object with the goal of
 importance sampling a quantity that is defined over the sphere seen
 from a given reference point.
 
-This general approach for sampling positions is named "direct"
-sampling throughout Mitsuba, motivated by direct illumination
-rendering techniques, which represent the most important application.
+This overall approach for sampling positions is named *direct*
+sampling throughout Mitsuba as in *direct illumination* rendering
+techniques, which represent the most important use case. However, the
+concept is used in a wider bidirectional sense, e.g. to sample
+positions on a sensor.
 
 This record inherits all fields from PositionSample and extends it
 with two useful quantities that are cached so that they don't need to
@@ -1663,6 +1741,57 @@ static const char *__doc_mitsuba_ETransportMode_EImportance = R"doc(Importance t
 static const char *__doc_mitsuba_ETransportMode_ERadiance = R"doc(Radiance transport)doc";
 
 static const char *__doc_mitsuba_ETransportMode_ETransportModes = R"doc(Specifies the number of supported transport modes)doc";
+
+static const char *__doc_mitsuba_Emitter = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint =
+R"doc(Endpoint: an abstract interface to light sources and sensors
+
+This class implements an abstract interface to all sensors and light
+sources emitting radiance and importance, respectively. Subclasses
+must implement functions for evaluating and sampling the emission
+profile and furthermore support querying the probability density of
+the provided sampling technique.
+
+Subclasses must also provide a specialized *direct* sampling method (a
+generalization of direct illumination sampling to both emitters *and*
+sensors). A direct sampling is given an arbitrary input position in
+the scene and in turn returns a sampled emitter position and
+direction, which has a nonzero contribution towards the provided
+position. The main idea is that direct sampling reduces the underlying
+space from 4D to 2D, hence it is often possible to use smarter
+sampling techniques than in the fully general case.
+
+Since the emission profile is defined as function over both positions
+and directions, there are functions to sample and query *each* of the
+two components separately. Furthermore, there is a convenience
+function to sample both at the same time, which is mainly used by
+unidirectional rendering algorithms that do not need this level of
+flexibility.
+
+One underlying assumption of this interface is that position and
+direction sampling will happen *in sequence*. This means that the
+direction sampling step is allowed to statistically condition on
+properties of the preceding position sampling step.
+
+When rendering scenes involving participating media, it is important
+to know what medium surrounds the sensors and light sources. For this
+reason, every emitter instance keeps a reference to a medium (or
+``nullptr`` when it is surrounded by vacuum).)doc";
+
+static const char *__doc_mitsuba_Endpoint_EFlags =
+R"doc(Flags used to classify the emission profile of different types of
+emitters)doc";
+
+static const char *__doc_mitsuba_Endpoint_EFlags_EDeltaDirection = R"doc(Emission profile contains a Dirac delta term with respect to direction)doc";
+
+static const char *__doc_mitsuba_Endpoint_EFlags_EDeltaPosition = R"doc(Emission profile contains a Dirac delta term with respect to position)doc";
+
+static const char *__doc_mitsuba_Endpoint_EFlags_EOnSurface = R"doc(Is the emitter associated with a surface in the scene?)doc";
+
+static const char *__doc_mitsuba_Endpoint_class = R"doc()doc";
 
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
@@ -2126,6 +2255,10 @@ static const char *__doc_mitsuba_Logger_static_initialization = R"doc(Initialize
 
 static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging)doc";
 
+static const char *__doc_mitsuba_Medium = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_class = R"doc()doc";
+
 static const char *__doc_mitsuba_MemoryStream =
 R"doc(Simple memory buffer-based stream with automatic memory management. It
 always has read & write capabilities.
@@ -2272,6 +2405,14 @@ static const char *__doc_mitsuba_Mesh_m_vertex_struct = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_normal_derivative =
+R"doc(Returns the derivative of the normal vector with respect to the UV
+parameterization)doc";
+
+static const char *__doc_mitsuba_Mesh_normal_derivative_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_normal_derivative_impl = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_primitive_count =
 R"doc(Returns the number of sub-primitives (i.e. triangles) that make up
 this shape)doc";
@@ -2345,6 +2486,8 @@ static const char *__doc_mitsuba_Normal_Normal_3 = R"doc()doc";
 static const char *__doc_mitsuba_Normal_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Normal_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Normal_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Object =
 R"doc(Object base class with builtin reference counting
@@ -2510,6 +2653,8 @@ static const char *__doc_mitsuba_Point_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Point_operator_assign_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Point_operator_assign_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_PositionSample =
 R"doc(Generic sampling record for positions
 
@@ -2553,7 +2698,7 @@ spaces, e.g. areas that have collapsed to a point or a line.)doc";
 static const char *__doc_mitsuba_PositionSample_n = R"doc(Sampled surface normal (if applicable))doc";
 
 static const char *__doc_mitsuba_PositionSample_object =
-R"doc(Optional: Ptr to an associated object
+R"doc(Optional: pointer to an associated object
 
 In some uses of this record, sampling a position also involves
 choosing one of several objects (shapes, emitters, ..) on which the
@@ -3135,7 +3280,54 @@ static const char *__doc_mitsuba_Scene_kdtree_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_kdtree = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_m_sensors = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
+
+static const char *__doc_mitsuba_Sensor = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_Sensor = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_m_shutter_open = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_m_shutter_open_time = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray =
+R"doc(Importance sample a ray according to the sensor response
+
+This function combines all three of the steps of sampling a time, ray
+position, and direction value. It does not return any auxiliary
+sampling information and is mainly meant to be used by unidirectional
+rendering techniques.
+
+Note that this function potentially uses a different sampling strategy
+compared to the sequence of running sample_area() and
+sample_direction(). The reason for this is that it may be possible to
+switch to a better technique when sampling both position and direction
+at the same time.
+
+Parameter ``position_sample``:
+    Denotes the desired sample position in fractional pixel
+    coordinates relative to the crop window of the underlying film.
+
+Parameter ``aperture_sample``:
+    A uniformly distributed 2D vector that is used to sample a
+    position on the aperture of the sensor if necessary. (Any value is
+    valid when needsApertureSample() == ``False``)
+
+Parameter ``time_sample``:
+    A uniformly distributed 1D vector that is used to sample the
+    temporal component of the emission profile. (Or any value when
+    needsTimeSample() == ``False``)
+
+Returns:
+    The sampled ray and an associated importance weight associated.
+    This accounts for the difference between the sensor response and
+    the sampling density function.)doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_2 = R"doc(Vectorized version of sample_ray)doc";
 
 static const char *__doc_mitsuba_Shape = R"doc()doc";
 
@@ -3174,7 +3366,14 @@ static const char *__doc_mitsuba_ShapeKDTree_shape_count = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
 
-static const char *__doc_mitsuba_Shape_adjust_time = R"doc(Adjust an intersection record to a different time value)doc";
+static const char *__doc_mitsuba_Shape_adjust_time =
+R"doc(Move an intersection record to a different time value
+
+Conceptually, the point remains firmly attached to the underlying
+object, which is moved forward or backward in time. The method updates
+all relevant SurfaceInteraction fields.)doc";
+
+static const char *__doc_mitsuba_Shape_adjust_time_2 = R"doc(Statically vectorized version of adjust_time())doc";
 
 static const char *__doc_mitsuba_Shape_bbox =
 R"doc(Return an axis aligned box that bounds all shape primitives (including
@@ -3195,7 +3394,7 @@ This is extremely important to construct decent kd-trees. The default
 implementation just takes the bounding box returned by bbox(Index
 index) and clips it to *clip*.)doc";
 
-static const char *__doc_mitsuba_Shape_bsdf = R"doc(Return the shape's BSDF)doc";
+static const char *__doc_mitsuba_Shape_bsdf = R"doc(Return the shape's BSDF (const version))doc";
 
 static const char *__doc_mitsuba_Shape_bsdf_2 = R"doc(Return the shape's BSDF)doc";
 
@@ -3208,9 +3407,11 @@ the scene by this shape
 Includes instanced geometry. The default implementation simply returns
 `primitive_count()`.)doc";
 
-static const char *__doc_mitsuba_Shape_emitter = R"doc(Return the associated emitter (if any))doc";
+static const char *__doc_mitsuba_Shape_emitter =
+R"doc(Return the area emitter associated with this shape (if any, const
+version))doc";
 
-static const char *__doc_mitsuba_Shape_emitter_2 = R"doc(Return the associated emitter (if any))doc";
+static const char *__doc_mitsuba_Shape_emitter_2 = R"doc(Return the area emitter associated with this shape (if any))doc";
 
 static const char *__doc_mitsuba_Shape_exterior_medium =
 R"doc(Return the medium that lies on the exterior of this shape (``nullptr``
@@ -3219,8 +3420,6 @@ R"doc(Return the medium that lies on the exterior of this shape (``nullptr``
 static const char *__doc_mitsuba_Shape_exterior_medium_2 =
 R"doc(Return the medium that lies on the exterior of this shape (``nullptr``
 == vacuum, const version))doc";
-
-static const char *__doc_mitsuba_Shape_has_bsdf = R"doc(Does the shape have a BSDF?)doc";
 
 static const char *__doc_mitsuba_Shape_interior_medium =
 R"doc(Return the medium that lies on the interior of this shape (``nullptr``
@@ -3238,6 +3437,10 @@ static const char *__doc_mitsuba_Shape_is_sensor = R"doc(Is this shape also an a
 
 static const char *__doc_mitsuba_Shape_m_bsdf = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_m_emitter = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_m_sensor = R"doc()doc";
+
 static const char *__doc_mitsuba_Shape_normal_derivative =
 R"doc(Return the derivative of the normal vector with respect to the UV
 parameterization
@@ -3245,20 +3448,18 @@ parameterization
 This can be used to compute Gaussian and principal curvatures, amongst
 other things.
 
-Parameter ``its``:
-    Intersection record associated with the query
-
-Parameter ``dndu``:
-    Parameter used to store the partial derivative of the normal
-    vector with respect to ``u``
-
-Parameter ``dndv``:
-    Parameter used to store the partial derivative of the normal
-    vector with respect to ``v``
+Parameter ``si``:
+    Surface interaction associated with the query
 
 Parameter ``shading_frame``:
     Specifies whether to compute the derivative of the geometric
-    normal *or* the shading normal of the surface)doc";
+    normal *or* the shading normal of the surface
+
+Returns:
+    The partial derivatives of the normal vector with respect to ``u``
+    and ``v``.)doc";
+
+static const char *__doc_mitsuba_Shape_normal_derivative_2 = R"doc(Vectorized version of normal_derivative())doc";
 
 static const char *__doc_mitsuba_Shape_primitive_count =
 R"doc(Returns the number of sub-primitives that make up this shape
@@ -3266,13 +3467,17 @@ R"doc(Returns the number of sub-primitives that make up this shape
 Remark:
     The default implementation simply returns ``1``)doc";
 
-static const char *__doc_mitsuba_Shape_sensor = R"doc(Return the associated sensor (if any))doc";
+static const char *__doc_mitsuba_Shape_sensor =
+R"doc(Return the area sensor associated with this shape (if any, const
+version))doc";
 
-static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the associated sensor (if any))doc";
+static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the area sensor associated with this shape (if any))doc";
 
 static const char *__doc_mitsuba_Shape_set_bsdf = R"doc(Set the BSDF of this shape)doc";
 
-static const char *__doc_mitsuba_Shape_set_emitter = R"doc(Set the emitter of this shape)doc";
+static const char *__doc_mitsuba_Shape_set_emitter = R"doc(Set the area emitter associated with this shape)doc";
+
+static const char *__doc_mitsuba_Shape_set_sensor = R"doc(Set the area sensor associated with this shape)doc";
 
 static const char *__doc_mitsuba_Spectrum = R"doc(//! @{ \name Data types for discretized spectral data)doc";
 
@@ -3285,6 +3490,8 @@ static const char *__doc_mitsuba_Spectrum_Spectrum_3 = R"doc()doc";
 static const char *__doc_mitsuba_Spectrum_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Spectrum_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Spectrum_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream =
 R"doc(Abstract seekable stream class
@@ -3838,69 +4045,6 @@ static const char *__doc_mitsuba_SurfaceInteraction_to_world = R"doc(Convert a l
 static const char *__doc_mitsuba_SurfaceInteraction_uv = R"doc(UV surface coordinates)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_wi = R"doc(Incident direction in the local shading frame)doc";
-
-static const char *__doc_mitsuba_TPCG32 = R"doc()doc";
-
-static const char *__doc_mitsuba_TPCG32_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_TPCG32_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_TPCG32_TPCG32 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
-
-static const char *__doc_mitsuba_TPCG32_advance =
-R"doc(Multi-step advance function (jump-ahead, jump-back)
-
-The method used here is based on Brown, "Random Number Generation with
-Arbitrary Stride", Transactions of the American Nuclear Society (Nov.
-1994). The algorithm is very similar to fast exponentiation.)doc";
-
-static const char *__doc_mitsuba_TPCG32_inc = R"doc()doc";
-
-static const char *__doc_mitsuba_TPCG32_next_float = R"doc()doc";
-
-static const char *__doc_mitsuba_TPCG32_next_float32 =
-R"doc(Generate a single precision floating point value on the interval [0,
-1))doc";
-
-static const char *__doc_mitsuba_TPCG32_next_float64 =
-R"doc(Generate a double precision floating point value on the interval [0,
-1)
-
-Remark:
-    Since the underlying random number generator produces 32 bit
-    output, only the first 32 mantissa bits will be filled (however,
-    the resolution is still finer than in next_float(), which only
-    uses 23 mantissa bits))doc";
-
-static const char *__doc_mitsuba_TPCG32_next_uint32 = R"doc(Generate a uniformly distributed unsigned 32-bit random number)doc";
-
-static const char *__doc_mitsuba_TPCG32_next_uint32_2 = R"doc(Generate a uniformly distributed number, r, where 0 <= r < bound)doc";
-
-static const char *__doc_mitsuba_TPCG32_next_uint32_masked =
-R"doc(Generate a uniformly distributed unsigned 32-bit random number
-
-Remark:
-    Masked version: only activates some of the RNGs)doc";
-
-static const char *__doc_mitsuba_TPCG32_operator_eq = R"doc(Equality operator)doc";
-
-static const char *__doc_mitsuba_TPCG32_operator_ne = R"doc(Inequality operator)doc";
-
-static const char *__doc_mitsuba_TPCG32_operator_sub = R"doc(Compute the distance between two PCG32 pseudorandom number generators)doc";
-
-static const char *__doc_mitsuba_TPCG32_seed =
-R"doc(Seed the pseudorandom number generator
-
-Specified in two parts: a state initializer and a sequence selection
-constant (a.k.a. stream id))doc";
-
-static const char *__doc_mitsuba_TPCG32_shuffle =
-R"doc(Draw uniformly distributed permutation and permute the given STL
-container
-
-From: Knuth, TAoCP Vol. 2 (3rd 3d), Section 3.4.2)doc";
-
-static const char *__doc_mitsuba_TPCG32_state = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree =
 R"doc(Optimized KD-tree acceleration data structure for n-dimensional (n<=4)
@@ -4645,11 +4789,23 @@ static const char *__doc_mitsuba_Transform_operator_eq = R"doc(Equality comparis
 
 static const char *__doc_mitsuba_Transform_operator_mul = R"doc(Concatenate transformations)doc";
 
-static const char *__doc_mitsuba_Transform_operator_mul_2 = R"doc(Transform a 3D point)doc";
+static const char *__doc_mitsuba_Transform_operator_mul_2 =
+R"doc(Transform a given 3D point
 
-static const char *__doc_mitsuba_Transform_operator_mul_3 = R"doc(Transform a 3D vector)doc";
+Remark:
+    In the Python API, this method is named ``transform_point``)doc";
 
-static const char *__doc_mitsuba_Transform_operator_mul_4 = R"doc(Transform a 3D normal)doc";
+static const char *__doc_mitsuba_Transform_operator_mul_3 =
+R"doc(Transform a given 3D vector
+
+Remark:
+    In the Python API, this method is named ``transform_vector``)doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul_4 =
+R"doc(Transform a given 3D normal vector
+
+Remark:
+    In the Python API, this method is named ``transform_normal``)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul_5 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
 
@@ -4712,6 +4868,8 @@ static const char *__doc_mitsuba_Vector_Vector_3 = R"doc()doc";
 static const char *__doc_mitsuba_Vector_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Vector_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Vector_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream =
 R"doc(Transparent compression/decompression stream based on ``zlib``.
@@ -4966,6 +5124,10 @@ in ``delim``.)doc";
 static const char *__doc_mitsuba_filesystem_remove =
 R"doc(Removes a file or empty directory. Returns true if removal was
 successful, false if there was an error (e.g. the file did not exist).)doc";
+
+static const char *__doc_mitsuba_filesystem_rename =
+R"doc(Renames a file or directory. Returns true if renaming was successful,
+false if there was an error (e.g. the file did not exist).)doc";
 
 static const char *__doc_mitsuba_filesystem_resize_file =
 R"doc(Changes the size of the regular file named by ``p`` as if ``truncate``

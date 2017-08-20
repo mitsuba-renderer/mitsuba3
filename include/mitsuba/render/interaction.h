@@ -9,7 +9,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** \brief Container for all information related to a surface intersection.
+/** \brief Container for all information related to a scattering
+ * event on a surface
  */
 template <typename Point3_> struct SurfaceInteraction {
 
@@ -52,7 +53,7 @@ template <typename Point3_> struct SurfaceInteraction {
     /// Time value associated with the intersection
     Value time;
 
-    /* SurfaceInteraction point in 3D coordinates */
+    /// Position of the surface interaction in world coordinates
     Point3 p;
 
     /// Geometric normal
@@ -108,22 +109,16 @@ template <typename Point3_> struct SurfaceInteraction {
     }
 
     /// Is the intersected shape also a emitter?
-    Mask is_emitter() const {
-        return shape->is_emitter();
-    }
+    auto is_emitter() const { return shape->is_emitter(); }
 
     /// Is the intersected shape also a sensor?
-    Mask is_sensor() const {
-        return shape->is_sensor();
-    }
+    auto is_sensor() const { return shape->is_sensor(); }
 
     /// Does the intersected shape have a subsurface integrator?
-    Mask has_subsurface() const {
-        return shape->has_subsurface();
-    }
+    auto has_subsurface() const { return shape->has_subsurface(); }
 
     /// Does the surface mark a transition between two media?
-    Mask is_medium_transition() const {
+    auto is_medium_transition() const {
         return shape->is_medium_transition();
     }
 
@@ -144,7 +139,7 @@ template <typename Point3_> struct SurfaceInteraction {
      * Returns the exterior medium when \c cos_theta > 0 and
      * the interior medium when \c cos_theta <= 0.
      */
-    const MediumPtr target_medium(Value cos_theta) const {
+    const MediumPtr target_medium(const Value &cos_theta) const {
         return select(cos_theta > 0,
                       shape->exterior_medium(),
                       shape->interior_medium());
@@ -187,14 +182,14 @@ template <typename Point3_> struct SurfaceInteraction {
 #endif
 
     /// Move the intersection forward or backward through time
-    void adjust_time(Value time) {
+    void adjust_time(const Value &time) {
         ShapePtr target = select(neq(instance, nullptr), instance, shape);
         target->adjust_time(*this, time);
     }
 
     /// Calls the suitable implementation of \ref Shape::normal_derivative()
     std::pair<Vector3, Vector3> normal_derivative(bool shading_frame = true,
-                                                  mask_t<Value> active = true) const {
+                                                  const mask_t<Value> &active = true) const {
         ShapePtr target = select(neq(instance, nullptr), instance, shape);
         return target->normal_derivative(*this, shading_frame, active);
     }

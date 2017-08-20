@@ -42,9 +42,9 @@ using MediumInteraction3f    = MediumInteraction<Point3f>;
 using MediumInteraction3fP   = MediumInteraction<Point3fP>;
 using MediumInteraction3fX   = MediumInteraction<Point3fX>;
 
-using ShapeP  = Array<const Shape *,  PacketSize>;
-using MediumP = Array<const Medium *, PacketSize>;
-using BSDFP   = Array<const BSDF *,   PacketSize>;
+using ShapeP  = Packet<const Shape *,  PacketSize>;
+using MediumP = Packet<const Medium *, PacketSize>;
+using BSDFP   = Packet<const BSDF *,   PacketSize>;
 
 // -----------------------------------------------------------------------------
 

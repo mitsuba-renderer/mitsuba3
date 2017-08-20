@@ -1,17 +1,26 @@
 #include <mitsuba/core/random.h>
 #include <mitsuba/python/python.h>
 
+#define DP(...) DOC(enoki, PCG32, ##__VA_ARGS__)
+
 MTS_PY_EXPORT(random) {
-    py::class_<PCG32> PCG32_(m, "PCG32", D(TPCG32));
+    using PCG32 = mitsuba::PCG32;
+    py::class_<PCG32> PCG32_(m, "PCG32", DP());
+
     PCG32_
-        .def(py::init<uint64_t, uint64_t>(), D(TPCG32, TPCG32),
+        .def(py::init<uint64_t, uint64_t>(),
              "initstate"_a = PCG32_DEFAULT_STATE,
-             "initseq"_a = index_sequence<uint64_t>() + PCG32_DEFAULT_STREAM)
+             "initseq"_a = index_sequence<uint64_t>() + PCG32_DEFAULT_STREAM,
+             DP(PCG32))
         .def(py::init<const PCG32 &>(), "Copy constructor")
-        .def("seed", &PCG32::seed, "initstate"_a, "initseq"_a = 1u, D(TPCG32, seed))
-        .def("next_uint32", py::overload_cast<>(&PCG32::next_uint32), D(TPCG32, next_uint32))
-        .def("next_uint32", py::overload_cast<uint32_t>(&PCG32::next_uint32), "bound"_a, D(TPCG32, next_uint32, 2))
-        .def("next_float32", &PCG32::next_float32, D(TPCG32, next_float32))
+        .def("seed", &PCG32::seed, "initstate"_a, "initseq"_a = 1u, DP(seed))
+        .def("next_uint32", py::overload_cast<>(&PCG32::next_uint32), DP(next_uint32))
+        .def("next_uint32_bounded", py::overload_cast<uint32_t>(&PCG32::next_uint32_bounded),
+             "bound"_a, DP(next_uint32_bounded))
+        .def("next_uint64", py::overload_cast<>(&PCG32::next_uint64), DP(next_uint64))
+        .def("next_uint64_bounded", py::overload_cast<uint64_t>(&PCG32::next_uint64_bounded),
+             "bound"_a, DP(next_uint64_bounded))
+        .def("next_float32", py::overload_cast<>(&PCG32::next_float32), DP(next_float32))
         .def("next_float32", [](PCG32 &rng, size_t n) {
             py::array_t<float> result(n);
             for (size_t i = 0; i < n; ++i)
@@ -24,7 +33,7 @@ MTS_PY_EXPORT(random) {
                 result.mutable_data()[i] = rng.next_float32();
             return result;
         }, "m"_a, "n"_a)
-        .def("next_float64", &PCG32::next_float64, D(TPCG32, next_float64))
+        .def("next_float64", py::overload_cast<>(&PCG32::next_float64), DP(next_float64))
         .def("next_float64", [](PCG32 &rng, size_t n) {
             py::array_t<float> result(n);
             for (size_t i = 0; i < n; ++i)
@@ -44,16 +53,16 @@ MTS_PY_EXPORT(random) {
                 return p.attr("next_float64")(*args, **kwargs);
             #endif
         })
-        .def("advance", &PCG32::advance, "delta"_a, D(TPCG32, advance))
+        .def("advance", &PCG32::advance, "delta"_a, DP(advance))
         .def("shuffle", [](PCG32 &p, py::list l) {
             auto vec = l.cast<std::vector<py::object>>();
             p.shuffle(vec.begin(), vec.end());
             for (size_t i = 0; i < vec.size(); ++i)
                 l[i] = vec[i];
-        }, D(TPCG32, shuffle))
-        .def(py::self == py::self, D(TPCG32, operator, eq))
-        .def(py::self != py::self, D(TPCG32, operator, ne))
-        .def(py::self - py::self, D(TPCG32, operator, sub))
+        }, DP(shuffle))
+        .def(py::self == py::self, DP(operator, eq))
+        .def(py::self != py::self, DP(operator, ne))
+        .def(py::self - py::self, DP(operator, sub))
         .def("__repr__", [](const PCG32 &p) {
             std::ostringstream oss;
             oss << "PCG32[state=0x" << std::hex << p.state << ", inc=0x" << std::hex << p.inc << "]";

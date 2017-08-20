@@ -27,7 +27,7 @@ auto bind_interaction(py::module &m, const char *name) {
              py::overload_cast<const Vector3 &>(&Type::target_medium, py::const_),
              "d"_a, D(SurfaceInteraction, target_medium))
         .def("target_medium",
-             py::overload_cast<Value>(&Type::target_medium, py::const_),
+             py::overload_cast<const Value &>(&Type::target_medium, py::const_),
              "cos_theta"_a, D(SurfaceInteraction, target_medium, 2))
         .def("bsdf", py::overload_cast<const RayDifferential3 &>(&Type::bsdf),
              "ray"_a, D(SurfaceInteraction, bsdf))

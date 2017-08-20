@@ -28,10 +28,10 @@ def test_pcg32():
         assert p.next_uint32() == v
 
     for v in values_coins:
-        assert 'H' if p.next_uint32(2) == 1 else 'T' == v
+        assert 'H' if p.next_uint32_bounded(2) == 1 else 'T' == v
 
     for v in values_rolls:
-        assert p.next_uint32(6) + 1 == v
+        assert p.next_uint32_bounded(6) + 1 == v
 
     cards = list(range(52))
     p.shuffle(cards)

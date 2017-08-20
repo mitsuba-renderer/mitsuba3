@@ -70,6 +70,23 @@ std::ostream &operator<<(std::ostream &os, const Transform &t) {
     return os;
 }
 
+void AnimatedTransform::append_keyframe(Float time, const Transform &trafo) {
+    if (!m_keyframes.empty() && time <= m_keyframes.back().time)
+        Throw("AnimatedTransform::append_keyframe(): time values must be "
+              "strictly monotonically increasing!");
+
+    Matrix3f M; Quaternion4f Q; Vector3f T;
+
+    /* Perform a polar decomposition into a 3x3 scale/shear matrix,
+       a rotation quaternion, and a translation vector. These will
+       all be interpolated independently. */
+    std::tie(M, Q, T) = enoki::transform_decompose(trafo.matrix());
+
+    m_keyframes.push_back(Keyframe { time, M, Q, T });
+    m_transform = trafo;
+}
+
+
 template Point3f   MTS_EXPORT_CORE Transform::operator*(const Point3f&) const;
 template Point3fP  MTS_EXPORT_CORE Transform::operator*(const Point3fP&) const;
 template Point3f   MTS_EXPORT_CORE Transform::transform_affine(const Point3f&) const;
@@ -89,5 +106,8 @@ template Ray3f     MTS_EXPORT_CORE Transform::operator*(const Ray3f&) const;
 template Ray3fP    MTS_EXPORT_CORE Transform::operator*(const Ray3fP&) const;
 template Ray3f     MTS_EXPORT_CORE Transform::transform_affine(const Ray3f&) const;
 template Ray3fP    MTS_EXPORT_CORE Transform::transform_affine(const Ray3fP&) const;
+
+template auto MTS_EXPORT_CORE AnimatedTransform::lookup(const Float &,  const bool &) const;
+template auto MTS_EXPORT_CORE AnimatedTransform::lookup(const FloatP &, const mask_t<FloatP> &) const;
 
 NAMESPACE_END(mitsuba)

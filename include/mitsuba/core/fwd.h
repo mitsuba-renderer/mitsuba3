@@ -53,36 +53,36 @@ template <typename> class AtomicFloat;
 
 constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float);
 
-using FloatP   = Array<Float, PacketSize>;
+using FloatP   = Packet<Float, PacketSize>;
 using FloatX   = DynamicArray<FloatP>;
 
-using Float16P = Array<enoki::half, PacketSize>;
+using Float16P = Packet<enoki::half, PacketSize>;
 using Float16X = DynamicArray<Float16P>;
 
-using Float32P = Array<float, PacketSize>;
+using Float32P = Packet<float, PacketSize>;
 using Float32X = DynamicArray<Float32P>;
 
-using Float64P = Array<double, PacketSize>;
+using Float64P = Packet<double, PacketSize>;
 using Float64X = DynamicArray<Float64P>;
 
-using Int32P   = Array<int32_t, PacketSize>;
+using Int32P   = Packet<int32_t, PacketSize>;
 using Int32X   = DynamicArray<Int32P>;
 
-using UInt32P  = Array<uint32_t, PacketSize>;
+using UInt32P  = Packet<uint32_t, PacketSize>;
 using UInt32X  = DynamicArray<UInt32P>;
 
-using Int64P   = Array<int64_t, PacketSize>;
+using Int64P   = Packet<int64_t, PacketSize>;
 using Int64X   = DynamicArray<Int64P>;
-using UInt64P  = Array<uint64_t, PacketSize>;
+using UInt64P  = Packet<uint64_t, PacketSize>;
 using UInt64X  = DynamicArray<UInt64P>;
 
-using SizeP    = Array<size_t, PacketSize>;
+using SizeP    = Packet<size_t, PacketSize>;
 using SizeX    = DynamicArray<SizeP>;
 
-using SSizeP   = Array<ssize_t, PacketSize>;
+using SSizeP   = Packet<ssize_t, PacketSize>;
 using SSizeX   = DynamicArray<SSizeP>;
 
-using BoolP    = Array<bool, PacketSize>;
+using BoolP    = Packet<bool, PacketSize>;
 using BoolX    = DynamicArray<BoolP>;
 
 //! @}

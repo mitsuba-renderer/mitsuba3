@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/ray.h>
-#include <enoki/homogeneous.h>
+#include <enoki/transform.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -199,43 +199,79 @@ private:
 
 class MTS_EXPORT_CORE AnimatedTransform {
 public:
-
-#if 0
-    void append_keyframe(Float time, const Transform &trafo) {
-
+    struct Keyframe {
+        Float time;
+        Matrix3f scale;
+        Quaternion4f quat;
+        Vector3f trans;
     };
 
+    AnimatedTransform() {
 
-    Transform lookup(Float time, mask_t<Float> active) {
-        using Index = int32_array_t<Float>;
+    }
 
-        if (size() <= 1)
-            return m_transform;
+    /// Append a keyframe to the current animated transform
+    void append_keyframe(Float time, const Transform &trafo);
 
-        /* Find the index of the left node in the queried subinterval */
+    template <typename Value>
+    auto lookup(const Value &time, const mask_t<Value> &active_ = true) const {
+        static_assert(std::is_same<scalar_t<Value>, Float>::value, "Expected a 'float'-valued time parameter");
+
+        auto active = disable_mask_if_scalar(active_);
+
+        /* Compute constants describing the layout of the 'Keyframe' data structure */
+        constexpr uint32_t stride       = uint32_t(sizeof(Keyframe) / sizeof(Float));
+        constexpr uint32_t scale_offset = offsetof(Keyframe, scale) / sizeof(Float);
+        constexpr uint32_t quat_offset  = offsetof(Keyframe, quat)  / sizeof(Float);
+        constexpr uint32_t trans_offset = offsetof(Keyframe, trans) / sizeof(Float);
+
+        using Index       = uint32_array_t<Value>;
+        using Matrix3     = Matrix<Value, 3>;
+        using Vector3     = Vector<Value, 3>;
+        using Quaternion4 = Quaternion<Value>;
+
+        /* Perhaps the transformation isn't animated */
+        if (likely(size() <= 1))
+            return Matrix<Value, 4>(m_transform.matrix());
+
+        /* Look up the interval containing 'time' */
         Index idx = math::find_interval(
-            size(),
-            [&](Index idx, mask_t<Float> active) {
-                return gather<Float>(m_times.data(), idx, active) <= time;
+            (uint32_t) size(),
+            [&](Index idx, mask_t<Value> active) {
+                return gather<Value>(m_keyframes.data(), idx * stride, active) <= time;
             },
             active);
 
-        gather<Matrix3f>(m_keyframes())
+        Index idx0 = idx * stride, idx1 = idx0 + stride;
 
-        return enoki::transform_compose(
-            scale, quat, translate
-        );
+        /* Compute the relative time value in [0, 1] */
+        Value t0 = gather<Value>(m_keyframes.data(), idx0, active);
+        Value t1 = gather<Value>(m_keyframes.data(), idx1, active);
+        Value t = min(max((time - t0) / (t1 - t0), 0.f), 1.f);
+
+        /* Interpolate the scale matrix */
+        Matrix3 scale0 = gather<Matrix3>((Float *) m_keyframes.data() + scale_offset, idx0, active);
+        Matrix3 scale1 = gather<Matrix3>((Float *) m_keyframes.data() + scale_offset, idx1, active);
+        Matrix3 scale = scale0 * (1 - t) + scale1 * t;
+
+        /* Interpolate the rotation quaternion */
+        Quaternion4 quat0 = gather<Quaternion4>((Float *) m_keyframes.data() + quat_offset, idx0, active);
+        Quaternion4 quat1 = gather<Quaternion4>((Float *) m_keyframes.data() + quat_offset, idx1, active);
+        Quaternion4 quat = quat0 * (1 - t) + quat1 * t;
+
+        /* Interpolate the translation component */
+        Vector3 trans0 = gather<Vector3>((Float *) m_keyframes.data() + trans_offset, idx0, active);
+        Vector3 trans1 = gather<Vector3>((Float *) m_keyframes.data() + trans_offset, idx1, active);
+        Vector3 trans = trans0 * (1 - t) + trans1 * t;
+
+        return transform_compose(scale, quat, trans);
     }
 
     size_t size() const { return m_keyframes.size(); }
-#endif
 
 private:
     Transform m_transform;
-    std::vector<Float> m_times;
-    std::vector<Matrix3f> m_scale;
-    std::vector<Quaternion4f> m_quat;
-    std::vector<Vector3f> m_translate;
+    std::vector<Keyframe> m_keyframes;
 };
 
 extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, const Transform &t);
