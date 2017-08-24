@@ -2,77 +2,24 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Transform Transform::perspective(Float fov, Float near, Float far) {
-    /* Project vectors in camera space onto a plane at z=1:
-     *
-     *  x_proj = x / z
-     *  y_proj = y / z
-     *  z_proj = (far * (z - near)) / (z * (far-near))
-     *
-     *  Camera-space depths are not mapped linearly!
-     */
-    Float recip = 1.f / (far - near);
+AnimatedTransform::~AnimatedTransform() { }
 
-    /* Perform a scale so that the field of view is mapped
-       to the interval [-1, 1] */
-    Float tan = enoki::tan(deg_to_rad(fov * .5f)),
-          cot = 1.f / tan;
+void AnimatedTransform::append(const Keyframe &keyframe) {
+    if (!m_keyframes.empty() && keyframe.time <= m_keyframes.back().time)
+        Throw("AnimatedTransform::append(): time values must be "
+              "strictly monotonically increasing!");
 
-    Matrix4f trafo = diag<Matrix4f>(Vector4f(cot, cot, far * recip, -near * far * recip));
-    trafo(3, 2) = 1.f;
+    if (m_keyframes.empty())
+        m_transform = Transform4f(
+            enoki::transform_compose(keyframe.scale, keyframe.quat, keyframe.trans),
+            enoki::transform_compose_inverse(keyframe.scale, keyframe.quat, keyframe.trans));
 
-    Matrix4f inv_trafo = diag<Matrix4f>(Vector4f(tan, tan, 0.f, rcp(near)));
-    trafo(2, 3) = 1.f;
-    trafo(3, 2) = (near - far) / (far * near);
-
-    return Transform(trafo, inv_trafo);
+    m_keyframes.push_back(keyframe);
 }
 
-Transform Transform::orthographic(Float near, Float far) {
-    return scale(Vector3f(1.f, 1.f, 1.f / (far - near))) *
-           translate(Vector3f(0.f, 0.f, -near));
-}
-
-Transform Transform::look_at(const Point3f &origin, const Point3f &target, const Vector3f &up) {
-    Vector3f dir = target - origin;
-    if (unlikely(target - origin == zero<Vector3f>()))
-        Throw("look_at(): 'origin' and 'target' coincide!");
-    dir = normalize(dir);
-
-    Vector3f left = cross(up, dir);
-    if (unlikely(left == zero<Vector3f>()))
-        Throw("look_at(): the forward and upward direction must be linearly independent!");
-    left = normalize(left);
-
-    Vector3f new_up = cross(dir, left);
-
-    Matrix4f result = Matrix4f::from_cols(
-        concat(left, 0.f),
-        concat(new_up, 0.f),
-        concat(dir, 0.f),
-        concat(origin, 1.f)
-    );
-
-    Matrix4f inverse = Matrix4f::from_rows(
-        concat(left, 0.f),
-        concat(new_up, 0.f),
-        concat(dir, 0.f),
-        Vector4f(0.f, 0.f, 0.f, 1.f)
-    );
-
-    inverse[3] = inverse * concat(-origin, 1.f);
-
-    return Transform(result, inverse);
-}
-
-std::ostream &operator<<(std::ostream &os, const Transform &t) {
-    os << t.matrix();
-    return os;
-}
-
-void AnimatedTransform::append_keyframe(Float time, const Transform &trafo) {
+void AnimatedTransform::append(Float time, const Transform4f &trafo) {
     if (!m_keyframes.empty() && time <= m_keyframes.back().time)
-        Throw("AnimatedTransform::append_keyframe(): time values must be "
+        Throw("AnimatedTransform::append(): time values must be "
               "strictly monotonically increasing!");
 
     Matrix3f M; Quaternion4f Q; Vector3f T;
@@ -80,34 +27,99 @@ void AnimatedTransform::append_keyframe(Float time, const Transform &trafo) {
     /* Perform a polar decomposition into a 3x3 scale/shear matrix,
        a rotation quaternion, and a translation vector. These will
        all be interpolated independently. */
-    std::tie(M, Q, T) = enoki::transform_decompose(trafo.matrix());
+    std::tie(M, Q, T) = enoki::transform_decompose(trafo.matrix);
+
+    if (m_keyframes.empty())
+        m_transform = trafo;
 
     m_keyframes.push_back(Keyframe { time, M, Q, T });
-    m_transform = trafo;
 }
 
+template <typename Value>
+Transform<Value> ENOKI_INLINE AnimatedTransform::lookup_impl(const Value &time, const mask_t<Value> &active_) const {
+    static_assert(std::is_same<scalar_t<Value>, Float>::value, "Expected a 'float'-valued time parameter");
 
-template Point3f   MTS_EXPORT_CORE Transform::operator*(const Point3f&) const;
-template Point3fP  MTS_EXPORT_CORE Transform::operator*(const Point3fP&) const;
-template Point3f   MTS_EXPORT_CORE Transform::transform_affine(const Point3f&) const;
-template Point3fP  MTS_EXPORT_CORE Transform::transform_affine(const Point3fP&) const;
+    auto active = disable_mask_if_scalar(active_);
 
-template Vector3f  MTS_EXPORT_CORE Transform::operator*(const Vector3f&) const;
-template Vector3fP MTS_EXPORT_CORE Transform::operator*(const Vector3fP&) const;
-template Vector3f  MTS_EXPORT_CORE Transform::transform_affine(const Vector3f&) const;
-template Vector3fP MTS_EXPORT_CORE Transform::transform_affine(const Vector3fP&) const;
+    /* Compute constants describing the layout of the 'Keyframe' data structure */
+    constexpr size_t Stride      = sizeof(Keyframe);
+    constexpr size_t ScaleOffset = offsetof(Keyframe, scale) / sizeof(Float);
+    constexpr size_t QuatOffset  = offsetof(Keyframe, quat)  / sizeof(Float);
+    constexpr size_t TransOffset = offsetof(Keyframe, trans) / sizeof(Float);
 
-template Normal3f  MTS_EXPORT_CORE Transform::operator*(const Normal3f&) const;
-template Normal3fP MTS_EXPORT_CORE Transform::operator*(const Normal3fP&) const;
-template Normal3f  MTS_EXPORT_CORE Transform::transform_affine(const Normal3f&) const;
-template Normal3fP MTS_EXPORT_CORE Transform::transform_affine(const Normal3fP&) const;
+    using Index       = uint32_array_t<Value>;
+    using Matrix3     = Matrix<Value, 3>;
+    using Vector3     = Vector<Value, 3>;
+    using Quaternion4 = Quaternion<Value>;
 
-template Ray3f     MTS_EXPORT_CORE Transform::operator*(const Ray3f&) const;
-template Ray3fP    MTS_EXPORT_CORE Transform::operator*(const Ray3fP&) const;
-template Ray3f     MTS_EXPORT_CORE Transform::transform_affine(const Ray3f&) const;
-template Ray3fP    MTS_EXPORT_CORE Transform::transform_affine(const Ray3fP&) const;
+    /* Perhaps the transformation isn't animated */
+    if (likely(size() <= 1))
+        return m_transform;
 
-template auto MTS_EXPORT_CORE AnimatedTransform::lookup(const Float &,  const bool &) const;
-template auto MTS_EXPORT_CORE AnimatedTransform::lookup(const FloatP &, const mask_t<FloatP> &) const;
+    /* Look up the interval containing 'time' */
+    Index idx0 = math::find_interval(
+        (uint32_t) size(),
+        [&](Index idx, mask_t<Value> active) {
+            return gather<Value, Stride>(m_keyframes.data(), idx, active) <= time;
+        },
+        active);
 
+    Index idx1 = idx0 + 1;
+
+    /* Compute the relative time value in [0, 1] */
+    Value t0 = gather<Value, Stride>(m_keyframes.data(), idx0, active);
+    Value t1 = gather<Value, Stride>(m_keyframes.data(), idx1, active);
+    Value t = min(max((time - t0) / (t1 - t0), 0.f), 1.f);
+
+    /* Interpolate the scale matrix */
+    Matrix3 scale0 = gather<Matrix3, Stride>((Float *) m_keyframes.data() + ScaleOffset, idx0, active);
+    Matrix3 scale1 = gather<Matrix3, Stride>((Float *) m_keyframes.data() + ScaleOffset, idx1, active);
+    Matrix3 scale = scale0 * (1 - t) + scale1 * t;
+
+    /* Interpolate the rotation quaternion */
+    Quaternion4 quat0 = gather<Quaternion4, Stride>((Float *) m_keyframes.data() + QuatOffset, idx0, active);
+    Quaternion4 quat1 = gather<Quaternion4, Stride>((Float *) m_keyframes.data() + QuatOffset, idx1, active);
+    Quaternion4 quat = enoki::slerp(quat0, quat1, t);
+
+    /* Interpolate the translation component */
+    Vector3 trans0 = gather<Vector3, Stride>((Float *) m_keyframes.data() + TransOffset, idx0, active);
+    Vector3 trans1 = gather<Vector3, Stride>((Float *) m_keyframes.data() + TransOffset, idx1, active);
+    Vector3 trans = trans0 * (1 - t) + trans1 * t;
+
+    return Transform<Value>(
+        enoki::transform_compose(scale, quat, trans),
+        enoki::transform_compose_inverse(scale, quat, trans)
+    );
+}
+
+/// Look up an interpolated transformation at the given time
+Transform4f AnimatedTransform::lookup(const Float &time, const bool &active) const {
+    return lookup_impl(time, active);
+
+}
+
+/// Vectorized version of \ref lookup
+Transform4fP AnimatedTransform::lookup(const FloatP &time, const mask_t<FloatP> &active) const {
+    return lookup_impl(time, active);
+}
+
+template Point3f   MTS_EXPORT_CORE Transform4f::operator*(const Point3f&) const;
+template Point3fP  MTS_EXPORT_CORE Transform4f::operator*(const Point3fP&) const;
+template Vector3f  MTS_EXPORT_CORE Transform4f::operator*(const Vector3f&) const;
+template Vector3fP MTS_EXPORT_CORE Transform4f::operator*(const Vector3fP&) const;
+template Normal3f  MTS_EXPORT_CORE Transform4f::operator*(const Normal3f&) const;
+template Normal3fP MTS_EXPORT_CORE Transform4f::operator*(const Normal3fP&) const;
+template Ray3f     MTS_EXPORT_CORE Transform4f::operator*(const Ray3f&) const;
+template Ray3fP    MTS_EXPORT_CORE Transform4f::operator*(const Ray3fP&) const;
+
+template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Point3f&) const;
+template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Point3fP&) const;
+template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Vector3f&) const;
+template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Vector3fP&) const;
+template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Normal3f&) const;
+template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Normal3fP&) const;
+template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3f&) const;
+template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3fP&) const;
+
+MTS_IMPLEMENT_CLASS(AnimatedTransform, Object)
 NAMESPACE_END(mitsuba)

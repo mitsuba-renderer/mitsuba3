@@ -114,7 +114,7 @@ class ChiSquareTest(object):
         from mitsuba.core import PCG32
 
         # Generate a table of uniform variates
-        samples_in = PCG32().next_float(self.sample_count, self.sample_dim)
+        samples_in = PCG32().next_float((self.sample_count, self.sample_dim))
 
         if self.sample_dim == 1:
             samples_in = samples_in.ravel()

@@ -1,5 +1,5 @@
 add_mitsuba_python_library(mitsuba_render_ext render
-  mitsuba_render_ext.cpp
+  main.cpp
   common.cpp
   interaction.cpp
   records.cpp

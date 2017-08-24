@@ -22,22 +22,21 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name Data types for RGB data
 // =======================================================================
 
-template <typename Type_, size_t Size_>
+template <typename Value, size_t Size>
 struct Color
-    : enoki::StaticArrayImpl<Type_, Size_,
-                             enoki::detail::approx_default<Type_>::value,
-                             RoundingMode::Default, Color<Type_, Size_>> {
+    : enoki::StaticArrayImpl<Value, Size,
+                             enoki::detail::approx_default<Value>::value,
+                             RoundingMode::Default, Color<Value, Size>> {
 
-    static constexpr bool Approx = enoki::detail::approx_default<Type_>::value;
+    static constexpr bool Approx = enoki::detail::approx_default<Value>::value;
 
-    using Base = enoki::StaticArrayImpl<Type_, Size_, Approx, RoundingMode::Default,
-                                        Color<Type_, Size_>>;
+    using Base = enoki::StaticArrayImpl<Value, Size, Approx, RoundingMode::Default,
+                                        Color<Value, Size>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
-    template <typename T> using ReplaceType = Color<T, Size_>;
+    template <typename T> using ReplaceType = Color<T, Size>;
 
-    using ArrayType = Color;
-    using MaskType = enoki::Mask<Type_, Size_, Approx, RoundingMode::Default>;
+    using MaskType = enoki::Mask<Value, Size, Approx, RoundingMode::Default>;
 
     using typename Base::Scalar;
 
@@ -64,22 +63,21 @@ using Color3fX = Color<FloatX, 3>;
 //! @{ \name Data types for discretized spectral data
 // =======================================================================
 
-template <typename Type_>
+template <typename Value>
 struct Spectrum
-    : enoki::StaticArrayImpl<Type_, MTS_WAVELENGTH_SAMPLES,
-                             enoki::detail::approx_default<Type_>::value,
-                             RoundingMode::Default, Spectrum<Type_>> {
+    : enoki::StaticArrayImpl<Value, MTS_WAVELENGTH_SAMPLES,
+                             enoki::detail::approx_default<Value>::value,
+                             RoundingMode::Default, Spectrum<Value>> {
 
-    static constexpr bool Approx = enoki::detail::approx_default<Type_>::value;
+    static constexpr bool Approx = enoki::detail::approx_default<Value>::value;
 
-    using Base = enoki::StaticArrayImpl<Type_, MTS_WAVELENGTH_SAMPLES, Approx,
-                                        RoundingMode::Default, Spectrum<Type_>>;
+    using Base = enoki::StaticArrayImpl<Value, MTS_WAVELENGTH_SAMPLES, Approx,
+                                        RoundingMode::Default, Spectrum<Value>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
     template <typename T> using ReplaceType = Spectrum<T>;
 
-    using ArrayType = Spectrum;
-    using MaskType = enoki::Mask<Type_, MTS_WAVELENGTH_SAMPLES,
+    using MaskType = enoki::Mask<Value, MTS_WAVELENGTH_SAMPLES,
                                  Approx, RoundingMode::Default>;
 
     ENOKI_DECLARE_ARRAY(Base, Spectrum)

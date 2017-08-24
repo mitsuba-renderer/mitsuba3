@@ -10,157 +10,161 @@ using Matrix4f     = enoki::Matrix<Float, 4>;
 using Quaternion4f = enoki::Quaternion<Float>;
 
 /**
- * \brief Encapsulates a 4x4 homogeneous coordinate transformation and its inverse
+ * \brief Encapsulates a 4x4 homogeneous coordinate transformation along with
+ * its inverse transpose
  *
- * This class provides a set of overloaded matrix-vector multiplication
- * operators for vectors, points, and normals (all of them transform
- * differently under homogeneous coordinate transformations)
+ * The Transform class provides a set of overloaded matrix-vector
+ * multiplication operators for vectors, points, and normals (all of them
+ * behave differently under homogeneous coordinate transformations, hence
+ * the need to represent them using separate types)
  */
-class MTS_EXPORT_CORE Transform {
-    using Column = column_t<Matrix4f>;
-public:
-    /// Create the identity transformation
-    Transform()
-        : m_value(identity<Matrix4f>()), m_inverse(identity<Matrix4f>()) { }
+template <typename Value> struct Transform {
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
 
-    /// Initialize the transformation from the given matrix (and compute its inverse)
-    Transform(Matrix4f value) : m_value(value), m_inverse(enoki::inverse(value)) { }
+    using Matrix4 = Matrix<Value, 4>;
+    using Vector3 = Vector<Value, 3>;
+    using Vector4 = Vector<Value, 4>;
 
-    /// Initialize the transformation from the given matrix and inverse
-    Transform(Matrix4f value, Matrix4f inverse) : m_value(value), m_inverse(inverse) { }
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
+
+    Matrix4 matrix            = identity<Matrix4>();
+    Matrix4 inverse_transpose = identity<Matrix4>();
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Constructors, methods, etc.
+    // =============================================================
+
+    /// Initialize the transformation from the given matrix (and compute its inverse transpose)
+    Transform(const Matrix4 &value)
+        : matrix(value),
+          inverse_transpose(enoki::inverse_transpose(value)) { }
 
     /// Concatenate transformations
-    Transform operator*(const Transform &other) const {
-        return Transform(m_value * other.m_value, other.m_inverse * m_inverse);
+    MTS_INLINE Transform operator*(const Transform &other) const {
+        return Transform(matrix * other.matrix,
+                         inverse_transpose * other.inverse_transpose);
     }
 
-    /// Compute the inverse of this transformation (for free, since it is already known)
+    /// Compute the inverse of this transformation (involves just shuffles, no arithmetic)
     MTS_INLINE Transform inverse() const {
-        return Transform(m_inverse, m_value);
+        return Transform(transpose(inverse_transpose), transpose(matrix));
     }
-
-    /// Return the underlying 4x4 matrix
-    Matrix4f matrix() const { return m_value; }
-
-    /// Return the underlying 4x4 inverse matrix
-    Matrix4f inverse_matrix() const { return m_inverse; }
 
     /// Equality comparison operator
-    bool operator==(const Transform &t) const { return m_value == t.m_value && m_inverse == t.m_inverse; }
+    bool operator==(const Transform &t) const {
+        return matrix == t.matrix &&
+               inverse_transpose == t.inverse_transpose;
+    }
 
     /// Inequality comparison operator
-    bool operator!=(const Transform &t) const { return m_value != t.m_value || m_inverse != t.m_inverse; }
+    bool operator!=(const Transform &t) const {
+        return matrix != t.matrix ||
+               inverse_transpose != t.inverse_transpose;
+    }
 
     /**
-     * \brief Transform a given 3D point
+     * \brief Transform a 3D vector/point/normal/ray by a transformation that
+     * is known to be an affine 3D transformation (i.e. no perspective)
+     */
+    template <typename T>
+    MTS_INLINE auto transform_affine(const T &input) const {
+        return operator*(input);
+    }
+
+    /// Transform a 3D point (handles affine/non-perspective transformations only)
+    template <typename Value2, typename E = expr_t<Value, Value2>>
+    MTS_INLINE auto transform_affine(const Point<Value2, 3> &vec) const {
+        Array<E, 4> result = matrix.coeff(3);
+        result = fmadd(matrix.coeff(0), vec.x(), result);
+        result = fmadd(matrix.coeff(1), vec.y(), result);
+        result = fmadd(matrix.coeff(2), vec.z(), result);
+
+        return Point<E, 3>(head<3>(result)); // no-op
+    }
+
+    /**
+     * \brief Transform a 3D point
      * \remark In the Python API, this method is named \c transform_point
      */
-    template <typename Scalar>
-    MTS_INLINE Point<Scalar, 3> operator*(const Point<Scalar, 3> &vec) const {
-        auto result = m_value.coeff(0) * enoki::fill<Column>(vec.x()) +
-                      m_value.coeff(1) * enoki::fill<Column>(vec.y()) +
-                      m_value.coeff(2) * enoki::fill<Column>(vec.z()) +
-                      m_value.coeff(3);
+    template <typename Value2, typename E = expr_t<Value, Value2>>
+    MTS_INLINE Point<E, 3> operator*(const Point<Value2, 3> &arg) const {
+        Array<E, 4> result = matrix.coeff(3);
+        result = fmadd(matrix.coeff(0), arg.x(), result);
+        result = fmadd(matrix.coeff(1), arg.y(), result);
+        result = fmadd(matrix.coeff(2), arg.z(), result);
 
-        Scalar w = result.w();
-        if (unlikely(w != 1.f))
-            result *= rcp<Point<Scalar, 3>::Approx>(w);
+        auto w = result.w();
+        if (unlikely(any_nested(neq(w, 1.f))))
+            result *= rcp<Point<Value2, 3>::Approx>(w);
 
-        return head<3>(result);
-    }
-
-    /// Transform a 3D point (for affine/non-perspective transformations)
-    template <typename Scalar>
-    MTS_INLINE Point<Scalar, 3> transform_affine(const Point<Scalar, 3> &vec) const {
-        auto result = m_value.coeff(0) * enoki::fill<Column>(vec.x()) +
-                      m_value.coeff(1) * enoki::fill<Column>(vec.y()) +
-                      m_value.coeff(2) * enoki::fill<Column>(vec.z()) +
-                      m_value.coeff(3);
-
-        return head<3>(result);
+        return head<3>(result); // no-op
     }
 
     /**
-     * \brief Transform a given 3D vector
-     * \remark In the Python API, this method is named \c transform_vector
+     * \brief Transform a 3D argtor
+     * \remark In the Python API, this method is named \c transform_argtor
      */
-    template <typename Scalar>
-    MTS_INLINE Vector<Scalar, 3> operator*(const Vector<Scalar, 3> &vec) const {
-        auto result = m_value.coeff(0) * enoki::fill<Column>(vec.x()) +
-                      m_value.coeff(1) * enoki::fill<Column>(vec.y()) +
-                      m_value.coeff(2) * enoki::fill<Column>(vec.z());
+    template <typename Value2, typename E = expr_t<Value, Value2>>
+    MTS_INLINE Vector<E, 3> operator*(const Vector<Value2, 3> &arg) const {
+        Array<E, 4> result = matrix.coeff(0); result *= arg.x();
+        result = fmadd(matrix.coeff(1), arg.y(), result);
+        result = fmadd(matrix.coeff(2), arg.z(), result);
 
-        return head<3>(result);
+        return head<3>(result); // no-op
     }
-
-    /// Transform a 3D vector (for affine/non-perspective transformations)
-    template <typename Scalar>
-    MTS_INLINE Vector<Scalar, 3> transform_affine(const Vector<Scalar, 3> &vec) const {
-        /// Identical to operator*(Vector)
-        auto result = m_value.coeff(0) * enoki::fill<Column>(vec.x()) +
-                      m_value.coeff(1) * enoki::fill<Column>(vec.y()) +
-                      m_value.coeff(2) * enoki::fill<Column>(vec.z());
-
-        return head<3>(result);
-    }
-
     /**
-     * \brief Transform a given 3D normal vector
+     * \brief Transform a 3D normal argtor
      * \remark In the Python API, this method is named \c transform_normal
      */
-    template <typename Scalar>
-    MTS_INLINE Normal<Scalar, 3> operator*(const Normal<Scalar, 3> &vec) const {
-        Matrix4f inv_t = enoki::transpose(m_inverse);
+    template <typename Value2, typename E = expr_t<Value, Value2>>
+    MTS_INLINE Normal<E, 3> operator*(const Normal<Value2, 3> &arg) const {
+        Array<E, 4> result = inverse_transpose.coeff(0); result *= arg.x();
+        result = fmadd(inverse_transpose.coeff(1), arg.y(), result);
+        result = fmadd(inverse_transpose.coeff(2), arg.z(), result);
 
-        auto result = inv_t.coeff(0) * enoki::fill<Column>(vec.x()) +
-                      inv_t.coeff(1) * enoki::fill<Column>(vec.y()) +
-                      inv_t.coeff(2) * enoki::fill<Column>(vec.z());
-
-        return head<3>(result);
+        return head<3>(result); // no-op
     }
 
-    /// Transform a 3D normal (for affine/non-perspective transformations)
-    template <typename Scalar>
-    MTS_INLINE Normal<Scalar, 3> transform_affine(const Normal<Scalar, 3> &vec) const {
-        /// Identical to operator*(Normal)
-        Matrix4f inv_t = enoki::transpose(m_inverse);
-
-        auto result = inv_t.coeff(0) * enoki::fill<Column>(vec.x()) +
-                      inv_t.coeff(1) * enoki::fill<Column>(vec.y()) +
-                      inv_t.coeff(2) * enoki::fill<Column>(vec.z());
-
-        return head<3>(result);
+    /// Transform a ray (for perspective transformations)
+    template <typename Value2, typename E = expr_t<Value, Value2>,
+              typename Result = Ray<Point<E, 3>>>
+    MTS_INLINE Result operator*(const Ray<Point<Value2, 3>> &ray) const {
+        return Result(operator*(ray.o), operator*(ray.d), ray.mint, ray.maxt);
     }
 
     /// Transform a ray (for affine/non-perspective transformations)
-    template <typename Point>
-    MTS_INLINE Ray<Point> operator*(const Ray<Point> &ray) const {
-        return Ray<Point>(operator*(ray.o),
-                          operator*(ray.d),
-                          ray.mint, ray.maxt);
-    }
-
-    /// Transform a ray (for affine/non-perspective transformations)
-    template <typename Point>
-    MTS_INLINE Ray<Point> transform_affine(const Ray<Point> &ray) const {
-        return Ray<Point>(transform_affine(ray.o),
-                          transform_affine(ray.d),
-                          ray.mint, ray.maxt);
+    template <typename Value2, typename E = expr_t<Value, Value2>>
+    MTS_INLINE auto transform_affine(const Ray<Point<Value2, 3>> &ray) const {
+        return Ray<Point<E, 3>>(transform_affine(ray.o),
+                                transform_affine(ray.d),
+                                ray.mint, ray.maxt);
     }
 
     /// Create a translation transformation
-    static Transform translate(const Vector3f &v) {
-        return Transform(enoki::translate<Matrix4f>(v), enoki::translate<Matrix4f>(-v));
+    static Transform translate(const Vector3 &v) {
+        return Transform(enoki::translate<Matrix4>(v),
+                         enoki::translate<Matrix4>(-v));
     }
 
     /// Create a scale transformation
-    static Transform scale(const Vector3f &v) {
-        return Transform(enoki::scale<Matrix4f>(v), enoki::scale<Matrix4f>(rcp(v)));
+    static Transform scale(const Vector3 &v) {
+        return Transform(enoki::scale<Matrix4>(v),
+                         enoki::scale<Matrix4>(rcp(v)));
     }
 
     /// Create a rotation transformation around an arbitrary axis. The angle is specified in degrees
-    static Transform rotate(const Vector3f &axis, Float angle) {
-        Matrix4f matrix = enoki::rotate<Matrix4f>(axis, deg_to_rad(angle));
+    static Transform rotate(const Vector3 &axis, const Value &angle) {
+        Matrix4 matrix = enoki::rotate<Matrix4>(axis, deg_to_rad(angle));
         return Transform(matrix, transpose(matrix));
     }
 
@@ -171,7 +175,31 @@ public:
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
-    static Transform perspective(Float fov, Float near, Float far);
+    static Transform perspective(const Value &fov, const Value &near, const Value &far) {
+        /* Project vectors in camera space onto a plane at z=1:
+         *
+         *  x_proj = x / z
+         *  y_proj = y / z
+         *  z_proj = (far * (z - near)) / (z * (far-near))
+         *
+         *  Camera-space depths are not mapped linearly!
+         */
+        Value recip = 1.f / (far - near);
+
+        /* Perform a scale so that the field of view is mapped
+           to the interval [-1, 1] */
+        Value tan = enoki::tan(deg_to_rad(fov * .5f)),
+              cot = 1.f / tan;
+
+        Matrix4 trafo = diag<Matrix4>(Vector4(cot, cot, far * recip, -near * far * recip));
+        trafo(3, 2) = 1.f;
+
+        Matrix4 inv_trafo = diag<Matrix4>(Vector4(tan, tan, 0.f, rcp(near)));
+        trafo(2, 3) = 1.f;
+        trafo(3, 2) = (near - far) / (far * near);
+
+        return Transform(trafo, inv_trafo);
+    }
 
     /** \brief Create an orthographic transformation, which maps Z to [0,1]
      * and leaves the X and Y coordinates untouched.
@@ -179,7 +207,10 @@ public:
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
-    static Transform orthographic(Float near, Float far);
+    static Transform orthographic(const Value &near, const Value &far) {
+        return scale(Vector3(1.f, 1.f, 1.f / (far - near))) *
+               translate(Vector3(0.f, 0.f, -near));
+    }
 
     /** \brief Create a look-at camera transformation
      *
@@ -189,91 +220,115 @@ public:
      */
     static Transform look_at(const Point3f &origin,
                              const Point3f &target,
-                             const Vector3f &up);
+                             const Vector3 &up) {
+        Vector3 dir = normalize(target - origin);
+        dir = normalize(dir);
+        Vector3 left = normalize(cross(up, dir));
 
+        Vector3 new_up = cross(dir, left);
+
+        Matrix4 result = Matrix4::from_cols(
+            concat(left, 0.f),
+            concat(new_up, 0.f),
+            concat(dir, 0.f),
+            concat(origin, 1.f)
+        );
+
+        Matrix4 inverse = Matrix4::from_rows(
+            concat(left, 0.f),
+            concat(new_up, 0.f),
+            concat(dir, 0.f),
+            Vector4(0.f, 0.f, 0.f, 1.f)
+        );
+
+        inverse[3] = inverse * concat(-origin, 1.f);
+
+        return Transform(result, inverse);
+    }
+
+    //! @}
+    // =============================================================
+
+    ENOKI_STRUCT(Transform, matrix, inverse_transpose)
     ENOKI_ALIGNED_OPERATOR_NEW()
-
-private:
-    Matrix4f m_value, m_inverse;
 };
 
-class MTS_EXPORT_CORE AnimatedTransform {
+/**
+ * \brief Encapsulates an animated 4x4 homogeneous coordinate transformation
+ *
+ * The animation is stored as keyframe animation with linear segments. The
+ * implementation performs a polar decomposition of each keyframe into a 3x3
+ * scale/shear matrix, a rotation quaternion, and a translation vector. These
+ * will all be interpolated independently at lookup time.
+ */
+class MTS_EXPORT_CORE AnimatedTransform : public Object {
 public:
+    /// Represents a single keyframe in an animated transform
     struct Keyframe {
+        /// Time value associated with this keyframe
         Float time;
+
+        /// 3x3 scale/shear matrix
         Matrix3f scale;
+
+        /// Rotation quaternion
         Quaternion4f quat;
+
+        /// 3D translation
         Vector3f trans;
+
+        Keyframe(const Float time, const Matrix3f &scale, const Quaternion4f &quat, const Vector3f &trans)
+            : time(time), scale(scale), quat(quat), trans(trans) { }
+
+        ENOKI_ALIGNED_OPERATOR_NEW()
     };
 
-    AnimatedTransform() {
-
-    }
+    /// Create an empty animated transform
+    AnimatedTransform() = default;
 
     /// Append a keyframe to the current animated transform
-    void append_keyframe(Float time, const Transform &trafo);
+    void append(Float time, const Transform4f &trafo);
 
-    template <typename Value>
-    auto lookup(const Value &time, const mask_t<Value> &active_ = true) const {
-        static_assert(std::is_same<scalar_t<Value>, Float>::value, "Expected a 'float'-valued time parameter");
+    /// Append a keyframe to the current animated transform
+    void append(const Keyframe &keyframe);
 
-        auto active = disable_mask_if_scalar(active_);
+    /// Look up an interpolated transform at the given time
+    Transform4f lookup(const Float &time, const bool& /* unused */ = true) const;
 
-        /* Compute constants describing the layout of the 'Keyframe' data structure */
-        constexpr uint32_t stride       = uint32_t(sizeof(Keyframe) / sizeof(Float));
-        constexpr uint32_t scale_offset = offsetof(Keyframe, scale) / sizeof(Float);
-        constexpr uint32_t quat_offset  = offsetof(Keyframe, quat)  / sizeof(Float);
-        constexpr uint32_t trans_offset = offsetof(Keyframe, trans) / sizeof(Float);
+    /// Vectorized version of \ref lookup
+    Transform4fP lookup(const FloatP &time, const mask_t<FloatP> &active = true) const;
 
-        using Index       = uint32_array_t<Value>;
-        using Matrix3     = Matrix<Value, 3>;
-        using Vector3     = Vector<Value, 3>;
-        using Quaternion4 = Quaternion<Value>;
-
-        /* Perhaps the transformation isn't animated */
-        if (likely(size() <= 1))
-            return Matrix<Value, 4>(m_transform.matrix());
-
-        /* Look up the interval containing 'time' */
-        Index idx = math::find_interval(
-            (uint32_t) size(),
-            [&](Index idx, mask_t<Value> active) {
-                return gather<Value>(m_keyframes.data(), idx * stride, active) <= time;
-            },
-            active);
-
-        Index idx0 = idx * stride, idx1 = idx0 + stride;
-
-        /* Compute the relative time value in [0, 1] */
-        Value t0 = gather<Value>(m_keyframes.data(), idx0, active);
-        Value t1 = gather<Value>(m_keyframes.data(), idx1, active);
-        Value t = min(max((time - t0) / (t1 - t0), 0.f), 1.f);
-
-        /* Interpolate the scale matrix */
-        Matrix3 scale0 = gather<Matrix3>((Float *) m_keyframes.data() + scale_offset, idx0, active);
-        Matrix3 scale1 = gather<Matrix3>((Float *) m_keyframes.data() + scale_offset, idx1, active);
-        Matrix3 scale = scale0 * (1 - t) + scale1 * t;
-
-        /* Interpolate the rotation quaternion */
-        Quaternion4 quat0 = gather<Quaternion4>((Float *) m_keyframes.data() + quat_offset, idx0, active);
-        Quaternion4 quat1 = gather<Quaternion4>((Float *) m_keyframes.data() + quat_offset, idx1, active);
-        Quaternion4 quat = enoki::slerp(quat0, quat1, t);
-
-        /* Interpolate the translation component */
-        Vector3 trans0 = gather<Vector3>((Float *) m_keyframes.data() + trans_offset, idx0, active);
-        Vector3 trans1 = gather<Vector3>((Float *) m_keyframes.data() + trans_offset, idx1, active);
-        Vector3 trans = trans0 * (1 - t) + trans1 * t;
-
-        return transform_compose(scale, quat, trans);
-    }
-
+    /// Return the number of keyframes
     size_t size() const { return m_keyframes.size(); }
 
+    /// Return a Keyframe data structure
+    const Keyframe &operator[](size_t i) const { return m_keyframes[i]; }
+
+    MTS_DECLARE_CLASS()
+protected:
+    virtual ~AnimatedTransform();
+
+    template <typename Value>
+    Transform<Value> lookup_impl(const Value &time, const mask_t<Value> &active) const;
+
 private:
-    Transform m_transform;
+    Transform4f m_transform;
     std::vector<Keyframe> m_keyframes;
 };
 
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, const Transform &t);
+template <typename Value>
+std::ostream &operator<<(std::ostream &os, const Transform<Value> &t) {
+    os << t.matrix;
+    return os;
+}
 
 NAMESPACE_END(mitsuba)
+
+// -----------------------------------------------------------------------
+//! @{ \name Enoki accessors for dynamic vectorization
+// -----------------------------------------------------------------------
+
+ENOKI_STRUCT_DYNAMIC(mitsuba::Transform, matrix, inverse_transpose)
+
+//! @}
+// -----------------------------------------------------------------------

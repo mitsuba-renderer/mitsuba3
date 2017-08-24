@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 class PerspectiveCamera : public Sensor {
 public:
     PerspectiveCamera(const Properties &props) : Sensor(props) {
-        m_to_world = props.transform("to_world", Transform());
+        m_to_world = props.transform("to_world", Transform4f());
         std::cout << m_to_world << std::endl;
     }
 
@@ -16,9 +16,9 @@ public:
               typename Point3 = mitsuba::Point<Float, 3>,
               typename Spectrum = mitsuba::Spectrum<Float>,
               typename Ray = mitsuba::Ray<Point3>>
-    auto sample_ray_impl(const Point2 &position_sample,
-                         const Point2 &aperture_sample,
-                         Float time_sample) const {
+    auto sample_ray_impl(const Point2 &,//position_sample,
+                         const Point2 &,//aperture_sample,
+                         Float /*time_sample*/) const {
         Spectrum spec;
         Ray ray;
         return std::make_pair(ray, spec);
@@ -45,7 +45,7 @@ public:
     MTS_DECLARE_CLASS()
 
 private:
-    Transform m_to_world;
+    Transform4f m_to_world;
 };
 
 MTS_IMPLEMENT_CLASS(PerspectiveCamera, Sensor);

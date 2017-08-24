@@ -218,11 +218,11 @@ public:  // Type-specific getters and setters ----------------------------------
     const Point3f& point3f(const std::string &name, const Point3f &def_val) const;
 
     /// Store a 4x4 homogeneous coordinate transformation in the Properties instance
-    void set_transform(const std::string &name, const Transform &value, bool warnDuplicates = true);
+    void set_transform(const std::string &name, const Transform4f &value, bool warnDuplicates = true);
     /// Retrieve a 4x4 homogeneous coordinate transformation
-    const Transform& transform(const std::string &name) const;
+    const Transform4f& transform(const std::string &name) const;
     /// Retrieve a 4x4 homogeneous coordinate transformation (use default value if no entry exists)
-    const Transform& transform(const std::string &name, const Transform &def_val) const;
+    const Transform4f& transform(const std::string &name, const Transform4f &def_val) const;
 
     /// Store an arbitrary object in the Properties instance
     void set_object(const std::string &name, const ref<Object> &value, bool warnDuplicates = true);

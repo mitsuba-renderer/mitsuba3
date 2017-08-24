@@ -35,7 +35,7 @@ MTS_PY_EXPORT(Properties) {
        .SET_ITEM_BINDING(long, int64_t)
        .SET_ITEM_BINDING(string, std::string)
        .SET_ITEM_BINDING(vector3f, Vector3f)
-       .SET_ITEM_BINDING(transform, Transform)
+       .SET_ITEM_BINDING(transform, Transform4f)
        .SET_ITEM_BINDING(object, ref<Object>)
 
        .def("__getitem__", [](const Properties& p, const std::string &key) {

@@ -1,6 +1,5 @@
 add_mitsuba_python_library(mitsuba_core_ext core
-  # main
-  mitsuba_core_ext.cpp
+  main.cpp
 
   # libcore
   appender.cpp

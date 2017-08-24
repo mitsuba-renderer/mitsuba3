@@ -125,29 +125,46 @@ From: Knuth, TAoCP Vol. 2 (3rd 3d), Section 3.4.2)doc";
 
 static const char *__doc_enoki_PCG32_state = R"doc()doc";
 
-static const char *__doc_mitsuba_AnimatedTransform = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform =
+R"doc(Encapsulates an animated 4x4 homogeneous coordinate transformation
 
-static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform = R"doc()doc";
+The animation is stored as keyframe animation with linear segments.
+The implementation performs a polar decomposition of each keyframe
+into a 3x3 scale/shear matrix, a rotation quaternion, and a
+translation vector. These will all be interpolated independently at
+lookup time.)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform = R"doc(Create an empty animated transform)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_quat = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc(Represents a single keyframe in an animated transform)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_scale = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_quat = R"doc(Rotation quaternion)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_time = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_scale = R"doc(3x3 scale/shear matrix)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_trans = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_time = R"doc(Time value associated with this keyframe)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_append_keyframe = R"doc(Append a keyframe to the current animated transform)doc";
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_trans = R"doc(3D translation)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_lookup = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_append = R"doc(Append a keyframe to the current animated transform)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_append_2 = R"doc(Append a keyframe to the current animated transform)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_class = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_lookup = R"doc(Look up an interpolated transform at the given time)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_lookup_2 = R"doc(Vectorized version of lookup)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_lookup_impl = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_m_keyframes = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_m_transform = R"doc()doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_size = R"doc()doc";
+static const char *__doc_mitsuba_AnimatedTransform_operator_array = R"doc(Return a Keyframe data structure)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_size = R"doc(Return the number of keyframes)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds a table of contents to an underlying stream
@@ -4768,26 +4785,31 @@ static const char *__doc_mitsuba_Timer_start = R"doc()doc";
 static const char *__doc_mitsuba_Timer_value = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform =
-R"doc(Encapsulates a 4x4 homogeneous coordinate transformation and its
-inverse
+R"doc(Encapsulates a 4x4 homogeneous coordinate transformation along with
+its inverse transpose
 
-This class provides a set of overloaded matrix-vector multiplication
-operators for vectors, points, and normals (all of them transform
-differently under homogeneous coordinate transformations))doc";
+The Transform class provides a set of overloaded matrix-vector
+multiplication operators for vectors, points, and normals (all of them
+behave differently under homogeneous coordinate transformations, hence
+the need to represent them using separate types))doc";
 
-static const char *__doc_mitsuba_Transform_Transform = R"doc(Create the identity transformation)doc";
-
-static const char *__doc_mitsuba_Transform_Transform_2 =
+static const char *__doc_mitsuba_Transform_Transform =
 R"doc(Initialize the transformation from the given matrix (and compute its
-inverse))doc";
+inverse transpose))doc";
 
-static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(Initialize the transformation from the given matrix and inverse)doc";
+static const char *__doc_mitsuba_Transform_Transform_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_Transform_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_Transform_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_inverse =
-R"doc(Compute the inverse of this transformation (for free, since it is
-already known))doc";
+R"doc(Compute the inverse of this transformation (involves just shuffles, no
+arithmetic))doc";
 
-static const char *__doc_mitsuba_Transform_inverse_matrix = R"doc(Return the underlying 4x4 inverse matrix)doc";
+static const char *__doc_mitsuba_Transform_inverse_transpose = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_look_at =
 R"doc(Create a look-at camera transformation
@@ -4801,11 +4823,11 @@ Parameter ``target``:
 Parameter ``up``:
     Up vector)doc";
 
-static const char *__doc_mitsuba_Transform_m_inverse = R"doc()doc";
+static const char *__doc_mitsuba_Transform_matrix = R"doc(//! @{ \name Fields)doc";
 
-static const char *__doc_mitsuba_Transform_m_value = R"doc()doc";
+static const char *__doc_mitsuba_Transform_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_matrix = R"doc(Return the underlying 4x4 matrix)doc";
+static const char *__doc_mitsuba_Transform_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_operator_delete = R"doc()doc";
 
@@ -4824,24 +4846,24 @@ static const char *__doc_mitsuba_Transform_operator_eq = R"doc(Equality comparis
 static const char *__doc_mitsuba_Transform_operator_mul = R"doc(Concatenate transformations)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul_2 =
-R"doc(Transform a given 3D point
+R"doc(Transform a 3D point
 
 Remark:
     In the Python API, this method is named ``transform_point``)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul_3 =
-R"doc(Transform a given 3D vector
+R"doc(Transform a 3D argtor
 
 Remark:
-    In the Python API, this method is named ``transform_vector``)doc";
+    In the Python API, this method is named ``transform_argtor``)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul_4 =
-R"doc(Transform a given 3D normal vector
+R"doc(Transform a 3D normal argtor
 
 Remark:
     In the Python API, this method is named ``transform_normal``)doc";
 
-static const char *__doc_mitsuba_Transform_operator_mul_5 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
+static const char *__doc_mitsuba_Transform_operator_mul_5 = R"doc(Transform a ray (for perspective transformations))doc";
 
 static const char *__doc_mitsuba_Transform_operator_ne = R"doc(Inequality comparison operator)doc";
 
@@ -4881,13 +4903,15 @@ is specified in degrees)doc";
 
 static const char *__doc_mitsuba_Transform_scale = R"doc(Create a scale transformation)doc";
 
-static const char *__doc_mitsuba_Transform_transform_affine = R"doc(Transform a 3D point (for affine/non-perspective transformations))doc";
+static const char *__doc_mitsuba_Transform_transform_affine =
+R"doc(Transform a 3D vector/point/normal/ray by a transformation that is
+known to be an affine 3D transformation (i.e. no perspective))doc";
 
-static const char *__doc_mitsuba_Transform_transform_affine_2 = R"doc(Transform a 3D vector (for affine/non-perspective transformations))doc";
+static const char *__doc_mitsuba_Transform_transform_affine_2 =
+R"doc(Transform a 3D point (handles affine/non-perspective transformations
+only))doc";
 
-static const char *__doc_mitsuba_Transform_transform_affine_3 = R"doc(Transform a 3D normal (for affine/non-perspective transformations))doc";
-
-static const char *__doc_mitsuba_Transform_transform_affine_4 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
+static const char *__doc_mitsuba_Transform_transform_affine_3 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
 
 static const char *__doc_mitsuba_Transform_translate = R"doc(Create a translation transformation)doc";
 
@@ -5204,6 +5228,10 @@ destructor is not accessible)doc";
 static const char *__doc_mitsuba_is_constructible_test = R"doc()doc";
 
 static const char *__doc_mitsuba_is_constructible_test_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_librender_nop =
+R"doc(Dummy function which can be called to ensure that the librender shared
+library is loaded)doc";
 
 static const char *__doc_mitsuba_math_bisect =
 R"doc(Bisect a floating point interval given a predicate function

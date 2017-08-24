@@ -77,6 +77,13 @@ struct Version {
 
 NAMESPACE_BEGIN(detail)
 
+#if defined(SINGLE_PRECISION)
+    inline Float stof(const std::string &s) { return std::stof(s); }
+#else
+    inline Float stof(const std::string &s) { return std::stod(s); }
+#endif
+
+
 static std::unordered_map<std::string, ETag> *tags = nullptr;
 static std::unordered_map<std::string, const Class *> *tag_class = nullptr;
 
@@ -188,7 +195,7 @@ struct XMLObject {
 
 struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
-    Transform transform;
+    Transform4f transform;
     size_t id_counter = 0;
 };
 
@@ -220,16 +227,30 @@ void expand_value_to_xyz(XMLSource &src, pugi::xml_node &node) {
     }
 }
 
-Vector3f parse_vector(XMLSource &src, pugi::xml_node &node) {
+Vector3f parse_named_vector(XMLSource &src, pugi::xml_node &node, const std::string &attr_name) {
+    auto vec_str = node.attribute(attr_name.c_str()).value();
+    auto list = string::tokenize(vec_str);
+    if (list.size() != 3)
+        src.throw_error(node, "\"%s\" attribute must have exactly 3 elements", attr_name);
+    try {
+        return Vector3f(detail::stof(list[0]),
+                        detail::stof(list[1]),
+                        detail::stof(list[2]));
+    } catch (const std::logic_error &) {
+        src.throw_error(node, "could not parse floating point values in \"%s\"", vec_str);
+    }
+}
+
+Vector3f parse_vector(XMLSource &src, pugi::xml_node &node, Float def_val = 0.f) {
     std::string value;
     try {
-        Float x = 0.f, y = 0.f, z = 0.f;
+        Float x = def_val, y = def_val, z = def_val;
         value = node.attribute("x").value();
-        if (!value.empty()) x = Float(std::stod(value));
+        if (!value.empty()) x = detail::stof(value);
         value = node.attribute("y").value();
-        if (!value.empty()) y = Float(std::stod(value));
+        if (!value.empty()) y = detail::stof(value);
         value = node.attribute("z").value();
-        if (!value.empty()) z = Float(std::stod(value));
+        if (!value.empty()) z = detail::stof(value);
         return Vector3f(x, y, z);
     } catch (const std::logic_error &) {
         src.throw_error(node, "could not parse floating point value \"%s\"", value);
@@ -237,7 +258,7 @@ Vector3f parse_vector(XMLSource &src, pugi::xml_node &node) {
 }
 
 void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) {
-    if (version == Version(MTS_VERSION))
+    if (version == Version(MTS_VERSION_MAJOR, MTS_VERSION_MINOR, MTS_VERSION_PATCH))
         return;
 
     Log(EInfo, "\"%s\": upgrading document from v%s to v%s ..", src.id, version,
@@ -324,7 +345,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         if (std::string(node.name()) == "scene") {
             node.append_attribute("type") = "scene";
         } else if (tag == ETransform) {
-            ctx.transform = Transform();
+            ctx.transform = Transform4f();
         }
 
         if (node.attribute("name")) {
@@ -441,7 +462,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     check_attributes(src, node, { "name", "value" });
                     std::string value = node.attribute("value").value();
                     try {
-                        props.set_float(node.attribute("name").value(), Float(std::stod(value)));
+                        props.set_float(node.attribute("name").value(), detail::stof(value));
                     } catch (const std::logic_error &) {
                         src.throw_error(node, "could not parse floating point value \"%s\"", value);
                     }
@@ -499,20 +520,17 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
             case ETransform: {
                     check_attributes(src, node, { "name" });
-                    ctx.transform = Transform();
+                    ctx.transform = Transform4f();
                 }
                 break;
 
             case ERotate: {
                     detail::expand_value_to_xyz(src, node);
-                    if (!node.attribute("x")) node.append_attribute("x").set_value("0");
-                    if (!node.attribute("y")) node.append_attribute("y").set_value("0");
-                    if (!node.attribute("z")) node.append_attribute("z").set_value("0");
                     check_attributes(src, node, { "angle", "x", "y", "z" });
                     Vector3f vec = detail::parse_vector(src, node);
                     std::string angle = node.attribute("angle").value();
                     try {
-                        ctx.transform = Transform::rotate(vec, (Float) std::stod(angle)) * ctx.transform;
+                        ctx.transform = Transform4f::rotate(vec, detail::stof(angle)) * ctx.transform;
                     } catch (const std::logic_error &) {
                         src.throw_error(node, "could not parse floating point value \"%s\"", angle);
                     }
@@ -521,41 +539,31 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
             case ETranslate: {
                     detail::expand_value_to_xyz(src, node);
-                    if (!node.attribute("x")) node.append_attribute("x").set_value("0");
-                    if (!node.attribute("y")) node.append_attribute("y").set_value("0");
-                    if (!node.attribute("z")) node.append_attribute("z").set_value("0");
                     check_attributes(src, node, { "x", "y", "z" });
                     Vector3f vec = detail::parse_vector(src, node);
-                    ctx.transform = Transform::translate(vec) * ctx.transform;
+                    ctx.transform = Transform4f::translate(vec) * ctx.transform;
                 }
                 break;
 
             case EScale: {
                     detail::expand_value_to_xyz(src, node);
-                    if (!node.attribute("x")) node.append_attribute("x").set_value("0");
-                    if (!node.attribute("y")) node.append_attribute("y").set_value("0");
-                    if (!node.attribute("z")) node.append_attribute("z").set_value("0");
                     check_attributes(src, node, { "x", "y", "z" });
-                    Vector3f vec = detail::parse_vector(src, node);
-                    ctx.transform = Transform::scale(vec) * ctx.transform;
+                    Vector3f vec = detail::parse_vector(src, node, 1.f);
+                    ctx.transform = Transform4f::scale(vec) * ctx.transform;
                 }
                 break;
 
             case ELookAt: {
                     check_attributes(src, node, { "origin", "target", "up" });
-                    //Eigen::Vector3f origin = to_vector3f(node.attribute("origin").value());
-                    //Eigen::Vector3f target = to_vector3f(node.attribute("target").value());
-                    //Eigen::Vector3f up = to_vector3f(node.attribute("up").value());
 
-                    //Vector3f dir = (target - origin).normalized();
-                    //Vector3f left = up.normalized().cross(dir).normalized();
-                    //Vector3f newUp = dir.cross(left).normalized();
+                    Point3f origin = parse_named_vector(src, node, "origin");
+                    Point3f target = parse_named_vector(src, node, "target");
+                    Vector3f up = parse_named_vector(src, node, "up");
 
-                    //Eigen::Matrix4f trafo;
-                    //trafo << left, newUp, dir, origin,
-                              //0, 0, 0, 1;
-
-                    //transform = Eigen::Affine3f(trafo) * transform;
+                    auto result = Transform4f::look_at(origin, target, up);
+                    if (any_nested(isnan(result.matrix)))
+                        src.throw_error(node, "invalid lookat transformation");
+                    ctx.transform = result * ctx.transform;
                 }
                 break;
 
@@ -568,13 +576,13 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     for (int i = 0; i < 4; ++i) {
                         for (int j = 0; j < 4; ++j) {
                             try {
-                                matrix(i, j) = (Float) std::stod(tokens[i * 4 + j]);
+                                matrix(i, j) = detail::stof(tokens[i * 4 + j]);
                             } catch (const std::logic_error &) {
                                 src.throw_error(node, "could not parse floating point value \"%s\"", tokens[i*4 + j]);
                             }
                         }
                     }
-                    ctx.transform = Transform(matrix) * ctx.transform;
+                    ctx.transform = Transform4f(matrix) * ctx.transform;
                 }
                 break;
 

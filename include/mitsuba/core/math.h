@@ -284,21 +284,21 @@ template <typename T> T round_to_power_of_two(T i) {
 }
 
 /// Apply the sRGB gamma curve to a floating point scalar
-template <typename T>
-static T gamma(T value) {
-    auto branch1 = T(12.92) * value;
-    auto branch2 = T(1.055) * pow(value, T(1.0/2.4)) - T(0.055);
+template <typename T> MTS_INLINE expr_t<T> gamma(const T &value) {
+    using Scalar = scalar_t<T>;
+    auto branch1 = Scalar(12.92) * value;
+    auto branch2 = Scalar(1.055) * pow(value, Scalar(1.0 / 2.4)) - Scalar(0.055);
 
-    return select(value <= T(0.0031308), branch1, branch2);
+    return select(value <= Scalar(0.0031308), branch1, branch2);
 }
 
 /// Apply the inverse of the sRGB gamma curve to a floating point scalar
-template <typename T>
-static T inv_gamma(T value) {
-    auto branch1 = value * T(1.0 / 12.92);
-    auto branch2 = pow((value + T(0.055)) * T(1.0 / 1.055), T(2.4));
+template <typename T> MTS_INLINE expr_t<T> inv_gamma(const T &value) {
+    using Scalar = scalar_t<T>;
+    auto branch1 = value * Scalar(1.0 / 12.92);
+    auto branch2 = pow((value + Scalar(0.055)) * Scalar(1.0 / 1.055), Scalar(2.4));
 
-    return select(value <= T(0.04045), branch1, branch2);
+    return select(value <= Scalar(0.04045), branch1, branch2);
 }
 /**
 * \brief Find an interval in an ordered set
@@ -316,22 +316,27 @@ static T inv_gamma(T value) {
 *
 */
 template <typename Size, typename Predicate,
-          typename Args = typename function_traits<Predicate>::Args,
+          typename Args  = typename function_traits<Predicate>::Args,
           typename Index = std::tuple_element_t<0, Args>>
-Index find_interval(Size left, Size right, const Predicate &pred) {
-    using IndexMask = mask_t<Index>;
-    using IndexScalar = scalar_t<Index>;
+MTS_INLINE Index find_interval(const Size &left, const Size &right,
+                               const Predicate &pred) {
+    using IndexMask         = mask_t<Index>;
+    using SignedIndex       = int_array_t<Index>;
+    using IndexScalar       = scalar_t<Index>;
+    using SignedIndexScalar = scalar_t<SignedIndex>;
 
     Size initial_size = right - left;
-
-    if (unlikely(initial_size == 0))
-        return zero<Index>();
-
+    Index first((IndexScalar) left + 1),
+          size((IndexScalar) (initial_size - 2));
     IndexMask active(true);
-    Index first((IndexScalar) left);
-    Index size((IndexScalar) initial_size);
 
-    do {
+    while (true) {
+        /* Disable converged entries */
+        active &= SignedIndex(size) > 0;
+
+        if (!any_nested(active))
+            break;
+
         Index half   = size >> 1,
               middle = first + half;
 
@@ -339,17 +344,11 @@ Index find_interval(Size left, Size right, const Predicate &pred) {
         IndexMask pred_result = IndexMask(pred(middle)) & active;
 
         /* .. and recurse into the left or right */
-        first = select(pred_result, middle + 1, first);
+        masked(first, pred_result) = middle + 1;
 
         /* Update the remaining interval size */
         size = select(pred_result, size - (half + 1), half);
-
-        /* Disable converged entries */
-        active &= size > 0;
-    } while (any_nested(active));
-
-    using SignedIndex = int_array_t<Index>;
-    using SignedIndexScalar = scalar_t<SignedIndex>;
+    }
 
     return Index(clamp(
         SignedIndex(first - 1),
@@ -359,10 +358,10 @@ Index find_interval(Size left, Size right, const Predicate &pred) {
 }
 
 template <typename Size, typename Predicate,
-          typename Args = typename function_traits<Predicate>::Args,
+          typename Args  = typename function_traits<Predicate>::Args,
           typename Index = std::tuple_element_t<0, Args>,
-          typename Mask = enoki::mask_t<Index>>
-Index find_interval(Size size, const Predicate &pred) {
+          typename Mask  = enoki::mask_t<Index>>
+MTS_INLINE Index find_interval(const Size &size, const Predicate &pred) {
     return find_interval(Size(0), size, pred);
 }
 
@@ -388,24 +387,28 @@ Index find_interval(Size size, const Predicate &pred) {
  * array entries. The mask is passed to the predicate as a second parameter.
  */
 template <typename Size, typename Predicate,
-          typename Args = typename function_traits<Predicate>::Args,
+          typename Args  = typename function_traits<Predicate>::Args,
           typename Index = std::tuple_element_t<0, Args>,
-          typename Mask = std::tuple_element_t<1, Args>>
-Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in) {
-    using IndexMask = mask_t<Index>;
-    using IndexScalar = scalar_t<Index>;
+          typename Mask  = std::tuple_element_t<1, Args>>
+MTS_INLINE Index find_interval(const Size &left, const Size &right,
+                               const Predicate &pred, const Mask &active_in) {
+    using IndexMask         = mask_t<Index>;
+    using SignedIndex       = int_array_t<Index>;
+    using IndexScalar       = scalar_t<Index>;
+    using SignedIndexScalar = scalar_t<SignedIndex>;
 
     Size initial_size = right - left;
-
-    if (initial_size == 0)
-        return zero<Index>();
-
-    Index first((IndexScalar) left);
-    Index size((IndexScalar) initial_size);
-
+    Index first((IndexScalar) left + 1),
+          size((IndexScalar) (initial_size - 2));
     IndexMask active(active_in);
 
-    do {
+    while (true) {
+        /* Disable converged entries */
+        active &= SignedIndex(size) > 0;
+
+        if (!any_nested(active))
+            break;
+
         Index half   = size >> 1,
               middle = first + half;
 
@@ -413,17 +416,11 @@ Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in
         IndexMask pred_result = IndexMask(pred(middle, Mask(active))) & active;
 
         /* .. and recurse into the left or right */
-        first = select(pred_result, middle + 1, first);
+        masked(first, pred_result) = middle + 1;
 
         /* Update the remaining interval size */
         size = select(pred_result, size - (half + 1), half);
-
-        /* Disable converged entries */
-        active &= size > 0;
-    } while (any_nested(active));
-
-    using SignedIndex = int_array_t<Index>;
-    using SignedIndexScalar = scalar_t<SignedIndex>;
+    }
 
     return Index(clamp(
         SignedIndex(first - 1),
@@ -433,10 +430,10 @@ Index find_interval(Size left, Size right, const Predicate &pred, Mask active_in
 }
 
 template <typename Size, typename Predicate,
-          typename Args = typename function_traits<Predicate>::Args,
+          typename Args  = typename function_traits<Predicate>::Args,
           typename Index = std::tuple_element_t<0, Args>,
-          typename Mask = enoki::mask_t<Index>>
-Index find_interval(Size size, const Predicate &pred, Mask active) {
+          typename Mask  = enoki::mask_t<Index>>
+MTS_INLINE Index find_interval(const Size &size, const Predicate &pred, const Mask &active) {
     return find_interval(Size(0), size, pred, active);
 }
 

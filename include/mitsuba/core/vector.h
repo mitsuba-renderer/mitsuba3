@@ -9,70 +9,67 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name Elementary vector, point, and normal data types
 // =======================================================================
 
-template <typename Type_, size_t Size_>
-struct Vector : enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
+template <typename Value, size_t Size>
+struct Vector : enoki::StaticArrayImpl<Value, Size, enoki::detail::approx_default<Value>::value,
                                        RoundingMode::Default,
-                                       Vector<Type_, Size_>> {
+                                       Vector<Value, Size>> {
 
-    static constexpr bool Approx = enoki::detail::approx_default<Type_>::value;
+    static constexpr bool Approx = enoki::detail::approx_default<Value>::value;
 
-    using Base = enoki::StaticArrayImpl<Type_, Size_, Approx, RoundingMode::Default,
-                                        Vector<Type_, Size_>>;
+    using Base = enoki::StaticArrayImpl<Value, Size, Approx, RoundingMode::Default,
+                                        Vector<Value, Size>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
-    template <typename T> using ReplaceType = Vector<T, Size_>;
+    template <typename T> using ReplaceType = Vector<T, Size>;
 
-    using ArrayType = Vector;
-    using MaskType = enoki::Mask<Type_, Size_, Approx, RoundingMode::Default>;
+    using MaskType = enoki::Mask<Value, Size, Approx, RoundingMode::Default>;
 
-    using Point  = mitsuba::Point<Type_, Size_>;
-    using Normal = mitsuba::Normal<Type_, Size_>;
+    using Point  = mitsuba::Point<Value, Size>;
+    using Normal = mitsuba::Normal<Value, Size>;
 
     ENOKI_DECLARE_ARRAY(Base, Vector)
 };
 
 
-template <typename Type_, size_t Size_>
-struct Point : enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
+template <typename Value, size_t Size>
+struct Point : enoki::StaticArrayImpl<Value, Size, enoki::detail::approx_default<Value>::value,
                                       RoundingMode::Default,
-                                      Point<Type_, Size_>> {
+                                      Point<Value, Size>> {
 
-    static constexpr bool Approx = enoki::detail::approx_default<Type_>::value;
+    static constexpr bool Approx = enoki::detail::approx_default<Value>::value;
 
-    using Base = enoki::StaticArrayImpl<Type_, Size_, Approx, RoundingMode::Default,
-                                        Point<Type_, Size_>>;
+    using Base = enoki::StaticArrayImpl<Value, Size, Approx, RoundingMode::Default,
+                                        Point<Value, Size>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
-    template <typename T> using ReplaceType = Point<T, Size_>;
+    template <typename T> using ReplaceType = Point<T, Size>;
 
-    using ArrayType = Point;
-    using MaskType = enoki::Mask<Type_, Size_, Approx, RoundingMode::Default>;
+    using MaskType = enoki::Mask<Value, Size, Approx, RoundingMode::Default>;
 
-    using Vector = mitsuba::Vector<Type_, Size_>;
-    using Normal = mitsuba::Normal<Type_, Size_>;
+    using Vector = mitsuba::Vector<Value, Size>;
+    using Normal = mitsuba::Normal<Value, Size>;
 
     ENOKI_DECLARE_ARRAY(Base, Point)
 };
 
 
-template <typename Type_, size_t Size_>
-struct Normal : enoki::StaticArrayImpl<Type_, Size_, enoki::detail::approx_default<Type_>::value,
+template <typename Value, size_t Size>
+struct Normal : enoki::StaticArrayImpl<Value, Size, enoki::detail::approx_default<Value>::value,
                                       RoundingMode::Default,
-                                      Normal<Type_, Size_>> {
+                                      Normal<Value, Size>> {
 
-    static constexpr bool Approx = enoki::detail::approx_default<Type_>::value;
+    static constexpr bool Approx = enoki::detail::approx_default<Value>::value;
 
-    using Base = enoki::StaticArrayImpl<Type_, Size_, Approx, RoundingMode::Default,
-                                        Normal<Type_, Size_>>;
+    using Base = enoki::StaticArrayImpl<Value, Size, Approx, RoundingMode::Default,
+                                        Normal<Value, Size>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
-    template <typename T> using ReplaceType = Normal<T, Size_>;
+    template <typename T> using ReplaceType = Normal<T, Size>;
 
-    using ArrayType = Normal;
-    using MaskType = enoki::Mask<Type_, Size_, Approx, RoundingMode::Default>;
+    using MaskType = enoki::Mask<Value, Size, Approx, RoundingMode::Default>;
 
-    using Vector = mitsuba::Vector<Type_, Size_>;
-    using Point  = mitsuba::Point<Type_, Size_>;
+    using Vector = mitsuba::Vector<Value, Size>;
+    using Point  = mitsuba::Point<Value, Size>;
 
     ENOKI_DECLARE_ARRAY(Base, Normal)
 };

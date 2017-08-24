@@ -17,8 +17,8 @@ cmake_policy(SET CMP0022 NEW) # New-style link interface
 cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
 
 include(CheckCXXCompilerFlag)
-include(TestBigEndian)
 include(CheckCXXSourceRuns)
+include(TestBigEndian)
 
 # Set a default build configuration (Release)
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -62,22 +62,21 @@ macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
   set(CMAKE_REQUIRED_FLAGS ${_CXX_FLAGS})
   set(CMAKE_REQUIRED_LIBRARIES ${_LINKER_FLAGS})
   set(CMAKE_REQUIRED_QUIET TRUE)
-  check_cxx_source_runs("#include <iostream> int main(int argc, char **argv) { return 0; }" ${_RESULT})
+  check_cxx_source_runs("#include <iostream>\nint main(int argc, char **argv) { std::cout << \"test\"; return 0; }" ${_RESULT})
   set(CMAKE_REQUIRED_FLAGS "")
   set(CMAKE_REQUIRED_LIBRARIES "")
 endmacro()
 
 # Prefer libc++ in conjunction with Clang
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # Always use libc++ on Clang
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_FLAGS MATCHES "-stdlib=libc\\+\\+")
   CHECK_CXX_COMPILER_AND_LINKER_FLAGS(HAS_LIBCPP "-stdlib=libc++" "-stdlib=libc++")
   if (HAS_LIBCPP)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -D_LIBCPP_VERSION")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
-    message(STATUS "Enoki: using libc++.")
+    message(STATUS "Mitsuba: using libc++.")
   else()
-    message(STATUS "Enoki: NOT using libc++.")
+    message(STATUS "Mitsuba: NOT using libc++.")
   endif()
 endif()
 
@@ -250,7 +249,6 @@ if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clan
     try_compile(HAS_LTO
       ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp
       ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c)
-    set(HAS_LTO OFF)
 
     if (HAS_LTO)
       message(STATUS "Mitsuba: LTO support enabled.")

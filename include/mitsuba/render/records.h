@@ -399,7 +399,6 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-// Support for static & dynamic vectorization
 ENOKI_STRUCT_DYNAMIC(mitsuba::PositionSample, p, n, uv, time,
                      pdf, measure, object)
 

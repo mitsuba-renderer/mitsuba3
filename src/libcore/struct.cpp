@@ -10,6 +10,15 @@
 #include <ostream>
 
 NAMESPACE_BEGIN(mitsuba)
+NAMESPACE_BEGIN(detail)
+
+/// Thin wrappers with pass-by-value calling conventions
+float gamma_f(float input) { return math::gamma<float>(input); }
+double gamma_d(double input) { return math::gamma<double>(input); }
+float inv_gamma_f(float input) { return math::inv_gamma<float>(input); }
+double inv_gamma_d(double input) { return math::inv_gamma<double>(input); }
+
+NAMESPACE_END(detail)
 
 Struct::Struct(bool pack, EByteOrder byte_order)
     : m_pack(pack), m_byte_order(byte_order) {
@@ -452,7 +461,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
                     c.mulss(reg_f_p, scale_c);
 
                     if (sf.flags & Struct::EGamma) {
-                        auto call = c.call(imm_ptr((void *) math::inv_gamma<float>),
+                        auto call = c.call(imm_ptr((void *) detail::inv_gamma_f),
                             FuncBuilder1<float, float>(kCallConvHost));
                         call->setArg(0, reg_f_p);
                         call->setRet(0, reg_f_p);
@@ -513,7 +522,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
                         if (df.flags & Struct::ENormalized) {
                             if (df.flags & Struct::EGamma) {
-                                auto call = c.call(imm_ptr((void *) math::gamma<float>),
+                                auto call = c.call(imm_ptr((void *) detail::gamma_f),
                                     FuncBuilder1<float, float>(kCallConvHost));
                                 call->setArg(0, reg_f);
                                 call->setRet(0, reg_f);
@@ -535,7 +544,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target)
 
                         if (df.flags & Struct::ENormalized) {
                             if (df.flags & Struct::EGamma) {
-                                auto call = c.call(imm_ptr((void *) math::gamma<double>),
+                                auto call = c.call(imm_ptr((void *) detail::gamma_d),
                                     FuncBuilder1<double, double>(kCallConvHost));
                                 call->setArg(0, reg_d);
                                 call->setRet(0, reg_d);
@@ -855,7 +864,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
                         float offset = float(-range.first);
                         reg_f = ((float) reg + offset) * scale;
                         if (sf.flags & Struct::EGamma)
-                            reg_f = math::inv_gamma<float>(reg_f);
+                            reg_f = detail::inv_gamma_f(reg_f);
                         sf_type = Struct::EFloat32;
                     }
 
@@ -914,7 +923,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                         if (df.flags & Struct::ENormalized) {
                             if (df.flags & Struct::EGamma)
-                                reg_f = math::gamma<float>(reg_f);
+                                reg_f = detail::gamma_f(reg_f);
                             reg_f = reg_f * (float) (range.second - range.first) + (float) range.first;
                         }
 
@@ -927,7 +936,7 @@ bool StructConverter::convert(size_t count, const void *src_, void *dest_) const
 
                         if (df.flags & Struct::ENormalized) {
                             if (df.flags & Struct::EGamma)
-                                reg_d = math::gamma<double>(reg_d);
+                                reg_d = detail::gamma_d(reg_d);
                             reg_d = reg_d * (range.second - range.first) + range.first;
                         }
 

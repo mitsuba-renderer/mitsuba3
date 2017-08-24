@@ -8,6 +8,7 @@ from mitsuba.core.math import legendre_pd_diff
 from mitsuba.core.math import log2i
 from mitsuba.core.math import round_to_power_of_two
 from mitsuba.core.math import solve_quadratic
+from mitsuba.core import PCG32
 
 def test01_log2i():
     assert log2i(1) == 0
@@ -109,6 +110,17 @@ def test09_find_interval_edge_cases():
     assert(find_interval(0, 2, always_false) == 0)
     assert(find_interval(0, 11, always_true) == 9)
     assert(find_interval(0, 11, always_false) == 0)
+
+def test10_find_interval_bruteforce():
+    rng = PCG32()
+    for size in range(1, 40):
+        tbl = rng.next_uint32_bounded(100, (size,))
+        tbl.sort()
+        print(tbl)
+        for k in range(101):
+            result = find_interval(tbl, k)
+            assert k >= tbl[result] or k < tbl[len(tbl)-1]
+            assert result >= len(tbl) - 2 or k < tbl[result + 1]
 
 def test10_morton2():
     from mitsuba.core.math import morton_encode2, morton_decode2

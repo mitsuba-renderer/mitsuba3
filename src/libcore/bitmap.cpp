@@ -688,7 +688,7 @@ void Bitmap::read_openexr(Stream *stream) {
             for (size_t i = 0; i < 4; ++i)
                 for (size_t j = 0; j < 4; ++j)
                     M(i, j) = v->value().x[i][j];
-            m_metadata.set_transform(name, Transform(M));
+            m_metadata.set_transform(name, Transform4f(M));
         }
     }
 
@@ -1056,7 +1056,7 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
                 }
                 break;
             case Properties::ETransform: {
-                    Matrix4f val = metadata.transform(*it).matrix();
+                    Matrix4f val = metadata.transform(*it).matrix;
                     header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
                         (float) val(0, 0), (float) val(0, 1),
                         (float) val(0, 2), (float) val(0, 3),

@@ -19,6 +19,7 @@ class Class;
 template <typename> class ref;
 
 class AnnotatedStraem;
+class AnimatedTransform;
 class Appender;
 class ArgParser;
 class DefaultFormatter;
@@ -35,7 +36,6 @@ class Stream;
 class StreamAppender;
 class Struct;
 class StructConverter;
-class Transform;
 class Thread;
 class ThreadLocalBase;
 class ZStream;
@@ -92,16 +92,17 @@ using BoolX    = DynamicArray<BoolP>;
 //! @{ \name Common type aliases
 // =============================================================
 
-template <typename Type, size_t Size>  struct Vector;
-template <typename Type, size_t Size>  struct Point;
-template <typename Type, size_t Size>  struct Normal;
+template <typename Value, size_t Size> struct Vector;
+template <typename Value, size_t Size> struct Point;
+template <typename Value, size_t Size> struct Normal;
 template <typename Point>              struct Ray;
 template <typename Point>              struct RayDifferential;
 template <typename Point>              struct BoundingBox;
 template <typename Point>              struct BoundingSphere;
 template <typename Vector>             struct Frame;
-template <typename Type, size_t Size>  struct Color;
-template <typename Type>               struct Spectrum;
+template <typename Value, size_t Size> struct Color;
+template <typename Value>              struct Spectrum;
+template <typename Value>              struct Transform;
 
 using Vector1f = Vector<Float, 1>;
 using Vector2f = Vector<Float, 2>;
@@ -170,6 +171,10 @@ using Ray3fX = Ray<Point3fX>;
 using RayDifferential3f  = RayDifferential<Point3f>;
 using RayDifferential3fP = RayDifferential<Point3fP>;
 using RayDifferential3fX = RayDifferential<Point3fX>;
+
+using Transform4f  = Transform<Float>;
+using Transform4fP = Transform<FloatP>;
+using Transform4fX = Transform<FloatX>;
 
 //! @}
 // =============================================================
