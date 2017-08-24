@@ -32,6 +32,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   cast.cpp
   ddistr.cpp
   rfilter.cpp
+  mmap.cpp
 )
 
 target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core mitsuba-render tbb asmjit)

@@ -47,8 +47,13 @@ public:
         PLYHeader header;
         try {
             header = parse_ply_header(stream);
-            if (header.ascii)
+            if (header.ascii) {
+                Log(EInfo,
+                    "\"%s\": performance note -- this file uses the ASCII PLY "
+                    "format, which is slow to parse. Consider converting it to "
+                    "the binary PLY format.", m_name);
                 stream = parse_ascii((FileStream *) stream.get(), header.elements);
+            }
         } catch (const std::exception &e) {
             fail(e.what());
         }

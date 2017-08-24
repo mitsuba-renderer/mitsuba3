@@ -138,6 +138,28 @@ static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform = R"doc(Cre
 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc(Represents a single keyframe in an animated transform)doc";
 
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_Keyframe = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_quat = R"doc(Rotation quaternion)doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_scale = R"doc(3x3 scale/shear matrix)doc";
@@ -2307,6 +2329,47 @@ static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging
 static const char *__doc_mitsuba_Medium = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile = R"doc(Basic cross-platform abstraction for memory mapped files)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_MemoryMappedFile = R"doc(Create a new memory-mapped file of the specified size)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_MemoryMappedFile_2 = R"doc(Map the specified file into memory)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_MemoryMappedFile_3 = R"doc(Internal constructor)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_MemoryMappedFilePrivate = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_class = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_create_temporary =
+R"doc(Create a temporary memory-mapped file
+
+Remark:
+    When closing the mapping, the file is automatically deleted.
+    Mitsuba additionally informs the OS that any outstanding changes
+    that haven't yet been written to disk can be discarded (Linux
+    only).)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_d = R"doc()doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_data = R"doc(Return a pointer to the file contents in memory)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_data_2 = R"doc(Return a pointer to the file contents in memory (const version))doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_filename = R"doc(Return the associated filename)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_is_read_only = R"doc(Return whether the mapped memory region is read-only)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_resize =
+R"doc(Resize the memory-mapped file
+
+This involves remapping the file, which will generally change the
+pointer obtained via data())doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_size = R"doc(Return the size of the mapped region)doc";
+
+static const char *__doc_mitsuba_MemoryMappedFile_to_string = R"doc(Return a string representation)doc";
 
 static const char *__doc_mitsuba_MemoryStream =
 R"doc(Simple memory buffer-based stream with automatic memory management. It

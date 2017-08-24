@@ -43,6 +43,7 @@ MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(DiscreteDistribution);
 MTS_PY_DECLARE(AnimatedTransform);
+MTS_PY_DECLARE(MemoryMappedFile);
 
 static tbb::task_scheduler_init *tbb_scheduler = nullptr;
 
@@ -116,6 +117,7 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     MTS_PY_IMPORT(spline);
     MTS_PY_IMPORT(DiscreteDistribution);
     MTS_PY_IMPORT(AnimatedTransform);
+    MTS_PY_IMPORT(MemoryMappedFile);
 
     tbb_scheduler = new tbb::task_scheduler_init();
 

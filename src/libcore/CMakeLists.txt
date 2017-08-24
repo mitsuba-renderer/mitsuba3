@@ -51,6 +51,7 @@ add_library(mitsuba-core-obj OBJECT
   spectrum.cpp         ${INC_DIR}/spectrum.h
   ddistr.cpp           ${INC_DIR}/ddistr.h
   rfilter.cpp          ${INC_DIR}/rfilter.h
+  mmap.cpp             ${INC_DIR}/mmap.h
 
   stream.cpp           ${INC_DIR}/stream.h ${INC_DIR}/detail/stream.hpp
   astream.cpp          ${INC_DIR}/astream.h ${INC_DIR}/dstream.h
