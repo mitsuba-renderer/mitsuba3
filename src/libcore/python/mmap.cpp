@@ -3,22 +3,21 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(MemoryMappedFile) {
-    py::class_<MemoryMappedFile>(m, "MemoryMappedFile", D(MemoryMappedFile), py::buffer_protocol())
-        .def(py::init<mitsuba::filesystem::path &, size_t>(), D(MemoryMappedFile, MemoryMappedFile))
-        .def(py::init<mitsuba::filesystem::path &, bool>(), D(MemoryMappedFile, MemoryMappedFile))
-        .def(py::init<mitsuba::filesystem::path &>(), D(MemoryMappedFile, MemoryMappedFile))
-        .def("__init__", [](MemoryMappedFile &m, mitsuba::filesystem::path &p, py::buffer b) {
-            py::buffer_info info = b.request();
-            if (info.format != py::format_descriptor<uint8_t>::format() || info.ndim != 1)
-                throw std::runtime_error("Incompatible buffer format!");
-            new (&m) MemoryMappedFile(p, (size_t)info.shape[0]);
-            memcpy(m.data(), info.ptr, sizeof(uint8_t) * m.size());
-        })
+    MTS_PY_CLASS(MemoryMappedFile, Object, py::buffer_protocol())
+        .def(py::init<fs::path &, size_t>(),
+             D(MemoryMappedFile, MemoryMappedFile), "filename"_a, "size"_a)
+        .def(py::init<fs::path &, bool>(),
+             D(MemoryMappedFile, MemoryMappedFile, 2), "filename"_a, "write"_a = false)
+        .def("__init__", [](MemoryMappedFile &m, const fs::path &p, py::array array) {
+            size_t size = array.size() * array.itemsize();
+            new (&m) MemoryMappedFile(p, size);
+            memcpy(m.data(), array.data(), size);
+        }, "filename"_a, "array"_a)
         .def("size", &MemoryMappedFile::size, D(MemoryMappedFile, size))
+        .def("data", py::overload_cast<>(&MemoryMappedFile::data, py::const_), D(MemoryMappedFile, data))
         .def("resize", &MemoryMappedFile::resize, D(MemoryMappedFile, resize))
         .def("filename", &MemoryMappedFile::filename, D(MemoryMappedFile, filename))
-        .def("is_read_only", &MemoryMappedFile::is_read_only, D(MemoryMappedFile, is_read_only))
-        .def("__repr__", &MemoryMappedFile::to_string, D(MemoryMappedFile, to_string))
+        .def("can_write", &MemoryMappedFile::can_write, D(MemoryMappedFile, can_write))
         .def("create_temporary", &MemoryMappedFile::create_temporary, D(MemoryMappedFile, create_temporary))
         .def_buffer([](MemoryMappedFile &m) -> py::buffer_info {
             return py::buffer_info(

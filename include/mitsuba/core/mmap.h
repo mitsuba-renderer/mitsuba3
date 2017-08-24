@@ -4,14 +4,20 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Basic cross-platform abstraction for memory mapped files
+/**
+ * \brief Basic cross-platform abstraction for memory mapped files
+ *
+ * \remark The Python API has one additional constructor
+ * <tt>MemoryMappedFile(filename, array)<tt>, which creates a new
+ * file, maps it into memory, and copies the array contents.
+ */
 class MTS_EXPORT_CORE MemoryMappedFile : public Object {
 public:
     /// Create a new memory-mapped file of the specified size
     MemoryMappedFile(const fs::path &filename, size_t size);
 
     /// Map the specified file into memory
-    MemoryMappedFile(const fs::path &filename, bool read_only = true);
+    MemoryMappedFile(const fs::path &filename, bool write = false);
 
     /// Return a pointer to the file contents in memory
     void *data();
@@ -33,8 +39,8 @@ public:
     /// Return the associated filename
     const fs::path &filename() const;
 
-    /// Return whether the mapped memory region is read-only
-    bool is_read_only() const;
+    /// Return whether the mapped memory region can be modified
+    bool can_write() const;
 
     /// Return a string representation
     std::string to_string() const override;
@@ -44,17 +50,19 @@ public:
      *
      * \remark When closing the mapping, the file is automatically deleted.
      *         Mitsuba additionally informs the OS that any outstanding changes
-     *         that haven't yet been written to disk can be discarded (Linux only).
+     *         that haven't yet been written to disk can be discarded
+     *         (Linux/OSX only).
      */
     static ref<MemoryMappedFile> create_temporary(size_t size);
-
-    /// Release all resources
-    virtual ~MemoryMappedFile();
 
     MTS_DECLARE_CLASS()
 protected:
     /// Internal constructor
     MemoryMappedFile();
+
+    /// Release all resources
+    virtual ~MemoryMappedFile();
+
 private:
     struct MemoryMappedFilePrivate;
     std::unique_ptr<MemoryMappedFilePrivate> d;

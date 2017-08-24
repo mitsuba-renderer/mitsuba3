@@ -45,8 +45,6 @@ MTS_PY_DECLARE(DiscreteDistribution);
 MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(MemoryMappedFile);
 
-static tbb::task_scheduler_init *tbb_scheduler = nullptr;
-
 PYBIND11_MODULE(mitsuba_core_ext, m_) {
     (void) m_; /* unused */;
 
@@ -119,22 +117,28 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(MemoryMappedFile);
 
-    tbb_scheduler = new tbb::task_scheduler_init();
-
-    auto cleanup_callback = []() {
-        delete tbb_scheduler;
-        Bitmap::static_shutdown();
-        Logger::static_shutdown();
-        Thread::static_shutdown();
-        Class::static_shutdown();
-        Jit::static_shutdown();
-    };
-
-    m.add_object("_cleanup", py::capsule(cleanup_callback));
-
     /* Append the mitsuba directory to the FileResolver search path list */
     ref<FileResolver> fr = Thread::thread()->file_resolver();
     fs::path basePath = util::library_path().parent_path();
     if (!fr->contains(basePath))
         fr->append(basePath);
+
+    auto tbb_scheduler = new tbb::task_scheduler_init();
+
+    /* Register a cleanup callback function that is invoked when
+       the 'mitsuba::Object' Python type is garbage collected */
+    py::cpp_function cleanup_callback(
+        [tbb_scheduler](py::handle weakref) {
+            std::cout << "Interpreter shutdown.." << std::endl;
+            delete tbb_scheduler;
+            Bitmap::static_shutdown();
+            Logger::static_shutdown();
+            Thread::static_shutdown();
+            Class::static_shutdown();
+            Jit::static_shutdown();
+            weakref.dec_ref();
+        }
+    );
+
+    (void) py::weakref((py::handle) m.attr("Object"), cleanup_callback).release();
 }

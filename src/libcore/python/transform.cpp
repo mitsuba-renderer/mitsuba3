@@ -70,7 +70,7 @@ MTS_PY_EXPORT(AnimatedTransform) {
             return trafo[index];
         })
         .def("append",
-             py::overload_cast<float, const Transform4f &>(
+             py::overload_cast<Float, const Transform4f &>(
                  &AnimatedTransform::append),
              D(AnimatedTransform, append))
         .def("append",

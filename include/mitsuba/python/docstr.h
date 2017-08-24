@@ -2330,7 +2330,13 @@ static const char *__doc_mitsuba_Medium = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
 
-static const char *__doc_mitsuba_MemoryMappedFile = R"doc(Basic cross-platform abstraction for memory mapped files)doc";
+static const char *__doc_mitsuba_MemoryMappedFile =
+R"doc(Basic cross-platform abstraction for memory mapped files
+
+Remark:
+    The Python API has one additional constructor
+    <tt>MemoryMappedFile(filename, array)<tt>, which creates a new
+    file, maps it into memory, and copies the array contents.)doc";
 
 static const char *__doc_mitsuba_MemoryMappedFile_MemoryMappedFile = R"doc(Create a new memory-mapped file of the specified size)doc";
 
@@ -2340,6 +2346,8 @@ static const char *__doc_mitsuba_MemoryMappedFile_MemoryMappedFile_3 = R"doc(Int
 
 static const char *__doc_mitsuba_MemoryMappedFile_MemoryMappedFilePrivate = R"doc()doc";
 
+static const char *__doc_mitsuba_MemoryMappedFile_can_write = R"doc(Return whether the mapped memory region can be modified)doc";
+
 static const char *__doc_mitsuba_MemoryMappedFile_class = R"doc()doc";
 
 static const char *__doc_mitsuba_MemoryMappedFile_create_temporary =
@@ -2348,7 +2356,7 @@ R"doc(Create a temporary memory-mapped file
 Remark:
     When closing the mapping, the file is automatically deleted.
     Mitsuba additionally informs the OS that any outstanding changes
-    that haven't yet been written to disk can be discarded (Linux
+    that haven't yet been written to disk can be discarded (Linux/OSX
     only).)doc";
 
 static const char *__doc_mitsuba_MemoryMappedFile_d = R"doc()doc";
@@ -2358,8 +2366,6 @@ static const char *__doc_mitsuba_MemoryMappedFile_data = R"doc(Return a pointer 
 static const char *__doc_mitsuba_MemoryMappedFile_data_2 = R"doc(Return a pointer to the file contents in memory (const version))doc";
 
 static const char *__doc_mitsuba_MemoryMappedFile_filename = R"doc(Return the associated filename)doc";
-
-static const char *__doc_mitsuba_MemoryMappedFile_is_read_only = R"doc(Return whether the mapped memory region is read-only)doc";
 
 static const char *__doc_mitsuba_MemoryMappedFile_resize =
 R"doc(Resize the memory-mapped file
