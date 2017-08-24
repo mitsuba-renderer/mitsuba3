@@ -60,7 +60,8 @@ Transform<Value> ENOKI_INLINE AnimatedTransform::lookup_impl(const Value &time, 
     Index idx0 = math::find_interval(
         (uint32_t) size(),
         [&](Index idx, mask_t<Value> active) {
-            return gather<Value, Stride>(m_keyframes.data(), idx, active) <= time;
+            constexpr size_t Stride_ = sizeof(Keyframe); // MSVC: have to redeclare constexpr variable in lambda scope :(
+            return gather<Value, Stride_>(m_keyframes.data(), idx, active) <= time;
         },
         active);
 

@@ -189,6 +189,9 @@ if (MSVC)
   # Check operator precedence for possible error
   add_compile_options("/wd4554")
 
+  # structure was padded due to alignment specifier
+  add_compile_options("/wd4324")
+
   # Workaround for MSVC 2017
   add_compile_options("/wd4244")
 

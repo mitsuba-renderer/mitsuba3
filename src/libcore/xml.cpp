@@ -561,7 +561,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     Vector3f up = parse_named_vector(src, node, "up");
 
                     auto result = Transform4f::look_at(origin, target, up);
-                    if (any_nested(isnan(result.matrix)))
+                    if (any_nested(enoki::isnan(result.matrix)))
                         src.throw_error(node, "invalid lookat transformation");
                     ctx.transform = result * ctx.transform;
                 }
