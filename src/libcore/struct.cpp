@@ -113,9 +113,14 @@ std::ostream &operator<<(std::ostream &os, Struct::EType value) {
 
 std::string Struct::to_string() const {
     std::ostringstream os;
-    os << "Struct[" << std::endl;
+    os << "Struct<" << size() << ">[" << std::endl;
     for (size_t i = 0; i < m_fields.size(); ++i) {
         auto const &f = m_fields[i];
+        if (i > 0) {
+            size_t padding = f.offset - (m_fields[i-1].offset + m_fields[i-1].size);
+            if (padding > 0)
+                os << "  // " << padding << " byte" << (padding > 1 ? "s" : "") << " of padding." << std::endl;
+        }
         os << "  " << f.type;
         os << " " << f.name << "; // @" << f.offset;
         if (f.flags & ENormalized)
@@ -136,6 +141,12 @@ std::string Struct::to_string() const {
             os << ">";
         }
         os << "\n";
+    }
+    if (!m_fields.empty()) {
+        size_t padding = size() - (m_fields[m_fields.size() - 1].offset +
+                                   m_fields[m_fields.size() - 1].size);
+        if (padding > 0)
+            os << "  // " << padding << " byte" << (padding > 1 ? "s" : "") << " of padding." << std::endl;
     }
     os << "]";
     return os.str();

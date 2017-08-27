@@ -8,41 +8,41 @@ ShapeKDTree::ShapeKDTree(const Properties &props)
     : Base(SurfaceAreaHeuristic3f(
           /* kd-tree construction: Relative cost of a shape intersection
              operation in the surface area heuristic. */
-          props.float_("kdIntersectionCost", 20.f),
+          props.float_("kd_intersection_cost", 20.f),
           /* kd-tree construction: Relative cost of a kd-tree traversal
              operation in the surface area heuristic. */
-          props.float_("kdTraversalCost", 15.f),
+          props.float_("kd_traversal_cost", 15.f),
           /* kd-tree construction: Bonus factor for cutting away regions of
              empty space */
-          props.float_("kdEmptySpaceBonus", .9f))) {
+          props.float_("kd_empty_space_bonus", .9f))) {
 
     /* kd-tree construction: A kd-tree node containing this many or fewer
        primitives will not be split */
-    if (props.has_property("kdStopPrims"))
-        set_stop_primitives(props.int_("kdStopPrims"));
+    if (props.has_property("kd_stop_prims"))
+        set_stop_primitives(props.int_("kd_stop_prims"));
 
     /* kd-tree construction: Maximum tree depth */
-    if (props.has_property("kdMaxDepth"))
-        set_max_depth(props.int_("kdMaxDepth"));
+    if (props.has_property("kd_max_depth"))
+        set_max_depth(props.int_("kd_max_depth"));
 
     /* kd-tree construction: Number of bins used by the min-max binning method */
-    if (props.has_property("kdMinMaxBins"))
-        set_min_max_bins(props.int_("kdMinMaxBins"));
+    if (props.has_property("kd_min_max_bins"))
+        set_min_max_bins(props.int_("kd_min_max_bins"));
 
     /* kd-tree construction: Enable primitive clipping? Generally leads to a
       significant improvement of the resulting tree. */
-    if (props.has_property("kdClip"))
-        set_clip_primitives(props.bool_("kdClip"));
+    if (props.has_property("kd_clip"))
+        set_clip_primitives(props.bool_("kd_clip"));
 
     /* kd-tree construction: specify whether or not bad splits can be "retracted". */
-    if (props.has_property("kdRetractBadSplits"))
-        set_retract_bad_splits(props.bool_("kdRetractBadSplits"));
+    if (props.has_property("kd_retract_bad_splits"))
+        set_retract_bad_splits(props.bool_("kd_retract_bad_splits"));
 
     /* kd-tree construction: Specify the number of primitives, at which the
        builder will switch from (approximate) Min-Max binning to the accurate
        O(n log n) SAH-based optimization method. */
-    if (props.has_property("kdExactPrimitiveThreshold"))
-        set_exact_primitive_threshold(props.int_("kdExactPrimitiveThreshold"));
+    if (props.has_property("kd_exact_primitive_threshold"))
+        set_exact_primitive_threshold(props.int_("kd_exact_primitive_threshold"));
 
     m_primitive_map.push_back(0);
 }

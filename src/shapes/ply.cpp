@@ -127,9 +127,9 @@ public:
                 else
                     fail("vertex_index/vertex_indices property not found");
 
-                for (int i = 0; i < 3; ++i)
+                for (size_t i = 0; i < 3; ++i)
                     m_face_struct->append(tfm::format("i%i", i),
-                                         struct_traits<Index>::value);
+                                          struct_traits<Index>::value);
 
                 size_t i_struct_size = el.struct_->size();
                 size_t o_struct_size = m_face_struct->size();

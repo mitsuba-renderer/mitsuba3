@@ -20,6 +20,9 @@ MTS_PY_EXPORT(Transform) {
     bind_transform<Float>(m, "Transform4f")
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform4f &>(), "Copy constructor")
+        .def(py::init([](py::array a) {
+            return new Transform4f(py::cast<Matrix4f>(a));
+        }))
         .def(py::init<Matrix4f>(), D(Transform, Transform))
         .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
         .def("transform_point", [](const Transform4f &t, const Point3f &v) { return t*v; })

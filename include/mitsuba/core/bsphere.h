@@ -73,6 +73,8 @@ template <typename Point_> struct BoundingSphere {
             squared_norm(o) - radius * radius
         );
     }
+
+    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /// Print a string representation of the bounding sphere

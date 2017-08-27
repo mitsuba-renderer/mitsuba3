@@ -129,7 +129,6 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
        the 'mitsuba::Object' Python type is garbage collected */
     py::cpp_function cleanup_callback(
         [tbb_scheduler](py::handle weakref) {
-            std::cout << "Interpreter shutdown.." << std::endl;
             delete tbb_scheduler;
             Bitmap::static_shutdown();
             Logger::static_shutdown();
@@ -140,5 +139,5 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
         }
     );
 
-    (void) py::weakref((py::handle) m.attr("Object"), cleanup_callback).release();
+    (void) py::weakref(m.attr("Object"), cleanup_callback).release();
 }

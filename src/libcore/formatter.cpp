@@ -14,45 +14,53 @@ std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
                                      const Thread *thread, const char *file, int line,
                                      const std::string &msg) {
     std::ostringstream oss;
+    std::istringstream iss(msg);
     char buffer[128];
+    std::string msg_line;
+    time_t time_ = std::time(nullptr);
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S ", std::localtime(&time_));
+    int line_idx = 0;
 
-    /* Date/Time */
-    if (m_has_date) {
-        time_t time_ = std::time(nullptr);
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S ", std::localtime(&time_));
-        oss << buffer;
-    }
+    while (std::getline(iss, msg_line) || line_idx == 0) {
+        if (line_idx > 0)
+            oss << '\n';
 
-    /* Log level */
-    if (m_has_log_level) {
-        switch (level) {
-            case ETrace: oss << "TRACE "; break;
-            case EDebug: oss << "DEBUG "; break;
-            case EInfo:  oss << "INFO  "; break;
-            case EWarn:  oss << "WARN  "; break;
-            case EError: oss << "ERROR "; break;
-            default:     oss << "CUSTM "; break;
+        /* Date/Time */
+        if (m_has_date)
+            oss << buffer;
+
+        /* Log level */
+        if (m_has_log_level) {
+            switch (level) {
+                case ETrace: oss << "TRACE "; break;
+                case EDebug: oss << "DEBUG "; break;
+                case EInfo:  oss << "INFO  "; break;
+                case EWarn:  oss << "WARN  "; break;
+                case EError: oss << "ERROR "; break;
+                default:     oss << "CUSTM "; break;
+            }
         }
+
+        /* Thread */
+        if (thread && m_has_thread) {
+            oss << thread->name();
+
+            for (int i=0; i<(5 - (int) thread->name().size()); i++)
+                oss << ' ';
+        }
+
+        /* Class */
+        if (m_has_class) {
+            if (class_)
+                oss << "[" << class_->name() << "] ";
+            else if (line != -1 && file)
+                oss << "[" << fs::path(file).filename() << ":" << line << "] ";
+        }
+
+        /* Message */
+        oss << msg_line;
+        line_idx++;
     }
-
-    /* Thread */
-    if (thread && m_has_thread) {
-        oss << thread->name();
-
-        for (int i=0; i<(5 - (int) thread->name().size()); i++)
-            oss << ' ';
-    }
-
-    /* Class */
-    if (m_has_class) {
-        if (class_)
-            oss << "[" << class_->name() << "] ";
-        else if (line != -1 && file)
-            oss << "[" << fs::path(file).filename() << ":" << line << "] ";
-    }
-
-    /* Message */
-    oss << msg;
 
     return oss.str();
 }

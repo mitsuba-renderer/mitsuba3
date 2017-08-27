@@ -26,19 +26,21 @@ size_t ArgParser::Arg::count() const {
 }
 
 int ArgParser::Arg::as_int() const {
-    try {
-        return std::stoi(m_value);
-    } catch (const std::logic_error &) {
+    char *start = (char *) m_value.data();
+    char *end   = (char *) m_value.data() + m_value.size();
+    long result = std::strtol(start, &start, 10);
+    if (start != end)
         Throw("Argument \"%s\": value \"%s\" is not an integer!", m_prefixes[0], m_value);
-    }
+    return (int) result;
 }
 
 Float ArgParser::Arg::as_float() const {
-    try {
-        return (Float) std::stod(m_value);
-    } catch (const std::logic_error &) {
-        Throw("Argument \"%s\": value \"%s\" is not a floating point value!", m_prefixes[0], m_value);
-    }
+    char *start = (char *) m_value.data();
+    char *end   = (char *) m_value.data() + m_value.size();
+    double result = std::strtod(start, &start);
+    if (start != end)
+        Throw("Argument \"%s\": value \"%s\" is not a valid floating point value!", m_prefixes[0], m_value);
+    return (Float) result;
 }
 
 void ArgParser::parse(int argc, const char **argv) {

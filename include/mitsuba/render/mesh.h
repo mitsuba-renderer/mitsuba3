@@ -47,10 +47,10 @@ public:
     uint8_t *faces() { return (uint8_t *) m_faces.get(); }
 
     /// Return a pointer to the raw face buffer (at a specified face index)
-    const uint8_t *face(uint8_t index) const { return m_faces.get() + m_face_size * index; }
+    const uint8_t *face(Index index) const { return m_faces.get() + m_face_size * index; }
 
     /// Return a pointer to the raw face buffer (at a specified face index)
-    uint8_t *face(uint8_t index) { return m_faces.get() + m_face_size * index; }
+    uint8_t *face(Index index) { return m_faces.get() + m_face_size * index; }
 
     /// Recompute the bounding box (must be called following changes to vertex positions)
     void recompute_bbox();

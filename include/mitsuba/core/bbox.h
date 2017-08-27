@@ -327,7 +327,10 @@ std::ostream &operator<<(std::ostream &os, const BoundingBox<Point> &bbox) {
     if (!bbox.valid())
         os << "[invalid]";
     else
-        os << "[min = " << bbox.min << ", max = " << bbox.max << "]";
+        os << "[" << std::endl
+           << "  min = " << bbox.min << "," << std::endl
+           << "  max = " << bbox.max << std::endl
+           << "]";
     return os;
 }
 

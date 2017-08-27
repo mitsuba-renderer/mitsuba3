@@ -267,9 +267,26 @@ elseif(MSVC)
   set(Configurations RELEASE RELWITHDEBINFO MINSIZEREL)
   set(LinkTypes EXE SHARED MODULE STATIC)
   foreach(Configuration ${Configurations})
-    set("CMAKE_CXX_FLAGS_${Configuration}" "${CMAKE_CXX_FLAGS_${Configuration}} /GL")
+    set(FLAGS ${CMAKE_CXX_FLAGS_${Configuration}})
+
+    if (NOT FLAGS MATCHES "/GL")
+      set(FLAGS "${FLAGS} /GL")
+    endif()
+
+    set("CMAKE_CXX_FLAGS_${Configuration}" "${FLAGS}" CACHE STRING "" FORCE)
+
     foreach(LinkType ${LinkTypes})
-      set("CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}" "${CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}} /LTCG")
+      set(FLAGS "${CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}}")
+
+      if (NOT FLAGS MATCHES "/LTCG")
+        set(FLAGS "${FLAGS} /LTCG")
+      endif()
+
+      if ((LinkType STREQUAL "EXE" OR LinkType STREQUAL "SHARED") AND NOT (Configuration MATCHES DEB) AND NOT FLAGS MATCHES "/OPT:REF,ICF")
+        set(FLAGS "${FLAGS} /OPT:REF,ICF")
+      endif()
+
+      set("CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}" "${FLAGS}" CACHE STRING "" FORCE)
     endforeach()
   endforeach()
   message(STATUS "Mitsuba: LTO support enabled.")

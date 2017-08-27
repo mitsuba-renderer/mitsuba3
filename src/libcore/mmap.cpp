@@ -64,7 +64,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
         can_write = true;
     }
 
-    void createTemp() {
+    void create_temp() {
         can_write = true;
         temp = true;
 
@@ -135,9 +135,11 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
             int fd = open(filename.string().c_str(), can_write ? O_RDWR : O_RDONLY);
             if (fd == -1)
                 Log(EError, "Could not open \"%s\"!", filename.string().c_str());
+
             data = mmap(nullptr, size, PROT_READ | (can_write ? PROT_WRITE : 0), MAP_SHARED, fd, 0);
             if (data == nullptr)
                 Log(EError, "Could not map \"%s\" to memory!", filename.string().c_str());
+
             if (close(fd) != 0)
                 Log(EError, "close(): unable to close file!");
         #elif defined(__WINDOWS__)
@@ -262,7 +264,7 @@ const fs::path &MemoryMappedFile::filename() const {
 ref<MemoryMappedFile> MemoryMappedFile::create_temporary(size_t size) {
     ref<MemoryMappedFile> result = new MemoryMappedFile();
     result->d->size = size;
-    result->d->createTemp();
+    result->d->create_temp();
     return result;
 }
 

@@ -24,15 +24,18 @@ def test01_create_mesh():
     if float_dtype == np.float32:
         assert str(m) == """Mesh[
   name = "MyMesh",
-  bbox = BoundingBox3f[min = [0, 0, 0], max = [0, 1, 1]],
-  vertex_struct = Struct[
+  bbox = BoundingBox3f[
+    min = [0, 0, 0],
+    max = [0, 1, 1]
+  ],
+  vertex_struct = Struct<12>[
     float32 x; // @0
     float32 y; // @4
     float32 z; // @8
   ],
   vertex_count = 3,
   vertices = [36 B of vertex data],
-  face_struct = Struct[
+  face_struct = Struct<12>[
     uint32 i0; // @0
     uint32 i1; // @4
     uint32 i2; // @8
@@ -43,15 +46,18 @@ def test01_create_mesh():
     else:
         assert str(m) == """Mesh[
   name = "MyMesh",
-  bbox = BoundingBox3f[min = [0, 0, 0], max = [0, 1, 1]],
-  vertex_struct = Struct[
+  bbox = BoundingBox3f[
+    min = [0, 0, 0],
+    max = [0, 1, 1]
+  ],
+  vertex_struct = Struct<24>[
     float64 x; // @0
     float64 y; // @8
     float64 z; // @16
   ],
   vertex_count = 3,
   vertices = [72 B of vertex data],
-  face_struct = Struct[
+  face_struct = Struct<12>[
     uint32 i0; // @0
     uint32 i1; // @4
     uint32 i2; // @8

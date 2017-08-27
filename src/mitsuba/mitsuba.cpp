@@ -44,7 +44,7 @@ static std::string copyright_info() {
 static std::string isa_info() {
     std::ostringstream oss;
 
-    oss << "Instruction sets enabled:";
+    oss << "Enabled processor features:";
     if (enoki::has_avx512f)         oss << " avx512f";
     if (enoki::has_avx512cd)        oss << " avx512cd";
     if (enoki::has_avx512dq)        oss << " avx512dq";

@@ -31,7 +31,7 @@ ninja'''
         stage('Run tests [release, single precision]') {
             steps {
                 sh '''source ./setpath.sh
-python3.4 -m pytest'''
+python3.4 -m pytest -v'''
             }
         }
         stage('Build [debug, double precision]') {
@@ -47,7 +47,7 @@ ninja'''
         stage('Run tests [debug, double precision]') {
             steps {
                 sh '''source ./setpath.sh
-python3.4 -m pytest'''
+python3.4 -m pytest -v'''
             }
         }
     }

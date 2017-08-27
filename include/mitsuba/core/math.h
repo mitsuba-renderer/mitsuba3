@@ -317,7 +317,7 @@ template <typename T> MTS_INLINE expr_t<T> inv_gamma(const T &value) {
 */
 template <typename Size, typename Predicate,
           typename Args  = typename function_traits<Predicate>::Args,
-          typename Index = std::tuple_element_t<0, Args>>
+          typename Index = std::decay_t<std::tuple_element_t<0, Args>>>
 MTS_INLINE Index find_interval(const Size &left, const Size &right,
                                const Predicate &pred) {
     using IndexMask         = mask_t<Index>;
@@ -327,7 +327,7 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
 
     Size initial_size = right - left;
     Index first((IndexScalar) left + 1),
-          size((IndexScalar) (initial_size - 2));
+          size((IndexScalar) initial_size - 2);
     IndexMask active(true);
 
     while (true) {
@@ -357,11 +357,8 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
     ));
 }
 
-template <typename Size, typename Predicate,
-          typename Args  = typename function_traits<Predicate>::Args,
-          typename Index = std::tuple_element_t<0, Args>,
-          typename Mask  = enoki::mask_t<Index>>
-MTS_INLINE Index find_interval(const Size &size, const Predicate &pred) {
+template <typename Size, typename Predicate>
+MTS_INLINE auto find_interval(const Size &size, const Predicate &pred) {
     return find_interval(Size(0), size, pred);
 }
 
@@ -388,8 +385,8 @@ MTS_INLINE Index find_interval(const Size &size, const Predicate &pred) {
  */
 template <typename Size, typename Predicate,
           typename Args  = typename function_traits<Predicate>::Args,
-          typename Index = std::tuple_element_t<0, Args>,
-          typename Mask  = std::tuple_element_t<1, Args>>
+          typename Index = std::decay_t<std::tuple_element_t<0, Args>>,
+          typename Mask  = std::decay_t<std::tuple_element_t<1, Args>>>
 MTS_INLINE Index find_interval(const Size &left, const Size &right,
                                const Predicate &pred, const Mask &active_in) {
     using IndexMask         = mask_t<Index>;
@@ -399,7 +396,7 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
 
     Size initial_size = right - left;
     Index first((IndexScalar) left + 1),
-          size((IndexScalar) (initial_size - 2));
+          size((IndexScalar) initial_size - 2);
     IndexMask active(active_in);
 
     while (true) {
@@ -429,11 +426,8 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
     ));
 }
 
-template <typename Size, typename Predicate,
-          typename Args  = typename function_traits<Predicate>::Args,
-          typename Index = std::tuple_element_t<0, Args>,
-          typename Mask  = enoki::mask_t<Index>>
-MTS_INLINE Index find_interval(const Size &size, const Predicate &pred, const Mask &active) {
+template <typename Size, typename Predicate, typename Mask>
+MTS_INLINE auto find_interval(const Size &size, const Predicate &pred, const Mask &active) {
     return find_interval(Size(0), size, pred, active);
 }
 

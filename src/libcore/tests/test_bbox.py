@@ -37,8 +37,8 @@ def test01_basics():
     assert (bbox3.corner(6) == [1, 3, 5]).all()
     assert (bbox3.corner(7) == [2, 3, 5]).all()
     assert str(bbox1) == "BoundingBox3f[invalid]"
-    assert str(bbox3) == "BoundingBox3f[min = [1, 2, 3]," \
-                         " max = [2, 3, 5]]"
+    assert str(bbox3) == "BoundingBox3f[\n  min = [1, 2, 3],\n" \
+                         "  max = [2, 3, 5]\n]"
     bbox4 = BBox.merge(bbox2, bbox3)
     assert (bbox4.min == [0, 1, 2]).all()
     assert (bbox4.max == [2, 3, 5]).all()

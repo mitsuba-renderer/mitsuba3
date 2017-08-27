@@ -1684,10 +1684,9 @@ protected:
             m_max_depth = (int) (8 + 1.3f * log2i(prim_count));
         m_max_depth = std::min(m_max_depth, (Size) MTS_KD_MAXDEPTH);
 
-        Log(m_log_level, "");
-
         Log(m_log_level, "kd-tree configuration:");
-        Log(m_log_level, "   Cost model               : %s", m_cost_model);
+        Log(m_log_level, "   Cost model               : %s",
+            string::indent(m_cost_model, 30));
         Log(m_log_level, "   Max. tree depth          : %i", m_max_depth);
         Log(m_log_level, "   Scene bounding box (min) : %s", m_bbox.min);
         Log(m_log_level, "   Scene bounding box (max) : %s", m_bbox.max);
@@ -1830,6 +1829,7 @@ protected:
                 ctx.exp_primitives_queried);
             Log(m_log_level, "   Final cost                  : %.2f",
                 final_cost);
+            Log(m_log_level, "");
         }
 
         #if defined(__LINUX__)
@@ -1948,10 +1948,11 @@ public:
     }
 
     friend std::ostream &operator<<(std::ostream &os, const SurfaceAreaHeuristic3f &sa) {
-        os << "SurfaceAreaHeuristic3f["
-           << "query_cost=" << sa.query_cost() << ", "
-           << "traversal_cost=" << sa.traversal_cost() << ", "
-           << "empty_space_bonus=" << sa.empty_space_bonus() << "]";
+        os << "SurfaceAreaHeuristic3f[" << std::endl
+           << "  query_cost = " << sa.query_cost() << "," << std::endl
+           << "  traversal_cost = " << sa.traversal_cost() << "," << std::endl
+           << "  empty_space_bonus = " << sa.empty_space_bonus() << std::endl
+           << "]";
         return os;
     }
 private:

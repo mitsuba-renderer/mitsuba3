@@ -257,7 +257,7 @@ std::string Mesh::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << std::endl
         << "  name = \"" << m_name << "\"," << std::endl
-        << "  bbox = " << m_bbox << "," << std::endl
+        << "  bbox = " << string::indent(m_bbox) << "," << std::endl
         << "  vertex_struct = " << string::indent(m_vertex_struct) << "," << std::endl
         << "  vertex_count = " << m_vertex_count << "," << std::endl
         << "  vertices = [" << util::mem_string(m_vertex_size * m_vertex_count) << " of vertex data]," << std::endl

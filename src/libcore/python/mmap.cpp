@@ -18,7 +18,7 @@ MTS_PY_EXPORT(MemoryMappedFile) {
         .def("resize", &MemoryMappedFile::resize, D(MemoryMappedFile, resize))
         .def("filename", &MemoryMappedFile::filename, D(MemoryMappedFile, filename))
         .def("can_write", &MemoryMappedFile::can_write, D(MemoryMappedFile, can_write))
-        .def("create_temporary", &MemoryMappedFile::create_temporary, D(MemoryMappedFile, create_temporary))
+        .def_static("create_temporary", &MemoryMappedFile::create_temporary, D(MemoryMappedFile, create_temporary))
         .def_buffer([](MemoryMappedFile &m) -> py::buffer_info {
             return py::buffer_info(
                 m.data(),

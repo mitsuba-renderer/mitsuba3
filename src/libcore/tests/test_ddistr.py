@@ -173,9 +173,6 @@ def test09_vectorized_sample_pdf():
     pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
     d = _get_example_distribution(False, pdf_values)
 
-    print(d)
-    print(d.sample_pdf([0.0, 0.49, 1.0]))
-
     assert(np.allclose(d.sample_pdf([0.0, 0.49, 1.0]),
                        ([   2,    3,   5],
                         [0.25, 0.25, 0.5])))
