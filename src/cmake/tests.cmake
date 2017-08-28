@@ -42,10 +42,4 @@ if (MITSUBA_PYTEST_FOUND)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist
     USES_TERMINAL
   )
-  add_custom_target(pytest-verbose
-    COMMAND ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/dist" "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python" ${PYTHON_EXECUTABLE} -m pytest -vvrws ${MITSUBA_TEST_DIRECTORIES}
-    DEPENDS mitsuba-python python-copy dist-copy
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist
-    USES_TERMINAL
-  )
 endif()
