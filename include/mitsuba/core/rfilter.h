@@ -107,7 +107,8 @@ template <typename Scalar> struct Resampler {
         if (source_res == 0 || target_res == 0)
             Throw("Resampler::Resampler(): source or target resolution == 0!");
 
-        Float filter_radius = rfilter->radius(),
+        Float filter_radius_orig = rfilter->radius(),
+              filter_radius = filter_radius_orig,
               scale = 1, inv_scale = 1;
 
         /* Low-pass filter: scale reconstruction filters when downsampling */
@@ -120,6 +121,9 @@ template <typename Scalar> struct Resampler {
         m_taps = (uint32_t) std::ceil(filter_radius * 2);
         if (source_res == target_res && (m_taps % 2) != 1)
             --m_taps;
+
+        if (filter_radius_orig < 1)
+            m_taps = std::min(m_taps, source_res);
 
         if (source_res != target_res) { /* Resampling mode */
             m_start = std::unique_ptr<int32_t[]>(new int32_t[target_res]);
@@ -141,7 +145,7 @@ template <typename Scalar> struct Resampler {
                 if (m_start[i] < 0)
                     m_fast_start = std::max(m_fast_start, i + 1);
                 else if (m_start[i] + m_taps - 1 >= m_source_res)
-                    m_fast_end = std::min(m_fast_end, i - 1);
+                    m_fast_end = std::min(m_fast_end, i);
 
                 double sum = 0.0;
                 for (uint32_t j = 0; j < m_taps; j++) {
@@ -186,7 +190,8 @@ template <typename Scalar> struct Resampler {
                 value = Scalar(double(value) * normalization);
             }
             m_fast_start = std::min(half_taps, m_target_res - 1);
-            m_fast_end   = std::max(m_target_res - half_taps - 1, 0u);
+            m_fast_end   = (uint32_t) std::max(
+                (ssize_t) m_target_res - (ssize_t) half_taps - 1, (ssize_t) 0);
         }
 
         /* Avoid overlapping fast start/end intervals when the

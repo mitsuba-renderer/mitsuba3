@@ -59,9 +59,10 @@ static std::string isa_info() {
     if (enoki::has_f16c)            oss << " f16c";
     if (enoki::has_sse42)           oss << " sse4.2";
     if (enoki::has_x86_64)          oss << " x86_64";
-    if (enoki::has_x86_32)          oss << " x86_32";
+    if (enoki::has_x86_32)          oss << " x86";
     if (enoki::has_neon)            oss << " neon";
-    if (enoki::has_aarch64)         oss << " aarch64";
+    if (enoki::has_arm_32)          oss << " arm";
+    if (enoki::has_arm_64)          oss << " aarch64";
 
 #if defined(ENOKI_USE_MEMKIND)
     if (hbw_check_available() == 0) oss << " hbm";

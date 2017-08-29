@@ -2,6 +2,10 @@ include_directories(
   ${NANOGUI_INCLUDE_DIRS}
 )
 
+add_definitions(
+  ${NANOGUI_EXTRA_DEFS}
+)
+
 set(INC_DIR "../../include/mitsuba/ui")
 
 add_library(mitsuba-ui-obj OBJECT
