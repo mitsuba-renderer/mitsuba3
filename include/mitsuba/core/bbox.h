@@ -166,9 +166,9 @@ template <typename Point_> struct BoundingBox {
     template <bool Strict = false>
     Mask contains(const Point &p) const {
         if (Strict)
-            return all(p > min & p < max);
+            return all((p > min) & (p < max));
         else
-            return all(p >= min & p <= max);
+            return all((p >= min) & (p <= max));
     }
 
     /**
@@ -188,9 +188,9 @@ template <typename Point_> struct BoundingBox {
     template <bool Strict = false>
     bool contains(const BoundingBox &bbox) const {
         if (Strict)
-            return all(bbox.min > min & bbox.max < max);
+            return all((bbox.min > min) & (bbox.max < max));
         else
-            return all(bbox.min >= min & bbox.max <= max);
+            return all((bbox.min >= min) & (bbox.max <= max));
     }
 
     /**
@@ -207,9 +207,9 @@ template <typename Point_> struct BoundingBox {
     template <bool Strict = false>
     bool overlaps(const BoundingBox &bbox) const {
         if (Strict)
-            return all(bbox.min < max & bbox.max > min);
+            return all((bbox.min < max) & (bbox.max > min));
         else
-            return all(bbox.min <= max & bbox.max >= min);
+            return all((bbox.min <= max) & (bbox.max >= min));
     }
 
     /**
@@ -217,8 +217,8 @@ template <typename Point_> struct BoundingBox {
      * the axis-aligned bounding box and the point \c p.
      */
     Value squared_distance(const Point &p) const {
-        return squared_norm(((p < min) & (min - p)) +
-                            ((p > max) & (p - max)));
+        return squared_norm(((min - p) & (p < min)) +
+                            ((p - max) & (p > max)));
     }
 
 
@@ -227,8 +227,8 @@ template <typename Point_> struct BoundingBox {
      * the axis-aligned bounding box and \c bbox.
      */
     Value squared_distance(const BoundingBox &bbox) const {
-        return squared_norm(((bbox.max < min) & (min - bbox.max)) +
-                            ((bbox.min > max) & (bbox.min - max)));
+        return squared_norm(((min - bbox.max) & (bbox.max < min)) +
+                            ((bbox.min - max) & (bbox.min > max)));
     }
 
     /**
@@ -236,7 +236,7 @@ template <typename Point_> struct BoundingBox {
      * the axis-aligned bounding box and the point \c p.
      */
     Value distance(const Point &p) const {
-        return std::sqrt(squared_distance(p));
+        return enoki::sqrt(squared_distance(p));
     }
 
     /**
@@ -244,7 +244,7 @@ template <typename Point_> struct BoundingBox {
      * the axis-aligned bounding box and \c bbox.
      */
     Value distance(const BoundingBox &bbox) const {
-        return std::sqrt(squared_distance(bbox));
+        return enoki::sqrt(squared_distance(bbox));
     }
 
     /**
@@ -261,20 +261,20 @@ template <typename Point_> struct BoundingBox {
 
     /// Clip this bounding box to another bounding box
     void clip(const BoundingBox &bbox) {
-        this->min = enoki::max(this->min, bbox.min);
-        this->max = enoki::min(this->max, bbox.max);
+        min = enoki::max(min, bbox.min);
+        max = enoki::min(max, bbox.max);
     }
 
     /// Expand the bounding box to contain another point
     void expand(const Point &p) {
-        this->min = enoki::min(this->min, p);
-        this->max = enoki::max(this->max, p);
+        min = enoki::min(min, p);
+        max = enoki::max(max, p);
     }
 
     /// Expand the bounding box to contain another bounding box
     void expand(const BoundingBox &bbox) {
-        this->min = enoki::min(this->min, bbox.min);
-        this->max = enoki::max(this->max, bbox.max);
+        min = enoki::min(min, bbox.min);
+        max = enoki::max(max, bbox.max);
     }
 
     /// Merge two bounding boxes
@@ -286,16 +286,15 @@ template <typename Point_> struct BoundingBox {
     }
 
     /// Check if a ray intersects a bounding box
-    template <typename Ray>
-    MTS_INLINE auto ray_intersect(const Ray &ray) const {
-        using Vector = typename Ray::Vector;
-        using Point = typename Ray::Point;
-        using Value = value_t<Point>;
-        using Mask = mask_t<Value>;
+    template <typename Ray, typename Value = expr_t<typename Ray::Value>,
+              typename Mask = mask_t<Value>,
+              typename Result = std::tuple<Mask, Value, Value>>
+    MTS_INLINE Result ray_intersect(const Ray &ray) const {
+        using Vector = expr_t<typename Ray::Vector>;
 
         /* First, ensure that the ray either has a nonzero slope on each axis,
            or that its origin on a zero-valued axis is within the box bounds */
-        Mask active = all(neq(ray.d, zero<Vector>()) | (ray.o > min | ray.o < max));
+        Mask active = all(neq(ray.d, zero<Vector>()) | ((ray.o > min) | (ray.o < max)));
 
         /* Compute intersection intervals for each axis */
         Vector t1 = (min - ray.o) * ray.d_rcp;
@@ -309,7 +308,7 @@ template <typename Point_> struct BoundingBox {
         Value nearT = hmax(t1p);
         Value farT  = hmin(t2p);
 
-        active &= ray.mint <= farT & nearT <= ray.maxt;
+        active &= (ray.mint <= farT) & (nearT <= ray.maxt);
 
         return std::make_tuple(active, nearT, farT);
     }

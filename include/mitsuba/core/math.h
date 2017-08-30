@@ -524,7 +524,7 @@ template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
  * \return \c true if a solution could be found
  */
 template <typename Value>
-std::tuple<mask_t<Value>, Value, Value> solve_quadratic(Value a, Value b, Value c) {
+MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &a, const Value &b, const Value &c) {
     using Scalar = scalar_t<Value>;
     using Mask = mask_t<Value>;
 
@@ -540,7 +540,7 @@ std::tuple<mask_t<Value>, Value, Value> solve_quadratic(Value a, Value b, Value 
 
     /* Check if the quadratic equation is solvable */
     Value discrim = fmsub(b, b, Scalar(4) * a * c);
-    active &= linear_case | discrim >= 0;
+    active &= linear_case | (discrim >= 0);
 
     if (likely(any(active))) {
         Value sqrt_discrim = sqrt(discrim);

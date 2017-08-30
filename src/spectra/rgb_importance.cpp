@@ -17,7 +17,7 @@ public:
 
     template <typename T>
     MTS_INLINE T eval_impl(T lambda) const {
-        auto mask_valid = lambda >= T(360) & lambda <= T(830);
+        auto mask_valid = (lambda >= T(360)) & (lambda <= T(830));
 
         T tmp = sech(Float(0.0072) * (lambda - Float(538)));
 

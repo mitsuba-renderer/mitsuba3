@@ -63,8 +63,9 @@ template <typename Point_> struct BoundingSphere {
     }
 
     /// Check if a ray intersects a bounding box
-    template <typename Point>
-    MTS_INLINE auto ray_intersect(const Ray<Point> &ray) const {
+    template <typename Point, typename Value = expr_t<value_t<Point>>, typename Mask = mask_t<Value>,
+              typename Return = std::tuple<Mask, Value, Value>>
+    MTS_INLINE Return ray_intersect(const Ray<Point> &ray) const {
         auto o = ray.o - center;
 
         return math::solve_quadratic(
@@ -84,7 +85,10 @@ std::ostream &operator<<(std::ostream &os, const BoundingSphere<Point> &bsphere)
     if (bsphere.empty())
         os << "[empty]";
     else
-        os << "[center = " << bsphere.center << ", radius = " << bsphere.radius << "]";
+        os << "[" << std::endl
+           << "  center = " << bsphere.center << "," << std::endl
+           << "  radius = " << bsphere.radius << std::endl
+           << "]";
     return os;
 }
 

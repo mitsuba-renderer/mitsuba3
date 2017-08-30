@@ -1,4 +1,5 @@
 from mitsuba.core.util import time_string, mem_string
+import sys
 
 
 def test01_time_string():
@@ -17,6 +18,7 @@ def test01_mem_string():
     assert mem_string(2 * 1024, precise=True) == '2 KiB'
     assert mem_string(2 * 1024 ** 2, precise=True) == '2 MiB'
     assert mem_string(2 * 1024 ** 3, precise=True) == '2 GiB'
-    assert mem_string(2 * 1024 ** 4, precise=True) == '2 TiB'
-    assert mem_string(2 * 1024 ** 5, precise=True) == '2 PiB'
-    assert mem_string(2 * 1024 ** 6, precise=True) == '2 EiB'
+    if sys.maxsize > 4*1024**3:
+        assert mem_string(2 * 1024 ** 4, precise=True) == '2 TiB'
+        assert mem_string(2 * 1024 ** 5, precise=True) == '2 PiB'
+        assert mem_string(2 * 1024 ** 6, precise=True) == '2 EiB'

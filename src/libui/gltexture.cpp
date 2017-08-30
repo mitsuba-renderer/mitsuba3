@@ -48,16 +48,24 @@ void GLTexture::refresh(const Bitmap *bitmap) {
     }
 
     switch (bitmap->pixel_format()) {
+#if defined(NANOGUI_USE_OPENGL)
         case Bitmap::EY:    format = GL_RED; break;
         case Bitmap::EYA:   format = GL_RG; break;
         case Bitmap::ERGB:  format = GL_RGB; break;
         case Bitmap::ERGBA: format = GL_RGBA; break;
+#else
+        case Bitmap::EY:    format = GL_LUMINANCE; break;
+        case Bitmap::EYA:   format = GL_LUMINANCE_ALPHA; break;
+        case Bitmap::ERGB:  format = GL_RGB; break;
+        case Bitmap::ERGBA: format = GL_RGBA; break;
+#endif
         default:
             Throw("GLTexture::refresh(): incompatible pixel format: %s",
                   bitmap->pixel_format());
     }
     internalFormat = format;
 
+#if defined(NANOGUI_USE_OPENGL)
     if (bitmap->srgb_gamma() && bitmap->component_format() == Struct::EUInt8) {
         switch (bitmap->pixel_format()) {
             case Bitmap::ERGB:            internalFormat = GL_SRGB8;
@@ -67,6 +75,7 @@ void GLTexture::refresh(const Bitmap *bitmap) {
                       bitmap->pixel_format());
         }
     }
+#endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, (GLsizei) bitmap->width(),
                  (GLsizei) bitmap->height(), 0, format, type,

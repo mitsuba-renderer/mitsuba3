@@ -71,7 +71,7 @@ Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
 }
 
 Bitmap::Bitmap(const Bitmap &bitmap)
-    : m_pixel_format(bitmap.m_pixel_format),
+    : Object(), m_pixel_format(bitmap.m_pixel_format),
       m_component_format(bitmap.m_component_format),
       m_size(bitmap.m_size),
       m_struct(new Struct(*bitmap.m_struct)),
@@ -321,7 +321,7 @@ ref<Bitmap> Bitmap::resample(const Vector2s &res, const ReconstructionFilter *rf
         new Bitmap(m_pixel_format, m_component_format, res, channel_count());
     result->m_struct = m_struct;
     result->m_metadata = m_metadata;
-    resample(result, rfilter, bc, bound);
+    resample(result, rfilter, bc, bound, nullptr);
     return result;
 }
 

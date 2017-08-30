@@ -11,7 +11,8 @@ option(MTS_DOUBLE_PRECISION  "Compile renderer in double precision?" OFF)
 # On Linux:
 #   export LD_LIBRARY_PATH=<path to libasan.so>
 
-option(MTS_ADDRESS_SANITIZER "Enable GCC/Clang address sanitizer?" OFF)
+option(MTS_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
+option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?" OFF)  # To catch use of unitialized memory
 
 cmake_policy(SET CMP0022 NEW) # New-style link interface
 cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
@@ -28,35 +29,6 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "MinSizeRel" "RelWithDebInfo")
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
-
-# Optimize for current architecture
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
-    CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  add_compile_options("-march=native")
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-  add_compile_options("-xHost")
-else(MSVC)
-  # MSVC doesn't have a flag equivalent to -march=native
-  # The 'archflags' executable provides this functionality
-  try_run(
-    ARCHFLAGS_SUCCESS
-    ARCHFLAGS_COMPILE_RESULT
-    ${CMAKE_BINARY_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/resources/archflags.cpp
-    RUN_OUTPUT_VARIABLE ARCHFLAGS_FLAGS
-  )
-  if(NOT ${ARCHFLAGS_COMPILE_RESULT})
-     message(FATAL_ERROR "Failed to compile 'archflags' binary")
-  endif()
-  add_compile_options(${ARCHFLAGS_FLAGS})
-  message(STATUS "Mitsuba: Compiling with ${ARCHFLAGS_FLAGS}")
-endif()
-
-# Disable overly aggressive FP optimization in the Intel compiler
-# (this flag is intentially added here so that it also applies to dependencies)
-if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-  add_compile_options("-fp-model" "precise")
-endif()
 
 macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
   set(CMAKE_REQUIRED_FLAGS ${_CXX_FLAGS})
@@ -77,6 +49,32 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_FLAGS MATCHES "-stdl
     message(STATUS "Mitsuba: using libc++.")
   else()
     message(STATUS "Mitsuba: NOT using libc++.")
+  endif()
+endif()
+
+# Clang/GCC address sanitizer
+if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+  # Don't optimize too heavily
+  if (U_CMAKE_BUILD_TYPE MATCHES REL)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O1")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -O1")
+    add_compile_options("-O1")
+  endif()
+
+  add_compile_options("-fno-omit-frame-pointer")
+
+  if (MTS_SANITIZE_ADDRESS)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+  endif()
+
+  if (MTS_SANITIZE_MEMORY)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=memory")
   endif()
 endif()
 
@@ -131,29 +129,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
     message(FATAL_ERROR "Unsupported compiler -- Mitsuba requires C++14 support!")
   endif()
 
-  # Enable link time optimization and set the default symbol
-  # visibility to hidden (very important to obtain small binaries)
+  # Set the default symbol visibility to hidden (very important to obtain small binaries)
   if (U_CMAKE_BUILD_TYPE MATCHES REL)
-    if (NOT MTS_ADDRESS_SANITIZER)
-      # Don't use stack security features in release mode
-      add_compile_options("-fno-stack-protector")
-
-      # In release mode, don't keep the frame pointer in a special register unless needed
-      add_compile_options("-fomit-frame-pointer")
-    endif()
-
-    # Don't update the 'errno' global when encountering domain errors in math functions
-    add_compile_options("-fno-math-errno")
-
     # Increase function size limits for inlining on GCC (useful for templated
     # code where significant portions can be optimized away during inlining)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
       add_compile_options("-finline-limit=150")
-    endif()
-
-    # Contract multiplications and additions into fused multiply-add instructions
-    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-      add_compile_options("-ffp-contract=fast")
     endif()
 
     # Set the default symbol visibility to hidden
@@ -200,18 +181,6 @@ if (MSVC)
 
   # Permit many sections in .obj files
   add_compile_options("/bigobj")
-
-  # Disable buffer security check cookie
-  string(REPLACE "/GS" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "/GS" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-  add_compile_options("$<$<NOT:$<CONFIG:Debug>>:/GS->")
-
-  # Honor __forceinline statements even in debug mode, needed to avoid internal compiler errors on MSVC
-  string(REPLACE "/Ob0" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-  add_compile_options("$<$<CONFIG:Debug>:/Ob1>")
-
-   # Enable intrinsic functions
-   add_compile_options("$<$<CONFIG:Release>:/Oi>")
 endif()
 
 # Enable link time optimization in release mode (if possible)
@@ -290,34 +259,6 @@ elseif(MSVC)
     endforeach()
   endforeach()
   message(STATUS "Mitsuba: LTO support enabled.")
-endif()
-
-# Clang/GCC Memory sanitizer
-if (MTS_ADDRESS_SANITIZER AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
-  # Don't optimize too heavily
-  if (U_CMAKE_BUILD_TYPE MATCHES REL)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O1")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -O1")
-    add_compile_options("-O1")
-  endif()
-
-  add_compile_options("-fno-omit-frame-pointer")
-  add_compile_options("-fsanitize=address")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
-endif()
-
-# Use memkind library (high-bandwidth memory on Xeon Phi) if available
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/ext/enoki/resources")
-find_package(Memkind QUIET)
-
-if (MEMKIND_FOUND)
-  message(STATUS "Mitsuba: Using memkind library for Enoki heap memory allocation.")
-  include_directories(${MEMKIND_INCLUDE_DIRS})
-  set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} ${MEMKIND_LIBRARIES}")
-  add_definitions(-DENOKI_USE_MEMKIND)
-else()
-  message(STATUS "Mitsuba: Using C library for Enoki heap memory allocation.")
 endif()
 
 # Set platform-specific flags

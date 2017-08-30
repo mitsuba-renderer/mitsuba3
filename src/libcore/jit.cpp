@@ -9,10 +9,8 @@ static Jit *jit = nullptr;
 Jit::Jit() : runtime() { }
 Jit *Jit::getInstance() { return jit; }
 
-#if defined(__GNUC__)
-    __attribute__((target("sse")))
-#endif
 void Jit::static_initialization() {
+#if defined(ENOKI_X86_32) || defined(ENOKI_X86_64)
     /* Try to detect mismatches in compilation flags and processor
        capabilities early on */
 
@@ -42,8 +40,14 @@ void Jit::static_initialization() {
     #undef CHECK
 
     jit = new Jit();
+#endif
 }
 
-void Jit::static_shutdown() { delete jit; jit = nullptr; }
+void Jit::static_shutdown() {
+#if defined(ENOKI_X86_32) || defined(ENOKI_X86_64)
+    delete jit;
+    jit = nullptr;
+#endif
+}
 
 NAMESPACE_END(mitsuba)

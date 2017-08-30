@@ -55,16 +55,7 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
              D(BoundingBox, expand, 2))
         .def("ray_intersect", &BBox::template ray_intersect<Ray3f>,
              D(BoundingBox, ray_intersect))
-        .def("ray_intersect", vectorize_wrapper(
-            [](const BBox & bbox, const Ray3fP &ray) {
-                auto result = bbox.ray_intersect(ray);
-                return std::make_tuple(
-                    std::get<0>(result),
-                    std::get<1>(result),
-                    std::get<2>(result)
-                );
-            })
-        )
+        .def("ray_intersect", vectorize_wrapper(&BBox::template ray_intersect<Ray3fP>))
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__repr__",

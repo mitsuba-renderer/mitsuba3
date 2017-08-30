@@ -157,8 +157,8 @@ template <bool TestDomain = false, typename Point2, typename Value = value_t<Poi
 MTS_INLINE Value square_to_uniform_triangle_pdf(Point2 p) {
     using Scalar = scalar_t<Point2>;
     if (TestDomain)
-        return select(p.x() < zero<Value>() | p.y() < zero<Value>()
-                    | p.x() + p.y() > Scalar(1),
+        return select((p.x() < zero<Value>()) | (p.y() < zero<Value>())
+                    | (p.x() + p.y() > Scalar(1)),
                       zero<Value>(), Value(Scalar(2.f)));
     else
         return Value(Scalar(2.f));
@@ -240,8 +240,8 @@ template <typename Point2, typename Value = value_t<Point2>>
 Value square_to_tent_pdf(Point2 p) {
     using Scalar = scalar_t<Point2>;
 
-    return select(p.x() >= Scalar(-1) & p.x() <= Scalar(1) &
-                  p.y() >= Scalar(-1) & p.y() <= Scalar(1),
+    return select((p.x() >= Scalar(-1)) & (p.x() <= Scalar(1)) &
+                  (p.y() >= Scalar(-1)) & (p.y() <= Scalar(1)),
                   (Scalar(1) - abs(p.x())) * (Scalar(1) - abs(p.y())),
                   zero<Value>());
 }
@@ -320,8 +320,8 @@ template <bool TestDomain = false, typename Vector3, typename Value = value_t<Ve
 MTS_INLINE Value square_to_uniform_hemisphere_pdf(Vector3 v) {
     using Scalar = scalar_t<Vector3>;
     if (TestDomain)
-        return select(abs(squared_norm(v) - Scalar(1)) > Scalar(math::Epsilon) |
-                      Frame<Vector3>::cos_theta(v) < Scalar(0), zero<Value>(),
+        return select((abs(squared_norm(v) - Scalar(1)) > Scalar(math::Epsilon)) |
+                      (Frame<Vector3>::cos_theta(v) < Scalar(0)), zero<Value>(),
                       Value(Scalar(math::InvTwoPi)));
     else
         return Value(Scalar(math::InvTwoPi));
@@ -355,8 +355,8 @@ MTS_INLINE Value square_to_cosine_hemisphere_pdf(Vector3 v) {
     using Scalar = scalar_t<Vector3>;
 
     if (TestDomain)
-        return select(abs(squared_norm(v) - Scalar(1)) > math::Epsilon |
-                      Frame<Vector3>::cos_theta(v) < Scalar(0), zero<Value>(),
+        return select((abs(squared_norm(v) - Scalar(1)) > math::Epsilon) |
+                      (Frame<Vector3>::cos_theta(v) < Scalar(0)), zero<Value>(),
                       Scalar(math::InvPi) * Frame<Vector3>::cos_theta(v));
     else
         return Scalar(math::InvPi) * Frame<Vector3>::cos_theta(v);
@@ -413,8 +413,8 @@ MTS_INLINE Value square_to_uniform_cone_pdf(Vector3 v, Float cos_cutoff) {
     using Scalar = scalar_t<Vector3>;
 
     if (TestDomain)
-        return select(abs(squared_norm(v) - Scalar(1)) > Scalar(math::Epsilon) |
-                          Frame<Vector3>::cos_theta(v) < Scalar(cos_cutoff),
+        return select((abs(squared_norm(v) - Scalar(1)) > Scalar(math::Epsilon)) |
+                           (Frame<Vector3>::cos_theta(v) < Scalar(cos_cutoff)),
                       zero<Value>(), Value(Scalar(math::InvTwoPi / (1 - cos_cutoff))));
     else
         return Value(Scalar(math::InvTwoPi / (1 - cos_cutoff)));

@@ -27,7 +27,7 @@ Struct::Struct(bool pack, EByteOrder byte_order)
 }
 
 Struct::Struct(const Struct &s)
-    : m_fields(s.m_fields), m_pack(s.m_pack),
+    : Object(), m_fields(s.m_fields), m_pack(s.m_pack),
       m_byte_order(s.m_byte_order) { }
 
 size_t Struct::size() const {

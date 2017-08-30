@@ -133,11 +133,11 @@ public:
 
         Vector3 tvec = ray.o - v0;
         Float u = dot(tvec, pvec) * inv_det;
-        auto mask = u >= 0.f & u <= 1.f;
+        auto mask = (u >= 0.f) & (u <= 1.f);
 
         auto qvec = cross(tvec, edge1);
         Float v = dot(ray.d, qvec) * inv_det;
-        mask &= v >= 0.f & u + v <= 1.f;
+        mask &= (v >= 0.f) & (u + v <= 1.f);
 
         Float t = dot(edge2, qvec) * inv_det;
         return std::make_tuple(mask, u, v, t);

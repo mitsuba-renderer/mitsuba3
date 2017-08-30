@@ -703,8 +703,8 @@ template MTS_EXPORT_CORE std::pair<FloatP, FloatP> legendre_pd(int, FloatP);
 template MTS_EXPORT_CORE std::pair<Float, Float>   legendre_pd_diff(int, Float);
 template MTS_EXPORT_CORE std::pair<FloatP, FloatP> legendre_pd_diff(int, FloatP);
 
-template MTS_EXPORT_CORE std::tuple<mask_t<Float>,  Float,  Float>  solve_quadratic(Float,  Float,  Float);
-template MTS_EXPORT_CORE std::tuple<mask_t<FloatP>, FloatP, FloatP> solve_quadratic(FloatP, FloatP, FloatP);
+template MTS_EXPORT_CORE std::tuple<mask_t<Float>,  Float,  Float>  solve_quadratic(const Float &,  const Float &,  const Float &);
+template MTS_EXPORT_CORE std::tuple<mask_t<FloatP>, FloatP, FloatP> solve_quadratic(const FloatP &, const FloatP &, const FloatP &);
 
 NAMESPACE_END(math)
 NAMESPACE_END(mitsuba)

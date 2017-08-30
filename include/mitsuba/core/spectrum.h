@@ -265,7 +265,7 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &lambda, const mask_t<Expr> &ac
     using Index = int_array_t<Expr>;
 
     Expr t = (lambda - 360.f) * 0.2f;
-    active &= lambda >= 360.f & lambda <= 830.f;
+    active &= (lambda >= 360.f) & (lambda <= 830.f);
 
     Index i0 = min(max(Index(t), zero<Index>()), Index(95 - 2));
     Index i1 = i0 + 1;
@@ -296,7 +296,7 @@ Expr cie1931_y(const T &lambda, const mask_t<Expr> &active_ = true) {
     mask_t<Expr> active(active_);
 
     Expr t = (lambda - 360.f) * 0.2f;
-    active &= lambda >= 360.f & lambda <= 830.f;
+    active &= (lambda >= 360.f) & (lambda <= 830.f);
 
     Index i0 = min(max(Index(t), zero<Index>()), Index(95-2));
     Index i1 = i0 + 1;

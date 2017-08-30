@@ -4,11 +4,11 @@
 
 MTS_PY_EXPORT(MemoryMappedFile) {
     MTS_PY_CLASS(MemoryMappedFile, Object, py::buffer_protocol())
-        .def(py::init<fs::path &, size_t>(),
+        .def(py::init<const mitsuba::filesystem::path &, size_t>(),
              D(MemoryMappedFile, MemoryMappedFile), "filename"_a, "size"_a)
-        .def(py::init<fs::path &, bool>(),
+        .def(py::init<const mitsuba::filesystem::path &, bool>(),
              D(MemoryMappedFile, MemoryMappedFile, 2), "filename"_a, "write"_a = false)
-        .def("__init__", [](MemoryMappedFile &m, const fs::path &p, py::array array) {
+        .def("__init__", [](MemoryMappedFile &m, const mitsuba::filesystem::path &p, py::array array) {
             size_t size = array.size() * array.itemsize();
             new (&m) MemoryMappedFile(p, size);
             memcpy(m.data(), array.data(), size);

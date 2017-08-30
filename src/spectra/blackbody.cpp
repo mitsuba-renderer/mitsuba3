@@ -98,7 +98,8 @@ public:
 
         do {
             /* Fall back to a bisection step when t is out of bounds */
-            t = select(!(t > a & t < b) & active, 0.5f * (a + b), t);
+            auto bisect_mask = !((t > a) & (t < b));
+            masked(t, bisect_mask & active) = .5f * (a + b);
 
             /* Evaluate the definite integral and its derivative
                (i.e. the spline) */
@@ -113,11 +114,12 @@ public:
                 break;
 
             /* Update the bisection bounds */
-            a = select(value <= 0, t, a);
-            b = select(value >  0, t, b);
+            auto update_mask = value <= 0;
+            masked(a,  update_mask) = t;
+            masked(b, !update_mask) = t;
 
             /* Perform a Newton step */
-            t = select(active, t - value / deriv, t);
+            masked(t, active) -= value / deriv;
         } while (true);
 
         auto pdf = deriv / m_integral;

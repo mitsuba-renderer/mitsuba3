@@ -7,7 +7,7 @@ def test01_basics():
     bsphere2 = BSphere([0, 1, 2], 1)
 
     assert str(bsphere1) == "BoundingSphere3f[empty]"
-    assert str(bsphere2) == "BoundingSphere3f[center = [0, 1, 2], radius = 1]"
+    assert str(bsphere2) == "BoundingSphere3f[\n  center = [0, 1, 2],\n  radius = 1\n]"
     assert bsphere1.radius == 0
     assert (bsphere1.center == [0, 0, 0]).all()
     assert bsphere2.radius == 1

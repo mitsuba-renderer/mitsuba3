@@ -47,10 +47,10 @@ MTS_PY_EXPORT(rfilter) {
                  if (!target.dtype().is(py::dtype::of<Float>()))
                      throw std::runtime_error(
                          "'target' has an incompatible type!");
-                 if (resampler.source_resolution() * source_stride != source.size())
+                 if (resampler.source_resolution() * source_stride != (size_t) source.size())
                      throw std::runtime_error(
                          "'source' has an incompatible size!");
-                 if (resampler.target_resolution() * target_stride != target.size())
+                 if (resampler.target_resolution() * target_stride != (size_t) target.size())
                      throw std::runtime_error(
                          "'target' has an incompatible size!");
 
