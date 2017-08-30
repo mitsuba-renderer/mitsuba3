@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function
 import gc
 import nanogui
 import numpy as np
+import re
 
 from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
                      Label, Button, TextBox, CheckBox, ComboBox, Slider,
@@ -87,11 +88,31 @@ class WarpVisualizer(Screen):
         self.parameter_widgets = []
         self.pending_refresh = 0
 
+        def translate_shader(source):
+            if nanogui.opengl:
+                return source
+            else: # Translate GLSL -> GLSL ES
+                source = re.sub('#version 330', '', source)
+                if 'isnan' in source:
+                    source = 'bool isnan(float f) { return f != f; }\n' + source
+                if 'out_color' in source:
+                    # Fragment shader
+                    source = re.sub(r'out vec4 out_color;', '', source)
+                    source = re.sub(r'out_color', 'gl_FragColor', source)
+                    source = re.sub(r'^\s*in ', 'varying ', source, flags=re.M)
+                    source = re.sub(r'texture', 'texture2D', source)
+                else:
+                    # Vertex shader
+                    source = re.sub(r'^\s*out ', 'varying ', source, flags=re.M)
+                    source = re.sub(r'^\s*in ', 'attribute ', source, flags=re.M)
+                    source = re.sub(r'texture', 'texture2D', source)
+                return source
+
         self.point_shader = GLShader()
         self.point_shader.init(
             'Sample shader (points)',
             # Vertex shader
-            '''
+            translate_shader('''
             #version 330
             uniform mat4 mvp;
             in vec3 position;
@@ -104,9 +125,9 @@ class WarpVisualizer(Screen):
                 else
                     frag_color = color;
             }
-            ''',
+            '''),
             # Fragment shader
-            '''
+            translate_shader('''
             #version 330
             in vec3 frag_color;
             out vec4 out_color;
@@ -115,34 +136,33 @@ class WarpVisualizer(Screen):
                     discard;
                 out_color = vec4(frag_color, 1.0);
             }
-            ''')
+            '''))
 
         self.grid_shader = GLShader()
         self.grid_shader.init(
             'Sample shader (grids)',
             # Vertex shader
-            '''
-            #version 330
+            translate_shader('''
             uniform mat4 mvp;
             in vec3 position;
             void main() {
                 gl_Position = mvp * vec4(position, 1.0);
             }
-            ''',
+            '''),
             # Fragment shader
-            '''
+            translate_shader('''
             #version 330
             out vec4 out_color;
             void main() {
                 out_color = vec4(vec3(1.0), 0.4);
             }
-            ''')
+            '''))
 
         self.histogram_shader = GLShader()
         self.histogram_shader.init(
             'Histogram shader',
             # Vertex shader
-            '''
+            translate_shader('''
             #version 330
             uniform mat4 mvp;
             in vec2 position;
@@ -151,9 +171,9 @@ class WarpVisualizer(Screen):
                 gl_Position = mvp * vec4(position, 0.0, 1.0);
                 uv = position;
             }
-            ''',
+            '''),
             # Fragment shader
-            '''
+            translate_shader('''
             #version 330
             out vec4 out_color;
             uniform sampler2D tex;
@@ -185,7 +205,7 @@ class WarpVisualizer(Screen):
                 float value = texture(tex, uv).r;
                 out_color = vec4(colormap(value, 0.0, 1.0), 1.0);
             }
-            ''')
+            '''))
         self.histogram_shader.bind()
         self.histogram_shader.upload_attrib(
             "position",
@@ -261,7 +281,8 @@ class WarpVisualizer(Screen):
 
         mvp = np.dot(np.dot(proj, view), model)
 
-        gl.PointSize(2)
+        if nanogui.opengl:
+            gl.PointSize(2)
         gl.Enable(gl.DEPTH_TEST)
         self.point_shader.bind()
         self.point_shader.set_uniform('mvp', mvp)
@@ -423,14 +444,14 @@ class WarpVisualizer(Screen):
             self.density_box.set_checked(False)
 
         if sample_type == 0:  # Uniform
-            samples_in = PCG32().next_float(point_count, sample_dim)
+            samples_in = PCG32().next_float((point_count, sample_dim))
         elif sample_type == 1:  # Grid
             x, y = np.mgrid[0:sqrt_val, 0:sqrt_val]
             x = (x.ravel() + 0.5) / sqrt_val
             y = (y.ravel() + 0.5) / sqrt_val
             samples_in = np.column_stack((y, x)).astype(float_dtype)
         elif sample_type == 2:  # Stratified
-            samples_in = PCG32().next_float(sample_dim, point_count)
+            samples_in = PCG32().next_float((sample_dim, point_count))
             x, y = np.mgrid[0:sqrt_val, 0:sqrt_val]
             x = (x.ravel() + samples_in[0, :]) / sqrt_val
             y = (y.ravel() + samples_in[1, :]) / sqrt_val
