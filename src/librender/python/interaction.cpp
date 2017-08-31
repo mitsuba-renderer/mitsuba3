@@ -47,7 +47,6 @@ auto bind_interaction(py::module &m, const char *name) {
         .def_readwrite("duv_dx", &Type::duv_dx, D(SurfaceInteraction, duv_dx))
         .def_readwrite("duv_dy", &Type::duv_dy, D(SurfaceInteraction, duv_dy))
         .def_readwrite("time", &Type::time, D(SurfaceInteraction, time))
-        .def_readwrite("color", &Type::color, D(SurfaceInteraction, color))
         .def_readwrite("wi", &Type::wi, D(SurfaceInteraction, wi))
         .def_readwrite("prim_index", &Type::prim_index, D(SurfaceInteraction, prim_index))
         .def_readwrite("instance", &Type::instance, D(SurfaceInteraction, instance))

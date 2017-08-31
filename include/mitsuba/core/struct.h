@@ -196,6 +196,12 @@ public:
     /// Look up a field by name. Throws an exception if not found
     Field &field(const std::string &name);
 
+    /// Return the offset of the i-th field
+    size_t offset(size_t i) const { return operator[](i).offset; }
+
+    /// Return the offset of field with the given name
+    size_t offset(const std::string &name) const { return field(name).offset; }
+
     /// Return an iterator associated with the first field
     std::vector<Field>::const_iterator begin() const { return m_fields.cbegin(); }
 
@@ -248,6 +254,7 @@ MTS_STRUCT_TRAITS(int32_t, EInt32);
 MTS_STRUCT_TRAITS(uint32_t, EUInt32);
 MTS_STRUCT_TRAITS(int64_t, EInt64);
 MTS_STRUCT_TRAITS(uint64_t, EUInt64);
+MTS_STRUCT_TRAITS(enoki::half, EFloat16);
 MTS_STRUCT_TRAITS(float, EFloat32);
 MTS_STRUCT_TRAITS(double, EFloat64);
 

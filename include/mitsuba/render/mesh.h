@@ -52,8 +52,14 @@ public:
     /// Return a pointer to the raw face buffer (at a specified face index)
     uint8_t *face(Index index) { return m_faces.get() + m_face_size * index; }
 
+    /// Return whether or not the mesh has per-vertex normals
+    bool vertex_normals() const { return m_vertex_normals; }
+
     /// Recompute the bounding box (must be called following changes to vertex positions)
     void recompute_bbox();
+
+    /// Generate smooth vertex normals (overriding existing normals)
+    void recompute_vertex_normals();
 
     // =========================================================================
     //! @{ \name Shape interface implementation
@@ -152,6 +158,7 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
+    Mesh(const Properties &);
     inline Mesh() { }
     virtual ~Mesh();
 
@@ -166,6 +173,7 @@ protected:
 
     std::string m_name;
     BoundingBox3f m_bbox;
+    bool m_vertex_normals;
 
     Size m_vertex_count = 0;
     Size m_face_count = 0;

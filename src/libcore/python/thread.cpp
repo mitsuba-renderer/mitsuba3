@@ -7,7 +7,7 @@ MTS_PY_EXPORT(Thread) {
     MTS_PY_CLASS(Thread, Object)
         .def("parent", (Thread * (Thread::*) ()) & Thread::parent,
              D(Thread, parent))
-        .def("fileResolver",
+        .def("file_resolver",
              (FileResolver * (Thread::*) ()) & Thread::file_resolver,
              D(Thread, file_resolver))
         .mdef(Thread, set_priority)

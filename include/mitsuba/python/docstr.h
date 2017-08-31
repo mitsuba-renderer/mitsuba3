@@ -1174,9 +1174,29 @@ static const char *__doc_mitsuba_BoundingSphere_empty = R"doc(Return whether thi
 
 static const char *__doc_mitsuba_BoundingSphere_expand = R"doc(Expand the bounding sphere radius to contain another point.)doc";
 
+static const char *__doc_mitsuba_BoundingSphere_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_delete_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_BoundingSphere_operator_eq = R"doc(Equality test against another bounding sphere)doc";
 
 static const char *__doc_mitsuba_BoundingSphere_operator_ne = R"doc(Inequality test against another bounding sphere)doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_BoundingSphere_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BoundingSphere_radius = R"doc()doc";
 
@@ -2473,6 +2493,8 @@ static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the gi
 
 static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_Mesh_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_bbox =
 R"doc(Return an axis aligned box that bounds the set of triangles (including
 any transformations that may have been applied to them))doc";
@@ -2517,6 +2539,8 @@ static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_m_vertex_normals = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_m_vertex_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_struct = R"doc()doc";
@@ -2559,6 +2583,8 @@ static const char *__doc_mitsuba_Mesh_recompute_bbox =
 R"doc(Recompute the bounding box (must be called following changes to vertex
 positions))doc";
 
+static const char *__doc_mitsuba_Mesh_recompute_vertex_normals = R"doc(Generate smooth vertex normals (overriding existing normals))doc";
+
 static const char *__doc_mitsuba_Mesh_to_string = R"doc(Return a human-readable string representation of the shape contents.)doc";
 
 static const char *__doc_mitsuba_Mesh_vertex =
@@ -2570,6 +2596,8 @@ R"doc(Return a pointer to the raw vertex buffer (at a specified vertex
 index))doc";
 
 static const char *__doc_mitsuba_Mesh_vertex_count = R"doc(Return the total number of vertices)doc";
+
+static const char *__doc_mitsuba_Mesh_vertex_normals = R"doc(Return whether or not the mesh has per-vertex normals)doc";
 
 static const char *__doc_mitsuba_Mesh_vertex_struct =
 R"doc(Return a ``Struct`` instance describing the contents of the vertex
@@ -3992,6 +4020,10 @@ static const char *__doc_mitsuba_Struct_m_byte_order = R"doc()doc";
 static const char *__doc_mitsuba_Struct_m_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_m_pack = R"doc()doc";
+
+static const char *__doc_mitsuba_Struct_offset = R"doc(Return the offset of the i-th field)doc";
+
+static const char *__doc_mitsuba_Struct_offset_2 = R"doc(Return the offset of field with the given name)doc";
 
 static const char *__doc_mitsuba_Struct_operator_array = R"doc(Access an individual field entry)doc";
 
@@ -6104,6 +6136,8 @@ static const char *__doc_mitsuba_struct_traits_9 = R"doc()doc";
 static const char *__doc_mitsuba_struct_traits_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_struct_traits_11 = R"doc()doc";
+
+static const char *__doc_mitsuba_struct_traits_12 = R"doc()doc";
 
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 

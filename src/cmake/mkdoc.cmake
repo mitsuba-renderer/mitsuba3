@@ -16,7 +16,7 @@ endforeach()
 if (NOT WIN32)
   add_custom_target(mkdoc USES_TERMINAL COMMAND
     python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py
-    ${MKDOC_CXX_FLAGS_LIST}
+    ${MKDOC_CXX_FLAGS_LIST} -DNANOGUI_USE_OPENGL
     `find ${PROJECT_SOURCE_DIR}/include/mitsuba/core -name '*.h' ! -name fwd.h -print`
     `find ${PROJECT_SOURCE_DIR}/include/mitsuba/render -name '*.h' ! -name fwd.h -print`
     `find ${PROJECT_SOURCE_DIR}/include/mitsuba/ui -name '*.h' ! -name fwd.h -print`

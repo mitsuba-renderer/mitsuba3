@@ -71,9 +71,6 @@ template <typename Point3_> struct SurfaceInteraction {
     /// UV partials wrt. changes in screen-space
     Vector2 duv_dx, duv_dy;
 
-    /// Interpolated vertex color
-    Color3 color;
-
     /// Incident direction in the local shading frame
     Vector3 wi;
 
@@ -235,7 +232,7 @@ template <typename Point3_> struct SurfaceInteraction {
     // =============================================================
 
     ENOKI_STRUCT(SurfaceInteraction, shape, t, time, p, n, uv, sh_frame,
-                 dp_du, dp_dv, duv_dx, duv_dy, color, wi, prim_index, instance,
+                 dp_du, dp_dv, duv_dx, duv_dy, wi, prim_index, instance,
                  has_uv_partials)
 
     ENOKI_ALIGNED_OPERATOR_NEW()
@@ -263,8 +260,7 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Point3> &it)
             os << "  duv_dx = " << it.duv_dx << "," << std::endl
                << "  duv_dy = " << it.duv_dy << "," << std::endl;
 
-        os << "  color = " << string::indent(it.color, 10) << "," << std::endl
-           << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
+        os << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl
            << "  instance = " << it.instance << "," << std::endl
            << "  has_uv_partials = " << it.has_uv_partials << "," << std::endl
@@ -280,8 +276,8 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 ENOKI_STRUCT_DYNAMIC(mitsuba::SurfaceInteraction, shape, t, time, p, n, uv,
-                     sh_frame, dp_du, dp_dv, duv_dx, duv_dy, color,
-                     wi, prim_index, instance, has_uv_partials)
+                     sh_frame, dp_du, dp_dv, duv_dx, duv_dy, wi, prim_index,
+                     instance, has_uv_partials)
 
 //! @}
 // -----------------------------------------------------------------------

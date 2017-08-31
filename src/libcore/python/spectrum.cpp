@@ -46,9 +46,9 @@ MTS_PY_EXPORT(Spectrum) {
         // ---------------------------------------------------------------------
 
     MTS_PY_CLASS(InterpolatedSpectrum, ContinuousSpectrum)
-        .def("__init__", [](InterpolatedSpectrum &s, Float min, Float max, const std::vector<Float> &values) {
-                new (&s) InterpolatedSpectrum(min, max, values.size(), values.data());
-        });
+        .def(py::init([](Float min, Float max, const std::vector<Float> &values) {
+                return new InterpolatedSpectrum(min, max, values.size(), values.data());
+        }), "min"_a, "max"_a, "values"_a);
 
     m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<const Spectrumf &>), "lambda"_a, "active"_a = true, D(cie1931_y));
     m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<SpectrumfP>), "lambda"_a, "active"_a = true);

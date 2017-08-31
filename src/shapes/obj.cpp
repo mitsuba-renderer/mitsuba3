@@ -34,7 +34,7 @@ public:
         #endif
     }
 
-    OBJMesh(const Properties &props) {
+    OBJMesh(const Properties &props) : Mesh(props) {
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
@@ -136,9 +136,9 @@ public:
                 Index3 tri;
 
                 while (true) {
-                    const char *next;
-                    Index value = (Index) strtoul(cur, (char **) &next, 10);
-                    if (cur == next)
+                    const char *next2;
+                    Index value = (Index) strtoul(cur, (char **) &next2, 10);
+                    if (cur == next2)
                         break;
 
                     if (type_index < 3) {
@@ -148,12 +148,12 @@ public:
                         break;
                     }
 
-                    while (*next == '/') {
+                    while (*next2 == '/') {
                         type_index++;
-                        next++;
+                        next2++;
                     }
 
-                    if (*next == ' ' || *next == '\t' || *next == '\0') {
+                    if (*next2 == ' ' || *next2 == '\t' || *next2 == '\0') {
                         type_index = 0;
                         size_t map_index = key[0] - 1;
 
@@ -193,7 +193,7 @@ public:
                             triangles.push_back(tri);
                     }
 
-                    cur = next;
+                    cur = next2;
                 }
             }
 
@@ -209,15 +209,19 @@ public:
         m_vertex_struct->append("y", struct_traits<Float>::value);
         m_vertex_struct->append("z", struct_traits<Float>::value);
 
-        if (!texcoords.empty()) {
-            m_vertex_struct->append("u", Struct::EFloat32);
-            m_vertex_struct->append("v", Struct::EFloat32);
-        }
+        size_t vertex_offset = 0, normal_offset = (size_t) -1, texcoord_offset = (size_t) -1;
 
-        if (!normals.empty()) {
+        if (m_vertex_normals) {
             m_vertex_struct->append("nx", Struct::EFloat16);
             m_vertex_struct->append("ny", Struct::EFloat16);
             m_vertex_struct->append("nz", Struct::EFloat16);
+            normal_offset = m_vertex_struct->offset("u");
+        }
+
+        if (!texcoords.empty()) {
+            m_vertex_struct->append("u", Struct::EFloat32);
+            m_vertex_struct->append("v", Struct::EFloat32);
+            texcoord_offset = m_vertex_struct->offset("u");
         }
 
         m_face_struct = new Struct();
@@ -240,23 +244,20 @@ public:
                 uint8_t *vertex_ptr = vertex(v->value);
                 auto key = v->key;
 
-                store(vertex_ptr, vertices[key[0] - 1]);
-                vertex_ptr += sizeof(Float) * 3;
+                store(vertex_ptr + vertex_offset, vertices[key[0] - 1]);
 
                 if (key[1]) {
                     size_t map_index = key[1] - 1;
                     if (unlikely(map_index > texcoords.size()))
                         fail("reference to invalid texture coordinate %i!", key[1]);
-                    store(vertex_ptr, texcoords[key[1] - 1]);
-                    vertex_ptr += sizeof(Float) * 2;
+                    store(vertex_ptr + texcoord_offset, texcoords[key[1] - 1]);
                 }
 
-                if (key[2]) {
+                if (m_vertex_normals && key[2]) {
                     size_t map_index = key[2] - 1;
                     if (unlikely(map_index > normals.size()))
                         fail("reference to invalid normal %i!", key[2]);
-                    store(vertex_ptr, normals[key[2] - 1]);
-                    vertex_ptr += sizeof(half) * 3;
+                    store(vertex_ptr + normal_offset, normals[key[2] - 1]);
                 }
 
                 v = v->next;
@@ -269,6 +270,9 @@ public:
                              m_vertex_count * m_vertex_struct->size()),
             util::time_string(timer.value())
         );
+
+        if (m_vertex_normals && normals.empty())
+            recompute_vertex_normals();
     }
 
 

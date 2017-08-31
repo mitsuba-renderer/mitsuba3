@@ -8,11 +8,12 @@ MTS_PY_EXPORT(MemoryMappedFile) {
              D(MemoryMappedFile, MemoryMappedFile), "filename"_a, "size"_a)
         .def(py::init<const mitsuba::filesystem::path &, bool>(),
              D(MemoryMappedFile, MemoryMappedFile, 2), "filename"_a, "write"_a = false)
-        .def("__init__", [](MemoryMappedFile &m, const mitsuba::filesystem::path &p, py::array array) {
+        .def(py::init([](const mitsuba::filesystem::path &p, py::array array) {
             size_t size = array.size() * array.itemsize();
-            new (&m) MemoryMappedFile(p, size);
-            memcpy(m.data(), array.data(), size);
-        }, "filename"_a, "array"_a)
+            auto m = new MemoryMappedFile(p, size);
+            memcpy(m->data(), array.data(), size);
+            return m;
+        }), "filename"_a, "array"_a)
         .def("size", &MemoryMappedFile::size, D(MemoryMappedFile, size))
         .def("data", py::overload_cast<>(&MemoryMappedFile::data, py::const_), D(MemoryMappedFile, data))
         .def("resize", &MemoryMappedFile::resize, D(MemoryMappedFile, resize))

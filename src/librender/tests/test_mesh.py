@@ -4,6 +4,7 @@ from mitsuba.render import Mesh
 import numpy as np
 import os
 
+
 def test01_create_mesh():
     vertex_struct = Struct() \
         .append("x", float_dtype) \
@@ -35,6 +36,7 @@ def test01_create_mesh():
   ],
   vertex_count = 3,
   vertices = [36 B of vertex data],
+  vertex_normals = 0,
   face_struct = Struct<12>[
     uint32 i0; // @0
     uint32 i1; // @4
@@ -57,6 +59,7 @@ def test01_create_mesh():
   ],
   vertex_count = 3,
   vertices = [72 B of vertex data],
+  vertex_normals = 0,
   face_struct = Struct<12>[
     uint32 i0; // @0
     uint32 i1; // @4
@@ -66,9 +69,13 @@ def test01_create_mesh():
   faces = [24 B of face data]
 ]"""
 
+
 def test02_ply_triangle():
+    '''
+    Tests vertex normal computation for a PLY file that doesn't have them
+    '''
     thread = Thread.thread()
-    fres_old = thread.fileResolver()
+    fres_old = thread.file_resolver()
     fres = FileResolver(fres_old)
     fres.append(os.path.dirname(os.path.realpath(__file__)))
     thread.set_file_resolver(fres)
@@ -77,11 +84,13 @@ def test02_ply_triangle():
         <scene version="0.5.0">
             <shape type="ply">
                 <string name="filename" value="data/triangle.ply"/>
+                <boolean name="face_normals" value="true"/>
             </shape>
         </scene>
     """).kdtree()[0]
 
     vertices, faces = shape.vertices(), shape.faces()
+    assert not shape.vertex_normals()
     assert vertices.ndim == 1
     assert vertices.shape == (3, )
     assert np.all(vertices['x'] == np.float32([0, 0, 0]))
@@ -93,3 +102,65 @@ def test02_ply_triangle():
     assert faces[0]['i1'] == np.uint32(1)
     assert faces[0]['i2'] == np.uint32(2)
     thread.set_file_resolver(fres_old)
+
+
+def test03_ply_computed_normals():
+    thread = Thread.thread()
+    fres_old = thread.file_resolver()
+    fres = FileResolver(fres_old)
+    fres.append(os.path.dirname(os.path.realpath(__file__)))
+    thread.set_file_resolver(fres)
+
+    shape = load_string("""
+        <scene version="0.5.0">
+            <shape type="ply">
+                <string name="filename" value="data/triangle.ply"/>
+            </shape>
+        </scene>
+    """).kdtree()[0]
+    vertices = shape.vertices()
+    assert shape.vertex_normals()
+    assert np.all(vertices['nx'] == np.float32([-1, -1, -1]))
+    assert np.all(vertices['ny'] == np.float32([0, 0, 0]))
+    assert np.all(vertices['nz'] == np.float32([0, 0, 0]))
+    thread.set_file_resolver(fres_old)
+
+
+def test04_normal_weighting_scheme():
+    ''' Tests the weighting scheme that is used to compute surface normals '''
+    vertex_struct = Struct() \
+        .append("x", float_dtype) \
+        .append("y", float_dtype) \
+        .append("z", float_dtype) \
+        .append("nx", Struct.EFloat16) \
+        .append("ny", Struct.EFloat16) \
+        .append("nz", Struct.EFloat16)
+
+    index_struct = Struct() \
+        .append("i0", Struct.EUInt32) \
+        .append("i1", Struct.EUInt32) \
+        .append("i2", Struct.EUInt32)
+
+    m = Mesh("MyMesh", vertex_struct, 5, index_struct, 2)
+    v = m.vertices()
+
+    a, b = 1.0, 0.5
+    v['x'] = np.array([0, -a, a, -b, b], dtype=float_dtype)
+    v['y'] = np.array([0,  1, 1,  0, 0], dtype=float_dtype)
+    v['z'] = np.array([0,  0, 0,  1, 1], dtype=float_dtype)
+
+    n0 = np.array([0.0, 0.0, -1.0])
+    n1 = np.array([0.0, 1.0, 0.0])
+    angle_0 = np.pi / 2.0
+    angle_1 = np.arccos(3.0 / 5.0)
+    n2 = n0 * angle_0 + n1 * angle_1
+    n2 /= np.linalg.norm(n2)
+    n = np.vstack([n2, n0, n0, n1, n1])
+
+    f = m.faces()
+    f[0] = np.array([0, 1, 2], dtype=np.uint32)
+    f[1] = np.array([0, 3, 4], dtype=np.uint32)
+    m.recompute_vertex_normals()
+    assert np.allclose(v['nx'], n[:, 0], 5e-4)
+    assert np.allclose(v['ny'], n[:, 1], 5e-4)
+    assert np.allclose(v['nz'], n[:, 2], 5e-4)

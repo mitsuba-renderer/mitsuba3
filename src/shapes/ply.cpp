@@ -25,7 +25,7 @@ public:
         std::vector<PLYElement> elements;
     };
 
-    PLYMesh(const Properties &props) {
+    PLYMesh(const Properties &props) : Mesh(props) {
         /// Process vertex/index records in large batches
         constexpr size_t packet_size = 1024;
 
@@ -48,24 +48,35 @@ public:
         try {
             header = parse_ply_header(stream);
             if (header.ascii) {
-                Log(EInfo,
-                    "\"%s\": performance note -- this file uses the ASCII PLY "
-                    "format, which is slow to parse. Consider converting it to "
-                    "the binary PLY format.", m_name);
+                if (stream->size() > 100 * 1024)
+                    Log(EWarn, "\"%s\": performance warning -- this file uses the ASCII PLY "
+                               "format, which is slow to parse. Consider converting it to "
+                               "the binary PLY format.", m_name);
                 stream = parse_ascii((FileStream *) stream.get(), header.elements);
             }
         } catch (const std::exception &e) {
             fail(e.what());
         }
 
+        bool has_vertex_normals = false;
         for (auto const &el : header.elements) {
             size_t size = el.struct_->size();
             if (el.name == "vertex") {
-                m_vertex_struct = new Struct(true);
+                m_vertex_struct = new Struct();
 
                 m_vertex_struct->append("x", struct_traits<Float>::value);
                 m_vertex_struct->append("y", struct_traits<Float>::value);
                 m_vertex_struct->append("z", struct_traits<Float>::value);
+
+                if (m_vertex_normals) {
+                    m_vertex_struct->append("nx", Struct::EFloat16, Struct::EDefault, 0.0);
+                    m_vertex_struct->append("ny", Struct::EFloat16, Struct::EDefault, 0.0);
+                    m_vertex_struct->append("nz", Struct::EFloat16, Struct::EDefault, 0.0);
+                }
+
+                if (el.struct_->has_field("nx") && el.struct_->has_field("ny") &&
+                    el.struct_->has_field("nz"))
+                    has_vertex_normals = true;
 
                 size_t i_struct_size = el.struct_->size();
                 size_t o_struct_size = m_vertex_struct->size();
@@ -117,7 +128,7 @@ public:
                 m_vertex_count = (Size) el.count;
                 m_vertex_size = (Size) o_struct_size;
             } else if (el.name == "face") {
-                m_face_struct = new Struct(true);
+                m_face_struct = new Struct();
 
                 std::string field_name;
                 if (el.struct_->has_field("vertex_index.count"))
@@ -184,6 +195,9 @@ public:
                             m_vertex_count * m_vertex_struct->size()),
             util::time_string(timer.value())
         );
+
+        if (m_vertex_normals && !has_vertex_normals)
+            recompute_vertex_normals();
     }
 
     std::string type_name(const Struct::EType type) const {

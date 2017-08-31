@@ -50,7 +50,7 @@ MTS_PY_EXPORT(Struct) {
         .value("EFloat", Struct::EType::EFloat)
         .value("EInvalid", Struct::EType::EInvalid)
         .export_values()
-        .def("__init__", [](Struct::EType &et, py::dtype dt) {
+        .def(py::init([](py::dtype dt) {
             Struct::EType value = Struct::EInt8;
             if (dt.kind() == 'i') {
                 switch (dt.itemsize()) {
@@ -78,8 +78,8 @@ MTS_PY_EXPORT(Struct) {
             } else {
                 throw py::type_error("Struct::EType(): Invalid type!");
             }
-            new (&et) Struct::EType(value);
-        });
+            return new Struct::EType(value);
+        }), "dtype"_a);
 
     py::implicitly_convertible<py::dtype, Struct::EType>();
 

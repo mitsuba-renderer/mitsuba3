@@ -143,6 +143,7 @@ class WarpVisualizer(Screen):
             'Sample shader (grids)',
             # Vertex shader
             translate_shader('''
+            #version 330
             uniform mat4 mvp;
             in vec3 position;
             void main() {

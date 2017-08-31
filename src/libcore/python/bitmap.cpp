@@ -8,7 +8,7 @@ MTS_PY_EXPORT(Bitmap) {
         .def(py::init<Bitmap::EPixelFormat, Struct::EType, const Vector2s &, size_t>(),
              "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, D(Bitmap, Bitmap))
 
-        .def("__init__", [](Bitmap &bitmap, py::array obj, py::object pixel_format_) {
+        .def(py::init([](py::array obj, py::object pixel_format_) {
             auto struct_ = py::module::import("mitsuba.core").attr("Struct");
             Struct::EType component_format = struct_.attr("EType")(obj.dtype()).cast<Struct::EType>();
             if (obj.ndim() != 2 && obj.ndim() != 3)
@@ -32,10 +32,10 @@ MTS_PY_EXPORT(Bitmap) {
 
             obj = py::array::ensure(obj, py::array::c_style);
             Vector2s size(obj.shape()[1], obj.shape()[0]);
-            new (&bitmap) Bitmap(pixel_format, component_format, size, channel_count);
-            memcpy(bitmap.data(), obj.data(), bitmap.buffer_size());
-        }, "array"_a, "pixel_format"_a = py::none(),
-           "Initialize a Bitmap from a NumPy array")
+            auto bitmap = new Bitmap(pixel_format, component_format, size, channel_count);
+            memcpy(bitmap->data(), obj.data(), bitmap->buffer_size());
+            return bitmap;
+        }), "array"_a, "pixel_format"_a = py::none(), "Initialize a Bitmap from a NumPy array")
         .def(py::init<const Bitmap &>())
         .mdef(Bitmap, pixel_format)
         .mdef(Bitmap, component_format)

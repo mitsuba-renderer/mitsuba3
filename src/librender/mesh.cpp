@@ -1,9 +1,18 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/interaction.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/core/util.h>
-#include <enoki/stl.h>
+#include <mitsuba/core/timer.h>
+#include <mitsuba/core/transform.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
+Mesh::Mesh(const Properties &props) {
+    /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
+       normals when rendering the object, which will give it a faceted
+       appearance. Default: ``false`` */
+    m_vertex_normals = !props.bool_("face_normals", false);
+}
 
 Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
            Struct *face_struct, Size face_count)
@@ -26,9 +35,20 @@ Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
     check_field(vertex_struct, 0, "x",  struct_traits<Float>::value);
     check_field(vertex_struct, 1, "y",  struct_traits<Float>::value);
     check_field(vertex_struct, 2, "z",  struct_traits<Float>::value);
+
     check_field(face_struct,   0, "i0", struct_traits<Index>::value);
     check_field(face_struct,   1, "i1", struct_traits<Index>::value);
     check_field(face_struct,   2, "i2", struct_traits<Index>::value);
+
+    m_vertex_normals = vertex_struct->has_field("nx") &&
+                       vertex_struct->has_field("ny") &&
+                       vertex_struct->has_field("nz");
+
+    if (m_vertex_normals) {
+        check_field(vertex_struct, 3, "nx", Struct::EFloat16);
+        check_field(vertex_struct, 4, "ny", Struct::EFloat16);
+        check_field(vertex_struct, 5, "nz", Struct::EFloat16);
+    }
 
     m_vertex_size = (Size) m_vertex_struct->size();
     m_face_size = (Size) m_face_struct->size();
@@ -49,9 +69,8 @@ BoundingBox3f Mesh::bbox(Index index) const {
     Assert(index <= m_face_count);
 
     auto idx = (const Index *) face(index);
-    Assert(idx[0] < m_vertex_count);
-    Assert(idx[1] < m_vertex_count);
-    Assert(idx[2] < m_vertex_count);
+    Assert(idx[0] < m_vertex_count && idx[1] < m_vertex_count &&
+           idx[2] < m_vertex_count);
 
     Point3f v0 = load<Point3f>((Float *) vertex(idx[0]));
     Point3f v1 = load<Point3f>((Float *) vertex(idx[1]));
@@ -61,6 +80,58 @@ BoundingBox3f Mesh::bbox(Index index) const {
         min(min(v0, v1), v2),
         max(max(v0, v1), v2)
     );
+}
+
+void Mesh::recompute_vertex_normals() {
+    std::vector<Normal3f, aligned_allocator<Normal3f>> normals(m_vertex_count, zero<Normal3f>());
+    size_t invalid_counter = 0;
+    Timer timer;
+
+    /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
+       by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
+    for (Size i = 0; i < m_face_count; ++i) {
+        const Index *idx = (const Index *) face(i);
+        Assert(idx[0] < m_vertex_count && idx[1] < m_vertex_count && idx[2] < m_vertex_count);
+        Point3f v[3] { load<Point3f>((Float *) vertex(idx[0])),
+                       load<Point3f>((Float *) vertex(idx[1])),
+                       load<Point3f>((Float *) vertex(idx[2])) };
+
+        Vector3f side_0 = v[1] - v[0], side_1 = v[2] - v[0];
+        Normal3f n = cross(side_0, side_1);
+        Float length_sqr = squared_norm(n);
+        if (likely(length_sqr > 0)) {
+            n *= rsqrt<Vector3f::Approx>(length_sqr);
+
+            /* Use Enoki to compute the face angles at the same time */
+            auto side_a = transpose(Array<Packet<float, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
+            auto side_b = transpose(Array<Packet<float, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
+            Vector3f face_angles = unit_angle(normalize(side_a), normalize(side_b));
+
+            for (size_t j = 0; j < 3; ++j)
+                normals[idx[j]] += n * face_angles[j];
+        }
+    }
+
+    size_t offset = m_vertex_struct->field("nx").offset;
+    for (Size i = 0; i < m_vertex_count; i++) {
+        Normal3f n = normals[i];
+        Float length = norm(n);
+        if (likely(length != 0.f)) {
+            n /= length;
+        } else {
+            n = Normal3f(1, 0, 0); // Choose some bogus value
+            invalid_counter++;
+        }
+
+        store(vertex(i) + offset, Normal3h(n));
+    }
+
+    if (invalid_counter == 0)
+        Log(EDebug, "\"%s\": computed vertex normals (took %s)", m_name,
+            util::time_string(timer.value()));
+    else
+        Log(EWarn, "\"%s\": computed vertex normals (took %s, %i invalid vertices!)",
+            m_name, util::time_string(timer.value()), invalid_counter);
 }
 
 void Mesh::recompute_bbox() {
@@ -261,6 +332,7 @@ std::string Mesh::to_string() const {
         << "  vertex_struct = " << string::indent(m_vertex_struct) << "," << std::endl
         << "  vertex_count = " << m_vertex_count << "," << std::endl
         << "  vertices = [" << util::mem_string(m_vertex_size * m_vertex_count) << " of vertex data]," << std::endl
+        << "  vertex_normals = " << m_vertex_normals << "," << std::endl
         << "  face_struct = " << string::indent(m_face_struct) << "," << std::endl
         << "  face_count = " << m_face_count << "," << std::endl
         << "  faces = [" << util::mem_string(m_face_size * m_face_count) << " of face data]" << std::endl
