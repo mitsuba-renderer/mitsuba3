@@ -1,8 +1,8 @@
 #pragma once
 
 #include <mitsuba/render/shape.h>
-#include <mitsuba/core/vector.h>
 #include <mitsuba/core/struct.h>
+#include <mitsuba/core/transform.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -174,6 +174,7 @@ protected:
     std::string m_name;
     BoundingBox3f m_bbox;
     bool m_vertex_normals;
+    Transform4f m_to_world;
 
     Size m_vertex_count = 0;
     Size m_face_count = 0;

@@ -12,6 +12,7 @@ Mesh::Mesh(const Properties &props) {
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
     m_vertex_normals = !props.bool_("face_normals", false);
+    m_to_world = props.transform("to_world", Transform4f());
 }
 
 Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,

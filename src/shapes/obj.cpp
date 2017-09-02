@@ -105,8 +105,11 @@ public:
                     p[i] = strtof(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
-                vertices.push_back(p);
+                p = m_to_world.transform_affine(p);
+                if (unlikely(!all(isfinite(p))))
+                    fail("mesh contains invalid vertex position data");
                 m_bbox.expand(p);
+                vertices.push_back(p);
             } else if (cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Vertex normal
                 Normal3f n;
@@ -116,7 +119,10 @@ public:
                     n[i] = strtof(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
-                normals.push_back(Normal3h(normalize(n)));
+                n = normalize(m_to_world.transform_affine(n));
+                if (unlikely(!all(isfinite(n))))
+                    fail("mesh contains invalid vertex normal data");
+                normals.push_back(Normal3h(n));
             } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Texture coordinate
                 Vector2f uv;
@@ -215,7 +221,7 @@ public:
             m_vertex_struct->append("nx", Struct::EFloat16);
             m_vertex_struct->append("ny", Struct::EFloat16);
             m_vertex_struct->append("nz", Struct::EFloat16);
-            normal_offset = m_vertex_struct->offset("u");
+            normal_offset = m_vertex_struct->offset("nx");
         }
 
         if (!texcoords.empty()) {
