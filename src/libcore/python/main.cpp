@@ -44,6 +44,7 @@ MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(DiscreteDistribution);
 MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(MemoryMappedFile);
+MTS_PY_DECLARE(ProgressReporter);
 
 PYBIND11_MODULE(mitsuba_core_ext, m_) {
     (void) m_; /* unused */;
@@ -116,6 +117,7 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     MTS_PY_IMPORT(DiscreteDistribution);
     MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(MemoryMappedFile);
+    MTS_PY_IMPORT(ProgressReporter);
 
     /* Append the mitsuba directory to the FileResolver search path list */
     ref<FileResolver> fr = Thread::thread()->file_resolver();

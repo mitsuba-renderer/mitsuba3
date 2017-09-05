@@ -110,25 +110,25 @@ public:
 
                     if (!has_vertex_normals) {
                         for (size_t j = 0; j < packet_size; ++j) {
-                            Vector3f p = enoki::load<Vector3f>(target);
+                            Vector3f p = enoki::load_unaligned<Vector3f>(target);
                             p = m_to_world.transform_affine(p);
-                            if (unlikely(!all(isfinite(p))))
+                            if (unlikely(!all(enoki::isfinite(p))))
                                 fail("mesh contains invalid vertex positions/normal data");
                             m_bbox.expand(p);
-                            enoki::store(target, p);
+                            enoki::store_unaligned(target, p);
                             target += o_struct_size;
                         }
                     } else {
                         for (size_t j = 0; j < packet_size; ++j) {
-                            Vector3f p = enoki::load<Vector3f>(target);
-                            Normal3f n = Normal3f(enoki::load<Normal3h>(target + sizeof(Float) * 3));
+                            Vector3f p = enoki::load_unaligned<Vector3f>(target);
+                            Normal3f n = Normal3f(enoki::load_unaligned<Normal3h>(target + sizeof(Float) * 3));
                             n = normalize(m_to_world.transform_affine(n));
                             p = m_to_world.transform_affine(p);
-                            if (unlikely(!all(isfinite(p) & isfinite(n))))
+                            if (unlikely(!all(enoki::isfinite(p) & enoki::isfinite(n))))
                                 fail("mesh contains invalid vertex positions/normal data");
                             m_bbox.expand(p);
-                            enoki::store(target, p);
-                            enoki::store(target + sizeof(Float) * 3, Normal3h(n));
+                            enoki::store_unaligned(target, p);
+                            enoki::store_unaligned(target + sizeof(Float) * 3, Normal3h(n));
                             target += o_struct_size;
                         }
                     }

@@ -11,10 +11,12 @@
 #  include <dlfcn.h>
 #  include <unistd.h>
 #  include <limits.h>
+#  include <sys/ioctl.h>
 #elif defined(__OSX__)
 #  include <sys/sysctl.h>
 #  include <mach-o/dyld.h>
 #  include <unistd.h>
+#  include <sys/ioctl.h>
 #elif defined(__WINDOWS__)
 #  include <windows.h>
 #endif
@@ -235,6 +237,29 @@ fs::path library_path() {
     if (result.empty())
         Throw("Could not detect the core library path!");
     return fs::absolute(result);
+}
+
+int terminal_width() {
+    static int cached_width = -1;
+
+    if (cached_width == -1) {
+#if defined(__WINDOWS__)
+        HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (h != INVALID_HANDLE_VALUE && h != nullptr) {
+            CONSOLE_SCREEN_BUFFER_INFO bufferInfo = {0};
+            GetConsoleScreenBufferInfo(h, &bufferInfo);
+            cached_width = bufferInfo.dwSize.X;
+        }
+#else
+        struct winsize w;
+        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) >= 0)
+            cached_width = w.ws_col;
+#endif
+        if (cached_width == -1)
+            cached_width = 80;
+    }
+
+    return cached_width;
 }
 
 NAMESPACE_END(util)

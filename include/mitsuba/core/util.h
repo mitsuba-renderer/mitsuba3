@@ -34,5 +34,8 @@ extern MTS_EXPORT_CORE void trap_debugger();
 /// Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>
 extern MTS_EXPORT_CORE fs::path library_path();
 
+/// Determine the width of the terminal window that is used to run Mitsuba
+extern MTS_EXPORT_CORE int terminal_width();
+
 NAMESPACE_END(util)
 NAMESPACE_END(mitsuba)
