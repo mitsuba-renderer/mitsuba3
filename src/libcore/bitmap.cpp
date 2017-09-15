@@ -22,6 +22,9 @@ extern "C" {
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wdeprecated-register"
 #  pragma clang diagnostic ignored "-Wunused-parameter"
+#elif defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdeprecated"
 #endif
 
 #if defined(_MSC_VER)
@@ -46,6 +49,8 @@ extern "C" {
 
 #if defined(__clang__)
 #  pragma clang diagnostic pop
+#elif defined(__GNUG__)
+#  pragma GCC diagnostic pop
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -1194,7 +1199,7 @@ extern "C" {
         p->mgr.free_in_buffer = 0;
     }
 
-    METHODDEF(void) jpeg_error_exit(j_common_ptr cinfo) throw(std::runtime_error) {
+    METHODDEF(void) jpeg_error_exit(j_common_ptr cinfo) {
         char msg[JMSG_LENGTH_MAX];
         (*cinfo->err->format_message) (cinfo, msg);
         Throw("Critcal libjpeg error: %s", msg);

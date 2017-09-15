@@ -14,7 +14,7 @@ ZStream::ZStream(Stream *child_stream, EStreamType stream_type, int level)
         Z_DEFLATED, windowBits, 8, Z_DEFAULT_STRATEGY);
 
     if (retval != Z_OK)
-        Log(EError, "Could not initialize ZLIB: error code %i", retval);
+        Throw("Could not initialize ZLIB: error code %i", retval);
 
     m_inflate_stream.zalloc = Z_NULL;
     m_inflate_stream.zfree = Z_NULL;
@@ -24,7 +24,7 @@ ZStream::ZStream(Stream *child_stream, EStreamType stream_type, int level)
 
     retval = inflateInit2(&m_inflate_stream, windowBits);
     if (retval != Z_OK)
-        Log(EError, "Could not initialize ZLIB: error code %i", retval);
+        Throw("Could not initialize ZLIB: error code %i", retval);
 }
 
 std::string ZStream::to_string() const {
@@ -62,7 +62,7 @@ void ZStream::write(const void *ptr, size_t size) {
 
         int retval = deflate(&m_deflate_stream, Z_NO_FLUSH);
         if (retval == Z_STREAM_ERROR)
-            Log(EError, "deflate(): stream error!");
+            Throw("deflate(): stream error!");
 
         output_size = sizeof(m_deflate_buffer) - m_deflate_stream.avail_out;
 
@@ -83,7 +83,7 @@ void ZStream::read(void *ptr, size_t size) {
             m_inflate_stream.next_in = m_inflate_buffer;
             m_inflate_stream.avail_in = (uInt) std::min(remaining, sizeof(m_inflate_buffer));
             if (m_inflate_stream.avail_in == 0)
-                Log(EError, "Read less data than expected (%i more bytes required)", size);
+                Throw("Read less data than expected (%i more bytes required)", size);
             m_child_stream->read(m_inflate_buffer, m_inflate_stream.avail_in);
         }
 
@@ -93,13 +93,17 @@ void ZStream::read(void *ptr, size_t size) {
         int retval = inflate(&m_inflate_stream, Z_NO_FLUSH);
         switch (retval) {
             case Z_STREAM_ERROR:
-            Log(EError, "inflate(): stream error!");
+                Throw("inflate(): stream error!");
+                break;
             case Z_NEED_DICT:
-            Log(EError, "inflate(): need dictionary!");
+                Throw("inflate(): need dictionary!");
+                break;
             case Z_DATA_ERROR:
-            Log(EError, "inflate(): data error!");
+                Throw("inflate(): data error!");
+                break;
             case Z_MEM_ERROR:
-            Log(EError, "inflate(): memory error!");
+                Throw("inflate(): memory error!");
+                break;
         };
 
         size_t output_size = size - (size_t) m_inflate_stream.avail_out;
@@ -107,7 +111,7 @@ void ZStream::read(void *ptr, size_t size) {
         size -= output_size;
 
         if (size > 0 && retval == Z_STREAM_END)
-            Log(EError, "inflate(): attempting to read past the end of the stream!");
+            Throw("inflate(): attempting to read past the end of the stream!");
     }
 }
 
@@ -125,7 +129,7 @@ void ZStream::flush() {
 
             int retval = deflate(&m_deflate_stream, Z_FULL_FLUSH);
             if (retval == Z_STREAM_ERROR)
-                Log(EError, "deflate(): stream error!");
+                Throw("deflate(): stream error!");
 
             output_size = sizeof(m_deflate_buffer) - m_deflate_stream.avail_out;
 
@@ -151,7 +155,7 @@ void ZStream::close() {
 
             int retval = deflate(&m_deflate_stream, Z_FINISH);
             if (retval == Z_STREAM_ERROR)
-                Log(EError, "deflate(): stream error!");
+                Throw("deflate(): stream error!");
 
             output_size = sizeof(m_deflate_buffer) - m_deflate_stream.avail_out;
 

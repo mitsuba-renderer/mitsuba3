@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
 enum ELogLevel : int {
     ETrace = 0,   ///< Trace message, for extremely verbose debugging
     EDebug = 100, ///< Debug message, usually turned off
-    EInfo = 200,  ///< More relevant debug / information message
-    EWarn = 300,  ///< Warning message
+    EInfo  = 200, ///< More relevant debug / information message
+    EWarn  = 300, ///< Warning message
     EError = 400  ///< Error message, causes an exception to be thrown
 };
 

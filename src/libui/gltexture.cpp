@@ -68,7 +68,7 @@ void GLTexture::refresh(const Bitmap *bitmap) {
 #if defined(NANOGUI_USE_OPENGL)
     if (bitmap->srgb_gamma() && bitmap->component_format() == Struct::EUInt8) {
         switch (bitmap->pixel_format()) {
-            case Bitmap::ERGB:            internalFormat = GL_SRGB8;
+            case Bitmap::ERGB:            internalFormat = GL_SRGB8; break;
             case Bitmap::ERGBA:           internalFormat = GL_SRGB8_ALPHA8; break;
             default:
                 Throw("GLTexture::refresh(): incompatible sRGB pixel format: %s",

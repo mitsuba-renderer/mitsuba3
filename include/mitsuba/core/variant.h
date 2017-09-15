@@ -186,15 +186,20 @@ public:
 
     bool empty() const { return type_info == nullptr; }
 
+    template <typename Visitor>
+    auto visit(Visitor &&v) -> decltype(helper_type::visit(type_info, &data, v)) {
+        return helper_type::visit(type_info, &data, v);
+    }
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
+
     template <typename T> operator T&() {
         if (!is<T>())
             throw std::bad_cast();
         return *reinterpret_cast<T *>(&data);
-    }
-
-    template <typename Visitor>
-    auto visit(Visitor &&v) -> decltype(helper_type::visit(type_info, &data, v)) {
-        return helper_type::visit(type_info, &data, v);
     }
 
     template <typename T> operator const T&() const {
@@ -202,6 +207,10 @@ public:
             throw std::bad_cast();
         return *reinterpret_cast<const T *>(&data);
     }
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#endif
 
     bool operator==(const variant<Args...> &other) const {
         if (type_info != other.type_info)
