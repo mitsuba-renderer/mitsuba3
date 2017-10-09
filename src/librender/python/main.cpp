@@ -12,6 +12,8 @@ MTS_PY_DECLARE(SurfaceInteraction);
 MTS_PY_DECLARE(Endpoint);
 MTS_PY_DECLARE(Emitter);
 MTS_PY_DECLARE(Sensor);
+MTS_PY_DECLARE(BSDF);
+MTS_PY_DECLARE(BSDFSample);
 
 PYBIND11_MODULE(mitsuba_render_ext, m_) {
     (void) m_; /* unused */
@@ -30,4 +32,6 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(Endpoint);
     MTS_PY_IMPORT(Emitter);
     MTS_PY_IMPORT(Sensor);
+    MTS_PY_IMPORT(BSDF);
+    MTS_PY_IMPORT(BSDFSample);
 }
