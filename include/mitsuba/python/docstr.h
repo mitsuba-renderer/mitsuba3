@@ -136,6 +136,11 @@ lookup time.)doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform = R"doc(Create an empty animated transform)doc";
 
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform_2 =
+R"doc(Create a constant "animated" transform. The provided transformation
+will be used as long as no keyframes are specified. However, it will
+be overwritten as soon as the first keyframe is appended.)doc";
+
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc(Represents a single keyframe in an animated transform)doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_Keyframe = R"doc()doc";
@@ -151,6 +156,10 @@ static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_4 = 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_ne = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new = R"doc()doc";
 
@@ -186,7 +195,13 @@ static const char *__doc_mitsuba_AnimatedTransform_m_transform = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_operator_array = R"doc(Return a Keyframe data structure)doc";
 
+static const char *__doc_mitsuba_AnimatedTransform_operator_eq = R"doc(Equality comparison operator)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_operator_ne = R"doc()doc";
+
 static const char *__doc_mitsuba_AnimatedTransform_size = R"doc(Return the number of keyframes)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_to_string = R"doc(Return a human-readable summary of this bitmap)doc";
 
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds a table of contents to an underlying stream
@@ -1835,7 +1850,31 @@ static const char *__doc_mitsuba_ETransportMode_ETransportModes = R"doc(Specifie
 
 static const char *__doc_mitsuba_Emitter = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_EEmitterType =
+R"doc(Flags used to classify the emission profile of different types of
+emitters.)doc";
+
+static const char *__doc_mitsuba_Emitter_EEmitterType_EDeltaDirection =
+R"doc(Emission profile contains a Dirac delta term with respect to
+direction.)doc";
+
+static const char *__doc_mitsuba_Emitter_EEmitterType_EDeltaPosition = R"doc(Emission profile contains a Dirac delta term with respect to position.)doc";
+
+static const char *__doc_mitsuba_Emitter_EEmitterType_EOnSurface = R"doc(Is the emitter associated with a surface in the scene?)doc";
+
+static const char *__doc_mitsuba_Emitter_Emitter = R"doc(//! @})doc";
+
 static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_m_properties = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_m_type = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_m_world_transform = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_set_world_transform = R"doc(Set the local space to world space transformation)doc";
+
+static const char *__doc_mitsuba_Emitter_world_transform = R"doc(Return the local space to world space transformation)doc";
 
 static const char *__doc_mitsuba_Endpoint =
 R"doc(Endpoint: an abstract interface to light sources and sensors
@@ -2009,6 +2048,32 @@ Throws an exception if in read-only mode.)doc";
 static const char *__doc_mitsuba_FileStream_write =
 R"doc(Writes a specified amount of data into the stream. Throws an exception
 when not all data could be written.)doc";
+
+static const char *__doc_mitsuba_Film = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_Film = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_configure = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_crop_offset = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_crop_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_m_crop_offset = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_m_crop_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_m_filter = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_m_high_quality_edges = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_m_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_Formatter =
 R"doc(Abstract interface for converting log information into a human-
@@ -2537,6 +2602,8 @@ static const char *__doc_mitsuba_Mesh_m_faces = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_m_to_world = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_normals = R"doc()doc";
@@ -2709,6 +2776,37 @@ This function is mainly useful for debugging purposes and should
 ideally be implemented by all subclasses. The default implementation
 simply returns ``MyObject[<address of 'this' pointer>]``, where
 ``MyObject`` is the name of the class.)doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera =
+R"doc(Perspective camera interface.
+
+This class provides an abstract interface to several types of sensors
+that are commonly used in computer graphics, such as perspective and
+orthographic camera models.
+
+The interface is meant to be implemented by any kind of sensor, whose
+world to clip space transformation can be explained using only linear
+operations on homogeneous coordinates.)doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_PerspectiveCamera = R"doc()doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_class = R"doc()doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_configure = R"doc()doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_diagonal_fov = R"doc(Return the diagonal field of view in degrees)doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_m_x_fov = R"doc()doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_set_diagonal_fov = R"doc(Set the diagonal field of view in degrees)doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_set_x_fov = R"doc(Set the horizontal field of view in degrees)doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_set_y_fov = R"doc(Set the vertical field of view in degrees)doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_x_fov = R"doc(Return the horizontal field of view in degrees)doc";
+
+static const char *__doc_mitsuba_PerspectiveCamera_y_fov = R"doc(Return the vertical field of view in degrees)doc";
 
 static const char *__doc_mitsuba_PluginManager =
 R"doc(The object factory is responsible for loading plugin modules and
@@ -2889,6 +2987,106 @@ an important 2D quantity, such as the texture coordinates on a
 triangle mesh or a position on the aperture of a sensor. When
 applicable, such positions are stored in the ``uv`` attribute.)doc";
 
+static const char *__doc_mitsuba_ProgressReporter =
+R"doc(General-purpose progress reporter
+
+This class is used to track the progress of various operations that
+might take longer than a second or so. It provides interactive
+feedback when Mitsuba is run on the console, via the OpenGL GUI, or in
+Jupyter Notebook.)doc";
+
+static const char *__doc_mitsuba_ProgressReporter_ProgressReporter =
+R"doc(Construct a new progress reporter.
+
+Parameter ``label``:
+    An identifying name for the operation taking place (e.g.
+    "Rendering")
+
+Parameter ``ptr``:
+    Custom pointer payload to be delivered as part of progress
+    messages)doc";
+
+static const char *__doc_mitsuba_ProgressReporter_class = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_m_bar_size = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_m_bar_start = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_m_label = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_m_last_progress = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_m_last_update = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_m_line = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_m_payload = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_m_timer = R"doc()doc";
+
+static const char *__doc_mitsuba_ProgressReporter_update =
+R"doc(Update the progress to ``progress`` (which should be in the range [0,
+1]))doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera =
+R"doc(Projective camera interface
+
+This class provides an abstract interface to several types of sensors
+that are commonly used in computer graphics, such as perspective and
+orthographic camera models.
+
+The interface is meant to be implemented by any kind of sensor, whose
+world to clip space transformation can be explained using only linear
+operations on homogeneous coordinates.
+
+A useful feature of ProjectiveCamera sensors is that their view can be
+rendered using the traditional OpenGL pipeline.)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_class = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_configure = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_far_clip = R"doc(Return the far clip plane distance)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_focus_distance = R"doc(Return the distance to the focal plane)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_m_far_clip = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_m_focus_distance = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_m_near_clip = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_near_clip = R"doc(Return the near clip plane distance)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_projection_transform =
+R"doc(Returns a projection matrix suitable for rendering the scene using
+OpenGL.
+
+For scenes involving a narrow depth of field and antialiasing, it is
+necessary to average many separately rendered images using different
+pixel offsets and aperture positions.
+
+Parameter ``aperture_sample``:
+    Sample for rendering with defocus blur. This should be a uniformly
+    distributed random point in [0,1]^2 (or any value when
+    needs_aperture_sample() == ``False``)
+
+Parameter ``aa_sample``:
+    Sample for antialiasing. This should be a uniformly distributed
+    random point in [0,1]^2.)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_set_far_clip = R"doc(Set the far clip plane distance)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_set_focus_distance = R"doc(Set the distance to the focal plane)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_set_near_clip = R"doc(Set the near clip plane distance)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_view_transform = R"doc(Return the world-to-view (aka "view") transformation at time ``t``)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_world_transform = R"doc(Return the view-to-world transformation at time ``t``)doc";
+
 static const char *__doc_mitsuba_Properties =
 R"doc(Associative parameter map for constructing subclasses of Object.
 
@@ -2935,6 +3133,16 @@ static const char *__doc_mitsuba_Properties_Properties_2 = R"doc(Construct an em
 static const char *__doc_mitsuba_Properties_Properties_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_Properties_PropertiesPrivate = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_animated_transform = R"doc(Retrieve an animated transformation)doc";
+
+static const char *__doc_mitsuba_Properties_animated_transform_2 =
+R"doc(Retrieve an animated transformation (use default value if no entry
+exists))doc";
+
+static const char *__doc_mitsuba_Properties_animated_transform_3 =
+R"doc(Retrieve an animated transformation (default value is a constant
+transform))doc";
 
 static const char *__doc_mitsuba_Properties_as_string = R"doc(Return one of the parameters (converting it to a string if necessary))doc";
 
@@ -3021,6 +3229,10 @@ R"doc(Remove a property with the specified name
 
 Returns:
     ``True`` upon success)doc";
+
+static const char *__doc_mitsuba_Properties_set_animated_transform = R"doc(Store an animated transformation in the Properties instance)doc";
+
+static const char *__doc_mitsuba_Properties_set_animated_transform_2 = R"doc(Store a (constant) animated transformation in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_set_bool = R"doc(Store a boolean value in the Properties instance)doc";
 
@@ -3209,9 +3421,11 @@ static const char *__doc_mitsuba_RayDifferential_o_x = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_o_y = R"doc()doc";
 
-static const char *__doc_mitsuba_RayDifferential_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_RayDifferential_operator_assign = R"doc(Copy from a Ray instance)doc";
 
 static const char *__doc_mitsuba_RayDifferential_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_scale = R"doc()doc";
 
@@ -3414,6 +3628,16 @@ static const char *__doc_mitsuba_Resampler_target_resolution = R"doc(Return the 
 
 static const char *__doc_mitsuba_Resampler_to_string = R"doc(Return a human-readable summary)doc";
 
+static const char *__doc_mitsuba_Sampler = R"doc()doc";
+
+static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
+
+static const char *__doc_mitsuba_Sampler_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Sampler_configure = R"doc()doc";
+
+static const char *__doc_mitsuba_Sampler_to_string = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc()doc";
@@ -3432,13 +3656,114 @@ static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable
 
 static const char *__doc_mitsuba_Sensor = R"doc()doc";
 
+static const char *__doc_mitsuba_Sensor_ESensorFlags =
+R"doc(This list of flags is used to additionally characterize and classify
+the response functions of different types of sensors
+
+See also:
+    Emitter::EEmitterType)doc";
+
+static const char *__doc_mitsuba_Sensor_ESensorFlags_EDeltaTime = R"doc(Sensor response contains a Dirac delta term with respect to time)doc";
+
+static const char *__doc_mitsuba_Sensor_ESensorFlags_EDirectionSampleMapsToPixels =
+R"doc(Does the sample given to sample_direction() determine the pixel
+coordinates?)doc";
+
+static const char *__doc_mitsuba_Sensor_ESensorFlags_ENeedsApertureSample = R"doc(Does the sample_ray() function need an aperture sample?)doc";
+
+static const char *__doc_mitsuba_Sensor_ESensorFlags_EOrthographicCamera = R"doc(Is the sensor an orthographic camera?)doc";
+
+static const char *__doc_mitsuba_Sensor_ESensorFlags_EPerspectiveCamera = R"doc(Is the sensor a perspective camera?)doc";
+
+static const char *__doc_mitsuba_Sensor_ESensorFlags_EPositionSampleMapsToPixels =
+R"doc(Does the sample given to sample_position() determine the pixel
+coordinates?)doc";
+
+static const char *__doc_mitsuba_Sensor_ESensorFlags_EProjectiveCamera = R"doc(Is the sensor a projective camera?)doc";
+
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc(//! @})doc";
 
+static const char *__doc_mitsuba_Sensor_aspect = R"doc(Return the aspect ratio of the sensor and its underlying film)doc";
+
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_configure = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_eval =
+R"doc(Return the emitted importance for the given surface intersection
+
+This is function is used when a sensor has been hit by a ray in a
+particle tracing-style integrator, and it subsequently needs to be
+queried for the emitted importance along the negative ray direction.
+
+It efficiently computes the product of eval_position() and
+eval_direction(), though note that it does not include the cosine
+foreshortening factor of the latter method.
+
+This function is provided here as a fast convenience function for
+unidirectional rendering techniques that support intersecting the
+sensor. The default implementation throws an exception, which states
+that the method is not implemented.
+
+Parameter ``its``:
+    An intersect record that specfies the query position
+
+Parameter ``d``:
+    A unit vector, which specifies the query direction
+
+Parameter ``result``:
+    This argument is used to return the 2D sample position (i.e. the
+    fractional pixel coordinates) associated with the intersection.
+
+Returns:
+    The emitted importance)doc";
+
+static const char *__doc_mitsuba_Sensor_eval_2 = R"doc(Vectorized version of eval)doc";
+
+static const char *__doc_mitsuba_Sensor_film = R"doc(Return the Film instance associated with this sensor)doc";
+
+static const char *__doc_mitsuba_Sensor_film_2 = R"doc(Return the Film instance associated with this sensor (const))doc";
+
+static const char *__doc_mitsuba_Sensor_get_sample_position =
+R"doc(Return the sample position associated with a given position and
+direction sampling record
+
+Parameter ``d_rec``:
+    A direction sampling record, which specifies the query direction
+
+Parameter ``p_rec``:
+    A position sampling record, which specifies the query position
+
+Returns:
+    ``True`` if the specified ray is visible by the camera)doc";
+
+static const char *__doc_mitsuba_Sensor_get_sample_position_2 = R"doc(Vectorized version of get_sample_position)doc";
+
+static const char *__doc_mitsuba_Sensor_m_aspect = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_m_film = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_m_inv_resolution = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_m_resolution = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_m_sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_m_shutter_open = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_m_shutter_open_time = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_needs_aperture_sample =
+R"doc(Does the method sample_ray() require a uniformly distributed sample
+for the aperture component?)doc";
+
+static const char *__doc_mitsuba_Sensor_needs_time_sample =
+R"doc(Does the method sample_ray() require a uniformly distributed sample
+for the time-dependent component?)doc";
+
+static const char *__doc_mitsuba_Sensor_pdf_time =
+R"doc(Evaluate the temporal component of the sampling density implemented by
+the sample_ray() method.)doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray =
 R"doc(Importance sample a ray according to the sensor response
@@ -3461,12 +3786,12 @@ Parameter ``position_sample``:
 Parameter ``aperture_sample``:
     A uniformly distributed 2D vector that is used to sample a
     position on the aperture of the sensor if necessary. (Any value is
-    valid when needsApertureSample() == ``False``)
+    valid when needs_aperture_sample() == ``False``)
 
 Parameter ``time_sample``:
     A uniformly distributed 1D vector that is used to sample the
     temporal component of the emission profile. (Or any value when
-    needsTimeSample() == ``False``)
+    needs_time_sample() == ``False``)
 
 Returns:
     The sampled ray and an associated importance weight associated.
@@ -3474,6 +3799,82 @@ Returns:
     the sampling density function.)doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray_2 = R"doc(Vectorized version of sample_ray)doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_differential =
+R"doc(Importance sample a ray differential according to the sensor response
+
+This function combines all three of the steps of sampling a time, ray
+position, and direction value. It does not return any auxiliary
+sampling information and is mainly meant to be used by unidirectional
+rendering techniques.
+
+Note that this function potentially uses a different sampling strategy
+compared to the sequence of running sample_area() and
+sample_direction(). The reason for this is that it may be possible to
+switch to a better technique when sampling both position and direction
+at the same time.
+
+The default implementation computes differentials using several
+internal calls to sample_ray(). Subclasses of the Sensor interface may
+optionally provide a more efficient approach.
+
+Parameter ``ray``:
+    A ray data structure to be populated with a position and direction
+    value.
+
+Parameter ``sample_position``:
+    Denotes the desired sample position in fractional pixel
+    coordinates relative to the crop window of the underlying film.
+
+Parameter ``aperture_sample``:
+    A uniformly distributed 2D vector that is used to sample a
+    position on the aperture of the sensor if necessary. (Any value is
+    valid when needs_aperture_sample() == ``False``)
+
+Parameter ``time_sample``:
+    A uniformly distributed 1D vector that is used to sample the
+    temporal component of the emission profile. (Or any value when
+    needs_time_sample() == ``False``)
+
+Returns:
+    An importance weight associated with the sampled ray. This
+    accounts for the difference between the sensor response and the
+    sampling density function.
+
+Remark:
+    In the Python API, the signature of this function is ``spectrumf,
+    ray = sensor.sample_ray_rifferential(sample_position,
+    aperture_sample)``)doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_differential_2 = R"doc(Vectorized version of sample_ray_differential)doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_differential_impl = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_sample_time = R"doc(Importance sample the temporal part of the sensor response function)doc";
+
+static const char *__doc_mitsuba_Sensor_sampler =
+R"doc(Return the sensor's sample generator
+
+This is the *root* sampler, which will later be cloned a number of
+times to provide each participating worker thread with its own
+instance (see Scene::sampler()). Therefore, this sampler should never
+be used for anything except creating clones.)doc";
+
+static const char *__doc_mitsuba_Sensor_sampler_2 =
+R"doc(Return the sensor's sampler (const version).
+
+This is the *root* sampler, which will later be cloned a number of
+times to provide each participating worker thread with its own
+instance (see Scene::sampler()). Therefore, this sampler should never
+be used for anything except creating clones.)doc";
+
+static const char *__doc_mitsuba_Sensor_set_shutter_open = R"doc(Set the time value of the shutter opening event)doc";
+
+static const char *__doc_mitsuba_Sensor_set_shutter_open_time = R"doc(Set the length, for which the shutter remains open)doc";
+
+static const char *__doc_mitsuba_Sensor_shutter_open = R"doc(Return the time value of the shutter opening event)doc";
+
+static const char *__doc_mitsuba_Sensor_shutter_open_time = R"doc(Return the length, for which the shutter remains open)doc";
 
 static const char *__doc_mitsuba_Shape = R"doc()doc";
 
@@ -4110,8 +4511,6 @@ Remark:
     intersection!)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf_2 = R"doc(Returns the BSDF of the intersected shape)doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_color = R"doc(Interpolated vertex color)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_compute_partials = R"doc(Computes texture coordinate partials)doc";
 
@@ -4906,6 +5305,31 @@ static const char *__doc_mitsuba_Transform_Transform_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Transform_gl_frustum =
+R"doc(Create a perspective transformation for OpenGL.
+
+Parameter ``left``:
+    Left clipping plane coordinate
+
+Parameter ``right``:
+    Right clipping plane coordinate
+
+Parameter ``top``:
+    Top clipping plane coordinate
+
+Parameter ``bottom``:
+    Bottom clipping plane coordinate
+
+Parameter ``near_val``:
+    Near clipping plane distance
+
+Parameter ``far_val``:
+    Far clipping plane distance)doc";
+
+static const char *__doc_mitsuba_Transform_has_scale =
+R"doc(Test for a scale component in each transform matrix by checking
+whether M . M^T == Identity (where M is the transformation matrix).)doc";
+
 static const char *__doc_mitsuba_Transform_inverse =
 R"doc(Compute the inverse of this transformation (involves just shuffles, no
 arithmetic))doc";
@@ -4953,10 +5377,10 @@ Remark:
     In the Python API, this method is named ``transform_point``)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul_3 =
-R"doc(Transform a 3D argtor
+R"doc(Transform a 3D vector
 
 Remark:
-    In the Python API, this method is named ``transform_argtor``)doc";
+    In the Python API, this method is named ``transform_vector``)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul_4 =
 R"doc(Transform a 3D normal argtor
@@ -5491,7 +5915,7 @@ static const char *__doc_mitsuba_operator_lshift_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_12 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_13 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_13 = R"doc(//! @{ \name Printing)doc";
 
 static const char *__doc_mitsuba_operator_lshift_14 = R"doc()doc";
 
@@ -5504,6 +5928,10 @@ static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_19 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_20 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_21 = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -6152,6 +6580,8 @@ static const char *__doc_mitsuba_util_core_count = R"doc(Determine the number of
 static const char *__doc_mitsuba_util_library_path = R"doc(Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>)doc";
 
 static const char *__doc_mitsuba_util_mem_string = R"doc(Turn a memory size into a human-readable string)doc";
+
+static const char *__doc_mitsuba_util_terminal_width = R"doc(Determine the width of the terminal window that is used to run Mitsuba)doc";
 
 static const char *__doc_mitsuba_util_time_string =
 R"doc(Convert a time difference (in seconds) to a string representation
