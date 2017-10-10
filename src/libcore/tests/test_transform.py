@@ -1,4 +1,4 @@
-from mitsuba.core import Transform4f, AnimatedTransform
+from mitsuba.core import Transform4f, Transform4fX, AnimatedTransform
 from mitsuba.core import PCG32
 import numpy as np
 import numpy.linalg as la
@@ -7,13 +7,30 @@ import pytest
 def test01_basics():
     assert(np.allclose(Transform4f().matrix, Transform4f(np.eye(4, 4)).matrix))
     assert(np.allclose(Transform4f().inverse_transpose, Transform4f(np.eye(4, 4)).inverse_transpose))
+
     assert(
-        repr(Transform4f([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12],
-                       [13, 14, 15, 16]])) ==
+        repr(Transform4f([[1, 2, 3, 4], [5, 6, 7, 8],
+                          [9, 10, 11, 12], [13, 14, 15, 16]])) ==
         "[[1, 2, 3, 4],\n [5, 6, 7, 8],\n [9, 10, 11, 12],\n [13, 14, 15, 16]]"
     )
 
+    m = np.array([
+       [ 0.295806  ,  0.19926196,  0.46541812,  0.31066751],
+       [ 0.19926196,  0.4046916 ,  0.86071449,  0.14933838],
+       [ 0.46541812,  0.86071449,  0.75046024,  0.90353475],
+       [ 0.31066751,  0.14933838,  0.90353475,  0.30514665]
+    ])
+    trafo = Transform4f(m)
+    assert la.norm(trafo.matrix - m) < 1e-5
+    assert la.norm(trafo.inverse_transpose - la.inv(m).T < 1e-5)
+
 def test02_inverse():
+    trafo = Transform4f.translate([1, 0, 1.5])
+    inv_trafo = trafo.inverse()
+    p = np.array([1, 2, 3])
+    assert np.all(trafo.transform_point(p) == np.array([2, 2, 4.5]))
+    assert np.all(inv_trafo.transform_point(trafo.transform_point(p)) == p)
+
     rng = PCG32()
     for i in range(1000):
         mtx = rng.next_float((4, 4))
@@ -22,6 +39,10 @@ def test02_inverse():
         inv_val = trafo.inverse_transpose.T
         assert np.all(trafo.matrix == mtx)
         assert la.norm(inv_ref-inv_val, 'fro') / la.norm(inv_val, 'fro') < 5e-4
+
+        p = rng.next_float((3,))
+        res = trafo.inverse().transform_point(trafo.transform_point(p))
+        assert la.norm(res - p, 2) < 5e-3
 
 def test03_matmul():
     A = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12],
@@ -57,7 +78,52 @@ def test06_transform_normal():
     assert np.allclose(
         Transform4f(A).transform_normal([[2, 4, 6], [4, 6, 8]]), [[2, 8, 2], [4, 12, 2]])
 
-def test07_atransform_lookup():
+def test07_transform_has_scale():
+    t = Transform4fX(11)
+    t[0] = Transform4f.rotate([1, 0, 0], 0.5)
+    t[1] = Transform4f.rotate([0, 1, 0], 50)
+    t[2] = Transform4f.rotate([0, 0, 1], 1e3)
+    t[3] = Transform4f.translate([41, 1e3, 0])
+    t[4] = Transform4f.scale([1, 1, 1])
+    t[5] = Transform4f.scale([1, 1, 1.1])
+    t[6] = Transform4f.perspective(90, 0.1, 100)
+    t[7] = Transform4f.orthographic(0.01, 200)
+    t[8] = Transform4f.look_at(origin=[10, -1, 3], target=[1, 1, 2], up=[0, 1, 0])
+    t[9] = Transform4f()
+    t[10] = AnimatedTransform(Transform4f()).lookup(0)
+
+    # Vectorized
+    expected = [
+        False, False, False, False, False,
+        True, True, True, False, False, False
+    ]
+    assert np.all(t.has_scale() == expected)
+
+    # Single
+    for i in range(11):
+        assert t[i].has_scale() == expected[i]
+
+    # Spot
+    assert la.norm(np.all(t[3].inverse_transpose - np.array([
+        [ 1,   0, 0,   0],
+        [ 0,   1, 0,   0],
+        [ 0,   0, 1,   0],
+        [41, 1e3, 0,   1]
+    ]))) < 1e-5
+
+def test08_atransform_construct():
+    t = Transform4f.rotate([1, 0, 0], 30)
+    a = AnimatedTransform(t)
+
+    t0 = a.lookup(0)
+    assert t0 == t
+    assert not t0.has_scale()
+    # Animation is constant over time
+    for tt in a.lookup([0, 10, 200, 1e5]):
+        assert np.all(t0 == tt)
+
+
+def test09_atransform_lookup():
     a = AnimatedTransform()
     trafo0 = Transform4f.translate([1, 2, 3])
     trafo1 = Transform4f.translate([2, 4, 6])
@@ -96,7 +162,7 @@ def test07_atransform_lookup():
     assert np.allclose(vec_transform[1].matrix, 0.5 * (trafo0.matrix + trafo1.matrix))
     assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
 
-def test08_atransform_interpolate_rotation():
+def test10_atransform_interpolate_rotation():
     a = AnimatedTransform()
     axis = np.array([1.0, 2.0, 3.0])
     axis /= la.norm(axis)
@@ -111,7 +177,7 @@ def test08_atransform_interpolate_rotation():
     assert np.allclose(vec_transform[1].matrix, trafo_mid.matrix)
     assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
 
-def test08_atransform_interpolate_scale():
+def test11_atransform_interpolate_scale():
     a = AnimatedTransform()
     trafo0 = Transform4f.scale([1,2,3])
     trafo1 = Transform4f.scale([4,5,6])
@@ -122,3 +188,7 @@ def test08_atransform_interpolate_scale():
     assert np.allclose(vec_transform[0].matrix, trafo0.matrix)
     assert np.allclose(vec_transform[1].matrix, trafo_mid.matrix)
     assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
+
+@pytest.mark.skip("Not implemented")
+def test12_gl_frustum():
+    pass

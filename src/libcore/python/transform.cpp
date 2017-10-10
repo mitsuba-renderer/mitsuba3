@@ -7,6 +7,8 @@ auto bind_transform(py::module &m, const char *name) {
 
     return py::class_<Type>(m, name, D(Transform))
         /// Fields
+        .def("inverse", &Type::inverse, D(Transform, inverse))
+        .def("has_scale", &Type::has_scale, D(Transform, has_scale))
         .def_readwrite("matrix", &Type::matrix)
         .def_readwrite("inverse_transpose", &Type::inverse_transpose)
         .def("__repr__", [](const Type &t) {
@@ -43,6 +45,7 @@ MTS_PY_EXPORT(Transform) {
         .def_static("perspective", &Transform4f::perspective, "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
         .def_static("orthographic", &Transform4f::orthographic, "near"_a, "far"_a, D(Transform, orthographic))
         .def_static("look_at", &Transform4f::look_at, "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
+        .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
         /// Operators
         .def(py::self == py::self)
         .def(py::self != py::self)
@@ -64,7 +67,9 @@ MTS_PY_EXPORT(AnimatedTransform) {
         .def_readwrite("quat", &AnimatedTransform::Keyframe::quat, D(AnimatedTransform, Keyframe, quat))
         .def_readwrite("trans", &AnimatedTransform::Keyframe::trans, D(AnimatedTransform, Keyframe, trans));
 
-    atrafo.def(py::init<>())
+    atrafo
+        .def(py::init<>())
+        .def(py::init<const Transform4f &>())
         .mdef(AnimatedTransform, size)
         .def("__len__", &AnimatedTransform::size)
         .def("__getitem__", [](const AnimatedTransform &trafo, size_t index) {

@@ -36,6 +36,7 @@ MTS_PY_EXPORT(Properties) {
        .SET_ITEM_BINDING(string, std::string)
        .SET_ITEM_BINDING(vector3f, Vector3f)
        .SET_ITEM_BINDING(transform, Transform4f)
+       .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
        .SET_ITEM_BINDING(object, ref<Object>)
 
        .def("__getitem__", [](const Properties& p, const std::string &key) {
@@ -56,6 +57,8 @@ MTS_PY_EXPORT(Properties) {
                 return py::cast(p.point3f(key));
             else if (type == Properties::ETransform)
                 return py::cast(p.transform(key));
+            else if (type == Properties::EAnimatedTransform)
+                return py::cast(p.animated_transform(key));
             else if (type == Properties::EObject)
                 return py::cast(p.object(key));
             else {

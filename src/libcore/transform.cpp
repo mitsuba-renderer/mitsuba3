@@ -104,6 +104,31 @@ Transform4fP AnimatedTransform::lookup(const FloatP &time, const mask_t<FloatP> 
     return lookup_impl(time, active);
 }
 
+std::string AnimatedTransform::to_string() const {
+    std::ostringstream oss;
+    oss << "AnimatedTransform[" << std::endl
+        << "  m_transform = " << string::indent(m_transform, 16) << "," << std::endl
+        << "  m_keyframes = " << string::indent(m_keyframes, 16) << std::endl
+        << "]";
+
+    return oss.str();
+}
+
+std::ostream &operator<<(std::ostream &os, const AnimatedTransform::Keyframe &frame) {
+    os << "Keyframe[" << std::endl
+       << "  time = " << frame.time << "," << std::endl
+       << "  scale = " << frame.scale << "," << std::endl
+       << "  quat = " << frame.quat << "," << std::endl
+       << "  trans = " << frame.trans
+       << "]";
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t) {
+    os << t.to_string();
+    return os;
+}
+
 template Point3f   MTS_EXPORT_CORE Transform4f::operator*(const Point3f&) const;
 template Point3fP  MTS_EXPORT_CORE Transform4f::operator*(const Point3fP&) const;
 template Vector3f  MTS_EXPORT_CORE Transform4f::operator*(const Vector3f&) const;

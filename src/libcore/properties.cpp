@@ -21,6 +21,7 @@ using VariantType = variant<
     Point3f,
     std::string,
     Transform4f,
+    ref<AnimatedTransform>,
     NamedReference,
     ref<Object>
 >;
@@ -79,15 +80,16 @@ struct Properties::PropertiesPrivate {
         return (const Type &) it->second.data; \
     }
 
-DEFINE_PROPERTY_ACCESSOR(bool,           boolean,   set_bool,            bool_)
-DEFINE_PROPERTY_ACCESSOR(int64_t,        integer,   set_long,            long_)
-DEFINE_PROPERTY_ACCESSOR(Float,          float,     set_float,           float_)
-DEFINE_PROPERTY_ACCESSOR(std::string,    string,    set_string,          string)
-DEFINE_PROPERTY_ACCESSOR(Vector3f,       vector,    set_vector3f,        vector3f)
-DEFINE_PROPERTY_ACCESSOR(Point3f,        point,     set_point3f,         point3f)
-DEFINE_PROPERTY_ACCESSOR(NamedReference, ref,       set_named_reference, named_reference)
-DEFINE_PROPERTY_ACCESSOR(Transform4f,    transform, set_transform,       transform)
-DEFINE_PROPERTY_ACCESSOR(ref<Object>,    object,    set_object,          object)
+DEFINE_PROPERTY_ACCESSOR(bool,              boolean,   set_bool,              bool_)
+DEFINE_PROPERTY_ACCESSOR(int64_t,           integer,   set_long,              long_)
+DEFINE_PROPERTY_ACCESSOR(Float,             float,     set_float,             float_)
+DEFINE_PROPERTY_ACCESSOR(std::string,       string,    set_string,            string)
+DEFINE_PROPERTY_ACCESSOR(Vector3f,          vector,    set_vector3f,          vector3f)
+DEFINE_PROPERTY_ACCESSOR(Point3f,           point,     set_point3f,           point3f)
+DEFINE_PROPERTY_ACCESSOR(NamedReference,    ref,       set_named_reference,   named_reference)
+DEFINE_PROPERTY_ACCESSOR(Transform4f,       transform, set_transform,         transform)
+DEFINE_PROPERTY_ACCESSOR(ref<Object>,       object,    set_object,            object)
+// See at the end of the file for custom-defined accessors.
 
 Properties::Properties()
     : d(new PropertiesPrivate()) { }
@@ -122,6 +124,7 @@ namespace {
         Result operator()(const std::string &) { return Properties::EString; }
         Result operator()(const NamedReference &) { return Properties::ENamedReference; }
         Result operator()(const Transform4f &) { return Properties::ETransform; }
+        Result operator()(const ref<AnimatedTransform> &) { return Properties::EAnimatedTransform; }
         Result operator()(const ref<Object> &) { return Properties::EObject; }
     };
 
@@ -135,6 +138,7 @@ namespace {
         void operator()(const Vector3f &v) { os << v; }
         void operator()(const Point3f &v) { os << v; }
         void operator()(const Transform4f &t) { os << t; }
+        void operator()(const ref<AnimatedTransform> &t) { os << *t; }
         void operator()(const std::string &s) { os << "\"" << s << "\""; }
         void operator()(const NamedReference &nr) { os << "\"" << (const std::string &) nr << "\""; }
         void operator()(const ref<Object> &o) { os << o->to_string(); }
@@ -309,6 +313,75 @@ std::ostream &operator<<(std::ostream &os, const Properties &p) {
        << "]" << std::endl;
 
     return os;
+}
+
+// =============================================================================
+// === Custom accessors
+// =============================================================================
+
+/// AnimatedTransform setter.
+void Properties::set_animated_transform(const std::string &name,
+                                        ref<AnimatedTransform> value,
+                                        bool warn_duplicates) {
+    if (has_property(name) && warn_duplicates)
+        Log(EWarn, "Property \"%s\" was specified multiple times!", name);
+    d->entries[name].data = value;
+    d->entries[name].queried = false;
+}
+
+/// AnimatedTransform setter (from a simple Transform).
+void Properties::set_animated_transform(const std::string &name,
+                                        const Transform4f &value,
+                                        bool warn_duplicates) {
+    ref<AnimatedTransform> trafo(new AnimatedTransform(value));
+    return set_animated_transform(name, trafo, warn_duplicates);
+}
+
+/// AnimatedTransform getter (without default value).
+ref<AnimatedTransform> Properties::animated_transform(const std::string &name) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        Throw("Property \"%s\" has not been specified!", name);
+    if (it->second.data.is<Transform4f>()) {
+        // Also accept simple transforms, from which we can build
+        // an AnimatedTransform.
+        it->second.queried = true;
+        return new AnimatedTransform(
+            static_cast<const Transform4f &>(it->second.data));
+    }
+    if (!it->second.data.is<ref<AnimatedTransform>>()) {
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <animated_transform> or <transform>).", name);
+    }
+    it->second.queried = true;
+    return (const ref<AnimatedTransform> &) it->second.data;
+}
+
+/// AnimatedTransform getter (with default value).
+ref<AnimatedTransform> Properties::animated_transform(
+        const std::string &name, ref<AnimatedTransform> def_val) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        return def_val;
+    if (it->second.data.is<Transform4f>()) {
+        // Also accept simple transforms, from which we can build
+        // an AnimatedTransform.
+        it->second.queried = true;
+        return new AnimatedTransform(
+            static_cast<const Transform4f &>(it->second.data));
+    }
+    if (!it->second.data.is<ref<AnimatedTransform>>()) {
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <animated_transform> or <transform>).", name);
+    }
+    it->second.queried = true;
+    return (const ref<AnimatedTransform> &) it->second.data;
+}
+
+/// Retrieve an animated transformation (default value is a constant transform)
+ref<AnimatedTransform> Properties::animated_transform(
+        const std::string &name, const Transform4f &def_val) const {
+    return animated_transform(name, new AnimatedTransform(def_val));
 }
 
 NAMESPACE_END(mitsuba)

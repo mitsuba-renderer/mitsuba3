@@ -129,3 +129,19 @@ def test07_printing():
   }
 ]
 """
+
+def test08_animated_transforms():
+    """An AnimatedTransform can be built from a given Transform."""
+    from mitsuba.core import Transform4f, AnimatedTransform
+
+    p = Prop()
+    p["trafo"] = Transform4f.translate([1, 2, 3])
+
+    atrafo = AnimatedTransform()
+    atrafo.append(0, Transform4f.translate([-1, -1, -2]))
+    atrafo.append(1, Transform4f.translate([4, 3, 2]))
+    p["atrafo"] = atrafo
+
+    assert type(p["trafo"]) is Transform4f
+    assert type(p["atrafo"]) is AnimatedTransform
+

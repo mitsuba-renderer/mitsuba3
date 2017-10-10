@@ -26,6 +26,7 @@ template <typename Value> struct Transform {
     using Matrix4 = Matrix<Value, 4>;
     using Vector3 = Vector<Value, 3>;
     using Vector4 = Vector<Value, 4>;
+    using Mask    = mask_t<Value>;
 
     //! @}
     // =============================================================
@@ -111,8 +112,8 @@ template <typename Value> struct Transform {
     }
 
     /**
-     * \brief Transform a 3D argtor
-     * \remark In the Python API, this method is named \c transform_argtor
+     * \brief Transform a 3D vector
+     * \remark In the Python API, this method is named \c transform_vector
      */
     template <typename Value2, typename E = expr_t<Value, Value2>>
     MTS_INLINE Vector<E, 3> operator*(const Vector<Value2, 3> &arg) const {
@@ -153,12 +154,13 @@ template <typename Value> struct Transform {
     /// Create a translation transformation
     static Transform translate(const Vector3 &v) {
         return Transform(enoki::translate<Matrix4>(v),
-                         enoki::translate<Matrix4>(-v));
+                         transpose(enoki::translate<Matrix4>(-v)));
     }
 
     /// Create a scale transformation
     static Transform scale(const Vector3 &v) {
         return Transform(enoki::scale<Matrix4>(v),
+                         // No need to transpose a diagonal matrix.
                          enoki::scale<Matrix4>(rcp(v)));
     }
 
@@ -198,7 +200,7 @@ template <typename Value> struct Transform {
         trafo(2, 3) = 1.f;
         trafo(3, 2) = (near - far) / (far * near);
 
-        return Transform(trafo, inv_trafo);
+        return Transform(trafo, transpose(inv_trafo));
     }
 
     /** \brief Create an orthographic transformation, which maps Z to [0,1]
@@ -243,7 +245,56 @@ template <typename Value> struct Transform {
 
         inverse[3] = inverse * concat(-origin, 1.f);
 
-        return Transform(result, inverse);
+        return Transform(result, transpose(inverse));
+    }
+
+    //! @}
+    // =============================================================
+
+
+    // =============================================================
+    //! @{ \name Test for transform properties.
+    // =============================================================
+
+    /// Test for a scale component in each transform matrix by checking
+    /// whether M . M^T == Identity (where M is the transformation matrix).
+    inline Mask has_scale() const {
+        Mask mask(false);
+        for (int i = 0; i < 3; ++i) {
+            for (int j = i; j < 3; ++j) {
+                Value sum(0);
+                for (int k = 0; k < 3; ++k)
+                    sum += matrix[i][k] * matrix[j][k];
+
+                // On the diagonal (i==j), check sum == 1,
+                // otherwise check sum == 0.
+                mask |= enoki::abs(sum - (i==j ? 1 : 0) ) > 1e-3f;
+            }
+        }
+        return mask;
+    }
+
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name OpenGL specific methods.
+    // =============================================================
+
+    /** \brief Create a perspective transformation for OpenGL.
+     * \param left Left clipping plane coordinate
+     * \param right Right clipping plane coordinate
+     * \param top Top clipping plane coordinate
+     * \param bottom Bottom clipping plane coordinate
+     * \param near_val Near clipping plane distance
+     * \param far_val Far clipping plane distance
+     */
+    static Transform gl_frustum(Float left, Float right,
+                                Float bottom, Float top,
+                                Float near_val, Float far_val) {
+        return Transform(enoki::frustum<Matrix4>(left, right, bottom, top,
+                                                 near_val, far_val));
     }
 
     //! @}
@@ -280,11 +331,31 @@ public:
         Keyframe(const Float time, const Matrix3f &scale, const Quaternion4f &quat, const Vector3f &trans)
             : time(time), scale(scale), quat(quat), trans(trans) { }
 
+        bool operator==(const Keyframe &f) const {
+            return (time == f.time
+                 && scale == f.scale
+                 && quat == f.quat
+                 && trans == f.trans);
+        }
+        bool operator!=(const Keyframe &f) const {
+            return !(*this == f);
+        }
+
         ENOKI_ALIGNED_OPERATOR_NEW()
     };
 
     /// Create an empty animated transform
     AnimatedTransform() = default;
+
+    /** Create a constant "animated" transform.
+     * The provided transformation will be used as long as no keyframes
+     * are specified. However, it will be overwritten as soon as the
+     * first keyframe is appended.
+     */
+    AnimatedTransform(const Transform4f &trafo)
+      : m_transform(trafo) { }
+
+    virtual ~AnimatedTransform();
 
     /// Append a keyframe to the current animated transform
     void append(Float time, const Transform4f &trafo);
@@ -304,10 +375,28 @@ public:
     /// Return a Keyframe data structure
     const Keyframe &operator[](size_t i) const { return m_keyframes[i]; }
 
-    MTS_DECLARE_CLASS()
-protected:
-    virtual ~AnimatedTransform();
+    /// Equality comparison operator
+    bool operator==(const AnimatedTransform &t) const {
+        if (m_transform != t.m_transform ||
+            m_keyframes.size() != t.m_keyframes.size()) {
+            return false;
+        }
+        for (size_t i = 0; i < m_keyframes.size(); ++i) {
+            if (m_keyframes[i] != t.m_keyframes[i])
+                return false;
+        }
+        return true;
+    }
+    bool operator!=(const AnimatedTransform &t) const {
+        return !(*this == t);
+    }
 
+    /// Return a human-readable summary of this bitmap
+    virtual std::string to_string() const override;
+
+    MTS_DECLARE_CLASS()
+
+protected:
     template <typename Value>
     Transform<Value> lookup_impl(const Value &time, const mask_t<Value> &active) const;
 
@@ -316,11 +405,22 @@ private:
     std::vector<Keyframe> m_keyframes;
 };
 
+// -----------------------------------------------------------------------
+//! @{ \name Printing
+// -----------------------------------------------------------------------
+
 template <typename Value>
 std::ostream &operator<<(std::ostream &os, const Transform<Value> &t) {
     os << t.matrix;
     return os;
 }
+
+std::ostream &operator<<(std::ostream &os, const AnimatedTransform::Keyframe &frame);
+
+std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t);
+
+//! @}
+// -----------------------------------------------------------------------
 
 NAMESPACE_END(mitsuba)
 
