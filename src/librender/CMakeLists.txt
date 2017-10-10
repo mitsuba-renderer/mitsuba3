@@ -6,14 +6,16 @@ add_library(mitsuba-render-obj OBJECT
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
   common.cpp       ${INC_DIR}/common.h
-  kdtree.cpp       ${INC_DIR}/kdtree.h
-  mesh.cpp         ${INC_DIR}/mesh.h
-  scene.cpp        ${INC_DIR}/scene.h
-  shape.cpp        ${INC_DIR}/shape.h
-  medium.cpp       ${INC_DIR}/medium.h
   emitter.cpp      ${INC_DIR}/emitter.h
-  sensor.cpp       ${INC_DIR}/sensor.h
+  film.cpp         ${INC_DIR}/film.h
   interaction.cpp  ${INC_DIR}/interaction.h
+  kdtree.cpp       ${INC_DIR}/kdtree.h
+  medium.cpp       ${INC_DIR}/medium.h
+  mesh.cpp         ${INC_DIR}/mesh.h
+  sampler.cpp      ${INC_DIR}/sampler.h
+  scene.cpp        ${INC_DIR}/scene.h
+  sensor.cpp       ${INC_DIR}/sensor.h
+  shape.cpp        ${INC_DIR}/shape.h
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
