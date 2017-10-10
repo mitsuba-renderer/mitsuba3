@@ -241,69 +241,10 @@ public:
 
 
     // =============================================================
-    //! @{ \name Other sampling methods (separating position and direction)
+    //! @{ \name Endpoint interface
     // =============================================================
 
-    template <typename PositionSample,
-              typename Point2 = Point<value_t<PositionSample>, 2>,
-              typename Spectrum = Spectrum<value_t<PositionSample>>>
-    Spectrum sample_position(
-        PositionSample &/*p_rec*/,
-        const Point2 &/*sample*/, const Point2 * /*extra*/) const {
-        NotImplementedError("sample_position");
-        return Spectrum(0.0f);
-    }
-
-    template <typename PositionSample,
-              typename Spectrum = Spectrum<value_t<PositionSample>>>
-    Spectrum eval_position(const PositionSample &p_rec) const {
-        return select(eq(p_rec.measure, EDiscrete), Spectrum(1.0f), Spectrum(0.0f));
-    }
-
-    template <typename PositionSample, typename Value = value_t<PositionSample>>
-    Value pdf_position(const PositionSample &p_rec) const {
-        return select(eq(p_rec.measure, EDiscrete), Value(1.0f), Value(0.0f));
-    }
-
-    template <typename DirectSample,
-              typename PositionSample = PositionSample<value_t<DirectSample>>,
-              typename Point2 = Point<value_t<DirectSample>, 2>,
-              typename Spectrum = Spectrum<value_t<DirectSample>>>
-    Spectrum sample_direction(
-        DirectSample &/*d_rec*/, const PositionSample &/*p_rec*/,
-        const Point2 &/*sample*/, const Point2 * /*extra*/) const {
-        NotImplementedError("sample_direction");
-        return Spectrum(0.0f);
-    }
-
-    template <typename DirectSample,
-              typename PositionSample = PositionSample<value_t<DirectSample>>,
-              typename Value = value_t<DirectSample>>
-    Value pdf_direction(const DirectSample &/*d_rec*/, const PositionSample &/*p_rec*/) const {
-        NotImplementedError("pdf_direction");
-        return Value(0.0f);
-    }
-
-    template <typename DirectSample,
-              typename PositionSample = PositionSample<value_t<DirectSample>>,
-              typename Spectrum = Spectrum<value_t<DirectSample>>>
-    Spectrum eval_direction(const DirectSample &/*d_rec*/, const PositionSample &/*p_rec*/) const {
-        NotImplementedError("eval_direction");
-        return Spectrum(0.0f);
-    }
-
-    template <typename DirectSample,
-              typename Point2 = Point<value_t<DirectSample>, 2>,
-              typename Spectrum = Spectrum<value_t<DirectSample>>>
-    Spectrum sample_direct(DirectSample &/*d_rec*/, const Point2 &/*sample*/) const {
-        NotImplementedError("sample_direct");
-        return Spectrum(0.0f);
-    }
-
-    template <typename DirectSample, typename Value = value_t<DirectSample>>
-    Value pdf_direct(const DirectSample &d_rec) const {
-        return select(eq(d_rec.measure, EDiscrete), Value(1.0f), Value(0.0f));
-    }
+    // TODO: implement the Endpoint interface.
 
     //! @}
     // =============================================================

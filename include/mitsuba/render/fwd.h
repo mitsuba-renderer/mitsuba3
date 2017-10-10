@@ -5,13 +5,14 @@
 NAMESPACE_BEGIN(mitsuba)
 
 class BSDF;
+class Emitter;
+class Endpoint;
+class Medium;
+class Scene;
+class Sensor;
 class Shape;
 class ShapeKDTree;
-class Medium;
 class Subsurface;
-class Endpoint;
-class Emitter;
-class Sensor;
 
 template <typename Vector3> struct DirectionSample;
 template <typename Point3>  struct DirectSample;

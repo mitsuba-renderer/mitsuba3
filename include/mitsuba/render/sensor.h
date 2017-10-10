@@ -2,23 +2,23 @@
 
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/render/endpoint.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/fwd.h>
-#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/sampler.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-class MTS_EXPORT_RENDER Sensor : public Emitter {
+class MTS_EXPORT_RENDER Sensor : public Endpoint {
 public:
 
     /**
      * \brief This list of flags is used to additionally characterize
      * and classify the response functions of different types of sensors
      *
-     * \sa Emitter::EEmitterType
+     * \sa Endpoint::EFlags
      */
     enum ESensorFlags {
         /// Sensor response contains a Dirac delta term with respect to time

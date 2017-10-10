@@ -3,7 +3,7 @@
 
 
 MTS_PY_EXPORT(sensor) {
-    auto sensor = MTS_PY_CLASS(Sensor, Emitter)
+    auto sensor = MTS_PY_CLASS(Sensor, Endpoint)
         .def("sample_ray",
              py::overload_cast<const Point2f&, const Point2f&, Float>(
                 &Sensor::sample_ray, py::const_),
@@ -90,7 +90,7 @@ MTS_PY_EXPORT(sensor) {
 
     MTS_PY_CLASS(ProjectiveCamera, Sensor)
         .mdef(ProjectiveCamera, view_transform, "t"_a)
-        // There's also the world_transform method from Emitter
+        // There's also the world_transform method from Endpoint
         .def("world_transform",
              py::overload_cast<Float>(
                 &ProjectiveCamera::world_transform, py::const_),

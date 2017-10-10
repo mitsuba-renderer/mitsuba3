@@ -24,7 +24,9 @@ py::object py_cast(Object *o) {
     PY_CAST(PerspectiveCamera);
     PY_CAST(ProjectiveCamera);
     PY_CAST(Sensor);
+
     PY_CAST(Emitter);
+    PY_CAST(Endpoint);
 
     Log(EWarn, "Unable to cast object pointer. Is your type registered in"
                " py_cast()?");

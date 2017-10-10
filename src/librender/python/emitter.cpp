@@ -1,23 +1,66 @@
-#include <mitsuba/render/emitter.h>
+#include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/render/emitter.h>
+#include <mitsuba/render/medium.h>
+#include <mitsuba/render/records.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Emitter) {
-    py::enum_<Emitter::EEmitterType>(m, "EEmitterType",
-        "Flags used to classify the emission profile of different types of"
-        " emitters. \n"
-        "\n    EDeltaDirection: Emission profile contains a Dirac delta term with respect to direction."
-        "\n    EDeltaPosition: Emission profile contains a Dirac delta term with respect to position."
-        "\n    EOnSurface: Is the emitter associated with a surface in the scene?",
-        py::arithmetic())
-        .value("EDeltaDirection", Emitter::EDeltaDirection)
-        .value("EDeltaPosition", Emitter::EDeltaPosition)
-        .value("EOnSurface", Emitter::EOnSurface)
-        .export_values();
+MTS_PY_EXPORT(emitter) {
+    auto emitter = MTS_PY_CLASS(Emitter, Endpoint)
+        .def("eval",
+             py::overload_cast<const SurfaceInteraction3f &, const Vector3f &>(
+                &Emitter::eval, py::const_),
+             D(Emitter, eval), "its"_a, "d"_a)
+        .def("eval", enoki::vectorize_wrapper(
+             py::overload_cast<const SurfaceInteraction3fP &, const Vector3fP &>(
+                &Emitter::eval, py::const_)),
+             D(Emitter, eval), "its"_a, "d"_a)
 
-    MTS_PY_CLASS(Emitter, Object)
-        .mdef(Emitter, world_transform)
-        .def("set_world_transform", &Emitter::set_world_transform,
-             D(Emitter, set_world_transform))
+        .def("sample_ray",
+             py::overload_cast<const Point2f &, const Point2f &, Float>(
+                &Emitter::sample_ray, py::const_),
+             D(Emitter, sample_ray),
+             "position_sample"_a, "direction_sample"_a, "time_sample"_a)
+        .def("sample_ray", enoki::vectorize_wrapper(
+             py::overload_cast<const Point2fP &, const Point2fP &, FloatP>(
+                &Emitter::sample_ray, py::const_)),
+             D(Emitter, sample_ray),
+             "position_sample"_a, "direction_sample"_a, "time_sample"_a)
+
+        .mdef(Emitter, sampling_weight)
+        .mdef(Emitter, bitmap, "size_hint"_a = Vector2i(-1, -1))
+        .mdef(Emitter, is_environment_emitter)
+
+        .def("eval_environment",
+             py::overload_cast<const RayDifferential3f &>(
+                &Emitter::eval_environment, py::const_),
+             D(Emitter, eval_environment), "ray"_a)
+        .def("eval_environment", enoki::vectorize_wrapper(
+             py::overload_cast<const RayDifferential3fP &>(
+                &Emitter::eval_environment, py::const_)),
+             D(Emitter, eval_environment), "ray"_a)
+
+        .def("fill_direct_sample",
+             py::overload_cast<DirectSample3f &, const Ray3f &>(
+                &Emitter::fill_direct_sample, py::const_),
+             D(Emitter, fill_direct_sample), "d_rec"_a, "ray"_a)
+        // .def("fill_direct_sample", enoki::vectorize_wrapper(
+        //      py::overload_cast<DirectSample3fP &, const Ray3fP &>(
+        //         &Emitter::fill_direct_sample, py::const_)),
+        //      D(Emitter, fill_direct_sample), "d_rec"_a, "ray"_a)
+
+        .mdef(Emitter, is_compound)
+        .mdef(Emitter, element, "index"_a)
         ;
+
+    // TODO: import EFlags from endpoint?
+    // emitter.attr("EFlags") = emitter_type;
+    // TODO: proper docs
+    py::enum_<Emitter::EEmitterFlags>(emitter, "EEmitterFlags",
+        "This list of flags is used to additionally characterize and"
+        " classify the response functions of different types of sensors",
+        py::arithmetic())
+        .value("EEnvironmentEmitter", Emitter::EEnvironmentEmitter)
+               // D(Emitter, EEmitterFlags, EEnvironmentEmitter))
+        .export_values();
 }

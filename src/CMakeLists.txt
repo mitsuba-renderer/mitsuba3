@@ -14,6 +14,7 @@ add_subdirectory(mitsuba)
 
 # Plugins
 add_subdirectory(bsdfs)
+add_subdirectory(emitters)
 add_subdirectory(films)
 add_subdirectory(rfilters)
 add_subdirectory(samplers)

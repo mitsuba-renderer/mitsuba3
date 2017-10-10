@@ -7,6 +7,7 @@ add_library(mitsuba-render-obj OBJECT
   bsdf.cpp         ${INC_DIR}/bsdf.h
   common.cpp       ${INC_DIR}/common.h
   emitter.cpp      ${INC_DIR}/emitter.h
+  endpoint.cpp     ${INC_DIR}/endpoint.h
   film.cpp         ${INC_DIR}/film.h
   interaction.cpp  ${INC_DIR}/interaction.h
   kdtree.cpp       ${INC_DIR}/kdtree.h

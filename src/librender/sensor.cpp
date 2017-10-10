@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 // =============================================================================
 
 Sensor::Sensor(const Properties &props)
-    : Emitter(props) {
+    : Endpoint(props) {
     m_shutter_open      = props.float_("shutter_open", 0.f);
     m_shutter_open_time = props.float_("shutter_close", 0.f) - m_shutter_open;
 
@@ -30,7 +30,7 @@ Sensor::Sensor(const Properties &props)
 Sensor::~Sensor() { }
 
 // Sensor::Sensor(Stream *stream, InstanceManager *manager)
-//  : Emitter(stream, manager) {
+//  : Endpoint(stream, manager) {
 //     m_film = static_cast<Film *>(manager->get_instance(stream));
 //     m_sampler = static_cast<Sampler *>(manager->get_instance(stream));
 //     m_shutter_open = stream->readFloat();
@@ -39,7 +39,7 @@ Sensor::~Sensor() { }
 
 
 // void Sensor::serialize(Stream *stream, InstanceManager *manager) const {
-//     Emitter::serialize(stream, manager);
+//     Endpoint::serialize(stream, manager);
 //     manager->serialize(stream, m_film.get());
 //     manager->serialize(stream, m_sampler.get());
 //     stream->writeFloat(m_shutter_open);
@@ -98,7 +98,7 @@ std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
     ray.d_y = temp_ray.d;
     ray.has_differentials = true;
 
-    return std::make_pair(ray, result);
+    return { ray, result };
 }
 
 std::pair<RayDifferential3f, Spectrumf> Sensor::sample_ray_differential(
@@ -116,26 +116,26 @@ std::pair<Spectrumf, Point2f> Sensor::eval(const SurfaceInteraction3f &/*its*/,
                                            const Vector3f &/*d*/) const {
     Log(EError, "eval(const SurfaceInteraction3f &, const Vector3f &)"
                 " is not implemented!");
-    return std::make_pair(Spectrumf(0.0f), Point2f(0.0f));
+    return { Spectrumf(0.0f), Point2f(0.0f) };
 }
 std::pair<SpectrumfP, Point2fP> Sensor::eval(const SurfaceInteraction3fP &/*its*/,
                                              const Vector3fP &/*d*/) const {
     Log(EError, "eval(const SurfaceInteraction3fP &, const Vector3fP &)"
                 " is not implemented!");
-    return std::make_pair(SpectrumfP(0.0f), Point2fP(0.0f));
+    return { SpectrumfP(0.0f), Point2fP(0.0f) };
 }
 
 std::pair<bool, Point2f> Sensor::get_sample_position(
     const PositionSample3f &/*pRec*/, const DirectionSample3f &/*dRec*/) const {
     Log(EError, "get_sample_position(const PositionSample3f &, "
                 "const DirectionSample3f &) is not implemented!");
-    return std::make_pair(false, Point2f(0.0f));
+    return { false, Point2f(0.0f) };
 }
 std::pair<BoolP, Point2fP> Sensor::get_sample_position(
     const PositionSample3fP &/*pRec*/, const DirectionSample3fP &/*dRec*/) const {
     Log(EError, "get_sample_position(const PositionSample3fP &, "
                 "const DirectionSample3fP &) is not implemented!");
-    return std::make_pair(BoolP(false), Point2fP(0.0f));
+    return { BoolP(false), Point2fP(0.0f) };
 }
 
 template <typename Value, typename Measure, typename Ray>
@@ -160,7 +160,7 @@ void Sensor::set_shutter_open_time(Float time) {
         m_type &= ~EDeltaTime;
 }
 
-MTS_IMPLEMENT_CLASS_ALIAS(Sensor, "sensor", Emitter)
+MTS_IMPLEMENT_CLASS(Sensor, Endpoint)
 
 
 // =============================================================================
