@@ -75,6 +75,7 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
     Vector d_x, d_y;
     bool has_differentials = false;
 
+
     /// Element-by-element constructor
     RayDifferential(const Point &o, const Vector &d, const Vector &d_rcp,
                     const Value &mint, const Value &maxt, const Value &time,
@@ -82,6 +83,14 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
                     const Vector &d_y, const bool &has_differentials)
         : Base(o, d, d_rcp, mint, maxt, time), o_x(o_x), o_y(o_y),
           d_x(d_x), d_y(d_y), has_differentials(has_differentials) { }
+
+    /// Copy from a Ray instance
+    RayDifferential<Point_>& operator=(const Ray<Point_>& ray) {
+        o = ray.o; d = ray.d; d_rcp = ray.d_rcp;
+        mint = ray.mint; maxt = ray.maxt; time = ray.time;
+
+        return *this;
+    }
 
     void scale(Float amount) {
         o_x = o + (o_x - o) * amount;

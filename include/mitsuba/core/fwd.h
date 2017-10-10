@@ -146,6 +146,11 @@ using Point2d = Point<double, 2>;
 using Point3d = Point<double, 3>;
 using Point4d = Point<double, 4>;
 
+using Point1i = Point<int32_t, 1>;
+using Point2i = Point<int32_t, 2>;
+using Point3i = Point<int32_t, 3>;
+using Point4i = Point<int32_t, 4>;
+
 using Normal3f = Normal<Float, 3>;
 using Normal3h = Normal<half, 3>;
 using Normal3d = Normal<double, 3>;

@@ -142,6 +142,17 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
   endif()
 endif()
 
+# Force colored output for the ninja generator
+if (CMAKE_GENERATOR STREQUAL "Ninja")
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fcolor-diagnostics")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
+  elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+  endif()
+endif()
+
 if (MSVC)
   # Disable annoying MSVC warnings (all targets)
   add_definitions(/D "_CRT_SECURE_NO_WARNINGS" /D "_SCL_SECURE_NO_WARNINGS")
@@ -310,7 +321,8 @@ endfunction()
 
 # Registers a test directory to be run by the `pytest` command
 function(add_tests)
-  set(MITSUBA_TEST_DIRECTORIES ${MITSUBA_TEST_DIRECTORIES} ${ARGV} CACHE INTERNAL "")
+  file(GLOB TEST_FILES ${ARGV}/test_*)
+  set(MITSUBA_TEST_DIRECTORIES ${MITSUBA_TEST_DIRECTORIES} ${TEST_FILES} CACHE INTERNAL "")
 endfunction()
 
 # Function for creating Mitsuba plugins

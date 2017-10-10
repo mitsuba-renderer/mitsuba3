@@ -13,11 +13,13 @@ add_subdirectory(libui)
 add_subdirectory(mitsuba)
 
 # Plugins
-add_subdirectory(spectra)
 add_subdirectory(bsdfs)
-add_subdirectory(shapes)
+add_subdirectory(films)
 add_subdirectory(rfilters)
+add_subdirectory(samplers)
 add_subdirectory(sensors)
+add_subdirectory(shapes)
+add_subdirectory(spectra)
 
 if (PYTHONLIBS_FOUND)
   add_subdirectory(python)
