@@ -5,7 +5,7 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(emitter) {
+MTS_PY_EXPORT(Emitter) {
     auto emitter = MTS_PY_CLASS(Emitter, Endpoint)
         .def("eval",
              py::overload_cast<const SurfaceInteraction3f &, const Vector3f &>(
@@ -27,7 +27,6 @@ MTS_PY_EXPORT(emitter) {
              D(Emitter, sample_ray),
              "position_sample"_a, "direction_sample"_a, "time_sample"_a)
 
-        .mdef(Emitter, sampling_weight)
         .mdef(Emitter, bitmap, "size_hint"_a = Vector2i(-1, -1))
         .mdef(Emitter, is_environment_emitter)
 
@@ -48,9 +47,6 @@ MTS_PY_EXPORT(emitter) {
         //      py::overload_cast<DirectSample3fP &, const Ray3fP &>(
         //         &Emitter::fill_direct_sample, py::const_)),
         //      D(Emitter, fill_direct_sample), "d_rec"_a, "ray"_a)
-
-        .mdef(Emitter, is_compound)
-        .mdef(Emitter, element, "index"_a)
         ;
 
     // TODO: import EFlags from endpoint?

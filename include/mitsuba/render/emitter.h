@@ -100,14 +100,6 @@ public:
     // =============================================================
 
     /**
-     * \brief Return the luminaire's sampling weight
-     *
-     * This is used by the luminaire importance sampling
-     * routines in \ref Scene.
-     */
-    inline Float sampling_weight() const { return m_sampling_weight; }
-
-    /**
      * \brief Return a bitmap representation of the emitter
      *
      * Some types of light sources (projection lights, environment maps)
@@ -136,7 +128,7 @@ public:
     // =============================================================
 
     /// Is this an environment emitter? (e.g. an HDRI environment map?)
-    inline bool is_environment_emitter() const {
+    bool is_environment_emitter() const {
         return m_type & EEnvironmentEmitter;
     }
 
@@ -183,25 +175,6 @@ public:
     //! @}
     // =============================================================
 
-    // =============================================================
-    //! @{ \name Miscellaneous
-    // =============================================================
-
-    /// Is this a compound emitter consisting of several sub-objects?
-    virtual bool is_compound() const;
-
-    /**
-     * \brief Return a sub-element of a compound emitter.
-     *
-     * When expanding emitters, the scene will repeatedly call this
-     * function with increasing indices. Returning \a nullptr indicates
-     * that no more are available.
-     */
-    virtual Emitter *element(size_t index);
-
-    //! @}
-    // =============================================================
-
     MTS_DECLARE_CLASS()
 
 protected:
@@ -211,9 +184,6 @@ protected:
     // Emitter(Stream *stream, InstanceManager *manager);
 
     virtual ~Emitter();
-
-protected:
-    Float m_sampling_weight;
 };
 
 NAMESPACE_END(mitsuba)

@@ -84,7 +84,8 @@ struct Spectrum
      * \brief Return a spectral color distribution of the
      * D65 white point (with unit luminance)
      */
-    inline static const Spectrum D65() {
+    static const Spectrum D65() {
+        // TODO: support for spectral queries.
         Log(EWarn, "Spectrum::D65() not implemented correctly yet.");
         return Spectrum(1.0f);
     }

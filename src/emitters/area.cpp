@@ -76,7 +76,7 @@ public:
 
     Spectrumf eval(const SurfaceInteraction3f &its,
                    const Vector3f &d) const override {
-        if (enoki::dot(its.sh_frame.n, d) <= 0)
+        if (dot(its.sh_frame.n, d) <= 0)
             return Spectrumf(0.0f);
         else
             return m_radiance;
@@ -84,7 +84,7 @@ public:
     SpectrumfP eval(const SurfaceInteraction3fP &its,
                     const Vector3fP &d) const override {
         SpectrumfP res(m_radiance);
-        res[enoki::dot(its.sh_frame.n, d) <= 0.0f] = 0.0f;
+        res[dot(its.sh_frame.n, d) <= 0.0f] = 0.0f;
         return res;
     }
 
@@ -145,8 +145,8 @@ public:
     template <typename DirectionSample, typename PositionSample>
     auto pdf_direction_impl(DirectionSample &d_rec,
                             const PositionSample &p_rec) const {
-        auto dp = enoki::dot(d_rec.d, p_rec.n);
-        masked(dp, (enoki::neq(d_rec.measure, ESolidAngle)) | (dp < 0)) = 0.0f;
+        auto dp = dot(d_rec.d, p_rec.n);
+        masked(dp, (neq(d_rec.measure, ESolidAngle)) | (dp < 0)) = 0.0f;
         return math::InvPi * dp;
     }
     Float pdf_direction(const DirectionSample3f &d_rec,
@@ -180,7 +180,7 @@ public:
 
         PositionSample p_rec(time_sample);
         m_shape->sample_position(p_rec, position_sample);
-        const auto local = warp::square_to_cosine_hemisphere(direction_sample);
+        auto local = warp::square_to_cosine_hemisphere(direction_sample);
         Ray3 ray;
         ray.time = time_sample;
         ray.o = p_rec.p;
@@ -211,9 +211,9 @@ public:
         // a reference point within a medium or on a transmissive surface
         // will set `d_rec.ref_n = 0`, hence they should always be accepted.
         Spectrum res(0.0f);
-        const auto mask = (enoki::dot(d_rec.d, d_rec.ref_n) >= 0)
-                        & (enoki::dot(d_rec.d, d_rec.n) < 0)
-                        & (d_rec.pdf != 0);
+        auto mask = (dot(d_rec.d, d_rec.ref_n) >= 0)
+                  & (dot(d_rec.d, d_rec.n) < 0)
+                  & (d_rec.pdf != 0);
         masked(res, mask) = Spectrum(m_radiance) / d_rec.pdf;
         masked(d_rec.pdf, ~mask) = 0.0f;
         return res;
@@ -237,8 +237,8 @@ public:
     }
     FloatP pdf_direct(const DirectSample3fP &d_rec) const override {
         FloatP res(0.0f);
-        res[(enoki::dot(d_rec.d, d_rec.ref_n) >= 0)
-            & (enoki::dot(d_rec.d, d_rec.n) < 0)] = m_shape->pdf_direct(d_rec);
+        res[(dot(d_rec.d, d_rec.ref_n) >= 0)
+            & (dot(d_rec.d, d_rec.n) < 0)] = m_shape->pdf_direct(d_rec);
         return res;
     }
 
@@ -250,7 +250,6 @@ public:
         std::ostringstream oss;
         oss << "AreaLight[" << std::endl
             << "  radiance = " << m_radiance << "," << std::endl
-            << "  sampling_weight = " << m_sampling_weight << "," << std::endl
             << "  surface_area = ";
         if (m_shape) oss << m_shape->surface_area();
         else         oss << "<no shape attached!>";

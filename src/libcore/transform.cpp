@@ -107,7 +107,7 @@ Transform4fP AnimatedTransform::lookup(const FloatP &time, const mask_t<FloatP> 
 
 BoundingBox3f AnimatedTransform::translation_bounds() const {
     if (m_keyframes.empty()) {
-        const auto p = m_transform * Point3f(0.0f);
+        auto p = m_transform * Point3f(0.0f);
         return BoundingBox3f(p, p);
     }
     Log(EError, "AnimatedTransform::translation_bounds() not implemented for"

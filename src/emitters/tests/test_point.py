@@ -11,7 +11,6 @@ def test01_point_construct():
     c = load_string("<emitter version='2.0.0' type='point'></emitter>")
     assert c is not None
     assert not c.is_environment_emitter()
-    assert not c.is_compound()
     # TODO: check flag-style emitters bindings
     assert c.type() == c.EFlags.EDeltaPosition
 

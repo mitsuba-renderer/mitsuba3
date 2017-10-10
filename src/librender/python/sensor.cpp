@@ -2,7 +2,7 @@
 #include <mitsuba/python/python.h>
 
 
-MTS_PY_EXPORT(sensor) {
+MTS_PY_EXPORT(Sensor) {
     auto sensor = MTS_PY_CLASS(Sensor, Endpoint)
         .def("sample_ray",
              py::overload_cast<const Point2f&, const Point2f&, Float>(

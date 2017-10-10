@@ -8,7 +8,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shape.h>
 
-MTS_PY_EXPORT(endpoint) {
+MTS_PY_EXPORT(Endpoint) {
     auto endpoint = MTS_PY_CLASS(Endpoint, Object)
         .def("sample_position",
              py::overload_cast<PositionSample3f &, const Point2f &, const Point2f *>(

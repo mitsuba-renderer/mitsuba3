@@ -5,9 +5,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 Emitter::Emitter(const Properties &props)
-    : Endpoint(props) {
-    m_sampling_weight = props.float_("sampling_weight", 1.0f);
-}
+    : Endpoint(props) { }
 
 Emitter::~Emitter() { }
 
@@ -62,14 +60,6 @@ bool Emitter::fill_direct_sample(
         DirectSample3fP &/*d_rec*/, const Ray3fP &/*ray*/) const {
     NotImplementedError("fill_direct_sample");
     return false;
-}
-
-bool Emitter::is_compound() const {
-    return false;
-}
-
-Emitter *Emitter::element(size_t /*index*/) {
-    return nullptr;
 }
 
 MTS_IMPLEMENT_CLASS(Emitter, Endpoint)

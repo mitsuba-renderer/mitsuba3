@@ -276,7 +276,7 @@ public:
      *
      * \sa EFlags
      */
-    inline uint32_t type() const { return m_type; }
+    uint32_t type() const { return m_type; }
 
     /// Return the local space to world space transformation
     const AnimatedTransform *world_transform() const;
@@ -289,7 +289,7 @@ public:
      * \brief Does the method \ref sample_position() require a uniformly
      * distributed sample for the spatial component?
      */
-    inline bool needs_position_sample() const {
+    bool needs_position_sample() const {
         return !(m_type & EDeltaPosition);
     }
 
@@ -297,14 +297,14 @@ public:
      * \brief Does the method \ref sample_direction() require a uniformly
      * distributed sample for the direction component?
      */
-    inline bool needs_direction_sample() const {
+    bool needs_direction_sample() const {
         return !(m_type & EDeltaDirection);
     }
 
     /**
      * \brief Does the emitter lie on some kind of surface?
      */
-    inline bool is_on_surface() const {
+    bool is_on_surface() const {
         return m_type & EOnSurface;
     }
 
@@ -312,7 +312,7 @@ public:
      * \brief Does the sensor have a degenerate directional or spatial
      * distribution?
      */
-    inline bool is_degenerate() const {
+    bool is_degenerate() const {
         return m_type & (EDeltaPosition | EDeltaDirection);
     }
 
@@ -324,7 +324,7 @@ public:
      * sampling domain, this is the case exactly when the original
      * domain was four-dimensionsional.
      */
-    inline bool needs_direct_sample() const {
+    bool needs_direct_sample() const {
         return needs_position_sample() && needs_direction_sample();
     }
 
@@ -332,7 +332,7 @@ public:
      * \brief Return the measure associated with the \ref sample_direct()
      * operation
      */
-    inline EMeasure direct_measure() const {
+    EMeasure direct_measure() const {
         return needs_direct_sample() ? ESolidAngle : EDiscrete;
     }
 
@@ -345,16 +345,16 @@ public:
     // =============================================================
 
     /// Return a pointer to the medium that surrounds the emitter
-    inline Medium *medium() { return m_medium; }
+    Medium *medium() { return m_medium; }
 
     /// Return a pointer to the medium that surrounds the emitter (const version)
-    inline const Medium *medium() const { return m_medium.get(); }
+    const Medium *medium() const { return m_medium.get(); }
 
     /// Return the shape, to which the emitter is currently attached
-    inline Shape *shape() { return m_shape; }
+    Shape *shape() { return m_shape; }
 
     /// Return the shape, to which the emitter is currently attached (const version)
-    inline const Shape *shape() const { return m_shape; }
+    const Shape *shape() const { return m_shape; }
 
     /**
      * \brief Create a special shape that represents the emitter
@@ -387,10 +387,10 @@ public:
     virtual BoundingBox3f bbox() const = 0;
 
     /// Set the shape associated with this endpoint.
-    inline void set_shape(Shape *shape) { m_shape = shape; }
+    void set_shape(Shape *shape) { m_shape = shape; }
 
     /// Set the medium that surrounds the emitter.
-    inline void set_medium(Medium *medium) { m_medium = medium; }
+    void set_medium(Medium *medium) { m_medium = medium; }
 
     /// Serialize this emitter to a binary data stream
     // virtual void serialize(Stream *stream, InstanceManager *manager) const;

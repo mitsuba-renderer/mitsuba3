@@ -43,13 +43,11 @@ def test01_area_construct():
         </emitter>""")
     assert e is not None
     assert not e.is_environment_emitter()
-    assert not e.is_compound()
 
     shape = example_shape()
     assert e is not None
     e = shape.emitter()
     assert not e.is_environment_emitter()
-    assert not e.is_compound()
     ref_shape = example_shape(has_emitter=False)
     assert e.bbox() == ref_shape.bbox()
 

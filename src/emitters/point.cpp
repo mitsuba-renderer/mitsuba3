@@ -26,10 +26,6 @@ NAMESPACE_BEGIN(mitsuba)
  *         power per unit steradian.
  *         \default{1}
  *     }
- *     \parameter{sampling_weight}{\Float}{
- *         Specifies the relative amount of samples
- *         allocated to this emitter. \default{1}
- *     }
  * }
  *
  * This emitter plugin implements a simple point light source, which
@@ -190,8 +186,8 @@ public:
         d_rec.measure = EDiscrete;
         d_rec.uv = Point2(0.5f);
         d_rec.d = d_rec.p - d_rec.ref_p;
-        d_rec.dist = enoki::norm(d_rec.d);
-        const Value inv_dist = enoki::rcp(d_rec.dist);
+        d_rec.dist = norm(d_rec.d);
+        Value inv_dist = rcp(d_rec.dist);
         d_rec.d *= inv_dist;
         d_rec.n = Normal3(0.0f);
         d_rec.pdf = 1.0f;
