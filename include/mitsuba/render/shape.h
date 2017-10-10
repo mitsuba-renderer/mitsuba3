@@ -39,6 +39,18 @@ public:
     virtual BoundingBox3f bbox(Index index,
                                const BoundingBox3f &clip) const;
 
+    /**
+     * \brief Return the shape's surface area.
+     *
+     * Assumes that the object is not undergoing some kind of
+     * time-dependent scaling.
+     *
+     * The default implementation throws an exception.
+     */
+    virtual Float surface_area() const {
+        NotImplementedError("surface_area");
+    }
+
     // =============================================================
     //! @{ \name Ray tracing routines
     // =============================================================
@@ -89,6 +101,109 @@ public:
     //! @}
     // =============================================================
 
+    // =============================================================
+    //! @{ \name Sampling routines
+    // =============================================================
+
+    /**
+     * \brief Sample a point on the surface of this shape instance
+     * (with respect to the area measure)
+     *
+     * The returned sample density will be uniform over the surface.
+     *
+     * \param p_rec
+     *     A position record, which will be used to return the sampled
+     *     position, as well as auxilary information about the sample.
+     *
+     * \param sample
+     *     A uniformly distributed 2D vector
+     */
+    virtual void sample_position(PositionSample3f &/*p_rec*/,
+                                 const Point2f &/*sample*/) const {
+        NotImplementedError("sample_position");
+    }
+    /// Vectorized version of \ref sample_position.
+    virtual void sample_position(PositionSample3fP &/*p_rec*/,
+                                 const Point2fP &/*sample*/) const {
+        NotImplementedError("sample_position");
+    }
+
+    /**
+     * \brief Query the probability density of \ref sample_position() for
+     * a particular point on the surface.
+     *
+     * This method will generally return the inverse of the surface area.
+     *
+     * \param p_rec
+     *     A position record, which will be used to return the sampled
+     *     position, as well as auxilary information about the sample.
+     */
+    virtual Float pdf_position(const PositionSample3f &/*p_rec*/) const {
+        NotImplementedError("pdf_position");
+    }
+    /// Vectorized version of \ref pdf_position.
+    virtual FloatP pdf_position(const PositionSample3fP &/*p_rec*/) const {
+        NotImplementedError("pdf_position");
+    }
+
+    /**
+     * \brief Sample a point on the surface of this shape instance
+     * (with respect to the solid angle measure)
+     *
+     * The sample density should ideally be uniform in direction as seen from
+     * the reference point \c d_rec.p.
+     *
+     * This general approach for sampling positions is named "direct" sampling
+     * throughout Mitsuba motivated by direct illumination rendering techniques,
+     * which represent the most important application.
+     *
+     * When no implementation of this function is supplied, the \ref Shape
+     * class will revert to the default approach, which piggybacks on
+     * \ref sampleArea(). This usually results in a a suboptimal sample
+     * placement, which can manifest itself in the form of high variance
+     *
+     * \param d_rec
+     *    A direct sampling record that specifies the reference point and a
+     *    time value. After the function terminates, it will be populated
+     *    with the position sample and related information
+     *
+     * \param sample
+     *     A uniformly distributed 2D vector
+     */
+    virtual void sample_direct(DirectSample3f &/*d_rec*/,
+                               const Point2f &/*sample*/) const {
+        NotImplementedError("sample_direct");
+    }
+    /// Vectorized version of \ref sample_direct.
+    virtual void sample_direct(DirectSample3fP &/*d_rec*/,
+                               const Point2fP &/*sample*/) const {
+        NotImplementedError("sample_direct");
+    }
+
+    /**
+     * \brief Query the probability density of \ref sampleDirect() for
+     * a particular point on the surface.
+     *
+     * \param d_rec
+     *    A direct sampling record, which specifies the query
+     *    location. Note that this record need not be completely
+     *    filled out. The important fields are \c p, \c n, \c ref,
+     *    \c dist, \c d, \c measure, and \c uv.
+     *
+     * \param p
+     *     An arbitrary point used to define the solid angle measure
+     */
+    virtual Float pdf_direct(const DirectSample3f &/*d_rec*/) const {
+        NotImplementedError("pdf_direct");
+    }
+    /// Vectorized version of \ref pdf_direct.
+    virtual FloatP pdf_direct(const DirectSample3fP &/*d_rec*/) const {
+        NotImplementedError("pdf_direct");
+    }
+
+    //! @}
+    // =============================================================
+
 
     // =============================================================
     //! @{ \name Miscellaneous
@@ -127,7 +242,7 @@ public:
     BSDF *bsdf() { return m_bsdf.get(); }
 
     /// Set the BSDF of this shape
-    void set_bsdf(BSDF * bsdf) { m_bsdf = bsdf; }
+    void set_bsdf(BSDF *bsdf) { m_bsdf = bsdf; }
 
     /// Is this shape also an area emitter?
     bool is_emitter() const { return m_emitter.get() != nullptr; }
@@ -138,9 +253,6 @@ public:
     /// Return the area emitter associated with this shape (if any)
     Emitter *emitter() { return m_emitter.get(); }
 
-    /// Set the area emitter associated with this shape
-    void set_emitter(Emitter * emitter) { m_emitter = emitter; }
-
     /// Is this shape also an area sensor?
     bool is_sensor() const { return m_sensor.get() != nullptr; }
 
@@ -149,10 +261,6 @@ public:
 
     /// Return the area sensor associated with this shape (if any)
     Sensor *sensor() { return m_sensor.get(); }
-
-    /// Set the area sensor associated with this shape
-    void set_sensor(Sensor * sensor) { m_sensor = sensor; }
-
 
     /**
      * \brief Returns the number of sub-primitives that make up this shape
@@ -177,6 +285,12 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
+    /// Constructs a new Shape.
+    Shape() { };
+    /// Constructs a new Shape, potentially containing children objects such
+    /// as an Emitter.
+    Shape(const Properties &props);
+
     virtual ~Shape();
 
 private:

@@ -1,12 +1,25 @@
-#include <mitsuba/render/mesh.h>
 #include <mitsuba/core/stream.h>
+#include <mitsuba/render/emitter.h>
+#include <mitsuba/render/mesh.h>
+#include <mitsuba/render/sensor.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Shape) {
     MTS_PY_CLASS(Shape, Object)
-        .def("bbox", (BoundingBox3f (Shape::*)() const) &Shape::bbox, D(Shape, bbox))
-        .def("bbox", (BoundingBox3f (Shape::*)(Shape::Index) const) &Shape::bbox, D(Shape, bbox, 2))
-        .mdef(Shape, primitive_count);
+        .def("bbox", py::overload_cast<>(&Shape::bbox, py::const_), D(Shape, bbox))
+        .def("bbox", py::overload_cast<typename Shape::Index>(&Shape::bbox, py::const_), D(Shape, bbox, 2))
+        .def("bbox", py::overload_cast<typename Shape::Index, const BoundingBox3f &>(&Shape::bbox, py::const_), D(Shape, bbox, 2))
+        .mdef(Shape, surface_area)
+        // TODO: rest of the bindings
+        .mdef(Shape, is_emitter)
+        .def("emitter", py::overload_cast<>(&Shape::emitter))
+        .def("emitter", py::overload_cast<>(&Shape::emitter, py::const_))
+        .mdef(Shape, is_sensor)
+        .def("sensor", py::overload_cast<>(&Shape::sensor))
+        .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
+        .mdef(Shape, primitive_count)
+        .mdef(Shape, effective_primitive_count)
+        ;
 
     MTS_PY_CLASS(Mesh, Shape)
         .def(py::init<const std::string &, Struct *, Mesh::Size, Struct *,

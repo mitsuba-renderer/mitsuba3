@@ -7,7 +7,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Mesh::Mesh(const Properties &props) {
+Mesh::Mesh(const Properties &props)
+    : Shape(props) {
     /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
@@ -17,8 +18,9 @@ Mesh::Mesh(const Properties &props) {
 
 Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
            Struct *face_struct, Size face_count)
-    : m_name(name), m_vertex_count(vertex_count), m_face_count(face_count),
-      m_vertex_struct(vertex_struct), m_face_struct(face_struct) {
+    : m_name(name), m_vertex_count(vertex_count),
+      m_face_count(face_count), m_vertex_struct(vertex_struct),
+      m_face_struct(face_struct) {
     auto check_field = [](const Struct *s, size_t idx,
                           const std::string &suffix_exp,
                           Struct::EType type_exp) {

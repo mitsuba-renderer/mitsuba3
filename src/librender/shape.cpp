@@ -1,8 +1,26 @@
+#include <mitsuba/core/bbox.h>
+#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
-#include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
+Shape::Shape(const Properties &props) {
+    for (auto &kv : props.objects()) {
+        auto emitter = dynamic_cast<Emitter *>(kv.second.get());
+
+        if (!emitter)
+            Throw("Tried to add an unsupported object of type %s", kv.second);
+        if (m_emitter) {
+            Log(EError, "Only a single Emitter child object can be specified"
+                        " per shape.");
+        }
+
+        m_emitter = emitter;
+        emitter->set_shape(this);
+    }
+
+}
 
 Shape::~Shape() { }
 
