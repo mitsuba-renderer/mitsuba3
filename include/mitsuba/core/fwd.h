@@ -18,10 +18,11 @@ class Object;
 class Class;
 template <typename> class ref;
 
-class AnnotatedStraem;
+class AnnotatedStream;
 class AnimatedTransform;
 class Appender;
 class ArgParser;
+class Bitmap;
 class DefaultFormatter;
 class DummyStream;
 class FileResolver;
@@ -181,6 +182,22 @@ using RayDifferential3fX = RayDifferential<Point3fX>;
 using Transform4f  = Transform<Float>;
 using Transform4fP = Transform<FloatP>;
 using Transform4fX = Transform<FloatX>;
+
+using Color3f  = Color<Float,  3>;
+using Color3fP = Color<FloatP, 3>;
+using Color3fX = Color<FloatX, 3>;
+
+/**
+ * The following types are used for computations involving data that
+ * is sampled at a fixed number of points in the wavelength domain.
+ *
+ * Note that this is not restricted to radiance data -- probabilities or
+ * sampling weights often need to be expressed in a spectrally varying manner,
+ * and this type also applies to these situations.
+ */
+using Spectrumf  = Spectrum<Float>;
+using SpectrumfP = Spectrum<FloatP>;
+using SpectrumfX = Spectrum<FloatX>;
 
 //! @}
 // =============================================================

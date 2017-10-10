@@ -369,6 +369,10 @@ public:
     /// Vectorized version of \ref lookup
     Transform4fP lookup(const FloatP &time, const mask_t<FloatP> &active = true) const;
 
+    /// Return an axis-aligned box bounding the amount of translation over the
+    /// course of the animation.
+    BoundingBox3f translation_bounds() const;
+
     /// Return the number of keyframes
     size_t size() const { return m_keyframes.size(); }
 

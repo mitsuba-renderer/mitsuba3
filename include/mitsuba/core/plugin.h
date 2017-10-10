@@ -44,9 +44,7 @@ NAMESPACE_BEGIN(mitsuba)
  * plugin named \c perspective.so/dll/dylib and adds a child object
  * named \c film, which is a \ref Film instance loaded from the
  * plugin \c ldrfilm.so/dll/dylib. By the time the function
- * returns, the object hierarchy has already been assembled, and the
- * \ref ConfigurableObject::configure() methods of every object
- * has been called.
+ * returns, the object hierarchy has already been assembled.
  */
 class MTS_EXPORT_CORE PluginManager : public Object {
 public:

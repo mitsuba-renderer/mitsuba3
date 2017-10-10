@@ -330,9 +330,9 @@ public:
         );
     }
 
-    // BoundingBox3f bounding_box() const {
-    //     return m_world_transform->translation_bounds();
-    // }
+    BoundingBox3f bbox() const override {
+        return m_world_transform->translation_bounds();
+    }
 
     std::string to_string() const override {
         using string::indent;

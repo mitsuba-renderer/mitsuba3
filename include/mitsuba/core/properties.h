@@ -237,6 +237,13 @@ public:  // Type-specific getters and setters ----------------------------------
     ref<AnimatedTransform> animated_transform(
             const std::string &name, const Transform4f &def_val) const;
 
+    /// Store a spectrum in the Properties instance
+    void set_spectrumf(const std::string &name, const Spectrumf &value, bool warnDuplicates = true);
+    /// Retrieve a spectrum
+    const Spectrumf& spectrumf(const std::string &name) const;
+    /// Retrieve a spectrum (use default value if no entry exists)
+    const Spectrumf& spectrumf(const std::string &name, const Spectrumf &def_val) const;
+
     /// Store an arbitrary object in the Properties instance
     void set_object(const std::string &name, const ref<Object> &value, bool warnDuplicates = true);
     /// Retrieve an arbitrary object

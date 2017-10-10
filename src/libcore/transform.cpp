@@ -1,4 +1,5 @@
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -102,6 +103,16 @@ Transform4f AnimatedTransform::lookup(const Float &time, const bool &active) con
 /// Vectorized version of \ref lookup
 Transform4fP AnimatedTransform::lookup(const FloatP &time, const mask_t<FloatP> &active) const {
     return lookup_impl(time, active);
+}
+
+BoundingBox3f AnimatedTransform::translation_bounds() const {
+    if (m_keyframes.empty()) {
+        const auto p = m_transform * Point3f(0.0f);
+        return BoundingBox3f(p, p);
+    }
+    Log(EError, "AnimatedTransform::translation_bounds() not implemented for"
+                " non-constant animation.");
+    return BoundingBox3f();
 }
 
 std::string AnimatedTransform::to_string() const {

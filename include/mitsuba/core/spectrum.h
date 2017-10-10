@@ -1,7 +1,9 @@
 #pragma once
 
-#include <mitsuba/core/simd.h>
+#include <mitsuba/core/fwd.h>
+#include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
+#include <mitsuba/core/simd.h>
 #include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -52,10 +54,6 @@ struct Color
     ENOKI_DECLARE_ARRAY(Base, Color)
 };
 
-using Color3f  = Color<Float,  3>;
-using Color3fP = Color<FloatP, 3>;
-using Color3fX = Color<FloatX, 3>;
-
 //! @}
 // =======================================================================
 
@@ -81,19 +79,16 @@ struct Spectrum
                                  Approx, RoundingMode::Default>;
 
     ENOKI_DECLARE_ARRAY(Base, Spectrum)
-};
 
-/**
- * The following types are used for computations involving data that
- * is sampled at a fixed number of points in the wavelength domain.
- *
- * Note that this is not restricted to radiance data -- probabilities or
- * sampling weights often need to be expressed in a spectrally varying manner,
- * and this type also applies to these situations.
- */
-using Spectrumf  = Spectrum<Float>;
-using SpectrumfP = Spectrum<FloatP>;
-using SpectrumfX = Spectrum<FloatX>;
+    /**
+     * \brief Return a spectral color distribution of the
+     * D65 white point (with unit luminance)
+     */
+    inline static const Spectrum D65() {
+        Log(EWarn, "Spectrum::D65() not implemented correctly yet.");
+        return Spectrum(1.0f);
+    }
+};
 
 //! @}
 // =======================================================================

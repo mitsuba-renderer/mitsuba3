@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 
+from mitsuba.core import BoundingBox3f
 from mitsuba.core.xml import load_string
 from pytest import approx
 
@@ -53,6 +54,8 @@ def test01_create():
     assert c.shutter_open_time() == approx(0)
     assert not c.needs_time_sample()
     assert not c.needs_aperture_sample()
+    assert c.bbox() == BoundingBox3f([1, 0, 1.5], [1, 0, 1.5])
+
 
     # Aspect should be the same as a default film
     # assert c.film() is not None

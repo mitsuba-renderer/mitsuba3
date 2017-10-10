@@ -2,10 +2,12 @@
 #  pragma warning (disable: 4324) // warning C4324: 'std::pair<const std::string,mitsuba::Entry>': structure was padded due to alignment specifier
 #endif
 
-#include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/variant.h>
+
+#include <mitsuba/core/logger.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/variant.h>
 #include <iostream>
 
 #include <map>
@@ -22,6 +24,7 @@ using VariantType = variant<
     std::string,
     Transform4f,
     ref<AnimatedTransform>,
+    Spectrumf,
     NamedReference,
     ref<Object>
 >;
@@ -88,6 +91,7 @@ DEFINE_PROPERTY_ACCESSOR(Vector3f,          vector,    set_vector3f,          ve
 DEFINE_PROPERTY_ACCESSOR(Point3f,           point,     set_point3f,           point3f)
 DEFINE_PROPERTY_ACCESSOR(NamedReference,    ref,       set_named_reference,   named_reference)
 DEFINE_PROPERTY_ACCESSOR(Transform4f,       transform, set_transform,         transform)
+DEFINE_PROPERTY_ACCESSOR(Spectrumf,         spectrumf, set_spectrumf,         spectrumf)
 DEFINE_PROPERTY_ACCESSOR(ref<Object>,       object,    set_object,            object)
 // See at the end of the file for custom-defined accessors.
 
@@ -125,6 +129,7 @@ namespace {
         Result operator()(const NamedReference &) { return Properties::ENamedReference; }
         Result operator()(const Transform4f &) { return Properties::ETransform; }
         Result operator()(const ref<AnimatedTransform> &) { return Properties::EAnimatedTransform; }
+        Result operator()(const Spectrumf &) { return Properties::ESpectrum; }
         Result operator()(const ref<Object> &) { return Properties::EObject; }
     };
 
@@ -139,6 +144,7 @@ namespace {
         void operator()(const Point3f &v) { os << v; }
         void operator()(const Transform4f &t) { os << t; }
         void operator()(const ref<AnimatedTransform> &t) { os << *t; }
+        void operator()(const Spectrumf &t) { os << t; }
         void operator()(const std::string &s) { os << "\"" << s << "\""; }
         void operator()(const NamedReference &nr) { os << "\"" << (const std::string &) nr << "\""; }
         void operator()(const ref<Object> &o) { os << o->to_string(); }

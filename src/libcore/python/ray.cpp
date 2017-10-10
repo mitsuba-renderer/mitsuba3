@@ -20,7 +20,8 @@ auto bind_ray(Args2&&... args2) {
         .def_readwrite("d", &Type::d, D(Ray, d))
         .def_readwrite("d_rcp", &Type::d_rcp, D(Ray, d_rcp))
         .def_readwrite("mint", &Type::mint, D(Ray, mint))
-        .def_readwrite("maxt", &Type::maxt, D(Ray, maxt));
+        .def_readwrite("maxt", &Type::maxt, D(Ray, maxt))
+        .def_readwrite("time", &Type::time, D(Ray, time));
 }
 
 template <typename Type, typename... Args, typename... Args2>

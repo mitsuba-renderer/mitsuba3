@@ -1,3 +1,4 @@
+#include <mitsuba/core/bbox.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
 
@@ -92,5 +93,7 @@ MTS_PY_EXPORT(AnimatedTransform) {
              vectorize_wrapper(
                  py::overload_cast<const FloatP &, const mask_t<FloatP> &>(
                      &AnimatedTransform::lookup, py::const_)),
-             "time"_a, "active"_a = true);
+             "time"_a, "active"_a = true)
+        .mdef(AnimatedTransform, translation_bounds)
+        ;
 }
