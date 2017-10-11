@@ -3,6 +3,7 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/common.h>
 #include <mitsuba/render/fwd.h>
@@ -98,8 +99,14 @@ public:
      */
     virtual Spectrumf sample_position(PositionSample3f &p_rec,
         const Point2f &sample, const Point2f *extra = nullptr) const;
+    Spectrumf sample_position(PositionSample3f &p_rec,
+        const Point2f &sample, const Point2f *extra, bool /*unused*/) const {
+        return sample_position(p_rec, sample, extra);
+    }
+    /// Vectorized variant of \ref sample_position.
     virtual SpectrumfP sample_position(PositionSample3fP &p_rec,
-        const Point2fP &sample, const Point2fP *extra = nullptr) const;
+        const Point2fP &sample, const Point2fP *extra = nullptr,
+        const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Conditioned on the spatial component, importance
@@ -134,9 +141,15 @@ public:
     virtual Spectrumf sample_direction(
         DirectionSample3f &d_rec, PositionSample3f &p_rec,
         const Point2f &sample, const Point2f *extra = nullptr) const;
+    Spectrumf sample_direction(
+        DirectionSample3f &d_rec, PositionSample3f &p_rec,
+        const Point2f &sample, const Point2f *extra, bool /*unused*/) const {
+        return sample_direction(d_rec, p_rec, sample, extra);
+    }
     virtual SpectrumfP sample_direction(
         DirectionSample3fP &d_rec, PositionSample3fP &p_rec,
-        const Point2fP &sample, const Point2fP *extra = nullptr) const;
+        const Point2fP &sample, const Point2fP *extra = nullptr,
+        const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief \a Direct sampling: given a reference point in the
@@ -169,8 +182,14 @@ public:
      */
     virtual Spectrumf sample_direct(DirectSample3f &d_rec,
                                     const Point2f &sample) const;
+    Spectrumf sample_direct(DirectSample3f &d_rec,
+                                    const Point2f &sample,
+                                    bool /*unused*/) const {
+        return sample_direct(d_rec, sample);
+    }
     virtual SpectrumfP sample_direct(DirectSample3fP &d_rec,
-                                    const Point2fP &sample) const;
+                                     const Point2fP &sample,
+                                     const mask_t<FloatP> &active = true) const;
 
     //! @}
     // =============================================================
@@ -191,7 +210,12 @@ public:
      * sensor response, or inverse power per unit area for sensors)
      */
     virtual Spectrumf eval_position(const PositionSample3f &p_rec) const;
-    virtual SpectrumfP eval_position(const PositionSample3fP &p_rec) const;
+    Spectrumf eval_position(const PositionSample3f &p_rec,
+                            bool /*unused*/) const {
+        return eval_position(p_rec);
+    }
+    virtual SpectrumfP eval_position(const PositionSample3fP &p_rec,
+                                     const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Evaluate the directional component of the emission profile
@@ -211,8 +235,14 @@ public:
      */
     virtual Spectrumf eval_direction(const DirectionSample3f &d_rec,
                                      const PositionSample3f &p_rec) const;
+    Spectrumf eval_direction(const DirectionSample3f &d_rec,
+                             const PositionSample3f &p_rec,
+                             bool /*unused*/) const {
+        return eval_direction(d_rec, p_rec);
+    }
     virtual SpectrumfP eval_direction(const DirectionSample3fP &d_rec,
-                                      const PositionSample3fP &p_rec) const;
+                                      const PositionSample3fP &p_rec,
+                                      const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Evaluate the spatial component of the sampling density
@@ -225,7 +255,12 @@ public:
      *    The area density at the supplied position
      */
     virtual Float pdf_position(const PositionSample3f &p_rec) const;
-    virtual FloatP pdf_position(const PositionSample3fP &p_rec) const;
+    Float pdf_position(const PositionSample3f &p_rec,
+                       bool /*unused*/) const {
+        return pdf_position(p_rec);
+    }
+    virtual FloatP pdf_position(const PositionSample3fP &p_rec,
+                                const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Evaluate the directional component of the sampling density
@@ -242,8 +277,14 @@ public:
      */
     virtual Float pdf_direction(const DirectionSample3f &d_rec,
                                 const PositionSample3f &p_rec) const;
+    Float pdf_direction(const DirectionSample3f &d_rec,
+                        const PositionSample3f &p_rec,
+                        bool /*unused*/) const {
+        return pdf_direction(d_rec, p_rec);
+    }
     virtual FloatP pdf_direction(const DirectionSample3fP &d_rec,
-                                 const PositionSample3fP &p_rec) const;
+                                 const PositionSample3fP &p_rec,
+                                 const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Evaluate the probability density of the \a direct sampling
@@ -260,7 +301,12 @@ public:
      *    (usually \ref ESolidAngle)
      */
     virtual Float pdf_direct(const DirectSample3f &d_rec) const;
-    virtual FloatP pdf_direct(const DirectSample3fP &d_rec) const;
+    Float pdf_direct(const DirectSample3f &d_rec,
+                     bool /*unused*/) const {
+        return pdf_direct(d_rec);
+    }
+    virtual FloatP pdf_direct(const DirectSample3fP &d_rec,
+                              const mask_t<FloatP> &active = true) const;
 
     //! @}
     // =============================================================

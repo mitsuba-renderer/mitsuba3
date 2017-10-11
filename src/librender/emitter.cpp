@@ -16,22 +16,21 @@ Spectrumf Emitter::eval(const SurfaceInteraction3f &/*its*/,
     return Spectrumf(0.0f);
 }
 SpectrumfP Emitter::eval(const SurfaceInteraction3fP &/*its*/,
-                         const Vector3fP &/*d*/) const {
+                         const Vector3fP &/*d*/,
+                         const mask_t<FloatP> &/*active*/) const {
     NotImplementedError("eval");
     return SpectrumfP(0.0f);
 }
 
 std::pair<Ray3f, Spectrumf> Emitter::sample_ray(
-    const Point2f &/*spatial_sample*/,
-    const Point2f &/*directional_sample*/,
-    Float /*time*/) const {
+        const Point2f &/*spatial_sample*/, const Point2f &/*directional_sample*/,
+        Float /*time*/) const {
     NotImplementedError("sample_ray");
     return { Ray3f(), Spectrumf(0.0f), };
 }
 std::pair<Ray3fP, SpectrumfP> Emitter::sample_ray(
-    const Point2fP &/*spatial_sample*/,
-    const Point2fP &/*directional_sample*/,
-    FloatP /*time*/) const {
+        const Point2fP &/*spatial_sample*/, const Point2fP &/*directional_sample*/,
+        FloatP /*time*/, const mask_t<FloatP> &/*active*/) const {
     NotImplementedError("sample_ray");
     return { Ray3fP(), SpectrumfP(0.0f) };
 }
@@ -46,7 +45,8 @@ Spectrumf Emitter::eval_environment(const RayDifferential3f &/*ray*/) const {
     NotImplementedError("eval_environment");
     return Spectrumf(0.0f);
 }
-SpectrumfP Emitter::eval_environment(const RayDifferential3fP &/*ray*/) const {
+SpectrumfP Emitter::eval_environment(const RayDifferential3fP &/*ray*/,
+                                     const mask_t<FloatP> &/*active*/) const {
     NotImplementedError("eval_environment");
     return SpectrumfP(0.0f);
 }
@@ -57,7 +57,8 @@ bool Emitter::fill_direct_sample(
     return false;
 }
 bool Emitter::fill_direct_sample(
-        DirectSample3fP &/*d_rec*/, const Ray3fP &/*ray*/) const {
+        DirectSample3fP &/*d_rec*/, const Ray3fP &/*ray*/,
+        const mask_t<FloatP> &/*active*/) const {
     NotImplementedError("fill_direct_sample");
     return false;
 }

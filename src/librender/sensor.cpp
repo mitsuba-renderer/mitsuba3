@@ -72,28 +72,30 @@ void Sensor::configure() {
 }
 
 
-template <typename Value, typename Point2,
-          typename RayDifferential, typename Spectrum>
+template <typename Value, typename Point2, typename RayDifferential,
+          typename Spectrum, typename Mask>
 std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
     const Point2 &sample_position, const Point2 &aperture_sample,
-    Value time_sample) const {
+    Value time_sample, const Mask &active) const {
     using Ray3 = Ray<Point<Value, 3>>;
 
     RayDifferential ray;
     Spectrum result, unused;
-    std::tie(ray, result) = sample_ray(sample_position, aperture_sample,
-                                       time_sample);
+    std::tie(ray, result) = sample_ray(
+            sample_position, aperture_sample, time_sample, active);
 
     // Sample a ray for X+1
     Ray3 temp_ray;
-    std::tie(temp_ray, unused) = sample_ray(sample_position + Vector2f(1, 0),
-                                            aperture_sample, time_sample);
+    std::tie(temp_ray, unused) = sample_ray(
+            sample_position + Vector2f(1, 0),
+            aperture_sample, time_sample, active);
     ray.o_x = temp_ray.o;
     ray.d_x = temp_ray.d;
 
     // Sample a ray for Y+1
-    std::tie(temp_ray, unused) = sample_ray(sample_position + Vector2f(0, 1),
-                                            aperture_sample, time_sample);
+    std::tie(temp_ray, unused) = sample_ray(
+            sample_position + Vector2f(0, 1),
+            aperture_sample, time_sample, active);
     ray.o_y = temp_ray.o;
     ray.d_y = temp_ray.d;
     ray.has_differentials = true;
@@ -104,12 +106,14 @@ std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
 std::pair<RayDifferential3f, Spectrumf> Sensor::sample_ray_differential(
         const Point2f &sample_position, const Point2f &aperture_sample,
         Float time_sample) const {
-    return sample_ray_differential_impl(sample_position, aperture_sample, time_sample);
+    return sample_ray_differential_impl(sample_position, aperture_sample,
+                                        time_sample);
 }
 std::pair<RayDifferential3fP, SpectrumfP> Sensor::sample_ray_differential(
         const Point2fP &sample_position, const Point2fP &aperture_sample,
-        FloatP time_sample) const {
-    return sample_ray_differential_impl(sample_position, aperture_sample, time_sample);
+        FloatP time_sample, const mask_t<FloatP> &active) const {
+    return sample_ray_differential_impl(sample_position, aperture_sample,
+                                        time_sample, active);
 }
 
 std::pair<Spectrumf, Point2f> Sensor::eval(const SurfaceInteraction3f &/*its*/,
@@ -118,28 +122,32 @@ std::pair<Spectrumf, Point2f> Sensor::eval(const SurfaceInteraction3f &/*its*/,
                 " is not implemented!");
     return { Spectrumf(0.0f), Point2f(0.0f) };
 }
-std::pair<SpectrumfP, Point2fP> Sensor::eval(const SurfaceInteraction3fP &/*its*/,
-                                             const Vector3fP &/*d*/) const {
+std::pair<SpectrumfP, Point2fP> Sensor::eval(
+        const SurfaceInteraction3fP &/*its*/, const Vector3fP &/*d*/,
+        const mask_t<FloatP> &/*active*/) const {
     Log(EError, "eval(const SurfaceInteraction3fP &, const Vector3fP &)"
                 " is not implemented!");
     return { SpectrumfP(0.0f), Point2fP(0.0f) };
 }
 
 std::pair<bool, Point2f> Sensor::get_sample_position(
-    const PositionSample3f &/*pRec*/, const DirectionSample3f &/*dRec*/) const {
+        const PositionSample3f &/*pRec*/,
+        const DirectionSample3f &/*dRec*/) const {
     Log(EError, "get_sample_position(const PositionSample3f &, "
                 "const DirectionSample3f &) is not implemented!");
     return { false, Point2f(0.0f) };
 }
 std::pair<BoolP, Point2fP> Sensor::get_sample_position(
-    const PositionSample3fP &/*pRec*/, const DirectionSample3fP &/*dRec*/) const {
+        const PositionSample3fP &/*pRec*/, const DirectionSample3fP &/*dRec*/,
+        const mask_t<FloatP> &/*active*/) const {
     Log(EError, "get_sample_position(const PositionSample3fP &, "
                 "const DirectionSample3fP &) is not implemented!");
     return { BoolP(false), Point2fP(0.0f) };
 }
 
-template <typename Value, typename Measure, typename Ray>
-Value Sensor::pdf_time(const Ray &/*ray*/, Measure measure) const {
+template <typename Value, typename Measure, typename Ray, typename Mask>
+Value Sensor::pdf_time(const Ray &/*ray*/, Measure measure,
+                       const Mask &/*active*/) const {
     Value res(0.0f);
 
     if (m_shutter_open_time == 0)
@@ -340,11 +348,10 @@ MTS_IMPLEMENT_CLASS(PerspectiveCamera, ProjectiveCamera)
 // Template instantiations
 // =============================================================================
 
-template MTS_EXPORT_RENDER Float  Sensor::sample_time(Float sample) const;
-template MTS_EXPORT_RENDER FloatP Sensor::sample_time(FloatP sample) const;
-template MTS_EXPORT_RENDER Float  Sensor::pdf_time(const Ray3f &ray, EMeasure measure) const;
-template MTS_EXPORT_RENDER FloatP Sensor::pdf_time(const Ray3fP &ray,
-                                                   like_t<FloatP, EMeasure> measure) const;
+template MTS_EXPORT_RENDER Float  Sensor::sample_time(Float, const bool &) const;
+template MTS_EXPORT_RENDER FloatP Sensor::sample_time(FloatP, const mask_t<FloatP> &) const;
+template MTS_EXPORT_RENDER Float  Sensor::pdf_time(const Ray3f &, EMeasure, const bool &) const;
+template MTS_EXPORT_RENDER FloatP Sensor::pdf_time(const Ray3fP &, like_t<FloatP, EMeasure>, const mask_t<FloatP> &) const;
 
 
 NAMESPACE_END(mitsuba)

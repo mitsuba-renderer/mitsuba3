@@ -10,10 +10,11 @@ MTS_PY_EXPORT(Sensor) {
              D(Sensor, sample_ray),
              "position_sample"_a, "aperture_sample"_a, "time_sample"_a)
         .def("sample_ray", enoki::vectorize_wrapper(
-             py::overload_cast<const Point2fP&, const Point2fP&, FloatP>(
+             py::overload_cast<const Point2fP&, const Point2fP&, FloatP,
+                               const mask_t<FloatP> &>(
                 &Sensor::sample_ray, py::const_)),
              D(Sensor, sample_ray),
-             "position_sample"_a, "aperture_sample"_a, "time_sample"_a)
+             "position_sample"_a, "aperture_sample"_a, "time_sample"_a, "active"_a)
 
         .def("sample_ray_differential",
              py::overload_cast<const Point2f&, const Point2f&, Float>(
@@ -21,38 +22,42 @@ MTS_PY_EXPORT(Sensor) {
              D(Sensor, sample_ray_differential),
              "position_sample"_a, "aperture_sample"_a, "time_sample"_a)
         .def("sample_ray_differential", enoki::vectorize_wrapper(
-             py::overload_cast<const Point2fP&, const Point2fP&, FloatP>(
+             py::overload_cast<const Point2fP&, const Point2fP&, FloatP,
+                               const mask_t<FloatP> &>(
                 &Sensor::sample_ray_differential, py::const_)),
              D(Sensor, sample_ray_differential),
-             "position_sample"_a, "aperture_sample"_a, "time_sample"_a)
+             "position_sample"_a, "aperture_sample"_a, "time_sample"_a, "active"_a)
 
         .def("sample_time", &Sensor::sample_time<Float>,
-             D(Sensor, sample_time), "sample"_a)
+             D(Sensor, sample_time), "sample"_a, "active"_a = true)
         .def("sample_time", enoki::vectorize_wrapper(&Sensor::sample_time<FloatP>),
-             D(Sensor, sample_time), "sample"_a)
+             D(Sensor, sample_time), "sample"_a, "active"_a = true)
+
+
+        .def("pdf_time", &Sensor::pdf_time<Float>,
+             D(Sensor, pdf_time), "ray"_a, "measure"_a, "active"_a = true)
+        .def("pdf_time", enoki::vectorize_wrapper(&Sensor::pdf_time<FloatP>),
+             D(Sensor, pdf_time), "ray"_a, "measure"_a, "active"_a = true)
 
         .def("eval",
              py::overload_cast<const SurfaceInteraction3f&, const Vector3f&>(
                 &Sensor::eval, py::const_),
              D(Sensor, eval), "its"_a, "d"_a)
         .def("eval", enoki::vectorize_wrapper(
-             py::overload_cast<const SurfaceInteraction3fP&, const Vector3fP&>(
+             py::overload_cast<const SurfaceInteraction3fP&, const Vector3fP&,
+                               const mask_t<FloatP> &>(
                 &Sensor::eval, py::const_)),
-             D(Sensor, eval), "its"_a, "d"_a)
+             D(Sensor, eval), "its"_a, "d"_a, "active"_a = true)
 
         .def("get_sample_position",
              py::overload_cast<const PositionSample3f&, const DirectionSample3f&>(
                 &Sensor::get_sample_position, py::const_),
              D(Sensor, get_sample_position), "p_rec"_a, "d_rec"_a)
         .def("get_sample_position", enoki::vectorize_wrapper(
-             py::overload_cast<const PositionSample3fP&, const DirectionSample3fP&>(
+             py::overload_cast<const PositionSample3fP&, const DirectionSample3fP&,
+                               const mask_t<FloatP> &>(
                 &Sensor::get_sample_position, py::const_)),
-             D(Sensor, get_sample_position), "p_rec"_a, "d_rec"_a)
-
-        .def("pdf_time", &Sensor::pdf_time<Float>,
-             D(Sensor, pdf_time), "ray"_a, "measure"_a)
-        .def("pdf_time", enoki::vectorize_wrapper(&Sensor::pdf_time<FloatP>),
-             D(Sensor, pdf_time), "ray"_a, "measure"_a)
+             D(Sensor, get_sample_position), "p_rec"_a, "d_rec"_a, "active"_a = true)
 
         .def("shutter_open", &Sensor::shutter_open, D(Sensor, shutter_open))
         .def("set_shutter_open", &Sensor::set_shutter_open,

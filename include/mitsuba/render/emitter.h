@@ -49,8 +49,13 @@ public:
      */
     virtual Spectrumf eval(const SurfaceInteraction3f &its,
                            const Vector3f &d) const;
+    Spectrumf eval(const SurfaceInteraction3f &its, const Vector3f &d,
+                   bool /*unused*/) const {
+        return eval(its, d);
+    }
     virtual SpectrumfP eval(const SurfaceInteraction3fP &its,
-                            const Vector3fP &d) const;
+                            const Vector3fP &d,
+                            const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Importance sample a ray according to the emission profile
@@ -84,13 +89,16 @@ public:
      *    and the sampling density function.
      */
     virtual std::pair<Ray3f, Spectrumf> sample_ray(
-        const Point2f &position_sample,
-        const Point2f &direction_sample,
-        Float time_sample) const;
+            const Point2f &position_sample, const Point2f &direction_sample,
+            Float time_sample) const;
+    std::pair<Ray3f, Spectrumf> sample_ray(
+            const Point2f &position_sample, const Point2f &direction_sample,
+            Float time_sample, bool /*unused*/) const {
+        return sample_ray(position_sample, direction_sample, time_sample);
+    }
     virtual std::pair<Ray3fP, SpectrumfP> sample_ray(
-        const Point2fP &position_sample,
-        const Point2fP &direction_sample,
-        FloatP time_sample) const;
+            const Point2fP &position_sample, const Point2fP &direction_sample,
+            FloatP time_sample, const mask_t<FloatP> &active = true) const;
 
     //! @}
     // =============================================================
@@ -145,7 +153,13 @@ public:
      *    Specifies the ray direction that should be queried
      */
     virtual Spectrumf eval_environment(const RayDifferential3f &ray) const;
-    virtual SpectrumfP eval_environment(const RayDifferential3fP &ray) const;
+    Spectrumf eval_environment(const RayDifferential3f &ray,
+                               bool /*unused*/) const {
+        return eval_environment(ray);
+    }
+    virtual SpectrumfP eval_environment(
+            const RayDifferential3fP &ray,
+            const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Fill out a data record that can be used to query the direct
@@ -169,8 +183,13 @@ public:
      */
     virtual bool fill_direct_sample(
             DirectSample3f &d_rec, const Ray3f &ray) const;
+    bool fill_direct_sample(DirectSample3f &d_rec, const Ray3f &ray,
+                            bool /*unused*/) const {
+        return fill_direct_sample(d_rec, ray);
+    }
     virtual bool fill_direct_sample(
-            DirectSample3fP &d_rec, const Ray3fP &ray) const;
+            DirectSample3fP &d_rec, const Ray3fP &ray,
+            const mask_t<FloatP> &active = true) const;
 
     //! @}
     // =============================================================

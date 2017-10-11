@@ -81,23 +81,24 @@ public:
         else
             return m_radiance;
     }
-    SpectrumfP eval(const SurfaceInteraction3fP &its,
-                    const Vector3fP &d) const override {
+    SpectrumfP eval(const SurfaceInteraction3fP &its, const Vector3fP &d,
+        const mask_t<FloatP> &/*active*/ = true) const override {
         SpectrumfP res(m_radiance);
         res[dot(its.sh_frame.n, d) <= 0.0f] = 0.0f;
         return res;
     }
 
     Spectrumf sample_position(
-        PositionSample3f &p_rec, const Point2f &sample,
-        const Point2f * /*extra*/) const override {
+            PositionSample3f &p_rec, const Point2f &sample,
+            const Point2f * /*extra*/) const override {
         m_shape->sample_position(p_rec, sample);
         return m_power;
     }
     SpectrumfP sample_position(
-        PositionSample3fP &p_rec, const Point2fP &sample,
-        const Point2fP * /*extra*/) const override {
-        m_shape->sample_position(p_rec, sample);
+            PositionSample3fP &p_rec, const Point2fP &sample,
+            const Point2fP * /*extra*/,
+            const mask_t<FloatP> &active = true) const override {
+        m_shape->sample_position(p_rec, sample, active);
         return SpectrumfP(m_power);
     }
 
@@ -106,29 +107,33 @@ public:
         return m_radiance * math::Pi;
     }
     SpectrumfP eval_position(
-            const PositionSample3fP &/*p_rec*/) const override {
+            const PositionSample3fP &/*p_rec*/,
+            const mask_t<FloatP> &/*active*/ = true) const override {
         return SpectrumfP(m_radiance * math::Pi);
     }
 
     Float pdf_position(const PositionSample3f &p_rec) const override {
         return m_shape->pdf_position(p_rec);
     }
-    FloatP pdf_position(const PositionSample3fP &p_rec) const override {
+    FloatP pdf_position(const PositionSample3fP &p_rec,
+                        const mask_t<FloatP> &/*active*/ = true) const override {
         return m_shape->pdf_position(p_rec);
     }
 
     template <typename DirectionSample, typename PositionSample,
-              typename Point2 = typename DirectionSample::Point2>
+              typename Point2 = typename DirectionSample::Point2,
+              typename Mask = mask_t<value_t<Point2>>>
     auto sample_direction_impl(DirectionSample &d_rec, PositionSample &p_rec,
-                               const Point2 &sample) const {
+                               const Point2 &sample,
+                               const Mask &active = true) const {
         using Vector3 = vector3_t<Point2>;
         using Frame = Frame<Vector3>;
         using Spectrum = Spectrum<value_t<Point2>>;
 
         Vector3 local = warp::square_to_cosine_hemisphere(sample);
-        d_rec.d = Frame(p_rec.n).to_world(local);
-        d_rec.pdf = warp::square_to_cosine_hemisphere_pdf(local);
-        d_rec.measure = ESolidAngle;
+        masked(d_rec.d, active) = Frame(p_rec.n).to_world(local);
+        masked(d_rec.pdf, active) = warp::square_to_cosine_hemisphere_pdf(local);
+        masked(d_rec.measure, active) = ESolidAngle;
         return Spectrum(1.0f);
     }
     Spectrumf sample_direction(
@@ -138,13 +143,16 @@ public:
     }
     SpectrumfP sample_direction(
             DirectionSample3fP &d_rec, PositionSample3fP &p_rec,
-            const Point2fP &sample, const Point2fP * /*extra*/) const override {
-        return sample_direction_impl(d_rec, p_rec, sample);
+            const Point2fP &sample, const Point2fP * /*extra*/,
+            const mask_t<FloatP> &active = true) const override {
+        return sample_direction_impl(d_rec, p_rec, sample, active);
     }
 
-    template <typename DirectionSample, typename PositionSample>
-    auto pdf_direction_impl(DirectionSample &d_rec,
-                            const PositionSample &p_rec) const {
+    template <typename DirectionSample, typename PositionSample,
+              typename Mask = typename DirectionSample::Value>
+    auto pdf_direction_impl(const DirectionSample &d_rec,
+                            const PositionSample &p_rec,
+                            const Mask & /*active*/ = true) const {
         auto dp = dot(d_rec.d, p_rec.n);
         masked(dp, (neq(d_rec.measure, ESolidAngle)) | (dp < 0)) = 0.0f;
         return math::InvPi * dp;
@@ -153,9 +161,10 @@ public:
                         const PositionSample3f &p_rec) const override {
         return pdf_direction_impl(d_rec, p_rec);
     }
-    FloatP pdf_direction(const DirectionSample3fP &d_rec,
-            const PositionSample3fP &p_rec) const override {
-        return pdf_direction_impl(d_rec, p_rec);
+    FloatP pdf_direction(
+            const DirectionSample3fP &d_rec, const PositionSample3fP &p_rec,
+            const mask_t<FloatP> &active = true) const override {
+        return pdf_direction_impl(d_rec, p_rec, active);
     }
 
 
@@ -164,14 +173,16 @@ public:
         return Spectrumf(pdf_direction_impl(d_rec, p_rec));
     }
     SpectrumfP eval_direction(const DirectionSample3fP &d_rec,
-                              const PositionSample3fP &p_rec) const override {
-        return SpectrumfP(pdf_direction_impl(d_rec, p_rec));
+                              const PositionSample3fP &p_rec,
+                              const mask_t<FloatP> &active = true) const override {
+        return SpectrumfP(pdf_direction_impl(d_rec, p_rec, active));
     }
 
-    template <typename Point2, typename Value = value_t<Point2>>
+    template <typename Point2, typename Value = value_t<Point2>,
+              typename Mask = mask_t<Value>>
     auto sample_ray_impl(const Point2 &position_sample,
                          const Point2 &direction_sample,
-                         Value time_sample) const {
+                         Value time_sample, const Mask &active = true) const {
         using Point3 = Point<Value, 3>;
         using Frame = Frame<vector3_t<Point3>>;
         using PositionSample = PositionSample<Point3>;
@@ -179,7 +190,7 @@ public:
         using Spectrum = Spectrum<Value>;
 
         PositionSample p_rec(time_sample);
-        m_shape->sample_position(p_rec, position_sample);
+        m_shape->sample_position(p_rec, position_sample, active);
         auto local = warp::square_to_cosine_hemisphere(direction_sample);
         Ray3 ray;
         ray.time = time_sample;
@@ -194,17 +205,21 @@ public:
     }
     std::pair<Ray3fP, SpectrumfP> sample_ray(
             const Point2fP &position_sample, const Point2fP &direction_sample,
-            FloatP time_sample) const override {
-        return sample_ray_impl(position_sample, direction_sample, time_sample);
+            FloatP time_sample,
+            const mask_t<FloatP> &active = true) const override {
+        return sample_ray_impl(position_sample, direction_sample, time_sample,
+                               active);
     }
 
     template <typename DirectSample,
               typename Point2 = typename DirectSample::Point2,
               typename Value = value_t<Point2>,
-              typename Spectrum = Spectrum<Value>>
+              typename Spectrum = Spectrum<Value>,
+              typename Mask = mask_t<Value>>
     Spectrum sample_direct_impl(DirectSample &d_rec,
-                                const Point2 &sample) const {
-        m_shape->sample_direct(d_rec, sample);
+                                const Point2 &sample,
+                                const Mask &active = true) const {
+        m_shape->sample_direct(d_rec, sample, active);
         // Check that the emitter and reference position are oriented correctly
         // with respect to each other. Note that the >= 0 check
         // for `ref_n` is intentional -- those sampling requests that specify
@@ -213,18 +228,19 @@ public:
         Spectrum res(0.0f);
         auto mask = (dot(d_rec.d, d_rec.ref_n) >= 0)
                   & (dot(d_rec.d, d_rec.n) < 0)
-                  & (d_rec.pdf != 0);
-        masked(res, mask) = Spectrum(m_radiance) / d_rec.pdf;
-        masked(d_rec.pdf, ~mask) = 0.0f;
+                  &  neq(d_rec.pdf, 0);
+        masked(res, active & mask) = Spectrum(m_radiance) / d_rec.pdf;
+        masked(d_rec.pdf, active & (~mask)) = 0.0f;
         return res;
     }
-    Spectrumf sample_direct(
-        DirectSample3f &d_rec, const Point2f &sample) const override {
+    Spectrumf sample_direct(DirectSample3f &d_rec,
+                            const Point2f &sample) const override {
         return sample_direct_impl(d_rec, sample);
     }
     SpectrumfP sample_direct(
-        DirectSample3fP &d_rec, const Point2fP &sample) const override {
-        return sample_direct_impl(d_rec, sample);
+            DirectSample3fP &d_rec, const Point2fP &sample,
+            const mask_t<FloatP> &active = true) const override {
+        return sample_direct_impl(d_rec, sample, active);
     }
 
     Float pdf_direct(const DirectSample3f &d_rec) const override {
@@ -235,10 +251,11 @@ public:
         else
             return 0.0f;
     }
-    FloatP pdf_direct(const DirectSample3fP &d_rec) const override {
+    FloatP pdf_direct(const DirectSample3fP &d_rec,
+                      const mask_t<FloatP> &active = true) const override {
         FloatP res(0.0f);
         res[(dot(d_rec.d, d_rec.ref_n) >= 0)
-            & (dot(d_rec.d, d_rec.n) < 0)] = m_shape->pdf_direct(d_rec);
+            & (dot(d_rec.d, d_rec.n) < 0)] = m_shape->pdf_direct(d_rec, active);
         return res;
     }
 

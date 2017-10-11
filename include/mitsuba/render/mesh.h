@@ -95,8 +95,7 @@ public:
     /// Returns the derivative of the normal vector with respect to the UV parameterization
     virtual std::pair<Vector3f, Vector3f>
     normal_derivative(const SurfaceInteraction3f &si,
-                      bool shading_frame = true,
-                      bool active = true) const override;
+                      bool shading_frame = true) const override;
 
     virtual std::pair<Vector3fP, Vector3fP>
     normal_derivative(const SurfaceInteraction3fP &si, bool shading_frame = true,

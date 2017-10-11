@@ -106,17 +106,17 @@ public:
     //! @{ \name Sampling methods (Sensor interface)
     // =============================================================
 
-    template <typename Point2, typename Value>
-    auto sample_ray_impl(const Point2 &position_sample,
-                         const Point2 &/*aperture_sample*/,
-                         Value time_sample) const {
+    template <typename Point2, typename Value, typename Mask = mask_t<Value>>
+    auto sample_ray_impl(
+            const Point2 &position_sample, const Point2 &/*aperture_sample*/,
+            Value time_sample, const Mask &active = true) const {
         using Point3 = Point<Value, 3>;
         using Ray = Ray<Point3>;
         using Spectrum = Spectrum<Value>;
         using Vector3 = Vector<Value, 3>;
 
         Ray ray;
-        ray.time = sample_time(time_sample);
+        ray.time = sample_time(time_sample, active);
 
         // Compute the corresponding position on the near plane (in local
         // camera space).
@@ -131,7 +131,7 @@ public:
         ray.mint = m_near_clip * invZ;
         ray.maxt = m_far_clip * invZ;
 
-        const auto &trafo = m_world_transform->lookup(ray.time);
+        const auto &trafo = m_world_transform->lookup(ray.time, active);
         ray.o = trafo.transform_affine(Point3(0.0f));
         ray.d = trafo * d;
 
@@ -147,24 +147,26 @@ public:
 
     /// Vectorized version of \ref sample_ray
     std::pair<Ray3fP, SpectrumfP>
-    sample_ray(const Point2fP &position_sample,
-               const Point2fP &aperture_sample,
-               FloatP time_sample) const override {
-        return sample_ray_impl(position_sample, aperture_sample, time_sample);
+    sample_ray(
+            const Point2fP &position_sample, const Point2fP &aperture_sample,
+            FloatP time_sample, const mask_t<FloatP> &active) const override {
+        return sample_ray_impl(position_sample, aperture_sample, time_sample,
+                               active);
     }
 
 
-    template <typename Point2, typename Value = value_t<Point2>>
-    auto sample_ray_differential_impl(const Point2 &position_sample,
-                                      const Point2 &/*aperture_sample*/,
-                                      Value time_sample) const {
+    template <typename Point2, typename Value = value_t<Point2>,
+              typename Mask = mask_t<Value>>
+    auto sample_ray_differential_impl(
+            const Point2 &position_sample, const Point2 &/*aperture_sample*/,
+            Value time_sample, const Mask &active = true) const {
         using Point3 = Point<Value, 3>;
         using RayDifferential = RayDifferential<Point3>;
         using Spectrum = Spectrum<Value>;
         using Vector3 = Vector<Value, 3>;
 
         RayDifferential ray;
-        ray.time = sample_time(time_sample);
+        ray.time = sample_time(time_sample, active);
 
         // Compute the corresponding position on the near plane (in local
         // camera space).
@@ -179,7 +181,7 @@ public:
         ray.mint = m_near_clip * invZ;
         ray.maxt = m_far_clip * invZ;
 
-        const auto &trafo = m_world_transform->lookup(ray.time);
+        const auto &trafo = m_world_transform->lookup(ray.time, active);
         ray.o = trafo.transform_affine(Point3(0.0f));
         ray.d = trafo * d;
 
@@ -194,44 +196,50 @@ public:
 
 
     std::pair<RayDifferential3f, Spectrumf> sample_ray_differential(
-        const Point2f &sample_position, const Point2f &aperture_sample,
-        Float time_sample) const override {
+            const Point2f &sample_position, const Point2f &aperture_sample,
+            Float time_sample) const override {
         return sample_ray_differential_impl(sample_position, aperture_sample,
                                             time_sample);
     }
 
     /// Vectorized version of \ref sample_ray_differential
     std::pair<RayDifferential3fP, SpectrumfP> sample_ray_differential(
-        const Point2fP &sample_position, const Point2fP &aperture_sample,
-        FloatP time_sample) const override {
+            const Point2fP &sample_position, const Point2fP &aperture_sample,
+            FloatP time_sample, const mask_t<FloatP> &active) const override {
         return sample_ray_differential_impl(sample_position, aperture_sample,
-                                            time_sample);
+                                            time_sample, active);
     }
 
 
     std::pair<bool, Point2f> get_sample_position(
-        const PositionSample3f &/*p_rec*/, const DirectionSample3f &/*d_rec*/) const override {
+            const PositionSample3f &/*p_rec*/,
+            const DirectionSample3f &/*d_rec*/) const override {
         Log(EError, "get_sample_position(...) not implemented yet.");
         return std::make_pair(false, Point2f(0.0f, 0.0f));
     }
 
     /// Vectorized version of \ref eval
     std::pair<BoolP, Point2fP> get_sample_position(
-        const PositionSample3fP &/*p_rec*/, const DirectionSample3fP &/*d_rec*/) const override {
+            const PositionSample3fP &/*p_rec*/,
+            const DirectionSample3fP &/*d_rec*/,
+            const mask_t<FloatP> &/*active*/) const override {
         Log(EError, "get_sample_position(...) not implemented yet.");
         return std::make_pair(BoolP(false), Point2fP(0.0f));
     }
 
 
     std::pair<Spectrumf, Point2f> eval(
-        const SurfaceInteraction3f &/*its*/, const Vector3f &/*d*/) const override {
+            const SurfaceInteraction3f &/*its*/,
+            const Vector3f &/*d*/) const override {
         Log(EError, "evel(...) not implemented yet.");
         return std::make_pair(Spectrumf(0.0f), Point2f(0.0f));
     }
 
     /// Vectorized version of \ref eval
     std::pair<SpectrumfP, Point2fP> eval(
-        const SurfaceInteraction3fP &/*its*/, const Vector3fP &/*d*/) const override {
+            const SurfaceInteraction3fP &/*its*/,
+            const Vector3fP &/*d*/,
+            const mask_t<FloatP> &/*active*/) const override {
         Log(EError, "evel(...) not implemented yet.");
         return std::make_pair(SpectrumfP(0.0f), Point2fP(0.0f));
     }

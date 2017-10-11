@@ -82,15 +82,18 @@ public:
      *    sampling density function.
      */
     virtual std::pair<Ray3f, Spectrumf> sample_ray(
-        const Point2f &position_sample,
-        const Point2f &aperture_sample,
-        Float time_sample) const = 0;
+            const Point2f &position_sample, const Point2f &aperture_sample,
+            Float time_sample) const = 0;
+    std::pair<Ray3f, Spectrumf> sample_ray(
+            const Point2f &position_sample, const Point2f &aperture_sample,
+            Float time_sample, bool /*active*/) const {
+        return sample_ray(position_sample, aperture_sample, time_sample);
+    }
 
     /// Vectorized version of \ref sample_ray
     virtual std::pair<Ray3fP, SpectrumfP> sample_ray(
-        const Point2fP &position_sample,
-        const Point2fP &aperture_sample,
-        FloatP time_sample) const = 0;
+            const Point2fP &position_sample, const Point2fP &aperture_sample,
+            FloatP time_sample, const mask_t<FloatP> &active = true) const = 0;
 
     /**
      * \brief Importance sample a ray differential according to the
@@ -140,21 +143,36 @@ public:
      *    <tt>spectrumf, ray = sensor.sample_ray_rifferential(sample_position, aperture_sample)</tt>
      */
     virtual std::pair<RayDifferential3f, Spectrumf> sample_ray_differential(
-        const Point2f &sample_position,
-        const Point2f &aperture_sample,
-        Float time_sample) const;
+            const Point2f &sample_position, const Point2f &aperture_sample,
+            Float time_sample) const;
+    std::pair<RayDifferential3f, Spectrumf> sample_ray_differential(
+            const Point2f &sample_position, const Point2f &aperture_sample,
+            Float time_sample, bool /*active*/) const {
+        return sample_ray_differential(sample_position, aperture_sample,
+                                       time_sample);
+    }
 
     /// Vectorized version of \ref sample_ray_differential
     virtual std::pair<RayDifferential3fP, SpectrumfP> sample_ray_differential(
-        const Point2fP &sample_position,
-        const Point2fP &aperture_sample,
-        FloatP time_sample) const;
+        const Point2fP &sample_position, const Point2fP &aperture_sample,
+        FloatP time_sample, const mask_t<FloatP> &active = true) const;
+
 
     /// Importance sample the temporal part of the sensor response function
-    template <typename Value>
-    Value sample_time(Value sample) const {
+    template <typename Value, typename Mask = mask_t<Value>>
+    Value sample_time(Value sample, const Mask &/*unused*/) const {
         return m_shutter_open + m_shutter_open_time * sample;
     }
+
+    /**
+     * \brief Evaluate the temporal component of the sampling density
+     * implemented by the \ref sample_ray() method.
+     */
+    template <typename Value, typename Measure = like_t<Value, EMeasure>,
+              typename Ray = Ray<Point<Value, 3>>,
+              typename Mask = mask_t<Value>>
+    Value pdf_time(const Ray &ray, Measure measure,
+                   const Mask &active = true) const;
 
     //! @}
     // =============================================================
@@ -195,10 +213,15 @@ public:
      */
     virtual std::pair<Spectrumf, Point2f> eval(const SurfaceInteraction3f &its,
                                                const Vector3f &d) const;
+    std::pair<Spectrumf, Point2f> eval(const SurfaceInteraction3f &its,
+                                       const Vector3f &d, bool /*active*/) const {
+        return eval(its, d);
+    }
 
     /// Vectorized version of \ref eval
-    virtual std::pair<SpectrumfP, Point2fP> eval(const SurfaceInteraction3fP &its,
-                                                 const Vector3fP &d) const;
+    virtual std::pair<SpectrumfP, Point2fP> eval(
+            const SurfaceInteraction3fP &its, const Vector3fP &d,
+            const mask_t<FloatP> &active = true) const;
 
 
     /**
@@ -214,20 +237,17 @@ public:
      * \return \c true if the specified ray is visible by the camera
      */
     virtual std::pair<bool, Point2f> get_sample_position(
-        const PositionSample3f &p_rec, const DirectionSample3f &d_rec) const;
+            const PositionSample3f &p_rec, const DirectionSample3f &d_rec) const;
+    std::pair<bool, Point2f> get_sample_position(
+            const PositionSample3f &p_rec, const DirectionSample3f &d_rec,
+            bool /*active*/) const {
+        return get_sample_position(p_rec, d_rec);
+    }
 
     /// Vectorized version of \ref get_sample_position
     virtual std::pair<BoolP, Point2fP> get_sample_position(
-        const PositionSample3fP &p_rec, const DirectionSample3fP &d_rec) const;
-
-
-    /**
-     * \brief Evaluate the temporal component of the sampling density
-     * implemented by the \ref sample_ray() method.
-     */
-    template <typename Value, typename Measure = like_t<Value, EMeasure>,
-              typename Ray = Ray<Point<Value, 3>> >
-    Value pdf_time(const Ray &ray, Measure measure) const;
+            const PositionSample3fP &p_rec, const DirectionSample3fP &d_rec,
+            const mask_t<FloatP> &active = true) const;
 
     /// Return the time value of the shutter opening event
     inline Float shutter_open() const { return m_shutter_open; }
@@ -308,11 +328,12 @@ protected:
     virtual ~Sensor();
 
     template <typename Value, typename Point2 = Point<Value, 2>,
-          typename RayDifferential = RayDifferential<Point<Value, 3>>,
-          typename Spectrum = Spectrum<Value>>
+              typename RayDifferential = RayDifferential<Point<Value, 3>>,
+              typename Spectrum = Spectrum<Value>,
+              typename Mask = mask_t<Value>>
     std::pair<RayDifferential, Spectrum> sample_ray_differential_impl(
         const Point2 &sample_position, const Point2 &aperture_sample,
-        Value time_sample) const;
+        Value time_sample, const Mask &active = true) const;
 
 private:
     void configure();

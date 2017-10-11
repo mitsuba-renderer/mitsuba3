@@ -64,6 +64,10 @@ public:
      */
     virtual void adjust_time(SurfaceInteraction3f &si,
                              const Float &time) const;
+    void adjust_time(SurfaceInteraction3f &si, const Float &time,
+                     bool /*active*/) const {
+        return adjust_time(si, time);
+    }
 
     /// Statically vectorized version of \ref adjust_time()
     virtual void adjust_time(SurfaceInteraction3fP &si, const FloatP &time,
@@ -89,8 +93,12 @@ public:
      */
     virtual std::pair<Vector3f, Vector3f>
     normal_derivative(const SurfaceInteraction3f &si,
-                      bool shading_frame = true,
-                      bool active = true) const = 0;
+                      bool shading_frame = true) const = 0;
+    std::pair<Vector3f, Vector3f>
+    normal_derivative(const SurfaceInteraction3f &si,
+                      bool shading_frame, bool /*active*/) const {
+        return normal_derivative(si, shading_frame);
+    }
 
     /// Vectorized version of \ref normal_derivative()
     virtual std::pair<Vector3fP, Vector3fP>
@@ -122,9 +130,14 @@ public:
                                  const Point2f &/*sample*/) const {
         NotImplementedError("sample_position");
     }
+    void sample_position(PositionSample3f &p_rec, const Point2f &sample,
+                         bool /*unused*/) const {
+        return sample_position(p_rec, sample);
+    }
     /// Vectorized version of \ref sample_position.
     virtual void sample_position(PositionSample3fP &/*p_rec*/,
-                                 const Point2fP &/*sample*/) const {
+                                 const Point2fP &/*sample*/,
+                                 const mask_t<FloatP> &/*active*/ = true) const {
         NotImplementedError("sample_position");
     }
 
@@ -140,10 +153,16 @@ public:
      */
     virtual Float pdf_position(const PositionSample3f &/*p_rec*/) const {
         NotImplementedError("pdf_position");
+        return 0.0f;
+    }
+    Float pdf_position(const PositionSample3f &p_rec, bool /*unused*/) const {
+        return pdf_position(p_rec);
     }
     /// Vectorized version of \ref pdf_position.
-    virtual FloatP pdf_position(const PositionSample3fP &/*p_rec*/) const {
+    virtual FloatP pdf_position(const PositionSample3fP &/*p_rec*/,
+                                const mask_t<FloatP> &/*active*/ = true) const {
         NotImplementedError("pdf_position");
+        return FloatP(0.0f);
     }
 
     /**
@@ -174,9 +193,14 @@ public:
                                const Point2f &/*sample*/) const {
         NotImplementedError("sample_direct");
     }
+    void sample_direct(DirectSample3f &d_rec, const Point2f &sample,
+                       bool /*unused*/) const {
+        return sample_direct(d_rec, sample);
+    }
     /// Vectorized version of \ref sample_direct.
     virtual void sample_direct(DirectSample3fP &/*d_rec*/,
-                               const Point2fP &/*sample*/) const {
+                               const Point2fP &/*sample*/,
+                               const mask_t<FloatP> &/*active*/ = true) const {
         NotImplementedError("sample_direct");
     }
 
@@ -195,10 +219,16 @@ public:
      */
     virtual Float pdf_direct(const DirectSample3f &/*d_rec*/) const {
         NotImplementedError("pdf_direct");
+        return 0.0f;
+    }
+    Float pdf_direct(const DirectSample3f &d_rec, bool /*active*/) const {
+        return pdf_direct(d_rec);
     }
     /// Vectorized version of \ref pdf_direct.
-    virtual FloatP pdf_direct(const DirectSample3fP &/*d_rec*/) const {
+    virtual FloatP pdf_direct(const DirectSample3fP &/*d_rec*/,
+                              const mask_t<FloatP> &/*active*/ = true) const {
         NotImplementedError("pdf_direct");
+        return FloatP(0.0f);
     }
 
     //! @}

@@ -309,7 +309,7 @@ ENOKI_INLINE auto Mesh::normal_derivative_impl(const SurfaceInteraction &si,
 }
 
 std::pair<Vector3f, Vector3f>
-Mesh::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame, bool /* active */) const {
+Mesh::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame) const {
     return normal_derivative_impl<SurfaceInteraction3f>(si, shading_frame, true);
 }
 
