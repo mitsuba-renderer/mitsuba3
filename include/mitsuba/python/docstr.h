@@ -203,6 +203,10 @@ static const char *__doc_mitsuba_AnimatedTransform_size = R"doc(Return the numbe
 
 static const char *__doc_mitsuba_AnimatedTransform_to_string = R"doc(Return a human-readable summary of this bitmap)doc";
 
+static const char *__doc_mitsuba_AnimatedTransform_translation_bounds =
+R"doc(Return an axis-aligned box bounding the amount of translation over the
+course of the animation.)doc";
+
 static const char *__doc_mitsuba_AnnotatedStream =
 R"doc(An AnnotatedStream adds a table of contents to an underlying stream
 that can later be used to selectively read specific items.
@@ -1850,31 +1854,139 @@ static const char *__doc_mitsuba_ETransportMode_ETransportModes = R"doc(Specifie
 
 static const char *__doc_mitsuba_Emitter = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_EEmitterType =
-R"doc(Flags used to classify the emission profile of different types of
-emitters.)doc";
+static const char *__doc_mitsuba_Emitter_EEmitterFlags =
+R"doc(This list of flags is used to additionally characterize and classify
+the response functions of different types of sensors
 
-static const char *__doc_mitsuba_Emitter_EEmitterType_EDeltaDirection =
-R"doc(Emission profile contains a Dirac delta term with respect to
-direction.)doc";
+See also:
+    Endpoint::EFlags)doc";
 
-static const char *__doc_mitsuba_Emitter_EEmitterType_EDeltaPosition = R"doc(Emission profile contains a Dirac delta term with respect to position.)doc";
-
-static const char *__doc_mitsuba_Emitter_EEmitterType_EOnSurface = R"doc(Is the emitter associated with a surface in the scene?)doc";
+static const char *__doc_mitsuba_Emitter_EEmitterFlags_EEnvironmentEmitter = R"doc(Is this an environment emitter, such as a HDRI map?)doc";
 
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc(//! @})doc";
 
+static const char *__doc_mitsuba_Emitter_bitmap =
+R"doc(Return a bitmap representation of the emitter
+
+Some types of light sources (projection lights, environment maps) are
+closely tied to an underlying bitmap data structure. This function can
+be used to return this information for various purposes.
+
+When the class implementing this interface is a bitmap-backed texture,
+this function directly returns the underlying bitmap. When it is
+procedural, a bitmap version must first be generated. In this case,
+the parameter size_hint is used to control the target size. The
+default value ``-1, -1`` allows the implementation to choose a
+suitable size by itself.
+
+Remark:
+    The default implementation throws an exception)doc";
+
 static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_m_properties = R"doc()doc";
+static const char *__doc_mitsuba_Emitter_eval =
+R"doc(Return the radiant emittance for the given surface intersection
 
-static const char *__doc_mitsuba_Emitter_m_type = R"doc()doc";
+This function is used when an area light source has been hit by a ray
+in a path tracing-style integrator, and it subsequently needs to be
+queried for the emitted radiance along the negative ray direction.
 
-static const char *__doc_mitsuba_Emitter_m_world_transform = R"doc()doc";
+It efficiently computes the product of eval_position() and
+eval_direction() *divided* by the absolute cosine of the angle between
+``d`` and ``its``.sh_frame.n.
 
-static const char *__doc_mitsuba_Emitter_set_world_transform = R"doc(Set the local space to world space transformation)doc";
+This function is provided here as a fast convenience function for
+unidirectional rendering techniques. The default implementation throws
+an exception, which states that the method is not implemented.
 
-static const char *__doc_mitsuba_Emitter_world_transform = R"doc(Return the local space to world space transformation)doc";
+Parameter ``its``:
+    An intersect record that specfies the query position
+
+Parameter ``d``:
+    A unit vector, which specifies the query direction
+
+Returns:
+    The radiant emittance)doc";
+
+static const char *__doc_mitsuba_Emitter_eval_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_eval_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_eval_environment =
+R"doc(Return the radiant emittance from an environment emitter
+
+This is function is called by unidirectional rendering techniques
+(e.g. a path tracer) when no scene object has been intersected, and
+the scene has been determined to contain an environment emitter.
+
+The default implementation throws an exception.
+
+Parameter ``ray``:
+    Specifies the ray direction that should be queried)doc";
+
+static const char *__doc_mitsuba_Emitter_eval_environment_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_eval_environment_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_fill_direct_sample =
+R"doc(Fill out a data record that can be used to query the direct
+illumination sampling density of an environment emitter.
+
+This is function is mainly called by unidirectional rendering
+techniques (e.g. a path tracer) when no scene object has been
+intersected, and the (hypothetical) sampling density of the
+environment emitter needs to be known by a multiple importance
+sampling technique.
+
+The default implementation throws an exception.
+
+Parameter ``d_rec``:
+    The direct illumination sampling record to be filled
+
+Parameter ``ray``:
+    Specifies the ray direction that should be queried
+
+Returns:
+    ``True`` upon success)doc";
+
+static const char *__doc_mitsuba_Emitter_fill_direct_sample_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_fill_direct_sample_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_is_environment_emitter = R"doc(Is this an environment emitter? (e.g. an HDRI environment map?))doc";
+
+static const char *__doc_mitsuba_Emitter_sample_ray =
+R"doc(Importance sample a ray according to the emission profile
+
+This function combines both steps of choosing a ray origin and
+direction value. It does not return any auxiliary sampling information
+and is mainly meant to be used by unidirectional rendering techniques.
+
+Note that this function potentially uses a different sampling strategy
+compared to the sequence of running sample_position() and
+sample_direction(). The reason for this is that it may be possible to
+switch to a better technique when sampling both position and direction
+at the same time.
+
+Parameter ``position_sample``:
+    Denotes the sample that is used to choose the spatial component
+
+Parameter ``direction_sample``:
+    Denotes the sample that is used to choose the directional
+    component
+
+Parameter ``time_sample``:
+    Scene time value to be associated with the sample
+
+Returns:
+    (ray, weight). ray: A ray data structure to be populated with a
+    position and direction value. weight: An importance weight
+    associated with the sampled ray. This accounts for the difference
+    between the emission profile and the sampling density function.)doc";
+
+static const char *__doc_mitsuba_Emitter_sample_ray_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_sample_ray_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint =
 R"doc(Endpoint: an abstract interface to light sources and sensors
@@ -1921,7 +2033,276 @@ static const char *__doc_mitsuba_Endpoint_EFlags_EDeltaPosition = R"doc(Emission
 
 static const char *__doc_mitsuba_Endpoint_EFlags_EOnSurface = R"doc(Is the emitter associated with a surface in the scene?)doc";
 
+static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_Endpoint_bbox = R"doc(Return an axis-aligned box bounding the spatial extents of the emitter)doc";
+
 static const char *__doc_mitsuba_Endpoint_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_create_shape =
+R"doc(Create a special shape that represents the emitter
+
+Some types of emitters are inherently associated with a surface, yet
+this surface is not explicitly needed for many kinds of rendering
+algorithms.
+
+An example would be an environment map, where the associated shape is
+a sphere surrounding the scene. Another example would be a perspective
+camera with depth of field, where the associated shape is a disk
+representing the aperture (remember that this class represents
+emitters in a generalized bidirectional sense, which includes
+sensors).
+
+When this shape is in fact needed by the underlying rendering
+algorithm, this function can be called to create it. The default
+implementation simply returns ``nullptr``.
+
+Parameter ``scene``:
+    A pointer to the associated scene (the created shape is allowed to
+    depend on it))doc";
+
+static const char *__doc_mitsuba_Endpoint_direct_measure = R"doc(Return the measure associated with the sample_direct() operation)doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_direction =
+R"doc(Evaluate the directional component of the emission profile
+
+When querying a smooth (i.e. non-degenerate) component, it already
+multiplies the result by the cosine foreshortening factor with respect
+to the outgoing direction.
+
+Parameter ``d_rec``:
+    A direction sampling record, which specifies the query direction
+
+Parameter ``p_rec``:
+    A position sampling record, which specifies the query position
+
+Returns:
+    The component of the emission profile that depends on the
+    direction (having units of 1/steradian))doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_direction_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_direction_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_position =
+R"doc(Evaluate the spatial component of the emission profile
+
+Parameter ``p_rec``:
+    A position sampling record, which specifies the query location
+
+Returns:
+    The component of the emission profile that depends on the position
+    (i.e. emitted power per unit area for luminaires and sensor
+    response, or inverse power per unit area for sensors))doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_position_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_position_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_is_degenerate = R"doc(Does the sensor have a degenerate directional or spatial distribution?)doc";
+
+static const char *__doc_mitsuba_Endpoint_is_on_surface = R"doc(Does the emitter lie on some kind of surface?)doc";
+
+static const char *__doc_mitsuba_Endpoint_m_medium = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_m_properties = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_m_shape = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_m_type = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_m_world_transform = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_medium = R"doc(Return a pointer to the medium that surrounds the emitter)doc";
+
+static const char *__doc_mitsuba_Endpoint_medium_2 =
+R"doc(Return a pointer to the medium that surrounds the emitter (const
+version))doc";
+
+static const char *__doc_mitsuba_Endpoint_needs_direct_sample =
+R"doc(Does the method sample_direct() require a uniformly distributed
+sample?
+
+Since sample_direct() essentially causes a 2D reduction of the
+sampling domain, this is the case exactly when the original domain was
+four-dimensionsional.)doc";
+
+static const char *__doc_mitsuba_Endpoint_needs_direction_sample =
+R"doc(Does the method sample_direction() require a uniformly distributed
+sample for the direction component?)doc";
+
+static const char *__doc_mitsuba_Endpoint_needs_position_sample =
+R"doc(Does the method sample_position() require a uniformly distributed
+sample for the spatial component?)doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_direct =
+R"doc(Evaluate the probability density of the *direct* sampling method
+implemented by the sample_direct() method.
+
+Parameter ``d_rec``:
+    A direct sampling record, which specifies the query location. Note
+    that this record need not be completely filled out. The important
+    fields are ``p``, ``n``, ``ref``, ``dist``, ``d``, ``measure``,
+    and ``uv``.
+
+Returns:
+    The density expressed with respect to the requested measure
+    (usually ESolidAngle))doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_direct_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_direct_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_direction =
+R"doc(Evaluate the directional component of the sampling density implemented
+by the sample_direction() method
+
+Parameter ``d_rec``:
+    A direction sampling record, which specifies the query direction
+
+Parameter ``p_rec``:
+    A position sampling record, which specifies the query position
+
+Returns:
+    The directional density at the supplied position)doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_direction_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_direction_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_position =
+R"doc(Evaluate the spatial component of the sampling density implemented by
+the sample_position() method
+
+Parameter ``p_rec``:
+    A position sampling record, which specifies the query location
+
+Returns:
+    The area density at the supplied position)doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_position_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_pdf_position_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direct =
+R"doc(*Direct* sampling: given a reference point in the scene, sample an
+emitter position that contributes towards it.
+
+Given an arbitrary reference point in the scene, this method samples a
+position on the emitter that has a nonzero contribution towards that
+point. This can be seen as a generalization of direct illumination
+sampling so that it works on both luminaires and sensors.
+
+Ideally, the implementation should importance sample the product of
+the emission profile and the geometry term between the reference point
+and the position on the emitter.
+
+The default implementation throws an exception.
+
+Parameter ``d_rec``:
+    A direct sampling record that specifies the reference point and a
+    time value. After the function terminates, it will be populated
+    with the position sample and related information
+
+Parameter ``sample``:
+    A uniformly distributed 2D vector (or any value when
+    needs_direct_sample() == ``False``)
+
+Returns:
+    An importance weight associated with the sample. Includes any
+    geometric terms between the emitter and the reference point.)doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direct_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direct_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direction =
+R"doc(Conditioned on the spatial component, importance sample the
+directional part of the emission profile.
+
+Some implementations may choose to implement extra functionality based
+on the value of ``extra:`` for instance, Sensors (which are a subclass
+of Endpoint) perform uniform sampling over the entire image plane if
+``extra == nullptr``, but other values, they will restrict sampling to
+a pixel-sized rectangle with that offset.
+
+The default implementation throws an exception.
+
+Parameter ``d_rec``:
+    A direction record to be populated with the sampled direction and
+    related information
+
+Parameter ``p_rec``:
+    A position record generated by a preceding call to
+    sample_position()
+
+Parameter ``sample``:
+    A uniformly distributed 2D vector (or any value when
+    needs_direction_sample() == ``False``)
+
+Returns:
+    An importance weight associated with the sampled direction. This
+    accounts for the difference between the directional part of the
+    emission profile and the density function.)doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direction_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direction_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_position =
+R"doc(Importance sample the spatial component of the emission profile.
+
+This function takes an uniformly distributed 2D vector and maps it to
+a position on the surface of the emitter.
+
+Some implementations may choose to implement extra functionality based
+on the value of ``extra:`` for instance, Sensors (which are a subclass
+of Endpoint) perform uniform sampling over the entire image plane if
+``extra == nullptr``, but other values, they will restrict sampling to
+a pixel-sized rectangle with that offset.
+
+The default implementation throws an exception.
+
+Parameter ``p_rec``:
+    A position record to be populated with the sampled position and
+    related information
+
+Parameter ``sample``:
+    A uniformly distributed 2D vector (or any value, when
+    needs_position_sample() == ``False``)
+
+Parameter ``extra``:
+    An additional 2D vector provided to the sampling routine -- its
+    use is implementation-dependent.
+
+Returns:
+    An importance weight associated with the sampled position. This
+    accounts for the difference between the spatial part of the
+    emission profile and the density function.)doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_position_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_position_3 = R"doc(Vectorized variant of sample_position.)doc";
+
+static const char *__doc_mitsuba_Endpoint_set_medium = R"doc(Set the medium that surrounds the emitter.)doc";
+
+static const char *__doc_mitsuba_Endpoint_set_shape = R"doc(Set the shape associated with this endpoint.)doc";
+
+static const char *__doc_mitsuba_Endpoint_set_world_transform = R"doc(Set the local space to world space transformation)doc";
+
+static const char *__doc_mitsuba_Endpoint_shape = R"doc(Return the shape, to which the emitter is currently attached)doc";
+
+static const char *__doc_mitsuba_Endpoint_shape_2 =
+R"doc(Return the shape, to which the emitter is currently attached (const
+version))doc";
+
+static const char *__doc_mitsuba_Endpoint_type =
+R"doc(Return a listing of classification flags combined using binary OR.
+
+See also:
+    EFlags)doc";
+
+static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local space to world space transformation)doc";
 
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
@@ -2845,9 +3226,7 @@ The above snippet constructs a Camera instance from a plugin named
 ``perspective``.so/dll/dylib and adds a child object named ``film``,
 which is a Film instance loaded from the plugin
 ``ldrfilm``.so/dll/dylib. By the time the function returns, the object
-hierarchy has already been assembled, and the
-ConfigurableObject::configure() methods of every object has been
-called.)doc";
+hierarchy has already been assembled.)doc";
 
 static const char *__doc_mitsuba_PluginManager_PluginManager = R"doc()doc";
 
@@ -3252,6 +3631,8 @@ static const char *__doc_mitsuba_Properties_set_plugin_name = R"doc(Set the asso
 
 static const char *__doc_mitsuba_Properties_set_point3f = R"doc(Store a 3D point in the Properties instance)doc";
 
+static const char *__doc_mitsuba_Properties_set_spectrumf = R"doc(Store a spectrum in the Properties instance)doc";
+
 static const char *__doc_mitsuba_Properties_set_string = R"doc(Store a string in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_set_transform =
@@ -3259,6 +3640,10 @@ R"doc(Store a 4x4 homogeneous coordinate transformation in the Properties
 instance)doc";
 
 static const char *__doc_mitsuba_Properties_set_vector3f = R"doc(Store a 3D vector in the Properties instance)doc";
+
+static const char *__doc_mitsuba_Properties_spectrumf = R"doc(Retrieve a spectrum)doc";
+
+static const char *__doc_mitsuba_Properties_spectrumf_2 = R"doc(Retrieve a spectrum (use default value if no entry exists))doc";
 
 static const char *__doc_mitsuba_Properties_string = R"doc(Retrieve a string value)doc";
 
@@ -3661,7 +4046,7 @@ R"doc(This list of flags is used to additionally characterize and classify
 the response functions of different types of sensors
 
 See also:
-    Emitter::EEmitterType)doc";
+    Endpoint::EFlags)doc";
 
 static const char *__doc_mitsuba_Sensor_ESensorFlags_EDeltaTime = R"doc(Sensor response contains a Dirac delta term with respect to time)doc";
 
@@ -3718,7 +4103,9 @@ Parameter ``result``:
 Returns:
     The emitted importance)doc";
 
-static const char *__doc_mitsuba_Sensor_eval_2 = R"doc(Vectorized version of eval)doc";
+static const char *__doc_mitsuba_Sensor_eval_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_eval_3 = R"doc(Vectorized version of eval)doc";
 
 static const char *__doc_mitsuba_Sensor_film = R"doc(Return the Film instance associated with this sensor)doc";
 
@@ -3737,7 +4124,9 @@ Parameter ``p_rec``:
 Returns:
     ``True`` if the specified ray is visible by the camera)doc";
 
-static const char *__doc_mitsuba_Sensor_get_sample_position_2 = R"doc(Vectorized version of get_sample_position)doc";
+static const char *__doc_mitsuba_Sensor_get_sample_position_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_get_sample_position_3 = R"doc(Vectorized version of get_sample_position)doc";
 
 static const char *__doc_mitsuba_Sensor_m_aspect = R"doc()doc";
 
@@ -3798,7 +4187,9 @@ Returns:
     This accounts for the difference between the sensor response and
     the sampling density function.)doc";
 
-static const char *__doc_mitsuba_Sensor_sample_ray_2 = R"doc(Vectorized version of sample_ray)doc";
+static const char *__doc_mitsuba_Sensor_sample_ray_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_3 = R"doc(Vectorized version of sample_ray)doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray_differential =
 R"doc(Importance sample a ray differential according to the sensor response
@@ -3846,7 +4237,9 @@ Remark:
     ray = sensor.sample_ray_rifferential(sample_position,
     aperture_sample)``)doc";
 
-static const char *__doc_mitsuba_Sensor_sample_ray_differential_2 = R"doc(Vectorized version of sample_ray_differential)doc";
+static const char *__doc_mitsuba_Sensor_sample_ray_differential_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_differential_3 = R"doc(Vectorized version of sample_ray_differential)doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray_differential_impl = R"doc()doc";
 
@@ -3913,6 +4306,12 @@ static const char *__doc_mitsuba_ShapeKDTree_shape_count = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
 
+static const char *__doc_mitsuba_Shape_Shape = R"doc(Constructs a new Shape.)doc";
+
+static const char *__doc_mitsuba_Shape_Shape_2 =
+R"doc(Constructs a new Shape, potentially containing children objects such
+as an Emitter.)doc";
+
 static const char *__doc_mitsuba_Shape_adjust_time =
 R"doc(Move an intersection record to a different time value
 
@@ -3920,7 +4319,9 @@ Conceptually, the point remains firmly attached to the underlying
 object, which is moved forward or backward in time. The method updates
 all relevant SurfaceInteraction fields.)doc";
 
-static const char *__doc_mitsuba_Shape_adjust_time_2 = R"doc(Statically vectorized version of adjust_time())doc";
+static const char *__doc_mitsuba_Shape_adjust_time_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_adjust_time_3 = R"doc(Statically vectorized version of adjust_time())doc";
 
 static const char *__doc_mitsuba_Shape_bbox =
 R"doc(Return an axis aligned box that bounds all shape primitives (including
@@ -4006,13 +4407,91 @@ Returns:
     The partial derivatives of the normal vector with respect to ``u``
     and ``v``.)doc";
 
-static const char *__doc_mitsuba_Shape_normal_derivative_2 = R"doc(Vectorized version of normal_derivative())doc";
+static const char *__doc_mitsuba_Shape_normal_derivative_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_normal_derivative_3 = R"doc(Vectorized version of normal_derivative())doc";
+
+static const char *__doc_mitsuba_Shape_pdf_direct =
+R"doc(Query the probability density of sampleDirect() for a particular point
+on the surface.
+
+Parameter ``d_rec``:
+    A direct sampling record, which specifies the query location. Note
+    that this record need not be completely filled out. The important
+    fields are ``p``, ``n``, ``ref``, ``dist``, ``d``, ``measure``,
+    and ``uv``.
+
+Parameter ``p``:
+    An arbitrary point used to define the solid angle measure)doc";
+
+static const char *__doc_mitsuba_Shape_pdf_direct_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_pdf_direct_3 = R"doc(Vectorized version of pdf_direct.)doc";
+
+static const char *__doc_mitsuba_Shape_pdf_position =
+R"doc(Query the probability density of sample_position() for a particular
+point on the surface.
+
+This method will generally return the inverse of the surface area.
+
+Parameter ``p_rec``:
+    A position record, which will be used to return the sampled
+    position, as well as auxilary information about the sample.)doc";
+
+static const char *__doc_mitsuba_Shape_pdf_position_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_pdf_position_3 = R"doc(Vectorized version of pdf_position.)doc";
 
 static const char *__doc_mitsuba_Shape_primitive_count =
 R"doc(Returns the number of sub-primitives that make up this shape
 
 Remark:
     The default implementation simply returns ``1``)doc";
+
+static const char *__doc_mitsuba_Shape_sample_direct =
+R"doc(Sample a point on the surface of this shape instance (with respect to
+the solid angle measure)
+
+The sample density should ideally be uniform in direction as seen from
+the reference point ``d_rec``.p.
+
+This general approach for sampling positions is named "direct"
+sampling throughout Mitsuba motivated by direct illumination rendering
+techniques, which represent the most important application.
+
+When no implementation of this function is supplied, the Shape class
+will revert to the default approach, which piggybacks on sampleArea().
+This usually results in a a suboptimal sample placement, which can
+manifest itself in the form of high variance
+
+Parameter ``d_rec``:
+    A direct sampling record that specifies the reference point and a
+    time value. After the function terminates, it will be populated
+    with the position sample and related information
+
+Parameter ``sample``:
+    A uniformly distributed 2D vector)doc";
+
+static const char *__doc_mitsuba_Shape_sample_direct_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_sample_direct_3 = R"doc(Vectorized version of sample_direct.)doc";
+
+static const char *__doc_mitsuba_Shape_sample_position =
+R"doc(Sample a point on the surface of this shape instance (with respect to
+the area measure)
+
+The returned sample density will be uniform over the surface.
+
+Parameter ``p_rec``:
+    A position record, which will be used to return the sampled
+    position, as well as auxilary information about the sample.
+
+Parameter ``sample``:
+    A uniformly distributed 2D vector)doc";
+
+static const char *__doc_mitsuba_Shape_sample_position_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_sample_position_3 = R"doc(Vectorized version of sample_position.)doc";
 
 static const char *__doc_mitsuba_Shape_sensor =
 R"doc(Return the area sensor associated with this shape (if any, const
@@ -4022,11 +4501,19 @@ static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the area sensor a
 
 static const char *__doc_mitsuba_Shape_set_bsdf = R"doc(Set the BSDF of this shape)doc";
 
-static const char *__doc_mitsuba_Shape_set_emitter = R"doc(Set the area emitter associated with this shape)doc";
+static const char *__doc_mitsuba_Shape_surface_area =
+R"doc(Return the shape's surface area.
 
-static const char *__doc_mitsuba_Shape_set_sensor = R"doc(Set the area sensor associated with this shape)doc";
+Assumes that the object is not undergoing some kind of time-dependent
+scaling.
+
+The default implementation throws an exception.)doc";
 
 static const char *__doc_mitsuba_Spectrum = R"doc(//! @{ \name Data types for discretized spectral data)doc";
+
+static const char *__doc_mitsuba_Spectrum_D65 =
+R"doc(Return a spectral color distribution of the D65 white point (with unit
+luminance))doc";
 
 static const char *__doc_mitsuba_Spectrum_Spectrum = R"doc()doc";
 
