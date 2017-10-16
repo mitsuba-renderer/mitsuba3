@@ -19,6 +19,7 @@ template <typename Point3>  struct DirectSample;
 template <typename Point3>  struct PositionSample;
 template <typename Point3>  struct SurfaceInteraction;
 template <typename Point3>  struct MediumInteraction;
+template <typename Point3>  struct BSDFSample;
 
 // -----------------------------------------------------------------------------
 // Common type aliases (non-vectorized, packet, dynamic).
@@ -42,6 +43,10 @@ using SurfaceInteraction3fX  = SurfaceInteraction<Point3fX>;
 using MediumInteraction3f    = MediumInteraction<Point3f>;
 using MediumInteraction3fP   = MediumInteraction<Point3fP>;
 using MediumInteraction3fX   = MediumInteraction<Point3fX>;
+
+using BSDFSample3f  = BSDFSample<Point3f>;
+using BSDFSample3fP = BSDFSample<Point3fP>;
+using BSDFSample3fX = BSDFSample<Point3fX>;
 
 using ShapeP  = Packet<const Shape *,  PacketSize>;
 using MediumP = Packet<const Medium *, PacketSize>;

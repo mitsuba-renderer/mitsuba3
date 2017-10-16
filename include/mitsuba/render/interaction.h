@@ -6,6 +6,7 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/ray.h>
+#include <mitsuba/render/bsdf.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -110,9 +111,6 @@ template <typename Point3_> struct SurfaceInteraction {
 
     /// Is the intersected shape also a sensor?
     auto is_sensor() const { return shape->is_sensor(); }
-
-    /// Does the intersected shape have a subsurface integrator?
-    auto has_subsurface() const { return shape->has_subsurface(); }
 
     /// Does the surface mark a transition between two media?
     auto is_medium_transition() const {

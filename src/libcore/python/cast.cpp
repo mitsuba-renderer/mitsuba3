@@ -5,6 +5,7 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
+#include <mitsuba/render/bsdf.h>
 
 
 #define PY_CAST(Name) {                                                        \
@@ -27,6 +28,8 @@ py::object py_cast(Object *o) {
 
     PY_CAST(Emitter);
     PY_CAST(Endpoint);
+
+    PY_CAST(BSDF);
 
     Log(EWarn, "Unable to cast object pointer. Is your type registered in"
                " py_cast()?");
