@@ -7,6 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 class BSDF;
 class Emitter;
 class Endpoint;
+class ImageBlock;
 class Medium;
 class Scene;
 class Sensor;

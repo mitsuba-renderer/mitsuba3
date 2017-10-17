@@ -454,6 +454,85 @@ void Bitmap::convert(Bitmap *target) const {
     conv.convert(hprod(m_size), uint8_data(), target->uint8_data());
 }
 
+void Bitmap::accumulate(const Bitmap *bitmap,
+                        Point2i source_offset,
+                        Point2i target_offset,
+                        Vector2i size) {
+    Assert(pixel_format()     == bitmap->pixel_format()     &&
+           component_format() == bitmap->component_format() &&
+           channel_count()    == bitmap->channel_count());
+
+    Vector2i offset_increase(
+        std::max(0, std::max(-source_offset.x(), -target_offset.x())),
+        std::max(0, std::max(-source_offset.y(), -target_offset.y()))
+    );
+
+    source_offset += offset_increase;
+    target_offset += offset_increase;
+    size -= offset_increase;
+
+    Vector2i size_decrease(
+        max(0, max(source_offset.x() + size.x() - bitmap->width(),  target_offset.x() + size.x() - width())),
+        max(0, max(source_offset.y() + size.y() - bitmap->height(), target_offset.y() + size.y() - height()))
+    );
+
+    size -= size_decrease;
+
+    if (size.x() <= 0 || size.y() <= 0)
+        return;
+
+    const size_t columns       = (size_t)size.x() * channel_count();
+    const size_t pixel_stride  = bytes_per_pixel();
+    const size_t source_stride = bitmap->width() * pixel_stride;
+    const size_t target_stride = width() * pixel_stride;
+
+    const uint8_t *source = bitmap->uint8_data() +
+        (source_offset.x() + source_offset.y() * (size_t)bitmap->width()) * pixel_stride;
+
+    uint8_t *target = m_data.get() +
+        (target_offset.x() + target_offset.y() * (size_t)m_size.x()) * pixel_stride;
+
+    for (int y = 0; y < size.y(); ++y) {
+        switch (m_component_format) {
+        case Struct::EType::EUInt8:
+            for (size_t i = 0; i < columns; ++i)
+                ((uint8_t *)target)[i] = (uint8_t)std::min(0xFF, ((uint8_t *)source)[i] + ((uint8_t *)target)[i]);
+            break;
+
+        case Struct::EType::EUInt16:
+            for (size_t i = 0; i < columns; ++i)
+                ((uint16_t *)target)[i] = (uint16_t)std::min(0xFFFF, ((uint16_t *)source)[i] + ((uint16_t *)target)[i]);
+            break;
+
+        case Struct::EType::EUInt32:
+            for (size_t i = 0; i < columns; ++i)
+                ((uint32_t *)target)[i] = std::min((uint32_t)0xFFFFFFFFUL, ((uint32_t *)source)[i] + ((uint32_t *)target)[i]);
+            break;
+
+        case Struct::EType::EFloat16:
+            for (size_t i = 0; i < columns; ++i)
+                ((enoki::half *)target)[i] += ((enoki::half *)source)[i];
+            break;
+
+        case Struct::EType::EFloat32:
+            for (size_t i = 0; i < columns; ++i)
+                ((float *)target)[i] += ((float *)source)[i];
+            break;
+
+        case Struct::EType::EFloat64:
+            for (size_t i = 0; i < columns; ++i)
+                ((double *)target)[i] += ((double *)source)[i];
+            break;
+
+        default:
+            Log(EError, m_component_format + ": Unknown component format!");
+        }
+
+        source += source_stride;
+        target += target_stride;
+    }
+}
+
 void Bitmap::read(Stream *stream, EFileFormat format) {
     if (format == EAuto) {
         /* Try to automatically detect the file format */

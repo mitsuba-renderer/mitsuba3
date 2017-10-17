@@ -451,9 +451,60 @@ public:
      */
     ref<Bitmap> convert(EPixelFormat pixel_format,
                         Struct::EType component_format,
-                        bool srgb_gamma) const;
+                        bool srgb_gamma = true) const;
 
     void convert(Bitmap *target) const;
+
+    /**
+    * \brief Accumulate the contents of another bitmap into the
+    * region with the specified offset
+    *
+    * Out-of-bounds regions are safely ignored. It is assumed that
+    * <tt>bitmap != this</tt>.
+    *
+    * \remark This function throws an exception when the bitmaps
+    * use different component formats or channels, or when the
+    * component format is \ref EBitmask.
+    */
+    void accumulate(const Bitmap *bitmap,
+                    Point2i source_offset,
+                    Point2i target_offset,
+                    Vector2i size);
+
+    /**
+    * \brief Accumulate the contents of another bitmap into the
+    * region with the specified offset
+    *
+    * This convenience function calls the main <tt>accumulate()</tt>
+    * implementation with <tt>size</tt> set to <tt>bitmap->size()</tt>
+    * and <tt>source_offset</tt> set to zero. Out-of-bounds regions are
+    * ignored. It is assumed that <tt>bitmap != this</tt>.
+    *
+    * \remark This function throws an exception when the bitmaps
+    * use different component formats or channels, or when the
+    * component format is \ref EBitmask.
+    */
+    void accumulate(const Bitmap *bitmap, Point2i target_offset) {
+        accumulate(bitmap, Point2i(0), target_offset, bitmap->size());
+    }
+
+    /**
+    * \brief Accumulate the contents of another bitmap into the
+    * region with the specified offset
+    *
+    * This convenience function calls the main <tt>accumulate()</tt>
+    * implementation with <tt>size</tt> set to <tt>bitmap->size()</tt>
+    * and <tt>source_offset</tt> and <tt>target_offset</tt>tt> set to zero.
+    * Out-of-bounds regions are ignored. It is assumed
+    * that <tt>bitmap != this</tt>.
+    *
+    * \remark This function throws an exception when the bitmaps
+    * use different component formats or channels, or when the
+    * component format is \ref EBitmask.
+    */
+    void accumulate(const Bitmap *bitmap) {
+        accumulate(bitmap, Point2i(0), Point2i(0), bitmap->size());
+    }
 
     /// Vertically flip the bitmap
     void vflip();

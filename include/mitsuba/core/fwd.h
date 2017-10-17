@@ -132,6 +132,11 @@ using Vector2u = Vector<uint32_t, 2>;
 using Vector3u = Vector<uint32_t, 3>;
 using Vector4u = Vector<uint32_t, 4>;
 
+using Vector2iP = Vector<Int32P, 2>;
+using Vector2iX = Vector<Int32X, 2>;
+using Vector3iP = Vector<Int32P, 3>;
+using Vector3iX = Vector<Int32X, 3>;
+
 using Vector1s = Vector<size_t, 1>;
 using Vector2s = Vector<size_t, 2>;
 using Vector3s = Vector<size_t, 3>;
@@ -157,8 +162,18 @@ using Point2i = Point<int32_t, 2>;
 using Point3i = Point<int32_t, 3>;
 using Point4i = Point<int32_t, 4>;
 
+using Point2iP = Point<Int32P, 2>;
+using Point2iX = Point<Int32X, 2>;
+using Point3iP = Point<Int32P, 3>;
+using Point3iX = Point<Int32X, 3>;
+
+using Point1s = Point<size_t, 1>;
+using Point2s = Point<size_t, 2>;
+using Point3s = Point<size_t, 3>;
+using Point4s = Point<size_t, 4>;
+
 using Normal3f = Normal<Float, 3>;
-using Normal3h = Normal<half, 3>;
+using Normal3h = Normal<enoki::half, 3>;
 using Normal3d = Normal<double, 3>;
 
 using Normal3fP = Normal<FloatP, 3>;
