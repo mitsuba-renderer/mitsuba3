@@ -17,6 +17,7 @@ MTS_PY_DECLARE(BSDFSample);
 MTS_PY_DECLARE(rt);
 MTS_PY_DECLARE(ImageBlock);
 MTS_PY_DECLARE(Film);
+MTS_PY_DECLARE(Spiral);
 
 PYBIND11_MODULE(mitsuba_render_ext, m_) {
     (void) m_; /* unused */
@@ -40,4 +41,5 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(rt);
     MTS_PY_IMPORT(ImageBlock);
     MTS_PY_IMPORT(Film);
+    MTS_PY_IMPORT(Spiral);
 }

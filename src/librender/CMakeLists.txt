@@ -19,6 +19,7 @@ add_library(mitsuba-render-obj OBJECT
   scene.cpp        ${INC_DIR}/scene.h
   sensor.cpp       ${INC_DIR}/sensor.h
   shape.cpp        ${INC_DIR}/shape.h
+  spiral.cpp       ${INC_DIR}/spiral.h
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
