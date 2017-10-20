@@ -5037,6 +5037,57 @@ static const char *__doc_mitsuba_Spectrum_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Spectrum_operator_assign_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Spiral =
+R"doc(Generates a spiral of blocks to be rendered.
+
+Author:
+    Adam Arbree Aug 25, 2005 RayTracer.java Used with permission.
+    Copyright 2005 Program of Computer Graphics, Cornell University)doc";
+
+static const char *__doc_mitsuba_Spiral_EDirection = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_EDirection_EDown = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_EDirection_ELeft = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_EDirection_ERight = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_EDirection_EUp = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_Spiral =
+R"doc(Create a new spiral generator for an image of the given width and
+height)doc";
+
+static const char *__doc_mitsuba_Spiral_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_m_block_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_m_blocks_counter = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_m_center = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_m_current_direction = R"doc(Direction where the spiral is currently headed.)doc";
+
+static const char *__doc_mitsuba_Spiral_m_mutex = R"doc(Protects the spiral's state (thread safety).)doc";
+
+static const char *__doc_mitsuba_Spiral_m_n_blocks = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_m_n_steps = R"doc(Step counters.)doc";
+
+static const char *__doc_mitsuba_Spiral_m_n_total_blocks = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_m_position = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_m_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Spiral_m_steps_left = R"doc(Step counters.)doc";
+
+static const char *__doc_mitsuba_Spiral_max_block_size = R"doc(Return the maximum block size)doc";
+
+static const char *__doc_mitsuba_Spiral_next_block = R"doc(Returns the next block to be processed, or nullptr if there are none.)doc";
+
+static const char *__doc_mitsuba_Spiral_reset = R"doc(Reset the spiral to its initial state)doc";
+
 static const char *__doc_mitsuba_Stream =
 R"doc(Abstract seekable stream class
 
