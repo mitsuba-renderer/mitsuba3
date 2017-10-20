@@ -24,6 +24,15 @@ Sensor::Sensor(const Properties &props)
     if (m_shutter_open_time == 0)
         m_type |= EDeltaTime;
 
+    for (auto &kv : props.objects()) {
+        auto *film = dynamic_cast<Film *>(kv.second.get());
+        if (film) {
+            if (m_film)
+                Throw("Only one film can be specified per sensor.");
+            m_film = film;
+        }
+    }
+
     configure();
 }
 
@@ -47,7 +56,7 @@ Sensor::~Sensor() { }
 // }
 
 void Sensor::configure() {
-    if (m_film == nullptr) {
+    if (!m_film) {
         // Instantiate an EXR film by default.
         Properties props("hdrfilm");
         m_film = static_cast<Film *>(
@@ -55,7 +64,7 @@ void Sensor::configure() {
         );
     }
 
-    if (m_sampler == nullptr) {
+    if (!m_sampler) {
         // Instantiate an independent filter with 4 samples/pixel by default.
         Properties props("independent");
         props.set_int("sample_count", 4);

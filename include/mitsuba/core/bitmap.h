@@ -167,7 +167,9 @@ public:
      *
      * \param component_format
      *    Specifies how the per-pixel components are encoded
-     *    (e.g. unsigned 8 bit integers or 32-bit floating point values)
+     *    (e.g. unsigned 8 bit integers or 32-bit floating point values).
+     *    The component format Struct::EFloat will be translated to the
+     *    corresponding compile-time precision type (EFloat32 or EFloat64).
      *
      * \param size
      *    Specifies the horizontal and vertical bitmap size in pixels
@@ -440,9 +442,9 @@ public:
      * the original bitmap, the function becomes a no-op and returns
      * the current instance.
      *
-     * \ref pixelFormat
+     * \ref pixel_format
      *      Specifies the desired pixel format
-     * \ref componentFormat
+     * \ref component_format
      *      Specifies the desired component format
      * \ref gamma
      *      Specifies the desired gamma value.

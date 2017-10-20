@@ -25,7 +25,8 @@ public:
     /// Merge an image block into the film
     virtual void put(const ImageBlock *block) = 0;
 
-    /// Overwrite the film with the given bitmap
+    /// Overwrite the film with the given bitmap.
+    /// The size of the given bitmap has to match to current size.
     virtual void set_bitmap(const Bitmap *bitmap) = 0;
 
     /// Accumulate a bitmap on top of the radiance values stored in the film.
@@ -63,12 +64,13 @@ public:
     */
     bool has_high_quality_edges() const { return m_high_quality_edges; }
 
-    /// Return whether or not this film records the alpha channel
-    virtual bool has_alpha() const = 0;
-
     // =============================================================
     //! @{ \name Accessor functions
     // =============================================================
+
+    /// Returns a pointer to the underlying image storage, or nullptr
+    /// if there is none.
+    virtual Bitmap *bitmap() { return nullptr; }
 
     /// Ignoring the crop window, return the resolution of the underlying sensor
     Vector2i size() const { return m_size; }
@@ -79,11 +81,16 @@ public:
     /// Return the offset of the crop window
     Point2i crop_offset() const { return m_crop_offset; }
 
+    /// Return whether or not this film records the alpha channel
+    virtual bool has_alpha() const = 0;
+
     /// Return the image reconstruction filter
     ReconstructionFilter *reconstruction_filter() { return m_filter.get(); }
 
     /// Return the image reconstruction filter (const version)
-    const ReconstructionFilter *reconstruction_filter() const { return m_filter.get(); }
+    const ReconstructionFilter *reconstruction_filter() const {
+        return m_filter.get();
+    }
 
     //! @}
     // =============================================================
@@ -95,7 +102,7 @@ public:
             << "  crop_size = "   << m_crop_size   << "," << std::endl
             << "  crop_offset = " << m_crop_offset << "," << std::endl
             << "  high_quality_edges = " << m_high_quality_edges << "," << std::endl
-            << "  m_filter = " << m_filter << "," << std::endl
+            << "  m_filter = " << m_filter << std::endl
             << "]";
         return oss.str();
     }

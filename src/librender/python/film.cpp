@@ -22,6 +22,7 @@ MTS_PY_EXPORT(Film) {
         .mdef(Film, destination_exists, "basename"_a)
         .mdef(Film, has_high_quality_edges)
         .mdef(Film, has_alpha)
+        .mdef(Film, bitmap)
         .mdef(Film, size)
         .mdef(Film, crop_size)
         .mdef(Film, crop_offset)

@@ -65,6 +65,14 @@ Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
     else
         m_srgb_gamma = false; // Linear by default
 
+    if (m_component_format == Struct::EFloat) {
+        #if defined(SINGLE_PRECISION)
+        m_component_format = Struct::EFloat32;
+        #else
+        m_component_format = Struct::EFloat64;
+        #endif
+    }
+
     rebuild_struct(channel_count);
 
     if (!m_data) {
@@ -180,15 +188,7 @@ size_t Bitmap::bytes_per_pixel() const {
         case Struct::EInt32:
         case Struct::EUInt32:  result = 4; break;
         case Struct::EFloat16: result = 2; break;
-
-        #if defined(SINGLE_PRECISION)
-        case Struct::EFloat:
-        #endif
         case Struct::EFloat32: result = 4; break;
-
-        #if !defined(SINGLE_PRECISION)
-        case Struct::EFloat:
-        #endif
         case Struct::EFloat64: result = 8; break;
         default: Throw("Unknown component format: %d", m_component_format);
     }
@@ -353,7 +353,8 @@ ref<Bitmap> Bitmap::convert(EPixelFormat pixel_format,
 
 void Bitmap::convert(Bitmap *target) const {
     if (m_size != target->size())
-        Throw("Bitmap::convert(): Incompatible target size!");
+        Throw("Bitmap::convert(): Incompatible target size!"
+              " This: %s vs target: %s)", m_size, target->size());
 
     ref<Struct> target_struct = new Struct(*(target->struct_()));
 
@@ -480,8 +481,12 @@ void Bitmap::accumulate(const Bitmap *bitmap,
     size -= offset_increase;
 
     Vector2i size_decrease(
-        max(0, max(source_offset.x() + size.x() - bitmap->width(),  target_offset.x() + size.x() - width())),
-        max(0, max(source_offset.y() + size.y() - bitmap->height(), target_offset.y() + size.y() - height()))
+        std::max(0, std::max(
+            source_offset.x() + size.x() - (value_t<Vector2i>)bitmap->width(),
+            target_offset.x() + size.x() - (value_t<Vector2i>)width()) ),
+        std::max(0, std::max(
+            source_offset.y() + size.y() - (value_t<Vector2i>)bitmap->height(),
+            target_offset.y() + size.y() - (value_t<Vector2i>)height()) )
     );
 
     size -= size_decrease;
@@ -1368,7 +1373,8 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
         Throw("write_jpeg(): Unsupported pixel format!");
 
     if (m_component_format != Struct::EUInt8)
-        Throw("write_jpeg(): Unsupported component format!");
+        Throw("write_jpeg(): Unsupported component format %s, expected %s",
+              m_component_format, Struct::EUInt8);
 
     memset(&jbuf, 0, sizeof(jbuf_out_t));
     cinfo.err = jpeg_std_error(&jerr);

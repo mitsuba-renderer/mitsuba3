@@ -10,7 +10,7 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
 
     // Allocate a small bitmap data structure for the block
     m_bitmap = new Bitmap(fmt, Struct::EType::EFloat,
-        size + Vector2i(2 * m_border_size), channels);
+                          size + Vector2i(2 * m_border_size), channels);
 
     if (filter) {
         // Temporary buffers used in put()
@@ -18,16 +18,19 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
         m_weights_x = new Float[2 * temp_buffer_size];
         m_weights_y = m_weights_x + temp_buffer_size;
 
-        // TODO Pre_allocate vectorized weights buffers
+        // TODO: pre_allocate vectorized weights buffers.
     }
 }
 
 ImageBlock::~ImageBlock() {
+    // Note that m_weights_y points to the same array as m_weights_x, so there's
+    // no need to delete it.
     if (m_weights_x)
         delete[] m_weights_x;
 }
 
 bool ImageBlock::put(const Point2f &_pos, const Float *value) {
+    Assert(m_filter != nullptr);
     const int channels = m_bitmap->channel_count();
 
     // Check if all sample values are valid
@@ -92,6 +95,7 @@ bool ImageBlock::put(const Point2f &_pos, const Float *value) {
 }
 
 bool ImageBlock::put(const Point2fP &_pos, const FloatP *value) {
+    Assert(m_filter != nullptr);
     using Mask = mask_t<FloatP>;
 
     const int channels = m_bitmap->channel_count();
@@ -190,6 +194,4 @@ template MTS_EXPORT_RENDER bool ImageBlock::put<>(const Point2fP &pos, const Spe
 
 
 MTS_IMPLEMENT_CLASS(ImageBlock, Object)
-
-
 NAMESPACE_END(mitsuba)

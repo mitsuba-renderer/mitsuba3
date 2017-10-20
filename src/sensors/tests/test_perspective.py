@@ -56,10 +56,9 @@ def test01_create():
     assert not c.needs_aperture_sample()
     assert c.bbox() == BoundingBox3f([1, 0, 1.5], [1, 0, 1.5])
 
-
     # Aspect should be the same as a default film
-    # assert c.film() is not None
-    # assert c.aspect() == approx(c.film().size()[0] / c.film().size()[1])
+    assert c.film() is not None
+    assert c.aspect() == approx(c.film().size()[0] / c.film().size()[1])
 
 def test02_sample_rays():
     # TODO: more precise tests

@@ -2,10 +2,11 @@
 
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/fwd.h>
+#include <mitsuba/core/object.h>
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/vector.h>
-#include <mitsuba/core/fwd.h>
 #include <mitsuba/render/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -30,6 +31,11 @@ public:
     * \param size
     *    Specifies the block dimensions (not accounting for additional
     *    border pixels required to support image reconstruction filters)
+    * \param filter
+    *    Pointer to the film's reconstruction filter. If passed, it is used to
+    *    compute and store reconstruction weights. Note that it is mandatory
+    *    when any of the block's \ref put operations are used, except for
+    *    \c put(const ImageBlock*).
     * \param channels
     *    Specifies the number of output channels. This is only necessary
     *    when \ref Bitmap::EMultiChannel is chosen as the pixel format
@@ -44,20 +50,17 @@ public:
 
     /// Accumulate another image block into this one
     void put(const ImageBlock *block) {
-        m_bitmap->accumulate(block->bitmap(),
-            Point2i(
-                block->offset() - m_offset
-                - Vector2i(block->border_size() - m_border_size)
-            )
-        );
+        Point2i offset = block->offset() - m_offset
+                         - Vector2i(block->border_size() - m_border_size);
+        m_bitmap->accumulate(block->bitmap(), offset);
     }
 
     /**
     * \brief Store a single sample / packets of samples inside the
     * image block
     *
-    * This variant assumes that the image block stores spectrum,
-    * alpha, and reconstruction filter weight values.
+    * This variant assumes that the image block's internal storage format is
+    * an (R, G, B) triplet of Floats.
     *
     * \param pos
     *    Denotes the sample position in fractional pixel coordinates
@@ -71,13 +74,26 @@ public:
     template<typename Point2,
              typename Spectrum,
              typename Value = typename Point2::Value>
-    bool put(const Point2 &pos, const Spectrum &spec, Value alpha) {
-        Value temp[MTS_WAVELENGTH_SAMPLES + 2];
-        for (int i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i)
+    bool put(const Point2 &pos, const Spectrum &spec, Value /*alpha*/) {
+        // TODO: which internal storage format should we use?
+        // 1. Spectrum samples, alpha, filter weight
+        // Value temp[MTS_WAVELENGTH_SAMPLES + 2];
+        // for (int i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i)
+        //     temp[i] = spec[i];
+        // temp[MTS_WAVELENGTH_SAMPLES] = alpha;
+        // temp[MTS_WAVELENGTH_SAMPLES + 1] = 1.0f;
+        // return put(pos, temp);
+
+        // 2. m first spectrum samples
+        // TODO: this was just for debugging, it's not a meaningful format.
+        std::vector<Value> temp(m_bitmap->channel_count());
+        if (temp.size() > MTS_WAVELENGTH_SAMPLES) {
+            Throw("Too many channels in ImageBlock");
+        }
+        // Value temp[3];
+        for (size_t i = 0; i < temp.size(); ++i)
             temp[i] = spec[i];
-        temp[MTS_WAVELENGTH_SAMPLES] = alpha;
-        temp[MTS_WAVELENGTH_SAMPLES + 1] = 1.0f;
-        return put(pos, temp);
+        return put(pos, temp.data());
     }
 
     /**

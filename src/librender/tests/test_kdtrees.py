@@ -41,6 +41,7 @@ def test01_bunny_pbrt():
     (time_pbrt_v, count_pbrt_v) = rt_pbrt_planar_morton_packet(kdtree,   N)
     (time_havran, count_havran) = rt_havran_planar_morton_scalar(kdtree, N)
 
+    assert count_dummy > 0
     assert count_dummy == count_pbrt
     assert count_dummy == count_pbrt_v
     assert count_dummy == count_havran
@@ -122,4 +123,4 @@ def test04_depth_packet_stairs():
     res_dummy = kdtree.ray_intersect_dummy_packet(rays, mint, maxt)
     res_pbrt  = kdtree.ray_intersect_pbrt_packet(rays, mint, maxt)
 
-    assert np.all(res_dummy[1] == res_pbrt[1])
+    assert np.allclose(res_dummy[1], res_pbrt[1], atol=1e-4)
