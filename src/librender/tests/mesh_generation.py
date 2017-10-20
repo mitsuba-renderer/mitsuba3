@@ -23,7 +23,7 @@ def create_single_triangle():
     v[0] = np.array([0, 0, 0],   dtype=float_dtype)
     v[1] = np.array([1, 0.2, 0], dtype=float_dtype)
     v[2] = np.array([0.2, 1, 0], dtype=float_dtype)
-    f[0] = np.array([0, 1, 2])
+    f[0] = np.array([0, 1, 2], dtype=np.uint32)
     m.recompute_bbox()
     return m
 
@@ -37,10 +37,10 @@ def create_regular_tetrahedron():
     v[2] = np.array([0.8, 0, 0.8],  dtype=float_dtype)
     v[3] = np.array([0, 0.8, 0.8],  dtype=float_dtype)
 
-    f[0]  = np.array([0, 1, 2])
-    f[1]  = np.array([2, 3, 0])
-    f[2]  = np.array([2, 1, 3])
-    f[3]  = np.array([3, 1, 0])
+    f[0]  = np.array([0, 1, 2], dtype=np.uint32)
+    f[1]  = np.array([2, 3, 0], dtype=np.uint32)
+    f[2]  = np.array([2, 1, 3], dtype=np.uint32)
+    f[3]  = np.array([3, 1, 0], dtype=np.uint32)
 
     m.recompute_bbox()
     return m
@@ -65,11 +65,11 @@ def create_stairs(num_steps):
         v[id+2] = np.array([0,          s2, h], dtype=float_dtype)
         v[id+3] = np.array([width_step, s2, h], dtype=float_dtype)
 
-        f[id]   = np.array([id, id+1, id+2])
-        f[id+1] = np.array([id+1, id+3, id+2])
+        f[id]   = np.array([id, id+1, id+2], dtype=np.uint32)
+        f[id+1] = np.array([id+1, id+3, id+2], dtype=np.uint32)
         if i < num_steps-1:
-            f[id+2] = np.array([id+2, id+3, id+5])
-            f[id+3] = np.array([id+5, id+4, id+2])
+            f[id+2] = np.array([id+2, id+3, id+5], dtype=np.uint32)
+            f[id+3] = np.array([id+5, id+4, id+2], dtype=np.uint32)
 
     m.recompute_bbox()
     return m

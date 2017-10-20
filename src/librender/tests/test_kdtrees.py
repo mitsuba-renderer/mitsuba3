@@ -46,7 +46,6 @@ def test01_bunny_pbrt():
     assert count_dummy == count_havran
 
 
-@pytest.mark.skip("TODO: investigate and fix this test case.")
 def test02_depth_scalar_stairs():
     N_steps = 20
 
@@ -103,7 +102,6 @@ def test03_depth_scalar_bunny():
             assert res_pbrt[1] == res_havran[1]
 
 
-@pytest.mark.skip("TODO: investigate and fix this test case.")
 def test04_depth_packet_stairs():
     # Create kdtree
     kdtree = ShapeKDTree(Properties())
@@ -124,4 +122,4 @@ def test04_depth_packet_stairs():
     res_dummy = kdtree.ray_intersect_dummy_packet(rays, mint, maxt)
     res_pbrt  = kdtree.ray_intersect_pbrt_packet(rays, mint, maxt)
 
-    assert np.allclose(res_dummy[1], res_pbrt[1], atol=1e-4)
+    assert np.all(res_dummy[1] == res_pbrt[1])

@@ -121,30 +121,30 @@ public:
     template <typename Ray3>
     auto ray_intersect(size_t index, const Ray3 &ray) const {
         using Vector3 = typename Ray3::Vector;
-        using Float = value_t<Vector3>;
+        using Value = value_t<Vector3>;
 
         auto idx = (const Index *) face(index);
         Assert(idx[0] < m_vertex_count &&
                idx[1] < m_vertex_count &&
                idx[2] < m_vertex_count);
 
-        Point3f v0 = load<Point3f>((float *) vertex(idx[0]));
-        Point3f v1 = load<Point3f>((float *) vertex(idx[1]));
-        Point3f v2 = load<Point3f>((float *) vertex(idx[2]));
+        Point3f v0 = load<Point3f>((Float *) vertex(idx[0]));
+        Point3f v1 = load<Point3f>((Float *) vertex(idx[1]));
+        Point3f v2 = load<Point3f>((Float *) vertex(idx[2]));
 
         Vector3 edge1 = v1 - v0, edge2 = v2 - v0;
         Vector3 pvec = cross(ray.d, edge2);
-        Float inv_det = rcp(dot(edge1, pvec));
+        Value inv_det = rcp(dot(edge1, pvec));
 
         Vector3 tvec = ray.o - v0;
-        Float u = dot(tvec, pvec) * inv_det;
+        Value u = dot(tvec, pvec) * inv_det;
         auto mask = (u >= 0.f) & (u <= 1.f);
 
         auto qvec = cross(tvec, edge1);
-        Float v = dot(ray.d, qvec) * inv_det;
+        Value v = dot(ray.d, qvec) * inv_det;
         mask &= (v >= 0.f) & (u + v <= 1.f);
 
-        Float t = dot(edge2, qvec) * inv_det;
+        Value t = dot(edge2, qvec) * inv_det;
         return std::make_tuple(mask, u, v, t);
     }
 
