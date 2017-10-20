@@ -84,21 +84,12 @@ MTS_PY_EXPORT(math) {
     math.def("solve_quadratic", &math::solve_quadratic<float>,
              D(math, solve_quadratic), "a"_a, "b"_a, "c"_a);
 
-    auto solve_quadratic = [](FloatP a, FloatP b, FloatP c) {
-        auto result = math::solve_quadratic(a, b, c);
-        return std::make_tuple(
-            reinterpret_array<bool_array_t<FloatP>>(std::get<0>(result)),
-            std::get<1>(result),
-            std::get<2>(result)
-        );
-    };
-
-    math.def("solve_quadratic", vectorize_wrapper(solve_quadratic),
-             "a"_a, "b"_a, "c"_a);
+    math.def("solve_quadratic", vectorize_wrapper(&math::solve_quadratic<FloatP>),
+             D(math, solve_quadratic), "a"_a, "b"_a, "c"_a);
 
     math.def("find_interval", [](const py::array_t<Float> &arr, Float x) {
         if (arr.ndim() != 1)
-            throw std::runtime_error("'arr' must be a one-dimentional array!");
+            throw std::runtime_error("'arr' must be a one-dimensional array!");
         return math::find_interval(arr.shape(0),
             [&](size_t idx) {
                 return arr.at(idx) <= x;

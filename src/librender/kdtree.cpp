@@ -72,7 +72,7 @@ std::string ShapeKDTree::to_string() const {
     oss << "ShapeKDTree[" << std::endl;
     oss << "  shapes = [" << std::endl;
     for (auto shape : m_shapes)
-        oss << "    " << string::indent(shape->to_string(), 4) << ", " << std::endl;
+        oss << "    " << string::indent(shape->to_string(), 4) << "," << std::endl;
     oss << "  ]" << std::endl;
     oss << "]";
     return oss.str();

@@ -30,18 +30,18 @@ template <typename Point_> struct Ray {
     Value maxt = math::Infinity; ///< Maximum position on the ray segment
     Value time = 0;              ///< Time value associated with this ray
 
-    /// Construct a new ray
+    /// Construct a new ray (o, d)
     Ray(const Point &o, const Vector &d) : o(o), d(d) {
         update();
     }
 
-    /// Construct a new ray
+    /// Construct a new ray (o, d) with bounds
     Ray(const Point &o, const Vector &d, Value mint, Value maxt)
         : o(o), d(d), d_rcp(rcp(d)), mint(mint), maxt(maxt) {
         update();
     }
 
-    /// Copy a ray, but change the covered segment of the copy
+    /// Copy a ray, but change the [mint, maxt] interval
     Ray(const Ray &r, Value mint, Value maxt)
         : o(r.o), d(r.d), d_rcp(r.d_rcp), mint(mint), maxt(maxt) { }
 
@@ -51,11 +51,19 @@ template <typename Point_> struct Ray {
     /// Return the position of a point along the ray
     Point operator() (Value t) const { return fmadd(d, t, o); }
 
+    /// Return a ray that points into the opposite direction
+    Ray reverse() const {
+        Ray result;
+        result.o = o; result.d = -d; result.d_rcp = -d_rcp;
+        result.mint = mint; result.maxt = maxt; result.time = time;
+        return result;
+    }
+
     ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
-/** \brief %Ray differential -- enhances the basic ray class with
+/** \brief Ray differential -- enhances the basic ray class with
     offset rays for two adjacent pixels on the view plane */
 template <typename Point_> struct RayDifferential : Ray<Point_> {
     using Base = Ray<Point_>;
@@ -75,6 +83,9 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
     Vector d_x, d_y;
     bool has_differentials = false;
 
+    /// Construct from a Ray instance
+    RayDifferential(const Ray<Point_> &ray)
+        : Base(ray) { }
 
     /// Element-by-element constructor
     RayDifferential(const Point &o, const Vector &d, const Vector &d_rcp,
@@ -83,14 +94,6 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
                     const Vector &d_y, const bool &has_differentials)
         : Base(o, d, d_rcp, mint, maxt, time), o_x(o_x), o_y(o_y),
           d_x(d_x), d_y(d_y), has_differentials(has_differentials) { }
-
-    /// Copy from a Ray instance
-    RayDifferential<Point_>& operator=(const Ray<Point_>& ray) {
-        o = ray.o; d = ray.d; d_rcp = ray.d_rcp;
-        mint = ray.mint; maxt = ray.maxt; time = ray.time;
-
-        return *this;
-    }
 
     void scale(Float amount) {
         o_x = o + (o_x - o) * amount;
@@ -101,6 +104,7 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
 
     ENOKI_DERIVED_STRUCT(RayDifferential, Base, o_x, o_y,
                          d_x, d_y, has_differentials)
+    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /// Return a string representation of the ray

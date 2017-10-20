@@ -194,35 +194,56 @@ protected:
     /*                  Essential internal data structures                  */
     /* ==================================================================== */
 
+#if defined(_MSC_VER)
+#  pragma pack(push)
+#  pragma pack(1)
+#endif
+
     /// kd-tree node in 8 bytes.
-    struct alignas(8) KDNode {
+    struct KDNode {
         union {
             /// Inner node
-            struct {
+            struct ENOKI_PACK {
                 /// Split plane coordinate
                 Scalar split;
 
                 /// X/Y/Z axis specifier
-                unsigned int axis : 3;
+                unsigned int axis : 2;
 
-                /// Offset to left child (max 512M nodes in between in 32 bit)
-                unsigned int left_offset : sizeof(Index) * 8 - 3;
+                /// Offset to left child (max 1B nodes in between)
+                unsigned int left_offset : sizeof(Index) * 8 - 2;
             } inner;
 
             /// Leaf node
-            struct {
-                #if defined(LITTLE_ENDIAN)
-                    /// How many primitives does this leaf reference?
-                    unsigned int prim_count : 23;
+            struct ENOKI_PACK {
+                #if defined(SINGLE_PRECISION)
+                    #if defined(LITTLE_ENDIAN)
+                        /// How many primitives does this leaf reference?
+                        unsigned int prim_count : 23;
 
-                    /// Mask bits (all 1s for leaf nodes)
-                    unsigned int mask : 9;
-                #else /* Swap for big endian machines */
-                    /// Mask bits (all 1s for leaf nodes)
-                    unsigned int mask : 9;
+                        /// Mask bits (all 1s for leaf nodes)
+                        unsigned int mask : 9;
+                    #else /* Swap for big endian machines */
+                        /// Mask bits (all 1s for leaf nodes)
+                        unsigned int mask : 9;
 
-                    /// How many primitives does this leaf reference?
-                    unsigned int prim_count : 23;
+                        /// How many primitives does this leaf reference?
+                        unsigned int prim_count : 23;
+                    #endif
+                #else
+                    #if defined(LITTLE_ENDIAN)
+                        /// How many primitives does this leaf reference?
+                        unsigned long long prim_count : 52;
+
+                        /// Mask bits (all 1s for leaf nodes)
+                        unsigned int mask : 12;
+                    #else /* Swap for big endian machines */
+                        /// Mask bits (all 1s for leaf nodes)
+                        unsigned int mask : 12;
+
+                        /// How many primitives does this leaf reference?
+                        unsigned long long prim_count : 52;
+                    #endif
                 #endif
 
                 /// Start offset of the primitive list
@@ -238,7 +259,11 @@ protected:
          */
         bool set_leaf_node(size_t prim_offset, size_t prim_count) {
             data.leaf.prim_count = (unsigned int) prim_count;
-            data.leaf.mask      = 0b111111111u;
+            #if defined(SINGLE_PRECISION)
+                data.leaf.mask = 0b111111111u;
+            #else
+                data.leaf.mask = 0b111111111111u;
+            #endif
             data.leaf.prim_offset = (Index) prim_offset;
             return (size_t) data.leaf.prim_offset == prim_offset &&
                    (size_t) data.leaf.prim_count == prim_count;
@@ -254,11 +279,18 @@ protected:
             data.inner.split = split;
             data.inner.axis = (unsigned int) axis;
             data.inner.left_offset = (Index) left_offset;
-            return (size_t) data.inner.left_offset == left_offset;
+            return (size_t) data.inner.left_offset == left_offset &&
+                   (Index) data.inner.axis == axis;
         }
 
         /// Is this a leaf node?
-        bool leaf() const { return data.leaf.mask == 0b111111111u; }
+        bool leaf() const {
+            #if defined(SINGLE_PRECISION)
+                return data.leaf.mask == 0b111111111u;
+            #else
+                return data.leaf.mask == 0b111111111111u;
+            #endif
+        }
 
         /// Assuming this is a leaf node, return the first primitive index
         Index primitive_offset() const { return data.leaf.prim_offset; }
@@ -295,10 +327,12 @@ protected:
         }
     };
 
-#if defined(SINGLE_PRECISION)
+#if defined(_MSC_VER)
+#  pragma pack(pop)
+#endif
+
     static_assert(sizeof(KDNode) == sizeof(Size) + sizeof(Scalar),
                   "kd-tree node has unexpected size. Padding issue?");
-#endif
 
 protected:
     /// Enumeration representing the state of a classified primitive in the O(N log N) builder
@@ -1485,8 +1519,6 @@ protected:
                 Throw("Internal error during kd-tree construction: unable "
                       "to store overly large offset to left child node (%i)",
                       left_offset);
-            if (node->left() == &*node || node->right() == &*node)
-                Throw("Internal error..");
 
             Scalar left_cost =
                 build_nlogn(children, best.left_count - pruned_left,
@@ -2141,7 +2173,7 @@ public:
         typename Point = typename Ray::Point,
         typename Scalar = value_t<Point>,
         enable_if_not_array_t<Scalar> = 0>
-        std::pair<bool, Scalar> ray_intersect_pbrt(const Ray &ray, Scalar mint_, Scalar maxt_) const {
+    std::pair<bool, Scalar> ray_intersect_pbrt(const Ray &ray, Scalar mint_, Scalar maxt_) const {
 
         /// Ray traversal stack entry
         struct KDStackEntry {
@@ -2247,7 +2279,7 @@ public:
         typename Scalar = value_t<Point>,
         typename Mask = mask_t<Scalar>,
         enable_if_static_array_t<Scalar> = 0>
-        std::pair<Mask, Scalar> ray_intersect_pbrt(const Ray &ray, const Scalar &mint_, Scalar maxt_) const {
+    std::pair<Mask, Scalar> ray_intersect_pbrt(const Ray &ray, const Scalar &mint_, Scalar maxt_) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Distance traveled along the rays to the entry and exit of this node
@@ -2430,8 +2462,6 @@ protected:
      */
     Index find_shape(Index &i) const {
         Assert(i < primitive_count());
-
-        if (i >= primitive_count()) std::cout << "Assert(i < primitive_count()) == false :" << i << std::endl;
 
         Index shape_index = (Index) math::find_interval(
             Size(0),

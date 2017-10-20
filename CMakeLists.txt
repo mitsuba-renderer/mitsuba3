@@ -194,6 +194,10 @@ if (MSVC)
   add_compile_options("/bigobj")
 endif()
 
+if (U_CMAKE_BUILD_TYPE MATCHES DEBUG AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+  add_compile_options("-fno-limit-debug-info")
+endif()
+
 # Enable link time optimization in release mode (if possible)
 if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
   # Enable link time optimization

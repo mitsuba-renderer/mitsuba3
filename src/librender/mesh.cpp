@@ -343,8 +343,8 @@ std::string Mesh::to_string() const {
     return oss.str();
 }
 
-template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3f &);
-template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3fP &);
+template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3f &) const;
+template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3fP &) const;
 
 MTS_IMPLEMENT_CLASS(Mesh, Shape)
 NAMESPACE_END(mitsuba)

@@ -19,7 +19,7 @@ MTS_PY_EXPORT(ShapeKDTree) {
                 return py::cast(static_cast<Mesh *>(s.shape(i)));
             else
                 return py::cast(s.shape(i));
-    })
+        })
         .def("__len__", &ShapeKDTree::primitive_count)
         .def("bbox", [] (ShapeKDTree &s) { return s.bbox(); })
         .mdef(ShapeKDTree, build)

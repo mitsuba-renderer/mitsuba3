@@ -450,33 +450,33 @@ namespace {
     std::string type_mask_to_string(Index type_mask) {
         std::ostringstream oss;
         oss << "{ ";
-#define isset(mask) (type_mask & mask) == mask
 
-        if (isset(BSDF::EAll)) { oss << "all "; type_mask &= ~BSDF::EAll; }
-        if (isset(BSDF::EReflection)) { oss << "reflection "; type_mask &= ~BSDF::EReflection; }
-        if (isset(BSDF::ETransmission)) { oss << "transmission "; type_mask &= ~BSDF::ETransmission; }
-        if (isset(BSDF::ESmooth)) { oss << "smooth "; type_mask &= ~BSDF::ESmooth; }
-        if (isset(BSDF::EDiffuse)) { oss << "diffuse "; type_mask &= ~BSDF::EDiffuse; }
-        if (isset(BSDF::EGlossy)) { oss << "glossy "; type_mask &= ~BSDF::EGlossy; }
-        if (isset(BSDF::EDelta)) { oss << "delta"; type_mask &= ~BSDF::EDelta; }
-        if (isset(BSDF::EDelta1D)) { oss << "delta1D "; type_mask &= ~BSDF::EDelta1D; }
-        if (isset(BSDF::EDiffuseReflection)) { oss << "diffuse_reflection "; type_mask &= ~BSDF::EDiffuseReflection; }
-        if (isset(BSDF::EDiffuseTransmission)) { oss << "diffuse_transmission "; type_mask &= ~BSDF::EDiffuseTransmission; }
-        if (isset(BSDF::EGlossyReflection)) { oss << "glossy_reflection "; type_mask &= ~BSDF::EGlossyReflection; }
-        if (isset(BSDF::EGlossyTransmission)) { oss << "glossy_transmission "; type_mask &= ~BSDF::EGlossyTransmission; }
-        if (isset(BSDF::EDeltaReflection)) { oss << "delta_reflection "; type_mask &= ~BSDF::EDeltaReflection; }
-        if (isset(BSDF::EDeltaTransmission)) { oss << "delta_transmission "; type_mask &= ~BSDF::EDeltaTransmission; }
-        if (isset(BSDF::EDelta1DReflection)) { oss << "delta1D_reflection "; type_mask &= ~BSDF::EDelta1DReflection; }
-        if (isset(BSDF::EDelta1DTransmission)) { oss << "delta1D_transmission "; type_mask &= ~BSDF::EDelta1DTransmission; }
-        if (isset(BSDF::ENull)) { oss << "null "; type_mask &= ~BSDF::ENull; }
-        if (isset(BSDF::EAnisotropic)) { oss << "anisotropic "; type_mask &= ~BSDF::EAnisotropic; }
-        if (isset(BSDF::EFrontSide)) { oss << "front_side "; type_mask &= ~BSDF::EFrontSide; }
-        if (isset(BSDF::EBackSide)) { oss << "back_side "; type_mask &= ~BSDF::EBackSide; }
-        if (isset(BSDF::EUsesSampler)) { oss << "uses_sampler "; type_mask &= ~BSDF::EUsesSampler; }
-        if (isset(BSDF::ESpatiallyVarying)) { oss << "spatially_varying"; type_mask &= ~BSDF::ESpatiallyVarying; }
-        if (isset(BSDF::ENonSymmetric)) { oss << "non_symmetric"; type_mask &= ~BSDF::ENonSymmetric; }
+#define is_set(mask) (type_mask & mask) == mask
+        if (is_set(BSDF::EAll)) { oss << "all "; type_mask &= ~BSDF::EAll; }
+        if (is_set(BSDF::EReflection)) { oss << "reflection "; type_mask &= ~BSDF::EReflection; }
+        if (is_set(BSDF::ETransmission)) { oss << "transmission "; type_mask &= ~BSDF::ETransmission; }
+        if (is_set(BSDF::ESmooth)) { oss << "smooth "; type_mask &= ~BSDF::ESmooth; }
+        if (is_set(BSDF::EDiffuse)) { oss << "diffuse "; type_mask &= ~BSDF::EDiffuse; }
+        if (is_set(BSDF::EGlossy)) { oss << "glossy "; type_mask &= ~BSDF::EGlossy; }
+        if (is_set(BSDF::EDelta)) { oss << "delta"; type_mask &= ~BSDF::EDelta; }
+        if (is_set(BSDF::EDelta1D)) { oss << "delta1D "; type_mask &= ~BSDF::EDelta1D; }
+        if (is_set(BSDF::EDiffuseReflection)) { oss << "diffuse_reflection "; type_mask &= ~BSDF::EDiffuseReflection; }
+        if (is_set(BSDF::EDiffuseTransmission)) { oss << "diffuse_transmission "; type_mask &= ~BSDF::EDiffuseTransmission; }
+        if (is_set(BSDF::EGlossyReflection)) { oss << "glossy_reflection "; type_mask &= ~BSDF::EGlossyReflection; }
+        if (is_set(BSDF::EGlossyTransmission)) { oss << "glossy_transmission "; type_mask &= ~BSDF::EGlossyTransmission; }
+        if (is_set(BSDF::EDeltaReflection)) { oss << "delta_reflection "; type_mask &= ~BSDF::EDeltaReflection; }
+        if (is_set(BSDF::EDeltaTransmission)) { oss << "delta_transmission "; type_mask &= ~BSDF::EDeltaTransmission; }
+        if (is_set(BSDF::EDelta1DReflection)) { oss << "delta1D_reflection "; type_mask &= ~BSDF::EDelta1DReflection; }
+        if (is_set(BSDF::EDelta1DTransmission)) { oss << "delta1D_transmission "; type_mask &= ~BSDF::EDelta1DTransmission; }
+        if (is_set(BSDF::ENull)) { oss << "null "; type_mask &= ~BSDF::ENull; }
+        if (is_set(BSDF::EAnisotropic)) { oss << "anisotropic "; type_mask &= ~BSDF::EAnisotropic; }
+        if (is_set(BSDF::EFrontSide)) { oss << "front_side "; type_mask &= ~BSDF::EFrontSide; }
+        if (is_set(BSDF::EBackSide)) { oss << "back_side "; type_mask &= ~BSDF::EBackSide; }
+        if (is_set(BSDF::EUsesSampler)) { oss << "uses_sampler "; type_mask &= ~BSDF::EUsesSampler; }
+        if (is_set(BSDF::ESpatiallyVarying)) { oss << "spatially_varying"; type_mask &= ~BSDF::ESpatiallyVarying; }
+        if (is_set(BSDF::ENonSymmetric)) { oss << "non_symmetric"; type_mask &= ~BSDF::ENonSymmetric; }
+#undef is_set
 
-#undef isset
         Assert(type_mask == 0);
         oss << "}";
         return oss.str();

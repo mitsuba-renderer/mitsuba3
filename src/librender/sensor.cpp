@@ -79,23 +79,22 @@ std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
     Value time_sample, const Mask &active) const {
     using Ray3 = Ray<Point<Value, 3>>;
 
-    RayDifferential ray;
+    Ray3 temp_ray;
     Spectrum result, unused;
-    std::tie(ray, result) = sample_ray(
-            sample_position, aperture_sample, time_sample, active);
+
+    std::tie(temp_ray, result) = sample_ray(
+        sample_position, aperture_sample, time_sample, active);
+    RayDifferential ray(temp_ray);
 
     // Sample a ray for X+1
-    Ray3 temp_ray;
     std::tie(temp_ray, unused) = sample_ray(
-            sample_position + Vector2f(1, 0),
-            aperture_sample, time_sample, active);
+        sample_position + Vector2f(1, 0), aperture_sample, time_sample, active);
     ray.o_x = temp_ray.o;
     ray.d_x = temp_ray.d;
 
     // Sample a ray for Y+1
     std::tie(temp_ray, unused) = sample_ray(
-            sample_position + Vector2f(0, 1),
-            aperture_sample, time_sample, active);
+        sample_position + Vector2f(0, 1), aperture_sample, time_sample, active);
     ray.o_y = temp_ray.o;
     ray.d_y = temp_ray.d;
     ray.has_differentials = true;
