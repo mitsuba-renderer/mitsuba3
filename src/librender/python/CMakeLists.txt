@@ -3,6 +3,8 @@ add_mitsuba_python_library(mitsuba_render_ext render
   common.cpp
   emitter.cpp
   endpoint.cpp
+  film.cpp
+  imageblock.cpp
   interaction.cpp
   main.cpp
   records.cpp
