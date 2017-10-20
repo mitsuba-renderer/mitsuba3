@@ -9,6 +9,12 @@
 #    source setpath.sh   for Zsh or Bash
 #
 
+if [[ "$#" -ge "1" ]]; then
+    BUILD_DIR="$1"
+else
+    BUILD_DIR="build"
+fi
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "The setpath.sh script must be sourced, not executed. In other words, run\n"
     echo "$ source setpath.sh\n"
@@ -22,6 +28,6 @@ elif [ "$ZSH_VERSION" ]; then
     export MITSUBA_DIR=$(dirname "$0:A")
 fi
 
-export PYTHONPATH="$MITSUBA_DIR/dist/python:$MITSUBA_DIR/build/dist/python"
-export PATH="$MITSUBA_DIR/dist:$MITSUBA_DIR/build/dist:$PATH"
-export LD_LIBRARY_PATH="$MITSUBA_DIR/dist:$MITSUBA_DIR/build/dist:$LD_LIBRARY_PATH"
+export PYTHONPATH="$MITSUBA_DIR/dist/python:$MITSUBA_DIR/$BUILD_DIR/dist/python"
+export PATH="$MITSUBA_DIR/dist:$MITSUBA_DIR/$BUILD_DIR/dist:$PATH"
+export LD_LIBRARY_PATH="$MITSUBA_DIR/dist:$MITSUBA_DIR/$BUILD_DIR/dist:$LD_LIBRARY_PATH"
