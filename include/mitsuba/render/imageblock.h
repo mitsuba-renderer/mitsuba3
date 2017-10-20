@@ -38,8 +38,8 @@ public:
     */
     ImageBlock(Bitmap::EPixelFormat fmt,
                const Vector2i &size,
-               const ReconstructionFilter *filter = NULL,
-               int channels = -1,
+               const ReconstructionFilter *filter = nullptr,
+               size_t channels = 0,
                bool warn = true);
 
     /// Accumulate another image block into this one
@@ -122,8 +122,11 @@ public:
         copy->m_warn = m_warn;
     }
 
+    /// Clear everything to zero
+    void clear() { m_bitmap->clear(); }
+
     // =============================================================
-    //! @{ \name Setter and accessor functions
+    //! @{ \name Accesors
     // =============================================================
 
     /// Set the current block offset
@@ -164,9 +167,6 @@ public:
 
     /// Return a pointer to the underlying bitmap representation (const version)
     const Bitmap *bitmap() const { return m_bitmap.get(); }
-
-    /// Clear everything to zero
-    void clear() { m_bitmap->clear(); }
 
     //! @}
     // =============================================================

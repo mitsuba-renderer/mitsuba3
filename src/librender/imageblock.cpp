@@ -3,7 +3,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
-    const ReconstructionFilter *filter, int channels, bool warn)
+    const ReconstructionFilter *filter, size_t channels, bool warn)
     : m_offset(0), m_size(size), m_filter(filter),
     m_weights_x(nullptr), m_weights_y(nullptr), m_warn(warn) {
     m_border_size = filter ? filter->border_size() : 0;
@@ -184,5 +184,12 @@ std::string ImageBlock::to_string() const {
     return oss.str();
 }
 
+
+template MTS_EXPORT_RENDER bool ImageBlock::put<>(const Point2f &pos, const Spectrumf &spec, Float alpha);
+template MTS_EXPORT_RENDER bool ImageBlock::put<>(const Point2fP &pos, const SpectrumfP &spec, FloatP alpha);
+
+
 MTS_IMPLEMENT_CLASS(ImageBlock, Object)
+
+
 NAMESPACE_END(mitsuba)

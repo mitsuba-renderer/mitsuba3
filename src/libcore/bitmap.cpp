@@ -180,9 +180,17 @@ size_t Bitmap::bytes_per_pixel() const {
         case Struct::EInt32:
         case Struct::EUInt32:  result = 4; break;
         case Struct::EFloat16: result = 2; break;
+
+        #if defined(SINGLE_PRECISION)
+        case Struct::EFloat:
+        #endif
         case Struct::EFloat32: result = 4; break;
+
+        #if !defined(SINGLE_PRECISION)
+        case Struct::EFloat:
+        #endif
         case Struct::EFloat64: result = 8; break;
-        default: Throw("Unknown component format!");
+        default: Throw("Unknown component format: %d", m_component_format);
     }
     return result * channel_count();
 }
@@ -525,7 +533,7 @@ void Bitmap::accumulate(const Bitmap *bitmap,
             break;
 
         default:
-            Log(EError, m_component_format + ": Unknown component format!");
+            Log(EError, "Unknown component format: %d", m_component_format);
         }
 
         source += source_stride;
