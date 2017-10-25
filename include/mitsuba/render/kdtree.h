@@ -2304,7 +2304,7 @@ public:
         Mask currently_inactive(false);
 
         // Records the intersection time for the earliest intersection along the ray
-        Scalar t(std::numeric_limits<scalar_t<Scalar>>::infinity());
+        Scalar t(maxt_);
 
         const KDNode *current_node = m_nodes.get();
         Scalar mint = Scalar(mint_), maxt = Scalar(maxt_);

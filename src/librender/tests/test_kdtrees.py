@@ -108,7 +108,7 @@ def test04_depth_packet_stairs():
     kdtree = ShapeKDTree(Properties())
     kdtree.add_shape(create_stairs(11))
     kdtree.build()
-    N = 128
+    N = 4
     invN = 1.0 / (N - 1)
     mint = np.full(N*N, 0.)
     maxt = np.full(N*N, 100.)
@@ -123,4 +123,6 @@ def test04_depth_packet_stairs():
     res_dummy = kdtree.ray_intersect_dummy_packet(rays, mint, maxt)
     res_pbrt  = kdtree.ray_intersect_pbrt_packet(rays, mint, maxt)
 
-    assert np.allclose(res_dummy[1], res_pbrt[1], atol=1e-4)
+    assert np.all(res_dummy[0] == res_pbrt[0])
+    assert np.allclose(res_dummy[1], res_pbrt[1], atol=1e-4), \
+            '\n' + '\n'.join([str(res_dummy[1]), str(res_pbrt[1])])
