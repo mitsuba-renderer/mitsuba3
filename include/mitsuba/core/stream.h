@@ -27,9 +27,9 @@ class MTS_EXPORT_CORE Stream : public Object {
 
 protected:
     /* In general, only low-level type serializers should call the stream's
-       protected read & write functions. Otherwise, make sure to handle
-       endianness swapping explicitly.
-    */
+     * protected read & write functions. Otherwise, make sure to handle
+     * endianness swapping explicitly.
+     */
     template <typename T> friend struct detail::serialization_helper;
 
 public:

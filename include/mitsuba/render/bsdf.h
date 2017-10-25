@@ -163,31 +163,31 @@ public:
     };
 
     /**
-    * \brief Sample the BSDF and return the probability density \a and the
-    * importance weight of the sample (i.e. the value of the BSDF divided
-    * by the probability density)
-    *
-    * If a component mask or a specific component index is specified, the
-    * sample is drawn from the matching component, if it exists. Depending
-    * on the provided transport type, either the BSDF or its adjoint version
-    * is used.
-    *
-    * When sampling a continuous/non-delta component, this method also
-    * multiplies by the cosine foreshorening factor with respect to the
-    * sampled direction.
-    *
-    * \param bs    A BSDF query record
-    * \param sample  A uniformly distributed sample on \f$[0,1]^2\f$
-    * \param pdf     Will record the probability with respect to solid angles
-    *                (or the discrete probability when a delta component is sampled)
-    *
-    * \return The BSDF value (multiplied by the cosine foreshortening
-    *         factor when a non-delta component is sampled). A zero spectrum
-    *         means that sampling failed.
-    *
-    * \remark From Python, this function is is called using the syntax
-    *         <tt>value, pdf = bsdf.sample(bs, sample)</tt>
-    */
+     * \brief Sample the BSDF and return the probability density \a and the
+     * importance weight of the sample (i.e. the value of the BSDF divided
+     * by the probability density)
+     *
+     * If a component mask or a specific component index is specified, the
+     * sample is drawn from the matching component, if it exists. Depending
+     * on the provided transport type, either the BSDF or its adjoint version
+     * is used.
+     *
+     * When sampling a continuous/non-delta component, this method also
+     * multiplies by the cosine foreshorening factor with respect to the
+     * sampled direction.
+     *
+     * \param bs    A BSDF query record
+     * \param sample  A uniformly distributed sample on \f$[0,1]^2\f$
+     * \param pdf     Will record the probability with respect to solid angles
+     *                (or the discrete probability when a delta component is sampled)
+     *
+     * \return The BSDF value (multiplied by the cosine foreshortening
+     *         factor when a non-delta component is sampled). A zero spectrum
+     *         means that sampling failed.
+     *
+     * \remark From Python, this function is is called using the syntax
+     *         <tt>value, pdf = bsdf.sample(bs, sample)</tt>
+     */
     virtual std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,
                                                const Point2f &sample) const = 0;
     std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,
@@ -200,22 +200,22 @@ public:
                                                  const mask_t<FloatP> &active = true) const = 0;
 
     /**
-    * \brief Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo)
-    *
-    * This method allows to query the BSDF as a whole or pick out
-    * individual components. When querying a smooth (i.e. non-degenerate)
-    * component, it already multiplies the result by the cosine
-    * foreshortening factor with respect to the outgoing direction.
-    *
-    * \param bs
-    *     A record with detailed information on the BSDF query
-    *
-    * \param measure
-    *     Specifies the measure of the component. This is necessary
-    *     to handle BSDFs, whose components live on spaces with
-    *     different measures. (E.g. a diffuse material with an
-    *     ideally smooth dielectric coating).
-    */
+     * \brief Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo)
+     *
+     * This method allows to query the BSDF as a whole or pick out
+     * individual components. When querying a smooth (i.e. non-degenerate)
+     * component, it already multiplies the result by the cosine
+     * foreshortening factor with respect to the outgoing direction.
+     *
+     * \param bs
+     *     A record with detailed information on the BSDF query
+     *
+     * \param measure
+     *     Specifies the measure of the component. This is necessary
+     *     to handle BSDFs, whose components live on spaces with
+     *     different measures. (E.g. a diffuse material with an
+     *     ideally smooth dielectric coating).
+     */
     virtual Spectrumf eval(const BSDFSample3f &bs,
                            EMeasure measure = ESolidAngle) const = 0;
     Spectrumf eval(const BSDFSample3f &bs,
@@ -228,25 +228,25 @@ public:
                             const mask_t<FloatP> &active = true) const = 0;
 
     /**
-    * \brief Compute the probability of sampling \c bs.wo (given
-    * \c bs.wi).
-    *
-    * This method provides access to the probability density that
-    * would result when supplying the same BSDF query record to the
-    * \ref sample() method. It correctly handles changes in probability
-    * when only a subset of the components is chosen for sampling
-    * (this can be done using the \ref BSDFSample::component and
-    * \ref BSDFSample::type_mask fields).
-    *
-    * \param bs
-    *     A record with detailed information on the BSDF query
-    *
-    * \param measure
-    *     Specifies the measure of the component. This is necessary
-    *     to handle BSDFs, whose components live on spaces with
-    *     different measures. (E.g. a diffuse material with an
-    *     ideally smooth dielectric coating).
-    */
+     * \brief Compute the probability of sampling \c bs.wo (given
+     * \c bs.wi).
+     *
+     * This method provides access to the probability density that
+     * would result when supplying the same BSDF query record to the
+     * \ref sample() method. It correctly handles changes in probability
+     * when only a subset of the components is chosen for sampling
+     * (this can be done using the \ref BSDFSample::component and
+     * \ref BSDFSample::type_mask fields).
+     *
+     * \param bs
+     *     A record with detailed information on the BSDF query
+     *
+     * \param measure
+     *     Specifies the measure of the component. This is necessary
+     *     to handle BSDFs, whose components live on spaces with
+     *     different measures. (E.g. a diffuse material with an
+     *     ideally smooth dielectric coating).
+     */
     virtual Float pdf(const BSDFSample3f &bs,
                       EMeasure measure = ESolidAngle) const = 0;
     Float pdf(const BSDFSample3f &bs,
@@ -342,27 +342,27 @@ template <typename Point3_> struct BSDFSample {
     // =============================================================
 
     /**
-    * \brief Given a surface interaction and an incident direction,
-    * construct a query record which can be used to sample an outgoing
-    * direction.
-    *
-    * By default, all components will be sampled irregardless of
-    * what measure they live on. For convenience, this function
-    * uses the local incident direction vector contained in the
-    * supplied intersection record.
-    *
-    * \param its
-    *      An reference to the underlying intersection record
-    *
-    * \param sampler
-    *      A source of (pseudo-) random numbers. Note that this sampler
-    *      is only used when the scattering model for some reason needs
-    *      more than the two unformly distributed numbers supplied in
-    *      the \ref BSDF::sample() methods.
-    *
-    * \param mode
-    *      The transported mode (\ref ERadiance or \ref EImportance)
-    */
+     * \brief Given a surface interaction and an incident direction,
+     * construct a query record which can be used to sample an outgoing
+     * direction.
+     *
+     * By default, all components will be sampled irregardless of
+     * what measure they live on. For convenience, this function
+     * uses the local incident direction vector contained in the
+     * supplied intersection record.
+     *
+     * \param its
+     *      An reference to the underlying intersection record
+     *
+     * \param sampler
+     *      A source of (pseudo-) random numbers. Note that this sampler
+     *      is only used when the scattering model for some reason needs
+     *      more than the two unformly distributed numbers supplied in
+     *      the \ref BSDF::sample() methods.
+     *
+     * \param mode
+     *      The transported mode (\ref ERadiance or \ref EImportance)
+     */
     inline BSDFSample(
         const SurfaceInteraction &its,
         Sampler *sampler,
@@ -372,22 +372,22 @@ template <typename Point3_> struct BSDFSample {
     }
 
     /**
-    * \brief Given a surface interaction an an incident/exitant direction
-    * pair (wi, wo), create a query record to evaluate the BSDF or its
-    * sampling density.
-    *
-    * For convenience, this function uses the local incident direction
-    * vector contained in the supplied intersection record.
-    *
-    * \param its
-    *      A reference to the underlying intersection record
-    * \param wo
-    *      An outgoing direction in local coordinates. This should
-    *      be a normalized direction vector that points \a away from
-    *      the scattering event.
-    * \param mode
-    *      The transported mode (\ref ERadiance or \ref EImportance)
-    */
+     * \brief Given a surface interaction an an incident/exitant direction
+     * pair (wi, wo), create a query record to evaluate the BSDF or its
+     * sampling density.
+     *
+     * For convenience, this function uses the local incident direction
+     * vector contained in the supplied intersection record.
+     *
+     * \param its
+     *      A reference to the underlying intersection record
+     * \param wo
+     *      An outgoing direction in local coordinates. This should
+     *      be a normalized direction vector that points \a away from
+     *      the scattering event.
+     * \param mode
+     *      The transported mode (\ref ERadiance or \ref EImportance)
+     */
     inline BSDFSample(
         const SurfaceInteraction &its,
         const Vector3 &wo,
@@ -397,24 +397,24 @@ template <typename Point3_> struct BSDFSample {
     }
 
     /**
-    * \brief Given a surface interaction and an incident/exitant direction
-    * pair (wi, wo), create a query record to evaluate the BSDF or its
-    * sampling density.
-    *
-    * \param its
-    *      An reference to the underlying intersection record
-    * \param wi
-    *      An incident direction in local coordinates. This should
-    *      be a normalized direction vector that points \a away from
-    *      the scattering event.
-    * \param wo
-    *      An outgoing direction in local coordinates. This should
-    *      be a normalized direction vector that points \a away from
-    *      the scattering event.
-    * \param mode
-    *      The transported mode (\ref ERadiance or \ref EImportance)
-    *
-    */
+     * \brief Given a surface interaction and an incident/exitant direction
+     * pair (wi, wo), create a query record to evaluate the BSDF or its
+     * sampling density.
+     *
+     * \param its
+     *      An reference to the underlying intersection record
+     * \param wi
+     *      An incident direction in local coordinates. This should
+     *      be a normalized direction vector that points \a away from
+     *      the scattering event.
+     * \param wo
+     *      An outgoing direction in local coordinates. This should
+     *      be a normalized direction vector that points \a away from
+     *      the scattering event.
+     * \param mode
+     *      The transported mode (\ref ERadiance or \ref EImportance)
+     *
+     */
     inline BSDFSample(
         const SurfaceInteraction &its,
         const Vector3 &wi,
@@ -425,12 +425,12 @@ template <typename Point3_> struct BSDFSample {
     }
 
     /**
-    * \brief Reverse the direction of light transport in the record
-    *
-    * This function essentially swaps \c wi and \c wo and adjusts
-    * \c mode appropriately, so that non-symmetric scattering
-    * models can be queried in the reverse direction.
-    */
+     * \brief Reverse the direction of light transport in the record
+     *
+     * This function essentially swaps \c wi and \c wo and adjusts
+     * \c mode appropriately, so that non-symmetric scattering
+     * models can be queried in the reverse direction.
+     */
     void reverse() {
         std::swap(wo, wi);
         mode = (ETransportMode)(1 - mode);

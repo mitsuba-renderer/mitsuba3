@@ -76,10 +76,11 @@ public:
      */
     path(const std::string &string);
 
-    /** \brief Constructs a path from an char array, even if it's not the
-    * native string type. Assumes the string is UTF-8 encoded to carry
-    * conversion to native type.
-    */
+    /**
+     * \brief Constructs a path from an char array, even if it's not the
+     * native string type. Assumes the string is UTF-8 encoded to carry
+     * conversion to native type.
+     */
     path(const char *string) : path(std::string(string)) { }
 #endif
 

@@ -40,14 +40,14 @@ public:
     virtual void develop(const Scene *scene, Float render_time) = 0;
 
     /**
-    * \brief Develop the contents of a subregion of the film and store
-    * it inside the given bitmap
-    *
-    * This may fail when the film does not have an explicit representation
-    * of the bitmap in question (e.g. when it is writing to a tiled EXR image)
-    *
-    * \return \c true upon success
-    */
+     * \brief Develop the contents of a subregion of the film and store
+     * it inside the given bitmap
+     *
+     * This may fail when the film does not have an explicit representation
+     * of the bitmap in question (e.g. when it is writing to a tiled EXR image)
+     *
+     * \return \c true upon success
+     */
     virtual bool develop(
         const Point2i  &offset,
         const Vector2i &size,
@@ -58,10 +58,10 @@ public:
     virtual bool destination_exists(const fs::path &basename) const = 0;
 
     /**
-    * Should regions slightly outside the image plane be sampled to improve
-    * the quality of the reconstruction at the edges? This only makes
-    * sense when reconstruction filters other than the box filter are used.
-    */
+     * Should regions slightly outside the image plane be sampled to improve
+     * the quality of the reconstruction at the edges? This only makes
+     * sense when reconstruction filters other than the box filter are used.
+     */
     bool has_high_quality_edges() const { return m_high_quality_edges; }
 
     // =============================================================

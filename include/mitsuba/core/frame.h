@@ -61,7 +61,8 @@ template <typename Vector3> struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the squared tangent of the angle between the normal and v */
+     * system, return the squared tangent of the angle between the normal and v
+     */
     static Scalar tan_theta_2(const Vector3 &v) {
         Scalar temp = 1 - v.z() * v.z();
         return select(temp <= Scalar(0), Scalar(0),
@@ -69,7 +70,8 @@ template <typename Vector3> struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the sine of the phi parameter in spherical coordinates */
+     * system, return the sine of the phi parameter in spherical coordinates
+     */
     static Scalar sin_phi(const Vector3 &v) {
         Scalar sin_theta = Frame::sin_theta(v);
         return select(eq(sin_theta, Scalar(0)),
@@ -78,8 +80,9 @@ template <typename Vector3> struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the squared sine of the phi parameter in  spherical
-    * coordinates */
+     * system, return the squared sine of the phi parameter in  spherical
+     * coordinates
+     */
     static Scalar sin_phi_2(const Vector3 &v) {
         Scalar sin_theta_2 = Frame::sin_theta_2(v);
         return select(eq(sin_theta_2, Scalar(0)),
@@ -88,7 +91,7 @@ template <typename Vector3> struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the cosine of the phi parameter in spherical coordinates */
+     * system, return the cosine of the phi parameter in spherical coordinates */
     static Float cos_phi(const Vector3 &v) {
         Scalar sin_theta = Frame::sin_theta(v);
         return select(eq(sin_theta, Scalar(0)),
@@ -97,8 +100,8 @@ template <typename Vector3> struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the squared cosine of the phi parameter in  spherical
-    * coordinates */
+     * system, return the squared cosine of the phi parameter in  spherical
+     * coordinates */
     static Float cos_phi_2(const Vector3 &v) {
         Scalar sin_theta_2 = Frame::sin_theta_2(v);
         return select(eq(sin_theta_2, Scalar(0)),
@@ -107,7 +110,7 @@ template <typename Vector3> struct Frame {
     }
 
     /** \brief Assuming that the given direction is in the local coordinate
-    * system, return the u and v coordinates of the vector 'v' */
+     * system, return the u and v coordinates of the vector 'v' */
     static Vector2 uv(const Vector3 &v) {
         return Vector2(v.x(), v.y());
     }

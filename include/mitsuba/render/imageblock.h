@@ -12,36 +12,36 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
-* \brief Storage for an image sub-block (a.k.a render bucket)
-*
-* This class is used by image-based parallel processes and encapsulates
-* computed rectangular regions of an image. This allows for easy and efficient
-* distributed rendering of large images. Image blocks usually also include a
-* border region storing contributions that are slightly outside of the block,
-* which is required to support image reconstruction filters.
-*/
+ * \brief Storage for an image sub-block (a.k.a render bucket)
+ *
+ * This class is used by image-based parallel processes and encapsulates
+ * computed rectangular regions of an image. This allows for easy and efficient
+ * distributed rendering of large images. Image blocks usually also include a
+ * border region storing contributions that are slightly outside of the block,
+ * which is required to support image reconstruction filters.
+ */
 class MTS_EXPORT_RENDER ImageBlock : public Object {
 public:
     /**
-    * Construct a new image block of the requested properties
-    *
-    * \param fmt
-    *    Specifies the pixel format -- see \ref Bitmap::EPixelFormat
-    *    for a list of possibilities
-    * \param size
-    *    Specifies the block dimensions (not accounting for additional
-    *    border pixels required to support image reconstruction filters)
-    * \param filter
-    *    Pointer to the film's reconstruction filter. If passed, it is used to
-    *    compute and store reconstruction weights. Note that it is mandatory
-    *    when any of the block's \ref put operations are used, except for
-    *    \c put(const ImageBlock*).
-    * \param channels
-    *    Specifies the number of output channels. This is only necessary
-    *    when \ref Bitmap::EMultiChannel is chosen as the pixel format
-    * \param warn
-    *    Warn when writing bad sample values?
-    */
+     * Construct a new image block of the requested properties
+     *
+     * \param fmt
+     *    Specifies the pixel format -- see \ref Bitmap::EPixelFormat
+     *    for a list of possibilities
+     * \param size
+     *    Specifies the block dimensions (not accounting for additional
+     *    border pixels required to support image reconstruction filters)
+     * \param filter
+     *    Pointer to the film's reconstruction filter. If passed, it is used to
+     *    compute and store reconstruction weights. Note that it is mandatory
+     *    when any of the block's \ref put operations are used, except for
+     *    \c put(const ImageBlock*).
+     * \param channels
+     *    Specifies the number of output channels. This is only necessary
+     *    when \ref Bitmap::EMultiChannel is chosen as the pixel format
+     * \param warn
+     *    Warn when writing bad sample values?
+     */
     ImageBlock(Bitmap::EPixelFormat fmt,
                const Vector2i &size,
                const ReconstructionFilter *filter = nullptr,
@@ -56,21 +56,21 @@ public:
     }
 
     /**
-    * \brief Store a single sample / packets of samples inside the
-    * image block
-    *
-    * This variant assumes that the image block's internal storage format is
-    * an (R, G, B) triplet of Floats.
-    *
-    * \param pos
-    *    Denotes the sample position in fractional pixel coordinates
-    * \param spec
-    *    Spectrum value assocated with the sample
-    * \param alpha
-    *    Alpha value assocated with the sample
-    * \return \c false if one of the sample values was \a invalid, e.g.
-    *    NaN or negative. A warning is also printed if \c m_warn is enabled.
-    */
+     * \brief Store a single sample / packets of samples inside the
+     * image block
+     *
+     * This variant assumes that the image block's internal storage format is
+     * an (R, G, B) triplet of Floats.
+     *
+     * \param pos
+     *    Denotes the sample position in fractional pixel coordinates
+     * \param spec
+     *    Spectrum value assocated with the sample
+     * \param alpha
+     *    Alpha value assocated with the sample
+     * \return \c false if one of the sample values was \a invalid, e.g.
+     *    NaN or negative. A warning is also printed if \c m_warn is enabled.
+     */
     template<typename Point2,
              typename Spectrum,
              typename Value = typename Point2::Value>
@@ -97,29 +97,29 @@ public:
     }
 
     /**
-    * \brief Store a single sample inside the block
-    *
-    * \param _pos
-    *    Denotes the sample position in fractional pixel coordinates
-    * \param value
-    *    Pointer to an array containing each channel of the sample values.
-    *    The array must match the length given by \ref channel_count()
-    * \return \c false if one of the sample values was \a invalid, e.g.
-    *    NaN or negative. A warning is also printed if \c m_warn is enabled.
-    */
+     * \brief Store a single sample inside the block
+     *
+     * \param _pos
+     *    Denotes the sample position in fractional pixel coordinates
+     * \param value
+     *    Pointer to an array containing each channel of the sample values.
+     *    The array must match the length given by \ref channel_count()
+     * \return \c false if one of the sample values was \a invalid, e.g.
+     *    NaN or negative. A warning is also printed if \c m_warn is enabled.
+     */
     bool put(const Point2f &_pos, const Float *value);
 
     /**
-    * \brief Store a packet of samples inside the block
-    *
-    * \param _pos
-    *    Denotes the samples positions in fractional pixel coordinates
-    * \param value
-    *    Pointer to an array containing packets for each channel of the sample
-    *    values. The array must match the length given by \ref channel_count()
-    * \return \c false if one of the sample values was \a invalid, e.g.
-    *    NaN or negative. A warning is also printed if \c m_warn is enabled.
-    */
+     * \brief Store a packet of samples inside the block
+     *
+     * \param _pos
+     *    Denotes the samples positions in fractional pixel coordinates
+     * \param value
+     *    Pointer to an array containing packets for each channel of the sample
+     *    values. The array must match the length given by \ref channel_count()
+     * \return \c false if one of the sample values was \a invalid, e.g.
+     *    NaN or negative. A warning is also printed if \c m_warn is enabled.
+     */
     bool put(const Point2fP &_pos, const FloatP *value);
 
     /// Create a clone of the entire image block

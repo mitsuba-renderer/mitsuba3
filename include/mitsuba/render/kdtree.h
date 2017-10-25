@@ -2046,12 +2046,12 @@ public:
     }
 
     /**
-    * \brief Ray tracing kd-tree traversal loop (Havran variant)
-    *
-    * This is generally the most robust and fastest traversal routine
-    * of the methods implemented in this class. However, this method is only
-    * implemented for scalar rays.
-    */
+     * \brief Ray tracing kd-tree traversal loop (Havran variant)
+     *
+     * This is generally the most robust and fastest traversal routine
+     * of the methods implemented in this class. However, this method is only
+     * implemented for scalar rays.
+     */
     template<bool IsShadowRay = false>
     std::pair<bool, Float> ray_intersect_havran(const Ray3f &ray, Float mint, Float maxt) const {
         /// Ray traversal stack entry
@@ -2166,8 +2166,8 @@ public:
     }
 
     /**
-    * \brief Scalar implementation of the ray tracing kd-tree traversal loop (PBRT variant).
-    */
+     * \brief Scalar implementation of the ray tracing kd-tree traversal loop (PBRT variant).
+     */
     template<bool IsShadowRay = false,
         typename Ray,
         typename Point = typename Ray::Point,
@@ -2271,8 +2271,8 @@ public:
     }
 
     /**
-    * \brief Vectorized implementation of the ray tracing kd-tree traversal loop (PBRT variant).
-    */
+     * \brief Vectorized implementation of the ray tracing kd-tree traversal loop (PBRT variant).
+     */
     template<bool IsShadowRay = false,
         typename Ray,
         typename Point = typename Ray::Point,
