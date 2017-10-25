@@ -176,3 +176,27 @@ def test_read_tga():
     b2 = Bitmap(find_resource('resources/data/tests/bitmap/tga_compressed.tga'))
     assert b1 == b2
 
+def test_accumulate():
+    # ----- Accumulate the whole bitmap
+    b1 = Bitmap(Bitmap.ERGB, Struct.EUInt8, [10, 10])
+    n = b1.height() * b1.width()
+    # 0, 1, 2, ..., 99
+    np.array(b1, copy=False)[:] = np.arange(n).reshape(b1.height(), b1.width(), 1)
+
+    b2 = Bitmap(Bitmap.ERGB, Struct.EUInt8, [10, 10])
+    # 100, 99, ..., 1
+    np.array(b2, copy=False)[:] = np.arange(n, 0, -1).reshape(
+        b2.height(), b2.width(), 1)
+
+    b1.accumulate(b2)
+    assert np.all(np.array(b1, copy=False) == n)
+
+    # ----- Accumulate only a sub-frame
+    np.array(b1, copy=False)[:] = np.arange(n).reshape(b1.height(), b1.width(), 1)
+    ref = np.array(b1)
+    ref[1:6, 3:4, :] += np.array(b2, copy=False)[3:8, 5:6, :]
+
+    # Recall that positions are specified as (x, y) in Mitsuba convention,
+    # but (row, column) in arrays.
+    b1.accumulate(b2, [5, 3], [3, 1], [1, 5])
+    assert np.all(np.array(b1, copy=False) == ref)

@@ -486,7 +486,7 @@ public:
      * use different component formats or channels, or when the
      * component format is \ref EBitmask.
      */
-    void accumulate(const Bitmap *bitmap, Point2i target_offset) {
+    void accumulate(const Bitmap *bitmap, const Point2i &target_offset) {
         accumulate(bitmap, Point2i(0), target_offset, bitmap->size());
     }
 

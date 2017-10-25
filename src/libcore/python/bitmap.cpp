@@ -78,6 +78,17 @@ MTS_PY_EXPORT(Bitmap) {
              "pixel_format"_a, "component_format"_a, "srgb_gamma"_a)
         .def("convert", py::overload_cast<Bitmap *>(&Bitmap::convert, py::const_),
              D(Bitmap, convert, 2), "target"_a)
+        .def("accumulate", py::overload_cast<const Bitmap *, Point2i,
+                                             Point2i, Vector2i>(
+                &Bitmap::accumulate), D(Bitmap, accumulate),
+             "bitmap"_a, "source_offset"_a, "target_offset"_a, "size"_a)
+        .def("accumulate", py::overload_cast<const Bitmap *, const Point2i &>(
+                &Bitmap::accumulate), D(Bitmap, accumulate, 2),
+             "bitmap"_a, "target_offset"_a)
+        .def("accumulate", py::overload_cast<const Bitmap *>(
+                &Bitmap::accumulate), D(Bitmap, accumulate, 3),
+             "bitmap"_a)
+        .mdef(Bitmap, vflip)
         .def("struct_", &Bitmap::struct_, D(Bitmap, struct))
         .def(py::self == py::self)
         .def(py::self != py::self);

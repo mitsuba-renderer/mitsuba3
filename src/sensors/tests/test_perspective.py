@@ -58,7 +58,7 @@ def test01_create():
 
     # Aspect should be the same as a default film
     assert c.film() is not None
-    assert c.aspect() == approx(c.film().size()[0] / c.film().size()[1])
+    assert c.aspect() == approx(c.film().size()[0] / float(c.film().size()[1]))
 
 def test02_sample_rays():
     # TODO: more precise tests

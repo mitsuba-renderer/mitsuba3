@@ -35,6 +35,18 @@ Film::Film(const Properties &props) : Object() {
        filters. */
     m_high_quality_edges = props.bool_("high_quality_edges", false);
 
+    // Use the provided reconstruction filter, if any.
+    for (auto &kv : props.objects()) {
+        auto *rfilter = dynamic_cast<ReconstructionFilter *>(kv.second.get());
+        if (rfilter) {
+            if (m_filter)
+                Throw("A film can only have one reconstruction filter.");
+            m_filter = rfilter;
+        } else {
+            Throw("Tried to add an unsupported object of type %s", kv.second);
+        }
+    }
+
     configure();
 }
 

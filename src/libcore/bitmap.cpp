@@ -60,18 +60,18 @@ Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
     : m_data(data), m_pixel_format(pixel_format),
       m_component_format(component_format), m_size(size), m_owns_data(false) {
 
-    if (m_component_format == Struct::EUInt8)
-        m_srgb_gamma = true;  // sRGB by default
-    else
-        m_srgb_gamma = false; // Linear by default
-
     if (m_component_format == Struct::EFloat) {
+        // Translate EFloat to the corresponding compile-time precision.
         #if defined(SINGLE_PRECISION)
         m_component_format = Struct::EFloat32;
         #else
         m_component_format = Struct::EFloat64;
         #endif
-    }
+    } else if (m_component_format == Struct::EUInt8)
+        m_srgb_gamma = true;  // sRGB by default
+    else
+        m_srgb_gamma = false; // Linear by default
+
 
     rebuild_struct(channel_count);
 

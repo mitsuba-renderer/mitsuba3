@@ -365,27 +365,38 @@ public:
         /* Currently, only accumulating spectrum-valued floating point images
         is supported. This function basically just exists to support the
         somewhat peculiar film updates done by BDPT */
-
         Vector2i size = bitmap->size();
-        if (bitmap->component_format() != Struct::EType::EFloat ||
-            bitmap->srgb_gamma() != 1.0f ||
-            size != m_storage->size()    ||
+        #if defined(SINGLE_PRECISION)
+        auto expected_format = Struct::EFloat32;
+        #else
+        auto expected_format = Struct::EFloat64;
+        #endif
+        if (bitmap->component_format() != expected_format ||
+            bitmap->srgb_gamma()                          ||
+            size != m_storage->size()                     ||
             m_pixel_formats.size() != 1) {
-            Throw("add_bitmap(): Unsupported bitmap format in new bitmap: %s",
-                  bitmap->to_string());
+            Throw("add_bitmap(): Unsupported bitmap format in new bitmap:"
+                  " %s,\nvs\n%s",
+                  bitmap->to_string(), m_storage->bitmap()->to_string());
         }
 
         size_t n_pixels = (size_t)size.x() * (size_t)size.y();
         const Float *source = static_cast<const Float *>(bitmap->data());
         Float *target = static_cast<Float *>(m_storage->bitmap()->data());
         for (size_t i = 0; i < n_pixels; ++i) {
-            Float weight = target[MTS_WAVELENGTH_SAMPLES + 1];
-            if (weight == 0)
-                weight = target[MTS_WAVELENGTH_SAMPLES + 1] = 1;
-            weight *= multiplier;
-            for (size_t j = 0; j < MTS_WAVELENGTH_SAMPLES; ++j)
-                (*target++) += (*source++ * weight);
-            target += 2;
+            // TODO: update to comply with internal storage format.
+            // TODO: this was just for debugging, it's not a meaningful format.
+            for (size_t j = 0; j < m_storage->bitmap()->channel_count(); ++j)
+                (*target++) += multiplier * (*source++);
+
+            // Proper handling when format is (Spectrum, alpha, weight):
+            // Float weight = target[MTS_WAVELENGTH_SAMPLES + 1];
+            // if (weight == 0)
+            //     weight = target[MTS_WAVELENGTH_SAMPLES + 1] = 1;
+            // weight *= multiplier;
+            // for (size_t j = 0; j < MTS_WAVELENGTH_SAMPLES; ++j)
+            //     (*target++) += (*source++ * weight);
+            // target += 2;
         }
     }
 
