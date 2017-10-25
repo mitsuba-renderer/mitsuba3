@@ -84,13 +84,16 @@ def test03_clear_set_add():
     b = Bitmap(Bitmap.ERGB, Struct.EFloat, film.bitmap().size())
     n = b.width() * b.height()
     # 0, 1, 2, ...
-    ref = 1.05 * np.arange(n).reshape(b.height(), b.width(), 1).astype(float_dtype)
+    ref = np.arange(n).reshape(b.height(), b.width(), 1).astype(
+        float_dtype) / float(4 * (n + 1))
+    assert np.all(ref >= 0) and np.all(ref <= 1)
     np.array(b, copy=False)[:] = ref
 
     film.set_bitmap(b)
     assert np.allclose(np.array(film.bitmap(), copy=False), ref)
     film.add_bitmap(b, multiplier=1.5)
-    assert np.allclose(np.array(film.bitmap(), copy=False), (1 + 1.5) * ref, atol=1e-4)
+    assert np.allclose(np.array(film.bitmap(), copy=False), (1 + 1.5) * ref,
+                       atol=1e-6)
     film.clear()
     assert np.all(np.array(film.bitmap(), copy=False) == 0)
     # This shouldn't affect the original bitmap that was passed.

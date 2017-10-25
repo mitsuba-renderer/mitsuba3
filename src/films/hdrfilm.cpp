@@ -290,7 +290,7 @@ public:
             // RGBE output; override pixel & component format if necessary
             if (m_pixel_formats.size() != 1) {
                 Throw("The RGBE format does not support general"
-                      "multi-channel images!");
+                      " multi-channel images!");
             }
             if (m_pixel_formats[0] != Bitmap::ERGB) {
                 Log(EWarn, "The RGBE format only supports pixel_format=\"rgb\"."

@@ -67,11 +67,12 @@ Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
         #else
         m_component_format = Struct::EFloat64;
         #endif
-    } else if (m_component_format == Struct::EUInt8)
+    }
+
+    if (m_component_format == Struct::EUInt8)
         m_srgb_gamma = true;  // sRGB by default
     else
         m_srgb_gamma = false; // Linear by default
-
 
     rebuild_struct(channel_count);
 
@@ -455,8 +456,9 @@ void Bitmap::convert(Bitmap *target) const {
             }
         }
 
-        Throw("Unable to convert %s to %s: don't know how to obtain channel \"%s\"",
-            m_struct->to_string(), target_struct->to_string(), field.name);
+        Throw("Unable to convert %s to %s: don't know how to obtain"
+              " channel \"%s\".",
+              m_struct->to_string(), target_struct->to_string(), field.name);
     }
 
     StructConverter conv(m_struct, target_struct);

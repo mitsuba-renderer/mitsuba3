@@ -12,27 +12,25 @@ MTS_PY_EXPORT(ImageBlock) {
              "fmt"_a, "size"_a, "filter"_a = nullptr, "channels"_a = 0,
              "warn"_a = true)
 
+        // Note that we are not using the py::overload_cast convenience method
+        // here, because it seems to be incompatible with overloads that have
+        // templated variants.
         .def("put",
              (void (ImageBlock::*)(const ImageBlock *)) &ImageBlock::put,
-             "block"_a)
+             D(ImageBlock, put), "block"_a)
         .def("put",
              &ImageBlock::put<Point2f, Spectrumf>,
-             "pos"_a, "spec"_a, "alpha"_a)
+             D(ImageBlock, put, 2),
+             "pos"_a, "spec"_a, "alpha"_a, "unused"_a = true)
         .def("put",
-             &ImageBlock::put<Point2fP, SpectrumfP>,
-             "pos"_a, "spec"_a, "alpha"_a)
-        .def("put",
-             (bool (ImageBlock::*)(const Point2f &, const Float *)) &ImageBlock::put,
-             "pos"_a, "value"_a)
-        .def("put",
-             (bool (ImageBlock::*)(const Point2fP &, const FloatP *)) &ImageBlock::put,
-             "pos"_a, "value"_a)
+             enoki::vectorize_wrapper(&ImageBlock::put<Point2fP, SpectrumfP>),
+             D(ImageBlock, put, 2),
+             "pos"_a, "spec"_a, "alpha"_a, "active"_a = true)
 
         .mdef(ImageBlock, clone)
         .mdef(ImageBlock, copy_to, "copy"_a)
         .mdef(ImageBlock, set_offset, "offset"_a)
         .mdef(ImageBlock, offset)
-        .mdef(ImageBlock, set_size, "size"_a)
         .mdef(ImageBlock, size)
         .mdef(ImageBlock, width)
         .mdef(ImageBlock, height)

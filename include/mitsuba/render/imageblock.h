@@ -37,8 +37,10 @@ public:
      *    when any of the block's \ref put operations are used, except for
      *    \c put(const ImageBlock*).
      * \param channels
-     *    Specifies the number of output channels. This is only necessary
-     *    when \ref Bitmap::EMultiChannel is chosen as the pixel format
+     *    Specifies the number of output channels. This is only valid
+     *    when \ref Bitmap::EMultiChannel is chosen as the pixel format,
+     *    otherwise pass 0 so that channels are set automatically from the
+     *    pixel format.
      * \param warn
      *    Warn when writing bad sample values?
      */
@@ -57,13 +59,18 @@ public:
 
     /**
      * \brief Store a single sample / packets of samples inside the
-     * image block
+     * image block.
+     *
+     * \note This method is only valid if a reconstruction filter was given at
+     * the construction of the block.
      *
      * This variant assumes that the image block's internal storage format is
      * an (R, G, B) triplet of Floats.
      *
      * \param pos
-     *    Denotes the sample position in fractional pixel coordinates
+     *    Denotes the sample position in fractional pixel coordinates. It is
+     *    not checked, and so must be valid. The block's offset is subtracted
+     *    from the given position to obtain the
      * \param spec
      *    Spectrum value assocated with the sample
      * \param alpha
@@ -74,7 +81,10 @@ public:
     template<typename Point2,
              typename Spectrum,
              typename Value = typename Point2::Value>
-    bool put(const Point2 &pos, const Spectrum &spec, Value /*alpha*/) {
+    mask_t<Value> put(const Point2 &pos, const Spectrum &spec,
+                      const Value &/*alpha*/,
+                      const mask_t<Value> &active) {
+        using ValueVector = std::vector<Value, aligned_allocator<Value>>;
         // TODO: which internal storage format should we use?
         // 1. Spectrum samples, alpha, filter weight
         // Value temp[MTS_WAVELENGTH_SAMPLES + 2];
@@ -86,41 +96,49 @@ public:
 
         // 2. m first spectrum samples
         // TODO: this was just for debugging, it's not a meaningful format.
-        std::vector<Value> temp(m_bitmap->channel_count());
-        if (temp.size() > MTS_WAVELENGTH_SAMPLES) {
-            Throw("Too many channels in ImageBlock");
-        }
-        // Value temp[3];
+        ValueVector temp(m_bitmap->channel_count());
+        if (temp.size() > MTS_WAVELENGTH_SAMPLES)
+            Throw("Too many channels in ImageBlock: %s", to_string());
+
         for (size_t i = 0; i < temp.size(); ++i)
             temp[i] = spec[i];
-        return put(pos, temp.data());
+        return put(pos, temp.data(), active);
     }
 
     /**
-     * \brief Store a single sample inside the block
+     * \brief Store a single sample inside the block.
+     *
+     * \note This method is only valid if a reconstruction filter was given at
+     * the construction of the block.
      *
      * \param _pos
-     *    Denotes the sample position in fractional pixel coordinates
+     *    Denotes the sample position in fractional pixel coordinates. It is
+     *    not checked, and so must be valid. The block's offset is subtracted
+     *    from the given position to obtain the
      * \param value
      *    Pointer to an array containing each channel of the sample values.
      *    The array must match the length given by \ref channel_count()
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    bool put(const Point2f &_pos, const Float *value);
+    bool put(const Point2f &_pos, const Float *value, bool /*unused*/ = true);
 
     /**
-     * \brief Store a packet of samples inside the block
+     * \brief Store a packet of samples inside the block.
+     *
+     * \note This method is only valid if a reconstruction filter was given at
+     * the construction of the block.
      *
      * \param _pos
-     *    Denotes the samples positions in fractional pixel coordinates
+     *    Denotes the samples positions in fractional pixel coordinates.
      * \param value
      *    Pointer to an array containing packets for each channel of the sample
      *    values. The array must match the length given by \ref channel_count()
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    bool put(const Point2fP &_pos, const FloatP *value);
+    mask_t<FloatP> put(const Point2fP &_pos, const FloatP *value,
+                       const mask_t<FloatP> &active = true);
 
     /// Create a clone of the entire image block
     ref<ImageBlock> clone() const {
@@ -130,7 +148,8 @@ public:
         return clone;
     }
 
-    /// Copy the contents of this image block to another one with the same configuration
+    /// Copy the contents of this image block to another one with the same
+    /// configuration. The reconstruction filter is left as-is.
     void copy_to(ImageBlock *copy) const {
         memcpy(copy->bitmap()->uint8_data(), m_bitmap->uint8_data(), m_bitmap->buffer_size());
         copy->m_size = m_size;
@@ -145,14 +164,12 @@ public:
     //! @{ \name Accesors
     // =============================================================
 
-    /// Set the current block offset
+    /// Set the current block offset. This corresponds to the offset
+    /// from a larger image's (e.g. a Film) corner to this block's corner.
     void set_offset(const Point2i &offset) { m_offset = offset; }
 
     /// Return the current block offset
     const Point2i &offset() const { return m_offset; }
-
-    /// Set the current block size
-    void set_size(const Vector2i &size) { m_size = size; }
 
     /// Return the current block size
     const Vector2i &size() const { return m_size; }
@@ -199,7 +216,8 @@ protected:
     Vector2i m_size;
     int m_border_size;
     const ReconstructionFilter *m_filter;
-    Float *m_weights_x, *m_weights_y;
+    Float  *m_weights_x  , *m_weights_y;
+    FloatP *m_weights_x_p, *m_weights_y_p;
     bool m_warn;
 };
 
