@@ -43,7 +43,7 @@ struct SortKey {
         b = b.substr(i);
         try {
             return std::stoi(a) < std::stoi(b);
-        } catch (const std::logic_error &) {
+        } catch (...) {
             return a < b;
         }
     }

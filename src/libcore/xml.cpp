@@ -236,7 +236,7 @@ Vector3f parse_named_vector(XMLSource &src, pugi::xml_node &node, const std::str
         return Vector3f(detail::stof(list[0]),
                         detail::stof(list[1]),
                         detail::stof(list[2]));
-    } catch (const std::logic_error &) {
+    } catch (...) {
         src.throw_error(node, "could not parse floating point values in \"%s\"", vec_str);
     }
 }
@@ -252,7 +252,7 @@ Vector3f parse_vector(XMLSource &src, pugi::xml_node &node, Float def_val = 0.f)
         value = node.attribute("z").value();
         if (!value.empty()) z = detail::stof(value);
         return Vector3f(x, y, z);
-    } catch (const std::logic_error &) {
+    } catch (...) {
         src.throw_error(node, "could not parse floating point value \"%s\"", value);
     }
 }
@@ -461,22 +461,26 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
             case EFloat: {
                     check_attributes(src, node, { "name", "value" });
                     std::string value = node.attribute("value").value();
+                    Float value_float;
                     try {
-                        props.set_float(node.attribute("name").value(), detail::stof(value));
-                    } catch (const std::logic_error &) {
+                        value_float = detail::stof(value);
+                    } catch (...) {
                         src.throw_error(node, "could not parse floating point value \"%s\"", value);
                     }
+                    props.set_float(node.attribute("name").value(), value_float);
                 }
                 break;
 
             case EInteger: {
                     check_attributes(src, node, { "name", "value" });
                     std::string value = node.attribute("value").value();
+                    int64_t value_long;
                     try {
-                        props.set_long(node.attribute("name").value(), int64_t(std::stoll(value)));
-                    } catch (const std::logic_error &) {
+                        value_long = int64_t(std::stoll(value));
+                    } catch (...) {
                         src.throw_error(node, "could not parse integer value \"%s\"", value);
                     }
+                    props.set_long(node.attribute("name").value(), value_long);
                 }
                 break;
 
@@ -529,11 +533,13 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     check_attributes(src, node, { "angle", "x", "y", "z" });
                     Vector3f vec = detail::parse_vector(src, node);
                     std::string angle = node.attribute("angle").value();
+                    Float angle_float;
                     try {
-                        ctx.transform = Transform4f::rotate(vec, detail::stof(angle)) * ctx.transform;
-                    } catch (const std::logic_error &) {
+                        angle_float = detail::stof(angle);
+                    } catch (...) {
                         src.throw_error(node, "could not parse floating point value \"%s\"", angle);
                     }
+                    ctx.transform = Transform4f::rotate(vec, angle_float) * ctx.transform;
                 }
                 break;
 
@@ -577,7 +583,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         for (int j = 0; j < 4; ++j) {
                             try {
                                 matrix(i, j) = detail::stof(tokens[i * 4 + j]);
-                            } catch (const std::logic_error &) {
+                            } catch (...) {
                                 src.throw_error(node, "could not parse floating point value \"%s\"", tokens[i*4 + j]);
                             }
                         }
