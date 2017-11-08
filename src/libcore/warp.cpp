@@ -100,26 +100,26 @@ template MTS_EXPORT_CORE FloatP square_to_cosine_hemisphere_pdf<false>(Vector3fP
 // ------------------------------------------------------------------------------------------
 
 template MTS_EXPORT_CORE Vector3f  square_to_uniform_cone(Point2f, Float);
-template MTS_EXPORT_CORE Vector3fP square_to_uniform_cone(Point2fP, Float);
+template MTS_EXPORT_CORE Vector3fP square_to_uniform_cone(Point2fP, FloatP);
 
 template MTS_EXPORT_CORE Point2f  uniform_cone_to_square(Vector3f, Float);
-template MTS_EXPORT_CORE Point2fP uniform_cone_to_square(Vector3fP, Float);
+template MTS_EXPORT_CORE Point2fP uniform_cone_to_square(Vector3fP, FloatP);
 
 template MTS_EXPORT_CORE Float  square_to_uniform_cone_pdf<true>(Vector3f , Float);
-template MTS_EXPORT_CORE FloatP square_to_uniform_cone_pdf<true>(Vector3fP, Float);
+template MTS_EXPORT_CORE FloatP square_to_uniform_cone_pdf<true>(Vector3fP, FloatP);
 template MTS_EXPORT_CORE Float  square_to_uniform_cone_pdf<false>(Vector3f , Float);
-template MTS_EXPORT_CORE FloatP square_to_uniform_cone_pdf<false>(Vector3fP, Float);
+template MTS_EXPORT_CORE FloatP square_to_uniform_cone_pdf<false>(Vector3fP, FloatP);
 
 // ------------------------------------------------------------------------------------------
 
 template MTS_EXPORT_CORE Vector3f  square_to_beckmann(Point2f, Float);
-template MTS_EXPORT_CORE Vector3fP square_to_beckmann(Point2fP, Float);
+template MTS_EXPORT_CORE Vector3fP square_to_beckmann(Point2fP, FloatP);
 
 template MTS_EXPORT_CORE Point2f  beckmann_to_square(Vector3f, Float);
-template MTS_EXPORT_CORE Point2fP beckmann_to_square(Vector3fP, Float);
+template MTS_EXPORT_CORE Point2fP beckmann_to_square(Vector3fP, FloatP);
 
 template MTS_EXPORT_CORE Float  square_to_beckmann_pdf(Vector3f, Float);
-template MTS_EXPORT_CORE FloatP square_to_beckmann_pdf(Vector3fP, Float);
+template MTS_EXPORT_CORE FloatP square_to_beckmann_pdf(Vector3fP, FloatP);
 
 // ------------------------------------------------------------------------------------------
 

@@ -3,6 +3,7 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/kdtree.h>
 
 MTS_PY_EXPORT(Shape) {
     using Index = Shape::Index;
@@ -59,7 +60,8 @@ MTS_PY_EXPORT(Shape) {
         .def("emitter", py::overload_cast<>(&Shape::emitter, py::const_))
         .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
         .mdef(Shape, primitive_count)
-        .mdef(Shape, effective_primitive_count);
+        .mdef(Shape, effective_primitive_count)
+        ;
 
     MTS_PY_CLASS(Mesh, Shape)
         .def(py::init<const std::string &, Struct *, Mesh::Size, Struct *,

@@ -87,6 +87,7 @@ static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 
 //! @}
 // -----------------------------------------------------------------------
 
+
 // -----------------------------------------------------------------------
 //! @{ \name Complete and incomplete elliptic integrals
 //! Caution: the 'k' factor is squared in the elliptic integral, which

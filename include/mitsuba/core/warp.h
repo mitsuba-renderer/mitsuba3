@@ -371,35 +371,37 @@ MTS_INLINE Value square_to_cosine_hemisphere_pdf(Vector3 v) {
  * \param cos_cutoff Cosine of the cutoff angle
  * \param sample A uniformly distributed sample on \f$[0,1]^2\f$
  */
-template <typename Point2, typename Vector3 = vector3_t<Point2>>
-MTS_INLINE Vector3 square_to_uniform_cone(Point2 sample, Float cos_cutoff) {
-    using Scalar = scalar_t<Point2>;
+template <typename Point2,
+          typename Vector3 = vector3_t<Point2>,
+          typename Value   = value_t<Point2>>
+MTS_INLINE Vector3 square_to_uniform_cone(Point2 sample, Value cos_cutoff) {
 #if 0
     /* Approach 1: warping method based on standard disk mapping */
-    auto cos_theta = (Scalar(1) - sample.y()) + sample.y() * cos_cutoff;
-    auto sin_theta = safe_sqrt(Scalar(1) - cos_theta * cos_theta);
+    auto cos_theta = (1 - sample.y()) + sample.y() * cos_cutoff;
+    auto sin_theta = safe_sqrt(1 - cos_theta * cos_theta);
 
-    auto sc = sincos(Scalar(2 * math::Pi) * sample.x());
+    auto sc = sincos(2 * math::Pi * sample.x());
     return Vector3(sc.second * sin_theta,
                    sc.first * sin_theta,
                    cos_theta);
 #else
     /* Approach 2: low-distortion warping technique based on concentric disk mapping */
-    Scalar one_minus_cos_cutoff(1 - cos_cutoff);
+    Value one_minus_cos_cutoff(1 - cos_cutoff);
     Point2 p = square_to_uniform_disk_concentric(sample);
     auto pn = squared_norm(p);
-    auto z = cos_cutoff + one_minus_cos_cutoff * (Scalar(1) - pn);
-    p *= safe_sqrt(one_minus_cos_cutoff * (Scalar(2) - one_minus_cos_cutoff*pn));
+    auto z = cos_cutoff + one_minus_cos_cutoff * (1 - pn);
+    p *= safe_sqrt(one_minus_cos_cutoff * (2 - one_minus_cos_cutoff * pn));
     return Vector3(p.x(), p.y(), z);
 #endif
 }
 
 /// Inverse of the mapping \ref square_to_uniform_cone
-template <typename Vector3, typename Point2 = point2_t<Vector3>>
-MTS_INLINE Point2 uniform_cone_to_square(Vector3 v, Float cos_cutoff) {
-    using Scalar = scalar_t<Point2>;
+template <typename Vector3,
+          typename Point2 = point2_t<Vector3>,
+          typename Value = value_t<Point2>>
+MTS_INLINE Point2 uniform_cone_to_square(Vector3 v, Value cos_cutoff) {
     Point2 p = Point2(v.x(), v.y());
-    p *= sqrt((Scalar(1) - v.z()) / (squared_norm(p) * Scalar(1 - cos_cutoff)));
+    p *= sqrt((1 - v.z()) / (squared_norm(p) * (1 - cos_cutoff)));
     return uniform_disk_to_square_concentric(p);
 }
 
@@ -408,33 +410,32 @@ MTS_INLINE Point2 uniform_cone_to_square(Vector3 v, Float cos_cutoff) {
  *
  * \param cos_cutoff Cosine of the cutoff angle
  */
-template <bool TestDomain = false, typename Vector3, typename Value = value_t<Vector3>>
-MTS_INLINE Value square_to_uniform_cone_pdf(Vector3 v, Float cos_cutoff) {
-    using Scalar = scalar_t<Vector3>;
-
+template <bool TestDomain = false,
+          typename Vector3,
+          typename Value = value_t<Vector3>>
+MTS_INLINE Value square_to_uniform_cone_pdf(Vector3 v, Value cos_cutoff) {
     if (TestDomain)
-        return select((abs(squared_norm(v) - Scalar(1)) > Scalar(math::Epsilon)) |
-                           (Frame<Vector3>::cos_theta(v) < Scalar(cos_cutoff)),
-                      zero<Value>(), Value(Scalar(math::InvTwoPi / (1 - cos_cutoff))));
+        return select((abs(squared_norm(v) - 1) > math::Epsilon) |
+                           (Frame<Vector3>::cos_theta(v) < cos_cutoff),
+                      zero<Value>(), Value(math::InvTwoPi / (1 - cos_cutoff)));
     else
-        return Value(Scalar(math::InvTwoPi / (1 - cos_cutoff)));
+        return math::InvTwoPi / (1 - cos_cutoff);
 }
 
 // =======================================================================
 
 /// Warp a uniformly distributed square sample to a Beckmann distribution
-template <typename Point2, typename Vector3 = vector3_t<Point2>>
-MTS_INLINE Vector3 square_to_beckmann(Point2 sample, Float alpha) {
-    using Value = value_t<Point2>;
-    using Scalar = scalar_t<Point2>;
-
+template <typename Point2,
+          typename Vector3 = vector3_t<Point2>,
+          typename Value   = value_t<Point2>>
+MTS_INLINE Vector3 square_to_beckmann(Point2 sample, Value alpha) {
 #if 0
     /* Approach 1: warping method based on standard disk mapping */
     auto sc = sincos(2.f * math::Pi * sample.x());
 
-    Value tan_theta_m_sqr = -alpha * alpha * log(Scalar(1) - sample.y());
-    Value cos_theta_m = rsqrt(Scalar(1) + tan_theta_m_sqr);
-    Value sin_theta_m = safe_sqrt(Scalar(1) - cos_theta_m * cos_theta_m);
+    Value tan_theta_m_sqr = -alpha * alpha * log(1 - sample.y());
+    Value cos_theta_m = rsqrt(1 + tan_theta_m_sqr);
+    Value sin_theta_m = safe_sqrt(1 - cos_theta_m * cos_theta_m);
 
     return Vector3(sin_theta_m * sc.second, sin_theta_m * sc.first, cos_theta_m);
 #else
@@ -442,44 +443,39 @@ MTS_INLINE Vector3 square_to_beckmann(Point2 sample, Float alpha) {
     Point2 p = square_to_uniform_disk_concentric(sample);
     Value r2 = squared_norm(p);
 
-    Value tan_theta_m_sqr = Scalar(-alpha * alpha) * log(Scalar(1) - r2);
-    Value cos_theta_m = rsqrt(Scalar(1) + tan_theta_m_sqr);
-    p *= safe_sqrt((Scalar(1) - cos_theta_m * cos_theta_m) / r2);
+    Value tan_theta_m_sqr = -alpha * alpha * log(1 - r2);
+    Value cos_theta_m = rsqrt(1 + tan_theta_m_sqr);
+    p *= safe_sqrt((1 - cos_theta_m * cos_theta_m) / r2);
 
     return Vector3(p.x(), p.y(), cos_theta_m);
 #endif
 }
 
 /// Inverse of the mapping \ref square_to_uniform_cone
-template <typename Vector3, typename Point2 = point2_t<Vector3>>
-MTS_INLINE Point2 beckmann_to_square(Vector3 v, Float alpha) {
-    using Value = value_t<Vector3>;
-    using Scalar = scalar_t<Vector3>;
-
+template <typename Vector3,
+          typename Point2 = point2_t<Vector3>,
+          typename Value  = value_t<Vector3>>
+MTS_INLINE Point2 beckmann_to_square(Vector3 v, Value alpha) {
     Point2 p(v.x(), v.y());
-    Value tan_theta_m_sqr = rcp(v.z() * v.z()) - Scalar(1);
+    Value tan_theta_m_sqr = rcp(v.z() * v.z()) - 1;
 
-    Value r2 =
-        Scalar(1) - exp(tan_theta_m_sqr * (Scalar(-1) / (alpha * alpha)));
+    Value r2 = 1 - exp(tan_theta_m_sqr * (-1 / (alpha * alpha)));
 
-    p *= safe_sqrt(r2 / ((Scalar(1) - v.z() * v.z())));
+    p *= safe_sqrt(r2 / ((1 - v.z() * v.z())));
 
     return uniform_disk_to_square_concentric(p);
 }
 
 /// Probability density of \ref square_to_beckmann()
 template <typename Vector3, typename Value = value_t<Vector3>>
-MTS_INLINE Value square_to_beckmann_pdf(Vector3 m, Float alpha) {
-    using Scalar = scalar_t<Vector3>;
-
-    auto zero_mask = m.z() < Scalar(1e-9);
+MTS_INLINE Value square_to_beckmann_pdf(Vector3 m, Value alpha) {
+    auto zero_mask = (m.z() < 1e-9f);
 
     Value temp = Frame<Vector3>::tan_theta(m) / alpha,
           ct   = Frame<Vector3>::cos_theta(m),
           ct2  = ct * ct;
 
-    Value result =
-        exp(-temp * temp) / (Scalar(math::Pi * alpha * alpha) * ct2 * ct);
+    Value result = exp(-temp * temp) / (math::Pi * alpha * alpha * ct2 * ct);
 
     return select(zero_mask, zero<Value>(), result);
 }
