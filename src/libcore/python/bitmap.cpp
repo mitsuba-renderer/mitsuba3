@@ -23,6 +23,7 @@ MTS_PY_EXPORT(Bitmap) {
                     case 2: pixel_format = Bitmap::EYA; break;
                     case 3: pixel_format = Bitmap::ERGB; break;
                     case 4: pixel_format = Bitmap::ERGBA; break;
+                    case 5: pixel_format = Bitmap::ERGBAW; break;
                     default: pixel_format = Bitmap::EMultiChannel; break;
                 }
             }
@@ -98,8 +99,10 @@ MTS_PY_EXPORT(Bitmap) {
         .value("EYA", Bitmap::EYA)
         .value("ERGB", Bitmap::ERGB)
         .value("ERGBA", Bitmap::ERGBA)
+        .value("ERGBAW", Bitmap::ERGBAW)
         .value("EXYZ", Bitmap::EXYZ)
         .value("EXYZA", Bitmap::EXYZA)
+        .value("EXYZAW", Bitmap::EXYZAW)
         .value("EMultiChannel", Bitmap::EMultiChannel)
         .export_values();
 

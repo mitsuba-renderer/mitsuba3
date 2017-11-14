@@ -45,11 +45,17 @@ public:
         /// RGB bitmap + alpha channel
         ERGBA,
 
+        /// RGB bitmap + alpha channel + weight
+        ERGBAW,
+
         /// XYZ tristimulus bitmap
         EXYZ,
 
         /// XYZ tristimulus + alpha channel
         EXYZA,
+
+        /// XYZ tristimulus + alpha channel + weight
+        EXYZAW,
 
         /// Arbitrary multi-channel bitmap without a fixed interpretation
         EMultiChannel

@@ -4,10 +4,6 @@
 #include <asmjit/asmjit.h>
 #include <mutex>
 
-#if !defined(MTS_JIT_LOG_ASSEMBLY)
-#  define MTS_JIT_LOG_ASSEMBLY 0
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
 
 struct MTS_EXPORT_CORE Jit {
@@ -26,7 +22,7 @@ struct MTS_EXPORT_CORE Jit {
     /// Release all memory used by JIT-compiled routines
     static void static_shutdown();
 
-    static Jit *getInstance();
+    static Jit *get_instance();
 
 private:
     Jit();

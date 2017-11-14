@@ -283,23 +283,6 @@ template <typename T> T round_to_power_of_two(T i) {
     return T(1) << (log2i<T>(i - 1) + 1);
 }
 
-/// Apply the sRGB gamma curve to a floating point scalar
-template <typename T> MTS_INLINE expr_t<T> gamma(const T &value) {
-    using Scalar = scalar_t<T>;
-    auto branch1 = Scalar(12.92) * value;
-    auto branch2 = Scalar(1.055) * pow(value, Scalar(1.0 / 2.4)) - Scalar(0.055);
-
-    return select(value <= Scalar(0.0031308), branch1, branch2);
-}
-
-/// Apply the inverse of the sRGB gamma curve to a floating point scalar
-template <typename T> MTS_INLINE expr_t<T> inv_gamma(const T &value) {
-    using Scalar = scalar_t<T>;
-    auto branch1 = value * Scalar(1.0 / 12.92);
-    auto branch2 = pow((value + Scalar(0.055)) * Scalar(1.0 / 1.055), Scalar(2.4));
-
-    return select(value <= Scalar(0.04045), branch1, branch2);
-}
 /**
 * \brief Find an interval in an ordered set
 *

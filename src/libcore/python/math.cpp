@@ -1,6 +1,7 @@
 #include <mitsuba/core/math.h>
 #include <enoki/morton.h>
 #include <enoki/special.h>
+#include <enoki/color.h>
 #include <mitsuba/python/python.h>
 #include <bitset>
 
@@ -72,8 +73,11 @@ MTS_PY_EXPORT(math) {
     math.def("log2i", &enoki::log2i<uint64_t>);
     math.def("is_power_of_two", &math::is_power_of_two<uint64_t>, D(math, is_power_of_two));
     math.def("round_to_power_of_two", &math::round_to_power_of_two<uint64_t>, D(math, round_to_power_of_two));
-    math.def("gamma", &math::gamma<double>, D(math, gamma));
-    math.def("inv_gamma", &math::inv_gamma<double>, D(math, inv_gamma));
+
+    math.def("linear_to_srgb", &enoki::linear_to_srgb<double>, D(math, gamma));
+    math.def("srgb_to_linear", &enoki::srgb_to_linear<double>, D(math, gamma));
+    math.def("linear_to_srgb", vectorize_wrapper(&enoki::linear_to_srgb<Float64P>), D(math, gamma));
+    math.def("srgb_to_linear", vectorize_wrapper(&enoki::srgb_to_linear<Float64P>), D(math, gamma));
 
     math.def("chi2", [](py::array_t<double> obs, py::array_t<double> exp, double thresh) {
         if (obs.ndim() != 1 || exp.ndim() != 1 || exp.shape(0) != obs.shape(0))

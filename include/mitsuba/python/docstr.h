@@ -931,9 +931,13 @@ static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGB = R"doc(RGB bitmap)doc
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGBA = R"doc(RGB bitmap + alpha channel)doc";
 
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGBAW = R"doc(RGB bitmap + alpha channel + weight)doc";
+
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZ = R"doc(XYZ tristimulus bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZA = R"doc(XYZ tristimulus + alpha channel)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZAW = R"doc(XYZ tristimulus + alpha channel + weight)doc";
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EY = R"doc(Single-channel luminance bitmap)doc";
 
@@ -3141,7 +3145,7 @@ static const char *__doc_mitsuba_Jit_Jit = R"doc()doc";
 
 static const char *__doc_mitsuba_Jit_Jit_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Jit_getInstance = R"doc()doc";
+static const char *__doc_mitsuba_Jit_get_instance = R"doc()doc";
 
 static const char *__doc_mitsuba_Jit_mutex = R"doc()doc";
 
@@ -5464,6 +5468,14 @@ static const char *__doc_mitsuba_Struct_has_field = R"doc(Check if the ``Struct`
 
 static const char *__doc_mitsuba_Struct_host_byte_order = R"doc(Return the byte order of the host machine)doc";
 
+static const char *__doc_mitsuba_Struct_is_float = R"doc(Check whether the given type is a floating point type)doc";
+
+static const char *__doc_mitsuba_Struct_is_integer = R"doc(Check whether the given type is an integer type)doc";
+
+static const char *__doc_mitsuba_Struct_is_signed = R"doc(Check whether the given type is a signed type)doc";
+
+static const char *__doc_mitsuba_Struct_is_unsigned = R"doc(Check whether the given type is an unsigned type)doc";
+
 static const char *__doc_mitsuba_Struct_m_byte_order = R"doc()doc";
 
 static const char *__doc_mitsuba_Struct_m_fields = R"doc()doc";
@@ -5481,6 +5493,8 @@ static const char *__doc_mitsuba_Struct_operator_array_2 = R"doc(Access an indiv
 static const char *__doc_mitsuba_Struct_operator_eq = R"doc(Equality operator)doc";
 
 static const char *__doc_mitsuba_Struct_operator_ne = R"doc(Inequality operator)doc";
+
+static const char *__doc_mitsuba_Struct_range = R"doc(Return the representable range of the given type)doc";
 
 static const char *__doc_mitsuba_Struct_size = R"doc(Return the size (in bytes) of the data structure, including padding)doc";
 

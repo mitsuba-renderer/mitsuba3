@@ -60,15 +60,6 @@ Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
     : m_data(data), m_pixel_format(pixel_format),
       m_component_format(component_format), m_size(size), m_owns_data(false) {
 
-    if (m_component_format == Struct::EFloat) {
-        // Translate EFloat to the corresponding compile-time precision.
-        #if defined(SINGLE_PRECISION)
-        m_component_format = Struct::EFloat32;
-        #else
-        m_component_format = Struct::EFloat64;
-        #endif
-    }
-
     if (m_component_format == Struct::EUInt8)
         m_srgb_gamma = true;  // sRGB by default
     else
@@ -129,7 +120,7 @@ void Bitmap::set_srgb_gamma(bool value) {
         auto it = suffix.rfind(".");
         if (it != std::string::npos)
             suffix = suffix.substr(it + 1);
-        if (suffix != "A") {
+        if (suffix != "A" && suffix != "W") {
             if (value)
                 field.flags |= Struct::EGamma;
             else
@@ -146,17 +137,19 @@ void Bitmap::rebuild_struct(size_t channel_count) {
     std::vector<std::string> channels;
 
     switch (m_pixel_format) {
-        case EY:    channels = { "Y" };               break;
-        case EYA:   channels = { "Y", "A" };          break;
-        case ERGB:  channels = { "R", "G", "B"};      break;
-        case ERGBA: channels = { "R", "G", "B", "A"}; break;
-        case EXYZ:  channels = { "X", "Y", "Z"};      break;
-        case EXYZA: channels = { "X", "Y", "Z", "A"}; break;
+        case EY:     channels = { "Y" };                    break;
+        case EYA:    channels = { "Y", "A" };               break;
+        case ERGB:   channels = { "R", "G", "B"};           break;
+        case ERGBA:  channels = { "R", "G", "B", "A"};      break;
+        case ERGBAW: channels = { "R", "G", "B", "A", "W"}; break;
+        case EXYZ:   channels = { "X", "Y", "Z"};           break;
+        case EXYZA:  channels = { "X", "Y", "Z", "A"};      break;
+        case EXYZAW: channels = { "X", "Y", "Z", "A", "W"}; break;
         case EMultiChannel: {
-            for (size_t i = 0; i < channel_count; ++i)
-                channels.push_back(tfm::format("ch%i", i));
+                for (size_t i = 0; i < channel_count; ++i)
+                    channels.push_back(tfm::format("ch%i", i));
+            }
             break;
-        };
         default: Throw("Unknown pixel format!");
     }
 
@@ -167,10 +160,12 @@ void Bitmap::rebuild_struct(size_t channel_count) {
     m_struct = new Struct();
     for (auto ch: channels) {
         uint32_t flags = 0;
-        if (ch == "A")
+        if (ch != "A" && ch != "W" && m_srgb_gamma)
+            flags |= Struct::EGamma;
+        if (ch == "W")
+            flags |= Struct::EWeight;
+        if (Struct::is_integer(m_component_format))
             flags |= Struct::ENormalized;
-        else if (m_srgb_gamma)
-            flags |= Struct::EGamma | Struct::ENormalized;
         m_struct->append(ch, m_component_format, flags);
     }
 }
@@ -188,6 +183,8 @@ size_t Bitmap::bytes_per_pixel() const {
         case Struct::EUInt16:  result = 2; break;
         case Struct::EInt32:
         case Struct::EUInt32:  result = 4; break;
+        case Struct::EInt64:
+        case Struct::EUInt64:  result = 8; break;
         case Struct::EFloat16: result = 2; break;
         case Struct::EFloat32: result = 4; break;
         case Struct::EFloat64: result = 8; break;
@@ -359,9 +356,9 @@ void Bitmap::convert(Bitmap *target) const {
 
     ref<Struct> target_struct = new Struct(*(target->struct_()));
 
-    bool source_is_rgb = m_pixel_format == ERGB || m_pixel_format == ERGBA;
-    bool source_is_xyz = m_pixel_format == EXYZ || m_pixel_format == EXYZA;
-    bool source_is_y   = m_pixel_format == EY || m_pixel_format == EYA;
+    bool source_is_rgb     = m_pixel_format == ERGB || m_pixel_format == ERGBA || m_pixel_format == ERGBAW;
+    bool source_is_xyz     = m_pixel_format == EXYZ || m_pixel_format == EXYZA || m_pixel_format == EXYZAW;
+    bool source_is_y       = m_pixel_format == EY || m_pixel_format == EYA;
 
     for (auto &field: *target_struct) {
         if (m_struct->has_field(field.name))
@@ -375,8 +372,8 @@ void Bitmap::convert(Bitmap *target) const {
             suffix = suffix.substr(it + 1);
         }
 
-        /* Set alpha to 1.0 by default */
-        if (suffix == "A") {
+        /* Set alpha/weight to 1.0 by default */
+        if (suffix == "A" || suffix == "W") {
             field.default_ = 1.0;
             field.flags |= Struct::EDefault;
             continue;
@@ -397,9 +394,9 @@ void Bitmap::convert(Bitmap *target) const {
         } else if (suffix == "G") {
             if (source_is_xyz) {
                 field.blend = {
-                    { -0.969256f, prefix + "X" },
-                    {  1.875991f, prefix + "Y" },
-                    {  0.041556f, prefix + "Z" }
+                    { -0.969256, prefix + "X" },
+                    {  1.875991, prefix + "Y" },
+                    {  0.041556, prefix + "Z" }
                 };
                 continue;
             } else if (source_is_y) {
@@ -409,9 +406,9 @@ void Bitmap::convert(Bitmap *target) const {
         } else if (suffix == "B") {
             if (source_is_xyz) {
                 field.blend = {
-                    {  0.055648f, prefix + "X" },
-                    { -0.204043f, prefix + "Y" },
-                    {  1.057311f, prefix + "Z" }
+                    {  0.055648, prefix + "X" },
+                    { -0.204043, prefix + "Y" },
+                    {  1.057311, prefix + "Z" }
                 };
                 continue;
             } else if (source_is_y) {
@@ -461,8 +458,10 @@ void Bitmap::convert(Bitmap *target) const {
               m_struct->to_string(), target_struct->to_string(), field.name);
     }
 
-    StructConverter conv(m_struct, target_struct);
-    conv.convert(hprod(m_size), uint8_data(), target->uint8_data());
+    StructConverter conv(m_struct, target_struct, true);
+    bool rv = conv.convert_2d(m_size.x(), m_size.y(), uint8_data(), target->uint8_data());
+    if (!rv)
+        Throw("Bitmap::convert(): conversion kernel indicated a failure!");
 }
 
 void Bitmap::accumulate(const Bitmap *bitmap,
@@ -484,11 +483,11 @@ void Bitmap::accumulate(const Bitmap *bitmap,
 
     Vector2i size_decrease(
         std::max(0, std::max(
-            source_offset.x() + size.x() - (value_t<Vector2i>)bitmap->width(),
-            target_offset.x() + size.x() - (value_t<Vector2i>)width()) ),
+            source_offset.x() + size.x() - (int) bitmap->width(),
+            target_offset.x() + size.x() - (int) width())),
         std::max(0, std::max(
-            source_offset.y() + size.y() - (value_t<Vector2i>)bitmap->height(),
-            target_offset.y() + size.y() - (value_t<Vector2i>)height()) )
+            source_offset.y() + size.y() - (int) bitmap->height(),
+            target_offset.y() + size.y() - (int) height()))
     );
 
     size -= size_decrease;
@@ -496,47 +495,47 @@ void Bitmap::accumulate(const Bitmap *bitmap,
     if (size.x() <= 0 || size.y() <= 0)
         return;
 
-    const size_t columns       = (size_t)size.x() * channel_count();
+    const size_t columns       = (size_t) size.x() * channel_count();
     const size_t pixel_stride  = bytes_per_pixel();
     const size_t source_stride = bitmap->width() * pixel_stride;
     const size_t target_stride = width() * pixel_stride;
 
     const uint8_t *source = bitmap->uint8_data() +
-        (source_offset.x() + source_offset.y() * (size_t)bitmap->width()) * pixel_stride;
+        (source_offset.x() + source_offset.y() * (size_t) bitmap->width()) * pixel_stride;
 
     uint8_t *target = m_data.get() +
-        (target_offset.x() + target_offset.y() * (size_t)m_size.x()) * pixel_stride;
+        (target_offset.x() + target_offset.y() * (size_t) m_size.x()) * pixel_stride;
 
     for (int y = 0; y < size.y(); ++y) {
         switch (m_component_format) {
         case Struct::EType::EUInt8:
             for (size_t i = 0; i < columns; ++i)
-                ((uint8_t *)target)[i] = (uint8_t)std::min(0xFF, ((uint8_t *)source)[i] + ((uint8_t *)target)[i]);
+                ((uint8_t *) target)[i] = (uint8_t) std::min(0xFF, ((uint8_t *) source)[i] + ((uint8_t *) target)[i]);
             break;
 
         case Struct::EType::EUInt16:
             for (size_t i = 0; i < columns; ++i)
-                ((uint16_t *)target)[i] = (uint16_t)std::min(0xFFFF, ((uint16_t *)source)[i] + ((uint16_t *)target)[i]);
+                ((uint16_t *) target)[i] = (uint16_t) std::min(0xFFFF, ((uint16_t *) source)[i] + ((uint16_t *) target)[i]);
             break;
 
         case Struct::EType::EUInt32:
             for (size_t i = 0; i < columns; ++i)
-                ((uint32_t *)target)[i] = std::min((uint32_t)0xFFFFFFFFUL, ((uint32_t *)source)[i] + ((uint32_t *)target)[i]);
+                ((uint32_t *) target)[i] = std::min((uint32_t) 0xFFFFFFFFUL, ((uint32_t *) source)[i] + ((uint32_t *) target)[i]);
             break;
 
         case Struct::EType::EFloat16:
             for (size_t i = 0; i < columns; ++i)
-                ((enoki::half *)target)[i] += ((enoki::half *)source)[i];
+                ((enoki::half *) target)[i] += ((enoki::half *) source)[i];
             break;
 
         case Struct::EType::EFloat32:
             for (size_t i = 0; i < columns; ++i)
-                ((float *)target)[i] += ((float *)source)[i];
+                ((float *) target)[i] += ((float *) source)[i];
             break;
 
         case Struct::EType::EFloat64:
             for (size_t i = 0; i < columns; ++i)
-                ((double *)target)[i] += ((double *)source)[i];
+                ((double *) target)[i] += ((double *) source)[i];
             break;
 
         default:
@@ -1617,31 +1616,31 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     if (m_srgb_gamma)
         png_set_sRGB_gAMA_and_cHRM(png_ptr, info_ptr, PNG_sRGB_INTENT_ABSOLUTE);
 
+    png_set_IHDR(png_ptr, info_ptr, (uint32_t) m_size.x(),
+                 (uint32_t) m_size.y(), bit_depth, color_type,
+                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
+                 PNG_FILTER_TYPE_BASE);
+
+    png_write_info(png_ptr, info_ptr);
+
     #if defined(LITTLE_ENDIAN)
-        if (m_component_format == Struct::EUInt16)
+        if (m_component_format == Struct::EUInt16 || m_component_format == Struct::EInt16)
             png_set_swap(png_ptr); // Swap the byte order on little endian machines
     #endif
 
-        png_set_IHDR(png_ptr, info_ptr, (uint32_t) m_size.x(),
-                     (uint32_t) m_size.y(), bit_depth, color_type,
-                     PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
-                     PNG_FILTER_TYPE_BASE);
+    rows = new png_bytep[m_size.y()];
 
-        png_write_info(png_ptr, info_ptr);
+    size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+    Assert(row_bytes == buffer_size() / m_size.y());
+    for (size_t i = 0; i < m_size.y(); i++)
+        rows[i] = &m_data[row_bytes * i];
 
-        rows = new png_bytep[m_size.y()];
+    png_write_image(png_ptr, rows);
+    png_write_end(png_ptr, info_ptr);
+    png_destroy_write_struct(&png_ptr, &info_ptr);
 
-        size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-        Assert(row_bytes == buffer_size() / m_size.y());
-        for (size_t i = 0; i < m_size.y(); i++)
-            rows[i] = &m_data[row_bytes * i];
-
-        png_write_image(png_ptr, rows);
-        png_write_end(png_ptr, info_ptr);
-        png_destroy_write_struct(&png_ptr, &info_ptr);
-
-        delete[] text;
-        delete[] rows;
+    delete[] text;
+    delete[] rows;
 }
 
 // -----------------------------------------------------------------------------
@@ -2264,8 +2263,10 @@ std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value) {
         case Bitmap::EYA:           os << "ya"; break;
         case Bitmap::ERGB:          os << "rgb"; break;
         case Bitmap::ERGBA:         os << "rgba"; break;
+        case Bitmap::ERGBAW:        os << "rgbaw"; break;
         case Bitmap::EXYZ:          os << "xyz"; break;
         case Bitmap::EXYZA:         os << "xyza"; break;
+        case Bitmap::EXYZAW:        os << "xyzaw"; break;
         case Bitmap::EMultiChannel: os << "multichannel"; break;
         default: Throw("Unknown pixel format!");
     }

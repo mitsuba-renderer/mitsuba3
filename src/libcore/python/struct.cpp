@@ -22,8 +22,6 @@ py::dtype dtype_for_struct(const Struct *s) {
             case Struct::EFloat16: format = "float16";  break;
             case Struct::EFloat32: format = "float32";  break;
             case Struct::EFloat64: format = "float64";  break;
-            case Struct::EFloat:   format = "float"
-                + std::to_string(sizeof(Float) * 8);  break;
             case Struct::EInvalid: format = "invalid";  break;
             default: Throw("Internal error.");
         }
@@ -92,6 +90,7 @@ MTS_PY_EXPORT(Struct) {
     py::enum_<Struct::EFlags>(c, "EFlags", py::arithmetic())
         .value("ENormalized", Struct::EFlags::ENormalized)
         .value("EGamma", Struct::EFlags::EGamma)
+        .value("EWeight", Struct::EFlags::EWeight)
         .value("EAssert", Struct::EFlags::EAssert)
         .value("EDefault", Struct::EFlags::EDefault)
         .export_values();
@@ -118,6 +117,11 @@ MTS_PY_EXPORT(Struct) {
         .mdef(Struct, byte_order)
         .mdef(Struct, field_count)
         .mdef(Struct, has_field)
+        .def_static("is_float", &Struct::is_float, D(Struct, is_float))
+        .def_static("is_integer", &Struct::is_integer, D(Struct, is_integer))
+        .def_static("is_signed", &Struct::is_signed, D(Struct, is_signed))
+        .def_static("is_unsigned", &Struct::is_unsigned, D(Struct, is_unsigned))
+        .def_static("range", &Struct::range, D(Struct, range))
         .def("dtype", &dtype_for_struct, "Return a NumPy dtype corresponding to this data structure");
 
     py::class_<Struct::Field>(c, "Field", D(Struct, Field))
@@ -137,7 +141,7 @@ MTS_PY_EXPORT(Struct) {
         .def_readwrite("blend", &Struct::Field::blend, D(Struct, Field, blend));
 
     MTS_PY_CLASS(StructConverter, Object)
-        .def(py::init<const Struct *, const Struct *>())
+        .def(py::init<const Struct *, const Struct *, bool>(), "source"_a, "target"_a, "dither"_a = false)
         .mdef(StructConverter, source)
         .mdef(StructConverter, target)
         .def("convert", [](const StructConverter &c, py::bytes input_) -> py::bytes {

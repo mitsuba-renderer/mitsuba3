@@ -6,10 +6,15 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if (defined(__x86_64__) || defined(_WIN64)) && defined(NDEBUG)
+#if defined(ENOKI_X86_64) && defined(NDEBUG)
 #  define MTS_STRUCTCONVERTER_USE_JIT 1
 #else
 #  define MTS_STRUCTCONVERTER_USE_JIT 0
+#endif
+
+/// Set this to '1' to view generated conversion code
+#if !defined(MTS_JIT_LOG_ASSEMBLY)
+#  define MTS_JIT_LOG_ASSEMBLY 1
 #endif
 
 /**
@@ -32,11 +37,15 @@ public:
         /* Floating point values */
         EFloat16, EFloat32, EFloat64,
 
-        /* Compile-time float precision */
-        EFloat,
-
         /* Invalid/unspecified */
-        EInvalid
+        EInvalid,
+
+        /* Compile-time float precision */
+        #if defined(SINGLE_PRECISION)
+            EFloat = EFloat32
+        #else
+            EFloat = EFloat64
+        #endif
     };
 
     /// Byte order of the fields in the \c Struct
@@ -49,9 +58,9 @@ public:
     /// Field-specific flags
     enum EFlags {
         /**
-         * Only applies to integer fields: specifies
-         * whether the field encodes a normalized value
-         * in the range [0, 1]
+         * Specifies whether an integer field encodes a normalized value in the
+         * range [0, 1]. The flag is ignored if specified for floating point
+         * valued fields.
          */
         ENormalized = 0x01,
 
@@ -71,7 +80,15 @@ public:
          * In \ref FieldConverter::convert, when the field is missing in the
          * source record, replace it by the specified default value
          */
-        EDefault    = 0x08
+        EDefault    = 0x08,
+
+        /**
+         * In \ref FieldConverter::convert, when an input structure contains a
+         * weight field, the value of all entries are considered to be
+         * expressed relative to its value. Converting to an un-weighted
+         * structure entails a division by the weight.
+         */
+        EWeight     = 0x10
     };
 
     /// Field specifier with size and offset
@@ -121,28 +138,24 @@ public:
         }
 
         bool is_unsigned() const {
-            return type == Struct::EUInt8 ||
-                   type == Struct::EUInt16 ||
-                   type == Struct::EUInt32 ||
-                   type == Struct::EUInt64;
-        }
-
-        bool is_float() const {
-            return type == Struct::EFloat16 ||
-                   type == Struct::EFloat32 ||
-                   type == Struct::EFloat64 ||
-                   type == Struct::EFloat;
+            return Struct::is_unsigned(type);
         }
 
         bool is_signed() const {
-            return !is_unsigned();
+            return Struct::is_signed(type);
+        }
+
+        bool is_float() const {
+            return Struct::is_float(type);
         }
 
         bool is_integer() const {
-            return !is_float();
+            return Struct::is_integer(type);
         }
 
-        std::pair<double, double> range() const;
+        std::pair<double, double> range() const {
+            return Struct::range(type);
+        }
     };
 
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
@@ -232,6 +245,34 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
+    /// Check whether the given type is an unsigned type
+    static bool is_unsigned(EType type) {
+        return type == Struct::EUInt8 ||
+               type == Struct::EUInt16 ||
+               type == Struct::EUInt32 ||
+               type == Struct::EUInt64;
+    }
+
+    /// Check whether the given type is a signed type
+    static bool is_signed(EType type) {
+        return !is_unsigned(type);
+    }
+
+    /// Check whether the given type is an integer type
+    static bool is_integer(EType type) {
+        return !is_float(type);
+    }
+
+    /// Check whether the given type is a floating point type
+    static bool is_float(EType type) {
+        return type == Struct::EFloat16 ||
+               type == Struct::EFloat32 ||
+               type == Struct::EFloat64;
+    }
+
+    /// Return the representable range of the given type
+    static std::pair<double, double> range(EType type);
+
     MTS_DECLARE_CLASS()
 protected:
     std::vector<Field> m_fields;
@@ -241,9 +282,9 @@ protected:
 
 template <typename T> struct struct_traits { };
 
-#define MTS_STRUCT_TRAITS(type, enumVal) \
+#define MTS_STRUCT_TRAITS(type, entry) \
     template <> struct struct_traits<type> { \
-        static constexpr Struct::EType value = Struct::enumVal; \
+        static constexpr Struct::EType value = Struct::entry; \
     };
 
 MTS_STRUCT_TRAITS(int8_t, EInt8);
@@ -265,8 +306,9 @@ MTS_STRUCT_TRAITS(double, EFloat64);
  * one kind of structured data representation to another
  *
  * Graphics applications often need to convert from one kind of structured
- * representation to another. Consider the following data records which
- * both describe positions tagged with color data.
+ * representation to another, for instance when loading/saving image or mesh
+ * data. Consider the following data records which both describe positions
+ * tagged with color data.
  *
  * \code
  * struct Source { // <-- Big endian! :(
@@ -281,7 +323,7 @@ MTS_STRUCT_TRAITS(double, EFloat64);
  * \endcode
  *
  * The record \c Source may represent what is stored in a file on disk, while
- * \c Target represents the assumed input of an existing algorithm. Not only
+ * \c Target represents the expected input of the implementation. Not only
  * are the formats (e.g. float vs half or uint8_t, incompatible endianness) and
  * encodings different (e.g. gamma correction vs linear space), but the second
  * record even has a different order and extra fields that don't exist in the
@@ -295,28 +337,50 @@ MTS_STRUCT_TRAITS(double, EFloat64);
  *   <li>applies or removes gamma correction</li>
  *   <li>optionally checks that certain entries have expected default values</li>
  *   <li>substitutes missing values with specified defaults</li>
+ *   <li>performs linear transformations of groups of fields (e.g. between
+ *       different RGB color spaces)</li>
+ *   <li>applies dithering to avoid banding artifacts when converting 2D images</li>
  * </ol>
  *
- * On x86_64 platforms, the implementation of this class relies on a JIT
- * compiler to instantiate a function that efficiently performs the conversion
- * for any number of elements. The function is cached and reused if this
- * particular conversion is needed any any later point.
- *
- * On non-x86_64 platforms, a slow fallback implementation is used.
+ * The above operations can be arranged in countless ways, which makes it hard
+ * to provide an efficient generic implementation of this functionality. For
+ * this reason, the implementation of this class relies on a JIT compiler that
+ * generates fast conversion code on demand for each specific conversion. The
+ * function is cached and reused in case the same conversion is needed later
+ * on. Note that JIT compilation only works on x86_64 processors; other
+ * platforms use a slow generic fallback implementation.
  */
 class MTS_EXPORT_CORE StructConverter : public Object {
-    using FuncType = bool (*) (size_t, const void *, void *);
+    using FuncType = bool (*) (size_t, size_t, const void *, void *);
 public:
     /// Construct an optimized conversion routine going from \c source to \c target
-    StructConverter(const Struct *source, const Struct *target);
+    StructConverter(const Struct *source, const Struct *target, bool dither = false);
 
     /// Convert \c count elements. Returns \c true upon success
-#if MTS_STRUCTCONVERTER_USE_JIT == 1
     bool convert(size_t count, const void *src, void *dest) const {
-        return m_func(count, src, dest);
+        return convert_2d(count, 1, src, dest);
+    }
+
+    /**
+     * \brief Convert a 2D image
+     *
+     * This function should be used instead of \ref convert when working with
+     * 2D image data. It is equivalent to calling the former function with
+     * <tt>width*height</tt> elements except for one major difference: when
+     * quantizing floating point input to integer output, the implementation
+     * performs dithering to avoid banding artifacts (if enabled in the
+     * constructor).
+     *
+     * \return \c true upon success
+     */
+#if MTS_STRUCTCONVERTER_USE_JIT == 1
+    bool convert_2d(size_t width, size_t height, const void *src,
+                    void *dest) const {
+        return m_func(width, height, src, dest);
     }
 #else
-    bool convert(size_t count, const void *src, void *dest) const;
+    bool convert_2d(size_t width, size_t height, const void *src,
+                    void *dest) const;
 #endif
 
     /// Return the source \c Struct descriptor
@@ -330,10 +394,35 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
+
+#if MTS_STRUCTCONVERTER_USE_JIT == 0
+    /* Support data structures/functions for non-accelerated
+       conversion backend */
+
+    struct Value {
+        Struct::EType type;
+        uint32_t flags;
+        union {
+            Float f;
+            float s;
+            double d;
+            int64_t i;
+            uint64_t u;
+        };
+    };
+
+    bool load(const uint8_t *src, const Struct::Field &f, Value &value) const;
+    void linearize(Value &value) const;
+    void save(uint8_t *dst, const Struct::Field &f, Value value, size_t x, size_t y) const;
+#endif
+
+protected:
     ref<const Struct> m_source;
     ref<const Struct> m_target;
 #if MTS_STRUCTCONVERTER_USE_JIT == 1
     FuncType m_func;
+#else
+    bool m_dither;
 #endif
 };
 

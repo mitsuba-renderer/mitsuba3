@@ -6,17 +6,949 @@
 #include <mitsuba/core/jit.h>
 #include <enoki/array.h>
 #include <enoki/half.h>
+#include <enoki/color.h>
 #include <unordered_map>
 #include <ostream>
+#include <map>
 
 NAMESPACE_BEGIN(mitsuba)
+
+/* Defined in dither-matrix256.cpp */
+extern const Float dither_matrix256[65536];
+
 NAMESPACE_BEGIN(detail)
 
-/// Thin wrappers with pass-by-value calling conventions
-float gamma_f(float input) { return math::gamma<float>(input); }
-double gamma_d(double input) { return math::gamma<double>(input); }
-float inv_gamma_f(float input) { return math::inv_gamma<float>(input); }
-double inv_gamma_d(double input) { return math::inv_gamma<double>(input); }
+using namespace asmjit;
+
+/// Helper class used to JIT-compile conversion code (in the StructCompiler class)
+class StructCompiler {
+public:
+    // A variable can exist in various forms (integer/float/gamma corrected..)
+    struct Key {
+        std::string name;
+        Struct::EType type;
+        uint32_t flags;
+
+        bool operator<(const Key &o) const {
+            return std::make_tuple(name, type, flags) < std::make_tuple(o.name, o.type, o.flags);
+        }
+    };
+
+    // .. and it is either stored in a general purpose or a vector register
+    struct Value {
+        X86Gp gp;
+        X86Xmm xmm;
+    };
+
+    StructCompiler(X86Compiler &cc, X86Gp x, X86Gp y, bool dither, Label &err_label)
+        : cc(cc), xp(x), yp(y), dither(dither), err_label(err_label) { }
+
+
+    /* --------------------------------------------------------- */
+    /*  Various low-level aliases for instrutions that adapt     */
+    /*  to the working precision and available instruction sets  */
+    /* --------------------------------------------------------- */
+
+    template <typename T>
+    X86Mem const_(T value) {
+        #if defined(SINGLE_PRECISION)
+            return cc.newFloatConst(asmjit::kConstScopeGlobal, (float) value);
+        #else
+            return cc.newDoubleConst(asmjit::kConstScopeGlobal, (double) value);
+        #endif
+    }
+
+    /// Floating point comparison
+    template <typename X, typename Y>
+    void ucomis(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vucomiss(x, y);
+            #else
+                cc.vucomisd(x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.ucomiss(x, y);
+            #else
+                cc.ucomisd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point move operation
+    template <typename X, typename Y>
+    void movs(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vmovss(x, y);
+            #else
+                cc.vmovsd(x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.movss(x, y);
+            #else
+                cc.movsd(x, y);
+            #endif
+        #endif
+    }
+
+    void movs(const X86Xmm &x, const X86Xmm &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vmovss(x, x, y);
+            #else
+                cc.vmovsd(x, x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.movss(x, y);
+            #else
+                cc.movsd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point addition operation (2op)
+    template <typename X, typename Y>
+    void adds(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vaddss(x, x, y);
+            #else
+                cc.vaddsd(x, x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.addss(x, y);
+            #else
+                cc.addsd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point subtraction operation (3op)
+    template <typename X, typename Y, typename Z>
+    void subs(const X &x, const Y &y, const Z &z) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vsubss(x, y, z);
+            #else
+                cc.vsubsd(x, y, z);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.movss(x, y);
+                cc.subss(x, z);
+            #else
+                cc.movsd(x, y);
+                cc.subsd(x, z);
+            #endif
+        #endif
+    }
+
+    /// Floating point multiplication operation (2op)
+    template <typename X, typename Y>
+    void muls(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vmulss(x, x, y);
+            #else
+                cc.vmulsd(x, x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.mulss(x, y);
+            #else
+                cc.mulsd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point multiplication operation (3op)
+    template <typename X, typename Y, typename Z>
+    void muls(const X &x, const Y &y, const Z &z) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vmulss(x, y, z);
+            #else
+                cc.vmulsd(x, y, z);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.movss(x, y);
+                cc.mulss(x, z);
+            #else
+                cc.movsd(x, y);
+                cc.mulsd(x, z);
+            #endif
+        #endif
+    }
+
+    /// Floating point division operation (2op)
+    template <typename X, typename Y>
+    void divs(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vdivss(x, x, y);
+            #else
+                cc.vdivsd(x, x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.divss(x, y);
+            #else
+                cc.divsd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point square root operation
+    template <typename X, typename Y>
+    void sqrts(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vsqrtss(x, x, y);
+            #else
+                cc.vsqrtsd(x, x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.sqrtss(x, y);
+            #else
+                cc.sqrtsd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point maximum operation
+    template <typename X, typename Y>
+    void maxs(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vmaxss(x, x, y);
+            #else
+                cc.vmaxsd(x, x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.maxss(x, y);
+            #else
+                cc.maxsd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point minimum operation
+    template <typename X, typename Y>
+    void mins(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vminss(x, x, y);
+            #else
+                cc.vminsd(x, x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.minss(x, y);
+            #else
+                cc.minsd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point fused multiply-add operation
+    template <typename X, typename Y, typename Z>
+    void fmadd213(const X &x, const Y &y, const Z &z) {
+        #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_FMA)
+            #if defined(SINGLE_PRECISION)
+                cc.vfmadd213ss(x, y, z);
+            #else
+                cc.vfmadd213sd(x, y, z);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.mulss(x, y);
+                cc.addss(x, z);
+            #else
+                cc.mulsd(x, y);
+                cc.addsd(x, z);
+            #endif
+        #endif
+    }
+
+    /// Floating point fused multiply-add operation
+    template <typename X, typename Y, typename Z>
+    void fmadd231(const X &x, const Y &y, const Z &z) {
+        #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_FMA)
+            #if defined(SINGLE_PRECISION)
+                cc.vfmadd231ss(x, y, z);
+            #else
+                cc.vfmadd231sd(x, y, z);
+            #endif
+        #else
+            auto tmp = cc.newXmm();
+            #if defined(SINGLE_PRECISION)
+                cc.movss(tmp, y);
+                cc.mulss(tmp, z);
+                cc.addss(x, tmp);
+            #else
+                cc.movsd(tmp, y);
+                cc.mulsd(tmp, z);
+                cc.addsd(x, tmp);
+            #endif
+        #endif
+    }
+
+    /// Convert an integer to a floating point value
+    template <typename X, typename Y>
+    void cvtsi2s(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vcvtsi2ss(x, x, y);
+            #else
+                cc.vcvtsi2sd(x, x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.cvtsi2ss(x, y);
+            #else
+                cc.cvtsi2sd(x, y);
+            #endif
+        #endif
+    }
+
+    /// Convert a floating point value to an integer (truncating)
+    template <typename X, typename Y>
+    void cvts2si(const X &x, const Y &y) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vcvtss2si(x, y);
+            #else
+                cc.vcvtsd2si(x, y);
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.cvtss2si(x, y);
+            #else
+                cc.cvtsd2si(x, y);
+            #endif
+        #endif
+    }
+
+    /// Floating point rounding operation
+    template <typename X, typename Y>
+    void rounds(const X &x, const Y &y, int mode) {
+        #if defined(ENOKI_X86_AVX)
+            #if defined(SINGLE_PRECISION)
+                cc.vroundss(x, x, y, Imm(mode));
+            #else
+                cc.vroundsd(x, x, y, Imm(mode));
+            #endif
+        #else
+            #if defined(SINGLE_PRECISION)
+                cc.roundss(x, y, Imm(mode));
+            #else
+                cc.roundsd(x, y, Imm(mode));
+            #endif
+        #endif
+    }
+
+    /// Forward/inverse gamma correction using the sRGB profile
+    X86Xmm gamma(X86Xmm x, bool to_srgb) {
+        #if MTS_JIT_LOG_ASSEMBLY == 1
+            cc.comment(to_srgb ? "# Linear -> sRGB conversion"
+                               : "# sRGB -> linear conversion");
+        #endif
+
+        X86Xmm a = cc.newXmm(),
+               b = cc.newXmm();
+
+        movs(a, const_(to_srgb ? 12.92 : (1.0 / 12.92)));
+        ucomis(x, const_(to_srgb ? 0.0031308 : 0.04045));
+
+        Label low_value = cc.newLabel();
+        cc.jb(low_value);
+
+        X86Xmm y;
+        if (to_srgb) {
+           y = cc.newXmm();
+           sqrts(y, x);
+        } else {
+            y = x;
+        }
+
+        #if defined(SINGLE_PRECISION)
+            // Rational polynomial fit, rel.err = 2*10^-7
+            float to_srgb_coeffs[2][6] =
+              { { -0.016202083165206348f, 0.7551545191665577f, 2.0041169284241644f,
+                  0.7642611304733891f, 0.03453868659826638f,
+                  -0.0016829072605308378f },
+                { 1.f, 1.8970238036421054f, 0.6085338522168684f,
+                  0.03467195408529984f, -0.00004375359692957097f,
+                  4.178892964897981e-7f } };
+        #else
+            // Rational polynomial fit, rel.err = 8*10^-15
+            double to_srgb_coeffs[2][11] =
+              { { -0.0031151377052754843, 0.5838023820686707, 8.450947414259522,
+                  27.901125077137042, 32.44669922192121, 15.374469584296442,
+                  3.0477578489880823, 0.2263810267005674, 0.002531335520959116,
+                  -0.00021805827098915798, -3.7113872202050023e-6 },
+                { 1., 10.723011300050162, 29.70548706952188, 30.50364355650628,
+                  13.297981743005433, 2.575446652731678, 0.21749170309546628,
+                  0.007244514696840552, 0.00007045228641004039,
+                  -8.387527630781522e-9, 2.2380622409188757e-11 } };
+        #endif
+
+        #if defined(SINGLE_PRECISION)
+            // Rational polynomial fit, rel.err = 2*10^-7
+            float from_srgb_coeffs[2][5] =
+                { { -36.04572663838034f, -47.46726633009393f, -11.199318357635072f,
+                    -0.7386328024653209f, -0.0163933279112946f },
+                  { 1.f, -18.225745396846637f, -59.096406619244426f,
+                    -19.140923959601675f, -0.004261480793199332f } };
+        #else
+            // Rational polynomial fit, rel.err = 1.5*10^-15
+            double from_srgb_coeffs[2][10] =
+                { { -342.62884098034357, -3483.4445569178347, -9735.250875334352,
+                    -10782.158977031822, -5548.704065887224, -1446.951694673217,
+                    -200.19589605282445, -14.786385491859248, -0.5489744177844188,
+                    -0.008042950896814532 },
+                  { 1., -84.8098437770271, -1884.7738197074218, -8059.219012060384,
+                    -11916.470977597566, -7349.477378676199, -2013.8039726540235,
+                    -237.47722999429413, -9.646075249097724,
+                    -2.2132610916769585e-8 } };
+        #endif
+
+        size_t ncoeffs =
+            to_srgb ? std::extent<decltype(to_srgb_coeffs), 1>::value :
+                      std::extent<decltype(from_srgb_coeffs), 1>::value;
+
+        for (size_t i = 0; i < ncoeffs; ++i) {
+            for (int j = 0; j < 2; ++j) {
+                X86Xmm &v = (j == 0) ? a : b;
+                X86Mem coeff = const_(to_srgb ? to_srgb_coeffs[j][i]
+                                              : from_srgb_coeffs[j][i]);
+                if (i == 0)
+                    movs(v, coeff);
+                else
+                    fmadd213(v, y, coeff);
+            }
+        }
+
+        divs(a, b);
+        cc.bind(low_value);
+        muls(a, x);
+
+        return a;
+    }
+
+    /// Load a variable from the given structure (or return from the cache if it was already loaded)
+    std::pair<Key, Value> load(const Struct* struct_, const X86Gp &input, const std::string &name) {
+        Struct::Field field = struct_->field(name);
+
+        Key key { field.name, field.type, field.flags };
+
+        auto it = cache.find(key);
+        if (it != cache.end())
+            return *it;
+
+        #if MTS_JIT_LOG_ASSEMBLY == 1
+            cc.comment(("# Load field \""+ name + "\"").c_str());
+       #endif
+
+        Value value;
+
+        uint32_t op;
+        if (field.is_signed())
+            op = field.size < 4 ? X86Inst::kIdMovsx : X86Inst::kIdMovsxd;
+        else
+            op = field.size < 4 ? X86Inst::kIdMovzx : X86Inst::kIdMov;
+        if (field.size == 8)
+            op = X86Inst::kIdMov;
+
+        // Will we need to swap the byte order of the source records?
+        bool bswap = struct_->byte_order() == Struct::EBigEndian;
+
+        if (Struct::is_integer(field.type) || field.type == Struct::EFloat16)
+            value.gp = cc.newInt64(field.name.c_str());
+        else
+            value.xmm = cc.newXmm(field.name.c_str());
+
+        const int32_t offset = (int32_t) field.offset;
+        switch (field.type) {
+            case Struct::EUInt8:
+            case Struct::EInt8:
+                cc.emit(op, value.gp, x86::byte_ptr(input, offset));
+                break;
+
+            case Struct::EUInt16:
+            case Struct::EInt16:
+                if (bswap) {
+                    cc.movzx(value.gp, x86::word_ptr(input, offset));
+                    cc.xchg(value.gp.r8Lo(), value.gp.r8Hi());
+                    if (field.is_signed())
+                        cc.emit(op, value.gp.r64(), value.gp.r16());
+                } else {
+                    cc.emit(op, value.gp, x86::word_ptr(input, offset));
+                }
+                break;
+
+            case Struct::EUInt32:
+            case Struct::EInt32:
+                if (bswap) {
+                    cc.mov(value.gp.r32(), x86::dword_ptr(input, offset));
+                    cc.bswap(value.gp.r32());
+                    if (field.is_signed())
+                        cc.emit(op, value.gp.r64(), value.gp.r32());
+                } else {
+                    cc.emit(op, value.gp.r32(), x86::dword_ptr(input, offset));
+                }
+                break;
+
+            case Struct::EUInt64:
+            case Struct::EInt64:
+                cc.mov(value.gp, x86::qword_ptr(input, offset));
+                if (bswap)
+                    cc.bswap(value.gp.r64());
+                break;
+
+            case Struct::EFloat16:
+                if (bswap) {
+                    cc.movzx(value.gp, x86::word_ptr(input, offset));
+                    cc.xchg(value.gp.r8Lo(), value.gp.r8Hi());
+                } else {
+                    cc.emit(op, value.gp.r16(), x86::word_ptr(input, offset));
+                }
+                break;
+
+            case Struct::EFloat32:
+                if (bswap) {
+                    X86Gp temp = cc.newUInt32();
+                    cc.mov(temp.r32(), x86::dword_ptr(input, offset));
+                    cc.bswap(temp.r32());
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vmovd(value.xmm, temp.r32());
+                    #else
+                        cc.movd(value.xmm, temp.r32());
+                    #endif
+                } else {
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vmovss(value.xmm, x86::dword_ptr(input, offset));
+                    #else
+                        cc.movss(value.xmm, x86::dword_ptr(input, offset));
+                    #endif
+                }
+                break;
+
+            case Struct::EFloat64:
+                if (bswap) {
+                    X86Gp temp = cc.newUInt64();
+                    cc.mov(temp.r64(), x86::qword_ptr(input, offset));
+                    cc.bswap(temp.r64());
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vmovq(value.xmm, temp.r64());
+                    #else
+                        cc.movq(value.xmm, temp.r64());
+                    #endif
+                } else {
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vmovsd(value.xmm, x86::qword_ptr(input, offset));
+                    #else
+                        cc.movsd(value.xmm, x86::qword_ptr(input, offset));
+                    #endif
+                }
+                break;
+
+            default: Throw("StructConverter: unknown field type!");
+        }
+
+        if (field.flags & Struct::EAssert) {
+            if (field.type == Struct::EFloat16) {
+                auto ref = cc.newUInt16Const(
+                    asmjit::kConstScopeGlobal,
+                    enoki::half::float32_to_float16((float) field.default_));
+                cc.cmp(value.gp.r16(), ref);
+            } else if (field.type == Struct::EFloat32) {
+                auto ref = cc.newFloatConst(asmjit::kConstScopeGlobal, (float) field.default_);
+                #if defined(ENOKI_X86_AVX)
+                    cc.vucomiss(value.xmm, ref);
+                #else
+                    cc.ucomiss(value.xmm, ref);
+                #endif
+            } else if (field.type == Struct::EFloat64) {
+                auto ref = cc.newDoubleConst(asmjit::kConstScopeGlobal, (double) field.default_);
+                #if defined(ENOKI_X86_AVX)
+                    cc.vucomisd(value.xmm, ref);
+                #else
+                    cc.ucomisd(value.xmm, ref);
+                #endif
+            } else if (field.type == Struct::EInt8 || field.type == Struct::EUInt8) {
+                auto ref = cc.newByteConst(asmjit::kConstScopeGlobal, (int8_t) field.default_);
+                cc.cmp(value.gp.r8(), ref);
+            } else if (field.type == Struct::EInt16 || field.type == Struct::EUInt16) {
+                auto ref = cc.newInt16Const(asmjit::kConstScopeGlobal, (int16_t) field.default_);
+                cc.cmp(value.gp.r16(), ref);
+            } else if (field.type == Struct::EInt32 || field.type == Struct::EUInt32) {
+                auto ref = cc.newInt32Const(asmjit::kConstScopeGlobal, (int32_t) field.default_);
+                cc.cmp(value.gp.r32(), ref);
+            } else if (field.type == Struct::EInt64 || field.type == Struct::EUInt64) {
+                auto ref = cc.newInt64Const(asmjit::kConstScopeGlobal, (int64_t) field.default_);
+                cc.cmp(value.gp.r64(), ref);
+            } else {
+                Throw("Internal error!");
+            }
+            cc.jne(err_label);
+        }
+
+        cache[key] = value;
+
+        return std::make_pair(key, value);
+    }
+
+    std::pair<Key, Value> load_default(const Struct::Field &field) {
+        Key key { field.name, Struct::EFloat, 0 };
+        Value value;
+        value.xmm = cc.newXmm();
+        movs(value.xmm, const_(field.default_));
+        return std::make_pair(key, value);
+    }
+
+    /// Convert a variable into a linear floating point representation
+    std::pair<Key, Value> linearize(const std::pair<Key, Value> &input) {
+        Key kr;
+        Value vr;
+        std::tie(kr, vr) = input;
+
+        bool int_to_float = false;
+        bool float_to_float = false;
+        bool inv_gamma = false;
+
+        if (Struct::is_integer(kr.type)) {
+            kr.type = Struct::EFloat;
+            kr.flags &= ~Struct::ENormalized;
+            int_to_float = true;
+        }
+
+        if (Struct::is_float(kr.type) && kr.type != Struct::EFloat) {
+            kr.type = Struct::EFloat;
+            float_to_float = true;
+        }
+
+        if (kr.flags & Struct::EGamma) {
+            kr.flags &= ~Struct::EGamma;
+            inv_gamma = true;
+        }
+
+        auto it = cache.find(kr);
+        if (it != cache.end())
+            return *it;
+
+        if (int_to_float) {
+            auto range = Struct::range(input.first.type);
+
+            vr.xmm = cc.newXmm();
+
+            if (input.first.type == Struct::EUInt32 || input.first.type == Struct::EInt64) {
+                cvtsi2s(vr.xmm, vr.gp.r64());
+            } else if (input.first.type == Struct::EUInt64) {
+                auto tmp = cc.newUInt64();
+                cc.mov(tmp, vr.gp.r64());
+                auto tmp2 = cc.newUInt64Const(asmjit::kConstScopeGlobal, 0x7fffffffffffffffull);
+                cc.and_(tmp, tmp2);
+                cvtsi2s(vr.xmm, tmp.r64());
+                cc.test(vr.gp.r64(), vr.gp.r64());
+                Label done = cc.newLabel();
+                cc.jns(done);
+                adds(vr.xmm, const_(0x8000000000000000ull));
+                cc.bind(done);
+            } else {
+                cvtsi2s(vr.xmm, vr.gp.r32());
+            }
+
+            if (input.first.flags & Struct::ENormalized)
+                muls(vr.xmm, const_(1.0 / range.second));
+        }
+
+        if (float_to_float) {
+            kr.type = input.first.type;
+
+            if (kr.type == Struct::EFloat16) {
+                vr.xmm = cc.newXmm();
+                #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_F16C)
+                    cc.vmovd(vr.xmm, vr.gp.r32());
+                    cc.vcvtph2ps(vr.xmm, vr.xmm);
+                #else
+                    auto call = cc.call(imm_ptr((void *) enoki::half::float16_to_float32),
+                        FuncSignature1<float, uint16_t>(CallConv::kIdHostCDecl));
+                    call->setArg(0, vr.gp);
+                    call->setRet(0, vr.xmm);
+                #endif
+                kr.type = Struct::EFloat32;
+            }
+
+            if (kr.type == Struct::EFloat32 && kr.type != Struct::EFloat) {
+                X86Xmm source = vr.xmm;
+                vr.xmm = cc.newXmm();
+                #if defined(ENOKI_X86_AVX)
+                    cc.vcvtss2sd(vr.xmm, vr.xmm, source);
+                #else
+                    cc.cvtss2sd(vr.xmm, source);
+                #endif
+                kr.type = Struct::EFloat64;
+            }
+
+            if (kr.type == Struct::EFloat64 && kr.type != Struct::EFloat) {
+                X86Xmm source = vr.xmm;
+                vr.xmm = cc.newXmm();
+                #if defined(ENOKI_X86_AVX)
+                    cc.vcvtsd2ss(vr.xmm, vr.xmm, source);
+                #else
+                    cc.cvtsd2ss(vr.xmm, source);
+                #endif
+                kr.type = Struct::EFloat32;
+            }
+        }
+
+        if (inv_gamma)
+            vr.xmm = gamma(vr.xmm, false);
+
+        cache[kr] = vr;
+
+        return std::make_pair(kr, vr);
+    }
+
+    /// Write a variable to memory
+    void save(const Struct *struct_, const X86Gp &output,
+              Struct::Field field, const std::pair<Key, Value> &kv) {
+        Key key;
+        Value value;
+        std::tie(key, value) = kv;
+
+        #if MTS_JIT_LOG_ASSEMBLY == 1
+            cc.comment(("# Save field \""+ field.name + "\"").c_str());
+        #endif
+
+        if ((field.flags & Struct::EGamma) != 0 &&
+            (key.flags & Struct::EGamma) == 0) {
+            value.xmm = gamma(value.xmm, true);
+        }
+
+        if (field.is_integer() && !Struct::is_integer(key.type)) {
+            auto range_dbl = field.range();
+            std::pair<Float, Float> range = range_dbl;
+            if (key.type != Struct::EFloat)
+                Throw("Internal error!");
+
+            auto temp = cc.newXmm();
+            movs(temp, value.xmm);
+            value.xmm = temp;
+
+            while ((double) range.first < range_dbl.first)
+                range.first = enoki::next_float(range.first);
+            while ((double) range.second > range_dbl.second)
+                range.second = enoki::prev_float(range.second);
+
+            if (field.flags & Struct::ENormalized) {
+                muls(value.xmm, const_(range.second));
+
+                if (dither) {
+                    if (!dither_ready) {
+                        X86Gp index = cc.newUInt64();
+                        cc.movzx(index.r64(), xp.r8Lo());
+                        cc.mov(index.r8Hi(), yp.r8Lo());
+                        X86Gp base = cc.newUInt64();
+                        cc.mov(base.r64(), Imm((uintptr_t) dither_matrix256));
+                        dither_value = cc.newXmm();
+                        movs(dither_value, X86Mem(base, index, sizeof(Float) == 4 ? 2 : 3, 0, (uint32_t) sizeof(Float)));
+                        dither_ready = true;
+                    }
+                    adds(value.xmm, dither_value);
+                }
+            }
+
+            rounds(value.xmm, value.xmm, 8);
+            maxs(value.xmm, const_(range.first));
+            mins(value.xmm, const_(range.second));
+            value.gp = cc.newUInt64();
+
+            if (field.type == Struct::EUInt32 || field.type == Struct::EInt64) {
+                cvts2si(value.gp.r64(), value.xmm);
+            } else if (field.type == Struct::EUInt64) {
+                cvts2si(value.gp.r64(), value.xmm);
+
+                X86Xmm large_thresh = cc.newXmm();
+                movs(large_thresh, const_(9.223372036854776e18 /* 2^63 - 1 */));
+
+                X86Xmm tmp = cc.newXmm();
+                subs(tmp, value.xmm, large_thresh);
+
+                X86Gp tmp2 = cc.newInt64();
+                cvts2si(tmp2, tmp);
+
+                X86Gp large_result = cc.newInt64();
+                cc.mov(large_result, Imm(0x7fffffffffffffffull));
+                cc.add(large_result, tmp2);
+
+                ucomis(value.xmm, large_thresh);
+                cc.cmovnb(value.gp.r64(), large_result);
+            } else {
+                cvts2si(value.gp.r32(), value.xmm);
+            }
+        }
+
+        bool bswap = struct_->byte_order() == Struct::EBigEndian;
+        const int32_t offset = (int32_t) field.offset;
+        X86Xmm temp;
+
+        switch (field.type) {
+            case Struct::EUInt8:
+            case Struct::EInt8:
+                cc.mov(x86::byte_ptr(output, offset), value.gp.r8());
+                break;
+
+            case Struct::EInt16:
+            case Struct::EUInt16:
+                if (bswap) {
+                   X86Gp temp = cc.newUInt16();
+                   cc.mov(temp, value.gp.r16());
+                   cc.xchg(temp.r8Lo(), temp.r8Hi());
+                   value.gp = temp;
+                }
+                cc.mov(x86::word_ptr(output, offset), value.gp.r16());
+                break;
+
+            case Struct::EInt32:
+            case Struct::EUInt32:
+                if (bswap) {
+                   X86Gp temp = cc.newUInt32();
+                   cc.mov(temp, value.gp.r32());
+                   cc.bswap(temp);
+                   value.gp = temp;
+                }
+                cc.mov(x86::dword_ptr(output, offset), value.gp.r32());
+                break;
+
+            case Struct::EInt64:
+            case Struct::EUInt64:
+                if (bswap) {
+                   X86Gp temp = cc.newUInt64();
+                   cc.mov(temp, value.gp.r64());
+                   cc.bswap(temp);
+                   value.gp = temp;
+                }
+                cc.mov(x86::qword_ptr(output, offset), value.gp.r64());
+                break;
+
+            case Struct::EFloat16:
+                if (key.type == Struct::EFloat64) {
+                    X86Xmm temp = cc.newXmm();
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vcvtsd2ss(temp, temp, value.xmm);
+                    #else
+                        cc.cvtsd2ss(temp, value.xmm);
+                    #endif
+                    value.xmm = temp;
+                    key.type = Struct::EFloat32;
+                }
+                if (key.type == Struct::EFloat32) {
+                    value.gp = cc.newUInt32();
+
+                    #if defined(__F16C__)
+                        X86Xmm temp = cc.newXmm();
+                        cc.vcvtps2ph(temp, value.xmm, 0);
+                        cc.vmovd(value.gp.r32(), temp);
+                    #else
+                        auto call = cc.call(imm_ptr((void *) enoki::half::float32_to_float16),
+                            FuncSignature1<uint16_t, float>(asmjit::CallConv::kIdHost));
+                        call->setArg(0, value.xmm);
+                        call->setRet(0, value.gp);
+                    #endif
+
+                    key.type = Struct::EFloat16;
+                }
+
+                if (bswap) {
+                   X86Gp temp = cc.newUInt16();
+                   cc.mov(temp, value.gp.r16());
+                   cc.xchg(temp.r8Lo(), temp.r8Hi());
+                   value.gp = temp;
+                }
+
+                cc.mov(x86::word_ptr(output, offset), value.gp.r16());
+
+                break;
+
+            case Struct::EFloat32:
+                if (key.type == Struct::EFloat64) {
+                    X86Xmm temp = cc.newXmm();
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vcvtsd2ss(temp, temp, value.xmm);
+                    #else
+                        cc.cvtsd2ss(temp, value.xmm);
+                    #endif
+                    value.xmm = temp;
+                }
+                if (bswap) {
+                    X86Gp temp = cc.newUInt32();
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vmovd(temp, value.xmm);
+                    #else
+                        cc.movd(temp, value.xmm);
+                    #endif
+                    cc.bswap(temp);
+                    cc.mov(x86::dword_ptr(output, offset), temp);
+                } else {
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vmovss(x86::dword_ptr(output, offset), value.xmm);
+                    #else
+                        cc.movss(x86::dword_ptr(output, offset), value.xmm);
+                    #endif
+                }
+                break;
+
+            case Struct::EFloat64:
+                if (key.type == Struct::EFloat32) {
+                    X86Xmm temp = cc.newXmm();
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vcvtss2sd(temp, temp, value.xmm);
+                    #else
+                        cc.cvtss2sd(temp, value.xmm);
+                    #endif
+                    value.xmm = temp;
+                }
+                if (bswap) {
+                    X86Gp temp = cc.newUInt64();
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vmovq(temp, value.xmm);
+                    #else
+                        cc.movq(temp, value.xmm);
+                    #endif
+                    cc.bswap(temp);
+                    cc.mov(x86::qword_ptr(output, offset), temp);
+                } else {
+                    #if defined(ENOKI_X86_AVX)
+                        cc.vmovsd(x86::qword_ptr(output, offset), value.xmm);
+                    #else
+                        cc.movsd(x86::qword_ptr(output, offset), value.xmm);
+                    #endif
+                }
+                break;
+
+            default: Throw("StructConverter: unknown field type!");
+        }
+    }
+private:
+    // Cache of all currently loaded/converted variables
+    X86Compiler &cc;
+    X86Gp xp, yp;
+    bool dither;
+    Label err_label;
+    X86Xmm dither_value;
+    bool dither_ready = false;
+    std::map<Key, Value> cache;
+};
 
 NAMESPACE_END(detail)
 
@@ -82,7 +1014,6 @@ Struct &Struct::append(const std::string &name, EType type, uint32_t flags, doub
         case EInt64:
         case EUInt64:
         case EFloat64: f.size = 8; break;
-        case EFloat:   f.size = sizeof(Float); break;
         default: Throw("Struct::append(): invalid field type!");
     }
     if (!m_pack)
@@ -104,7 +1035,6 @@ std::ostream &operator<<(std::ostream &os, Struct::EType value) {
         case Struct::EFloat16: os << "float16"; break;
         case Struct::EFloat32: os << "float32"; break;
         case Struct::EFloat64: os << "float64"; break;
-        case Struct::EFloat:   os << "Float";   break;
         case Struct::EInvalid: os << "invalid"; break;
         default: Throw("Struct: operator<<: invalid field type!");
     }
@@ -127,6 +1057,8 @@ std::string Struct::to_string() const {
             os << ", normalized";
         if (f.flags & EGamma)
             os << ", gamma";
+        if (f.flags & EWeight)
+            os << ", weight";
         if (f.flags & EDefault)
             os << ", default=" << f.default_;
         if (f.flags & EAssert)
@@ -166,50 +1098,44 @@ Struct::Field &Struct::field(const std::string &name) {
     Throw("Unable to find field \"%s\"", name);
 }
 
-std::pair<double, double> Struct::Field::range() const {
+std::pair<double, double> Struct::range(EType type) {
+    std::pair<double, double> result;
+
+    #define COMPUTE_RANGE(key, type)                                        \
+        case key:                                                           \
+            result = std::make_pair(std::numeric_limits<type>::min(),       \
+                                    std::numeric_limits<type>::max());      \
+            break;
+
     switch (type) {
-        case Struct::EUInt8:
-            return std::make_pair(std::numeric_limits<uint8_t>::min(),
-                                  std::numeric_limits<uint8_t>::max());
-        case Struct::EInt8:
-            return std::make_pair(std::numeric_limits<int8_t>::min(),
-                                  std::numeric_limits<int8_t>::max());
-        case Struct::EUInt16:
-            return std::make_pair(std::numeric_limits<uint16_t>::min(),
-                                  std::numeric_limits<uint16_t>::max());
-        case Struct::EInt16:
-            return std::make_pair(std::numeric_limits<int16_t>::min(),
-                                  std::numeric_limits<int16_t>::max());
-        case Struct::EUInt32:
-            return std::make_pair(std::numeric_limits<uint32_t>::min(),
-                                  std::numeric_limits<uint32_t>::max());
-        case Struct::EInt32:
-            return std::make_pair(std::numeric_limits<int32_t>::min(),
-                                  std::numeric_limits<int32_t>::max());
-        case Struct::EUInt64:
-            return std::make_pair(std::numeric_limits<uint64_t>::min(),
-                                  std::numeric_limits<uint64_t>::max());
-        case Struct::EInt64:
-            return std::make_pair(std::numeric_limits<int64_t>::min(),
-                                  std::numeric_limits<int64_t>::max());
+        COMPUTE_RANGE(EUInt8, uint8_t);
+        COMPUTE_RANGE(EInt8, int8_t);
+        COMPUTE_RANGE(EUInt16, uint16_t);
+        COMPUTE_RANGE(EInt16, int16_t);
+        COMPUTE_RANGE(EUInt32, uint32_t);
+        COMPUTE_RANGE(EInt32, int32_t);
+        COMPUTE_RANGE(EUInt64, uint64_t);
+        COMPUTE_RANGE(EInt64, int64_t);
+        COMPUTE_RANGE(EFloat32, float);
+        COMPUTE_RANGE(EFloat64, double);
 
         case Struct::EFloat16:
-            return std::make_pair(-65504, 65504);
+            result = std::make_pair(-65504, 65504);
+            break;
 
-        case Struct::EFloat32:
-            return std::make_pair(-std::numeric_limits<float>::max(),
-                                   std::numeric_limits<float>::max());
-
-        case Struct::EFloat64:
-            return std::make_pair(-std::numeric_limits<double>::max(),
-                                   std::numeric_limits<double>::max());
-
-        case Struct::EFloat:
-            return std::make_pair(-std::numeric_limits<Float>::max(),
-                                   std::numeric_limits<Float>::max());
         default:
             Throw("Internal error: invalid field type");
     }
+
+    if (is_integer(type)) {
+        // Account for rounding errors in the conversions above.
+        // (we want the bounds to be conservative)
+        if (result.first != 0)
+            result.first = enoki::next_float(result.first);
+        result.second = enoki::prev_float(result.second);
+    }
+
+    return result;
 }
 
 size_t hash(const Struct::Field &f) {
@@ -232,817 +1158,523 @@ static std::unordered_map<
     hasher<std::pair<ref<const Struct>, ref<const Struct>>>,
     comparator<std::pair<ref<const Struct>, ref<const Struct>>>> __cache;
 
-StructConverter::StructConverter(const Struct *source, const Struct *target)
+StructConverter::StructConverter(const Struct *source, const Struct *target, bool dither)
  : m_source(source), m_target(target) {
 #if MTS_STRUCTCONVERTER_USE_JIT == 1
     using namespace asmjit;
 
-    auto jit = Jit::getInstance();
+    // Use the Jit instance to cache struture converters
+    auto jit = Jit::get_instance();
     std::lock_guard<std::mutex> guard(jit->mutex);
 
     auto key = std::make_pair(ref<const Struct>(source), ref<const Struct>(target));
     auto it = __cache.find(key);
 
     if (it != __cache.end()) {
-        m_func = asmjit_cast<FuncType>(it->second);
+        // Cache hit
+        m_func = ptr_as_func<FuncType>(it->second);
         return;
     }
 
-    asmjit::X86Assembler assembler(&jit->runtime);
-
+    CodeHolder code;
+    code.init(jit->runtime.getCodeInfo());
     #if MTS_JIT_LOG_ASSEMBLY == 1
         Log(EInfo, "Converting from %s to %s", source->to_string(), target->to_string());
         StringLogger logger;
         logger.addOptions(asmjit::Logger::kOptionBinaryForm);
-        assembler.setLogger(&logger);
+        code.setLogger(&logger);
     #endif
 
-    asmjit::X86Compiler c(&assembler);
+    X86Compiler cc(&code);
 
-    c.addFunc(FuncBuilder3<void, size_t, const void *, void *>(kCallConvHost));
-    auto count = c.newInt64("count");
-    auto input = c.newIntPtr("input");
-    auto output = c.newIntPtr("output");
+    cc.addFunc(FuncSignature4<bool, size_t, size_t, const void *, void *>(asmjit::CallConv::kIdHost));
+    auto width = cc.newInt64("width");
+    auto height = cc.newInt64("height");
+    auto input = cc.newIntPtr("input");
+    auto output = cc.newIntPtr("output");
+    auto x = cc.newUInt64("x");
+    auto y = cc.newUInt64("y");
 
-    /* Force caller-save registers for these */
-    c.alloc(count, x86::r12);
-    c.alloc(input, x86::r13);
-    c.alloc(output, x86::r14);
+    cc.setArg(0, width);
+    cc.setArg(1, height);
+    cc.setArg(2, input);
+    cc.setArg(3, output);
 
-    c.setArg(0, count);
-    c.setArg(1, input);
-    c.setArg(2, output);
+    // Control flow structure
+    Label loop_start = cc.newLabel();
+    Label loop_x_end = cc.newLabel();
+    Label loop_y_end = cc.newLabel();
+    Label loop_fail  = cc.newLabel();
 
-    Label loopStart = c.newLabel();
-    Label loopEnd = c.newLabel();
-    Label loopFail = c.newLabel();
+    detail::StructCompiler sc(cc, x, y, dither, loop_fail);
 
-    c.test(count, count);
-    c.jz(loopEnd);
+    cc.test(width, width);
+    cc.jz(loop_y_end);
+    cc.xor_(x, x);
 
-    size_t source_size = source->size();
+    cc.test(height, height);
+    cc.jz(loop_y_end);
+    cc.xor_(y, y);
 
-    if (source_size > 1) {
-        if (math::is_power_of_two(source_size))
-            c.shl(count, Imm(enoki::log2i(source_size)));
-        else
-            c.imul(count, Imm(source->size()));
-    }
+    cc.bind(loop_start);
 
-    c.add(count, input);
-    c.bind(loopStart);
-
-    auto reg    = c.newInt64("reg");
-    auto reg_f  = c.newXmmVar(kX86VarTypeXmmSs, "reg_f");
-    auto reg_d  = c.newXmmVar(kX86VarTypeXmmSd, "reg_d");
-    auto temp_f = c.newXmmVar(kX86VarTypeXmmSs, "temp_f");
-    auto temp_d = c.newXmmVar(kX86VarTypeXmmSd, "temp_d");
-
-    bool failNeeded = false;
-    std::vector<std::string> fields;
-    for (Struct::Field f : *source) {
-        if ((f.flags & Struct::EAssert) && !target->has_field(f.name))
-            fields.push_back(f.name);
-    }
-    for (Struct::Field f : *target)
-        fields.push_back(f.name);
-
-    for (auto const &name : fields) {
-        Struct::Field df;
-        if (target->has_field(name))
-            df = target->field(name);
-
-        int df_type = df.type;
-        if (df_type == Struct::EFloat) {
-            if (sizeof(Float) == sizeof(float))
-                df_type = Struct::EFloat32;
-            else if (sizeof(Float) == sizeof(double))
-                df_type = Struct::EFloat64;
-            else
-                Throw("Invalid 'Float' size");
-        }
-
-        try {
-            auto sources = df.blend;
-            if (sources.empty())
-                sources.push_back(std::make_pair(1.0, name));
-
-            Struct::EType sf_type_final = Struct::EInvalid;
-            Struct::Field sf;
-            Struct::EType &sf_type = sf.type;
-
-            for (size_t i = 0; i< sources.size(); ++i) {
-                double weight = sources[i].first;
-                sf = source->field(sources[i].second);
-
-                auto reg_f_p = i == 0 ? reg_f : temp_f;
-                auto reg_d_p = i == 0 ? reg_d : temp_d;
-
-                bool source_signed = sf.is_signed();
-                bool source_swap = source->byte_order() == Struct::EBigEndian;
-
-                uint32_t op;
-                if (source_signed) {
-                    op = sf.size < 4 ? kX86InstIdMovsx : kX86InstIdMovsxd;
-                } else {
-                    op = sf.size < 4 ? kX86InstIdMovzx : kX86InstIdMov;
-                }
-                if (sf.size == 8)
-                    op = kX86InstIdMov;
-
-                if (sf_type == Struct::EFloat) {
-                    if (sizeof(Float) == sizeof(float))
-                        sf_type = Struct::EFloat32;
-                    else if (sizeof(Float) == sizeof(double))
-                        sf_type = Struct::EFloat64;
-                    else
-                        Throw("Invalid 'Float' size");
-                }
-
-                switch (sf_type) {
-                    case Struct::EUInt8:
-                    case Struct::EInt8:
-                        c.emit(op, reg, x86::byte_ptr(input, (int32_t) sf.offset));
-                        break;
-
-                    case Struct::EUInt16:
-                    case Struct::EInt16:
-                        if (source_swap) {
-                            c.movzx(reg, x86::word_ptr(input, (int32_t) sf.offset));
-                            c.xchg(reg.r8Lo(), reg.r8Hi());
-                            if (source_signed)
-                                c.emit(op, reg.r64(), reg.r16());
-                        } else {
-                            c.emit(op, reg, x86::word_ptr(input, (int32_t) sf.offset));
-                        }
-                        break;
-
-                    case Struct::EUInt32:
-                    case Struct::EInt32:
-                        if (source_swap) {
-                            c.mov(reg.r32(), x86::dword_ptr(input, (int32_t) sf.offset));
-                            c.bswap(reg.r32());
-                            if (source_signed)
-                                c.emit(op, reg.r64(), reg.r32());
-                        } else {
-                            c.emit(op, reg, x86::dword_ptr(input, (int32_t) sf.offset));
-                        }
-                        break;
-
-                    case Struct::EUInt64:
-                    case Struct::EInt64:
-                        c.mov(reg, x86::qword_ptr(input, (int32_t) sf.offset));
-                        if (source_swap)
-                            c.bswap(reg.r64());
-                        break;
-
-                    case Struct::EFloat16: {
-                            c.movzx(reg, x86::word_ptr(input, (int32_t) sf.offset));
-                            if (source_swap)
-                                c.xchg(reg.r8Lo(), reg.r8Hi());
-
-                            #if defined(__F16C__)
-                                c.movd(reg_f_p, reg.r32());
-                                c.vcvtph2ps(reg_f_p, reg_f_p);
-                            #else
-                                auto call = c.call(imm_ptr((void *) enoki::half::float16_to_float32),
-                                    FuncBuilder1<float, uint16_t>(kCallConvHost));
-
-                                call->setArg(0, reg);
-                                call->setRet(0, reg_f_p);
-                            #endif
-                            sf_type = Struct::EFloat32;
-                        }
-                        break;
-
-                    case Struct::EFloat32:
-                        if (source_swap) {
-                            c.mov(reg.r32(), x86::dword_ptr(input, (int32_t) sf.offset));
-                            c.bswap(reg.r32());
-                            c.movd(reg_f_p, reg.r32());
-                        } else {
-                            c.movss(reg_f_p, x86::dword_ptr(input, (int32_t) sf.offset));
-                        }
-                        break;
-
-                    case Struct::EFloat64:
-                        if (source_swap) {
-                            c.mov(reg.r64(), x86::qword_ptr(input, (int32_t) sf.offset));
-                            c.bswap(reg.r64());
-                            c.movq(reg_d_p, reg.r64());
-                        } else {
-                            c.movsd(reg_d_p, x86::qword_ptr(input, (int32_t) sf.offset));
-                        }
-                        break;
-
-                    default: Throw("StructConverter: unknown field type!");
-                }
-
-                if (sf.flags & Struct::EAssert) {
-                    if (sf.is_integer()) {
-                        auto ref = c.newInt64Const(asmjit::kConstScopeLocal, (int64_t) sf.default_);
-                        c.cmp(reg.r64(), ref);
-                    } else if (sf_type == Struct::EFloat32) {
-                        auto ref = c.newFloatConst(asmjit::kConstScopeLocal, (float) sf.default_);
-                        c.ucomiss(reg_f_p, ref);
-                    } else if (sf_type == Struct::EFloat64) {
-                        auto ref = c.newDoubleConst(asmjit::kConstScopeLocal, sf.default_);
-                        c.ucomisd(reg_d_p, ref);
-                    } else {
-                        Throw("Internal error!");
-                    }
-                    failNeeded = true;
-                    c.jne(loopFail);
-                }
-
-                if (!target->has_field(name))
-                    continue;
-
-                if (sf.is_integer() && (sf.flags & Struct::ENormalized)) {
-                    auto range = sf.range();
-                    float scale = float(1 / (range.second - range.first));
-                    float offset = float(-range.first);
-
-                    c.cvtsi2ss(reg_f_p, reg.r64());
-                    if (offset != 0) {
-                        auto offset_c = c.newFloatConst(asmjit::kConstScopeLocal, offset);
-                        c.addss(reg_f_p, offset_c);
-                    }
-                    auto scale_c = c.newFloatConst(asmjit::kConstScopeLocal, scale);
-                    c.mulss(reg_f_p, scale_c);
-
-                    if (sf.flags & Struct::EGamma) {
-                        auto call = c.call(imm_ptr((void *) detail::inv_gamma_f),
-                            FuncBuilder1<float, float>(kCallConvHost));
-                        call->setArg(0, reg_f_p);
-                        call->setRet(0, reg_f_p);
-                    }
-
-                    sf_type = Struct::EFloat32;
-                }
-
-                if (sf_type_final == Struct::EInvalid) {
-                    sf_type_final = sf_type;
-                } else if (sf_type != sf_type_final) {
-                    Throw("StructConverter(): field \"%s\" blends incompatible "
-                          "fields.\nsource = %s,\ntarget = %s",
-                          name, m_source->to_string(), m_target->to_string());
-                }
-
-                if (weight != 1.0) {
-                    if (sf_type == Struct::EFloat32) {
-                        auto scale = c.newFloatConst(asmjit::kConstScopeLocal, (float) weight);
-                        c.mulss(reg_f_p, scale);
-                    } else if (sf_type == Struct::EFloat64) {
-                        auto scale = c.newDoubleConst(asmjit::kConstScopeLocal, (double) weight);
-                        c.mulsd(reg_d_p, scale);
-                    } else {
-                        Throw("StructConverter(): field \"%s\": can't scale "
-                              "non-float fields.\nsource = %s,\ntarget = %s",
-                              name, m_source->to_string(), m_target->to_string());
-                    }
-                }
-
-                if (reg_f != reg_f_p) {
-                    if (sf_type == Struct::EFloat32) {
-                        c.addss(reg_f, reg_f_p);
-                    } else if (sf_type == Struct::EFloat64) {
-                        c.addsd(reg_d, reg_d_p);
-                    } else {
-                        Throw("StructConverter(): field \"%s\": can't blend "
-                              "non-float fields.\nsource = %s,\ntarget = %s",
-                              name, m_source->to_string(), m_target->to_string());
-                    }
-                }
-            }
-
-            if (!target->has_field(name))
-                continue;
-
-            if (sf.is_integer() != df.is_integer()) {
-                if (sf.is_integer()) {
-                    if (df_type == Struct::EFloat16 || df_type == Struct::EFloat32)
-                        c.cvtsi2ss(reg_f, reg.r64());
-                    else if (df_type == Struct::EFloat64)
-                        c.cvtsi2sd(reg_d, reg.r64());
-                } else if (df.is_integer()) {
-                    if (sf_type == Struct::EFloat32) {
-                        auto range = df.range();
-                        auto rbegin = c.newFloatConst(asmjit::kConstScopeLocal, float(range.first));
-                        auto rend = c.newFloatConst(asmjit::kConstScopeLocal, float(range.second));
-
-                        if (df.flags & Struct::ENormalized) {
-                            if (df.flags & Struct::EGamma) {
-                                auto call = c.call(imm_ptr((void *) detail::gamma_f),
-                                    FuncBuilder1<float, float>(kCallConvHost));
-                                call->setArg(0, reg_f);
-                                call->setRet(0, reg_f);
-                            }
-
-                            auto rrange = c.newFloatConst(asmjit::kConstScopeLocal, float(range.second-range.first));
-                            c.mulss(reg_f, rrange);
-                            c.addss(reg_f, rbegin);
-                        }
-
-                        c.roundss(reg_f, reg_f, Imm(8));
-                        c.maxss(reg_f, rbegin);
-                        c.minss(reg_f, rend);
-                        c.cvtss2si(reg.r64(), reg_f);
-                    } else if (sf_type == Struct::EFloat64) {
-                        auto range = df.range();
-                        auto rbegin = c.newDoubleConst(asmjit::kConstScopeLocal, range.first);
-                        auto rend = c.newDoubleConst(asmjit::kConstScopeLocal, range.second);
-
-                        if (df.flags & Struct::ENormalized) {
-                            if (df.flags & Struct::EGamma) {
-                                auto call = c.call(imm_ptr((void *) detail::gamma_d),
-                                    FuncBuilder1<double, double>(kCallConvHost));
-                                call->setArg(0, reg_d);
-                                call->setRet(0, reg_d);
-                            }
-
-                            auto rrange = c.newDoubleConst(asmjit::kConstScopeLocal, range.second-range.first);
-                            c.mulsd(reg_d, rrange);
-                            c.addsd(reg_d, rbegin);
-                        }
-
-                        c.roundsd(reg_d, reg_d, Imm(8));
-                        c.maxsd(reg_d, rbegin);
-                        c.minsd(reg_d, rend);
-                        c.cvtsd2si(reg.r64(), reg_d);
-                    }
-                }
-            }
-
-            if (sf_type == Struct::EFloat32 && df_type == Struct::EFloat64)
-                c.cvtss2sd(reg_d, reg_f);
-            else if (sf_type == Struct::EFloat64 && (df_type == Struct::EFloat16 ||
-                                                     df_type == Struct::EFloat32))
-                c.cvtsd2ss(reg_f, reg_d);
-        } catch (const std::exception &e) {
-            if (!(df.flags & Struct::EDefault))
-                Throw("StructConverter(): field \"%s\" is missing in the "
-                      "source structure: %s\nsource = %s,\ntarget = %s",
-                      name, e.what(), m_source->to_string(), m_target->to_string());
-
-            if (df.is_integer()) {
-                if (df.default_ == 0) {
-                    c.xor_(reg, reg);
-                } else {
-                    auto cval = c.newInt64Const(asmjit::kConstScopeLocal, df.default_);
-                    c.mov(reg, cval);
-                }
-            } else if (df_type == Struct::EFloat16 || df_type == Struct::EFloat32) {
-                if (df.default_ == 0) {
-                    c.xorps(reg_f, reg_f);
-                } else {
-                    auto cval = c.newFloatConst(asmjit::kConstScopeLocal, (float) df.default_);
-                    c.movd(reg_f, cval);
-                }
-            } else if (df_type == Struct::EFloat64) {
-                if (df.default_ == 0) {
-                    c.xorpd(reg_d, reg_d);
-                } else {
-                    auto cval = c.newDoubleConst(asmjit::kConstScopeLocal, df.default_);
-                    c.movq(reg_d, cval);
-                }
-            }
-        }
-
-        bool target_swap = target->byte_order() == Struct::EBigEndian;
-        switch (df_type) {
-            case Struct::EUInt8:
-            case Struct::EInt8:
-                c.mov(x86::byte_ptr(output, (int32_t) df.offset), reg.r8());
-                break;
-
-            case Struct::EFloat16: {
-                    #if defined(__F16C__)
-                        c.vcvtps2ph(reg_f, reg_f, 0);
-                        c.movd(reg.r32(), reg_f);
-                    #else
-                        auto call = c.call(imm_ptr((void *) enoki::half::float32_to_float16),
-                            FuncBuilder1<uint16_t, float>(kCallConvHost));
-                        call->setArg(0, reg_f);
-                        call->setRet(0, reg);
-                    #endif
-
-
-                    if (target_swap)
-                       c.xchg(reg.r8Lo(), reg.r8Hi());
-
-                    c.mov(x86::word_ptr(output, (int32_t) df.offset), reg.r16());
-                }
-                break;
-
-            case Struct::EUInt16:
-            case Struct::EInt16:
-                if (target_swap)
-                   c.xchg(reg.r8Lo(), reg.r8Hi());
-
-                c.mov(x86::word_ptr(output, (int32_t) df.offset), reg.r16());
-                break;
-
-            case Struct::EUInt32:
-            case Struct::EInt32:
-                if (target_swap)
-                    c.bswap(reg.r32());
-
-                c.mov(x86::dword_ptr(output, (int32_t) df.offset), reg.r32());
-                break;
-
-            case Struct::EUInt64:
-            case Struct::EInt64:
-                if (target_swap)
-                    c.bswap(reg.r64());
-
-                c.mov(x86::qword_ptr(output, (int32_t) df.offset), reg.r64());
-                break;
-
-            case Struct::EFloat32:
-                if (target_swap) {
-                    c.movd(reg.r32(), reg_f);
-                    c.bswap(reg.r32());
-                    c.mov(x86::dword_ptr(output, (int32_t) df.offset), reg.r32());
-                } else {
-                    c.movss(x86::dword_ptr(output, (int32_t) df.offset), reg_f);
-                }
-                break;
-
-            case Struct::EFloat64:
-                if (target_swap) {
-                    c.movq(reg.r64(), reg_d);
-                    c.bswap(reg.r64());
-                    c.mov(x86::qword_ptr(output, (int32_t) df.offset), reg.r64());
-                } else {
-                    c.movsd(x86::qword_ptr(output, (int32_t) df.offset), reg_d);
-                }
-                break;
-
-            default: Throw("StructConverter: unknown field type!");
+    bool has_assert = false;
+    // Ensure that fields with an EAssert flag are loaded
+    for (const Struct::Field &f : *source) {
+        if (f.flags & Struct::EAssert) {
+            sc.load(source, input, f.name);
+            has_assert = true;
         }
     }
 
-    c.add(input,  Imm(source->size()));
-    c.add(output, Imm(target->size()));
-    c.cmp(input, count);
-    c.jne(loopStart);
-    c.bind(loopEnd);
+    const Struct::Field *source_weight = nullptr;
+    const Struct::Field *target_weight = nullptr;
 
-    auto rv = c.newInt64("rv");
-    c.mov(rv.r32(), 1);
-    c.ret(rv);
-    if (failNeeded) {
-        c.bind(loopFail);
-        c.xor_(rv, rv);
-        c.ret(rv);
+    for (const Struct::Field &f : *source) {
+        if ((f.flags & Struct::EWeight) == 0)
+            continue;
+        if (source_weight != nullptr)
+            Throw("Internal error: source structure has more than one weight field!");
+        source_weight = &f;
     }
-    c.endFunc();
-    c.finalize();
+
+    for (const Struct::Field &f : *target) {
+        if ((f.flags & Struct::EWeight) == 0)
+            continue;
+        if (target_weight != nullptr)
+            Throw("Internal error: target structure has more than one weight field!");
+        target_weight = &f;
+    }
+
+    if (source_weight != nullptr && target_weight != nullptr) {
+        if (source_weight->name != target_weight->name)
+            Throw("Internal error: source and target weights have mismatched names!");
+    }
+
+    X86Xmm scale_factor;
+    if (source_weight != nullptr && target_weight == nullptr) {
+        scale_factor = cc.newXmm();
+        X86Xmm value = sc.linearize(sc.load(source, input, source_weight->name)).second.xmm;
+        sc.movs(scale_factor, sc.const_(1.0));
+        sc.divs(scale_factor, value);
+    }
+
+
+    for (const Struct::Field &f : *target) {
+        std::pair<detail::StructCompiler::Key, detail::StructCompiler::Value> kv;
+        if (f.blend.empty()) {
+            if (source->has_field(f.name)) {
+                kv = sc.load(source, input, f.name);
+            } else if (f.flags & Struct::EDefault) {
+                kv = sc.load_default(f);
+            } else {
+                Throw("Unable to find field \"%s\"!", f.name);
+            }
+        } else {
+            X86Xmm accum = cc.newXmm();
+            for (size_t i = 0; i<f.blend.size(); ++i) {
+                kv = sc.linearize(sc.load(source, input, f.blend[i].second));
+                if (i == 0)
+                    sc.muls(accum, kv.second.xmm, sc.const_(f.blend[i].first));
+                else
+                    sc.fmadd231(accum, kv.second.xmm, sc.const_(f.blend[i].first));
+            }
+            kv.first.name = "_" + f.name + "_blend";
+            kv.second.xmm = accum;
+        }
+
+        uint32_t flag_mask = Struct::ENormalized | Struct::EGamma;
+        if (!((kv.first.type == f.type || (Struct::is_integer(kv.first.type) &&
+                                           Struct::is_integer(f.type) &&
+                                           (f.flags & Struct::ENormalized) == 0)) &&
+            ((kv.first.flags & flag_mask) == (f.flags & flag_mask))))
+            kv = sc.linearize(kv);
+
+        if (source_weight != nullptr && target_weight == nullptr) {
+            X86Xmm result = cc.newXmm();
+            if (kv.first.type != Struct::EFloat)
+                kv = sc.linearize(kv);
+            sc.muls(result, kv.second.xmm, scale_factor);
+            kv.second.xmm = result;
+        }
+
+        sc.save(target, output, f, kv);
+    }
+
+    cc.inc(x);
+    cc.add(input,  Imm(source->size()));
+    cc.add(output, Imm(target->size()));
+    cc.cmp(x, width);
+    cc.jne(loop_start);
+
+    cc.bind(loop_x_end);
+    cc.xor_(x, x);
+    cc.inc(y);
+    cc.cmp(y, height);
+    cc.jne(loop_start);
+
+    cc.bind(loop_y_end);
+    auto rv = cc.newInt64("rv");
+    cc.mov(rv.r32(), Imm(1));
+    cc.ret(rv);
+    if (has_assert) {
+        cc.bind(loop_fail);
+        cc.xor_(rv, rv);
+        cc.ret(rv);
+    }
+    cc.endFunc();
+
+    asmjit::Error err = cc.finalize();
+    if (err != asmjit::kErrorOk)
+        Throw("asmjit failed: %s", asmjit::DebugUtils::errorAsString(err));
+
+    jit->runtime.add((void **) &m_func, &code);
 
     #if MTS_JIT_LOG_ASSEMBLY == 1
        Log(EInfo, "Assembly:\n%s", logger.getString());
     #endif
 
-    m_func = asmjit_cast<FuncType>(assembler.make());
     __cache[key] = (void *) m_func;
+#else
+    m_dither = dither;
 #endif
 }
 
 #if MTS_STRUCTCONVERTER_USE_JIT == 0
-bool StructConverter::convert(size_t count, const void *src_, void *dest_) const {
-    size_t source_size = m_source->size();
-    size_t target_size = m_target->size();
-    using namespace mitsuba::detail;
 
-    /* Is swapping needed */
+bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &value) const {
     bool source_swap = m_source->byte_order() != Struct::host_byte_order();
+
+    src += f.offset;
+    value.type = f.type;
+    value.flags = f.flags;
+
+    switch (f.type) {
+        case Struct::EUInt8:
+            value.u = *((const uint8_t *) src);
+            break;
+
+        case Struct::EInt8:
+            value.i = *((const int8_t *) src);
+            break;
+
+        case Struct::EUInt16: {
+                uint16_t val = *((const uint16_t *) src);
+                if (source_swap)
+                    val = detail::swap16(val);
+                value.u = val;
+            }
+            break;
+
+        case Struct::EInt16: {
+                int16_t val = *((const int16_t *) src);
+                if (source_swap)
+                    val = detail::swap16(val);
+                value.i = val;
+            }
+            break;
+
+        case Struct::EUInt32: {
+                uint32_t val = *((const uint32_t *) src);
+                if (source_swap)
+                    val = detail::swap32(val);
+                value.u =  val;
+            }
+            break;
+
+        case Struct::EInt32: {
+                int32_t val = *((const int32_t *) src);
+                if (source_swap)
+                    val = detail::swap32(val);
+                value.i = val;
+            }
+            break;
+
+        case Struct::EUInt64: {
+                uint64_t val = *((const uint64_t *) src);
+                if (source_swap)
+                    val = detail::swap64(val);
+                value.u = val;
+            }
+            break;
+
+        case Struct::EInt64: {
+                int64_t val = *((const int64_t *) src);
+                if (source_swap)
+                    val = detail::swap64(val);
+                value.i = val;
+            }
+            break;
+
+        case Struct::EFloat16: {
+                uint16_t val = *((const uint16_t *) src);
+                if (source_swap)
+                    val = detail::swap16(val);
+                value.s = enoki::half::float16_to_float32(val);
+                value.type = Struct::EFloat32;
+            }
+            break;
+
+        case Struct::EFloat32: {
+                uint32_t val = *((const uint32_t *) src);
+                if (source_swap)
+                    val = detail::swap32(val);
+                value.s = memcpy_cast<float>(val);
+            }
+            break;
+
+        case Struct::EFloat64: {
+                uint64_t val = *((const uint64_t *) src);
+                if (source_swap)
+                    val = detail::swap64(val);
+                value.d = memcpy_cast<double>(val);
+            }
+            break;
+
+        default: Throw("StructConverter: unknown field type!");
+    }
+
+    if (f.flags & Struct::EAssert) {
+        if (f.is_integer()) {
+            if (f.is_signed() && (int64_t) f.default_ != value.i)
+                return false;
+            if (!f.is_signed() && (uint64_t) f.default_ != value.u)
+                return false;
+
+        }
+        if (value.type == Struct::EFloat32 && (Float) f.default_ != value.s)
+            return false;
+        if (value.type == Struct::EFloat64 && f.default_ != value.d)
+            return false;
+    }
+    return true;
+}
+
+void StructConverter::linearize(Value &value) const {
+    if (Struct::is_integer(value.type)) {
+        if (Struct::is_unsigned(value.type))
+            value.f = (Float) value.u;
+        else
+            value.f = (Float) value.i;
+
+        if (value.flags & Struct::ENormalized)
+            value.f *= Float(1 / Struct::range(value.type).second);
+    } else if (Struct::is_float(value.type) && value.type != Struct::EFloat) {
+        if (value.type == Struct::EFloat32)
+            value.f = (Float) value.s;
+        else
+            value.f = (Float) value.d;
+    }
+    if (value.flags & Struct::EGamma) {
+        value.f = srgb_to_linear(value.f);
+        value.flags &= ~Struct::EGamma;
+    }
+
+    value.type = Struct::EFloat;
+}
+
+void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, size_t x, size_t y) const {
+    /* Is swapping needed */
     bool target_swap = m_target->byte_order() != Struct::host_byte_order();
 
-    std::vector<std::string> fields;
+    dst += f.offset;
+
+    if ((f.flags & Struct::EGamma) != 0 && (value.flags & Struct::EGamma) == 0)
+        value.f = enoki::linear_to_srgb(value.f);
+
+    if (f.is_integer() && value.type == Struct::EFloat) {
+        auto range = f.range();
+
+        if (f.flags & Struct::ENormalized)
+            value.f *= range.second;
+
+        double d = value.f;
+
+        if (m_dither)
+            d += dither_matrix256[(y % 256)*256 + (x%256)];
+
+        d = std::max(d, range.first);
+        d = std::min(d, range.second);
+        d = std::rint(d);
+
+        if (Struct::is_signed(f.type))
+            value.i = (int64_t) d;
+        else
+            value.u = (uint64_t) d;
+    }
+
+    if ((f.type == Struct::EFloat16 || f.type == Struct::EFloat32) && value.type == Struct::EFloat)
+        value.s = (float) value.f;
+    else if (f.type == Struct::EFloat64 && value.type == Struct::EFloat)
+        value.d = (double) value.f;
+
+    switch (f.type) {
+        case Struct::EUInt8:
+            *((uint8_t *) dst) = (uint8_t) value.i;
+            break;
+
+        case Struct::EInt8:
+            *((int8_t *) dst) = (int8_t) value.u;
+            break;
+
+        case Struct::EUInt16: {
+                uint16_t val = (uint16_t) value.u;
+                if (target_swap)
+                    val = detail::swap16(val);
+                *((uint16_t *) dst) = val;
+            }
+            break;
+
+        case Struct::EInt16: {
+                int16_t val = (int16_t) value.i;
+                if (target_swap)
+                    val = detail::swap16(val);
+                *((int16_t *) dst) = val;
+            }
+            break;
+
+        case Struct::EUInt32: {
+                uint32_t val = (uint32_t) value.u;
+                if (target_swap)
+                    val = detail::swap32(val);
+                *((uint32_t *) dst) = val;
+            }
+            break;
+
+        case Struct::EInt32: {
+                int32_t val = (int32_t) value.i;
+                if (target_swap)
+                    val = detail::swap32(val);
+                *((int32_t *) dst) = val;
+            }
+            break;
+
+        case Struct::EUInt64: {
+                uint64_t val = (uint64_t) value.u;
+                if (target_swap)
+                    val = detail::swap64(val);
+                *((uint64_t *) dst) = val;
+            }
+            break;
+
+        case Struct::EInt64: {
+                int64_t val = (int64_t) value.i;
+                if (target_swap)
+                    val = detail::swap64(val);
+                *((int64_t *) dst) = val;
+            }
+            break;
+
+        case Struct::EFloat16: {
+                uint16_t val = enoki::half::float32_to_float16(value.s);
+                if (target_swap)
+                    val = detail::swap16(val);
+                *((uint16_t *) dst) = val;
+            }
+            break;
+
+        case Struct::EFloat32: {
+                uint32_t val = (uint32_t) memcpy_cast<uint32_t>(value.s);
+                if (target_swap)
+                    val = detail::swap32(val);
+                *((uint32_t *) dst) = val;
+            }
+            break;
+
+        case Struct::EFloat64: {
+                uint64_t val = (uint64_t) memcpy_cast<uint64_t>(value.d);
+                if (target_swap)
+                    val = detail::swap64(val);
+                *((uint64_t *) dst) = val;
+            }
+            break;
+
+        default: Throw("StructConverter: unknown field type!");
+    }
+}
+
+bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, void *dest_) const {
+    using namespace mitsuba::detail;
+
+    size_t source_size = m_source->size();
+    size_t target_size = m_target->size();
+    Struct::Field weight_field;
+
+    bool has_weight = false;
+    std::vector<Struct::Field> assert_fields;
     for (Struct::Field f : *m_source) {
         if ((f.flags & Struct::EAssert) && !m_target->has_field(f.name))
-            fields.push_back(f.name);
+            assert_fields.push_back(f);
+        if (f.flags & Struct::EWeight) {
+            weight_field = f;
+            has_weight = true;
+        }
     }
-    for (Struct::Field f : *m_target)
-        fields.push_back(f.name);
+    for (const Struct::Field &f : *m_target) {
+        if (f.flags & Struct::EWeight && has_weight)
+            has_weight = false;
+    }
 
-    for (size_t i = 0; i<count; ++i) {
-        for (auto const &name : fields) {
+    uint8_t *src  = (uint8_t *) src_;
+    uint8_t *dest = (uint8_t *) dest_;
 
-            Struct::Field df;
-            if (m_target->has_field(name))
-                df = m_target->field(name);
-
-            int df_type = df.type;
-            if (df_type == Struct::EFloat) {
-                if (sizeof(Float) == sizeof(float))
-                    df_type = Struct::EFloat32;
-                else if (sizeof(Float) == sizeof(double))
-                    df_type = Struct::EFloat64;
-                else
-                    Throw("Invalid 'Float' size");
+    for (size_t y = 0; y<height; ++y) {
+        for (size_t x = 0; x<width; ++x) {
+            Float inv_weight;
+            for (const Struct::Field &f : assert_fields) {
+                Value value;
+                if (!load(src, f, value))
+                    return false;
             }
 
-            int64_t reg = 0;
-            float reg_f = 0, accum_f = 0;
-            double reg_d = 0, accum_d = 0;
-            Struct::EType sf_type_final = Struct::EInvalid;
-            Struct::Field sf;
-            Struct::EType &sf_type = sf.type;
+            if (has_weight) {
+                Value value;
+                if (!load(src, weight_field, value))
+                    return false;
+                linearize(value);
+                inv_weight = 1.f / value.f;
+            }
 
-            try {
-                auto sources = df.blend;
-                if (sources.empty())
-                    sources.push_back(std::make_pair(1.0, name));
+            for (const Struct::Field &f : *m_target) {
+                Value value;
 
-                for (size_t j = 0; j < sources.size(); ++j) {
-                    double weight = sources[j].first;
-                    sf = m_source->field(sources[j].second);
-
-                    const uint8_t *src =
-                        (const uint8_t *) src_ + sf.offset + source_size * i;
-
-                    if (sf_type == Struct::EFloat) {
-                        if (sizeof(Float) == sizeof(float))
-                            sf_type = Struct::EFloat32;
-                        else if (sizeof(Float) == sizeof(double))
-                            sf_type = Struct::EFloat64;
-                        else
-                            Throw("Invalid 'Float' size");
-                    }
-
-                    switch (sf_type) {
-                        case Struct::EUInt8:
-                            reg = ((const uint8_t *)src)[0];
-                            break;
-
-                        case Struct::EInt8:
-                            reg = (int64_t) *((const int8_t *)  src);
-                            break;
-
-                        case Struct::EUInt16: {
-                                uint16_t val = *((const uint16_t *) src);
-                                if (source_swap)
-                                    val = swap16(val);
-                                reg = (int64_t) val;
-                            }
-                            break;
-
-                        case Struct::EInt16: {
-                                int16_t val = *((const int16_t *) src);
-                                if (source_swap)
-                                    val = swap16(val);
-                                reg = (int64_t) val;
-                            }
-                            break;
-
-                        case Struct::EUInt32: {
-                                uint32_t val = *((const uint32_t *) src);
-                                if (source_swap)
-                                    val = swap32(val);
-                                reg = (int64_t) val;
-                            }
-                            break;
-
-                        case Struct::EInt32: {
-                                int32_t val = *((const int32_t *) src);
-                                if (source_swap)
-                                    val = swap32(val);
-                                reg = (int64_t) val;
-                            }
-                            break;
-
-                        case Struct::EUInt64: {
-                                uint64_t val = *((const uint64_t *) src);
-                                if (source_swap)
-                                    val = swap64(val);
-                                reg = (int64_t) val;
-                            }
-                            break;
-
-                        case Struct::EInt64: {
-                                int64_t val = *((const int64_t *) src);
-                                if (source_swap)
-                                    val = swap64(val);
-                                reg = val;
-                            }
-                            break;
-
-                        case Struct::EFloat16: {
-                                uint16_t val = *((const uint16_t *) src);
-                                if (source_swap)
-                                    val = swap16(val);
-                                reg_f = enoki::half::float16_to_float32(val);
-                                sf_type = Struct::EFloat32;
-                            }
-                            break;
-
-                        case Struct::EFloat32: {
-                                uint32_t val = *((const uint32_t *) src);
-                                if (source_swap)
-                                    val = swap32(val);
-                                reg_f = memcpy_cast<float>(val);
-                            }
-                            break;
-
-                        case Struct::EFloat64: {
-                                uint64_t val = *((const uint64_t *) src);
-                                if (source_swap)
-                                    val = swap64(val);
-                                reg_d = memcpy_cast<double>(val);
-                            }
-                            break;
-
-                        default: Throw("StructConverter: unknown field type!");
-                    }
-
-                    if (sf.flags & Struct::EAssert) {
-                        if (sf.is_integer() && (int64_t) sf.default_ != reg)
-                            return false;
-                        else if (sf_type == Struct::EFloat32 && (float) sf.default_ != reg_f)
-                            return false;
-                        else if (sf_type == Struct::EFloat64 && sf.default_ != reg_d)
+                if (f.blend.empty()) {
+                    if (!m_source->has_field(f.name) && (f.flags & Struct::EDefault)) {
+                        value.d = f.default_;
+                        value.type = Struct::EFloat64;
+                        value.flags = 0;
+                    } else {
+                        if (!load(src, m_source->field(f.name), value))
                             return false;
                     }
-
-                    if (!m_target->has_field(name))
-                        continue;
-
-                    if (sf.is_integer() && (sf.flags & Struct::ENormalized)) {
-                        auto range = sf.range();
-                        float scale = float(1 / (range.second - range.first));
-                        float offset = float(-range.first);
-                        reg_f = ((float) reg + offset) * scale;
-                        if (sf.flags & Struct::EGamma)
-                            reg_f = detail::inv_gamma_f(reg_f);
-                        sf_type = Struct::EFloat32;
-                    }
-
-                    accum_f += reg_f * (float) weight;
-                    accum_d += reg_d * weight;
-
-                    if ((weight != 1.0 || sources.size() > 1) && !sf.is_float()) {
-                        Throw("StructConverter(): field \"%s\": can't scale "
-                              "non-float fields.\nsource = %s,\ntarget = %s",
-                              name, m_source->to_string(), m_target->to_string());
-                    }
-
-                    if (sf_type_final == Struct::EInvalid) {
-                        sf_type_final = sf_type;
-                    } else if (sf_type != sf_type_final) {
-                        Throw("StructConverter(): field \"%s\" blends incompatible "
-                              "fields.\nsource = %s,\ntarget = %s",
-                              name, m_source->to_string(), m_target->to_string());
+                } else {
+                    value.type = Struct::EFloat;
+                    value.f = 0;
+                    value.flags = 0;
+                    for (auto kv : f.blend) {
+                        Value value2;
+                        if (!load(src, m_source->field(kv.second), value2))
+                            return false;
+                        linearize(value2);
+                        value.f += (Float) kv.first * value2.f;
                     }
                 }
 
-                if (!m_target->has_field(name))
-                    continue;
+                uint32_t flag_mask = Struct::ENormalized | Struct::EGamma;
+                if ((!((value.type == f.type || (Struct::is_integer(value.type) &&
+                                                 Struct::is_integer(f.type) &&
+                                                (f.flags & Struct::ENormalized) == 0)) &&
+                    ((value.flags & flag_mask) == (f.flags & flag_mask)))) || has_weight)
+                    linearize(value);
 
-                reg_f = accum_f;
-                reg_d = accum_d;
+                if (has_weight)
+                    value.f *= inv_weight;
 
-                if (sf_type == Struct::EFloat32 && df_type == Struct::EFloat64)
-                    reg_d = (double) reg_f;
-                else if (sf_type == Struct::EFloat64 && (df_type == Struct::EFloat16 ||
-                                                         df_type == Struct::EFloat32))
-                    reg_f = (float) reg_d;
-            } catch (const std::exception &e) {
-                if (!(df.flags & Struct::EDefault))
-                    Throw("StructConverter(): field \"%s\" is missing in the "
-                          "source structure: %s\nsource = %s,\ntarget = %s",
-                          name, e.what(), m_source->to_string(), m_target->to_string());
-
-                if (df.is_integer())
-                    reg = (int64_t) df.default_;
-                else if (df_type == Struct::EFloat16 || df_type == Struct::EFloat32)
-                    reg_f = (float) df.default_;
-                else if (df_type == Struct::EFloat64)
-                    reg_d = df.default_;
+                save(dest, f, value, x, y);
             }
 
-            if (sf.is_integer() != df.is_integer()) {
-                if (sf.is_integer()) {
-                    if (df_type == Struct::EFloat16 || df_type == Struct::EFloat32)
-                        reg_f = (float) reg;
-                    else if (df_type == Struct::EFloat64)
-                        reg_d = (double) reg;
-                } else if (df.is_integer()) {
-                    if (sf_type == Struct::EFloat32) {
-                        auto range = df.range();
-
-                        if (df.flags & Struct::ENormalized) {
-                            if (df.flags & Struct::EGamma)
-                                reg_f = detail::gamma_f(reg_f);
-                            reg_f = reg_f * (float) (range.second - range.first) + (float) range.first;
-                        }
-
-                        reg_f = std::rint(reg_f);
-                        reg_f = std::max(reg_f, (float) range.first);
-                        reg_f = std::min(reg_f, (float) range.second);
-                        reg = (int64_t) reg_f;
-                    } else if (sf_type == Struct::EFloat64) {
-                        auto range = df.range();
-
-                        if (df.flags & Struct::ENormalized) {
-                            if (df.flags & Struct::EGamma)
-                                reg_d = detail::gamma_d(reg_d);
-                            reg_d = reg_d * (range.second - range.first) + range.first;
-                        }
-
-                        reg_d = std::rint(reg_d);
-                        reg_d = std::max(reg_d, range.first);
-                        reg_d = std::min(reg_d, range.second);
-                        reg = (int64_t) reg_d;
-                    }
-                }
-            }
-
-            uint8_t *dst = (uint8_t *) dest_ + df.offset + target_size * i;
-            switch (df_type) {
-                case Struct::EUInt8:
-                    *((uint8_t *) dst) = (uint8_t) reg;
-                    break;
-
-                case Struct::EInt8:
-                    *((int8_t *) dst) = (int8_t) reg;
-                    break;
-
-                case Struct::EUInt16: {
-                        uint16_t val = (uint16_t) reg;
-                        if (target_swap)
-                            val = swap16(val);
-                        *((uint16_t *) dst) = val;
-                    }
-                    break;
-
-                case Struct::EInt16: {
-                        int16_t val = (int16_t) reg;
-                        if (target_swap)
-                            val = swap16(val);
-                        *((int16_t *) dst) = val;
-                    }
-                    break;
-
-                case Struct::EUInt32: {
-                        uint32_t val = (uint32_t) reg;
-                        if (target_swap)
-                            val = swap32(val);
-                        *((uint32_t *) dst) = val;
-                    }
-                    break;
-
-                case Struct::EInt32: {
-                        int32_t val = (int32_t) reg;
-                        if (target_swap)
-                            val = swap32(val);
-                        *((int32_t *) dst) = val;
-                    }
-                    break;
-
-                case Struct::EUInt64: {
-                        uint64_t val = (uint64_t) reg;
-                        if (target_swap)
-                            val = swap64(val);
-                        *((uint64_t *) dst) = val;
-                    }
-                    break;
-
-                case Struct::EInt64: {
-                        int64_t val = (int64_t) reg;
-                        if (target_swap)
-                            val = swap64(val);
-                        *((int64_t *) dst) = val;
-                    }
-                    break;
-
-                case Struct::EFloat16: {
-                        uint16_t val = enoki::half::float32_to_float16(reg_f);
-                        if (target_swap)
-                            val = swap16(val);
-                        *((uint16_t *) dst) = val;
-                    }
-                    break;
-
-                case Struct::EFloat32: {
-                        uint32_t val = (uint32_t) memcpy_cast<uint32_t>(reg_f);
-                        if (target_swap)
-                            val = swap32(val);
-                        *((uint32_t *) dst) = val;
-                    }
-                    break;
-
-                case Struct::EFloat64: {
-                        uint64_t val = (uint64_t) memcpy_cast<uint64_t>(reg_d);
-                        if (target_swap)
-                            val = swap64(val);
-                        *((uint64_t *) dst) = val;
-                    }
-                    break;
-
-                default: Throw("StructConverter: unknown field type!");
-            }
+            src += source_size;
+            dest += target_size;
         }
     }
     return true;
