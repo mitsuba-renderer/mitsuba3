@@ -16,6 +16,7 @@ MTS_PY_DECLARE(rt);
 MTS_PY_DECLARE(ImageBlock);
 MTS_PY_DECLARE(Film);
 MTS_PY_DECLARE(Spiral);
+MTS_PY_DECLARE(Integrator);
 MTS_PY_DECLARE(Sampler);
 
 PYBIND11_MODULE(mitsuba_render_ext, m_) {
@@ -39,5 +40,6 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(ImageBlock);
     MTS_PY_IMPORT(Film);
     MTS_PY_IMPORT(Spiral);
+    MTS_PY_IMPORT(Integrator);
     MTS_PY_IMPORT(Sampler);
 }
