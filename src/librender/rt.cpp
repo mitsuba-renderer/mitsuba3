@@ -88,24 +88,30 @@ template <typename Point2f> auto gen_ray_sphere(const ShapeKDTree *kdtree) {
 template <typename Ray3f, bool IsShadowRay = false> auto kernel_pbrt(const ShapeKDTree *kdtree) {
     using Point = typename Ray3f::Point;
     using Scalar = value_t<Point>;
+    typename Shape::Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
-    return [kdtree] (Ray3f rays) {
-        return kdtree->ray_intersect_pbrt<IsShadowRay>(rays, Scalar(0.f), Scalar(norm(kdtree->bbox().extents())));
+    return [kdtree, cache] (Ray3f rays) {
+        return kdtree->ray_intersect_pbrt<IsShadowRay>(
+            rays, Scalar(0.f), Scalar(norm(kdtree->bbox().extents())), (void*)cache);
     };
 }
 
 template <bool IsShadowRay = false> auto kernel_havran(const ShapeKDTree *kdtree) {
-    return [kdtree] (Ray3f rays) {
-        return kdtree->ray_intersect_havran<IsShadowRay>(rays, 0.f, norm(kdtree->bbox().extents()));
+    typename Shape::Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+    return [kdtree, cache] (Ray3f rays) {
+        return kdtree->ray_intersect_havran<IsShadowRay>(
+            rays, 0.f, norm(kdtree->bbox().extents()), (void*)cache);
     };
 }
 
 template <typename Ray3f, bool IsShadowRay = false> auto kernel_dummy(const ShapeKDTree *kdtree) {
     using Point = typename Ray3f::Point;
     using Scalar = value_t<Point>;
+    typename Shape::Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
-    return [kdtree] (Ray3f rays) {
-        return kdtree->ray_intersect_dummy(rays, Scalar(0.f), Scalar(norm(kdtree->bbox().extents())));
+    return [kdtree, cache] (Ray3f rays) {
+        return kdtree->ray_intersect_dummy(
+            rays, Scalar(0.f), Scalar(norm(kdtree->bbox().extents())), (void*) cache);
     };
 }
 

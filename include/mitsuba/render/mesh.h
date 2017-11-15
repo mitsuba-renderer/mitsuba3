@@ -206,6 +206,54 @@ public:
         return std::make_tuple(mask, u, v, t);
     }
 
+    /**
+     * \brief Given a unique intersection found in the KD-Tree, fill a proper
+     * record using the temporary information collected in \ref KDTree::intersect().
+     * The field \c its.uv and \c its.prim_index must be filled before calling
+     * this function.
+     */
+    template <typename SurfaceInteraction>
+    void fill_surface_interaction(
+            SurfaceInteraction &its,
+            const mask_t<typename SurfaceInteraction::Value> &active) const {
+        using Point3  = typename SurfaceInteraction::Point3;
+        using Vector3 = typename SurfaceInteraction::Vector3;
+        using Normal3 = typename SurfaceInteraction::Normal3;
+        using Index   = like_t<value_t<Point3>, Index>;
+        // Compute baricentric coordinates
+        Vector3 b(1 - its.uv.x() - its.uv.y(),
+                  its.uv.x(),
+                  its.uv.y());
+
+        // Get triangle vertex indices from the raw face buffer.
+        auto base_offset = (typename Shape::Index *)m_faces.get();
+        auto offsets = m_face_size * its.prim_index;
+        auto p0_idx = gather<Index, 1>(base_offset    , offsets, active);
+        auto p1_idx = gather<Index, 1>(base_offset + 1, offsets, active);
+        auto p2_idx = gather<Index, 1>(base_offset + 2, offsets, active);
+        const Point3 p0 = vertex_position(p0_idx, active);
+        const Point3 p1 = vertex_position(p1_idx, active);
+        const Point3 p2 = vertex_position(p2_idx, active);
+
+        // Intersection point
+        masked(its.p, active) = p0 * b.x() + p1 * b.y() + p2 * b.z();
+        // Tangents
+        Vector3 side1(p1 - p0), side2(p2 - p0);
+        masked(its.dp_du, active) = side1;
+        masked(its.dp_dv, active) = side2;
+        // Normals (if available)
+        if (m_vertex_normals) {
+            const Normal3 n0 = vertex_normal(p0_idx, active);
+            const Normal3 n1 = vertex_normal(p1_idx, active);
+            const Normal3 n2 = vertex_normal(p2_idx, active);
+
+            masked(its.sh_frame.n, active) = normalize(
+                    n0 * b.x() + n1 * b.y() + n2 * b.z());
+        }
+    }
+    /// @}
+    // =========================================================================
+
     // =========================================================================
     //! @{ \name Sampling routines
     // =========================================================================

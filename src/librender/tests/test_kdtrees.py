@@ -66,7 +66,7 @@ def test02_depth_scalar_stairs():
 
             res_dummy  = kdtree.ray_intersect_dummy_scalar(r, 0., 100.)
             res_pbrt   = kdtree.ray_intersect_pbrt_scalar(r, 0., 100.)
-            res_havran = kdtree.ray_intersect_havran(r, 0., 100.)
+            res_havran = kdtree.ray_intersect_havran_scalar(r, 0., 100.)
 
             step_id = math.floor((y * invN) * N_steps)
 
@@ -97,7 +97,7 @@ def test03_depth_scalar_bunny():
 
             res_dummy  = kdtree.ray_intersect_dummy_scalar(r, 0., 100.)
             res_pbrt   = kdtree.ray_intersect_pbrt_scalar(r, 0., 100.)
-            res_havran = kdtree.ray_intersect_havran(r, 0., 100.)
+            res_havran = kdtree.ray_intersect_havran_scalar(r, 0., 100.)
 
             assert res_dummy[1] == res_havran[1]
             assert res_pbrt[1] == res_havran[1]
@@ -123,6 +123,7 @@ def test04_depth_packet_stairs():
     res_dummy = kdtree.ray_intersect_dummy_packet(rays, mint, maxt)
     res_pbrt  = kdtree.ray_intersect_pbrt_packet(rays, mint, maxt)
 
+    # TODO: spot-check for errors
     assert np.all(res_dummy[0] == res_pbrt[0])
     assert np.allclose(res_dummy[1], res_pbrt[1], atol=1e-4), \
             '\n' + '\n'.join([str(res_dummy[1]), str(res_pbrt[1])])

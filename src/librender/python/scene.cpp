@@ -9,6 +9,24 @@
 
 using Index = Shape::Index;
 
+template <typename Func>
+auto provide_cache(Func f) {
+    return [f](const ShapeKDTree &kdtree, const Ray3fX &ray,
+               const FloatX &mint, const FloatX &maxt) {
+       Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+
+       mask_t<FloatX> mask;
+       FloatX time;
+       set_slices(mask, slices(ray));
+       set_slices(time, slices(ray));
+       vectorize([&kdtree, &cache, f](auto &&m, auto &&t, auto &&r,
+                                      auto &&mi, auto &&ma) {
+           std::tie(m, t) = (kdtree.*f)(r, mi, ma, (void*)cache);
+       }, mask, time, ray, mint, maxt);
+       return std::make_pair(mask, time);
+    };
+}
+
 MTS_PY_EXPORT(ShapeKDTree) {
 
     MTS_PY_CLASS(ShapeKDTree, Object)
@@ -29,11 +47,36 @@ MTS_PY_EXPORT(ShapeKDTree) {
         .def("__len__", &ShapeKDTree::primitive_count)
         .def("bbox", [] (ShapeKDTree &s) { return s.bbox(); })
         .mdef(ShapeKDTree, build)
-        .def("ray_intersect_havran",       &ShapeKDTree::ray_intersect_havran<false>)
-        .def("ray_intersect_dummy_scalar", &ShapeKDTree::ray_intersect_dummy<false, Ray3f>)
-        .def("ray_intersect_dummy_packet", vectorize_wrapper(&ShapeKDTree::ray_intersect_dummy<false, Ray3fP>))
-        .def("ray_intersect_pbrt_scalar",  &ShapeKDTree::ray_intersect_pbrt<false, Ray3f>)
-        .def("ray_intersect_pbrt_packet",  vectorize_wrapper(&ShapeKDTree::ray_intersect_pbrt<false, Ray3fP>));
+
+        // These methods are exposed to Python mostly for testing purposes.
+        // For fully correct intersections, use Scene::ray_intersect.
+        .def("ray_intersect_dummy_scalar",
+             [](const ShapeKDTree &kdtree, const Ray3f &ray, Float mint, Float maxt) {
+                Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+                return kdtree.ray_intersect_dummy<false>(ray, mint, maxt, (void *)cache);
+             },
+             D(ShapeKDTree, ray_intersect_dummy))
+        .def("ray_intersect_dummy_packet",
+             provide_cache(&ShapeKDTree::ray_intersect_dummy<false, Ray3fP>),
+             D(ShapeKDTree, ray_intersect_dummy))
+
+        .def("ray_intersect_havran_scalar",
+             [](const ShapeKDTree &kdtree, const Ray3f &ray, Float mint, Float maxt) {
+                Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+                return kdtree.ray_intersect_havran<false>(ray, mint, maxt, (void *)cache);
+             },
+             D(ShapeKDTree, ray_intersect_havran))
+
+        .def("ray_intersect_pbrt_scalar",
+             [](const ShapeKDTree &kdtree, const Ray3f &ray, Float mint, Float maxt) {
+                Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+                return kdtree.ray_intersect_pbrt<false>(ray, mint, maxt, (void *)cache);
+             },
+             D(ShapeKDTree, ray_intersect_pbrt))
+        .def("ray_intersect_pbrt_packet",
+             provide_cache(&ShapeKDTree::ray_intersect_pbrt<false, Ray3fP>),
+             D(ShapeKDTree, ray_intersect_pbrt))
+        ;
 }
 
 MTS_PY_EXPORT(Scene) {

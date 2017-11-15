@@ -54,18 +54,23 @@ void ShapeKDTree::add_shape(Shape *shape) {
     m_bbox.expand(shape->bbox());
 }
 
-template MTS_EXPORT_CORE std::pair<bool, Float> ShapeKDTree::ray_intersect_havran<true>(const Ray3f&, Float, Float) const;
-template MTS_EXPORT_CORE std::pair<bool, Float> ShapeKDTree::ray_intersect_havran<false>(const Ray3f&, Float, Float) const;
+using Mask = mask_t<FloatP>;
 
-template MTS_EXPORT_CORE std::pair<bool, Float> ShapeKDTree::ray_intersect_pbrt<true>(const Ray3f&, Float, Float) const;
-template MTS_EXPORT_CORE std::pair<bool, Float> ShapeKDTree::ray_intersect_pbrt<false>(const Ray3f&, Float, Float) const;
-template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> ShapeKDTree::ray_intersect_pbrt<true>(const Ray3fP&,  const FloatP&, FloatP) const;
-template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> ShapeKDTree::ray_intersect_pbrt<false>(const Ray3fP&, const FloatP&, FloatP) const;
+template MTS_EXPORT_RENDER void ShapeKDTree::fill_surface_interaction(const Ray3f  &, const void *, SurfaceInteraction3f  &, const bool &) const;
+template MTS_EXPORT_RENDER void ShapeKDTree::fill_surface_interaction(const Ray3fP &, const void *, SurfaceInteraction3fP &, const Mask &) const;
 
-template MTS_EXPORT_CORE std::pair<bool, Float> ShapeKDTree::ray_intersect_dummy<true>(const Ray3f&, const Float&, Float) const;
-template MTS_EXPORT_CORE std::pair<bool, Float> ShapeKDTree::ray_intersect_dummy<false>(const Ray3f&, const Float&, Float) const;
-template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> ShapeKDTree::ray_intersect_dummy<true>(const Ray3fP&, const FloatP&, FloatP) const;
-template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> ShapeKDTree::ray_intersect_dummy<false>(const Ray3fP&, const FloatP&, FloatP) const;
+template MTS_EXPORT_RENDER std::pair<bool, Float> ShapeKDTree::ray_intersect_havran<true>( const Ray3f &, const Float &, const Float &, void*) const;
+template MTS_EXPORT_RENDER std::pair<bool, Float> ShapeKDTree::ray_intersect_havran<false>(const Ray3f &, const Float &, const Float &, void*) const;
+
+template MTS_EXPORT_RENDER std::pair<bool, Float>  ShapeKDTree::ray_intersect_pbrt<true>( const Ray3f &, const Float &, const Float &, void*) const;
+template MTS_EXPORT_RENDER std::pair<bool, Float>  ShapeKDTree::ray_intersect_pbrt<false>(const Ray3f &, const Float &, const Float &, void*) const;
+template MTS_EXPORT_RENDER std::pair<Mask, FloatP> ShapeKDTree::ray_intersect_pbrt<true>( const Ray3fP &, const FloatP &, const FloatP &, void*) const;
+template MTS_EXPORT_RENDER std::pair<Mask, FloatP> ShapeKDTree::ray_intersect_pbrt<false>(const Ray3fP &, const FloatP &, const FloatP &, void*) const;
+
+template MTS_EXPORT_RENDER std::pair<bool, Float>  ShapeKDTree::ray_intersect_dummy<true>( const Ray3f &, const Float &, const Float &, void*) const;
+template MTS_EXPORT_RENDER std::pair<bool, Float>  ShapeKDTree::ray_intersect_dummy<false>(const Ray3f &, const Float &, const Float &, void*) const;
+template MTS_EXPORT_RENDER std::pair<Mask, FloatP> ShapeKDTree::ray_intersect_dummy<true>( const Ray3fP &, const FloatP &, const FloatP &, void*) const;
+template MTS_EXPORT_RENDER std::pair<Mask, FloatP> ShapeKDTree::ray_intersect_dummy<false>(const Ray3fP &, const FloatP &, const FloatP &, void*) const;
 
 std::string ShapeKDTree::to_string() const {
     std::ostringstream oss;
