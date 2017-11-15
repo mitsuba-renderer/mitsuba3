@@ -9,6 +9,7 @@ class Emitter;
 class Endpoint;
 class ImageBlock;
 class Medium;
+class Sampler;
 class Scene;
 class Sensor;
 class Shape;

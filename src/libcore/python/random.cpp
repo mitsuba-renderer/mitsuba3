@@ -77,7 +77,7 @@ MTS_PY_EXPORT(random) {
         .def(py::self - py::self, DE(PCG32, operator, sub))
         .def("__repr__", [](const PCG32 &p) {
             std::ostringstream oss;
-            oss << "PCG32[state=0x" << std::hex << p.state << ", inc=0x" << std::hex << p.inc << "]";
+            oss << p;
             return oss.str();
         });
 
