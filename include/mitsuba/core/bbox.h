@@ -24,10 +24,10 @@ template <typename Point_> struct BoundingBox {
     static constexpr size_t Size = Point_::Size;
 
     using Point  = Point_;
-    using Value = value_t<Point>;
+    using Value  = value_t<Point>;
     using Vector = typename Point::Vector;
     using UInt32 = uint32_array_t<Value>;
-    using Mask = mask_t<Value>;
+    using Mask   = mask_t<Value>;
 
     /**
      * \brief Create a new invalid bounding box
@@ -45,6 +45,11 @@ template <typename Point_> struct BoundingBox {
     /// Create a bounding box from two positions
     BoundingBox(const Point &min, const Point &max)
         : min(min), max(max) { }
+
+    /// Create a bounding box from a smaller type (e.g. vectorized from scalar).
+    template <typename PointT>
+    BoundingBox(const BoundingBox<PointT> &other)
+        : min(other.min), max(other.max) { }
 
     /// Test for equality against another bounding box
     bool operator==(const BoundingBox &bbox) const {

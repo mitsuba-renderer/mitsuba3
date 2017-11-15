@@ -170,16 +170,16 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve an integer value
     int int_(const std::string &name) const { return (int) long_(name); }
-    /// Retrieve a boolean value (use default value if no entry exists)
+    /// Retrieve an integer value (use default value if no entry exists)
     int int_(const std::string &name, const int &def_val) const {
         return (int) long_(name, (int64_t) def_val);
     }
 
-    /// Store an integer value in the Properties instance
+    /// Store a long value in the Properties instance
     void set_long(const std::string &name, const int64_t &value, bool warnDuplicates = true);
-    /// Retrieve an integer value
+    /// Retrieve a long value
     const int64_t& long_(const std::string &name) const;
-    /// Retrieve an integer value (use default value if no entry exists)
+    /// Retrieve a long value (use default value if no entry exists)
     const int64_t& long_(const std::string &name, const int64_t &def_val) const;
 
     /// Store a floating point value in the Properties instance

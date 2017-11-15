@@ -173,19 +173,20 @@ template <typename Value> struct Transform {
     /** \brief Create a perspective transformation.
      *   (Maps [near, far] to [0, 1])
      *
+     *  Projects vectors in camera space onto a plane at z=1:
+     *
+     *  x_proj = x / z
+     *  y_proj = y / z
+     *  z_proj = (far * (z - near)) / (z * (far-near))
+     *
+     *  Camera-space depths are not mapped linearly!
+     *
      * \param fov Field of view in degrees
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
-    static Transform perspective(const Value &fov, const Value &near, const Value &far) {
-        /* Project vectors in camera space onto a plane at z=1:
-         *
-         *  x_proj = x / z
-         *  y_proj = y / z
-         *  z_proj = (far * (z - near)) / (z * (far-near))
-         *
-         *  Camera-space depths are not mapped linearly!
-         */
+    static Transform perspective(const Value &fov, const Value &near,
+                                 const Value &far) {
         Value recip = 1.f / (far - near);
 
         /* Perform a scale so that the field of view is mapped
@@ -193,12 +194,13 @@ template <typename Value> struct Transform {
         Value tan = enoki::tan(deg_to_rad(fov * .5f)),
               cot = 1.f / tan;
 
-        Matrix4 trafo = diag<Matrix4>(Vector4(cot, cot, far * recip, -near * far * recip));
+        Matrix4 trafo = diag<Matrix4>(Vector4(cot, cot, far * recip, 0.0f));
+        trafo(2, 3) = -near * far * recip;
         trafo(3, 2) = 1.f;
 
         Matrix4 inv_trafo = diag<Matrix4>(Vector4(tan, tan, 0.f, rcp(near)));
-        trafo(2, 3) = 1.f;
-        trafo(3, 2) = (near - far) / (far * near);
+        inv_trafo(2, 3) = 1.f;
+        inv_trafo(3, 2) = (near - far) / (far * near);
 
         return Transform(trafo, transpose(inv_trafo));
     }

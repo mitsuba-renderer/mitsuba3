@@ -1,7 +1,9 @@
-import pytest
-import os
 import numpy as np
-from mitsuba.core import Stream, DummyStream, FileStream, MemoryStream, ZStream
+import os
+import pytest
+
+from mitsuba.core import Stream, DummyStream, FileStream, \
+                         MemoryStream, ZStream
 from .utils import tmpfile
 
 parameters = [

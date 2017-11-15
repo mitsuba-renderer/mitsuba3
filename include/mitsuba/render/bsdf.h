@@ -16,10 +16,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 
 /**
-* \brief This macro must be used in the definition of bsdfs
-* plugins for template instantiations of the sample, eval and
-* pdf functions.
-*/
+ * \brief This macro must be used in the definition of bsdfs
+ * plugins for template instantiations of the sample, eval and
+ * pdf functions.
+ */
 #define MTS_IMPLEMENT_BSDF()                                    \
     std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,        \
         const Point2f &sample) const override {                 \
@@ -48,8 +48,6 @@ NAMESPACE_BEGIN(mitsuba)
         const mask_t<FloatP> &active) const override {          \
         return pdf_impl(bs, measure, active);                   \
     }                                                           \
-
-
 
 
 /**
@@ -190,14 +188,13 @@ public:
      */
     virtual std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,
                                                const Point2f &sample) const = 0;
-    std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,
-                                       const Point2f &s,
-                                       bool /*unused*/) const {
+    std::pair<Spectrumf, Float> sample(
+            BSDFSample3f &bs, const Point2f &s, bool /*unused*/) const {
         return sample(bs, s);
     }
-    virtual std::pair<SpectrumfP, FloatP> sample(BSDFSample3fP &bs,
-                                                 const Point2fP &sample,
-                                                 const mask_t<FloatP> &active = true) const = 0;
+    virtual std::pair<SpectrumfP, FloatP> sample(
+            BSDFSample3fP &bs, const Point2fP &sample,
+            const mask_t<FloatP> &active = true) const = 0;
 
     /**
      * \brief Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo)
@@ -218,8 +215,7 @@ public:
      */
     virtual Spectrumf eval(const BSDFSample3f &bs,
                            EMeasure measure = ESolidAngle) const = 0;
-    Spectrumf eval(const BSDFSample3f &bs,
-                   EMeasure measure,
+    Spectrumf eval(const BSDFSample3f &bs, EMeasure measure,
                    bool /*unused*/) const {
         return eval(bs, measure);
     }

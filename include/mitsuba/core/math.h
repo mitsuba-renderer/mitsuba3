@@ -25,6 +25,7 @@ static const double InvSqrtTwo_d      = 0.70710678118654752440;
 static const double SqrtTwoPi_d       = 2.50662827463100050242;
 static const double InvSqrtTwoPi_d    = 0.39894228040143267794;
 static const double Epsilon_d         = 1e-7;
+static const double ShadowEpsilon_d   = 1e-5;
 #if defined(MTS_CPP17)
 static const double OneMinusEpsilon_d = 0x1.fffffffffffffp-1;
 static const double RecipOverflow_d   = 0x1p-1024;
@@ -48,6 +49,7 @@ static const float  InvSqrtTwo_f      = (float) InvSqrtTwo_d;
 static const float  SqrtTwoPi_f       = (float) SqrtTwoPi_d;
 static const float  InvSqrtTwoPi_f    = (float) InvSqrtTwoPi_d;
 static const float  Epsilon_f         = 1e-4f;
+static const float  ShadowEpsilon_f   = 1e-3f;
 #if defined(MTS_CPP17)
 static const float  OneMinusEpsilon_f = 0x1.fffffep-1f;
 static const float  RecipOverflow_f   = 0x1p-128f;
@@ -76,6 +78,8 @@ static const Float  RecipOverflow     = Float(sizeof(Float) == sizeof(double) ?
                                         RecipOverflow_d : (double) RecipOverflow_f);
 static const Float  Epsilon           = Float(sizeof(Float) == sizeof(double) ?
                                         Epsilon_d : (double) Epsilon_f);
+static const Float  ShadowEpsilon     = Float(sizeof(Float) == sizeof(double) ?
+                                        ShadowEpsilon_d : (double) ShadowEpsilon_f);
 static const Float  MaxFloat          = std::numeric_limits<Float>::max();
 static const Float  Infinity          = std::numeric_limits<Float>::infinity();
 static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 2;

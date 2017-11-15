@@ -32,6 +32,7 @@ template <typename Point3_> struct SurfaceInteraction {
 
     using Frame3              = Frame<Vector3>;
     using Color3              = Color<Value, 3>;
+    using Spectrum            = Spectrum<Value>;
     using RayDifferential3    = RayDifferential<Point3>;
 
     using BSDFPtr             = like_t<Value, const BSDF *>;
@@ -152,6 +153,7 @@ template <typename Point3_> struct SurfaceInteraction {
      */
     const BSDFPtr bsdf(const RayDifferential3 &ray) {
         const BSDFPtr bsdf = shape->bsdf();
+        Assert(!all(bsdf == nullptr));
 
         if (!has_uv_partials && any(bsdf->needs_differentials()))
             compute_partials(ray);
@@ -162,19 +164,16 @@ template <typename Point3_> struct SurfaceInteraction {
     /// Returns the BSDF of the intersected shape
     const BSDFPtr bsdf() const { return shape->bsdf(); }
 
-#if 0
     /**
      * \brief Returns radiance emitted into direction d.
      *
      * \remark This function should only be called if the
      * intersected shape is actually an emitter.
      */
-    Spectrum Le(const Vector3 &/*d*/) const {
-        Log(EError, "Not implemented yet");
-        // return shape->emitter()->eval(*this, d);
-        return Spectrum();
+    Spectrum Le(const Vector3 &d) const {
+        Assert(shape->emitter());
+        return shape->emitter()->eval(*this, d);
     }
-#endif
 
     /// Move the intersection forward or backward through time
     void adjust_time(const Value &time) {
@@ -183,8 +182,9 @@ template <typename Point3_> struct SurfaceInteraction {
     }
 
     /// Calls the suitable implementation of \ref Shape::normal_derivative()
-    std::pair<Vector3, Vector3> normal_derivative(bool shading_frame = true,
-                                                  const mask_t<Value> &active = true) const {
+    std::pair<Vector3, Vector3> normal_derivative(
+            bool shading_frame = true,
+            const mask_t<Value> &active = true) const {
         ShapePtr target = select(neq(instance, nullptr), instance, shape);
         return target->normal_derivative(*this, shading_frame, active);
     }

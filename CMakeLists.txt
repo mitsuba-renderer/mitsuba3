@@ -2,6 +2,7 @@
 cmake_minimum_required (VERSION 2.8.12)
 project(mitsuba CXX)
 
+# ---------- User options ----------
 option(MTS_DOUBLE_PRECISION  "Compile renderer in double precision?" OFF)
 
 # Use GCC/Clang address sanitizer?
@@ -10,9 +11,14 @@ option(MTS_DOUBLE_PRECISION  "Compile renderer in double precision?" OFF)
 #   export DYLD_INSERT_LIBRARIES=<path to libclang_rt.asan_osx_dynamic.dylib>
 # On Linux:
 #   export LD_LIBRARY_PATH=<path to libasan.so>
-
 option(MTS_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
 option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?" OFF)  # To catch use of unitialized memory
+
+option(MTS_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
+if(MTS_THROW_TRAPS_DEBUGGER)
+    add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
+endif()
+# ----------------------------------
 
 cmake_policy(SET CMP0022 NEW) # New-style link interface
 cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
@@ -343,7 +349,7 @@ function(add_plugin)
   set_target_properties(${TARGET} ${TARGET}-obj PROPERTIES FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET})
 endfunction(add_plugin)
 
-# Initialize variables
+# Initialize CMake variables
 set(MITSUBA_DIST "" CACHE INTERNAL "")
 set(MITSUBA_TEST_DIRECTORIES "" CACHE INTERNAL "")
 

@@ -207,4 +207,8 @@ std::ostream& operator<<(std::ostream &os, const ref<T> &object) {
     return operator<<(os, object.get());
 }
 
+// This checks that it is safe to reinterpret a \c ref object into the
+// underlying pointer type.
+static_assert(sizeof(ref<Object>) == sizeof(Object *),
+              "ref<T> must be reinterpretable as a T*.");
 NAMESPACE_END(mitsuba)

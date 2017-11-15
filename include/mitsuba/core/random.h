@@ -32,6 +32,18 @@
 #include <mitsuba/core/logger.h>
 #include <enoki/random.h>
 
+NAMESPACE_BEGIN(enoki)
+/// Prints the canonical representation of a PCG32 object.
+template <typename Value>
+std::ostream& operator<<(std::ostream &os, const enoki::PCG32<Value> &p) {
+    os << "PCG32[" << std::endl
+       << "  state = 0x" << std::hex << p.state << "," << std::endl
+       << "  inc = 0x" << std::hex << p.inc << std::endl
+       << "]";
+    return os;
+}
+NAMESPACE_END(enoki)
+
 NAMESPACE_BEGIN(mitsuba)
 
 using PCG32  = enoki::PCG32<uint32_t>;

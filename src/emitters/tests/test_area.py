@@ -8,23 +8,8 @@ from mitsuba.core.math import Pi
 from mitsuba.core.xml import load_string
 from mitsuba.render import EMeasure
 from mitsuba.render import PositionSample3f, DirectionSample3f
+from mitsuba.test.util import fresolver_append_path
 
-# TODO: refactor to common test utils
-def fresolver_append_path(func):
-    def f(*args, **kwargs):
-        # New file resolver
-        thread = Thread.thread()
-        fres_old = thread.file_resolver()
-        fres = FileResolver(fres_old)
-        fres.append(os.path.dirname(os.path.realpath(__file__)))
-        thread.set_file_resolver(fres)
-        # Run actual function
-        res = func(*args, **kwargs)
-        # Restore previous file resolver
-        thread.set_file_resolver(fres_old)
-
-        return res
-    return f
 
 @fresolver_append_path
 def example_shape(filename = "data/triangle.ply", has_emitter = True):
@@ -39,7 +24,7 @@ def example_shape(filename = "data/triangle.ply", has_emitter = True):
 
 def test01_area_construct():
     e = load_string("""<emitter version="2.0.0" type="area">
-            <spectrum name="radiance" value="4"/>
+            <spectrum name="radiance" value="1.0f, 0.5f, 0.5f, 0.8f"/>
         </emitter>""")
     assert e is not None
     assert not e.is_environment_emitter()

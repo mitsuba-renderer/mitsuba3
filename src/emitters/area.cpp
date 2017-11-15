@@ -196,6 +196,7 @@ public:
         ray.time = time_sample;
         ray.o = p_rec.p;
         ray.d = Frame(p_rec.n).to_world(local);
+        ray.update();
         return std::make_pair(ray, Spectrum(m_power));
     }
     std::pair<Ray3f, Spectrumf> sample_ray(

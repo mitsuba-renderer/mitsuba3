@@ -167,6 +167,7 @@ public:
         ray.time = time_sample;
         ray.o = trafo * Point3(0.0f);
         ray.d = warp::square_to_uniform_sphere(direction_sample);
+        ray.update();
         return std::make_pair(ray, Spectrum(m_intensity * (4.0f * math::Pi)));
     }
     std::pair<Ray3f, Spectrumf> sample_ray(

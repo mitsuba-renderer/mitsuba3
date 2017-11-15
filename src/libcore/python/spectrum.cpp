@@ -56,4 +56,6 @@ MTS_PY_EXPORT(Spectrum) {
     m.def("cie1931_y", vectorize_wrapper(&cie1931_y<SpectrumfP>), "lambda"_a, "active"_a = true);
 
     m.attr("MTS_WAVELENGTH_SAMPLES") = MTS_WAVELENGTH_SAMPLES;
+    m.attr("MTS_WAVELENGTH_MIN") = MTS_WAVELENGTH_MIN;
+    m.attr("MTS_WAVELENGTH_MAX") = MTS_WAVELENGTH_MAX;
 }

@@ -1,7 +1,8 @@
-from mitsuba.core import AnnotatedStream, FileStream, \
-    MemoryStream, Thread, EError
-import pytest
 import numpy as np
+import pytest
+
+from mitsuba.core import AnnotatedStream, FileStream, MemoryStream
+from mitsuba.core import Thread, EError
 from .utils import tmpfile
 
 

@@ -25,11 +25,56 @@ def test01_basics():
     assert la.norm(trafo.inverse_transpose - la.inv(m).T < 1e-5)
 
 def test02_inverse():
-    trafo = Transform4f.translate([1, 0, 1.5])
-    inv_trafo = trafo.inverse()
     p = np.array([1, 2, 3])
+    def check_inverse(tr, expected):
+        inv_trafo = tr.inverse()
+        assert np.allclose(inv_trafo.matrix, np.array(expected)), \
+               '\n' + str(inv_trafo.matrix) + '\n' + str(expected)
+
+        assert np.allclose(inv_trafo.transform_point(tr.transform_point(p)), p,
+                           rtol=1e-4)
+
+    # --- Scale
+    trafo = Transform4f.scale([1.0, 10.0, 500.0])
+    assert np.all(trafo.matrix == np.array([
+        [1,    0,    0,    0],
+        [0,   10,    0,    0],
+        [0,    0,  500,    0],
+        [0,    0,    0,    1]
+    ]))
+    assert np.all(trafo.transform_point(p) == np.array([1, 20, 1500]))
+    check_inverse(trafo, [
+        [1,      0,       0,    0],
+        [0, 1/10.0,       0,    0],
+        [0,      0, 1/500.0,    0],
+        [0,      0,       0,    1]
+    ])
+    # --- Translation
+    trafo = Transform4f.translate([1, 0, 1.5])
+    assert np.all(trafo.matrix == np.array([
+        [1, 0, 0,    1],
+        [0, 1, 0,    0],
+        [0, 0, 1,  1.5],
+        [0, 0, 0,    1],
+    ]))
     assert np.all(trafo.transform_point(p) == np.array([2, 2, 4.5]))
-    assert np.all(inv_trafo.transform_point(trafo.transform_point(p)) == p)
+    check_inverse(trafo, [
+        [1, 0, 0,   -1],
+        [0, 1, 0,    0],
+        [0, 0, 1, -1.5],
+        [0, 0, 0,    1]
+    ])
+    # --- Perspective                x_fov, near clip, far clip
+    trafo = Transform4f.perspective(34.022,         1,     1000)
+    # Spot-checked against a known transform from Mitsuba1.
+    expected = np.array([
+        [3.26860189,          0,        0,         0],
+        [         0, 3.26860189,        0,         0],
+        [         0,          0, 1.001001, -1.001001],
+        [         0,          0,        1,         0]
+    ])
+    assert np.allclose(trafo.matrix, expected)
+    check_inverse(trafo, la.inv(expected))
 
     rng = PCG32()
     for i in range(1000):

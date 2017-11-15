@@ -27,9 +27,9 @@ public:
             return { 0.f, 0.f };
 
         Value n_dot_wi = Frame::cos_theta(bs.wi);
-        auto below_horizon = (n_dot_wi <= 0.f | !active);
+        auto below_horizon = (n_dot_wi <= 0.f);
 
-        if (all(below_horizon))
+        if (all(below_horizon | !active))
             return { 0.f, 0.f };
 
         masked(bs.wo,  active) = warp::square_to_cosine_hemisphere(sample);
@@ -40,7 +40,8 @@ public:
         Value pdf = select(below_horizon,
                            Value(0.f),
                            warp::square_to_cosine_hemisphere_pdf(bs.wo));
-        Spectrum value = select(below_horizon, Spectrum(0.f), Spectrum(m_reflectance));
+        Spectrum value = select(below_horizon,
+                                Spectrum(0.f), Spectrum(m_reflectance));
         return { value, pdf };
     }
 
@@ -49,7 +50,7 @@ public:
               typename Spectrum = Spectrum<Value>>
     Spectrum eval_impl(const BSDFSample &bs,
                        EMeasure measure,
-                       const mask_t<Value> &/* active */) const {
+                       const mask_t<Value> &/*active*/) const {
         using Vector3 = typename BSDFSample::Vector3;
         using Frame   = Frame<Vector3>;
         if (!(bs.type_mask & EDiffuseReflection) || measure != ESolidAngle)
@@ -58,10 +59,10 @@ public:
         Value n_dot_wi = Frame::cos_theta(bs.wi);
         Value n_dot_wo = Frame::cos_theta(bs.wo);
 
-        return select((n_dot_wi <= 0.f) | (n_dot_wo <= 0.f),
-                      Spectrum(0.f),
-                      Spectrum(m_reflectance))
-               * (math::InvPi * n_dot_wo);
+        auto reflectance = select((n_dot_wi <= 0.f) | (n_dot_wo <= 0.f),
+                                  Spectrum(0.f), Spectrum(m_reflectance));
+
+        return (math::InvPi * n_dot_wo) * reflectance;
     }
 
     template <typename BSDFSample,
@@ -77,10 +78,10 @@ public:
         Value n_dot_wi = Frame::cos_theta(bs.wi);
         Value n_dot_wo = Frame::cos_theta(bs.wo);
 
-        auto wi_below_horizon = (n_dot_wi <= 0.f | !active);
-        auto wo_below_horizon = (n_dot_wo <= 0.f | !active);
+        auto wi_below_horizon = (n_dot_wi <= 0.f);
+        auto wo_below_horizon = (n_dot_wo <= 0.f);
 
-        if (all(wi_below_horizon) && all(wo_below_horizon))
+        if (all((wi_below_horizon & wo_below_horizon) | !active))
             return Value(0.f);
 
         return select(wi_below_horizon | wo_below_horizon,

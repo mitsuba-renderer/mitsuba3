@@ -162,6 +162,11 @@ using Point2i = Point<int32_t, 2>;
 using Point3i = Point<int32_t, 3>;
 using Point4i = Point<int32_t, 4>;
 
+using Point1u = Point<uint32_t, 1>;
+using Point2u = Point<uint32_t, 2>;
+using Point3u = Point<uint32_t, 3>;
+using Point4u = Point<uint32_t, 4>;
+
 using Point2iP = Point<Int32P, 2>;
 using Point2iX = Point<Int32X, 2>;
 using Point3iP = Point<Int32P, 3>;
