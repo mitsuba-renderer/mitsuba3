@@ -198,6 +198,9 @@ if (MSVC)
 
   # Permit many sections in .obj files
   add_compile_options("/bigobj")
+
+  # Use defines from math.h (M_PI, etc)
+  add_compile_options(/D "_USE_MATH_DEFINES")
 endif()
 
 if (U_CMAKE_BUILD_TYPE MATCHES DEBUG AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")

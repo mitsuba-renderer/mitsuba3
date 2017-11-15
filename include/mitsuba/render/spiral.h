@@ -4,7 +4,7 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
-#include <tbb/spin_mutex.h>
+#include <tbb/tbb.h>
 
 #if !defined(MTS_BLOCK_SIZE)
 #define MTS_BLOCK_SIZE 32

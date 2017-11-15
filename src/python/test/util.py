@@ -5,6 +5,7 @@ test decorators, etc).
 
 import os
 
+from functools import wraps
 from inspect import getframeinfo, stack
 from mitsuba.core import Thread, FileResolver
 
@@ -36,6 +37,10 @@ def fresolver_append_path(func):
     while not is_root(root_path) and (par(root_path) != root_path):
         root_path = par(root_path)
 
+
+    # The @wraps decorator properly sets __name__ and other properties, so that
+    # pytest-xdist can keep track of the original test function.
+    @wraps(func)
     def f(*args, **kwargs):
         # New file resolver
         thread = Thread.thread()
@@ -56,4 +61,5 @@ def fresolver_append_path(func):
         thread.set_file_resolver(fres_old)
 
         return res
+
     return f

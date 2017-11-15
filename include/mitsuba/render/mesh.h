@@ -4,6 +4,7 @@
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/shape.h>
+#include <tbb/tbb.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -339,7 +340,7 @@ protected:
     /// until it has been computed.
     DiscreteDistribution m_area_distribution;
     Float m_surface_area, m_inv_surface_area;
-    ref<std::mutex> m_mutex;
+    ref<tbb::spin_mutex> m_mutex;
 };
 
 // TODO: move to a more appropriate location.

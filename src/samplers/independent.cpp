@@ -72,8 +72,11 @@ public:
                 m_samples_1d[i][j] = next_float();
         }
         for (size_t i = 0; i < m_requests_2d.size(); i++) {
-            for (size_t j = 0; j < m_sample_count * m_requests_2d[i]; ++j)
-                m_samples_2d[i][j] = Point2f(next_float(), next_float());
+            for (size_t j = 0; j < m_sample_count * m_requests_2d[i]; ++j) {
+                auto f1 = next_float();
+                auto f2 = next_float();
+                m_samples_2d[i][j] = Point2f(f1, f2);
+            }
         }
         m_sample_index = 0;
         m_dimension_1d_array = m_dimension_2d_array = 0;
@@ -87,10 +90,15 @@ public:
     }
 
     Point2f next_2d() override {
-        return Point2f(next_float(), next_float());
+        // Evaluation order matters for reproducibility.
+        auto f1 = next_float();
+        auto f2 = next_float();
+        return Point2f(f1, f2);
     }
     Point2fP next_2d_p(const mask_t<FloatP> &active = true) override {
-        return Point2fP(next_float_p(active), next_float_p(active));
+        auto p1 = next_float_p(active);
+        auto p2 = next_float_p(active);
+        return Point2fP(p1, p2);
     }
 
     void set_film_resolution(const Vector2i &/*res*/, bool /*blocked*/) override {

@@ -85,33 +85,40 @@ template <typename Point2f> auto gen_ray_sphere(const ShapeKDTree *kdtree) {
 
 // --------------------------------------------------------------------------------------------
 
+namespace {
+auto create_cache() {
+    return std::unique_ptr<void, enoki::aligned_deleter>(
+        enoki::alloc(MTS_KD_INTERSECTION_CACHE_SIZE));
+}
+}  // end namespace
+
 template <typename Ray3f, bool IsShadowRay = false> auto kernel_pbrt(const ShapeKDTree *kdtree) {
     using Point = typename Ray3f::Point;
     using Scalar = value_t<Point>;
-    typename Shape::Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
-    return [kdtree, cache] (Ray3f rays) {
+    return [kdtree] (Ray3f rays) {
+        auto cache = create_cache();
         return kdtree->ray_intersect_pbrt<IsShadowRay>(
-            rays, Scalar(0.f), Scalar(norm(kdtree->bbox().extents())), (void*)cache);
+            rays, Scalar(0.f), Scalar(norm(kdtree->bbox().extents())), cache.get());
     };
 }
 
 template <bool IsShadowRay = false> auto kernel_havran(const ShapeKDTree *kdtree) {
-    typename Shape::Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-    return [kdtree, cache] (Ray3f rays) {
+    return [kdtree] (Ray3f rays) {
+        auto cache = create_cache();
         return kdtree->ray_intersect_havran<IsShadowRay>(
-            rays, 0.f, norm(kdtree->bbox().extents()), (void*)cache);
+            rays, 0.f, norm(kdtree->bbox().extents()), cache.get());
     };
 }
 
 template <typename Ray3f, bool IsShadowRay = false> auto kernel_dummy(const ShapeKDTree *kdtree) {
     using Point = typename Ray3f::Point;
     using Scalar = value_t<Point>;
-    typename Shape::Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
-    return [kdtree, cache] (Ray3f rays) {
+    return [kdtree] (Ray3f rays) {
+        auto cache = create_cache();
         return kdtree->ray_intersect_dummy(
-            rays, Scalar(0.f), Scalar(norm(kdtree->bbox().extents())), (void*) cache);
+            rays, Scalar(0.f), Scalar(norm(kdtree->bbox().extents())), cache.get());
     };
 }
 

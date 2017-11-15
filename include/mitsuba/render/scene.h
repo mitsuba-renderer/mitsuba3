@@ -32,19 +32,17 @@ public:
                                          const Value &mint, const Value &maxt,
                                          SurfaceInteraction &its,
                                          const Mask &active) const {
-        using Index = typename SurfaceInteraction::Index;
-        // TODO: check that size of cache is correct.
-        Index cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-        auto cache_ = (void *)cache;
+        std::unique_ptr<void, enoki::aligned_deleter> cache(
+            enoki::alloc(MTS_KD_INTERSECTION_CACHE_SIZE));
 
         // TODO: ugly workaround, pass `active` to the ray intersection routine
         // instead.
         // masked(maxt, ~active) = mint - 1.0f;  // maxt < min ==> ray disabled.
 
         auto result = m_kdtree->ray_intersect_pbrt<false>(ray, mint, maxt,
-                                                          cache_);
+                                                          cache.get());
         if (any(active & result.first)) {
-            m_kdtree->fill_surface_interaction(ray, cache_, its,
+            m_kdtree->fill_surface_interaction(ray, cache.get(), its,
                                                active & result.first);
         }
 

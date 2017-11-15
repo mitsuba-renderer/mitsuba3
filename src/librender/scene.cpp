@@ -107,14 +107,14 @@ std::string Scene::to_string() const {
     );
 }
 
-template MTS_EXPORT_CORE bool Scene::ray_intersect(
+template MTS_EXPORT_RENDER bool Scene::ray_intersect(
     const Ray3f &, const Float &, const Float &) const;
-template MTS_EXPORT_CORE mask_t<FloatP> Scene::ray_intersect(
+template MTS_EXPORT_RENDER mask_t<FloatP> Scene::ray_intersect(
     const Ray3fP &, const FloatP &, const FloatP &) const;
-template MTS_EXPORT_CORE std::pair<bool, Float> Scene::ray_intersect(
+template MTS_EXPORT_RENDER std::pair<bool, Float> Scene::ray_intersect(
     const Ray3f &, const Float &, const Float &, SurfaceInteraction3f &,
     const bool &) const;
-template MTS_EXPORT_CORE std::pair<mask_t<FloatP>, FloatP> Scene::ray_intersect(
+template MTS_EXPORT_RENDER std::pair<mask_t<FloatP>, FloatP> Scene::ray_intersect(
     const Ray3fP &, const FloatP &, const FloatP &, SurfaceInteraction3fP &,
     const mask_t<FloatP> &) const;
 //! @}

@@ -1,7 +1,8 @@
-from mitsuba.core import Thread, FileResolver, Struct, float_dtype, Properties, Ray3f, Ray3fX
+from mitsuba.core import Properties, Ray3f, Ray3fX
 from mitsuba.render import ShapeKDTree, Mesh
 from mitsuba.core.xml import load_string
 from mitsuba.render.rt import *
+from mitsuba.test.util import fresolver_append_path
 
 import math
 import numpy as np
@@ -11,24 +12,30 @@ import pytest
 
 from .mesh_generation import *
 
-def find_resource(fname):
-    path = os.path.dirname(os.path.realpath(__file__))
-    while True:
-        full = os.path.join(path, fname)
-        if os.path.exists(full):
-            return full
-        if path == '' or path == '/':
-            raise Exception("find_resource(): could not find \"%s\"" % fname);
-        path = os.path.dirname(path)
+def compare_results(resA, resB, atol=0):
+    assert np.all(resA[0] == resB[0])
+
+    (ma, a), (mb, b) = resA, resB
+    if np.isscalar(a):
+        a = np.array([a])
+        ma = np.array([resA[0]])
+    if np.isscalar(b):
+        b = np.array([b])
+        mb = np.array([resB[0]])
+
+    # The `t` return value is only meaningful when there was an intersection
+    assert np.allclose(a[ma], b[mb], atol=atol), \
+           '\n' + '\n'.join([str(a), str(b)])
 
 # ------------------------------------------------------------------------------
 
+@fresolver_append_path
 def test01_bunny_pbrt():
     # Create kdtree
     kdtree = load_string("""
         <scene version="0.5.0">
             <shape type="ply">
-                <string name="filename" value=\"""" + find_resource('resources/data/ply/bunny_lowres.ply') + """"/>
+                <string name="filename" value="resources/data/ply/bunny_lowres.ply"/>
             </shape>
         </scene>
     """).kdtree()
@@ -70,16 +77,18 @@ def test02_depth_scalar_stairs():
 
             step_id = math.floor((y * invN) * N_steps)
 
-            assert np.allclose(res_dummy[1], 2 - (step_id / N_steps))
-            assert res_dummy[1] == res_pbrt[1]
-            assert res_dummy[1] == res_havran[1]
+
+            compare_results(res_dummy, (True, 2 - (step_id / N_steps)), atol=1e-9)
+            compare_results(res_dummy, res_pbrt)
+            compare_results(res_dummy, res_havran)
 
 
+@fresolver_append_path
 def test03_depth_scalar_bunny():
     kdtree = load_string("""
         <scene version="0.5.0">
             <shape type="ply">
-                <string name="filename" value=\"""" + find_resource('resources/data/ply/bunny_lowres.ply') + """"/>
+                <string name="filename" value="resources/data/ply/bunny_lowres.ply"/>
             </shape>
         </scene>
     """).kdtree()
@@ -99,8 +108,8 @@ def test03_depth_scalar_bunny():
             res_pbrt   = kdtree.ray_intersect_pbrt_scalar(r, 0., 100.)
             res_havran = kdtree.ray_intersect_havran_scalar(r, 0., 100.)
 
-            assert res_dummy[1] == res_havran[1]
-            assert res_pbrt[1] == res_havran[1]
+            compare_results(res_dummy, res_pbrt)
+            compare_results(res_dummy, res_havran)
 
 
 def test04_depth_packet_stairs():
@@ -124,6 +133,4 @@ def test04_depth_packet_stairs():
     res_pbrt  = kdtree.ray_intersect_pbrt_packet(rays, mint, maxt)
 
     # TODO: spot-check for errors
-    assert np.all(res_dummy[0] == res_pbrt[0])
-    assert np.allclose(res_dummy[1], res_pbrt[1], atol=1e-4), \
-            '\n' + '\n'.join([str(res_dummy[1]), str(res_pbrt[1])])
+    compare_results(res_dummy, res_pbrt, atol=1e-4)

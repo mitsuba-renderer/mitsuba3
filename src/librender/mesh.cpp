@@ -1,3 +1,4 @@
+#include <mutex>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/transform.h>
@@ -269,7 +270,7 @@ void Mesh::prepare_sampling_table() {
         Throw("Cannot prepare the sampling table of an empty mesh: %s",
               this->to_string());
 
-    std::lock_guard<std::mutex> lock(*m_mutex);
+    std::lock_guard<tbb::spin_mutex> lock(*m_mutex);
     if (m_surface_area < 0) {
         // Generate a PDF for sampling wrt. the area of each face.
         m_area_distribution.reserve(m_face_count);

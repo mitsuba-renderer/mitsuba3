@@ -27,9 +27,9 @@
 /// Size of temporary intersection data structures to allocate, in bytes.
 /// Computed based on the size of \ref ShapeKDTree::IntersectionCache.
 #if defined(SINGLE_PRECISION)
-#define MTS_KD_INTERSECTION_CACHE_SIZE 1024 // 64 * 16
+#define MTS_KD_INTERSECTION_CACHE_SIZE (64 * mitsuba::PacketSize)
 #else
-#define MTS_KD_INTERSECTION_CACHE_SIZE 2048 // 128 * 16
+#define MTS_KD_INTERSECTION_CACHE_SIZE (128 * mitsuba::PacketSize)
 #endif
 
 
