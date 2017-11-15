@@ -76,12 +76,12 @@ def test03_clear_set_add():
         </film>""")
     # Note that the internal storage format is independent from the format
     # which will be developped.
-    assert film.bitmap().pixel_format() == Bitmap.ERGB
+    assert film.bitmap().pixel_format() == Bitmap.EXYZAW
     assert film.bitmap().component_format() == (
         Struct.EFloat32 if float_dtype == np.float32
                         else Struct.EFloat64)
 
-    b = Bitmap(Bitmap.ERGB, Struct.EFloat, film.bitmap().size())
+    b = Bitmap(Bitmap.EXYZAW, Struct.EFloat, film.bitmap().size())
     n = b.width() * b.height()
     # 0, 1, 2, ...
     ref = np.arange(n).reshape(b.height(), b.width(), 1).astype(

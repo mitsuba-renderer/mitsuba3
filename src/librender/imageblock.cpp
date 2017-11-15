@@ -16,9 +16,8 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
     m_bitmap->clear();
 
     if (filter) {
-        // TODO: allocate just the ones we need (especially when there are
-        // many image blocks).
         // Temporary buffers used in put()
+        // TODO: allocate just the ones we need (either vectorized or scalar).
         int temp_buffer_size = (int)std::ceil(2 * filter->radius()) + 1;
         m_weights_x = new Float[2 * temp_buffer_size];
         m_weights_y = m_weights_x + temp_buffer_size;
@@ -107,7 +106,6 @@ bool ImageBlock::put(const Point2f &_pos, const Float *value, bool /*unused*/) {
 
 mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
                                const mask_t<FloatP> &active) {
-    // TODO: rework this method (efficiency, clarity).
     Assert(m_filter != nullptr);
     using Mask = mask_t<FloatP>;
 
@@ -116,9 +114,9 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
     // Check if all sample values are valid
     Mask is_valid(true);
     if (m_warn) {
-        for (int i = 0; i < channels; ++i) {
+        for (int k = 0; k < channels; ++k) {
             // We only care about active lanes
-            is_valid &= (!active) | (enoki::isfinite(value[i]) & (value[i] >= 0));
+            is_valid &= (~active) | (enoki::isfinite(value[k]) & (value[k] >= 0));
         }
 
         if (unlikely(any(~is_valid))) {
@@ -131,8 +129,8 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
             oss << "]";
             Log(EWarn, "%s", oss.str());
 
-            if (none(is_valid))
-                return is_valid;  // Early return
+            if (none(is_valid))  // Early return
+                return is_valid;
         }
     }
 
@@ -156,58 +154,51 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
     );
 
     // Lookup values from the pre-rasterized filter
-    Vector2iP pixel_range = max(hi - lo, 1);
+    Vector2iP window_sizes = max(hi - lo, 0);
+    Point2i max_size(
+        hmax(window_sizes.x()),
+        hmax(window_sizes.y())
+    );
 
-    int max_range_x = hmax(pixel_range.x());
-    int max_range_y = hmax(pixel_range.y());
+    auto corner = lo - pos;
+    for (int i = 0; i <= max_size.x(); ++i)
+        m_weights_x_p[i] = m_filter->eval_discretized(corner.x() + i);
+    for (int i = 0; i <= max_size.y(); ++i)
+        m_weights_y_p[i] = m_filter->eval_discretized(corner.y() + i);
 
-    for (int i = 0; i <= max_range_x; ++i) {
-        m_weights_x_p[i] = m_filter->eval_discretized(lo.x() + i - pos.x());
-    }
-    for (int i = 0; i <= max_range_y; ++i) {
-        m_weights_y_p[i] = m_filter->eval_discretized(lo.y() + i - pos.y());
-    }
 
     // Rasterize the filtered sample into the framebuffer
-    auto *destination = static_cast<Float *>(m_bitmap->data());
-    for (int yr = 0; yr <= max_range_y; ++yr) {
-        const FloatP &weight_y = m_weights_y_p[yr];
+    auto *buffer = (Float *)m_bitmap->data();
+    Mask enabled;
+    for (int yr = 0; yr <= max_size.y(); ++yr) {
+        enabled = active & is_valid & (yr <= window_sizes.y());
+        auto y = lo.y() + yr;
 
-        SizeP offset_y = ((lo.y() + yr) * (size_t)size.x() + lo.x()) * channels;
-
-        for (int xr = 0; xr <= max_range_x; ++xr) {
-            const FloatP weight = m_weights_x_p[xr] * weight_y;
-
-            // Ensure we are not writing out of the filter range
-            Mask invalid_store = (!active) | (pixel_range.y() < yr)
-                                 | (pixel_range.x() < xr) | (!is_valid);
-            if (all(invalid_store)) continue;
+        for (int xr = 0; xr <= max_size.x(); ++xr) {
+            enabled &= (xr <= window_sizes.x());
+            if (none(enabled))
+                continue;
+            // Linearized offsets: n_channels * (y * n_x + x)
+            auto offsets = channels * (y * size.x() + (lo.x() + xr));
+            auto weights = m_weights_y_p[yr] * m_weights_x_p[xr];
 
             for (int k = 0; k < channels; ++k) {
-                // TODO: replace with vectorized writes.
-                for (size_t i = 0; i < SizeP::Size; ++i) {
-                    if (invalid_store[i])
-                        continue;
-                    *(destination + k + xr + offset_y[i]) += weight[i] * value[k][i];
-                }
-                // We need to be extra-careful about the "histogram problem"
-                // here (http://enoki.readthedocs.io/en/master/advanced.html#the-histogram-problem-and-conflict-detection).
-                // Issue: Enoki's `transform` method doesn't seem to allow for
-                // this use-case.
-                #if 0
-                transform<FloatP>(m_bitmap->data(),  // Memory location
-                                  k + xr + offset_y, // Indices to be modified
-                                  !invalid_store,    // Mask
-                                  // Transformation
-                                  [&](auto& v) {
-                                      // Problem here: we don't know which value
-                                      // should be added, because this lambda
-                                      // isn't aware of the current index
-                                      // being processed.
-                                      v += weight * value[k];
-                                  });
-                #endif
-
+                // We need to be extra-careful about the "histogram problem". See:
+                //   http://enoki.readthedocs.io/en/master/
+                //   advanced.html#the-histogram-problem-and-conflict-detection.
+                enoki::transform<FloatP>(
+                    // Base offset into the bitmap's buffer.
+                    buffer + k,
+                    // Index of each position, relative to the base (may have
+                    // repeated values, which is why we're using `transform`).
+                    offsets,
+                    // Perform operation on active lanes only.
+                    enabled,
+                    // Operation (accumulate weighted value).
+                    [](auto &&x, auto &&w, auto &&v) { x += w * v; },
+                    // Reconstruction weights, values to store.
+                    weights, value[k]
+                );
             }
         }
     }

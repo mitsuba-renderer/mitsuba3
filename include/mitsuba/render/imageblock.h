@@ -64,44 +64,50 @@ public:
      * \note This method is only valid if a reconstruction filter was given at
      * the construction of the block.
      *
-     * This variant assumes that the image block's internal storage format is
-     * an (R, G, B) triplet of Floats.
+     * This variant assumes that the ImageBlock's internal storage format
+     * is XYZAW. The given Spectrum will be converted to XYZ color space
+     * for storage.
      *
      * \param pos
      *    Denotes the sample position in fractional pixel coordinates. It is
      *    not checked, and so must be valid. The block's offset is subtracted
      *    from the given position to obtain the
-     * \param spec
+     * \param spectrum
      *    Spectrum value assocated with the sample
      * \param alpha
      *    Alpha value assocated with the sample
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    template<typename Point2,
-             typename Spectrum,
+    template<typename Point2, typename Spectrum,
              typename Value = typename Point2::Value>
-    mask_t<Value> put(const Point2 &pos, const Spectrum &spec,
-                      const Value &/*alpha*/,
+    mask_t<Value> put(const Point2 &pos, const Spectrum &spectrum,
+                      const Value &alpha,
                       const mask_t<Value> &active) {
         using ValueVector = std::vector<Value, aligned_allocator<Value>>;
-        // TODO: which internal storage format should we use?
-        // 1. Spectrum samples, alpha, filter weight
-        // Value temp[MTS_WAVELENGTH_SAMPLES + 2];
-        // for (int i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i)
-        //     temp[i] = spec[i];
-        // temp[MTS_WAVELENGTH_SAMPLES] = alpha;
-        // temp[MTS_WAVELENGTH_SAMPLES + 1] = 1.0f;
-        // return put(pos, temp);
+        Assert(m_bitmap->pixel_format() == Bitmap::EXYZAW,
+               "This `put` variant requires XYZAW internal storage format.");
 
-        // 2. m first spectrum samples
-        // TODO: this was just for debugging, it's not a meaningful format.
+        // Convert spectrum to XYZ
+        // TODO: proper handling of spectral rendering (use sampled wavelengths)
+        static const Spectrum wavelengths(
+            MTS_WAVELENGTH_MIN, 517, 673, MTS_WAVELENGTH_MAX
+        );
+        static const auto responses = cie1931_xyz(wavelengths);
+
+        Value x(0.0f), y(0.0f), z(0.0f);
+        for (int li = 0; li < MTS_WAVELENGTH_SAMPLES; ++li) {
+            x += spectrum.coeff(li) * std::get<0>(responses).coeff(li);
+            y += spectrum.coeff(li) * std::get<1>(responses).coeff(li);
+            z += spectrum.coeff(li) * std::get<2>(responses).coeff(li);
+        }
+
         ValueVector temp(m_bitmap->channel_count());
-        if (temp.size() > MTS_WAVELENGTH_SAMPLES)
-            Throw("Too many channels in ImageBlock: %s", to_string());
-
-        for (size_t i = 0; i < temp.size(); ++i)
-            temp[i] = spec[i];
+        temp[0] = x;
+        temp[1] = y;
+        temp[2] = z;
+        temp[3] = alpha;
+        temp[4] = 1.0f;  // Will be multiplied by the reconstruction weight.
         return put(pos, temp.data(), active);
     }
 

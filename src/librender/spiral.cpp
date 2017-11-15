@@ -37,9 +37,8 @@ ref<ImageBlock> Spiral::next_block() {
                   std::min((int) m_block_size, m_size.y() - offset.y()));
     Assert(size.x() > 0 && size.y() > 0);
 
-    // TODO: use the RGBAW format (once it's supported).
-    ref<ImageBlock> block(new ImageBlock(Bitmap::ERGB, size));
-    block->set_offset(offset);
+    // TODO: use a provided (reusable) block instead.
+    ref<ImageBlock> block(new ImageBlock(Bitmap::EXYZAW, size, m_rfilter));
     block->set_offset(m_offset + offset);
 
     if (++m_blocks_counter == m_n_total_blocks)

@@ -1,15 +1,16 @@
-#include <mitsuba/core/xml.h>
-#include <mitsuba/core/properties.h>
-#include <mitsuba/core/object.h>
+#include <mitsuba/core/class.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/logger.h>
-#include <mitsuba/core/class.h>
-#include <mitsuba/core/string.h>
-#include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
+#include <mitsuba/core/object.h>
 #include <mitsuba/core/plugin.h>
+#include <mitsuba/core/properties.h>
+#include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/vector.h>
+#include <mitsuba/core/vector.h>
+#include <mitsuba/core/xml.h>
 #include <pugixml.hpp>
 #include <tbb/tbb.h>
 
@@ -517,8 +518,46 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 break;
 
             case ESpectrum: {
-                    check_attributes(src, node, { "name", "value" });
-                    //props.setColor(node.attribute("name").value(), Color3f(to_vector3f(node.attribute("value").value()).array()));
+                    // TODO(!): replace with proper support for continuous
+                    // spectra. This is just a temporary workaround.
+                    static_assert(MTS_WAVELENGTH_SAMPLES == 4,
+                                  "This workaroun only works with 4 wavelength"
+                                  "samples, but MTS_WAVELENGTH_SAMPLES != 4.");
+
+                    // Expand "value" attribute if present
+                    if (node.attribute("value")) {
+                        auto list = string::tokenize(node.attribute("value").value());
+                        if (list.size() != 4)
+                            src.throw_error(node, "\"value\" attribute must have exactly 4 elements");
+                        else if (node.attribute("x") || node.attribute("y")
+                                 || node.attribute("z")|| node.attribute("w"))
+                            src.throw_error(node, "can't mix and match \"value\" and \"x\"/\"y\"/\"z\"/\"w\" attributes");
+                        node.append_attribute("x") = list[0].c_str();
+                        node.append_attribute("y") = list[1].c_str();
+                        node.append_attribute("z") = list[2].c_str();
+                        node.append_attribute("w") = list[3].c_str();
+                        node.remove_attribute("value");
+                    }
+
+                    check_attributes(src, node, { "name", "x", "y", "z", "w" });
+
+                    std::string value;
+                    Float x = 0.0f, y = 0.0f, z = 0.0f, w = 0.0f;
+                    try {
+                        value = node.attribute("x").value();
+                        if (!value.empty()) x = detail::stof(value);
+                        value = node.attribute("y").value();
+                        if (!value.empty()) y = detail::stof(value);
+                        value = node.attribute("z").value();
+                        if (!value.empty()) z = detail::stof(value);
+                        value = node.attribute("w").value();
+                        if (!value.empty()) w = detail::stof(value);
+                    } catch (...) {
+                        src.throw_error(node, "could not parse floating point value \"%s\"", value);
+                    }
+
+                    Spectrumf spec(x, y, z, w);
+                    props.set_spectrumf(node.attribute("name").value(), spec);
                 }
                 break;
 

@@ -336,7 +336,7 @@ public:
         }
 
         if (m_pixel_formats.size() == 1) {
-            m_storage = new ImageBlock(Bitmap::ERGB, m_crop_size);
+            m_storage = new ImageBlock(Bitmap::EXYZAW, m_crop_size);
         } else {
             m_storage = new ImageBlock(
                 Bitmap::EMultiChannel, m_crop_size, nullptr,
@@ -372,6 +372,7 @@ public:
         auto expected_format = Struct::EFloat64;
         #endif
         if (bitmap->component_format() != expected_format ||
+            bitmap->pixel_format() != Bitmap::EXYZAW      ||
             bitmap->srgb_gamma()                          ||
             size != m_storage->size()                     ||
             m_pixel_formats.size() != 1) {
@@ -380,23 +381,17 @@ public:
                   bitmap->to_string(), m_storage->bitmap()->to_string());
         }
 
-        size_t n_pixels = (size_t)size.x() * (size_t)size.y();
-        const Float *source = static_cast<const Float *>(bitmap->data());
-        Float *target = static_cast<Float *>(m_storage->bitmap()->data());
-        for (size_t i = 0; i < n_pixels; ++i) {
-            // TODO: update to comply with internal storage format.
-            // TODO: this was just for debugging, it's not a meaningful format.
-            for (size_t j = 0; j < m_storage->bitmap()->channel_count(); ++j)
-                (*target++) += multiplier * (*source++);
+        auto storage = m_storage->bitmap();
+        auto converted = bitmap->convert(
+                storage->pixel_format(), storage->component_format(),
+                storage->srgb_gamma());
 
-            // Proper handling when format is (Spectrum, alpha, weight):
-            // Float weight = target[MTS_WAVELENGTH_SAMPLES + 1];
-            // if (weight == 0)
-            //     weight = target[MTS_WAVELENGTH_SAMPLES + 1] = 1;
-            // weight *= multiplier;
-            // for (size_t j = 0; j < MTS_WAVELENGTH_SAMPLES; ++j)
-            //     (*target++) += (*source++ * weight);
-            // target += 2;
+        size_t n_pixels = (size_t)size.x() * (size_t)size.y();
+        const Float *source = static_cast<const Float *>(converted->data());
+        Float *target = static_cast<Float *>(storage->data());
+        for (size_t i = 0; i < n_pixels; ++i) {
+            for (size_t k = 0; k < storage->channel_count(); ++k)
+                (*target++) += (*source++ * multiplier);
         }
     }
 
@@ -437,19 +432,18 @@ public:
         if (m_dest_file.empty())
             return;
 
-        Log(EDebug, "Developing film ..");
+        Log(EDebug, "Developing film...");
 
         ref<Bitmap> bitmap;
-        if (m_pixel_formats.size() == 1) {
-            bitmap = m_storage->bitmap()->convert(m_pixel_formats[0],
-                                                  m_component_format);
-            // Set channels' names
-            int idx = 0;
-            for (auto c : *bitmap->struct_())
-                c.name = m_channel_names[idx++];
-        } else {
+        if (m_pixel_formats.size() != 1)
             NotImplementedError("Bitmap conversion for multi-channel HDR images.");
-        }
+
+        bitmap = m_storage->bitmap()->convert(m_pixel_formats.front(),
+                                              m_component_format);
+        // Set channels' names
+        int idx = 0;
+        for (auto c : *bitmap->struct_())
+            c.name = m_channel_names[idx++];
 
         if (m_banner)
             NotImplementedError("Overlaying the Mitsuba watermark.")
@@ -471,9 +465,8 @@ public:
         ref<FileStream> stream = new FileStream(filename, FileStream::EMode::ETruncReadWrite);
 
         // TODO: support annotations.
-        if (m_attach_log) {
+        if (m_attach_log)
             NotImplementedError("Attaching the log file to the output image.");
-        }
 
         bitmap->write(stream, m_file_format);
     }
