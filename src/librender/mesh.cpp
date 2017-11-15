@@ -1,9 +1,10 @@
-#include <mitsuba/render/mesh.h>
-#include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/util.h>
+#include <mitsuba/render/interaction.h>
+#include <mitsuba/render/mesh.h>
+#include <mitsuba/render/records.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -51,6 +52,7 @@ Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
         check_field(vertex_struct, 3, "nx", Struct::EFloat16);
         check_field(vertex_struct, 4, "ny", Struct::EFloat16);
         check_field(vertex_struct, 5, "nz", Struct::EFloat16);
+        m_normals_offset = vertex_struct->field("nx").offset;
     }
 
     m_vertex_size = (Size) m_vertex_struct->size();
@@ -63,6 +65,10 @@ Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
 }
 
 Mesh::~Mesh() { }
+
+void Mesh::write(Stream *) const {
+    NotImplementedError("write");
+}
 
 BoundingBox3f Mesh::bbox() const {
     return m_bbox;
@@ -86,7 +92,15 @@ BoundingBox3f Mesh::bbox(Index index) const {
 }
 
 void Mesh::recompute_vertex_normals() {
-    std::vector<Normal3f, aligned_allocator<Normal3f>> normals(m_vertex_count, zero<Normal3f>());
+    if (unlikely(!m_vertex_normals)) {
+        NotImplementedError("Storing new normals in a Mesh that didn't have"
+                            " normals at construction.");
+    }
+    m_normals_offset = m_vertex_struct->field("nx").offset;
+    m_vertex_normals = true;
+
+    std::vector<Normal3f, aligned_allocator<Normal3f>> normals(
+            m_vertex_count, zero<Normal3f>());
     size_t invalid_counter = 0;
     Timer timer;
 
@@ -105,7 +119,7 @@ void Mesh::recompute_vertex_normals() {
         if (likely(length_sqr > 0)) {
             n *= rsqrt<Vector3f::Approx>(length_sqr);
 
-            /* Use Enoki to compute the face angles at the same time */
+            // Use Enoki to compute the face angles at the same time
             auto side_a = transpose(Array<Packet<float, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
             auto side_b = transpose(Array<Packet<float, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
             Vector3f face_angles = unit_angle(normalize(side_a), normalize(side_b));
@@ -115,7 +129,6 @@ void Mesh::recompute_vertex_normals() {
         }
     }
 
-    size_t offset = m_vertex_struct->field("nx").offset;
     for (Size i = 0; i < m_vertex_count; i++) {
         Normal3f n = normals[i];
         Float length = norm(n);
@@ -126,7 +139,7 @@ void Mesh::recompute_vertex_normals() {
             invalid_counter++;
         }
 
-        store(vertex(i) + offset, Normal3h(n));
+        store(vertex(i) + m_normals_offset, Normal3h(n));
     }
 
     if (invalid_counter == 0)
@@ -144,56 +157,56 @@ void Mesh::recompute_bbox() {
 }
 
 namespace {
-    constexpr size_t max_vertices = 10;
+constexpr size_t max_vertices = 10;
 
-    size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output,
-                              int axis, double split_pos, bool is_minimum) {
-        if (in_count < 3)
-            return 0;
+size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output,
+                          int axis, double split_pos, bool is_minimum) {
+    if (in_count < 3)
+        return 0;
 
-        Point3d cur        = input[0];
-        double sign        = is_minimum ? 1.0 : -1.0;
-        double distance    = sign * (cur[axis] - split_pos);
-        bool  cur_is_inside = (distance >= 0);
-        size_t out_count    = 0;
+    Point3d cur        = input[0];
+    double sign        = is_minimum ? 1.0 : -1.0;
+    double distance    = sign * (cur[axis] - split_pos);
+    bool  cur_is_inside = (distance >= 0);
+    size_t out_count    = 0;
 
-        for (size_t i=0; i<in_count; ++i) {
-            size_t next_idx = i+1;
-            if (next_idx == in_count)
-                next_idx = 0;
+    for (size_t i=0; i<in_count; ++i) {
+        size_t next_idx = i+1;
+        if (next_idx == in_count)
+            next_idx = 0;
 
-            Point3d next = input[next_idx];
-            distance = sign * (next[axis] - split_pos);
-            bool next_is_inside = (distance >= 0);
+        Point3d next = input[next_idx];
+        distance = sign * (next[axis] - split_pos);
+        bool next_is_inside = (distance >= 0);
 
-            if (cur_is_inside && next_is_inside) {
-                /* Both this and the next vertex are inside, add to the list */
-                Assert(out_count + 1 < max_vertices);
-                output[out_count++] = next;
-            } else if (cur_is_inside && !next_is_inside) {
-                /* Going outside -- add the intersection */
-                double t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
-                Assert(out_count + 1 < max_vertices);
-                Point3d p = cur + (next - cur) * t;
-                p[axis] = split_pos; // Avoid roundoff errors
-                output[out_count++] = p;
-            } else if (!cur_is_inside && next_is_inside) {
-                /* Coming back inside -- add the intersection + next vertex */
-                double t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
-                Assert(out_count + 2 < max_vertices);
-                Point3d p = cur + (next - cur) * t;
-                p[axis] = split_pos; // Avoid roundoff errors
-                output[out_count++] = p;
-                output[out_count++] = next;
-            } else {
-                /* Entirely outside - do not add anything */
-            }
-            cur = next;
-            cur_is_inside = next_is_inside;
+        if (cur_is_inside && next_is_inside) {
+            /* Both this and the next vertex are inside, add to the list */
+            Assert(out_count + 1 < max_vertices);
+            output[out_count++] = next;
+        } else if (cur_is_inside && !next_is_inside) {
+            /* Going outside -- add the intersection */
+            double t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
+            Assert(out_count + 1 < max_vertices);
+            Point3d p = cur + (next - cur) * t;
+            p[axis] = split_pos; // Avoid roundoff errors
+            output[out_count++] = p;
+        } else if (!cur_is_inside && next_is_inside) {
+            /* Coming back inside -- add the intersection + next vertex */
+            double t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
+            Assert(out_count + 2 < max_vertices);
+            Point3d p = cur + (next - cur) * t;
+            p[axis] = split_pos; // Avoid roundoff errors
+            output[out_count++] = p;
+            output[out_count++] = next;
+        } else {
+            /* Entirely outside - do not add anything */
         }
-        return out_count;
+        cur = next;
+        cur_is_inside = next_is_inside;
     }
+    return out_count;
 }
+}  // end namespace
 
 BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
     /* Reserve room for some additional vertices */
@@ -240,6 +253,36 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
 
     return result;
 }
+
+void Mesh::sample_position(PositionSample3f &p_rec,
+                           const Point2f &sample) const {
+    return sample_position_impl(p_rec, sample, true);
+}
+void Mesh::sample_position(PositionSample3fP &p_rec,
+                           const Point2fP &sample,
+                           const mask_t<FloatP> &active) const {
+    return sample_position_impl(p_rec, sample, active);
+}
+
+void Mesh::prepare_sampling_table() {
+    if (m_face_count == 0)
+        Throw("Cannot prepare the sampling table of an empty mesh: %s",
+              this->to_string());
+
+    std::lock_guard<std::mutex> lock(*m_mutex);
+    if (m_surface_area < 0) {
+        // Generate a PDF for sampling wrt. the area of each face.
+        m_area_distribution.reserve(m_face_count);
+        for (size_t i = 0; i < m_face_count; i++) {
+            // TODO: surface area of a face
+            Float face_area = 1.0f;  // face(i).surface_area(m_positions)
+            m_area_distribution.append(face_area);
+        }
+        m_surface_area = m_area_distribution.normalize();
+        m_inv_surface_area = rcp(m_surface_area);
+    }
+}
+
 
 template <typename SurfaceInteraction, typename Mask>
 ENOKI_INLINE auto Mesh::normal_derivative_impl(const SurfaceInteraction &si,
@@ -307,7 +350,6 @@ ENOKI_INLINE auto Mesh::normal_derivative_impl(const SurfaceInteraction &si,
 
     return std::make_pair(dndu, dndv);
 }
-
 std::pair<Vector3f, Vector3f>
 Mesh::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame) const {
     return normal_derivative_impl<SurfaceInteraction3f>(si, shading_frame, true);
@@ -319,12 +361,32 @@ Mesh::normal_derivative(const SurfaceInteraction3fP &si, bool shading_frame,
     return normal_derivative_impl<SurfaceInteraction3fP>(si, shading_frame, active);
 }
 
-Shape::Size Mesh::primitive_count() const {
-    return face_count();
-}
+template <typename PositionSample, typename Point2, typename Mask>
+void Mesh::sample_position_impl(PositionSample &p_rec, const Point2 &sample_,
+                                const Mask &active) const {
+    using Index = like_t<typename Point2::Value, Index>;
 
-void Mesh::write(Stream *) const {
-    NotImplementedError("write");
+    ensure_table_ready();
+
+    Point2 sample(sample_);
+    Index index;
+    std::tie(index, sample.y()) = m_area_distribution.sample_reuse(sample.y());
+
+    auto base_offset = (const typename Shape::Index *)faces();
+    auto i0 = gather<Index>(base_offset,   index, active);
+    auto i1 = gather<Index>(base_offset+1, index, active);
+    auto i2 = gather<Index>(base_offset+2, index, active);
+    auto v0 = vertex_position(i0, active);
+    auto v1 = vertex_position(i1, active);
+    auto v2 = vertex_position(i2, active);
+
+    masked(p_rec.p, active) = (v0 + v1 + v2) / 3.0f;
+    // TODO: this is probably wrong
+    masked(p_rec.n, active) = normalize(cross(v1 - v0, v2 - v0));
+    masked(p_rec.uv, active) = 0.5f;
+
+    masked(p_rec.pdf, active) = m_inv_surface_area;
+    masked(p_rec.measure, active) = EArea;
 }
 
 std::string Mesh::to_string() const {
@@ -343,8 +405,14 @@ std::string Mesh::to_string() const {
     return oss.str();
 }
 
-template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3f &) const;
-template MTS_EXPORT_CORE auto Mesh::ray_intersect(size_t, const Ray3fP &) const;
+template MTS_EXPORT_RENDER auto Mesh::ray_intersect(Index, const Ray3f &) const;
+template MTS_EXPORT_RENDER auto Mesh::ray_intersect(Index, const Ray3fP &) const;
+
+// template MTS_EXPORT_RENDER auto Mesh::vertex_position<typename Shape::Index>(const typename Shape::Index &, const bool &) const;
+// template MTS_EXPORT_RENDER auto Mesh::vertex_position<UInt32P>(const UInt32P &, const mask_t<UInt32P> &) const;
+
+template MTS_EXPORT_RENDER auto Mesh::vertex_normal(const Index &, const bool &) const;
+template MTS_EXPORT_RENDER auto Mesh::vertex_normal(const UInt32P  &, const mask_t<UInt32P> &) const;
 
 MTS_IMPLEMENT_CLASS(Mesh, Shape)
 NAMESPACE_END(mitsuba)

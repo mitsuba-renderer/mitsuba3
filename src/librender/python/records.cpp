@@ -1,4 +1,5 @@
 #include <mitsuba/render/records.h>
+#include <mitsuba/render/scene.h>
 #include <mitsuba/python/python.h>
 
 template <typename Point3>
@@ -27,12 +28,6 @@ auto bind_position_sample(py::module &m, const char *name) {
         });
 }
 
-MTS_PY_EXPORT(PositionSample) {
-    bind_position_sample<Point3f>(m, "PositionSample3f");
-    auto ps3fx = bind_position_sample<Point3fX>(m, "PositionSample3fX");
-    bind_slicing_operators<PositionSample3fX, PositionSample3f>(ps3fx);
-}
-
 // -----------------------------------------------------------------------------
 
 template <typename Vector3> auto bind_direction_sample(py::module &m, const char *name) {
@@ -55,12 +50,6 @@ template <typename Vector3> auto bind_direction_sample(py::module &m, const char
             oss << record;
             return oss.str();
         });
-}
-
-MTS_PY_EXPORT(DirectionSample) {
-    bind_direction_sample<Vector3f>(m, "DirectionSample3f");
-    auto ds3fx = bind_direction_sample<Vector3fX>(m, "DirectionSample3fX");
-    bind_slicing_operators<DirectionSample3fX, DirectionSample3f>(ds3fx);
 }
 
 // -----------------------------------------------------------------------------
@@ -92,8 +81,62 @@ auto bind_direct_sample(py::module &m, const char *name) {
         });
 }
 
-MTS_PY_EXPORT(DirectSample) {
+// -----------------------------------------------------------------------------
+
+template <typename Point3>
+auto bind_radiance_record(py::module &m, const char *name) {
+    using Type = RadianceRecord<Point3>;
+
+    return py::class_<Type>(m, name, D(RadianceRecord))
+        .def(py::init<>(), D(RadianceRecord, RadianceRecord))
+        .def(py::init<const Scene *, Sampler *>(),
+             D(RadianceRecord, RadianceRecord, 2), "scene"_a, "sampler"_a)
+        .def(py::init<const Type &>(),
+             D(RadianceRecord, RadianceRecord, 3),  "r_rec"_a)
+        .def("new_query", &Type::new_query, "medium"_a,
+             D(RadianceRecord, new_query))
+        .def("recursive_query", &Type::recursive_query, "parent"_a,
+             D(RadianceRecord, recursive_query))
+        .def("next_sample_1d", &Type::next_sample_1d,
+             D(RadianceRecord, next_sample_1d))
+        .def("next_sample_2d", &Type::next_sample_2d,
+             D(RadianceRecord, next_sample_2d))
+        .def("__repr__", [](const Type &record) {
+            std::ostringstream oss;
+            oss << record;
+            return oss.str();
+        })
+        .def_readwrite(  "scene",   &Type::scene,   D(RadianceRecord, scene))
+        .def_readwrite("sampler", &Type::sampler, D(RadianceRecord, sampler))
+        .def_readwrite( "medium",  &Type::medium,  D(RadianceRecord, medium))
+        .def_readwrite(  "depth",   &Type::depth,   D(RadianceRecord, depth))
+        .def_readwrite(    "its",     &Type::its,     D(RadianceRecord, its))
+        .def_readwrite(  "alpha",   &Type::alpha,   D(RadianceRecord, alpha))
+        .def_readwrite(   "dist",    &Type::dist,    D(RadianceRecord, dist))
+        ;
+}
+
+// -----------------------------------------------------------------------------
+
+MTS_PY_EXPORT(SamplingRecords) {
+    bind_position_sample<Point3f>(m, "PositionSample3f");
+    auto ps3fx = bind_position_sample<Point3fX>(m, "PositionSample3fX");
+    bind_slicing_operators<PositionSample3fX, PositionSample3f>(ps3fx);
+
+    bind_direction_sample<Vector3f>(m, "DirectionSample3f");
+    auto ds3fx = bind_direction_sample<Vector3fX>(m, "DirectionSample3fX");
+    bind_slicing_operators<DirectionSample3fX, DirectionSample3f>(ds3fx);
+
     bind_direct_sample<Point3f, PositionSample3f>(m, "DirectSample3f");
-    auto ds3fx = bind_direct_sample<Point3fX, PositionSample3fX>(m, "DirectSample3fX");
-    bind_slicing_operators<DirectSample3fX, DirectSample3f>(ds3fx);
+    auto dds3fx = bind_direct_sample<Point3fX, PositionSample3fX>(m, "DirectSample3fX");
+    bind_slicing_operators<DirectSample3fX, DirectSample3f>(dds3fx);
+
+    bind_radiance_record<Point3f>(m, "RadianceRecord3f")
+        // Needs to be handled separately so that we can use vectorize_wrapper.
+        .def("ray_intersect", &RadianceRecord3f::ray_intersect,
+             "ray"_a, "active"_a, D(RadianceRecord, ray_intersect));
+    auto rr3fx = bind_radiance_record<Point3fX>(m, "RadianceRecord3fX")
+        .def("ray_intersect", enoki::vectorize_wrapper(&RadianceRecord3fP::ray_intersect),
+             "ray"_a, "active"_a, D(RadianceRecord, ray_intersect));
+    bind_slicing_operators<RadianceRecord3fX, RadianceRecord3f>(rr3fx);
 }

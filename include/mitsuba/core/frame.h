@@ -140,6 +140,27 @@ std::ostream &operator<<(std::ostream &os, const Frame<Vector3> &f) {
     return os;
 }
 
+/**
+ * \brief Given a smoothly varying shading normal and a tangent of a shape
+ * parameterization, compute a smoothly varying orthonormal frame.
+ *
+ * \param n
+ *    A shading normal at a surface position
+ * \param dp_du
+ *    Position derivative of the underlying parameterization with respect to
+ *    the 'u' coordinate
+ * \param frame
+ *    Used to return the computed frame
+ */
+template <typename Normal3, typename Vector3, typename Frame,
+          typename Mask = mask_t<Frame>>
+void compute_shading_frame(const Normal3 &n, const Vector3 &dp_du,
+                           Frame &frame, const Mask &active = true) {
+    masked(frame.n, active) = n;
+    masked(frame.s, active) = normalize(dp_du - frame.n * dot(frame.n, dp_du));
+    masked(frame.t, active) = cross(frame.n, frame.s);
+}
+
 NAMESPACE_END(mitsuba)
 
 ENOKI_STRUCT_DYNAMIC(mitsuba::Frame, s, t, n)

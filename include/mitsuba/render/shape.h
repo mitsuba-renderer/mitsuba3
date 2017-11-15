@@ -140,7 +140,6 @@ public:
                                  const mask_t<FloatP> &/*active*/ = true) const {
         NotImplementedError("sample_position");
     }
-
     /**
      * \brief Query the probability density of \ref sample_position() for
      * a particular point on the surface.
@@ -189,20 +188,16 @@ public:
      * \param sample
      *     A uniformly distributed 2D vector
      */
-    virtual void sample_direct(DirectSample3f &/*d_rec*/,
-                               const Point2f &/*sample*/) const {
-        NotImplementedError("sample_direct");
-    }
+    virtual void sample_direct(DirectSample3f &d_rec,
+                               const Point2f &sample) const;
     void sample_direct(DirectSample3f &d_rec, const Point2f &sample,
                        bool /*unused*/) const {
         return sample_direct(d_rec, sample);
     }
     /// Vectorized version of \ref sample_direct.
-    virtual void sample_direct(DirectSample3fP &/*d_rec*/,
-                               const Point2fP &/*sample*/,
-                               const mask_t<FloatP> &/*active*/ = true) const {
-        NotImplementedError("sample_direct");
-    }
+    virtual void sample_direct(DirectSample3fP &d_rec,
+                               const Point2fP &sample,
+                               const mask_t<FloatP> &active = true) const;
 
     /**
      * \brief Query the probability density of \ref sampleDirect() for
@@ -217,23 +212,113 @@ public:
      * \param p
      *     An arbitrary point used to define the solid angle measure
      */
-    virtual Float pdf_direct(const DirectSample3f &/*d_rec*/) const {
-        NotImplementedError("pdf_direct");
-        return 0.0f;
-    }
-    Float pdf_direct(const DirectSample3f &d_rec, bool /*active*/) const {
+    virtual Float pdf_direct(const DirectSample3f &d_rec) const;
+    Float pdf_direct(const DirectSample3f &d_rec, bool /*unused*/) const {
         return pdf_direct(d_rec);
     }
     /// Vectorized version of \ref pdf_direct.
-    virtual FloatP pdf_direct(const DirectSample3fP &/*d_rec*/,
-                              const mask_t<FloatP> &/*active*/ = true) const {
-        NotImplementedError("pdf_direct");
-        return FloatP(0.0f);
-    }
+    virtual FloatP pdf_direct(const DirectSample3fP &d_rec,
+                              const mask_t<FloatP> &active = true) const;
 
     //! @}
     // =============================================================
 
+    // =============================================================
+    //! @{ \name Ray tracing routines
+    // =============================================================
+
+    /**
+    * \brief Fast ray intersection test (scalar)
+    *
+    * Check whether the shape is intersected by the given ray. Some
+    * temporary space (\ref MTS_KD_INTERSECTION_CACHE_SIZE-4 bytes) is,
+    * supplied which can be used to cache information about the
+    * intersection. The function \ref fill_intersection_record()
+    * can later use this information to fill in a detailed
+    * intersection record.
+    */
+    virtual std::pair<bool, Float> ray_intersect(const Ray3f &/*ray*/,
+                                                 Float /*mint*/,
+                                                 Float /*maxt*/,
+                                                 void */*cache_*/) const {
+        NotImplementedError("ray_intersect_scalar");
+        return { false, 0.f };
+    }
+
+    /**
+    * \brief Fast ray intersection test (packet)
+    *
+    * Check whether the shape is intersected by the given ray. Some
+    * temporary space (\ref MTS_KD_INTERSECTION_CACHE_SIZE-4 bytes) is,
+    * supplied which can be used to cache information about the
+    * intersection. The function \ref fill_intersection_record()
+    * can later use this information to fill in a detailed
+    * intersection record.
+    */
+    virtual std::pair<mask_t<FloatP>, FloatP> ray_intersect(const Ray3fP &/*ray*/,
+                                                            FloatP /*mint*/,
+                                                            FloatP /*maxt*/,
+                                                            void */*cache_*/) const {
+        NotImplementedError("ray_intersect_packet");
+        return { false, 0.f };
+    }
+
+    /**
+    * \brief Fast ray intersection test for visibility queries (scalar)
+    *
+    * Check whether the shape is intersected by the given ray.
+    * No details about the intersection are returned, hence the
+    * function is only useful for visibility queries. For most
+    * shapes, this will simply call forward the call to \ref
+    * ray_intersect. When the shape actually contains a nested
+    * kd-tree, some optimizations are possible.
+    */
+    virtual bool ray_intersect(const Ray3f &/*ray*/,
+                               Float /*mint*/,
+                               Float /*maxt*/) const {
+        NotImplementedError("ray_intersect");
+        return false;
+    }
+
+    /**
+    * \brief Fast ray intersection test for visibility queries (packet)
+    *
+    * Check whether the shape is intersected by the given ray.
+    * No details about the intersection are returned, hence the
+    * function is only useful for visibility queries. For most
+    * shapes, this will simply call forward the call to \ref
+    * ray_intersect. When the shape actually contains a nested
+    * kd-tree, some optimizations are possible.
+    */
+    virtual mask_t<FloatP> ray_intersect(const Ray3fP &/*ray*/,
+                                         FloatP /*mint*/,
+                                         FloatP /*maxt*/) const {
+        NotImplementedError("ray_intersect");
+        return false;
+    }
+
+    /**
+    * \brief Given that an intersection has been found, create a
+    * detailed intersection record (scalar)
+    */
+    void fill_intersection_record(const Ray3f &/*ray*/,
+                                  const void */*cache_*/ ,
+                                  SurfaceInteraction3f &/*its*/) const {
+        NotImplementedError("fill_intersection_record");
+    }
+
+    /**
+    * \brief Given that an intersection has been found, create a
+    * detailed intersection record (packet)
+    */
+    void fill_intersection_record(const Ray3fP &/*ray*/,
+                                  const void */*cache_*/,
+                                  SurfaceInteraction3fP &/*its*/) const {
+        NotImplementedError("fill_intersection_record");
+    }
+
+    //! @}
+    // =============================================================
 
     // =============================================================
     //! @{ \name Miscellaneous
@@ -241,27 +326,41 @@ public:
 
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const {
-        Throw("Not implemented yet");
+        // TODO: handle media.
+        return false;
+        // NotImplementedError(is_medium_transition);
         // return m_interior_medium.get() || m_exterior_medium.get();
     }
-    /// Return the medium that lies on the interior of this shape (\c nullptr == vacuum)
+    /// Return the medium that lies on the interior of this
+    /// shape (\c nullptr == vacuum)
     Medium *interior_medium() {
-        Throw("Not implemented yet");
+        // TODO: handle media.
+        return nullptr;
+        // NotImplementedError(interior_medium);
         // return m_interior_medium;
     }
-    /// Return the medium that lies on the interior of this shape (\c nullptr == vacuum, const version)
+    /// Return the medium that lies on the interior of this
+    /// shape (\c nullptr == vacuum, const version)
     const Medium *interior_medium() const {
-        Throw("Not implemented yet");
+        // TODO: handle media.
+        return nullptr;
+        // NotImplementedError(interior_medium);
         // return m_interior_medium.get();
     }
-    /// Return the medium that lies on the exterior of this shape (\c nullptr == vacuum)
+    /// Return the medium that lies on the exterior of this
+    /// shape (\c nullptr == vacuum)
     Medium *exterior_medium() {
-        Throw("Not implemented yet");
+        // TODO: handle media.
+        return nullptr;
+        // NotImplementedError(exterior_medium);
         // return m_exterior_medium;
     }
-    /// Return the medium that lies on the exterior of this shape (\c nullptr == vacuum, const version)
+    /// Return the medium that lies on the exterior of this
+    /// shape (\c nullptr == vacuum, const version)
     const Medium *exterior_medium() const {
-        Throw("Not implemented yet");
+        // TODO: handle media.
+        return nullptr;
+        // NotImplementedError(exterior_medium);
         // return m_exterior_medium.get();
     }
 
@@ -275,7 +374,7 @@ public:
     void set_bsdf(BSDF *bsdf) { m_bsdf = bsdf; }
 
     /// Is this shape also an area emitter?
-    bool is_emitter() const { return m_emitter.get() != nullptr; }
+    bool is_emitter() const { return (bool)m_emitter; }
 
     /// Return the area emitter associated with this shape (if any, const version)
     const Emitter *emitter() const { return m_emitter.get(); }
@@ -284,7 +383,7 @@ public:
     Emitter *emitter() { return m_emitter.get(); }
 
     /// Is this shape also an area sensor?
-    bool is_sensor() const { return m_sensor.get() != nullptr; }
+    bool is_sensor() const { return (bool)m_sensor; }
 
     /// Return the area sensor associated with this shape (if any, const version)
     const Sensor *sensor() const { return m_sensor.get(); }
@@ -327,6 +426,16 @@ private:
     ref<BSDF> m_bsdf;
     ref<Emitter> m_emitter;
     ref<Sensor> m_sensor;
+
+
+private:  // Implementation-specific
+    template <typename DirectSample, typename Point2 = typename DirectSample::Point2,
+              typename Mask = mask_t<typename DirectSample::Value>>
+    void sample_direct_impl(DirectSample &d_rec, const Point2 &sample,
+                            const Mask &active) const;
+    template <typename DirectSample, typename Value = typename DirectSample::Value,
+              typename Mask = mask_t<Value>>
+    Value pdf_direct_impl(const DirectSample &d_rec, const Mask &active) const;
 };
 
 NAMESPACE_END(mitsuba)

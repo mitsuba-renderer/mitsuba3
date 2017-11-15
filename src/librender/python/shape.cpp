@@ -27,7 +27,7 @@ MTS_PY_EXPORT(Shape) {
         .mdef(Mesh, vertex_struct)
         .mdef(Mesh, face_struct)
         .mdef(Mesh, write)
-        .mdef(Mesh, vertex_normals)
+        .mdef(Mesh, has_vertex_normals)
         .mdef(Mesh, recompute_bbox)
         .mdef(Mesh, recompute_vertex_normals)
         .def("vertices", [](py::object &o) {

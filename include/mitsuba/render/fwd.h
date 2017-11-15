@@ -38,6 +38,10 @@ using DirectSample3f         = DirectSample<Point3f>;
 using DirectSample3fP        = DirectSample<Point3fP>;
 using DirectSample3fX        = DirectSample<Point3fX>;
 
+using RadianceRecord3f       = RadianceRecord<Point3f>;
+using RadianceRecord3fP      = RadianceRecord<Point3fP>;
+using RadianceRecord3fX      = RadianceRecord<Point3fX>;
+
 using SurfaceInteraction3f   = SurfaceInteraction<Point3f>;
 using SurfaceInteraction3fP  = SurfaceInteraction<Point3fP>;
 using SurfaceInteraction3fX  = SurfaceInteraction<Point3fX>;

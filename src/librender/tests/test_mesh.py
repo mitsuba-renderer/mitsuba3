@@ -1,6 +1,7 @@
-from mitsuba.core import Thread, FileResolver, Struct, float_dtype
+from mitsuba.core import Struct, float_dtype
 from mitsuba.core.xml import load_string
 from mitsuba.render import Mesh
+from mitsuba.test.util import fresolver_append_path
 import numpy as np
 import os
 
@@ -70,16 +71,8 @@ def test01_create_mesh():
 ]"""
 
 
+@fresolver_append_path
 def test02_ply_triangle():
-    '''
-    Tests vertex normal computation for a PLY file that doesn't have them
-    '''
-    thread = Thread.thread()
-    fres_old = thread.file_resolver()
-    fres = FileResolver(fres_old)
-    fres.append(os.path.dirname(os.path.realpath(__file__)))
-    thread.set_file_resolver(fres)
-
     shape = load_string("""
         <scene version="0.5.0">
             <shape type="ply">
@@ -90,7 +83,7 @@ def test02_ply_triangle():
     """).kdtree()[0]
 
     vertices, faces = shape.vertices(), shape.faces()
-    assert not shape.vertex_normals()
+    assert not shape.has_vertex_normals()
     assert vertices.ndim == 1
     assert vertices.shape == (3, )
     assert np.all(vertices['x'] == np.float32([0, 0, 0]))
@@ -101,16 +94,11 @@ def test02_ply_triangle():
     assert faces[0]['i0'] == np.uint32(0)
     assert faces[0]['i1'] == np.uint32(1)
     assert faces[0]['i2'] == np.uint32(2)
-    thread.set_file_resolver(fres_old)
 
-
+@fresolver_append_path
 def test03_ply_computed_normals():
-    thread = Thread.thread()
-    fres_old = thread.file_resolver()
-    fres = FileResolver(fres_old)
-    fres.append(os.path.dirname(os.path.realpath(__file__)))
-    thread.set_file_resolver(fres)
-
+    """Checks(automatic) vertex normal computation for a PLY file that
+    doesn't have them."""
     shape = load_string("""
         <scene version="0.5.0">
             <shape type="ply">
@@ -119,15 +107,15 @@ def test03_ply_computed_normals():
         </scene>
     """).kdtree()[0]
     vertices = shape.vertices()
-    assert shape.vertex_normals()
-    assert np.all(vertices['nx'] == np.float32([-1, -1, -1]))
-    assert np.all(vertices['ny'] == np.float32([0, 0, 0]))
-    assert np.all(vertices['nz'] == np.float32([0, 0, 0]))
-    thread.set_file_resolver(fres_old)
+    assert shape.has_vertex_normals()
+    # Normals are stored in half precision
+    assert np.all(vertices['nx'] == np.float16([-1, -1, -1]))
+    assert np.all(vertices['ny'] == np.float16([0, 0, 0]))
+    assert np.all(vertices['nz'] == np.float16([0, 0, 0]))
 
 
 def test04_normal_weighting_scheme():
-    ''' Tests the weighting scheme that is used to compute surface normals '''
+    """Tests the weighting scheme that is used to compute surface normals."""
     vertex_struct = Struct() \
         .append("x", float_dtype) \
         .append("y", float_dtype) \

@@ -3,6 +3,7 @@ set(INC_DIR "../../include/mitsuba/render")
 add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/fwd.h
   ${INC_DIR}/records.h
+  ${INC_DIR}/records.inl
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
   common.cpp       ${INC_DIR}/common.h

@@ -3,10 +3,10 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/string.h>
-#include <mitsuba/render/common.h>
-#include <mitsuba/render/interaction.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/common.h>
 #include <mitsuba/render/emitter.h>
+#include <mitsuba/render/interaction.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -339,10 +339,138 @@ template <typename Point3_> struct DirectSample : public PositionSample<Point3_>
         : Base(p, n, uv, time, pdf, measure, object), ref_p(ref_p),
           ref_n(ref_n), d(d), dist(dist) { }
 
+      /**
+       * \brief Setup this record so that it can be used to \a query
+       * the density of a surface position (where the reference point lies on
+       * a \a surface).
+       *
+       * \param ray
+       *     Reference to the ray that generated the intersection \c si
+       *     The ray origin must be located at \c si.p
+       *
+       * \param si
+       *     A surface intersection record (usually on an emitter).
+       */
+    void set_query(const Ray3 &ray, const SurfaceInteraction &si,
+                   const Measure &_measure = ESolidAngle) {
+        p = si.p;
+        n = si.sh_frame.n;
+        uv = si.uv;
+        measure = _measure;
+        object = si.shape->emitter();
+        d = ray.d;
+        dist = si.t;
+    }
+
     //! @}
     // =============================================================
 
     ENOKI_DERIVED_STRUCT(DirectSample, Base, ref_p, ref_n, d, dist)
+    ENOKI_ALIGNED_OPERATOR_NEW()
+};
+
+// -----------------------------------------------------------------------------
+
+/**
+ * \brief Radiance query record data structure used by \ref SamplingIntegrator
+ * \ingroup librender
+ */
+template <typename Point3> struct RadianceRecord {
+
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
+    using Value              = value_t<Point3>;
+    using Int                = int_array_t<Value>;
+    using Mask               = mask_t<Value>;
+    using Point2             = point2_t<Point3>;
+    using SurfaceInteraction = SurfaceInteraction<Point3>;
+    using RayDifferential    = RayDifferential<Point3>;
+    using MediumPtr          = like_t<Value, const Medium *>;
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Fields
+    // An asterisk (*) marks entries which may be overwritten by the callee.
+    // =============================================================
+
+    /// Pointer to the associated scene
+    const Scene *scene = nullptr;
+
+    /// Sample generator
+    Sampler *sampler = nullptr;
+
+    /// Pointer to the current medium (*)
+    MediumPtr medium = nullptr;
+
+    /// Current depth value (# of light bounces) (*)
+    Int depth = 0;
+
+    /// Surface interaction data structure (*)
+    SurfaceInteraction its;
+
+    /// Opacity value of the associated pixel (*)
+    Value alpha = 0.0f;
+
+    /// Ray distance to the first surface interaction
+    Value dist = -1.0f;
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Constructor and convenience methods.
+    // =============================================================
+    /// Construct a radiance query record for the given scene and sampler
+    RadianceRecord(const Scene *scene, Sampler *sampler)
+        : scene(scene), sampler(sampler), medium(nullptr),
+          depth(0), its(), alpha(0), dist(-1) { }
+
+    /// Begin a new query
+    void new_query(const MediumPtr &_medium) {
+        medium = _medium;
+        depth = 1;
+        alpha = 1;
+        dist = -1;
+    }
+
+    /// Initialize the query record for a recursive query
+    void recursive_query(const RadianceRecord &parent) {
+        scene = parent.scene;
+        sampler = parent.sampler;
+        depth = parent.depth+1;
+        medium = parent.medium;
+    }
+
+    /**
+     * \brief Search for a ray intersection
+     *
+     * This function does several things at once: if the
+     * intersection has already been provided, it returns.
+     *
+     * Otherwise, it
+     * 1. performs the ray intersection
+     * 2. computes the transmittance due to participating media
+     *   and stores it in \c transmittance.
+     * 3. sets the alpha value
+     * 4. sets the distance value
+     *
+     * \return \c true if there is a valid intersection.
+     *
+     * \note See \file records.inl for implementation.
+     */
+    Mask ray_intersect(const RayDifferential &ray, const Mask &active);
+
+
+    /// Retrieve a 1D sample (\ref sampler must point to a valid sampler).
+    Value next_sample_1d() { return sampler->next<Value, mask_t<Value>>(); }
+
+    /// Retrieve a 2D sample (\ref sampler must point to a valid sampler).
+    Point2 next_sample_2d() { return sampler->next<Point2, mask_t<Value>>(); }
+    //! @}
+    // =============================================================
+
+    ENOKI_STRUCT(RadianceRecord, scene, sampler, medium, depth, its, alpha, dist)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
@@ -393,6 +521,27 @@ std::ostream &operator<<(std::ostream &os,
     return os;
 }
 
+template <typename Point3>
+std::ostream &operator<<(std::ostream &os,
+                         const RadianceRecord<Point3> & record) {
+    os << "RadianceRecord[" << std::endl
+       << "  scene = ";
+    if (record.scene == nullptr) os << "[ not set ]"; else os << record.scene;
+    os << "," << std::endl
+       << "  sampler = ";
+    if (record.sampler == nullptr) os << "[ not set ]"; else os << record.sampler;
+    os << "," << std::endl
+       << "  medium = ";
+    if (record.medium == nullptr) os << "[ not set ]"; else os << record.medium;
+    os << "," << std::endl
+       << "  depth = " << record.depth << "," << std::endl
+       << "  its = " << string::indent(record.its) << std::endl
+       << "  alpha = " << record.alpha << "," << std::endl
+       << "  dist = " << record.dist << std::endl
+       << "]" << std::endl;
+    return os;
+}
+
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
@@ -406,6 +555,9 @@ ENOKI_STRUCT_DYNAMIC(mitsuba::DirectionSample, d, pdf, measure)
 
 ENOKI_STRUCT_DYNAMIC(mitsuba::DirectSample, p, n, uv, time, pdf,
                      measure, object, ref_p, ref_n, d, dist)
+
+ENOKI_STRUCT_DYNAMIC(mitsuba::RadianceRecord, scene, sampler, medium, depth,
+                     its, alpha, dist)
 
 //! @}
 // -----------------------------------------------------------------------
