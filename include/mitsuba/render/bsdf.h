@@ -15,10 +15,10 @@
 NAMESPACE_BEGIN(mitsuba)
 
 
-/**
- * \brief This macro must be used in the definition of bsdfs
- * plugins for template instantiations of the sample, eval and
- * pdf functions.
+/*
+ * \brief This macro should be used in the definition of BSDF
+ * plugins to instantiate concrete versions of the the \c sample,
+ * \c eval and \c pdf functions.
  */
 #define MTS_IMPLEMENT_BSDF()                                    \
     std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,        \

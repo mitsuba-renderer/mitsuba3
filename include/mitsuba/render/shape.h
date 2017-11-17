@@ -228,93 +228,79 @@ public:
     // =============================================================
 
     /**
-    * \brief Fast ray intersection test (scalar)
-    *
-    * Check whether the shape is intersected by the given ray. Some
-    * temporary space (\ref MTS_KD_INTERSECTION_CACHE_SIZE-4 bytes) is,
-    * supplied which can be used to cache information about the
-    * intersection. The function \ref fill_intersection_record()
-    * can later use this information to fill in a detailed
-    * intersection record.
-    */
-    virtual std::pair<bool, Float> ray_intersect(const Ray3f &/*ray*/,
-                                                 Float /*mint*/,
-                                                 Float /*maxt*/,
-                                                 void */*cache_*/) const {
-        NotImplementedError("ray_intersect_scalar");
+     * \brief Fast ray intersection test (scalar)
+     *
+     * Check whether the shape is intersected by the given ray. Some
+     * temporary space (\ref MTS_KD_INTERSECTION_CACHE_SIZE-4 bytes) is,
+     * supplied which can be used to cache information about the
+     * intersection. The function \ref fill_surface_interaction()
+     * can later use this information to fill in a detailed
+     * intersection record.
+     */
+    virtual std::pair<bool, Float> ray_intersect(
+            const Ray3f &/*ray*/, Float /*mint*/, Float /*maxt*/,
+            void */*cache*/) const {
+        NotImplementedError("ray_intersect(full, scalar)");
+        return { false, 0.f };
+    }
+    auto ray_intersect(const Ray3f &ray, Float mint, Float maxt, void *cache,
+                       bool /*unused*/) const {
+        return ray_intersect(ray, mint, maxt, cache);
+    }
+    /// Vectorized variant of \ref ray_intersect.
+    virtual std::pair<mask_t<FloatP>, FloatP> ray_intersect(
+            const Ray3fP &/*ray*/, FloatP /*mint*/, FloatP /*maxt*/,
+            void */*cache*/, const mask_t<FloatP> &/*active*/) const {
+        NotImplementedError("ray_intersect(full, vector)");
         return { false, 0.f };
     }
 
     /**
-    * \brief Fast ray intersection test (packet)
-    *
-    * Check whether the shape is intersected by the given ray. Some
-    * temporary space (\ref MTS_KD_INTERSECTION_CACHE_SIZE-4 bytes) is,
-    * supplied which can be used to cache information about the
-    * intersection. The function \ref fill_intersection_record()
-    * can later use this information to fill in a detailed
-    * intersection record.
-    */
-    virtual std::pair<mask_t<FloatP>, FloatP> ray_intersect(const Ray3fP &/*ray*/,
-                                                            FloatP /*mint*/,
-                                                            FloatP /*maxt*/,
-                                                            void */*cache_*/) const {
-        NotImplementedError("ray_intersect_packet");
-        return { false, 0.f };
-    }
-
-    /**
-    * \brief Fast ray intersection test for visibility queries (scalar)
-    *
-    * Check whether the shape is intersected by the given ray.
-    * No details about the intersection are returned, hence the
-    * function is only useful for visibility queries. For most
-    * shapes, this will simply call forward the call to \ref
-    * ray_intersect. When the shape actually contains a nested
-    * kd-tree, some optimizations are possible.
-    */
-    virtual bool ray_intersect(const Ray3f &/*ray*/,
-                               Float /*mint*/,
+     * \brief Fast ray intersection test for visibility queries (scalar)
+     *
+     * Check whether the shape is intersected by the given ray.
+     * No details about the intersection are returned, hence the
+     * function is only useful for visibility queries. For most
+     * shapes, this will simply call forward the call to \ref
+     * ray_intersect. When the shape actually contains a nested
+     * kd-tree, some optimizations are possible.
+     */
+    virtual bool ray_intersect(const Ray3f &/*ray*/, Float /*mint*/,
                                Float /*maxt*/) const {
-        NotImplementedError("ray_intersect");
+        NotImplementedError("ray_intersect(shadow, scalar)");
+        return false;
+    }
+    auto ray_intersect(const Ray3f &ray, Float mint, Float maxt,
+                       bool /*unused*/) const {
+        return ray_intersect(ray, mint, maxt);
+    }
+    /// Vectorized variant of \ref ray_intersect.
+    virtual mask_t<FloatP> ray_intersect(
+            const Ray3fP &/*ray*/, FloatP /*mint*/, FloatP /*maxt*/,
+            const mask_t<FloatP> &/*active*/) const {
+        NotImplementedError("ray_intersect(shadow, scalar)");
         return false;
     }
 
     /**
-    * \brief Fast ray intersection test for visibility queries (packet)
-    *
-    * Check whether the shape is intersected by the given ray.
-    * No details about the intersection are returned, hence the
-    * function is only useful for visibility queries. For most
-    * shapes, this will simply call forward the call to \ref
-    * ray_intersect. When the shape actually contains a nested
-    * kd-tree, some optimizations are possible.
-    */
-    virtual mask_t<FloatP> ray_intersect(const Ray3fP &/*ray*/,
-                                         FloatP /*mint*/,
-                                         FloatP /*maxt*/) const {
-        NotImplementedError("ray_intersect");
-        return false;
+     * \brief Given that an intersection has been found, create a
+     * detailed intersection record (scalar)
+     */
+    virtual void fill_surface_interaction(
+            const Ray3f &/*ray*/, const void */*cache*/,
+            SurfaceInteraction3f &/*its*/) const {
+        NotImplementedError("fill_surface_interaction(scalar)");
     }
-
-    /**
-    * \brief Given that an intersection has been found, create a
-    * detailed intersection record (scalar)
-    */
-    void fill_intersection_record(const Ray3f &/*ray*/,
-                                  const void */*cache_*/ ,
-                                  SurfaceInteraction3f &/*its*/) const {
-        NotImplementedError("fill_intersection_record");
+    void fill_surface_interaction(
+            const Ray3f &ray, const void *cache,
+            SurfaceInteraction3f &its, bool /*unused*/) const {
+        return fill_surface_interaction(ray, cache, its);
     }
-
-    /**
-    * \brief Given that an intersection has been found, create a
-    * detailed intersection record (packet)
-    */
-    void fill_intersection_record(const Ray3fP &/*ray*/,
-                                  const void */*cache_*/,
-                                  SurfaceInteraction3fP &/*its*/) const {
-        NotImplementedError("fill_intersection_record");
+    /// Vectorized variant of \ref fill_surface_interaction.
+    virtual void fill_surface_interaction(
+            const Ray3fP &/*ray*/, const void */*cache*/,
+            SurfaceInteraction3fP &/*its*/, const mask_t<FloatP> &/*active*/) const {
+        NotImplementedError("fill_surface_interaction(vector)");
     }
 
     //! @}

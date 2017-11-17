@@ -22,6 +22,7 @@ def convert_to_xyz(spectrum):
         xyz[0] += spectrum[li] * responses[0][li]
         xyz[1] += spectrum[li] * responses[1][li]
         xyz[2] += spectrum[li] * responses[2][li]
+    xyz /= float(N_SAMPLES)
 
     return xyz
 

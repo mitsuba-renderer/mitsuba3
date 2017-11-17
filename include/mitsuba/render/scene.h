@@ -23,26 +23,16 @@ public:
     //! @{ \name Ray tracing
     // =============================================================
     /// Shoot a ray and get full information about any resulting intersection.
-    template<typename Ray,
-             typename Point = typename Ray::Point,
-             typename Value = value_t<Point>,
-             typename SurfaceInteraction = SurfaceInteraction<Point>,
-             typename Mask = mask_t<Value>>
-    std::pair<Mask, Value> ray_intersect(const Ray &ray,
-                                         const Value &mint, const Value &maxt,
-                                         SurfaceInteraction &its,
-                                         const Mask &active) const {
-        std::unique_ptr<void, enoki::aligned_deleter> cache(
-            enoki::alloc(MTS_KD_INTERSECTION_CACHE_SIZE));
-
-        // TODO: ugly workaround, pass `active` to the ray intersection routine
-        // instead.
-        // masked(maxt, ~active) = mint - 1.0f;  // maxt < min ==> ray disabled.
+    template <typename Ray, typename Value = typename Ray::Value>
+    auto ray_intersect(const Ray &ray, const Value &mint, const Value &maxt,
+                       SurfaceInteraction<typename Ray::Point> &its,
+                       const mask_t<Value> &active) const {
+        MTS_MAKE_KD_CACHE(cache);
 
         auto result = m_kdtree->ray_intersect_pbrt<false>(ray, mint, maxt,
-                                                          cache.get());
+                                                          (void*) cache, active);
         if (any(active & result.first)) {
-            m_kdtree->fill_surface_interaction(ray, cache.get(), its,
+            m_kdtree->fill_surface_interaction(ray, (void*) cache, its,
                                                active & result.first);
         }
 
@@ -51,13 +41,11 @@ public:
 
     /// Shoot a shadow ray: only a boolean is returned (true iff there was an
     /// intersection).
-    template<typename Ray,
-             typename Point = typename Ray::Point,
-             typename Value = value_t<Point>,
-             typename SurfaceInteraction = SurfaceInteraction<Point>,
-             typename Mask = mask_t<Value>>
-    Mask ray_intersect(const Ray &ray, const Value &mint, const Value &maxt) const {
-        return m_kdtree->ray_intersect_pbrt<true>(ray, mint, maxt).first;
+    template <typename Ray, typename Value = typename Ray::Value>
+    auto ray_intersect(const Ray &ray, const Value &mint, const Value &maxt,
+                       const mask_t<Value> &active = true) const {
+        return m_kdtree->ray_intersect_pbrt<true>(ray, mint, maxt, nullptr,
+                                                  active).first;
     }
 
     //! @}

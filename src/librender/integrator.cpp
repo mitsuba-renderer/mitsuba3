@@ -140,7 +140,7 @@ void SamplingIntegrator::render_block_scalar(
     bool needs_aperture_sample = sensor->needs_aperture_sample();
     bool needs_time_sample = sensor->needs_time_sample();
 
-    RadianceRecord3f r_rec(scene, sampler);
+    RadianceSample3f r_rec(scene, sampler);
     Point2f aperture_sample(0.5f);
     Float time_sample = 0.5f;
     RayDifferential3f sensor_ray;
@@ -189,7 +189,7 @@ void SamplingIntegrator::render_block_vector(
     bool needs_aperture_sample = sensor->needs_aperture_sample();
     bool needs_time_sample = sensor->needs_time_sample();
 
-    RadianceRecord3fP r_rec(scene, sampler);
+    RadianceSample3fP r_rec(scene, sampler);
     Point2fP aperture_sample(0.5f);
     FloatP time_sample = 0.5f;
     RayDifferential3fP sensor_ray;

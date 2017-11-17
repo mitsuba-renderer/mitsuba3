@@ -406,11 +406,11 @@ std::string Mesh::to_string() const {
     return oss.str();
 }
 
-template MTS_EXPORT_RENDER auto Mesh::ray_intersect(Index, const Ray3f &) const;
-template MTS_EXPORT_RENDER auto Mesh::ray_intersect(Index, const Ray3fP &) const;
+template MTS_EXPORT_RENDER auto Mesh::intersect_face(Index, const Ray3f &) const;
+template MTS_EXPORT_RENDER auto Mesh::intersect_face(Index, const Ray3fP &) const;
 
-// template MTS_EXPORT_RENDER auto Mesh::vertex_position<typename Shape::Index>(const typename Shape::Index &, const bool &) const;
-// template MTS_EXPORT_RENDER auto Mesh::vertex_position<UInt32P>(const UInt32P &, const mask_t<UInt32P> &) const;
+template MTS_EXPORT_RENDER auto Mesh::vertex_position<typename Shape::Index>(const typename Shape::Index &, const bool &) const;
+template MTS_EXPORT_RENDER auto Mesh::vertex_position<UInt32P>(const UInt32P &, const mask_t<UInt32P> &) const;
 
 template MTS_EXPORT_RENDER auto Mesh::vertex_normal(const Index &, const bool &) const;
 template MTS_EXPORT_RENDER auto Mesh::vertex_normal(const UInt32P  &, const mask_t<UInt32P> &) const;

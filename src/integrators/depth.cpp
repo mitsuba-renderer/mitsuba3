@@ -23,8 +23,8 @@ public:
     // =============================================================
     template <typename RayDifferential,
               typename Point3 = typename RayDifferential::Point,
-              typename RadianceRecord = RadianceRecord<Point3>>
-    auto Li_impl(const RayDifferential &r, RadianceRecord &r_rec,
+              typename RadianceSample = RadianceSample<Point3>>
+    auto Li_impl(const RayDifferential &r, RadianceSample &r_rec,
                  const mask_t<value_t<Point3>> &active_) const {
         using Value    = value_t<Point3>;
         using Mask     = mask_t<Value>;
@@ -44,13 +44,13 @@ public:
 
         // Intersect ray against scene.
         // For a binary image, we could use shadow rays.
-        active &= r_rec.ray_intersect(ray, active) & (r_rec.dist >= 0.0f);
+        active &= r_rec.ray_intersect(ray, active) & (r_rec.its.t >= 0.0f);
 
         if (none(active))  // Early return
             return Spectrum(0.0f);
 
         // Grayscale value (inversely proportional to the intersection distance).
-        Value d = (r_rec.dist - min_distance) / (max_distance - min_distance);
+        Value d = (r_rec.its.t - min_distance) / (max_distance - min_distance);
         Assert(all((d >= 0.0f) | ~active));
         masked(Li, active) += Spectrum(Value(1.0) - min(Value(1.0), d));
 
@@ -58,10 +58,10 @@ public:
     }
 
     Spectrumf Li(const RayDifferential3f &r,
-                 RadianceRecord3f &r_rec) const override {
+                 RadianceSample3f &r_rec) const override {
         return Li_impl(r, r_rec, true);
     }
-    SpectrumfP Li(const RayDifferential3fP &r, RadianceRecord3fP &r_rec,
+    SpectrumfP Li(const RayDifferential3fP &r, RadianceSample3fP &r_rec,
                   const mask_t<FloatP> &active) const override {
         return Li_impl(r, r_rec, active);
     }

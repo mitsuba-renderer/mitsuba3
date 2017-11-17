@@ -20,7 +20,7 @@ class Subsurface;
 template <typename Vector3> struct DirectionSample;
 template <typename Point3>  struct DirectSample;
 template <typename Point3>  struct PositionSample;
-template <typename Point3>  struct RadianceRecord;
+template <typename Point3>  struct RadianceSample;
 template <typename Point3>  struct SurfaceInteraction;
 template <typename Point3>  struct MediumInteraction;
 template <typename Point3>  struct BSDFSample;
@@ -40,9 +40,9 @@ using DirectSample3f         = DirectSample<Point3f>;
 using DirectSample3fP        = DirectSample<Point3fP>;
 using DirectSample3fX        = DirectSample<Point3fX>;
 
-using RadianceRecord3f       = RadianceRecord<Point3f>;
-using RadianceRecord3fP      = RadianceRecord<Point3fP>;
-using RadianceRecord3fX      = RadianceRecord<Point3fX>;
+using RadianceSample3f       = RadianceSample<Point3f>;
+using RadianceSample3fP      = RadianceSample<Point3fP>;
+using RadianceSample3fX      = RadianceSample<Point3fX>;
 
 using SurfaceInteraction3f   = SurfaceInteraction<Point3f>;
 using SurfaceInteraction3fP  = SurfaceInteraction<Point3fP>;

@@ -375,7 +375,7 @@ template <typename Point3_> struct DirectSample : public PositionSample<Point3_>
  * \brief Radiance query record data structure used by \ref SamplingIntegrator
  * \ingroup librender
  */
-template <typename Point3> struct RadianceRecord {
+template <typename Point3> struct RadianceSample {
 
     // =============================================================
     //! @{ \name Type declarations
@@ -393,6 +393,8 @@ template <typename Point3> struct RadianceRecord {
     // =============================================================
     //! @{ \name Fields
     // An asterisk (*) marks entries which may be overwritten by the callee.
+    //
+    // Note: the field \c dist have been moved to \ref SurfaceInteraction::t.
     // =============================================================
 
     /// Pointer to the associated scene
@@ -413,8 +415,6 @@ template <typename Point3> struct RadianceRecord {
     /// Opacity value of the associated pixel (*)
     Value alpha = 0.0f;
 
-    /// Ray distance to the first surface interaction
-    Value dist = -1.0f;
     //! @}
     // =============================================================
 
@@ -422,20 +422,19 @@ template <typename Point3> struct RadianceRecord {
     //! @{ \name Constructor and convenience methods.
     // =============================================================
     /// Construct a radiance query record for the given scene and sampler
-    RadianceRecord(const Scene *scene, Sampler *sampler)
+    RadianceSample(const Scene *scene, Sampler *sampler)
         : scene(scene), sampler(sampler), medium(nullptr),
-          depth(0), its(), alpha(0), dist(-1) { }
+          depth(0), its(), alpha(0) { }
 
     /// Begin a new query
     void new_query(const MediumPtr &_medium) {
         medium = _medium;
         depth = 1;
         alpha = 1;
-        dist = -1;
     }
 
     /// Initialize the query record for a recursive query
-    void recursive_query(const RadianceRecord &parent) {
+    void recursive_query(const RadianceSample &parent) {
         scene = parent.scene;
         sampler = parent.sampler;
         depth = parent.depth+1;
@@ -470,7 +469,7 @@ template <typename Point3> struct RadianceRecord {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(RadianceRecord, scene, sampler, medium, depth, its, alpha, dist)
+    ENOKI_STRUCT(RadianceSample, scene, sampler, medium, depth, its, alpha)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
@@ -523,8 +522,8 @@ std::ostream &operator<<(std::ostream &os,
 
 template <typename Point3>
 std::ostream &operator<<(std::ostream &os,
-                         const RadianceRecord<Point3> & record) {
-    os << "RadianceRecord[" << std::endl
+                         const RadianceSample<Point3> & record) {
+    os << "RadianceSample[" << std::endl
        << "  scene = ";
     if (record.scene == nullptr) os << "[ not set ]"; else os << record.scene;
     os << "," << std::endl
@@ -537,7 +536,6 @@ std::ostream &operator<<(std::ostream &os,
        << "  depth = " << record.depth << "," << std::endl
        << "  its = " << string::indent(record.its) << std::endl
        << "  alpha = " << record.alpha << "," << std::endl
-       << "  dist = " << record.dist << std::endl
        << "]" << std::endl;
     return os;
 }
@@ -556,8 +554,8 @@ ENOKI_STRUCT_DYNAMIC(mitsuba::DirectionSample, d, pdf, measure)
 ENOKI_STRUCT_DYNAMIC(mitsuba::DirectSample, p, n, uv, time, pdf,
                      measure, object, ref_p, ref_n, d, dist)
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::RadianceRecord, scene, sampler, medium, depth,
-                     its, alpha, dist)
+ENOKI_STRUCT_DYNAMIC(mitsuba::RadianceSample, scene, sampler, medium, depth,
+                     its, alpha)
 
 //! @}
 // -----------------------------------------------------------------------

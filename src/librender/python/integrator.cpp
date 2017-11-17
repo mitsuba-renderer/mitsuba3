@@ -14,10 +14,10 @@ MTS_PY_EXPORT(Integrator) {
 
     MTS_PY_CLASS(SamplingIntegrator, Integrator)
         .def("Li", py::overload_cast<const RayDifferential3f &,
-                                     RadianceRecord3f &>(
+                                     RadianceSample3f &>(
                 &SamplingIntegrator::Li, py::const_), "ray"_a, "r_rec"_a)
         .def("Li", py::overload_cast<const RayDifferential3fP &,
-                                     RadianceRecord3fP &,
+                                     RadianceSample3fP &,
                                      const mask_t<FloatP> &>(
                 &SamplingIntegrator::Li, py::const_), "ray"_a, "r_rec"_a, "active"_a)
         .mdef(SamplingIntegrator, cancel)

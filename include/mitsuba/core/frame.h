@@ -152,13 +152,11 @@ std::ostream &operator<<(std::ostream &os, const Frame<Vector3> &f) {
  * \param frame
  *    Used to return the computed frame
  */
-template <typename Normal3, typename Vector3, typename Frame,
-          typename Mask = mask_t<Frame>>
-void compute_shading_frame(const Normal3 &n, const Vector3 &dp_du,
-                           Frame &frame, const Mask &active = true) {
-    masked(frame.n, active) = n;
-    masked(frame.s, active) = normalize(dp_du - frame.n * dot(frame.n, dp_du));
-    masked(frame.t, active) = cross(frame.n, frame.s);
+template <typename Vector3>
+auto compute_shading_frame(const typename Vector3::Normal &n,
+                           const Vector3 &dp_du) {
+    auto s = normalize(dp_du - n * dot(n, dp_du));
+    return Frame<Vector3>(s, cross(n, s), n);
 }
 
 NAMESPACE_END(mitsuba)

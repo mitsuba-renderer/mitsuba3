@@ -9,24 +9,35 @@
 
 using Index = Shape::Index;
 
-auto create_cache() {
-    return std::unique_ptr<void, enoki::aligned_deleter>(
-        enoki::alloc(MTS_KD_INTERSECTION_CACHE_SIZE));
+template <typename Func>
+auto provide_cache_scalar(Func f) {
+    return [f](const ShapeKDTree &kdtree, const Ray3f &ray,
+               const Float &mint, const Float &maxt) {
+        MTS_MAKE_KD_CACHE(cache);
+        return (kdtree.*f)(ray, mint, maxt, (void *)cache, true);
+    };
 }
-
 template <typename Func>
 auto provide_cache(Func f) {
-    return [f](const ShapeKDTree &kdtree, const Ray3fX &ray,
-               const FloatX &mint, const FloatX &maxt) {
-        auto cache = create_cache();
+    return [f](const ShapeKDTree &kdtree, const Ray3fX &ray, const FloatX &mint,
+               const FloatX &maxt, const mask_t<FloatX> &active_) {
+        MTS_MAKE_KD_CACHE(cache);
+        auto n = slices(ray);
         mask_t<FloatX> mask;
         FloatX time;
-        set_slices(mask, slices(ray));
-        set_slices(time, slices(ray));
+        set_slices(mask, n);
+        set_slices(time, n);
+        // Expand if a single value is provided
+        auto active = active_;
+        if (slices(active) == 1) {
+            set_slices(active, n);
+            active = active_.coeff(0);
+        }
+
         vectorize([&kdtree, &cache, f](auto &&m, auto &&t, auto &&r,
-                                       auto &&mi, auto &&ma) {
-            std::tie(m, t) = (kdtree.*f)(r, mi, ma, cache.get());
-        }, mask, time, ray, mint, maxt);
+                                       auto &&mi, auto &&ma, auto&&a) {
+            std::tie(m, t) = (kdtree.*f)(r, mi, ma, (void *)cache, a);
+        }, mask, time, ray, mint, maxt, active);
         return std::make_pair(mask, time);
     };
 }
@@ -55,30 +66,26 @@ MTS_PY_EXPORT(ShapeKDTree) {
         // These methods are exposed to Python mostly for testing purposes.
         // For fully correct intersections, use Scene::ray_intersect.
         .def("ray_intersect_dummy_scalar",
-             [](const ShapeKDTree &kdtree, const Ray3f &ray, Float mint, Float maxt) {
-                auto cache = create_cache();
-                return kdtree.ray_intersect_dummy<false>(ray, mint, maxt, cache.get());
-             },
+             provide_cache_scalar(&ShapeKDTree::ray_intersect_dummy<false, Ray3f>),
+             "ray"_a, "mint"_a, "maxt"_a,
              D(ShapeKDTree, ray_intersect_dummy))
         .def("ray_intersect_dummy_packet",
              provide_cache(&ShapeKDTree::ray_intersect_dummy<false, Ray3fP>),
+             "ray"_a, "mint"_a, "maxt"_a, "active"_a = true,
              D(ShapeKDTree, ray_intersect_dummy))
 
         .def("ray_intersect_havran_scalar",
-             [](const ShapeKDTree &kdtree, const Ray3f &ray, Float mint, Float maxt) {
-                auto cache = create_cache();
-                return kdtree.ray_intersect_havran<false>(ray, mint, maxt, cache.get());
-             },
+             provide_cache_scalar(&ShapeKDTree::ray_intersect_havran<false>),
+             "ray"_a, "mint"_a, "maxt"_a,
              D(ShapeKDTree, ray_intersect_havran))
 
         .def("ray_intersect_pbrt_scalar",
-             [](const ShapeKDTree &kdtree, const Ray3f &ray, Float mint, Float maxt) {
-                auto cache = create_cache();
-                return kdtree.ray_intersect_pbrt<false>(ray, mint, maxt, cache.get());
-             },
+             provide_cache_scalar(&ShapeKDTree::ray_intersect_pbrt<false, Ray3f>),
+             "ray"_a, "mint"_a, "maxt"_a,
              D(ShapeKDTree, ray_intersect_pbrt))
         .def("ray_intersect_pbrt_packet",
              provide_cache(&ShapeKDTree::ray_intersect_pbrt<false, Ray3fP>),
+             "ray"_a, "mint"_a, "maxt"_a, "active"_a = true,
              D(ShapeKDTree, ray_intersect_pbrt))
         ;
 }
@@ -96,26 +103,34 @@ MTS_PY_EXPORT(Scene) {
                 &Scene::eval_environment<RayDifferential3fP>),
              D(Scene, eval_environment), "ray"_a)
 
+        // Full intersection
         .def("ray_intersect",
              py::overload_cast<const Ray3f &, const Float &, const Float &,
                               SurfaceInteraction3f &, const bool &>(
                 &Scene::ray_intersect<Ray3f>, py::const_),
+             "ray"_a, "mint"_a, "maxt"_a, "its"_a, "active"_a = true,
+             D(Scene, ray_intersect))
+        // TODO: why can't we use vectorize_wrapper here? (compilation error)
+        .def("ray_intersect", //enoki::vectorize_wrapper(
+             py::overload_cast<const Ray3fP &, const FloatP &, const FloatP &,
+                               SurfaceInteraction3fP &, const mask_t<FloatP> &>(
+                &Scene::ray_intersect<Ray3fP>, py::const_), //),
              "ray"_a, "mint"_a, "maxt"_a, "its"_a, "active"_a,
              D(Scene, ray_intersect))
-        //.def("ray_intersect", enoki::vectorize_wrapper(
-        //     py::overload_cast<const Ray3fP &, const FloatP &, const FloatP &,
-        //                       SurfaceInteraction3fP &, const mask_t<FloatP> &> (
-        //        &Scene::ray_intersect<Ray3fP>, py::const_),
-        //    "ray"_a, "mint"_a, "maxt"_a, "its"_a, "active"_a,
-        //     D(Scene, ray_intersect))
+
+        // Shadow rays
         .def("ray_intersect",
-            py::overload_cast<const Ray3f &, const Float &, const Float &>(
+             py::overload_cast<const Ray3f &, const Float &, const Float &,
+                              const bool &>(
                 &Scene::ray_intersect<Ray3f>, py::const_),
-             "ray"_a, "mint"_a, "maxt"_a, D(Scene, ray_intersect, 2))
+             "ray"_a, "mint"_a, "maxt"_a, "active"_a = true,
+             D(Scene, ray_intersect, 2))
         .def("ray_intersect", enoki::vectorize_wrapper(
-            py::overload_cast<const Ray3fP &, const FloatP &, const FloatP &> (
+             py::overload_cast<const Ray3fP &, const FloatP &, const FloatP &,
+                              const mask_t<FloatP> &> (
                 &Scene::ray_intersect<Ray3fP>, py::const_)),
-             "ray"_a, "mint"_a, "maxt"_a, D(Scene, ray_intersect, 2))
+             "ray"_a, "mint"_a, "maxt"_a, "activa"_a = true,
+             D(Scene, ray_intersect, 2))
 
         // Sampling
 

@@ -84,7 +84,6 @@ public:
     mask_t<Value> put(const Point2 &pos, const Spectrum &spectrum,
                       const Value &alpha,
                       const mask_t<Value> &active) {
-        using ValueVector = std::vector<Value, aligned_allocator<Value>>;
         Assert(m_bitmap->pixel_format() == Bitmap::EXYZAW,
                "This `put` variant requires XYZAW internal storage format.");
 
@@ -93,22 +92,15 @@ public:
         static const Spectrum wavelengths(
             MTS_WAVELENGTH_MIN, 517, 673, MTS_WAVELENGTH_MAX
         );
-        static const auto responses = cie1931_xyz(wavelengths);
 
-        Value x(0.0f), y(0.0f), z(0.0f);
-        for (int li = 0; li < MTS_WAVELENGTH_SAMPLES; ++li) {
-            x += spectrum.coeff(li) * std::get<0>(responses).coeff(li);
-            y += spectrum.coeff(li) * std::get<1>(responses).coeff(li);
-            z += spectrum.coeff(li) * std::get<2>(responses).coeff(li);
-        }
+        Spectrum Xw, Yw, Zw;
+        std::tie(Xw, Yw, Zw) = cie1931_xyz(wavelengths);
+        Value Xs = enoki::mean(Xw * spectrum),
+              Ys = enoki::mean(Yw * spectrum),
+              Zs = enoki::mean(Zw * spectrum);
 
-        ValueVector temp(m_bitmap->channel_count());
-        temp[0] = x;
-        temp[1] = y;
-        temp[2] = z;
-        temp[3] = alpha;
-        temp[4] = 1.0f;  // Will be multiplied by the reconstruction weight.
-        return put(pos, temp.data(), active);
+        Array<Value, 5> values(Xs, Ys, Zs, alpha, 1.0f);
+        return put(pos, values.data(), active);
     }
 
     /**

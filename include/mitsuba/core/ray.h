@@ -96,17 +96,17 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
           d_x(d_x), d_y(d_y), has_differentials(has_differentials) { }
 
     void scale(Float amount) {
-        o_x = o + (o_x - o) * amount;
-        o_y = o + (o_y - o) * amount;
-        d_x = d + (d_x - d) * amount;
-        d_y = d + (d_y - d) * amount;
+        o_x = fmadd(o_x - o, amount, o);
+        o_y = fmadd(o_y - o, amount, o);
+        d_x = fmadd(d_x - d, amount, d);
+        d_y = fmadd(d_y - d, amount, d);
     }
 
     void scale_differential(Float amount) {
-        o_x = o + (o_x - o) * amount;
-        o_y = o + (o_y - o) * amount;
-        d_x = d + (d_x - d) * amount;
-        d_y = d + (d_y - d) * amount;
+        o_x = fmadd(o_x - o, amount, o);
+        o_y = fmadd(o_y - o, amount, o);
+        d_x = fmadd(d_x - d, amount, d);
+        d_y = fmadd(d_y - d, amount, d);
     }
 
     ENOKI_DERIVED_STRUCT(RayDifferential, Base, o_x, o_y,

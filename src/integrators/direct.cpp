@@ -150,14 +150,14 @@ public:
     //! @{ \name Integrator interface
     // =============================================================
 
-    SpectrumfP Li(const RayDifferential3fP &/*r*/, RadianceRecord3fP &/*r_rec*/,
+    SpectrumfP Li(const RayDifferential3fP &/*r*/, RadianceSample3fP &/*r_rec*/,
                   const mask_t<FloatP> &/*active*/) const override {
         NotImplementedError("Li (vectorized)");
         return SpectrumfP(0.0f);
     }
 
 
-    Spectrumf Li(const RayDifferential3f &r, RadianceRecord3f &r_rec) const override {
+    Spectrumf Li(const RayDifferential3f &r, RadianceSample3f &r_rec) const override {
         // Some aliases and local variables
         const Scene *scene = r_rec.scene;
         auto &its = r_rec.its;
@@ -206,7 +206,7 @@ public:
         /* ================================================================== */
         /*                          Emitter sampling                          */
         /* ================================================================== */
-        // TODO: notion of adaptive query (r_rec.extra & RadianceRecord3f::EAdaptiveQuery).
+        // TODO: notion of adaptive query (r_rec.extra & RadianceSample3f::EAdaptiveQuery).
         bool adaptive_query = false;
 
         // Figure out how many BSDF and direct illumination samples to

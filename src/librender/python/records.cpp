@@ -85,34 +85,33 @@ auto bind_direct_sample(py::module &m, const char *name) {
 
 template <typename Point3>
 auto bind_radiance_record(py::module &m, const char *name) {
-    using Type = RadianceRecord<Point3>;
+    using Type = RadianceSample<Point3>;
 
-    return py::class_<Type>(m, name, D(RadianceRecord))
-        .def(py::init<>(), D(RadianceRecord, RadianceRecord))
+    return py::class_<Type>(m, name, D(RadianceSample))
+        .def(py::init<>(), D(RadianceSample, RadianceSample))
         .def(py::init<const Scene *, Sampler *>(),
-             D(RadianceRecord, RadianceRecord, 2), "scene"_a, "sampler"_a)
+             D(RadianceSample, RadianceSample, 2), "scene"_a, "sampler"_a)
         .def(py::init<const Type &>(),
-             D(RadianceRecord, RadianceRecord, 3),  "r_rec"_a)
+             D(RadianceSample, RadianceSample, 3),  "r_rec"_a)
         .def("new_query", &Type::new_query, "medium"_a,
-             D(RadianceRecord, new_query))
+             D(RadianceSample, new_query))
         .def("recursive_query", &Type::recursive_query, "parent"_a,
-             D(RadianceRecord, recursive_query))
+             D(RadianceSample, recursive_query))
         .def("next_sample_1d", &Type::next_sample_1d,
-             D(RadianceRecord, next_sample_1d))
+             D(RadianceSample, next_sample_1d))
         .def("next_sample_2d", &Type::next_sample_2d,
-             D(RadianceRecord, next_sample_2d))
+             D(RadianceSample, next_sample_2d))
         .def("__repr__", [](const Type &record) {
             std::ostringstream oss;
             oss << record;
             return oss.str();
         })
-        .def_readwrite(  "scene",   &Type::scene,   D(RadianceRecord, scene))
-        .def_readwrite("sampler", &Type::sampler, D(RadianceRecord, sampler))
-        .def_readwrite( "medium",  &Type::medium,  D(RadianceRecord, medium))
-        .def_readwrite(  "depth",   &Type::depth,   D(RadianceRecord, depth))
-        .def_readwrite(    "its",     &Type::its,     D(RadianceRecord, its))
-        .def_readwrite(  "alpha",   &Type::alpha,   D(RadianceRecord, alpha))
-        .def_readwrite(   "dist",    &Type::dist,    D(RadianceRecord, dist))
+        .def_readwrite(  "scene",   &Type::scene,   D(RadianceSample, scene))
+        .def_readwrite("sampler", &Type::sampler, D(RadianceSample, sampler))
+        .def_readwrite( "medium",  &Type::medium,  D(RadianceSample, medium))
+        .def_readwrite(  "depth",   &Type::depth,   D(RadianceSample, depth))
+        .def_readwrite(    "its",     &Type::its,     D(RadianceSample, its))
+        .def_readwrite(  "alpha",   &Type::alpha,   D(RadianceSample, alpha))
         ;
 }
 
@@ -131,12 +130,12 @@ MTS_PY_EXPORT(SamplingRecords) {
     auto dds3fx = bind_direct_sample<Point3fX, PositionSample3fX>(m, "DirectSample3fX");
     bind_slicing_operators<DirectSample3fX, DirectSample3f>(dds3fx);
 
-    bind_radiance_record<Point3f>(m, "RadianceRecord3f")
+    bind_radiance_record<Point3f>(m, "RadianceSample3f")
         // Needs to be handled separately so that we can use vectorize_wrapper.
-        .def("ray_intersect", &RadianceRecord3f::ray_intersect,
-             "ray"_a, "active"_a, D(RadianceRecord, ray_intersect));
-    auto rr3fx = bind_radiance_record<Point3fX>(m, "RadianceRecord3fX")
-        .def("ray_intersect", enoki::vectorize_wrapper(&RadianceRecord3fP::ray_intersect),
-             "ray"_a, "active"_a, D(RadianceRecord, ray_intersect));
-    bind_slicing_operators<RadianceRecord3fX, RadianceRecord3f>(rr3fx);
+        .def("ray_intersect", &RadianceSample3f::ray_intersect,
+             "ray"_a, "active"_a, D(RadianceSample, ray_intersect));
+    auto rr3fx = bind_radiance_record<Point3fX>(m, "RadianceSample3fX")
+        .def("ray_intersect", enoki::vectorize_wrapper(&RadianceSample3fP::ray_intersect),
+             "ray"_a, "active"_a, D(RadianceSample, ray_intersect));
+    bind_slicing_operators<RadianceSample3fX, RadianceSample3f>(rr3fx);
 }

@@ -94,15 +94,15 @@ public:
      * used to store extra information about the result, if appropriate.
      */
     virtual Spectrumf Li(const RayDifferential3f &ray,
-                         RadianceRecord3f &r_rec) const = 0;
+                         RadianceSample3f &r_rec) const = 0;
     /// \see \ref Li.
-    Spectrumf Li(const RayDifferential3f &ray, RadianceRecord3f &r_rec,
+    Spectrumf Li(const RayDifferential3f &ray, RadianceSample3f &r_rec,
                  const bool &/*unused*/) const {
         return Li(ray, r_rec);
     }
     /// Vectorized variant of \ref Li.
     virtual SpectrumfP Li(const RayDifferential3fP &ray,
-                          RadianceRecord3fP &r_rec,
+                          RadianceSample3fP &r_rec,
                           const mask_t<FloatP> &active) const = 0;
 
     /**

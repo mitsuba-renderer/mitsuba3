@@ -107,16 +107,19 @@ std::string Scene::to_string() const {
     );
 }
 
-template MTS_EXPORT_RENDER bool Scene::ray_intersect(
-    const Ray3f &, const Float &, const Float &) const;
-template MTS_EXPORT_RENDER mask_t<FloatP> Scene::ray_intersect(
-    const Ray3fP &, const FloatP &, const FloatP &) const;
-template MTS_EXPORT_RENDER std::pair<bool, Float> Scene::ray_intersect(
+// Full intersection
+template MTS_EXPORT_RENDER auto Scene::ray_intersect(
     const Ray3f &, const Float &, const Float &, SurfaceInteraction3f &,
     const bool &) const;
-template MTS_EXPORT_RENDER std::pair<mask_t<FloatP>, FloatP> Scene::ray_intersect(
+template MTS_EXPORT_RENDER auto Scene::ray_intersect(
     const Ray3fP &, const FloatP &, const FloatP &, SurfaceInteraction3fP &,
     const mask_t<FloatP> &) const;
+// Shadow rays
+// TODO: why does the following lead to a compile error?
+// template MTS_EXPORT_RENDER auto Scene::ray_intersect<Ray3f, Float>(
+//     const Ray3f &, const Float &, const Float &, const bool &) const;
+template MTS_EXPORT_RENDER auto Scene::ray_intersect(
+    const Ray3fP &, const FloatP &, const FloatP &, const mask_t<FloatP> &) const;
 //! @}
 // =============================================================
 
