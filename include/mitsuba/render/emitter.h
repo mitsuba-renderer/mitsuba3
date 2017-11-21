@@ -205,4 +205,22 @@ protected:
     virtual ~Emitter();
 };
 
+// TODO: move to a more appropriate location.
+using EmitterPtr = like_t<FloatP, const Emitter *>;
+
 NAMESPACE_END(mitsuba)
+
+
+// -----------------------------------------------------------------------
+//! @{ \name Enoki support for packets of Emitter pointers
+// -----------------------------------------------------------------------
+
+// Enable usage of array pointers for our types
+ENOKI_CALL_SUPPORT_BEGIN(mitsuba::EmitterPtr)
+ENOKI_CALL_SUPPORT_SCALAR(is_on_surface)
+ENOKI_CALL_SUPPORT(eval)
+ENOKI_CALL_SUPPORT(sample_direct)
+ENOKI_CALL_SUPPORT_END(mitsuba::EmitterPtr)
+
+//! @}
+// -----------------------------------------------------------------------

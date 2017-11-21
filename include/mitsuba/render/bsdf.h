@@ -254,9 +254,11 @@ public:
                        EMeasure measure = ESolidAngle,
                        const mask_t<FloatP> &active = true) const = 0;
 
-    bool needs_differentials() const { return m_needs_differentials; }
+    bool needs_differentials(bool /*unused*/ = true) const {
+        return m_needs_differentials;
+    }
 
-    uint32_t flags() const { return m_flags; }
+    uint32_t flags(bool /*unused*/ = true) const { return m_flags; }
 
     std::string to_string() const override = 0;
 

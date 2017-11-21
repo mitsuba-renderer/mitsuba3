@@ -62,35 +62,49 @@ Scene::~Scene() { }
 // =============================================================
 //! @{ \name Sampling interface
 // =============================================================
-Spectrumf Scene::sample_emitter_direct(DirectSample3f &d_rec,
-                                       const Point2f &sample_,
-                                       bool test_visibility) const {
+template <typename DirectSample, typename Value>
+auto Scene::sample_emitter_direct_impl(
+        DirectSample &d_rec, const Point<Value, 2> &sample_,
+        bool test_visibility, mask_t<Value> active) const {
+    using Point2      = Point<Value, 2>;
+    using Point3      = point3_t<Point2>;
+    using Index       = like_t<Value, size_t>;
+    using Ray         = Ray<Point3>;
+    using EmittersPtr = like_t<Value, const Emitter *>;
     // Randomly pick an emitter according to the precomputed (discrete)
     // distribution of emitter intensity.
-    Point2f sample(sample_);
-    size_t index;
-    Float emitter_pdf;
+    Point2 sample(sample_);
+    Index index;
+    Value emitter_pdf;
+
     std::tie(index, emitter_pdf, sample.x()) =
         m_emitters_pdf.sample_reuse_pdf(sample.x());
+    auto emitter = gather<EmittersPtr>(m_emitters.data(), index, active);
 
-    const Emitter *emitter = m_emitters[index].get();
-    auto value = emitter->sample_direct(d_rec, sample);
-
-    if (d_rec.pdf == 0)
-        return Spectrumf(0.0f);
+    auto value = emitter->sample_direct(d_rec, sample, active);
+    active &= neq(d_rec.pdf, 0.0f);
 
     if (test_visibility) {
         // Shadow ray
-        Ray3f ray(d_rec.p, d_rec.d, rcp(d_rec.d), math::Epsilon,
-                  d_rec.dist * (1.0f - math::ShadowEpsilon), d_rec.time);
-        if (ray_intersect(ray, ray.mint, ray.maxt))
-            return Spectrumf(0.0f);
+        Ray ray(d_rec.p, d_rec.d, rcp(d_rec.d), math::Epsilon,
+                d_rec.dist * (1.0f - math::ShadowEpsilon), d_rec.time);
+        active &= ~ray_intersect(ray, ray.mint, ray.maxt, active);
     }
 
-    d_rec.object = emitter;
-    d_rec.pdf *= emitter_pdf;
-    value /= emitter_pdf;
-    return value;
+    masked(d_rec.object, active) = emitter;
+    masked(d_rec.pdf, active) *= emitter_pdf;
+    return select(active, value / emitter_pdf, 0.0f);
+}
+
+Spectrumf Scene::sample_emitter_direct(DirectSample3f &d_rec,
+                                       const Point2f &sample,
+                                       bool test_visibility) const {
+    return sample_emitter_direct_impl(d_rec, sample, test_visibility, true);
+}
+SpectrumfP Scene::sample_emitter_direct(
+        DirectSample3fP &d_rec, const Point2fP &sample,
+        bool test_visibility, const mask_t<FloatP> &active) const {
+    return sample_emitter_direct_impl(d_rec, sample, test_visibility, active);
 }
 //! @}
 // =============================================================
@@ -118,8 +132,8 @@ template MTS_EXPORT_RENDER auto Scene::ray_intersect(
 // TODO: why does the following lead to a compile error?
 // template MTS_EXPORT_RENDER auto Scene::ray_intersect<Ray3f, Float>(
 //     const Ray3f &, const Float &, const Float &, const bool &) const;
-template MTS_EXPORT_RENDER auto Scene::ray_intersect(
-    const Ray3fP &, const FloatP &, const FloatP &, const mask_t<FloatP> &) const;
+// template MTS_EXPORT_RENDER auto Scene::ray_intersect(
+//     const Ray3fP &, const FloatP &, const FloatP &, const mask_t<FloatP> &) const;
 //! @}
 // =============================================================
 

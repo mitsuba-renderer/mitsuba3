@@ -367,7 +367,6 @@ protected:
     ref<Struct> m_vertex_struct;
     ref<Struct> m_face_struct;
 
-
     /// Surface and distribution -- generated lazily by calling
     /// \ref prepare_sampling_table. Value of \ref m_surface_area is negative
     /// until it has been computed.
@@ -377,7 +376,7 @@ protected:
 };
 
 // TODO: move to a more appropriate location.
-using MeshPtr = Packet<const Mesh *, PacketSize>;
+using MeshPtr = like_t<FloatP, const Mesh *>;
 
 NAMESPACE_END(mitsuba)
 

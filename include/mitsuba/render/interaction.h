@@ -7,6 +7,7 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/emitter.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -108,14 +109,14 @@ template <typename Point3_> struct SurfaceInteraction {
     }
 
     /// Is the intersected shape also a emitter?
-    auto is_emitter() const { return shape->is_emitter(); }
+    auto is_emitter() const { return shape->is_emitter(neq(shape, nullptr)); }
 
     /// Is the intersected shape also a sensor?
-    auto is_sensor() const { return shape->is_sensor(); }
+    auto is_sensor() const { return shape->is_sensor(neq(shape, nullptr)); }
 
     /// Does the surface mark a transition between two media?
     auto is_medium_transition() const {
-        return shape->is_medium_transition();
+        return shape->is_medium_transition(neq(shape, nullptr));
     }
 
     /**
@@ -136,9 +137,10 @@ template <typename Point3_> struct SurfaceInteraction {
      * the interior medium when \c cos_theta <= 0.
      */
     const MediumPtr target_medium(const Value &cos_theta) const {
+        auto valid = neq(shape, nullptr);
         return select(cos_theta > 0,
-                      shape->exterior_medium(),
-                      shape->interior_medium());
+                      shape->exterior_medium(valid),
+                      shape->interior_medium(valid));
     }
 
     /**
@@ -151,18 +153,18 @@ template <typename Point3_> struct SurfaceInteraction {
      * \remark This function should only be called if there is a valid
      * intersection!
      */
-    const BSDFPtr bsdf(const RayDifferential3 &ray) {
-        const BSDFPtr bsdf = shape->bsdf();
-        Assert(!all(bsdf == nullptr));
+    const BSDFPtr bsdf(const RayDifferential3 &ray, const Mask &active = true) {
+        const BSDFPtr bsdf = shape->bsdf(active);
+        Assert(none(active & eq(bsdf, nullptr)));
 
-        if (!has_uv_partials && any(bsdf->needs_differentials()))
+        if (!has_uv_partials && any(bsdf->needs_differentials(active)))
             compute_partials(ray);
 
         return bsdf;
     }
 
     /// Returns the BSDF of the intersected shape
-    const BSDFPtr bsdf() const { return shape->bsdf(); }
+    const BSDFPtr bsdf() const { return shape->bsdf(neq(shape, nullptr)); }
 
     /**
      * \brief Returns radiance emitted into direction d.
@@ -170,9 +172,12 @@ template <typename Point3_> struct SurfaceInteraction {
      * \remark This function should only be called if the
      * intersected shape is actually an emitter.
      */
-    Spectrum Le(const Vector3 &d) const {
-        Assert(shape->emitter());
-        return shape->emitter()->eval(*this, d);
+    Spectrum Le(const Vector3 &d, const Mask &active = true) const {
+        // TODO: remove this (should already be a Packet != array).
+        using EmitterPtr = like_t<value_t<Vector3>, const Emitter *>;
+        EmitterPtr emitter = shape->emitter(active);
+        Assert(none(active & eq(emitter, nullptr)));
+        return emitter->eval(*this, d, active);
     }
 
     /// Move the intersection forward or backward through time

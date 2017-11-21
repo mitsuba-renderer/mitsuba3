@@ -92,11 +92,6 @@ MTS_PY_EXPORT(ShapeKDTree) {
 
 MTS_PY_EXPORT(Scene) {
     MTS_PY_CLASS(Scene, Object)
-        .mdef(Scene, sample_emitter_direct, "d_rec"_a, "sample"_a,
-              "test_visibility"_a = true)
-        .mdef(Scene, pdf_emitter_direct, "d_rec"_a)
-        .mdef(Scene, sample_attenuated_emitter_direct, "d_rec"_a, "its"_a,
-              "medium"_a, "interactions"_a, "sample"_a, "sampler"_a = nullptr)
         .def("eval_environment", &Scene::eval_environment<RayDifferential3f>,
              D(Scene, eval_environment), "ray"_a)
         .def("eval_environment", enoki::vectorize_wrapper(
@@ -133,6 +128,22 @@ MTS_PY_EXPORT(Scene) {
              D(Scene, ray_intersect, 2))
 
         // Sampling
+        .def("sample_emitter_direct",
+             py::overload_cast<DirectSample3f &, const Point2f &, bool>(
+                &Scene::sample_emitter_direct, py::const_),
+             "d_rec"_a, "sample"_a, "test_visibility"_a = true,
+             D(Scene, sample_emitter_direct))
+        // TODO: bind this (vectorize_wrapper probably fails because of the
+        // remaining scalar parameter `bool`).
+        // .def("sample_emitter_direct", enoki::vectorize_wrapper(
+        //      py::overload_cast<DirectSample3fP &, const Point2fP &, bool,
+        //                        const mask_t<FloatP> &>(
+        //         &Scene::sample_emitter_direct, py::const_)),
+        //      "d_rec"_a, "sample"_a, "test_visibility"_a, "active"_a,
+        //      D(Scene, sample_emitter_direct))
+        .mdef(Scene, pdf_emitter_direct, "d_rec"_a)
+        .mdef(Scene, sample_attenuated_emitter_direct, "d_rec"_a, "its"_a,
+              "medium"_a, "interactions"_a, "sample"_a, "sampler"_a = nullptr)
 
         // Accessors
         .def("kdtree",  py::overload_cast<>(&Scene::kdtree),  D(Scene, kdtree))

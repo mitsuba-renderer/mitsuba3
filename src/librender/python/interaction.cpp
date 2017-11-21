@@ -11,6 +11,7 @@ auto bind_interaction(py::module &m, const char *name) {
     using Vector3 = typename Type::Vector3;
     using RayDifferential3 = typename Type::RayDifferential3;
     using Value = typename Type::Value;
+    using Mask = typename Type::Mask;
 
     return py::class_<Type>(m, name, D(SurfaceInteraction))
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
@@ -29,8 +30,9 @@ auto bind_interaction(py::module &m, const char *name) {
         .def("target_medium",
              py::overload_cast<const Value &>(&Type::target_medium, py::const_),
              "cos_theta"_a, D(SurfaceInteraction, target_medium, 2))
-        .def("bsdf", py::overload_cast<const RayDifferential3 &>(&Type::bsdf),
-             "ray"_a, D(SurfaceInteraction, bsdf))
+        .def("bsdf", py::overload_cast<const RayDifferential3 &,
+                                       const Mask &>(&Type::bsdf),
+             "ray"_a, "active"_a, D(SurfaceInteraction, bsdf))
         .def("bsdf", py::overload_cast<>(&Type::bsdf, py::const_),
              D(SurfaceInteraction, bsdf, 2))
 

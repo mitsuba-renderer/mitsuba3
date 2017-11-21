@@ -80,10 +80,19 @@ public:
      *    An importance weight given by the radiance received along
      *    the sampled ray divided by the sample probability.
      */
-    // TODO: vectorized variant
     Spectrumf sample_emitter_direct(DirectSample3f &d_rec,
                                     const Point2f &sample,
                                     bool test_visibility = true) const;
+    Spectrumf sample_emitter_direct(
+            DirectSample3f &d_rec, const Point2f &sample, bool test_visibility,
+            bool /*unused*/) const {
+        return sample_emitter_direct(d_rec, sample, test_visibility);
+    }
+    /// Vectorized variant of \ref sample_emitter_direct
+    SpectrumfP sample_emitter_direct(
+            DirectSample3fP &d_rec, const Point2fP &sample,
+            bool test_visibility, const mask_t<FloatP> &active) const;
+
 
     /**
      * \brief Evaluate the probability density of the \a direct sampling
@@ -194,6 +203,12 @@ protected:
 
     /// Precomputed distribution of emitters' intensity.
     DiscreteDistribution m_emitters_pdf;
+
+protected:
+    template <typename DirectSample, typename Value = typename DirectSample::Value>
+    auto sample_emitter_direct_impl(
+        DirectSample &d_rec, const Point<Value, 2> &sample_,
+        bool test_visibility, mask_t<Value> active) const;
 };
 
 NAMESPACE_END(mitsuba)

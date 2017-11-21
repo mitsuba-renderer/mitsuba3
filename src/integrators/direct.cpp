@@ -150,14 +150,241 @@ public:
     //! @{ \name Integrator interface
     // =============================================================
 
-    SpectrumfP Li(const RayDifferential3fP &/*r*/, RadianceSample3fP &/*r_rec*/,
-                  const mask_t<FloatP> &/*active*/) const override {
-        NotImplementedError("Li (vectorized)");
-        return SpectrumfP(0.0f);
+    template <typename RayDifferential,
+              typename Point3 = typename RayDifferential::Point>
+    auto Li_impl(const RayDifferential &r, RadianceSample<Point3> &r_rec,
+                 const mask_t<value_t<Point3>> &active_) const {
+        using Value        = value_t<Point3>;
+        using Spectrum     = Spectrum<Value>;
+        using Mask         = mask_t<Value>;
+        using Point2       = point2_t<Point3>;
+        using Frame        = Frame<Point3>;
+        using BSDFPtr      = like_t<Value, const BSDF *>;
+        using EmitterPtr   = like_t<Value, const Emitter *>;
+        using BSDFSample   = BSDFSample<Point3>;
+        using DirectSample = DirectSample<Point3>;
+
+        // Some aliases and local variables
+        const Scene *scene = r_rec.scene;
+        auto &its = r_rec.its;
+        RayDifferential ray(r);
+        Spectrum Li(0.0f);
+        Point2 sample;
+        Mask active(active_);
+
+        // Perform the first ray intersection.
+        auto hit = r_rec.ray_intersect(ray, active);
+        // Even if there's no intersection, possibly add radiance from
+        // a background emitter.
+        if (!m_hide_emitters)
+            masked(Li, ~hit) = scene->eval_environment(ray);
+        active &= hit;
+        if (none(active))  // Early return
+            return Li;
+
+        Assert(none(active & eq(its.shape, nullptr)),
+               "There was an intersection, but the intersection record"
+               " wasn't properly filled (`its.shape` is null).");
+
+        // Include emitted radiance
+        auto is_emitter = Mask(!m_hide_emitters) & active;
+        if (any(is_emitter)) {
+            // TODO(!): this is incorrect! Call of `its.is_emitter` will lead
+            // to de-referencing nullptr on lanes that are not active. We need
+            // a way to pass the `active` mask down to a `CALL_SUPPORT_SCALAR`
+            // method.
+            is_emitter &= its.is_emitter();
+            masked(Li, is_emitter) += its.Le(-ray.d, is_emitter);
+        }
+
+        // // Include radiance from a subsurface scattering model
+        // if (its.has_subsurface())
+        //     Li += its.Lo_sub(scene, r_rec.sampler, -ray.d, r_rec.depth);
+
+        BSDFPtr bsdf = its.bsdf(ray, active);
+
+        /* Only render the direct illumination component if:
+         *
+         * 1. The surface has an associated BSDF (i.e. it isn't an index-
+         *    matched medium transition -- this is not supported by 'direct')
+         * 2. If 'strict_normals'=true, when the geometric and shading
+         *    normals classify the incident direction to the same side
+         *
+         * Otherwise, we can stop right there.
+         */
+        Assert(none(active & eq(bsdf, nullptr)), "Shapes without BSDF are not"
+               " supported by the Direct integrator.");
+        if (m_strict_normals)
+            active &= (dot(ray.d, its.n) * Frame::cos_theta(its.wi) < 0);
+        if (none(active))  // Early return
+            return Li;
+
+
+        /* ================================================================== */
+        /*                          Emitter sampling                          */
+        /* ================================================================== */
+
+        // Figure out how many BSDF and direct illumination samples to
+        // generate, and where the random numbers should come from.
+        Point2 *sample_array;
+        size_t n_direct_samples = m_emitter_samples,
+               n_bsdf_samples = m_bsdf_samples;
+        Float frac_lum = m_frac_lum, frac_bsdf = m_frac_bsdf,
+              weight_lum = m_weight_lum, weight_bsdf = m_weight_bsdf;
+
+        // TODO: notion of adaptive query (r_rec.extra & RadianceSample3f::EAdaptiveQuery).
+        bool adaptive_query = false;
+        if (all(r_rec.depth > 1) || adaptive_query) {
+            // This integrator is used recursively by another integrator.
+            // Be less accurate as this sample will not directly be observed.
+            n_bsdf_samples = n_direct_samples = 1;
+            frac_lum = frac_bsdf = .5f;
+            weight_lum = weight_bsdf = 1.0f;
+        }
+
+        // Get samples for direct illumination
+        if (n_direct_samples > 1) {
+            sample_array = r_rec.sampler->template next_array<Point2>(n_direct_samples, active);
+        } else {
+            sample = r_rec.next_sample_2d();
+            sample_array = &sample;
+        }
+
+        DirectSample d_rec(its);
+        // Only use direct illumination sampling when the surface's
+        // BSDF has smooth (i.e. non-Dirac delta) component.
+        // TODO: OR-ing flags, getting a mask out.
+        auto sample_direct = active & (bsdf->flags(active) & BSDF::ESmooth);
+        if (any(sample_direct)) {
+            for (size_t i = 0; i < n_direct_samples; ++i) {
+                // Estimate the direct illumination
+                Spectrum value = scene->sample_emitter_direct(
+                        d_rec, sample_array[i], true, active);
+
+                if (all_nested(eq(value, 0.0f)))
+                    continue;
+
+                auto emitter = reinterpret_array<EmitterPtr>(d_rec.object);
+
+                // Allocate a record for querying the BSDF
+                BSDFSample b_rec(its, its.to_local(d_rec.d));
+
+                // Evaluate BSDF * cos(theta)
+                Spectrum bsdf_val = bsdf->eval(b_rec, ESolidAngle, active);
+                Mask same_side = (dot(its.n, d_rec.d)
+                                  * Frame::cos_theta(b_rec.wo)) >= 0;
+                Mask enabled   = active & (m_strict_normals ? same_side : true);
+                if (none(enabled & any(neq(bsdf_val, 0.0f))))
+                    continue;  // Early return for this sample
+
+                // Calculate the probability of sampling that direction
+                // using BSDF sampling.
+                auto bsdf_pdf = select(emitter->is_on_surface(),
+                                       bsdf->pdf(b_rec, ESolidAngle, active),
+                                       0.0f);
+
+                // Weight using the power heuristic
+                Value weight = weight_lum * mi_weight(d_rec.pdf * frac_lum,
+                                                      bsdf_pdf * frac_bsdf);
+
+                masked(Li, enabled) += value * bsdf_val * weight;
+            }
+        }
+
+        /* ================================================================== */
+        /*                            BSDF sampling                           */
+        /* ================================================================== */
+
+        #if 0
+        if (n_bsdf_samples > 1) {
+            sample_array = r_rec.sampler->next_2d_array(n_bsdf_samples);
+        } else {
+            sample = r_rec.next_sample_2d();
+            sample_array = &sample;
+        }
+
+        SurfaceInteraction3f bsdf_its;
+        Float mint = 0,
+              maxt = std::numeric_limits<Float>::max();
+        for (size_t i = 0; i < n_bsdf_samples; ++i) {
+            // Sample BSDF * cos(theta) and also request the local density
+            BSDFSample3f b_rec(its, r_rec.sampler, ERadiance);
+            Float bsdf_pdf;
+            Spectrumf bsdf_val;
+
+            std::tie(bsdf_val, bsdf_pdf) = bsdf->sample(b_rec, sample_array[i]);
+            if (all(eq(bsdf_val, 0.0f)))
+                continue;
+
+            // Prevent light leaks due to the use of shading normals
+            const Vector3f wo = its.to_world(b_rec.wo);
+            Float wo_dot_geo_n = dot(its.n, wo);
+            if (m_strict_normals
+                && wo_dot_geo_n * Frame::cos_theta(b_rec.wo) <= 0.0f)
+                continue;
+
+            // Trace a ray in this direction
+            Ray3f bsdf_ray(its.p, wo);
+            bsdf_ray.time = ray.time;
+            bool hit;
+            Float t;
+            std::tie(hit, t) = scene->ray_intersect(bsdf_ray, mint, maxt, bsdf_its, true);
+
+            Spectrumf value;
+            if (hit) {
+                // Intersected something - check if it was an emitter
+                if (!bsdf_its.is_emitter())
+                    continue;
+
+                value = bsdf_its.Le(-bsdf_ray.d);
+                d_rec.set_query(bsdf_ray, bsdf_its);
+            } else {
+                // Intersected nothing -- perhaps there is an environment map?
+                const Emitter *env = scene->environment_emitter();
+
+                if (!env || (m_hide_emitters && b_rec.sampled_type == BSDF::ENull))
+                    continue;
+
+                value = env->eval_environment(RayDifferential3f(bsdf_ray));
+                if (!env->fill_direct_sample(d_rec, bsdf_ray))
+                    continue;
+            }
+
+            // Compute the probability of generating that direction using the
+            // implemented direct illumination sampling technique.
+            const Float lum_pdf = (!(b_rec.sampled_type & BSDF::EDelta)) ?
+                    scene->pdf_emitter_direct(d_rec) : 0;
+
+            // Weight using the power heuristic
+            const Float weight =  weight_bsdf * mi_weight(bsdf_pdf * frac_bsdf,
+                                                          lum_pdf * frac_lum);
+
+            Li += value * bsdf_val * weight;
+        }
+        #endif
+
+        return Li;
+    }
+
+    SpectrumfP Li(const RayDifferential3fP &r, RadianceSample3fP &r_rec,
+                  const mask_t<FloatP> &active) const override {
+        return Li_impl(r, r_rec, active);
+        // return SpectrumfP(0.0f);
     }
 
 
     Spectrumf Li(const RayDifferential3f &r, RadianceSample3f &r_rec) const override {
+        // return Li_ref(r, r_rec);
+        return Li_impl(r, r_rec, true);
+        // TODO: remove this (simply return Li_impl)
+        // RadianceSample3f r_rec_ref(r_rec);
+        // auto ref = Li_ref(r, r_rec_ref);
+        // auto res = Li_impl(r, r_rec, true);
+        // Assert(all(abs(ref - res)) < 1e-4);
+        // return res;
+    }
+
+    Spectrumf Li_ref(const RayDifferential3f &r, RadianceSample3f &r_rec) const {
         // Some aliases and local variables
         const Scene *scene = r_rec.scene;
         auto &its = r_rec.its;
@@ -174,10 +401,9 @@ public:
             return scene->eval_environment(ray);
         }
 
-        if (!its.shape) {
-            Throw("There was an intersection, but the intersection record"
-                  " wasn't properly filled (`its.shape` is empty).");
-        }
+        Assert(its.shape != nullptr,
+               "There was an intersection, but the intersection record"
+               " wasn't properly filled (`its.shape` is empty).");
 
         // Include emitted radiance
         if (its.is_emitter() && !m_hide_emitters)
@@ -327,15 +553,14 @@ public:
                     continue;
             }
 
-            /* Compute the prob. of generating that direction using the
-               implemented direct illumination sampling technique */
+            // Compute the probability of generating that direction using the
+            // implemented direct illumination sampling technique.
             const Float lum_pdf = (!(b_rec.sampled_type & BSDF::EDelta)) ?
                     scene->pdf_emitter_direct(d_rec) : 0;
 
             // Weight using the power heuristic
-            const Float weight = mi_weight(
-                    bsdf_pdf * frac_bsdf,
-                    lum_pdf * frac_lum) * weight_bsdf;
+            const Float weight =  weight_bsdf * mi_weight(bsdf_pdf * frac_bsdf,
+                                                          lum_pdf * frac_lum);
 
             Li += value * bsdf_val * weight;
         }
@@ -343,8 +568,10 @@ public:
         return Li;
     }
 
-    inline Float mi_weight(Float pdf_a, Float pdf_b) const {
-        pdf_a *= pdf_a; pdf_b *= pdf_b;
+    template <typename Value>
+    Value mi_weight(Value pdf_a, Value pdf_b) const {
+        pdf_a *= pdf_a;
+        pdf_b *= pdf_b;
         return pdf_a / (pdf_a + pdf_b);
     }
     //! @}

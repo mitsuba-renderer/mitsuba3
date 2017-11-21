@@ -76,8 +76,11 @@ public:
     void request_2d_array(size_t size);
 
     /// See \ref next_2d_array.
-    // TODO: vectorized variants
     Float *next_1d_array(size_t size);
+    /// Vectorized variant of \ref next_1d_array.
+    FloatP *next_1d_array_p(size_t /*size*/, const mask_t<FloatP> &/*active*/ = true) {
+        Throw("Not implemented yet: Sampler::next_1d_array_p().");
+    }
 
     /**
      * \brief Retrieve the next 2D array of values from the current sample.
@@ -96,7 +99,14 @@ public:
      * are all well-stratified with respect to each other.
      */
     Point2f *next_2d_array(size_t size);
+    /// Vectorized variant of \ref next_2d_array.
+    Point2fP *next_2d_array_p(size_t /*size*/, const mask_t<FloatP> &/*active*/ = true) {
+        Throw("Not implemented yet: Sampler::next_2d_array_p().");
+    }
 
+    /// TODO: docstring
+    template <typename T, typename Mask> auto next_array(size_t size,
+                                                         const Mask &active = true);
 
     // =============================================================
     //! @{ \name Accessors & misc
@@ -158,6 +168,19 @@ template <> inline Point2fP Sampler::next<Point2fP>(const mask_t<FloatP> &active
 template <> inline Point2fX Sampler::next<Point2fX>(const mask_t<FloatX> &/*active*/) {
     NotImplementedError("next<Point2fX>()");
     return Point2fX();
+}
+
+template <> inline auto Sampler::next_array<Float>(size_t size, const mask_t<Float> &) {
+    return next_1d_array(size);
+}
+template <> inline auto Sampler::next_array<FloatP>(size_t size, const mask_t<FloatP> &active) {
+    return next_1d_array_p(size, active);
+}
+template <> inline auto Sampler::next_array<Point2f>(size_t size, const mask_t<Float> &) {
+    return next_2d_array(size);
+}
+template <> inline auto Sampler::next_array<Point2fP>(size_t size, const mask_t<FloatP> &active) {
+    return next_2d_array_p(size, active);
 }
 //! @}
 // =============================================================

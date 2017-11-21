@@ -9,7 +9,7 @@ from mitsuba.test.scenes import empty_scene, teapot_scene, make_integrator
 integrators = [
     'int_name', [
         "depth",
-        "direct"
+        # "direct"
     ]
 ]
 

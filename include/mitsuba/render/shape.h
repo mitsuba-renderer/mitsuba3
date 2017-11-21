@@ -311,7 +311,7 @@ public:
     // =============================================================
 
     /// Does the surface of this shape mark a medium transition?
-    bool is_medium_transition() const {
+    bool is_medium_transition(bool /*unused*/ = true) const {
         // TODO: handle media.
         return false;
         // NotImplementedError(is_medium_transition);
@@ -319,7 +319,7 @@ public:
     }
     /// Return the medium that lies on the interior of this
     /// shape (\c nullptr == vacuum)
-    Medium *interior_medium() {
+    Medium *interior_medium(bool /*unused*/ = true) {
         // TODO: handle media.
         return nullptr;
         // NotImplementedError(interior_medium);
@@ -327,7 +327,7 @@ public:
     }
     /// Return the medium that lies on the interior of this
     /// shape (\c nullptr == vacuum, const version)
-    const Medium *interior_medium() const {
+    const Medium *interior_medium(bool /*unused*/ = true) const {
         // TODO: handle media.
         return nullptr;
         // NotImplementedError(interior_medium);
@@ -335,7 +335,7 @@ public:
     }
     /// Return the medium that lies on the exterior of this
     /// shape (\c nullptr == vacuum)
-    Medium *exterior_medium() {
+    Medium *exterior_medium(bool /*unused*/ = true) {
         // TODO: handle media.
         return nullptr;
         // NotImplementedError(exterior_medium);
@@ -343,7 +343,7 @@ public:
     }
     /// Return the medium that lies on the exterior of this
     /// shape (\c nullptr == vacuum, const version)
-    const Medium *exterior_medium() const {
+    const Medium *exterior_medium(bool /*unused*/ = true) const {
         // TODO: handle media.
         return nullptr;
         // NotImplementedError(exterior_medium);
@@ -351,31 +351,31 @@ public:
     }
 
     /// Return the shape's BSDF (const version)
-    const BSDF *bsdf() const { return m_bsdf.get(); }
+    const BSDF *bsdf(bool /*unused*/ = true) const { return m_bsdf.get(); }
 
     /// Return the shape's BSDF
-    BSDF *bsdf() { return m_bsdf.get(); }
+    BSDF *bsdf(bool /*unused*/ = true) { return m_bsdf.get(); }
 
     /// Set the BSDF of this shape
     void set_bsdf(BSDF *bsdf) { m_bsdf = bsdf; }
 
     /// Is this shape also an area emitter?
-    bool is_emitter() const { return (bool)m_emitter; }
+    bool is_emitter(bool /*unused*/ = true) const { return (bool)m_emitter; }
 
     /// Return the area emitter associated with this shape (if any, const version)
-    const Emitter *emitter() const { return m_emitter.get(); }
+    const Emitter *emitter(bool /*unused*/ = true) const { return m_emitter.get(); }
 
     /// Return the area emitter associated with this shape (if any)
-    Emitter *emitter() { return m_emitter.get(); }
+    Emitter *emitter(bool /*unused*/ = true) { return m_emitter.get(); }
 
     /// Is this shape also an area sensor?
-    bool is_sensor() const { return (bool)m_sensor; }
+    bool is_sensor(bool /*unused*/ = true) const { return (bool)m_sensor; }
 
     /// Return the area sensor associated with this shape (if any, const version)
-    const Sensor *sensor() const { return m_sensor.get(); }
+    const Sensor *sensor(bool /*unused*/ = true) const { return m_sensor.get(); }
 
     /// Return the area sensor associated with this shape (if any)
-    Sensor *sensor() { return m_sensor.get(); }
+    Sensor *sensor(bool /*unused*/ = true) { return m_sensor.get(); }
 
     /**
      * \brief Returns the number of sub-primitives that make up this shape
