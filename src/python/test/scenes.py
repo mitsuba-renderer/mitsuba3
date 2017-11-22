@@ -50,7 +50,7 @@ def teapot_scene():
                         value="resources/data/ply/teapot.ply"/>
 
                 <bsdf type="diffuse">
-                    <spectrum name="radiance" value="0.4f, 0.1f, 0.8f, 0.5f"/>
+                    <spectrum name="reflectance" value="0.4f, 0.1f, 0.8f, 0.5f"/>
                 </bsdf>
             </shape>
 

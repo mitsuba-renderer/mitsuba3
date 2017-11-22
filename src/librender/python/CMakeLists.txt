@@ -8,6 +8,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   integrator.cpp
   interaction.cpp
   main.cpp
+  microfacet.cpp
   records.cpp
   rt.cpp
   sampler.cpp

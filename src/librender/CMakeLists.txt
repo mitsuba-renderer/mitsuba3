@@ -4,6 +4,8 @@ add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/fwd.h
   ${INC_DIR}/records.h
   ${INC_DIR}/records.inl
+  ${INC_DIR}/microfacet.h
+  ${INC_DIR}/ior.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
   common.cpp       ${INC_DIR}/common.h
@@ -16,6 +18,7 @@ add_library(mitsuba-render-obj OBJECT
   kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h
   mesh.cpp         ${INC_DIR}/mesh.h
+  microfacet.cpp   ${INC_DIR}/microfacet.h
   rt.cpp           ${INC_DIR}/rt.h
   sampler.cpp      ${INC_DIR}/sampler.h
   scene.cpp        ${INC_DIR}/scene.h

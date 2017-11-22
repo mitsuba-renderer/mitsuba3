@@ -31,13 +31,15 @@ from __future__ import division
 import mitsuba
 from mitsuba.core import warp, float_dtype
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
-from mitsuba.core.chi2 import SpectrumAdapter
+from mitsuba.core.chi2 import SpectrumAdapter, BSDFAdapter, MicrofacetDistributionAdaptater
+from mitsuba.render    import MicrofacetDistributionf
 import numpy as np
 
 def deg2rad(value):
     return value * np.pi / 180
 
-DEFAULT_SETTINGS = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
+DEFAULT_SETTINGS   = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
+DEFAULT_SETTINGS_3 = {'sample_dim': 3, 'ires': 10, 'res': 101, 'parameters': []}
 
 DISTRIBUTIONS = [
     ('Uniform square', PlanarDomain(np.array([[0, 1],
@@ -149,5 +151,41 @@ DISTRIBUTIONS = [
           parameters=[
               ('Temperature', [0, 8000, 3000]),
           ])
+    ),
+
+    ('MD - Beckmann - 0.5 alpha', SphericalDomain(),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.5, False, [0, 0, 1]),
+      DEFAULT_SETTINGS
+    ),
+    ('Microfacet - Beckmann - 0.1 alpha', SphericalDomain(),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.1, False, [0, 0, 1]),
+      DEFAULT_SETTINGS
+    ),
+
+    ('Microfacet - Beckmann - vis - 0.5 alpha', SphericalDomain(),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.5, True, [0, 0, 1]),
+      DEFAULT_SETTINGS
+    ),
+    ('Microfacet - Beckmann - vis - 0.1 alpha', SphericalDomain(),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.1, True, [0, 0, 1]),
+      DEFAULT_SETTINGS
+    ),
+
+    ('Microfacet - GGX - 0.5 alpha', SphericalDomain(),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.5, False, [0, 0, 1]),
+      DEFAULT_SETTINGS
+    ),
+    ('Microfacet - GGX - 0.1 alpha', SphericalDomain(),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.1, False, [0, 0, 1]),
+      DEFAULT_SETTINGS
+    ),
+
+    ('Microfacet - GGX - vis - 0.5 alpha', SphericalDomain(),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.5, True, [0, 0, 1]),
+      DEFAULT_SETTINGS
+    ),
+    ('Microfacet - GGX - vis - 0.1 alpha', SphericalDomain(),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.1, True, [0, 0, 1]),
+      DEFAULT_SETTINGS
     )
 ]

@@ -48,20 +48,20 @@ MTS_PY_EXPORT(BSDFSample) {
 MTS_PY_EXPORT(BSDF) {
     auto bsdf = MTS_PY_CLASS(BSDF, Object)
        .def("sample",
-            py::overload_cast<BSDFSample3f&, const Point2f&>(
-                 &BSDF::sample, py::const_),
-            "bs"_a, "sample"_a = ESolidAngle, D(BSDF, sample))
-        // .def("sample", enoki::vectorize_wrapper(
-        //      py::overload_cast<BSDFSample3fP&, const Point2fP&, const mask_t<FloatP> &>(
-        //          &BSDF::sample, py::const_)),
-        //      "bs"_a, "sample"_a, "active"_a = true, D(BSDF, sample))
+           py::overload_cast<BSDFSample3f&, const Point2f&>(
+                &BSDF::sample, py::const_),
+           D(BSDF, sample), "bs"_a, "sample"_a = ESolidAngle)
+        //.def("sample", enoki::vectorize_wrapper(
+        //    py::overload_cast<BSDFSample3fP&, const Point2fP&, const mask_t<FloatP>&>(
+        //        &BSDF::sample, py::const_)))
+                      //D(BSDF, sample), "bs"_a, "sample"_a)
 
         .def("eval",
              py::overload_cast<const BSDFSample3f&, EMeasure>(
                  &BSDF::eval, py::const_),
              D(BSDF, eval), "bs"_a, "measure"_a = ESolidAngle)
         //.def("eval", enoki::vectorize_wrapper(
-        //    py::overload_cast<const BSDFSample3fP&, EMeasure, mask_t<FloatP>>(
+        //    py::overload_cast<const BSDFSample3fP&, EMeasure, const mask_t<FloatP>&>(
         //        &BSDF::eval, py::const_)))
                       //D(BSDF, eval), "bs"_a, "measure"_a)
 

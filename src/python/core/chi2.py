@@ -404,3 +404,64 @@ def SpectrumAdapter(value):
 
     return sample_functor, pdf_functor
 
+
+def BSDFAdapter(value, wi = [1, 0, 0], nn = [0, 0, 1]):
+    """
+    Adapter which permits testing BSDF
+    distributions using the Chi^2 test
+    """
+
+    from mitsuba.core   import Frame3f
+    from mitsuba.render import BSDFSample3f
+    from mitsuba.render import SurfaceInteraction3f
+
+    frame = Frame3f(nn)
+    its = SurfaceInteraction3f()
+    its.p = [0, 0, 0]
+    its.t = 44.0
+    its.n = nn
+    its.sh_frame = frame
+
+    def instantiate(args):
+        from mitsuba.core.xml import load_string
+        return load_string(value % args)
+
+    def sample_functor(sample, *args):
+        plugin = instantiate(args)
+
+        bs = BSDFSample3f(its, wi)
+
+        s_value, s_pdf = plugin.sample(bs, sample)
+        return s_value
+
+    def pdf_functor(wo, *args):
+        plugin = instantiate(args)
+
+        bs = BSDFSample3f(its, wo, wi)
+
+        return plugin.pdf(bs)
+
+    return sample_functor, pdf_functor
+
+
+def MicrofacetDistributionAdaptater(md_type, alpha, sample_visible = False, wi = [0, 0, 1]):
+    """
+    Adapter which permits testing microfacet
+    distributions using the Chi^2 test
+    """
+
+    def instantiate(args):
+        from mitsuba.render import MicrofacetDistributionX
+        return MicrofacetDistributionX(md_type, alpha, sample_visible)
+
+    def sample_functor(sample, *args):
+        dist = instantiate(args)
+        s_value, s_pdf = dist.sample(np.tile(wi, [len(sample), 1]), sample)
+        return s_value
+
+    def pdf_functor(m, *args):
+        dist = instantiate(args)
+        return dist.pdf(np.tile(wi, [len(m), 1]), m)
+
+    return sample_functor, pdf_functor
+

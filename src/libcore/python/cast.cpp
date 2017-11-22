@@ -7,6 +7,7 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 
@@ -33,6 +34,8 @@ py::object py_cast(Object *o) {
     PY_CAST(Endpoint);
 
     PY_CAST(BSDF);
+    PY_CAST(MicrofacetDistribution<Float>);
+    PY_CAST(MicrofacetDistribution<FloatP>);
 
     PY_CAST(ImageBlock);
     PY_CAST(Film);

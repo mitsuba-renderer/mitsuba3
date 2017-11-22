@@ -106,7 +106,7 @@ def test04_render_direct():
                         value="resources/data/ply/teapot.ply"/>
 
                 <bsdf type="diffuse">
-                    <spectrum name="radiance" value="0.1f, 0.3f, 1.0f, 0.5f"/>
+                    <spectrum name="reflectance" value="0.1f, 0.3f, 1.0f, 0.5f"/>
                 </bsdf>
 
             </shape>
