@@ -14,6 +14,21 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/*
+ * \brief This macro should be used in the definition of BSDF
+ * plugins to instantiate concrete versions of the the \c sample,
+ * \c eval and \c pdf functions.
+ */
+#define MTS_IMPLEMENT_INTEGRATOR()                                             \
+    Spectrumf Li(const RayDifferential3f &r,                                   \
+                 RadianceSample3f &r_rec) const override {                     \
+        return Li_impl(r, r_rec, true);                                        \
+    }                                                                          \
+    SpectrumfP Li(const RayDifferential3fP &r, RadianceSample3fP &r_rec,       \
+                  const mask_t<FloatP> &active) const override {               \
+        return Li_impl(r, r_rec, active);                                      \
+    }
+
 /**
  * \brief Abstract integrator base-class; does not make any assumptions on
  * how radiance is computed.

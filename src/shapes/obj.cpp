@@ -279,6 +279,9 @@ public:
 
         if (m_vertex_normals && normals.empty())
             recompute_vertex_normals();
+
+        if (is_emitter())
+            emitter()->set_shape(this);
     }
 
 

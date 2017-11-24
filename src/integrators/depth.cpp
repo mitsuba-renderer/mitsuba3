@@ -57,20 +57,12 @@ public:
         return Li;
     }
 
-    Spectrumf Li(const RayDifferential3f &r,
-                 RadianceSample3f &r_rec) const override {
-        return Li_impl(r, r_rec, true);
-    }
-    SpectrumfP Li(const RayDifferential3fP &r, RadianceSample3fP &r_rec,
-                  const mask_t<FloatP> &active) const override {
-        return Li_impl(r, r_rec, active);
-    }
+    MTS_IMPLEMENT_INTEGRATOR()
+
     //! @}
     // =============================================================
 
     std::string to_string() const override {
-        using string::indent;
-
         std::ostringstream oss;
         oss << "DepthIntegrator[]";
         return oss.str();

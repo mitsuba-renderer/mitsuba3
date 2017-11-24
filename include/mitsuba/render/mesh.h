@@ -9,6 +9,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+// TODO: remove this comment
+constexpr int kMyConst = 4;
+
 class MTS_EXPORT_RENDER Mesh : public Shape {
 public:
     using FaceHolder   = std::unique_ptr<uint8_t, enoki::aligned_deleter>;
@@ -57,10 +60,17 @@ public:
     auto vertex_position(const Index &index,
                          const mask_t<Index> &active = true) const {
         using Value = like_t<Index, Float>;
-        auto base_offset = (Float *)m_vertices.get();
+        // auto base_offset = (Float *)m_vertices.get();
         // Indices are expressed in bytes.
-        return gather<Point<Value, 3>, 1>(base_offset, m_vertex_size * index,
-                                          active);
+        // return gather<Point<Value, 3>, 1>((uint8_t *)base_offset,
+        //                                   m_vertex_size * index, active);
+        Point<Value, 3> res;
+        auto base_offset = (Float *)m_vertices.get();
+        auto indices = m_vertex_size * index;
+        res.x() = gather<Value, 1>(base_offset    , indices, active);
+        res.y() = gather<Value, 1>(base_offset + 1, indices, active);
+        res.z() = gather<Value, 1>(base_offset + 2, indices, active);
+        return res;
     }
 
     /// Load the normal for a vertex. Assumes that \ref has_vertex_normals().
@@ -69,9 +79,17 @@ public:
     auto vertex_normal(const Index &index,
                        const mask_t<Index> &active = true) const {
         using Value = like_t<Index, enoki::half>;
-        auto base_offset = (enoki::half *)(m_vertices.get() + m_normals_offset);
-        return gather<Normal<Value, 3>, 1>(base_offset, m_vertex_size * index,
-                                           active);
+        // auto base_offset = (enoki::half *)(m_vertices.get() + m_normals_offset);
+        // Indices are expressed in bytes.
+        // return gather<Normal<Value, 3>, 1>((uint8_t *)base_offset,
+        //                                    m_vertex_size * index, active);
+        Normal<Value, 3> res;
+        auto offset = (enoki::half *)(m_vertices.get() + m_normals_offset);
+        auto indices = m_vertex_size * index;
+        res.x() = gather<Value, 1>(offset    , indices, active);
+        res.y() = gather<Value, 1>(offset + 1, indices, active);
+        res.z() = gather<Value, 1>(offset + 2, indices, active);
+        return res;
     }
 
     /// Return the total number of faces
@@ -95,6 +113,30 @@ public:
     template <typename Index, typename BufferPtr = like_t<Index, const uint8_t *>>
     BufferPtr face(const Index &index) const {
         return BufferPtr(m_faces.get()) + m_face_size * index;
+    }
+
+    /// Returns the surface area of a triangular face, given its face index.
+    template <typename FaceIndex>
+    auto face_area(const FaceIndex &index,
+                   const mask_t<FaceIndex> &active = true) const {
+        using Value     = like_t<Index, Float>;
+        using Index     = like_t<FaceIndex, typename Shape::Index>;
+        using Point3    = Point<Value, 3>;
+        using Vector3   = Vector<Value, 3>;
+        // Load the face's vertices
+        auto face_ptr = (typename Shape::Index *)faces();
+        auto vertex_ptr = vertices();
+        auto prim_index = index * m_face_size;
+        Index i0 = gather<Index>((uint8_t *)(face_ptr  ), prim_index, active) * m_vertex_size,
+              i1 = gather<Index>((uint8_t *)(face_ptr+1), prim_index, active) * m_vertex_size,
+              i2 = gather<Index>((uint8_t *)(face_ptr+2), prim_index, active) * m_vertex_size;
+        const Point3 &p0 = gather<Point3>(vertex_ptr, i0, active),
+                     &p1 = gather<Point3>(vertex_ptr, i1, active),
+                     &p2 = gather<Point3>(vertex_ptr, i2, active);
+        // Compute surface area
+        Vector3 side_a = p1 - p0,
+                side_b = p2 - p0;
+        return 0.5f * norm(cross(side_a, side_b));
     }
 
     /// Does this mesh have per-vertex normals?
@@ -182,9 +224,9 @@ public:
                idx[1] < m_vertex_count &&
                idx[2] < m_vertex_count);
 
-        Point3f v0 = load<Point3f>((Float *) vertex(idx[0]));;
-        Point3f v1 = load<Point3f>((Float *) vertex(idx[1]));;
-        Point3f v2 = load<Point3f>((Float *) vertex(idx[2]));;
+        Point3f v0 = load<Point3f>((Float *) vertex(idx[0]));
+        Point3f v1 = load<Point3f>((Float *) vertex(idx[1]));
+        Point3f v2 = load<Point3f>((Float *) vertex(idx[2]));
 
         Vector3f edge1 = v1 - v0, edge2 = v2 - v0;
         Vector3 pvec = cross(ray.d, edge2);
@@ -202,15 +244,22 @@ public:
     }
 
     using Shape::fill_surface_interaction;
+
     /// See \ref fill_surface_interaction_impl
     virtual void fill_surface_interaction(
-            const Ray3f &/*ray*/, const void */*cache*/,
+            const Ray3f &/*ray*/, const void * /*cache*/,
             SurfaceInteraction3f &its) const override {
         return fill_surface_interaction_impl(its, true);
     }
-    /// See \ref fill_surface_interaction_impl
+    /**
+     * See \ref fill_surface_interaction_impl
+     *
+     * \warning All fields of \c its may be overwritten, independently of the
+     * \c active mask. The mask is only used to avoid unsafe operations such
+     * as nullptr dereference.
+     */
     virtual void fill_surface_interaction(
-            const Ray3fP &/*ray*/, const void */*cache*/,
+            const Ray3fP &/*ray*/, const void * /*cache*/,
             SurfaceInteraction3fP &its,
             const mask_t<FloatP> &active) const override {
         return fill_surface_interaction_impl(its, active);
@@ -296,16 +345,19 @@ protected:
                                 bool shading_frame, const Mask &active) const;
 
     template <typename PositionSample,
-              typename Point2 = typename PositionSample::Point2,
-              typename Mask = mask_t<typename PositionSample::Value>>
+              typename Point2 = typename PositionSample::Point2>
     void sample_position_impl(PositionSample &p_rec, const Point2 &sample_,
-                              const Mask &active) const;
+                              const mask_t<value_t<Point2>> &active) const;
 
     /**
      * \brief Given a unique intersection found in the KD-Tree, fill a proper
      * record using the temporary information collected in \ref KDTree::intersect().
      * The field \c its.uv and \c its.prim_index must be filled before calling
      * this function.
+     *
+     * \warning All fields of \c its may be overwritten, independently of the
+     * \c active mask. The mask is only used to avoid unsafe operations such
+     * as nullptr dereference.
      */
     template <typename SurfaceInteraction>
     void fill_surface_interaction_impl(
@@ -331,19 +383,18 @@ protected:
         const Point3 p2 = vertex_position(p2_idx, active);
 
         // Intersection point
-        masked(its.p, active) = p0 * b.x() + p1 * b.y() + p2 * b.z();
+        its.p = p0 * b.x() + p1 * b.y() + p2 * b.z();
         // Tangents
         Vector3 side1(p1 - p0), side2(p2 - p0);
-        masked(its.dp_du, active) = side1;
-        masked(its.dp_dv, active) = side2;
+        its.dp_du = side1;
+        its.dp_dv = side2;
         // Normals (if available)
         if (m_vertex_normals) {
             const Normal3 n0 = vertex_normal(p0_idx, active);
             const Normal3 n1 = vertex_normal(p1_idx, active);
             const Normal3 n2 = vertex_normal(p2_idx, active);
 
-            masked(its.sh_frame.n, active) = normalize(
-                    n0 * b.x() + n1 * b.y() + n2 * b.z());
+            its.sh_frame.n = normalize(n0 * b.x() + n1 * b.y() + n2 * b.z());
         }
     }
 
@@ -372,7 +423,7 @@ protected:
     /// until it has been computed.
     DiscreteDistribution m_area_distribution;
     Float m_surface_area, m_inv_surface_area;
-    ref<tbb::spin_mutex> m_mutex;
+    tbb::spin_mutex m_mutex;
 };
 
 // TODO: move to a more appropriate location.

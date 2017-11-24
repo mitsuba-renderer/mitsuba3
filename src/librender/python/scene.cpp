@@ -9,6 +9,8 @@
 
 using Index = Shape::Index;
 
+/// Creates the intersection cache used by the KD-tree, so that the Python
+/// user doesn't need to handle it (since it is an internal data structure).
 template <typename Func>
 auto provide_cache_scalar(Func f) {
     return [f](const ShapeKDTree &kdtree, const Ray3f &ray,
@@ -19,27 +21,13 @@ auto provide_cache_scalar(Func f) {
 }
 template <typename Func>
 auto provide_cache(Func f) {
-    return [f](const ShapeKDTree &kdtree, const Ray3fX &ray, const FloatX &mint,
-               const FloatX &maxt, const mask_t<FloatX> &active_) {
+    auto provide_cache_p = [f](const ShapeKDTree *kdtree, const Ray3fP &ray,
+                               const FloatP &mint, const FloatP &maxt,
+                               const mask_t<FloatP> &active) {
         MTS_MAKE_KD_CACHE(cache);
-        auto n = slices(ray);
-        mask_t<FloatX> mask;
-        FloatX time;
-        set_slices(mask, n);
-        set_slices(time, n);
-        // Expand if a single value is provided
-        auto active = active_;
-        if (slices(active) == 1) {
-            set_slices(active, n);
-            active = active_.coeff(0);
-        }
-
-        vectorize([&kdtree, &cache, f](auto &&m, auto &&t, auto &&r,
-                                       auto &&mi, auto &&ma, auto&&a) {
-            std::tie(m, t) = (kdtree.*f)(r, mi, ma, (void *)cache, a);
-        }, mask, time, ray, mint, maxt, active);
-        return std::make_pair(mask, time);
+        return ((*kdtree).*f)(ray, mint, maxt, (void *)cache, active);
     };
+    return enoki::vectorize_wrapper(provide_cache_p);
 }
 
 MTS_PY_EXPORT(ShapeKDTree) {
@@ -155,6 +143,5 @@ MTS_PY_EXPORT(Scene) {
         .def("environment_emitter",
              py::overload_cast<>(&Scene::environment_emitter),
              D(Scene, environment_emitter))
-        .def("__repr__", &Scene::to_string)
         ;
 }

@@ -372,12 +372,14 @@ public:
     using Sensor::world_transform;
 
     /// Return the world-to-view (aka "view") transformation at time \c t
-    inline const Transform4f view_transform(Float t) const {
+    inline const Transform4f view_transform_t(Float t,
+                                              bool /*unused*/ = true) const {
         return world_transform()->lookup(t).inverse();
     }
 
     /// Return the view-to-world transformation at time \c t
-    inline const Transform4f world_transform(Float t) const {
+    inline const Transform4f world_transform_t(Float t,
+                                              bool /*unused*/ = true) const {
         return world_transform()->lookup(t);
     }
 

@@ -41,6 +41,5 @@ MTS_PY_EXPORT(ImageBlock) {
         .mdef(ImageBlock, pixel_format)
         .def("bitmap", py::overload_cast<>(&ImageBlock::bitmap))
         .mdef(ImageBlock, clear)
-        .def("__repr__", &ImageBlock::to_string)
         ;
 }

@@ -27,30 +27,30 @@ def test01_create():
     assert c.focus_distance() == approx(15)
     assert c.x_fov() == approx(34)
 
-    assert np.all((c.world_transform(0).matrix - np.array([
+    assert np.all((c.world_transform_t(0).matrix - np.array([
         [1, 0, 0,   1],
         [0, 1, 0,   0],
         [0, 0, 1, 1.5],
         [0, 0, 0,   1]
     ])) == approx(0))
-    assert np.all((c.world_transform(0).inverse_transpose - np.array([
+    assert np.all((c.world_transform_t(0).inverse_transpose - np.array([
         [ 1, 0,    0,   0],
         [ 0, 1,    0,   0],
         [ 0, 0,    1,   0],
         [-1, 0, -1.5,   1]
-    ])) == approx(0)), c.world_transform(0).inverse_transpose
-    assert np.all((c.view_transform(0).matrix - np.array([
+    ])) == approx(0)), c.world_transform_t(0).inverse_transpose
+    assert np.all((c.view_transform_t(0).matrix - np.array([
         [1, 0, 0,  -1],
         [0, 1, 0,   0],
         [0, 0, 1,-1.5],
         [0, 0, 0,   1]
-    ])) == approx(0)), c.view_transform(0).matrix
-    assert np.all((c.view_transform(0).inverse_transpose - np.array([
+    ])) == approx(0)), c.view_transform_t(0).matrix
+    assert np.all((c.view_transform_t(0).inverse_transpose - np.array([
         [1, 0,   0,  0],
         [0, 1,   0,  0],
         [0, 0,   1,  0],
         [1, 0, 1.5,  1]
-    ])) == approx(0)), c.view_transform(0).matrix
+    ])) == approx(0)), c.view_transform_t(0).matrix
     assert c.shutter_open_time() == approx(0)
     assert not c.needs_time_sample()
     assert not c.needs_aperture_sample()

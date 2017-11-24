@@ -109,14 +109,20 @@ template <typename Point3_> struct SurfaceInteraction {
     }
 
     /// Is the intersected shape also a emitter?
-    auto is_emitter() const { return shape->is_emitter(neq(shape, nullptr)); }
+    Mask is_emitter(const Mask &active = true) const {
+        if (none(active))
+            return false;
+        return shape->is_emitter(active);
+    }
 
     /// Is the intersected shape also a sensor?
-    auto is_sensor() const { return shape->is_sensor(neq(shape, nullptr)); }
+    auto is_sensor(const Mask &active = true) const {
+        return shape->is_sensor(active);
+    }
 
     /// Does the surface mark a transition between two media?
-    auto is_medium_transition() const {
-        return shape->is_medium_transition(neq(shape, nullptr));
+    auto is_medium_transition(const Mask &active = true) const {
+        return shape->is_medium_transition(active);
     }
 
     /**
@@ -125,8 +131,9 @@ template <typename Point3_> struct SurfaceInteraction {
      * When \c is_medium_transition() = \c true, determine the medium that
      * contains the ray (\c this->p, \c d)
      */
-    const MediumPtr target_medium(const Vector3 &d) const {
-        return target_medium(dot(d, n));
+    const MediumPtr target_medium(const Vector3 &d,
+                                  const Mask &active = true) const {
+        return target_medium(dot(d, n), active);
     }
 
     /**
@@ -136,11 +143,11 @@ template <typename Point3_> struct SurfaceInteraction {
      * Returns the exterior medium when \c cos_theta > 0 and
      * the interior medium when \c cos_theta <= 0.
      */
-    const MediumPtr target_medium(const Value &cos_theta) const {
-        auto valid = neq(shape, nullptr);
+    const MediumPtr target_medium(const Value &cos_theta,
+                                  const Mask &active = true) const {
         return select(cos_theta > 0,
-                      shape->exterior_medium(valid),
-                      shape->interior_medium(valid));
+                      shape->exterior_medium(active),
+                      shape->interior_medium(active));
     }
 
     /**
@@ -164,7 +171,9 @@ template <typename Point3_> struct SurfaceInteraction {
     }
 
     /// Returns the BSDF of the intersected shape
-    const BSDFPtr bsdf() const { return shape->bsdf(neq(shape, nullptr)); }
+    const BSDFPtr bsdf(const Mask &active = true) const {
+        return shape->bsdf(active);
+    }
 
     /**
      * \brief Returns radiance emitted into direction d.
@@ -173,7 +182,7 @@ template <typename Point3_> struct SurfaceInteraction {
      * intersected shape is actually an emitter.
      */
     Spectrum Le(const Vector3 &d, const Mask &active = true) const {
-        // TODO: remove this (should already be a Packet != array).
+        // TODO: remove this (should already be a Packet, not an Array).
         using EmitterPtr = like_t<value_t<Vector3>, const Emitter *>;
         EmitterPtr emitter = shape->emitter(active);
         Assert(none(active & eq(emitter, nullptr)));
@@ -181,9 +190,9 @@ template <typename Point3_> struct SurfaceInteraction {
     }
 
     /// Move the intersection forward or backward through time
-    void adjust_time(const Value &time) {
+    void adjust_time(const Value &time, const Mask &active = true) {
         ShapePtr target = select(neq(instance, nullptr), instance, shape);
-        target->adjust_time(*this, time);
+        target->adjust_time(*this, time, active);
     }
 
     /// Calls the suitable implementation of \ref Shape::normal_derivative()

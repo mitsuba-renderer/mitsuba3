@@ -10,7 +10,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 Mesh::Mesh(const Properties &props)
-    : Shape(props) {
+    : Shape(props), m_surface_area(-1) {
     /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
@@ -22,7 +22,7 @@ Mesh::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
            Struct *face_struct, Size face_count)
     : m_name(name), m_vertex_count(vertex_count),
       m_face_count(face_count), m_vertex_struct(vertex_struct),
-      m_face_struct(face_struct) {
+      m_face_struct(face_struct), m_surface_area(-1) {
     auto check_field = [](const Struct *s, size_t idx,
                           const std::string &suffix_exp,
                           Struct::EType type_exp) {
@@ -270,14 +270,13 @@ void Mesh::prepare_sampling_table() {
         Throw("Cannot prepare the sampling table of an empty mesh: %s",
               this->to_string());
 
-    std::lock_guard<tbb::spin_mutex> lock(*m_mutex);
+    std::lock_guard<tbb::spin_mutex> lock(m_mutex);
     if (m_surface_area < 0) {
         // Generate a PDF for sampling wrt. the area of each face.
         m_area_distribution.reserve(m_face_count);
         for (size_t i = 0; i < m_face_count; i++) {
-            // TODO: surface area of a face
-            Float face_area = 1.0f;  // face(i).surface_area(m_positions)
-            m_area_distribution.append(face_area);
+            Float area = face_area(i);
+            m_area_distribution.append(area);
         }
         m_surface_area = m_area_distribution.normalize();
         m_inv_surface_area = rcp(m_surface_area);
@@ -301,9 +300,9 @@ ENOKI_INLINE auto Mesh::normal_derivative_impl(const SurfaceInteraction &si,
     auto face_ptr = faces();
     auto prim_index = si.prim_index * m_face_size;
 
-    auto i0 = gather<Index>(face_ptr,   prim_index, active) * m_vertex_size;
-    auto i1 = gather<Index>(face_ptr+1, prim_index, active) * m_vertex_size;
-    auto i2 = gather<Index>(face_ptr+2, prim_index, active) * m_vertex_size;
+    Index i0 = gather<Index>(face_ptr,   prim_index, active) * m_vertex_size,
+          i1 = gather<Index>(face_ptr+1, prim_index, active) * m_vertex_size,
+          i2 = gather<Index>(face_ptr+2, prim_index, active) * m_vertex_size;
 
     auto vertex_ptr = vertices(),
          normal_ptr = vertex_ptr + sizeof(Vector3f);
@@ -362,10 +361,11 @@ Mesh::normal_derivative(const SurfaceInteraction3fP &si, bool shading_frame,
     return normal_derivative_impl<SurfaceInteraction3fP>(si, shading_frame, active);
 }
 
-template <typename PositionSample, typename Point2, typename Mask>
+template <typename PositionSample, typename Point2>
 void Mesh::sample_position_impl(PositionSample &p_rec, const Point2 &sample_,
-                                const Mask &active) const {
-    using Index = like_t<typename Point2::Value, Index>;
+                                const mask_t<value_t<Point2>> &active) const {
+    using Index  = like_t<typename Point2::Value, Index>;
+    using Point3 = typename PositionSample::Point3;
 
     ensure_table_ready();
 
@@ -374,12 +374,12 @@ void Mesh::sample_position_impl(PositionSample &p_rec, const Point2 &sample_,
     std::tie(index, sample.y()) = m_area_distribution.sample_reuse(sample.y());
 
     auto base_offset = (const typename Shape::Index *)faces();
-    auto i0 = gather<Index>(base_offset,   index, active);
-    auto i1 = gather<Index>(base_offset+1, index, active);
-    auto i2 = gather<Index>(base_offset+2, index, active);
-    auto v0 = vertex_position(i0, active);
-    auto v1 = vertex_position(i1, active);
-    auto v2 = vertex_position(i2, active);
+    Index  i0  = gather<Index>(base_offset,   index, active),
+           i1  = gather<Index>(base_offset+1, index, active),
+           i2  = gather<Index>(base_offset+2, index, active);
+    Point3 v0  = vertex_position(i0, active),
+           v1  = vertex_position(i1, active),
+           v2  = vertex_position(i2, active);
 
     masked(p_rec.p, active) = (v0 + v1 + v2) / 3.0f;
     // TODO: this is probably wrong

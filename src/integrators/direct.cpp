@@ -87,12 +87,12 @@ public:
 
         /// Number of shading samples -- this parameter is a shorthand notation
         /// to set both 'emitter_samples' and 'bsdf_samples' at the same time
-        size_t shading_samples = props.long_("shading_samples", 1);
+        size_t shading_samples = props.size_("shading_samples", 1);
 
         /// Number of samples to take using the emitter sampling technique
-        m_emitter_samples = props.long_("emitter_samples", shading_samples);
+        m_emitter_samples = props.size_("emitter_samples", shading_samples);
         /// Number of samples to take using the BSDF sampling technique
-        m_bsdf_samples = props.long_("bsdf_samples", shading_samples);
+        m_bsdf_samples = props.size_("bsdf_samples", shading_samples);
 
         /// Be strict about potential inconsistencies involving shading normals?
         m_strict_normals = props.bool_("strict_normals", false);
@@ -138,10 +138,18 @@ public:
 
     void configure_sampler(const Scene *scene, Sampler *sampler) override {
         SamplingIntegrator::configure_sampler(scene, sampler);
-        if (m_emitter_samples > 1)
+        if (m_emitter_samples > 1) {
+            // TODO: avoid having to request both kinds of arrays, even though
+            // we don't know yet if we're going to use the scalar or vector
+            // variant of the integrator.
             sampler->request_2d_array(m_emitter_samples);
-        if (m_bsdf_samples > 1)
+            sampler->request_2d_array_p(m_emitter_samples);
+        }
+        if (m_bsdf_samples > 1) {
+            // TODO: same as above.
             sampler->request_2d_array(m_bsdf_samples);
+            sampler->request_2d_array_p(m_bsdf_samples);
+        }
     }
     //! @}
     // =============================================================
@@ -187,15 +195,9 @@ public:
                " wasn't properly filled (`its.shape` is null).");
 
         // Include emitted radiance
-        auto is_emitter = Mask(!m_hide_emitters) & active;
-        if (any(is_emitter)) {
-            // TODO(!): this is incorrect! Call of `its.is_emitter` will lead
-            // to de-referencing nullptr on lanes that are not active. We need
-            // a way to pass the `active` mask down to a `CALL_SUPPORT_SCALAR`
-            // method.
-            is_emitter &= its.is_emitter();
+        auto is_emitter = active & (!m_hide_emitters) & its.is_emitter(active);
+        if (any(is_emitter))
             masked(Li, is_emitter) += its.Le(-ray.d, is_emitter);
-        }
 
         // // Include radiance from a subsurface scattering model
         // if (its.has_subsurface())
@@ -227,24 +229,14 @@ public:
         // Figure out how many BSDF and direct illumination samples to
         // generate, and where the random numbers should come from.
         Point2 *sample_array;
-        size_t n_direct_samples = m_emitter_samples,
-               n_bsdf_samples = m_bsdf_samples;
+        size_t n_direct_samples = m_emitter_samples;
+               // n_bsdf_samples = m_bsdf_samples;
         Float frac_lum = m_frac_lum, frac_bsdf = m_frac_bsdf,
-              weight_lum = m_weight_lum, weight_bsdf = m_weight_bsdf;
-
-        // TODO: notion of adaptive query (r_rec.extra & RadianceSample3f::EAdaptiveQuery).
-        bool adaptive_query = false;
-        if (all(r_rec.depth > 1) || adaptive_query) {
-            // This integrator is used recursively by another integrator.
-            // Be less accurate as this sample will not directly be observed.
-            n_bsdf_samples = n_direct_samples = 1;
-            frac_lum = frac_bsdf = .5f;
-            weight_lum = weight_bsdf = 1.0f;
-        }
+              weight_lum = m_weight_lum;  //, weight_bsdf = m_weight_bsdf;
 
         // Get samples for direct illumination
         if (n_direct_samples > 1) {
-            sample_array = r_rec.sampler->template next_array<Point2>(n_direct_samples, active);
+            sample_array = r_rec.sampler->template next_array<Point2>(n_direct_samples);
         } else {
             sample = r_rec.next_sample_2d();
             sample_array = &sample;
@@ -254,14 +246,16 @@ public:
         // Only use direct illumination sampling when the surface's
         // BSDF has smooth (i.e. non-Dirac delta) component.
         // TODO: OR-ing flags, getting a mask out.
-        auto sample_direct = active & (bsdf->flags(active) & BSDF::ESmooth);
+        auto sample_direct = active & neq(bsdf->flags(active) & BSDF::ESmooth,
+                                          (uint32_t) 0);
         if (any(sample_direct)) {
             for (size_t i = 0; i < n_direct_samples; ++i) {
                 // Estimate the direct illumination
                 Spectrum value = scene->sample_emitter_direct(
                         d_rec, sample_array[i], true, active);
 
-                if (all_nested(eq(value, 0.0f)))
+                Mask enabled = active & any(neq(value, 0.0f));
+                if (none(enabled))
                     continue;
 
                 auto emitter = reinterpret_array<EmitterPtr>(d_rec.object);
@@ -273,14 +267,14 @@ public:
                 Spectrum bsdf_val = bsdf->eval(b_rec, ESolidAngle, active);
                 Mask same_side = (dot(its.n, d_rec.d)
                                   * Frame::cos_theta(b_rec.wo)) >= 0;
-                Mask enabled   = active & (m_strict_normals ? same_side : true);
-                if (none(enabled & any(neq(bsdf_val, 0.0f))))
+                enabled  &= (m_strict_normals ? same_side : true);
+                if (none(enabled))
                     continue;  // Early return for this sample
 
                 // Calculate the probability of sampling that direction
                 // using BSDF sampling.
-                auto bsdf_pdf = select(emitter->is_on_surface(),
-                                       bsdf->pdf(b_rec, ESolidAngle, active),
+                auto bsdf_pdf = select(emitter->is_on_surface(enabled),
+                                       bsdf->pdf(b_rec, ESolidAngle, enabled),
                                        0.0f);
 
                 // Weight using the power heuristic
@@ -288,6 +282,9 @@ public:
                                                       bsdf_pdf * frac_bsdf);
 
                 masked(Li, enabled) += value * bsdf_val * weight;
+                if (any_nested(enoki::isnan(Li))) {
+                    Log(EWarn, "Has nan now");
+                }
             }
         }
 
@@ -366,24 +363,27 @@ public:
         return Li;
     }
 
-    SpectrumfP Li(const RayDifferential3fP &r, RadianceSample3fP &r_rec,
-                  const mask_t<FloatP> &active) const override {
-        return Li_impl(r, r_rec, active);
-        // return SpectrumfP(0.0f);
-    }
+    MTS_IMPLEMENT_INTEGRATOR()
+
+    // SpectrumfP Li(const RayDifferential3fP &r, RadianceSample3fP &r_rec,
+    //               const mask_t<FloatP> &active) const override {
+    //     return Li_impl(r, r_rec, active);
+    //     // return SpectrumfP(0.0f);
+    // }
 
 
-    Spectrumf Li(const RayDifferential3f &r, RadianceSample3f &r_rec) const override {
-        // return Li_ref(r, r_rec);
-        return Li_impl(r, r_rec, true);
-        // TODO: remove this (simply return Li_impl)
-        // RadianceSample3f r_rec_ref(r_rec);
-        // auto ref = Li_ref(r, r_rec_ref);
-        // auto res = Li_impl(r, r_rec, true);
-        // Assert(all(abs(ref - res)) < 1e-4);
-        // return res;
-    }
+    // Spectrumf Li(const RayDifferential3f &r, RadianceSample3f &r_rec) const override {
+    //     // return Li_ref(r, r_rec);
+    //     return Li_impl(r, r_rec, true);
+    //     // TODO: remove this (simply return Li_impl)
+    //     // RadianceSample3f r_rec_ref(r_rec);
+    //     // auto ref = Li_ref(r, r_rec_ref);
+    //     // auto res = Li_impl(r, r_rec, true);
+    //     // Assert(all(abs(ref - res)) < 1e-4);
+    //     // return res;
+    // }
 
+    #if 0
     Spectrumf Li_ref(const RayDifferential3f &r, RadianceSample3f &r_rec) const {
         // Some aliases and local variables
         const Scene *scene = r_rec.scene;
@@ -567,6 +567,7 @@ public:
 
         return Li;
     }
+    #endif
 
     template <typename Value>
     Value mi_weight(Value pdf_a, Value pdf_b) const {

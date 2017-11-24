@@ -217,6 +217,9 @@ public:
 
         if (m_vertex_normals && !has_vertex_normals)
             recompute_vertex_normals();
+
+        if (is_emitter())
+            emitter()->set_shape(this);
     }
 
     std::string type_name(const Struct::EType type) const {
@@ -450,9 +453,12 @@ private:
 
                         case Struct::EUInt8: {
                                 int value;
-                                if (!(is >> value)) Throw("Could not parse \"uchar\" value");
+                                if (!(is >> value))
+                                    Throw("Could not parse \"uchar\" value (may"
+                                          " be due to non-triangular faces)");
                                 if (value < 0 || value > 255)
-                                    Throw("Could not parse \"uchar\" value");
+                                    Throw("Could not parse \"uchar\" value (may"
+                                          " be due to non-triangular faces)");
                                 out->write((uint8_t) value);
                             }
                             break;

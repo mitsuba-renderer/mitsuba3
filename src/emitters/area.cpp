@@ -74,6 +74,13 @@ public:
     //     m_intensity.serialize(stream);
     // }
 
+    /// Set the shape associated with this endpoint.
+    /// \warning This should only be call once `shape` is fully constructed.
+    void set_shape(Shape *shape, bool /*unused*/ = true) override {
+        m_shape = shape;
+        m_power = m_radiance * math::Pi * m_shape->surface_area();
+    }
+
     Spectrumf eval(const SurfaceInteraction3f &its,
                    const Vector3f &d) const override {
         if (dot(its.sh_frame.n, d) <= 0)
@@ -260,7 +267,7 @@ public:
         return res;
     }
 
-    BoundingBox3f bbox() const override {
+    BoundingBox3f bbox(bool /*active*/ = true) const override {
         return m_shape->bbox();
     }
 

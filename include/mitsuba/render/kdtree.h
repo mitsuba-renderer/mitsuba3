@@ -2561,6 +2561,10 @@ public:
     /**
      * \brief Having found a unique intersection, fill a proper record
      * using the temporary information collected in \ref intersect().
+     *
+     * \warning All fields of \c its may be overwritten, independently of the
+     * \c active mask. The mask is only used to avoid unsafe operations such
+     * as nullptr dereference.
      */
     template<typename Ray, typename SurfaceInteraction>
     void fill_surface_interaction(
@@ -2574,26 +2578,22 @@ public:
 
         // Recover intersection data stored in the cache.
         auto *cache = static_cast<const IntersectionCache *>(cache_);
-        masked(its.uv, active) = cache->uv;
-        masked(its.prim_index, active) = cache->prim_index;
+        its.uv = cache->uv;
+        its.prim_index = cache->prim_index;
 
         // TODO: support other shape types.
-        masked(its.shape, active) = gather<ShapePtr>(
+        its.shape = gather<ShapePtr>(
                 m_shapes.data(), cache->shape_index, active);
         auto mesh = enoki::reinterpret_array<MeshPtr>(its.shape);
         Assert(none(active & eq(mesh, nullptr)));
 
         mesh->fill_surface_interaction(ray, cache_, its, active);
-        // TODO: do masked assignment directly.
-        auto frame = compute_shading_frame(its.sh_frame.n, its.dp_du);
-        masked(its.sh_frame.n, active) = frame.n;
-        masked(its.sh_frame.s, active) = frame.s;
-        masked(its.sh_frame.t, active) = frame.t;
-        masked(its.wi, active) = its.to_local(-ray.d);
+        its.sh_frame = compute_shading_frame(its.sh_frame.n, its.dp_du);
+        its.wi = its.to_local(-ray.d);
 
         its.has_uv_partials = false;
-        masked(its.instance, active) = nullptr;
-        masked(its.time, active) = ray.time;
+        its.instance = nullptr;
+        its.time = ray.time;
     }
 
     /// Return a human-readable string representation of the scene contents.

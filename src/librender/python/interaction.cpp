@@ -25,16 +25,18 @@ auto bind_interaction(py::module &m, const char *name) {
         .def("is_medium_transition", &Type::is_medium_transition,
              D(SurfaceInteraction, is_medium_transition))
         .def("target_medium",
-             py::overload_cast<const Vector3 &>(&Type::target_medium, py::const_),
-             "d"_a, D(SurfaceInteraction, target_medium))
+             py::overload_cast<const Vector3 &, const Mask &>(
+                    &Type::target_medium, py::const_),
+             "d"_a, "active"_a = true, D(SurfaceInteraction, target_medium))
         .def("target_medium",
-             py::overload_cast<const Value &>(&Type::target_medium, py::const_),
-             "cos_theta"_a, D(SurfaceInteraction, target_medium, 2))
+             py::overload_cast<const Value &, const Mask &>(
+                    &Type::target_medium, py::const_),
+             "cos_theta"_a, "active"_a = true, D(SurfaceInteraction, target_medium, 2))
         .def("bsdf", py::overload_cast<const RayDifferential3 &,
                                        const Mask &>(&Type::bsdf),
-             "ray"_a, "active"_a, D(SurfaceInteraction, bsdf))
-        .def("bsdf", py::overload_cast<>(&Type::bsdf, py::const_),
-             D(SurfaceInteraction, bsdf, 2))
+             "ray"_a, "active"_a = true, D(SurfaceInteraction, bsdf))
+        .def("bsdf", py::overload_cast<const Mask &>(&Type::bsdf, py::const_),
+             "active"_a = true, D(SurfaceInteraction, bsdf, 2))
 
         // Members
         .def_readwrite("shape", &Type::shape, D(SurfaceInteraction, shape))
@@ -63,7 +65,7 @@ auto bind_interaction(py::module &m, const char *name) {
 MTS_PY_EXPORT(SurfaceInteraction) {
     bind_interaction<Point3f>(m, "SurfaceInteraction3f")
         .def("adjust_time", &SurfaceInteraction3f::adjust_time,
-             "time"_a, D(SurfaceInteraction, adjust_time))
+             "time"_a, "active"_a = true, D(SurfaceInteraction, adjust_time))
         .def("normal_derivative", &SurfaceInteraction3f::normal_derivative,
              "shading_frame"_a = true, "active"_a = true,
              D(SurfaceInteraction, normal_derivative));

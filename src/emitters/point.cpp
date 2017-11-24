@@ -224,7 +224,7 @@ public:
         return select(eq(d_rec.measure, EDiscrete), FloatP(1.0f), FloatP(0.0f));
     }
 
-    BoundingBox3f bbox() const override {
+    BoundingBox3f bbox(bool /*active*/ = true) const override {
         return m_world_transform->translation_bounds();
     }
 

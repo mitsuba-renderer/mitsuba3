@@ -6,6 +6,12 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**
+ * \warning Implementing classes must call `m_emitter->set_shape(this)` once they
+ * are entirely initialized. When calling it from the parent class (Shape), we
+ * cannot ensure that all information required to compute `surface_area()` has
+ * been initialized.
+ */
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
     /// Use 32 bit indices to keep track of indices to conserve memory
@@ -239,7 +245,7 @@ public:
      */
     virtual std::pair<bool, Float> ray_intersect(
             const Ray3f &/*ray*/, Float /*mint*/, Float /*maxt*/,
-            void */*cache*/) const {
+            void * /*cache*/) const {
         NotImplementedError("ray_intersect(full, scalar)");
         return { false, 0.f };
     }
@@ -250,7 +256,7 @@ public:
     /// Vectorized variant of \ref ray_intersect.
     virtual std::pair<mask_t<FloatP>, FloatP> ray_intersect(
             const Ray3fP &/*ray*/, FloatP /*mint*/, FloatP /*maxt*/,
-            void */*cache*/, const mask_t<FloatP> &/*active*/) const {
+            void * /*cache*/, const mask_t<FloatP> &/*active*/) const {
         NotImplementedError("ray_intersect(full, vector)");
         return { false, 0.f };
     }
@@ -283,11 +289,16 @@ public:
     }
 
     /**
-     * \brief Given that an intersection has been found, create a
-     * detailed intersection record (scalar)
+     * \brief Given that an intersection has been found, fill a
+     * detailed intersection record.
+     *
+     * \warning In implementations of this interface, all fields of \c its may
+     * be overwritten, independently of the \c active mask. The mask is only
+     * used to avoid unsafe operations such as nullptr dereference.
+     * This allows for efficient unmasked operations.
      */
     virtual void fill_surface_interaction(
-            const Ray3f &/*ray*/, const void */*cache*/,
+            const Ray3f &/*ray*/, const void * /*cache*/,
             SurfaceInteraction3f &/*its*/) const {
         NotImplementedError("fill_surface_interaction(scalar)");
     }
@@ -298,7 +309,7 @@ public:
     }
     /// Vectorized variant of \ref fill_surface_interaction.
     virtual void fill_surface_interaction(
-            const Ray3fP &/*ray*/, const void */*cache*/,
+            const Ray3fP &/*ray*/, const void * /*cache*/,
             SurfaceInteraction3fP &/*its*/, const mask_t<FloatP> &/*active*/) const {
         NotImplementedError("fill_surface_interaction(vector)");
     }

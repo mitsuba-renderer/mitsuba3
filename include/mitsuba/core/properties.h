@@ -182,6 +182,14 @@ public:  // Type-specific getters and setters ----------------------------------
     /// Retrieve a long value (use default value if no entry exists)
     const int64_t& long_(const std::string &name, const int64_t &def_val) const;
 
+    /// Retrieve a size_t value. Since the underlying storage has type int64_t,
+    /// an exception is thrown if the value is negative.
+    size_t size_(const std::string &name) const;
+    /// Retrieve a long value (use default value if no entry exists). Since the
+    /// underlying storage has type int64_t an exception is thrown if the value
+    /// is negative).
+    size_t size_(const std::string &name, const size_t &def_val) const;
+
     /// Store a floating point value in the Properties instance
     void set_float(const std::string &name, const Float &value, bool warnDuplicates = true);
     /// Retrieve a floating point value

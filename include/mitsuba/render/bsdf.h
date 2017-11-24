@@ -20,34 +20,34 @@ NAMESPACE_BEGIN(mitsuba)
  * plugins to instantiate concrete versions of the the \c sample,
  * \c eval and \c pdf functions.
  */
-#define MTS_IMPLEMENT_BSDF()                                    \
-    std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,        \
-        const Point2f &sample) const override {                 \
-        return sample_impl(bs, sample, true);                   \
-    }                                                           \
-    std::pair<SpectrumfP, FloatP> sample(BSDFSample3fP &bs,     \
-        const Point2fP &sample,                                 \
-        const mask_t<FloatP> &active = true) const override {   \
-        return sample_impl(bs, sample, active);                 \
-    }                                                           \
-    Spectrumf eval(const BSDFSample3f &bs,                      \
-        EMeasure measure) const override {                      \
-        return eval_impl(bs, measure, true);                    \
-    }                                                           \
-    SpectrumfP eval(const BSDFSample3fP &bs,                    \
-        EMeasure measure,                                       \
-        const mask_t<FloatP> &active) const override {          \
-        return eval_impl(bs, measure, active);                  \
-    }                                                           \
-    Float pdf(const BSDFSample3f &bs,                           \
-        EMeasure measure) const override {                      \
-        return pdf_impl(bs, measure, true);                     \
-    }                                                           \
-    FloatP pdf(const BSDFSample3fP &bs,                         \
-        EMeasure measure,                                       \
-        const mask_t<FloatP> &active) const override {          \
-        return pdf_impl(bs, measure, active);                   \
-    }                                                           \
+#define MTS_IMPLEMENT_BSDF()                                                   \
+    std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,                       \
+        const Point2f &sample) const override {                                \
+        return sample_impl(bs, sample, true);                                  \
+    }                                                                          \
+    std::pair<SpectrumfP, FloatP> sample(BSDFSample3fP &bs,                    \
+        const Point2fP &sample,                                                \
+        const mask_t<FloatP> &active = true) const override {                  \
+        return sample_impl(bs, sample, active);                                \
+    }                                                                          \
+    Spectrumf eval(const BSDFSample3f &bs,                                     \
+        EMeasure measure) const override {                                     \
+        return eval_impl(bs, measure, true);                                   \
+    }                                                                          \
+    SpectrumfP eval(const BSDFSample3fP &bs,                                   \
+        EMeasure measure,                                                      \
+        const mask_t<FloatP> &active) const override {                         \
+        return eval_impl(bs, measure, active);                                 \
+    }                                                                          \
+    Float pdf(const BSDFSample3f &bs,                                          \
+        EMeasure measure) const override {                                     \
+        return pdf_impl(bs, measure, true);                                    \
+    }                                                                          \
+    FloatP pdf(const BSDFSample3fP &bs,                                        \
+        EMeasure measure,                                                      \
+        const mask_t<FloatP> &active) const override {                         \
+        return pdf_impl(bs, measure, active);                                  \
+    }                                                                          \
 
 
 /**

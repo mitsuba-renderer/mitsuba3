@@ -94,12 +94,12 @@ MTS_PY_EXPORT(Sensor) {
         .export_values();
 
     MTS_PY_CLASS(ProjectiveCamera, Sensor)
-        .mdef(ProjectiveCamera, view_transform, "t"_a)
+        .mdef(ProjectiveCamera, view_transform_t, "t"_a, "unused"_a = true)
         // There's also the world_transform method from Endpoint
-        .def("world_transform",
-             py::overload_cast<Float>(
-                &ProjectiveCamera::world_transform, py::const_),
-             D(ProjectiveCamera, world_transform), "t"_a)
+        .def("world_transform_t",
+             py::overload_cast<Float, bool>(
+                &ProjectiveCamera::world_transform_t, py::const_),
+             D(ProjectiveCamera, world_transform_t), "t"_a, "unused"_a = true)
 
         .def("projection_transform", &ProjectiveCamera::projection_transform,
              D(ProjectiveCamera, projection_transform),

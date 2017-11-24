@@ -22,7 +22,12 @@ public:
     // =============================================================
     //! @{ \name Ray tracing
     // =============================================================
-    /// Shoot a ray and get full information about any resulting intersection.
+    /**
+     * Shoot a ray and get full information about any resulting intersection.
+     *
+     * \warning All fields of \c its may be overwritten, independently of the
+     * \c active mask.
+     */
     template <typename Ray, typename Value = typename Ray::Value>
     auto ray_intersect(const Ray &ray, const Value &mint, const Value &maxt,
                        SurfaceInteraction<typename Ray::Point> &its,

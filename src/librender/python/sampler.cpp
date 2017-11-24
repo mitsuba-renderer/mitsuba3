@@ -35,6 +35,5 @@ MTS_PY_EXPORT(Sampler) {
         .mdef(Sampler, sample_index)
         .mdef(Sampler, set_sample_index, "sample_index"_a)
         .mdef(Sampler, set_film_resolution, "res"_a, "blocked"_a)
-        .def("__repr__", &Sampler::to_string)
         ;
 }

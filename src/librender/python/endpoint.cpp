@@ -103,29 +103,29 @@ MTS_PY_EXPORT(Endpoint) {
                 &Endpoint::pdf_direct, py::const_)),
              D(Endpoint, pdf_direct), "d_rec"_a, "active"_a = true)
 
-        .mdef(Endpoint, type)
-        .mdef(Endpoint, world_transform)
-        .mdef(Endpoint, set_world_transform, "trafo"_a)
-        .mdef(Endpoint, needs_position_sample)
-        .mdef(Endpoint, needs_direction_sample)
-        .mdef(Endpoint, is_on_surface)
-        .mdef(Endpoint, is_degenerate)
-        .mdef(Endpoint, needs_direct_sample)
-        .mdef(Endpoint, direct_measure)
+        .mdef(Endpoint, type, "unused"_a = true)
+        .mdef(Endpoint, world_transform, "unused"_a = true)
+        .mdef(Endpoint, set_world_transform, "trafo"_a, "unused"_a = true)
+        .mdef(Endpoint, needs_position_sample, "unused"_a = true)
+        .mdef(Endpoint, needs_direction_sample, "unused"_a = true)
+        .mdef(Endpoint, is_on_surface, "unused"_a = true)
+        .mdef(Endpoint, is_degenerate, "unused"_a = true)
+        .mdef(Endpoint, needs_direct_sample, "unused"_a = true)
+        .mdef(Endpoint, direct_measure, "unused"_a = true)
 
-        .def("medium", py::overload_cast<>(&Endpoint::medium),
-             D(Endpoint, medium))
-        .def("medium", py::overload_cast<>(&Endpoint::medium, py::const_),
-             D(Endpoint, medium))
-        .def("shape", py::overload_cast<>(&Endpoint::shape),
-             D(Endpoint, shape))
-        .def("shape", py::overload_cast<>(&Endpoint::shape, py::const_),
-             D(Endpoint, shape))
+        .def("medium", py::overload_cast<bool>(&Endpoint::medium),
+             "unused"_a = true, D(Endpoint, medium))
+        .def("medium", py::overload_cast<bool>(&Endpoint::medium, py::const_),
+             "unused"_a = true, D(Endpoint, medium))
+        .def("shape", py::overload_cast<bool>(&Endpoint::shape),
+             "unused"_a = true, D(Endpoint, shape))
+        .def("shape", py::overload_cast<bool>(&Endpoint::shape, py::const_),
+             "unused"_a = true, D(Endpoint, shape))
 
-        .mdef(Endpoint, create_shape, "scene"_a)
-        .mdef(Endpoint, bbox)
-        .mdef(Endpoint, set_shape, "shape"_a)
-        .mdef(Endpoint, set_medium, "medium"_a)
+        .mdef(Endpoint, create_shape, "scene"_a, "unused"_a = true)
+        .mdef(Endpoint, bbox, "unused"_a = true)
+        .mdef(Endpoint, set_shape, "shape"_a, "unused"_a = true)
+        .mdef(Endpoint, set_medium, "medium"_a, "unused"_a = true)
         ;
 
     // TODO: use docstrings from `mkdoc.py` (currently, there's no pybind11 support).

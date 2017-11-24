@@ -19,10 +19,10 @@ public:
         m_type |= EDeltaPosition | EPerspectiveCamera
                   | EOnSurface |EDirectionSampleMapsToPixels;
 
-        if (world_transform(0).has_scale()) {
+        if (world_transform_t(0).has_scale()) {
             Log(EError, "Scale factors in the camera-to-world"
                         " transformation are not allowed! Transform:\n%s",
-                        world_transform(0));
+                        world_transform_t(0));
         }
 
         configure();
@@ -281,7 +281,7 @@ public:
         );
     }
 
-    BoundingBox3f bbox() const override {
+    BoundingBox3f bbox(bool /*unused*/ = true) const override {
         return m_world_transform->translation_bounds();
     }
 

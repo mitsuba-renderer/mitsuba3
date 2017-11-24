@@ -325,6 +325,37 @@ std::ostream &operator<<(std::ostream &os, const Properties &p) {
 // === Custom accessors
 // =============================================================================
 
+// size_t getter
+size_t Properties::size_(const std::string &name) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        Throw("Property \"%s\" has not been specified!", name);
+    if (!it->second.data.is<int64_t>())
+        Throw("The property \"%s\" has the wrong type (expected <integer>).", name);
+
+    auto v = (int64_t) it->second.data;
+    if (v < 0) {
+        Throw("Property \"%s\" has negative value %i, but was queried as a"
+              " size_t (unsigned).", name, v);
+    }
+    it->second.queried = true;
+    return (size_t) v;
+}
+// size_t getter (with default value)
+size_t Properties::size_(const std::string &name, const size_t &def_val) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        return def_val;
+
+    auto v = (int64_t) it->second.data;
+    if (v < 0) {
+        Throw("Property \"%s\" has negative value %i, but was queried as a"
+              " size_t (unsigned).", name, v);
+    }
+    it->second.queried = true;
+    return (size_t) v;
+}
+
 /// AnimatedTransform setter.
 void Properties::set_animated_transform(const std::string &name,
                                         ref<AnimatedTransform> value,

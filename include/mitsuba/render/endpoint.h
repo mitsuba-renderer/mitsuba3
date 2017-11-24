@@ -322,20 +322,20 @@ public:
      *
      * \sa EFlags
      */
-    uint32_t type() const { return m_type; }
+    uint32_t type(bool /*unused*/ = true) const { return m_type; }
 
     /// Return the local space to world space transformation
-    const AnimatedTransform *world_transform() const;
+    const AnimatedTransform *world_transform(bool /*unused*/ = true) const;
 
 
     /// Set the local space to world space transformation
-    void set_world_transform(const AnimatedTransform *trafo);
+    void set_world_transform(const AnimatedTransform *trafo, bool /*unused*/ = true);
 
     /**
      * \brief Does the method \ref sample_position() require a uniformly
      * distributed sample for the spatial component?
      */
-    bool needs_position_sample() const {
+    bool needs_position_sample(bool /*unused*/ = true) const {
         return !(m_type & EDeltaPosition);
     }
 
@@ -343,14 +343,14 @@ public:
      * \brief Does the method \ref sample_direction() require a uniformly
      * distributed sample for the direction component?
      */
-    bool needs_direction_sample() const {
+    bool needs_direction_sample(bool /*unused*/ = true) const {
         return !(m_type & EDeltaDirection);
     }
 
     /**
      * \brief Does the emitter lie on some kind of surface?
      */
-    bool is_on_surface() const {
+    bool is_on_surface(bool /*unused*/ = true) const {
         return m_type & EOnSurface;
     }
 
@@ -358,7 +358,7 @@ public:
      * \brief Does the sensor have a degenerate directional or spatial
      * distribution?
      */
-    bool is_degenerate() const {
+    bool is_degenerate(bool /*unused*/ = true) const {
         return m_type & (EDeltaPosition | EDeltaDirection);
     }
 
@@ -370,7 +370,7 @@ public:
      * sampling domain, this is the case exactly when the original
      * domain was four-dimensionsional.
      */
-    bool needs_direct_sample() const {
+    bool needs_direct_sample(bool /*unused*/ = true) const {
         return needs_position_sample() && needs_direction_sample();
     }
 
@@ -378,7 +378,7 @@ public:
      * \brief Return the measure associated with the \ref sample_direct()
      * operation
      */
-    EMeasure direct_measure() const {
+    EMeasure direct_measure(bool /*unused*/ = true) const {
         return needs_direct_sample() ? ESolidAngle : EDiscrete;
     }
 
@@ -391,16 +391,16 @@ public:
     // =============================================================
 
     /// Return a pointer to the medium that surrounds the emitter
-    Medium *medium() { return m_medium; }
+    Medium *medium(bool /*unused*/ = true) { return m_medium; }
 
     /// Return a pointer to the medium that surrounds the emitter (const version)
-    const Medium *medium() const { return m_medium.get(); }
+    const Medium *medium(bool /*unused*/ = true) const { return m_medium.get(); }
 
     /// Return the shape, to which the emitter is currently attached
-    Shape *shape() { return m_shape; }
+    Shape *shape(bool /*unused*/ = true) { return m_shape; }
 
     /// Return the shape, to which the emitter is currently attached (const version)
-    const Shape *shape() const { return m_shape; }
+    const Shape *shape(bool /*unused*/ = true) const { return m_shape; }
 
     /**
      * \brief Create a special shape that represents the emitter
@@ -424,19 +424,21 @@ public:
      *     A pointer to the associated scene (the created shape is
      *     allowed to depend on it)
      */
-    virtual ref<Shape> create_shape(const Scene *scene);
+    virtual ref<Shape> create_shape(const Scene *scene, bool /*unused*/ = true);
 
     /**
      * \brief Return an axis-aligned box bounding the spatial
      * extents of the emitter
      */
-    virtual BoundingBox3f bbox() const = 0;
+    virtual BoundingBox3f bbox(bool /*unused*/ = true) const = 0;
 
     /// Set the shape associated with this endpoint.
-    void set_shape(Shape *shape) { m_shape = shape; }
+    virtual void set_shape(Shape *shape, bool /*unused*/ = true) {
+        m_shape = shape;
+    }
 
     /// Set the medium that surrounds the emitter.
-    void set_medium(Medium *medium) { m_medium = medium; }
+    void set_medium(Medium *medium, bool /*unused*/ = true) { m_medium = medium; }
 
     /// Serialize this emitter to a binary data stream
     // virtual void serialize(Stream *stream, InstanceManager *manager) const;

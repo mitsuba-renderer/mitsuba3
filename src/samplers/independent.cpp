@@ -40,7 +40,7 @@ public:
 
     IndependentSampler(const Properties &props)
         : Sampler(props), m_random(), m_random_p() {
-        m_sample_count = props.long_("sample_count", 4);
+        m_sample_count = props.size_("sample_count", 4);
         configure();
     }
 
@@ -63,23 +63,33 @@ public:
             sampler->request_1d_array(size);
         for (const auto & size : m_requests_2d)
             sampler->request_2d_array(size);
+        for (const auto & size : m_requests_1d_p)
+            sampler->request_1d_array_p(size);
+        for (const auto & size : m_requests_2d_p)
+            sampler->request_2d_array_p(size);
         return sampler.get();
     }
 
     void generate(const Point2i &) override {
         for (size_t i = 0; i < m_requests_1d.size(); i++) {
             for (size_t j = 0; j < m_sample_count * m_requests_1d[i]; ++j)
-                m_samples_1d[i][j] = next_float();
+                m_samples_1d[i][j] = next_1d();
         }
         for (size_t i = 0; i < m_requests_2d.size(); i++) {
-            for (size_t j = 0; j < m_sample_count * m_requests_2d[i]; ++j) {
-                auto f1 = next_float();
-                auto f2 = next_float();
-                m_samples_2d[i][j] = Point2f(f1, f2);
-            }
+            for (size_t j = 0; j < m_sample_count * m_requests_2d[i]; ++j)
+                m_samples_2d[i][j] = next_2d();
+        }
+        for (size_t i = 0; i < m_requests_1d_p.size(); i++) {
+            for (size_t j = 0; j < m_sample_count * m_requests_1d_p[i]; ++j)
+                m_samples_1d_p[i][j] = next_1d_p();
+        }
+        for (size_t i = 0; i < m_requests_2d_p.size(); i++) {
+            for (size_t j = 0; j < m_sample_count * m_requests_2d_p[i]; ++j)
+                m_samples_2d_p[i][j] = next_2d_p();
         }
         m_sample_index = 0;
         m_dimension_1d_array = m_dimension_2d_array = 0;
+        m_dimension_1d_array_p = m_dimension_2d_array_p = 0;
     }
 
     Float next_1d() override {

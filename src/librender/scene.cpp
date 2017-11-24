@@ -48,13 +48,13 @@ Scene::Scene(const Properties &props) {
         m_emitters_pdf.normalize();
 
     if (m_sensors.size() > 0) {
-        // TODO: proper handling of multiple samplers
+        // TODO: proper handling of multiple sensors (need to always use the
+        // sampler from the currently selected sensor).
         m_sampler = m_sensors.front()->sampler();
     }
 
-    if (m_integrator && m_sampler) {
+    if (m_integrator && m_sampler)
         m_integrator->configure_sampler(this, m_sampler);
-    }
 }
 
 Scene::~Scene() { }

@@ -34,12 +34,14 @@ public:
     virtual void generate(const Point2i &/*offset*/) {
         m_sample_index = 0;
         m_dimension_1d_array = m_dimension_2d_array = 0;
+        m_dimension_1d_array_p = m_dimension_2d_array_p = 0;
     }
 
     /// Advance to the next sample
     virtual void advance() {
         m_sample_index++;
         m_dimension_1d_array = m_dimension_2d_array = 0;
+        m_dimension_1d_array_p = m_dimension_2d_array_p = 0;
     }
 
     /// Retrieve the next component value from the current sample
@@ -64,6 +66,7 @@ public:
     /// See \ref request_2d_array.
     // TODO: vectorized variants
     void request_1d_array(size_t size);
+    void request_1d_array_p(size_t size);
 
     /**
      * \brief Request that a 2D array will be made available for
@@ -74,13 +77,18 @@ public:
      * of this feature.
      */
     void request_2d_array(size_t size);
+    void request_2d_array_p(size_t size);
+
+    /**
+     * Automatically selects the right variant among the request_*_array_*
+     * methods, based on the template type.
+     */
+    template <typename T> void request_array(size_t size);
 
     /// See \ref next_2d_array.
     Float *next_1d_array(size_t size);
     /// Vectorized variant of \ref next_1d_array.
-    FloatP *next_1d_array_p(size_t /*size*/, const mask_t<FloatP> &/*active*/ = true) {
-        Throw("Not implemented yet: Sampler::next_1d_array_p().");
-    }
+    FloatP *next_1d_array_p(size_t /*size*/);
 
     /**
      * \brief Retrieve the next 2D array of values from the current sample.
@@ -100,13 +108,13 @@ public:
      */
     Point2f *next_2d_array(size_t size);
     /// Vectorized variant of \ref next_2d_array.
-    Point2fP *next_2d_array_p(size_t /*size*/, const mask_t<FloatP> &/*active*/ = true) {
-        Throw("Not implemented yet: Sampler::next_2d_array_p().");
-    }
+    Point2fP *next_2d_array_p(size_t /*size*/);
 
-    /// TODO: docstring
-    template <typename T, typename Mask> auto next_array(size_t size,
-                                                         const Mask &active = true);
+    /**
+     * Automatically selects the right variant among the next_*_array_*
+     * methods, based on the template type.
+     */
+    template <typename T> auto next_array(size_t size);
 
     // =============================================================
     //! @{ \name Accessors & misc
@@ -118,6 +126,7 @@ public:
     virtual void set_sample_index(size_t sample_index) {
         m_sample_index = sample_index;
         m_dimension_1d_array = m_dimension_2d_array = 0;
+        m_dimension_1d_array_p = m_dimension_2d_array_p = 0;
     }
 
     virtual void set_film_resolution(const Vector2i &/*res*/, bool /*blocked*/) {
@@ -140,10 +149,14 @@ protected:
     size_t m_sample_count;
     size_t m_sample_index;
 
-    std::vector<size_t> m_requests_1d, m_requests_2d;
+    std::vector<size_t> m_requests_1d, m_requests_2d,
+                        m_requests_1d_p, m_requests_2d_p;
     std::vector<Float *> m_samples_1d;
+    std::vector<FloatP *> m_samples_1d_p;
     std::vector<Point2f *> m_samples_2d;
-    size_t m_dimension_1d_array, m_dimension_2d_array;
+    std::vector<Point2fP *> m_samples_2d_p;
+    size_t m_dimension_1d_array, m_dimension_1d_array_p,
+           m_dimension_2d_array, m_dimension_2d_array_p;
 };
 
 // =============================================================
@@ -170,18 +183,15 @@ template <> inline Point2fX Sampler::next<Point2fX>(const mask_t<FloatX> &/*acti
     return Point2fX();
 }
 
-template <> inline auto Sampler::next_array<Float>(size_t size, const mask_t<Float> &) {
-    return next_1d_array(size);
-}
-template <> inline auto Sampler::next_array<FloatP>(size_t size, const mask_t<FloatP> &active) {
-    return next_1d_array_p(size, active);
-}
-template <> inline auto Sampler::next_array<Point2f>(size_t size, const mask_t<Float> &) {
-    return next_2d_array(size);
-}
-template <> inline auto Sampler::next_array<Point2fP>(size_t size, const mask_t<FloatP> &active) {
-    return next_2d_array_p(size, active);
-}
+template <> inline void Sampler::request_array<Float>(size_t size) { return request_1d_array(size); }
+template <> inline void Sampler::request_array<FloatP>(size_t size) { return request_1d_array_p(size); }
+template <> inline void Sampler::request_array<Point2f>(size_t size) { return request_2d_array(size); }
+template <> inline void Sampler::request_array<Point2fP>(size_t size) { return request_2d_array_p(size); }
+
+template <> inline auto Sampler::next_array<Float>(size_t size) { return next_1d_array(size); }
+template <> inline auto Sampler::next_array<FloatP>(size_t size) { return next_1d_array_p(size); }
+template <> inline auto Sampler::next_array<Point2f>(size_t size) { return next_2d_array(size); }
+template <> inline auto Sampler::next_array<Point2fP>(size_t size) { return next_2d_array_p(size); }
 //! @}
 // =============================================================
 

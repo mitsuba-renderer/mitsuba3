@@ -296,8 +296,12 @@ template <typename Point3_> struct DirectSample : public PositionSample<Point3_>
      */
     DirectSample(const SurfaceInteraction &ref_si)
         : Base(ref_si), ref_p(ref_si.p) {
-        auto front_only_material = eq(
-            ref_si.bsdf()->flags() & (BSDF::ETransmission | BSDF::EBackSide), 0u);
+        auto active = neq(ref_si.shape, nullptr);
+        auto bsdf = ref_si.bsdf(active);
+        Assert(none(active & eq(bsdf, nullptr)));
+        auto front_only_material = eq(bsdf->flags(active)
+                                      & (BSDF::ETransmission | BSDF::EBackSide), 0u)
+                                   & active;
         ref_n = select(front_only_material, ref_si.sh_frame.n, Normal3(0.f));
     }
 

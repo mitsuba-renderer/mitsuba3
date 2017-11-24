@@ -47,9 +47,6 @@ NAMESPACE_BEGIN(mitsuba)
  *         information is permanently saved.
  *         \default{\code{true}, i.e. attach it}
  *     }
- *     \parameter{banner}{\Boolean}{Include a small Mitsuba banner in the
- *         output image? \default{\code{true}}
- *     }
  *     \parameter{high_quality_edges}{\Boolean}{
  *        If set to \code{true}, regions slightly outside of the film
  *        plane will also be sampled. This may improve the image
@@ -93,12 +90,11 @@ NAMESPACE_BEGIN(mitsuba)
  * converted to linear RGB based on the CIE 1931 XYZ color matching curves and
  * the ITU-R Rec. BT.709-3 primaries with a D65 white point.
  *
- * \begin{xml}[caption=Instantiation of a film that writes a full-HD RGBA OpenEXR file without the Mitsuba banner]
+ * \begin{xml}[caption=Instantiation of a film that writes a full-HD RGBA OpenEXR file]
  * <film type="hdrfilm">
  *     <string name="pixel_format" value="rgba"/>
  *     <integer name="width" value="1920"/>
  *     <integer name="height" value="1080"/>
- *     <boolean name="banner" value="false"/>
  * </film>
  * \end{xml}
  *
@@ -187,7 +183,6 @@ NAMESPACE_BEGIN(mitsuba)
 class HDRFilm : public Film {
 public:
     HDRFilm(const Properties &props) : Film(props) {
-        m_banner = props.bool_("banner", false);
         m_attach_log = props.bool_("attach_log", false);
 
         std::string file_format = string::to_lower(
@@ -362,30 +357,14 @@ public:
     }
 
     void add_bitmap(const Bitmap *bitmap, Float multiplier) override {
-        /* Currently, only accumulating spectrum-valued floating point images
-        is supported. This function basically just exists to support the
-        somewhat peculiar film updates done by BDPT */
-        Vector2i size = bitmap->size();
-        #if defined(SINGLE_PRECISION)
-        auto expected_format = Struct::EFloat32;
-        #else
-        auto expected_format = Struct::EFloat64;
-        #endif
-        if (bitmap->component_format() != expected_format ||
-            bitmap->pixel_format() != Bitmap::EXYZAW      ||
-            bitmap->srgb_gamma()                          ||
-            size != m_storage->size()                     ||
-            m_pixel_formats.size() != 1) {
-            Throw("add_bitmap(): Unsupported bitmap format in new bitmap:"
-                  " %s,\nvs\n%s",
-                  bitmap->to_string(), m_storage->bitmap()->to_string());
-        }
-
+        // This function basically just exists to support the somewhat peculiar
+        // film updates done by BDPT.
         auto storage = m_storage->bitmap();
         auto converted = bitmap->convert(
                 storage->pixel_format(), storage->component_format(),
                 storage->srgb_gamma());
 
+        Vector2i size = storage->size();
         size_t n_pixels = (size_t)size.x() * (size_t)size.y();
         const Float *source = static_cast<const Float *>(converted->data());
         Float *target = static_cast<Float *>(storage->data());
@@ -428,11 +407,11 @@ public:
         return true;
     }
 
-    void develop(const Scene */*scene*/, Float /*renderTime*/) override {
+    void develop(const Scene * /*scene*/, Float /*renderTime*/) override {
         if (m_dest_file.empty())
             return;
 
-        Log(EDebug, "Developing film...");
+        Log(EDebug, "Developing film..");
 
         ref<Bitmap> bitmap;
         if (m_pixel_formats.size() != 1)
@@ -444,9 +423,6 @@ public:
         int idx = 0;
         for (auto c : *bitmap->struct_())
             c.name = m_channel_names[idx++];
-
-        if (m_banner)
-            NotImplementedError("Overlaying the Mitsuba watermark.")
 
         fs::path filename = m_dest_file;
         std::string proper_extension;
@@ -515,7 +491,6 @@ public:
             << "  pixel_formats = " << m_pixel_formats << "," << std::endl
             << "  channel_names = " << m_channel_names << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
-            << "  banner = " << m_banner << "," << std::endl
             << "  attach_log = " << m_attach_log << "," << std::endl
             << "  dest_file = " << m_dest_file << std::endl
             << "]";
@@ -529,7 +504,6 @@ protected:
     std::vector<Bitmap::EPixelFormat> m_pixel_formats;
     std::vector<std::string> m_channel_names;
     Struct::EType m_component_format;
-    bool m_banner;
     bool m_attach_log;
     fs::path m_dest_file;
     ref<ImageBlock> m_storage;

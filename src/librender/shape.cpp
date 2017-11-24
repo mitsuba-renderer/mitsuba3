@@ -18,7 +18,8 @@ Shape::Shape(const Properties &props) {
                 Log(EError, "Only a single Emitter child object can be specified"
                             " per shape.");
             m_emitter = emitter;
-            emitter->set_shape(this);
+            // Child classes must make this call at the end of construction:
+            //     emitter->set_shape(this);
         } else if (bsdf) {
             if (m_bsdf)
                 Log(EError, "Only a single BSDF child object can be specified"

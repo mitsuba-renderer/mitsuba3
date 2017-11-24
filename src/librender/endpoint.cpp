@@ -107,17 +107,17 @@ FloatP Endpoint::pdf_direct(const DirectSample3fP &/*d_rec*/,
     return FloatP(0.0f);
 }
 
-const AnimatedTransform *Endpoint::world_transform() const {
+const AnimatedTransform *Endpoint::world_transform(bool /*unused*/) const {
     return m_world_transform.get();
 }
 
-void Endpoint::set_world_transform(const AnimatedTransform *trafo) {
+void Endpoint::set_world_transform(const AnimatedTransform *trafo, bool /*unused*/) {
     m_world_transform = trafo;
     ref<AnimatedTransform> atrafo(new AnimatedTransform(*trafo));
     m_properties.set_animated_transform("to_world", atrafo, false);
 }
 
-ref<Shape> Endpoint::create_shape(const Scene * /*scene*/) {
+ref<Shape> Endpoint::create_shape(const Scene * /*scene*/, bool /*unused*/) {
     return nullptr;
 }
 

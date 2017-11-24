@@ -11,12 +11,16 @@ MTS_PY_EXPORT(Shape) {
         .def("bbox", py::overload_cast<typename Shape::Index, const BoundingBox3f &>(&Shape::bbox, py::const_), D(Shape, bbox, 2))
         .mdef(Shape, surface_area)
         // TODO: rest of the bindings
-        .mdef(Shape, is_emitter)
-        .def("emitter", py::overload_cast<bool>(&Shape::emitter))
-        .def("emitter", py::overload_cast<bool>(&Shape::emitter, py::const_))
-        .mdef(Shape, is_sensor)
-        .def("sensor", py::overload_cast<bool>(&Shape::sensor))
-        .def("sensor", py::overload_cast<bool>(&Shape::sensor, py::const_))
+        .mdef(Shape, is_emitter, "active"_a = true)
+        .def("emitter", py::overload_cast<bool>(&Shape::emitter),
+             "active"_a = true)
+        .def("emitter", py::overload_cast<bool>(&Shape::emitter, py::const_),
+             "active"_a = true)
+        .mdef(Shape, is_sensor, "active"_a = true)
+        .def("sensor", py::overload_cast<bool>(&Shape::sensor),
+             "active"_a = true)
+        .def("sensor", py::overload_cast<bool>(&Shape::sensor, py::const_),
+             "active"_a = true)
         .mdef(Shape, primitive_count)
         .mdef(Shape, effective_primitive_count)
         ;
