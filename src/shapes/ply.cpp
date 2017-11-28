@@ -110,8 +110,8 @@ public:
 
                     if (!has_vertex_normals) {
                         for (size_t j = 0; j < packet_size; ++j) {
-                            Vector3f p = enoki::load_unaligned<Vector3f>(target);
-                            p = m_to_world.transform_affine(p);
+                            Point3f p = enoki::load_unaligned<Point3f>(target);
+                            p = m_to_world * p;
                             if (unlikely(!all(enoki::isfinite(p))))
                                 fail("mesh contains invalid vertex positions/normal data");
                             m_bbox.expand(p);
@@ -120,10 +120,10 @@ public:
                         }
                     } else {
                         for (size_t j = 0; j < packet_size; ++j) {
-                            Vector3f p = enoki::load_unaligned<Vector3f>(target);
+                            Point3f p = enoki::load_unaligned<Point3f>(target);
                             Normal3f n = Normal3f(enoki::load_unaligned<Normal3h>(target + sizeof(Float) * 3));
                             n = normalize(m_to_world.transform_affine(n));
-                            p = m_to_world.transform_affine(p);
+                            p = m_to_world * p;
                             if (unlikely(!all(enoki::isfinite(p) & enoki::isfinite(n))))
                                 fail("mesh contains invalid vertex positions/normal data");
                             m_bbox.expand(p);
@@ -139,8 +139,10 @@ public:
                     fail("incompatible contents -- is this a triangle mesh?");
 
                 for (size_t j = 0; j < remainder_count; ++j) {
-                    Vector3f p = enoki::load<Vector3f>((Float *) target);
+                    Point3f p = enoki::load_unaligned<Point3f>((Float *) target);
+                    p = m_to_world * p;
                     m_bbox.expand(p);
+                    enoki::store_unaligned(target, p);
                     target += o_struct_size;
                 }
 
