@@ -5,12 +5,12 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/vector.h>
+#include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shape.h>
-#include <mitsuba/render/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

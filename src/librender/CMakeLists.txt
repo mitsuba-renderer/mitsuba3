@@ -11,6 +11,7 @@ add_library(mitsuba-render-obj OBJECT
   endpoint.cpp     ${INC_DIR}/endpoint.h
   film.cpp         ${INC_DIR}/film.h
   imageblock.cpp   ${INC_DIR}/imageblock.h
+  integrator.cpp   ${INC_DIR}/integrator.h
   interaction.cpp  ${INC_DIR}/interaction.h
   kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h

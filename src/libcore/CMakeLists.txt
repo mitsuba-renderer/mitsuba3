@@ -11,16 +11,16 @@ set(INC_DIR "../../include/mitsuba/core")
 
 add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/../mitsuba.h
-  ${INC_DIR}/fwd.h
-  ${INC_DIR}/essentials.h
-  ${INC_DIR}/platform.h
-  ${INC_DIR}/variant.h
   ${INC_DIR}/atomic.h
-  ${INC_DIR}/string.h
+  ${INC_DIR}/essentials.h
   ${INC_DIR}/frame.h
+  ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
   ${INC_DIR}/jit.h
+  ${INC_DIR}/platform.h
   ${INC_DIR}/simd.h
+  ${INC_DIR}/string.h
+  ${INC_DIR}/variant.h
 
   appender.cpp         ${INC_DIR}/appender.h
   argparser.cpp        ${INC_DIR}/argparser.h
@@ -59,6 +59,8 @@ add_library(mitsuba-core-obj OBJECT
   warp.cpp             ${INC_DIR}/warp.h
   xml.cpp              ${INC_DIR}/xml.h
   zstream.cpp          ${INC_DIR}/zstream.h
+
+  dither-matrix256.cpp
 )
 
 add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)

@@ -5,6 +5,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/render/integrator.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
@@ -35,6 +36,10 @@ py::object py_cast(Object *o) {
 
     PY_CAST(ImageBlock);
     PY_CAST(Film);
+
+    PY_CAST(MonteCarloIntegrator);
+    PY_CAST(SamplingIntegrator);
+    PY_CAST(Integrator);
 
     PY_CAST(Sampler);
 

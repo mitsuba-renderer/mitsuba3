@@ -1,14 +1,17 @@
-#include <mitsuba/core/thread.h>
-#include <mitsuba/core/logger.h>
-#include <mitsuba/core/xml.h>
+#include <mitsuba/core/argparser.h>
+#include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/argparser.h>
+#include <mitsuba/core/fstream.h>
+#include <mitsuba/core/jit.h>
+#include <mitsuba/core/logger.h>
+#include <mitsuba/core/thread.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
-#include <mitsuba/core/jit.h>
-#include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/xml.h>
 #include <mitsuba/render/common.h>
+#include <mitsuba/render/integrator.h>
+#include <mitsuba/render/scene.h>
 #include <tbb/task_scheduler_init.h>
 
 #include <mitsuba/render/records.h>
@@ -88,6 +91,9 @@ Options:
 
    -t <count>, --threads <count>
                Render with the specified number of threads
+
+   -s, --scalar
+               Render without vectorization support
 )";
 }
 
@@ -104,6 +110,7 @@ int main(int argc, char *argv[]) {
     ArgParser parser;
     typedef std::vector<std::string> StringVec;
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
+    auto arg_scalar  = parser.add(StringVec { "-s", "--scalar" }, false);
     auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
     auto arg_help = parser.add(StringVec { "-h", "--help" });
     auto arg_extra = parser.add("", true);
@@ -136,6 +143,8 @@ int main(int argc, char *argv[]) {
         int thread_count = *arg_threads ? arg_threads->as_int() : util::core_count();
         tbb::task_scheduler_init init(thread_count);
 
+        bool render_scalar = (bool)*arg_scalar;
+
         /* Append the mitsuba directory to the FileResolver search path list */
         ref<FileResolver> fr = Thread::thread()->file_resolver();
         fs::path base_path = util::library_path().parent_path();
@@ -148,10 +157,44 @@ int main(int argc, char *argv[]) {
             Log(EInfo, "%s", build_info(thread_count));
             Log(EInfo, "%s", copyright_info());
             Log(EInfo, "%s", isa_info());
+            if (render_scalar)
+                Log(EInfo, "Vectorization support disabled by --scalar flag.");
         }
 
         while (arg_extra && *arg_extra) {
-            xml::load_file(arg_extra->as_string());
+            fs::path filename(arg_extra->as_string());
+            // Add the scene file's directory to the search path.
+            auto scene_dir = filename.parent_path();
+            if (!fr->contains(scene_dir))
+                fr->append(scene_dir);
+
+            // Try and parse a scene from the passed file.
+            ref<Object> parsed = xml::load_file(arg_extra->as_string());
+
+            auto *scene = dynamic_cast<Scene *>(parsed.get());
+            if (scene) {
+                // TODO: honor a `filename` parameter specified in the scene?
+                filename.replace_extension("exr");
+                scene->film()->set_destination_file(filename, 32 /*unused*/);
+
+                auto integrator = scene->integrator();
+                if (!integrator) {
+                    Log(EError, "No integrator specified for scene: %s",
+                        scene->to_string());
+                }
+
+                bool success = (render_scalar ?
+                      integrator->render<false>(scene)
+                    : integrator->render<true>(scene));
+                if (success) {
+                    // TODO: measure render time and pass to it to `develop`.
+                    Log(EInfo, "Render complete, saving result to: %s", filename);
+                    scene->film()->develop(scene, 0);
+                } else {
+                    Log(EWarn, "Render failed, results not saved.");
+                }
+            }
+
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
