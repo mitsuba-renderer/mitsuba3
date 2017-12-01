@@ -385,12 +385,10 @@ template <typename Point3> struct RadianceSample {
     //! @{ \name Type declarations
     // =============================================================
     using Value              = value_t<Point3>;
-    using Int                = int_array_t<Value>;
     using Mask               = mask_t<Value>;
     using Point2             = point2_t<Point3>;
     using SurfaceInteraction = SurfaceInteraction<Point3>;
     using RayDifferential    = RayDifferential<Point3>;
-    using MediumPtr          = like_t<Value, const Medium *>;
     //! @}
     // =============================================================
 
@@ -407,12 +405,6 @@ template <typename Point3> struct RadianceSample {
     /// Sample generator
     Sampler *sampler = nullptr;
 
-    /// Pointer to the current medium (*)
-    MediumPtr medium = nullptr;
-
-    /// Current depth value (# of light bounces) (*)
-    Int depth = 0;
-
     /// Surface interaction data structure (*)
     SurfaceInteraction its;
 
@@ -427,22 +419,11 @@ template <typename Point3> struct RadianceSample {
     // =============================================================
     /// Construct a radiance query record for the given scene and sampler
     RadianceSample(const Scene *scene, Sampler *sampler)
-        : scene(scene), sampler(sampler), medium(nullptr),
-          depth(0), its(), alpha(0) { }
+        : scene(scene), sampler(sampler), its(), alpha(0) { }
 
     /// Begin a new query
-    void new_query(const MediumPtr &_medium) {
-        medium = _medium;
-        depth = 1;
+    void new_query() {
         alpha = 1;
-    }
-
-    /// Initialize the query record for a recursive query
-    void recursive_query(const RadianceSample &parent) {
-        scene = parent.scene;
-        sampler = parent.sampler;
-        depth = parent.depth+1;
-        medium = parent.medium;
     }
 
     /**
@@ -473,7 +454,7 @@ template <typename Point3> struct RadianceSample {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(RadianceSample, scene, sampler, medium, depth, its, alpha)
+    ENOKI_STRUCT(RadianceSample, scene, sampler, its, alpha)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
@@ -534,10 +515,6 @@ std::ostream &operator<<(std::ostream &os,
        << "  sampler = ";
     if (record.sampler == nullptr) os << "[ not set ]"; else os << record.sampler;
     os << "," << std::endl
-       << "  medium = ";
-    if (record.medium == nullptr) os << "[ not set ]"; else os << record.medium;
-    os << "," << std::endl
-       << "  depth = " << record.depth << "," << std::endl
        << "  its = " << string::indent(record.its) << std::endl
        << "  alpha = " << record.alpha << "," << std::endl
        << "]" << std::endl;
@@ -558,8 +535,7 @@ ENOKI_STRUCT_DYNAMIC(mitsuba::DirectionSample, d, pdf, measure)
 ENOKI_STRUCT_DYNAMIC(mitsuba::DirectSample, p, n, uv, time, pdf,
                      measure, object, ref_p, ref_n, d, dist)
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::RadianceSample, scene, sampler, medium, depth,
-                     its, alpha)
+ENOKI_STRUCT_DYNAMIC(mitsuba::RadianceSample, scene, sampler, its, alpha)
 
 //! @}
 // -----------------------------------------------------------------------

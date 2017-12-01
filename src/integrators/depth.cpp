@@ -44,7 +44,7 @@ public:
 
         // Intersect ray against scene.
         // For a binary image, we could use shadow rays.
-        active &= r_rec.ray_intersect(ray, active) & (r_rec.its.t >= 0.0f);
+        active &= r_rec.ray_intersect(ray, active);
 
         if (none(active))  // Early return
             return Spectrum(0.0f);

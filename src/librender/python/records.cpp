@@ -93,10 +93,7 @@ auto bind_radiance_record(py::module &m, const char *name) {
              D(RadianceSample, RadianceSample, 2), "scene"_a, "sampler"_a)
         .def(py::init<const Type &>(),
              D(RadianceSample, RadianceSample, 3),  "r_rec"_a)
-        .def("new_query", &Type::new_query, "medium"_a,
-             D(RadianceSample, new_query))
-        .def("recursive_query", &Type::recursive_query, "parent"_a,
-             D(RadianceSample, recursive_query))
+        .def("new_query", &Type::new_query, D(RadianceSample, new_query))
         .def("next_sample_1d", &Type::next_sample_1d,
              D(RadianceSample, next_sample_1d))
         .def("next_sample_2d", &Type::next_sample_2d,
@@ -108,8 +105,6 @@ auto bind_radiance_record(py::module &m, const char *name) {
         })
         .def_readwrite(  "scene",   &Type::scene,   D(RadianceSample, scene))
         .def_readwrite("sampler", &Type::sampler, D(RadianceSample, sampler))
-        .def_readwrite( "medium",  &Type::medium,  D(RadianceSample, medium))
-        .def_readwrite(  "depth",   &Type::depth,   D(RadianceSample, depth))
         .def_readwrite(    "its",     &Type::its,     D(RadianceSample, its))
         .def_readwrite(  "alpha",   &Type::alpha,   D(RadianceSample, alpha))
         ;

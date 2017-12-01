@@ -3,6 +3,7 @@
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/util.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/records.h>
@@ -255,6 +256,48 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
     return result;
 }
 
+template <typename PositionSample, typename Point2>
+void Mesh::sample_position_impl(PositionSample &p_rec, const Point2 &sample_,
+                                const mask_t<value_t<Point2>> &active) const {
+    using Index   = like_t<typename Point2::Value, Shape::Index>;
+    using Point3  = typename PositionSample::Point3;
+    using Normal3 = typename PositionSample::Normal3;
+    using Vector3 = vector3_t<Point3>;
+
+    ensure_table_ready();
+
+    Point2 sample(sample_);
+    Index index;
+    std::tie(index, sample.y()) = m_area_distribution.sample_reuse(sample.y());
+
+    auto face_ptr = (const typename Shape::Index *) faces();
+    index *= m_face_size;
+    Index i0 = gather<Index, 1>(face_ptr  , index, active),
+          i1 = gather<Index, 1>(face_ptr+1, index, active),
+          i2 = gather<Index, 1>(face_ptr+2, index, active);
+    Point3 p0  = vertex_position(i0, active),
+           p1  = vertex_position(i1, active),
+           p2  = vertex_position(i2, active);
+
+    Vector3 side_a = p1 - p0,
+            side_b = p2 - p0;
+
+    Point2 bary = warp::square_to_uniform_triangle(sample);
+    masked(p_rec.p, active) =  p0 + (side_a * bary.x()) + (side_b * bary.y());
+
+    if (has_vertex_normals()) {
+        const Normal3 n0 = vertex_normal(i0, active),
+                      n1 = vertex_normal(i1, active),
+                      n2 = vertex_normal(i2, active);
+        masked(p_rec.n, active) = normalize(n0 * (1.0f - bary.x() - bary.y())
+                                          + n1 * bary.x() + n2 * bary.y());
+    }
+    // TODO: set UV from the UV of the vertices, if available
+    masked(p_rec.uv, active) = 0.5f;
+
+    masked(p_rec.pdf, active) = m_inv_surface_area;
+    masked(p_rec.measure, active) = EArea;
+}
 void Mesh::sample_position(PositionSample3f &p_rec,
                            const Point2f &sample) const {
     return sample_position_impl(p_rec, sample, true);
@@ -276,6 +319,7 @@ void Mesh::prepare_sampling_table() {
         m_area_distribution.reserve(m_face_count);
         for (size_t i = 0; i < m_face_count; i++) {
             Float area = face_area(i);
+            Assert(area >= 0);
             m_area_distribution.append(area);
         }
         m_surface_area = m_area_distribution.normalize();
@@ -300,6 +344,7 @@ ENOKI_INLINE auto Mesh::normal_derivative_impl(const SurfaceInteraction &si,
     auto face_ptr = faces();
     auto prim_index = si.prim_index * m_face_size;
 
+    // TODO: check this, stride and / or indices are probably incorrect.
     Index i0 = gather<Index>(face_ptr,   prim_index, active) * m_vertex_size,
           i1 = gather<Index>(face_ptr+1, prim_index, active) * m_vertex_size,
           i2 = gather<Index>(face_ptr+2, prim_index, active) * m_vertex_size;
@@ -361,35 +406,6 @@ Mesh::normal_derivative(const SurfaceInteraction3fP &si, bool shading_frame,
     return normal_derivative_impl<SurfaceInteraction3fP>(si, shading_frame, active);
 }
 
-template <typename PositionSample, typename Point2>
-void Mesh::sample_position_impl(PositionSample &p_rec, const Point2 &sample_,
-                                const mask_t<value_t<Point2>> &active) const {
-    using Index  = like_t<typename Point2::Value, Index>;
-    using Point3 = typename PositionSample::Point3;
-
-    ensure_table_ready();
-
-    Point2 sample(sample_);
-    Index index;
-    std::tie(index, sample.y()) = m_area_distribution.sample_reuse(sample.y());
-
-    auto base_offset = (const typename Shape::Index *)faces();
-    Index  i0  = gather<Index>(base_offset,   index, active),
-           i1  = gather<Index>(base_offset+1, index, active),
-           i2  = gather<Index>(base_offset+2, index, active);
-    Point3 v0  = vertex_position(i0, active),
-           v1  = vertex_position(i1, active),
-           v2  = vertex_position(i2, active);
-
-    masked(p_rec.p, active) = (v0 + v1 + v2) / 3.0f;
-    // TODO: this is probably wrong
-    masked(p_rec.n, active) = normalize(cross(v1 - v0, v2 - v0));
-    masked(p_rec.uv, active) = 0.5f;
-
-    masked(p_rec.pdf, active) = m_inv_surface_area;
-    masked(p_rec.measure, active) = EArea;
-}
-
 std::string Mesh::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << std::endl
@@ -408,9 +424,6 @@ std::string Mesh::to_string() const {
 
 template MTS_EXPORT_RENDER auto Mesh::intersect_face(Index, const Ray3f &) const;
 template MTS_EXPORT_RENDER auto Mesh::intersect_face(Index, const Ray3fP &) const;
-
-template MTS_EXPORT_RENDER auto Mesh::vertex_position<typename Shape::Index>(const typename Shape::Index &, const bool &) const;
-template MTS_EXPORT_RENDER auto Mesh::vertex_position<UInt32P>(const UInt32P &, const mask_t<UInt32P> &) const;
 
 template MTS_EXPORT_RENDER auto Mesh::vertex_normal(const Index &, const bool &) const;
 template MTS_EXPORT_RENDER auto Mesh::vertex_normal(const UInt32P  &, const mask_t<UInt32P> &) const;

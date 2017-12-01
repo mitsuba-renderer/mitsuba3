@@ -100,8 +100,10 @@ template <typename Ray3f, bool IsShadowRay = false> auto kernel_pbrt(const Shape
 template <bool IsShadowRay = false> auto kernel_havran(const ShapeKDTree *kdtree) {
     return [kdtree] (Ray3f rays) {
         MTS_MAKE_KD_CACHE(cache);
-        return kdtree->ray_intersect_havran<IsShadowRay>(
-            rays, 0.f, std::numeric_limits<Float>::max(), (void *)cache);
+        // TODO: should return consistent results even for maxt = +inf
+        const Float maxt = norm(kdtree->bbox().extents());
+        return kdtree->ray_intersect_havran<IsShadowRay>(rays, 0.f, maxt,
+                                                         (void *) cache);
     };
 }
 

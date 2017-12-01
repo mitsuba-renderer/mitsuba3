@@ -2117,10 +2117,10 @@ public:
             Value u, v, t;
             std::tie(its_found, u, v, t) = mesh->intersect_face(prim_index, ray);
 
-            if (IsShadowRay)
-                return { active & its_found, t};
-
             its_found &= active & (t >= mint) & (t <= maxt);
+            if (IsShadowRay)
+                return { its_found, t};
+
             if (any(its_found)) {
                 masked(cache->shape_index, its_found) = shape_index;
                 masked(cache->prim_index,  its_found) = prim_index;

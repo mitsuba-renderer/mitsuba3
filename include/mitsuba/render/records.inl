@@ -15,8 +15,6 @@ RadianceSample<Point3>::ray_intersect(const RayDifferential &ray,
 
     if (unlikely(any(active & hit & its.is_medium_transition())))
         Throw("Not implemented case: intersection with medium transition.");
-    else if (unlikely(any(active & ~hit & neq(medium, nullptr))))
-        Throw("Not implemented case: no intersection, but medium present.");
 
     masked(alpha, active) = select(hit, Value(1.0f), Value(0.0f));
     return hit;

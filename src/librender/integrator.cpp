@@ -155,7 +155,7 @@ void SamplingIntegrator::render_block_scalar(
         sampler->generate(offset);
 
         for (size_t j = 0; j < sampler->sample_count(); j++) {
-            r_rec.new_query(sensor->medium());
+            r_rec.new_query();
             Point2f sample_pos(Point2f(offset)
                                + Vector2f(r_rec.next_sample_2d()));
 
@@ -208,7 +208,7 @@ void SamplingIntegrator::render_block_vector(
         size_t n_packets = (size_t)std::ceil(
                 sampler->sample_count() / (Float)PacketSize);
         for (size_t j = 0; j < n_packets; j++) {
-            r_rec.new_query(sensor->medium());
+            r_rec.new_query();
 
             Point2fP sample_pos(Point2fP(offset)
                                 + Vector2fP(r_rec.next_sample_2d()));

@@ -75,7 +75,7 @@ public:
     // }
 
     /// Set the shape associated with this endpoint.
-    /// \warning This should only be call once `shape` is fully constructed.
+    /// \warning This should only be called once `shape` is fully constructed.
     void set_shape(Shape *shape, bool /*unused*/ = true) override {
         m_shape = shape;
         m_power = m_radiance * math::Pi * m_shape->surface_area();
@@ -227,6 +227,7 @@ public:
     Spectrum sample_direct_impl(DirectSample &d_rec,
                                 const Point2 &sample,
                                 const Mask &active = true) const {
+        Assert(m_shape, "Cannot sample from an area emitter without Shape.");
         m_shape->sample_direct(d_rec, sample, active);
         // Check that the emitter and reference position are oriented correctly
         // with respect to each other. Note that the >= 0 check
@@ -234,9 +235,9 @@ public:
         // a reference point within a medium or on a transmissive surface
         // will set `d_rec.ref_n = 0`, hence they should always be accepted.
         Spectrum res(0.0f);
-        auto mask = (dot(d_rec.d, d_rec.ref_n) >= 0)
-                  & (dot(d_rec.d, d_rec.n) < 0)
-                  &  neq(d_rec.pdf, 0);
+        auto mask = (dot(d_rec.d, d_rec.ref_n) >= 0.0f)
+                  & (dot(d_rec.d, d_rec.n) < 0.0f)
+                  &  neq(d_rec.pdf, 0.0f);
         masked(res, active & mask) = Spectrum(m_radiance) / d_rec.pdf;
         masked(d_rec.pdf, active & (~mask)) = 0.0f;
         return res;

@@ -119,20 +119,19 @@ public:
     template <typename FaceIndex>
     auto face_area(const FaceIndex &index,
                    const mask_t<FaceIndex> &active = true) const {
-        using Value     = like_t<Index, Float>;
+        using Value     = like_t<FaceIndex, Float>;
         using Index     = like_t<FaceIndex, typename Shape::Index>;
         using Point3    = Point<Value, 3>;
         using Vector3   = Vector<Value, 3>;
         // Load the face's vertices
         auto face_ptr = (typename Shape::Index *)faces();
-        auto vertex_ptr = vertices();
         auto prim_index = index * m_face_size;
-        Index i0 = gather<Index>((uint8_t *)(face_ptr  ), prim_index, active) * m_vertex_size,
-              i1 = gather<Index>((uint8_t *)(face_ptr+1), prim_index, active) * m_vertex_size,
-              i2 = gather<Index>((uint8_t *)(face_ptr+2), prim_index, active) * m_vertex_size;
-        const Point3 &p0 = gather<Point3>(vertex_ptr, i0, active),
-                     &p1 = gather<Point3>(vertex_ptr, i1, active),
-                     &p2 = gather<Point3>(vertex_ptr, i2, active);
+        Index i0 = gather<Index, 1>(face_ptr  , prim_index, active),
+              i1 = gather<Index, 1>(face_ptr+1, prim_index, active),
+              i2 = gather<Index, 1>(face_ptr+2, prim_index, active);
+        const Point3 &p0 = vertex_position(i0, active),
+                     &p1 = vertex_position(i1, active),
+                     &p2 = vertex_position(i2, active);
         // Compute surface area
         Vector3 side_a = p1 - p0,
                 side_b = p2 - p0;
@@ -378,9 +377,9 @@ protected:
         auto p0_idx = gather<Index, 1>(base_offset    , offsets, active);
         auto p1_idx = gather<Index, 1>(base_offset + 1, offsets, active);
         auto p2_idx = gather<Index, 1>(base_offset + 2, offsets, active);
-        const Point3 p0 = vertex_position(p0_idx, active);
-        const Point3 p1 = vertex_position(p1_idx, active);
-        const Point3 p2 = vertex_position(p2_idx, active);
+        const Point3 p0 = vertex_position(p0_idx, active),
+                     p1 = vertex_position(p1_idx, active),
+                     p2 = vertex_position(p2_idx, active);
 
         // Intersection point
         its.p = p0 * b.x() + p1 * b.y() + p2 * b.z();
@@ -390,9 +389,9 @@ protected:
         its.dp_dv = side2;
         // Normals (if available)
         if (m_vertex_normals) {
-            const Normal3 n0 = vertex_normal(p0_idx, active);
-            const Normal3 n1 = vertex_normal(p1_idx, active);
-            const Normal3 n2 = vertex_normal(p2_idx, active);
+            const Normal3 n0 = vertex_normal(p0_idx, active),
+                          n1 = vertex_normal(p1_idx, active),
+                          n2 = vertex_normal(p2_idx, active);
 
             its.sh_frame.n = normalize(n0 * b.x() + n1 * b.y() + n2 * b.z());
         }

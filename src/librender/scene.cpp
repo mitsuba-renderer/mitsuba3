@@ -40,10 +40,8 @@ Scene::Scene(const Properties &props) {
 
     // Precompute the emitters PDF.
     m_emitters_pdf = DiscreteDistribution(m_emitters.size());
-    for (size_t i = 0; i < m_emitters.size(); ++i) {
-        // TODO: which weight to give each emitter?
-        m_emitters_pdf.append(1.0f);
-    }
+    for (size_t i = 0; i < m_emitters.size(); ++i)
+        m_emitters_pdf.append(1.0f);  // Simple uniform distribution for now.
     if (m_emitters.size() > 0)
         m_emitters_pdf.normalize();
 
@@ -84,9 +82,9 @@ auto Scene::sample_emitter_direct_impl(
     auto value = emitter->sample_direct(d_rec, sample, active);
     active &= neq(d_rec.pdf, 0.0f);
 
-    if (test_visibility) {
+    if (any(active) & test_visibility) {
         // Shadow ray
-        Ray ray(d_rec.p, d_rec.d, rcp(d_rec.d), math::Epsilon,
+        Ray ray(d_rec.ref_p, d_rec.d, rcp(d_rec.d), math::Epsilon,
                 d_rec.dist * (1.0f - math::ShadowEpsilon), d_rec.time);
         active &= ~ray_intersect(ray, ray.mint, ray.maxt, active);
     }
@@ -122,12 +120,12 @@ std::string Scene::to_string() const {
 }
 
 // Full intersection
-template MTS_EXPORT_RENDER auto Scene::ray_intersect(
-    const Ray3f &, const Float &, const Float &, SurfaceInteraction3f &,
-    const bool &) const;
-template MTS_EXPORT_RENDER auto Scene::ray_intersect(
-    const Ray3fP &, const FloatP &, const FloatP &, SurfaceInteraction3fP &,
-    const mask_t<FloatP> &) const;
+// template MTS_EXPORT_RENDER auto Scene::ray_intersect(
+//     const Ray3f &, const Float &, const Float &, SurfaceInteraction3f &,
+//     const bool &) const;
+// template MTS_EXPORT_RENDER auto Scene::ray_intersect(
+//     const Ray3fP &, const FloatP &, const FloatP &, SurfaceInteraction3fP &,
+//     const mask_t<FloatP> &) const;
 // Shadow rays
 // TODO: why does the following lead to a compile error?
 // template MTS_EXPORT_RENDER auto Scene::ray_intersect<Ray3f, Float>(

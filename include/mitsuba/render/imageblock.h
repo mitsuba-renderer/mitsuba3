@@ -89,7 +89,7 @@ public:
 
         // Convert spectrum to XYZ
         // TODO: proper handling of spectral rendering (use sampled wavelengths)
-        static const Spectrum wavelengths(
+        const Spectrum wavelengths(
             MTS_WAVELENGTH_MIN, 517, 673, MTS_WAVELENGTH_MAX
         );
 

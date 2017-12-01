@@ -53,11 +53,9 @@ void Shape::sample_direct_impl(DirectSample &d_rec, const Point2 &sample,
     masked(d_rec.pdf, active)    *= select(neq(dp, 0.0f), dist_squared / dp, 0.0f);
     masked(d_rec.measure, active) = ESolidAngle;
 }
-
 void Shape::sample_direct(DirectSample3f &d_rec, const Point2f &sample) const {
     return sample_direct_impl(d_rec, sample, true);
 }
-
 void Shape::sample_direct(DirectSample3fP &d_rec, const Point2fP &sample,
                           const mask_t<FloatP> &active) const {
     return sample_direct_impl(d_rec, sample, active);
@@ -76,11 +74,9 @@ Value Shape::pdf_direct_impl(const DirectSample &d_rec, const Mask &active) cons
     masked(pdf, active & mask) = 0.0f;
     return pdf;
 }
-
 Float Shape::pdf_direct(const DirectSample3f &d_rec) const {
     return pdf_direct_impl(d_rec, true);
 }
-
 FloatP Shape::pdf_direct(const DirectSample3fP &d_rec,
                           const mask_t<FloatP> &active) const {
     return pdf_direct_impl(d_rec, active);

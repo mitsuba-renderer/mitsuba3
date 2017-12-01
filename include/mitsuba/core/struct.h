@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Set this to '1' to view generated conversion code
 #if !defined(MTS_JIT_LOG_ASSEMBLY)
-#  define MTS_JIT_LOG_ASSEMBLY 1
+#  define MTS_JIT_LOG_ASSEMBLY 0
 #endif
 
 /**
