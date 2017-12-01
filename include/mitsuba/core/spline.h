@@ -811,7 +811,7 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
     Index idx = enoki::max(Index(0), enoki::min(Index(t), Index(size - 2)));
 
     /* Compute the relative position within the interval */
-    t -= (Value)(idx);
+    t -= (Value) idx;
     Value t2 = t * t,
            t3 = t2 * t,
            w0, w1, w2, w3;

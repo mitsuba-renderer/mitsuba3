@@ -205,8 +205,8 @@ void SamplingIntegrator::render_block_vector(
 
         // Generate and handle PacketSize samples at once.
         // TODO: use dynamic arrays instead.
-        size_t n_packets = (size_t)std::ceil(
-                sampler->sample_count() / (Float)PacketSize);
+        size_t n_packets = (size_t) std::ceil(
+                sampler->sample_count() / (Float) PacketSize);
         for (size_t j = 0; j < n_packets; j++) {
             r_rec.new_query();
 

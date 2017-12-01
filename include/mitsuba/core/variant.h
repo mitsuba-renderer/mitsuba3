@@ -34,7 +34,7 @@ template <size_t Arg1, size_t Arg2, size_t... Args> struct static_max<Arg1, Arg2
 
 template<typename... Args> struct variant_helper;
 
-template<typename T, typename... Args> struct variant_helper<T, Args...> {
+template <typename T, typename... Args> struct variant_helper<T, Args...> {
     static bool copy(const std::type_info *type_info, const void *source, void *target)
         noexcept(std::is_nothrow_copy_constructible<T>::value &&
             noexcept(variant_helper<Args...>::copy(type_info, source, target))) {
@@ -83,7 +83,7 @@ template<typename T, typename... Args> struct variant_helper<T, Args...> {
     }
 };
 
-template<> struct variant_helper<>  {
+template <> struct variant_helper<>  {
     static bool copy(const std::type_info *, const void *, void *) noexcept(true) { return false; }
     static bool move(const std::type_info *, void *, void *) noexcept(true) { return false; }
     static void destruct(const std::type_info *, void *) noexcept(true) { }

@@ -371,7 +371,7 @@ public:
     void set_bsdf(BSDF *bsdf) { m_bsdf = bsdf; }
 
     /// Is this shape also an area emitter?
-    bool is_emitter(bool /*unused*/ = true) const { return (bool)m_emitter; }
+    bool is_emitter(bool /*unused*/ = true) const { return (bool) m_emitter; }
 
     /// Return the area emitter associated with this shape (if any, const version)
     const Emitter *emitter(bool /*unused*/ = true) const { return m_emitter.get(); }
@@ -380,7 +380,7 @@ public:
     Emitter *emitter(bool /*unused*/ = true) { return m_emitter.get(); }
 
     /// Is this shape also an area sensor?
-    bool is_sensor(bool /*unused*/ = true) const { return (bool)m_sensor; }
+    bool is_sensor(bool /*unused*/ = true) const { return (bool) m_sensor; }
 
     /// Return the area sensor associated with this shape (if any, const version)
     const Sensor *sensor(bool /*unused*/ = true) const { return m_sensor.get(); }

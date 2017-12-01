@@ -245,7 +245,6 @@ public:
         DirectSample d_rec(its);
         // Only use direct illumination sampling when the surface's
         // BSDF has smooth (i.e. non-Dirac delta) component.
-        // TODO: OR-ing flags, getting a mask out.
         auto sample_direct = active & neq(bsdf->flags(active) & BSDF::ESmooth,
                                           (uint32_t) 0);
         if (any(sample_direct)) {

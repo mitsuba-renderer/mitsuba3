@@ -1943,8 +1943,8 @@ void Bitmap::write_rgbe(Stream *stream) const {
 
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[4 * m_size.x()]);
     for (size_t y = 0; y < m_size.y(); ++y) {
-        uint8_t rgbe[4] = { 2, 2, (uint8_t)(m_size.x() >> 8),
-                                  (uint8_t)(m_size.x() & 0xFF) };
+        uint8_t rgbe[4] = { 2, 2, (uint8_t) (m_size.x() >> 8),
+                                  (uint8_t) (m_size.x() & 0xFF) };
         stream->write(rgbe, 4);
 
         for (size_t x = 0; x < m_size.x(); x++) {

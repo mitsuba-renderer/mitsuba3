@@ -51,7 +51,7 @@ template <typename Point3_> struct SurfaceInteraction {
     ShapePtr shape = nullptr;
 
     /// Distance traveled along the ray
-    Value t = std::numeric_limits<Float>::infinity();
+    Value t = math::Infinity;
 
     /// Time value associated with the intersection
     Value time;
@@ -105,7 +105,7 @@ template <typename Point3_> struct SurfaceInteraction {
 
     /// Is the current intersection valid?
     Mask is_valid() const {
-        return neq(t, std::numeric_limits<Float>::infinity());
+        return neq(t, math::Infinity);
     }
 
     /// Is the intersected shape also a emitter?
@@ -182,9 +182,7 @@ template <typename Point3_> struct SurfaceInteraction {
      * intersected shape is actually an emitter.
      */
     Spectrum Le(const Vector3 &d, const Mask &active = true) const {
-        // TODO: remove this (should already be a Packet, not an Array).
-        using EmitterPtr = like_t<value_t<Vector3>, const Emitter *>;
-        EmitterPtr emitter = shape->emitter(active);
+        auto emitter = shape->emitter(active);
         Assert(none(active & eq(emitter, nullptr)));
         return emitter->eval(*this, d, active);
     }

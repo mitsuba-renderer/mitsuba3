@@ -69,7 +69,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
         /* Efficiently compute all Faure permutations using dynamic programming */
         uint16_t initial_bases = m_base[m_base_count - 1].value;
         size_t initial_size =
-            ((size_t) initial_bases * (size_t)(initial_bases + 1)) / 2;
+            ((size_t) initial_bases * (size_t) (initial_bases + 1)) / 2;
 
         uint16_t *initial_permutation_storage = new uint16_t[initial_size];
         uint16_t **initial_perm = new uint16_t *[initial_bases + 1],

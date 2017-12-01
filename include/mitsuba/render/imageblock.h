@@ -79,8 +79,8 @@ public:
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    template<typename Point2, typename Spectrum,
-             typename Value = typename Point2::Value>
+    template <typename Point2, typename Spectrum,
+              typename Value = typename Point2::Value>
     mask_t<Value> put(const Point2 &pos, const Spectrum &spectrum,
                       const Value &alpha,
                       const mask_t<Value> &active) {

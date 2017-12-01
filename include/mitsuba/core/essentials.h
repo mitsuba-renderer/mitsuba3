@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
  * for all the same types are available for both \ref Stream implementations
  * and \AnnotatedStream. */
 
-template<typename... Args> struct for_each_type;
+template <typename... Args> struct for_each_type;
 
 template <typename T, typename... Args>
 struct for_each_type<T, Args...> {
@@ -23,7 +23,7 @@ struct for_each_type<T, Args...> {
 };
 
 /// Base case
-template<>
+template <>
 struct for_each_type<> {
     template <typename UserFunctionType, typename... Params>
     static void recurse(Params&&...) { }

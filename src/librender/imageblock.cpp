@@ -18,7 +18,7 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
     if (filter) {
         // Temporary buffers used in put()
         // TODO: allocate just the ones we need (either vectorized or scalar).
-        int temp_buffer_size = (int)std::ceil(2 * filter->radius()) + 1;
+        int temp_buffer_size = (int) std::ceil(2 * filter->radius()) + 1;
         m_weights_x = new Float[2 * temp_buffer_size];
         m_weights_y = m_weights_x + temp_buffer_size;
         // Vectorized variant
@@ -74,12 +74,12 @@ bool ImageBlock::put(const Point2f &_pos, const Float *value, bool /*unused*/) {
 
     // Determine the affected range of pixels
     const Point2i lo(
-        std::max((int)std::ceil(pos.x() - filter_radius), 0),
-        std::max((int)std::ceil(pos.y() - filter_radius), 0)
+        std::max((int) std::ceil(pos.x() - filter_radius), 0),
+        std::max((int) std::ceil(pos.y() - filter_radius), 0)
     );
     const Point2i hi(
-        std::min((int)std::floor(pos.x() + filter_radius), size.x() - 1),
-        std::min((int)std::floor(pos.y() + filter_radius), size.y() - 1)
+        std::min((int) std::floor(pos.x() + filter_radius), size.x() - 1),
+        std::min((int) std::floor(pos.y() + filter_radius), size.y() - 1)
     );
 
     // Lookup values from the pre-rasterized filter
@@ -92,7 +92,7 @@ bool ImageBlock::put(const Point2f &_pos, const Float *value, bool /*unused*/) {
     for (int y = lo.y(), yr = 0; y <= hi.y(); ++y, ++yr) {
         const Float weightY = m_weights_y[yr];
         auto dest = static_cast<Float *>(m_bitmap->data())
-            + (y * (size_t)size.x() + lo.x()) * channels;
+            + (y * (size_t) size.x() + lo.x()) * channels;
 
         for (int x = lo.x(), xr = 0; x <= hi.x(); ++x, ++xr) {
             const Float weight = m_weights_x[xr] * weightY;
@@ -149,8 +149,8 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
         max(ceil(pos.y() - filter_radius), 0.0f)
     );
     const Point2iP hi(
-        min(floor(pos.x() + filter_radius), (int)size.x() - 1.0f),
-        min(floor(pos.y() + filter_radius), (int)size.y() - 1.0f)
+        min(floor(pos.x() + filter_radius), (int) size.x() - 1.0f),
+        min(floor(pos.y() + filter_radius), (int) size.y() - 1.0f)
     );
 
     // Lookup values from the pre-rasterized filter
@@ -168,7 +168,7 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
 
 
     // Rasterize the filtered sample into the framebuffer
-    auto *buffer = (Float *)m_bitmap->data();
+    auto *buffer = (Float *) m_bitmap->data();
     Mask enabled;
     for (int yr = 0; yr <= max_size.y(); ++yr) {
         enabled = active & is_valid & (yr <= window_sizes.y());

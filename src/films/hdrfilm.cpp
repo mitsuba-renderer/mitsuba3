@@ -335,7 +335,7 @@ public:
         } else {
             m_storage = new ImageBlock(
                 Bitmap::EMultiChannel, m_crop_size, nullptr,
-                (int)(MTS_WAVELENGTH_SAMPLES * m_pixel_formats.size() + 2));
+                (int) (MTS_WAVELENGTH_SAMPLES * m_pixel_formats.size() + 2));
         }
     }
 
@@ -365,7 +365,7 @@ public:
                 storage->srgb_gamma());
 
         Vector2i size = storage->size();
-        size_t n_pixels = (size_t)size.x() * (size_t)size.y();
+        size_t n_pixels = (size_t) size.x() * (size_t) size.y();
         const Float *source = static_cast<const Float *>(converted->data());
         Float *target = static_cast<Float *>(storage->data());
         for (size_t i = 0; i < n_pixels; ++i) {

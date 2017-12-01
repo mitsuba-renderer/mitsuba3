@@ -431,7 +431,7 @@ template <typename Point3_> struct BSDFSample {
      */
     void reverse() {
         std::swap(wo, wi);
-        mode = (ETransportMode)(1 - mode);
+        mode = (ETransportMode) (1 - mode);
     }
 
     //! @}
@@ -444,7 +444,7 @@ template <typename Point3_> struct BSDFSample {
 };
 
 namespace {
-    template<typename Index>
+    template <typename Index>
     std::string type_mask_to_string(Index type_mask) {
         std::ostringstream oss;
         oss << "{ ";
@@ -481,7 +481,7 @@ namespace {
     }
 }
 
-template<typename Point3>
+template <typename Point3>
 std::ostream &operator<<(std::ostream &os, const BSDFSample<Point3>& bs) {
     os << "BSDFSample[" << std::endl
         << "  its = " << bs.its << "," << std::endl

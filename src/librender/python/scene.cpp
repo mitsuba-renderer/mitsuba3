@@ -16,7 +16,7 @@ auto provide_cache_scalar(Func f) {
     return [f](const ShapeKDTree &kdtree, const Ray3f &ray,
                const Float &mint, const Float &maxt) {
         MTS_MAKE_KD_CACHE(cache);
-        return (kdtree.*f)(ray, mint, maxt, (void *)cache, true);
+        return (kdtree.*f)(ray, mint, maxt, (void *) cache, true);
     };
 }
 template <typename Func>
@@ -25,7 +25,7 @@ auto provide_cache(Func f) {
                                const FloatP &mint, const FloatP &maxt,
                                const mask_t<FloatP> &active) {
         MTS_MAKE_KD_CACHE(cache);
-        return ((*kdtree).*f)(ray, mint, maxt, (void *)cache, active);
+        return ((*kdtree).*f)(ray, mint, maxt, (void *) cache, active);
     };
     return enoki::vectorize_wrapper(provide_cache_p);
 }

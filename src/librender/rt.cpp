@@ -92,8 +92,8 @@ template <typename Ray3f, bool IsShadowRay = false> auto kernel_pbrt(const Shape
     return [kdtree] (Ray3f rays) {
         MTS_MAKE_KD_CACHE(cache);
         return kdtree->ray_intersect_pbrt<IsShadowRay>(
-            rays, Scalar(0.f), Scalar(std::numeric_limits<Float>::max()),
-            (void *)cache, true);
+            rays, Scalar(0.f), Scalar(math::Infinity),
+            (void *) cache, true);
     };
 }
 
@@ -114,8 +114,8 @@ template <typename Ray3f, bool IsShadowRay = false> auto kernel_dummy(const Shap
     return [kdtree] (Ray3f rays) {
         MTS_MAKE_KD_CACHE(cache);
         return kdtree->ray_intersect_dummy(
-            rays, Scalar(0.f), Scalar(std::numeric_limits<Float>::max()),
-            (void *)cache, true);
+            rays, Scalar(0.f), Scalar(math::Infinity),
+            (void *) cache, true);
     };
 }
 

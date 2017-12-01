@@ -1488,10 +1488,10 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         if (f.flags & Struct::ENormalized)
             value.f *= range.second;
 
-        double d = (double)value.f;
+        double d = (double) value.f;
 
         if (m_dither)
-            d += (double)dither_matrix256[(y % 256)*256 + (x%256)];
+            d += (double) dither_matrix256[(y % 256)*256 + (x%256)];
 
         d = std::max(d, range.first);
         d = std::min(d, range.second);

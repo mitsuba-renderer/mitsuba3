@@ -65,7 +65,7 @@ public:
         // return gather<Point<Value, 3>, 1>((uint8_t *)base_offset,
         //                                   m_vertex_size * index, active);
         Point<Value, 3> res;
-        auto base_offset = (Float *)m_vertices.get();
+        auto base_offset = (Float *) m_vertices.get();
         auto indices = m_vertex_size * index;
         res.x() = gather<Value, 1>(base_offset    , indices, active);
         res.y() = gather<Value, 1>(base_offset + 1, indices, active);
@@ -84,7 +84,7 @@ public:
         // return gather<Normal<Value, 3>, 1>((uint8_t *)base_offset,
         //                                    m_vertex_size * index, active);
         Normal<Value, 3> res;
-        auto offset = (enoki::half *)(m_vertices.get() + m_normals_offset);
+        auto offset = (enoki::half *) (m_vertices.get() + m_normals_offset);
         auto indices = m_vertex_size * index;
         res.x() = gather<Value, 1>(offset    , indices, active);
         res.y() = gather<Value, 1>(offset + 1, indices, active);
@@ -372,7 +372,7 @@ protected:
                   its.uv.y());
 
         // Get triangle vertex indices from the raw face buffer.
-        auto base_offset = (typename Shape::Index *)m_faces.get();
+        auto base_offset = (typename Shape::Index *) m_faces.get();
         auto offsets = m_face_size * its.prim_index;  // In bytes
         auto p0_idx = gather<Index, 1>(base_offset    , offsets, active);
         auto p1_idx = gather<Index, 1>(base_offset + 1, offsets, active);

@@ -375,8 +375,7 @@ public:
                   const std::pair<EBoundaryCondition, EBoundaryCondition> &bc =
                       { EBoundaryCondition::EClamp, EBoundaryCondition::EClamp },
                   const std::pair<Float, Float> &bound =
-                      { -std::numeric_limits<Float>::infinity(),
-                         std::numeric_limits<Float>::infinity() },
+                      { -math::Infinity, math::Infinity },
                   Bitmap *temp = nullptr) const;
 
     /**
@@ -411,8 +410,7 @@ public:
                          const std::pair<EBoundaryCondition, EBoundaryCondition> &bc =
                              { EBoundaryCondition::EClamp, EBoundaryCondition::EClamp },
                          const std::pair<Float, Float> &bound =
-                             { -std::numeric_limits<Float>::infinity(),
-                                std::numeric_limits<Float>::infinity() }) const;
+                             { -math::Infinity, math::Infinity }) const;
 
     /**
      * \brief Convert the bitmap into another pixel and/or component format

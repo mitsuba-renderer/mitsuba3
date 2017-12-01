@@ -73,7 +73,7 @@ NAMESPACE_BEGIN(detail)
  *   @param  z  The third of three symmetric arguments.
  *   @return  The Carlson elliptic function of the first kind.
  */
-template<typename Type> Type ellint_rf(const Type x, const Type y, const Type z) {
+template <typename Type> Type ellint_rf(const Type x, const Type y, const Type z) {
   const Type min = std::numeric_limits<Type>::min();
   const Type lolim = Type(5) * min;
 
@@ -145,7 +145,7 @@ template<typename Type> Type ellint_rf(const Type x, const Type y, const Type z)
  *   @param  k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the first kind.
  */
-template<typename Type> Type comp_ellint_1_series(const Type k) {
+template <typename Type> Type comp_ellint_1_series(const Type k) {
 
   const Type kk = k * k;
 
@@ -179,7 +179,7 @@ template<typename Type> Type comp_ellint_1_series(const Type k) {
  *   @param  k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the first kind.
  */
-template<typename Type> Type comp_ellint_1(const Type k) {
+template <typename Type> Type comp_ellint_1(const Type k) {
   if (std::isnan(k))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) >= Type(1))
@@ -203,7 +203,7 @@ template<typename Type> Type comp_ellint_1(const Type k) {
  *   @param  phi  The integral limit argument of the elliptic function.
  *   @return  The elliptic function of the first kind.
  */
-template<typename Type> Type ellint_1(const Type k, const Type phi) {
+template <typename Type> Type ellint_1(const Type k, const Type phi) {
   if (std::isnan(k) || std::isnan(phi))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) > Type(1))
@@ -245,7 +245,7 @@ template<typename Type> Type ellint_1(const Type k, const Type phi) {
  *   @param  k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the second kind.
  */
-template<typename Type> Type comp_ellint_2_series(const Type k) {
+template <typename Type> Type comp_ellint_2_series(const Type k) {
   const Type kk = k * k;
 
   Type term = kk;
@@ -288,7 +288,7 @@ template<typename Type> Type comp_ellint_2_series(const Type k) {
  *   @param  z  The third argument.
  *   @return  The Carlson elliptic function of the second kind.
  */
-template<typename Type> Type ellint_rd(const Type x, const Type y, const Type z) {
+template <typename Type> Type ellint_rd(const Type x, const Type y, const Type z) {
   const Type eps = std::numeric_limits<Type>::epsilon();
   const Type errtol = std::pow(eps / Type(8), Type(1) / Type(6));
   const Type max = std::numeric_limits<Type>::max();
@@ -368,7 +368,7 @@ template<typename Type> Type ellint_rd(const Type x, const Type y, const Type z)
  *   @param  k  The argument of the complete elliptic function.
  *   @return  The complete elliptic function of the second kind.
  */
-template<typename Type> Type comp_ellint_2(const Type k) {
+template <typename Type> Type comp_ellint_2(const Type k) {
   if (std::isnan(k))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) == 1)
@@ -397,7 +397,7 @@ template<typename Type> Type comp_ellint_2(const Type k) {
  *   @param  phi  The integral limit argument of the elliptic function.
  *   @return  The elliptic function of the second kind.
  */
-template<typename Type> Type ellint_2(const Type k, const Type phi) {
+template <typename Type> Type ellint_2(const Type k, const Type phi) {
   if (std::isnan(k) || std::isnan(phi))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) > Type(1))
@@ -451,7 +451,7 @@ template<typename Type> Type ellint_2(const Type k, const Type phi) {
  *   @param  y  The second argument.
  *   @return  The Carlson elliptic function.
  */
-template<typename Type> Type ellint_rc(const Type x, const Type y) {
+template <typename Type> Type ellint_rc(const Type x, const Type y) {
   const Type min = std::numeric_limits<Type>::min();
   const Type lolim = Type(5) * min;
 
@@ -515,7 +515,7 @@ template<typename Type> Type ellint_rc(const Type x, const Type y) {
  *   @param  p  The fourth argument.
  *   @return  The Carlson elliptic function of the fourth kind.
  */
-template<typename Type> Type ellint_rj(const Type x, const Type y, const Type z, const Type p) {
+template <typename Type> Type ellint_rj(const Type x, const Type y, const Type z, const Type p) {
   const Type min = std::numeric_limits<Type>::min();
   const Type lolim = std::pow(Type(5) * min, Type(1)/Type(3));
 
@@ -610,7 +610,7 @@ template<typename Type> Type ellint_rj(const Type x, const Type y, const Type z,
  *   @param  nu  The second argument of the elliptic function.
  *   @return  The complete elliptic function of the third kind.
  */
-template<typename Type> Type comp_ellint_3(const Type k, const Type nu) {
+template <typename Type> Type comp_ellint_3(const Type k, const Type nu) {
   if (std::isnan(k) || std::isnan(nu))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (nu == Type(1))
@@ -645,7 +645,7 @@ template<typename Type> Type comp_ellint_3(const Type k, const Type nu) {
  *   @param  phi  The integral limit argument of the elliptic function.
  *   @return  The elliptic function of the third kind.
  */
-template<typename Type> Type ellint_3(const Type k, const Type nu, const Type phi) {
+template <typename Type> Type ellint_3(const Type k, const Type nu, const Type phi) {
   if (std::isnan(k) || std::isnan(nu) || std::isnan(phi))
     return std::numeric_limits<Type>::quiet_NaN();
   else if (std::abs(k) > Type(1))

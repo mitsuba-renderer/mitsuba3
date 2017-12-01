@@ -46,8 +46,8 @@
 #if defined(__WINDOWS__)
 #define MTS_MAKE_KD_CACHE(name) \
     uint8_t name[MTS_KD_INTERSECTION_CACHE_SIZE + enoki::max_packet_size]; \
-    (uintptr_t &) cache += ((ptrdiff_t)enoki::max_packet_size - (ptrdiff_t)cache) \
-                           % ((ptrdiff_t)enoki::max_packet_size)
+    (uintptr_t &) cache += ((ptrdiff_t) enoki::max_packet_size - (ptrdiff_t) cache) \
+                           % ((ptrdiff_t) enoki::max_packet_size)
 #else  // Standard case
 #define MTS_MAKE_KD_CACHE(name) \
     alignas(enoki::max_packet_size) uint8_t name[MTS_KD_INTERSECTION_CACHE_SIZE]
@@ -2077,7 +2077,7 @@ public:
     }
 
     /// Temporarily holds some intersection information
-    template<typename Value>
+    template <typename Value>
     struct IntersectionCache {
         using Index = uint32_array_t<Value>;
         using Point2 = mitsuba::Point<Value, 2>;
@@ -2092,19 +2092,21 @@ public:
      * temporary space is supplied to store data that can later
      * be used to create a detailed intersection record.
      */
-    template<bool IsShadowRay = false,
-             typename Ray, typename Point3 = typename Ray::Point,
-             typename Value = value_t<Point3>>
+    template <bool IsShadowRay = false,
+              typename Ray, typename Point3 = typename Ray::Point,
+              typename Value = value_t<Point3>>
     std::pair<mask_t<Value>, Value> intersect_prim(
             const Ray &ray, Index prim_index, const Value &mint,
             const Value &maxt, void *cache_, const mask_t<Value> &active) const {
         using IntersectionCache = IntersectionCache<Value>;
         using Mask = mask_t<Value>;
 
+        #if !defined(NDEBUG)
         if (!IsShadowRay && !cache_) {
             Throw("Standard rays (i.e. non-shadow rays) must provide a `cache`"
                   " pointer to store intersection data.");
         }
+        #endif
 
         IntersectionCache *cache = static_cast<IntersectionCache *>(cache_);
 
@@ -2137,7 +2139,7 @@ public:
             std::tie(its_found, t) = shape->ray_intersect(
                 ray, mint, maxt,
                 // Provide the next entry of the cache array.
-                (uint8_t*)(cache_) + sizeof(IntersectionCache), active);
+                (uint8_t*) cache_ + sizeof(IntersectionCache), active);
 
             its_found &= active;
             if (any(its_found)) {
@@ -2156,7 +2158,7 @@ public:
      * of the methods implemented in this class. However, this method is only
      * implemented for scalar rays.
      */
-    template<bool IsShadowRay = false>
+    template <bool IsShadowRay = false>
     std::pair<bool, Float> ray_intersect_havran(const Ray3f &ray,
                                                 Float mint, Float maxt,
                                                 void *cache_ = nullptr,
@@ -2274,11 +2276,10 @@ public:
     /**
      * \brief Scalar implementation of the ray tracing kd-tree traversal loop (PBRT variant).
      */
-    template<bool IsShadowRay = false,
-             typename Ray,
-             typename Point3 = typename Ray::Point,
-             typename Value  = value_t<Point3>,
-             enable_if_not_array_t<Value> = 0>
+    template <bool IsShadowRay = false,
+              typename Ray, typename Point3 = typename Ray::Point,
+              typename Value = value_t<Point3>,
+              enable_if_not_array_t<Value> = 0>
     std::pair<bool, Value> ray_intersect_pbrt(const Ray &ray,
                                               const Value &mint_, const Value &maxt_,
                                               void *cache_ = nullptr,
@@ -2300,7 +2301,7 @@ public:
 
         const KDNode *current_node = m_nodes.get();
         Value mint(mint_), maxt(maxt_);
-        Value its_t = std::numeric_limits<Float>::infinity();
+        Value its_t = math::Infinity;
 
         if (!(its_t >= mint))
             return { its_found, std::min(its_t, maxt_) };
@@ -2412,7 +2413,7 @@ public:
         Mask currently_inactive(inactive);
 
         // Records the intersection time for the earliest intersection along the ray
-        Value its_t = std::numeric_limits<Float>::infinity();
+        Value its_t = math::Infinity;
 
         const KDNode *current_node = m_nodes.get();
         Value mint(mint_), maxt(maxt_), maxt_running(maxt_);
@@ -2566,7 +2567,7 @@ public:
      * \c active mask. The mask is only used to avoid unsafe operations such
      * as nullptr dereference.
      */
-    template<typename Ray, typename SurfaceInteraction>
+    template <typename Ray, typename SurfaceInteraction>
     void fill_surface_interaction(
             const Ray &ray, const void *cache_, SurfaceInteraction &its,
             const mask_t<typename Ray::Value> &active = true) const {
