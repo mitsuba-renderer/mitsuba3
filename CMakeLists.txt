@@ -18,6 +18,9 @@ option(MTS_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
 if(MTS_THROW_TRAPS_DEBUGGER)
     add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
 endif()
+
+# For developers: ability to disable Link Time Optimization to speed up builds
+option(MTS_ENABLE_LTO "Enable Link Time Optimization?" ON)
 # ----------------------------------
 
 cmake_policy(SET CMP0022 NEW) # New-style link interface
@@ -209,8 +212,10 @@ endif()
 
 # Enable link time optimization in release mode (if possible)
 if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
-  # Enable link time optimization
-  if (NOT CMAKE_CXX_FLAGS MATCHES "-flto")
+  if (NOT MTS_ENABLE_LTO)
+    message(STATUS "Mitsuba: LTO support disabled (MTS_ENABLE_LTO=OFF).")
+  elseif (NOT CMAKE_CXX_FLAGS MATCHES "-flto")
+    # Enable link time optimization
     set(BACKUP_C_FLAGS ${CMAKE_CXX_FLAGS})
     set(BACKUP_CXX_FLAGS ${CMAKE_C_FLAGS})
     set(BACKUP_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
