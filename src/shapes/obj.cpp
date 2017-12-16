@@ -48,7 +48,7 @@ public:
         if (!fs::exists(file_path))
             fail("file not found");
 
-        ref<MemoryMappedFile> mmap = new MemoryMappedFile(m_name);
+        ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
 
         using Index3 = std::array<Index, 3>;
 
@@ -123,6 +123,7 @@ public:
                 if (unlikely(!all(enoki::isfinite(n))))
                     fail("mesh contains invalid vertex normal data");
                 normals.push_back(Normal3h(n));
+                m_vertex_normals = true;
             } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Texture coordinate
                 Vector2f uv;

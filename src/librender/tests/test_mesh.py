@@ -152,3 +152,25 @@ def test04_normal_weighting_scheme():
     assert np.allclose(v['nx'], n[:, 0], 5e-4)
     assert np.allclose(v['ny'], n[:, 1], 5e-4)
     assert np.allclose(v['nz'], n[:, 2], 5e-4)
+
+
+@fresolver_append_path
+def test05_obj():
+    """Tests the OBJ loader on a simple example """
+    shape = load_string("""
+        <scene version="0.5.0">
+            <shape type="obj">
+                <string name="filename" value="resources/data/tests/obj/cbox_smallbox.obj"/>
+            </shape>
+        </scene>
+    """).kdtree()[0]
+
+    vertices, faces = shape.vertices(), shape.faces()
+    assert shape.has_vertex_normals()
+    assert vertices.ndim == 1
+    assert vertices.shape == (24, )
+    assert faces.ndim == 1
+    assert faces.shape == (12, )
+    assert np.all(np.array(faces[2].tolist()) == [4, 5, 6])
+    assert np.allclose(vertices[0].tolist(), [130, 165, 65, 0, 1, 0], atol=1e-3)
+    assert np.allclose(vertices[4].tolist(), [290, 0, 114, 0.9534, 0, 0.301709], atol=1e-3)
