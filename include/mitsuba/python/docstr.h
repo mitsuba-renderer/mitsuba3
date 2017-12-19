@@ -2123,6 +2123,18 @@ static const char *__doc_mitsuba_ETransportMode_ERadiance = R"doc(Radiance trans
 
 static const char *__doc_mitsuba_ETransportMode_ETransportModes = R"doc(Specifies the number of supported transport modes)doc";
 
+static const char *__doc_mitsuba_EType = R"doc(Supported normal distribution functions)doc";
+
+static const char *__doc_mitsuba_EType_EBeckmann = R"doc(Beckmann distribution derived from Gaussian random surfaces)doc";
+
+static const char *__doc_mitsuba_EType_EGGX =
+R"doc(GGX: Long-tailed distribution for very rough surfaces (aka.
+Trowbridge-Reitz distr.))doc";
+
+static const char *__doc_mitsuba_EType_EPhong =
+R"doc(Phong distribution (with the anisotropic extension by Ashikhmin and
+Shirley))doc";
+
 static const char *__doc_mitsuba_Emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_EEmitterFlags =
@@ -2941,6 +2953,12 @@ static const char *__doc_mitsuba_GLTexture_release = R"doc(Release/unbind the te
 
 static const char *__doc_mitsuba_GLTexture_set_interpolation = R"doc(Set the interpolation mode)doc";
 
+static const char *__doc_mitsuba_IOREntry = R"doc()doc";
+
+static const char *__doc_mitsuba_IOREntry_name = R"doc()doc";
+
+static const char *__doc_mitsuba_IOREntry_value = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock =
 R"doc(Storage for an image sub-block (a.k.a render bucket)
 
@@ -3672,6 +3690,165 @@ static const char *__doc_mitsuba_Mesh_vertices = R"doc(Return a pointer to the r
 static const char *__doc_mitsuba_Mesh_vertices_2 = R"doc(Const variant of vertices.)doc";
 
 static const char *__doc_mitsuba_Mesh_write = R"doc(Export mesh using the file format implemented by the subclass)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution =
+R"doc(Implementation of the Beckman and GGX / Trowbridge-Reitz microfacet
+distributions and various useful sampling routines
+
+Based on the papers
+
+"Microfacet Models for Refraction through Rough Surfaces" by Bruce
+Walter, Stephen R. Marschner, Hongsong Li, and Kenneth E. Torrance
+
+and
+
+"Importance Sampling Microfacet-Based BSDFs using the Distribution of
+Visible Normals" by Eric Heitz and Eugene D'Eon
+
+The visible normal sampling code was provided by Eric Heitz and Eugene
+D'Eon.)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_G =
+R"doc(Separable shadow-masking function based on Smith's one-dimensional
+masking model)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_MicrofacetDistribution =
+R"doc(Create an isotropic microfacet distribution of the specified type
+
+Parameter ``type``:
+    The desired type of microfacet distribution
+
+Parameter ``alpha``:
+    The surface roughness)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_MicrofacetDistribution_2 =
+R"doc(Create an anisotropic microfacet distribution of the specified type
+
+Parameter ``type``:
+    The desired type of microfacet distribution
+
+Parameter ``alpha_u``:
+    The surface roughness in the tangent direction
+
+Parameter ``alpha_v``:
+    The surface roughness in the bitangent direction)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_MicrofacetDistribution_3 = R"doc(Create a microfacet distribution from a Property data structure)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_alpha = R"doc(Return the roughness (isotropic case))doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_alpha_u = R"doc(Return the roughness along the tangent direction)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_alpha_v = R"doc(Return the roughness along the bitangent direction)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_compute_phong_exponent =
+R"doc(Helper routine: convert from Beckmann-style roughness values to Phong
+exponents (Walter et al.))doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_configure = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_distribution_name = R"doc(Return a string representation of the name of a distribution)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_eval =
+R"doc(Evaluate the microfacet distribution function
+
+Parameter ``m``:
+    The microfacet normal)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_exponent = R"doc(Return the Phong exponent (isotropic case))doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_exponent_u = R"doc(Return the Phong exponent along the tangent direction)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_exponent_v = R"doc(Return the Phong exponent along the bitangent direction)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_interpolate_phong_exponent = R"doc(Compute the interpolated roughness for the Phong model)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_is_anisotropic = R"doc(Is this an anisotropic microfacet distribution?)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_is_isotropic = R"doc(Is this an anisotropic microfacet distribution?)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_m_alpha_u = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_m_alpha_v = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_m_exponent_u = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_m_exponent_v = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_m_sample_visible = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_m_type = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_pdf =
+R"doc(Wrapper function which calls pdf_all() or pdf_visible_normals()
+depending on the parameters of this class)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_pdf_all =
+R"doc(Returns the density function associated with the sample_all()
+function.
+
+Parameter ``m``:
+    The microfacet normal)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_pdf_visible_normals =
+R"doc(Implements the probability density of the function
+sample_visible_normals())doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_project_roughness = R"doc(Compute the effective roughness projected on direction ``v``)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_sample =
+R"doc(Wrapper function which calls sample_all() or sample_visible_normals()
+depending on the parameters of this class)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_sample_all =
+R"doc(Draw a sample from the microfacet normal distribution (including *all*
+normals) and return the associated probability density
+
+Parameter ``sample``:
+    A uniformly distributed 2D sample
+
+Parameter ``pdf``:
+    The probability density wrt. solid angles)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_sample_first_quadrant =
+R"doc(Helper routine: sample the azimuthal part of the first quadrant of the
+A&S distribution)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_sample_visible = R"doc(Return whether or not only visible normals are sampled?)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_sample_visible_11 =
+R"doc(Visible normal sampling code for the alpha=1 case
+
+Source: supplemental material of "Importance Sampling Microfacet-Based
+BSDFs using the Distribution of Visible Normals")doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_sample_visible_normals =
+R"doc(Draw a sample from the distribution of visible normals
+
+Parameter ``_wi``:
+    A reference direction that defines the set of visible normals
+
+Parameter ``sample``:
+    A uniformly distributed 2D sample
+
+Parameter ``pdf``:
+    The probability density wrt. solid angles)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_scale_alpha = R"doc(Scale the roughness values by some constant)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_smith_g1 =
+R"doc(Smith's shadowing-masking function G1 for each of the supported
+microfacet distributions
+
+Parameter ``v``:
+    An arbitrary direction
+
+Parameter ``m``:
+    The microfacet normal)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_to_string = R"doc(Return a string representation of the contents of this instance)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_type = R"doc(Return the distribution type)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator = R"doc()doc";
 
@@ -7465,6 +7642,12 @@ static const char *__doc_mitsuba_is_constructible_test_2 = R"doc()doc";
 static const char *__doc_mitsuba_librender_nop =
 R"doc(Dummy function which can be called to ensure that the librender shared
 library is loaded)doc";
+
+static const char *__doc_mitsuba_lookup_IOR = R"doc()doc";
+
+static const char *__doc_mitsuba_lookup_IOR_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_lookup_IOR_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_math_bisect =
 R"doc(Bisect a floating point interval given a predicate function
