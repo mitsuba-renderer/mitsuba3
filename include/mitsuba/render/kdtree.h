@@ -2061,7 +2061,6 @@ public:
     template <bool ShadowRay = false, typename Ray,
               typename Value = typename Ray::Value,
               typename Mask  = mask_t<Value>>
-
     MTS_INLINE std::pair<Mask, Value>
     intersect_prim(Index prim_index,
                    const Ray &ray,
@@ -2084,7 +2083,7 @@ public:
             std::tie(hit, u, v, t) = ((const Mesh *) shape)
                     ->ray_intersect_triangle(prim_index, ray, active);
         else if (ShadowRay)
-            hit = shape->ray_intersect(ray, active);
+            hit = shape->ray_test(ray, active);
         else
             std::tie(hit, t) = shape->ray_intersect(ray, cache + 2, active);
 

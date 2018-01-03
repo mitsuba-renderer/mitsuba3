@@ -200,14 +200,14 @@ public:
      * \param ray
      *     The ray to be tested for an intersection
      */
-    virtual bool ray_intersect(const Ray3f &ray) const;
+    virtual bool ray_test(const Ray3f &ray) const;
 
-    /// Vectorized variant of \ref ray_intersect.
-    virtual MaskP ray_intersect(const Ray3fP &ray, MaskP active) const;
+    /// Vectorized variant of \ref ray_test.
+    virtual MaskP ray_test(const Ray3fP &ray, MaskP active) const;
 
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect()
-    bool ray_intersect(const Ray3f &ray, bool /* unused */) const {
-        return ray_intersect(ray);
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_test()
+    bool ray_test(const Ray3f &ray, bool /* unused */) const {
+        return ray_test(ray);
     }
 
     /**
@@ -438,65 +438,73 @@ ENOKI_CALL_SUPPORT_END(mitsuba::ShapeP)
  * plugins to instantiate concrete versions of the functions.
  */
 #define MTS_IMPLEMENT_SHAPE()                                                            \
-    std::pair<bool, Float> ray_intersect(const Ray3f &ray, Float mint,                   \
-                                         Float maxt, void * cache) const override {      \
-        return ray_intersect_impl(ray, mint, maxt, cache, true);                         \
+    PositionSample3f sample_position(Float time, const Point2f &sample) const override { \
+        return sample_position_impl(time, sample, true);                                 \
     }                                                                                    \
-    std::pair<mask_t<FloatP>, FloatP> ray_intersect(const Ray3fP &ray, FloatP mint,      \
-        FloatP maxt, void * cache, const mask_t<FloatP> &active) const override {        \
-        return ray_intersect_impl(ray, mint, maxt, cache, active);                       \
+    PositionSample3fP sample_position(FloatP time, const Point2fP &sample,               \
+                                      MaskP active) const override {                     \
+        return sample_position_impl(time, sample, active);                               \
     }                                                                                    \
-    bool ray_intersect(const Ray3f &ray, Float mint, Float maxt) const override {        \
-        return ray_intersect_impl(ray, mint, maxt, true);                                \
+    Float pdf_position(const PositionSample3f &ps) const override {                      \
+        return pdf_position_impl(ps, true);                                              \
     }                                                                                    \
-    mask_t<FloatP> ray_intersect(const Ray3fP &ray, FloatP mint, FloatP maxt,            \
-                                 const mask_t<FloatP> &active) const override {          \
-            return ray_intersect_impl(ray, mint, maxt, active);                          \
+    FloatP pdf_position(const PositionSample3fP &ps,                                     \
+                        MaskP active) const override {                                   \
+        return pdf_position_impl(ps, active);                                            \
     }                                                                                    \
-    void fill_surface_interaction(const Ray3f &ray, const void *cache,                   \
-                                  SurfaceInteraction3f &its) const override {            \
-        fill_intersection_record_impl(ray, cache, its, true);                            \
+                                                                                         \
+    DirectionSample3f sample_direction(const Interaction3f &it,                          \
+                                       const Point2f &sample) const override {           \
+        return sample_direction_impl(it, sample, true);                                  \
     }                                                                                    \
-    void fill_surface_interaction(const Ray3fP &ray, const void *cache,                  \
-             SurfaceInteraction3fP &its, const mask_t<FloatP> &active) const override {  \
-        fill_intersection_record_impl(ray, cache, its, active);                          \
+    DirectionSample3fP sample_direction(const Interaction3fP &it,                        \
+                                        const Point2fP &sample,                          \
+                                        MaskP active) const override {                   \
+        return sample_direction_impl(it, sample, active);                                \
     }                                                                                    \
-    std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &its,     \
+    Float pdf_direction(const Interaction3f &it,                                         \
+                        const DirectionSample3f &ds) const override {                    \
+        return pdf_direction_impl(it, ds, true);                                         \
+    }                                                                                    \
+    FloatP pdf_direction(const Interaction3fP &it, const DirectionSample3fP &ds,         \
+                         MaskP active) const override {                                  \
+        return pdf_direction_impl(it, ds, active);                                       \
+    }                                                                                    \
+                                                                                         \
+    std::pair<bool, Float> ray_intersect(const Ray3f &ray,                               \
+                                         Float * cache) const override {                 \
+        return ray_intersect_impl(ray, cache, true);                                     \
+    }                                                                                    \
+    std::pair<MaskP, FloatP> ray_intersect(const Ray3fP &ray, FloatP * cache,            \
+                                           MaskP active) const override {                \
+        return ray_intersect_impl(ray, cache, active);                                   \
+    }                                                                                    \
+    bool ray_test(const Ray3f &ray) const override {                                     \
+        return ray_test_impl(ray, true);                                                 \
+    }                                                                                    \
+    MaskP ray_test(const Ray3fP &ray, MaskP active) const override {                     \
+        return ray_test_impl(ray, active);                                               \
+    }                                                                                    \
+                                                                                         \
+    void fill_surface_interaction(const Ray3f &ray, const Float *cache,                  \
+                                  SurfaceInteraction3f &si) const override {             \
+        fill_intersection_record_impl(ray, cache, si, true);                             \
+    }                                                                                    \
+    void fill_surface_interaction(const Ray3fP &ray, const FloatP *cache,                \
+                                  SurfaceInteraction3fP &si,                             \
+                                  MaskP active) const override {                         \
+        fill_intersection_record_impl(ray, cache, si, active);                           \
+    }                                                                                    \
+                                                                                         \
+    std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,      \
                                                     bool shading_frame) const override { \
-        return normal_derivative_impl(its, shading_frame, true);                         \
+        return normal_derivative_impl(si, shading_frame, true);                          \
     }                                                                                    \
-    std::pair<Vector3fP, Vector3fP> normal_derivative(const SurfaceInteraction3fP &its,  \
-                 bool shading_frame, const mask_t<FloatP> &active) const override {      \
-        return normal_derivative_impl(its, shading_frame, active);                       \
-    }                                                                                    \
-    void sample_position(PositionSample3f &p_rec, const Point2f &sample) const override {\
-        sample_position_impl(p_rec, sample, true);                                       \
-    }                                                                                    \
-    void sample_position(PositionSample3fP &p_rec, const Point2fP &sample,               \
-                         const mask_t<FloatP> &active) const override {                  \
-        sample_position_impl(p_rec, sample, active);                                     \
-    }                                                                                    \
-    Float pdf_position(const PositionSample3f &p_rec) const override {                   \
-        return pdf_position_impl(p_rec, true);                                           \
-    }                                                                                    \
-    FloatP pdf_position(const PositionSample3fP &p_rec,                                  \
-                        const mask_t<FloatP> &active) const override {                   \
-        return pdf_position_impl(p_rec, active);                                         \
-    }                                                                                    \
-    void sample_direct(DirectSample3f &d_rec, const Point2f &sample) const override {    \
-        sample_direct_impl(d_rec, sample, true);                                         \
-    }                                                                                    \
-    void sample_direct(DirectSample3fP &d_rec, const Point2fP &sample,                   \
-                       const mask_t<FloatP> &active) const override {                    \
-        sample_direct_impl(d_rec, sample, active);                                       \
-    }                                                                                    \
-    Float pdf_direct(const DirectSample3f &d_rec) const override {                       \
-        return pdf_direct_impl(d_rec, true);                                             \
-    }                                                                                    \
-    FloatP pdf_direct(const DirectSample3fP &d_rec,                                      \
-                      const mask_t<FloatP> &active) const override {                     \
-        return pdf_direct_impl(d_rec, active);                                           \
-    }                                                                                    \
+    std::pair<Vector3fP, Vector3fP> normal_derivative(const SurfaceInteraction3fP &si,   \
+                                                      bool shading_frame,                \
+                                                      MaskP active) const override {     \
+        return normal_derivative_impl(si, shading_frame, active);                        \
+    }
 
 //! @}
 // -----------------------------------------------------------------------

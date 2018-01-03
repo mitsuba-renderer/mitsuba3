@@ -116,12 +116,12 @@ std::pair<MaskP, FloatP> Shape::ray_intersect(const Ray3fP& /* ray */,
     NotImplementedError("ray_intersect_p");
 }
 
-bool Shape::ray_intersect(const Ray3f &ray) const {
+bool Shape::ray_test(const Ray3f &ray) const {
     Float unused[MTS_KD_INTERSECTION_CACHE_SIZE];
     return ray_intersect(ray, unused).first;
 }
 
-MaskP Shape::ray_intersect(const Ray3fP &ray, MaskP active) const {
+MaskP Shape::ray_test(const Ray3fP &ray, MaskP active) const {
     FloatP unused[MTS_KD_INTERSECTION_CACHE_SIZE];
     return ray_intersect(ray, unused, active).first;
 }
