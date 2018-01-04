@@ -1,234 +1,237 @@
-#include <enoki/morton.h>
-#include <mitsuba/core/util.h>
-#include <mitsuba/core/warp.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/integrator.h>
-#include <mitsuba/render/records.h>
-#include <mitsuba/render/interaction.h>
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spiral.h>
-#include <tbb/tbb.h>
+#include <mitsuba/core/util.h>
+#include <mitsuba/core/warp.h>
+#include <mitsuba/core/timer.h>
+#include <mitsuba/core/profiler.h>
+#include <mitsuba/core/progress.h>
+#include <enoki/morton.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-Integrator::Integrator(const Properties &/*props*/)
-    : Object() { }
-
-// Integrator::Integrator(Stream *stream, InstanceManager *manager)
-//  : Object(stream, manager) { }
-
-// void Integrator::serialize(Stream *stream, InstanceManager * /*manager*/) const {
-//     Object::serialize(stream, manager);
-// }
-
-void Integrator::configure_sampler(const Scene * scene, Sampler *sampler) {
-    // Prepare the sampler for bucket-based rendering
-    sampler->set_film_resolution(
-        scene->film()->crop_size(),
-        class_()->derives_from(MTS_CLASS(SamplingIntegrator))
-    );
-}
+Integrator::Integrator(const Properties &/*props*/) { }
 
 SamplingIntegrator::SamplingIntegrator(const Properties &props)
-    : Integrator(props) { }
+    : Integrator(props) {
+    m_block_size = props.size_("block_size", MTS_BLOCK_SIZE);
+    size_t b = math::round_to_power_of_two(m_block_size);
 
-// SamplingIntegrator::SamplingIntegrator(Stream *stream, InstanceManager *manager)
-//  : Integrator(stream, manager) { }
-
-// void SamplingIntegrator::serialize(Stream *stream,
-//                                    InstanceManager *manager) const {
-//     Integrator::serialize(stream, manager);
-// }
-
-void SamplingIntegrator::cancel() {
-    NotImplementedError("cancel");  // Well, crashing is one way to cancel.
+    if (b != m_block_size) {
+        m_block_size = b;
+        Log(EWarn, "Setting block size to next higher power of two: %i", m_block_size);
+    }
 }
 
-template <bool Vectorize>
-bool SamplingIntegrator::render_impl(Scene *scene) {
+SamplingIntegrator::~SamplingIntegrator() { }
+
+void SamplingIntegrator::cancel() {
+    m_stop = true;
+}
+
+bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
+    ScopedPhase sp(EProfilerPhase::ERender);
     ref<Sensor> sensor = scene->sensor();
     ref<Film> film = sensor->film();
-    ref<Sampler> sampler = sensor->sampler();
 
     size_t n_cores = util::core_count();
-    size_t sample_count = sampler->sample_count();
+    size_t sample_count = scene->sampler()->sample_count();
     film->clear();
+    m_stop = false;
 
     Log(EInfo, "Starting render job (%ix%i, %i sample%s, %i core%s)",
         film->crop_size().x(), film->crop_size().y(),
         sample_count, sample_count == 1 ? "" : "s",
         n_cores, n_cores == 1 ? "" : "s");
 
-    // Prepare image blocks to be given to the threads.
-    // TODO: tweak interface to allow reusing the blocks?
-    Spiral spiral(film);
-    std::vector<ref<ImageBlock>> blocks;
-    ref<ImageBlock> b = spiral.next_block();
-    do {
-        blocks.push_back(b);
-        b = spiral.next_block();
-    } while (b);
+    Spiral spiral(film, m_block_size);
 
-    // Hack to make sure that each block has a sampler seeded differently
-    // (in a thread-safe way).
-    // TODO: refactor / do this more elegantly
-    std::vector<ref<Sampler>> samplers;
-    for (size_t i = 0; i < blocks.size(); ++i) {
-        // Perturb sampler's state before cloning it.
-        sampler->next_1d();
-        samplers.push_back(sampler->clone());
-    }
+    Timer timer;
+    ThreadEnvironment env;
+    ref<ProgressReporter> progress = new ProgressReporter("Rendering");
+    tbb::spin_mutex mutex;
+    size_t blocks_done = 0;
+    size_t grain_count = std::max(
+        (size_t) 1, (size_t) std::rint(spiral.block_count() / Float(n_cores * 2)));
 
-    // Render image blocks in parallel.
-    // TODO: proper parallelization support (resources, distributed, etc).
-    bool stop = false;
     tbb::parallel_for(
-        // Minimum workload: 1 image block per thread.
-        tbb::blocked_range<size_t>(0, blocks.size(), 1),
+        tbb::blocked_range<size_t>(0, spiral.block_count(), grain_count),
         [&](const tbb::blocked_range<size_t> &range) {
-            for (auto block_i = range.begin(); block_i != range.end(); ++block_i) {
-                auto &block = blocks[block_i];
-                auto local_sampler = samplers[block_i];
+            ScopedSetThreadEnvironment set_env(env);
+            ref<Sampler> sampler = scene->sampler()->clone();
+            ref<ImageBlock> block =
+                new ImageBlock(Bitmap::EXYZAW, Vector2i(m_block_size), film->reconstruction_filter());
+            Point2fX points;
+            for (auto i = range.begin(); i != range.end() && !m_stop; ++i) {
+                Vector2i offset, size;
+                std::tie(offset, size) = spiral.next_block();
 
+                // Ensure that the sample generation is fully deterministic
+                sampler->seed((size_t) offset.x() +
+                              (size_t) offset.y() * (size_t) film->crop_size().x());
 
-                // Pixels of the block will be handled in Morton order.
-                // TODO: avoid re-generating the most common morton order over
-                // and over again (at least for the standard image block size,
-                // it is always the same).
-                size_t i_max = math::round_to_power_of_two(
-                        std::max(block->width(), block->height()));
-                i_max *= i_max;
+                if (hprod(size) == 0)
+                    Throw("Internal error -- generated empty image block!");
 
-                std::vector<Point2u> points;
-                points.reserve(i_max);
-                for (value_t<Point2u> i = 0; i < i_max; ++i) {
-                    const auto p = enoki::morton_decode<Point2u>(i);
-                    if (p.x() >= block->width() || p.y() >= block->height())
-                        continue;
+                if (size != block->size())
+                    block = new ImageBlock(Bitmap::EXYZAW, size, film->reconstruction_filter());
 
-                    points.push_back(p);
+                block->set_offset(offset);
+
+                if (vectorize)
+                    render_block_vector(scene, sampler, block, points);
+                else
+                    render_block_scalar(scene, sampler, block);
+
+                film->put(block);
+
+                /* locked */ {
+                    tbb::spin_mutex::scoped_lock lock(mutex);
+                    blocks_done++;
+                    progress->update(blocks_done / (Float) spiral.block_count());
                 }
-
-                // Start rendering the image block.
-                render_block<Vectorize>(scene, sensor.get(), local_sampler,
-                                        block.get(), stop, points);
-                // Add the block's results to the film.
-                // TODO: double-check this is thread-safe.
-                film->put(block.get());
             }
         }
     );
-    Log(EInfo, "Committed %i blocks to the film.", blocks.size());
-    return true;
-}
-bool SamplingIntegrator::render_scalar(Scene *scene) {
-    return render_impl<false>(scene);
-}
-bool SamplingIntegrator::render_vector(Scene *scene) {
-    return render_impl<true>(scene);
+
+    if (!m_stop)
+        Log(EInfo, "Rendering finished. (took %s)",
+            util::time_string(timer.value(), true));
+
+    return !m_stop;
 }
 
-void SamplingIntegrator::render_block_scalar(
-        const Scene *scene, const Sensor *sensor, Sampler *sampler,
-        ImageBlock *block, const bool &stop,
-        const std::vector<Point2u> &points) const {
-
-    Float diff_scale_factor = 1.0f /
-        std::sqrt((Float) sampler->sample_count());
-
-    bool needs_aperture_sample = sensor->needs_aperture_sample();
-    bool needs_time_sample = sensor->needs_time_sample();
-
-    RadianceSample3f r_rec(scene, sampler);
-    Point2f aperture_sample(0.5f);
-    Float time_sample = 0.5f;
-    RayDifferential3f sensor_ray;
-
+void SamplingIntegrator::render_block_scalar(const Scene *scene,
+                                             Sampler *sampler,
+                                             ImageBlock *block) const {
+    const Sensor *sensor = scene->sensor();
     block->clear();
-    // For each pixel of the block
-    for (size_t i = 0; i < points.size(); ++i) {
-        Point2i offset = Point2i(points[i]) + Vector2i(block->offset());
-        if (stop)
-            break;
+    uint32_t pixel_count = m_block_size * m_block_size,
+             sample_count = sampler->sample_count();
 
-        sampler->generate(offset);
+    RadianceSample3f rs(scene, sampler);
+    bool needs_aperture_sample = sensor->needs_aperture_sample();
+    bool needs_time_sample = sensor->shutter_open_time() > 0;
 
-        for (size_t j = 0; j < sampler->sample_count(); j++) {
-            r_rec.new_query();
-            Point2f sample_pos(Point2f(offset)
-                               + Vector2f(r_rec.next_sample_2d()));
+    Float diff_scale_factor = rsqrt((Float) sampler->sample_count());
+
+    Point2f aperture_sample(.5f);
+    Vector2f inv_resolution = 1.f / sensor->film()->crop_size();
+
+    for (uint32_t i = 0; i < pixel_count && !m_stop; ++i) {
+        Point2u p = enoki::morton_decode<Point2u>(i);
+        if (any(p >= block->size()))
+            continue;
+
+        p += block->offset();
+        for (uint32_t j = 0; j < sample_count && !m_stop; ++j) {
+            Vector2f position_sample = p + rs.next_2d();
 
             if (needs_aperture_sample)
-                aperture_sample = r_rec.next_sample_2d();
+                aperture_sample = rs.next_2d();
+
+            Float time = sensor->shutter_open();
             if (needs_time_sample)
-                time_sample = r_rec.next_sample_1d();
+                time += rs.next_1d() * sensor->shutter_open_time();
 
-            Spectrumf spec;
-            RayDifferential3f sensor_ray;
-            std::tie(sensor_ray, spec) = sensor->sample_ray_differential(
-                sample_pos, aperture_sample, time_sample);
+            Float wavelength_sample = rs.next_1d();
 
-            sensor_ray.scale_differential(diff_scale_factor);
+            RayDifferential3f ray;
+            Spectrumf ray_weight;
+            std::tie(ray, ray_weight) = sensor->sample_ray_differential(
+                time, wavelength_sample, position_sample * inv_resolution,
+                aperture_sample);
 
-            spec *= Li(sensor_ray, r_rec);
-            block->put(sample_pos, spec, r_rec.alpha, true);
-            sampler->advance();
+            ray.scale_differential(diff_scale_factor);
+
+            Spectrumf result;
+            /* Integrator::eval */ {
+                ScopedPhase sp(EProfilerPhase::ESamplingIntegratorEval);
+                result = eval(ray, rs);
+            }
+            /* ImageBlock::put */ {
+                ScopedPhase sp(EProfilerPhase::EImageBlockPut);
+                block->put(position_sample, ray.wavelengths,
+                           ray_weight * result, rs.alpha);
+            }
         }
     }
 }
 
-void SamplingIntegrator::render_block_vector(
-        const Scene *scene, const Sensor *sensor, Sampler *sampler,
-        ImageBlock *block, const bool &stop,
-        const std::vector<Point2u> &points) const {
-
-    Float diff_scale_factor = 1.0f /
-        std::sqrt((Float) sampler->sample_count());
-
-    bool needs_aperture_sample = sensor->needs_aperture_sample();
-    bool needs_time_sample = sensor->needs_time_sample();
-
-    RadianceSample3fP r_rec(scene, sampler);
-    Point2fP aperture_sample(0.5f);
-    FloatP time_sample = 0.5f;
-    RayDifferential3fP sensor_ray;
-
+void SamplingIntegrator::render_block_vector(const Scene *scene,
+                                             Sampler *sampler,
+                                             ImageBlock *block,
+                                             Point2fX &points) const {
+    const Sensor *sensor = scene->sensor();
     block->clear();
-    // For each pixel of the block
-    for (size_t i = 0; i < points.size(); ++i) {
-        Point2i offset = Point2i(points[i]) + Vector2i(block->offset());
-        if (stop)
-            break;
+    uint32_t sample_count = sampler->sample_count();
 
-        sampler->generate(offset);
+    if ((uint32_t) hprod(block->size()) * sample_count !=
+        (uint32_t) slices(points)) {
+        size_t max_pixel_count = m_block_size * m_block_size,
+               n_entries = 0;
+        set_slices(points, max_pixel_count * sample_count);
+        for (uint32_t i = 0; i < max_pixel_count; ++i) {
+            Point2u p = enoki::morton_decode<Point2u>(i);
+            if (any(p >= block->size()))
+                continue;
+            Point2f pf = Point2f(p);
 
-        // Generate and handle PacketSize samples at once.
-        // TODO: use dynamic arrays instead.
-        size_t n_packets = (size_t) std::ceil(
-                sampler->sample_count() / (Float) PacketSize);
-        for (size_t j = 0; j < n_packets; j++) {
-            r_rec.new_query();
-
-            Point2fP sample_pos(Point2fP(offset)
-                                + Vector2fP(r_rec.next_sample_2d()));
-
-            if (needs_aperture_sample)
-                aperture_sample = r_rec.next_sample_2d();
-            if (needs_time_sample)
-                time_sample = r_rec.next_sample_1d();
-
-            SpectrumfP spec;
-            RayDifferential3fP sensor_ray;
-            std::tie(sensor_ray, spec) = sensor->sample_ray_differential(
-                sample_pos, aperture_sample, time_sample);
-
-            sensor_ray.scale_differential(diff_scale_factor);
-
-            spec *= Li(sensor_ray, r_rec, true);
-            block->put(sample_pos, spec, r_rec.alpha, true);
-            sampler->advance();
+            for (uint32_t j = 0; j < sample_count; ++j)
+                slice(points, n_entries++) = pf;
         }
+        set_slices(points, n_entries);
+    }
+
+    Vector2f inv_resolution = 1.f / sensor->film()->crop_size();
+
+    Vector2fP offset = block->offset(),
+              aperture_sample = .5f;
+
+    RadianceSample3fP rs(scene, sampler);
+
+    bool needs_aperture_sample = sensor->needs_aperture_sample(),
+         needs_time_sample = sensor->shutter_open_time() == 0;
+
+    Float diff_scale_factor = rsqrt((Float) sampler->sample_count());
+    UInt32P index = index_sequence<UInt32P>();
+
+    for (size_t i = 0; i < packets(points) && !m_stop; ++i) {
+        MaskP active = index < slices(points);
+        Vector2fP position_sample =
+            packet(points, i) + offset + rs.next_2d(active);
+
+        if (needs_aperture_sample)
+            aperture_sample = rs.next_2d(active);
+
+        FloatP time = sensor->shutter_open();
+        if (needs_time_sample)
+            time += rs.next_1d(active) * sensor->shutter_open_time();
+
+        FloatP wavelength_sample = rs.next_1d(active);
+
+        RayDifferential3fP ray;
+        SpectrumfP ray_weight;
+        std::tie(ray, ray_weight) = sensor->sample_ray_differential(
+            time, wavelength_sample, position_sample * inv_resolution,
+            aperture_sample, active);
+
+        ray.scale_differential(diff_scale_factor);
+
+        SpectrumfP result;
+        /* Integrator::eval */ {
+            ScopedPhase p(EProfilerPhase::ESamplingIntegratorEvalP);
+            result = eval(ray, rs);
+        }
+        /* ImageBlock::put */ {
+            ScopedPhase p(EProfilerPhase::EImageBlockPutP);
+            block->put(position_sample, ray.wavelengths,
+                       ray_weight * result, rs.alpha);
+        }
+
+        index += (uint32_t) PacketSize;
     }
 }
 
@@ -236,20 +239,17 @@ MonteCarloIntegrator::MonteCarloIntegrator(const Properties &props)
     : SamplingIntegrator(props) {
     /// Depth to begin using russian roulette
     m_rr_depth = props.int_("rr_depth", 5);
-    if (m_rr_depth <= 0) {
-        Log(EError, "'rr_depth' must be set to a value greater than zero!"
-                    " Found %i instead.", m_rr_depth);
-    }
+    if (m_rr_depth <= 0)
+        Throw("\"rr_depth\" must be set to a value greater than zero!");
 
     /** Longest visualized path depth (\c -1 = infinite).
       * A value of \c 1 will visualize only directly visible light sources.
       * \c 2 will lead to single-bounce (direct-only) illumination, and so on.
       */
     m_max_depth = props.int_("max_depth", -1);
-    if (m_max_depth <= 0 && m_max_depth != -1) {
-        Log(EError, "'max_depth' must be set to -1 (infinite) or a value"
-                    " greater than zero! Found %i instead.", m_max_depth);
-    }
+    if (m_max_depth <= 0 && m_max_depth != -1)
+        Throw("\"max_depth\" must be set to -1 (infinite) or a value"
+              " greater than zero!");
 
     /**
      * This parameter specifies the action to be taken when the geometric
@@ -265,47 +265,12 @@ MonteCarloIntegrator::MonteCarloIntegrator(const Properties &props)
      * lead to silhouette darkening on badly tesselated meshes.
      */
     m_strict_normals = props.bool_("strict_normals", false);
-
-    /**
-     * When this flag is set to true, contributions from directly
-     * visible emitters will not be included in the rendered image
-     */
-    m_hide_emitters = props.bool_("hide_emitters", false);
 }
 
-// MonteCarloIntegrator::MonteCarloIntegrator(Stream *stream, InstanceManager *manager)
-//     : SamplingIntegrator(stream, manager) {
-//     m_rr_depth = stream->readInt();
-//     m_max_depth = stream->readInt();
-//     m_strict_normals = stream->readBool();
-//     m_hide_emitters = stream->readBool();
-// }
-
-// void MonteCarloIntegrator::serialize(Stream *stream, InstanceManager *manager) const {
-//     SamplingIntegrator::serialize(stream, manager);
-//     stream->writeInt(m_rr_depth);
-//     stream->writeInt(m_max_depth);
-//     stream->writeBool(m_strict_normals);
-//     stream->writeBool(m_hide_emitters);
-// }
+MonteCarloIntegrator::~MonteCarloIntegrator() { }
 
 MTS_IMPLEMENT_CLASS(Integrator, Object)
 MTS_IMPLEMENT_CLASS(SamplingIntegrator, Integrator)
 MTS_IMPLEMENT_CLASS(MonteCarloIntegrator, SamplingIntegrator)
-
-// =============================================================
-//! @{ \name Explicit template instantiations
-// =============================================================
-template MTS_EXPORT_RENDER bool Integrator::render<false>(Scene *);
-template MTS_EXPORT_RENDER bool Integrator::render<true>(Scene *);
-template MTS_EXPORT_RENDER void SamplingIntegrator::render_block<false>(
-    const Scene *, const Sensor *, Sampler *, ImageBlock *, const bool &,
-    const std::vector<Point2u> &) const;
-template MTS_EXPORT_RENDER void SamplingIntegrator::render_block<true>(
-    const Scene *, const Sensor *, Sampler *, ImageBlock *, const bool &,
-    const std::vector<Point2u> &) const;
-
-//! @}
-// =============================================================
 
 NAMESPACE_END(mitsuba)

@@ -13,19 +13,16 @@ MTS_PY_EXPORT(Film) {
         .mdef(Film, set_bitmap, "bitmap"_a)
         .mdef(Film, add_bitmap, "bitmap"_a, "multiplier"_a = 1.0f)
         .mdef(Film, set_destination_file, "filename"_a, "block_size"_a)
-        .def("develop", py::overload_cast<const Scene *, Float>(&Film::develop),
-             "scene"_a, "render_time"_a)
+        .def("develop", py::overload_cast<>(&Film::develop))
         .def("develop", py::overload_cast<const Point2i &, const Vector2i &,
                                           const Point2i &, Bitmap *>(
                 &Film::develop, py::const_),
              "offset"_a, "size"_a, "target_offset"_a, "target"_a)
         .mdef(Film, destination_exists, "basename"_a)
         .mdef(Film, has_high_quality_edges)
-        .mdef(Film, has_alpha)
         .mdef(Film, bitmap)
         .mdef(Film, size)
         .mdef(Film, crop_size)
         .mdef(Film, crop_offset)
-        .def("reconstruction_filter", py::overload_cast<>(&Film::reconstruction_filter))
-        ;
+        .def("reconstruction_filter", py::overload_cast<>(&Film::reconstruction_filter, py::const_));
 }

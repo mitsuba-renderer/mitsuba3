@@ -2,6 +2,7 @@
 
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/string.h>
+#include <mitsuba/core/properties.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -47,7 +48,7 @@ static IOREntry ior_data[] = {
     { nullptr,                 0.0f }
 };
 
-static Float lookup_IOR(const std::string &name) {
+static Float lookup_ior(const std::string &name) {
     std::string lower_case = string::to_lower(name);
     IOREntry *ior = ior_data;
 
@@ -73,19 +74,21 @@ static Float lookup_IOR(const std::string &name) {
     return 0.0f;
 }
 
-inline Float lookup_IOR(const Properties &props, const std::string &param_name, const std::string &default_value) {
-    if (props.has_property(param_name) && props.property_type(param_name) == Properties::EFloat)
+inline Float lookup_ior(const Properties &props, const std::string &param_name,
+                        const std::string &default_value) {
+    if (props.has_property(param_name) && props.type(param_name) == Properties::EFloat)
         return props.float_(param_name);
     else
-        return lookup_IOR(props.string(param_name, default_value));
+        return lookup_ior(props.string(param_name, default_value));
 }
 
-inline Float lookup_IOR(const Properties &props, const std::string &param_name, Float default_value) {
+inline Float lookup_ior(const Properties &props, const std::string &param_name,
+                        Float default_value) {
     if (props.has_property(param_name)) {
-        if (props.property_type(param_name) == Properties::EFloat)
+        if (props.type(param_name) == Properties::EFloat)
             return props.float_(param_name);
         else
-            return lookup_IOR(props.string(param_name));
+            return lookup_ior(props.string(param_name));
     }
     else {
         return default_value;

@@ -213,7 +213,7 @@ class MitsubaRenderer(Screen):
         print("Developping to: " + str(destination))
         # Develop the film (i.e. save the result in an image file).
         film.set_destination_file(destination, 32)
-        film.develop(self.scene, 1.0)
+        film.develop()
 
         # Display image
         self.update_image_viewer(film.bitmap())

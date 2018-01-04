@@ -135,7 +135,7 @@ def test07_transform_has_scale():
     t[7] = Transform4f.orthographic(0.01, 200)
     t[8] = Transform4f.look_at(origin=[10, -1, 3], target=[1, 1, 2], up=[0, 1, 0])
     t[9] = Transform4f()
-    t[10] = AnimatedTransform(Transform4f()).lookup(0)
+    t[10] = AnimatedTransform(Transform4f()).eval(0)
 
     # Vectorized
     expected = [
@@ -160,23 +160,23 @@ def test08_atransform_construct():
     t = Transform4f.rotate([1, 0, 0], 30)
     a = AnimatedTransform(t)
 
-    t0 = a.lookup(0)
+    t0 = a.eval(0)
     assert t0 == t
     assert not t0.has_scale()
     # Animation is constant over time
-    for tt in a.lookup([0, 10, 200, 1e5]):
+    for tt in a.eval([0, 10, 200, 1e5]):
         assert np.all(t0 == tt)
 
 
-def test09_atransform_lookup():
+def eval():
     a = AnimatedTransform()
     trafo0 = Transform4f.translate([1, 2, 3])
     trafo1 = Transform4f.translate([2, 4, 6])
     assert(len(a) == 0)
-    assert a.lookup(100) == Transform4f()
+    assert a.eval(100) == Transform4f()
 
     a.append(1, trafo0)
-    assert a.lookup(100) == trafo0
+    assert a.eval(100) == trafo0
     assert(len(a) == 1)
     with pytest.raises(Exception):
         a.append(-1, trafo1)
@@ -195,14 +195,14 @@ def test09_atransform_lookup():
     with pytest.raises(IndexError):
         print(a[2].trans)
     a.append(3, trafo1)
-    assert np.allclose(a.lookup(0).matrix, trafo0.matrix)
-    assert np.allclose(a.lookup(1).matrix, trafo0.matrix)
-    assert np.allclose(a.lookup(1.5).matrix, 0.5*(trafo0.matrix + trafo1.matrix))
-    assert np.allclose(a.lookup([1.5])[0].matrix, 0.5*(trafo0.matrix + trafo1.matrix))
-    assert np.allclose(a.lookup(2).matrix, trafo1.matrix)
-    assert np.allclose(a.lookup(3).matrix, trafo1.matrix)
+    assert np.allclose(a.eval(0).matrix, trafo0.matrix)
+    assert np.allclose(a.eval(1).matrix, trafo0.matrix)
+    assert np.allclose(a.eval(1.5).matrix, 0.5*(trafo0.matrix + trafo1.matrix))
+    assert np.allclose(a.eval([1.5])[0].matrix, 0.5*(trafo0.matrix + trafo1.matrix))
+    assert np.allclose(a.eval(2).matrix, trafo1.matrix)
+    assert np.allclose(a.eval(3).matrix, trafo1.matrix)
 
-    vec_transform = a.lookup([-100,1.5,100])
+    vec_transform = a.eval([-100,1.5,100])
     assert np.allclose(vec_transform[0].matrix, trafo0.matrix)
     assert np.allclose(vec_transform[1].matrix, 0.5 * (trafo0.matrix + trafo1.matrix))
     assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
@@ -217,7 +217,7 @@ def test10_atransform_interpolate_rotation():
     trafo_mid = Transform4f.rotate(axis, 15)
     a.append(2, trafo0)
     a.append(3, trafo1)
-    vec_transform = a.lookup([-10,2.5,10])
+    vec_transform = a.eval([-10,2.5,10])
     assert np.allclose(vec_transform[0].matrix, trafo0.matrix)
     assert np.allclose(vec_transform[1].matrix, trafo_mid.matrix)
     assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
@@ -229,7 +229,7 @@ def test11_atransform_interpolate_scale():
     trafo_mid = Transform4f.scale([2.5, 3.5, 4.5])
     a.append(2, trafo0)
     a.append(3, trafo1)
-    vec_transform = a.lookup([-10,2.5,10])
+    vec_transform = a.eval([-10,2.5,10])
     assert np.allclose(vec_transform[0].matrix, trafo0.matrix)
     assert np.allclose(vec_transform[1].matrix, trafo_mid.matrix)
     assert np.allclose(vec_transform[2].matrix, trafo1.matrix)

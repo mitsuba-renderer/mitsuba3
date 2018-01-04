@@ -1,4 +1,6 @@
 #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/properties.h>
+#include <mitsuba/core/plugin.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -17,17 +19,50 @@ const Float data[95] = {
     59.4519f,  55.7054f,  51.959f,   54.6998f,  57.4406f,  58.8765f,  60.3125f
 };
 
-/**
- * CIE D65 spectrum discretized in 5nm increments
- */
-class D65Spectrum final : public InterpolatedSpectrum {
+// CIE D65 spectrum discretized at 5nm intervals
+class D65Spectrum final : public ContinuousSpectrum {
 public:
-    D65Spectrum(const Properties &) : InterpolatedSpectrum(360, 830, 95, data) { }
+    D65Spectrum(const Properties &props) {
+        /* The default scale factor is set so that integrating
+           the spectrum against the CIE curves & converting to
+           sRGB yields a pixel value of (1, 1, 1) */
+
+        m_scale = props.float_("value", 1.f) / 10568.f;
+    }
+
+    std::vector<ref<Object>> expand() const override {
+        // This plugin recursively expands into an instance of 'interpolated'
+        Properties props("interpolated");
+        props.set_float("lambda_min", 360);
+        props.set_float("lambda_max", 830);
+        props.set_int("size", 95);
+        Float tmp[95];
+        for (size_t i = 0; i < 95; ++i)
+            tmp[i] = data[i] * m_scale;
+        props.set_pointer("values", (const void *) &tmp[0]);
+
+        PluginManager *pmgr = PluginManager::instance();
+        ref<ContinuousSpectrum> spec =
+            pmgr->create_object<ContinuousSpectrum>(props);
+
+        return std::vector<ref<Object>>(1, spec.get());
+    }
+
+    std::string to_string() const override {
+        std::ostringstream oss;
+        oss << "D65Spectrum[" << std::endl
+            << "  scale = " << m_scale << std::endl
+            << "]";
+        return oss.str();
+    }
 
     MTS_DECLARE_CLASS()
+
+private:
+    Float m_scale;
 };
 
-MTS_IMPLEMENT_CLASS(D65Spectrum, InterpolatedSpectrum)
+MTS_IMPLEMENT_CLASS(D65Spectrum, ContinuousSpectrum)
 MTS_EXPORT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
 
 NAMESPACE_END(mitsuba)

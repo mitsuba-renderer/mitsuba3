@@ -1,52 +1,9 @@
 #pragma once
 
-#include <mitsuba/core/fwd.h>
-#include <mitsuba/core/spectrum.h>
-#include <mitsuba/core/frame.h>
-#include <mitsuba/core/math.h>
-#include <mitsuba/core/object.h>
-#include <mitsuba/core/simd.h>
-#include <mitsuba/core/properties.h>
-#include <mitsuba/render/fwd.h>
-#include <mitsuba/render/common.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/sampler.h>
+#include <mitsuba/render/common.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
-/**
-* \brief This macro should be used in the definition of BSDF
-* plugins to instantiate concrete versions of the the \c sample,
-* \c eval and \c pdf functions.
-*/
-#define MTS_IMPLEMENT_BSDF()                                    \
-    std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,        \
-        const Point2f &sample) const override {                 \
-        return sample_impl(bs, sample, true);                   \
-    }                                                           \
-    std::pair<SpectrumfP, FloatP> sample(BSDFSample3fP &bs,     \
-        const Point2fP &sample,                                 \
-        const mask_t<FloatP> &active = true) const override {   \
-        return sample_impl(bs, sample, active);                 \
-    }                                                           \
-    Spectrumf eval(const BSDFSample3f &bs,                      \
-        EMeasure measure) const override {                      \
-        return eval_impl(bs, measure, true);                    \
-    }                                                           \
-    SpectrumfP eval(const BSDFSample3fP &bs,                    \
-        EMeasure measure,                                       \
-        const mask_t<FloatP> &active) const override {          \
-        return eval_impl(bs, measure, active);                  \
-    }                                                           \
-    Float pdf(const BSDFSample3f &bs,                           \
-        EMeasure measure) const override {                      \
-        return pdf_impl(bs, measure, true);                     \
-    }                                                           \
-    FloatP pdf(const BSDFSample3fP &bs,                         \
-        EMeasure measure,                                       \
-        const mask_t<FloatP> &active) const override {          \
-        return pdf_impl(bs, measure, active);                   \
-    }                                                           \
 
 /**
  * \brief Abstract %BSDF base-class.
@@ -184,15 +141,17 @@ public:
      * \remark From Python, this function is is called using the syntax
      *         <tt>value, pdf = bsdf.sample(bs, sample)</tt>
      */
-    virtual std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,
-                                               const Point2f &sample) const = 0;
-    std::pair<Spectrumf, Float> sample(
-            BSDFSample3f &bs, const Point2f &s, bool /*unused*/) const {
+    virtual std::pair<Spectrumf, Float>
+    sample(BSDFSample3f &bs, const Point2f &sample) const = 0;
+
+    virtual std::pair<SpectrumfP, FloatP>
+    sample(BSDFSample3fP &bs, const Point2fP &sample,
+           const mask_t<FloatP> &active = true) const = 0;
+
+    std::pair<Spectrumf, Float>
+    sample(BSDFSample3f &bs, const Point2f &s, bool /*unused*/) const {
         return sample(bs, s);
     }
-    virtual std::pair<SpectrumfP, FloatP> sample(
-            BSDFSample3fP &bs, const Point2fP &sample,
-            const mask_t<FloatP> &active = true) const = 0;
 
     /**
      * \brief Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo)
@@ -213,13 +172,15 @@ public:
      */
     virtual Spectrumf eval(const BSDFSample3f &bs,
                            EMeasure measure = ESolidAngle) const = 0;
+
+    virtual SpectrumfP eval(const BSDFSample3fP &bs,
+                            EMeasure measure = ESolidAngle,
+                            const mask_t<FloatP> &active = true) const = 0;
+
     Spectrumf eval(const BSDFSample3f &bs, EMeasure measure,
                    bool /*unused*/) const {
         return eval(bs, measure);
     }
-    virtual SpectrumfP eval(const BSDFSample3fP &bs,
-                            EMeasure measure = ESolidAngle,
-                            const mask_t<FloatP> &active = true) const = 0;
 
     /**
      * \brief Compute the probability of sampling \c bs.wo (given
@@ -243,14 +204,15 @@ public:
      */
     virtual Float pdf(const BSDFSample3f &bs,
                       EMeasure measure = ESolidAngle) const = 0;
-    Float pdf(const BSDFSample3f &bs,
-              EMeasure measure,
-              bool /*unused*/) const {
-        return pdf(bs, measure);
-    }
+
     virtual FloatP pdf(const BSDFSample3fP &bs,
                        EMeasure measure = ESolidAngle,
                        const mask_t<FloatP> &active = true) const = 0;
+
+    Float pdf(const BSDFSample3f &bs, EMeasure measure,
+              bool /*unused*/) const {
+        return pdf(bs, measure);
+    }
 
     bool needs_differentials(bool /*unused*/ = true) const {
         return m_needs_differentials;
@@ -285,6 +247,7 @@ template <typename Point3_> struct BSDFSample {
     using Value = value_t<Point3>;
     using Index = uint32_array_t<Value>;
     using Mask = mask_t<Value>;
+    using Spectrum = mitsuba::Spectrum<Value>;
 
     using Point2 = point2_t<Point3>;
     using Vector2 = vector2_t<Point3>;
@@ -301,7 +264,7 @@ template <typename Point3_> struct BSDFSample {
     // =============================================================
 
     /// Reference to the underlying surface interaction
-    const SurfaceInteraction &its;
+    const SurfaceInteraction &si;
 
     /// Pointer to a \ref Sampler instance (optional)
     Sampler *sampler = nullptr;
@@ -347,7 +310,7 @@ template <typename Point3_> struct BSDFSample {
      * uses the local incident direction vector contained in the
      * supplied intersection record.
      *
-     * \param its
+     * \param si
      *      An reference to the underlying intersection record
      *
      * \param sampler
@@ -359,13 +322,11 @@ template <typename Point3_> struct BSDFSample {
      * \param mode
      *      The transported mode (\ref ERadiance or \ref EImportance)
      */
-    inline BSDFSample(
-        const SurfaceInteraction &its,
-        Sampler *sampler,
-        ETransportMode mode = ERadiance)
-        : its(its), sampler(sampler), wi(its.wi), mode(mode),
-        type_mask(BSDF::EAll), component(-1), sampled_type(0), sampled_component(-1) {
-    }
+    BSDFSample(const SurfaceInteraction &si, Sampler *sampler,
+               ETransportMode mode = ERadiance)
+        : si(si), sampler(sampler), wi(si.wi), mode(mode),
+          type_mask(BSDF::EAll), component(-1), sampled_type(0),
+          sampled_component(-1) { }
 
     /**
      * \brief Given a surface interaction an an incident/exitant direction
@@ -375,50 +336,50 @@ template <typename Point3_> struct BSDFSample {
      * For convenience, this function uses the local incident direction
      * vector contained in the supplied intersection record.
      *
-     * \param its
+     * \param si
      *      A reference to the underlying intersection record
+     *
      * \param wo
      *      An outgoing direction in local coordinates. This should
      *      be a normalized direction vector that points \a away from
      *      the scattering event.
+     *
      * \param mode
      *      The transported mode (\ref ERadiance or \ref EImportance)
      */
-    inline BSDFSample(
-        const SurfaceInteraction &its,
-        const Vector3 &wo,
-        ETransportMode mode = ERadiance)
-        : its(its), sampler(nullptr), wi(its.wi), wo(wo), mode(mode),
-        type_mask(BSDF::EAll), component(-1), sampled_type(0), sampled_component(-1) {
-    }
+    BSDFSample(const SurfaceInteraction &si, const Vector3 &wo,
+               ETransportMode mode = ERadiance)
+        : si(si), sampler(nullptr), wi(si.wi), wo(wo), mode(mode),
+          type_mask(BSDF::EAll), component(-1), sampled_type(0),
+          sampled_component(-1) { }
 
     /**
      * \brief Given a surface interaction and an incident/exitant direction
      * pair (wi, wo), create a query record to evaluate the BSDF or its
      * sampling density.
      *
-     * \param its
+     * \param si
      *      An reference to the underlying intersection record
+     *
      * \param wi
      *      An incident direction in local coordinates. This should
      *      be a normalized direction vector that points \a away from
      *      the scattering event.
+     *
      * \param wo
      *      An outgoing direction in local coordinates. This should
      *      be a normalized direction vector that points \a away from
      *      the scattering event.
+     *
      * \param mode
      *      The transported mode (\ref ERadiance or \ref EImportance)
      *
      */
-    inline BSDFSample(
-        const SurfaceInteraction &its,
-        const Vector3 &wi,
-        const Vector3 &wo,
-        ETransportMode mode = ERadiance)
-        : its(its), sampler(nullptr), wi(wi), wo(wo), mode(mode),
-        type_mask(BSDF::EAll), component(-1), sampled_type(0), sampled_component(-1) {
-    }
+    BSDFSample(const SurfaceInteraction &si, const Vector3 &wi,
+               const Vector3 &wo, ETransportMode mode = ERadiance)
+        : si(si), sampler(nullptr), wi(wi), wo(wo), mode(mode),
+          type_mask(BSDF::EAll), component(-1), sampled_type(0),
+          sampled_component(-1) { }
 
     /**
      * \brief Reverse the direction of light transport in the record
@@ -429,13 +390,13 @@ template <typename Point3_> struct BSDFSample {
      */
     void reverse() {
         std::swap(wo, wi);
-        mode = (ETransportMode) (1 - mode);
+        mode = (ETransportMode) (1 - (int) mode);
     }
 
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(BSDFSample, its, sampler, wi, wo, eta, mode,
+    ENOKI_STRUCT(BSDFSample, si, sampler, wi, wo, eta, mode,
                  type_mask, component, sampled_type, sampled_component)
 
     ENOKI_ALIGNED_OPERATOR_NEW()
@@ -455,15 +416,15 @@ namespace {
         if (is_set(BSDF::EDiffuse)) { oss << "diffuse "; type_mask &= ~BSDF::EDiffuse; }
         if (is_set(BSDF::EGlossy)) { oss << "glossy "; type_mask &= ~BSDF::EGlossy; }
         if (is_set(BSDF::EDelta)) { oss << "delta"; type_mask &= ~BSDF::EDelta; }
-        if (is_set(BSDF::EDelta1D)) { oss << "delta1D "; type_mask &= ~BSDF::EDelta1D; }
+        if (is_set(BSDF::EDelta1D)) { oss << "delta_1d "; type_mask &= ~BSDF::EDelta1D; }
         if (is_set(BSDF::EDiffuseReflection)) { oss << "diffuse_reflection "; type_mask &= ~BSDF::EDiffuseReflection; }
         if (is_set(BSDF::EDiffuseTransmission)) { oss << "diffuse_transmission "; type_mask &= ~BSDF::EDiffuseTransmission; }
         if (is_set(BSDF::EGlossyReflection)) { oss << "glossy_reflection "; type_mask &= ~BSDF::EGlossyReflection; }
         if (is_set(BSDF::EGlossyTransmission)) { oss << "glossy_transmission "; type_mask &= ~BSDF::EGlossyTransmission; }
         if (is_set(BSDF::EDeltaReflection)) { oss << "delta_reflection "; type_mask &= ~BSDF::EDeltaReflection; }
         if (is_set(BSDF::EDeltaTransmission)) { oss << "delta_transmission "; type_mask &= ~BSDF::EDeltaTransmission; }
-        if (is_set(BSDF::EDelta1DReflection)) { oss << "delta1D_reflection "; type_mask &= ~BSDF::EDelta1DReflection; }
-        if (is_set(BSDF::EDelta1DTransmission)) { oss << "delta1D_transmission "; type_mask &= ~BSDF::EDelta1DTransmission; }
+        if (is_set(BSDF::EDelta1DReflection)) { oss << "delta_1d_reflection "; type_mask &= ~BSDF::EDelta1DReflection; }
+        if (is_set(BSDF::EDelta1DTransmission)) { oss << "delta_1d_transmission "; type_mask &= ~BSDF::EDelta1DTransmission; }
         if (is_set(BSDF::ENull)) { oss << "null "; type_mask &= ~BSDF::ENull; }
         if (is_set(BSDF::EAnisotropic)) { oss << "anisotropic "; type_mask &= ~BSDF::EAnisotropic; }
         if (is_set(BSDF::EFrontSide)) { oss << "front_side "; type_mask &= ~BSDF::EFrontSide; }
@@ -482,7 +443,7 @@ namespace {
 template <typename Point3>
 std::ostream &operator<<(std::ostream &os, const BSDFSample<Point3>& bs) {
     os << "BSDFSample[" << std::endl
-        << "  its = " << bs.its << "," << std::endl
+        << "  si = " << string::indent(bs.si, 7) << "," << std::endl
         << "  sampler = " << bs.sampler << "," << std::endl
         << "  wi = " << bs.wi << "," << std::endl
         << "  wo = " << bs.wo << "," << std::endl
@@ -496,6 +457,16 @@ std::ostream &operator<<(std::ostream &os, const BSDFSample<Point3>& bs) {
     return os;
 }
 
+template <typename Point3>
+typename SurfaceInteraction<Point3>::BSDFPtr
+SurfaceInteraction<Point3>::bsdf(const RayDifferential3 &ray) {
+    const BSDFPtr bsdf = shape->bsdf();
+
+    if (!has_uv_partials && any(bsdf->needs_differentials()))
+        compute_partials(ray);
+
+    return bsdf;
+}
 
 NAMESPACE_END(mitsuba)
 
@@ -503,7 +474,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::BSDFSample, its, sampler, wi, wo, eta,
+ENOKI_STRUCT_DYNAMIC(mitsuba::BSDFSample, si, sampler, wi, wo, eta,
                      mode, type_mask, component, sampled_type, sampled_component)
 
 //! @}
@@ -524,3 +495,33 @@ ENOKI_CALL_SUPPORT_END(mitsuba::BSDFP)
 
 //! @}
 // -----------------------------------------------------------------------
+
+/*
+ * \brief This macro should be used in the definition of BSDF
+ * plugins to instantiate concrete versions of the the \c sample,
+ * \c eval and \c pdf functions.
+ */
+#define MTS_IMPLEMENT_BSDF()                                                   \
+    std::pair<Spectrumf, Float> sample(BSDFSample3f &bs,                       \
+                                       const Point2f &sample) const override { \
+        return sample_impl(bs, sample, true);                                  \
+    }                                                                          \
+    std::pair<SpectrumfP, FloatP> sample(                                      \
+        BSDFSample3fP &bs, const Point2fP &sample,                             \
+        const mask_t<FloatP> &active = true) const override {                  \
+        return sample_impl(bs, sample, active);                                \
+    }                                                                          \
+    Spectrumf eval(const BSDFSample3f &bs, EMeasure measure) const override {  \
+        return eval_impl(bs, measure, true);                                   \
+    }                                                                          \
+    SpectrumfP eval(const BSDFSample3fP &bs, EMeasure measure,                 \
+                    const mask_t<FloatP> &active) const override {             \
+        return eval_impl(bs, measure, active);                                 \
+    }                                                                          \
+    Float pdf(const BSDFSample3f &bs, EMeasure measure) const override {       \
+        return pdf_impl(bs, measure, true);                                    \
+    }                                                                          \
+    FloatP pdf(const BSDFSample3fP &bs, EMeasure measure,                      \
+               const mask_t<FloatP> &active) const override {                  \
+        return pdf_impl(bs, measure, active);                                  \
+    }

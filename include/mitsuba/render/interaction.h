@@ -1,44 +1,23 @@
 #pragma once
 
-#include <mitsuba/render/shape.h>
+#include <mitsuba/render/fwd.h>
 #include <mitsuba/core/spectrum.h>
-#include <mitsuba/core/fwd.h>
 #include <mitsuba/core/frame.h>
-#include <mitsuba/core/math.h>
 #include <mitsuba/core/ray.h>
-#include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/emitter.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** \brief Container for all information related to a scattering
- * event on a surface
+/** \brief Generic surface interaction data structure
  */
-template <typename Point3_> struct SurfaceInteraction {
-
+template <typename Point3_> struct Interaction {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
-    //
-    using Point3              = Point3_;
 
-    using Value               = value_t<Point3>;
-    using Index               = uint32_array_t<Value>;
-    using Mask                = mask_t<Value>;
-
-    using Point2              = point2_t<Point3>;
-    using Vector2             = vector2_t<Point3>;
-    using Vector3             = vector3_t<Point3>;
-    using Normal3             = normal3_t<Point3>;
-
-    using Frame3              = Frame<Vector3>;
-    using Color3              = Color<Value, 3>;
-    using Spectrum            = Spectrum<Value>;
-    using RayDifferential3    = RayDifferential<Point3>;
-
-    using BSDFPtr             = like_t<Value, const BSDF *>;
-    using MediumPtr           = like_t<Value, const Medium *>;
-    using ShapePtr            = like_t<Value, const Shape *>;
+    using Point3   = Point3_;
+    using Value    = value_t<Point3>;
+    using Spectrum = mitsuba::Spectrum<Value>;
+    using Mask     = mask_t<Value>;
 
     //! @}
     // =============================================================
@@ -47,23 +26,88 @@ template <typename Point3_> struct SurfaceInteraction {
     //! @{ \name Fields
     // =============================================================
 
-    /// Pointer to the associated shape
-    ShapePtr shape = nullptr;
-
     /// Distance traveled along the ray
     Value t = math::Infinity;
 
-    /// Time value associated with the intersection
+    /// Time value associated with the interaction
     Value time;
 
-    /// Position of the surface interaction in world coordinates
+    /// Wavelengths associated with the ray that produced this interaction
+    Spectrum wavelengths;
+
+    /// Position of the interaction in world coordinates
     Point3 p;
 
-    /// Geometric normal
-    Normal3 n;
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Methods
+    // =============================================================
+
+    /// Is the current interaction valid?
+    Mask is_valid() const {
+        return neq(t, math::Infinity);
+    }
+
+    //! @}
+    // =============================================================
+
+    ENOKI_STRUCT(Interaction, t, time, wavelengths, p);
+    ENOKI_ALIGNED_OPERATOR_NEW()
+};
+
+/** \brief Container for all information related to a scattering
+ * event on a surface
+ */
+template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
+
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
+    //
+    using Base = Interaction<Point3_>;
+    using typename Base::Point3;
+    using typename Base::Value;
+    using typename Base::Mask;
+    using typename Base::Spectrum;
+
+    using Index               = uint32_array_t<Value>;
+
+    using Point2              = point2_t<Point3>;
+    using Vector2             = vector2_t<Point3>;
+    using Vector3             = vector3_t<Point3>;
+    using Normal3             = normal3_t<Point3>;
+
+    using Frame3              = Frame<Vector3>;
+    using Color3              = Color<Value, 3>;
+    using RayDifferential3    = RayDifferential<Point3>;
+
+    using BSDFPtr             = like_t<Value, const BSDF *>;
+    using MediumPtr           = like_t<Value, const Medium *>;
+    using ShapePtr            = like_t<Value, const Shape *>;
+    using EmitterPtr          = like_t<Value, const Emitter *>;
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
+
+    using Base::t;
+    using Base::time;
+    using Base::wavelengths;
+    using Base::p;
+
+    /// Pointer to the associated shape
+    ShapePtr shape = nullptr;
 
     /// UV surface coordinates
     Point2 uv;
+
+    /// Geometric normal
+    Normal3 n;
 
     /// Shading frame
     Frame3 sh_frame;
@@ -81,7 +125,7 @@ template <typename Point3_> struct SurfaceInteraction {
     Index prim_index;
 
     /// Stores a pointer to the parent instance (if applicable)
-    ShapePtr instance;
+    ShapePtr instance = nullptr;
 
     /// Have texture coordinate partials been computed?
     bool has_uv_partials;
@@ -103,27 +147,23 @@ template <typename Point3_> struct SurfaceInteraction {
         return sh_frame.to_local(v);
     }
 
-    /// Is the current intersection valid?
-    Mask is_valid() const {
-        return neq(t, math::Infinity);
+    /// Return amount of light emitted towards the ray origin
+    template <typename Mask>
+    Spectrum emission(Mask active = true) const {
+        EmitterPtr emitter = shape->emitter();
+        if (!is_array<Value>::value && emitter == nullptr)
+            return Spectrum(0.f);
+        return emitter->eval(*this, active);
     }
 
     /// Is the intersected shape also a emitter?
-    Mask is_emitter(const Mask &active = true) const {
-        if (none(active))
-            return false;
-        return shape->is_emitter(active);
-    }
+    Mask is_emitter() const { return shape->is_emitter(); }
 
     /// Is the intersected shape also a sensor?
-    auto is_sensor(const Mask &active = true) const {
-        return shape->is_sensor(active);
-    }
+    Mask is_sensor() const { return shape->is_sensor(); }
 
     /// Does the surface mark a transition between two media?
-    auto is_medium_transition(const Mask &active = true) const {
-        return shape->is_medium_transition(active);
-    }
+    Mask is_medium_transition() const { return shape->is_medium_transition(); }
 
     /**
      * \brief Determine the target medium
@@ -131,9 +171,8 @@ template <typename Point3_> struct SurfaceInteraction {
      * When \c is_medium_transition() = \c true, determine the medium that
      * contains the ray (\c this->p, \c d)
      */
-    const MediumPtr target_medium(const Vector3 &d,
-                                  const Mask &active = true) const {
-        return target_medium(dot(d, n), active);
+    MediumPtr target_medium(const Vector3 &d) const {
+        return target_medium(dot(d, n));
     }
 
     /**
@@ -143,60 +182,28 @@ template <typename Point3_> struct SurfaceInteraction {
      * Returns the exterior medium when \c cos_theta > 0 and
      * the interior medium when \c cos_theta <= 0.
      */
-    const MediumPtr target_medium(const Value &cos_theta,
-                                  const Mask &active = true) const {
-        return select(cos_theta > 0,
-                      shape->exterior_medium(active),
-                      shape->interior_medium(active));
+    MediumPtr target_medium(const Value &cos_theta) const {
+        return select(cos_theta > 0, shape->exterior_medium(),
+                                     shape->interior_medium());
     }
 
     /**
      * \brief Returns the BSDF of the intersected shape.
      *
-     * The parameter \c ray must match the one used to create the intersection
+     * The parameter \c ray must match the one used to create the interaction
      * record. This function computes texture coordinate partials if this is
      * required by the BSDF (e.g. for texture filtering).
      *
-     * \remark This function should only be called if there is a valid
-     * intersection!
+     * Implementation in 'bsdf.h'
      */
-    const BSDFPtr bsdf(const RayDifferential3 &ray, const Mask &active = true) {
-        const BSDFPtr bsdf = shape->bsdf(active);
-        Assert(none(active & eq(bsdf, nullptr)));
+    BSDFPtr bsdf(const RayDifferential3 &ray);
 
-        if (!has_uv_partials && any(bsdf->needs_differentials(active)))
-            compute_partials(ray);
-
-        return bsdf;
-    }
-
-    /// Returns the BSDF of the intersected shape
-    const BSDFPtr bsdf(const Mask &active = true) const {
-        return shape->bsdf(active);
-    }
-
-    /**
-     * \brief Returns radiance emitted into direction d.
-     *
-     * \remark This function should only be called if the
-     * intersected shape is actually an emitter.
-     */
-    Spectrum Le(const Vector3 &d, const Mask &active = true) const {
-        auto emitter = shape->emitter(active);
-        Assert(none(active & eq(emitter, nullptr)));
-        return emitter->eval(*this, d, active);
-    }
-
-    /// Move the intersection forward or backward through time
-    void adjust_time(const Value &time, const Mask &active = true) {
-        ShapePtr target = select(neq(instance, nullptr), instance, shape);
-        target->adjust_time(*this, time, active);
-    }
+    // Returns the BSDF of the intersected shape
+    BSDFPtr bsdf() const { return shape->bsdf(); }
 
     /// Calls the suitable implementation of \ref Shape::normal_derivative()
     std::pair<Vector3, Vector3> normal_derivative(
-            bool shading_frame = true,
-            const mask_t<Value> &active = true) const {
+            bool shading_frame = true, mask_t<Value> active = true) const {
         ShapePtr target = select(neq(instance, nullptr), instance, shape);
         return target->normal_derivative(*this, shading_frame, active);
     }
@@ -206,7 +213,7 @@ template <typename Point3_> struct SurfaceInteraction {
         if (has_uv_partials || !ray.has_differentials)
             return;
 
-        /* Compute intersection with the two offset rays */
+        /* Compute interaction with the two offset rays */
         auto d   = dot(n, p),
              t_x = (d - dot(n, ray.o_x)) / dot(n, ray.d_x),
              t_y = (d - dot(n, ray.o_y)) / dot(n, ray.d_y);
@@ -241,9 +248,23 @@ template <typename Point3_> struct SurfaceInteraction {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(SurfaceInteraction, shape, t, time, p, n, uv, sh_frame,
-                 dp_du, dp_dv, duv_dx, duv_dy, wi, prim_index, instance,
-                 has_uv_partials)
+    /// Element-by-element constructor
+    SurfaceInteraction(const Value &t, const Value &time,
+                       const Spectrum &wavelengths, const Point3 &p,
+                       const ShapePtr &shape, const Point2 &uv,
+                       const Normal3 &n, const Frame3 sh_frame,
+                       const Vector3 &dp_du, const Vector3 &dp_dv,
+                       const Vector2 &duv_dx, const Vector2 &duv_dy,
+                       const Vector3 &wi, const Index &prim_index,
+                       const ShapePtr &instance, bool has_uv_partials)
+        : Base(t, time, wavelengths, p), shape(shape), uv(uv), n(n),
+          sh_frame(sh_frame), dp_du(dp_du), dp_dv(dp_dv), duv_dx(duv_dx),
+          duv_dy(duv_dy), wi(wi), prim_index(prim_index), instance(instance),
+          has_uv_partials(has_uv_partials) { }
+
+    ENOKI_DERIVED_STRUCT(SurfaceInteraction, Base, shape, uv, n, sh_frame,
+                         dp_du, dp_dv, duv_dx, duv_dy, wi, prim_index, instance,
+                         has_uv_partials)
 
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
@@ -251,28 +272,44 @@ template <typename Point3_> struct SurfaceInteraction {
 // -----------------------------------------------------------------------------
 
 template <typename Point3>
+std::ostream &operator<<(std::ostream &os, const Interaction<Point3> &it) {
+    if (none(it.is_valid())) {
+        os << "Interaction[invalid]";
+    } else {
+        os << "Interaction[" << std::endl
+           << "  t = " << it.t << "," << std::endl
+           << "  time = " << it.time << "," << std::endl
+           << "  wavelengths = " << it.wavelengths << "," << std::endl
+           << "  p = " << string::indent(it.p, 6) << std::endl
+           << "]";
+    }
+    return os;
+}
+
+template <typename Point3>
 std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Point3> &it) {
     if (none(it.is_valid())) {
         os << "SurfaceInteraction[invalid]";
     } else {
         os << "SurfaceInteraction[" << std::endl
-           << "  shape = " << it.shape << std::endl
            << "  t = " << it.t << "," << std::endl
            << "  time = " << it.time << "," << std::endl
+           << "  wavelengths = " << it.wavelengths << "," << std::endl
            << "  p = " << string::indent(it.p, 6) << "," << std::endl
-           << "  n = " << string::indent(it.n, 6) << "," << std::endl
+           << "  shape = " << string::indent(it.shape, 10) << "," << std::endl
            << "  uv = " << string::indent(it.uv, 7) << "," << std::endl
+           << "  n = " << string::indent(it.n, 6) << "," << std::endl
            << "  sh_frame = " << string::indent(it.sh_frame, 2) << "," << std::endl
            << "  dp_du = " << string::indent(it.dp_du, 10) << "," << std::endl
            << "  dp_dv = " << string::indent(it.dp_dv, 10) << "," << std::endl;
 
         if (it.has_uv_partials)
-            os << "  duv_dx = " << it.duv_dx << "," << std::endl
-               << "  duv_dy = " << it.duv_dy << "," << std::endl;
+            os << "  duv_dx = " << string::indent(it.duv_dx, 11) << "," << std::endl
+               << "  duv_dy = " << string::indent(it.duv_dy, 11) << "," << std::endl;
 
         os << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl
-           << "  instance = " << it.instance << "," << std::endl
+           << "  instance = " << string::indent(it.instance, 13) << "," << std::endl
            << "  has_uv_partials = " << it.has_uv_partials << "," << std::endl
            << "]";
     }
@@ -285,9 +322,11 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::SurfaceInteraction, shape, t, time, p, n, uv,
-                     sh_frame, dp_du, dp_dv, duv_dx, duv_dy, wi, prim_index,
-                     instance, has_uv_partials)
+ENOKI_STRUCT_DYNAMIC(mitsuba::Interaction, t, time, wavelengths, p);
+
+ENOKI_STRUCT_DYNAMIC(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
+                     shape, uv, n, sh_frame, dp_du, dp_dv, duv_dx, duv_dy, wi,
+                     prim_index, instance, has_uv_partials)
 
 //! @}
 // -----------------------------------------------------------------------

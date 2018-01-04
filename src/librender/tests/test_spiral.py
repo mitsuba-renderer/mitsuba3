@@ -17,7 +17,7 @@ def film(width = 156, height = 232):
 def extract_blocks(spiral, max_blocks = 1000):
     blocks = []
     b = spiral.next_block()
-    while b is not None:
+    while np.prod(b[1]) > 0:
         blocks.append(b)
         b = spiral.next_block()
 
@@ -29,8 +29,8 @@ def check_first_blocks(blocks, expected, n_total = None):
     n_total = n_total or len(expected)
     assert len(blocks) == n_total
     for i in range(len(expected)):
-        assert np.all(blocks[i].offset() == expected[i][0])
-        assert np.all(blocks[i].size() == expected[i][1])
+        assert np.all(blocks[i][0] == expected[i][0])
+        assert np.all(blocks[i][1] == expected[i][1])
 
 
 def test01_construct(film):
@@ -42,11 +42,11 @@ def test02_small_film():
     f = film(15, 12)
     s = Spiral(f)
 
-    b = s.next_block()
-    assert np.all(b.offset() == [0, 0])
-    assert np.all(b.size() == [15, 12])
+    (bo, bs) = s.next_block()
+    assert np.all(bo == [0, 0])
+    assert np.all(bs == [15, 12])
     # The whole image is covered by a single block
-    assert s.next_block() is None
+    assert np.all(s.next_block()[1] == 0)
 
 
 def test03_normal_film():

@@ -622,7 +622,7 @@ void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
                   extension);
     }
 
-    Log(EDebug, "Writing %s file \"%s\" .. (%ix%i, %s, %s)",
+    Log(EDebug, "Writing %s file \"%s\" (%ix%i, %s, %s) ..",
         format, fs ? fs->path().string() : "<stream>",
         m_size.x(), m_size.y(),
         m_pixel_format, m_component_format
@@ -1122,7 +1122,7 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
         Imf::addDwaCompressionLevel(header, float(quality));
 
     for (auto it = keys.begin(); it != keys.end(); ++it) {
-        Properties::EPropertyType type = metadata.property_type(*it);
+        Properties::EType type = metadata.type(*it);
         if (*it == "pixelAspectRatio" || *it == "screenWindowWidth" ||
             *it == "screenWindowCenter")
             continue;

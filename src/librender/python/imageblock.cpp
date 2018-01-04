@@ -12,23 +12,15 @@ MTS_PY_EXPORT(ImageBlock) {
              "fmt"_a, "size"_a, "filter"_a = nullptr, "channels"_a = 0,
              "warn"_a = true)
 
-        // Note that we are not using the py::overload_cast convenience method
-        // here, because it seems to be incompatible with overloads that have
-        // templated variants.
         .def("put",
              (void (ImageBlock::*)(const ImageBlock *)) &ImageBlock::put,
              D(ImageBlock, put), "block"_a)
-        .def("put",
-             &ImageBlock::put<Point2f, Spectrumf>,
-             D(ImageBlock, put, 2),
-             "pos"_a, "spec"_a, "alpha"_a, "unused"_a = true)
+        .def("put", &ImageBlock::put<Point2f, Spectrumf>, D(ImageBlock, put, 2),
+             "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a, "unused"_a = true)
         .def("put",
              enoki::vectorize_wrapper(&ImageBlock::put<Point2fP, SpectrumfP>),
-             D(ImageBlock, put, 2),
-             "pos"_a, "spec"_a, "alpha"_a, "active"_a = true)
+             "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a, "active"_a = true)
 
-        .mdef(ImageBlock, clone)
-        .mdef(ImageBlock, copy_to, "copy"_a)
         .mdef(ImageBlock, set_offset, "offset"_a)
         .mdef(ImageBlock, offset)
         .mdef(ImageBlock, size)
@@ -40,6 +32,5 @@ MTS_PY_EXPORT(ImageBlock) {
         .mdef(ImageBlock, channel_count)
         .mdef(ImageBlock, pixel_format)
         .def("bitmap", py::overload_cast<>(&ImageBlock::bitmap))
-        .mdef(ImageBlock, clear)
-        ;
+        .mdef(ImageBlock, clear);
 }

@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <sstream>
+#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -19,6 +20,10 @@ std::string Object::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << (void *) this << "]";
     return oss.str();
+}
+
+std::vector<ref<Object>> Object::expand() const {
+    return { };
 }
 
 Object::~Object() { }

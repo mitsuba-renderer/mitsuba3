@@ -1,4 +1,5 @@
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/emitter.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/mstream.h>
 #include <mitsuba/core/fresolver.h>
@@ -27,7 +28,7 @@ public:
 
     PLYMesh(const Properties &props) : Mesh(props) {
         /// Process vertex/index records in large batches
-        constexpr size_t packet_size = 1024;
+        constexpr size_t elements_per_packet = 1024;
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
@@ -64,19 +65,27 @@ public:
             if (el.name == "vertex") {
                 m_vertex_struct = new Struct();
 
-                m_vertex_struct->append("x", struct_traits<Float>::value);
-                m_vertex_struct->append("y", struct_traits<Float>::value);
-                m_vertex_struct->append("z", struct_traits<Float>::value);
+                for (auto name : { "x", "y", "z" })
+                    m_vertex_struct->append(name, Struct::EFloat);
 
-                if (m_vertex_normals) {
-                    m_vertex_struct->append("nx", Struct::EFloat16, Struct::EDefault, 0.0);
-                    m_vertex_struct->append("ny", Struct::EFloat16, Struct::EDefault, 0.0);
-                    m_vertex_struct->append("nz", Struct::EFloat16, Struct::EDefault, 0.0);
+                if (!m_disable_vertex_normals) {
+                    for (auto name : { "nx", "ny", "nz" })
+                        m_vertex_struct->append(name, Struct::EFloat, Struct::EDefault, 0.0);
+
+                    if (el.struct_->has_field("nx") &&
+                        el.struct_->has_field("ny") &&
+                        el.struct_->has_field("nz"))
+                        has_vertex_normals = true;
+
+                    m_normal_offset = m_vertex_struct->field("nx").offset;
                 }
 
-                if (el.struct_->has_field("nx") && el.struct_->has_field("ny") &&
-                    el.struct_->has_field("nz"))
-                    has_vertex_normals = true;
+                if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
+                    for (auto name : { "u", "v" })
+                        m_vertex_struct->append(name, Struct::EFloat);
+
+                    m_texcoord_offset = m_vertex_struct->field("nx").offset;
+                }
 
                 size_t i_struct_size = el.struct_->size();
                 size_t o_struct_size = m_vertex_struct->size();
@@ -95,22 +104,25 @@ public:
                 /* Clear unused entry */
                 memset(m_vertices.get() + o_struct_size * el.count, 0, o_struct_size);
 
-                size_t packet_count    = el.count / packet_size;
-                size_t remainder_count = el.count % packet_size;
-                size_t i_packet_size   = i_struct_size * packet_size;
-                size_t remainder_size  = i_struct_size * remainder_count;
+                size_t packet_count     = el.count / elements_per_packet;
+                size_t remainder_count  = el.count % elements_per_packet;
+                size_t i_packet_size    = i_struct_size * elements_per_packet;
+                size_t i_remainder_size = i_struct_size * remainder_count;
 
                 std::unique_ptr<uint8_t[]> buf(new uint8_t[i_packet_size]);
                 uint8_t *target = (uint8_t *) m_vertices.get();
 
-                for (size_t i = 0; i < packet_count; ++i) {
-                    stream->read(buf.get(), i_packet_size);
-                    if (unlikely(!conv->convert(packet_size, buf.get(), target)))
+                for (size_t i = 0; i <= packet_count; ++i) {
+                    size_t size = (i != packet_count) ? i_packet_size : i_remainder_size;
+                    size_t count = (i != packet_count) ? elements_per_packet : remainder_count;
+
+                    stream->read(buf.get(), size);
+                    if (unlikely(!conv->convert(count, buf.get(), target)))
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     if (!has_vertex_normals) {
-                        for (size_t j = 0; j < packet_size; ++j) {
-                            Point3f p = enoki::load_unaligned<Point3f>(target);
+                        for (size_t j = 0; j < count; ++j) {
+                            Point3f p = enoki::load<Point3f>(target);
                             p = m_to_world.transform_affine(p);
                             if (unlikely(!all(enoki::isfinite(p))))
                                 fail("mesh contains invalid vertex positions/normal data");
@@ -119,31 +131,19 @@ public:
                             target += o_struct_size;
                         }
                     } else {
-                        for (size_t j = 0; j < packet_size; ++j) {
-                            Point3f p = enoki::load_unaligned<Point3f>(target);
-                            Normal3f n = Normal3f(enoki::load_unaligned<Normal3h>(target + sizeof(Float) * 3));
+                        for (size_t j = 0; j < count; ++j) {
+                            Point3f p = enoki::load<Point3f>(target);
+                            Normal3f n = enoki::load<Normal3f>(target + sizeof(Float) * 3);
                             n = normalize(m_to_world.transform_affine(n));
                             p = m_to_world.transform_affine(p);
                             if (unlikely(!all(enoki::isfinite(p) & enoki::isfinite(n))))
                                 fail("mesh contains invalid vertex positions/normal data");
                             m_bbox.expand(p);
                             enoki::store_unaligned(target, p);
-                            enoki::store_unaligned(target + sizeof(Float) * 3, Normal3h(n));
+                            enoki::store_unaligned(target + sizeof(Float) * 3, n);
                             target += o_struct_size;
                         }
                     }
-                }
-
-                stream->read(buf.get(), remainder_size);
-                if (unlikely(!conv->convert(remainder_count, buf.get(), target)))
-                    fail("incompatible contents -- is this a triangle mesh?");
-
-                for (size_t j = 0; j < remainder_count; ++j) {
-                    Point3f p = enoki::load_unaligned<Point3f>((Float *) target);
-                    p = m_to_world.transform_affine(p);
-                    m_bbox.expand(p);
-                    enoki::store_unaligned(target, p);
-                    target += o_struct_size;
                 }
 
                 m_vertex_count = (Size) el.count;
@@ -176,26 +176,25 @@ public:
                 m_faces = FaceHolder(
                     (uint8_t *) enoki::alloc(el.count * o_struct_size));
 
-                size_t packet_count    = el.count / packet_size;
-                size_t remainder_count = el.count % packet_size;
-                size_t i_packet_size   = i_struct_size * packet_size;
-                size_t o_packet_size   = o_struct_size * packet_size;
-                size_t remainder_size  = i_struct_size * remainder_count;
+                size_t packet_count     = el.count / elements_per_packet;
+                size_t remainder_count  = el.count % elements_per_packet;
+                size_t i_packet_size    = i_struct_size * elements_per_packet;
+                size_t o_packet_size    = o_struct_size * elements_per_packet;
+                size_t i_remainder_size = i_struct_size * remainder_count;
 
                 std::unique_ptr<uint8_t[]> buf(new uint8_t[i_packet_size]);
                 uint8_t *target = (uint8_t *) m_faces.get();
 
-                for (size_t i = 0; i < packet_count; ++i) {
-                    stream->read(buf.get(), i_packet_size);
-                    if (unlikely(!conv->convert(packet_size, buf.get(), target)))
+                for (size_t i = 0; i <= packet_count; ++i) {
+                    size_t size = (i != packet_count) ? i_packet_size : i_remainder_size;
+                    size_t count = (i != packet_count) ? elements_per_packet : remainder_count;
+
+                    stream->read(buf.get(), size);
+                    if (unlikely(!conv->convert(count, buf.get(), target)))
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     target += o_packet_size;
                 }
-
-                stream->read(buf.get(), remainder_size);
-                if (unlikely(!conv->convert(remainder_count, buf.get(), target)))
-                    fail("incompatible contents -- is this a triangle mesh?");
 
                 m_face_count = (Size) el.count;
                 m_face_size = (Size) o_struct_size;
@@ -217,7 +216,7 @@ public:
             util::time_string(timer.value())
         );
 
-        if (m_vertex_normals && !has_vertex_normals)
+        if (!m_disable_vertex_normals && !has_vertex_normals)
             recompute_vertex_normals();
 
         if (is_emitter())

@@ -290,7 +290,12 @@ template <typename Point_> struct BoundingBox {
         );
     }
 
-    /// Check if a ray intersects a bounding box
+    /**
+     * \brief Check if a ray intersects a bounding box
+     *
+     * Note that this function ignores the <tt>(mint, maxt)</tt> interval
+     * associated with the ray.
+     */
     template <typename Ray, typename Value = expr_t<typename Ray::Value>,
               typename Mask = mask_t<Value>,
               typename Result = std::tuple<Mask, Value, Value>>
@@ -302,20 +307,20 @@ template <typename Point_> struct BoundingBox {
         Mask active = all(neq(ray.d, zero<Vector>()) | ((ray.o > min) | (ray.o < max)));
 
         /* Compute intersection intervals for each axis */
-        Vector t1 = (min - ray.o) * ray.d_rcp;
-        Vector t2 = (max - ray.o) * ray.d_rcp;
+        Vector t1 = (min - ray.o) * ray.d_rcp,
+               t2 = (max - ray.o) * ray.d_rcp;
 
         /* Ensure proper ordering */
-        Vector t1p = enoki::min(t1, t2);
-        Vector t2p = enoki::max(t1, t2);
+        Vector t1p = enoki::min(t1, t2),
+               t2p = enoki::max(t1, t2);
 
         /* Intersect intervals */
-        Value nearT = hmax(t1p);
-        Value farT  = hmin(t2p);
+        Value mint = hmax(t1p),
+              maxt = hmin(t2p);
 
-        active &= (ray.mint <= farT) & (nearT <= ray.maxt);
+        active &= maxt >= mint;
 
-        return std::make_tuple(active, nearT, farT);
+        return std::make_tuple(active, mint, maxt);
     }
 
     Point min; ///< Component-wise minimum

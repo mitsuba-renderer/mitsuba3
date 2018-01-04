@@ -55,9 +55,9 @@ MTS_PY_EXPORT(Stream) {
         .DECLARE_RW(std::string, "string");
 
     py::enum_<Stream::EByteOrder>(c, "EByteOrder", D(Stream, EByteOrder))
-        .value("EBigEndian", Stream::EBigEndian)
-        .value("ELittleEndian", Stream::ELittleEndian)
-        .value("ENetworkByteOrder", Stream::ENetworkByteOrder)
+        .value("EBigEndian", Stream::EBigEndian, D(Stream, EByteOrder, EBigEndian))
+        .value("ELittleEndian", Stream::ELittleEndian, D(Stream, EByteOrder, ELittleEndian))
+        .value("ENetworkByteOrder", Stream::ENetworkByteOrder, D(Stream, EByteOrder, ENetworkByteOrder))
         .export_values();
 }
 
@@ -73,9 +73,9 @@ MTS_PY_EXPORT(FileStream) {
         .mdef(FileStream, path);
 
     py::enum_<FileStream::EMode>(fs, "EMode", D(FileStream, EMode))
-        .value("ERead", FileStream::ERead)
-        .value("EReadWrite", FileStream::EReadWrite)
-        .value("ETruncReadWrite", FileStream::ETruncReadWrite)
+        .value("ERead", FileStream::ERead, D(FileStream, EMode, ERead))
+        .value("EReadWrite", FileStream::EReadWrite, D(FileStream, EMode, EReadWrite))
+        .value("ETruncReadWrite", FileStream::ETruncReadWrite, D(FileStream, EMode, ETruncReadWrite))
         .export_values();
 
     fs.def(py::init<const mitsuba::filesystem::path &, FileStream::EMode>(),
@@ -94,8 +94,8 @@ MTS_PY_EXPORT(ZStream) {
     auto c = MTS_PY_CLASS(ZStream, Stream);
 
     py::enum_<ZStream::EStreamType>(c, "EStreamType", D(ZStream, EStreamType))
-        .value("EDeflateStream", ZStream::EDeflateStream)
-        .value("EGZipStream", ZStream::EGZipStream)
+        .value("EDeflateStream", ZStream::EDeflateStream, D(ZStream, EStreamType, EDeflateStream))
+        .value("EGZipStream", ZStream::EGZipStream, D(ZStream, EStreamType, EGZipStream))
         .export_values();
 
 

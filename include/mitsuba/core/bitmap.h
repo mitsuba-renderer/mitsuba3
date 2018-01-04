@@ -249,8 +249,9 @@ public:
 
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
-        return m_pixel_format == EYA || m_pixel_format == ERGBA ||
-               m_pixel_format == EXYZA;
+        return m_pixel_format == EYA
+               || m_pixel_format == ERGBA || m_pixel_format == ERGBAW
+               || m_pixel_format == EXYZA || m_pixel_format == EXYZAW;
     }
 
     /// Return the number bytes of storage used per pixel

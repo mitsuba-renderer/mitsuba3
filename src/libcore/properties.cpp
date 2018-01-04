@@ -8,6 +8,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/variant.h>
+#include <mitsuba/core/plugin.h>
 #include <iostream>
 
 #include <map>
@@ -23,10 +24,10 @@ using VariantType = variant<
     Point3f,
     std::string,
     Transform4f,
-    ref<AnimatedTransform>,
-    Spectrumf,
+    Color3f,
     NamedReference,
-    ref<Object>
+    ref<Object>,
+    const void *
 >;
 
 struct alignas(alignof(Transform4f)) Entry {
@@ -56,31 +57,31 @@ struct Properties::PropertiesPrivate {
 };
 
 #define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
-    void Properties::SetterName(const std::string &name, const Type &value, bool warn_duplicates) { \
+    void Properties::SetterName(const std::string &name, Type const &value, bool warn_duplicates) { \
         if (has_property(name) && warn_duplicates) \
             Log(EWarn, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
         d->entries[name].queried = false; \
     } \
     \
-    const Type& Properties::GetterName(const std::string &name) const { \
+    Type const & Properties::GetterName(const std::string &name) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
             Throw("Property \"%s\" has not been specified!", name); \
         if (!it->second.data.is<Type>()) \
             Throw("The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
         it->second.queried = true; \
-        return (const Type &) it->second.data; \
+        return (Type const &) it->second.data; \
     } \
     \
-    const Type &Properties::GetterName(const std::string &name, const Type &def_val) const { \
+    Type const & Properties::GetterName(const std::string &name, Type const &def_val) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
             return def_val; \
         if (!it->second.data.is<Type>()) \
             Throw("The property \"%s\" has the wrong type (expected <" #TagName ">).", name); \
         it->second.queried = true; \
-        return (const Type &) it->second.data; \
+        return (Type const &) it->second.data; \
     }
 
 DEFINE_PROPERTY_ACCESSOR(bool,              boolean,   set_bool,              bool_)
@@ -91,8 +92,9 @@ DEFINE_PROPERTY_ACCESSOR(Vector3f,          vector,    set_vector3f,          ve
 DEFINE_PROPERTY_ACCESSOR(Point3f,           point,     set_point3f,           point3f)
 DEFINE_PROPERTY_ACCESSOR(NamedReference,    ref,       set_named_reference,   named_reference)
 DEFINE_PROPERTY_ACCESSOR(Transform4f,       transform, set_transform,         transform)
-DEFINE_PROPERTY_ACCESSOR(Spectrumf,         spectrumf, set_spectrumf,         spectrumf)
+DEFINE_PROPERTY_ACCESSOR(Color3f,           color,     set_color,             color)
 DEFINE_PROPERTY_ACCESSOR(ref<Object>,       object,    set_object,            object)
+DEFINE_PROPERTY_ACCESSOR(const void *,      pointer,   set_pointer,           pointer)
 // See at the end of the file for custom-defined accessors.
 
 Properties::Properties()
@@ -118,43 +120,43 @@ bool Properties::has_property(const std::string &name) const {
 
 namespace {
     struct PropertyTypeVisitor {
-        typedef Properties::EPropertyType Result;
+        typedef Properties::EType Result;
         Result operator()(const std::nullptr_t &) { throw std::runtime_error("Internal error"); }
-        Result operator()(const int64_t &) { return Properties::ELong; }
         Result operator()(const bool &) { return Properties::EBool; }
+        Result operator()(const int64_t &) { return Properties::ELong; }
         Result operator()(const Float &) { return Properties::EFloat; }
         Result operator()(const Vector3f &) { return Properties::EVector3f; }
         Result operator()(const Point3f &) { return Properties::EPoint3f; }
         Result operator()(const std::string &) { return Properties::EString; }
-        Result operator()(const NamedReference &) { return Properties::ENamedReference; }
         Result operator()(const Transform4f &) { return Properties::ETransform; }
-        Result operator()(const ref<AnimatedTransform> &) { return Properties::EAnimatedTransform; }
-        Result operator()(const Spectrumf &) { return Properties::ESpectrum; }
+        Result operator()(const Color3f &) { return Properties::EColor; }
+        Result operator()(const NamedReference &) { return Properties::ENamedReference; }
         Result operator()(const ref<Object> &) { return Properties::EObject; }
+        Result operator()(const void *&) { return Properties::EPointer; }
     };
 
     struct StreamVisitor {
         std::ostream &os;
         StreamVisitor(std::ostream &os) : os(os) { }
         void operator()(const std::nullptr_t &) { throw std::runtime_error("Internal error"); }
-        void operator()(const int64_t &i) { os << i; }
         void operator()(const bool &b) { os << (b ? "true" : "false"); }
+        void operator()(const int64_t &i) { os << i; }
         void operator()(const Float &f) { os << f; }
         void operator()(const Vector3f &v) { os << v; }
         void operator()(const Point3f &v) { os << v; }
-        void operator()(const Transform4f &t) { os << t; }
-        void operator()(const ref<AnimatedTransform> &t) { os << *t; }
-        void operator()(const Spectrumf &t) { os << t; }
         void operator()(const std::string &s) { os << "\"" << s << "\""; }
+        void operator()(const Transform4f &t) { os << t; }
+        void operator()(const Color3f &t) { os << t; }
         void operator()(const NamedReference &nr) { os << "\"" << (const std::string &) nr << "\""; }
         void operator()(const ref<Object> &o) { os << o->to_string(); }
+        void operator()(const void *&p) { os << p; }
     };
 }
 
-Properties::EPropertyType Properties::property_type(const std::string &name) const {
+Properties::EType Properties::type(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
-        Throw("property_type(): Could not find property named \"%s\"!", name);
+        Throw("type(): Could not find property named \"%s\"!", name);
 
     return it->second.data.visit(PropertyTypeVisitor());
 }
@@ -362,7 +364,7 @@ void Properties::set_animated_transform(const std::string &name,
                                         bool warn_duplicates) {
     if (has_property(name) && warn_duplicates)
         Log(EWarn, "Property \"%s\" was specified multiple times!", name);
-    d->entries[name].data = value;
+    d->entries[name].data = ref<Object>(value.get());
     d->entries[name].queried = false;
 }
 
@@ -386,12 +388,16 @@ ref<AnimatedTransform> Properties::animated_transform(const std::string &name) c
         return new AnimatedTransform(
             static_cast<const Transform4f &>(it->second.data));
     }
-    if (!it->second.data.is<ref<AnimatedTransform>>()) {
+    if (!it->second.data.is<ref<Object>>()) {
         Throw("The property \"%s\" has the wrong type (expected "
               " <animated_transform> or <transform>).", name);
     }
+    ref<Object> o = it->second.data;
+    if (!o->class_()->derives_from(MTS_CLASS(AnimatedTransform)))
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <animated_transform> or <transform>).", name);
     it->second.queried = true;
-    return (const ref<AnimatedTransform> &) it->second.data;
+    return (AnimatedTransform *) o.get();
 }
 
 /// AnimatedTransform getter (with default value).
@@ -407,18 +413,67 @@ ref<AnimatedTransform> Properties::animated_transform(
         return new AnimatedTransform(
             static_cast<const Transform4f &>(it->second.data));
     }
-    if (!it->second.data.is<ref<AnimatedTransform>>()) {
+    if (!it->second.data.is<ref<Object>>()) {
         Throw("The property \"%s\" has the wrong type (expected "
               " <animated_transform> or <transform>).", name);
     }
+    ref<Object> o = it->second.data;
+    if (!o->class_()->derives_from(MTS_CLASS(AnimatedTransform)))
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <animated_transform> or <transform>).", name);
     it->second.queried = true;
-    return (const ref<AnimatedTransform> &) it->second.data;
+    return (AnimatedTransform *) o.get();
 }
 
 /// Retrieve an animated transformation (default value is a constant transform)
 ref<AnimatedTransform> Properties::animated_transform(
         const std::string &name, const Transform4f &def_val) const {
     return animated_transform(name, new AnimatedTransform(def_val));
+}
+
+/// Retrieve a continuous spectrum
+ref<ContinuousSpectrum> Properties::spectrum(const std::string &name) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        Throw("Property \"%s\" has not been specified!", name);
+    if (!it->second.data.is<ref<Object>>()) {
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <spectrum>).", name);
+    }
+    ref<Object> o = it->second.data;
+    if (!o->class_()->derives_from(MTS_CLASS(ContinuousSpectrum)))
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <spectrum>).", name);
+    it->second.queried = true;
+    return (ContinuousSpectrum *) o.get();
+}
+
+/// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
+ref<ContinuousSpectrum> Properties::spectrum(
+        const std::string &name, const ref<ContinuousSpectrum> &def_val) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        return def_val;
+
+    if (!it->second.data.is<ref<Object>>()) {
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <spectrum>).", name);
+    }
+    ref<Object> o = it->second.data;
+    if (!o->class_()->derives_from(MTS_CLASS(ContinuousSpectrum)))
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <spectrum>).", name);
+    it->second.queried = true;
+    return (ContinuousSpectrum *) o.get();
+}
+/// Retrieve a continuous spectrum (or create flat spectrum with default value)
+ref<ContinuousSpectrum> Properties::spectrum(
+        const std::string &name, Float def_val) const {
+    Properties props("uniform");
+    props.set_float("value", def_val);
+    PluginManager *pmgr = PluginManager::instance();
+    auto flat = pmgr->create_object<ContinuousSpectrum>(props);
+    return spectrum(name, flat);
 }
 
 NAMESPACE_END(mitsuba)

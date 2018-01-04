@@ -2,8 +2,6 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Spectrum) {
-    using Mask = ContinuousSpectrum::Mask;
-
     MTS_PY_CLASS(ContinuousSpectrum, Object)
         .def("integral", &ContinuousSpectrum::integral, D(ContinuousSpectrum, integral))
 
@@ -12,24 +10,24 @@ MTS_PY_EXPORT(Spectrum) {
         .def("eval",
              vectorize_wrapper(py::overload_cast<const Spectrumf &>(
                  &ContinuousSpectrum::eval, py::const_)),
-             "lambda"_a, D(ContinuousSpectrum, eval))
+             "wavelengths"_a, D(ContinuousSpectrum, eval))
 
         .def("eval",
-             vectorize_wrapper(py::overload_cast<const SpectrumfP &, const Mask &>(
+             vectorize_wrapper(py::overload_cast<const SpectrumfP &, MaskP>(
                  &ContinuousSpectrum::eval, py::const_)),
-             "lambda"_a, "active"_a = true, D(ContinuousSpectrum, eval, 2))
+             "wavelengths"_a, "active"_a = true, D(ContinuousSpectrum, eval, 2))
 
         // ---------------------------------------------------------------------
-        //
+
         .def("pdf",
              vectorize_wrapper(py::overload_cast<const Spectrumf &>(
                  &ContinuousSpectrum::pdf, py::const_)),
-             "lambda"_a, D(ContinuousSpectrum, pdf))
+             "wavelengths"_a, D(ContinuousSpectrum, pdf))
 
         .def("pdf",
-             vectorize_wrapper(py::overload_cast<const SpectrumfP &, const Mask &>(
+             vectorize_wrapper(py::overload_cast<const SpectrumfP &, MaskP>(
                  &ContinuousSpectrum::pdf, py::const_)),
-             "lambda"_a, "active"_a = true, D(ContinuousSpectrum, pdf, 2))
+             "wavelengths"_a, "active"_a = true, D(ContinuousSpectrum, pdf, 2))
 
         // ---------------------------------------------------------------------
 
@@ -39,21 +37,24 @@ MTS_PY_EXPORT(Spectrum) {
              "sample"_a, D(ContinuousSpectrum, sample))
 
         .def("sample",
-             vectorize_wrapper(py::overload_cast<const SpectrumfP &, const Mask &>(
+             vectorize_wrapper(py::overload_cast<const SpectrumfP &, MaskP>(
                  &ContinuousSpectrum::sample, py::const_)),
              "sample"_a, "active"_a = true, D(ContinuousSpectrum, sample, 2));
 
         // ---------------------------------------------------------------------
 
-    MTS_PY_CLASS(InterpolatedSpectrum, ContinuousSpectrum)
-        .def(py::init([](Float min, Float max, const std::vector<Float> &values) {
-                return new InterpolatedSpectrum(min, max, values.size(), values.data());
-        }), "min"_a, "max"_a, "values"_a);
-
-    m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<const Spectrumf &>), "lambda"_a, "active"_a = true, D(cie1931_y));
-    m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<SpectrumfP>), "lambda"_a, "active"_a = true);
-    m.def("cie1931_y", vectorize_wrapper(&cie1931_y<const Spectrumf &>), "lambda"_a, "active"_a = true, D(cie1931_y));
-    m.def("cie1931_y", vectorize_wrapper(&cie1931_y<SpectrumfP>), "lambda"_a, "active"_a = true);
+    m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<const Spectrumf &>),
+          "wavelengths"_a, "active"_a = true, D(cie1931_y));
+    m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<SpectrumfP>),
+          "wavelengths"_a, "active"_a = true);
+    m.def("cie1931_y", vectorize_wrapper(&cie1931_y<const Spectrumf &>),
+          "wavelengths"_a, "active"_a = true, D(cie1931_y));
+    m.def("cie1931_y", vectorize_wrapper(&cie1931_y<SpectrumfP>),
+          "wavelengths"_a, "active"_a = true);
+    m.def("sample_rgb_spectrum", vectorize_wrapper(&sample_rgb_spectrum<Float>),
+          "sample"_a, D(sample_rgb_spectrum));
+    m.def("sample_rgb_spectrum", vectorize_wrapper(&sample_rgb_spectrum<FloatP>),
+          "sample"_a, D(sample_rgb_spectrum));
 
     m.attr("MTS_WAVELENGTH_SAMPLES") = MTS_WAVELENGTH_SAMPLES;
     m.attr("MTS_WAVELENGTH_MIN") = MTS_WAVELENGTH_MIN;

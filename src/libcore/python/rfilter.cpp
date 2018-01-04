@@ -18,11 +18,11 @@ MTS_PY_EXPORT(rfilter) {
              D(ReconstructionFilter, eval_discretized));
 
     auto bc = py::enum_<EBoundaryCondition>(rfilter, "EBoundaryCondition")
-        .value("EClamp", EBoundaryCondition::EClamp)
-        .value("ERepeat", EBoundaryCondition::ERepeat)
-        .value("EMirror", EBoundaryCondition::EMirror)
-        .value("EZero", EBoundaryCondition::EZero)
-        .value("EOne", EBoundaryCondition::EOne)
+        .value("EClamp", EBoundaryCondition::EClamp, D(ReconstructionFilter, EBoundaryCondition, EClamp))
+        .value("ERepeat", EBoundaryCondition::ERepeat, D(ReconstructionFilter, EBoundaryCondition, ERepeat))
+        .value("EMirror", EBoundaryCondition::EMirror, D(ReconstructionFilter, EBoundaryCondition, EMirror))
+        .value("EZero", EBoundaryCondition::EZero, D(ReconstructionFilter, EBoundaryCondition, EZero))
+        .value("EOne", EBoundaryCondition::EOne, D(ReconstructionFilter, EBoundaryCondition, EOne))
         .export_values();
 
     auto resampler = py::class_<Resampler>(m, "Resampler", D(Resampler))

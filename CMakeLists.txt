@@ -4,6 +4,9 @@ project(mitsuba CXX)
 
 # ---------- User options ----------
 option(MTS_DOUBLE_PRECISION  "Compile renderer in double precision?" OFF)
+if (UNIX)
+  option(MTS_ENABLE_PROFILER   "Enable sampling profiler" ON)
+endif()
 
 # Use GCC/Clang address sanitizer?
 # NOTE: To use this in conjunction with Python plugin, you will need to call
@@ -310,10 +313,17 @@ endif()
 
 if (MTS_DOUBLE_PRECISION)
   add_definitions(-DDOUBLE_PRECISION)
-  message(STATUS "Mitsuba: Compiling using double precision.")
+  message(STATUS "Mitsuba: compiling using double precision.")
 else()
   add_definitions(-DSINGLE_PRECISION)
-  message(STATUS "Mitsuba: Compiling using single precision.")
+  message(STATUS "Mitsuba: compiling using single precision.")
+endif()
+
+if (MTS_ENABLE_PROFILER)
+  add_definitions(-DMTS_ENABLE_PROFILER)
+  message(STATUS "Mitsuba: sampling profiler enabled.")
+else()
+  message(STATUS "Mitsuba: sampling profiler disabled.")
 endif()
 
 # Get the current working branch

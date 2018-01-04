@@ -23,6 +23,7 @@ class AnimatedTransform;
 class Appender;
 class ArgParser;
 class Bitmap;
+class ContinuousSpectrum;
 class DefaultFormatter;
 class DummyStream;
 class FileResolver;
@@ -33,6 +34,7 @@ class MemoryStream;
 class Mutex;
 class PluginManager;
 class Properties;
+class ScopedThreadEnvironment;
 class Stream;
 class StreamAppender;
 class Struct;
@@ -56,6 +58,7 @@ constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float);
 
 using FloatP   = Packet<Float, PacketSize>;
 using FloatX   = DynamicArray<FloatP>;
+using MaskP    = PacketMask<Float, PacketSize>;
 
 using Float16P = Packet<enoki::half, PacketSize>;
 using Float16X = DynamicArray<Float16P>;
@@ -122,6 +125,25 @@ using Vector2d = Vector<double, 2>;
 using Vector3d = Vector<double, 3>;
 using Vector4d = Vector<double, 4>;
 
+using Vector2dP = Vector<Float64P, 2>;
+using Vector2dX = Vector<Float64X, 2>;
+using Vector3dP = Vector<Float64P, 3>;
+using Vector3dX = Vector<Float64X, 3>;
+using Vector4dP = Vector<Float64P, 4>;
+using Vector4dX = Vector<Float64X, 4>;
+
+using Vector1h = Vector<enoki::half, 1>;
+using Vector2h = Vector<enoki::half, 2>;
+using Vector3h = Vector<enoki::half, 3>;
+using Vector4h = Vector<enoki::half, 4>;
+
+using Vector2hP = Vector<Float16P, 2>;
+using Vector2hX = Vector<Float16X, 2>;
+using Vector3hP = Vector<Float16P, 3>;
+using Vector3hX = Vector<Float16X, 3>;
+using Vector4hP = Vector<Float16P, 4>;
+using Vector4hX = Vector<Float16X, 4>;
+
 using Vector1i = Vector<int32_t, 1>;
 using Vector2i = Vector<int32_t, 2>;
 using Vector3i = Vector<int32_t, 3>;
@@ -182,6 +204,7 @@ using Normal3h = Normal<enoki::half, 3>;
 using Normal3d = Normal<double, 3>;
 
 using Normal3fP = Normal<FloatP, 3>;
+using Normal3hP = Normal<Float16P, 3>;
 using Normal3fX = Normal<FloatX, 3>;
 
 using Frame3f  = Frame<Vector3f>;

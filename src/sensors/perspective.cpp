@@ -1,49 +1,74 @@
-#include <mitsuba/core/properties.h>
-#include <mitsuba/core/ray.h>
-#include <mitsuba/core/transform.h>
 #include <mitsuba/render/sensor.h>
+#include <mitsuba/core/properties.h>
+#include <mitsuba/core/transform.h>
+#include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-// TODO: documentation
-class PerspectiveCameraImpl : public PerspectiveCamera {
+class PerspectiveCamera : public ProjectiveCamera {
 public:
     // =============================================================
     //! @{ \name Constructors
     // =============================================================
 
-    PerspectiveCameraImpl(const Properties &props) : PerspectiveCamera(props) {
-        /* This sensor is the result of a limiting process where the aperture
-           radius tends to zero. However, it still has all the cosine
-           foreshortening terms caused by the aperture, hence the flag "EOnSurface" */
-        m_type |= EDeltaPosition | EPerspectiveCamera
-                  | EOnSurface |EDirectionSampleMapsToPixels;
+    PerspectiveCamera(const Properties &props) : ProjectiveCamera(props) {
+        if (props.has_property("fov") && props.has_property("focal_length"))
+            Throw("Please specify either a focal length ('focal_length') or a "
+                  "field of view ('fov')!");
 
-        if (world_transform_t(0).has_scale()) {
-            Log(EError, "Scale factors in the camera-to-world"
-                        " transformation are not allowed! Transform:\n%s",
-                        world_transform_t(0));
+        Float fov;
+        std::string fov_axis;
+
+        if (props.has_property("fov")) {
+            fov = props.float_("fov");
+
+            fov_axis = string::to_lower(props.string("fov_axis", "x"));
+
+            if (fov_axis == "smaller")
+                fov_axis = m_aspect > 1 ? "y" : "x";
+            else if (fov_axis == "larger")
+                fov_axis = m_aspect > 1 ? "x" : "y";
+        } else {
+            std::string f = props.string("focal_length", "50mm");
+            if (string::ends_with(f, "mm"))
+                f = f.substr(0, f.length()-2);
+
+            char *end_ptr = nullptr;
+            Float value = (Float) strtod(f.c_str(), &end_ptr);
+            if (*end_ptr != '\0')
+                Throw("Could not parse the focal length (must be of the form "
+                    "<x>mm, where <x> is a positive integer)!");
+
+            fov = 2.f * rad_to_deg(std::atan(std::sqrt(Float(36 * 36 + 24 * 24)) / (2.f * value)));
+            fov_axis = "diagonal";
         }
 
-        configure();
-    }
+        if (fov_axis == "x") {
+            m_x_fov = fov;
+        } else if (fov_axis == "y") {
+            m_x_fov = rad_to_deg(
+                2.f * std::atan(std::tan(.5f * deg_to_rad(fov)) * m_aspect));
+        } else if (fov_axis == "diagonal") {
+            Float diagonal = 2.f * std::tan(.5f * deg_to_rad(fov));
+            Float width = diagonal / std::sqrt(1.f + 1.f / (m_aspect*m_aspect));
+            m_x_fov = rad_to_deg(2.f * std::atan(width*.5f));
+        } else {
+            Throw("The 'fov_axis' parameter must be set to one of 'smaller', "
+                  "'larger', 'diagonal', 'x', or 'y'!");
+        }
 
-    // PerspectiveCameraImpl(Stream *stream, InstanceManager *manager)
-    //         : PerspectiveCamera(stream, manager) {
-    //     configure();
-    // }
+        if (m_x_fov <= 0.f || m_x_fov >= 180.f)
+            Throw("The horizontal field of view must be in the range [0, 180]!");
 
-    void configure() {
-        using Transform = Transform4f;
+        if (m_world_transform->has_scale())
+            Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
-        const Vector2i &film_size   = m_film->size();
-        const Vector2i &crop_size   = m_film->crop_size();
-        const Point2i  &crop_offset = m_film->crop_offset();
+        Vector2f film_size   = Vector2f(m_film->size()),
+                 crop_size   = Vector2f(m_film->crop_size()),
+                 rel_size    = crop_size / film_size;
 
-        Vector2f rel_size((Float) crop_size.x() / (Float) film_size.x(),
-                          (Float) crop_size.y() / (Float) film_size.y());
-        Point2f rel_offset((Float) crop_offset.x() / (Float) film_size.x(),
-                           (Float) crop_offset.y() / (Float) film_size.y());
+        Point2f  crop_offset = Point2f(m_film->crop_offset()),
+                 rel_offset  = crop_offset / film_size;
 
         /**
          * These do the following (in reverse order):
@@ -58,45 +83,30 @@ public:
          *     for a cropping window (if there is any)
          */
         m_camera_to_sample =
-              Transform::scale(Vector3f(1.0f / rel_size.x(),
-                                        1.0f / rel_size.y(), 1.0f))
-            * Transform::translate(Vector3f(-rel_offset.x(),
-                                            -rel_offset.y(), 0.0f))
-            * Transform::scale(Vector3f(-0.5f,
-                                        -0.5f * m_aspect, 1.0f))
-            * Transform::translate(Vector3f(-1.0f,
-                                            -1.0f / m_aspect, 0.0f))
-            * Transform::perspective(m_x_fov, m_near_clip, m_far_clip);
+              Transform4f::scale(Vector3f(1.f / rel_size.x(), 1.f / rel_size.y(), 1.f))
+            * Transform4f::translate(Vector3f(-rel_offset.x(), -rel_offset.y(), 0.f))
+            * Transform4f::scale(Vector3f(-0.5f, -0.5f * m_aspect, 1.f))
+            * Transform4f::translate(Vector3f(-1.f, -1.f / m_aspect, 0.f))
+            * Transform4f::perspective(m_x_fov, m_near_clip, m_far_clip);
 
         m_sample_to_camera = m_camera_to_sample.inverse();
 
         // Position differentials on the near plane
-        m_dx = m_sample_to_camera * Point3f(m_inv_resolution.x(), 0.0f, 0.0f)
-               - m_sample_to_camera * Point3f(0.0f);
-        m_dy = m_sample_to_camera * Point3f(0.0f, m_inv_resolution.y(), 0.0f)
-               - m_sample_to_camera * Point3f(0.0f);
+        m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f)
+             - m_sample_to_camera * Point3f(0.f);
+        m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
+             - m_sample_to_camera * Point3f(0.f);
 
-        // Precompute some data for importance(). Please
-        // look at that function for further details.
-        Point3f pmin(m_sample_to_camera * Point3f(0, 0, 0)),
-                pmax(m_sample_to_camera * Point3f(1, 1, 0));
+        /* Precompute some data for importance(). Please
+           look at that function for further details. */
+        Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
+                pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
 
         m_image_rect.reset();
         m_image_rect.expand(Point2f(pmin.x(), pmin.y()) / pmin.z());
         m_image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
-        m_normalization = Float(1) / m_image_rect.volume();
-
-        // Clip-space transformation for OpenGL
-        m_clip_transform =
-            Transform::translate(Vector3f(
-                 (1.0f - 2.0f * rel_offset.x()) / rel_size.x() - 1.0f,
-                -(1.0f - 2.0f * rel_offset.y()) / rel_size.y() + 1.0f,
-                0.0f)
-            ) * Transform::scale(Vector3f(
-                1.0f / rel_size.x(),
-                1.0f / rel_size.y(),
-                1.0f)
-        );
+        m_normalization = 1.f / m_image_rect.volume();
+        m_needs_sample_3 = false;
     }
 
     //! @}
@@ -107,223 +117,147 @@ public:
     // =============================================================
 
     template <typename Point2, typename Value, typename Mask = mask_t<Value>>
-    auto sample_ray_impl(
-            const Point2 &position_sample, const Point2 &/*aperture_sample*/,
-            Value time_sample, const Mask &active = true) const {
-        using Point3 = Point<Value, 3>;
-        using Ray = Ray<Point3>;
+    auto sample_ray_impl(Value time,
+                         Value wavelength_sample,
+                         const Point2& position_sample,
+                         const Point2& /* aperture_sample */,
+                         Mask active) const {
+        using Point3   = Point<Value, 3>;
+        using Ray      = Ray<Point3>;
         using Spectrum = Spectrum<Value>;
-        using Vector3 = Vector<Value, 3>;
+        using Vector3  = Vector<Value, 3>;
 
         Ray ray;
-        ray.time = sample_time(time_sample, active);
+        Spectrum spec_weight;
+        std::tie(ray.wavelengths, spec_weight) = sample_rgb_spectrum(
+            enoki::sample_shifted<Spectrum>(wavelength_sample));
+        ray.time = time;
 
-        // Compute the corresponding position on the near plane (in local
-        // camera space).
-        const Point3 nearP = m_sample_to_camera * Point3(
-            position_sample.x() * m_inv_resolution.x(),
-            position_sample.y() * m_inv_resolution.y(), 0.0f);
+        /* Compute the sample position on the near plane (local camera space). */
+        Point3 near_p = m_sample_to_camera *
+                        Point3(position_sample.x(), position_sample.y(), 0.f);
 
-        // Turn that into a normalized ray direction, and adjust the ray
-        // interval accordingly.
-        const auto d = normalize(Vector3(nearP));
-        const Value invZ = rcp(d.z());
-        ray.mint = m_near_clip * invZ;
-        ray.maxt = m_far_clip * invZ;
+        /* Convert into a normalized ray direction; adjust the ray interval accordingly. */
+        Vector3 d = normalize(Vector3(near_p));
 
-        const auto &trafo = m_world_transform->lookup(ray.time, active);
-        ray.o = trafo.transform_affine(Point3(0.0f));
+        Value inv_z = rcp(d.z());
+        ray.mint = m_near_clip * inv_z;
+        ray.maxt = m_far_clip * inv_z;
+
+        auto trafo = m_world_transform->eval(ray.time, active);
+        ray.o = trafo.translation();
         ray.d = trafo * d;
         ray.update();
 
-        return std::make_pair(ray, Spectrum(1.0f));
+        return std::make_pair(ray, spec_weight);
     }
-
-    std::pair<Ray3f, Spectrumf>
-    sample_ray(const Point2f &position_sample,
-               const Point2f &aperture_sample,
-               Float time_sample) const override {
-        return sample_ray_impl(position_sample, aperture_sample, time_sample);
-    }
-
-    /// Vectorized version of \ref sample_ray
-    std::pair<Ray3fP, SpectrumfP>
-    sample_ray(
-            const Point2fP &position_sample, const Point2fP &aperture_sample,
-            FloatP time_sample, const mask_t<FloatP> &active) const override {
-        return sample_ray_impl(position_sample, aperture_sample, time_sample,
-                               active);
-    }
-
 
     template <typename Point2, typename Value = value_t<Point2>,
               typename Mask = mask_t<Value>>
-    auto sample_ray_differential_impl(
-            const Point2 &position_sample, const Point2 &/*aperture_sample*/,
-            Value time_sample, const Mask &active = true) const {
+    auto sample_ray_differential_impl(Value time,
+                                      Value wavelength_sample,
+                                      const Point2&  position_sample,
+                                      const Point2& /*aperture_sample*/,
+                                      Mask active) const {
         using Point3 = Point<Value, 3>;
         using RayDifferential = RayDifferential<Point3>;
         using Spectrum = Spectrum<Value>;
         using Vector3 = Vector<Value, 3>;
 
         RayDifferential ray;
-        ray.time = sample_time(time_sample, active);
+        Spectrum spec_weight;
+        std::tie(ray.wavelengths, spec_weight) = sample_rgb_spectrum(
+            enoki::sample_shifted<Spectrum>(wavelength_sample));
+        ray.time = time;
 
-        // Compute the corresponding position on the near plane (in local
-        // camera space).
-        const Point3 nearP = m_sample_to_camera * Point3(
-            position_sample.x() * m_inv_resolution.x(),
-            position_sample.y() * m_inv_resolution.y(), 0.0f);
+        /* Compute the sample position on the near plane (local camera space). */
+        Point3 near_p = m_sample_to_camera *
+                        Point3(position_sample.x(), position_sample.y(), 0.f);
 
-        // Turn that into a normalized ray direction, and adjust the ray
-        // interval accordingly.
-        const auto d = normalize(Vector3(nearP));
-        const Value invZ = rcp(d.z());
-        ray.mint = m_near_clip * invZ;
-        ray.maxt = m_far_clip * invZ;
+        /* Convert into a normalized ray direction; adjust the ray interval accordingly. */
+        Vector3 d = normalize(Vector3(near_p));
+        Value inv_z = rcp(d.z());
+        ray.mint = m_near_clip * inv_z;
+        ray.maxt = m_far_clip * inv_z;
 
-        const auto &trafo = m_world_transform->lookup(ray.time, active);
-        ray.o = trafo.transform_affine(Point3(0.0f));
+        auto trafo = m_world_transform->eval(ray.time, active);
+        ray.o = trafo.transform_affine(Point3(0.f));
         ray.d = trafo * d;
         ray.update();
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = trafo * normalize(Vector3(nearP) + m_dx);
-        ray.d_y = trafo * normalize(Vector3(nearP) + m_dy);
+        ray.d_x = trafo * normalize(Vector3(near_p) + m_dx);
+        ray.d_y = trafo * normalize(Vector3(near_p) + m_dy);
         ray.has_differentials = true;
 
-        return std::make_pair(ray, Spectrum(1.0f));
+        return std::make_pair(ray, spec_weight);
     }
 
-
-    std::pair<RayDifferential3f, Spectrumf> sample_ray_differential(
-            const Point2f &sample_position, const Point2f &aperture_sample,
-            Float time_sample) const override {
-        return sample_ray_differential_impl(sample_position, aperture_sample,
-                                            time_sample);
-    }
-
-    /// Vectorized version of \ref sample_ray_differential
-    std::pair<RayDifferential3fP, SpectrumfP> sample_ray_differential(
-            const Point2fP &sample_position, const Point2fP &aperture_sample,
-            FloatP time_sample, const mask_t<FloatP> &active) const override {
-        return sample_ray_differential_impl(sample_position, aperture_sample,
-                                            time_sample, active);
-    }
-
-
-    std::pair<bool, Point2f> get_sample_position(
-            const PositionSample3f &/*p_rec*/,
-            const DirectionSample3f &/*d_rec*/) const override {
-        Log(EError, "get_sample_position(...) not implemented yet.");
-        return std::make_pair(false, Point2f(0.0f, 0.0f));
-    }
-
-    /// Vectorized version of \ref eval
-    std::pair<BoolP, Point2fP> get_sample_position(
-            const PositionSample3fP &/*p_rec*/,
-            const DirectionSample3fP &/*d_rec*/,
-            const mask_t<FloatP> &/*active*/) const override {
-        Log(EError, "get_sample_position(...) not implemented yet.");
-        return std::make_pair(BoolP(false), Point2fP(0.0f));
-    }
-
-
-    std::pair<Spectrumf, Point2f> eval(
-            const SurfaceInteraction3f &/*its*/,
-            const Vector3f &/*d*/) const override {
-        Log(EError, "evel(...) not implemented yet.");
-        return std::make_pair(Spectrumf(0.0f), Point2f(0.0f));
-    }
-
-    /// Vectorized version of \ref eval
-    std::pair<SpectrumfP, Point2fP> eval(
-            const SurfaceInteraction3fP &/*its*/,
-            const Vector3fP &/*d*/,
-            const mask_t<FloatP> &/*active*/) const override {
-        Log(EError, "evel(...) not implemented yet.");
-        return std::make_pair(SpectrumfP(0.0f), Point2fP(0.0f));
-    }
-
-    //! @}
-    // =============================================================
-
-
-    // =============================================================
-    //! @{ \name Endpoint interface
-    // =============================================================
-
-    // TODO: implement the Endpoint interface.
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name Misc
-    // =============================================================
-
-    Transform4f projection_transform(const Point2f &/*aperture_sample*/,
-            const Point2f &aa_sample) const override {
-        Float right = std::tan(Float(0.5) * deg_to_rad(m_x_fov)) * m_near_clip;
-        Float left  = -right;
-        Float top = right / m_aspect;
-        Float bottom = -top;
-
-        Vector2f offset(
-            (right-left) / m_film->size().x() * (aa_sample.x() - Float(0.5f)),
-            (top-bottom) / m_film->size().y() * (aa_sample.y() - Float(0.5f)));
-
-        return m_clip_transform * Transform4f::gl_frustum(
-            left + offset.x(), right + offset.x(),
-            bottom + offset.y(), top + offset.y(),
-            m_near_clip, m_far_clip
-        );
-    }
-
-    BoundingBox3f bbox(bool /*unused*/ = true) const override {
+    BoundingBox3f bbox() const override {
         return m_world_transform->translation_bounds();
     }
+
+    template <typename Interaction, typename Mask,
+              typename Value = typename Interaction::Value,
+              typename Point2 = typename Interaction::Point2,
+              typename Point3 = typename Interaction::Point3,
+              typename Spectrum = typename Interaction::Spectrum,
+              typename DirectionSample = DirectionSample<Point3>>
+    std::pair<DirectionSample, Spectrum>
+    sample_direction_impl(const Interaction & /* it */, const Point2 & /* sample */, Mask /* active */) const {
+        NotImplementedError("sample_direct");
+    }
+
+    template <typename Interaction, typename DirectionSample, typename Mask,
+              typename Value = typename DirectionSample::Value>
+    Value pdf_direction_impl(const Interaction & /* it */, const DirectionSample & /* ds */, Mask /* active */) const {
+        NotImplementedError("pdf_direct");
+    }
+
+    template <typename SurfaceInteraction, typename Mask,
+              typename Spectrum = typename SurfaceInteraction::Spectrum,
+              typename Frame = Frame<typename SurfaceInteraction::Point3>>
+    Spectrum eval_impl(const SurfaceInteraction & /* si */, Mask /* active */) const {
+        NotImplementedError("eval");
+    }
+
+    //! @}
+    // =============================================================
 
     std::string to_string() const override {
         using string::indent;
 
         std::ostringstream oss;
         oss << "PerspectiveCamera[" << std::endl
-            << "  fov = [" << x_fov() << ", " << y_fov() << "]," << std::endl
-
+            << "  x_fov = " << m_x_fov << "," << std::endl
             << "  near_clip = " << m_near_clip << "," << std::endl
             << "  far_clip = " << m_far_clip << "," << std::endl
             << "  focus_distance = " << m_focus_distance << "," << std::endl
-
             << "  film = " << indent(m_film->to_string()) << "," << std::endl
             << "  sampler = " << indent(m_sampler->to_string()) << "," << std::endl
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
             << "  aspect = " << m_aspect << "," << std::endl
-
-            << "  world_transform = " << indent(m_world_transform->to_string()) << "," << std::endl
-            << "  type = " << m_type << std::endl
+            << "  world_transform = " << indent(m_world_transform)  << std::endl
             << "]";
         return oss.str();
     }
 
+    MTS_IMPLEMENT_SENSOR()
     MTS_DECLARE_CLASS()
-
-    //! @}
-    // =============================================================
 
 private:
     Transform4f m_camera_to_sample;
     Transform4f m_sample_to_camera;
-    Transform4f m_clip_transform;
     BoundingBox2f m_image_rect;
     Float m_normalization;
+    Float m_x_fov;
     Vector3f m_dx, m_dy;
 };
 
 
-MTS_IMPLEMENT_CLASS(PerspectiveCameraImpl, PerspectiveCamera);
-MTS_EXPORT_PLUGIN(PerspectiveCameraImpl, "Perspective Camera");
+MTS_IMPLEMENT_CLASS(PerspectiveCamera, ProjectiveCamera);
+MTS_EXPORT_PLUGIN(PerspectiveCamera, "Perspective Camera");
 NAMESPACE_END(mitsuba)

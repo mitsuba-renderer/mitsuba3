@@ -1,6 +1,8 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
+#include <mitsuba/core/plugin.h>
+#include <mitsuba/core/properties.h>
 #include <numeric>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -8,137 +10,31 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 //! @{ \name Spectrum implementation (just throws exceptions)
 // =======================================================================
+//
+Spectrumf
+ContinuousSpectrum::eval(const Spectrumf &) const { NotImplementedError("eval"); }
 
-std::tuple<Spectrumf, Spectrumf, Spectrumf>
+SpectrumfP
+ContinuousSpectrum::eval(const SpectrumfP &, MaskP) const { NotImplementedError("eval_p"); }
+
+std::pair<Spectrumf, Spectrumf>
 ContinuousSpectrum::sample(const Spectrumf &) const { NotImplementedError("sample"); }
 
-std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
-ContinuousSpectrum::sample(const SpectrumfP &, const Mask &) const { NotImplementedError("sample"); }
+std::pair<SpectrumfP, SpectrumfP>
+ContinuousSpectrum::sample(const SpectrumfP &, MaskP) const { NotImplementedError("sample_p"); }
 
 Spectrumf ContinuousSpectrum::pdf(const Spectrumf &) const { NotImplementedError("pdf"); }
 
-SpectrumfP ContinuousSpectrum::pdf(const SpectrumfP &, const Mask &) const { NotImplementedError("pdf"); }
+SpectrumfP ContinuousSpectrum::pdf(const SpectrumfP &, MaskP) const { NotImplementedError("pdf_p"); }
 
 Float ContinuousSpectrum::integral() const { NotImplementedError("integral"); }
 
-//! @}
-// =======================================================================
-
-// =======================================================================
-//! @{ \name InterpolatedSpectrum implementation
-// =======================================================================
-
-InterpolatedSpectrum::InterpolatedSpectrum(Float lambda_min, Float lambda_max,
-                                           size_t size, const Float *data)
-    : m_data(data, data + size), m_lambda_min(lambda_min),
-      m_lambda_max(lambda_max) {
-
-    m_interval_size = Float((double(lambda_max) - double(lambda_min)) / (size - 1));
-    m_inv_interval_size = Float((size - 1) / (double(lambda_max) - double(lambda_min)));
-    m_size_minus_2 = uint32_t(size - 2);
-
-    m_cdf.resize(size);
-    m_cdf[0] = 0.f;
-
-    /* Compute a probability mass function for each interval */
-    double scale = 0.5 * (double(lambda_max) - double(lambda_min)) / (size - 1),
-           accum = 0.0;
-    for (size_t i = 1; i < size; ++i) {
-        accum += scale * (double(m_data[i - 1]) + double(m_data[i]));
-        m_cdf[i] = Float(accum);
-    }
-
-    /* Store the normalization factor */
-    m_integral = Float(accum);
-    m_normalization = Float(1.0 / accum);
-}
-
-template <typename Value>
-ENOKI_INLINE auto InterpolatedSpectrum::eval_impl(Value lambda,
-                                                  mask_t<Value> active) const {
-    using Index = uint_array_t<Value>;
-
-    Value t = (lambda - m_lambda_min) * m_inv_interval_size;
-    active &= (lambda >= m_lambda_min) & (lambda <= m_lambda_max);
-
-    Index i0 = min(max(Index(t), zero<Index>()), Index(m_size_minus_2));
-    Index i1 = i0 + 1;
-
-    Value v0 = gather<Value>(m_data.data(), i0, active);
-    Value v1 = gather<Value>(m_data.data(), i1, active);
-
-    Value w1 = t - Value(i0);
-    Value w0 = (Float) 1 - w1;
-
-    auto r1 = (w0 * v0 + w1 * v1);
-    auto r2 = r1 & active;
-    return r2;
-}
-
-template <typename Value>
-ENOKI_INLINE auto InterpolatedSpectrum::sample_impl(Value sample,
-                                                    mask_t<Value> active) const {
-    using Index = int_array_t<Value>;
-    using Mask = mask_t<Value>;
-
-    sample *= m_cdf[m_cdf.size() - 1];
-
-    Index i0 = math::find_interval(m_cdf.size(),
-        [&](Index idx, Mask active) {
-            return gather<Value>(m_cdf.data(), idx, active) <= sample;
-        },
-        active
-    );
-
-    Index i1 = i0 + 1;
-
-    Value f0 = gather<Value>(m_data.data(), i0, active);
-    Value f1 = gather<Value>(m_data.data(), i1, active);
-
-    /* Reuse the sample */
-    sample = (sample - gather<Value>(m_cdf.data(), i0)) * m_inv_interval_size;
-
-    /* Importance sample the linear interpolant */
-    Value t_linear =
-        (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
-    Value t_const  = sample / f0;
-    Value t = select(eq(f0, f1), t_const, t_linear);
-
-    return std::make_tuple(
-        m_lambda_min + (Value(i0) + t) * m_interval_size,
-        Value(m_integral),
-        ((1 - t) * f0 + t * f1) * m_normalization
-    );
-}
-
-Spectrumf InterpolatedSpectrum::eval(const Spectrumf &lambda) const {
-    return eval_impl(lambda);
-}
-
-SpectrumfP InterpolatedSpectrum::eval(const SpectrumfP &lambda, const Mask &active) const {
-    return eval_impl(lambda, active);
-}
-
-Spectrumf InterpolatedSpectrum::pdf(const Spectrumf &lambda) const {
-    return eval_impl(lambda) * m_normalization;
-}
-
-SpectrumfP InterpolatedSpectrum::pdf(const SpectrumfP &lambda, const Mask &active) const {
-    return eval_impl(lambda, active) * m_normalization;
-}
-
-std::tuple<Spectrumf, Spectrumf, Spectrumf>
-InterpolatedSpectrum::sample(const Spectrumf &sample) const {
-    return sample_impl(sample);
-}
-
-std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
-InterpolatedSpectrum::sample(const SpectrumfP &sample, const Mask &active) const {
-    return sample_impl(sample, active);
-}
-
-Float InterpolatedSpectrum::integral() const {
-    return m_integral;
+ref<ContinuousSpectrum> ContinuousSpectrum::D65(Float scale) {
+    Properties props("d65");
+    props.set_float("scale", scale);
+    auto obj = PluginManager::instance()
+            ->create_object<ContinuousSpectrum>(props);
+    return (ContinuousSpectrum *) (obj->expand()[0].get());
 }
 
 //! @}
@@ -237,12 +133,8 @@ cie1931_xyz(const SpectrumfP &lambda, const mask_t<SpectrumfP> &);
 template MTS_EXPORT_CORE Spectrumf  cie1931_y(const Spectrumf  &lambda, const mask_t<Spectrumf> &);
 template MTS_EXPORT_CORE SpectrumfP cie1931_y(const SpectrumfP &lambda, const mask_t<SpectrumfP> &);
 
-template MTS_EXPORT_CORE Spectrumf  rgb_spectrum(const Color3f &, const Spectrumf  &lambda);
-template MTS_EXPORT_CORE SpectrumfP rgb_spectrum(const Color3f &, const SpectrumfP &lambda);
-
 //! @}
 // =======================================================================
 
 MTS_IMPLEMENT_CLASS_ALIAS(ContinuousSpectrum, "spectrum", Object)
-MTS_IMPLEMENT_CLASS(InterpolatedSpectrum, ContinuousSpectrum)
 NAMESPACE_END(mitsuba)

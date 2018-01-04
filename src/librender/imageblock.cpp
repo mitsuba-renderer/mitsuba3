@@ -3,11 +3,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
-    const ReconstructionFilter *filter, size_t channels, bool warn)
-    : m_offset(0), m_size(size), m_filter(filter),
-    m_weights_x(nullptr), m_weights_y(nullptr),
-    m_weights_x_p(nullptr), m_weights_y_p(nullptr),
-    m_warn(warn) {
+                       const ReconstructionFilter *filter, size_t channels,
+                       bool warn)
+    : m_offset(0), m_size(size), m_filter(filter), m_weights_x(nullptr),
+      m_weights_y(nullptr), m_weights_x_p(nullptr), m_weights_y_p(nullptr),
+      m_warn(warn) {
     m_border_size = filter ? filter->border_size() : 0;
 
     // Allocate a small bitmap data structure for the block
@@ -21,6 +21,7 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
         int temp_buffer_size = (int) std::ceil(2 * filter->radius()) + 1;
         m_weights_x = new Float[2 * temp_buffer_size];
         m_weights_y = m_weights_x + temp_buffer_size;
+
         // Vectorized variant
         m_weights_x_p = new FloatP[2 * temp_buffer_size];
         m_weights_y_p = m_weights_x_p + temp_buffer_size;
@@ -28,15 +29,16 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
 }
 
 ImageBlock::~ImageBlock() {
-    // Note that m_weights_y points to the same array as m_weights_x, so there's
-    // no need to delete it.
+    /* Note that m_weights_y points to the same array as
+      m_weights_x, so there is no need to delete it. */
     if (m_weights_x)
         delete[] m_weights_x;
+
     if (m_weights_x_p)
         delete[] m_weights_x_p;
 }
 
-bool ImageBlock::put(const Point2f &_pos, const Float *value, bool /*unused*/) {
+bool ImageBlock::put(const Point2f &pos_, const Float *value) {
     Assert(m_filter != nullptr);
     const int channels = m_bitmap->channel_count();
 
@@ -63,28 +65,20 @@ bool ImageBlock::put(const Point2f &_pos, const Float *value, bool /*unused*/) {
         }
     }
 
-    const Float filter_radius = m_filter->radius();
-    const Vector2i &size = m_bitmap->size();
+    Float filter_radius = m_filter->radius();
+    Vector2i size = m_bitmap->size();
 
     // Convert to pixel coordinates within the image block
-    const Point2f pos(
-        _pos.x() - 0.5f - (m_offset.x() - m_border_size),
-        _pos.y() - 0.5f - (m_offset.y() - m_border_size)
-    );
+    Point2f pos = pos_ - .5f - (m_offset - m_border_size);
 
     // Determine the affected range of pixels
-    const Point2i lo(
-        std::max((int) std::ceil(pos.x() - filter_radius), 0),
-        std::max((int) std::ceil(pos.y() - filter_radius), 0)
-    );
-    const Point2i hi(
-        std::min((int) std::floor(pos.x() + filter_radius), size.x() - 1),
-        std::min((int) std::floor(pos.y() + filter_radius), size.y() - 1)
-    );
+    Point2i lo = max(Point2i(ceil (pos - filter_radius)), 0);
+    Point2i hi = min(Point2i(floor(pos + filter_radius)), size - 1);
 
     // Lookup values from the pre-rasterized filter
     for (int x = lo.x(), idx = 0; x <= hi.x(); ++x)
         m_weights_x[idx++] = m_filter->eval_discretized(x - pos.x());
+
     for (int y = lo.y(), idx = 0; y <= hi.y(); ++y)
         m_weights_y[idx++] = m_filter->eval_discretized(y - pos.y());
 
@@ -104,8 +98,7 @@ bool ImageBlock::put(const Point2f &_pos, const Float *value, bool /*unused*/) {
     return true;
 }
 
-mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
-                               const mask_t<FloatP> &active) {
+MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Assert(m_filter != nullptr);
     using Mask = mask_t<FloatP>;
 
@@ -114,51 +107,38 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
     // Check if all sample values are valid
     Mask is_valid(true);
     if (m_warn) {
-        for (int k = 0; k < channels; ++k) {
-            // We only care about active lanes
-            is_valid &= (~active) | (enoki::isfinite(value[k]) & (value[k] >= 0));
-        }
+        for (int k = 0; k < channels; ++k)
+            is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
 
-        if (unlikely(any(~is_valid))) {
+        if (unlikely(any(active && !is_valid))) {
             std::ostringstream oss;
             oss << "Invalid sample value(s): [";
             for (int i = 0; i < channels; ++i) {
                 oss << value[i];
-                if (i + 1 < channels) oss << ", ";
+                if (i + 1 < channels)
+                    oss << ", ";
             }
             oss << "]";
             Log(EWarn, "%s", oss.str());
 
-            if (none(is_valid))  // Early return
+            if (none(is_valid && active))  // Early return
                 return is_valid;
         }
     }
 
-    const Float filter_radius = m_filter->radius();
-    const Vector2i &size = m_bitmap->size();
+    Float filter_radius = m_filter->radius();
+    Vector2i size = m_bitmap->size();
 
     // Convert to pixel coordinates within the image block
-    const Point2fP pos(
-        _pos.x() - 0.5f - (m_offset.x() - m_border_size),
-        _pos.y() - 0.5f - (m_offset.y() - m_border_size)
-    );
+    Point2fP pos = pos_ - .5f - (m_offset - m_border_size);
 
     // Determine the affected range of pixels
-    const Point2iP lo(
-        max(ceil(pos.x() - filter_radius), 0.0f),
-        max(ceil(pos.y() - filter_radius), 0.0f)
-    );
-    const Point2iP hi(
-        min(floor(pos.x() + filter_radius), (int) size.x() - 1.0f),
-        min(floor(pos.y() + filter_radius), (int) size.y() - 1.0f)
-    );
+    Point2iP lo = max(Point2iP(ceil (pos - filter_radius)), 0);
+    Point2iP hi = min(Point2iP(floor(pos + filter_radius)), size - 1);
 
     // Lookup values from the pre-rasterized filter
-    Vector2iP window_sizes = max(hi - lo, 0);
-    Point2i max_size(
-        hmax(window_sizes.x()),
-        hmax(window_sizes.y())
-    );
+    Vector2iP window_sizes = hi - lo;
+    Point2i max_size(hmax(window_sizes.x()), hmax(window_sizes.y()));
 
     auto corner = lo - pos;
     for (int i = 0; i <= max_size.x(); ++i)
@@ -171,7 +151,7 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
     auto *buffer = (Float *) m_bitmap->data();
     Mask enabled;
     for (int yr = 0; yr <= max_size.y(); ++yr) {
-        enabled = active & is_valid & (yr <= window_sizes.y());
+        enabled = active && is_valid && (yr <= window_sizes.y());
         auto y = lo.y() + yr;
 
         for (int xr = 0; xr <= max_size.x(); ++xr) {
@@ -183,6 +163,8 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
             auto weights = m_weights_y_p[yr] * m_weights_x_p[xr];
 
             for (int k = 0; k < channels; ++k) {
+                FloatP weighted_value = weights * value[k];
+
                 // We need to be extra-careful about the "histogram problem". See:
                 //   http://enoki.readthedocs.io/en/master/
                 //   advanced.html#the-histogram-problem-and-conflict-detection.
@@ -195,9 +177,9 @@ mask_t<FloatP> ImageBlock::put(const Point2fP &_pos, const FloatP *value,
                     // Perform operation on active lanes only.
                     enabled,
                     // Operation (accumulate weighted value).
-                    [](auto &&x, auto &&w, auto &&v) { x += w * v; },
+                    [](auto &&x, auto &&wv) { x += wv; },
                     // Reconstruction weights, values to store.
-                    weights, value[k]
+                    weighted_value
                 );
             }
         }
@@ -215,13 +197,6 @@ std::string ImageBlock::to_string() const {
         << "]";
     return oss.str();
 }
-
-
-template MTS_EXPORT_RENDER bool ImageBlock::put<>(
-    const Point2f &, const Spectrumf &, const Float &, const mask_t<Float> &);
-template MTS_EXPORT_RENDER mask_t<FloatP> ImageBlock::put<>(
-    const Point2fP &, const SpectrumfP &, const FloatP &, const mask_t<FloatP> &);
-
 
 MTS_IMPLEMENT_CLASS(ImageBlock, Object)
 NAMESPACE_END(mitsuba)

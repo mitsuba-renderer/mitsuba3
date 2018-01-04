@@ -19,9 +19,9 @@ add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/jit.h
   ${INC_DIR}/platform.h
   ${INC_DIR}/simd.h
-  ${INC_DIR}/string.h
   ${INC_DIR}/variant.h
 
+  string.cpp           ${INC_DIR}/string.h
   appender.cpp         ${INC_DIR}/appender.h
   argparser.cpp        ${INC_DIR}/argparser.h
   astream.cpp          ${INC_DIR}/astream.h ${INC_DIR}/dstream.h
@@ -30,7 +30,6 @@ add_library(mitsuba-core-obj OBJECT
   bsphere.cpp          ${INC_DIR}/bsphere.h
   class.cpp            ${INC_DIR}/class.h
   ddistr.cpp           ${INC_DIR}/ddistr.h
-  dither-matrix256.cpp
   filesystem.cpp       ${INC_DIR}/filesystem.h
   formatter.cpp        ${INC_DIR}/formatter.h
   fresolver.cpp        ${INC_DIR}/fresolver.h
@@ -42,6 +41,7 @@ add_library(mitsuba-core-obj OBJECT
   mstream.cpp          ${INC_DIR}/mstream.h
   object.cpp           ${INC_DIR}/object.h
   plugin.cpp           ${INC_DIR}/plugin.h
+  profiler.cpp         ${INC_DIR}/profiler.h
   progress.cpp         ${INC_DIR}/progress.h
   properties.cpp       ${INC_DIR}/properties.h
   qmc.cpp              ${INC_DIR}/qmc.h

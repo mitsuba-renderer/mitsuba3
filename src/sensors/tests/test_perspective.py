@@ -25,47 +25,48 @@ def test01_create():
     assert c.near_clip() == approx(1)
     assert c.far_clip() == approx(35.4)
     assert c.focus_distance() == approx(15)
-    assert c.x_fov() == approx(34)
 
-    assert np.all((c.world_transform_t(0).matrix - np.array([
+    wt = c.world_transform().eval(0)
+    vt = wt.inverse()
+
+    assert np.all((wt.matrix - np.array([
         [1, 0, 0,   1],
         [0, 1, 0,   0],
         [0, 0, 1, 1.5],
         [0, 0, 0,   1]
     ])) == approx(0))
-    assert np.all((c.world_transform_t(0).inverse_transpose - np.array([
+    assert np.all((wt.inverse_transpose - np.array([
         [ 1, 0,    0,   0],
         [ 0, 1,    0,   0],
         [ 0, 0,    1,   0],
         [-1, 0, -1.5,   1]
-    ])) == approx(0)), c.world_transform_t(0).inverse_transpose
-    assert np.all((c.view_transform_t(0).matrix - np.array([
+    ])) == approx(0))
+    assert np.all((vt.matrix - np.array([
         [1, 0, 0,  -1],
         [0, 1, 0,   0],
         [0, 0, 1,-1.5],
         [0, 0, 0,   1]
-    ])) == approx(0)), c.view_transform_t(0).matrix
-    assert np.all((c.view_transform_t(0).inverse_transpose - np.array([
+    ])) == approx(0))
+    assert np.all((vt.inverse_transpose - np.array([
         [1, 0,   0,  0],
         [0, 1,   0,  0],
         [0, 0,   1,  0],
         [1, 0, 1.5,  1]
-    ])) == approx(0)), c.view_transform_t(0).matrix
+    ])) == approx(0))
     assert c.shutter_open_time() == approx(0)
-    assert not c.needs_time_sample()
     assert not c.needs_aperture_sample()
     assert c.bbox() == BoundingBox3f([1, 0, 1.5], [1, 0, 1.5])
 
     # Aspect should be the same as a default film
     assert c.film() is not None
-    assert c.aspect() == approx(c.film().size()[0] / float(c.film().size()[1]))
 
 def test02_sample_rays():
-    # TODO: more precise tests
     c = load_string("<sensor version='2.0.0' type='perspective'></sensor>")
-    assert c.sample_ray(position_sample=[0, 0], aperture_sample=[0, 0], time_sample=0) is not None
+    (ray, spec_weight) = c.sample_ray(0.0, 0.6, [0, 0], [0, 0])
+    assert ray is not None
+    assert np.all(spec_weight > 0)
 
-def test03_sample_time():
+def test03_needs_time_sample():
     c = load_string("""
         <sensor version='2.0.0' type='perspective'>
             <float name='shutter_open' value='1.5'/>
@@ -74,11 +75,3 @@ def test03_sample_time():
     """)
     assert c.shutter_open() == approx(1.5)
     assert c.shutter_open_time() == approx(5 - 1.5)
-    assert c.needs_time_sample()
-
-    assert c.sample_time(0.5) == approx(c.shutter_open() + 0.5 * c.shutter_open_time())
-    times = np.linspace(0, 1, 10)
-    assert np.all(c.sample_time(times) == [
-        approx(c.shutter_open() + t * c.shutter_open_time())
-        for t in times
-    ])

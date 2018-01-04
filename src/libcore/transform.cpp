@@ -36,11 +36,19 @@ void AnimatedTransform::append(Float time, const Transform4f &trafo) {
     m_keyframes.push_back(Keyframe { time, M, Q, T });
 }
 
-template <typename Value>
-Transform<Value> ENOKI_INLINE AnimatedTransform::lookup_impl(const Value &time, const mask_t<Value> &active_) const {
-    static_assert(std::is_same<scalar_t<Value>, Float>::value, "Expected a 'float'-valued time parameter");
+bool AnimatedTransform::has_scale() const {
+    if (m_keyframes.empty())
+        return false;
 
-    auto active = disable_mask_if_scalar(active_);
+    Matrix3f delta = zero<Matrix3f>();
+    for (auto const &k: m_keyframes)
+        delta += abs(k.scale - enoki::identity<Matrix3f>());
+    return hsum_nested(delta) / m_keyframes.size() > 1e-3f;
+}
+
+template <typename Value>
+Transform<Value> MTS_INLINE AnimatedTransform::eval_impl(Value time, mask_t<Value> active) const {
+    static_assert(std::is_same<scalar_t<Value>, Float>::value, "Expected a 'float'-valued time parameter");
 
     /* Compute constants describing the layout of the 'Keyframe' data structure */
     constexpr size_t Stride      = sizeof(Keyframe);
@@ -95,14 +103,14 @@ Transform<Value> ENOKI_INLINE AnimatedTransform::lookup_impl(const Value &time, 
 }
 
 /// Look up an interpolated transformation at the given time
-Transform4f AnimatedTransform::lookup(const Float &time, const bool &active) const {
-    return lookup_impl(time, active);
+Transform4f AnimatedTransform::eval(Float time) const {
+    return eval_impl(time, true);
 
 }
 
-/// Vectorized version of \ref lookup
-Transform4fP AnimatedTransform::lookup(const FloatP &time, const mask_t<FloatP> &active) const {
-    return lookup_impl(time, active);
+/// Vectorized version of \ref eval
+Transform4fP AnimatedTransform::eval(FloatP time, MaskP active) const {
+    return eval_impl(time, active);
 }
 
 BoundingBox3f AnimatedTransform::translation_bounds() const {
@@ -110,8 +118,8 @@ BoundingBox3f AnimatedTransform::translation_bounds() const {
         auto p = m_transform * Point3f(0.0f);
         return BoundingBox3f(p, p);
     }
-    Log(EError, "AnimatedTransform::translation_bounds() not implemented for"
-                " non-constant animation.");
+    Throw("AnimatedTransform::translation_bounds() not implemented for"
+          " non-constant animation.");
     return BoundingBox3f();
 }
 

@@ -10,7 +10,7 @@
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
-
+#include <mitsuba/render/emitter.h>
 
 #define PY_CAST(Name) {                                                        \
         Name *temp = dynamic_cast<Name *>(o);                                  \
@@ -26,7 +26,6 @@ py::object py_cast(Object *o) {
     PY_CAST(ContinuousSpectrum);
     PY_CAST(ReconstructionFilter);
 
-    PY_CAST(PerspectiveCamera);
     PY_CAST(ProjectiveCamera);
     PY_CAST(Sensor);
 
@@ -34,8 +33,6 @@ py::object py_cast(Object *o) {
     PY_CAST(Endpoint);
 
     PY_CAST(BSDF);
-    PY_CAST(MicrofacetDistribution<Float>);
-    PY_CAST(MicrofacetDistribution<FloatP>);
 
     PY_CAST(ImageBlock);
     PY_CAST(Film);

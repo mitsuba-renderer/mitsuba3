@@ -7,7 +7,7 @@ from mitsuba.core import warp, Frame3f
 from mitsuba.core.math import Pi
 from mitsuba.core.xml import load_string
 from mitsuba.render import EMeasure
-from mitsuba.render import PositionSample3f, DirectionSample3f
+from mitsuba.render import PositionSample3f, Interaction3f
 from mitsuba.test.util import fresolver_append_path
 
 
@@ -18,21 +18,19 @@ def example_shape(filename = "data/triangle.ply", has_emitter = True):
         + ("    <string name='filename' value='%s'/>" % filename)
         + ("    <emitter type='area'/>" if has_emitter else "")
         +  "    <transform name='to_world'>"
-        +  "        <translate x='10' y='-1' z='2'/>"
-        +  "    </transform>"
-        +  "</shape>")
+           "        <translate x='10' y='-1' z='2'/>"
+           "    </transform>"
+           "</shape>")
 
 def test01_area_construct():
     e = load_string("""<emitter version="2.0.0" type="area">
-            <spectrum name="radiance" value="1.0f, 0.5f, 0.5f, 0.8f"/>
+            <spectrum name="radiance" value="1000f"/>
         </emitter>""")
     assert e is not None
-    assert not e.is_environment_emitter()
 
     shape = example_shape()
     assert e is not None
     e = shape.emitter()
-    assert not e.is_environment_emitter()
     ref_shape = example_shape(has_emitter=False)
     assert e.bbox() == ref_shape.bbox()
 
@@ -62,17 +60,20 @@ def test03_area_sample_direction():
     shape = example_shape()
     e = shape.emitter()
     # Direction sampling is conditioned on a sampled position
-    p_rec = PositionSample3f()
-    p_rec.n = [0, 1, 0]
+    it = Interaction3f()
+    it.wavelengths = [400, 500, 600, 750]
+    it.p = [-5, 3, -1] # Some position
+    it.time = 1.0
 
-    d_rec = DirectionSample3f()
-    p = [10, -1, 2] # Light position
-    sample = [0.5, 0.5]
+    sample = np.array([0.5, 0.5])
     local = warp.square_to_cosine_hemisphere(sample)
-    assert np.all(e.sample_direction(d_rec, p_rec, sample) == 1)
-    assert np.all(d_rec.d == Frame3f(p_rec.n).to_world(local))
-    assert np.all(d_rec.pdf == warp.square_to_cosine_hemisphere_pdf(local))
-    assert d_rec.measure == EMeasure.ESolidAngle
+
+    (d_rec, res) = e.sample_direction(it, sample)
+    d = (d_rec.p - it.p) / np.linalg.norm(d_rec.p - it.p)
+
+    assert np.all(res > 0)
+    assert np.allclose(d_rec.d, d)
+    assert d_rec.pdf > 1.0
 
 @pytest.mark.skip("Mesh position sampling is not implemented yet.")
 def test04_area_sample_ray():

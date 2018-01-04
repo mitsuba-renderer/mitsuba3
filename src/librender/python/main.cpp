@@ -6,6 +6,7 @@ MTS_PY_DECLARE(Scene);
 MTS_PY_DECLARE(Shape);
 MTS_PY_DECLARE(ShapeKDTree);
 MTS_PY_DECLARE(SamplingRecords);
+MTS_PY_DECLARE(Interaction);
 MTS_PY_DECLARE(SurfaceInteraction);
 MTS_PY_DECLARE(Endpoint);
 MTS_PY_DECLARE(Emitter);
@@ -31,6 +32,7 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(Shape);
     MTS_PY_IMPORT(ShapeKDTree);
     MTS_PY_IMPORT(SamplingRecords);
+    MTS_PY_IMPORT(Interaction);
     MTS_PY_IMPORT(SurfaceInteraction);
     MTS_PY_IMPORT(Endpoint);
     MTS_PY_IMPORT(Emitter);

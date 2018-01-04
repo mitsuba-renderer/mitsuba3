@@ -50,9 +50,6 @@ void ProgressReporter::update(Float progress) {
         memcpy((char *) m_line.data() + eta_pos, eta.data(), eta.length());
     }
 
-    if (progress == 1.f)
-        m_line += '\n';
-
     Thread::thread()->logger()->log_progress(progress, m_label, m_line,
                                              eta, m_payload);
     m_last_update = elapsed;

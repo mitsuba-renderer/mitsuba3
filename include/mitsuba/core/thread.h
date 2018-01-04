@@ -16,6 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 class MTS_EXPORT_CORE Thread : public Object {
 public:
     class TaskObserver; /* Used internally to keep track of TBB threads */
+    friend class ScopedThreadEnvironment;
 
     /// Possible priority values for \ref Thread::set_priority()
     enum EPriority {
@@ -161,15 +162,41 @@ private:
     std::unique_ptr<ThreadPrivate> d;
 };
 
-/// RAII-style class to temporarily switch to another thread's logger/file resolver
+/**
+ * \brief Captures a thread environment (logger, file resolver, profiler flags).
+ * Used with \ref ScopedSetThreadEnvironment
+ */
 class MTS_EXPORT_CORE ThreadEnvironment {
+    friend class ScopedSetThreadEnvironment;
 public:
-    ThreadEnvironment(Thread *thread);
+    ThreadEnvironment();
     ~ThreadEnvironment();
+
+    ThreadEnvironment(const ThreadEnvironment &) = delete;
+    ThreadEnvironment& operator=(const ThreadEnvironment &) = delete;
+private:
+    ref<Logger> m_logger;
+    ref<FileResolver> m_file_resolver;
+#if defined(MTS_ENABLE_PROFILER)
+    uint64_t m_profiler_flags;
+#endif
+};
+
+/// RAII-style class to temporarily switch to another thread's logger/file resolver
+class MTS_EXPORT_CORE ScopedSetThreadEnvironment {
+public:
+    ScopedSetThreadEnvironment(ThreadEnvironment &env);
+    ~ScopedSetThreadEnvironment();
+
+    ScopedSetThreadEnvironment(const ScopedSetThreadEnvironment &) = delete;
+    ScopedSetThreadEnvironment& operator=(const ScopedSetThreadEnvironment &) = delete;
 
 private:
     ref<Logger> m_logger;
     ref<FileResolver> m_file_resolver;
+#if defined(MTS_ENABLE_PROFILER)
+    uint64_t m_profiler_flags;
+#endif
 };
 
 NAMESPACE_END(mitsuba)

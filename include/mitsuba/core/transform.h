@@ -5,6 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+using Matrix2f     = enoki::Matrix<Float, 2>;
 using Matrix3f     = enoki::Matrix<Float, 3>;
 using Matrix4f     = enoki::Matrix<Float, 4>;
 using Quaternion4f = enoki::Quaternion<Float>;
@@ -60,6 +61,9 @@ template <typename Value> struct Transform {
     MTS_INLINE Transform inverse() const {
         return Transform(transpose(inverse_transpose), transpose(matrix));
     }
+
+    /// Get the translation part of a matrix
+    Vector3 translation() const { return head<3>(matrix.coeff(3)); }
 
     /// Equality comparison operator
     bool operator==(const Transform &t) const {
@@ -140,15 +144,16 @@ template <typename Value> struct Transform {
     template <typename Value2, typename E = expr_t<Value, Value2>,
               typename Result = Ray<Point<E, 3>>>
     MTS_INLINE Result operator*(const Ray<Point<Value2, 3>> &ray) const {
-        return Result(operator*(ray.o), operator*(ray.d), ray.mint, ray.maxt);
+        return Result(operator*(ray.o), operator*(ray.d), ray.mint, ray.maxt,
+                      ray.time, ray.wavelengths);
     }
 
     /// Transform a ray (for affine/non-perspective transformations)
     template <typename Value2, typename E = expr_t<Value, Value2>>
     MTS_INLINE auto transform_affine(const Ray<Point<Value2, 3>> &ray) const {
         return Ray<Point<E, 3>>(transform_affine(ray.o),
-                                transform_affine(ray.d),
-                                ray.mint, ray.maxt);
+                                transform_affine(ray.d), ray.mint, ray.maxt,
+                                ray.time, ray.wavelengths);
     }
 
     /// Create a translation transformation
@@ -258,8 +263,11 @@ template <typename Value> struct Transform {
     //! @{ \name Test for transform properties.
     // =============================================================
 
-    /// Test for a scale component in each transform matrix by checking
-    /// whether M . M^T == Identity (where M is the transformation matrix).
+    /**
+     * \brief Test for a scale component in each transform matrix by checking
+     * whether <tt>M . M^T == I</tt> (where <tt>M</tt> is the matrix in
+     * question and <tt>I</tt> is the identity).
+     */
     inline Mask has_scale() const {
         Mask mask(false);
         for (int i = 0; i < 3; ++i) {
@@ -268,36 +276,12 @@ template <typename Value> struct Transform {
                 for (int k = 0; k < 3; ++k)
                     sum += matrix[i][k] * matrix[j][k];
 
-                // On the diagonal (i==j), check sum == 1,
-                // otherwise check sum == 0.
-                mask |= enoki::abs(sum - (i==j ? 1 : 0) ) > 1e-3f;
+                mask |= enoki::abs(sum - (i == j ? 1.f : 0.f)) > 1e-3f;
             }
         }
         return mask;
     }
 
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name OpenGL specific methods.
-    // =============================================================
-
-    /** \brief Create a perspective transformation for OpenGL.
-     * \param left Left clipping plane coordinate
-     * \param right Right clipping plane coordinate
-     * \param top Top clipping plane coordinate
-     * \param bottom Bottom clipping plane coordinate
-     * \param near_val Near clipping plane distance
-     * \param far_val Far clipping plane distance
-     */
-    static Transform gl_frustum(Float left, Float right,
-                                Float bottom, Float top,
-                                Float near_val, Float far_val) {
-        return Transform(enoki::frustum<Matrix4>(left, right, bottom, top,
-                                                 near_val, far_val));
-    }
 
     //! @}
     // =============================================================
@@ -312,7 +296,7 @@ template <typename Value> struct Transform {
  * The animation is stored as keyframe animation with linear segments. The
  * implementation performs a polar decomposition of each keyframe into a 3x3
  * scale/shear matrix, a rotation quaternion, and a translation vector. These
- * will all be interpolated independently at lookup time.
+ * will all be interpolated independently at eval time.
  */
 class MTS_EXPORT_CORE AnimatedTransform : public Object {
 public:
@@ -366,14 +350,22 @@ public:
     void append(const Keyframe &keyframe);
 
     /// Look up an interpolated transform at the given time
-    Transform4f lookup(const Float &time, const bool& /* unused */ = true) const;
+    Transform4f eval(Float time) const;
 
-    /// Vectorized version of \ref lookup
-    Transform4fP lookup(const FloatP &time, const mask_t<FloatP> &active = true) const;
+    /// Vectorized version of \ref eval()
+    Transform4fP eval(FloatP time, MaskP active = true) const;
 
-    /// Return an axis-aligned box bounding the amount of translation over the
-    /// course of the animation.
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
+    Transform4f eval(Float time, bool /* unused */) const { return eval(time); }
+
+    /**
+     * \brief Return an axis-aligned box bounding the amount of translation
+     * throughout the animation sequence
+     */
     BoundingBox3f translation_bounds() const;
+
+    /// Determine whether the transformation involves any kind of scaling
+    bool has_scale() const;
 
     /// Return the number of keyframes
     size_t size() const { return m_keyframes.size(); }
@@ -404,11 +396,11 @@ public:
 
 protected:
     template <typename Value>
-    Transform<Value> lookup_impl(const Value &time, const mask_t<Value> &active) const;
+    Transform<Value> eval_impl(Value time, mask_t<Value> active) const;
 
 private:
     Transform4f m_transform;
-    std::vector<Keyframe> m_keyframes;
+    std::vector<Keyframe, enoki::aligned_allocator<Keyframe>> m_keyframes;
 };
 
 // -----------------------------------------------------------------------

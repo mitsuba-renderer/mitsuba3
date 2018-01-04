@@ -1,12 +1,12 @@
 #pragma once
 
+#include <enoki/special.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/common.h>
-#include <enoki/special.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -241,8 +241,7 @@ public:
      * \brief Wrapper function which calls \ref sample_all() or \ref sample_visible_normals()
      * depending on the parameters of this class
      */
-    std::pair<Normal3, Value> sample(const Vector3 &wi,
-                                     const Point2 &sample,
+    std::pair<Normal3, Value> sample(const Vector3 &wi, const Point2 &sample,
                                      const Mask &active = true) const {
         if (m_sample_visible) {
             Normal3 m = sample_visible_normals(wi, sample, active);
@@ -272,9 +271,10 @@ public:
      * \param pdf
      *    The probability density wrt. solid angles
      */
-    std::pair<Normal3, Value> sample_all(const Point2 &sample, const Mask &active = true) const {
-        // The azimuthal component is always selected
-        // uniformly regardless of the distribution
+    std::pair<Normal3, Value> sample_all(const Point2 &sample,
+                                         const Mask &active = true) const {
+        // The azimuthal component is always selected uniformly regardless of
+        // the distribution.
         Value cos_theta_m = 0.0f;
         Value sin_phi_m, cos_phi_m;
         Value alpha_sqr;
@@ -428,6 +428,7 @@ public:
             cos_theta_m
         ), pdf };
     }
+
     /**
      *  \brief Returns the density function associated with
      *  the \ref sample_all() function.
@@ -439,7 +440,6 @@ public:
         // PDF is just D(m) * cos(theta_M)
         return eval(m, active) * Frame::cos_theta(m);
     }
-
 
     /**
      * \brief Draw a sample from the distribution of visible normals
@@ -558,9 +558,7 @@ public:
      * \brief Separable shadow-masking function based on Smith's
      * one-dimensional masking model
      */
-    Value G(const Vector3 &wi,
-            const Vector3 &wo,
-            const Vector3 &m,
+    Value G(const Vector3 &wi, const Vector3 &wo, const Vector3 &m,
             const Mask &active = true) const {
         return smith_g1(wi, m, active) * smith_g1(wo, m, active);
     }
@@ -629,8 +627,7 @@ protected:
      * Source: supplemental material of "Importance Sampling
      * Microfacet-Based BSDFs using the Distribution of Visible Normals"
      */
-    Vector2 sample_visible_11(const Value &theta_i,
-                              Point2 sample,
+    Vector2 sample_visible_11(const Value &theta_i, Point2 sample,
                               const Mask &active = true) const {
         const Value InvSqrtPi = 1 / sqrt(Pi);
         Vector2 slope;

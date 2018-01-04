@@ -10,7 +10,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   main.cpp
   microfacet.cpp
   records.cpp
-  rt.cpp
+  rtbench.cpp
   sampler.cpp
   scene.cpp
   sensor.cpp

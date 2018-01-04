@@ -37,14 +37,15 @@ def test01_create_mesh():
   ],
   vertex_count = 3,
   vertices = [36 B of vertex data],
-  vertex_normals = 0,
   face_struct = Struct<12>[
     uint32 i0; // @0
     uint32 i1; // @4
     uint32 i2; // @8
   ],
   face_count = 2,
-  faces = [24 B of face data]
+  faces = [24 B of face data],
+  disable_vertex_normals = 0,
+  surface_area = -1
 ]"""
     else:
         assert str(m) == """Mesh[
@@ -60,14 +61,15 @@ def test01_create_mesh():
   ],
   vertex_count = 3,
   vertices = [72 B of vertex data],
-  vertex_normals = 0,
   face_struct = Struct<12>[
     uint32 i0; // @0
     uint32 i1; // @4
     uint32 i2; // @8
   ],
   face_count = 2,
-  faces = [24 B of face data]
+  faces = [24 B of face data],
+  disable_vertex_normals = 0,
+  surface_area = -1
 ]"""
 
 
@@ -109,9 +111,9 @@ def test03_ply_computed_normals():
     vertices = shape.vertices()
     assert shape.has_vertex_normals()
     # Normals are stored in half precision
-    assert np.all(vertices['nx'] == np.float16([-1, -1, -1]))
-    assert np.all(vertices['ny'] == np.float16([0, 0, 0]))
-    assert np.all(vertices['nz'] == np.float16([0, 0, 0]))
+    assert np.allclose(vertices['nx'], np.float32([-1, -1, -1]))
+    assert np.allclose(vertices['ny'], np.float32([0, 0, 0]))
+    assert np.allclose(vertices['nz'], np.float32([0, 0, 0]))
 
 
 def test04_normal_weighting_scheme():
@@ -120,9 +122,9 @@ def test04_normal_weighting_scheme():
         .append("x", float_dtype) \
         .append("y", float_dtype) \
         .append("z", float_dtype) \
-        .append("nx", Struct.EFloat16) \
-        .append("ny", Struct.EFloat16) \
-        .append("nz", Struct.EFloat16)
+        .append("nx", float_dtype) \
+        .append("ny", float_dtype) \
+        .append("nz", float_dtype)
 
     index_struct = Struct() \
         .append("i0", Struct.EUInt32) \

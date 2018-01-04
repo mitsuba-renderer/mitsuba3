@@ -30,8 +30,8 @@ def teapot_scene():
                 <float name="far_clip" value="1000"/>
 
                 <transform name="to_world">
-                    <lookat target="0.0, 0.0, 1.5"
-                            origin="0.0, -12.0, 1.5"
+                    <lookat target="0.0, 0.0, 0.2"
+                            origin="1.0, -12.0, 2"
                             up    ="0.0, 0.0, 1.0"/>
                 </transform>
 
@@ -41,7 +41,7 @@ def teapot_scene():
                 </film>
 
                 <sampler type="independent">
-                    <integer name="sample_count" value="32"/>
+                    <integer name="sample_count" value="16"/>
                 </sampler>
             </sensor>
 
@@ -50,17 +50,17 @@ def teapot_scene():
                         value="resources/data/ply/teapot.ply"/>
 
                 <bsdf type="diffuse">
-                    <spectrum name="reflectance" value="0.4f, 0.1f, 0.8f, 0.5f"/>
+                    <rgb name="reflectance" value="0.1f, 0.1f, 0.8f"/>
                 </bsdf>
             </shape>
 
             <emitter type="point">
-                <point name="position" x="2" y="-6.0" z="4.5"/>
-                <spectrum name="intensity" value="3.0f, 3.0f, 1.0f, 0.5f"/>
+                <point name="position" x="2.0" y="-6.0" z="4.5"/>
+                <spectrum name="intensity" value="300.0f"/>
             </emitter>
             <emitter type="point">
-                <point name="position" x="-3" y="-3.0" z="-0.5"/>
-                <spectrum name="intensity" value="1.0f, 3.0f, 3.0f, 0.5f"/>
+                <point name="position" x="-3.0" y="-3.0" z="-0.5"/>
+                <spectrum name="intensity" value="100.0f"/>
             </emitter>
         </scene>
     """)

@@ -1,7 +1,6 @@
-#include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/medium.h>
-#include <mitsuba/render/records.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
+#include <mitsuba/render/bsdf.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -9,98 +8,77 @@ class SmoothDiffuse final : public BSDF {
 public:
     SmoothDiffuse(const Properties &props) {
         m_flags = EDiffuseReflection | EFrontSide;
-        m_reflectance = props.spectrumf("reflectance", Spectrumf(1.0f));
+        m_reflectance = props.spectrum("reflectance", .5f);
     }
 
-    template <typename BSDFSample,
-              typename Value  = typename BSDFSample::Value,
-              typename Point2 = typename BSDFSample::Point2,
+    template <typename BSDFSample, typename Value = typename BSDFSample::Value,
+              typename Point2   = typename BSDFSample::Point2,
               typename Spectrum = Spectrum<Value>>
     std::pair<Spectrum, Value> sample_impl(BSDFSample &bs,
                                            const Point2 &sample,
-                                           const mask_t<Value> &active_) const {
+                                           const mask_t<Value> &active) const {
         using Index   = typename BSDFSample::Index;
         using Vector3 = typename BSDFSample::Vector3;
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
 
-        Mask active(active_);
+        Value n_dot_wi = Frame::cos_theta(bs.wi);
+        Mask above_horizon = n_dot_wi > 0.f;
 
-        if (!(bs.type_mask & EDiffuseReflection))
-            return { 0.0f, 0.0f };
-
-        Mask below_horizon = (Frame::cos_theta(bs.wi) <= 0.0f);
-        active &= ~below_horizon;
-
-        if (none(active))
-            return { 0.0f, 0.0f };
+        if (none(above_horizon && active) || !(bs.type_mask & EDiffuseReflection))
+            return { 0.f, 0.f };
 
         masked(bs.wo,  active) = warp::square_to_cosine_hemisphere(sample);
         masked(bs.eta, active) = Value(1.0f);
         masked(bs.sampled_component, active) = Index(0);
         masked(bs.sampled_type, active) = Index(EDiffuseReflection);
 
-        Value pdf(0.0f);
-        masked(pdf, active) = warp::square_to_cosine_hemisphere_pdf(bs.wo);
-        Spectrum value(0.0f);
-        masked(value, active) = Spectrum(m_reflectance);
+        Value pdf = select(above_horizon,
+                           warp::square_to_cosine_hemisphere_pdf(bs.wo),
+                           Value(0.f));
+
+        Spectrum value = select(above_horizon,
+                                m_reflectance->eval(bs.si.wavelengths, active),
+                                Spectrum(0.f));
 
         return { value, pdf };
     }
 
-    template <typename BSDFSample,
-              typename Value = typename BSDFSample::Value,
+    template <typename BSDFSample, typename Value = typename BSDFSample::Value,
               typename Spectrum = Spectrum<Value>>
-    Spectrum eval_impl(const BSDFSample &bs,
-                       EMeasure measure,
-                       const mask_t<Value> &/*active*/) const {
+    Spectrum eval_impl(const BSDFSample &bs, EMeasure measure,
+                       const mask_t<Value> &active) const {
         using Vector3 = typename BSDFSample::Vector3;
         using Frame   = Frame<Vector3>;
-        using Mask    = mask_t<Value>;
 
-        if (!(bs.type_mask & EDiffuseReflection) || measure != ESolidAngle)
-            return 0.0f;
+        if (unlikely(!(bs.type_mask & EDiffuseReflection) || measure != ESolidAngle))
+            return 0.f;
 
         Value n_dot_wi = Frame::cos_theta(bs.wi);
         Value n_dot_wo = Frame::cos_theta(bs.wo);
 
-        Mask active = !((n_dot_wi <= 0.0f) | (n_dot_wo <= 0.0f));
-
-        Spectrum result(0.0f);
-        masked(result, active) = (math::InvPi * n_dot_wo) * Spectrum(m_reflectance);
-
-        return result;
+        return select((n_dot_wi > 0.f) && (n_dot_wo > 0.f),
+                      m_reflectance->eval(bs.si.wavelengths, active) * math::InvPi * n_dot_wo,
+                      Spectrum(0.f));
     }
 
-    template <typename BSDFSample,
-              typename Value = typename BSDFSample::Value>
-    Value pdf_impl(const BSDFSample &bs,
-                   EMeasure measure,
-                   const mask_t<Value> &active_) const {
+    template <typename BSDFSample, typename Value = typename BSDFSample::Value>
+    Value pdf_impl(const BSDFSample &bs, EMeasure measure,
+                  const mask_t<Value> & /* active */) const {
         using Vector3 = typename BSDFSample::Vector3;
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
 
-        if (!(bs.type_mask & EDiffuseReflection) || measure != ESolidAngle)
-            return 0.0f;
+        if (unlikely(!(bs.type_mask & EDiffuseReflection) || measure != ESolidAngle))
+            return 0.f;
 
-        Mask active(active_);
+        Mask above_horizon = (Frame::cos_theta(bs.wi) > 0.f) &&
+                             (Frame::cos_theta(bs.wo) > 0.f);
 
-        Value n_dot_wi = Frame::cos_theta(bs.wi);
-        Value n_dot_wo = Frame::cos_theta(bs.wo);
-
-        active &= !((n_dot_wi <= 0.0f) | (n_dot_wo <= 0.0f));
-
-        if (none(active))
-            return 0.0f;
-
-        Value result(0.0f);
-        masked(result, active) = warp::square_to_cosine_hemisphere_pdf(bs.wo);
-
-        return result;
+        return select(above_horizon,
+                      warp::square_to_cosine_hemisphere_pdf(bs.wo),
+                      Value(0.f));
     }
-
-    MTS_IMPLEMENT_BSDF()
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -110,9 +88,10 @@ public:
         return oss.str();
     }
 
+    MTS_IMPLEMENT_BSDF()
     MTS_DECLARE_CLASS()
 private:
-    Spectrumf m_reflectance;
+    ref<ContinuousSpectrum> m_reflectance;
 };
 
 MTS_IMPLEMENT_CLASS(SmoothDiffuse, BSDF)

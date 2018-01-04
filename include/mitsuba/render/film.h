@@ -37,7 +37,7 @@ public:
     virtual void set_destination_file(const fs::path &filename, uint32_t block_size) = 0;
 
     /// Develop the film and write the result to the previously specified filename
-    virtual void develop(const Scene *scene, Float render_time) = 0;
+    virtual void develop() = 0;
 
     /**
      * \brief Develop the contents of a subregion of the film and store
@@ -73,19 +73,13 @@ public:
     virtual Bitmap *bitmap() { return nullptr; }
 
     /// Ignoring the crop window, return the resolution of the underlying sensor
-    Vector2i size() const { return m_size; }
+    const Vector2i &size() const { return m_size; }
 
     /// Return the size of the crop window
-    Vector2i crop_size() const { return m_crop_size; }
+    const Vector2i &crop_size() const { return m_crop_size; }
 
     /// Return the offset of the crop window
-    Point2i crop_offset() const { return m_crop_offset; }
-
-    /// Return whether or not this film records the alpha channel
-    virtual bool has_alpha() const = 0;
-
-    /// Return the image reconstruction filter
-    ReconstructionFilter *reconstruction_filter() { return m_filter.get(); }
+    const Point2i &crop_offset() const { return m_crop_offset; }
 
     /// Return the image reconstruction filter (const version)
     const ReconstructionFilter *reconstruction_filter() const {
@@ -114,10 +108,7 @@ protected:
     Film(const Properties &props);
 
     /// Virtual destructor
-    virtual ~Film() { }
-
-private:
-    void configure();
+    virtual ~Film();
 
 protected:
     Vector2i m_size, m_crop_size;

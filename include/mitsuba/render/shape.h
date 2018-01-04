@@ -1,24 +1,252 @@
 #pragma once
 
-#include <mitsuba/render/fwd.h>
-#include <mitsuba/core/object.h>
+#include <mitsuba/render/records.h>
 #include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \warning Implementing classes must call `m_emitter->set_shape(this)` once they
- * are entirely initialized. When calling it from the parent class (Shape), we
- * cannot ensure that all information required to compute `surface_area()` has
- * been initialized.
+ * \brief Base class of all geometric shapes in Mitsuba
+ *
+ * This class provides core functionality for sampling positions on surfaces,
+ * computing ray intersections, and bounding shapes within ray intersection
+ * acceleration data structures.
  */
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
-    /// Use 32 bit indices to keep track of indices to conserve memory
-    using Index = uint32_t;
+    // Use 32 bit indices to keep track of indices to conserve memory
+    using Index  = uint32_t;
+    using IndexP = UInt32P;
+    using Size   = uint32_t;
+    using SizeP  = UInt32P;
 
-    /// Use 32 bit indices to keep track of sizes to conserve memory
-    using Size  = uint32_t;
+    // =============================================================
+    //! @{ \name Sampling routines
+    // =============================================================
+
+    /**
+     * \brief Sample a point on the surface of this shape
+     *
+     * The sampling strategy is ideally uniform over the surface, though
+     * implementations are allowed to deviate from a perfectly uniform
+     * distribution as long as this is reflected in the returned probability
+     * density.
+     *
+     * \param time
+     *     The scene time associated with the position sample
+     *
+     * \param sample
+     *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>
+     *
+     * \return
+     *     A \ref PositionSample instance describing the generated sample
+     */
+    virtual PositionSample3f sample_position(Float time,
+                                             const Point2f &sample) const;
+
+    /// Vectorized version of \ref sample_position.
+    virtual PositionSample3fP sample_position(FloatP time,
+                                              const Point2fP &sample,
+                                              MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_position()
+    PositionSample3f sample_position(Float time,
+                                     const Point2f &sample,
+                                     bool /* unused */) const {
+        return sample_position(time, sample);
+    }
+
+    /**
+     * \brief Query the probability density of \ref sample_position() for
+     * a particular point on the surface.
+     *
+     * \param ps
+     *     A position record describing the sample in question
+     *
+     * \return
+     *     The probability density per unit area
+     */
+    virtual Float pdf_position(const PositionSample3f &ps) const;
+
+    /// Vectorized version of \ref pdf_position.
+    virtual FloatP pdf_position(const PositionSample3fP &ps,
+                                MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_position()
+    Float pdf_position(const PositionSample3f &ps,
+                       bool /* unused */) const {
+        return pdf_position(ps);
+    }
+
+    /**
+     * \brief Sample a direction towards this shape with respect to solid
+     * angles measured at a reference position within the scene
+     *
+     * An ideal implementation of this interface would achieve a uniform solid
+     * angle density within the surface region that is visible from the
+     * reference position <tt>it.p</tt> (though such an ideal implementation
+     * is usually neither feasible nor advisable due to poor efficiency).
+     *
+     * The function returns the sampled position and the inverse probability
+     * per unit solid angle associated with the sample.
+     *
+     * When the Shape subclass does not supply a custom implementation of this
+     * function, the \ref Shape class reverts to a fallback approach that
+     * piggybacks on \ref sample_position(). This will generally lead to a
+     * suboptimal sample placement and higher variance in Monte Carlo
+     * estimators using the samples.
+     *
+     * \param it
+     *    A reference position somewhere within the scene.
+     *
+     * \param sample
+     *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>
+     *
+     * \return
+     *     A \ref DirectionSample instance describing the generated sample
+     */
+    virtual DirectionSample3f sample_direction(const Interaction3f &it,
+                                               const Point2f &sample) const;
+
+    /// Vectorized version of \ref sample_direction.
+    virtual DirectionSample3fP sample_direction(const Interaction3fP &it,
+                                                const Point2fP &sample,
+                                                MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction()
+    DirectionSample3f sample_direction(const Interaction3f &it,
+                                       const Point2f &sample,
+                                       bool /* unused */) const {
+        return sample_direction(it, sample);
+    }
+
+    /**
+     * \brief Query the probability density of \ref sample_direction()
+     *
+     * \param it
+     *    A reference position somewhere within the scene.
+     *
+     * \param ps
+     *     A position record describing the sample in question
+     *
+     * \return
+     *     The probability density per unit solid angle
+     */
+    virtual Float pdf_direction(const Interaction3f &it,
+                                const DirectionSample3f &ds) const;
+
+    /// Vectorized version of \ref pdf_direction.
+    virtual FloatP pdf_direction(const Interaction3fP &it,
+                                 const DirectionSample3fP &ds,
+                                 MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_direction()
+    Float pdf_direction(const Interaction3f &it,
+                        const DirectionSample3f &ds,
+                        bool /* unused */) const {
+        return pdf_direction(it, ds);
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Ray tracing routines
+    // =============================================================
+
+    /**
+     * \brief Fast ray intersection test
+     *
+     * Efficiently test whether the shape is intersected by the given ray, and
+     * cache preliminary information about the intersection if that is the
+     * case.
+     *
+     * If the intersection is deemed relevant (e.g. the closest to the ray
+     * origin), detailed intersection information can later be obtained via the
+     * \ref create_surface_interaction() method.
+     *
+     * \param ray
+     *     The ray to be tested for an intersection
+     *
+     * \param cache
+     *    Temporary space (<tt>(MTS_KD_INTERSECTION_CACHE_SIZE-2) *
+     *    sizeof(Float[P])</tt> bytes) that must be supplied to cache
+     *    information about the intersection.
+     */
+    virtual std::pair<bool, Float> ray_intersect(const Ray3f &ray, Float *cache) const;
+
+    /// Vectorized variant of \ref ray_intersect.
+    virtual std::pair<MaskP, FloatP> ray_intersect(const Ray3fP &ray, FloatP *cache,
+                                                   MaskP active) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect()
+    std::pair<bool, Float> ray_intersect(const Ray3f &ray, Float *cache,
+                                         bool /* unused */) const {
+        return ray_intersect(ray, cache);
+    }
+
+    /**
+     * \brief Fast ray shadow test
+     *
+     * Efficiently test whether the shape is intersected by the given ray, and
+     * cache preliminary information about the intersection if that is the
+     * case.
+     *
+     * No details about the intersection are returned, hence the function is
+     * only useful for visibility queries. For most shapes, the implementation
+     * will simply forward the call to \ref ray_intersect(). When the shape
+     * actually contains a nested kd-tree, some optimizations are possible.
+     *
+     * \param ray
+     *     The ray to be tested for an intersection
+     */
+    virtual bool ray_intersect(const Ray3f &ray) const;
+
+    /// Vectorized variant of \ref ray_intersect.
+    virtual MaskP ray_intersect(const Ray3fP &ray, MaskP active) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect()
+    bool ray_intersect(const Ray3f &ray, bool /* unused */) const {
+        return ray_intersect(ray);
+    }
+
+    /**
+     * \brief Given a surface intersection found by \ref ray_intersect(), fill
+     * a \ref SurfaceInteraction data structure with detailed information
+     * describing the intersection.
+     *
+     * The implementation should fill in the fields \c p, \c uv, \c n, \c
+     * sh_frame.n, \c dp_du, and \c dp_dv. The fields \c t, \c time, \c
+     * wavelengths, \c shape, \c prim_index, \c instance, and \c
+     * has_uv_partials will already have been initialized by the caller. The
+     * field \c wi is initialized by the caller following the call to \ref
+     * fill_surface_interaction(), and \c duv_dx, and \c duv_dy are left
+     * uninitialized.
+     */
+    virtual void fill_surface_interaction(const Ray3f &ray,
+                                          const Float *cache,
+                                          SurfaceInteraction3f &si) const;
+
+    /// Vectorized version of \ref fill_surface_interaction()
+    virtual void fill_surface_interaction(const Ray3fP &ray,
+                                          const FloatP *cache,
+                                          SurfaceInteraction3fP &si,
+                                          MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref fill_surface_interaction()
+    void fill_surface_interaction(const Ray3f &ray,
+                                  const Float *cache,
+                                  SurfaceInteraction3f &si,
+                                  bool /* unused */) const {
+        fill_surface_interaction(ray, cache, si);
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Miscellaneous query routines
+    // =============================================================
 
     /**
      * \brief Return an axis aligned box that bounds all shape primitives
@@ -32,59 +260,34 @@ public:
      *
      * \remark The default implementation simply calls \ref bbox()
      */
-    virtual BoundingBox3f bbox(Index Size) const;
+    virtual BoundingBox3f bbox(Index index) const;
 
     /**
      * \brief Return an axis aligned box that bounds a single shape primitive
      * after it has been clipped to another bounding box.
      *
-     * This is extremely important to construct decent kd-trees. The default
-     * implementation just takes the bounding box returned by \ref bbox(Index
-     * index) and clips it to \a clip.
+     * This is extremely important to construct high-quality kd-trees. The
+     * default implementation just takes the bounding box returned by
+     * \ref bbox(Index index) and clips it to \a clip.
      */
-    virtual BoundingBox3f bbox(Index index,
-                               const BoundingBox3f &clip) const;
+    virtual BoundingBox3f bbox(Index index, const BoundingBox3f &clip) const;
 
     /**
      * \brief Return the shape's surface area.
      *
-     * Assumes that the object is not undergoing some kind of
-     * time-dependent scaling.
+     * The function assumes that the object is not undergoing
+     * some kind of time-dependent scaling.
      *
      * The default implementation throws an exception.
      */
-    virtual Float surface_area() const {
-        NotImplementedError("surface_area");
-    }
-
-    // =============================================================
-    //! @{ \name Interaction utilities
-    // =============================================================
+    virtual Float surface_area() const;
 
     /**
-     * \brief Move an intersection record to a different time value
+     * \brief Return the derivative of the normal vector with respect to the UV
+     * parameterization
      *
-     * Conceptually, the point remains firmly attached to the underlying
-     * object, which is moved forward or backward in time. The method updates
-     * all relevant SurfaceInteraction fields.
-     */
-    virtual void adjust_time(SurfaceInteraction3f &si,
-                             const Float &time) const;
-    void adjust_time(SurfaceInteraction3f &si, const Float &time,
-                     bool /*active*/) const {
-        return adjust_time(si, time);
-    }
-
-    /// Statically vectorized version of \ref adjust_time()
-    virtual void adjust_time(SurfaceInteraction3fP &si, const FloatP &time,
-                             const mask_t<FloatP> &active = true) const;
-
-    /**
-     * \brief Return the derivative of the normal vector with
-     * respect to the UV parameterization
-     *
-     * This can be used to compute Gaussian and principal curvatures,
-     * amongst other things.
+     * This can be used to compute Gaussian and principal curvatures, amongst
+     * other things.
      *
      * \param si
      *     Surface interaction associated with the query
@@ -99,219 +302,19 @@ public:
      */
     virtual std::pair<Vector3f, Vector3f>
     normal_derivative(const SurfaceInteraction3f &si,
-                      bool shading_frame = true) const = 0;
-    std::pair<Vector3f, Vector3f>
-    normal_derivative(const SurfaceInteraction3f &si,
-                      bool shading_frame, bool /*active*/) const {
-        return normal_derivative(si, shading_frame);
-    }
+                      bool shading_frame = true) const;
 
     /// Vectorized version of \ref normal_derivative()
     virtual std::pair<Vector3fP, Vector3fP>
     normal_derivative(const SurfaceInteraction3fP &si,
-                      bool shading_frame           = true,
-                      const mask_t<FloatP> &active = true) const = 0;
+                      bool shading_frame = true,
+                      MaskP active = true) const;
 
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name Sampling routines
-    // =============================================================
-
-    /**
-     * \brief Sample a point on the surface of this shape instance
-     * (with respect to the area measure)
-     *
-     * The returned sample density will be uniform over the surface.
-     *
-     * \param p_rec
-     *     A position record, which will be used to return the sampled
-     *     position, as well as auxilary information about the sample.
-     *
-     * \param sample
-     *     A uniformly distributed 2D vector
-     */
-    virtual void sample_position(PositionSample3f &/*p_rec*/,
-                                 const Point2f &/*sample*/) const {
-        NotImplementedError("sample_position");
-    }
-    void sample_position(PositionSample3f &p_rec, const Point2f &sample,
-                         bool /*unused*/) const {
-        return sample_position(p_rec, sample);
-    }
-    /// Vectorized version of \ref sample_position.
-    virtual void sample_position(PositionSample3fP &/*p_rec*/,
-                                 const Point2fP &/*sample*/,
-                                 const mask_t<FloatP> &/*active*/ = true) const {
-        NotImplementedError("sample_position");
-    }
-    /**
-     * \brief Query the probability density of \ref sample_position() for
-     * a particular point on the surface.
-     *
-     * This method will generally return the inverse of the surface area.
-     *
-     * \param p_rec
-     *     A position record, which will be used to return the sampled
-     *     position, as well as auxilary information about the sample.
-     */
-    virtual Float pdf_position(const PositionSample3f &/*p_rec*/) const {
-        NotImplementedError("pdf_position");
-        return 0.0f;
-    }
-    Float pdf_position(const PositionSample3f &p_rec, bool /*unused*/) const {
-        return pdf_position(p_rec);
-    }
-    /// Vectorized version of \ref pdf_position.
-    virtual FloatP pdf_position(const PositionSample3fP &/*p_rec*/,
-                                const mask_t<FloatP> &/*active*/ = true) const {
-        NotImplementedError("pdf_position");
-        return FloatP(0.0f);
-    }
-
-    /**
-     * \brief Sample a point on the surface of this shape instance
-     * (with respect to the solid angle measure)
-     *
-     * The sample density should ideally be uniform in direction as seen from
-     * the reference point \c d_rec.p.
-     *
-     * This general approach for sampling positions is named "direct" sampling
-     * throughout Mitsuba motivated by direct illumination rendering techniques,
-     * which represent the most important application.
-     *
-     * When no implementation of this function is supplied, the \ref Shape
-     * class will revert to the default approach, which piggybacks on
-     * \ref sampleArea(). This usually results in a a suboptimal sample
-     * placement, which can manifest itself in the form of high variance
-     *
-     * \param d_rec
-     *    A direct sampling record that specifies the reference point and a
-     *    time value. After the function terminates, it will be populated
-     *    with the position sample and related information
-     *
-     * \param sample
-     *     A uniformly distributed 2D vector
-     */
-    virtual void sample_direct(DirectSample3f &d_rec,
-                               const Point2f &sample) const;
-    void sample_direct(DirectSample3f &d_rec, const Point2f &sample,
-                       bool /*unused*/) const {
-        return sample_direct(d_rec, sample);
-    }
-    /// Vectorized version of \ref sample_direct.
-    virtual void sample_direct(DirectSample3fP &d_rec,
-                               const Point2fP &sample,
-                               const mask_t<FloatP> &active = true) const;
-
-    /**
-     * \brief Query the probability density of \ref sampleDirect() for
-     * a particular point on the surface.
-     *
-     * \param d_rec
-     *    A direct sampling record, which specifies the query
-     *    location. Note that this record need not be completely
-     *    filled out. The important fields are \c p, \c n, \c ref,
-     *    \c dist, \c d, \c measure, and \c uv.
-     *
-     * \param p
-     *     An arbitrary point used to define the solid angle measure
-     */
-    virtual Float pdf_direct(const DirectSample3f &d_rec) const;
-    Float pdf_direct(const DirectSample3f &d_rec, bool /*unused*/) const {
-        return pdf_direct(d_rec);
-    }
-    /// Vectorized version of \ref pdf_direct.
-    virtual FloatP pdf_direct(const DirectSample3fP &d_rec,
-                              const mask_t<FloatP> &active = true) const;
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name Ray tracing routines
-    // =============================================================
-
-    /**
-     * \brief Fast ray intersection test (scalar)
-     *
-     * Check whether the shape is intersected by the given ray. Some
-     * temporary space (\ref MTS_KD_INTERSECTION_CACHE_SIZE-4 bytes) is,
-     * supplied which can be used to cache information about the
-     * intersection. The function \ref fill_surface_interaction()
-     * can later use this information to fill in a detailed
-     * intersection record.
-     */
-    virtual std::pair<bool, Float> ray_intersect(
-            const Ray3f &/*ray*/, Float /*mint*/, Float /*maxt*/,
-            void * /*cache*/) const {
-        NotImplementedError("ray_intersect(full, scalar)");
-        return { false, 0.f };
-    }
-    auto ray_intersect(const Ray3f &ray, Float mint, Float maxt, void *cache,
-                       bool /*unused*/) const {
-        return ray_intersect(ray, mint, maxt, cache);
-    }
-    /// Vectorized variant of \ref ray_intersect.
-    virtual std::pair<mask_t<FloatP>, FloatP> ray_intersect(
-            const Ray3fP &/*ray*/, FloatP /*mint*/, FloatP /*maxt*/,
-            void * /*cache*/, const mask_t<FloatP> &/*active*/) const {
-        NotImplementedError("ray_intersect(full, vector)");
-        return { false, 0.f };
-    }
-
-    /**
-     * \brief Fast ray intersection test for visibility queries (scalar)
-     *
-     * Check whether the shape is intersected by the given ray.
-     * No details about the intersection are returned, hence the
-     * function is only useful for visibility queries. For most
-     * shapes, this will simply call forward the call to \ref
-     * ray_intersect. When the shape actually contains a nested
-     * kd-tree, some optimizations are possible.
-     */
-    virtual bool ray_intersect(const Ray3f &/*ray*/, Float /*mint*/,
-                               Float /*maxt*/) const {
-        NotImplementedError("ray_intersect(shadow, scalar)");
-        return false;
-    }
-    auto ray_intersect(const Ray3f &ray, Float mint, Float maxt,
-                       bool /*unused*/) const {
-        return ray_intersect(ray, mint, maxt);
-    }
-    /// Vectorized variant of \ref ray_intersect.
-    virtual mask_t<FloatP> ray_intersect(
-            const Ray3fP &/*ray*/, FloatP /*mint*/, FloatP /*maxt*/,
-            const mask_t<FloatP> &/*active*/) const {
-        NotImplementedError("ray_intersect(shadow, scalar)");
-        return false;
-    }
-
-    /**
-     * \brief Given that an intersection has been found, fill a
-     * detailed intersection record.
-     *
-     * \warning In implementations of this interface, all fields of \c its may
-     * be overwritten, independently of the \c active mask. The mask is only
-     * used to avoid unsafe operations such as nullptr dereference.
-     * This allows for efficient unmasked operations.
-     */
-    virtual void fill_surface_interaction(
-            const Ray3f &/*ray*/, const void * /*cache*/,
-            SurfaceInteraction3f &/*its*/) const {
-        NotImplementedError("fill_surface_interaction(scalar)");
-    }
-    void fill_surface_interaction(
-            const Ray3f &ray, const void *cache,
-            SurfaceInteraction3f &its, bool /*unused*/) const {
-        return fill_surface_interaction(ray, cache, its);
-    }
-    /// Vectorized variant of \ref fill_surface_interaction.
-    virtual void fill_surface_interaction(
-            const Ray3fP &/*ray*/, const void * /*cache*/,
-            SurfaceInteraction3fP &/*its*/, const mask_t<FloatP> &/*active*/) const {
-        NotImplementedError("fill_surface_interaction(vector)");
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref normal_derivative()
+    std::pair<Vector3f, Vector3f>
+    normal_derivative(const SurfaceInteraction3f &si,
+                      bool shading_frame, bool /* unused */) const {
+        return normal_derivative(si, shading_frame);
     }
 
     //! @}
@@ -321,72 +324,35 @@ public:
     //! @{ \name Miscellaneous
     // =============================================================
 
-    /// Does the surface of this shape mark a medium transition?
-    bool is_medium_transition(bool /*unused*/ = true) const {
-        // TODO: handle media.
-        return false;
-        // NotImplementedError(is_medium_transition);
-        // return m_interior_medium.get() || m_exterior_medium.get();
-    }
-    /// Return the medium that lies on the interior of this
-    /// shape (\c nullptr == vacuum)
-    Medium *interior_medium(bool /*unused*/ = true) {
-        // TODO: handle media.
-        return nullptr;
-        // NotImplementedError(interior_medium);
-        // return m_interior_medium;
-    }
-    /// Return the medium that lies on the interior of this
-    /// shape (\c nullptr == vacuum, const version)
-    const Medium *interior_medium(bool /*unused*/ = true) const {
-        // TODO: handle media.
-        return nullptr;
-        // NotImplementedError(interior_medium);
-        // return m_interior_medium.get();
-    }
-    /// Return the medium that lies on the exterior of this
-    /// shape (\c nullptr == vacuum)
-    Medium *exterior_medium(bool /*unused*/ = true) {
-        // TODO: handle media.
-        return nullptr;
-        // NotImplementedError(exterior_medium);
-        // return m_exterior_medium;
-    }
-    /// Return the medium that lies on the exterior of this
-    /// shape (\c nullptr == vacuum, const version)
-    const Medium *exterior_medium(bool /*unused*/ = true) const {
-        // TODO: handle media.
-        return nullptr;
-        // NotImplementedError(exterior_medium);
-        // return m_exterior_medium.get();
-    }
+    /// Is this shape a triangle mesh?
+    bool is_mesh() const { return m_mesh; }
 
-    /// Return the shape's BSDF (const version)
-    const BSDF *bsdf(bool /*unused*/ = true) const { return m_bsdf.get(); }
+    /// Does the surface of this shape mark a medium transition?
+    bool is_medium_transition() const { return false; /* TODO: handle media. */ }
+
+    /// Return the medium that lies on the interior of this shape
+    const Medium *interior_medium() const { return nullptr; /* TODO: handle media. */ }
+
+    /// Return the medium that lies on the exterior of this shape
+    const Medium *exterior_medium() const { return nullptr; /* TODO: handle media. */ }
 
     /// Return the shape's BSDF
-    BSDF *bsdf(bool /*unused*/ = true) { return m_bsdf.get(); }
-
-    /// Set the BSDF of this shape
-    void set_bsdf(BSDF *bsdf) { m_bsdf = bsdf; }
+    const BSDF *bsdf() const { return m_bsdf.get(); }
 
     /// Is this shape also an area emitter?
-    bool is_emitter(bool /*unused*/ = true) const { return (bool) m_emitter; }
-
-    /// Return the area emitter associated with this shape (if any, const version)
-    const Emitter *emitter(bool /*unused*/ = true) const { return m_emitter.get(); }
+    bool is_emitter() const { return (bool) m_emitter; }
 
     /// Return the area emitter associated with this shape (if any)
-    Emitter *emitter(bool /*unused*/ = true) { return m_emitter.get(); }
+    const Emitter *emitter() const { return m_emitter.get(); }
+
+    /// Return the area emitter associated with this shape (if any)
+    Emitter *emitter() { return m_emitter.get(); }
 
     /// Is this shape also an area sensor?
-    bool is_sensor(bool /*unused*/ = true) const { return (bool) m_sensor; }
-
-    /// Return the area sensor associated with this shape (if any, const version)
-    const Sensor *sensor(bool /*unused*/ = true) const { return m_sensor.get(); }
+    bool is_sensor() const { return (bool) m_sensor; }
 
     /// Return the area sensor associated with this shape (if any)
-    Sensor *sensor(bool /*unused*/ = true) { return m_sensor.get(); }
+    const Sensor *sensor() const { return m_sensor.get(); }
 
     /**
      * \brief Returns the number of sub-primitives that make up this shape
@@ -398,12 +364,10 @@ public:
      * \brief Return the number of primitives (triangles, hairs, ..)
      * contributed to the scene by this shape
      *
-     * Includes instanced geometry.
-     * The default implementation simply returns `primitive_count()`.
+     * Includes instanced geometry. The default implementation simply returns
+     * the same value as \ref primitive_count().
      */
-    virtual size_t effective_primitive_count() const {
-        return primitive_count();
-    };
+    virtual Size effective_primitive_count() const;
 
     //! @}
     // =============================================================
@@ -411,28 +375,35 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
-    /// Constructs a new Shape.
-    Shape() { };
-    /// Constructs a new Shape, potentially containing children objects such
-    /// as an Emitter.
     Shape(const Properties &props);
-
+    inline Shape() { }
     virtual ~Shape();
 
-private:
+protected:
+    bool m_mesh = false;
     ref<BSDF> m_bsdf;
     ref<Emitter> m_emitter;
     ref<Sensor> m_sensor;
 
+private:
+    // Internal
 
-private:  // Implementation-specific
-    template <typename DirectSample, typename Point2 = typename DirectSample::Point2,
-              typename Mask = mask_t<typename DirectSample::Value>>
-    void sample_direct_impl(DirectSample &d_rec, const Point2 &sample,
-                            const Mask &active) const;
-    template <typename DirectSample, typename Value = typename DirectSample::Value,
+    template <typename Interaction,
+              typename Value = typename Interaction::Value,
+              typename Point2 = Point<Value, 2>,
+              typename Point3 = Point<Value, 3>,
+              typename DirectionSample = mitsuba::DirectionSample<Point3>,
               typename Mask = mask_t<Value>>
-    Value pdf_direct_impl(const DirectSample &d_rec, const Mask &active) const;
+    DirectionSample sample_direction_fallback(const Interaction &it,
+                                           const Point2 &sample,
+                                           Mask mask) const;
+
+    template <typename Interaction, typename DirectionSample,
+              typename Value = typename Interaction::Value,
+              typename Mask = mask_t<Value>>
+    Value pdf_direction_fallback(const Interaction &it,
+                                 const DirectionSample &ds,
+                                 Mask mask) const;
 };
 
 NAMESPACE_END(mitsuba)
@@ -452,7 +423,7 @@ ENOKI_CALL_SUPPORT_SCALAR(is_medium_transition)
 ENOKI_CALL_SUPPORT_SCALAR(exterior_medium)
 ENOKI_CALL_SUPPORT_SCALAR(interior_medium)
 ENOKI_CALL_SUPPORT(normal_derivative)
-ENOKI_CALL_SUPPORT(adjust_time)
+ENOKI_CALL_SUPPORT(fill_surface_interaction)
 ENOKI_CALL_SUPPORT_END(mitsuba::ShapeP)
 
 //! @}

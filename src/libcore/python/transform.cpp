@@ -72,6 +72,7 @@ MTS_PY_EXPORT(AnimatedTransform) {
         .def(py::init<>())
         .def(py::init<const Transform4f &>())
         .mdef(AnimatedTransform, size)
+        .mdef(AnimatedTransform, has_scale)
         .def("__len__", &AnimatedTransform::size)
         .def("__getitem__", [](const AnimatedTransform &trafo, size_t index) {
             if (index >= trafo.size())
@@ -85,15 +86,14 @@ MTS_PY_EXPORT(AnimatedTransform) {
         .def("append",
              py::overload_cast<const AnimatedTransform::Keyframe &>(
                  &AnimatedTransform::append))
-        .def("lookup",
-             py::overload_cast<const Float &, const bool &>(
-                 &AnimatedTransform::lookup, py::const_),
-             "time"_a, "unused"_a = true, D(AnimatedTransform, lookup))
-        .def("lookup",
+        .def("eval",
+             py::overload_cast<Float, bool>(
+                 &AnimatedTransform::eval, py::const_),
+             "time"_a, "unused"_a = true, D(AnimatedTransform, eval))
+        .def("eval",
              vectorize_wrapper(
-                 py::overload_cast<const FloatP &, const mask_t<FloatP> &>(
-                     &AnimatedTransform::lookup, py::const_)),
+                 py::overload_cast<FloatP, MaskP>(
+                     &AnimatedTransform::eval, py::const_)),
              "time"_a, "active"_a = true)
-        .mdef(AnimatedTransform, translation_bounds)
-        ;
+        .mdef(AnimatedTransform, translation_bounds);
 }

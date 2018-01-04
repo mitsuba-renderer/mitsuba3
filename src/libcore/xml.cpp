@@ -11,6 +11,7 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/xml.h>
+#include <mitsuba/core/profiler.h>
 #include <pugixml.hpp>
 #include <tbb/tbb.h>
 
@@ -33,9 +34,9 @@ NAMESPACE_BEGIN(xml)
 
 /* Set of supported XML tags */
 enum ETag {
-    EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ETransform,
-    ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject, ENamedReference,
-    EInclude, EInvalid
+    EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ERGB,
+    ETransform, ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject,
+    ENamedReference, EInclude, EInvalid
 };
 
 struct Version {
@@ -109,6 +110,7 @@ void register_class(const Class *class_) {
         (*tags)["lookat"]     = ELookAt;
         (*tags)["ref"]        = ENamedReference;
         (*tags)["spectrum"]   = ESpectrum;
+        (*tags)["rgb"]        = ERGB;
         (*tags)["include"]    = EInclude;
     }
 
@@ -200,7 +202,6 @@ struct XMLParseContext {
     size_t id_counter = 0;
 };
 
-
 /// Helper function to check if attributes are fully specified
 static void check_attributes(XMLSource &src, const pugi::xml_node &node, std::set<std::string> &&attrs) {
     for (auto attr : node.attributes()) {
@@ -279,6 +280,8 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
             }
             name_attrib.set_value(name.c_str());
         }
+        for (pugi::xpath_node result: node.select_nodes("//lookAt"))
+            result.node().set_name("lookat");
     }
 
     src.modified = true;
@@ -286,7 +289,8 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
 
 static std::pair<std::string, std::string>
 parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
-         ETag parent_tag, Properties &props, size_t &arg_counter, int depth) {
+         ETag parent_tag, Properties &props, size_t &arg_counter, int depth,
+         bool within_emitter = false) {
     try {
         /* Skip over comments */
         if (node.type() == pugi::node_comment || node.type() == pugi::node_declaration)
@@ -302,7 +306,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
         ETag tag = it->second;
 
-        if (node.attribute("type") && tag != EObject && tag_class->find(node.name()) != tag_class->end())
+        if (node.attribute("type") && tag != EObject
+            && tag_class->find(node.name()) != tag_class->end())
             tag = EObject;
 
         /* Perform some safety checks to make sure that the XML tree really makes sense */
@@ -374,28 +379,31 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         switch (tag) {
             case EObject: {
                     check_attributes(src, node, { "type", "id", "name" });
-                    auto id = node.attribute("id").value();
-                    auto name = node.attribute("name").value();
+                    std::string id        = node.attribute("id").value(),
+                                name      = node.attribute("name").value(),
+                                type      = node.attribute("type").value(),
+                                node_name = node.name();
 
-                    Properties props_nested(node.attribute("type").value());
+                    Properties props_nested(type);
                     props_nested.set_id(id);
 
                     auto it_inst = ctx.instances.find(id);
                     if (it_inst != ctx.instances.end())
                         src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
-                            node.name(), id, src.offset(it_inst->second.location));
+                            node_name, id, src.offset(it_inst->second.location));
 
-                    auto it2 = tag_class->find(node.name());
+                    auto it2 = tag_class->find(node_name);
                     if (it2 == tag_class->end())
                         src.throw_error(node, "could not retrieve class object for "
-                                       "tag \"%s\"", node.name());
+                                       "tag \"%s\"", node_name);
 
                     size_t arg_counter_nested = 0;
                     for (pugi::xml_node &ch: node.children()) {
                         std::string nested_id, arg_name;
                         std::tie(arg_name, nested_id) =
                             parse_xml(src, ctx, ch, tag, props_nested,
-                                     arg_counter_nested, depth + 1);
+                                     arg_counter_nested, depth + 1,
+                                     node_name == "emitter");
                         if (!nested_id.empty())
                             props_nested.set_named_reference(arg_name, nested_id);
                     }
@@ -517,47 +525,69 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case ESpectrum: {
-                    // TODO(!): replace with proper support for continuous
-                    // spectra. This is just a temporary workaround.
-                    static_assert(MTS_WAVELENGTH_SAMPLES == 4,
-                                  "This workaroun only works with 4 wavelength"
-                                  "samples, but MTS_WAVELENGTH_SAMPLES != 4.");
+            case ERGB : {
+                    check_attributes(src, node, { "name", "value" });
+                    std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
-                    // Expand "value" attribute if present
-                    if (node.attribute("value")) {
-                        auto list = string::tokenize(node.attribute("value").value());
-                        if (list.size() != 4)
-                            src.throw_error(node, "\"value\" attribute must have exactly 4 elements");
-                        else if (node.attribute("x") || node.attribute("y")
-                                 || node.attribute("z")|| node.attribute("w"))
-                            src.throw_error(node, "can't mix and match \"value\" and \"x\"/\"y\"/\"z\"/\"w\" attributes");
-                        node.append_attribute("x") = list[0].c_str();
-                        node.append_attribute("y") = list[1].c_str();
-                        node.append_attribute("z") = list[2].c_str();
-                        node.append_attribute("w") = list[3].c_str();
-                        node.remove_attribute("value");
-                    }
+                    if (tokens.size() != 3)
+                        src.throw_error(node, "'rgb' tag requires three values (got \"%s\")", node.attribute("value").value());
 
-                    check_attributes(src, node, { "name", "x", "y", "z", "w" });
+                    if (within_emitter)
+                        src.throw_error(node, "The 'rgb' tag is not yet supported within emitter declarations.");
 
-                    std::string value;
-                    Float x = 0.0f, y = 0.0f, z = 0.0f, w = 0.0f;
+                    Properties props2("srgb");
                     try {
-                        value = node.attribute("x").value();
-                        if (!value.empty()) x = detail::stof(value);
-                        value = node.attribute("y").value();
-                        if (!value.empty()) y = detail::stof(value);
-                        value = node.attribute("z").value();
-                        if (!value.empty()) z = detail::stof(value);
-                        value = node.attribute("w").value();
-                        if (!value.empty()) w = detail::stof(value);
+                        props2.set_color("color", Color3f(
+                            detail::stof(tokens[0]),
+                            detail::stof(tokens[1]),
+                            detail::stof(tokens[2])));
                     } catch (...) {
-                        src.throw_error(node, "could not parse floating point value \"%s\"", value);
+                        src.throw_error(node, "could not parse RGB value \"%s\"", node.attribute("value").value());
                     }
+                    ref<Object> obj =
+                        PluginManager::instance()
+                            ->create_object<ContinuousSpectrum>(props2).get();
+                    props.set_object(node.attribute("name").value(), obj);
+                }
+                break;
 
-                    Spectrumf spec(x, y, z, w);
-                    props.set_spectrumf(node.attribute("name").value(), spec);
+            case ESpectrum: {
+                    check_attributes(src, node, { "name", "value" });
+                    std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
+
+                    if (tokens.size() == 1) {
+                        Properties props2(within_emitter ? "d65" : "uniform");
+                        try {
+                            props2.set_float("value", detail::stof(tokens[0]));
+                        } catch (...) {
+                            src.throw_error(node, "could not parse constant spectrum \"%s\"", tokens[0]);
+                        }
+                        ref<Object> obj =
+                            PluginManager::instance()
+                                ->create_object<ContinuousSpectrum>(props2).get();
+                        auto expanded = obj->expand();
+                        if (expanded.size() == 1)
+                            obj = expanded[0];
+                        props.set_object(node.attribute("name").value(), obj);
+                    } else {
+                        std::vector<std::pair<Float, Float>> values;
+
+                        for (const std::string &token : tokens) {
+                            std::vector<std::string> values = string::tokenize(token, ":");
+                            if (values.size() != 2)
+                                src.throw_error(node, "invalid spectrum (expected wavelength:value pairs)");
+                            Float wavelength, value;
+                            try {
+                                wavelength = detail::stof(values[0]);
+                                value = detail::stof(values[1]);
+                            } catch (...) {
+                                src.throw_error(node, "could not parse wavelength:value pair: \"%s\"", token);
+                            }
+                            values.emplace_back(wavelength, value);
+                        }
+
+                        // TODO: probably need to set_pointer("values") and set_size("size")?
+                    }
                 }
                 break;
 
@@ -663,17 +693,27 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, std::string id) {
     Properties &props = inst.props;
     auto named_references = props.named_references();
 
-    Thread *thread = Thread::thread();
+    ThreadEnvironment env;
 
     tbb::parallel_for(tbb::blocked_range<uint32_t>(
         0u, (uint32_t) named_references.size(), 1),
         [&](const tbb::blocked_range<uint32_t> &range) {
-            ThreadEnvironment env(thread);
+            ScopedSetThreadEnvironment set_env(env);
             for (uint32_t i = range.begin(); i != range.end(); ++i) {
                 auto &kv = named_references[i];
                 try {
                     ref<Object> obj = instantiate_node(ctx, kv.second);
-                    props.set_object(kv.first, obj, false);
+                    // Give the object a chance to recursively expand into sub-objects
+                    std::vector<ref<Object>> children = obj->expand();
+                    if (children.empty()) {
+                        props.set_object(kv.first, obj, false);
+                    } else if (children.size() == 1) {
+                        props.set_object(kv.first, children[0], false);
+                    } else {
+                        int ctr = 0;
+                        for (auto c : children)
+                            props.set_object(kv.first + "_" + std::to_string(ctr++), children[0], false);
+                    }
                 } catch (const std::exception &e) {
                     if (strstr(e.what(), "Error while loading") == nullptr)
                         Throw("Error while loading \"%s\" (near %s): %s",
@@ -697,7 +737,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, std::string id) {
     auto unqueried = props.unqueried();
     if (!unqueried.empty()) {
         for (auto &v : unqueried) {
-            if (props.property_type(v) == Properties::EObject) {
+            if (props.type(v) == Properties::EObject) {
                 const auto &obj = props.object(v);
                 Throw("Error while loading \"%s\" (near %s): unreferenced "
                       "object %s (within %s of type \"%s\")",
@@ -720,6 +760,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, std::string id) {
 NAMESPACE_END(detail)
 
 ref<Object> load_string(const std::string &string) {
+    ScopedPhase sp(EProfilerPhase::EInitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
                                                     pugi::parse_default |
@@ -742,6 +783,7 @@ ref<Object> load_string(const std::string &string) {
 }
 
 ref<Object> load_file(const fs::path &filename_) {
+    ScopedPhase sp(EProfilerPhase::EInitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);

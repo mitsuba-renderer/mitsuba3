@@ -1,4 +1,5 @@
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/emitter.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/mmap.h>
@@ -59,11 +60,11 @@ public:
         };
 
         /// Temporary buffers for vertices, normals, and texture coordinates
-        std::vector<Vector3f> vertices;
-        std::vector<Normal3h> normals;
-        std::vector<Vector2f> texcoords;
-        std::vector<Index3> triangles;
-        std::vector<VertexBinding> vertex_map;
+        std::vector<Vector3f, enoki::aligned_allocator<Vector3f>> vertices;
+        std::vector<Normal3f, enoki::aligned_allocator<Normal3f>> normals;
+        std::vector<Vector2f, enoki::aligned_allocator<Vector2f>> texcoords;
+        std::vector<Index3, enoki::aligned_allocator<Index3>> triangles;
+        std::vector<VertexBinding, enoki::aligned_allocator<VertexBinding>> vertex_map;
 
         size_t vertex_guess = mmap->size() / 100;
         vertices.reserve(vertex_guess);
@@ -122,8 +123,7 @@ public:
                 n = normalize(m_to_world.transform_affine(n));
                 if (unlikely(!all(enoki::isfinite(n))))
                     fail("mesh contains invalid vertex normal data");
-                normals.push_back(Normal3h(n));
-                m_vertex_normals = true;
+                normals.push_back(n);
             } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Texture coordinate
                 Vector2f uv;
@@ -212,23 +212,19 @@ public:
         m_vertex_count = (Size) vertex_map.size();
         m_face_count = (Size) triangles.size();
         m_vertex_struct = new Struct();
-        m_vertex_struct->append("x", struct_traits<Float>::value);
-        m_vertex_struct->append("y", struct_traits<Float>::value);
-        m_vertex_struct->append("z", struct_traits<Float>::value);
+        for (auto name : { "x", "y", "z" })
+            m_vertex_struct->append(name, Struct::EFloat);
 
-        size_t vertex_offset = 0, normal_offset = (size_t) -1, texcoord_offset = (size_t) -1;
-
-        if (m_vertex_normals) {
-            m_vertex_struct->append("nx", Struct::EFloat16);
-            m_vertex_struct->append("ny", Struct::EFloat16);
-            m_vertex_struct->append("nz", Struct::EFloat16);
-            normal_offset = m_vertex_struct->offset("nx");
+        if (!m_disable_vertex_normals) {
+            for (auto name : { "nx", "ny", "nz" })
+                m_vertex_struct->append(name, Struct::EFloat);
+            m_normal_offset = m_vertex_struct->offset("nx");
         }
 
         if (!texcoords.empty()) {
-            m_vertex_struct->append("u", Struct::EFloat32);
-            m_vertex_struct->append("v", Struct::EFloat32);
-            texcoord_offset = m_vertex_struct->offset("u");
+            for (auto name : { "u", "v" })
+                m_vertex_struct->append(name, Struct::EFloat);
+            m_texcoord_offset = m_vertex_struct->offset("u");
         }
 
         m_face_struct = new Struct();
@@ -251,20 +247,20 @@ public:
                 uint8_t *vertex_ptr = vertex(v->value);
                 auto key = v->key;
 
-                store(vertex_ptr + vertex_offset, vertices[key[0] - 1]);
+                store(vertex_ptr, vertices[key[0] - 1]);
 
                 if (key[1]) {
                     size_t map_index = key[1] - 1;
                     if (unlikely(map_index > texcoords.size()))
                         fail("reference to invalid texture coordinate %i!", key[1]);
-                    store(vertex_ptr + texcoord_offset, texcoords[key[1] - 1]);
+                    store(vertex_ptr + m_texcoord_offset, texcoords[key[1] - 1]);
                 }
 
-                if (m_vertex_normals && key[2]) {
+                if (has_vertex_normals() && key[2]) {
                     size_t map_index = key[2] - 1;
                     if (unlikely(map_index > normals.size()))
                         fail("reference to invalid normal %i!", key[2]);
-                    store(vertex_ptr + normal_offset, normals[key[2] - 1]);
+                    store(vertex_ptr + m_normal_offset, normals[key[2] - 1]);
                 }
 
                 v = v->next;
@@ -278,7 +274,7 @@ public:
             util::time_string(timer.value())
         );
 
-        if (m_vertex_normals && normals.empty())
+        if (!m_disable_vertex_normals && normals.empty())
             recompute_vertex_normals();
 
         if (is_emitter())

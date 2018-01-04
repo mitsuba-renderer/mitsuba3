@@ -2,6 +2,10 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
 
+#if defined(__clang__)
+#  pragma clang diagnostic ignored "-Wduplicate-decl-specifier" // warning: duplicate 'const' declaration specifier
+#endif
+
 #define SET_ITEM_BINDING(Name, Type)                                   \
     def("__setitem__", [](Properties& p,                               \
                           const std::string &key, const Type &value) { \
@@ -41,7 +45,7 @@ MTS_PY_EXPORT(Properties) {
 
        .def("__getitem__", [](const Properties& p, const std::string &key) {
             // We need to ask for type information to return the right cast
-            auto type = p.property_type(key);
+            auto type = p.type(key);
 
             if (type == Properties::EBool)
                 return py::cast(p.bool_(key));
@@ -61,6 +65,8 @@ MTS_PY_EXPORT(Properties) {
                 return py::cast(p.animated_transform(key));
             else if (type == Properties::EObject)
                 return py::cast(p.object(key));
+            else if (type == Properties::EPointer)
+                return py::cast(p.pointer(key));
             else {
                 throw std::runtime_error("Unsupported property type");
             }

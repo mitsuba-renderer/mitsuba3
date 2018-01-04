@@ -55,8 +55,8 @@ extern py::dtype dtype_for_struct(const Struct *s);
 
 template <typename VectorClass, typename ScalarClass, typename ClassBinding>
 void bind_slicing_operators(ClassBinding &c) {
-    c.def(py::init([](size_t n) {
-        auto result = new VectorClass();
+    c.def(py::init([](size_t n) -> VectorClass* {
+        VectorClass* result = new VectorClass();
         set_slices(*result, n);
         return result;
     }))

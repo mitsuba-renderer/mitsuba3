@@ -131,12 +131,18 @@ DISTRIBUTIONS = [
     ),
 
     ('Spectrum: test', LineDomain([300.0, 700.0]),
-     SpectrumAdapter(mitsuba.core.InterpolatedSpectrum(400, 650, [1, 5, 3, 6])),
+     SpectrumAdapter("""<spectrum version="2.0.0" type="interpolated">
+        <float name="lambda_min" value="400"/>
+        <float name="lambda_max" value="650"/>
+        <string name="values" value="1, 5, 3, 6"/>
+      </spectrum>"""),
      dict(DEFAULT_SETTINGS, sample_dim=1)),
 
-    ('Spectrum: rgb_importance', LineDomain([360.0, 830.0]),
-     SpectrumAdapter('<spectrum version="2.0.0" type="rgb_importance"/>'),
-     dict(DEFAULT_SETTINGS, sample_dim=1)),
+    # TODO: test `sample_rgb_spectrum` (missing the PDF for now)
+    # ('Spectrum: rgb_importance', LineDomain([360.0, 830.0]),
+    #  (lambda sample: mitsuba.core.sample_rgb_spectrum(sample)[0],
+    #   lambda value: 1.0 / mitsuba.core.sample_rgb_spectrum_pdf(value)),
+    #  dict(DEFAULT_SETTINGS, sample_dim=1)),
 
     ('Spectrum: d65', LineDomain([360.0, 830.0]),
      SpectrumAdapter('<spectrum version="2.0.0" type="d65"/>'),

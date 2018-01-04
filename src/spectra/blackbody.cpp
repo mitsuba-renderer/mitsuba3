@@ -29,15 +29,15 @@ public:
         m_integral = cdf_and_pdf(MTS_WAVELENGTH_MAX).first - m_integral_min;
     }
 
-    template <typename T>
-    MTS_INLINE T eval_impl(T lambda_) const {
+    template <typename Value>
+    MTS_INLINE Value eval_impl(Value lambda_, mask_t<Value>) const {
         auto mask_valid =
             lambda_ >= MTS_WAVELENGTH_MIN &&
             lambda_ <= MTS_WAVELENGTH_MAX;
 
-        T lambda  = lambda_ * 1e-9f;
-        T lambda2 = lambda * lambda;
-        T lambda5 = lambda2 * lambda2 * lambda;
+        Value lambda  = lambda_ * 1e-9f;
+        Value lambda2 = lambda * lambda;
+        Value lambda5 = lambda2 * lambda2 * lambda;
 
         /* Watts per unit surface area (m^-2)
                  per unit wavelength (nm^-1)
@@ -48,18 +48,18 @@ public:
         return P & mask_valid;
     }
 
-    template <typename T>
-    MTS_INLINE T pdf_impl(T lambda_) const {
-        const T lambda  = lambda_ * 1e-9f,
-                lambda2 = lambda * lambda,
-                lambda5 = lambda2 * lambda2 * lambda;
+    template <typename Value>
+    MTS_INLINE Value pdf_impl(Value lambda_, mask_t<Value>) const {
+        const Value lambda  = lambda_ * 1e-9f,
+                    lambda2 = lambda * lambda,
+                    lambda5 = lambda2 * lambda2 * lambda;
 
         /* Wien's approximation to Planck's law  */
         return 1e-9f * c0 * exp(-c1 / (lambda * m_temperature))
             / (lambda5 * m_integral);
     }
 
-    template <typename T> std::pair<T, T> cdf_and_pdf(T lambda_) const {
+    template <typename Value> std::pair<Value, Value> cdf_and_pdf(Value lambda_) const {
         const Float c1_2 = c1 * c1,
                     c1_3 = c1_2 * c1,
                     c1_4 = c1_2 * c1_2;
@@ -67,34 +67,36 @@ public:
         const Float K = m_temperature,
                     K2 = K*K, K3 = K2*K;
 
-        const T lambda  = lambda_ * 1e-9f,
-                lambda2 = lambda * lambda,
-                lambda3 = lambda2 * lambda,
-                lambda5 = lambda2 * lambda3;
+        const Value lambda  = lambda_ * 1e-9f,
+                    lambda2 = lambda * lambda,
+                    lambda3 = lambda2 * lambda,
+                    lambda5 = lambda2 * lambda3;
 
-        T expval = exp(-c1 / (K * lambda));
+        Value expval = exp(-c1 / (K * lambda));
 
-        T cdf = c0 * K * expval *
+        Value cdf = c0 * K * expval *
                 (c1_3 + 3 * c1_2 * K * lambda + 6 * c1 * K2 * lambda2 +
                  6 * K3 * lambda3) / (c1_4 * lambda3);
 
-        T pdf = 1e-9f * c0 * expval / lambda5;
+        Value pdf = 1e-9f * c0 * expval / lambda5;
 
         return std::make_pair(cdf, pdf);
     }
 
-    template <typename T>
-    std::tuple<T, T, T> sample_impl(T sample, mask_t<T> active = true) const {
+    template <typename Value>
+    MTS_INLINE std::pair<Value, Value> sample_impl(Value sample, mask_t<Value> active_ = true) const {
+        mask_t<Value> active = active_;
+
         sample = fmadd(sample, m_integral, m_integral_min);
 
         const Float eps        = 1e-5f,
                     eps_domain = eps * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN),
                     eps_value  = eps * m_integral;
 
-        T a = MTS_WAVELENGTH_MIN,
-          b = MTS_WAVELENGTH_MAX,
-          t = 0.5f * (MTS_WAVELENGTH_MIN + MTS_WAVELENGTH_MAX),
-          value, deriv;
+        Value a = MTS_WAVELENGTH_MIN,
+              b = MTS_WAVELENGTH_MAX,
+              t = 0.5f * (MTS_WAVELENGTH_MIN + MTS_WAVELENGTH_MAX),
+              value, deriv;
 
         do {
             /* Fall back to a bisection step when t is out of bounds */
@@ -119,42 +121,17 @@ public:
             masked(b, !update_mask) = t;
 
             /* Perform a Newton step */
-            masked(t, active) -= value / deriv;
+            masked(t, active) = t - value / deriv;
         } while (true);
 
         auto pdf = deriv / m_integral;
 
-        return std::make_tuple(t, eval_impl(t) / pdf, pdf);
-    }
-
-    Spectrumf eval(const Spectrumf &lambda) const override {
-        return eval_impl(lambda);
-    }
-
-    SpectrumfP eval(const SpectrumfP &lambda, const Mask &) const override {
-        return eval_impl(lambda);
-    }
-
-    Spectrumf pdf(const Spectrumf &lambda) const override {
-        return pdf_impl(lambda);
-    }
-
-    SpectrumfP pdf(const SpectrumfP &lambda, const Mask &) const override {
-        return pdf_impl(lambda);
-    }
-
-    std::tuple<Spectrumf, Spectrumf, Spectrumf>
-    sample(const Spectrumf &sample) const override {
-        return sample_impl<Spectrumf>(sample);
-    }
-
-    std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
-    sample(const SpectrumfP &sample, const Mask &active) const override {
-        return sample_impl<SpectrumfP>(sample, active);
+        return { t, eval_impl(t, active_) / pdf };
     }
 
     Float integral() const override { return m_integral; }
 
+    MTS_IMPLEMENT_SPECTRUM()
     MTS_DECLARE_CLASS()
 
 private:

@@ -42,11 +42,11 @@ MTS_PY_EXPORT(Logger) {
         .mdef(Logger, read_log);
 
     py::enum_<ELogLevel>(m, "ELogLevel", D(ELogLevel))
-        .value("ETrace", ETrace)
-        .value("EDebug", EDebug)
-        .value("EInfo", EInfo)
-        .value("EWarn", EWarn)
-        .value("EError", EError)
+        .value("ETrace", ETrace, D(ELogLevel, ETrace))
+        .value("EDebug", EDebug, D(ELogLevel, EDebug))
+        .value("EInfo", EInfo, D(ELogLevel, EInfo))
+        .value("EWarn", EWarn, D(ELogLevel, EWarn))
+        .value("EError", EError, D(ELogLevel, EError))
         .export_values();
 
     m.def("Log", &PyLog, "level"_a, "msg"_a);

@@ -3,6 +3,7 @@
 #include <mitsuba/core/tls.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/profiler.h>
 #include <tbb/task_scheduler_observer.h>
 #include <condition_variable>
 #include <thread>
@@ -242,8 +243,8 @@ bool Thread::set_priority(EPriority priority) {
     return true;
 }
 
-void Thread::set_core_affinity(int coreID) {
-    d->core_affinity = coreID;
+void Thread::set_core_affinity(int core_id) {
+    d->core_affinity = core_id;
     if (!d->running)
         return;
 
@@ -295,7 +296,7 @@ void Thread::set_core_affinity(int coreID) {
     for (int i=0; i<logical_core_count; ++i) {
         if (!CPU_ISSET_S(i, size, cpuset))
             continue;
-        if (available++ == coreID) {
+        if (available++ == core_id) {
             actual_core_id = i;
             break;
         }
@@ -304,7 +305,7 @@ void Thread::set_core_affinity(int coreID) {
     if (actual_core_id == -1) {
         Log(EWarn, "Thread::set_core_affinity(): out of bounds: %i/%i cores "
                    "available, requested #%i!",
-            available, core_count, coreID);
+            available, core_count, core_id);
         CPU_FREE(cpuset);
         return;
     }
@@ -328,8 +329,8 @@ void Thread::set_core_affinity(int coreID) {
 
     DWORD_PTR mask;
 
-    if (coreID != -1 && coreID < core_count)
-        mask = (DWORD_PTR) 1 << coreID;
+    if (core_id != -1 && core_id < core_count)
+        mask = (DWORD_PTR) 1 << core_id;
     else
         mask = (1 << core_count) - 1;
 
@@ -516,10 +517,11 @@ void Thread::static_initialization() {
     ThreadLocalBase::register_thread();
 
     self = new ThreadLocal<Thread>();
-    Thread *mainThread = new MainThread();
-    mainThread->d->running = true;
-    mainThread->d->fresolver = new FileResolver();
-    *self = mainThread;
+    Thread *main_thread = new MainThread();
+
+    main_thread->d->running = true;
+    main_thread->d->fresolver = new FileResolver();
+    *self = main_thread;
 
     observer = std::unique_ptr<Thread::TaskObserver>(
         new Thread::TaskObserver());
@@ -539,19 +541,39 @@ void Thread::static_shutdown() {
     #endif
 }
 
-ThreadEnvironment::ThreadEnvironment(Thread *other) {
-    auto thread = Thread::thread();
+ThreadEnvironment::ThreadEnvironment() {
+    Thread *thread = Thread::thread();
     Assert(thread);
     m_logger = thread->logger();
     m_file_resolver = thread->file_resolver();
-    thread->set_logger(other->logger());
-    thread->set_file_resolver(other->file_resolver());
+#if defined(MTS_ENABLE_PROFILER)
+    m_profiler_flags = *profiler_flags();
+#endif
 }
 
-ThreadEnvironment::~ThreadEnvironment() {
-    auto thread = Thread::thread();
+ThreadEnvironment::~ThreadEnvironment() { }
+
+ScopedSetThreadEnvironment::ScopedSetThreadEnvironment(ThreadEnvironment &env) {
+    Thread *thread = Thread::thread();
+    Assert(thread);
+    m_logger = thread->logger();
+    m_file_resolver = thread->file_resolver();
+    thread->set_logger(env.m_logger);
+    thread->set_file_resolver(env.m_file_resolver);
+#if defined(MTS_ENABLE_PROFILER)
+    uint64_t *profiler_flags = mitsuba::profiler_flags();
+    m_profiler_flags = *profiler_flags;
+    *profiler_flags = env.m_profiler_flags;
+#endif
+}
+
+ScopedSetThreadEnvironment::~ScopedSetThreadEnvironment() {
+    Thread *thread = Thread::thread();
     thread->set_logger(m_logger);
     thread->set_file_resolver(m_file_resolver);
+#if defined(MTS_ENABLE_PROFILER)
+    *profiler_flags() = m_profiler_flags;
+#endif
 }
 
 MTS_IMPLEMENT_CLASS(Thread, Object)

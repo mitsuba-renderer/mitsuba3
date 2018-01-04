@@ -47,11 +47,7 @@ Film::Film(const Properties &props) : Object() {
         }
     }
 
-    configure();
-}
-
-void Film::configure() {
-    if (m_filter == nullptr) {
+    if (!m_filter) {
         // No reconstruction filter has been selected. Load a Gaussian filter by default
         m_filter = static_cast<ReconstructionFilter *>(
             PluginManager::instance()->create_object<ReconstructionFilter>(
@@ -59,6 +55,8 @@ void Film::configure() {
         );
     }
 }
+
+Film::~Film() { }
 
 MTS_IMPLEMENT_CLASS(Film, Object);
 NAMESPACE_END(mitsuba)

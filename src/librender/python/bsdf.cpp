@@ -1,5 +1,6 @@
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/interaction.h>
+#include <mitsuba/render/sampler.h>
+#include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
 
 template <typename Point3>
@@ -10,22 +11,20 @@ auto bind_bsdf_sample(py::module &m, const char *name) {
 
     return py::class_<Type>(m, name, D(BSDFSample))
         .def(py::init<const SurfaceInteraction&, Sampler*, ETransportMode>(),
-            "its"_a, "sampler"_a, "mode"_a = ERadiance,
-            D(BSDFSample, BSDFSample))
+            "si"_a, "sampler"_a, "mode"_a = ERadiance, D(BSDFSample, BSDFSample))
         .def(py::init<const SurfaceInteraction&, const Vector3&, ETransportMode>(),
-            "its"_a, "wo"_a, "mode"_a = ERadiance,
-            D(BSDFSample, BSDFSample, 2))
-        .def(py::init<const SurfaceInteraction&, const Vector3&, const Vector3&, ETransportMode>(),
-            "its"_a, "wi"_a, "wo"_a, "mode"_a = ERadiance,
-            D(BSDFSample, BSDFSample, 3))
+            "si"_a, "wo"_a, "mode"_a = ERadiance, D(BSDFSample, BSDFSample, 2))
+        .def(py::init<const SurfaceInteraction&, const Vector3&, const Vector3&,
+                      ETransportMode>(),
+            "si"_a, "wi"_a, "wo"_a, "mode"_a = ERadiance, D(BSDFSample, BSDFSample, 3))
         .def("reverse", &Type::reverse, D(BSDFSample, reverse))
         .def("__repr__", [](const Type &bs) {
             std::ostringstream oss;
             oss << bs;
             return oss.str();
         })
-        .def_property_readonly("its",
-            [](const Type &bs) -> const SurfaceInteraction &{ return bs.its; },
+        .def_property_readonly("si",
+            [](const Type &bs) -> const SurfaceInteraction& { return bs.si; },
             py::return_value_policy::reference_internal)
         .def_readwrite("sampler", &Type::sampler, D(BSDFSample, sampler))
         .def_readwrite("wi", &Type::wi, D(BSDFSample, wi))
@@ -48,16 +47,17 @@ MTS_PY_EXPORT(BSDFSample) {
 MTS_PY_EXPORT(BSDF) {
     auto bsdf = MTS_PY_CLASS(BSDF, Object)
        .def("sample",
-           py::overload_cast<BSDFSample3f&, const Point2f&>(
-                &BSDF::sample, py::const_),
-           D(BSDF, sample), "bs"_a, "sample"_a = ESolidAngle)
-        //.def("sample", enoki::vectorize_wrapper(
-        //    py::overload_cast<BSDFSample3fP&, const Point2fP&, const mask_t<FloatP>&>(
-        //        &BSDF::sample, py::const_)))
-                      //D(BSDF, sample), "bs"_a, "sample"_a)
+            py::overload_cast<BSDFSample3f &, const Point2f &>(
+                 &BSDF::sample, py::const_),
+            D(BSDF, sample), "bs"_a, "sample"_a)
+        // .def("sample", enoki::vectorize_wrapper(
+        //          py::overload_cast<BSDFSample3fP &, const Point2fP &,
+        //                            const mask_t<FloatP> &>(&BSDF::sample, py::const_)
+        //      ),
+        //      D(BSDF, sample), "bs"_a, "sample"_a)
 
         .def("eval",
-             py::overload_cast<const BSDFSample3f&, EMeasure>(
+             py::overload_cast<const BSDFSample3f &, EMeasure>(
                  &BSDF::eval, py::const_),
              D(BSDF, eval), "bs"_a, "measure"_a = ESolidAngle)
         //.def("eval", enoki::vectorize_wrapper(
@@ -79,55 +79,31 @@ MTS_PY_EXPORT(BSDF) {
         .def("flags", &BSDF::flags, D(BSDF, flags))
     ;
 
-    py::enum_<BSDF::EFlags>(bsdf, "EFlags",
-        "This list of flags is used to classify the different"
-        " types of lobes that are implemented in a BSDF instance.",
-        py::arithmetic())
-        .value("ENull", BSDF::ENull)
-                       //D(BSDF_EFlags, ENull))
-        .value("EDiffuseReflection", BSDF::EDiffuseReflection)
-                       //D(BSDF_EFlags, EDiffuseReflection))
-        .value("EDiffuseTransmission", BSDF::EDiffuseTransmission)
-                       //D(BSDF_EFlags, EDiffuseTransmission))
-        .value("EGlossyReflection", BSDF::EGlossyReflection)
-                       //D(BSDF_EFlags, EGlossyReflection))
-        .value("EGlossyTransmission", BSDF::EGlossyTransmission)
-                       //D(BSDF_EFlags, EGlossyTransmission))
-        .value("EDeltaReflection", BSDF::EDeltaReflection)
-                       //D(BSDF_EFlags, EDeltaReflection))
-        .value("EDeltaTransmission", BSDF::EDeltaTransmission)
-                       //D(BSDF_EFlags, EDeltaTransmission))
-        .value("EAnisotropic", BSDF::EAnisotropic)
-                       //D(BSDF_EFlags, EAnisotropic))
-        .value("ESpatiallyVarying", BSDF::ESpatiallyVarying)
-                       //D(BSDF_EFlags, ESpatiallyVarying))
-        .value("ENonSymmetric", BSDF::ENonSymmetric)
-                       //D(BSDF_EFlags, ENonSymmetric))
-        .value("EFrontSide", BSDF::EFrontSide)
-                       //D(BSDF_EFlags, EFrontSide))
-        .value("EBackSide", BSDF::EBackSide)
-                       //D(BSDF_EFlags, EBackSide))
-        .value("EUsesSampler", BSDF::EUsesSampler)
-                       //D(BSDF_EFlags, EUsesSampler))
+    py::enum_<BSDF::EFlags>(bsdf, "EFlags", D(BSDF, EFlags), py::arithmetic())
+        .value("ENull", BSDF::ENull, D(BSDF, EFlags, ENull))
+        .value("EDiffuseReflection", BSDF::EDiffuseReflection, D(BSDF, EFlags, EDiffuseReflection))
+        .value("EDiffuseTransmission", BSDF::EDiffuseTransmission, D(BSDF, EFlags, EDiffuseTransmission))
+        .value("EGlossyReflection", BSDF::EGlossyReflection, D(BSDF, EFlags, EGlossyReflection))
+        .value("EGlossyTransmission", BSDF::EGlossyTransmission, D(BSDF, EFlags, EGlossyTransmission))
+        .value("EDeltaReflection", BSDF::EDeltaReflection, D(BSDF, EFlags, EDeltaReflection))
+        .value("EDeltaTransmission", BSDF::EDeltaTransmission, D(BSDF, EFlags, EDeltaTransmission))
+        .value("EAnisotropic", BSDF::EAnisotropic, D(BSDF, EFlags, EAnisotropic))
+        .value("ESpatiallyVarying", BSDF::ESpatiallyVarying, D(BSDF, EFlags, ESpatiallyVarying))
+        .value("ENonSymmetric", BSDF::ENonSymmetric, D(BSDF, EFlags, ENonSymmetric))
+        .value("EFrontSide", BSDF::EFrontSide, D(BSDF, EFlags, EFrontSide))
+        .value("EBackSide", BSDF::EBackSide, D(BSDF, EFlags, EBackSide))
+        .value("EUsesSampler", BSDF::EUsesSampler, D(BSDF, EFlags, EUsesSampler))
         .export_values();
+
     py::enum_<BSDF::EFlagCombinations>(bsdf, "EFlagCombinations",
-        "Convenient combinations of flags from \ref EBSDFType",
-        py::arithmetic())
-        .value("EReflection", BSDF::EReflection)
-                       //D(BSDF_EFlagCombinations, EReflection))
-        .value("ETransmission", BSDF::ETransmission)
-                       //D(BSDF_EFlagCombinations, ETransmission))
-        .value("EDiffuse", BSDF::EDiffuse)
-                       //D(BSDF_EFlagCombinations, EDiffuse))
-        .value("EGlossy", BSDF::EGlossy)
-                       //D(BSDF_EFlagCombinations, EGlossy))
-        .value("ESmooth", BSDF::ESmooth)
-                       //D(BSDF_EFlagCombinations, ESmooth))
-        .value("EDelta", BSDF::EDelta)
-                       //D(BSDF_EFlagCombinations, EDelta))
-        .value("EDelta1D", BSDF::EDelta1D)
-                       //D(BSDF_EFlagCombinations, EDelta1D))
-        .value("EAll", BSDF::EAll)
-                       //D(BSDF_EFlagCombinations, EAll))
+                                       D(BSDF, EFlagCombinations), py::arithmetic())
+        .value("EReflection", BSDF::EReflection, D(BSDF, EFlagCombinations, EReflection))
+        .value("ETransmission", BSDF::ETransmission, D(BSDF, EFlagCombinations, ETransmission))
+        .value("EDiffuse", BSDF::EDiffuse, D(BSDF, EFlagCombinations, EDiffuse))
+        .value("EGlossy", BSDF::EGlossy, D(BSDF, EFlagCombinations, EGlossy))
+        .value("ESmooth", BSDF::ESmooth, D(BSDF, EFlagCombinations, ESmooth))
+        .value("EDelta", BSDF::EDelta, D(BSDF, EFlagCombinations, EDelta))
+        .value("EDelta1D", BSDF::EDelta1D, D(BSDF, EFlagCombinations, EDelta1D))
+        .value("EAll", BSDF::EAll, D(BSDF, EFlagCombinations, EAll))
         .export_values();
 }

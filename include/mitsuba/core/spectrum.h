@@ -79,16 +79,6 @@ struct Spectrum
                                  Approx, RoundingMode::Default>;
 
     ENOKI_DECLARE_ARRAY(Base, Spectrum)
-
-    /**
-     * \brief Return a spectral color distribution of the
-     * D65 white point (with unit luminance)
-     */
-    static const Spectrum D65() {
-        // TODO: support for spectral queries.
-        Log(EWarn, "Spectrum::D65() not implemented correctly yet.");
-        return Spectrum(1.0f);
-    }
 };
 
 //! @}
@@ -105,20 +95,23 @@ struct Spectrum
  */
 class MTS_EXPORT_CORE ContinuousSpectrum : public Object {
 public:
-    using Mask = mask_t<FloatP>;
-
     /**
      * Evaluate the value of the spectral power distribution
      * at a set of wavelengths
      *
-     * \param lambda
+     * \param wavelengths
      *     List of wavelengths specified in nanometers
      */
-    virtual Spectrumf eval(const Spectrumf &lambda) const = 0;
+    virtual Spectrumf eval(const Spectrumf &wavelengths) const;
 
     /// Vectorized version of \ref eval()
-    virtual SpectrumfP eval(const SpectrumfP &lambda,
-                            const Mask &active = true) const = 0;
+    virtual SpectrumfP eval(const SpectrumfP &wavelengths,
+                            MaskP active = true) const;
+
+    /// Wrapper for scalar \ref eval() with a mask (which will be ignored)
+    Spectrumf eval(const Spectrumf &wavelengths, bool /* unused */) const {
+        return eval(wavelengths);
+    }
 
     /**
      * \brief Importance sample the spectral power distribution
@@ -132,18 +125,21 @@ public:
      * \return
      *     1. Set of sampled wavelengths specified in nanometers
      *
-     *     2. The Monte Carlo sampling weight (SPD value divided
-     *        by the sampling density)
-     *
-     *     3. Sample probability per unit wavelength (in units of 1/nm)
+     *     2. The Monte Carlo importance weight (Spectral power
+     *        distribution value divided by the sampling density)
      */
-    virtual std::tuple<Spectrumf, Spectrumf, Spectrumf>
+    virtual std::pair<Spectrumf, Spectrumf>
     sample(const Spectrumf &sample) const;
 
     /// Vectorized version of \ref sample()
-    virtual std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
-    sample(const SpectrumfP &sample,
-           const Mask &active = true) const;
+    virtual std::pair<SpectrumfP, SpectrumfP>
+    sample(const SpectrumfP &sample, MaskP active = true) const;
+
+    /// Wrapper for scalar \ref sample() with a mask (which will be ignored)
+    std::pair<Spectrumf, Spectrumf>
+    sample(const Spectrumf &sample, bool /* mask */) const {
+        return ContinuousSpectrum::sample(sample);
+    }
 
     /**
      * \brief Return the probability distribution of the \ref sample() method
@@ -152,11 +148,16 @@ public:
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.
      */
-    virtual Spectrumf pdf(const Spectrumf &lambda) const;
+    virtual Spectrumf pdf(const Spectrumf &wavelengths) const;
 
     /// Vectorized version of \ref pdf()
-    virtual SpectrumfP pdf(const SpectrumfP &lambda,
-                           const Mask &active = true) const;
+    virtual SpectrumfP pdf(const SpectrumfP &wavelengths,
+                           MaskP active = true) const;
+
+    /// Wrapper for scalar \ref pdf() with a mask (which will be ignored)
+    Spectrumf pdf(const Spectrumf &wavelengths, bool /* mask */) {
+        return pdf(wavelengths);
+    }
 
     /**
      * Return the integral over the spectrum over its support
@@ -168,82 +169,15 @@ public:
      */
     virtual Float integral() const;
 
+    /**
+     * Convenience method returning the standard D65 illuminant.
+     */
+    static ref<ContinuousSpectrum> D65(Float scale = 1.0f);
+
     MTS_DECLARE_CLASS()
 
 protected:
     virtual ~ContinuousSpectrum() = default;
-};
-
-/**
- * \brief Linear interpolant of a regularly sampled spectrum
- */
-class MTS_EXPORT_CORE InterpolatedSpectrum : public ContinuousSpectrum {
-public:
-    /**
-     * \brief Construct a linearly interpolated spectrum
-     *
-     * \param lambda_min
-     *      Lowest wavelength value associated with a sample
-     *
-     * \param lambda_max
-     *      Largest wavelength value associated with a sample
-     *
-     * \param size
-     *      Number of sample values
-     *
-     * \param data
-     *      Pointer to the sample values. The data is copied,
-     *      hence there is no need to keep 'data' alive.
-     */
-    InterpolatedSpectrum(Float lambda_min, Float lambda_max,
-                         size_t size, const Float *data);
-
-    // =======================================================================
-    //! @{ \name Implementation of the ContinuousSpectrum interface
-    // =======================================================================
-
-    virtual Spectrumf eval(const Spectrumf &lambda) const override;
-
-    virtual SpectrumfP eval(const SpectrumfP &lambda,
-                            const Mask &active) const override;
-
-    virtual std::tuple<Spectrumf, Spectrumf, Spectrumf>
-    sample(const Spectrumf &sample) const override;
-
-    virtual std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
-    sample(const SpectrumfP &sample,
-           const Mask &active) const override;
-
-    virtual Spectrumf pdf(const Spectrumf &lambda) const override;
-
-    virtual SpectrumfP pdf(const SpectrumfP &lambda,
-                           const Mask &active) const override;
-
-    virtual Float integral() const override;
-
-    //! @}
-    // =======================================================================
-
-    MTS_DECLARE_CLASS()
-
-protected:
-    virtual ~InterpolatedSpectrum() = default;
-
-    template <typename Value>
-    auto eval_impl(Value lambda, mask_t<Value> active = true) const;
-
-    template <typename Value>
-    auto sample_impl(Value sample, mask_t<Value> active = true) const;
-
-private:
-    std::vector<Float> m_data, m_cdf;
-    uint32_t m_size_minus_2;
-    Float m_lambda_min;
-    Float m_lambda_max;
-    Float m_interval_size;
-    Float m_inv_interval_size;
-    Float m_integral;
-    Float m_normalization;
 };
 
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
@@ -256,12 +190,12 @@ extern MTS_EXPORT_CORE const Float cie1931_z_data[95];
  * in nanometers
  */
 template <typename T, typename Expr = expr_t<T>>
-std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &lambda, const mask_t<Expr> &active_ = true) {
+std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths, const mask_t<Expr> &active_ = true) {
     mask_t<Expr> active(active_);
     using Index = int_array_t<Expr>;
 
-    Expr t = (lambda - 360.f) * 0.2f;
-    active &= (lambda >= 360.f) & (lambda <= 830.f);
+    Expr t = (wavelengths - 360.f) * 0.2f;
+    active &= (wavelengths >= 360.f) & (wavelengths <= 830.f);
 
     Index i0 = min(max(Index(t), zero<Index>()), Index(95 - 2));
     Index i1 = i0 + 1;
@@ -286,13 +220,13 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &lambda, const mask_t<Expr> &ac
  * nanometers
  */
 template <typename T, typename Expr = expr_t<T>>
-Expr cie1931_y(const T &lambda, const mask_t<Expr> &active_ = true) {
+Expr cie1931_y(const T &wavelengths, const mask_t<Expr> &active_ = true) {
     using Index = int_array_t<Expr>;
 
     mask_t<Expr> active(active_);
 
-    Expr t = (lambda - 360.f) * 0.2f;
-    active &= (lambda >= 360.f) & (lambda <= 830.f);
+    Expr t = (wavelengths - 360.f) * 0.2f;
+    active &= (wavelengths >= 360.f) & (wavelengths <= 830.f);
 
     Index i0 = min(max(Index(t), zero<Index>()), Index(95-2));
     Index i1 = i0 + 1;
@@ -306,59 +240,59 @@ Expr cie1931_y(const T &lambda, const mask_t<Expr> &active_ = true) {
     return (w0 * v0 + w1 * v1) & active;
 }
 
-template <typename T, typename Expr = expr_t<T>>
-Expr rgb_spectrum(const Color3f &rgb, const T &lambda) {
-    const Float data[54] = {
-        0.424537460743542f,  66.59311145791196f,  0.560757618949125f, /* 0: Cyan */
-        0.246400896854156f,  79.07867913610922f,  0.216116362841135f,
-        0.067666394964209f,  6.865886967165104f,  0.890716186803857f,
-        0.092393363155047f,  531.5188158872747f,  0.425200104381996f, /* 3: Magenta */
-        0.174734179228986f,  104.86530594120306f, 0.983929883263911f,
-        0.613995338323662f,   79.16826549684968f, 1.003105061865860f,
-        0.369673263739623f,  98.20082350314888f,  0.503666150930812f, /* 6: Yellow */
-        0.558410218684172f,  21.681749660643593f, 0.878349029651678f,
-        0.587945864428471f,  49.00953480003718f,  0.109960421083442f,
-        0.574803873802654f, 408.25292226490063f,  0.670478585641923f, /* 9: Red */
-        0.042753652345675f,  85.26554030088637f,  0.070884754752968f,
-        0.669048230499984f, 145.09527307890576f,  0.957999219817480f,
-        0.305242141596798f,  438.7067293053841f,  0.424248514020785f, /* 12: Green */
-        0.476992126451749f,  170.7806891748844f,  0.815789194891182f,
-        0.365833471799225f,  147.01853626031775f, 0.792406519710127f,
-        0.144760614900738f,   69.47400741194751f, 0.993361426917213f, /* 15: Blue */
-        0.600421286424602f,  134.8991351396275f,  0.074487377394544f,
-        0.231505955455338f,  559.4892148020447f,  0.339396172335299f
-    };
+/**
+ * Importance sample a "importance spectrum" that concentrates the computation
+ * on wavelengths that are relevant for rendering of RGB data
+ *
+ * Based on "An Improved Technique for Full Spectral Rendering"
+ * Radziszewski, Boryczko, and Alda
+ *
+ * Returns a tuple with the sampled wavelength and inverse PDF
+ */
+template <typename Value>
+std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
+#if 1
+    Value wavelengths = Float(538) -
+               atanh(Float(0.8569106254698279) -
+                     Float(1.8275019724092267) * sample) *
+               Float(138.88888888888889);
 
-    const uint8_t cases[6][5] = {
-        { 1, 4, 5,  9, 27 }, { 2, 5, 3, 18, 36 },
-        { 2, 1, 0, 18, 27 }, { 0, 3, 4,  0, 45 },
-        { 1, 0, 2,  9, 45 }, { 0, 2, 1,  0, 36 }
-    };
+    Value tmp = cosh(Float(0.0072) * (wavelengths - Float(538)));
+    Value weight = Float(253.82) * tmp * tmp;
 
-    Float diff[6] = { rgb.r() - rgb.g(), rgb.g() - rgb.b(), rgb.b() - rgb.r() };
-    diff[3] = -diff[0]; diff[4] = -diff[1]; diff[5] = -diff[2];
-
-    const uint8_t *e = cases[
-      (((diff[0] >  0 ? 1 : 0) |
-        (diff[1] >  0 ? 2 : 0) |
-        (diff[2] >  0 ? 4 : 0))) - 1];
-
-    Expr t = (lambda - 380.f) * (1.f / (780.f - 380.f));
-
-    const Float *g0 = data + e[3];
-    Expr g0_0 = g0[2] * exp(-(t - g0[0]) * (t - g0[0]) * g0[1]);
-    Expr g0_1 = g0[5] * exp(-(t - g0[3]) * (t - g0[3]) * g0[4]);
-    Expr g0_2 = g0[8] * exp(-(t - g0[6]) * (t - g0[6]) * g0[7]);
-    Expr g0_s = min(g0_0 + g0_1 + g0_2, 1.f);
-
-    const Float *g1 = data + e[4];
-    Expr g1_0 = g1[2] * exp(-(t - g1[0]) * (t - g1[0]) * g1[1]);
-    Expr g1_1 = g1[5] * exp(-(t - g1[3]) * (t - g1[3]) * g1[4]);
-    Expr g1_2 = g1[8] * exp(-(t - g1[6]) * (t - g1[6]) * g1[7]);
-    Expr g1_s = min(g1_0 + g1_1 + g1_2, 1.f);
-
-    return rgb[e[0]] + diff[e[1]] * g0_s + diff[e[2]] * g1_s;
+    return { wavelengths, weight };
+#else
+    return { sample * (830.f - 360.f) + 360.f, 830.f - 360.f };
+#endif
 }
 
+/*
+ * \brief These macros should be used in the definition of Spectrum
+ * plugins to instantiate concrete versions of the the \c sample,
+ * \c eval and \c pdf functions.
+ */
+#define MTS_IMPLEMENT_SPECTRUM()                                               \
+    Spectrumf eval(const Spectrumf &wavelengths) const override {              \
+        return eval_impl(wavelengths, true);                                   \
+    }                                                                          \
+    SpectrumfP eval(const SpectrumfP &wavelengths, MaskP active)               \
+        const override {                                                       \
+        return eval_impl(wavelengths, active);                                 \
+    }                                                                          \
+    Spectrumf pdf(const Spectrumf &wavelengths) const override {               \
+        return pdf_impl(wavelengths, true);                                    \
+    }                                                                          \
+    SpectrumfP pdf(const SpectrumfP &wavelengths, MaskP active)                \
+        const override {                                                       \
+        return pdf_impl(wavelengths, active);                                  \
+    }                                                                          \
+    std::pair<Spectrumf, Spectrumf> sample(const Spectrumf &sample)            \
+        const override {                                                       \
+        return sample_impl(sample, true);                                      \
+    }                                                                          \
+    std::pair<SpectrumfP, SpectrumfP> sample(const SpectrumfP &sample,         \
+                                             MaskP active) const override {    \
+        return sample_impl(sample, active);                                    \
+    }
 
 NAMESPACE_END(mitsuba)

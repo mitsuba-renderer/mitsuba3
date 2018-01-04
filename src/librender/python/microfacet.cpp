@@ -82,20 +82,22 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
              D(MicrofacetDistribution, sample_all), "sample"_a, "active"_a = true)
         .def("pdf_all", enoki::vectorize_wrapper(&MicrofacetDistributionX::pdf_all),
              D(MicrofacetDistribution, pdf_all), "m"_a, "active"_a = true)
-        //.def("sample_visible_normals",
-        //    enoki::vectorize_wrapper(&MicrofacetDistributionX::sample_visible_normals),
-        //    D(MicrofacetDistribution, sample_visible_normals), "wi"_a, "sample"_a, "active"_a = true)
-        //.def("pdf_visible_normals",
-        //    enoki::vectorize_wrapper(&MicrofacetDistributionX::pdf_visible_normals),
-        //    D(MicrofacetDistribution, pdf_visible_normals), "wi"_a, "m"_a, "active"_a = true)
-        .def("smith_g1", &MicrofacetDistributionX::smith_g1,
+        .def("sample_visible_normals", enoki::vectorize_wrapper(
+                &MicrofacetDistributionX::sample_visible_normals
+             ), D(MicrofacetDistribution, sample_visible_normals),
+             "wi"_a, "sample"_a, "active"_a = true)
+        .def("pdf_visible_normals", enoki::vectorize_wrapper(
+                &MicrofacetDistributionX::pdf_visible_normals
+             ), D(MicrofacetDistribution, pdf_visible_normals),
+             "wi"_a, "m"_a, "active"_a = true)
+        .def("smith_g1", enoki::vectorize_wrapper(&MicrofacetDistributionX::smith_g1),
              D(MicrofacetDistribution, smith_g1), "v"_a, "m"_a, "active"_a = true)
-        .def("G", &MicrofacetDistributionX::G,
+        .def("G", enoki::vectorize_wrapper(&MicrofacetDistributionX::G),
              D(MicrofacetDistribution, G), "wi"_a, "wo"_a, "m"_a, "active"_a = true);
 
     py::enum_<EType>(md, "EType", py::arithmetic(), "Supported distribution types")
-        .value("EBeckmann", EType::EBeckmann) //, "Beckmann distribution derived from Gaussian random surfaces")
-        .value("EGGX",      EType::EGGX) //, "GGX: Long-tailed distribution for very rough surfaces (aka. Trowbridge-Reitz distr.)")
-        .value("EPhong",    EType::EPhong) //, "Phong distribution (with the anisotropic extension by Ashikhmin and Shirley)")
+        .value("EBeckmann", EType::EBeckmann, D(EType, EBeckmann))
+        .value("EGGX",      EType::EGGX, D(EType, EGGX))
+        .value("EPhong",    EType::EPhong, D(EType, EPhong))
         .export_values();
 }

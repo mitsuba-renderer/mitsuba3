@@ -5,25 +5,19 @@ import pytest
 
 from mitsuba.core import Bitmap, Struct, ReconstructionFilter, float_dtype
 from mitsuba.core import cie1931_xyz, \
-                         MTS_WAVELENGTH_SAMPLES as N_SAMPLES, \
-                         MTS_WAVELENGTH_MIN as W_MIN, \
-                         MTS_WAVELENGTH_MAX as W_MAX
+                         MTS_WAVELENGTH_SAMPLES as N_SAMPLES
 from mitsuba.core.xml import load_string
 from mitsuba.render import ImageBlock
 
 
-def convert_to_xyz(spectrum):
-    # TODO: use sampled wavelengths
-    wavelengths = np.array([W_MIN, 517, 673, W_MAX])
+def convert_to_xyz(wavelengths, spectrum):
     responses = cie1931_xyz(wavelengths)
-
     xyz = np.zeros(shape=(3,))
     for li in range(N_SAMPLES):
         xyz[0] += spectrum[li] * responses[0][li]
         xyz[1] += spectrum[li] * responses[1][li]
         xyz[2] += spectrum[li] * responses[2][li]
     xyz /= float(N_SAMPLES)
-
     return xyz
 
 def check_value(im, arr, atol=1e-9):
@@ -96,13 +90,14 @@ def test03_put_values_basic():
                           3 + 1 + 1))
     for i in range(border, im.height() + border):
         for j in range(border, im.width() + border):
+            wavelengths = np.random.uniform(size=(N_SAMPLES,), low=350, high=750)
             spectrum = np.random.uniform(size=(N_SAMPLES,))
-            ref[i, j, :3] = convert_to_xyz(spectrum)
+            ref[i, j, :3] = convert_to_xyz(wavelengths, spectrum)
             ref[i, j,  3] = 1  # Alpha
             ref[i, j,  4] = 1  # Weight
             # To avoid the effects of the reconstruction filter (simpler test),
             # we'll just add one sample right in the center of each pixel.
-            im.put([j + 0.5, i + 0.5], spectrum, alpha=1.0)
+            im.put([j + 0.5, i + 0.5], wavelengths, spectrum, alpha=1.0)
     check_value(im, ref, atol=1e-6)
 
 def test04_put_packets_basic():
@@ -120,6 +115,7 @@ def test04_put_packets_basic():
     # the same pixel receives several values
     positions[-3:, :] = positions[:3, :]
 
+    wavelengths = np.random.uniform(size=(n, N_SAMPLES), low=350, high=750)
     spectra = np.arange(n * N_SAMPLES).reshape((n, N_SAMPLES))
     alphas = np.ones(shape=(n,))
 
@@ -128,11 +124,11 @@ def test04_put_packets_basic():
                           3 + 1 + 1))
     for i in range(n):
         (x, y) = positions[i, :] + border
-        ref[int(y), int(x), :3] += convert_to_xyz(spectra[i, :])
+        ref[int(y), int(x), :3] += convert_to_xyz(wavelengths[i, :], spectra[i, :])
         ref[int(y), int(x),  3] += 1  # Alpha
         ref[int(y), int(x),  4] += 1  # Weight
     # Vectorized `put`
-    im.put(positions + 0.5, spectra, alphas)
+    im.put(positions + 0.5, wavelengths, spectra, alphas)
 
     check_value(im, ref, atol=1e-6)
 
@@ -154,6 +150,7 @@ def test05_put_with_filter():
     n = positions.shape[0]
     positions += np.random.uniform(size=positions.shape, low=0, high=0.95)
 
+    wavelengths = np.random.uniform(size=(n, N_SAMPLES), low=350, high=750)
     spectra = np.arange(n * N_SAMPLES).reshape((n, N_SAMPLES))
     alphas = np.ones(shape=(n,))
 
@@ -163,7 +160,7 @@ def test05_put_with_filter():
                           3 + 1 + 1))
     for i in range(n):
         # -- Scalar `put`
-        im2.put(positions[i, :], spectra[i, :], alpha=1.0)
+        im2.put(positions[i, :], wavelengths[i, :], spectra[i, :], alpha=1.0)
 
         # Fractional part of the position
         offset = positions[i, :] - positions[i, :].astype(np.int)
@@ -185,13 +182,13 @@ def test05_put_with_filter():
                 weight = rfilter.eval_discretized(w_pos[0]) \
                          * rfilter.eval_discretized(w_pos[1])
 
-                xyz = convert_to_xyz(spectra[i, :])
+                xyz = convert_to_xyz(wavelengths[i, :], spectra[i, :])
                 ref[r_pos[1], r_pos[0], :3] += weight * xyz
                 ref[r_pos[1], r_pos[0],  3] += weight * 1  # Alpha
                 ref[r_pos[1], r_pos[0],  4] += weight * 1  # Weight
 
     # -- Vectorized `put`
-    im.put(positions, spectra, alphas)
+    im.put(positions, wavelengths, spectra, alphas)
 
     check_value(im, ref, atol=1e-6)
     check_value(im2, ref, atol=1e-6)

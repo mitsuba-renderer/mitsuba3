@@ -36,7 +36,7 @@ private:
 class MTS_EXPORT_CORE Properties {
 public:
     /// Supported types of properties
-    enum EPropertyType {
+    enum EType {
         /// Boolean value (true/false)
         EBool = 0,
         /// 64-bit signed integer
@@ -51,14 +51,16 @@ public:
         ETransform,
         /// An animated 4x4 transformation
         EAnimatedTransform,
-        /// Discretized color spectrum
-        ESpectrum,
+        /// Tristimulus color value
+        EColor,
         /// String
         EString,
         /// Named reference to another named object
         ENamedReference,
         /// Arbitrary object
-        EObject
+        EObject,
+        /// const void* pointer (for internal communication between plugins)
+        EPointer
     };
 
     /// Construct an empty property container
@@ -89,7 +91,7 @@ public:
      * If no property exists under that name, an error is logged
      * and type <tt>void</tt> is returned.
      */
-    EPropertyType property_type(const std::string &name) const;
+    EType type(const std::string &name) const;
 
     /**
      * \brief Remove a property with the specified name
@@ -245,19 +247,37 @@ public:  // Type-specific getters and setters ----------------------------------
     ref<AnimatedTransform> animated_transform(
             const std::string &name, const Transform4f &def_val) const;
 
-    /// Store a spectrum in the Properties instance
-    void set_spectrumf(const std::string &name, const Spectrumf &value, bool warnDuplicates = true);
-    /// Retrieve a spectrum
-    const Spectrumf& spectrumf(const std::string &name) const;
-    /// Retrieve a spectrum (use default value if no entry exists)
-    const Spectrumf& spectrumf(const std::string &name, const Spectrumf &def_val) const;
-
     /// Store an arbitrary object in the Properties instance
     void set_object(const std::string &name, const ref<Object> &value, bool warnDuplicates = true);
     /// Retrieve an arbitrary object
     const ref<Object>& object(const std::string &name) const;
     /// Retrieve an arbitrary object (use default value if no entry exists)
     const ref<Object>& object(const std::string &name, const ref<Object> &def_val) const;
+
+    /// Store an arbitrary pointer in the Properties instance
+    void set_pointer(const std::string &name, const void * const &value, bool warnDuplicates = true);
+    /// Retrieve an arbitrary pointer
+    const void * const& pointer(const std::string &name) const;
+    /// Retrieve an arbitrary pointer (use default value if no entry exists)
+    const void * const& pointer(const std::string &name, const void * const &def_val) const;
+
+    /// Store a color in the Properties instance
+    void set_color(const std::string &name, const Color3f &value, bool warnDuplicates = true);
+    /// Retrieve a color
+    const Color3f& color(const std::string &name) const;
+    /// Retrieve a color (use default value if no entry exists)
+    const Color3f& color(const std::string &name, const Color3f &def_val) const;
+
+    /// Retrieve a continuous spectrum
+    ref<ContinuousSpectrum> spectrum(const std::string &name) const;
+
+    /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
+    ref<ContinuousSpectrum> spectrum(const std::string &name,
+                                     const ref<ContinuousSpectrum> &def_val) const;
+    /// Retrieve a continuous spectrum (use default flat spectrum if no entry exists)
+    ref<ContinuousSpectrum> spectrum(const std::string &name,
+                                     Float def_val) const;
+
 private:
     struct PropertiesPrivate;
     std::unique_ptr<PropertiesPrivate> d;

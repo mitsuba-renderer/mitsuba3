@@ -7,6 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 class BSDF;
 class Emitter;
 class Endpoint;
+class Film;
 class ImageBlock;
 class Integrator;
 class Medium;
@@ -17,13 +18,13 @@ class Shape;
 class ShapeKDTree;
 class Subsurface;
 
-template <typename Vector3> struct DirectionSample;
-template <typename Point3>  struct DirectSample;
-template <typename Point3>  struct PositionSample;
-template <typename Point3>  struct RadianceSample;
-template <typename Point3>  struct SurfaceInteraction;
-template <typename Point3>  struct MediumInteraction;
-template <typename Point3>  struct BSDFSample;
+template <typename Point3> struct DirectionSample;
+template <typename Point3> struct PositionSample;
+template <typename Point3> struct Interaction;
+template <typename Point3> struct SurfaceInteraction;
+template <typename Point3> struct MediumInteraction;
+template <typename Point3> struct BSDFSample;
+template <typename Point3> struct RadianceSample;
 
 // -----------------------------------------------------------------------------
 // Common type aliases (non-vectorized, packet, dynamic).
@@ -32,17 +33,17 @@ using PositionSample3f       = PositionSample<Point3f>;
 using PositionSample3fP      = PositionSample<Point3fP>;
 using PositionSample3fX      = PositionSample<Point3fX>;
 
-using DirectionSample3f      = DirectionSample<Vector3f>;
-using DirectionSample3fP     = DirectionSample<Vector3fP>;
-using DirectionSample3fX     = DirectionSample<Vector3fX>;
-
-using DirectSample3f         = DirectSample<Point3f>;
-using DirectSample3fP        = DirectSample<Point3fP>;
-using DirectSample3fX        = DirectSample<Point3fX>;
+using DirectionSample3f      = DirectionSample<Point3f>;
+using DirectionSample3fP     = DirectionSample<Point3fP>;
+using DirectionSample3fX     = DirectionSample<Point3fX>;
 
 using RadianceSample3f       = RadianceSample<Point3f>;
 using RadianceSample3fP      = RadianceSample<Point3fP>;
 using RadianceSample3fX      = RadianceSample<Point3fX>;
+
+using Interaction3f          = Interaction<Point3f>;
+using Interaction3fP         = Interaction<Point3fP>;
+using Interaction3fX         = Interaction<Point3fX>;
 
 using SurfaceInteraction3f   = SurfaceInteraction<Point3f>;
 using SurfaceInteraction3fP  = SurfaceInteraction<Point3fP>;

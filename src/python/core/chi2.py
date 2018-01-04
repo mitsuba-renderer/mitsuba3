@@ -144,15 +144,15 @@ class ChiSquareTest(object):
         r = self.bounds[:, 1] - self.bounds[:, 0]
         if not np.all((xy >= self.bounds[:, 0] - eps*r) &
                       (xy <= self.bounds[:, 1] + eps*r)):
-            self._log("Encountered samples outside of the specified domain")
+            self._log("Encountered samples outside of the specified domain: %s" % str(xy))
             self.fail = True
 
         if not np.all(self.histogram >= 0):
-            self._log("Encountered a cell with negative sample weights")
+            self._log("Encountered a cell with negative sample weights: %s" % str(self.histogram))
             self.fail = True
 
         if np.sum(self.histogram) > 1.1:
-            self._log("Sample weights add up to a value greater than 1.0")
+            self._log("Sample weights add up to a value greater than 1.0: %s", str(self.histogram))
             self.fail = True
 
     def tabulate_pdf(self):
@@ -194,11 +194,11 @@ class ChiSquareTest(object):
 
         # A few sanity checks
         if not np.all(self.pdf >= 0):
-            self._log("Encountered a cell with a negative PDF value")
+            self._log("Encountered a cell with a negative PDF value: %s" % str(self.pdf))
             self.fail = True
 
         if np.sum(self.pdf) > 1.1:
-            self._log("PDF integrates to a value greater than 1.0")
+            self._log("PDF integrates to a value greater than 1.0: %s" % str(self.pdf))
             self.fail = True
 
     def run(self, significance_level, test_count=1):
@@ -391,11 +391,16 @@ def SpectrumAdapter(value):
             return value
         else:
             from mitsuba.core.xml import load_string
-            return load_string(value % args)
+            obj = load_string(value % args)
+            expanded = obj.expand()
+            if len(expanded) == 1:
+                return expanded[0]
+            else:
+                return obj
 
     def sample_functor(sample, *args):
         plugin = instantiate(args)
-        wavelength, weight, pp = plugin.sample(sample)
+        wavelength, weight = plugin.sample(sample)
         return wavelength
 
     def pdf_functor(pdf, *args):

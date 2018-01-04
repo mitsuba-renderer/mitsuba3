@@ -1,9 +1,10 @@
 #pragma once
 
-#include <mitsuba/core/class.h>
-#include <enoki/alloc.h>
 #include <atomic>
 #include <stdexcept>
+#include <vector>
+#include <enoki/alloc.h>
+#include <mitsuba/core/class.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -49,6 +50,17 @@ public:
      * reaches zero.
      */
     void dec_ref(bool dealloc = true) const noexcept;
+
+    /**
+     * \brief Expand the object into a list of sub-objects and return them
+     *
+     * In some cases, an \ref Object instance is merely a container for a
+     * number of sub-objects. In the context of Mitsuba, an example would be a
+     * sun & sky emitter instantiated via XML, which recursively expands into a
+     * sun & separate sky emitter. This functionality is supported by any
+     * Mitsuba object, hence it is located this level.
+     */
+    virtual std::vector<ref<Object>> expand() const;
 
     /**
      * \brief Return a \ref Class instance containing run-time type information
@@ -211,4 +223,5 @@ std::ostream& operator<<(std::ostream &os, const ref<T> &object) {
 // underlying pointer type.
 static_assert(sizeof(ref<Object>) == sizeof(Object *),
               "ref<T> must be reinterpretable as a T*.");
+
 NAMESPACE_END(mitsuba)

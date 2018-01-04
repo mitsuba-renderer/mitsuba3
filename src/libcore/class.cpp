@@ -34,7 +34,7 @@ Class::Class(const std::string &name, const std::string &alias,
     (*__classes)[name] = this;
 
     /* Also register new abstract classes with the XML parser */
-    if (abstract || name == "Scene" /* Special case for 'Scene' */)
+    if (abstract || name == "Scene" || name == "ContinuousSpectrum" /* Special cases */)
         xml::detail::register_class(this);
 }
 

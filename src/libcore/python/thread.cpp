@@ -30,13 +30,13 @@ MTS_PY_EXPORT(Thread) {
         .sdef(Thread, sleep);
 
     py::enum_<Thread::EPriority>(m.attr("Thread"), "EPriority", D(Thread, EPriority))
-        .value("EIdlePriority,", Thread::EIdlePriority)
-        .value("ELowestPriority,", Thread::ELowestPriority)
-        .value("ELowPriority,", Thread::ELowPriority)
-        .value("ENormalPriority,", Thread::ENormalPriority)
-        .value("EHighPriority,", Thread::EHighPriority)
-        .value("EHighestPriority,", Thread::EHighestPriority)
-        .value("ERealtimePriority", Thread::ERealtimePriority)
+        .value("EIdlePriority,", Thread::EIdlePriority, D(Thread, EPriority, EIdlePriority))
+        .value("ELowestPriority,", Thread::ELowestPriority, D(Thread, EPriority, ELowestPriority))
+        .value("ELowPriority,", Thread::ELowPriority, D(Thread, EPriority, ELowPriority))
+        .value("ENormalPriority,", Thread::ENormalPriority, D(Thread, EPriority, ENormalPriority))
+        .value("EHighPriority,", Thread::EHighPriority, D(Thread, EPriority, EHighPriority))
+        .value("EHighestPriority,", Thread::EHighestPriority, D(Thread, EPriority, EHighestPriority))
+        .value("ERealtimePriority", Thread::ERealtimePriority, D(Thread, EPriority, ERealtimePriority))
         .export_values();
 }
 

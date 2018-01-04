@@ -4,149 +4,75 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/*!\plugin{independent}{Independent sampler}
- * \order{1}
- * \parameters{
- *     \parameter{sample_count}{\Integer}{
- *       Number of samples per pixel \default{4}
- *     }
- * }
- *
- * \renderings{
- *     \unframedrendering{A projection of the first 1024 points
- *     onto the first two dimensions. Note the sample clumping.}{sampler_independent}
- * }
- *
- * The independent sampler produces a stream of independent and uniformly
- * distributed pseudorandom numbers. It relies on Enoki's implementation of
- * the PCG32 algorithm.
- *
- * This is the most basic sample generator; because no precautions are taken to
- * avoid sample clumping, images produced using this plugin will usually take
- * longer to converge.
- * In theory, this sampler is initialized using a deterministic procedure, which
- * means that subsequent runs of Mitsuba should create the same image. In
- * practice, when rendering with multiple threads and/or machines, this is not
- * true anymore, since the ordering of samples is influenced by the operating
- * system scheduler.
- */
 class IndependentSampler final : public Sampler {
 public:
-    IndependentSampler()
-        : Sampler(Properties()), m_random(), m_random_p() {
-        m_sample_count = 4;
-        configure();
-    }
-
-    IndependentSampler(const Properties &props)
-        : Sampler(props), m_random(), m_random_p() {
-        m_sample_count = props.size_("sample_count", 4);
-        configure();
-    }
-
-    void configure() {
-        // Fixed seed for the pseudo-random number generators.
-        // TODO: allow custom RNG seed?
-        m_random.seed(0, 1u);
-        m_random_p.seed(enoki::index_sequence<UInt32P>() + 2u,
-                        enoki::index_sequence<UInt32P>() + 3u);
-    }
+    IndependentSampler() : Sampler(Properties()) { }
+    IndependentSampler(const Properties &props) : Sampler(props) {}
 
     ref<Sampler> clone() override {
-        ref<IndependentSampler> sampler(new IndependentSampler());
+        IndependentSampler *sampler = new IndependentSampler();
+        sampler->seed(m_rng.next_uint64());
         sampler->m_sample_count = m_sample_count;
-        // The clone's state should be different, so that the new sampler
-        // produces distinct random values.
-        sampler->m_random.seed(m_random.state + 1, m_random.inc + 2);
-        sampler->m_random_p.seed(m_random_p.state + 3, m_random_p.inc + 4);
-        for (const auto & size : m_requests_1d)
-            sampler->request_1d_array(size);
-        for (const auto & size : m_requests_2d)
-            sampler->request_2d_array(size);
-        for (const auto & size : m_requests_1d_p)
-            sampler->request_1d_array_p(size);
-        for (const auto & size : m_requests_2d_p)
-            sampler->request_2d_array_p(size);
-        return sampler.get();
+        return sampler;
     }
 
-    void generate(const Point2i &) override {
-        for (size_t i = 0; i < m_requests_1d.size(); i++) {
-            for (size_t j = 0; j < m_sample_count * m_requests_1d[i]; ++j)
-                m_samples_1d[i][j] = next_1d();
-        }
-        for (size_t i = 0; i < m_requests_2d.size(); i++) {
-            for (size_t j = 0; j < m_sample_count * m_requests_2d[i]; ++j)
-                m_samples_2d[i][j] = next_2d();
-        }
-        for (size_t i = 0; i < m_requests_1d_p.size(); i++) {
-            for (size_t j = 0; j < m_sample_count * m_requests_1d_p[i]; ++j)
-                m_samples_1d_p[i][j] = next_1d_p();
-        }
-        for (size_t i = 0; i < m_requests_2d_p.size(); i++) {
-            for (size_t j = 0; j < m_sample_count * m_requests_2d_p[i]; ++j)
-                m_samples_2d_p[i][j] = next_2d_p();
-        }
-        m_sample_index = 0;
-        m_dimension_1d_array = m_dimension_2d_array = 0;
-        m_dimension_1d_array_p = m_dimension_2d_array_p = 0;
+    void seed(size_t seed_value) override {
+        m_rng.seed(seed_value, PCG32_DEFAULT_STREAM);
+        m_rng_p.seed(seed_value, PCG32_DEFAULT_STREAM + index_sequence<UInt64P>());
     }
 
     Float next_1d() override {
         return next_float();
     }
-    FloatP next_1d_p(const mask_t<FloatP> &active = true) override {
+
+    FloatP next_1d_p(MaskP active) override {
         return next_float_p(active);
     }
 
     Point2f next_2d() override {
-        // Evaluation order matters for reproducibility.
-        auto f1 = next_float();
-        auto f2 = next_float();
+        Float f1 = next_float(),
+              f2 = next_float();
         return Point2f(f1, f2);
     }
-    Point2fP next_2d_p(const mask_t<FloatP> &active = true) override {
-        auto p1 = next_float_p(active);
-        auto p2 = next_float_p(active);
-        return Point2fP(p1, p2);
-    }
 
-    void set_film_resolution(const Vector2i &/*res*/, bool /*blocked*/) override {
-        // No-op for the independent sampler.
+    Point2fP next_2d_p(MaskP active) override {
+        FloatP f1 = next_float_p(active),
+               f2 = next_float_p(active);
+        return Point2fP(f1, f2);
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "IndependentSampler[" << std::endl
             << "  sample_count = " << m_sample_count << "," << std::endl
-            << "  sample_index = " << m_sample_index << "," << std::endl
-            << "  random = " << string::indent(m_random) << "," << std::endl
-            << "  random_p = " << string::indent(m_random_p) << "," << std::endl
+            << "  rng = " << string::indent(m_rng) << "," << std::endl
+            << "  rng_p = " << string::indent(m_rng_p) << std::endl
             << "]" << std::endl;
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 
-private:
-    Float next_float() {
+protected:
+    MTS_INLINE Float next_float() {
         #if defined(SINGLE_PRECISION)
-            return m_random.next_float32();
+            return m_rng.next_float32();
         #else
-            return m_random.next_float64();
+            return m_rng.next_float64();
         #endif
     }
-    FloatP next_float_p(const mask_t<FloatP> &active) {
+
+    MTS_INLINE FloatP next_float_p(MaskP active) {
         #if defined(SINGLE_PRECISION)
-            return m_random_p.next_float32(active);
+            return m_rng_p.next_float32(active);
         #else
-            return m_random_p.next_float64(active);
+            return m_rng_p.next_float64(active);
         #endif
     }
 
 protected:
-    PCG32 m_random;
-    PCG32P m_random_p;
+    PCG32 m_rng;
+    PCG32P m_rng_p;
 };
 
 MTS_IMPLEMENT_CLASS(IndependentSampler, Sampler);

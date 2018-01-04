@@ -2,10 +2,9 @@ set(INC_DIR "../../include/mitsuba/render")
 
 add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/fwd.h
-  ${INC_DIR}/records.h
-  ${INC_DIR}/records.inl
-  ${INC_DIR}/microfacet.h
   ${INC_DIR}/ior.h
+  ${INC_DIR}/microfacet.h
+  ${INC_DIR}/records.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
   common.cpp       ${INC_DIR}/common.h
@@ -19,7 +18,7 @@ add_library(mitsuba-render-obj OBJECT
   medium.cpp       ${INC_DIR}/medium.h
   mesh.cpp         ${INC_DIR}/mesh.h
   microfacet.cpp   ${INC_DIR}/microfacet.h
-  rt.cpp           ${INC_DIR}/rt.h
+  rtbench.cpp      ${INC_DIR}/rtbench.h
   sampler.cpp      ${INC_DIR}/sampler.h
   scene.cpp        ${INC_DIR}/scene.h
   sensor.cpp       ${INC_DIR}/sensor.h

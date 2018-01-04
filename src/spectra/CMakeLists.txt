@@ -1,5 +1,7 @@
 set(MTS_PLUGIN_PREFIX "spectra")
 
-add_plugin(rgb_importance rgb_importance.cpp)
 add_plugin(blackbody blackbody.cpp)
+add_plugin(uniform uniform.cpp)
+add_plugin(interpolated interpolated.cpp)
 add_plugin(d65 d65.cpp)
+add_plugin(srgb srgb.cpp)

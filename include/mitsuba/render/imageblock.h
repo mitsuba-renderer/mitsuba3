@@ -28,19 +28,23 @@ public:
      * \param fmt
      *    Specifies the pixel format -- see \ref Bitmap::EPixelFormat
      *    for a list of possibilities
+     *
      * \param size
      *    Specifies the block dimensions (not accounting for additional
      *    border pixels required to support image reconstruction filters)
+     *
      * \param filter
      *    Pointer to the film's reconstruction filter. If passed, it is used to
      *    compute and store reconstruction weights. Note that it is mandatory
      *    when any of the block's \ref put operations are used, except for
      *    \c put(const ImageBlock*).
+     *
      * \param channels
      *    Specifies the number of output channels. This is only valid
      *    when \ref Bitmap::EMultiChannel is chosen as the pixel format,
      *    otherwise pass 0 so that channels are set automatically from the
      *    pixel format.
+     *
      * \param warn
      *    Warn when writing bad sample values?
      */
@@ -52,8 +56,8 @@ public:
 
     /// Accumulate another image block into this one
     void put(const ImageBlock *block) {
-        Point2i offset = block->offset() - m_offset
-                         - Vector2i(block->border_size() - m_border_size);
+        Point2i offset = block->offset() - m_offset -
+                         Vector2i(block->border_size() - m_border_size);
         m_bitmap->accumulate(block->bitmap(), offset);
     }
 
@@ -72,32 +76,35 @@ public:
      *    Denotes the sample position in fractional pixel coordinates. It is
      *    not checked, and so must be valid. The block's offset is subtracted
      *    from the given position to obtain the
-     * \param spectrum
-     *    Spectrum value assocated with the sample
+     *
+     * \param wavelengths
+     *    Sample wavelengths in nanometers
+     *
+     * \param value
+     *    Sample value assocated with the specified wavelengths
+     *
      * \param alpha
      *    Alpha value assocated with the sample
+     *
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
     template <typename Point2, typename Spectrum,
-              typename Value = typename Point2::Value>
-    mask_t<Value> put(const Point2 &pos, const Spectrum &spectrum,
-                      const Value &alpha,
-                      const mask_t<Value> &active) {
+              typename Value = typename Point2::Value,
+              typename Mask = mask_t<Value>>
+    Mask put(const Point2 &pos,
+             const Spectrum &wavelengths,
+             const Spectrum &value,
+             const Value &alpha,
+             Mask active = true) {
         Assert(m_bitmap->pixel_format() == Bitmap::EXYZAW,
                "This `put` variant requires XYZAW internal storage format.");
 
-        // Convert spectrum to XYZ
-        // TODO: proper handling of spectral rendering (use sampled wavelengths)
-        const Spectrum wavelengths(
-            MTS_WAVELENGTH_MIN, 517, 673, MTS_WAVELENGTH_MAX
-        );
-
         Spectrum Xw, Yw, Zw;
         std::tie(Xw, Yw, Zw) = cie1931_xyz(wavelengths);
-        Value Xs = enoki::mean(Xw * spectrum),
-              Ys = enoki::mean(Yw * spectrum),
-              Zs = enoki::mean(Zw * spectrum);
+        Value Xs = enoki::mean(Xw * value),
+              Ys = enoki::mean(Yw * value),
+              Zs = enoki::mean(Zw * value);
 
         Array<Value, 5> values(Xs, Ys, Zs, alpha, 1.0f);
         return put(pos, values.data(), active);
@@ -106,20 +113,26 @@ public:
     /**
      * \brief Store a single sample inside the block.
      *
-     * \note This method is only valid if a reconstruction filter was given at
-     * the construction of the block.
+     * \note This method is only valid if a reconstruction filter was provided
+     * when the block was constructed.
      *
-     * \param _pos
+     * \param pos
      *    Denotes the sample position in fractional pixel coordinates. It is
      *    not checked, and so must be valid. The block's offset is subtracted
      *    from the given position to obtain the
+     *
      * \param value
      *    Pointer to an array containing each channel of the sample values.
      *    The array must match the length given by \ref channel_count()
+     *
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    bool put(const Point2f &_pos, const Float *value, bool /*unused*/ = true);
+    bool put(const Point2f &pos, const Float *value);
+
+    bool put(const Point2f &pos, const Float *value, bool) {
+        return put(pos, value);
+    }
 
     /**
      * \brief Store a packet of samples inside the block.
@@ -127,33 +140,17 @@ public:
      * \note This method is only valid if a reconstruction filter was given at
      * the construction of the block.
      *
-     * \param _pos
+     * \param pos
      *    Denotes the samples positions in fractional pixel coordinates.
+     *
      * \param value
      *    Pointer to an array containing packets for each channel of the sample
      *    values. The array must match the length given by \ref channel_count()
+     *
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    mask_t<FloatP> put(const Point2fP &_pos, const FloatP *value,
-                       const mask_t<FloatP> &active = true);
-
-    /// Create a clone of the entire image block
-    ref<ImageBlock> clone() const {
-        ref<ImageBlock> clone = new ImageBlock(m_bitmap->pixel_format(),
-            m_bitmap->size() - Vector2i(2 * m_border_size, 2 * m_border_size), m_filter, m_bitmap->channel_count());
-        copy_to(clone);
-        return clone;
-    }
-
-    /// Copy the contents of this image block to another one with the same
-    /// configuration. The reconstruction filter is left as-is.
-    void copy_to(ImageBlock *copy) const {
-        memcpy(copy->bitmap()->uint8_data(), m_bitmap->uint8_data(), m_bitmap->buffer_size());
-        copy->m_size = m_size;
-        copy->m_offset = m_offset;
-        copy->m_warn = m_warn;
-    }
+    MaskP put(const Point2fP &pos, const FloatP *value, MaskP active = true);
 
     /// Clear everything to zero
     void clear() { m_bitmap->clear(); }

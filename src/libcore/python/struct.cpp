@@ -34,19 +34,19 @@ MTS_PY_EXPORT(Struct) {
     auto c = MTS_PY_CLASS(Struct, Object);
 
     py::enum_<Struct::EType>(c, "EType")
-        .value("EInt8",  Struct::EType::EInt8)
-        .value("EUInt8", Struct::EType::EUInt8)
-        .value("EInt16",  Struct::EType::EInt16)
-        .value("EUInt16", Struct::EType::EUInt16)
-        .value("EInt32",  Struct::EType::EInt32)
-        .value("EUInt32", Struct::EType::EUInt32)
-        .value("EInt64",  Struct::EType::EInt64)
-        .value("EUInt64", Struct::EType::EUInt64)
-        .value("EFloat16", Struct::EType::EFloat16)
-        .value("EFloat32", Struct::EType::EFloat32)
-        .value("EFloat64", Struct::EType::EFloat64)
-        .value("EFloat", Struct::EType::EFloat)
-        .value("EInvalid", Struct::EType::EInvalid)
+        .value("EInt8",  Struct::EType::EInt8, D(Struct, EType, EInt8))
+        .value("EUInt8", Struct::EType::EUInt8, D(Struct, EType, EUInt8))
+        .value("EInt16",  Struct::EType::EInt16, D(Struct, EType, EInt16))
+        .value("EUInt16", Struct::EType::EUInt16, D(Struct, EType, EUInt16))
+        .value("EInt32",  Struct::EType::EInt32, D(Struct, EType, EInt32))
+        .value("EUInt32", Struct::EType::EUInt32, D(Struct, EType, EUInt32))
+        .value("EInt64",  Struct::EType::EInt64, D(Struct, EType, EInt64))
+        .value("EUInt64", Struct::EType::EUInt64, D(Struct, EType, EUInt64))
+        .value("EFloat16", Struct::EType::EFloat16, D(Struct, EType, EFloat16))
+        .value("EFloat32", Struct::EType::EFloat32, D(Struct, EType, EFloat32))
+        .value("EFloat64", Struct::EType::EFloat64, D(Struct, EType, EFloat64))
+        .value("EFloat", Struct::EType::EFloat, D(Struct, EType, EFloat))
+        .value("EInvalid", Struct::EType::EInvalid, D(Struct, EType, EInvalid))
         .export_values()
         .def(py::init([](py::dtype dt) {
             Struct::EType value = Struct::EInt8;
@@ -82,17 +82,17 @@ MTS_PY_EXPORT(Struct) {
     py::implicitly_convertible<py::dtype, Struct::EType>();
 
     py::enum_<Struct::EByteOrder>(c, "EByteOrder")
-        .value("ELittleEndian",  Struct::EByteOrder::ELittleEndian)
-        .value("EBigEndian",  Struct::EByteOrder::EBigEndian)
-        .value("EHostByteOrder",  Struct::EByteOrder::EHostByteOrder)
+        .value("ELittleEndian",  Struct::EByteOrder::ELittleEndian, D(Struct, EByteOrder, ELittleEndian))
+        .value("EBigEndian",  Struct::EByteOrder::EBigEndian, D(Struct, EByteOrder, EBigEndian))
+        .value("EHostByteOrder",  Struct::EByteOrder::EHostByteOrder, D(Struct, EByteOrder, EHostByteOrder))
         .export_values();
 
     py::enum_<Struct::EFlags>(c, "EFlags", py::arithmetic())
-        .value("ENormalized", Struct::EFlags::ENormalized)
-        .value("EGamma", Struct::EFlags::EGamma)
-        .value("EWeight", Struct::EFlags::EWeight)
-        .value("EAssert", Struct::EFlags::EAssert)
-        .value("EDefault", Struct::EFlags::EDefault)
+        .value("ENormalized", Struct::EFlags::ENormalized, D(Struct, EFlags, ENormalized))
+        .value("EGamma", Struct::EFlags::EGamma, D(Struct, EFlags, EGamma))
+        .value("EWeight", Struct::EFlags::EWeight, D(Struct, EFlags, EWeight))
+        .value("EAssert", Struct::EFlags::EAssert, D(Struct, EFlags, EAssert))
+        .value("EDefault", Struct::EFlags::EDefault, D(Struct, EFlags, EDefault))
         .export_values();
 
     c.def(py::init<bool, Struct::EByteOrder>(), "pack"_a = false,

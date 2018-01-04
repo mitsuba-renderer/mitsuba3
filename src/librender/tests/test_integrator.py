@@ -15,14 +15,14 @@ integrators = [
 
 def check_scene(integrator, scene):
     # Scalar render
-    assert integrator.render_scalar(scene) is True
+    assert integrator.render(scene, vectorize=False) is True
     res_scalar = np.array(scene.film().bitmap(), copy=True)
     scene.film().clear()
     assert np.all(np.array(scene.film().bitmap(), copy=False) == 0)
 
     try:
         # Vectorized render
-        assert integrator.render_vector(scene) is True
+        assert integrator.render(scene, vectorize=True) is True
         res_vector = np.array(scene.film().bitmap(), copy=True)
 
         # TODO: check they match
@@ -56,7 +56,6 @@ def test01_create(int_name):
 @pytest.mark.parametrize(*integrators)
 def test02_render_empty_scene(int_name, empty_scene):
     integrator = make_integrator(int_name)
-    integrator.configure_sampler(empty_scene, empty_scene.sampler())
 
     (res, _) = check_scene(integrator, empty_scene)
     assert np.all(res[:, :, :3] == 0)   # Pixel values
@@ -65,7 +64,6 @@ def test02_render_empty_scene(int_name, empty_scene):
 @pytest.mark.parametrize(*integrators)
 def test03_render_teapot(int_name, teapot_scene):
     integrator = make_integrator(int_name)
-    integrator.configure_sampler(teapot_scene, teapot_scene.sampler())
 
     (res, _) = check_scene(integrator, teapot_scene)
     n = res.shape[0] * res.shape[1]
@@ -106,18 +104,18 @@ def test04_render_direct():
                         value="resources/data/ply/teapot.ply"/>
 
                 <bsdf type="diffuse">
-                    <spectrum name="reflectance" value="0.1f, 0.3f, 1.0f, 0.5f"/>
+                    <rgb name="reflectance" value="0.1f, 0.3f, 1.0f"/>
                 </bsdf>
 
             </shape>
 
             <emitter type="point">
                 <point name="position" x="2" y="-6.0" z="4.5"/>
-                <spectrum name="intensity" value="3.0f, 3.0f, 3.0f, 0.5f"/>
+                <spectrum name="intensity" value="300.0f"/>
             </emitter>
             <emitter type="point">
                 <point name="position" x="-3" y="-3" z="-0.5"/>
-                <spectrum name="intensity" value="1.0f, 0.05f, 0.0f, 0.5f"/>
+                <spectrum name="intensity" value="100.0f"/>
             </emitter>
         </scene>
     """)
@@ -126,5 +124,4 @@ def test04_render_direct():
             <integer name="emitter_samples" value="4"/>
             <integer name="bsdf_samples" value="0"/>
         """)
-    integrator.configure_sampler(scene, scene.sampler())
     check_scene(integrator, scene)

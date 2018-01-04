@@ -47,7 +47,7 @@ def test02_crops():
     assert np.all(film.crop_size() == [11, 5])
     assert np.all(film.crop_offset() == [2, 3])
     assert film.has_high_quality_edges()
-    assert film.has_alpha()
+    assert film.bitmap().has_alpha()
 
     # Crop size doesn't adjust its size, so an error should be raised if the
     # resulting crop window goes out of bounds.
