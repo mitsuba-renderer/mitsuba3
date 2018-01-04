@@ -203,6 +203,22 @@ Vector3 reflect(const Vector3 &wi) {
 }
 
 /**
+ * \brief Refract \c wi with respect to a given surface normal
+ *
+ * \param wi   Direction to refract
+ * \param m    Surface normal
+ * \param eta  Ratio of interior to exterior IORs at the interface.
+ * \param cos_theta_t Cosine of the angle between the normal the the transmitted
+ *                    ray, as computed e.g. by \ref fresnel_dielectric_ext.
+ */
+// TODO: this is not compatible with a wavelength-dependent `eta`
+template <typename Vector3, typename Normal3, typename Value = value_t<Vector3>>
+Vector3 refract(const Vector3 &wi, const Normal3 &m, const Value &eta, const Value &cos_theta_t) {
+    Value scale = select(cos_theta_t < 0.0f, rcp(eta), eta);
+    return m * (dot(wi, m) * scale + cos_theta_t) - wi * scale;
+}
+
+/**
  * \brief Refraction in local coordinates
  *
  * The 'cos_theta_t' and 'eta_ti' parameters are given by the last two tuple
