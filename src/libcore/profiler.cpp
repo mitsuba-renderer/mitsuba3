@@ -14,29 +14,27 @@ NAMESPACE_BEGIN(mitsuba)
 static thread_local uint64_t profiler_flags_storage = 0;
 uint64_t *profiler_flags() { return &profiler_flags_storage; }
 
-struct ProfileSample {
-    std::atomic<uint64_t> flags { (uint64_t) -1 };
-    std::atomic<uint64_t> count { 0 };
+struct ProfilerSample {
+    uint64_t flags = (uint64_t) -1;
+    uint64_t count = 0;
 };
 
-static std::array<ProfileSample, MTS_PROFILE_HASH_SIZE> profiler_samples;
+static std::array<ProfilerSample, MTS_PROFILE_HASH_SIZE> profiler_samples;
 
 static void profiler_callback(int, siginfo_t *, void *) {
     uint64_t flags = *profiler_flags();
 
-    uint64_t bucket =
+    uint64_t bucket_id =
         std::hash<uint64_t>{}(flags) % (profiler_samples.size() - 1);
 
     /* Hash table with linear probing */
     size_t tries = 0;
     while (tries < profiler_samples.size()) {
-        uint64_t expected = (uint64_t) -1;
-        if (profiler_samples[bucket].flags.compare_exchange_strong(expected, flags))
+        ProfilerSample &bucket = profiler_samples[bucket_id];
+        if (bucket.flags == (uint64_t) -1 || bucket.flags == flags)
             break;
-        if (expected == flags)
-            break;
-        if (++bucket == profiler_samples.size())
-            bucket = 0;
+        if (++bucket_id == profiler_samples.size())
+            bucket_id = 0;
         ++tries;
     }
 
@@ -46,7 +44,9 @@ static void profiler_callback(int, siginfo_t *, void *) {
         return;
     }
 
-    profiler_samples[bucket].count++;
+    ProfilerSample &bucket = profiler_samples[bucket_id];
+    bucket.flags = flags;
+    bucket.count++;
 }
 
 void Profiler::static_initialization() {
