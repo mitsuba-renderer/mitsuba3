@@ -47,7 +47,7 @@ public:
             << "  sample_count = " << m_sample_count << "," << std::endl
             << "  rng = " << string::indent(m_rng) << "," << std::endl
             << "  rng_p = " << string::indent(m_rng_p) << std::endl
-            << "]" << std::endl;
+            << "]";
         return oss.str();
     }
 

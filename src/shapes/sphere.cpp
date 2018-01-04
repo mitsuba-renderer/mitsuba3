@@ -361,8 +361,7 @@ public:
         std::ostringstream oss;
         oss << "Sphere[" << std::endl
             << "  radius = "  << m_radius << "," << std::endl
-            << "  center = "  << m_center << "," << std::endl
-            << "  bsdf = "    << string::indent(bsdf()->to_string()) << std::endl
+            << "  center = "  << m_center << std::endl
             << "]";
         return oss.str();
     }

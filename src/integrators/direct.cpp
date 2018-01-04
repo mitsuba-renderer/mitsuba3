@@ -1,3 +1,4 @@
+#include <enoki/stl.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>
@@ -48,12 +49,14 @@ public:
               typename Mask            = mask_t<Value>>
     Spectrum eval_impl(const RayDifferential &ray, RadianceSample<Point3> &rs,
                        Mask active) const {
-        using DirectionSample = mitsuba::DirectionSample<Point3>;
-        using BSDFSample      = mitsuba::BSDFSample<Point3>;
+        using DirectionSample    = mitsuba::DirectionSample<Point3>;
+        using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
+        using BSDFSample         = mitsuba::BSDFSample<Point3>;
 
         const Scene *scene = rs.scene;
         Spectrum result = 0.f;
 
+        // Direct intersection
         auto &si = rs.ray_intersect(ray, active);
         active &= si.is_valid();
 
@@ -64,21 +67,69 @@ public:
 
         auto bsdf = si.bsdf(ray);
 
+        // ---------------------------------------------------- Emitter sampling
+        Spectrum result_partial = 0.0f;
         for (size_t i = 0; i < m_emitter_samples; ++i) {
             DirectionSample ds;
-            Spectrum spec;
-            std::tie(ds, spec) = scene->sample_emitter_direction(
+            Spectrum emitter_val;
+            std::tie(ds, emitter_val) = scene->sample_emitter_direction(
                 si, rs.next_2d(active), true, active);
             Mask valid = active && neq(ds.pdf, 0.0f);
 
+            // Query the BSDF for that emitter-sampled direction
             BSDFSample bs(si, si.to_local(ds.d));
-
             Spectrum bsdf_val = bsdf->eval(bs, ESolidAngle, valid);
-            masked(result, valid) = result + spec * bsdf_val;
-        }
-        result *= 1.f / m_emitter_samples;
 
-        // TODO: implement MIS (emitter sampling, BSDF sampling)
+            /* Weight using the probability of sampling that direction through
+               BSDF sampling. */
+            Value bsdf_pdf = bsdf->pdf(bs, ESolidAngle, valid);
+
+            masked(result_partial, valid) =
+                result_partial + emitter_val * bsdf_val
+                                 * mi_weight(ds.pdf, bsdf_pdf);
+        }
+        if (m_emitter_samples > 0)
+            result += result_partial / m_emitter_samples;
+
+        // ------------------------------------------------------- BSDF sampling
+        result_partial = 0.0f;
+        for (size_t i = 0; i < m_bsdf_samples; ++i) {
+            BSDFSample bs(si, rs.sampler, ERadiance);
+
+            Spectrum bsdf_val;
+            Value bsdf_pdf;
+            std::tie(bsdf_val, bsdf_pdf) = bsdf->sample(bs, rs.next_2d(), active);
+            Mask valid = active && neq(bsdf_pdf, 0.0f);
+
+            // Trace the ray in the sampled direction and intersect against the scene
+            RayDifferential bdsf_ray(si.p, si.to_world(bs.wo), si.time, ray.wavelengths);
+            SurfaceInteraction si_bsdf = scene->ray_intersect(bdsf_ray, active);
+
+            // Retain only rays that hit an emitter
+            valid = valid && si_bsdf.is_valid() && si_bsdf.is_emitter();
+            if (any(valid)) {
+                Spectrum emitter_val = si_bsdf.emission(valid);
+                // TODO: support environment lights
+
+                /* Weight using the probability of sampling that direction through
+                   emitter sampling. */
+                DirectionSample ds(si_bsdf, si);
+                ds.object = si_bsdf.shape->emitter();
+                ds.delta = neq(bs.sampled_type & BSDF::EDelta, 0u);
+
+                Value emitter_pdf = select(
+                    neq(bs.sampled_type & BSDF::EDelta, 0u),
+                    Value(0.0f),
+                    scene->pdf_emitter_direction(si_bsdf, ds, valid)
+                );
+
+                masked(result_partial, valid) =
+                    result_partial + bsdf_val * emitter_val
+                                     * mi_weight(bsdf_pdf, emitter_pdf);
+            }
+        }
+        if (m_bsdf_samples > 0)
+            result += result_partial / m_bsdf_samples;
 
         return result;
     }

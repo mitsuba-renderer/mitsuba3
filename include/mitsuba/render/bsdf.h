@@ -443,7 +443,7 @@ template <typename Point3>
 std::ostream &operator<<(std::ostream &os, const BSDFSample<Point3>& bs) {
     os << "BSDFSample[" << std::endl
         << "  si = " << string::indent(bs.si, 7) << "," << std::endl
-        << "  sampler = " << bs.sampler << "," << std::endl
+        << "  sampler = " << string::indent(bs.sampler, 2) << "," << std::endl
         << "  wi = " << bs.wi << "," << std::endl
         << "  wo = " << bs.wo << "," << std::endl
         << "  eta = " << bs.eta << "," << std::endl
