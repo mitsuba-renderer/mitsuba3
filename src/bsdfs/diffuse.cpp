@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 class SmoothDiffuse final : public BSDF {
 public:
     SmoothDiffuse(const Properties &props) {
-        m_flags = EDiffuseReflection | EFrontSide;
+        m_flags = (EDiffuseReflection | EFrontSide);
         m_reflectance = props.spectrum("reflectance", .5f);
     }
 

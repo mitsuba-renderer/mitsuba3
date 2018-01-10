@@ -1,9 +1,11 @@
+import numpy as np
+import os
+import pytest
+
 from mitsuba.core import Struct, float_dtype
 from mitsuba.core.xml import load_string
 from mitsuba.render import Mesh
 from mitsuba.test.util import fresolver_append_path
-import numpy as np
-import os
 
 
 def test01_create_mesh():
@@ -18,9 +20,9 @@ def test01_create_mesh():
         .append("i2", Struct.EUInt32)
     m = Mesh("MyMesh", vertex_struct, 3, index_struct, 2)
     v = m.vertices()
-    v[0] = np.array([0, 0, 0], dtype=float_dtype)
-    v[1] = np.array([0, 0, 1], dtype=float_dtype)
-    v[2] = np.array([0, 1, 0], dtype=float_dtype)
+    v[0] = (0.0, 0.0, 0.0)
+    v[1] = (0.0, 0.0, 1.0)
+    v[2] = (0.0, 1.0, 0.0)
     m.recompute_bbox()
 
     if float_dtype == np.float32:
@@ -148,8 +150,8 @@ def test04_normal_weighting_scheme():
     n = np.vstack([n2, n0, n0, n1, n1])
 
     f = m.faces()
-    f[0] = np.array([0, 1, 2], dtype=np.uint32)
-    f[1] = np.array([0, 3, 4], dtype=np.uint32)
+    f[0] = [0, 1, 2]
+    f[1] = [0, 3, 4]
     m.recompute_vertex_normals()
     assert np.allclose(v['nx'], n[:, 0], 5e-4)
     assert np.allclose(v['ny'], n[:, 1], 5e-4)
@@ -157,22 +159,23 @@ def test04_normal_weighting_scheme():
 
 
 @fresolver_append_path
-def test05_obj():
-    """Tests the OBJ loader on a simple example """
-    shape = load_string("""
-        <scene version="0.5.0">
-            <shape type="obj">
-                <string name="filename" value="resources/data/tests/obj/cbox_smallbox.obj"/>
-            </shape>
-        </scene>
-    """).kdtree()[0]
+def test05_load_simple_mesh( ):
+    """Tests the OBJ and PLY loaders on a simple example """
+    for mesh_format in ["obj", "ply"]:
+        shape = load_string("""
+            <scene version="2.0.0">
+                <shape type="{0}">
+                    <string name="filename" value="resources/data/tests/{0}/cbox_smallbox.{0}"/>
+                </shape>
+            </scene>
+        """.format(mesh_format)).kdtree()[0]
 
-    vertices, faces = shape.vertices(), shape.faces()
-    assert shape.has_vertex_normals()
-    assert vertices.ndim == 1
-    assert vertices.shape == (24, )
-    assert faces.ndim == 1
-    assert faces.shape == (12, )
-    assert np.all(np.array(faces[2].tolist()) == [4, 5, 6])
-    assert np.allclose(vertices[0].tolist(), [130, 165, 65, 0, 1, 0], atol=1e-3)
-    assert np.allclose(vertices[4].tolist(), [290, 0, 114, 0.9534, 0, 0.301709], atol=1e-3)
+        vertices, faces = shape.vertices(), shape.faces()
+        assert shape.has_vertex_normals()
+        assert vertices.ndim == 1
+        assert vertices.shape == (24, )
+        assert faces.ndim == 1
+        assert faces.shape == (12, )
+        assert np.all(np.array(faces[2].tolist()) == [4, 5, 6])
+        assert np.allclose(vertices[0].tolist(), [130, 165, 65, 0, 1, 0], atol=1e-3)
+        assert np.allclose(vertices[4].tolist(), [290, 0, 114, 0.9534, 0, 0.301709], atol=1e-3)

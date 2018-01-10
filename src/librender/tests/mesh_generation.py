@@ -8,21 +8,23 @@ vertex_struct = Struct() \
     .append("x", float_dtype) \
     .append("y", float_dtype) \
     .append("z", float_dtype)
+vdt = vertex_struct.dtype()
 
 index_struct = Struct() \
     .append("i0", Struct.EUInt32) \
     .append("i1", Struct.EUInt32) \
     .append("i2", Struct.EUInt32)
+idt = vertex_struct.dtype()
 
 
 def create_single_triangle():
     m = Mesh("tri", vertex_struct, 3, index_struct, 1)
     v = m.vertices()
     f = m.faces()
-    v[0] = np.array([0, 0, 0], dtype=float_dtype)
-    v[1] = np.array([1, 0.2, 0], dtype=float_dtype)
-    v[2] = np.array([0.2, 1, 0], dtype=float_dtype)
-    f[0] = np.array([0, 1, 2], dtype=np.uint32)
+    v[0] = (0, 0, 0)
+    v[1] = (1, 0.2, 0)
+    v[2] = (0.2, 1, 0)
+    f[0] = (0, 1, 2)
     m.recompute_bbox()
     return m
 
@@ -32,15 +34,15 @@ def create_regular_tetrahedron():
     v = m.vertices()
     f = m.faces()
 
-    v[0] = np.array([0, 0, 0], dtype=float_dtype)
-    v[1] = np.array([0.8, 0.8, 0], dtype=float_dtype)
-    v[2] = np.array([0.8, 0, 0.8], dtype=float_dtype)
-    v[3] = np.array([0, 0.8, 0.8], dtype=float_dtype)
+    v[0] = (0, 0, 0)
+    v[1] = (0.8, 0.8, 0)
+    v[2] = (0.8, 0, 0.8)
+    v[3] = (0, 0.8, 0.8)
 
-    f[0] = np.array([0, 1, 2], dtype=np.uint32)
-    f[1] = np.array([2, 3, 0], dtype=np.uint32)
-    f[2] = np.array([2, 1, 3], dtype=np.uint32)
-    f[3] = np.array([3, 1, 0], dtype=np.uint32)
+    f[0] = (0, 1, 2)
+    f[1] = (2, 3, 0)
+    f[2] = (2, 1, 3)
+    f[3] = (3, 1, 0)
 
     m.recompute_bbox()
     return m
@@ -61,16 +63,16 @@ def create_stairs(num_steps):
         s2 = (i + 1) * size_step
         k = 4 * i
 
-        v[k + 0] = np.array([0.0, s1, h], dtype=float_dtype)
-        v[k + 1] = np.array([1.0, s1, h], dtype=float_dtype)
-        v[k + 2] = np.array([0.0, s2, h], dtype=float_dtype)
-        v[k + 3] = np.array([1.0, s2, h], dtype=float_dtype)
+        v[k + 0] = (0.0, s1, h)
+        v[k + 1] = (1.0, s1, h)
+        v[k + 2] = (0.0, s2, h)
+        v[k + 3] = (1.0, s2, h)
 
-        f[k]   = np.array([k, k + 1, k + 2], dtype=np.uint32)
-        f[k + 1] = np.array([k + 1, k + 3, k + 2], dtype=np.uint32)
+        f[k]   = (k, k + 1, k + 2)
+        f[k + 1] = (k + 1, k + 3, k + 2)
         if i < num_steps - 1:
-            f[k + 2] = np.array([k + 2, k + 3, k + 5], dtype=np.uint32)
-            f[k + 3] = np.array([k + 5, k + 4, k + 2], dtype=np.uint32)
+            f[k + 2] = (k + 2, k + 3, k + 5)
+            f[k + 3] = (k + 5, k + 4, k + 2)
 
     m.recompute_bbox()
     return m

@@ -2072,7 +2072,7 @@ public:
                "Standard rays (i.e. non-shadow rays) must provide a `cache`"
                " pointer to store intersection data.");
 
-        Index shape_index = find_shape(prim_index);
+        Index shape_index  = find_shape(prim_index);
         const Shape *shape = this->shape(shape_index);
         bool is_mesh = shape->is_mesh();
 

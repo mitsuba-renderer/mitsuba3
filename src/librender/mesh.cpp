@@ -293,13 +293,13 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
            p2 = vertex_position(fi[2], active);
 
     /* Re-interpolate intersection using barycentric coordinates */
-    si.p = p0 * b0 + p1 * b1 + p2 * b2;
+    masked(si.p, active) = p0 * b0 + p1 * b1 + p2 * b2;
 
     /* Tangents */
     vector3_t<Point3> e0 = p1 - p0, e1 = p2 - p0;
-    si.n = normalize(cross(e1, e0));
-    si.dp_du = e0;
-    si.dp_dv = e1;
+    masked(si.n, active) = normalize(cross(e1, e0));
+    masked(si.dp_du, active) = e0;
+    masked(si.dp_dv, active) = e1;
 
     /* Texture coordinates (if available) */
     if (has_vertex_texcoords()) {
@@ -307,9 +307,9 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
                uv1 = vertex_texcoord(fi[1], active),
                uv2 = vertex_texcoord(fi[2], active);
 
-        si.uv = uv0 * b0 + uv1 * b1 + uv2 * b2;
+        masked(si.uv, active) = uv0 * b0 + uv1 * b1 + uv2 * b2;
     } else {
-        si.uv = Point2(b1, b2);
+        masked(si.uv, active) = Point2(b1, b2);
     }
 
 
@@ -319,9 +319,9 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
                 n1 = vertex_normal(fi[1], active),
                 n2 = vertex_normal(fi[2], active);
 
-        si.sh_frame.n = normalize(n0 * b0 + n1 * b1 + n2 * b2);
+        masked(si.sh_frame.n, active) = normalize(n0 * b0 + n1 * b1 + n2 * b2);
     } else {
-        si.sh_frame.n = si.n;
+        masked(si.sh_frame.n, active) = si.n;
     }
 }
 

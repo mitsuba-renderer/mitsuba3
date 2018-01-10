@@ -168,8 +168,10 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
     block->clear();
     uint32_t sample_count = sampler->sample_count();
 
-    if ((uint32_t) hprod(block->size()) * sample_count !=
-        (uint32_t) slices(points)) {
+    if (block->size().x() != block->size().y()
+        || (uint32_t) hprod(block->size()) * sample_count
+           != (uint32_t) slices(points)) {
+
         size_t max_pixel_count = m_block_size * m_block_size,
                n_entries = 0;
         set_slices(points, max_pixel_count * sample_count);

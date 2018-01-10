@@ -147,7 +147,6 @@ public:
     Float pdf_emitter_direction(const Interaction3f &it,
                                 const DirectionSample3f &ds) const;
 
-
     /// Vectorized version of \ref pdf_emitter_direction
     FloatP pdf_emitter_direction(const Interaction3fP &it,
                                  const DirectionSample3fP &ds,
@@ -160,10 +159,17 @@ public:
         return pdf_emitter_direction(it, ds);
     }
 
-    template <typename Ray,
-              typename Value = typename Ray::Value,
-              typename Spectrum = mitsuba::Spectrum<Value>>
-    Spectrum eval_environment(const Ray &) { return Spectrum(0.f); }
+    /**
+     * \brief Return the environment radiance for a ray that did not intersect
+     * any of the scene objects.
+     *
+     * This is primarily meant for path tracing-style integrators.
+     */
+    template <typename Ray, typename Value = typename Ray::Value>
+    auto eval_environment(const Ray &,
+                          const mask_t<Value> &/*active*/ = true) const {
+        return Spectrum<Value>(0.f);
+    }
 
     //! @}
     // =============================================================
@@ -187,6 +193,9 @@ public:
     std::vector<ref<Emitter>> &emitters() { return m_emitters; }
     /// Return the current emitter
     const std::vector<ref<Emitter>> &emitters() const { return m_emitters; }
+
+    /// True if the scene has an environment emitter
+    bool has_environment_emitter() const { return false; }
 
     /// Return the current sensor's film
     Film *film() { return m_sensors.front()->film(); }

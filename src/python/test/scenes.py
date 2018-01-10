@@ -36,8 +36,8 @@ def teapot_scene():
                 </transform>
 
                 <film type="hdrfilm">
-                    <integer name="width" value="151"/>
-                    <integer name="height" value="146"/>
+                    <integer name="width" value="100"/>
+                    <integer name="height" value="72"/>
                 </film>
 
                 <sampler type="independent">

@@ -4,6 +4,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**
+ * D65 illuminant data from CIE, expressed as Relative Spectral Power Distribution,
+ * normalized relative to the power at 560nm.
+ */
 const Float data[95] = {
     46.6383f,  49.3637f,  52.0891f,  51.0323f,  49.9755f,  52.3118f,  54.6482f,  68.7015f,
     82.7549f,  87.1204f,  91.486f,   92.4589f,  93.4318f,  90.057f,   86.6823f,  95.7736f,
@@ -19,14 +23,13 @@ const Float data[95] = {
     59.4519f,  55.7054f,  51.959f,   54.6998f,  57.4406f,  58.8765f,  60.3125f
 };
 
-// CIE D65 spectrum discretized at 5nm intervals
+/// CIE D65 spectrum discretized at 5nm intervals
 class D65Spectrum final : public ContinuousSpectrum {
 public:
     D65Spectrum(const Properties &props) {
         /* The default scale factor is set so that integrating
            the spectrum against the CIE curves & converting to
            sRGB yields a pixel value of (1, 1, 1) */
-
         m_scale = props.float_("value", 1.f) / 10568.f;
     }
 

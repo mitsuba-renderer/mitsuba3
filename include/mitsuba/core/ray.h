@@ -37,6 +37,11 @@ template <typename Point_> struct Ray {
     Ray(const Point &o, const Vector &d, Value time, const Spectrum &wavelengths)
         : o(o), d(d), d_rcp(rcp(d)), time(time), wavelengths(wavelengths) { }
 
+    /// Construct a new ray (o, d) with time
+    Ray(const Point &o, const Vector &d, const Value &t) : o(o), d(d), time(t) {
+        update();
+    }
+
     /// Construct a new ray (o, d) with bounds
     Ray(const Point &o, const Vector &d, Value mint, Value maxt, Value time, const Spectrum &wavelengths)
         : o(o), d(d), d_rcp(rcp(d)), mint(mint), maxt(maxt), time(time), wavelengths(wavelengths) { }

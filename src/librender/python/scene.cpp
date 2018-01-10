@@ -34,9 +34,10 @@ MTS_PY_EXPORT(Scene) {
     MTS_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
         .def("eval_environment", &Scene::eval_environment<RayDifferential3f>,
-             D(Scene, eval_environment), "ray"_a)
+             D(Scene, eval_environment), "ray"_a, "active"_a = true)
         .def("eval_environment", enoki::vectorize_wrapper(
-                &Scene::eval_environment<RayDifferential3fP>), "ray"_a)
+                &Scene::eval_environment<RayDifferential3fP>),
+             D(Scene, eval_environment), "ray"_a, "active"_a = true)
 
         // Full intersection
         .def("ray_intersect",

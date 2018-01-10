@@ -187,6 +187,28 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
     /// Construct from a position sample
     DirectionSample(const Base &base) : Base(base) { }
 
+    /**
+     * \brief Setup this record so that it can be used to \a query
+     * the density of a surface position (where the reference point lies on
+     * a \a surface).
+     *
+     * \param ray
+     *     Reference to the ray that generated the intersection \c si
+     *     The ray origin must be located at \c si.p
+     *
+     * \param si
+     *     A surface intersection record (usually on an emitter).
+     */
+    void set_query(const Ray<Point3> &ray, const SurfaceInteraction &si) {
+        p = si.p;
+        n = si.sh_frame.n;
+        uv = si.uv;
+        time = si.time;
+        object = si.shape->emitter();
+        d = ray.d;
+        dist = si.t;
+    }
+
     //! @}
     // =============================================================
 
