@@ -150,8 +150,8 @@ def test04_normal_weighting_scheme():
     n = np.vstack([n2, n0, n0, n1, n1])
 
     f = m.faces()
-    f[0] = [0, 1, 2]
-    f[1] = [0, 3, 4]
+    f[0] = (0, 1, 2)
+    f[1] = (0, 3, 4)
     m.recompute_vertex_normals()
     assert np.allclose(v['nx'], n[:, 0], 5e-4)
     assert np.allclose(v['ny'], n[:, 1], 5e-4)
