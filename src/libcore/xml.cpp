@@ -570,23 +570,61 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             obj = expanded[0];
                         props.set_object(node.attribute("name").value(), obj);
                     } else {
-                        std::vector<std::pair<Float, Float>> values;
+                        /* Parse wavelength:value pairs, where wavelengths are
+                           expected to be specified in increasing order.
+                           Automatically detect whether wavelengths are regularly
+                           sampled, and instantiate the appropriate
+                           ContinuousSpectrum plugin. */
+                        std::vector<Float> wavelengths, values;
+                        bool is_regular = true;
+                        Float interval;
+                        /* Values are scaled so that integrating the
+                           spectrum against the CIE curves and converting
+                           to sRGB yields (1, 1, 1) for D65. See D65Spectrum. */
+                        Float unit_conversion = 1.0f;
+                        if (within_emitter)
+                            unit_conversion = 100.0f / 10568.0f;
 
                         for (const std::string &token : tokens) {
-                            std::vector<std::string> values = string::tokenize(token, ":");
-                            if (values.size() != 2)
+                            std::vector<std::string> pair = string::tokenize(token, ":");
+                            if (pair.size() != 2)
                                 src.throw_error(node, "invalid spectrum (expected wavelength:value pairs)");
                             Float wavelength, value;
                             try {
-                                wavelength = detail::stof(values[0]);
-                                value = detail::stof(values[1]);
+                                wavelength = detail::stof(pair[0]);
+                                value = detail::stof(pair[1]);
                             } catch (...) {
                                 src.throw_error(node, "could not parse wavelength:value pair: \"%s\"", token);
                             }
-                            values.emplace_back(wavelength, value);
+
+                            value *= unit_conversion;
+                            wavelengths.push_back(wavelength);
+                            values.push_back(value);
+
+                            size_t n = wavelengths.size();
+                            if (n <= 1)
+                                continue;
+                            Float distance = (wavelengths[n - 1] - wavelengths[n - 2]);
+                            if (distance < 0.0f)
+                                src.throw_error(node, "wavelengths must be specified in increasing order");
+                            if (n == 2)
+                                interval = distance;
+                            else if ((distance - interval) > math::Epsilon)
+                                is_regular = false;
                         }
 
-                        // TODO: probably need to set_pointer("values") and set_size("size")?
+                        if (!is_regular)
+                            Throw("Not implemented yet: irregularly sampled spectra.");
+
+                        Properties props2("interpolated");
+                        props2.set_float("lambda_min", wavelengths.front());
+                        props2.set_float("lambda_max", wavelengths.back());
+                        props2.set_long("size", wavelengths.size());
+                        props2.set_pointer("values", values.data());
+                        ref<Object> obj =
+                            PluginManager::instance()
+                                ->create_object<ContinuousSpectrum>(props2).get();
+                        props.set_object(node.attribute("name").value(), obj);
                     }
                 }
                 break;
