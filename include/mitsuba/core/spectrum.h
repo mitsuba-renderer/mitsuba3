@@ -109,7 +109,7 @@ public:
                             MaskP active = true) const;
 
     /// Wrapper for scalar \ref eval() with a mask (which will be ignored)
-    Spectrumf eval(const Spectrumf &wavelengths, bool /* unused */) const {
+    Spectrumf eval(const Spectrumf &wavelengths, bool /*unused*/) const {
         return eval(wavelengths);
     }
 
@@ -120,7 +120,7 @@ public:
      * implementation throws an exception.
      *
      * \param sample
-     *     A uniform variate
+     *     A uniform variate for each desired wavelength.
      *
      * \return
      *     1. Set of sampled wavelengths specified in nanometers
@@ -137,8 +137,8 @@ public:
 
     /// Wrapper for scalar \ref sample() with a mask (which will be ignored)
     std::pair<Spectrumf, Spectrumf>
-    sample(const Spectrumf &sample, bool /* mask */) const {
-        return ContinuousSpectrum::sample(sample);
+    sample(const Spectrumf &s, bool /*mask*/) const {
+        return sample(s);
     }
 
     /**
@@ -155,7 +155,7 @@ public:
                            MaskP active = true) const;
 
     /// Wrapper for scalar \ref pdf() with a mask (which will be ignored)
-    Spectrumf pdf(const Spectrumf &wavelengths, bool /* mask */) {
+    Spectrumf pdf(const Spectrumf &wavelengths, bool /*mask*/) {
         return pdf(wavelengths);
     }
 

@@ -34,14 +34,14 @@ public:
                     const Point2 & /* pos_sample */,
                     const Point2 &dir_sample,
                     Mask active) const {
-        Spectrum spec_wl, spec_weight;
-        std::tie(spec_wl, spec_weight) =
-            m_intensity->sample(wavelength_sample, active);
+        Spectrum wavelengths, spec_weight;
+        std::tie(wavelengths, spec_weight) = m_intensity->sample(
+            enoki::sample_shifted<Spectrum>(wavelength_sample), active);
 
         const auto &trafo = m_world_transform->eval(time);
         Ray3 ray(trafo * Point3(0.f),
                  warp::square_to_uniform_sphere(dir_sample),
-                 time, spec_wl);
+                 time, wavelengths);
 
         return std::make_pair(ray, spec_weight * (4.f * math::Pi));
     }

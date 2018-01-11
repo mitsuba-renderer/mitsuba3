@@ -47,6 +47,10 @@ Scene::Scene(const Properties &props) {
     if (m_emitters.size() > 0)
         m_emitter_distr.normalize();
 
+    // Create emitters' shapes (environment luminaires)
+    for (auto emitter: m_emitters)
+        emitter->create_shape(this);
+
     if (m_sensors.size() > 0) {
         if (m_sensors.size() > 1)
             Throw("Only one sensor is supported ATM.");

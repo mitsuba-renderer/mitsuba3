@@ -2,14 +2,11 @@ import numpy as np
 import os
 import pytest
 
-from mitsuba.core import Thread, FileResolver, Struct, float_dtype
-from mitsuba.core import warp, Frame3f
+from mitsuba.core import warp
 from mitsuba.core.math import Pi
 from mitsuba.core.xml import load_string
-from mitsuba.render import EMeasure
-from mitsuba.render import PositionSample3f, Interaction3f
+from mitsuba.render import EMeasure, PositionSample3f, Interaction3f
 from mitsuba.test.util import fresolver_append_path
-
 
 @fresolver_append_path
 def example_shape(filename = "data/triangle.ply", has_emitter = True):

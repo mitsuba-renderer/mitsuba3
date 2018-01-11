@@ -323,6 +323,13 @@ template <typename Point_> struct BoundingBox {
         return std::make_tuple(active, mint, maxt);
     }
 
+    /// Create a bounding sphere, which contains the axis-aligned box
+    template <typename BoundingSphere = BoundingSphere<Point>>
+    BoundingSphere bounding_sphere() const {
+        Point c = center();
+        return BoundingSphere3f(c, norm(c - max));
+    }
+
     Point min; ///< Component-wise minimum
     Point max; ///< Component-wise maximum
 

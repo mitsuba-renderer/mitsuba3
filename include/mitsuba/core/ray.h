@@ -19,11 +19,11 @@ NAMESPACE_BEGIN(mitsuba)
  * ray-object intersection code may produce undefined results.
  */
 template <typename Point_> struct Ray {
+    static constexpr size_t Size = Point_::Size;
     using Point                  = Point_;
-    using Vector                 = typename Point::Vector;
     using Value                  = value_t<Point>;
+    using Vector                 = Vector<Value, Size>;
     using Spectrum               = mitsuba::Spectrum<Value>;
-    static constexpr size_t Size = Point::Size;
 
     Point o;                     ///< Ray origin
     Vector d;                    ///< Ray direction

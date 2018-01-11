@@ -248,6 +248,32 @@ public:
     /// Set the medium that surrounds the emitter.
     virtual void set_medium(Medium *medium);
 
+    /**
+     * \brief Create a special shape that represents the emitter
+     *
+     * Some types of emitters are inherently associated with a surface, yet
+     * this surface is not explicitly needed for many kinds of rendering
+     * algorithms.
+     *
+     * An example would be an environment map, where the associated shape
+     * is a sphere surrounding the scene. Another example would be a
+     * perspective camera with depth of field, where the associated shape
+     * is a disk representing the aperture (remember that this class
+     * represents emitters in a generalized bidirectional sense, which
+     * includes sensors).
+     *
+     * When this shape is in fact needed by the underlying rendering algorithm,
+     * this function can be called to create it. The default implementation
+     * simply returns \c nullptr.
+     *
+     * \param scene
+     *     A pointer to the associated scene (the created shape is
+     *     allowed to depend on it)
+     */
+    virtual ref<Shape> create_shape(const Scene * /*scene*/) {
+        return nullptr;
+    }
+
     //! @}
     // =============================================================
 

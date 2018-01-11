@@ -3,9 +3,7 @@
 #include <mitsuba/python/python.h>
 
 // TODO: move all signal-related mechanisms to libcore?
-#define MTS_INSTALL_HANDLER defined(__APPLE__) || defined(__linux__)
-
-#if MTS_INSTALL_HANDLER
+#if defined(__APPLE__) || defined(__linux__)
 #include <signal.h>
 
 /// Integrator currently in use (has to be global)
@@ -28,7 +26,7 @@ static void sigint_handler(int sig) {
 MTS_PY_EXPORT(Integrator) {
     MTS_PY_CLASS(Integrator, Object)
         .def("render", [&](Integrator &integrator, Scene *scene, bool vectorize) {
-                #if MTS_INSTALL_HANDLER
+                #if defined(__APPLE__) || defined(__linux__)
                 // Install new signal handler
                 current_integrator = &integrator;
                 sigint_handler_prev = signal(SIGINT, sigint_handler);
@@ -36,7 +34,7 @@ MTS_PY_EXPORT(Integrator) {
 
                 bool res = integrator.render(scene, vectorize);
 
-                #if MTS_INSTALL_HANDLER
+                #if defined(__APPLE__) || defined(__linux__)
                 // Restore previous signal handler
                 signal(SIGINT, sigint_handler_prev);
                 #endif
@@ -56,5 +54,3 @@ MTS_PY_EXPORT(Integrator) {
 
     MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 }
-
-#undef MTS_INSTALL_HANDLER

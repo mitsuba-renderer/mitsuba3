@@ -9,9 +9,9 @@ template <typename Point_> struct BoundingSphere {
     static constexpr size_t Size = Point_::Size;
 
     using Point  = Point_;
-    using Value = value_t<Point>;
-    using Vector = typename Point::Vector;
-    using Mask = mask_t<Value>;
+    using Value  = value_t<Point>;
+    using Vector = Vector<Value, Size>;
+    using Mask   = mask_t<Value>;
 
     Point center;
     Value radius;

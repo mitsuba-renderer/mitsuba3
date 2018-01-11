@@ -27,7 +27,7 @@ public:
               typename Frame = Frame<typename SurfaceInteraction::Point3>>
     Spectrum eval_impl(const SurfaceInteraction &si, Mask active) const {
         return m_radiance->eval(si.wavelengths, active) &
-               (Frame::cos_theta(si.wi) > 0.f);
+               (Frame::cos_theta(si.wi) > 0.0f);
     }
 
     template <typename Point2,
@@ -38,7 +38,7 @@ public:
               typename Spectrum = Spectrum<Value>>
     std::pair<Ray3, Spectrum>
     sample_ray_impl(Value time,
-                    Value sample1,
+                    Value wavelength_sample,
                     const Point2 &sample2,
                     const Point2 &sample3,
                     Mask active) const {
@@ -46,9 +46,9 @@ public:
         using Frame = Frame<Vector<Value, 3>>;
 
         /* 1. Sample spectrum */
-        Spectrum spec_wl, spec_weight;
-        std::tie(spec_wl, spec_weight) =
-            m_radiance->sample(sample1, active);
+        Spectrum wavelengths, spec_weight;
+        std::tie(wavelengths, spec_weight) = m_radiance->sample(
+            enoki::sample_shifted<Spectrum>(wavelength_sample), active);
 
         /* 2. Sample spatial component */
         PositionSample ps = m_shape->sample_position(time, sample2);
@@ -57,7 +57,7 @@ public:
         auto local = warp::square_to_cosine_hemisphere(sample3);
 
         return std::make_pair(
-            Ray3(ps.p, Frame(ps.n).to_world(local), time, spec_wl),
+            Ray3(ps.p, Frame(ps.n).to_world(local), time, wavelengths),
             spec_weight * m_area_times_pi
         );
     }
@@ -73,11 +73,11 @@ public:
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
         DirectionSample ds = m_shape->sample_direction(it, sample, active);
 
-        active &= dot(ds.d, ds.n) < 0 && neq(ds.pdf, 0.f);
+        active = active && dot(ds.d, ds.n) < 0.0f && neq(ds.pdf, 0.0f);
         Spectrum spec = m_radiance->eval(it.wavelengths, active) / ds.pdf;
 
-        masked(ds.pdf, !active) = 0.f;
-        masked(spec, !active) = Spectrum(0.f);
+        masked(ds.pdf, !active) = 0.0f;
+        masked(spec,   !active) = Spectrum(0.0f);
         ds.object = this;
         return std::make_pair(ds, spec);
     }
@@ -85,8 +85,8 @@ public:
     template <typename Interaction, typename DirectionSample, typename Mask,
               typename Value = typename DirectionSample::Value>
     Value pdf_direction_impl(const Interaction &it, const DirectionSample &ds, Mask active) const {
-        return select(dot(ds.d, ds.n) < 0.f,
-                      m_shape->pdf_direction(it, ds, active), 0.f);
+        return select(dot(ds.d, ds.n) < 0.0f,
+                      m_shape->pdf_direction(it, ds, active), 0.0f);
     }
 
     BoundingBox3f bbox() const override { return m_shape->bbox(); }
@@ -109,7 +109,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_radiance;
-    Float m_area_times_pi = 0.f;
+    Float m_area_times_pi = 0.0f;
 };
 
 
