@@ -2335,9 +2335,11 @@ public:
                         std::tie(prim_hit, prim_t) =
                             intersect_prim<ShadowRay>(prim_index, ray, cache, active);
 
-                        Assert(all(!prim_hit || (prim_t >= ray.mint && prim_t <= ray.maxt)));
-                        masked(ray.maxt, prim_hit) = prim_t;
-                        masked(temp_maxt, prim_hit) = prim_t;
+                        if (!ShadowRay) {
+                            Assert(all(!prim_hit || (prim_t >= ray.mint && prim_t <= ray.maxt)));
+                            masked(ray.maxt, prim_hit) = prim_t;
+                            masked(temp_maxt, prim_hit) = prim_t;
+                        }
                         hit |= prim_hit;
                     }
 

@@ -276,75 +276,77 @@ public:
               typename SurfaceInteraction3,
               typename Value = typename SurfaceInteraction3::Value>
     void fill_intersection_record_impl(const Ray3 &ray, const Value * /*cache*/,
-                                       SurfaceInteraction3 &its,
+                                       SurfaceInteraction3 &si,
                                        const mask_t<Value> &active) const {
         using Vector3 = typename SurfaceInteraction3::Vector3;
         using Mask    = mask_t<Value>;
 
-        its.p = ray(its.t);
+        masked(si.p, active) = ray(si.t);
 
         // Re-project onto the sphere to limit cancellation effects
-        its.p = m_center + normalize(its.p - m_center) * m_radius;
+        masked(si.p, active) = m_center + normalize(si.p - m_center) * m_radius;
 
-        Vector3 local = m_world_to_object * (its.p - m_center);
+        Vector3 local = m_world_to_object * (si.p - m_center);
         Value   theta = safe_acos(local.z() / m_radius);
         Value   phi   = atan2(local.y(), local.x());
 
         masked(phi, phi < 0.0f) += 2.0f * math::Pi;
 
-        its.uv.x() = phi * math::InvTwoPi;
-        its.uv.y() = theta * math::InvPi;
-        its.dp_du = m_object_to_world * Vector3(
+        masked(si.uv.x(), active) = phi * math::InvTwoPi;
+        masked(si.uv.y(), active) = theta * math::InvPi;
+        masked(si.dp_du,  active) = m_object_to_world * Vector3(
             -local.y(), local.x(), 0.0f) * (2.0f * math::Pi);
-        its.sh_frame.n = normalize(its.p - m_center);
+        masked(si.sh_frame.n, active) = normalize(si.p - m_center);
         Value z_rad = sqrt(local.x() * local.x() + local.y() * local.y());
-        its.shape = this;
+        masked(si.shape, active) = this;
 
         Mask z_rad_gt_0  = (z_rad > 0.0f);
         Mask z_rad_leq_0 = !z_rad_gt_0;
 
         if (any(z_rad_gt_0 && active)) {
+            Mask mask = z_rad_gt_0 && active;
             Value inv_z_rad = rcp(z_rad),
                   cos_phi   = local.x() * inv_z_rad,
                   sin_phi   = local.y() * inv_z_rad;
-            masked(its.dp_dv, z_rad_gt_0) = m_object_to_world
+            masked(si.dp_dv, mask) = m_object_to_world
                                             * Vector3(local.z() * cos_phi,
                                                       local.z() * sin_phi,
                                                       -sin(theta) * m_radius) * math::Pi;
-            masked(its.sh_frame.s, z_rad_gt_0) = normalize(its.dp_du);
-            masked(its.sh_frame.t, z_rad_gt_0) = normalize(its.dp_dv);
+            masked(si.sh_frame.s, mask) = normalize(si.dp_du);
+            masked(si.sh_frame.t, mask) = normalize(si.dp_dv);
         }
 
         if (any(z_rad_leq_0 && active)) {
+            Mask mask = z_rad_leq_0 && active;
             // avoid a singularity
             const Value cos_phi = 0.0f, sin_phi = 1.0f;
-            masked(its.dp_dv, z_rad_leq_0) = m_object_to_world
+            masked(si.dp_dv, mask) = m_object_to_world
                                              * Vector3(local.z() * cos_phi,
                                                        local.z() * sin_phi,
                                                        -sin(theta) * m_radius) * math::Pi;
             Vector3 a, b;
-            std::tie(a, b) = coordinate_system(its.sh_frame.n);
-            masked(its.sh_frame.s, z_rad_leq_0) = a;
-            masked(its.sh_frame.t, z_rad_leq_0) = b;
+            std::tie(a, b) = coordinate_system(si.sh_frame.n);
+            masked(si.sh_frame.s, mask) = a;
+            masked(si.sh_frame.t, mask) = b;
         }
 
         if (m_flip_normals)
-            its.sh_frame.n *= -1.0f;
+            masked(si.sh_frame.n, active) = -si.sh_frame.n;
 
-        its.n = its.sh_frame.n;
-        its.has_uv_partials = false;
-        its.instance = nullptr;
-        its.time = ray.time;
+        masked(si.n,        active) = si.sh_frame.n;
+        masked(si.instance, active) = nullptr;
+        masked(si.time,     active) = ray.time;
+        si.has_uv_partials = false;
     }
 
     template <typename SurfaceInteraction3,
               typename Value   = typename SurfaceInteraction3::Value,
               typename Vector3 = typename SurfaceInteraction3::Vector3>
     std::pair<Vector3, Vector3> normal_derivative_impl(
-            const SurfaceInteraction3 &its, bool, const mask_t<Value> &) const {
+            const SurfaceInteraction3 &si, bool, const mask_t<Value> &) const {
         Value inv_radius = (m_flip_normals ? -1.0f : 1.0f) / m_radius;
-        Vector3 dn_du = its.dp_du * inv_radius;
-        Vector3 dn_dv = its.dp_dv * inv_radius;
+        Vector3 dn_du = si.dp_du * inv_radius;
+        Vector3 dn_dv = si.dp_dv * inv_radius;
         return { dn_du , dn_dv };
     }
 
@@ -360,9 +362,7 @@ public:
         oss << "Sphere[" << std::endl
             << "  radius = "  << m_radius << "," << std::endl
             << "  center = "  << m_center << "," << std::endl
-            << "  bsdf = "    << string::indent(bsdf()->to_string()) << "," << std::endl
-            << "  emitter = " << string::indent(emitter()->to_string()) << "," << std::endl
-            << "  sensor = "  << string::indent(sensor()->to_string())  << "," << std::endl
+            << "  bsdf = "    << string::indent(bsdf()->to_string()) << std::endl
             << "]";
         return oss.str();
     }
