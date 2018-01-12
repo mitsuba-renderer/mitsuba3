@@ -136,7 +136,7 @@ public:
                             Normal3f n = enoki::load<Normal3f>(target + sizeof(Float) * 3);
                             n = normalize(m_to_world.transform_affine(n));
                             p = m_to_world.transform_affine(p);
-                            if (unlikely(!all(enoki::isfinite(p) & enoki::isfinite(n))))
+                            if (unlikely(!all(enoki::isfinite(p) && enoki::isfinite(n))))
                                 fail("mesh contains invalid vertex positions/normal data");
                             m_bbox.expand(p);
                             enoki::store_unaligned(target, p);

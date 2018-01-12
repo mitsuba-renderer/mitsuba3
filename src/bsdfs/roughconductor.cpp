@@ -132,7 +132,7 @@ public:
               typename Value = typename BSDFSample::Value,
               typename Spectrum = Spectrum<Value>>
     Spectrum eval_impl(const BSDFSample &bs, EMeasure measure,
-                       const mask_t<Value> & active_) const {
+                       const mask_t<Value> &active_) const {
         using Vector3 = typename BSDFSample::Vector3;
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
@@ -148,7 +148,7 @@ public:
         Value n_dot_wi = Frame::cos_theta(bs.wi);
         Value n_dot_wo = Frame::cos_theta(bs.wo);
 
-        active = active && !((n_dot_wi <= 0.0f) & (n_dot_wo <= 0.0f));
+        active = active && !((n_dot_wi <= 0.0f) && (n_dot_wo <= 0.0f));
 
         if (none(active))
             return 0.0f;
@@ -206,7 +206,7 @@ public:
         Value n_dot_wi = Frame::cos_theta(bs.wi);
         Value n_dot_wo = Frame::cos_theta(bs.wo);
 
-        active = active && !((n_dot_wi <= 0.0f) & (n_dot_wo <= 0.0f));
+        active = active && !((n_dot_wi <= 0.0f) && (n_dot_wo <= 0.0f));
 
         if (none(active))
             return 0.0f;

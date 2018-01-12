@@ -248,14 +248,14 @@ public:
 
         Vector tvec = ray.o - v0;
         Value u = dot(tvec, pvec) * inv_det;
-        active &= (u >= 0.f) && (u <= 1.f);
+        active = active && (u >= 0.f) && (u <= 1.f);
 
         Vector qvec = cross(tvec, edge1);
         Value v = dot(ray.d, qvec) * inv_det;
-        active &= (v >= 0.f) && (u + v <= 1.f);
+        active = active && (v >= 0.f) && (u + v <= 1.f);
 
         Value t = dot(edge2, qvec) * inv_det;
-        active &= (t >= ray.mint) && (t <= ray.maxt);
+        active = active && (t >= ray.mint) && (t <= ray.maxt);
 
         return std::make_tuple(active, u, v, t);
     }

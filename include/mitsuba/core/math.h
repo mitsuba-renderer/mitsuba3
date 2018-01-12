@@ -324,7 +324,7 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
 
     while (true) {
         /* Disable converged entries */
-        active &= SignedIndex(size) > 0;
+        active = active && SignedIndex(size) > 0;
 
         if (!any_nested(active))
             break;
@@ -333,7 +333,7 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
               middle = first + half;
 
         /* Evaluate the predicate */
-        IndexMask pred_result = IndexMask(pred(middle)) & active;
+        IndexMask pred_result = IndexMask(pred(middle)) && active;
 
         /* .. and recurse into the left or right */
         masked(first, pred_result) = middle + 1;
@@ -393,7 +393,7 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
 
     while (true) {
         /* Disable converged entries */
-        active &= SignedIndex(size) > 0;
+        active = active && SignedIndex(size) > 0;
 
         if (!any_nested(active))
             break;
@@ -402,7 +402,7 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
               middle = first + half;
 
         /* Evaluate the predicate */
-        IndexMask pred_result = IndexMask(pred(middle, Mask(active))) & active;
+        IndexMask pred_result = IndexMask(pred(middle, Mask(active))) && active;
 
         /* .. and recurse into the left or right */
         masked(first, pred_result) = middle + 1;
@@ -524,7 +524,7 @@ MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &
     Mask linear_case = eq(a, Scalar(0));
 
     /* If so, we require b > 0 */
-    Mask active = (!linear_case) | (b > Scalar(0));
+    Mask active = (!linear_case) || (b > Scalar(0));
 
     /* Initialize solution with that of linear equation */
     Value x0, x1;
@@ -532,7 +532,7 @@ MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &
 
     /* Check if the quadratic equation is solvable */
     Value discrim = fmsub(b, b, Scalar(4) * a * c);
-    active &= linear_case | (discrim >= 0);
+    active = active && linear_case || (discrim >= 0);
 
     if (likely(any(active))) {
         Value sqrt_discrim = sqrt(discrim);

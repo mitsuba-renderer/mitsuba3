@@ -25,12 +25,12 @@ template <typename Point_> struct BoundingSphere {
 
     /// Equality test against another bounding sphere
     bool operator==(const BoundingSphere &bsphere) const {
-        return all_nested(all(eq(center, bsphere.center)) & eq(radius, bsphere.radius));
+        return all_nested(all(eq(center, bsphere.center)) && eq(radius, bsphere.radius));
     }
 
     /// Inequality test against another bounding sphere
     bool operator!=(const BoundingSphere &bsphere) const {
-        return any_nested(any(neq(center, bsphere.center)) | neq(radius, bsphere.radius));
+        return any_nested(any(neq(center, bsphere.center)) || neq(radius, bsphere.radius));
     }
 
     /// Return whether this bounding sphere has a radius of zero or less.

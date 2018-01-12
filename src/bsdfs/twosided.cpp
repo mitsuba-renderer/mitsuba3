@@ -78,7 +78,7 @@ public:
               typename Value = typename BSDFSample::Value,
               typename Spectrum = Spectrum<Value>>
     Spectrum eval_impl(const BSDFSample &bs, EMeasure measure,
-                       const mask_t<Value> & active) const {
+                       const mask_t<Value> &active) const {
         using Vector3 = typename BSDFSample::Vector3;
         using Frame = Frame<Vector3>;
         using Mask  = mask_t<Value>;

@@ -103,7 +103,7 @@ MTS_PY_EXPORT(Struct) {
              D(Struct, append), py::return_value_policy::reference)
         .def("field", py::overload_cast<const std::string &>(&Struct::field), D(Struct, field),
              py::return_value_policy::reference_internal)
-        .def("__getitem__", [](Struct & s, size_t i) -> Struct::Field& {
+        .def("__getitem__", [](Struct &s, size_t i) -> Struct::Field& {
             if (i >= s.field_count())
                 throw py::index_error();
             return s[i];

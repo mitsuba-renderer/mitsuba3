@@ -336,7 +336,7 @@ std::ostream &operator<<(std::ostream &os,
 
 template <typename Point3>
 std::ostream &operator<<(std::ostream &os,
-                         const RadianceSample<Point3> & record) {
+                         const RadianceSample<Point3> &record) {
     os << "RadianceSample[" << std::endl
        << "  scene = ";
     if (record.scene == nullptr) os << "[ not set ]"; else os << record.scene;

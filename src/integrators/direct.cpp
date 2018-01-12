@@ -58,7 +58,7 @@ public:
 
         // Direct intersection
         auto &si = rs.ray_intersect(ray, active);
-        active &= si.is_valid();
+        active = active && si.is_valid();
 
         if (none(active))
             return result;

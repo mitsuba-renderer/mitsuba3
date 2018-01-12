@@ -16,14 +16,14 @@ public:
 
     template <typename Value>
     MTS_INLINE Value eval_impl(Value lambda, mask_t<Value> /* unused */ ) const {
-        return Value(m_value) & (lambda >= MTS_WAVELENGTH_MIN) &
-               (lambda <= MTS_WAVELENGTH_MAX);
+        mask_t<Value> active = (lambda >= MTS_WAVELENGTH_MIN) && (lambda <= MTS_WAVELENGTH_MAX);
+        return select(active, Value(m_value), Value(0.0f));
     }
 
     template <typename Value>
     MTS_INLINE Value pdf_impl(Value lambda, mask_t<Value> /* unused */) const {
-        return Value(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)) &
-               (lambda >= MTS_WAVELENGTH_MIN) & (lambda <= MTS_WAVELENGTH_MAX);
+        mask_t<Value> active = (lambda >= MTS_WAVELENGTH_MIN) && (lambda <= MTS_WAVELENGTH_MAX);
+        return select(active, Value(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Value(0.0f));
     }
 
     template <typename Value>

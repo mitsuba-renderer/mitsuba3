@@ -2253,9 +2253,9 @@ public:
         FloatP maxt = enoki::min(ray.maxt, std::get<2>(bbox_result));
 
         while (true) {
-            active &= maxt >= mint;
+            active = active && maxt >= mint;
             if (ShadowRay)
-                active &= !hit;
+                active = active && !hit;
 
             if (likely(any(active))) {
                 if (likely(!node->leaf())) { // Inner node
@@ -2312,7 +2312,7 @@ public:
                     /* Visit 'n_cur' now */
                     mint = select(sel1, t_plane, mint);
                     maxt = select(sel0, t_plane, maxt);
-                    active &= visit_cur;
+                    active = active && visit_cur;
                     node = n_cur;
                     continue;
                 } else if (node->primitive_count() > 0) { // Arrived at a leaf node

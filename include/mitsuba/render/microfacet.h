@@ -170,7 +170,7 @@ public:
     bool sample_visible() const { return m_sample_visible; }
 
     /// Is this an anisotropic microfacet distribution?
-    Mask is_anisotropic() const { return ~eq(m_alpha_u, m_alpha_v); }
+    Mask is_anisotropic() const { return !eq(m_alpha_u, m_alpha_v); }
 
     /// Is this an anisotropic microfacet distribution?
     Mask is_isotropic() const { return eq(m_alpha_u, m_alpha_v); }
@@ -191,7 +191,7 @@ public:
      */
     Value eval(const Vector3 &m, Mask active = true) const {
         Value cos_theta = Frame::cos_theta(m);
-        active &= (cos_theta > 0);
+        active = active && (cos_theta > 0);
 
         if (none(active))
             return 0.0f;
@@ -232,7 +232,7 @@ public:
         }
 
         // Prevent potential numerical issues in other stages of the model
-        masked(result, ((result * cos_theta < 1e-20f) | !active)) = 0.f;
+        masked(result, ((result * cos_theta < 1e-20f) || !active)) = 0.f;
 
         return result;
     }
@@ -280,7 +280,7 @@ public:
         Value alpha_sqr;
         Value pdf(0.f);
 
-        if (any(active & is_anisotropic())) { // anisotropic case
+        if (any(active && is_anisotropic())) { // anisotropic case
             switch (m_type) {
                 case EBeckmann: {
                     // Beckmann distribution function for Gaussian random surfaces
@@ -331,9 +331,9 @@ public:
                     // Sampling method based on code from PBRT
 
                     Mask sample_quad_1 = sample.y() < 0.25f,
-                         sample_quad_2 = sample.y() < 0.5f & !sample_quad_1,
-                         sample_quad_3 = sample.y() < 0.75f & !(sample_quad_1 | sample_quad_2),
-                         sample_quad_4 = !(sample_quad_1 | sample_quad_2 | sample_quad_3);
+                         sample_quad_2 = sample.y() < 0.5f && !sample_quad_1,
+                         sample_quad_3 = sample.y() < 0.75f && !(sample_quad_1 || sample_quad_2),
+                         sample_quad_4 = !(sample_quad_1 || sample_quad_2 || sample_quad_3);
 
                     // TODO add comments
 
@@ -495,7 +495,7 @@ public:
     /// Implements the probability density of the function \ref sample_visible_normals()
     Value pdf_visible_normals(const Vector3 &wi, const Vector3 &m, Mask active = true) const {
         Value cos_theta = Frame::cos_theta(wi);
-        active &= !eq(cos_theta, 0.0f);
+        active = active && !eq(cos_theta, 0.0f);
 
         if (none(active))
             return 0.0f;
@@ -588,7 +588,7 @@ protected:
     /// Compute the effective roughness projected on direction \c v
     Value project_roughness(const Vector3 &v, Mask active = true) const {
         Value inv_sin_theta_2 = 1.0f / Frame::sin_theta_2(v);
-        active &= !(is_isotropic() | inv_sin_theta_2 <= 0.0f);
+        active = active && !(is_isotropic() || inv_sin_theta_2 <= 0.0f);
 
         if (none(active))
             return m_alpha_u;
@@ -606,7 +606,7 @@ protected:
     /// Compute the interpolated roughness for the Phong model
     Value interpolate_phong_exponent(const Vector3 &v, Mask active = true) const {
         const Value sin_theta_2 = Frame::sin_theta_2(v);
-        active &= !(is_isotropic() | (sin_theta_2 <= RecipOverflow));
+        active = active && !(is_isotropic() || (sin_theta_2 <= RecipOverflow));
 
         if (none(active))
             return m_exponent_u;
@@ -636,7 +636,7 @@ protected:
             case EBeckmann: {
                 // Special case (normal incidence)
                 Mask normal_incidence = theta_i < 1e-4f;
-                if (any((normal_incidence & active))) {
+                if (any((normal_incidence && active))) {
                     Value r = sqrt(-log(1.0f - sample.x()));
 
                     Value sin_phi, cos_phi;
@@ -645,7 +645,7 @@ protected:
                     masked(slope, normal_incidence) = Vector2(r * cos_phi, r * sin_phi);
                 }
 
-                if (all(normal_incidence | !active))
+                if (all(normal_incidence || !active))
                     return slope;
 
                 /* The original inversion routine from the paper contained
@@ -671,13 +671,13 @@ protected:
                 Value normalization = 1 / (1 + c + InvSqrtPi *
                     tan_theta_i * exp(-cot_theta_i * cot_theta_i));
 
-                Mask active_bisection = !normal_incidence & active;
+                Mask active_bisection = !normal_incidence && active;
                 int it = 0;
                 while (++it < 10) {
                     // Bisection criterion -- the oddly-looking
                     // boolean expression are intentional to check
                     // for NaNs at little additional cost
-                    masked(b, active_bisection & !(b >= a && b <= c)) = 0.5f * (a + c);
+                    masked(b, active_bisection && !(b >= a && b <= c)) = 0.5f * (a + c);
 
                     // Evaluate the CDF and its derivative
                     // (i.e. the density function)
@@ -691,8 +691,8 @@ protected:
                         break;
 
                     // Update bisection intervals
-                    masked(c, active_bisection & (value >  0.0f)) = b;
-                    masked(a, active_bisection & (value <= 0.0f)) = b;
+                    masked(c, active_bisection && (value >  0.0f)) = b;
+                    masked(a, active_bisection && (value <= 0.0f)) = b;
 
                     masked(b, active_bisection) -= value / derivative;
                 }
@@ -709,7 +709,7 @@ protected:
             case EGGX: {
                 // Special case (normal incidence)
                 Mask normal_incidence = (theta_i < 1e-4f);
-                if (any(normal_incidence & active)) {
+                if (any(normal_incidence && active)) {
                     Value r = safe_sqrt(sample.x() / (1 - sample.x()));
 
                     Value sin_phi, cos_phi;
@@ -718,7 +718,7 @@ protected:
                     masked(slope, normal_incidence) = Vector2(r * cos_phi, r * sin_phi);
                 }
 
-                if (all(normal_incidence | !active))
+                if (all(normal_incidence || !active))
                     return slope;
 
                 // Precomputations

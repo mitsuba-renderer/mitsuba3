@@ -31,7 +31,7 @@ public:
     std::pair<Ray3, Spectrum>
     sample_ray_impl(Value time,
                     Value wavelength_sample,
-                    const Point2 & /* pos_sample */,
+                    const Point2 &/*pos_sample*/,
                     const Point2 &dir_sample,
                     Mask active) const {
         Spectrum wavelengths, spec_weight;
@@ -54,7 +54,7 @@ public:
               typename DirectionSample = DirectionSample<Point3>>
     std::pair<DirectionSample, Spectrum>
     sample_direction_impl(const Interaction &it,
-                          const Point2 & /* sample */,
+                          const Point2 & /*sample*/,
                           Mask active) const {
         auto trafo = m_world_transform->eval(it.time, active);
 

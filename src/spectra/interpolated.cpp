@@ -70,7 +70,7 @@ public:
         using Index = uint_array_t<Value>;
 
         Value t = (lambda - m_lambda_min) * m_inv_interval_size;
-        active &= (lambda >= m_lambda_min) & (lambda <= m_lambda_max);
+        active  = active && (lambda >= m_lambda_min) && (lambda <= m_lambda_max);
 
         Index i0 = min(max(Index(t), zero<Index>()), Index(m_size_minus_2));
         Index i1 = i0 + 1;
@@ -81,7 +81,7 @@ public:
         Value w1 = t - Value(i0);
         Value w0 = (Float) 1 - w1;
 
-        return (w0 * v0 + w1 * v1) & active;
+        return select(active, w0 * v0 + w1 * v1, Value(0.0f));
     }
 
     template <typename Value>

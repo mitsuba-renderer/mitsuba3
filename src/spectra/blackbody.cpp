@@ -31,9 +31,8 @@ public:
 
     template <typename Value>
     MTS_INLINE Value eval_impl(Value lambda_, mask_t<Value>) const {
-        auto mask_valid =
-            lambda_ >= MTS_WAVELENGTH_MIN &&
-            lambda_ <= MTS_WAVELENGTH_MAX;
+        auto mask_valid = lambda_ >= MTS_WAVELENGTH_MIN
+                          && lambda_ <= MTS_WAVELENGTH_MAX;
 
         Value lambda  = lambda_ * 1e-9f;
         Value lambda2 = lambda * lambda;
@@ -45,7 +44,7 @@ public:
         auto P = 1e-9f * c0 / (lambda5 *
                 (exp(c1 / (lambda * m_temperature)) - 1.0f));
 
-        return P & mask_valid;
+        return select(mask_valid, P, Value(0.0f));
     }
 
     template <typename Value>
@@ -100,8 +99,8 @@ public:
 
         do {
             /* Fall back to a bisection step when t is out of bounds */
-            auto bisect_mask = !((t > a) & (t < b));
-            masked(t, bisect_mask & active) = .5f * (a + b);
+            auto bisect_mask = !((t > a) && (t < b));
+            masked(t, bisect_mask && active) = .5f * (a + b);
 
             /* Evaluate the definite integral and its derivative
                (i.e. the spline) */
@@ -109,7 +108,7 @@ public:
             value -= sample;
 
             /* Update which lanes are still active */
-            active &= (abs(value) > eps_value) & (b - a > eps_domain);
+            active = active && (abs(value) > eps_value) && (b - a > eps_domain);
 
             /* Stop the iteration if converged */
             if (none_nested(active))

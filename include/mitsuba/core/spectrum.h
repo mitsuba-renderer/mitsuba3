@@ -195,7 +195,7 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths, const mask_t<Expr
     using Index = int_array_t<Expr>;
 
     Expr t = (wavelengths - 360.f) * 0.2f;
-    active &= (wavelengths >= 360.f) & (wavelengths <= 830.f);
+    active = active && (wavelengths >= 360.f) && (wavelengths <= 830.f);
 
     Index i0 = min(max(Index(t), zero<Index>()), Index(95 - 2));
     Index i1 = i0 + 1;
@@ -210,9 +210,9 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths, const mask_t<Expr
     Expr w1 = t - Expr(i0);
     Expr w0 = (Float) 1 - w1;
 
-    return { fmadd(w0, v0_x, w1 * v1_x) & active,
-             fmadd(w0, v0_y, w1 * v1_y) & active,
-             fmadd(w0, v0_z, w1 * v1_z) & active };
+    return { fmadd(w0, v0_x, w1 * v1_x) && active,
+             fmadd(w0, v0_y, w1 * v1_y) && active,
+             fmadd(w0, v0_z, w1 * v1_z) && active };
 }
 
 /**
@@ -226,7 +226,7 @@ Expr cie1931_y(const T &wavelengths, const mask_t<Expr> &active_ = true) {
     mask_t<Expr> active(active_);
 
     Expr t = (wavelengths - 360.f) * 0.2f;
-    active &= (wavelengths >= 360.f) & (wavelengths <= 830.f);
+    active = active && (wavelengths >= 360.f) && (wavelengths <= 830.f);
 
     Index i0 = min(max(Index(t), zero<Index>()), Index(95-2));
     Index i1 = i0 + 1;
@@ -237,7 +237,7 @@ Expr cie1931_y(const T &wavelengths, const mask_t<Expr> &active_ = true) {
     Expr w1 = t - Expr(i0);
     Expr w0 = (Float) 1 - w1;
 
-    return (w0 * v0 + w1 * v1) & active;
+    return (w0 * v0 + w1 * v1) && active;
 }
 
 /**

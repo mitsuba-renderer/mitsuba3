@@ -108,7 +108,7 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Mask is_valid(true);
     if (m_warn) {
         for (int k = 0; k < channels; ++k)
-            is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
+            is_valid = is_valid && enoki::isfinite(value[k]) && value[k] >= 0;
 
         if (unlikely(any(active && !is_valid))) {
             std::ostringstream oss;
@@ -155,7 +155,7 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
         auto y = lo.y() + yr;
 
         for (int xr = 0; xr <= max_size.x(); ++xr) {
-            enabled &= (xr <= window_sizes.x());
+            enabled = enabled && (xr <= window_sizes.x());
             if (none(enabled))
                 continue;
             // Linearized offsets: n_channels * (y * n_x + x)

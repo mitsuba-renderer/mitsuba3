@@ -224,7 +224,7 @@ Value eval_1d(Float min, Float max, const Float *values,
     using Index = uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
-    Mask mask_valid = ((x >= min) & (x <= max));
+    Mask mask_valid = ((x >= min) && (x <= max));
 
     if (unlikely(!Extrapolate && none(mask_valid)))
         return zero<Value>();
@@ -283,7 +283,7 @@ Value eval_1d(const Float *nodes, const Float *values,
     using Index = uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
-    Mask mask_valid = (x >= nodes[0]) & (x <= nodes[size-1]);
+    Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
         return zero<Value>();
@@ -415,7 +415,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
     /* Give up when given an out-of-range or NaN argument */
     Mask in_bounds_low  = y > values[0],
          in_bounds_high = y < values[size - 1],
-         in_bounds      = in_bounds_low & in_bounds_high;
+         in_bounds      = in_bounds_low && in_bounds_high;
 
     /* Assuming that the lookup is out of bounds */
     Value out_of_bounds_value =
@@ -447,8 +447,8 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
 
     do {
         /* Fall back to a bisection step when t is out of bounds */
-        Mask bisect_mask = !((t > a) & (t < b));
-        masked(t, bisect_mask & active) = .5f * (a + b);
+        Mask bisect_mask = !((t > a) && (t < b));
+        masked(t, bisect_mask && active) = .5f * (a + b);
 
         /* Evaluate the spline and its derivative */
         Value value, deriv;
@@ -456,7 +456,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
         value -= y;
 
         /* Update which lanes are still active */
-        active &= (abs(value) > eps_value) & (b - a > eps_domain);
+        active = active && (abs(value) > eps_value) && (b - a > eps_domain);
 
         /* Stop the iteration if converged */
         if (none_nested(active))
@@ -505,7 +505,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
     /* Give up when given an out-of-range or NaN argument */
     Mask in_bounds_low  = y > values[0],
          in_bounds_high = y < values[size - 1],
-         in_bounds      = in_bounds_low & in_bounds_high;
+         in_bounds      = in_bounds_low && in_bounds_high;
 
     /* Assuming that the lookup is out of bounds */
     Value out_of_bounds_value =
@@ -538,15 +538,15 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
                 eps_value  = eps * values[size - 1];
     do {
         /* Fall back to a bisection step when t is out of bounds */
-        Mask bisect_mask = !((t > a) & (t < b));
-        masked(t, bisect_mask & active) = .5f * (a + b);
+        Mask bisect_mask = !((t > a) && (t < b));
+        masked(t, bisect_mask && active) = .5f * (a + b);
 
         /* Evaluate the spline and its derivative */
         std::tie(value, deriv) = eval_spline_d(f0, f1, d0, d1, t);
         value -= y;
 
         /* Update which lanes are still active */
-        active &= (abs(value) > eps_value) & (b - a > eps_domain);
+        active = active && (abs(value) > eps_value) && (b - a > eps_domain);
 
         /* Stop the iteration if converged */
         if (none_nested(active))
@@ -635,8 +635,8 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
     Mask active(true);
     do {
         /* Fall back to a bisection step when t is out of bounds */
-        Mask bisect_mask = !((t > a) & (t < b));
-        masked(t, bisect_mask & active) = .5f * (a + b);
+        Mask bisect_mask = !((t > a) && (t < b));
+        masked(t, bisect_mask && active) = .5f * (a + b);
 
         /* Evaluate the definite integral and its derivative
            (i.e. the spline) */
@@ -644,7 +644,7 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
         value -= sample;
 
         /* Update which lanes are still active */
-        active &= (abs(value) > eps_value) & (b - a > eps_domain);
+        active = active && (abs(value) > eps_value) && (b - a > eps_domain);
 
         /* Stop the iteration if converged */
         if (none_nested(active))
@@ -731,8 +731,8 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
     Mask active(true);
     do {
         /* Fall back to a bisection step when t is out of bounds */
-        Mask bisect_mask = !((t > a) & (t < b));
-        masked(t, bisect_mask & active) = .5f * (a + b);
+        Mask bisect_mask = !((t > a) && (t < b));
+        masked(t, bisect_mask && active) = .5f * (a + b);
 
         /* Evaluate the definite integral and its derivative
            (i.e. the spline) */
@@ -740,7 +740,7 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
         value -= sample;
 
         /* Update which lanes are still active */
-        active &= (abs(value) > eps_value) & (b - a > eps_domain);
+        active = active && (abs(value) > eps_value) && (b - a > eps_domain);
 
         /* Stop the iteration if converged */
         if (none_nested(active))
@@ -799,7 +799,7 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
     using Index = uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
-    auto mask_valid = (x >= min) & (x <= max);
+    auto mask_valid = (x >= min) && (x <= max);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
         return std::make_pair(Mask(false), zero<Int32>());
@@ -889,7 +889,7 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
     using Index = uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
-    Mask mask_valid = (x >= nodes[0]) & (x <= nodes[size-1]);
+    Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
         return std::make_pair(Mask(false), zero<Int32>());
@@ -1008,7 +1008,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
         eval_spline_weights<Extrapolate>(nodes2, size2, y, weights[1]);
 
     /* Compute interpolation weights separately for each dimension */
-    if (unlikely(none(valid_x & valid_y)))
+    if (unlikely(none(valid_x && valid_y)))
         return zero<Value>();
 
     Index index = offset[1] * size1 + offset[0];
