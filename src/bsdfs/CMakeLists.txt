@@ -6,6 +6,7 @@ add_plugin(mask mask.cpp)
 add_plugin(plastic plastic.cpp)
 add_plugin(roughconductor roughconductor.cpp)
 add_plugin(roughplastic roughplastic.cpp)
+add_plugin(thindielectric thindielectric.cpp)
 add_plugin(twosided twosided.cpp)
 
 # Register the test directory
