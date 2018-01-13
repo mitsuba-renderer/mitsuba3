@@ -31,8 +31,8 @@ public:
 
     template <typename Value>
     MTS_INLINE Value eval_impl(Value lambda_, mask_t<Value>) const {
-        auto mask_valid = lambda_ >= MTS_WAVELENGTH_MIN
-                          && lambda_ <= MTS_WAVELENGTH_MAX;
+        auto mask_valid = (lambda_ >= MTS_WAVELENGTH_MIN)
+                          && (lambda_ <= MTS_WAVELENGTH_MAX);
 
         Value lambda  = lambda_ * 1e-9f;
         Value lambda2 = lambda * lambda;

@@ -324,7 +324,7 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
 
     while (true) {
         /* Disable converged entries */
-        active = active && SignedIndex(size) > 0;
+        active = active && (SignedIndex(size) > 0);
 
         if (!any_nested(active))
             break;
@@ -393,7 +393,7 @@ MTS_INLINE Index find_interval(const Size &left, const Size &right,
 
     while (true) {
         /* Disable converged entries */
-        active = active && SignedIndex(size) > 0;
+        active = active && (SignedIndex(size) > 0);
 
         if (!any_nested(active))
             break;

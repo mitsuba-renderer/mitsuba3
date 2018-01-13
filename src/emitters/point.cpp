@@ -39,11 +39,11 @@ public:
             enoki::sample_shifted<Spectrum>(wavelength_sample), active);
 
         const auto &trafo = m_world_transform->eval(time);
-        Ray3 ray(trafo * Point3(0.f),
+        Ray3 ray(trafo * Point3(0.0f),
                  warp::square_to_uniform_sphere(dir_sample),
                  time, wavelengths);
 
-        return std::make_pair(ray, spec_weight * (4.f * math::Pi));
+        return { ray, spec_weight * (4.0f * math::Pi) };
     }
 
     template <typename Interaction, typename Mask,
@@ -59,14 +59,14 @@ public:
         auto trafo = m_world_transform->eval(it.time, active);
 
         DirectionSample ds;
-        ds.p = trafo.translation();
-        ds.n = 0.f;
-        ds.uv = 0.f;
-        ds.time = it.time;
-        ds.pdf = 1.f;
+        ds.p     = trafo.translation();
+        ds.n     = 0.0f;
+        ds.uv    = 0.0f;
+        ds.time  = it.time;
+        ds.pdf   = 1.0f;
         ds.delta = true;
-        ds.d = ds.p - it.p;
-        ds.dist = norm(ds.d);
+        ds.d     = ds.p - it.p;
+        ds.dist  = norm(ds.d);
         Value inv_dist = rcp(ds.dist);
         ds.d *= inv_dist;
 
@@ -79,13 +79,13 @@ public:
     template <typename Interaction, typename DirectionSample, typename Mask,
               typename Value = typename DirectionSample::Value>
     Value pdf_direction_impl(const Interaction &, const DirectionSample &, Mask) const {
-        return 0.f;
+        return 0.0f;
     }
 
     template <typename SurfaceInteraction, typename Mask,
               typename Spectrum = typename SurfaceInteraction::Spectrum>
     Spectrum eval_impl(const SurfaceInteraction &, Mask) const {
-        return 0.f;
+        return 0.0f;
     }
 
     BoundingBox3f bbox() const override {

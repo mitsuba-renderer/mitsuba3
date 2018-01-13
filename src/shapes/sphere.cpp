@@ -73,10 +73,10 @@ public:
         ps.p = Point3(v * m_radius) + m_center;
         ps.n = Normal3(v);
         if (m_flip_normals)
-            ps.n *= -1;
+            ps.n *= -1.0f;
         // TODO: fill UVs?
         ps.time = time;
-        ps.delta = m_radius != 0.f;
+        ps.delta = (m_radius != 0.0f);
         ps.pdf = m_inv_surface_area;
 
         return ps;
@@ -185,7 +185,7 @@ public:
 
         if (m_flip_normals)
             ds.n *= -1.0f;
-        ds.delta = m_radius != 0.f;
+        ds.delta = (m_radius != 0.0f);
         return ds;
     }
 
@@ -196,9 +196,9 @@ public:
         using Vector3 = typename DirectionSample3::Vector3;
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
         Value sin_alpha = m_radius * rcp(norm(m_center - it.p)),
-              cos_alpha = enoki::safe_sqrt(1 - sin_alpha * sin_alpha);
+              cos_alpha = enoki::safe_sqrt(1.0f - sin_alpha * sin_alpha);
 
-        return select(sin_alpha < (1 - math::Epsilon),
+        return select(sin_alpha < (1.0f - math::Epsilon),
             // Reference point lies outside the sphere
             warp::square_to_uniform_cone_pdf(Vector3(0, 0, 0), cos_alpha),
             m_inv_surface_area * ds.dist * ds.dist / abs_dot(ds.d, ds.n)

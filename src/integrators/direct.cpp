@@ -36,8 +36,8 @@ public:
             Throw("Must have at least 1 BSDF or emitter sample!");
 
         size_t sum = m_emitter_samples + m_bsdf_samples;
-        m_weight_bsdf = 1 / (Float) m_bsdf_samples;
-        m_weight_lum = 1 / (Float) m_emitter_samples;
+        m_weight_bsdf = 1.0f / (Float) m_bsdf_samples;
+        m_weight_lum = 1.0f / (Float) m_emitter_samples;
         m_frac_bsdf = m_bsdf_samples / (Float) sum;
         m_frac_lum = m_emitter_samples / (Float) sum;
     }
@@ -54,7 +54,7 @@ public:
         using BSDFSample         = mitsuba::BSDFSample<Point3>;
 
         const Scene *scene = rs.scene;
-        Spectrum result = 0.f;
+        Spectrum result(0.0f);
 
         // Direct intersection
         auto &si = rs.ray_intersect(ray, active);

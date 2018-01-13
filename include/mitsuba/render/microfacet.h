@@ -221,7 +221,7 @@ public:
                 // Isotropic case: Phong distribution.
                 // Anisotropic case: Ashikhmin-Shirley distribution
                 Value exponent = interpolate_phong_exponent(m, active);
-                result = sqrt((m_exponent_u + 2) * (m_exponent_v + 2))
+                result = sqrt((m_exponent_u + 2.0f) * (m_exponent_v + 2.0f))
                          * InvTwoPi * pow(Frame::cos_theta(m), exponent);
             }
             break;
@@ -232,7 +232,7 @@ public:
         }
 
         // Prevent potential numerical issues in other stages of the model
-        masked(result, ((result * cos_theta < 1e-20f) || !active)) = 0.f;
+        masked(result, ((result * cos_theta < 1e-20f) || !active)) = 0.0f;
 
         return result;
     }
@@ -278,15 +278,15 @@ public:
         Value cos_theta_m = 0.0f;
         Value sin_phi_m, cos_phi_m;
         Value alpha_sqr;
-        Value pdf(0.f);
+        Value pdf(0.0f);
 
         if (any(active && is_anisotropic())) { // anisotropic case
             switch (m_type) {
                 case EBeckmann: {
                     // Beckmann distribution function for Gaussian random surfaces
                     // Sample phi component
-                    Value phi_m = atan(m_alpha_v / m_alpha_u * tan(Pi + 2 * Pi * sample.y()))
-                                  + Pi * floor(2 * sample.y() + 0.5f);
+                    Value phi_m = atan(m_alpha_v / m_alpha_u * tan(Pi + 2.0f * Pi * sample.y()))
+                                  + Pi * floor(2.0f * sample.y() + 0.5f);
                     std::tie(sin_phi_m, cos_phi_m) = sincos(phi_m);
 
                     Value cos_sc = cos_phi_m / m_alpha_u,
@@ -306,20 +306,20 @@ public:
                 case EGGX: {
                     // GGX / Trowbridge-Reitz distribution function for rough surfaces
                     // Sample phi component
-                    Value phi_m = atan(m_alpha_v / m_alpha_u * tan(Pi + 2 * Pi * sample.y()))
-                                  + Pi * floor(2 * sample.y() + 0.5f);
+                    Value phi_m = atan(m_alpha_v / m_alpha_u * tan(Pi + 2.0f * Pi * sample.y()))
+                                  + Pi * floor(2.0f * sample.y() + 0.5f);
                     std::tie( sin_phi_m, cos_phi_m ) = sincos(phi_m);
 
                     Value cos_sc = cos_phi_m / m_alpha_u,
                           sin_sc = sin_phi_m / m_alpha_v;
-                    alpha_sqr = 1.0f / (cos_sc*cos_sc + sin_sc*sin_sc);
+                    alpha_sqr = rcp((cos_sc * cos_sc + sin_sc * sin_sc));
 
                     // Sample theta component
                     Value tan_theta_m_sqr = alpha_sqr * sample.x() / (1.0f - sample.x());
-                    cos_theta_m = 1.0f / sqrt(1.0f + tan_theta_m_sqr);
+                    cos_theta_m = rcp(sqrt(1.0f + tan_theta_m_sqr));
 
                     // Compute probability density of the sampled position
-                    Value temp = 1 + tan_theta_m_sqr / alpha_sqr;
+                    Value temp = 1.0f + tan_theta_m_sqr / alpha_sqr;
                     pdf = InvPi / (m_alpha_u*m_alpha_v*cos_theta_m*cos_theta_m*cos_theta_m*temp*temp);
                 }
                 break;
@@ -338,16 +338,16 @@ public:
                     // TODO add comments
 
                     Value u1;
-                    masked(u1, sample_quad_1) = 4 * sample.y();
-                    masked(u1, sample_quad_2) = 4 * (0.5f - sample.y());
-                    masked(u1, sample_quad_3) = 4 * (sample.y() - 0.5f);
-                    masked(u1, sample_quad_4) = 4 * (1 - sample.y());
+                    masked(u1, sample_quad_1) = 4.0f * sample.y();
+                    masked(u1, sample_quad_2) = 4.0f * (0.5f - sample.y());
+                    masked(u1, sample_quad_3) = 4.0f * (sample.y() - 0.5f);
+                    masked(u1, sample_quad_4) = 4.0f * (1.0f - sample.y());
 
                     std::tie(phi_m, exponent) = sample_first_quadrant(u1);
 
                     masked(phi_m, sample_quad_2) = Pi - phi_m;
                     masked(phi_m, sample_quad_3) += Pi;
-                    masked(phi_m, sample_quad_4) = 2 * Pi - phi_m;
+                    masked(phi_m, sample_quad_4) = 2.0f * Pi - phi_m;
 
                     std::tie(sin_phi_m, cos_phi_m) = sincos(phi_m);
                     cos_theta_m = pow(sample.x(), 1.0f / (exponent + 2.0f));
@@ -358,7 +358,7 @@ public:
 
                 default:
                     Log(EError, "Invalid distribution type!");
-                    return { Vector3(-1), -1 };
+                    return { Vector3(-1.0f), -1.0f };
             }
         } else { // isotropic
             switch (m_type) {
@@ -371,7 +371,7 @@ public:
 
                     // Sample theta component
                     Value tan_theta_m_sqr = alpha_sqr * -log(1.0f - sample.x());
-                    cos_theta_m = 1.0f / sqrt(1.0f + tan_theta_m_sqr);
+                    cos_theta_m = rcp(sqrt(1.0f + tan_theta_m_sqr));
 
                     // Compute probability density of the sampled position
                     pdf = (1.0f - sample.x())
@@ -389,10 +389,10 @@ public:
 
                     // Sample theta component
                     Value tan_theta_m_sqr = alpha_sqr * sample.x() / (1.0f - sample.x());
-                    cos_theta_m = 1.0f / sqrt(1.0f + tan_theta_m_sqr);
+                    cos_theta_m = rcp(sqrt(1.0f + tan_theta_m_sqr));
 
                     // Compute probability density of the sampled position
-                    Value temp = 1 + tan_theta_m_sqr / alpha_sqr;
+                    Value temp = 1.0f + tan_theta_m_sqr / alpha_sqr;
                     pdf = InvPi / (m_alpha_u * m_alpha_v * cos_theta_m
                                    * cos_theta_m * cos_theta_m * temp * temp);
                 }
@@ -405,7 +405,7 @@ public:
                     exponent = m_exponent_u;
 
                     std::tie(sin_phi_m, cos_phi_m) = sincos(phi_m);
-                    cos_theta_m = pow(sample.x(), 1.0f / (exponent + 2.0f));
+                    cos_theta_m = pow(sample.x(), rcp((exponent + 2.0f)));
                     pdf = sqrt((m_exponent_u + 2.0f) * (m_exponent_v + 2.0f))
                           * InvTwoPi * pow(cos_theta_m, exponent + 1.0f);
                 }
@@ -413,7 +413,7 @@ public:
 
                 default:
                     Log(EError, "Invalid distribution type!");
-                    return { Vector3(-1), -1 };
+                    return { Vector3(-1.0f), -1.0f };
             }
         }
 
@@ -482,8 +482,8 @@ public:
         slope.y() *= m_alpha_v;
 
         // Step 5: compute normal
-        Value normalization = 1.0f / sqrt(slope.x() * slope.x()
-            + slope.y() * slope.y() + 1.0f);
+        Value normalization = rcp(sqrt(slope.x() * slope.x()
+            + slope.y() * slope.y() + 1.0f));
 
         return Normal3(
             -slope.x() * normalization,
@@ -587,7 +587,7 @@ public:
 protected:
     /// Compute the effective roughness projected on direction \c v
     Value project_roughness(const Vector3 &v, Mask active = true) const {
-        Value inv_sin_theta_2 = 1.0f / Frame::sin_theta_2(v);
+        Value inv_sin_theta_2 = rcp(Frame::sin_theta_2(v));
         active = active && !(is_isotropic() || inv_sin_theta_2 <= 0.0f);
 
         if (none(active))

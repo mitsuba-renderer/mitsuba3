@@ -2253,7 +2253,7 @@ public:
         FloatP maxt = enoki::min(ray.maxt, std::get<2>(bbox_result));
 
         while (true) {
-            active = active && maxt >= mint;
+            active = active && (maxt >= mint);
             if (ShadowRay)
                 active = active && !hit;
 

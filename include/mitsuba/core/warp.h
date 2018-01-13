@@ -73,23 +73,23 @@ MTS_INLINE Point2 square_to_uniform_disk_concentric(Point2 sample) {
             r = phi = 0;
         } else if (x * x > y * y) {
             r = x;
-            phi = (math::Pi / 4.f) * (y / x);
+            phi = (math::Pi / 4.0f) * (y / x);
         } else {
             r = y;
-            phi = (math::Pi / 2.f) - (x / y) * (math::Pi / 4.f);
+            phi = (math::Pi / 2.0f) - (x / y) * (math::Pi / 4.0f);
         }
     */
 
     Mask is_zero = eq(x, zero<Value>()) &&
                    eq(y, zero<Value>());
 
-    Mask quadrant_0_or_2 = abs(x) > abs(y);
+    Mask quadrant_0_or_2 = (abs(x) > abs(y));
 
     Value r  = select(quadrant_0_or_2, x, y),
           rp = select(quadrant_0_or_2, y, x);
 
-    Value phi = rp / r * Scalar(math::Pi / 4);
-    phi = select(quadrant_0_or_2, phi, Scalar(math::Pi / 2) - phi);
+    Value phi = rp / r * Scalar(0.25f * math::Pi);
+    phi = select(quadrant_0_or_2, phi, Scalar(0.5f * math::Pi) - phi);
     phi = select(is_zero, zero<Value>(), phi);
 
     auto sc = sincos(phi);
@@ -105,7 +105,7 @@ MTS_INLINE Point2 uniform_disk_to_square_concentric(Point2 p) {
     using Mask   = mask_t<Value>;
     using Scalar = scalar_t<Value>;
 
-    Mask quadrant_0_or_2 = abs(p.x()) > abs(p.y());
+    Mask quadrant_0_or_2 = (abs(p.x()) > abs(p.y()));
     Value r_sign = select(quadrant_0_or_2, p.x(), p.y());
     Value r = copysign(norm(p), r_sign);
 
@@ -159,9 +159,9 @@ MTS_INLINE Value square_to_uniform_triangle_pdf(Point2 p) {
     if (TestDomain)
         return select((p.x() < zero<Value>()) || (p.y() < zero<Value>())
                     || (p.x() + p.y() > Scalar(1)),
-                      zero<Value>(), Value(Scalar(2.f)));
+                      zero<Value>(), Value(Scalar(2.0f)));
     else
-        return Value(Scalar(2.f));
+        return Value(Scalar(2.0f));
 }
 
 // =======================================================================
@@ -212,7 +212,7 @@ Value tent_to_interval(Value value) {
 template <typename Value>
 Value interval_to_nonuniform_tent(Value a, Value b, Value c, Value sample) {
     using Scalar = scalar_t<Value>;
-    auto mask = sample * (c - a) < b - a;
+    auto mask = (sample * (c - a) < b - a);
     Value factor = select(mask, a - b, c - b);
     sample = select(mask, sample * ((a - c) / (a - b)),
                     ((a - c) / (b - c)) * (sample - ((a - b) / (a - c))));
@@ -431,7 +431,7 @@ template <typename Point2,
 MTS_INLINE Vector3 square_to_beckmann(Point2 sample, Value alpha) {
 #if 0
     /* Approach 1: warping method based on standard disk mapping */
-    auto sc = sincos(2.f * math::Pi * sample.x());
+    auto sc = sincos(2.0f * math::Pi * sample.x());
 
     Value tan_theta_m_sqr = -alpha * alpha * log(1 - sample.y());
     Value cos_theta_m = rsqrt(1 + tan_theta_m_sqr);
@@ -491,7 +491,7 @@ MTS_INLINE Vector3 square_to_von_mises_fisher(Point2 sample, Float kappa) {
     if (unlikely(kappa == 0))
         return square_to_uniform_sphere(sample);
 
-    assert(kappa > 0.f);
+    assert(kappa > 0.0f);
 
 #if 0
     /* Approach 1: warping method based on standard disk mapping */
@@ -509,8 +509,8 @@ MTS_INLINE Vector3 square_to_von_mises_fisher(Point2 sample, Float kappa) {
             (Scalar(1) - sy) * exp(Scalar(-2) * kappa)) / Scalar(kappa);
     #endif
 
-    auto sc = sincos(2.f * math::Pi * sample.x());
-    Value sin_theta = safe_sqrt(1.f - cos_theta * cos_theta);
+    auto sc = sincos(2.0f * math::Pi * sample.x());
+    Value sin_theta = safe_sqrt(1.0f - cos_theta * cos_theta);
     return select(mask, result, Vector3(sc.second * sin_theta, sc.first * sin_theta, cos_theta));
 #else
     /* Approach 2: low-distortion warping technique based on concentric disk mapping */
@@ -574,7 +574,7 @@ Vector3 square_to_rough_fiber(Point3 sample, Vector3 wi_, Vector3 tangent, Float
     Vector3 wi = tframe.to_local(wi_);
 
     /* Sample a point on the reflection cone */
-    auto sc = sincos(2.f * math::Pi * sample.x());
+    auto sc = sincos(2.0f * math::Pi * sample.x());
 
     Scalar cos_theta = wi.z();
     Scalar sin_theta = safe_sqrt(1 - cos_theta * cos_theta);
@@ -597,21 +597,21 @@ Vector3 square_to_rough_fiber(Point3 sample, Vector3 wi_, Vector3 tangent, Float
 namespace detail {
     template <typename Scalar>
     Scalar i0(Scalar x) {
-        Scalar result = Scalar(1.f), x2 = x * x, xi = x2;
-        Scalar denom = Scalar(4.f);
+        Scalar result = Scalar(1.0f), x2 = x * x, xi = x2;
+        Scalar denom = Scalar(4.0f);
         for (int i = 1; i <= 10; ++i) {
-            Scalar factor = Scalar(i + 1.f);
+            Scalar factor = Scalar(i + 1.0f);
             result += xi / denom;
             xi *= x2;
-            denom *= 4.f * factor * factor;
+            denom *= 4.0f * factor * factor;
         }
         return result;
     }
 
     template <typename Scalar>
     Scalar log_i0(Scalar x) {
-        return select(x > 12.f,
-                      x + 0.5f * (log(rcp(2.f * math::Pi * x)) + rcp(8.f * x)),
+        return select(x > 12.0f,
+                      x + 0.5f * (log(rcp(2.0f * math::Pi * x)) + rcp(8.0f * x)),
                       log(i0(x)));
     }
 }
@@ -635,10 +635,10 @@ Scalar square_to_rough_fiber_pdf(Vector3 v, Vector3 wi, Vector3 tangent, Float k
     Scalar c = cos_theta_i * cos_theta_o * kappa;
     Scalar s = sin_theta_i * sin_theta_o * kappa;
 
-    if (kappa > 10.f)
-        return exp(-c + detail::log_i0(s) - kappa + 0.6931f + log(kappa / 2.f)) * math::InvTwoPi;
+    if (kappa > 10.0f)
+        return exp(-c + detail::log_i0(s) - kappa + 0.6931f + log(0.5f * kappa)) * math::InvTwoPi;
     else
-        return exp(-c) * detail::i0(s) * kappa / (2.f * sinh(kappa)) * math::InvTwoPi;
+        return exp(-c) * detail::i0(s) * kappa / (2.0f * sinh(kappa)) * math::InvTwoPi;
 }
 
 //! @}

@@ -318,7 +318,7 @@ template <typename Point_> struct BoundingBox {
         Value mint = hmax(t1p),
               maxt = hmin(t2p);
 
-        active = active && maxt >= mint;
+        active = active && (maxt >= mint);
 
         return std::make_tuple(active, mint, maxt);
     }

@@ -79,7 +79,7 @@ public:
         masked(ds.pdf, !active) = 0.0f;
         masked(spec,   !active) = Spectrum(0.0f);
         ds.object = this;
-        return std::make_pair(ds, spec);
+        return { ds, spec };
     }
 
     template <typename Interaction, typename DirectionSample, typename Mask,
