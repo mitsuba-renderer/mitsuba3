@@ -53,9 +53,9 @@ using MediumInteraction3f    = MediumInteraction<Point3f>;
 using MediumInteraction3fP   = MediumInteraction<Point3fP>;
 using MediumInteraction3fX   = MediumInteraction<Point3fX>;
 
-using BSDFSample3f  = BSDFSample<Point3f>;
-using BSDFSample3fP = BSDFSample<Point3fP>;
-using BSDFSample3fX = BSDFSample<Point3fX>;
+using BSDFSample3f   = BSDFSample<Point3f>;
+using BSDFSample3fP  = BSDFSample<Point3fP>;
+using BSDFSample3fX  = BSDFSample<Point3fX>;
 
 using ShapeP  = Packet<const Shape *,  PacketSize>;
 using MediumP = Packet<const Medium *, PacketSize>;

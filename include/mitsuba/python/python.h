@@ -69,6 +69,10 @@ void bind_slicing_operators(ClassBinding &c) {
         if (i >= slices(r))
             throw py::index_error();
         enoki::slice(r, i) = r2;
-    });
+    })
+    .def("__len__", [](const VectorClass &r) {
+        return slices(r);
+    })
+    ;
 }
 

@@ -14,7 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
  * coordinate system whose pole is aligned with the \c n axis (e.g. \ref
  * cos_theta(), \ref sin_phi(), etc.).
  */
-template <typename Vector3> struct Frame {
+template <typename Vector3_> struct Frame {
+    using Vector3 = Vector3_;
     using Scalar  = value_t<Vector3>;
     using Vector2 = mitsuba::Vector<Scalar, 2>;
     using Normal3 = mitsuba::Normal<Scalar, 3>;

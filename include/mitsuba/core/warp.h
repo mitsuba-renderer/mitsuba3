@@ -80,8 +80,7 @@ MTS_INLINE Point2 square_to_uniform_disk_concentric(Point2 sample) {
         }
     */
 
-    Mask is_zero = eq(x, zero<Value>()) &&
-                   eq(y, zero<Value>());
+    Mask is_zero = eq(x, zero<Value>()) && eq(y, zero<Value>());
 
     Mask quadrant_0_or_2 = (abs(x) > abs(y));
 
@@ -156,10 +155,14 @@ MTS_INLINE Point2 uniform_triangle_to_square(Point2 p) {
 template <bool TestDomain = false, typename Point2, typename Value = value_t<Point2>>
 MTS_INLINE Value square_to_uniform_triangle_pdf(Point2 p) {
     using Scalar = scalar_t<Point2>;
-    if (TestDomain)
-        return select((p.x() < zero<Value>()) || (p.y() < zero<Value>())
-                    || (p.x() + p.y() > Scalar(1)),
-                      zero<Value>(), Value(Scalar(2.0f)));
+    if (TestDomain) {
+        return select(
+            (p.x() < zero<Value>()) || (p.y() < zero<Value>())
+                                    || (p.x() + p.y() > Scalar(1)),
+            zero<Value>(),
+            Value(Scalar(2.f))
+        );
+    }
     else
         return Value(Scalar(2.0f));
 }

@@ -190,8 +190,8 @@ extern MTS_EXPORT_CORE const Float cie1931_z_data[95];
  * in nanometers
  */
 template <typename T, typename Expr = expr_t<T>>
-std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths, const mask_t<Expr> &active_ = true) {
-    mask_t<Expr> active(active_);
+std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths,
+                                         mask_t<Expr> active = true) {
     using Index = int_array_t<Expr>;
 
     Expr t = (wavelengths - 360.f) * 0.2f;
@@ -210,9 +210,9 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths, const mask_t<Expr
     Expr w1 = t - Expr(i0);
     Expr w0 = (Float) 1 - w1;
 
-    return { fmadd(w0, v0_x, w1 * v1_x) && active,
-             fmadd(w0, v0_y, w1 * v1_y) && active,
-             fmadd(w0, v0_z, w1 * v1_z) && active };
+    return { fmadd(w0, v0_x, w1 * v1_x) & active,
+             fmadd(w0, v0_y, w1 * v1_y) & active,
+             fmadd(w0, v0_z, w1 * v1_z) & active };
 }
 
 /**
@@ -220,10 +220,8 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths, const mask_t<Expr
  * nanometers
  */
 template <typename T, typename Expr = expr_t<T>>
-Expr cie1931_y(const T &wavelengths, const mask_t<Expr> &active_ = true) {
+Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
     using Index = int_array_t<Expr>;
-
-    mask_t<Expr> active(active_);
 
     Expr t = (wavelengths - 360.f) * 0.2f;
     active = active && (wavelengths >= 360.f) && (wavelengths <= 830.f);
@@ -237,7 +235,14 @@ Expr cie1931_y(const T &wavelengths, const mask_t<Expr> &active_ = true) {
     Expr w1 = t - Expr(i0);
     Expr w0 = (Float) 1 - w1;
 
-    return (w0 * v0 + w1 * v1) && active;
+    return (w0 * v0 + w1 * v1) & active;
+}
+
+template <typename Spectrum>
+value_t<Spectrum> luminance(const Spectrum &spectrum, const Spectrum &wavelengths,
+                            mask_t<Spectrum> active = true) {
+    // CIE_Y_integral = 106.856895
+    return mean(cie1931_y(wavelengths, active) * spectrum);
 }
 
 /**

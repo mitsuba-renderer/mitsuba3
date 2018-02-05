@@ -73,7 +73,7 @@ public:
         active  = active && (lambda >= m_lambda_min) && (lambda <= m_lambda_max);
 
         Index i0 = min(max(Index(t), zero<Index>()), Index(m_size_minus_2));
-        Index i1 = i0 + 1;
+         Index i1 = i0 + Index(1);
 
         Value v0 = gather<Value>(m_data.data(), i0, active);
         Value v1 = gather<Value>(m_data.data(), i1, active);
@@ -81,7 +81,7 @@ public:
         Value w1 = t - Value(i0);
         Value w0 = (Float) 1 - w1;
 
-        return select(active, w0 * v0 + w1 * v1, Value(0.0f));
+        return (w0 * v0 + w1 * v1) & active;
     }
 
     template <typename Value>
@@ -103,7 +103,7 @@ public:
             active
         );
 
-        Index i1 = i0 + 1;
+        Index i1 = i0 + Index(1);
 
         Value f0 = gather<Value>(m_data.data(), i0, active);
         Value f1 = gather<Value>(m_data.data(), i1, active);
@@ -113,7 +113,7 @@ public:
 
         /* Importance sample the linear interpolant */
         Value t_linear =
-            (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
+            (f0 - safe_sqrt(f0 * f0 + 2.0f * sample * (f1 - f0))) / (f0 - f1);
         Value t_const  = sample / f0;
         Value t = select(eq(f0, f1), t_const, t_linear);
 

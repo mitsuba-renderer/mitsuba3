@@ -208,8 +208,8 @@ using Normal3hP = Normal<Float16P, 3>;
 using Normal3fX = Normal<FloatX, 3>;
 
 using Frame3f  = Frame<Vector3f>;
-using Frame3fP = Frame<Point3fP>;
-using Frame3fX = Frame<Point3fX>;
+using Frame3fP = Frame<Vector3fP>;
+using Frame3fX = Frame<Vector3fX>;
 
 using BoundingBox1f = BoundingBox<Point1f>;
 using BoundingBox2f = BoundingBox<Point2f>;

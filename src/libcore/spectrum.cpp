@@ -126,12 +126,12 @@ const Float cie1931_z_data[95] = {
 };
 
 template MTS_EXPORT_CORE std::tuple<Spectrumf, Spectrumf, Spectrumf>
-cie1931_xyz(const Spectrumf &lambda, const mask_t<Spectrumf> &);
+cie1931_xyz(const Spectrumf &lambda, mask_t<Spectrumf>);
 template MTS_EXPORT_CORE std::tuple<SpectrumfP, SpectrumfP, SpectrumfP>
-cie1931_xyz(const SpectrumfP &lambda, const mask_t<SpectrumfP> &);
+cie1931_xyz(const SpectrumfP &lambda, mask_t<SpectrumfP>);
 
-template MTS_EXPORT_CORE Spectrumf  cie1931_y(const Spectrumf  &lambda, const mask_t<Spectrumf> &);
-template MTS_EXPORT_CORE SpectrumfP cie1931_y(const SpectrumfP &lambda, const mask_t<SpectrumfP> &);
+template MTS_EXPORT_CORE Spectrumf  cie1931_y(const Spectrumf  &lambda, mask_t<Spectrumf>);
+template MTS_EXPORT_CORE SpectrumfP cie1931_y(const SpectrumfP &lambda, mask_t<SpectrumfP>);
 
 //! @}
 // =======================================================================

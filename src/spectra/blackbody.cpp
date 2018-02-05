@@ -44,7 +44,7 @@ public:
         auto P = 1e-9f * c0 / (lambda5 *
                 (exp(c1 / (lambda * m_temperature)) - 1.0f));
 
-        return select(mask_valid, P, Value(0.0f));
+        return P & mask_valid;
     }
 
     template <typename Value>

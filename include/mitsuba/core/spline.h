@@ -224,7 +224,7 @@ Value eval_1d(Float min, Float max, const Float *values,
     using Index = uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
-    Mask mask_valid = ((x >= min) && (x <= max));
+    Mask mask_valid = (x >= min) && (x <= max);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
         return zero<Value>();
