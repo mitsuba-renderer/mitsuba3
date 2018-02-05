@@ -7,5 +7,14 @@ template struct MTS_EXPORT_RENDER BSDFSample<Point3fP>;
 
 BSDF::~BSDF() { }
 
+std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {
+    os << "BSDFContext[" << std::endl
+        << "  mode = " << ctx.mode << "," << std::endl
+        << "  type_mask = " << type_mask_to_string(ctx.type_mask) << "," << std::endl
+        << "  component = " << ctx.component << std::endl
+        << "]";
+    return os;
+}
+
 MTS_IMPLEMENT_CLASS(BSDF, Object)
 NAMESPACE_END(mitsuba)

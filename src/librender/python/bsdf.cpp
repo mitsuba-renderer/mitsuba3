@@ -6,78 +6,97 @@
 template <typename Point3>
 auto bind_bsdf_sample(py::module &m, const char *name) {
     using Type = BSDFSample<Point3>;
-    using SurfaceInteraction = typename Type::SurfaceInteraction;
     using Vector3 = typename Type::Vector3;
 
     return py::class_<Type>(m, name, D(BSDFSample))
-        .def(py::init<const SurfaceInteraction&, Sampler*, ETransportMode>(),
-            "si"_a, "sampler"_a, "mode"_a = ERadiance, D(BSDFSample, BSDFSample))
-        .def(py::init<const SurfaceInteraction&, const Vector3&, ETransportMode>(),
-            "si"_a, "wo"_a, "mode"_a = ERadiance, D(BSDFSample, BSDFSample, 2))
-        .def(py::init<const SurfaceInteraction&, const Vector3&, const Vector3&,
-                      ETransportMode>(),
-            "si"_a, "wi"_a, "wo"_a, "mode"_a = ERadiance, D(BSDFSample, BSDFSample, 3))
-        .def("reverse", &Type::reverse, D(BSDFSample, reverse))
+        .def(py::init<>(), D(BSDFSample, BSDFSample))
+        .def(py::init<const Vector3 &>(), "wo"_a, D(BSDFSample, BSDFSample, 2))
+        .def(py::init<const Vector3 &, const Vector3 &>(),
+             "wi"_a, "wo"_a, D(BSDFSample, BSDFSample, 3))
         .def("__repr__", [](const Type &bs) {
             std::ostringstream oss;
             oss << bs;
             return oss.str();
         })
-        .def_property_readonly("si",
-            [](const Type &bs) -> const SurfaceInteraction& { return bs.si; },
-            py::return_value_policy::reference_internal)
-        .def_readwrite("sampler", &Type::sampler, D(BSDFSample, sampler))
         .def_readwrite("wi", &Type::wi, D(BSDFSample, wi))
         .def_readwrite("wo", &Type::wo, D(BSDFSample, wo))
+        .def_readwrite("pdf", &Type::pdf, D(BSDFSample, pdf))
         .def_readwrite("eta", &Type::eta, D(BSDFSample, eta))
-        .def_readwrite("mode", &Type::mode, D(BSDFSample, mode))
-        .def_readwrite("type_mask", &Type::type_mask, D(BSDFSample, type_mask))
-        .def_readwrite("component", &Type::component, D(BSDFSample, component))
         .def_readwrite("sampled_type", &Type::sampled_type, D(BSDFSample, sampled_type))
-        .def_readwrite("sampled_component", &Type::sampled_component, D(BSDFSample, sampled_component));
+        .def_readwrite("sampled_component", &Type::sampled_component, D(BSDFSample, sampled_component))
+        ;
+}
+
+MTS_PY_EXPORT(BSDFContext) {
+    py::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))
+        .def(py::init<ETransportMode>(),
+             "mode"_a = ERadiance, D(BSDFContext, BSDFContext))
+        .def(py::init<ETransportMode, uint32_t, uint32_t>(),
+             "mode"_a, "type_mak"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
+        .def(py::init<const BSDFContext &>(),
+             "ctx"_a, D(BSDFContext, BSDFContext, 3))
+        .mdef(BSDFContext, reverse)
+        .mdef(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
+        .def("__repr__", [](const BSDFContext &ctx) {
+            std::ostringstream oss;
+            oss << ctx;
+            return oss.str();
+        })
+        .def_readwrite("mode", &BSDFContext::mode, D(BSDFContext, mode))
+        .def_readwrite("type_mask", &BSDFContext::type_mask, D(BSDFContext, type_mask))
+        .def_readwrite("component", &BSDFContext::component, D(BSDFContext, component))
+        ;
 }
 
 MTS_PY_EXPORT(BSDFSample) {
     bind_bsdf_sample<Point3f>(m, "BSDFSample3f");
     auto bs3fx = bind_bsdf_sample<Point3fX>(m, "BSDFSample3fX");
-    // TODO compilation error: attempting to reference a deleted function
-    //bind_slicing_operators<BSDFSample3fX, BSDFSample3f>(bs3fx);
+    bind_slicing_operators<BSDFSample3fX, BSDFSample3f>(bs3fx);
 }
 
 MTS_PY_EXPORT(BSDF) {
     auto bsdf = MTS_PY_CLASS(BSDF, Object)
-       .def("sample",
-            py::overload_cast<BSDFSample3f &, const Point2f &>(
-                 &BSDF::sample, py::const_),
-            D(BSDF, sample), "bs"_a, "sample"_a)
-        // .def("sample", enoki::vectorize_wrapper(
-        //          py::overload_cast<BSDFSample3fP &, const Point2fP &,
-        //                            const mask_t<FloatP> &>(&BSDF::sample, py::const_)
-        //      ),
-        //      D(BSDF, sample), "bs"_a, "sample"_a)
+        .def("sample",
+             py::overload_cast<const SurfaceInteraction3f &, const BSDFContext &,
+                               Float, const Point2f &>(
+                  &BSDF::sample, py::const_),
+             "si"_a, "ctx"_a, "sample1"_a, "sample2"_a, D(BSDF, sample))
+        .def("sample", enoki::vectorize_wrapper(
+                 py::overload_cast<const SurfaceInteraction3fP &,
+                                   const BSDFContext &, FloatP, const Point2fP &,
+                                   MaskP>(&BSDF::sample, py::const_)
+             ),
+             "si"_a, "ctx"_a, "sample1"_a, "sample2"_a, "active"_a = true,
+             D(BSDF, sample))
 
         .def("eval",
-             py::overload_cast<const BSDFSample3f &, EMeasure>(
+             py::overload_cast<const SurfaceInteraction3f &, const BSDFContext &,
+                               const Vector3f &>(
                  &BSDF::eval, py::const_),
-             D(BSDF, eval), "bs"_a, "measure"_a = ESolidAngle)
-        //.def("eval", enoki::vectorize_wrapper(
-        //    py::overload_cast<const BSDFSample3fP&, EMeasure, const mask_t<FloatP>&>(
-        //        &BSDF::eval, py::const_)))
-                      //D(BSDF, eval), "bs"_a, "measure"_a)
+             "si"_a, "ctx"_a, "wo"_a, D(BSDF, eval))
+        .def("eval", enoki::vectorize_wrapper(
+                 py::overload_cast<const SurfaceInteraction3fP &,
+                                   const BSDFContext &, const Vector3fP &,
+                                   MaskP>(&BSDF::eval, py::const_)
+             ),
+             "si"_a, "ctx"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
 
         .def("pdf",
-             py::overload_cast<const BSDFSample3f&, EMeasure>(
-                 &BSDF::pdf, py::const_),
-             D(BSDF, pdf), "bs"_a, "measure"_a = ESolidAngle)
-        //.def("pdf", enoki::vectorize_wrapper(
-        //    py::overload_cast<const BSDFSample3fP&, EMeasure, mask_t<FloatP>>(
-        //        &BSDF::pdf, py::const_)))
-                      //D(BSDF, pdf), "bs"_a, "measure"_a)
+             py::overload_cast<const SurfaceInteraction3f &, const BSDFContext &,
+                               const Vector3f &>(&BSDF::pdf, py::const_),
+             "si"_a, "ctx"_a, "wo"_a, D(BSDF, pdf))
+        .def("pdf", enoki::vectorize_wrapper(
+                 py::overload_cast<const SurfaceInteraction3fP &,
+                                   const BSDFContext &, const Vector3fP &,
+                                   MaskP>(&BSDF::pdf, py::const_)
+             ),
+             "si"_a, "ctx"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
 
-        .def("needs_differentials", &BSDF::needs_differentials,
-             D(BSDF, needs_differentials))
-        .def("flags", &BSDF::flags, D(BSDF, flags))
-    ;
+        .mdef(BSDF, needs_differentials)
+        .mdef(BSDF, component_count)
+        .def("flags", py::overload_cast<>(&BSDF::flags, py::const_), D(BSDF, flags))
+        .def("flags", py::overload_cast<size_t>(&BSDF::flags, py::const_), D(BSDF, flags, 2))
+        ;
 
     py::enum_<BSDF::EFlags>(bsdf, "EFlags", D(BSDF, EFlags), py::arithmetic())
         .value("ENull", BSDF::ENull, D(BSDF, EFlags, ENull))
@@ -92,7 +111,6 @@ MTS_PY_EXPORT(BSDF) {
         .value("ENonSymmetric", BSDF::ENonSymmetric, D(BSDF, EFlags, ENonSymmetric))
         .value("EFrontSide", BSDF::EFrontSide, D(BSDF, EFlags, EFrontSide))
         .value("EBackSide", BSDF::EBackSide, D(BSDF, EFlags, EBackSide))
-        .value("EUsesSampler", BSDF::EUsesSampler, D(BSDF, EFlags, EUsesSampler))
         .export_values();
 
     py::enum_<BSDF::EFlagCombinations>(bsdf, "EFlagCombinations",

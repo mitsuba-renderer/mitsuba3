@@ -5,6 +5,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 class BSDF;
+struct BSDFContext;
 class Emitter;
 class Endpoint;
 class Film;
