@@ -491,11 +491,10 @@ static const char *__doc_mitsuba_AtomicFloat_operator_imul = R"doc(Atomically mu
 static const char *__doc_mitsuba_AtomicFloat_operator_isub = R"doc(Atomically subtract a floating point value)doc";
 
 static const char *__doc_mitsuba_BSDF =
-R"doc(Abstract %BSDF base-class.
+R"doc(Abstract BSDF base-class.
 
-This class implements an abstract interface to all BSDF plugins in
-Mitsuba. It exposes functions for evaluating and sampling the model,
-and it allows querying the probability density of the sampling method.
+This class provides an abstract interface to all %BSDF plugins in
+Mitsuba. It exposes functions for evaluating and sampling the model.
 Smooth two-dimensional density functions, as well as degenerate one-
 dimensional and discrete densities are all handled within the same
 framework.
@@ -504,62 +503,68 @@ For improved flexibility with respect to the various rendering
 algorithms, this class can sample and evaluate a complete BSDF, but it
 also allows to pick and choose individual components of multi-lobed
 BSDFs based on their properties and component indices. This selection
-is specified using a special record that is provided along with every
-query.
+is specified using a context data structure that is provided along
+with every operation.
 
-BSDFSample)doc";
+See also:
+    BSDFContext
 
-static const char *__doc_mitsuba_BSDFSample =
-R"doc(Container for all information that is required to sample or query a
-BSDF.)doc";
+See also:
+    BSDFSample)doc";
+
+static const char *__doc_mitsuba_BSDFContext =
+R"doc(Record specifying a BSDF query and its context. Note that since none
+of the fields are be wide, it is not an Enoki struct.)doc";
+
+static const char *__doc_mitsuba_BSDFContext_BSDFContext = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_BSDFContext_BSDFContext_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDFContext_BSDFContext_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDFContext_component =
+R"doc(Integer value of requested BSDF component index to be
+sampled/evaluated. The default value of `(uint32_t) -1` enables all
+components.)doc";
+
+static const char *__doc_mitsuba_BSDFContext_is_enabled =
+R"doc(Checks whether a given BSDF component type and BSDF component index
+are enabled in this context.)doc";
+
+static const char *__doc_mitsuba_BSDFContext_mode = R"doc(Transported mode (radiance or importance))doc";
+
+static const char *__doc_mitsuba_BSDFContext_reverse =
+R"doc(Reverse the direction of light transport in the record
+
+This updates the transport mode (radiance to importance and vice
+versa).)doc";
+
+static const char *__doc_mitsuba_BSDFContext_type_mask = R"doc(Bit mask for requested BSDF component types to be sampled/evaluated)doc";
+
+static const char *__doc_mitsuba_BSDFSample = R"doc(Structure holding the result of BSDF sampling operations.)doc";
 
 static const char *__doc_mitsuba_BSDFSample_BSDFSample =
-R"doc(Given a surface interaction and an incident direction, construct a
-query record which can be used to sample an outgoing direction.
+R"doc(Given a surface interaction an an incident/exitant direction pair (wi,
+wo), create a query record to evaluate the BSDF or its sampling
+density.
 
 By default, all components will be sampled irregardless of what
 measure they live on. For convenience, this function uses the local
 incident direction vector contained in the supplied intersection
 record.
 
-Parameter ``si``:
-    An reference to the underlying intersection record
-
-Parameter ``sampler``:
-    A source of (pseudo-) random numbers. Note that this sampler is
-    only used when the scattering model for some reason needs more
-    than the two unformly distributed numbers supplied in the
-    BSDF::sample() methods.
-
-Parameter ``mode``:
-    The transported mode (ERadiance or EImportance))doc";
-
-static const char *__doc_mitsuba_BSDFSample_BSDFSample_2 =
-R"doc(Given a surface interaction an an incident/exitant direction pair (wi,
-wo), create a query record to evaluate the BSDF or its sampling
-density.
-
 For convenience, this function uses the local incident direction
 vector contained in the supplied intersection record.
-
-Parameter ``si``:
-    A reference to the underlying intersection record
 
 Parameter ``wo``:
     An outgoing direction in local coordinates. This should be a
     normalized direction vector that points *away* from the scattering
-    event.
+    event.)doc";
 
-Parameter ``mode``:
-    The transported mode (ERadiance or EImportance))doc";
-
-static const char *__doc_mitsuba_BSDFSample_BSDFSample_3 =
+static const char *__doc_mitsuba_BSDFSample_BSDFSample_2 =
 R"doc(Given a surface interaction and an incident/exitant direction pair
 (wi, wo), create a query record to evaluate the BSDF or its sampling
 density.
-
-Parameter ``si``:
-    An reference to the underlying intersection record
 
 Parameter ``wi``:
     An incident direction in local coordinates. This should be a
@@ -569,10 +574,9 @@ Parameter ``wi``:
 Parameter ``wo``:
     An outgoing direction in local coordinates. This should be a
     normalized direction vector that points *away* from the scattering
-    event.
+    event.)doc";
 
-Parameter ``mode``:
-    The transported mode (ERadiance or EImportance))doc";
+static const char *__doc_mitsuba_BSDFSample_BSDFSample_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_BSDFSample_4 = R"doc()doc";
 
@@ -580,15 +584,7 @@ static const char *__doc_mitsuba_BSDFSample_BSDFSample_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_BSDFSample_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample_BSDFSample_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_component =
-R"doc(Integer value of requested BSDF component index to be
-sampled/evaluated)doc";
-
 static const char *__doc_mitsuba_BSDFSample_eta = R"doc(Relative index of refraction in the sampled direction)doc";
-
-static const char *__doc_mitsuba_BSDFSample_mode = R"doc(Transported mode (radiance or importance))doc";
 
 static const char *__doc_mitsuba_BSDFSample_operator_assign = R"doc()doc";
 
@@ -614,22 +610,11 @@ static const char *__doc_mitsuba_BSDFSample_operator_new_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_operator_new_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample_reverse =
-R"doc(Reverse the direction of light transport in the record
-
-This function essentially swaps ``wi`` and ``wo`` and adjusts ``mode``
-appropriately, so that non-symmetric scattering models can be queried
-in the reverse direction.)doc";
+static const char *__doc_mitsuba_BSDFSample_pdf = R"doc(Probability density at the sample)doc";
 
 static const char *__doc_mitsuba_BSDFSample_sampled_component = R"doc(Stores the component index that was sampled by BSDF::sample())doc";
 
 static const char *__doc_mitsuba_BSDFSample_sampled_type = R"doc(Stores the component type that was sampled by BSDF::sample())doc";
-
-static const char *__doc_mitsuba_BSDFSample_sampler = R"doc(Pointer to a Sampler instance (optional))doc";
-
-static const char *__doc_mitsuba_BSDFSample_si = R"doc(Reference to the underlying surface interaction)doc";
-
-static const char *__doc_mitsuba_BSDFSample_type_mask = R"doc(Bit mask for requested BSDF component types to be sampled/evaluated)doc";
 
 static const char *__doc_mitsuba_BSDFSample_wi = R"doc(Normalized incident direction in local coordinates)doc";
 
@@ -662,7 +647,7 @@ R"doc(This list of flags is used to classify the different types of lobes
 that are implemented in a BSDF instance.
 
 They are also useful for picking out individual components by setting
-combinations in BSDFSample::type_mask.)doc";
+combinations in BSDFContext::type_mask.)doc";
 
 static const char *__doc_mitsuba_BSDF_EFlags_EAnisotropic = R"doc(The lobe is not invariant to rotation around the normal)doc";
 
@@ -692,60 +677,74 @@ static const char *__doc_mitsuba_BSDF_EFlags_ENull = R"doc('null' scattering eve
 
 static const char *__doc_mitsuba_BSDF_EFlags_ESpatiallyVarying = R"doc(The BSDF depends on the UV coordinates)doc";
 
-static const char *__doc_mitsuba_BSDF_EFlags_EUsesSampler = R"doc(Uses extra random numbers from the supplied sampler instance)doc";
-
 static const char *__doc_mitsuba_BSDF_class = R"doc()doc";
 
+static const char *__doc_mitsuba_BSDF_component_count = R"doc(Number of components this BSDF is comprised of.)doc";
+
 static const char *__doc_mitsuba_BSDF_eval =
-R"doc(Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo)
+R"doc(Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo) and
+multiply by cosine foreshortening term.
 
-This method allows to query the BSDF as a whole or pick out individual
-components. When querying a smooth (i.e. non-degenerate) component, it
-already multiplies the result by the cosine foreshortening factor with
-respect to the outgoing direction.
+Based on the information in the supplied query context ``ctx``, this
+method will either evaluate the entire BSDF or query individual
+components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+components are supported: calling ``eval``() on a perfectly specular
+material will return zero.
 
-Parameter ``bs``:
-    A record with detailed information on the BSDF query
+Only the outgoing direction needs to be specified. The incident
+direction is obtained from the surface interaction referenced by the
+query context (``ctx.si.wi``).
 
-Parameter ``measure``:
-    Specifies the measure of the component. This is necessary to
-    handle BSDFs, whose components live on spaces with different
-    measures. (E.g. a diffuse material with an ideally smooth
-    dielectric coating).)doc";
+Parameter ``ctx``:
+    A record with detailed information on the BSDF query, including a
+    reference to a valid SurfaceInteraction.
+
+Parameter ``wo``:
+    The outgoing direction)doc";
 
 static const char *__doc_mitsuba_BSDF_eval_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_eval_3 = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_eval_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+eval())doc";
 
-static const char *__doc_mitsuba_BSDF_flags = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_flags = R"doc(Flags for all components combined.)doc";
 
-static const char *__doc_mitsuba_BSDF_m_flags = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_flags_2 = R"doc(Flags for a specific component of this BSDF.)doc";
+
+static const char *__doc_mitsuba_BSDF_m_components = R"doc(Flags for each component of this BSDF.)doc";
+
+static const char *__doc_mitsuba_BSDF_m_flags = R"doc(Combined flags for all components of this BSDF.)doc";
 
 static const char *__doc_mitsuba_BSDF_m_needs_differentials = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_needs_differentials = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_pdf =
-R"doc(Compute the probability of sampling ``bs``.wo (given ``bs``.wi).
+R"doc(Compute the probability of sampling ``wo`` (given ``ctx``.si.wi).
 
 This method provides access to the probability density that would
-result when supplying the same BSDF query record to the sample()
-method. It correctly handles changes in probability when only a subset
-of the components is chosen for sampling (this can be done using the
+result when supplying the same BSDF context to the sample() method. It
+correctly handles changes in probability when only a subset of the
+components is chosen for sampling (this can be done using the
 BSDFSample::component and BSDFSample::type_mask fields).
 
-Parameter ``bs``:
-    A record with detailed information on the BSDF query
+Only the outgoing direction needs to be specified. The incident
+direction is obtained from the surface interaction referenced by the
+query context (``ctx.si.wi``).
 
-Parameter ``measure``:
-    Specifies the measure of the component. This is necessary to
-    handle BSDFs, whose components live on spaces with different
-    measures. (E.g. a diffuse material with an ideally smooth
-    dielectric coating).)doc";
+Parameter ``ctx``:
+    A record with detailed information on the BSDF query, including a
+    reference to a valid SurfaceInteraction.
+
+Parameter ``wo``:
+    The outgoing direction.)doc";
 
 static const char *__doc_mitsuba_BSDF_pdf_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_pdf_3 = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_pdf_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+pdf())doc";
 
 static const char *__doc_mitsuba_BSDF_sample =
 R"doc(Sample the BSDF and return the probability density *and* the
@@ -761,7 +760,7 @@ When sampling a continuous/non-delta component, this method also
 multiplies by the cosine foreshorening factor with respect to the
 sampled direction.
 
-Parameter ``bs``:
+Parameter ``ctx``:
     A BSDF query record
 
 Parameter ``sample``:
@@ -772,9 +771,11 @@ Parameter ``pdf``:
     discrete probability when a delta component is sampled)
 
 Returns:
-    The BSDF value (multiplied by the cosine foreshortening factor
-    when a non-delta component is sampled). A zero spectrum means that
-    sampling failed.
+    (bs, value) bs: Sampling record, indicating the sampled direction,
+    PDF values and other information. Lanes for which sampling failed
+    have undefined values. value: The BSDF value (multiplied by the
+    cosine foreshortening factor when a non-delta component is
+    sampled). A zero spectrum means that sampling failed.
 
 Remark:
     From Python, this function is is called using the syntax ``value,
@@ -782,7 +783,9 @@ Remark:
 
 static const char *__doc_mitsuba_BSDF_sample_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_sample_3 = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_sample_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+sample())doc";
 
 static const char *__doc_mitsuba_BSDF_to_string = R"doc()doc";
 
@@ -1292,6 +1295,8 @@ static const char *__doc_mitsuba_BoundingBox_BoundingBox_4 =
 R"doc(Create a bounding box from a smaller type (e.g. vectorized from
 scalar).)doc";
 
+static const char *__doc_mitsuba_BoundingBox_bounding_sphere = R"doc(Create a bounding sphere, which contains the axis-aligned box)doc";
+
 static const char *__doc_mitsuba_BoundingBox_center = R"doc(Return the center point)doc";
 
 static const char *__doc_mitsuba_BoundingBox_clip = R"doc(Clip this bounding box to another bounding box)doc";
@@ -1696,7 +1701,7 @@ Not every implementation necessarily provides this function. The
 default implementation throws an exception.
 
 Parameter ``sample``:
-    A uniform variate
+    A uniform variate for each desired wavelength.
 
 Returns:
     1. Set of sampled wavelengths specified in nanometers
@@ -1816,6 +1821,17 @@ static const char *__doc_mitsuba_DirectionSample_operator_new_2 = R"doc()doc";
 static const char *__doc_mitsuba_DirectionSample_operator_new_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_new_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_set_query =
+R"doc(Setup this record so that it can be used to *query* the density of a
+surface position (where the reference point lies on a *surface*).
+
+Parameter ``ray``:
+    Reference to the ray that generated the intersection ``si`` The
+    ray origin must be located at ``si``.p
+
+Parameter ``si``:
+    A surface intersection record (usually on an emitter).)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution =
 R"doc(Discrete probability distribution
@@ -2120,6 +2136,28 @@ static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc(//! @})doc";
 static const char *__doc_mitsuba_Endpoint_bbox = R"doc(Return an axis-aligned box bounding the spatial extents of the emitter)doc";
 
 static const char *__doc_mitsuba_Endpoint_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_create_shape =
+R"doc(Create a special shape that represents the emitter
+
+Some types of emitters are inherently associated with a surface, yet
+this surface is not explicitly needed for many kinds of rendering
+algorithms.
+
+An example would be an environment map, where the associated shape is
+a sphere surrounding the scene. Another example would be a perspective
+camera with depth of field, where the associated shape is a disk
+representing the aperture (remember that this class represents
+emitters in a generalized bidirectional sense, which includes
+sensors).
+
+When this shape is in fact needed by the underlying rendering
+algorithm, this function can be called to create it. The default
+implementation simply returns ``nullptr``.
+
+Parameter ``scene``:
+    A pointer to the associated scene (the created shape is allowed to
+    depend on it))doc";
 
 static const char *__doc_mitsuba_Endpoint_eval =
 R"doc(Given a ray-surface intersection, return the emitted radiance or
@@ -2843,6 +2881,26 @@ static const char *__doc_mitsuba_Interaction_is_valid = R"doc(Is the current int
 static const char *__doc_mitsuba_Interaction_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_p = R"doc(Position of the interaction in world coordinates)doc";
 
@@ -4313,17 +4371,19 @@ static const char *__doc_mitsuba_RayDifferential_scale_differential = R"doc()doc
 
 static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray (o, d) at time 'time')doc";
 
-static const char *__doc_mitsuba_Ray_Ray_2 = R"doc(Construct a new ray (o, d) with bounds)doc";
+static const char *__doc_mitsuba_Ray_Ray_2 = R"doc(Construct a new ray (o, d) with time)doc";
 
-static const char *__doc_mitsuba_Ray_Ray_3 = R"doc(Copy a ray, but change the [mint, maxt] interval)doc";
+static const char *__doc_mitsuba_Ray_Ray_3 = R"doc(Construct a new ray (o, d) with bounds)doc";
 
-static const char *__doc_mitsuba_Ray_Ray_4 = R"doc()doc";
+static const char *__doc_mitsuba_Ray_Ray_4 = R"doc(Copy a ray, but change the [mint, maxt] interval)doc";
 
 static const char *__doc_mitsuba_Ray_Ray_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_Ray_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_Ray_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_Ray_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_d = R"doc(< Ray direction)doc";
 
@@ -4597,11 +4657,17 @@ static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the current emitt
 
 static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the current emitter)doc";
 
-static const char *__doc_mitsuba_Scene_eval_environment = R"doc()doc";
+static const char *__doc_mitsuba_Scene_eval_environment =
+R"doc(Return the environment radiance for a ray that did not intersect any
+of the scene objects.
+
+This is primarily meant for path tracing-style integrators.)doc";
 
 static const char *__doc_mitsuba_Scene_film = R"doc(Return the current sensor's film)doc";
 
 static const char *__doc_mitsuba_Scene_film_2 = R"doc(Return the current sensor's film)doc";
+
+static const char *__doc_mitsuba_Scene_has_environment_emitter = R"doc(True if the scene has an environment emitter)doc";
 
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's integrator)doc";
 
@@ -4669,6 +4735,10 @@ testing purposes.)doc";
 
 static const char *__doc_mitsuba_Scene_ray_intersect_naive_2 = R"doc(Vectorized version of ray_intersect_naive)doc";
 
+static const char *__doc_mitsuba_Scene_ray_intersect_naive_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+ray_intersect_naive())doc";
+
 static const char *__doc_mitsuba_Scene_ray_test =
 R"doc(Intersect a ray against all primitives stored in the scene and *only*
 determine whether or not there is an intersection.
@@ -4731,8 +4801,6 @@ static const char *__doc_mitsuba_Scene_sampler_2 = R"doc(Return the scene's samp
 static const char *__doc_mitsuba_Scene_sensor = R"doc(Return the current sensor)doc";
 
 static const char *__doc_mitsuba_Scene_sensor_2 = R"doc(Return the current sensor)doc";
-
-static const char *__doc_mitsuba_Scene_set_kdtree = R"doc(Replace the scene's KD-tree. Exposed for testing purposes.)doc";
 
 static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
 
@@ -5081,7 +5149,7 @@ static const char *__doc_mitsuba_Shape_ray_intersect_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 ray_intersect())doc";
 
-static const char *__doc_mitsuba_Shape_ray_intersect_4 =
+static const char *__doc_mitsuba_Shape_ray_test =
 R"doc(Fast ray shadow test
 
 Efficiently test whether the shape is intersected by the given ray,
@@ -5097,11 +5165,11 @@ possible.
 Parameter ``ray``:
     The ray to be tested for an intersection)doc";
 
-static const char *__doc_mitsuba_Shape_ray_intersect_5 = R"doc(Vectorized variant of ray_intersect.)doc";
+static const char *__doc_mitsuba_Shape_ray_test_2 = R"doc(Vectorized variant of ray_test.)doc";
 
-static const char *__doc_mitsuba_Shape_ray_intersect_6 =
+static const char *__doc_mitsuba_Shape_ray_test_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
-ray_intersect())doc";
+ray_test())doc";
 
 static const char *__doc_mitsuba_Shape_sample_direction =
 R"doc(Sample a direction towards this shape with respect to solid angles
@@ -6791,6 +6859,8 @@ Parameter ``frame``:
 
 static const char *__doc_mitsuba_coordinate_system = R"doc(Complete the set {a} to an orthonormal basis {a, b, c})doc";
 
+static const char *__doc_mitsuba_coordinate_system_2 = R"doc(Complete the set {a} to an orthonormal basis {a, b, c})doc";
+
 static const char *__doc_mitsuba_detail_Log = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_Throw = R"doc()doc";
@@ -7015,6 +7085,8 @@ static const char *__doc_mitsuba_lookup_ior_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_lookup_ior_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_luminance = R"doc()doc";
+
 static const char *__doc_mitsuba_math_bisect =
 R"doc(Bisect a floating point interval given a predicate function
 
@@ -7180,7 +7252,7 @@ static const char *__doc_mitsuba_operator_lshift_14 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_16 = R"doc(//! @{ \name Misc implementations)doc";
 
 static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
@@ -7195,6 +7267,8 @@ static const char *__doc_mitsuba_operator_lshift_21 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_22 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_23 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_24 = R"doc()doc";
 
 static const char *__doc_mitsuba_profiler_flags = R"doc()doc";
 
@@ -7251,6 +7325,10 @@ static const char *__doc_mitsuba_ref_ref_2 = R"doc(Construct a reference from a 
 static const char *__doc_mitsuba_ref_ref_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
+
+static const char *__doc_mitsuba_reflect = R"doc(Reflect ``wi`` with respect to a given surface normal)doc";
+
+static const char *__doc_mitsuba_reflect_2 = R"doc(Reflection in local coordinates)doc";
 
 static const char *__doc_mitsuba_rtbench_naive_planar_independent_packet = R"doc()doc";
 
@@ -7863,6 +7941,10 @@ static const char *__doc_mitsuba_string_indent_2 =
 R"doc(Turn a type into a string representation and indent every line by some
 number of spaces)doc";
 
+static const char *__doc_mitsuba_string_indent_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_string_indent_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_string_starts_with = R"doc(Check if the given string starts with a specified prefix)doc";
 
 static const char *__doc_mitsuba_string_to_lower =
@@ -7877,7 +7959,7 @@ static const char *__doc_mitsuba_string_tokenize =
 R"doc(Chop up the string given a set of delimiters (warning: not unicode
 compliant))doc";
 
-static const char *__doc_mitsuba_string_trim = R"doc()doc";
+static const char *__doc_mitsuba_string_trim = R"doc(Remove leading and trailing characters)doc";
 
 static const char *__doc_mitsuba_struct_traits = R"doc()doc";
 
