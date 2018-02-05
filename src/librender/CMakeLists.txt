@@ -5,6 +5,7 @@ add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/ior.h
   ${INC_DIR}/microfacet.h
   ${INC_DIR}/records.h
+  ${INC_DIR}/reflection.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
   common.cpp       ${INC_DIR}/common.h

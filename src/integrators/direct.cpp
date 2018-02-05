@@ -54,16 +54,16 @@ public:
         using BSDFSample         = mitsuba::BSDFSample<Point3>;
 
         const Scene *scene = rs.scene;
-        Spectrum result(0.0f);
 
         // Direct intersection
         auto &si = rs.ray_intersect(ray, active);
         active = active && si.is_valid();
+        BSDFContext ctx;
 
         if (none(active))
-            return result;
+            return Spectrum(0.0f);
 
-        result += si.emission(active);
+        Spectrum result = si.emission(active);
 
         auto bsdf = si.bsdf(ray);
 
@@ -77,29 +77,28 @@ public:
             Mask valid = active && neq(ds.pdf, 0.0f);
 
             // Query the BSDF for that emitter-sampled direction
-            BSDFSample bs(si, si.to_local(ds.d));
-            Spectrum bsdf_val = bsdf->eval(bs, ESolidAngle, valid);
+            auto wo = si.to_local(ds.d);
+            Spectrum bsdf_val = bsdf->eval(si, ctx, wo, valid);
 
             /* Weight using the probability of sampling that direction through
                BSDF sampling. */
-            Value bsdf_pdf = bsdf->pdf(bs, ESolidAngle, valid);
+            Value bsdf_pdf = bsdf->pdf(si, ctx, wo, valid);
 
             masked(result_partial, valid) =
                 result_partial + emitter_val * bsdf_val
                                  * mi_weight(ds.pdf, bsdf_pdf);
         }
         if (m_emitter_samples > 0)
-            result += result_partial / m_emitter_samples;
+            result += result_partial / (Float) m_emitter_samples;
 
         // ------------------------------------------------------- BSDF sampling
         result_partial = 0.0f;
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
-            BSDFSample bs(si, rs.sampler, ERadiance);
-
+            BSDFSample bs;
             Spectrum bsdf_val;
-            Value bsdf_pdf;
-            std::tie(bsdf_val, bsdf_pdf) = bsdf->sample(bs, rs.next_2d(), active);
-            Mask valid = active && neq(bsdf_pdf, 0.0f);
+            std::tie(bs, bsdf_val) = bsdf->sample(si, ctx, rs.next_1d(),
+                                                  rs.next_2d(), active);
+            Mask valid = active && neq(bs.pdf, 0.0f);
 
             // Trace the ray in the sampled direction and intersect against the scene
             RayDifferential bdsf_ray(si.p, si.to_world(bs.wo), si.time, ray.wavelengths);
@@ -125,11 +124,11 @@ public:
 
                 masked(result_partial, valid) =
                     result_partial + bsdf_val * emitter_val
-                                     * mi_weight(bsdf_pdf, emitter_pdf);
+                                     * mi_weight(bs.pdf, emitter_pdf);
             }
         }
         if (m_bsdf_samples > 0)
-            result += result_partial / m_bsdf_samples;
+            result += result_partial / (Float) m_bsdf_samples;
 
         return result;
     }

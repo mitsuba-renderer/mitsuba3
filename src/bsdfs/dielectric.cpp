@@ -1,54 +1,17 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/reflection.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/records.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-namespace {
-// TODO: move to some utils.h
-template <typename Value>
-std::pair<Value, Value> fresnel_dielectric_ext(Value cos_theta_i_, Float eta) {
-    if (unlikely(eta == 1.0f))
-        return { Value(0.0f), -cos_theta_i_ };
-
-    /* Using Snell's law, calculate the squared sine of the angle between the
-       normal and the transmitted ray */
-    Value scale = select(cos_theta_i_ > 0.0f, Value(rcp(eta)), Value(eta)),
-          cos_theta_t_sqr = 1.0f - (1.0f - cos_theta_i_ * cos_theta_i_)
-                                   * (scale * scale);
-
-    // Check for total internal reflection.
-    mask_t<Value> total_reflection = cos_theta_t_sqr <= 0.0f;
-    if (all(total_reflection))
-        return { Value(1.0f), Value(0.0f) };
-
-    // Find the absolute cosines of the incident/transmitted rays.
-    Value cos_theta_i = abs(cos_theta_i_),
-          cos_theta_t = sqrt(cos_theta_t_sqr);
-
-    Value Rs = (cos_theta_i - eta * cos_theta_t)
-               / (cos_theta_i + eta * cos_theta_t),
-          Rp = (eta * cos_theta_i - cos_theta_t)
-               / (eta * cos_theta_i + cos_theta_t);
-
-    return {
-        select(total_reflection,
-            Value(1.0f),
-            // No polarization -- return the unpolarized reflectance.
-            0.5f * (Rs * Rs + Rp * Rp)),
-        select(total_reflection,
-            Value(0.0f),
-            select(cos_theta_i_ > 0.0f, -cos_theta_t, cos_theta_t))
-    };
-}
-
-}  // namespace
-
 /**
  * Smooth dielectric material.
  */
+// TODO: consider taking `specular_reflectance` and `specular_transmittance`
+// into account when sampling, otherwise may "throw away" 1/2 of the samples.
 class SmoothDielectric final : public BSDF {
 public:
     SmoothDielectric(const Properties &props) {
@@ -62,8 +25,8 @@ public:
         Float ext_ior = lookup_ior(props, "ext_ior", "air");
 
         if (int_ior < 0 || ext_ior < 0)
-            Log(EError, "The interior and exterior indices of "
-                "refraction must be positive!");
+            Throw("The interior and exterior indices of refraction must"
+                  " be positive!");
 
         m_eta = int_ior / ext_ior;
         m_inv_eta = rcp(m_eta);
@@ -71,157 +34,136 @@ public:
         m_specular_reflectance = props.spectrum("specular_reflectance", .5f);
         m_specular_transmittance = props.spectrum("specular_transmittance", .5f);
 
-        // Verify the input parameters and fix them if necessary
-        // TODO: when replacing this with textures, implement `ensure_energy_conservation`.
-        // if (any((m_specular_reflectance > 1.0f) || (m_specular_transmittance > 1.0f)))
-        //     Throw("Energy conservation not satisfied, reflectance and "
-        //           "transmittance must be <= 1");
-
-        // m_components.clear();
-        // m_components.push_back(EDeltaReflection | EFrontSide | EBackSide
-        //     | (m_specular_reflectance->isConstant() ? 0 : ESpatiallyVarying));
-        // m_components.push_back(EDeltaTransmission | EFrontSide | EBackSide | ENonSymmetric
-        //     | (m_specular_transmittance->isConstant() ? 0 : ESpatiallyVarying));
+        // TODO: when replacing this with textures, use `ensure_energy_conservation`,
+        // correct `ESpatiallyVarying` components and `needs_differentials`.
+        m_components.push_back(EDeltaReflection | EFrontSide | EBackSide);
+        m_components.push_back(EDeltaTransmission | EFrontSide | EBackSide
+                               | ENonSymmetric);
 
         m_needs_differentials = false;
-            // m_specular_reflectance->uses_ray_differentials() ||
-            // m_specular_transmittance->uses_ray_differentials();
     }
 
-    /// Reflection in local coordinates
-    template <typename Vector3>
-    Vector3 reflect(const Vector3 &wi) const {
-        return Vector3(-wi.x(), -wi.y(), wi.z());
-    }
-
-    /// Refraction in local coordinates
-    template <typename Vector3, typename Value = value_t<Float>>
-    Vector3 refract(const Vector3 &wi, const Value &cos_theta_t) const {
-        Value scale = select(cos_theta_t < 0.0f, Value(-m_inv_eta), Value(-m_eta));
-        return Vector3(scale * wi.x(), scale * wi.y(), cos_theta_t);
-    }
-
-    template <typename BSDFSample,
-              typename Value  = typename BSDFSample::Value,
-              typename Point2 = typename BSDFSample::Point2,
-              typename Spectrum = Spectrum<Value>>
-    std::pair<Spectrum, Value> sample_impl(BSDFSample &bs, const Point2 &sample,
-                                           const mask_t<Value> &/*active_*/) const {
+    template <typename SurfaceInteraction,
+              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
+              typename Value      = typename SurfaceInteraction::Value,
+              typename Point2     = typename SurfaceInteraction::Point2,
+              typename Spectrum   = Spectrum<Value>>
+    std::pair<BSDFSample, Spectrum> sample_impl(
+            const SurfaceInteraction &si, const BSDFContext &ctx, Value sample1,
+            const Point2 &/*sample2*/, const mask_t<Value> &active) const {
         using Index   = typename BSDFSample::Index;
         using Vector3 = typename BSDFSample::Vector3;
-        using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
 
-        Mask sample_reflection   = neq(bs.type_mask & EDeltaReflection, 0u)
-                                   && (bs.component == -1 || bs.component == 0);
-        Mask sample_transmission = neq(bs.type_mask & EDeltaTransmission, 0u)
-                                   && (bs.component == -1 || bs.component == 1);
+        Mask sample_reflection   = active && Mask(ctx.is_enabled(EDeltaReflection, 0));
+        Mask sample_transmission = active && Mask(ctx.is_enabled(EDeltaTransmission, 1));
+        Mask sample_any = sample_reflection || sample_transmission;
 
-        if (none(sample_reflection || sample_transmission))
-            return { Spectrum(0.0f), 1.0f };
+        BSDFSample bs;
+        if (none(sample_any))
+            return { bs, 0.0f };
 
-
-        Value cos_theta_i = Frame::cos_theta(bs.wi);
+        Value cos_theta_i = Frame<Vector3>::cos_theta(si.wi);
         Value F, cos_theta_t;
-        std::tie(F, cos_theta_t) = fresnel_dielectric_ext(cos_theta_i, m_eta);
+        std::tie(F, cos_theta_t) = fresnel_dielectric_ext(cos_theta_i, Value(m_eta));
 
         Value threshold = select(sample_transmission && sample_reflection, F, 1.0f);
-        Mask selected_reflection = sample_reflection && (sample.x() <= threshold);
+        Mask selected_reflection = sample_reflection && (sample1 <= threshold);
+
         bs.sampled_component = select(selected_reflection, Index(0), Index(1));
         bs.sampled_type      = select(selected_reflection,
                                       Index(EDeltaReflection),
                                       Index(EDeltaTransmission));
+        bs.wi                = si.wi;
         bs.wo                = select(selected_reflection,
-                                      reflect(bs.wi), refract(bs.wi, cos_theta_t));
+                                      reflect(si.wi),
+                                      refract(si.wi, Value(m_eta), cos_theta_t));
         bs.eta               = select(selected_reflection,
                                       Value(1.0f),
                                       select(cos_theta_t < 0,
                                              Value(m_eta), Value(m_inv_eta))
                                );
-
-        Value pdf = 1.0f;
-        masked(pdf, sample_transmission &&  selected_reflection) = F;
-        masked(pdf, sample_reflection   && !selected_reflection) = 1.0f - F;
+        bs.pdf               = 1.0f;
+        masked(bs.pdf, sample_transmission &&  selected_reflection) = F;
+        masked(bs.pdf, sample_reflection   && !selected_reflection) = 1.0f - F;
 
         /* For transmission, radiance must be scaled to account for the solid
            angle compression that occurs when crossing the interface. */
-        Value factor = (bs.mode == ERadiance)
+        Value factor = (ctx.mode == ERadiance)
             ? select(cos_theta_t < 0.0f, Value(m_inv_eta), Value(m_eta)) : 1.0f;
 
-        Spectrum radiance = pdf * select(selected_reflection,
-            m_specular_reflectance->eval(bs.si.wavelengths),
-            (factor * factor) * m_specular_transmittance->eval(bs.si.wavelengths)
+        Spectrum radiance = bs.pdf * select(selected_reflection,
+            m_specular_reflectance->eval(si.wavelengths, selected_reflection),
+            (factor * factor)
+            * m_specular_transmittance->eval(si.wavelengths, !selected_reflection)
         );
 
-        return { radiance, pdf };
+        return { bs, radiance };
     }
 
-    template <typename BSDFSample,
-              typename Value = typename BSDFSample::Value,
+    template <typename SurfaceInteraction,
+              typename Value    = typename SurfaceInteraction::Value,
+              typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
-    Spectrum eval_impl(const BSDFSample &bs, EMeasure measure,
-                       const mask_t<Value> &active_) const {
-        using Frame   = Frame<typename BSDFSample::Vector3>;
-        using Mask    = mask_t<Value>;
+        Spectrum eval_impl(const SurfaceInteraction &si, const BSDFContext &ctx,
+                           const Vector3 &wo, mask_t<Value> active) const {
+        using Frame = Frame<Vector3>;
+        using Mask  = mask_t<Value>;
 
-        Mask sample_reflection   = neq(bs.type_mask & EDeltaReflection, 0u)
-                                   && (bs.component == -1 || bs.component == 0)
-                                   && measure == EDiscrete;
-        Mask sample_transmission = neq(bs.type_mask & EDeltaTransmission, 0u)
-                                   && (bs.component == -1 || bs.component == 1)
-                                   && measure == EDiscrete;
+        Mask sample_reflection   = ctx.is_enabled(EDeltaReflection, 0);
+        Mask sample_transmission = ctx.is_enabled(EDeltaTransmission, 1);
 
-        Value cos_theta_i = Frame::cos_theta(bs.wi);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
         Value F, cos_theta_t;
-        std::tie(F, cos_theta_t) = fresnel_dielectric_ext(cos_theta_i, m_eta);
+        std::tie(F, cos_theta_t) = fresnel_dielectric_ext(cos_theta_i, Value(m_eta));
 
-        Mask is_reflection = cos_theta_i * Frame::cos_theta(bs.wo) >= 0;
+        Mask is_reflection = cos_theta_i * Frame::cos_theta(wo) >= 0;
         Mask has_reflection = sample_reflection
-            && (abs(dot(reflect(bs.wi), bs.wo) - 1.0f) > math::DeltaEpsilon);
+            && (abs(dot(reflect(si.wi), wo) - 1.0f) > math::DeltaEpsilon);
         Mask has_transmission = sample_transmission
-            && (abs(dot(refract(bs.wi, cos_theta_t), bs.wo) - 1.0f) > math::DeltaEpsilon);
-        Mask active = active_ && ((is_reflection && has_reflection)
-                                  || (!is_reflection && has_transmission));
+            && (abs(dot(refract(si.wi, Value(m_eta), cos_theta_t), wo)
+                    - 1.0f) > math::DeltaEpsilon);
+        active = active && ((is_reflection && has_reflection)
+                            || (!is_reflection && has_transmission));
 
         Spectrum result = 1.0f;
         masked(result, !active) = Spectrum(0.0f);
         masked(result, active && is_reflection && sample_transmission) =
-            m_specular_reflectance->eval(bs.si.wavelengths) * F;
+            m_specular_reflectance->eval(si.wavelengths) * F;
         /* Radiance must be scaled to account for the solid angle compression
            that occurs when crossing the interface. */
-        Value factor = bs.mode == ERadiance
+        Value factor = ctx.mode == ERadiance
             ? select(cos_theta_t < 0.0f, Value(m_inv_eta), Value(m_eta)) : 1.0f;
         masked(result, active && !is_reflection && sample_reflection) =
-            m_specular_transmittance->eval(bs.si.wavelengths)
+            m_specular_transmittance->eval(si.wavelengths)
             * factor * factor * (1.0f - F);
 
         return result;
     }
 
-    template <typename BSDFSample, typename Value = typename BSDFSample::Value>
-    Value pdf_impl(const BSDFSample &bs, EMeasure measure,
-                   const mask_t<Value> &active_) const {
-        using Frame   = Frame<typename BSDFSample::Vector3>;
-        using Mask    = mask_t<Value>;
+    template <typename SurfaceInteraction,
+              typename Value   = typename SurfaceInteraction::Value,
+              typename Vector3 = typename SurfaceInteraction::Vector3>
+    Value pdf_impl(const SurfaceInteraction &si, const BSDFContext &ctx,
+                   const Vector3 &wo, mask_t<Value> active) const {
+        using Frame = Frame<Vector3>;
+        using Mask  = mask_t<Value>;
 
-        Mask sample_reflection   = neq(bs.type_mask & EDeltaReflection, 0u)
-                                   && (bs.component == -1 || bs.component == 0)
-                                   && measure == EDiscrete;
-        Mask sample_transmission = neq(bs.type_mask & EDeltaTransmission, 0u)
-                                   && (bs.component == -1 || bs.component == 1)
-                                   && measure == EDiscrete;
+        Mask sample_reflection   = ctx.is_enabled(EDeltaReflection, 0);
+        Mask sample_transmission = ctx.is_enabled(EDeltaTransmission, 1);
 
-        Value cos_theta_i = Frame::cos_theta(bs.wi);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
         Value F, cos_theta_t;
-        std::tie(F, cos_theta_t) = fresnel_dielectric_ext(cos_theta_i, m_eta);
+        std::tie(F, cos_theta_t) = fresnel_dielectric_ext(cos_theta_i, Value(m_eta));
 
-        Mask is_reflection = cos_theta_i * Frame::cos_theta(bs.wo) >= 0;
+        Mask is_reflection = cos_theta_i * Frame::cos_theta(wo) >= 0;
         Mask has_reflection = sample_reflection
-            && (abs(dot(reflect(bs.wi), bs.wo) - 1.0f) > math::DeltaEpsilon);
+            && (abs(dot(reflect(si.wi), wo) - 1.0f) > math::DeltaEpsilon);
         Mask has_transmission = sample_transmission
-            && (abs(dot(refract(bs.wi, cos_theta_t), bs.wo) - 1.0f) > math::DeltaEpsilon);
-        Mask active = active_ && ((is_reflection && has_reflection)
-                                  || (!is_reflection && has_transmission));
+            && (abs(dot(refract(si.wi, Value(m_eta), cos_theta_t), wo)
+                    - 1.0f) > math::DeltaEpsilon);
+        active = active && ((is_reflection && has_reflection)
+                            || (!is_reflection && has_transmission));
 
         Value result = 1.0f;
         masked(result, !active) = 0.0f;

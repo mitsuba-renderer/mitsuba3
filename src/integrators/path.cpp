@@ -37,18 +37,19 @@ public:
               typename Value = typename RayDifferential::Value>
     auto eval_impl(const RayDifferential &r, RadianceSample &rs,
                    mask_t<Value> active) const {
-        using Mask         = mask_t<Value>;
-        using Spectrum     = Spectrum<Value>;
-        using BSDFSample   = BSDFSample<Point3>;
-        using DirectionSample = DirectionSample<Point3>;
+        using Mask                = mask_t<Value>;
+        using Spectrum            = Spectrum<Value>;
+        using BSDFSample          = BSDFSample<Point3>;
+        using DirectionSample     = DirectionSample<Point3>;
         using SurfaceInteraction3 = SurfaceInteraction<Point3>;
-        using BSDFPtr      = like_t<Value, const BSDF *>;
-        using Frame        = Frame<Point3>;
+        using BSDFPtr             = like_t<Value, const BSDF *>;
+        using Frame               = Frame<Point3>;
 
         // Some aliases and local variables
         const Scene *scene = rs.scene;
         RayDifferential ray(r);
         Spectrum Li(0.0f), throughput(1.0f);
+        BSDFContext ctx;
 
         Mask scattered(false);
         /* Tracks the accumulated effect of radiance scaling due to rays passing
@@ -104,20 +105,20 @@ public:
                 Assert(all_nested(value >= 0));
 
                 Mask enabled = active && not_specular && neq(ds.pdf, 0.0f);
-                // Allocate a record for querying the BSDF
-                BSDFSample bs(si, si.to_local(ds.d));
+                // Prepare a BSDF query.
+                auto wo = si.to_local(ds.d);
                 if (m_strict_normals) {
-                    Mask same_side = (dot(si.n, ds.d) * Frame::cos_theta(bs.wo)) > 0;
+                    Mask same_side = (dot(si.n, ds.d) * Frame::cos_theta(wo)) > 0;
                     enabled = enabled && same_side;
                 }
 
                 if (any(enabled)) {
-                    Spectrum bsdf_val = bsdf->eval(bs, ESolidAngle, enabled);
+                    Spectrum bsdf_val = bsdf->eval(si, ctx, wo, enabled);
                     enabled = enabled && any(neq(bsdf_val, 0.0f));
 
                     /* Calculate the probability of sampling that direction
                        using BSDF sampling. */
-                    Value bsdf_pdf = bsdf->pdf(bs, ESolidAngle, enabled);
+                    Value bsdf_pdf = bsdf->pdf(si, ctx, wo, enabled);
                     // Weight using the power heuristic
                     Value weight = mi_weight(ds.pdf, bsdf_pdf);
 
@@ -132,13 +133,13 @@ public:
 
             /* Sample the BSDF (including foreshortening factor) to get the
                next path direction. */
-            BSDFSample bs(si, rs.sampler, ERadiance);
+            BSDFSample bs;
             Spectrum bsdf_val;  // Used to update `throughput`
-            Value bsdf_pdf;
-            std::tie(bsdf_val, bsdf_pdf) = bsdf->sample(bs, rs.next_2d(), active);
+            std::tie(bs, bsdf_val) = bsdf->sample(si, ctx, rs.next_1d(),
+                                                  rs.next_2d(), active);
 
             // Update ray for next path segment
-            active = active && any(bsdf_val > 0.0f) && (bsdf_pdf > 0.0f);
+            active = active && any(bsdf_val > 0.0f) && (bs.pdf > 0.0f);
             scattered = neq(bsdf_flags & BSDF::EDelta, 0u);
 
             // Prevent light leaks due to the use of shading normals
@@ -187,7 +188,7 @@ public:
                     scene->pdf_emitter_direction(si_next, ds, hit_emitter)
                 );
                 masked(Li, hit_emitter) =
-                    Li + throughput * value_emitter * mi_weight(bsdf_pdf, lum_pdf);
+                    Li + throughput * value_emitter * mi_weight(bs.pdf, lum_pdf);
             }
 
             /* ============================================================== */
