@@ -1,25 +1,19 @@
 import numpy as np
 import pytest
 
-from mitsuba.core.xml import load_string
 from mitsuba.core import Frame3f
-from mitsuba.render import BSDFSample3f
-from mitsuba.render import BSDF
-from mitsuba.render import SurfaceInteraction3f
-from mitsuba.core.warp import square_to_uniform_hemisphere
-from mitsuba.core.warp import square_to_uniform_sphere
-from mitsuba.core.warp import square_to_cosine_hemisphere
 from mitsuba.core.math import Pi, InvPi
+from mitsuba.core.warp import square_to_uniform_sphere
+from mitsuba.core.xml import load_string
+from mitsuba.render import BSDF, BSDFContext, SurfaceInteraction3f
 
 @pytest.fixture
 def interaction():
-    nn = [0, 0, 1]
-    frame = Frame3f(nn)
-
     si = SurfaceInteraction3f()
+    si.t = 0.1
     si.p = [0, 0, 0]
-    si.n = nn
-    si.sh_frame = frame
+    si.n = [0, 0, 1]
+    si.sh_frame = Frame3f(si.n)
     si.wavelengths = [300, 450, 520, 680]
     return si
 
@@ -28,27 +22,32 @@ def test01_create():
         <bsdf type="diffuse"/>
     </bsdf>""")
     assert bsdf is not None
+    assert bsdf.component_count() == 2
+    assert bsdf.flags(0) == (BSDF.EDiffuseReflection | BSDF.EFrontSide)
+    assert bsdf.flags(1) == (BSDF.EDiffuseReflection | BSDF.EBackSide)
+    assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
+
+
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
-        <bsdf type="diffuse"/>
         <bsdf type="roughconductor"/>
+        <bsdf type="diffuse"/>
     </bsdf>""")
     assert bsdf is not None
+    assert bsdf.component_count() == 2
+    assert bsdf.flags(0) == (BSDF.EGlossyReflection  | BSDF.EFrontSide)
+    assert bsdf.flags(1) == (BSDF.EDiffuseReflection | BSDF.EBackSide)
+    assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
 def test02_pdf(interaction):
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
         <bsdf type="diffuse"/>
     </bsdf>""")
 
-    wi = [0, 0, 1]
-    wo = [0, 0, 1]
-    bs = BSDFSample3f(interaction, wi, wo)
-    p_pdf = bsdf.pdf(bs)
+    interaction.wi = [0, 0, 1]
+    p_pdf = bsdf.pdf(interaction, BSDFContext(), [0, 0, 1])
     assert np.allclose(p_pdf, InvPi)
 
-    wi = [0, 0, 1]
-    wo = [0, 0, -1]
-    bs = BSDFSample3f(interaction, wi, wo)
-    p_pdf = bsdf.pdf(bs)
+    p_pdf = bsdf.pdf(interaction, BSDFContext(), [0, 0, -1])
     assert np.allclose(p_pdf, 0.0)
 
 def test03_sample_eval_pdf(interaction):
@@ -68,19 +67,19 @@ def test03_sample_eval_pdf(interaction):
         up = np.dot(interaction.wi, [0, 0, 1]) > 0
 
         for x, y in np.ndindex((n, n)):
-            bs = BSDFSample3f(interaction, [0, 0, 1])
-
             sample = [x / float(n-1), y / float(n-1)]
-            (s_value, s_pdf) = bsdf.sample(bs, sample)
-            # multiply by square_to_cosine_hemisphere_theta
-            s_value = s_value * (bs.wo[2] * InvPi);
-            if not up:
-                s_value *= -1
+            (bs, s_value) = bsdf.sample(interaction, BSDFContext(), 0.5, sample)
 
-            e_value = bsdf.eval(bs)
-            p_pdf   = bsdf.pdf(bs)
+            if np.any(s_value > 0):
+                # Multiply by square_to_cosine_hemisphere_theta
+                s_value *= bs.wo[2] * InvPi;
+                if not up:
+                    s_value *= -1
 
-            assert np.allclose(s_pdf, p_pdf)
-            if p_pdf > 0 :
-                assert not np.any(np.isnan(e_value) | np.isnan(s_value))
+                e_value = bsdf.eval(interaction, BSDFContext(), bs.wo)
+                p_pdf   = bsdf.pdf(interaction, BSDFContext(), bs.wo)
+
                 assert np.allclose(s_value, e_value, atol=1e-2)
+                assert np.allclose(bs.pdf, p_pdf)
+                assert not np.any(np.isnan(e_value) | np.isnan(s_value))
+            # Otherwise, sampling failed and we can't rely on bs.wo.

@@ -314,7 +314,7 @@ class ChiSquareTest(object):
 
 class LineDomain(object):
     """
-    The identity map on the plane
+    The identity map on the line.
     """
     def __init__(self, bounds=np.array([-1.0, 1.0])):
         self._bounds = np.vstack((bounds, [-0.5, 0.5]))
@@ -334,7 +334,7 @@ class LineDomain(object):
 
 class PlanarDomain(object):
     """
-    The identity map on the plane
+    The identity map on the plane.
     """
     def __init__(self, bounds=np.array([[-1.0, 1.0],
                                         [-1.0, 1.0]])):
@@ -356,8 +356,8 @@ class PlanarDomain(object):
 
 class SphericalDomain(object):
     """
-    Maps between the unit sphere and a parameterization
-    based on azimuth & the z coordinate
+    Maps between the unit sphere and a parameterization based on azimuth & the
+    z coordinate.
     """
     def bounds(self):
         return np.array(
@@ -382,8 +382,8 @@ class SphericalDomain(object):
 
 def SpectrumAdapter(value):
     """
-    Adapter which permits testing 1D spectral power
-    distributions using the Chi^2 test
+    Adapter which permits testing 1D spectral power distributions using the
+    Chi^2 test.
     """
 
     def instantiate(args):
@@ -410,49 +410,71 @@ def SpectrumAdapter(value):
     return sample_functor, pdf_functor
 
 
-def BSDFAdapter(value, wi = [1, 0, 0], nn = [0, 0, 1]):
+def BSDFAdapter(bsdf_type, extra, wi = [0, 0, 1], nn = [0, 0, 1]):
     """
-    Adapter which permits testing BSDF
-    distributions using the Chi^2 test
+    Adapter which permits testing BSDF distributions using the Chi^2 test.
+
+    Parameters
+    ----------
+    bsdf_type: string
+        Name of the BSDF plugin to instantiate.
+    extra: string
+        Additional XML used to specify the BSDF's parameters.
+    wi: array(3,)
+        Incoming direction, in local coordinates.
+    nn: array(3,)
+        Normal direction of the surface at the intersection.
     """
 
-    from mitsuba.core   import Frame3f
-    from mitsuba.render import BSDFSample3f
-    from mitsuba.render import SurfaceInteraction3f
+    from mitsuba.core   import Frame3f, Frame3fX, MTS_WAVELENGTH_SAMPLES
+    from mitsuba.render import BSDFContext, \
+                               SurfaceInteraction3f, SurfaceInteraction3fX
 
-    frame = Frame3f(nn)
-    its = SurfaceInteraction3f()
-    its.p = [0, 0, 0]
-    its.t = 44.0
-    its.n = nn
-    its.sh_frame = frame
+    def make_context(n):
+        frame = Frame3f(nn)
+        frames = Frame3fX(n)
+        frames.n = np.tile(frame.n, (n, 1))
+        frames.s = np.tile(frame.s, (n, 1))
+        frames.t = np.tile(frame.t, (n, 1))
+
+        si = SurfaceInteraction3fX()
+        si.p  = np.zeros(shape=(n, 3))
+        si.t  = 44.0
+        si.n  = np.tile(nn, (n, 1))
+        si.wi = np.tile(wi, (n, 1))
+        si.sh_frame = frames
+        si.wavelengths = np.random.uniform(low=400, high=800,
+                                           size=(n, MTS_WAVELENGTH_SAMPLES))
+
+        return (si, BSDFContext())
 
     def instantiate(args):
+        xml = """<bsdf version="2.0.0" type="%s">
+            %s
+        </bsdf>""" % (bsdf_type, extra)
         from mitsuba.core.xml import load_string
-        return load_string(value % args)
+        return load_string(xml % args)
 
     def sample_functor(sample, *args):
+        n = sample.shape[0]
         plugin = instantiate(args)
-
-        bs = BSDFSample3f(its, wi)
-
-        s_value, s_pdf = plugin.sample(bs, sample)
-        return s_value
+        (si, ctx) = make_context(n)
+        bs, weight = plugin.sample(si, ctx, sample[:, 0], sample[:, 1:])
+        return bs.wo
 
     def pdf_functor(wo, *args):
+        n = wo.shape[0]
         plugin = instantiate(args)
+        (si, ctx) = make_context(n)
 
-        bs = BSDFSample3f(its, wo, wi)
-
-        return plugin.pdf(bs)
+        return plugin.pdf(si, ctx, wo)
 
     return sample_functor, pdf_functor
 
 
 def MicrofacetDistributionAdaptater(md_type, alpha, sample_visible = False, wi = [0, 0, 1]):
     """
-    Adapter which permits testing microfacet
-    distributions using the Chi^2 test
+    Adapter which permits testing microfacet distributions using the Chi^2 test.
     """
 
     def instantiate(args):
@@ -461,7 +483,7 @@ def MicrofacetDistributionAdaptater(md_type, alpha, sample_visible = False, wi =
 
     def sample_functor(sample, *args):
         dist = instantiate(args)
-        s_value, s_pdf = dist.sample(np.tile(wi, [len(sample), 1]), sample)
+        s_value, _ = dist.sample(np.tile(wi, [len(sample), 1]), sample)
         return s_value
 
     def pdf_functor(m, *args):

@@ -15,7 +15,7 @@ from nanogui import nanovg as nvg
 from mitsuba.core import PCG32, float_dtype, Bitmap, RadicalInverse
 from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain
 from mitsuba.core.warp.distr import DISTRIBUTIONS
-from . import GLTexture
+from mitsuba.ui import GLTexture
 
 
 class WarpVisualizer(Screen):

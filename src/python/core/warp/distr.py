@@ -193,5 +193,30 @@ DISTRIBUTIONS = [
     ('Microfacet - GGX - vis - 0.1 alpha', SphericalDomain(),
       MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.1, True, [0, 0, 1]),
       DEFAULT_SETTINGS
-    )
+    ),
+
+    ('Diffuse BSDF', SphericalDomain(),
+     BSDFAdapter("diffuse", """<rgb name="reflectance" value="0.6f, 0.7f, 0.8f"/>"""),
+     DEFAULT_SETTINGS_3),
+    ('Diffuse BSDF - alternative wi', SphericalDomain(),
+     BSDFAdapter("diffuse", """<rgb name="reflectance" value="0.9f, 0.1f, 0.0f"/>""",
+                 wi=[0.68041382,  0.27216553,  0.68041382]),
+     DEFAULT_SETTINGS_3),
+
+    ('Rough conductor BSDF - smooth', SphericalDomain(),
+     BSDFAdapter("roughconductor", """
+        <float name="alpha" value="0.05"/>
+        <spectrum name="eta" value="0.7"/>
+     """), DEFAULT_SETTINGS_3),
+    ('Rough conductor BSDF - rough', SphericalDomain(),
+     BSDFAdapter("roughconductor", """
+        <float name="alpha" value="0.25"/>
+        <spectrum name="eta" value="0.4"/>
+     """), DEFAULT_SETTINGS_3),
+    ('Rough conductor BSDF - rough - alternative wi', SphericalDomain(),
+     BSDFAdapter("roughconductor", """
+        <float name="alpha" value="0.25"/>
+        <spectrum name="eta" value="0.9"/>
+     """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
+
 ]
