@@ -84,7 +84,7 @@ if (UNIX AND NOT APPLE)
     -Wl,-rpath-link=$<TARGET_FILE_DIR:pugixml>)
 endif()
 
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   target_link_libraries(mitsuba-core PRIVATE asmjit)
   if (UNIX AND NOT APPLE)
     target_link_libraries(mitsuba-core PUBLIC
