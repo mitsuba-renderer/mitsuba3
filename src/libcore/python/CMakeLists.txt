@@ -36,4 +36,8 @@ add_mitsuba_python_library(mitsuba_core_ext core
   progress.cpp
 )
 
-target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core mitsuba-render tbb asmjit)
+target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core mitsuba-render tbb)
+
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+  target_link_libraries(mitsuba_core_ext PRIVATE asmjit)
+endif()

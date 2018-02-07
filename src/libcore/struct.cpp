@@ -18,6 +18,8 @@ extern const Float dither_matrix256[65536];
 
 NAMESPACE_BEGIN(detail)
 
+#if MTS_STRUCTCONVERTER_USE_JIT == 1
+
 using namespace asmjit;
 
 /// Helper class used to JIT-compile conversion code (in the StructCompiler class)
@@ -949,6 +951,8 @@ private:
     bool dither_ready = false;
     std::map<Key, Value> cache;
 };
+
+#endif
 
 NAMESPACE_END(detail)
 

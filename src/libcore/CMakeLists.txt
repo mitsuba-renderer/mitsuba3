@@ -72,8 +72,8 @@ target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)
   ${PNG_LIBRARIES}
   ${ZLIB_LIBRARY}
-  # Link to Intel's Thread Building Blocks, the pugixml parser, and asmjit
-  tbb pugixml asmjit
+  # Link to Intel's Thread Building Blocks and the pugixml parser
+  tbb pugixml
   # Image libraries: link to libjpeg, libpng, OpenEXR
   ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf
 )
@@ -81,12 +81,20 @@ target_link_libraries(mitsuba-core PRIVATE
 if (UNIX AND NOT APPLE)
   target_link_libraries(mitsuba-core PUBLIC
     -Wl,-rpath-link=$<TARGET_FILE_DIR:tbb>
-    -Wl,-rpath-link=$<TARGET_FILE_DIR:pugixml>
-    -Wl,-rpath-link=$<TARGET_FILE_DIR:asmjit>)
+    -Wl,-rpath-link=$<TARGET_FILE_DIR:pugixml>)
+endif()
+
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+  target_link_libraries(mitsuba-core PRIVATE asmjit)
+  if (UNIX AND NOT APPLE)
+    target_link_libraries(mitsuba-core PUBLIC
+      -Wl,-rpath-link=$<TARGET_FILE_DIR:asmjit>)
+  endif()
+  add_dist(asmjit)
 endif()
 
 # Copy to 'dist' directory
-add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq asmjit)
+add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq)
 
 # Python bindings
 add_subdirectory(python)

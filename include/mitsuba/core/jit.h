@@ -1,14 +1,18 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
-#include <asmjit/asmjit.h>
+#if defined(ENOKI_X86_64)
+#  include <asmjit/asmjit.h>
+#endif
 #include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
 
 struct MTS_EXPORT_CORE Jit {
     std::mutex mutex;
+#if defined(ENOKI_X86_64)
     asmjit::JitRuntime runtime;
+#endif
 
     /**
      * \brief Statically initialize the JIT runtime
