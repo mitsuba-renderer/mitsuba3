@@ -30,13 +30,13 @@ def test01_construct():
 
 def test02_sample_ray():
     e = example_emitter()
-    ray, weight = e.sample_ray(0.3, 0.4, [0.1, 0.6], [1.0, 0.0])
+    ray, weight = e.sample_ray(0.3, 0.4, [0.1, 0.6], [0.9, 0.24])
     assert np.allclose(ray.time, 0.3) and np.allclose(ray.mint, Epsilon)
     # Ray should point towards the scene
     assert np.sum(ray.d > 0) > 0
     assert np.dot(ray.d, ray.o) < 0
     assert np.all(weight > 0)
-    # TODO: check unique wavelengths being sampled
+    # Wavelengths sampled should be different
     n = len(ray.wavelengths)
     assert n > 0 and len(np.unique(ray.wavelengths))
 
