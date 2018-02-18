@@ -8,12 +8,12 @@
 MTS_PY_EXPORT(math) {
     MTS_PY_IMPORT_MODULE(math, "mitsuba.core.math");
 
-    math.def("comp_ellint_1",   (double(*)(double))                           math::comp_ellint_1, D(math, comp_ellint_1));
-    math.def("comp_ellint_2",   (double(*)(double))                           math::comp_ellint_2, D(math, comp_ellint_2));
-    math.def("comp_ellint_3",   (double(*)(double, double))                   math::comp_ellint_3, D(math, comp_ellint_3));
-    math.def("ellint_1",        (double(*)(double, double))                   math::ellint_1, D(math, ellint_1));
-    math.def("ellint_2",        (double(*)(double, double))                   math::ellint_2, D(math, ellint_2));
-    math.def("ellint_3",        (double(*)(double, double, double))           math::ellint_3, D(math, ellint_3));
+    math.def("comp_ellint_1", &enoki::comp_ellint_1<double>, "k"_a);
+    math.def("comp_ellint_2", &enoki::comp_ellint_2<double>, "k"_a);
+    math.def("comp_ellint_3", &enoki::comp_ellint_3<double, double>, "k"_a, "nu"_a);
+    math.def("ellint_1",      &enoki::ellint_1<double, double>, "phi"_a, "k"_a);
+    math.def("ellint_2",      &enoki::ellint_2<double, double>, "phi"_a, "k"_a);
+    math.def("ellint_3",      &enoki::ellint_3<double, double, double>, "phi"_a, "k"_a, "nu"_a);
 
     math.def("i0e", enoki::i0e<Float>, "x"_a);
 

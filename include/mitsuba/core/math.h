@@ -91,42 +91,6 @@ static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 
 //! @}
 // -----------------------------------------------------------------------
 
-
-// -----------------------------------------------------------------------
-//! @{ \name Complete and incomplete elliptic integrals
-//! Caution: the 'k' factor is squared in the elliptic integral, which
-//! differs from the convention of Mathematica's EllipticK etc.
-// -----------------------------------------------------------------------
-
-/// Complete elliptic integral of the first kind (double precision)
-extern MTS_EXPORT_CORE double comp_ellint_1(double k);
-/// Complete elliptic integral of the second kind (double precision)
-extern MTS_EXPORT_CORE double comp_ellint_2(double k);
-/// Complete elliptic integral of the third kind (double precision)
-extern MTS_EXPORT_CORE double comp_ellint_3(double k, double nu);
-/// Incomplete elliptic integral of the first kind (double precision)
-extern MTS_EXPORT_CORE double ellint_1(double k, double phi);
-/// Incomplete elliptic integral of the second kind (double precision)
-extern MTS_EXPORT_CORE double ellint_2(double k, double phi);
-/// Incomplete elliptic integral of the third kind (double precision)
-extern MTS_EXPORT_CORE double ellint_3(double k, double nu, double phi);
-
-/// Complete elliptic integral of the first kind (single precision)
-extern MTS_EXPORT_CORE float comp_ellint_1(float k);
-/// Complete elliptic integral of the second kind (single precision)
-extern MTS_EXPORT_CORE float comp_ellint_2(float k);
-/// Complete elliptic integral of the third kind (single precision)
-extern MTS_EXPORT_CORE float comp_ellint_3(float k, float nu);
-/// Incomplete elliptic integral of the first kind (single precision)
-extern MTS_EXPORT_CORE float ellint_1(float k, float phi);
-/// Incomplete elliptic integral of the second kind (single precision)
-extern MTS_EXPORT_CORE float ellint_2(float k, float phi);
-/// Incomplete elliptic integral of the first kind (single precision)
-extern MTS_EXPORT_CORE float ellint_3(float k, float nu, float phi);
-
-//! @}
-// -----------------------------------------------------------------------
-
 // -----------------------------------------------------------------------
 //! @{ \name Legendre functions
 // -----------------------------------------------------------------------
