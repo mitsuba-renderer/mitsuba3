@@ -7,11 +7,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * Smooth dielectric material.
- */
-// TODO: consider taking `specular_reflectance` and `specular_transmittance`
-// into account when sampling, otherwise may "throw away" 1/2 of the samples.
+/// Smooth dielectric material.
 class SmoothDielectric final : public BSDF {
 public:
     SmoothDielectric(const Properties &props) {
@@ -31,11 +27,9 @@ public:
         m_eta = int_ior / ext_ior;
         m_inv_eta = rcp(m_eta);
 
-        m_specular_reflectance = props.spectrum("specular_reflectance", .5f);
-        m_specular_transmittance = props.spectrum("specular_transmittance", .5f);
+        m_specular_reflectance   = props.spectrum("specular_reflectance", 1.f);
+        m_specular_transmittance = props.spectrum("specular_transmittance", 1.f);
 
-        // TODO: when replacing this with textures, use `ensure_energy_conservation`,
-        // correct `ESpatiallyVarying` components and `needs_differentials`.
         m_components.push_back(EDeltaReflection | EFrontSide | EBackSide);
         m_components.push_back(EDeltaTransmission | EFrontSide | EBackSide
                                | ENonSymmetric);

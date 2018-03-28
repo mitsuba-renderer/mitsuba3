@@ -221,11 +221,11 @@ public:
             << "  crop_size = " << m_crop_size   << "," << std::endl
             << "  crop_offset = " << m_crop_offset << "," << std::endl
             << "  high_quality_edges = " << m_high_quality_edges << "," << std::endl
-            << "  m_filter = " << m_filter << "," << std::endl
+            << "  filter = " << m_filter << "," << std::endl
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
-            << "  dest_file = " << m_dest_file << std::endl
+            << "  dest_file = \"" << m_dest_file << "\"" << std::endl
             << "]";
         return oss.str();
     }

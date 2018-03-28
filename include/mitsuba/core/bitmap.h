@@ -61,6 +61,21 @@ public:
         EMultiChannel
     };
 
+    /* Replicate Struct::EType here for convenience */
+    static constexpr Struct::EType EInt8 = Struct::EInt8;
+    static constexpr Struct::EType EUInt8 = Struct::EUInt8;
+    static constexpr Struct::EType EInt16 = Struct::EInt16;
+    static constexpr Struct::EType EUInt16 = Struct::EUInt16;
+    static constexpr Struct::EType EInt32 = Struct::EInt32;
+    static constexpr Struct::EType EUInt32 = Struct::EUInt32;
+    static constexpr Struct::EType EInt64 = Struct::EInt64;
+    static constexpr Struct::EType EUInt64 = Struct::EUInt64;
+    static constexpr Struct::EType EFloat16 = Struct::EFloat16;
+    static constexpr Struct::EType EFloat32 = Struct::EFloat32;
+    static constexpr Struct::EType EFloat64 = Struct::EFloat64;
+    static constexpr Struct::EType EFloat = Struct::EFloat;
+    static constexpr Struct::EType EInvalid = Struct::EInvalid;
+
     /// Supported file formats
     enum EFileFormat {
         /**

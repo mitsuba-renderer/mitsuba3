@@ -23,14 +23,14 @@ public:
     }
 
     Float eval(Float x) const override {
-        Float alpha = -1.0f / (2.0f * m_stddev * m_stddev);
-        return std::max((Float) 0.0f,
+        Float alpha = -1.f / (2.f * m_stddev * m_stddev);
+        return std::max((Float) 0.f,
             std::exp(alpha * x * x) -
             std::exp(alpha * m_radius * m_radius));
     }
 
     std::string to_string() const override {
-        return tfm::format("GaussianFilter[stddev=%f, radius=%f]", m_stddev, m_radius);
+        return tfm::format("GaussianFilter[stddev=%.2f, radius=%.2f]", m_stddev, m_radius);
     }
 
     MTS_DECLARE_CLASS()

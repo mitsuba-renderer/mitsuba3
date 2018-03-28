@@ -116,6 +116,21 @@ MTS_PY_EXPORT(Bitmap) {
         .value("EAuto", Bitmap::EAuto, D(Bitmap, EFileFormat, EAuto))
         .export_values();
 
+
+    auto struct_ = py::module::import("mitsuba.core").attr("Struct");
+    bitmap.attr("EUInt8") = struct_.attr("EUInt8");
+    bitmap.attr("EInt8") = struct_.attr("EInt8");
+    bitmap.attr("EUInt16") = struct_.attr("EUInt16");
+    bitmap.attr("EInt16") = struct_.attr("EInt16");
+    bitmap.attr("EUInt32") = struct_.attr("EUInt32");
+    bitmap.attr("EInt32") = struct_.attr("EInt32");
+    bitmap.attr("EUInt64") = struct_.attr("EUInt64");
+    bitmap.attr("EInt64") = struct_.attr("EInt64");
+    bitmap.attr("EFloat16") = struct_.attr("EFloat16");
+    bitmap.attr("EFloat32") = struct_.attr("EFloat32");
+    bitmap.attr("EFloat64") = struct_.attr("EFloat64");
+    bitmap.attr("EInvalid") = struct_.attr("EInvalid");
+
     bitmap
         .def(py::init<const fs::path &, Bitmap::EFileFormat>(), "path"_a,
              "format"_a = Bitmap::EAuto)

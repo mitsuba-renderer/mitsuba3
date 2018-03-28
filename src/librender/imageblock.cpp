@@ -17,7 +17,6 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
 
     if (filter) {
         // Temporary buffers used in put()
-        // TODO: allocate just the ones we need (either vectorized or scalar).
         int temp_buffer_size = (int) std::ceil(2 * filter->radius()) + 1;
         m_weights_x = new Float[2 * temp_buffer_size];
         m_weights_y = m_weights_x + temp_buffer_size;
@@ -30,7 +29,7 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
 
 ImageBlock::~ImageBlock() {
     /* Note that m_weights_y points to the same array as
-      m_weights_x, so there is no need to delete it. */
+       m_weights_x, so there is no need to delete it. */
     if (m_weights_x)
         delete[] m_weights_x;
 
@@ -45,12 +44,8 @@ bool ImageBlock::put(const Point2f &pos_, const Float *value) {
     // Check if all sample values are valid
     bool valid_sample = true;
     if (m_warn) {
-        for (int i = 0; i < channels; ++i) {
-            if (unlikely((!std::isfinite(value[i]) || value[i] < 0))) {
-                valid_sample = false;
-                break;
-            }
-        }
+        for (int i = 0; i < channels; ++i)
+            valid_sample &= std::isfinite(value[i]) && value[i] >= 0;
 
         if (unlikely(!valid_sample)) {
             std::ostringstream oss;
@@ -193,7 +188,10 @@ std::string ImageBlock::to_string() const {
     oss << "ImageBlock[" << std::endl
         << "  offset = " << m_offset << "," << std::endl
         << "  size = "   << m_size   << "," << std::endl
-        << "  border_size = " << m_border_size << std::endl
+        << "  border_size = " << m_border_size;
+    if (m_filter)
+        oss << "," << std::endl << "  filter = " << m_filter->to_string();
+    oss << std::endl
         << "]";
     return oss.str();
 }
