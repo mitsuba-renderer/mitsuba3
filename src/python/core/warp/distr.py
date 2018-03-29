@@ -248,6 +248,17 @@ DISTRIBUTIONS = [
         <spectrum name="specular_reflectance" value="0.4"/>
         <spectrum name="diffuse_reflectance" value="0.9"/>
      """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
+
+    ('Plastic BSDF', SphericalDomain(),
+     BSDFAdapter("plastic", """
+        <rgb name="specular_reflectance" value="1.0, 0.1, 0.1"/>
+        <rgb name="diffuse_reflectance" value="0.5, 0.5, 1.0"/>
+     """), DEFAULT_SETTINGS_3),
+    ('Plastic BSDF - alternative wi', SphericalDomain(),
+     BSDFAdapter("plastic", """
+        <rgb name="specular_reflectance" value="1.0, 0.1, 0.1"/>
+        <rgb name="diffuse_reflectance" value="0.5, 0.5, 1.0"/>
+     """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
 ]
 
 @fresolver_append_path
