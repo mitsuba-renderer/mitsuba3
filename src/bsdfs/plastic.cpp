@@ -13,6 +13,9 @@ class SmoothPlastic : public BSDF {
 public:
     SmoothPlastic(const Properties &props) {
         m_flags = EDeltaReflection | EDiffuseReflection | EFrontSide;
+        m_components.clear();
+        m_components.push_back(EDeltaReflection | EFrontSide);
+        m_components.push_back(EDiffuseReflection | EFrontSide);
 
         /* Specifies the internal index of refraction at the interface */
         Float int_ior = lookup_ior(props, "int_ior", "polypropylene");
@@ -55,7 +58,6 @@ public:
         m_specular_sampling_weight = s_avg / (d_avg + s_avg);
 
         m_nonlinear = props.bool_("nonlinear", false);
-        m_needs_differentials = false;
     }
 
     template <typename SurfaceInteraction,
@@ -64,8 +66,8 @@ public:
               typename Point2     = typename SurfaceInteraction::Point2,
               typename Spectrum   = Spectrum<Value>>
     std::pair<BSDFSample, Spectrum> sample_impl(
-            const SurfaceInteraction &si, const BSDFContext &ctx,
-            Value /*sample1*/, const Point2 &sample2,
+            const BSDFContext &ctx, const SurfaceInteraction &si,
+            Value sample1, const Point2 &sample2,
             mask_t<Value> active) const {
         using Index   = typename BSDFSample::Index;
         using Vector3 = typename BSDFSample::Vector3;
@@ -89,8 +91,8 @@ public:
 
         Value eta_lum = luminance(m_eta->eval(si.wavelengths, active),
                                   si.wavelengths, active);
-        // TODO: should pass Spectrum to fresnel_dielectric_ext
-        Value fi = fresnel_dielectric_ext(n_dot_wi, eta_lum, active).first;
+        // TODO: should pass Spectrum to fresnel
+        Value fi = std::get<0>(fresnel(n_dot_wi, eta_lum));
 
         Spectrum result;
         if (has_diffuse && has_specular) {
@@ -99,16 +101,14 @@ public:
                                      (1.0f - fi) * (1.0f - m_specular_sampling_weight));
 
             // Importance sample wrt. the Fresnel reflectance
-            Mask sample_specular = (sample2.x() < prob_specular);
+            Mask sample_specular = (sample1 < prob_specular);
             bs.sampled_component = select(sample_specular, Index(0), Index(1));
             bs.sampled_type      = select(sample_specular,
                                           Index(EDeltaReflection),
                                           Index(EDiffuseReflection));
             bs.wo = select(sample_specular,
                            reflect(si.wi),
-                           warp::square_to_cosine_hemisphere(
-                               Point2((sample2.x() - prob_specular) / (1.0f - prob_specular),
-                                      sample2.y())));
+                           warp::square_to_cosine_hemisphere(sample2));
 
             bs.pdf = select(sample_specular,
                                prob_specular,
@@ -116,8 +116,8 @@ public:
                                * warp::square_to_cosine_hemisphere_pdf(bs.wo));
 
             // Compute value for diffuse sample
-            // TODO: should pass Spectrum to fresnel_dielectric_ext
-            Value fo = fresnel_dielectric_ext(Frame::cos_theta(bs.wo), eta_lum, active).first;
+            // TODO: should pass Spectrum to fresnel
+            Value fo = std::get<0>(fresnel(Frame::cos_theta(bs.wo), eta_lum));
             Spectrum diff = m_diffuse_reflectance->eval(si.wavelengths, active);
             if (m_nonlinear)
                 diff /= Spectrum(1.0f) - diff * fdr_int;
@@ -138,8 +138,8 @@ public:
             bs.sampled_component = 1;
             bs.sampled_type = EDiffuseReflection;
             bs.wo = warp::square_to_cosine_hemisphere(sample2);
-            // TODO: should pass Spectrum to fresnel_dielectric_ext
-            Value fo = fresnel_dielectric_ext(Frame::cos_theta(bs.wo), eta_lum, active).first;
+            // TODO: should pass Spectrum to fresnel
+            Value fo = std::get<0>(fresnel(Frame::cos_theta(bs.wo), eta_lum));
 
             Spectrum diff = m_diffuse_reflectance->eval(si.wavelengths, active);
 
@@ -161,7 +161,7 @@ public:
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
-    Spectrum eval_impl(const SurfaceInteraction &si, const BSDFContext &ctx,
+    Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                        const Vector3 &wo, mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
 
@@ -177,8 +177,8 @@ public:
 
         Value eta_lum = luminance(m_eta->eval(si.wavelengths, active),
                                   si.wavelengths, active);
-        // TODO: should pass Spectrum to fresnel_dielectric_ext
-        Value fi = fresnel_dielectric_ext(n_dot_wi, eta_lum, active).first;
+        // TODO: should pass Spectrum to fresnel
+        Value fi = std::get<0>(fresnel(n_dot_wi, eta_lum));
 
         Spectrum result(0.0f);
         if (has_specular) {
@@ -187,8 +187,8 @@ public:
             masked(result, active && (abs(dot(reflect(si.wi), wo) - 1.0f) < math::DeltaEpsilon))
                 = m_specular_reflectance->eval(si.wavelengths, active) * fi;
         } else if (has_diffuse) {
-            // TODO: should pass Spectrum to fresnel_dielectric_ext
-            Value fo = fresnel_dielectric_ext(n_dot_wo, eta_lum, active).first;
+            // TODO: should pass Spectrum to fresnel
+            Value fo = std::get<0>(fresnel(n_dot_wo, eta_lum));
 
             Spectrum diff      = m_diffuse_reflectance->eval(si.wavelengths, active);
             Spectrum fdr_int   = m_fdr_int->eval(si.wavelengths, active);
@@ -210,7 +210,7 @@ public:
     template <typename SurfaceInteraction,
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3>
-    Value pdf_impl(const SurfaceInteraction &si, const BSDFContext &ctx,
+    Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                    const Vector3 &wo, mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
 
@@ -226,10 +226,10 @@ public:
 
         Value prob_specular = has_specular ? 1.0f : 0.0f;
         if (has_specular && has_diffuse) {
-            // TODO: should pass Spectrum to fresnel_dielectric_ext
+            // TODO: should pass Spectrum to fresnel
             Value eta_lum = luminance(m_eta->eval(si.wavelengths, active),
                                       si.wavelengths, active);
-            Value fi = fresnel_dielectric_ext(n_dot_wi, eta_lum, active).first;
+            Value fi = std::get<0>(fresnel(n_dot_wi, eta_lum));
             prob_specular = (fi * m_specular_sampling_weight) /
                 (fi * m_specular_sampling_weight +
                 (1.0f - fi) * (1.0f - m_specular_sampling_weight));
