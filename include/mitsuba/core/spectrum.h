@@ -84,6 +84,30 @@ struct Spectrum
 //! @}
 // =======================================================================
 
+// =======================================================================
+//! @{ \name Masking support for color and spectrum data types
+// =======================================================================
+
+template <typename Value, size_t Size>
+struct Color<enoki::detail::MaskedArray<Value>, Size> : enoki::detail::MaskedArray<Color<Value, Size>> {
+    using Base = enoki::detail::MaskedArray<Color<Value, Size>>;
+    using Base::Base;
+    using Base::operator=;
+    Color(const Base &b) : Base(b) { }
+};
+
+template <typename Value>
+struct Spectrum<enoki::detail::MaskedArray<Value>> : enoki::detail::MaskedArray<Spectrum<Value>> {
+    using Base = enoki::detail::MaskedArray<Spectrum<Value>>;
+    using Base::Base;
+    using Base::operator=;
+    Spectrum(const Base &b) : Base(b) { }
+};
+
+//! @}
+// =======================================================================
+
+
 /**
  * \brief Abstract continuous spectral power distribution data type,
  * which supports evaluation at arbitrary wavelengths.

@@ -78,6 +78,40 @@ struct Normal : enoki::StaticArrayImpl<Value, Size, enoki::detail::approx_defaul
 // =======================================================================
 
 // =======================================================================
+//! @{ \name Masking support for vector, point, and normal data types
+// =======================================================================
+
+template <typename Value, size_t Size>
+struct Vector<enoki::detail::MaskedArray<Value>, Size> : enoki::detail::MaskedArray<Vector<Value, Size>> {
+    using Base = enoki::detail::MaskedArray<Vector<Value, Size>>;
+    using Base::Base;
+    using Base::operator=;
+    Vector(const Base &b) : Base(b) { }
+};
+
+template <typename Value, size_t Size>
+struct Point<enoki::detail::MaskedArray<Value>, Size> : enoki::detail::MaskedArray<Point<Value, Size>> {
+    using Base = enoki::detail::MaskedArray<Point<Value, Size>>;
+    using Base::Base;
+    using Base::operator=;
+    Point(const Base &b) : Base(b) { }
+};
+
+template <typename Value, size_t Size>
+struct Normal<enoki::detail::MaskedArray<Value>, Size> : enoki::detail::MaskedArray<Normal<Value, Size>> {
+    using Base = enoki::detail::MaskedArray<Normal<Value, Size>>;
+    using Base::Base;
+    using Base::operator=;
+    Normal(const Base &b) : Base(b) { }
+};
+
+//! @}
+// =======================================================================
+
+//! @}
+// =======================================================================
+
+// =======================================================================
 //! @{ \name Convenient point/vector type aliases that use the value
 //           type underlying another given point or vector type
 // =======================================================================
@@ -118,7 +152,6 @@ std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
     );
 }
 
-
 /// Complete the set {a} to an orthonormal basis {a, b, c}
 template <typename Vector3,
           std::enable_if_t<enoki::is_dynamic_nested<Vector3>::value, int> = 0>
@@ -127,4 +160,5 @@ std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
         return coordinate_system<Vector3fP>(n_);
     }, n);
 }
+
 NAMESPACE_END(mitsuba)
