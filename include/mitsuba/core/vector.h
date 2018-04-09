@@ -81,25 +81,25 @@ struct Normal : enoki::StaticArrayImpl<Value, Size, enoki::detail::approx_defaul
 //! @{ \name Masking support for vector, point, and normal data types
 // =======================================================================
 
-template <typename Value, size_t Size>
-struct Vector<enoki::detail::MaskedArray<Value>, Size> : enoki::detail::MaskedArray<Vector<Value, Size>> {
-    using Base = enoki::detail::MaskedArray<Vector<Value, Size>>;
+template <typename Value_, size_t Size_>
+struct Vector<enoki::detail::MaskedArray<Value_>, Size_> : enoki::detail::MaskedArray<Vector<Value_, Size_>> {
+    using Base = enoki::detail::MaskedArray<Vector<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Vector(const Base &b) : Base(b) { }
 };
 
-template <typename Value, size_t Size>
-struct Point<enoki::detail::MaskedArray<Value>, Size> : enoki::detail::MaskedArray<Point<Value, Size>> {
-    using Base = enoki::detail::MaskedArray<Point<Value, Size>>;
+template <typename Value_, size_t Size_>
+struct Point<enoki::detail::MaskedArray<Value_>, Size_> : enoki::detail::MaskedArray<Point<Value_, Size_>> {
+    using Base = enoki::detail::MaskedArray<Point<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Point(const Base &b) : Base(b) { }
 };
 
-template <typename Value, size_t Size>
-struct Normal<enoki::detail::MaskedArray<Value>, Size> : enoki::detail::MaskedArray<Normal<Value, Size>> {
-    using Base = enoki::detail::MaskedArray<Normal<Value, Size>>;
+template <typename Value_, size_t Size_>
+struct Normal<enoki::detail::MaskedArray<Value_>, Size_> : enoki::detail::MaskedArray<Normal<Value_, Size_>> {
+    using Base = enoki::detail::MaskedArray<Normal<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Normal(const Base &b) : Base(b) { }

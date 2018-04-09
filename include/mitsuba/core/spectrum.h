@@ -88,17 +88,17 @@ struct Spectrum
 //! @{ \name Masking support for color and spectrum data types
 // =======================================================================
 
-template <typename Value, size_t Size>
-struct Color<enoki::detail::MaskedArray<Value>, Size> : enoki::detail::MaskedArray<Color<Value, Size>> {
-    using Base = enoki::detail::MaskedArray<Color<Value, Size>>;
+template <typename Value_, size_t Size_>
+struct Color<enoki::detail::MaskedArray<Value_>, Size_> : enoki::detail::MaskedArray<Color<Value_, Size_>> {
+    using Base = enoki::detail::MaskedArray<Color<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Color(const Base &b) : Base(b) { }
 };
 
-template <typename Value>
-struct Spectrum<enoki::detail::MaskedArray<Value>> : enoki::detail::MaskedArray<Spectrum<Value>> {
-    using Base = enoki::detail::MaskedArray<Spectrum<Value>>;
+template <typename Value_>
+struct Spectrum<enoki::detail::MaskedArray<Value_>> : enoki::detail::MaskedArray<Spectrum<Value_>> {
+    using Base = enoki::detail::MaskedArray<Spectrum<Value_>>;
     using Base::Base;
     using Base::operator=;
     Spectrum(const Base &b) : Base(b) { }
