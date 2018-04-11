@@ -10,7 +10,7 @@ template <typename Point_> struct BoundingSphere {
 
     using Point  = Point_;
     using Value  = value_t<Point>;
-    using Vector = Vector<Value, Size>;
+    using Vector = mitsuba::Vector<Value, Size>;
     using Mask   = mask_t<Value>;
 
     Point center;

@@ -166,9 +166,8 @@ public:
      * This is primarily meant for path tracing-style integrators.
      */
     template <typename Ray, typename Value = typename Ray::Value>
-    auto eval_environment(const Ray &,
-                          const mask_t<Value> &/*active*/ = true) const {
-        return Spectrum<Value>(0.f);
+    Spectrum<Value> eval_environment(const Ray &, mask_t<Value> /* active */ = true) const {
+        return 0.f;
     }
 
     //! @}

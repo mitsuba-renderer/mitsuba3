@@ -1,9 +1,21 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
+
 #if defined(ENOKI_X86_64)
+#  if defined(__GNUG__) && !defined(__clang__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wbool-operation"
+#    pragma GCC diagnostic ignored "-Wbool-compare"
+#  endif
+
 #  include <asmjit/asmjit.h>
+
+#  if defined(__GNUG__) && !defined(__clang__)
+#    pragma GCC diagnostic pop
+#  endif
 #endif
+
 #include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)

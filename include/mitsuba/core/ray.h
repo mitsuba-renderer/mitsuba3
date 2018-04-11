@@ -22,7 +22,7 @@ template <typename Point_> struct Ray {
     static constexpr size_t Size = Point_::Size;
     using Point                  = Point_;
     using Value                  = value_t<Point>;
-    using Vector                 = Vector<Value, Size>;
+    using Vector                 = mitsuba::Vector<Value, Size>;
     using Spectrum               = mitsuba::Spectrum<Value>;
 
     Point o;                     ///< Ray origin

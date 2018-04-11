@@ -46,7 +46,7 @@ class MicrofacetDistribution {
     using Vector2 = Vector<Value, 2>;
     using Vector3 = Vector<Value, 3>;
     using Normal3 = Normal<Value, 3>;
-    using Frame   = Frame<Vector3>;
+    using Frame   = mitsuba::Frame<Vector3>;
 
 public:
     /**

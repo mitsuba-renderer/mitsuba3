@@ -38,12 +38,12 @@ public:
     auto eval_impl(const RayDifferential &r, RadianceSample &rs,
                    mask_t<Value> active) const {
         using Mask                = mask_t<Value>;
-        using Spectrum            = Spectrum<Value>;
-        using BSDFSample          = BSDFSample<Point3>;
-        using DirectionSample     = DirectionSample<Point3>;
+        using Spectrum            = mitsuba::Spectrum<Value>;
+        using BSDFSample          = mitsuba::BSDFSample<Point3>;
+        using DirectionSample     = mitsuba::DirectionSample<Point3>;
         using SurfaceInteraction3 = SurfaceInteraction<Point3>;
         using BSDFPtr             = like_t<Value, const BSDF *>;
-        using Frame               = Frame<Point3>;
+        using Frame               = mitsuba::Frame<Point3>;
 
         // Some aliases and local variables
         const Scene *scene = rs.scene;
@@ -66,7 +66,7 @@ public:
         for (int bounces = 0;; ++bounces) {
             /* If no intersection could be found, potentially return
                radiance from a environment luminaire if it exists */
-            if (bounces == 0 && any(!hit) || any(scattered)) {
+            if (any(!hit && (Mask(bounces == 0) || scattered))) {
                 masked(Li, active && !hit) =
                     Li + throughput * scene->eval_environment(ray, active && !hit);
             }

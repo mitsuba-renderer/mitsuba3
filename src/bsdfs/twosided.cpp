@@ -103,7 +103,7 @@ public:
               typename Spectrum = Spectrum<Value>>
     Spectrum eval_impl(const SurfaceInteraction &si, const BSDFContext &ctx,
                        const Vector3 &wo, const mask_t<Value> &active) const {
-        using Frame = Frame<Vector3>;
+        using Frame = mitsuba::Frame<Vector3>;
         using Mask  = mask_t<Value>;
 
         Spectrum result(0.0f);

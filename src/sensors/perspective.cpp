@@ -123,8 +123,8 @@ public:
                          const Point2& /* aperture_sample */,
                          Mask active) const {
         using Point3   = Point<Value, 3>;
-        using Ray      = Ray<Point3>;
-        using Spectrum = Spectrum<Value>;
+        using Ray      = mitsuba::Ray<Point3>;
+        using Spectrum = mitsuba::Spectrum<Value>;
         using Vector3  = Vector<Value, 3>;
 
         Ray ray;
@@ -160,8 +160,8 @@ public:
                                       const Point2& /*aperture_sample*/,
                                       Mask active) const {
         using Point3 = Point<Value, 3>;
-        using RayDifferential = RayDifferential<Point3>;
-        using Spectrum = Spectrum<Value>;
+        using RayDifferential = mitsuba::RayDifferential<Point3>;
+        using Spectrum = mitsuba::Spectrum<Value>;
         using Vector3 = Vector<Value, 3>;
 
         RayDifferential ray;

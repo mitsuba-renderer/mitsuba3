@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(rtbench)
 
 template <typename Sampler, typename RayGenerator, typename RTKernel>
 std::pair<Float, size_t>
-scalar(uint32_t N, const Sampler &sampler, const RayGenerator &ray_generator, const RTKernel &kernel) {
+run_scalar(uint32_t N, const Sampler &sampler, const RayGenerator &ray_generator, const RTKernel &kernel) {
     Timer timer;
     size_t its_count = 0;
     for (uint32_t i = 0; i < N*N; i++) {
@@ -27,7 +27,7 @@ scalar(uint32_t N, const Sampler &sampler, const RayGenerator &ray_generator, co
 
 template <typename Sampler, typename RayGenerator, typename RTKernel>
 std::pair<Float, size_t>
-packet(uint32_t N, const Sampler &sampler, const RayGenerator &ray_generator, const RTKernel &kernel) {
+run_packet(uint32_t N, const Sampler &sampler, const RayGenerator &ray_generator, const RTKernel &kernel) {
     Timer timer;
     size_t its_count = 0;
     for (auto pair : range<UInt32P>(N*N)) {
@@ -41,21 +41,21 @@ packet(uint32_t N, const Sampler &sampler, const RayGenerator &ray_generator, co
 
 // --------------------------------------------------------------------------------------------
 
-template <typename UInt32> MTS_INLINE auto sample_morton(UInt32 idx, size_t N) {
-    using Float = float_array_t<UInt32>;
+template <typename UInt32,
+          typename Float = float_array_t<UInt32>,
+          typename Point2f = Point<Float, 2>>
+MTS_INLINE Point2f sample_morton(UInt32 idx, size_t N) {
     using Vector2u = Vector<UInt32, 2>;
-    using Point2f = Point<Float, 2>;
-
     auto p = enoki::morton_decode<Vector2u>(idx);
     return Point2f(p) * (1.f / N) * 2.f - Point2f(1.f);
 }
 
-template <typename UInt32> MTS_INLINE auto sample_independent(UInt32 idx, size_t) {
-    using Float = float_array_t<UInt32>;
-    using Point2f = Point<Float, 2>;
-
-    return Point2f(sample_tea_float(idx, UInt32(1)),
-                   sample_tea_float(idx, UInt32(2)));
+template <typename UInt32,
+          typename Float = float_array_t<UInt32>,
+          typename Point2f = Point<Float, 2>>
+MTS_INLINE Point2f sample_independent(UInt32 idx, size_t) {
+    return { sample_tea_float(idx, UInt32(1)),
+             sample_tea_float(idx, UInt32(2)) };
 }
 
 // --------------------------------------------------------------------------------------------
@@ -110,133 +110,133 @@ template <typename Ray3, bool ShadowRay = false> auto kernel_naive(const Scene *
 // pbrt routines
 
 std::pair<Float, size_t> planar_morton_scalar(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_morton<uint32_t>, gen_ray_planar<Point2f>(scene), kernel<Ray3f>(scene));
+    return run_scalar(N, sample_morton<uint32_t>, gen_ray_planar<Point2f>(scene), kernel<Ray3f>(scene));
 }
 
 std::pair<Float, size_t> planar_morton_packet(const Scene *scene, uint32_t N) {
-    return packet(N, sample_morton<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel<Ray3fP>(scene));
+    return run_packet(N, sample_morton<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel<Ray3fP>(scene));
 }
 
 std::pair<Float, size_t> planar_morton_scalar_shadow(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_morton<uint32_t>, gen_ray_planar<Point2f>(scene), kernel<Ray3f, true>(scene));
+    return run_scalar(N, sample_morton<uint32_t>, gen_ray_planar<Point2f>(scene), kernel<Ray3f, true>(scene));
 }
 
 std::pair<Float, size_t> planar_morton_packet_shadow(const Scene *scene, uint32_t N) {
-    return packet(N, sample_morton<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel<Ray3fP, true>(scene));
+    return run_packet(N, sample_morton<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel<Ray3fP, true>(scene));
 }
 
 std::pair<Float, size_t> spherical_morton_scalar(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_morton<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel<Ray3f>(scene));
+    return run_scalar(N, sample_morton<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel<Ray3f>(scene));
 }
 
 std::pair<Float, size_t> spherical_morton_packet(const Scene *scene, uint32_t N) {
-    return packet(N, sample_morton<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel<Ray3fP>(scene));
+    return run_packet(N, sample_morton<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel<Ray3fP>(scene));
 }
 
 std::pair<Float, size_t> spherical_morton_scalar_shadow(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_morton<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel<Ray3f, true>(scene));
+    return run_scalar(N, sample_morton<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel<Ray3f, true>(scene));
 }
 
 std::pair<Float, size_t> spherical_morton_packet_shadow(const Scene *scene, uint32_t N) {
-    return packet(N, sample_morton<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel<Ray3fP, true>(scene));
+    return run_packet(N, sample_morton<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel<Ray3fP, true>(scene));
 }
 
 std::pair<Float, size_t> planar_independent_scalar(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_independent<uint32_t>, gen_ray_planar<Point2f>(scene), kernel<Ray3f>(scene));
+    return run_scalar(N, sample_independent<uint32_t>, gen_ray_planar<Point2f>(scene), kernel<Ray3f>(scene));
 }
 
 std::pair<Float, size_t> planar_independent_packet(const Scene *scene, uint32_t N) {
-    return packet(N, sample_independent<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel<Ray3fP>(scene));
+    return run_packet(N, sample_independent<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel<Ray3fP>(scene));
 }
 
 std::pair<Float, size_t> planar_independent_scalar_shadow(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_independent<uint32_t>, gen_ray_planar<Point2f>(scene), kernel<Ray3f, true>(scene));
+    return run_scalar(N, sample_independent<uint32_t>, gen_ray_planar<Point2f>(scene), kernel<Ray3f, true>(scene));
 }
 
 std::pair<Float, size_t> planar_independent_packet_shadow(const Scene *scene, uint32_t N) {
-    return packet(N, sample_independent<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel<Ray3fP, true>(scene));
+    return run_packet(N, sample_independent<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel<Ray3fP, true>(scene));
 }
 
 std::pair<Float, size_t> spherical_independent_scalar(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_independent<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel<Ray3f>(scene));
+    return run_scalar(N, sample_independent<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel<Ray3f>(scene));
 }
 
 std::pair<Float, size_t> spherical_independent_packet(const Scene *scene, uint32_t N) {
-    return packet(N, sample_independent<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel<Ray3fP>(scene));
+    return run_packet(N, sample_independent<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel<Ray3fP>(scene));
 }
 
 std::pair<Float, size_t> spherical_independent_scalar_shadow(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_independent<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel<Ray3f, true>(scene));
+    return run_scalar(N, sample_independent<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel<Ray3f, true>(scene));
 }
 
 std::pair<Float, size_t> spherical_independent_packet_shadow(const Scene *scene, uint32_t N) {
-    return packet(N, sample_independent<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel<Ray3fP, true>(scene));
+    return run_packet(N, sample_independent<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel<Ray3fP, true>(scene));
 }
 
 // Dummy routines
 
 std::pair<Float, size_t> naive_planar_morton_scalar(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_morton<uint32_t>, gen_ray_planar<Point2f>(scene), kernel_naive<Ray3f>(scene));
+    return run_scalar(N, sample_morton<uint32_t>, gen_ray_planar<Point2f>(scene), kernel_naive<Ray3f>(scene));
 }
 
 std::pair<Float, size_t> naive_planar_morton_packet(const Scene *scene, uint32_t N) {
-    return packet(N, sample_morton<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel_naive<Ray3fP>(scene));
+    return run_packet(N, sample_morton<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel_naive<Ray3fP>(scene));
 }
 
 std::pair<Float, size_t> naive_planar_morton_scalar_shadow(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_morton<uint32_t>, gen_ray_planar<Point2f>(scene), kernel_naive<Ray3f, true>(scene));
+    return run_scalar(N, sample_morton<uint32_t>, gen_ray_planar<Point2f>(scene), kernel_naive<Ray3f, true>(scene));
 }
 
 std::pair<Float, size_t> naive_planar_morton_packet_shadow(const Scene *scene, uint32_t N) {
-    return packet(N, sample_morton<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel_naive<Ray3fP, true>(scene));
+    return run_packet(N, sample_morton<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel_naive<Ray3fP, true>(scene));
 }
 
 std::pair<Float, size_t> naive_spherical_morton_scalar(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_morton<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel_naive<Ray3f>(scene));
+    return run_scalar(N, sample_morton<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel_naive<Ray3f>(scene));
 }
 
 std::pair<Float, size_t> naive_spherical_morton_packet(const Scene *scene, uint32_t N) {
-    return packet(N, sample_morton<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel_naive<Ray3fP>(scene));
+    return run_packet(N, sample_morton<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel_naive<Ray3fP>(scene));
 }
 
 std::pair<Float, size_t> naive_spherical_morton_scalar_shadow(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_morton<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel_naive<Ray3f, true>(scene));
+    return run_scalar(N, sample_morton<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel_naive<Ray3f, true>(scene));
 }
 
 std::pair<Float, size_t> naive_spherical_morton_packet_shadow(const Scene *scene, uint32_t N) {
-    return packet(N, sample_morton<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel_naive<Ray3fP, true>(scene));
+    return run_packet(N, sample_morton<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel_naive<Ray3fP, true>(scene));
 }
 
 std::pair<Float, size_t> naive_planar_independent_scalar(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_independent<uint32_t>, gen_ray_planar<Point2f>(scene), kernel_naive<Ray3f>(scene));
+    return run_scalar(N, sample_independent<uint32_t>, gen_ray_planar<Point2f>(scene), kernel_naive<Ray3f>(scene));
 }
 
 std::pair<Float, size_t> naive_planar_independent_packet(const Scene *scene, uint32_t N) {
-    return packet(N, sample_independent<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel_naive<Ray3fP>(scene));
+    return run_packet(N, sample_independent<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel_naive<Ray3fP>(scene));
 }
 
 std::pair<Float, size_t> naive_planar_independent_scalar_shadow(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_independent<uint32_t>, gen_ray_planar<Point2f>(scene), kernel_naive<Ray3f, true>(scene));
+    return run_scalar(N, sample_independent<uint32_t>, gen_ray_planar<Point2f>(scene), kernel_naive<Ray3f, true>(scene));
 }
 
 std::pair<Float, size_t> naive_planar_independent_packet_shadow(const Scene *scene, uint32_t N) {
-    return packet(N, sample_independent<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel_naive<Ray3fP, true>(scene));
+    return run_packet(N, sample_independent<UInt32P>, gen_ray_planar<Point2fP>(scene), kernel_naive<Ray3fP, true>(scene));
 }
 
 std::pair<Float, size_t> naive_spherical_independent_scalar(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_independent<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel_naive<Ray3f>(scene));
+    return run_scalar(N, sample_independent<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel_naive<Ray3f>(scene));
 }
 
 std::pair<Float, size_t> naive_spherical_independent_packet(const Scene *scene, uint32_t N) {
-    return packet(N, sample_independent<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel_naive<Ray3fP>(scene));
+    return run_packet(N, sample_independent<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel_naive<Ray3fP>(scene));
 }
 
 std::pair<Float, size_t> naive_spherical_independent_scalar_shadow(const Scene *scene, uint32_t N) {
-    return scalar(N, sample_independent<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel_naive<Ray3f, true>(scene));
+    return run_scalar(N, sample_independent<uint32_t>, gen_ray_sphere<Point2f>(scene), kernel_naive<Ray3f, true>(scene));
 }
 
 std::pair<Float, size_t> naive_spherical_independent_packet_shadow(const Scene *scene, uint32_t N) {
-    return packet(N, sample_independent<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel_naive<Ray3fP, true>(scene));
+    return run_packet(N, sample_independent<UInt32P>, gen_ray_sphere<Point2fP>(scene), kernel_naive<Ray3fP, true>(scene));
 }
 
 NAMESPACE_END(rtbench)

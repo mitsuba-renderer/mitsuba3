@@ -5,7 +5,7 @@
 #include <iosfwd>
 #include "logger.h"
 
-namespace fs = mitsuba::filesystem;
+namespace fs = ::mitsuba::filesystem;
 using path = fs::path;
 
 NAMESPACE_BEGIN(mitsuba)

@@ -59,8 +59,8 @@ auto bind_radiance_record(py::module &m, const char *name) {
         .def(py::init<>(), D(RadianceSample, RadianceSample))
         .def(py::init<const Scene *, Sampler *>(),
              D(RadianceSample, RadianceSample, 2), "scene"_a, "sampler"_a)
-        .def(py::init<const Type &>(), D(RadianceSample, RadianceSample, 3),
-             "other"_a)
+        // .def(py::init<const Type &>(), D(RadianceSample, RadianceSample, 3),
+        //   "other"_a)
         .def("__repr__",
              [](const Type &record) {
                  std::ostringstream oss;

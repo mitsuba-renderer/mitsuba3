@@ -48,11 +48,11 @@ public:
     template <typename Point2, typename Value = value_t<Point2>>
     auto sample_ray_impl(Value time, Value wavelength_sample, const Point2 &sample2,
                          const Point2 &sample3, mask_t<Value> active) const {
-        using Spectrum = Spectrum<Value>;
-        using Point3  = Point<Value, 3>;
-        using Vector3 = vector3_t<Point3>;
-        using Frame   = Frame<Vector<Value, 3>>;
-        using Ray3    = Ray<Point3>;
+        using Spectrum = mitsuba::Spectrum<Value>;
+        using Point3   = Point<Value, 3>;
+        using Vector3  = vector3_t<Point3>;
+        using Frame    = Frame<Vector<Value, 3>>;
+        using Ray3     = Ray<Point3>;
 
         // 1. Sample spectrum
         Spectrum wavelengths, wav_weight;

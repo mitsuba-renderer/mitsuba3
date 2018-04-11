@@ -33,11 +33,14 @@ MTS_PY_EXPORT(ShapeKDTree) {
 MTS_PY_EXPORT(Scene) {
     MTS_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
-        .def("eval_environment", &Scene::eval_environment<RayDifferential3f>,
+        .def("eval_environment",
+             py::overload_cast<const RayDifferential3f &, bool>(
+                &Scene::eval_environment<RayDifferential3f>, py::const_),
              D(Scene, eval_environment), "ray"_a, "active"_a = true)
-        .def("eval_environment", enoki::vectorize_wrapper(
-                &Scene::eval_environment<RayDifferential3fP>),
-             D(Scene, eval_environment), "ray"_a, "active"_a = true)
+        .def("eval_environment",
+             py::overload_cast<const RayDifferential3fP &, MaskP>(
+                &Scene::eval_environment<RayDifferential3fP>, py::const_),
+             "ray"_a, "active"_a = true)
 
         // Full intersection
         .def("ray_intersect",

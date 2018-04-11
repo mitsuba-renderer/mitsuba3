@@ -51,7 +51,7 @@ public:
               typename Spectrum = Spectrum<Value>>
     Spectrum eval_impl(const SurfaceInteraction &si, const BSDFContext &ctx,
                        const Vector3 &wo, const mask_t<Value> &active) const {
-        using Frame = Frame<Vector3>;
+        using Frame = mitsuba::Frame<Vector3>;
 
         if (!ctx.is_enabled(EDiffuseReflection))
             return 0.0f;
@@ -70,7 +70,7 @@ public:
               typename Vector3  = typename SurfaceInteraction::Vector3>
     Value pdf_impl(const SurfaceInteraction &si, const BSDFContext &ctx, const Vector3 &wo,
                    const mask_t<Value> & /*active*/) const {
-        using Frame = Frame<Vector3>;
+        using Frame = mitsuba::Frame<Vector3>;
 
         if (!ctx.is_enabled(EDiffuseReflection))
             return 0.0f;

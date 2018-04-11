@@ -496,7 +496,7 @@ MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &
 
     /* Check if the quadratic equation is solvable */
     Value discrim = fmsub(b, b, Scalar(4) * a * c);
-    active = active && linear_case || (discrim >= 0);
+    active &= linear_case || (discrim >= 0);
 
     if (likely(any(active))) {
         Value sqrt_discrim = sqrt(discrim);

@@ -43,7 +43,7 @@ public:
                     const Point2 &sample3,
                     Mask active) const {
         using PositionSample = PositionSample<Point3>;
-        using Frame = Frame<Vector<Value, 3>>;
+        using Frame = mitsuba::Frame<Vector<Value, 3>>;
 
         /* 1. Sample spectrum */
         Spectrum wavelengths, spec_weight;
