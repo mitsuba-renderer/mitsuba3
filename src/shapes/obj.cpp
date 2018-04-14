@@ -160,7 +160,7 @@ public:
                         next2++;
                     }
 
-                    if (*next2 == ' ' || *next2 == '\t' || *next2 == '\0') {
+                    if (*next2 == ' ' || *next2 == '\t' || *next2 == '\0' || *next2 == '\r') {
                         type_index = 0;
                         size_t map_index = key[0] - 1;
 
