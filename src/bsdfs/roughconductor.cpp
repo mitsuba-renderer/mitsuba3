@@ -74,9 +74,9 @@ public:
         bs.sampled_component = 0;
         bs.sampled_type = EGlossyReflection;
 
-        active = active && !(Frame::cos_theta(bs.wo) <= 0.0f);
-
         // Side check
+        active = active && (Frame::cos_theta(bs.wo) > 0.0f);
+
         if (none(active))
             return { bs, 0.0f };
 
@@ -117,7 +117,7 @@ public:
         Value n_dot_wi = Frame::cos_theta(si.wi);
         Value n_dot_wo = Frame::cos_theta(wo);
 
-        active = active && !((n_dot_wi <= 0.0f) && (n_dot_wo <= 0.0f));
+        active = active && ((n_dot_wi > 0.0f) && (n_dot_wo > 0.0f));
 
         if (none(active))
             return 0.0f;
@@ -150,7 +150,7 @@ public:
         const Value G = distr.G(si.wi, wo, H, active);
 
         // Calculate the total amount of reflection
-        Value model = D * G / (4.0f * Frame::cos_theta(si.wi));
+        Value model = D * G / (4.0f * n_dot_wi);
 
         Spectrum result(0.f);
         masked(result, active) = F * model;
@@ -171,7 +171,7 @@ public:
         Value n_dot_wi = Frame::cos_theta(si.wi);
         Value n_dot_wo = Frame::cos_theta(wo);
 
-        active = active && !((n_dot_wi <= 0.0f) && (n_dot_wo <= 0.0f));
+        active = active && ((n_dot_wi > 0.0f) && (n_dot_wo > 0.0f));
 
         if (none(active))
             return 0.0f;

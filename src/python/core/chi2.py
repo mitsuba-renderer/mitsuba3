@@ -460,7 +460,10 @@ def BSDFAdapter(bsdf_type, extra, wi = [0, 0, 1], nn = [0, 0, 1]):
         plugin = instantiate(args)
         (si, ctx) = make_context(n)
         bs, weight = plugin.sample(si, ctx, sample[:, 0], sample[:, 1:])
-        return bs.wo
+
+        w = np.ones(weight.shape[0])
+        w[np.mean(weight, axis=1) == 0] = 0
+        return bs.wo, w
 
     def pdf_functor(wo, *args):
         n = wo.shape[0]
@@ -492,3 +495,69 @@ def MicrofacetDistributionAdaptater(md_type, alpha, sample_visible = False, wi =
 
     return sample_functor, pdf_functor
 
+
+def InteractiveMicrofacetBSDFAdapter(bsdf_type, extra, wi = [0, 0, 1], nn = [0, 0, 1]):
+    """
+    Adapter which permits interactive testing of BSDF
+    distributions using the Chi^2 test
+    """
+
+    from mitsuba.core   import Frame3f, Frame3fX, MTS_WAVELENGTH_SAMPLES
+    from mitsuba.render import BSDFContext, \
+                               SurfaceInteraction3f, SurfaceInteraction3fX
+
+    def sph_to_cartesian(theta, phi):
+        sin_phi = np.sin(phi)
+        cos_phi = np.cos(phi)
+        sin_theta = np.sin(theta)
+        cos_theta = np.cos(theta)
+        return np.column_stack(
+            (cos_phi * sin_theta,
+             sin_phi * sin_theta,
+             cos_theta)
+        )
+
+    def make_context(n, wi):
+        frame = Frame3f(nn)
+        frames = Frame3fX(n)
+        frames.n = np.tile(frame.n, (n, 1))
+        frames.s = np.tile(frame.s, (n, 1))
+        frames.t = np.tile(frame.t, (n, 1))
+
+        si = SurfaceInteraction3fX()
+        si.p  = np.zeros(shape=(n, 3))
+        si.t  = 44.0
+        si.n  = np.tile(nn, (n, 1))
+        si.wi = np.tile(wi, (n, 1))
+        si.sh_frame = frames
+        si.wavelengths = np.random.uniform(low=400, high=800,
+                                           size=(n, MTS_WAVELENGTH_SAMPLES))
+
+        return (si, BSDFContext())
+
+    def instantiate(args):
+        xml = """<bsdf version="2.0.0" type="%s">
+            <float name="alpha_u" value="%s"/>
+            <float name="alpha_v" value="%s"/>
+            %s
+        </bsdf>""" % (bsdf_type, str(args[0]), str(args[1]), extra)
+        from mitsuba.core.xml import load_string
+        return load_string(xml)
+
+    def sample_functor(sample, *args):
+        n = sample.shape[0]
+        plugin = instantiate(args)
+        (si, ctx) = make_context(n, sph_to_cartesian(args[2], args[3]))
+        bs, weight = plugin.sample(si, ctx, sample[:, 0], sample[:, 1:])
+
+        w = np.ones(weight.shape[0])
+        w[np.mean(weight, axis=1) == 0] = 0
+        return bs.wo, w
+
+    def pdf_functor(wo, *args):
+        n = wo.shape[0]
+        plugin = instantiate(args)
+        (si, ctx) = make_context(n, sph_to_cartesian(args[2], args[3]))
+        return plugin.pdf(si, ctx, wo)
+
+    return sample_functor, pdf_functor

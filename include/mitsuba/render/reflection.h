@@ -20,7 +20,7 @@ Vector3 reflect(const Vector3 &wi) {
 /**
  * \brief Refraction in local coordinates
  *
- * \param wi   Direction to reflect
+ * \param wi   Direction to refract
  * \param eta  Ratio of interior to exterior IORs at the interface.
  * \param cos_theta_t Cosine of the angle between the normal and the transmitted
  *                    ray, as computed e.g. by \ref fresnel_dielectric_ext.

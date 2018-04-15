@@ -31,7 +31,7 @@ from __future__ import division
 import mitsuba
 from mitsuba.core import warp, float_dtype
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
-from mitsuba.core.chi2 import SpectrumAdapter, BSDFAdapter, MicrofacetDistributionAdaptater
+from mitsuba.core.chi2 import SpectrumAdapter, BSDFAdapter, MicrofacetDistributionAdaptater, InteractiveMicrofacetBSDFAdapter
 from mitsuba.render    import MicrofacetDistributionf
 import numpy as np
 
@@ -160,7 +160,7 @@ DISTRIBUTIONS = [
     ),
 
     ('MD - Beckmann - 0.5 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.5, False, [0, 0, 1]),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.5, False, [0.970942, 0, 0.239316]),
       DEFAULT_SETTINGS
     ),
     ('Microfacet - Beckmann - 0.1 alpha', SphericalDomain(),
@@ -169,7 +169,7 @@ DISTRIBUTIONS = [
     ),
 
     ('Microfacet - Beckmann - vis - 0.5 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.5, True, [0, 0, 1]),
+      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.5, True, [0.970942, 0, 0.239316]),
       DEFAULT_SETTINGS
     ),
     ('Microfacet - Beckmann - vis - 0.1 alpha', SphericalDomain(),
@@ -206,17 +206,36 @@ DISTRIBUTIONS = [
     ('Rough conductor BSDF - smooth', SphericalDomain(),
      BSDFAdapter("roughconductor", """
         <float name="alpha" value="0.05"/>
-        <spectrum name="eta" value="0.7"/>
      """), DEFAULT_SETTINGS_3),
     ('Rough conductor BSDF - rough', SphericalDomain(),
      BSDFAdapter("roughconductor", """
         <float name="alpha" value="0.25"/>
-        <spectrum name="eta" value="0.4"/>
      """), DEFAULT_SETTINGS_3),
     ('Rough conductor BSDF - rough - alternative wi', SphericalDomain(),
      BSDFAdapter("roughconductor", """
         <float name="alpha" value="0.25"/>
-        <spectrum name="eta" value="0.9"/>
-     """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
+     """, wi=[0.970942, 0, 0.239316]), DEFAULT_SETTINGS_3),
 
+    ('Rough conductor BSDF - interactive', SphericalDomain(),
+     InteractiveMicrofacetBSDFAdapter("roughconductor", """
+        <boolean name="sample_visible" value="false"/>
+        <string name="distribution" value="beckmann"/>
+    """), dict(DEFAULT_SETTINGS_3,
+         parameters=[
+             ('alpha_u', [0, 1, 0.2]),
+             ('alpha_v', [0, 1, 0.2]),
+             ('Theta', [0, np.pi, 0]),
+             ('Phi', [0, 2*np.pi, 0])
+     ])),
+    ('Rough conductor BSDF - vis - interactive', SphericalDomain(),
+     InteractiveMicrofacetBSDFAdapter("roughconductor", """
+        <boolean name="sample_visible" value="true"/>
+        <string name="distribution" value="beckmann"/>
+    """), dict(DEFAULT_SETTINGS_3,
+         parameters=[
+             ('alpha_u', [0, 1, 0.2]),
+             ('alpha_v', [0, 1, 0.2]),
+             ('Theta', [0, np.pi, 0]),
+             ('Phi', [0, 2*np.pi, 0])
+     ])),
 ]

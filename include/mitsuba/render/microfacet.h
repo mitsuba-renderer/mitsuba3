@@ -172,7 +172,7 @@ public:
     /// Is this an anisotropic microfacet distribution?
     Mask is_anisotropic() const { return !eq(m_alpha_u, m_alpha_v); }
 
-    /// Is this an anisotropic microfacet distribution?
+    /// Is this an isotropic microfacet distribution?
     Mask is_isotropic() const { return eq(m_alpha_u, m_alpha_v); }
 
     /// Scale the roughness values by some constant
