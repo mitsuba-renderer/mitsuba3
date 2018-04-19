@@ -513,19 +513,24 @@ See also:
     BSDFSample)doc";
 
 static const char *__doc_mitsuba_BSDFContext =
-R"doc(Record specifying a BSDF query and its context. Note that since none
-of the fields are be wide, it is not an Enoki struct.)doc";
+R"doc(Context data structure for BSDF evaluation and sampling
+
+BSDF models in Mitsuba can be queried and sampled using a variety of
+different modes -- for instance, a rendering algorithm can indicate
+whether radiance or importance is being transported, and it can also
+restrict evaluation and sampling to a subset of lobes in a a multi-
+lobe BSDF model.
+
+The BSDFContext data structure encodes these preferences and is
+supplied to most BSDF methods.)doc";
 
 static const char *__doc_mitsuba_BSDFContext_BSDFContext = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_BSDFContext_BSDFContext_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFContext_BSDFContext_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_BSDFContext_component =
 R"doc(Integer value of requested BSDF component index to be
-sampled/evaluated. The default value of `(uint32_t) -1` enables all
-components.)doc";
+sampled/evaluated.)doc";
 
 static const char *__doc_mitsuba_BSDFContext_is_enabled =
 R"doc(Checks whether a given BSDF component type and BSDF component index
@@ -539,50 +544,30 @@ R"doc(Reverse the direction of light transport in the record
 This updates the transport mode (radiance to importance and vice
 versa).)doc";
 
-static const char *__doc_mitsuba_BSDFContext_type_mask = R"doc(Bit mask for requested BSDF component types to be sampled/evaluated)doc";
+static const char *__doc_mitsuba_BSDFContext_type_mask = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample = R"doc(Structure holding the result of BSDF sampling operations.)doc";
+static const char *__doc_mitsuba_BSDFSample = R"doc(Data structure holding the result of BSDF sampling operations.)doc";
 
 static const char *__doc_mitsuba_BSDFSample_BSDFSample =
 R"doc(Given a surface interaction an an incident/exitant direction pair (wi,
 wo), create a query record to evaluate the BSDF or its sampling
 density.
 
-By default, all components will be sampled irregardless of what
-measure they live on. For convenience, this function uses the local
-incident direction vector contained in the supplied intersection
-record.
-
-For convenience, this function uses the local incident direction
-vector contained in the supplied intersection record.
+By default, all components will be sampled regardless of what measure
+they live on.
 
 Parameter ``wo``:
     An outgoing direction in local coordinates. This should be a
     normalized direction vector that points *away* from the scattering
     event.)doc";
 
-static const char *__doc_mitsuba_BSDFSample_BSDFSample_2 =
-R"doc(Given a surface interaction and an incident/exitant direction pair
-(wi, wo), create a query record to evaluate the BSDF or its sampling
-density.
-
-Parameter ``wi``:
-    An incident direction in local coordinates. This should be a
-    normalized direction vector that points *away* from the scattering
-    event.
-
-Parameter ``wo``:
-    An outgoing direction in local coordinates. This should be a
-    normalized direction vector that points *away* from the scattering
-    event.)doc";
+static const char *__doc_mitsuba_BSDFSample_BSDFSample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_BSDFSample_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_BSDFSample_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_BSDFSample_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_BSDFSample_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_eta = R"doc(Relative index of refraction in the sampled direction)doc";
 
@@ -615,8 +600,6 @@ static const char *__doc_mitsuba_BSDFSample_pdf = R"doc(Probability density at t
 static const char *__doc_mitsuba_BSDFSample_sampled_component = R"doc(Stores the component index that was sampled by BSDF::sample())doc";
 
 static const char *__doc_mitsuba_BSDFSample_sampled_type = R"doc(Stores the component type that was sampled by BSDF::sample())doc";
-
-static const char *__doc_mitsuba_BSDFSample_wi = R"doc(Normalized incident direction in local coordinates)doc";
 
 static const char *__doc_mitsuba_BSDFSample_wo = R"doc(Normalized outgoing direction in local coordinates)doc";
 
@@ -671,6 +654,8 @@ static const char *__doc_mitsuba_BSDF_EFlags_EGlossyReflection = R"doc(Glossy re
 
 static const char *__doc_mitsuba_BSDF_EFlags_EGlossyTransmission = R"doc(Glossy transmission)doc";
 
+static const char *__doc_mitsuba_BSDF_EFlags_ENeedsDifferentials = R"doc(Does the implementation require access to texture-space differentials)doc";
+
 static const char *__doc_mitsuba_BSDF_EFlags_ENonSymmetric = R"doc(Flags non-symmetry (e.g. transmission in dielectric materials))doc";
 
 static const char *__doc_mitsuba_BSDF_EFlags_ENull = R"doc('null' scattering event, i.e. particles do not undergo deflection)doc";
@@ -683,7 +668,7 @@ static const char *__doc_mitsuba_BSDF_component_count = R"doc(Number of componen
 
 static const char *__doc_mitsuba_BSDF_eval =
 R"doc(Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo) and
-multiply by cosine foreshortening term.
+multiply by the cosine foreshortening term.
 
 Based on the information in the supplied query context ``ctx``, this
 method will either evaluate the entire BSDF or query individual
@@ -691,13 +676,17 @@ components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
 components are supported: calling ``eval``() on a perfectly specular
 material will return zero.
 
-Only the outgoing direction needs to be specified. The incident
-direction is obtained from the surface interaction referenced by the
-query context (``ctx.si.wi``).
+Note that the incident direction does not need to be explicitly
+specified. It is obtained from the field ``si.wi``.
 
 Parameter ``ctx``:
-    A record with detailed information on the BSDF query, including a
-    reference to a valid SurfaceInteraction.
+    A context data structure describing which lobes to evalute, and
+    whether radiance or importance are being transported.
+
+Parameter ``si``:
+    A surface interaction data structure describing the underlying
+    surface position. The incident direction is obtained from the
+    field ``si.wi``.
 
 Parameter ``wo``:
     The outgoing direction)doc";
@@ -716,29 +705,33 @@ static const char *__doc_mitsuba_BSDF_m_components = R"doc(Flags for each compon
 
 static const char *__doc_mitsuba_BSDF_m_flags = R"doc(Combined flags for all components of this BSDF.)doc";
 
-static const char *__doc_mitsuba_BSDF_m_needs_differentials = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_needs_differentials = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_needs_differentials = R"doc(Does the implementation require access to texture-space differentials?)doc";
 
 static const char *__doc_mitsuba_BSDF_pdf =
-R"doc(Compute the probability of sampling ``wo`` (given ``ctx``.si.wi).
+R"doc(Compute the probability per unit solid angle of sampling a given
+direction
 
 This method provides access to the probability density that would
-result when supplying the same BSDF context to the sample() method. It
-correctly handles changes in probability when only a subset of the
-components is chosen for sampling (this can be done using the
-BSDFSample::component and BSDFSample::type_mask fields).
+result when supplying the same BSDF context and surface interaction
+data structures to the sample() method. It correctly handles changes
+in probability when only a subset of the components is chosen for
+sampling (this can be done using the BSDFContext::component and
+BSDFCOntext::type_mask fields).
 
-Only the outgoing direction needs to be specified. The incident
-direction is obtained from the surface interaction referenced by the
-query context (``ctx.si.wi``).
+Note that the incident direction does not need to be explicitly
+specified. It is obtained from the field ``si.wi``.
 
 Parameter ``ctx``:
-    A record with detailed information on the BSDF query, including a
-    reference to a valid SurfaceInteraction.
+    A context data structure describing which lobes to evalute, and
+    whether radiance or importance are being transported.
+
+Parameter ``si``:
+    A surface interaction data structure describing the underlying
+    surface position. The incident direction is obtained from the
+    field ``si.wi``.
 
 Parameter ``wo``:
-    The outgoing direction.)doc";
+    The outgoing direction)doc";
 
 static const char *__doc_mitsuba_BSDF_pdf_2 = R"doc()doc";
 
@@ -747,39 +740,49 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 pdf())doc";
 
 static const char *__doc_mitsuba_BSDF_sample =
-R"doc(Sample the BSDF and return the probability density *and* the
-importance weight of the sample (i.e. the value of the BSDF divided by
-the probability density)
+R"doc(Importance sample the BSDF model
 
-If a component mask or a specific component index is specified, the
-sample is drawn from the matching component, if it exists. Depending
-on the provided transport type, either the BSDF or its adjoint version
-is used.
+The function returns a sample data structure along with the importance
+weight, which is the value of the BSDF divided by the probability
+density, and multiplied by the cosine foreshortening factor (if needed
+--- it is omitted for degenerate BSDFs like smooth
+mirrors/dielectrics).
+
+If the supplied context data strutcures selects subset of components
+in a multi-lobe BRDF model, the sampling is restricted to this subset.
+Depending on the provided transport type, either the BSDF or its
+adjoint version is sampled.
 
 When sampling a continuous/non-delta component, this method also
 multiplies by the cosine foreshorening factor with respect to the
 sampled direction.
 
 Parameter ``ctx``:
-    A BSDF query record
+    A context data structure describing which lobes to sample, and
+    whether radiance or importance are being transported.
 
-Parameter ``sample``:
-    A uniformly distributed sample on $[0,1]^2$
+Parameter ``si``:
+    A surface interaction data structure describing the underlying
+    surface position. The incident direction is obtained from the
+    field ``si.wi``.
 
-Parameter ``pdf``:
-    Will record the probability with respect to solid angles (or the
-    discrete probability when a delta component is sampled)
+Parameter ``sample1``:
+    A uniformly distributed sample on $[0,1]$. It is used to select
+    the BSDF lobe in multi-lobe models.
+
+Parameter ``sample2``:
+    A uniformly distributed sample on $[0,1]^2$. It is used to
+    generate the sampled direction.
 
 Returns:
-    (bs, value) bs: Sampling record, indicating the sampled direction,
-    PDF values and other information. Lanes for which sampling failed
-    have undefined values. value: The BSDF value (multiplied by the
-    cosine foreshortening factor when a non-delta component is
-    sampled). A zero spectrum means that sampling failed.
+    A pair (bs, value) consisting of
 
-Remark:
-    From Python, this function is is called using the syntax ``value,
-    pdf = bsdf.sample(bs, sample)``)doc";
+bs: Sampling record, indicating the sampled direction, PDF values and
+other information. The contents are undefined if sampling failed.
+
+value: The BSDF value (multiplied by the cosine foreshortening factor
+when a non-delta component is sampled). A zero spectrum indicates that
+sampling failed.)doc";
 
 static const char *__doc_mitsuba_BSDF_sample_2 = R"doc()doc";
 
@@ -787,7 +790,7 @@ static const char *__doc_mitsuba_BSDF_sample_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample())doc";
 
-static const char *__doc_mitsuba_BSDF_to_string = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_to_string = R"doc(Return a human-readable representation of the BSDF)doc";
 
 static const char *__doc_mitsuba_Bitmap =
 R"doc(General-purpose bitmap class with read and write support for several
@@ -2093,10 +2096,6 @@ static const char *__doc_mitsuba_EType_EGGX =
 R"doc(GGX: Long-tailed distribution for very rough surfaces (aka.
 Trowbridge-Reitz distr.))doc";
 
-static const char *__doc_mitsuba_EType_EPhong =
-R"doc(Phong distribution (with the anisotropic extension by Ashikhmin and
-Shirley))doc";
-
 static const char *__doc_mitsuba_Emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc()doc";
@@ -2555,21 +2554,23 @@ static const char *__doc_mitsuba_Frame_Frame_4 = R"doc()doc";
 static const char *__doc_mitsuba_Frame_Frame_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_cos_phi =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the cosine of the phi parameter in spherical coordinates)doc";
+R"doc(Give a unit direction, this function returns the cosine of the azimuth
+in a reference spherical coordinate system (see the Frame description))doc";
 
 static const char *__doc_mitsuba_Frame_cos_phi_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared cosine of the phi parameter in spherical
-coordinates)doc";
+R"doc(Give a unit direction, this function returns the squared cosine of the
+azimuth in a reference spherical coordinate system (see the Frame
+description))doc";
 
 static const char *__doc_mitsuba_Frame_cos_theta =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the cosine of the angle between the normal and v)doc";
+R"doc(Give a unit direction, this function returns the cosine of the
+elevation angle in a reference spherical coordinate system (see the
+Frame description))doc";
 
 static const char *__doc_mitsuba_Frame_cos_theta_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared cosine of the angle between the normal and v)doc";
+R"doc(Give a unit direction, this function returns the square cosine of the
+elevation angle in a reference spherical coordinate system (see the
+Frame description))doc";
 
 static const char *__doc_mitsuba_Frame_n = R"doc()doc";
 
@@ -2604,38 +2605,49 @@ static const char *__doc_mitsuba_Frame_operator_new_4 = R"doc()doc";
 static const char *__doc_mitsuba_Frame_s = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_sin_phi =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the sine of the phi parameter in spherical coordinates)doc";
+R"doc(Give a unit direction, this function returns the sine of the azimuth
+in a reference spherical coordinate system (see the Frame description))doc";
 
 static const char *__doc_mitsuba_Frame_sin_phi_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared sine of the phi parameter in spherical coordinates)doc";
+R"doc(Give a unit direction, this function returns the squared sine of the
+azimuth in a reference spherical coordinate system (see the Frame
+description))doc";
 
 static const char *__doc_mitsuba_Frame_sin_theta =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the sine of the angle between the normal and v)doc";
+R"doc(Give a unit direction, this function returns the sine of the elevation
+angle in a reference spherical coordinate system (see the Frame
+description))doc";
 
 static const char *__doc_mitsuba_Frame_sin_theta_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared sine of the angle between the normal and v)doc";
+R"doc(Give a unit direction, this function returns the square sine of the
+elevation angle in a reference spherical coordinate system (see the
+Frame description))doc";
+
+static const char *__doc_mitsuba_Frame_sincos_phi =
+R"doc(Give a unit direction, this function returns the sine and cosine of
+the azimuth in a reference spherical coordinate system (see the Frame
+description))doc";
+
+static const char *__doc_mitsuba_Frame_sincos_phi_2 =
+R"doc(Give a unit direction, this function returns the squared sine and
+cosine of the azimuth in a reference spherical coordinate system (see
+the Frame description))doc";
 
 static const char *__doc_mitsuba_Frame_t = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_tan_theta =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the tangent of the angle between the normal and v)doc";
+R"doc(Give a unit direction, this function returns the tangent of the
+elevation angle in a reference spherical coordinate system (see the
+Frame description))doc";
 
 static const char *__doc_mitsuba_Frame_tan_theta_2 =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the squared tangent of the angle between the normal and v)doc";
+R"doc(Give a unit direction, this function returns the square tangent of the
+elevation angle in a reference spherical coordinate system (see the
+Frame description))doc";
 
 static const char *__doc_mitsuba_Frame_to_local = R"doc(Convert from world coordinates to local coordinates)doc";
 
 static const char *__doc_mitsuba_Frame_to_world = R"doc(Convert from local coordinates to world coordinates)doc";
-
-static const char *__doc_mitsuba_Frame_uv =
-R"doc(Assuming that the given direction is in the local coordinate system,
-return the u and v coordinates of the vector 'v')doc";
 
 static const char *__doc_mitsuba_GLTexture = R"doc()doc";
 
@@ -3377,11 +3389,17 @@ and
 Visible Normals" by Eric Heitz and Eugene D'Eon
 
 The visible normal sampling code was provided by Eric Heitz and Eugene
-D'Eon.)doc";
+D'Eon. An improvement of the Beckmann model sampling routine is
+discussed in
 
-static const char *__doc_mitsuba_MicrofacetDistribution_G =
-R"doc(Separable shadow-masking function based on Smith's one-dimensional
-masking model)doc";
+"An Improved Visible Normal Sampling Routine for the Beckmann
+Distribution" by Wenzel Jakob
+
+An improvement of the GGX model sampling routine is discussed in "A
+Simpler and Exact Sampling Routine for the GGX Distribution of Visible
+Normals" by Eric Heitz)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_G = R"doc(Smith's separable shadowing-masking approximation)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_MicrofacetDistribution =
 R"doc(Create an isotropic microfacet distribution of the specified type
@@ -3412,13 +3430,7 @@ static const char *__doc_mitsuba_MicrofacetDistribution_alpha_u = R"doc(Return t
 
 static const char *__doc_mitsuba_MicrofacetDistribution_alpha_v = R"doc(Return the roughness along the bitangent direction)doc";
 
-static const char *__doc_mitsuba_MicrofacetDistribution_compute_phong_exponent =
-R"doc(Helper routine: convert from Beckmann-style roughness values to Phong
-exponents (Walter et al.))doc";
-
 static const char *__doc_mitsuba_MicrofacetDistribution_configure = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_distribution_name = R"doc(Return a string representation of the name of a distribution)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_eval =
 R"doc(Evaluate the microfacet distribution function
@@ -3426,25 +3438,13 @@ R"doc(Evaluate the microfacet distribution function
 Parameter ``m``:
     The microfacet normal)doc";
 
-static const char *__doc_mitsuba_MicrofacetDistribution_exponent = R"doc(Return the Phong exponent (isotropic case))doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_exponent_u = R"doc(Return the Phong exponent along the tangent direction)doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_exponent_v = R"doc(Return the Phong exponent along the bitangent direction)doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_interpolate_phong_exponent = R"doc(Compute the interpolated roughness for the Phong model)doc";
-
 static const char *__doc_mitsuba_MicrofacetDistribution_is_anisotropic = R"doc(Is this an anisotropic microfacet distribution?)doc";
 
-static const char *__doc_mitsuba_MicrofacetDistribution_is_isotropic = R"doc(Is this an anisotropic microfacet distribution?)doc";
+static const char *__doc_mitsuba_MicrofacetDistribution_is_isotropic = R"doc(Is this an isotropic microfacet distribution?)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_m_alpha_u = R"doc()doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_m_alpha_v = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_m_exponent_u = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_m_exponent_v = R"doc()doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_m_sample_visible = R"doc()doc";
 
@@ -3471,73 +3471,41 @@ static const char *__doc_mitsuba_MicrofacetDistribution_operator_new_3 = R"doc()
 static const char *__doc_mitsuba_MicrofacetDistribution_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_pdf =
-R"doc(Wrapper function which calls pdf_all() or pdf_visible_normals()
-depending on the parameters of this class)doc";
+R"doc(Returns the density function associated with the sample() function.
 
-static const char *__doc_mitsuba_MicrofacetDistribution_pdf_all =
-R"doc(Returns the density function associated with the sample_all()
-function.
+Parameter ``wi``:
+    The incident direction (only relevant if visible normal sampling
+    is used)
 
 Parameter ``m``:
     The microfacet normal)doc";
 
-static const char *__doc_mitsuba_MicrofacetDistribution_pdf_visible_normals =
-R"doc(Implements the probability density of the function
-sample_visible_normals())doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_project_roughness = R"doc(Compute the effective roughness projected on direction ``v``)doc";
+static const char *__doc_mitsuba_MicrofacetDistribution_project_roughness_2 = R"doc(Compute the squared 1D roughness along direction ``v``)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_sample =
-R"doc(Wrapper function which calls sample_all() or sample_visible_normals()
-depending on the parameters of this class)doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_sample_all =
-R"doc(Draw a sample from the microfacet normal distribution (including *all*
-normals) and return the associated probability density
+R"doc(Draw a sample from the microfacet normal distribution and return the
+associated probability density
 
 Parameter ``sample``:
     A uniformly distributed 2D sample
 
 Parameter ``pdf``:
     The probability density wrt. solid angles)doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_sample_first_quadrant =
-R"doc(Helper routine: sample the azimuthal part of the first quadrant of the
-A&S distribution)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_sample_visible = R"doc(Return whether or not only visible normals are sampled?)doc";
 
-static const char *__doc_mitsuba_MicrofacetDistribution_sample_visible_11 =
-R"doc(Visible normal sampling code for the alpha=1 case
-
-Source: supplemental material of "Importance Sampling Microfacet-Based
-BSDFs using the Distribution of Visible Normals")doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_sample_visible_normals =
-R"doc(Draw a sample from the distribution of visible normals
-
-Parameter ``_wi``:
-    A reference direction that defines the set of visible normals
-
-Parameter ``sample``:
-    A uniformly distributed 2D sample
-
-Parameter ``pdf``:
-    The probability density wrt. solid angles)doc";
+static const char *__doc_mitsuba_MicrofacetDistribution_sample_visible_11 = R"doc(Visible normal sampling code for the alpha=1 case)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_scale_alpha = R"doc(Scale the roughness values by some constant)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_smith_g1 =
-R"doc(Smith's shadowing-masking function G1 for each of the supported
-microfacet distributions
+R"doc(Smith's shadowing-masking function for a single direction
 
 Parameter ``v``:
     An arbitrary direction
 
 Parameter ``m``:
     The microfacet normal)doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_to_string = R"doc(Return a string representation of the contents of this instance)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_type = R"doc(Return the distribution type)doc";
 
@@ -7047,6 +7015,119 @@ static const char *__doc_mitsuba_for_each_type_2 = R"doc(Base case)doc";
 
 static const char *__doc_mitsuba_for_each_type_recurse = R"doc()doc";
 
+static const char *__doc_mitsuba_fresnel =
+R"doc(Calculates the unpolarized Fresnel reflection coefficient at a planar
+interface between two dielectrics
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the normal and the incident ray
+
+Parameter ``eta``:
+    Relative refractive index of the interface. A value greater than
+    1.0 means that the surface normal is pointing into the region of
+    lower density.
+
+Returns:
+    A tuple (F, cos_theta_t, eta_it, eta_ti) consisting of
+
+F Fresnel reflection coefficient.
+
+cos_theta_t Cosine of the angle between the normal and the transmitted
+ray
+
+eta Index of refraction in the direction of travel.
+
+eta_it Relative index of refraction in the direction of travel.
+
+eta_ti Reciprocal of the relative index of refraction in the direction
+of travel. This also happens to be equal to the scale factor that must
+be applied to the X and Y component of the refracted direction.)doc";
+
+static const char *__doc_mitsuba_fresnel_complex =
+R"doc(Calculates the unpolarized Fresnel reflection coefficient at a planar
+interface having a complex-valued relative index of refraction (i.e.
+the material conducts electrons)
+
+Remark:
+    The implementation assumes that cos_theta_i > 0, i.e. light enters
+    from *outside* of the conducting layer (generally a reasonable
+    assumption unless very thin layers are being simulated)
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the normal and the incident ray
+
+Parameter ``eta``:
+    Relative refractive index (complex-valued)
+
+Returns:
+    The unpolarized Fresnel reflection coefficient.)doc";
+
+static const char *__doc_mitsuba_fresnel_complex_polarized =
+R"doc(Calculates the polarized Fresnel reflection coefficient at a planar
+interface having a complex-valued relative index of refraction (i.e.
+the material conducts electrons)
+
+Remark:
+    The implementation assumes that cos_theta_i > 0, i.e. light enters
+    from *outside* of the conducting layer (generally a reasonable
+    assumption unless very thin layers are being simulated)
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the normal and the incident ray
+
+Parameter ``eta``:
+    Relative refractive index (complex-valued)
+
+Returns:
+    A pair (r_s, r_p) consisting of
+
+r_s Perpendicularly polarized Fresnel reflectance ("senkrecht").
+
+r_p Parallel polarized Fresnel reflectance.)doc";
+
+static const char *__doc_mitsuba_fresnel_diffuse_reflectance =
+R"doc(Computes the diffuse unpolarized Fresnel reflectance of a dielectric
+material (sometimes referred to as "Fdr").
+
+This value quantifies what fraction of diffuse incident illumination
+will, on average, be reflected at a dielectric material boundary
+
+Parameter ``eta``:
+    Relative refraction coefficient
+
+Returns:
+    F, the unpolarized Fresnel coefficient.)doc";
+
+static const char *__doc_mitsuba_fresnel_polarized =
+R"doc(Calculates the polarized Fresnel reflection coefficient at a planar
+interface between two dielectrics
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the normal and the incident ray
+
+Parameter ``eta``:
+    Relative refractive index of the interface. A value greater than
+    1.0 means that the surface normal is pointing into the region of
+    lower density.
+
+Returns:
+    A tuple (r_s, r_p, cos_theta_t, eta_it, eta_ti) consisting of
+
+r_s Perpendicularly polarized Fresnel reflectance ("senkrecht").
+
+r_p Parallel polarized Fresnel reflectance.
+
+cos_theta_t Cosine of the angle between the normal and the transmitted
+ray
+
+eta Index of refraction in the direction of travel.
+
+eta_it Relative index of refraction in the direction of travel.
+
+eta_ti Reciprocal of the relative index of refraction in the direction
+of travel. This also happens to be equal to the scale factor that must
+be applied to the X and Y component of the refracted direction.)doc";
+
 static const char *__doc_mitsuba_function_traits = R"doc(Type trait to inspect the return and argument types of functions)doc";
 
 static const char *__doc_mitsuba_hash = R"doc()doc";
@@ -7122,30 +7203,6 @@ Chi^2 statistic.
 
 The function returns the statistic value, degrees of freedom, below-
 treshold entries and resulting number of pooled regions.)doc";
-
-static const char *__doc_mitsuba_math_comp_ellint_1 = R"doc(Complete elliptic integral of the first kind (double precision))doc";
-
-static const char *__doc_mitsuba_math_comp_ellint_1_2 = R"doc(Complete elliptic integral of the first kind (single precision))doc";
-
-static const char *__doc_mitsuba_math_comp_ellint_2 = R"doc(Complete elliptic integral of the second kind (double precision))doc";
-
-static const char *__doc_mitsuba_math_comp_ellint_2_2 = R"doc(Complete elliptic integral of the second kind (single precision))doc";
-
-static const char *__doc_mitsuba_math_comp_ellint_3 = R"doc(Complete elliptic integral of the third kind (double precision))doc";
-
-static const char *__doc_mitsuba_math_comp_ellint_3_2 = R"doc(Complete elliptic integral of the third kind (single precision))doc";
-
-static const char *__doc_mitsuba_math_ellint_1 = R"doc(Incomplete elliptic integral of the first kind (double precision))doc";
-
-static const char *__doc_mitsuba_math_ellint_1_2 = R"doc(Incomplete elliptic integral of the first kind (single precision))doc";
-
-static const char *__doc_mitsuba_math_ellint_2 = R"doc(Incomplete elliptic integral of the second kind (double precision))doc";
-
-static const char *__doc_mitsuba_math_ellint_2_2 = R"doc(Incomplete elliptic integral of the second kind (single precision))doc";
-
-static const char *__doc_mitsuba_math_ellint_3 = R"doc(Incomplete elliptic integral of the third kind (double precision))doc";
-
-static const char *__doc_mitsuba_math_ellint_3_2 = R"doc(Incomplete elliptic integral of the first kind (single precision))doc";
 
 static const char *__doc_mitsuba_math_find_interval =
 R"doc(Find an interval in an ordered set
@@ -7270,6 +7327,8 @@ static const char *__doc_mitsuba_operator_lshift_23 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_24 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_lshift_25 = R"doc()doc";
+
 static const char *__doc_mitsuba_profiler_flags = R"doc()doc";
 
 static const char *__doc_mitsuba_ref =
@@ -7329,6 +7388,12 @@ static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
 static const char *__doc_mitsuba_reflect = R"doc(Reflect ``wi`` with respect to a given surface normal)doc";
 
 static const char *__doc_mitsuba_reflect_2 = R"doc(Reflection in local coordinates)doc";
+
+static const char *__doc_mitsuba_refract =
+R"doc(Refraction in local coordinates
+
+The 'cos_theta_t' and 'eta_ti' parameters are given by the last two
+tuple entries returned by the fresnel and fresnel_polarized functions.)doc";
 
 static const char *__doc_mitsuba_rtbench_naive_planar_independent_packet = R"doc()doc";
 
@@ -7932,6 +7997,10 @@ Returns:
     the sampled position 3. The probability density at the sampled
     position (which only differs from item 2. when the function does
     not integrate to one))doc";
+
+static const char *__doc_mitsuba_srgb_model_eval = R"doc()doc";
+
+static const char *__doc_mitsuba_srgb_model_fetch = R"doc()doc";
 
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 

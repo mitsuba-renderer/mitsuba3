@@ -11,14 +11,12 @@ auto bind_bsdf_sample(py::module &m, const char *name) {
     return py::class_<Type>(m, name, D(BSDFSample))
         .def(py::init<>(), D(BSDFSample, BSDFSample))
         .def(py::init<const Vector3 &>(), "wo"_a, D(BSDFSample, BSDFSample, 2))
-        .def(py::init<const Vector3 &, const Vector3 &>(),
-             "wi"_a, "wo"_a, D(BSDFSample, BSDFSample, 3))
+        .def(py::init<const Type &>(), "bs"_a, "Copy constructor")
         .def("__repr__", [](const Type &bs) {
             std::ostringstream oss;
             oss << bs;
             return oss.str();
         })
-        .def_readwrite("wi", &Type::wi, D(BSDFSample, wi))
         .def_readwrite("wo", &Type::wo, D(BSDFSample, wo))
         .def_readwrite("pdf", &Type::pdf, D(BSDFSample, pdf))
         .def_readwrite("eta", &Type::eta, D(BSDFSample, eta))
@@ -33,8 +31,7 @@ MTS_PY_EXPORT(BSDFContext) {
              "mode"_a = ERadiance, D(BSDFContext, BSDFContext))
         .def(py::init<ETransportMode, uint32_t, uint32_t>(),
              "mode"_a, "type_mak"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
-        .def(py::init<const BSDFContext &>(),
-             "ctx"_a, D(BSDFContext, BSDFContext, 3))
+        .def(py::init<const BSDFContext &>(), "ctx"_a, "Copy constructor")
         .mdef(BSDFContext, reverse)
         .mdef(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
         .def("__repr__", [](const BSDFContext &ctx) {
@@ -57,40 +54,39 @@ MTS_PY_EXPORT(BSDFSample) {
 MTS_PY_EXPORT(BSDF) {
     auto bsdf = MTS_PY_CLASS(BSDF, Object)
         .def("sample",
-             py::overload_cast<const SurfaceInteraction3f &, const BSDFContext &,
+             py::overload_cast<const BSDFContext &, const SurfaceInteraction3f &,
                                Float, const Point2f &>(
                   &BSDF::sample, py::const_),
-             "si"_a, "ctx"_a, "sample1"_a, "sample2"_a, D(BSDF, sample))
+             "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, D(BSDF, sample))
         .def("sample", enoki::vectorize_wrapper(
-                 py::overload_cast<const SurfaceInteraction3fP &,
-                                   const BSDFContext &, FloatP, const Point2fP &,
-                                   MaskP>(&BSDF::sample, py::const_)
-             ),
-             "si"_a, "ctx"_a, "sample1"_a, "sample2"_a, "active"_a = true,
+                 py::overload_cast<const BSDFContext &,
+                                   const SurfaceInteraction3fP &,
+                                   FloatP, const Point2fP &,
+                                   MaskP>(&BSDF::sample, py::const_)),
+             "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true,
              D(BSDF, sample))
 
         .def("eval",
-             py::overload_cast<const SurfaceInteraction3f &, const BSDFContext &,
+             py::overload_cast<const BSDFContext &, const SurfaceInteraction3f &,
                                const Vector3f &>(
                  &BSDF::eval, py::const_),
-             "si"_a, "ctx"_a, "wo"_a, D(BSDF, eval))
+              "ctx"_a, "si"_a, "wo"_a, D(BSDF, eval))
         .def("eval", enoki::vectorize_wrapper(
-                 py::overload_cast<const SurfaceInteraction3fP &,
-                                   const BSDFContext &, const Vector3fP &,
-                                   MaskP>(&BSDF::eval, py::const_)
-             ),
-             "si"_a, "ctx"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
+                 py::overload_cast<const BSDFContext &, const SurfaceInteraction3fP &,
+                                   const Vector3fP &,
+                                   MaskP>(&BSDF::eval, py::const_)),
+             "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
 
         .def("pdf",
-             py::overload_cast<const SurfaceInteraction3f &, const BSDFContext &,
+             py::overload_cast<const BSDFContext &, const SurfaceInteraction3f &,
                                const Vector3f &>(&BSDF::pdf, py::const_),
-             "si"_a, "ctx"_a, "wo"_a, D(BSDF, pdf))
+             "ctx"_a, "si"_a, "wo"_a, D(BSDF, pdf))
         .def("pdf", enoki::vectorize_wrapper(
-                 py::overload_cast<const SurfaceInteraction3fP &,
-                                   const BSDFContext &, const Vector3fP &,
+                 py::overload_cast<const BSDFContext &, const SurfaceInteraction3fP &,
+                                   const Vector3fP &,
                                    MaskP>(&BSDF::pdf, py::const_)
              ),
-             "si"_a, "ctx"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
+             "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
 
         .mdef(BSDF, needs_differentials)
         .mdef(BSDF, component_count)

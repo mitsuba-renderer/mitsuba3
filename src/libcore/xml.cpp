@@ -577,7 +577,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                            ContinuousSpectrum plugin. */
                         std::vector<Float> wavelengths, values;
                         bool is_regular = true;
-                        Float interval;
+                        Float interval = 0.f;
+
                         /* Values are scaled so that integrating the
                            spectrum against the CIE curves and converting
                            to sRGB yields (1, 1, 1) for D65. See D65Spectrum. */

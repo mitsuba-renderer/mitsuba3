@@ -5,7 +5,6 @@ add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/ior.h
   ${INC_DIR}/microfacet.h
   ${INC_DIR}/records.h
-  ${INC_DIR}/reflection.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
   common.cpp       ${INC_DIR}/common.h
@@ -26,6 +25,7 @@ add_library(mitsuba-render-obj OBJECT
   shape.cpp        ${INC_DIR}/shape.h
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
+  reflection.cpp   ${INC_DIR}/reflection.h
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)

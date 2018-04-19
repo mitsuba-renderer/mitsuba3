@@ -16,9 +16,10 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename Vector3_> struct Frame {
     using Vector3 = Vector3_;
-    using Scalar  = value_t<Vector3>;
-    using Vector2 = mitsuba::Vector<Scalar, 2>;
-    using Normal3 = mitsuba::Normal<Scalar, 3>;
+    using Value  = value_t<Vector3>;
+    using Scalar = scalar_t<Value>;
+    using Vector2 = mitsuba::Vector<Value, 2>;
+    using Normal3 = mitsuba::Normal<Value, 3>;
     Vector3 s, t;
     Normal3 n;
 
@@ -37,83 +38,122 @@ template <typename Vector3_> struct Frame {
         return s * v.x() + t * v.y() + n * v.z();
     }
 
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the cosine of the angle between the normal and v */
-    static Scalar cos_theta(const Vector3 &v) { return v.z(); }
-
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the squared cosine of the angle between the normal and v */
-    static Scalar cos_theta_2(const Vector3 &v) { return v.z() * v.z(); }
-
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the sine of the angle between the normal and v */
-    static Scalar sin_theta(const Vector3 &v) { return safe_sqrt(sin_theta_2(v)); }
-
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the squared sine of the angle between the normal and v */
-    static Scalar sin_theta_2(const Vector3 &v) { return Scalar(1) - v.z() * v.z(); }
-
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the tangent of the angle between the normal and v */
-    static Scalar tan_theta(const Vector3 &v) {
-        Scalar temp = Scalar(1) - v.z() * v.z();
-        return select(temp <= Scalar(0), Scalar(0),
-                      sqrt(temp) / v.z());
-    }
-
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the squared tangent of the angle between the normal and v
+    /** \brief Give a unit direction, this function returns the cosine of the
+     * elevation angle in a reference spherical coordinate system (see the \ref
+     * Frame description)
      */
-    static Scalar tan_theta_2(const Vector3 &v) {
-        Scalar temp = 1 - v.z() * v.z();
-        return select(temp <= Scalar(0), Scalar(0),
-                      temp / (v.z() * v.z()));
-    }
+    static Value cos_theta(const Vector3 &v) { return v.z(); }
 
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the sine of the phi parameter in spherical coordinates
+    /** \brief Give a unit direction, this function returns the square cosine
+     * of the elevation angle in a reference spherical coordinate system (see
+     * the \ref Frame description)
      */
-    static Scalar sin_phi(const Vector3 &v) {
-        Scalar sin_theta = Frame::sin_theta(v);
-        return select(eq(sin_theta, Scalar(0)),
-                      Scalar(1),
-                      clamp(v.y() / sin_theta, Scalar(-1), Scalar(1)));
-    }
+    static Value cos_theta_2(const Vector3 &v) { return sqr(v.z()); }
 
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the squared sine of the phi parameter in  spherical
-     * coordinates
+    /** \brief Give a unit direction, this function returns the sine
+     * of the elevation angle in a reference spherical coordinate system (see
+     * the \ref Frame description)
      */
-    static Scalar sin_phi_2(const Vector3 &v) {
-        Scalar sin_theta_2 = Frame::sin_theta_2(v);
-        return select(eq(sin_theta_2, Scalar(0)),
-                      Scalar(1),
-                      min((v.y() * v.y()) / sin_theta_2, Scalar(1)));
+    static Value sin_theta(const Vector3 &v) { return safe_sqrt(sin_theta_2(v)); }
+
+    /** \brief Give a unit direction, this function returns the square sine
+     * of the elevation angle in a reference spherical coordinate system (see
+     * the \ref Frame description)
+     */
+    static Value sin_theta_2(const Vector3 &v) { return fnmadd(v.z(), v.z(), Scalar(1)); }
+
+    /** \brief Give a unit direction, this function returns the tangent
+     * of the elevation angle in a reference spherical coordinate system (see
+     * the \ref Frame description)
+     */
+    static Value tan_theta(const Vector3 &v) {
+        Value temp = fnmadd(v.z(), v.z(), Scalar(1));
+        return safe_sqrt(temp) / v.z();
     }
 
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the cosine of the phi parameter in spherical coordinates */
-    static Float cos_phi(const Vector3 &v) {
-        Scalar sin_theta = Frame::sin_theta(v);
-        return select(eq(sin_theta, Scalar(0)),
-                      Scalar(1),
-                      clamp(v.x() / sin_theta, Scalar(-1), Scalar(1)));
+    /** \brief Give a unit direction, this function returns the square tangent
+     * of the elevation angle in a reference spherical coordinate system (see
+     * the \ref Frame description)
+     */
+    static Value tan_theta_2(const Vector3 &v) {
+        Value temp = fnmadd(v.z(), v.z(), Scalar(1));
+        return max(temp, Scalar(0)) / sqr(v.z());
     }
 
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the squared cosine of the phi parameter in  spherical
-     * coordinates */
-    static Float cos_phi_2(const Vector3 &v) {
-        Scalar sin_theta_2 = Frame::sin_theta_2(v);
-        return select(eq(sin_theta_2, Scalar(0)),
-                      Scalar(1),
-                      min((v.x() * v.x()) / sin_theta_2, Scalar(1)));
+    /** \brief Give a unit direction, this function returns the sine of the
+     * azimuth in a reference spherical coordinate system (see the \ref Frame
+     * description)
+     */
+    static Value sin_phi(const Vector3 &v) {
+        Value sin_theta_2 = Frame::sin_theta_2(v),
+              inv_sin_theta = rsqrt(Frame::sin_theta_2(v));
+        return select(abs(sin_theta_2) <= 4 * math::MachineEpsilon, Scalar(0),
+                      clamp(v.y() * inv_sin_theta, Scalar(-1), Scalar(1)));
     }
 
-    /** \brief Assuming that the given direction is in the local coordinate
-     * system, return the u and v coordinates of the vector 'v' */
-    static Vector2 uv(const Vector3 &v) {
-        return Vector2(v.x(), v.y());
+    /** \brief Give a unit direction, this function returns the cosine of the
+     * azimuth in a reference spherical coordinate system (see the \ref Frame
+     * description)
+     */
+    static Value cos_phi(const Vector3 &v) {
+        Value sin_theta_2 = Frame::sin_theta_2(v),
+              inv_sin_theta = rsqrt(Frame::sin_theta_2(v));
+        return select(abs(sin_theta_2) <= 4 * math::MachineEpsilon, Scalar(1),
+                      clamp(v.x() * inv_sin_theta, Scalar(-1), Scalar(1)));
+    }
+
+    /** \brief Give a unit direction, this function returns the sine and cosine
+     * of the azimuth in a reference spherical coordinate system (see the \ref
+     * Frame description)
+     */
+    static std::pair<Value, Value> sincos_phi(const Vector3 &v) {
+        Value sin_theta_2 = Frame::sin_theta_2(v),
+              inv_sin_theta = rsqrt(Frame::sin_theta_2(v));
+
+        Vector2 result = head<2>(v) * inv_sin_theta;
+
+        result = select(abs(sin_theta_2) <= 4 * math::MachineEpsilon,
+                        Vector2(Scalar(1), Scalar(0)),
+                        clamp(result, Scalar(-1), Scalar(1)));
+
+        return { result.y(), result.x() };
+    }
+
+    /** \brief Give a unit direction, this function returns the squared sine of
+     * the azimuth in a reference spherical coordinate system (see the \ref
+     * Frame description)
+     */
+    static Value sin_phi_2(const Vector3 &v) {
+        Value sin_theta_2 = Frame::sin_theta_2(v);
+        return select(abs(sin_theta_2) <= 4 * math::MachineEpsilon, Scalar(0),
+                      clamp(sqr(v.y()) / sin_theta_2, Scalar(-1), Scalar(1)));
+    }
+
+    /** \brief Give a unit direction, this function returns the squared cosine of
+     * the azimuth in a reference spherical coordinate system (see the \ref
+     * Frame description)
+     */
+    static Value cos_phi_2(const Vector3 &v) {
+        Value sin_theta_2 = Frame::sin_theta_2(v);
+        return select(abs(sin_theta_2) <= 4 * math::MachineEpsilon, Scalar(1),
+                      clamp(sqr(v.x()) / sin_theta_2, Scalar(-1), Scalar(1)));
+    }
+
+    /** \brief Give a unit direction, this function returns the squared sine
+     * and cosine of the azimuth in a reference spherical coordinate system
+     * (see the \ref Frame description)
+     */
+    static std::pair<Value, Value> sincos_phi_2(const Vector3 &v) {
+        Value sin_theta_2 = Frame::sin_theta_2(v),
+              inv_sin_theta_2 = rcp(sin_theta_2);
+
+        Vector2 result = sqr(head<2>(v)) * inv_sin_theta_2;
+
+        result = select(abs(sin_theta_2) <= 4 * math::MachineEpsilon,
+                        Vector2(Scalar(1), Scalar(0)),
+                        clamp(result, Scalar(-1), Scalar(1)));
+
+        return { result.y(), result.x() };
     }
 
     /// Equality test

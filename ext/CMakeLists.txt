@@ -180,14 +180,17 @@ set_property(TARGET libzmq PROPERTY FOLDER "dependencies")
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
-    # Build asmjit
-    set(ASMJIT_BUILD_X64 TRUE)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-undefined-inline")
-    endif()
-    add_subdirectory(asmjit)
-    set(ASMJIT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src PARENT_SCOPE)
-    set_property(TARGET asmjit PROPERTY FOLDER "dependencies")
+  # Build asmjit
+  set(ASMJIT_BUILD_X64 TRUE)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-undefined-inline")
+  endif()
+  add_subdirectory(asmjit)
+  set(ASMJIT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src PARENT_SCOPE)
+  set_property(TARGET asmjit PROPERTY FOLDER "dependencies")
+  if (MSVC)
+    target_compile_options(asmjit PRIVATE "/wd4804" "/wd4838")
+  endif()
 endif()
 
 mark_as_advanced(

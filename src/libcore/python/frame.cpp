@@ -8,8 +8,6 @@ auto bind_frame(py::module &m, const char *name) {
     return py::class_<Type>(m, name, D(Frame))
         .def(py::init<>(), D(Frame, Frame))
         .def(py::init<const Type &>(), "Copy constructor")
-        // Omitted because the Vector/Normal distinction doesn't apply in Python
-        // .def(py::init<Vector3, Vector3, Normal3>(), D(Frame, Frame, _2))
         .def(py::init<Vector3, Vector3, Vector3>(), D(Frame, Frame, 3))
         .def(py::init<Vector3>(), D(Frame, Frame, 4))
         .def(py::self == py::self, D(Frame, operator_eq))
@@ -39,7 +37,8 @@ MTS_PY_EXPORT(Frame) {
         .def_static("sin_phi_2", &Frame3f::sin_phi_2, "v"_a, D(Frame, sin_phi_2))
         .def_static("cos_phi", &Frame3f::cos_phi, "v"_a, D(Frame, cos_phi))
         .def_static("cos_phi_2", &Frame3f::cos_phi_2, "v"_a, D(Frame, cos_phi_2))
-        .def_static("uv", &Frame3f::uv, "v"_a, D(Frame, uv))
+        .def_static("sincos_phi", &Frame3f::sincos_phi, "v"_a, D(Frame, sincos_phi))
+        .def_static("sincos_phi_2", &Frame3f::sincos_phi_2, "v"_a, D(Frame, sincos_phi_2))
         ;
 
 

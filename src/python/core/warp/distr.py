@@ -28,12 +28,14 @@ Each entry of the DISTRIBUTIONS table is a tuple with the following entries:
 """
 
 from __future__ import division
-import mitsuba
 from mitsuba.core import warp, float_dtype
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
-from mitsuba.core.chi2 import SpectrumAdapter, BSDFAdapter, MicrofacetDistributionAdaptater, InteractiveMicrofacetBSDFAdapter
-from mitsuba.render    import MicrofacetDistributionf
+from mitsuba.core.chi2 import (
+    SpectrumAdapter, BSDFAdapter, MicrofacetAdapter,
+    InteractiveMicrofacetBSDFAdapter)
+from mitsuba.render import MicrofacetDistribution
 import numpy as np
+
 
 def deg2rad(value):
     return value * np.pi / 180
@@ -138,12 +140,6 @@ DISTRIBUTIONS = [
       </spectrum>"""),
      dict(DEFAULT_SETTINGS, sample_dim=1)),
 
-    # TODO: test `sample_rgb_spectrum` (missing the PDF for now)
-    # ('Spectrum: rgb_importance', LineDomain([360.0, 830.0]),
-    #  (lambda sample: mitsuba.core.sample_rgb_spectrum(sample)[0],
-    #   lambda value: 1.0 / mitsuba.core.sample_rgb_spectrum_pdf(value)),
-    #  dict(DEFAULT_SETTINGS, sample_dim=1)),
-
     ('Spectrum: d65', LineDomain([360.0, 830.0]),
      SpectrumAdapter('<spectrum version="2.0.0" type="d65"/>'),
      dict(DEFAULT_SETTINGS, sample_dim=1)),
@@ -156,52 +152,42 @@ DISTRIBUTIONS = [
           sample_dim=1,
           parameters=[
               ('Temperature', [0, 8000, 3000]),
-          ])
-    ),
+          ])),
 
-    ('MD - Beckmann - 0.5 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.5, False, [0.970942, 0, 0.239316]),
-      DEFAULT_SETTINGS
-    ),
-    ('Microfacet - Beckmann - 0.1 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.1, False, [0, 0, 1]),
-      DEFAULT_SETTINGS
-    ),
+    ('Microfact: Beckmann, all, 0.5', SphericalDomain(),
+     MicrofacetAdapter(MicrofacetDistribution.EBeckmann, 0.5, False),
+     DEFAULT_SETTINGS),
+    ('Microfact: Beckmann, all, 0.1', SphericalDomain(),
+     MicrofacetAdapter(MicrofacetDistribution.EBeckmann, 0.1, False),
+     DEFAULT_SETTINGS),
 
-    ('Microfacet - Beckmann - vis - 0.5 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.5, True, [0.970942, 0, 0.239316]),
-      DEFAULT_SETTINGS
-    ),
-    ('Microfacet - Beckmann - vis - 0.1 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EBeckmann, 0.1, True, [0, 0, 1]),
-      DEFAULT_SETTINGS
-    ),
+    ('Microfact: Beckmann, vis, 0.5', SphericalDomain(),
+     MicrofacetAdapter(MicrofacetDistribution.EBeckmann, 0.5, True),
+     dict(DEFAULT_SETTINGS,
+         parameters=[('Angle of incidence', [0, 90, 30])])),
+    ('Microfact: Beckmann, vis, 0.1', SphericalDomain(),
+     MicrofacetAdapter(MicrofacetDistribution.EBeckmann, 0.1, True),
+     dict(DEFAULT_SETTINGS,
+         parameters=[('Angle of incidence', [0, 90, 30])])),
 
-    ('Microfacet - GGX - 0.5 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.5, False, [0, 0, 1]),
-      DEFAULT_SETTINGS
-    ),
-    ('Microfacet - GGX - 0.1 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.1, False, [0, 0, 1]),
-      DEFAULT_SETTINGS
-    ),
+    ('Microfact: GGX, all, 0.5', SphericalDomain(),
+     MicrofacetAdapter(MicrofacetDistribution.EGGX, 0.5, False),
+     DEFAULT_SETTINGS),
+    ('Microfact: GGX, all, 0.1', SphericalDomain(),
+     MicrofacetAdapter(MicrofacetDistribution.EGGX, 0.1, False),
+     DEFAULT_SETTINGS),
 
-    ('Microfacet - GGX - vis - 0.5 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.5, True, [0, 0, 1]),
-      DEFAULT_SETTINGS
-    ),
-    ('Microfacet - GGX - vis - 0.1 alpha', SphericalDomain(),
-      MicrofacetDistributionAdaptater(MicrofacetDistributionf.EGGX, 0.1, True, [0, 0, 1]),
-      DEFAULT_SETTINGS
-    ),
+    ('Microfact: GGX, vis, 0.5', SphericalDomain(),
+     MicrofacetAdapter(MicrofacetDistribution.EGGX, 0.5, True),
+     dict(DEFAULT_SETTINGS,
+         parameters=[('Angle of incidence', [0, 90, 30])])),
+    ('Microfact: GGX, vis, 0.1', SphericalDomain(),
+     MicrofacetAdapter(MicrofacetDistribution.EGGX, 0.1, True),
+     dict(DEFAULT_SETTINGS,
+         parameters=[('Angle of incidence', [0, 90, 30])])),
 
     ('Diffuse BSDF', SphericalDomain(),
-     BSDFAdapter("diffuse", """<rgb name="reflectance" value="0.6f, 0.7f, 0.8f"/>"""),
-     DEFAULT_SETTINGS_3),
-    ('Diffuse BSDF - alternative wi', SphericalDomain(),
-     BSDFAdapter("diffuse", """<rgb name="reflectance" value="0.9f, 0.1f, 0.0f"/>""",
-                 wi=[0.68041382,  0.27216553,  0.68041382]),
-     DEFAULT_SETTINGS_3),
+     BSDFAdapter("diffuse", ''), DEFAULT_SETTINGS_3),
 
     ('Rough conductor BSDF - smooth', SphericalDomain(),
      BSDFAdapter("roughconductor", """

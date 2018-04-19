@@ -6,8 +6,62 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Structure holding the result of BSDF sampling operations.
+ * \brief Context data structure for BSDF evaluation and sampling
+ *
+ * BSDF models in Mitsuba can be queried and sampled using a variety of
+ * different modes -- for instance, a rendering algorithm can indicate whether
+ * radiance or importance is being transported, and it can also restrict
+ * evaluation and sampling to a subset of lobes in a a multi-lobe BSDF model.
+ *
+ * The \ref BSDFContext data structure encodes these preferences and is
+ * supplied to most \ref BSDF methods.
  */
+struct MTS_EXPORT_RENDER BSDFContext {
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
+
+    /// Transported mode (radiance or importance)
+    ETransportMode mode;
+
+    /*
+     * Bit mask for requested BSDF component types to be sampled/evaluated
+     * The default value (equal to \ref BSDF::EAll) enables all components.
+     */
+    uint32_t type_mask = (uint32_t) 0x1FFu;
+
+    /// Integer value of requested BSDF component index to be sampled/evaluated.
+    uint32_t component = (uint32_t) -1;
+
+    //! @}
+    // =============================================================
+
+    BSDFContext(ETransportMode mode = ERadiance)
+        : mode(mode) { }
+
+    BSDFContext(ETransportMode mode, uint32_t type_mask, uint32_t component)
+        : mode(mode), type_mask(type_mask), component(component) { }
+
+    /**
+     * \brief Reverse the direction of light transport in the record
+     *
+     * This updates the transport mode (radiance to importance and vice versa).
+     */
+    void reverse() {
+        mode = (ETransportMode) (1 - (int) mode);
+    }
+
+    /**
+     * Checks whether a given BSDF component type and BSDF component index are
+     * enabled in this context.
+     */
+    bool is_enabled(uint32_t type_, uint32_t component_ = 0) const {
+        return (type_mask == (uint32_t) -1 || (type_mask & type_) == type_)
+            && (component == (uint32_t) -1 || component == component_);
+    }
+};
+
+/// Data structure holding the result of BSDF sampling operations.
 template <typename Point3_> struct BSDFSample {
 
     // =============================================================
@@ -34,9 +88,6 @@ template <typename Point3_> struct BSDFSample {
     //! @{ \name Fields
     // =============================================================
 
-    /// Normalized incident direction in local coordinates
-    Vector3 wi;
-
     /// Normalized outgoing direction in local coordinates
     Vector3 wo;
 
@@ -50,7 +101,7 @@ template <typename Point3_> struct BSDFSample {
     Index sampled_type = 0;
 
     /// Stores the component index that was sampled by \ref BSDF::sample()
-    Index sampled_component = Index(-1);
+    Index sampled_component = uint32_t(-1);
 
     //! @}
     // =============================================================
@@ -64,13 +115,8 @@ template <typename Point3_> struct BSDFSample {
      * pair (wi, wo), create a query record to evaluate the BSDF or its
      * sampling density.
      *
-     * By default, all components will be sampled irregardless of
-     * what measure they live on. For convenience, this function
-     * uses the local incident direction vector contained in the
-     * supplied intersection record.
-     *
-     * For convenience, this function uses the local incident direction
-     * vector contained in the supplied intersection record.
+     * By default, all components will be sampled regardless of what measure
+     * they live on.
      *
      * \param wo
      *      An outgoing direction in local coordinates. This should
@@ -78,33 +124,14 @@ template <typename Point3_> struct BSDFSample {
      *      the scattering event.
      */
     BSDFSample(const Vector3 &wo)
-        : wi(0.0f), wo(wo), pdf(0.0f), eta(1.0f), sampled_type(0),
-          sampled_component(-1) { }
+        : wo(wo), pdf(0.f), eta(1.f), sampled_type(0),
+          sampled_component(uint32_t(-1)) { }
 
-    /**
-     * \brief Given a surface interaction and an incident/exitant direction
-     * pair (wi, wo), create a query record to evaluate the BSDF or its
-     * sampling density.
-     *
-     * \param wi
-     *      An incident direction in local coordinates. This should
-     *      be a normalized direction vector that points \a away from
-     *      the scattering event.
-     *
-     * \param wo
-     *      An outgoing direction in local coordinates. This should
-     *      be a normalized direction vector that points \a away from
-     *      the scattering event.
-     */
-    BSDFSample(const Vector3 &wi, const Vector3 &wo)
-        : wi(wi), wo(wo), pdf(0.0f), eta(1.0f), sampled_type(0),
-          sampled_component(-1) { }
 
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(BSDFSample, wi, wo, pdf, eta, sampled_type,
-                 sampled_component)
+    ENOKI_STRUCT(BSDFSample, wo, pdf, eta, sampled_type, sampled_component)
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
@@ -185,6 +212,9 @@ public:
 
         /// Supports interactions on the back-facing side
         EBackSide             = 0x10000,
+
+        /// Does the implementation require access to texture-space differentials
+        ENeedsDifferentials   = 0x20000
     };
 
     /// Convenient combinations of flags from \ref EBSDFType
@@ -217,54 +247,68 @@ public:
     };
 
     /**
-     * \brief Sample the BSDF and return the probability density \a and the
-     * importance weight of the sample (i.e. the value of the BSDF divided
-     * by the probability density)
+     * \brief Importance sample the BSDF model
      *
-     * If a component mask or a specific component index is specified, the
-     * sample is drawn from the matching component, if it exists. Depending
-     * on the provided transport type, either the BSDF or its adjoint version
-     * is used.
+     * The function returns a sample data structure along with the importance
+     * weight, which is the value of the BSDF divided by the probability
+     * density, and multiplied by the cosine foreshortening factor (if needed
+     * --- it is omitted for degenerate BSDFs like smooth mirrors/dielectrics).
+     *
+     * If the supplied context data strutcures selects subset of components in
+     * a multi-lobe BRDF model, the sampling is restricted to this subset.
+     * Depending on the provided transport type, either the BSDF or its adjoint
+     * version is sampled.
      *
      * When sampling a continuous/non-delta component, this method also
      * multiplies by the cosine foreshorening factor with respect to the
      * sampled direction.
      *
-     * \param ctx     A BSDF query record
-     * \param sample  A uniformly distributed sample on \f$[0,1]^2\f$
-     * \param pdf     Will record the probability with respect to solid angles
-     *                (or the discrete probability when a delta component is sampled)
+     * \param ctx
+     *     A context data structure describing which lobes to sample,
+     *     and whether radiance or importance are being transported.
      *
-     * \return (bs, value)
+     * \param si
+     *     A surface interaction data structure describing the underlying
+     *     surface position. The incident direction is obtained from
+     *     the field <tt>si.wi</tt>.
+     *
+     * \param sample1
+     *     A uniformly distributed sample on \f$[0,1]\f$. It is used
+     *     to select the BSDF lobe in multi-lobe models.
+     *
+     * \param sample2
+     *     A uniformly distributed sample on \f$[0,1]^2\f$. It is
+     *     used to generate the sampled direction.
+     *
+     * \return A pair (bs, value) consisting of
+     *
      *     bs:    Sampling record, indicating the sampled direction, PDF values
-     *            and other information. Lanes for which sampling failed have
-     *            undefined values.
-     *     value: The BSDF value (multiplied by the cosine foreshortening
-     *            factor when a non-delta component is sampled). A zero spectrum
-     *            means that sampling failed.
+     *            and other information. The contents are undefined if sampling
+     *            failed.
      *
-     * \remark From Python, this function is is called using the syntax
-     *         <tt>value, pdf = bsdf.sample(bs, sample)</tt>
+     *     value: The BSDF value (multiplied by the cosine foreshortening
+     *            factor when a non-delta component is sampled). A zero
+     *            spectrum indicates that sampling failed.
      */
-    virtual std::pair<BSDFSample3f, Spectrumf> sample(
-            const SurfaceInteraction3f &si, const BSDFContext &ctx,
-            Float sample1, const Point2f &sample2) const = 0;
+    virtual std::pair<BSDFSample3f, Spectrumf>
+    sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+           Float sample1, const Point2f &sample2) const = 0;
 
-    virtual std::pair<BSDFSample3fP, SpectrumfP> sample(
-            const SurfaceInteraction3fP &si, const BSDFContext &ctx,
-            FloatP sample1, const Point2fP &sample2, MaskP active = true) const = 0;
+    virtual std::pair<BSDFSample3fP, SpectrumfP>
+    sample(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
+           FloatP sample1, const Point2fP &sample2,
+           MaskP active = true) const = 0;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample()
-    std::pair<BSDFSample3f, Spectrumf> sample(
-            const SurfaceInteraction3f &si, const BSDFContext &ctx,
-            Float sample1, const Point2f &sample2, bool /*unused*/) const {
-        return sample(si, ctx, sample1, sample2);
+    std::pair<BSDFSample3f, Spectrumf>
+    sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+           Float sample1, const Point2f &sample2, bool /*unused*/) const {
+        return sample(ctx, si, sample1, sample2);
     }
-
 
     /**
      * \brief Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo)
-     * and multiply by cosine foreshortening term.
+     * and multiply by the cosine foreshortening term.
      *
      * Based on the information in the supplied query context \c ctx, this
      * method will either evaluate the entire BSDF or query individual
@@ -272,61 +316,69 @@ public:
      * components are supported: calling \c eval() on a perfectly specular
      * material will return zero.
      *
-     * Only the outgoing direction needs to be specified. The incident
-     * direction is obtained from the surface interaction referenced by
-     * the query context (<tt>ctx.si.wi</tt>).
+     * Note that the incident direction does not need to be explicitly
+     * specified. It is obtained from the field <tt>si.wi</tt>.
      *
      * \param ctx
-     *     A record with detailed information on the BSDF query, including a
-     *     reference to a valid \ref SurfaceInteraction.
+     *     A context data structure describing which lobes to evalute,
+     *     and whether radiance or importance are being transported.
+     *
+     * \param si
+     *     A surface interaction data structure describing the underlying
+     *     surface position. The incident direction is obtained from
+     *     the field <tt>si.wi</tt>.
      *
      * \param wo
      *     The outgoing direction
      */
-    virtual Spectrumf eval(const SurfaceInteraction3f &si, const BSDFContext &ctx,
+    virtual Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                            const Vector3f &wo) const = 0;
 
-    virtual SpectrumfP eval(const SurfaceInteraction3fP &si, const BSDFContext &ctx,
+    virtual SpectrumfP eval(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
                             const Vector3fP &wo, MaskP active = true) const = 0;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
-    Spectrumf eval(const SurfaceInteraction3f &si, const BSDFContext &ctx,
+    Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                    const Vector3f &wo, bool /*unused*/) const {
-        return eval(si, ctx, wo);
+        return eval(ctx, si, wo);
     }
 
     /**
-     * \brief Compute the probability of sampling \c wo (given
-     * \c ctx.si.wi).
+     * \brief Compute the probability per unit solid angle of sampling a
+     * given direction
      *
-     * This method provides access to the probability density that
-     * would result when supplying the same BSDF context to the
-     * \ref sample() method. It correctly handles changes in probability
-     * when only a subset of the components is chosen for sampling
-     * (this can be done using the \ref BSDFSample::component and
-     * \ref BSDFSample::type_mask fields).
+     * This method provides access to the probability density that would result
+     * when supplying the same BSDF context and surface interaction data
+     * structures to the \ref sample() method. It correctly handles changes in
+     * probability when only a subset of the components is chosen for sampling
+     * (this can be done using the \ref BSDFContext::component and \ref
+     * BSDFCOntext::type_mask fields).
      *
-     * Only the outgoing direction needs to be specified. The incident
-     * direction is obtained from the surface interaction referenced by
-     * the query context (<tt>ctx.si.wi</tt>).
+     * Note that the incident direction does not need to be explicitly
+     * specified. It is obtained from the field <tt>si.wi</tt>.
      *
      * \param ctx
-     *     A record with detailed information on the BSDF query, including a
-     *     reference to a valid \ref SurfaceInteraction.
+     *     A context data structure describing which lobes to evalute,
+     *     and whether radiance or importance are being transported.
+     *
+     * \param si
+     *     A surface interaction data structure describing the underlying
+     *     surface position. The incident direction is obtained from
+     *     the field <tt>si.wi</tt>.
      *
      * \param wo
-     *     The outgoing direction.
+     *     The outgoing direction
      */
-    virtual Float pdf(const SurfaceInteraction3f &si, const BSDFContext &ctx,
+    virtual Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                       const Vector3f &wo) const = 0;
 
-    virtual FloatP pdf(const SurfaceInteraction3fP &si, const BSDFContext &ctx,
+    virtual FloatP pdf(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
                        const Vector3fP &wo, MaskP active = true) const = 0;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf()
-    Float pdf(const SurfaceInteraction3f &si, const BSDFContext &ctx,
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, bool /*unused*/) const {
-        return pdf(si, ctx, wo);
+        return pdf(ctx, si, wo);
     }
 
 
@@ -337,15 +389,16 @@ public:
     /// Number of components this BSDF is comprised of.
     size_t component_count() const { return m_components.size(); }
 
-    bool needs_differentials() const {
-        return m_needs_differentials;
-    }
+    /// Does the implementation require access to texture-space differentials?
+    bool needs_differentials() const { return m_flags & ENeedsDifferentials; }
 
     /// Flags for all components combined.
     uint32_t flags() const { return m_flags; }
-    /// Flags for a specific component of this BSDF.
-    uint32_t flags(size_t i) const { return m_components[i]; }
 
+    /// Flags for a specific component of this BSDF.
+    uint32_t flags(size_t i) const { Assert(i < m_components.size()); return m_components[i]; }
+
+    /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
     //! @}
@@ -357,64 +410,11 @@ protected:
     virtual ~BSDF();
 
 protected:
-    bool m_needs_differentials = false;
     /// Combined flags for all components of this BSDF.
     uint32_t m_flags;
+
     /// Flags for each component of this BSDF.
     std::vector<uint32_t> m_components;
-};
-
-
-/**
- * \brief Record specifying a BSDF query and its context.
- * Note that since none of the fields are be wide, it is not an Enoki struct.
- */
-struct MTS_EXPORT_RENDER BSDFContext {
-    // =============================================================
-    //! @{ \name Fields
-    // =============================================================
-
-    /// Transported mode (radiance or importance)
-    ETransportMode mode;
-
-    /// Bit mask for requested BSDF component types to be sampled/evaluated
-    uint32_t type_mask = BSDF::EAll;
-
-    /**
-     * Integer value of requested BSDF component index to be sampled/evaluated.
-     * The default value of `(uint32_t) -1` enables all components.
-     */
-    uint32_t component = (uint32_t) -1;
-
-    //! @}
-    // =============================================================
-
-    BSDFContext(ETransportMode mode = ERadiance)
-        : mode(mode) { }
-
-    BSDFContext(ETransportMode mode, uint32_t type_mask, uint32_t component)
-        : mode(mode), type_mask(type_mask), component(component) { }
-
-    BSDFContext(const BSDFContext &ctx)
-        : mode(ctx.mode), type_mask(ctx.type_mask), component(ctx.component) { }
-
-    /**
-     * \brief Reverse the direction of light transport in the record
-     *
-     * This updates the transport mode (radiance to importance and vice versa).
-     */
-    void reverse() {
-        mode = (ETransportMode) (1 - (int) mode);
-    }
-
-    /**
-     * Checks whether a given BSDF component type and BSDF component index are
-     * enabled in this context.
-     */
-    bool is_enabled(uint32_t type_, uint32_t component_ = 0) const {
-        return (type_mask == (uint32_t) -1 || (type_mask & type_))
-            && (component == (uint32_t) -1 || component == component_);
-    }
 };
 
 
@@ -445,8 +445,8 @@ namespace {
         if (is_set(BSDF::EAnisotropic)) { oss << "anisotropic "; type_mask &= ~BSDF::EAnisotropic; }
         if (is_set(BSDF::EFrontSide)) { oss << "front_side "; type_mask &= ~BSDF::EFrontSide; }
         if (is_set(BSDF::EBackSide)) { oss << "back_side "; type_mask &= ~BSDF::EBackSide; }
-        if (is_set(BSDF::ESpatiallyVarying)) { oss << "spatially_varying"; type_mask &= ~BSDF::ESpatiallyVarying; }
-        if (is_set(BSDF::ENonSymmetric)) { oss << "non_symmetric"; type_mask &= ~BSDF::ENonSymmetric; }
+        if (is_set(BSDF::ESpatiallyVarying)) { oss << "spatially_varying "; type_mask &= ~BSDF::ESpatiallyVarying; }
+        if (is_set(BSDF::ENonSymmetric)) { oss << "non_symmetric "; type_mask &= ~BSDF::ENonSymmetric; }
 #undef is_set
 
         Assert(type_mask == 0);
@@ -465,7 +465,6 @@ extern MTS_EXPORT_RENDER std::ostream &operator<<(std::ostream &os,
 template <typename Point3>
 std::ostream &operator<<(std::ostream &os, const BSDFSample<Point3>& bs) {
     os << "BSDFSample[" << std::endl
-        << "  wi = " << bs.wi << "," << std::endl
         << "  wo = " << bs.wo << "," << std::endl
         << "  pdf = " << bs.pdf << "," << std::endl
         << "  eta = " << bs.eta << "," << std::endl
@@ -494,7 +493,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::BSDFSample, wi, wo, pdf, eta,
+ENOKI_STRUCT_DYNAMIC(mitsuba::BSDFSample, wo, pdf, eta,
                      sampled_type, sampled_component)
 
 //! @}
@@ -523,29 +522,29 @@ ENOKI_CALL_SUPPORT_END(mitsuba::BSDFP)
  */
 #define MTS_IMPLEMENT_BSDF()                                                   \
     std::pair<BSDFSample3f, Spectrumf> sample(                                 \
-            const SurfaceInteraction3f &si, const BSDFContext &ctx,            \
+            const BSDFContext &ctx, const SurfaceInteraction3f &si,            \
             Float sample1, const Point2f &sample2) const override {            \
-        return sample_impl(si, ctx, sample1, sample2, true);                   \
+        return sample_impl(ctx, si, sample1, sample2, true);                   \
     }                                                                          \
     std::pair<BSDFSample3fP, SpectrumfP> sample(                               \
-            const SurfaceInteraction3fP &si, const BSDFContext &ctx,           \
+            const BSDFContext &ctx, const SurfaceInteraction3fP &si,           \
             FloatP sample1, const Point2fP &sample2,                           \
             MaskP active = true) const override {                              \
-        return sample_impl(si, ctx, sample1, sample2, active);                 \
+        return sample_impl(ctx, si, sample1, sample2, active);                 \
     }                                                                          \
-    Spectrumf eval(const SurfaceInteraction3f &si, const BSDFContext &ctx,     \
+    Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,     \
                    const Vector3f &wo) const override {                        \
-        return eval_impl(si, ctx, wo, true);                                   \
+        return eval_impl(ctx, si, wo, true);                                   \
     }                                                                          \
-    SpectrumfP eval(const SurfaceInteraction3fP &si, const BSDFContext &ctx,   \
+    SpectrumfP eval(const BSDFContext &ctx, const SurfaceInteraction3fP &si,   \
                     const Vector3fP &wo, MaskP active) const override {        \
-        return eval_impl(si, ctx, wo, active);                                 \
+        return eval_impl(ctx, si, wo, active);                                 \
     }                                                                          \
-    Float pdf(const SurfaceInteraction3f &si, const BSDFContext &ctx,          \
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,          \
               const Vector3f &wo) const override {                             \
-        return pdf_impl(si, ctx, wo, true);                                    \
+        return pdf_impl(ctx, si, wo, true);                                    \
     }                                                                          \
-    FloatP pdf(const SurfaceInteraction3fP &si, const BSDFContext &ctx,        \
+    FloatP pdf(const BSDFContext &ctx, const SurfaceInteraction3fP &si,        \
                const Vector3fP &wo, MaskP active) const override {             \
-        return pdf_impl(si, ctx, wo, active);                                  \
+        return pdf_impl(ctx, si, wo, active);                                  \
     }

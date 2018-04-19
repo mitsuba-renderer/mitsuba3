@@ -36,8 +36,8 @@ public:
             Throw("Must have at least 1 BSDF or emitter sample!");
 
         size_t sum = m_emitter_samples + m_bsdf_samples;
-        m_weight_bsdf = 1.0f / (Float) m_bsdf_samples;
-        m_weight_lum = 1.0f / (Float) m_emitter_samples;
+        m_weight_bsdf = 1.f / (Float) m_bsdf_samples;
+        m_weight_lum = 1.f / (Float) m_emitter_samples;
         m_frac_bsdf = m_bsdf_samples / (Float) sum;
         m_frac_lum = m_emitter_samples / (Float) sum;
     }
@@ -61,28 +61,28 @@ public:
         BSDFContext ctx;
 
         if (none(active))
-            return Spectrum(0.0f);
+            return Spectrum(0.f);
 
         Spectrum result = si.emission(active);
 
         auto bsdf = si.bsdf(ray);
 
         // ---------------------------------------------------- Emitter sampling
-        Spectrum result_partial = 0.0f;
+        Spectrum result_partial = 0.f;
         for (size_t i = 0; i < m_emitter_samples; ++i) {
             DirectionSample ds;
             Spectrum emitter_val;
             std::tie(ds, emitter_val) = scene->sample_emitter_direction(
                 si, rs.next_2d(active), true, active);
-            Mask valid = active && neq(ds.pdf, 0.0f);
+            Mask valid = active && neq(ds.pdf, 0.f);
 
             // Query the BSDF for that emitter-sampled direction
             auto wo = si.to_local(ds.d);
-            Spectrum bsdf_val = bsdf->eval(si, ctx, wo, valid);
+            Spectrum bsdf_val = bsdf->eval(ctx, si, wo, valid);
 
             /* Weight using the probability of sampling that direction through
                BSDF sampling. */
-            Value bsdf_pdf = bsdf->pdf(si, ctx, wo, valid);
+            Value bsdf_pdf = bsdf->pdf(ctx, si, wo, valid);
 
             masked(result_partial, valid) =
                 result_partial + emitter_val * bsdf_val
@@ -92,13 +92,13 @@ public:
             result += result_partial / (Float) m_emitter_samples;
 
         // ------------------------------------------------------- BSDF sampling
-        result_partial = 0.0f;
+        result_partial = 0.f;
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
             BSDFSample bs;
             Spectrum bsdf_val;
-            std::tie(bs, bsdf_val) = bsdf->sample(si, ctx, rs.next_1d(),
+            std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(),
                                                   rs.next_2d(), active);
-            Mask valid = active && neq(bs.pdf, 0.0f);
+            Mask valid = active && neq(bs.pdf, 0.f);
 
             // Trace the ray in the sampled direction and intersect against the scene
             RayDifferential bdsf_ray(si.p, si.to_world(bs.wo), si.time, ray.wavelengths);
@@ -118,7 +118,7 @@ public:
 
                 Value emitter_pdf = select(
                     neq(bs.sampled_type & BSDF::EDelta, 0u),
-                    Value(0.0f),
+                    Value(0.f),
                     scene->pdf_emitter_direction(si_bsdf, ds, valid)
                 );
 

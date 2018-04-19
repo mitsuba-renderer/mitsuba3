@@ -108,8 +108,8 @@ void SamplingIntegrator::render_block_scalar(const Scene *scene,
                                              ImageBlock *block) const {
     const Sensor *sensor = scene->sensor();
     block->clear();
-    uint32_t pixel_count = m_block_size * m_block_size,
-             sample_count = sampler->sample_count();
+    uint32_t pixel_count = (uint32_t) (m_block_size * m_block_size),
+             sample_count = (uint32_t) sampler->sample_count();
 
     RadianceSample3f rs(scene, sampler);
     bool needs_aperture_sample = sensor->needs_aperture_sample();
@@ -166,7 +166,7 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
                                              Point2fX &points) const {
     const Sensor *sensor = scene->sensor();
     block->clear();
-    uint32_t sample_count = sampler->sample_count();
+    uint32_t sample_count = (uint32_t) sampler->sample_count();
 
     if (block->size().x() != block->size().y()
         || (uint32_t) hprod(block->size()) * sample_count

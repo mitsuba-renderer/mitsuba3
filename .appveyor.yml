@@ -7,9 +7,9 @@ platform:
 - x64
 build:
   parallel: true
-cache:
-- C:\Miniconda-x64\pkgs
-- C:\Miniconda36-x64\pkgs
+  #cache:
+  #- C:\Miniconda-x64\pkgs
+  #- C:\Miniconda36-x64\pkgs
 environment:
   matrix:
     - PYTHON_VERSION: 2.7

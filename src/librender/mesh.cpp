@@ -55,7 +55,7 @@ Mesh::Mesh(const std::string &name,
         check_field(vertex_struct, 3, "nx", Struct::EFloat);
         check_field(vertex_struct, 4, "ny", Struct::EFloat);
         check_field(vertex_struct, 5, "nz", Struct::EFloat);
-        m_normal_offset = vertex_struct->field("nx").offset;
+        m_normal_offset = (Index) vertex_struct->field("nx").offset;
     }
 
     if (vertex_struct->has_field("u") && vertex_struct->has_field("v")) {
@@ -66,7 +66,7 @@ Mesh::Mesh(const std::string &name,
             check_field(vertex_struct, 6, "u", Struct::EFloat);
             check_field(vertex_struct, 7, "v", Struct::EFloat);
         }
-        m_texcoord_offset = vertex_struct->field("u").offset;
+        m_texcoord_offset = (Index) vertex_struct->field("u").offset;
     }
 
     m_vertex_size = (Size) m_vertex_struct->size();
@@ -179,7 +179,7 @@ void Mesh::prepare_sampling_table() {
     if (m_surface_area < 0) {
         // Generate a PDF for sampling wrt. the area of each face.
         m_area_distribution.reserve(m_face_count);
-        for (size_t i = 0; i < m_face_count; i++) {
+        for (Index i = 0; i < m_face_count; i++) {
             Float area = face_area(i);
             Assert(area >= 0);
             m_area_distribution.append(area);
@@ -485,7 +485,7 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
     vertices1[1] = Point3d(v1);
     vertices1[2] = Point3d(v2);
 
-    for (size_t axis = 0; axis < 3; ++axis) {
+    for (int axis = 0; axis < 3; ++axis) {
         nVertices = sutherland_hodgman(vertices1, nVertices, vertices2, axis,
                                       (double) clip.min[axis], true);
         nVertices = sutherland_hodgman(vertices2, nVertices, vertices1, axis,

@@ -1624,7 +1624,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
 
     for (size_t y = 0; y<height; ++y) {
         for (size_t x = 0; x<width; ++x) {
-            Float inv_weight;
+            Float inv_weight = 1.f;
             for (const Struct::Field &f : assert_fields) {
                 Value value;
                 if (!load(src, f, value))

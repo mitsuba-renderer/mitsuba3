@@ -113,12 +113,12 @@ public:
                 }
 
                 if (any(enabled)) {
-                    Spectrum bsdf_val = bsdf->eval(si, ctx, wo, enabled);
+                    Spectrum bsdf_val = bsdf->eval(ctx, si, wo, enabled);
                     enabled = enabled && any(neq(bsdf_val, 0.0f));
 
                     /* Calculate the probability of sampling that direction
                        using BSDF sampling. */
-                    Value bsdf_pdf = bsdf->pdf(si, ctx, wo, enabled);
+                    Value bsdf_pdf = bsdf->pdf(ctx, si, wo, enabled);
                     // Weight using the power heuristic
                     Value weight = mi_weight(ds.pdf, bsdf_pdf);
 
@@ -135,7 +135,7 @@ public:
                next path direction. */
             BSDFSample bs;
             Spectrum bsdf_val;  // Used to update `throughput`
-            std::tie(bs, bsdf_val) = bsdf->sample(si, ctx, rs.next_1d(),
+            std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(),
                                                   rs.next_2d(), active);
 
             // Update ray for next path segment

@@ -39,15 +39,15 @@ Sensor::Sensor(const Properties &props)
     auto pmgr = PluginManager::instance();
     if (!m_film) {
         // Instantiate an high dynamic range film if none was specified
-        Properties props("hdrfilm");
-        m_film = static_cast<Film *>(pmgr->create_object<Film>(props));
+        m_film = static_cast<Film *>(
+            pmgr->create_object<Film>(Properties("hdrfilm")));
     }
 
     if (!m_sampler) {
         // Instantiate an independent filter with 4 samples/pixel if none was specified
-        Properties props("independent");
-        props.set_int("sample_count", 4);
-        m_sampler = static_cast<Sampler *>(pmgr->create_object<Sampler>(props));
+        Properties props2("independent");
+        props2.set_int("sample_count", 4);
+        m_sampler = static_cast<Sampler *>(pmgr->create_object<Sampler>(props2));
     }
 
     m_aspect = m_film->size().x() / (Float) m_film->size().y();

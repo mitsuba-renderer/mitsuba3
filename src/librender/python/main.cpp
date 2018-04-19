@@ -21,6 +21,7 @@ MTS_PY_DECLARE(Spiral);
 MTS_PY_DECLARE(Integrator);
 MTS_PY_DECLARE(Sampler);
 MTS_PY_DECLARE(MicrofacetDistribution);
+MTS_PY_DECLARE(reflection);
 
 PYBIND11_MODULE(mitsuba_render_ext, m_) {
     (void) m_; /* unused */
@@ -48,4 +49,5 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(Integrator);
     MTS_PY_IMPORT(Sampler);
     MTS_PY_IMPORT(MicrofacetDistribution);
+    MTS_PY_IMPORT(reflection);
 }

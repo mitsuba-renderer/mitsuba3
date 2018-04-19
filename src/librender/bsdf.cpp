@@ -11,8 +11,13 @@ std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {
     os << "BSDFContext[" << std::endl
         << "  mode = " << ctx.mode << "," << std::endl
         << "  type_mask = " << type_mask_to_string(ctx.type_mask) << "," << std::endl
-        << "  component = " << ctx.component << std::endl
-        << "]";
+        << "  component = ";
+
+    if (ctx.component == (uint32_t) -1)
+        os << "all";
+    else
+        os << ctx.component;
+    os  << std::endl << "]";
     return os;
 }
 

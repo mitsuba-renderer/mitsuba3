@@ -17,16 +17,16 @@ def interaction():
     si.wavelengths = [300, 450, 520, 680]
     return si
 
+
 def test01_create():
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
         <bsdf type="diffuse"/>
     </bsdf>""")
     assert bsdf is not None
     assert bsdf.component_count() == 2
-    assert bsdf.flags(0) == (BSDF.EDiffuseReflection | BSDF.EFrontSide)
-    assert bsdf.flags(1) == (BSDF.EDiffuseReflection | BSDF.EBackSide)
+    assert bsdf.flags(0) == BSDF.EDiffuseReflection | BSDF.EFrontSide
+    assert bsdf.flags(1) == BSDF.EDiffuseReflection | BSDF.EBackSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
-
 
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
         <bsdf type="roughconductor"/>
@@ -34,9 +34,10 @@ def test01_create():
     </bsdf>""")
     assert bsdf is not None
     assert bsdf.component_count() == 2
-    assert bsdf.flags(0) == (BSDF.EGlossyReflection  | BSDF.EFrontSide)
-    assert bsdf.flags(1) == (BSDF.EDiffuseReflection | BSDF.EBackSide)
+    assert bsdf.flags(0) == BSDF.EGlossyReflection  | BSDF.EFrontSide
+    assert bsdf.flags(1) == BSDF.EDiffuseReflection | BSDF.EBackSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
+
 
 def test02_pdf(interaction):
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
@@ -44,11 +45,13 @@ def test02_pdf(interaction):
     </bsdf>""")
 
     interaction.wi = [0, 0, 1]
-    p_pdf = bsdf.pdf(interaction, BSDFContext(), [0, 0, 1])
+    ctx = BSDFContext()
+    p_pdf = bsdf.pdf(ctx, interaction, [0, 0, 1])
     assert np.allclose(p_pdf, InvPi)
 
-    p_pdf = bsdf.pdf(interaction, BSDFContext(), [0, 0, -1])
+    p_pdf = bsdf.pdf(ctx, interaction, [0, 0, -1])
     assert np.allclose(p_pdf, 0.0)
+
 
 def test03_sample_eval_pdf(interaction):
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
@@ -61,6 +64,7 @@ def test03_sample_eval_pdf(interaction):
     </bsdf>""")
 
     n = 5
+    ctx = BSDFContext()
     for u, v in np.ndindex((n, n)):
         interaction.wi = square_to_uniform_sphere([u / float(n-1),
                                                    v / float(n-1)])
@@ -68,7 +72,7 @@ def test03_sample_eval_pdf(interaction):
 
         for x, y in np.ndindex((n, n)):
             sample = [x / float(n-1), y / float(n-1)]
-            (bs, s_value) = bsdf.sample(interaction, BSDFContext(), 0.5, sample)
+            (bs, s_value) = bsdf.sample(ctx, interaction, 0.5, sample)
 
             if np.any(s_value > 0):
                 # Multiply by square_to_cosine_hemisphere_theta
@@ -76,8 +80,8 @@ def test03_sample_eval_pdf(interaction):
                 if not up:
                     s_value *= -1
 
-                e_value = bsdf.eval(interaction, BSDFContext(), bs.wo)
-                p_pdf   = bsdf.pdf(interaction, BSDFContext(), bs.wo)
+                e_value = bsdf.eval(ctx, interaction, bs.wo)
+                p_pdf   = bsdf.pdf(ctx, interaction, bs.wo)
 
                 assert np.allclose(s_value, e_value, atol=1e-2)
                 assert np.allclose(bs.pdf, p_pdf)

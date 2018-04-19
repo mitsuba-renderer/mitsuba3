@@ -39,18 +39,18 @@ ImageBlock::~ImageBlock() {
 
 bool ImageBlock::put(const Point2f &pos_, const Float *value) {
     Assert(m_filter != nullptr);
-    const int channels = m_bitmap->channel_count();
+    size_t channels = m_bitmap->channel_count();
 
     // Check if all sample values are valid
     bool valid_sample = true;
     if (m_warn) {
-        for (int i = 0; i < channels; ++i)
+        for (size_t i = 0; i < channels; ++i)
             valid_sample &= std::isfinite(value[i]) && value[i] >= 0;
 
         if (unlikely(!valid_sample)) {
             std::ostringstream oss;
             oss << "Invalid sample value: [";
-            for (int i = 0; i < channels; ++i) {
+            for (size_t i = 0; i < channels; ++i) {
                 oss << value[i];
                 if (i + 1 < channels) oss << ", ";
             }
@@ -86,7 +86,7 @@ bool ImageBlock::put(const Point2f &pos_, const Float *value) {
         for (int x = lo.x(), xr = 0; x <= hi.x(); ++x, ++xr) {
             const Float weight = m_weights_x[xr] * weightY;
 
-            for (int k = 0; k < channels; ++k)
+            for (size_t k = 0; k < channels; ++k)
                 *dest++ += weight * value[k];
         }
     }
@@ -97,18 +97,18 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Assert(m_filter != nullptr);
     using Mask = mask_t<FloatP>;
 
-    const int channels = m_bitmap->channel_count();
+    size_t channels = m_bitmap->channel_count();
 
     // Check if all sample values are valid
     Mask is_valid(true);
     if (m_warn) {
-        for (int k = 0; k < channels; ++k)
+        for (size_t k = 0; k < channels; ++k)
             is_valid = is_valid && enoki::isfinite(value[k]) && (value[k] >= 0);
 
         if (unlikely(any(active && !is_valid))) {
             std::ostringstream oss;
             oss << "Invalid sample value(s): [";
-            for (int i = 0; i < channels; ++i) {
+            for (size_t i = 0; i < channels; ++i) {
                 oss << value[i];
                 if (i + 1 < channels)
                     oss << ", ";
@@ -157,7 +157,7 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
             auto offsets = channels * (y * size.x() + (lo.x() + xr));
             auto weights = m_weights_y_p[yr] * m_weights_x_p[xr];
 
-            for (int k = 0; k < channels; ++k) {
+            for (size_t k = 0; k < channels; ++k) {
                 FloatP weighted_value = weights * value[k];
 
                 // We need to be extra-careful about the "histogram problem". See:

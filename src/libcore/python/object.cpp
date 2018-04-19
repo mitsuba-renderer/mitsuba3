@@ -13,8 +13,8 @@ MTS_PY_EXPORT(Object) {
         .def("expand", [](const Object &o) -> py::list {
             auto result = o.expand();
             py::list l;
-            for (Object *o: result)
-                l.append(py_cast(o));
+            for (Object *o2: result)
+                l.append(py_cast(o2));
             return l;
         })
         .def("__repr__", &Object::to_string, D(Object, to_string));

@@ -7,12 +7,18 @@
 #    pragma GCC diagnostic push
 #    pragma GCC diagnostic ignored "-Wbool-operation"
 #    pragma GCC diagnostic ignored "-Wbool-compare"
+#  elif defined(_MSC_VER)
+#    pragma warning(push)
+#    pragma warning(disable : 4804) // warning C4804: '~': unsafe use of type 'bool' in operation
+#    pragma warning(disable : 4245) // warning C4245: 'argument': conversion from 'int' to 'uint32_t', signed/unsigned mismatch
 #  endif
 
 #  include <asmjit/asmjit.h>
 
 #  if defined(__GNUG__) && !defined(__clang__)
 #    pragma GCC diagnostic pop
+#  elif defined(_MSC_VER)
+#    pragma warning(pop)
 #  endif
 #endif
 
