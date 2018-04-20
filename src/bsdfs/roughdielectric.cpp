@@ -46,7 +46,6 @@ public:
             | EBackSide | ENonSymmetric | extra);
 
         m_flags = m_components[0] | m_components[1];
-        m_needs_differentials = false;
     }
 
     template <typename SurfaceInteraction,
@@ -55,7 +54,7 @@ public:
               typename Point2     = typename SurfaceInteraction::Point2,
               typename Spectrum   = Spectrum<Value>>
     std::pair<BSDFSample, Spectrum> sample_impl(
-            const SurfaceInteraction &si, const BSDFContext &ctx, Value sample1,
+            const BSDFContext &ctx, const SurfaceInteraction &si, Value sample1,
             const Point2 &sample, mask_t<Value> active) const {
         using Vector3 = typename BSDFSample::Vector3;
         using Normal3 = typename BSDFSample::Normal3;
@@ -92,7 +91,7 @@ public:
         Value microfacet_pdf;
         Normal3 m;
         std::tie(m, microfacet_pdf)
-            = sample_distr.sample(sign(cos_theta_wi) * si.wi, sample, active);
+            = sample_distr.sample(sign(cos_theta_wi) * si.wi, sample);
 
         active = active && neq(microfacet_pdf, 0.0f);
         if (none(active))
@@ -103,8 +102,8 @@ public:
         Value inv_eta_value = rcp(eta_value);
 
         Value F, cos_theta_t;
-        std::tie(F, cos_theta_t) = fresnel_dielectric_ext(dot(si.wi, m),
-                                                          eta_value, active);
+        std::tie(F, cos_theta_t, std::ignore, std::ignore) =
+            fresnel(dot(si.wi, m), eta_value);
 
         Mask sampled_reflection = has_reflection;
         Spectrum weight(1.0f);
@@ -174,10 +173,10 @@ public:
             return { bs, 0.0f };
 
         if (m_sample_visible)
-            weight *= distr.smith_g1(bs.wo, m, active);
+            weight *= distr.smith_g1(bs.wo, m);
         else
-            weight *= abs(distr.eval(m, active)
-                      * distr.G(si.wi, bs.wo, m, active) * dot(si.wi, m)
+            weight *= abs(distr.eval(m)
+                      * distr.G(si.wi, bs.wo, m) * dot(si.wi, m)
                       / (microfacet_pdf * cos_theta_wi));
 
         bs.pdf *= abs(dwh_dwo);
@@ -191,7 +190,7 @@ public:
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
-    Spectrum eval_impl(const SurfaceInteraction &si, const BSDFContext &ctx,
+    Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                        const Vector3 &wo, mask_t<Value> active) const {
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
@@ -237,17 +236,17 @@ public:
         );
 
         // Evaluate the microfacet normal distribution
-        Value D = distr.eval(H, active);
+        Value D = distr.eval(H);
 
         active = active && neq(D, 0.0f);
         if (none(active))
             return Spectrum(0.0f);
 
         // Fresnel factor
-        Value F = fresnel_dielectric_ext(dot(si.wi, H), eta_value, active).first;
+        Value F = std::get<0>(fresnel(dot(si.wi, H), eta_value));
 
         // Smith's shadow-masking function
-        Value G = distr.G(si.wi, wo, H, active);
+        Value G = distr.G(si.wi, wo, H);
 
         Spectrum result(0.0f);
 
@@ -286,7 +285,7 @@ public:
     template <typename SurfaceInteraction,
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3>
-    Value pdf_impl(const SurfaceInteraction &si, const BSDFContext &ctx,
+    Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                    const Vector3 &wo, mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
         using Mask  = mask_t<Value>;
@@ -349,11 +348,10 @@ public:
             sample_distr.scale_alpha(1.2f - 0.2f * sqrt(abs(Frame::cos_theta(si.wi))));
 
         // Evaluate the microfacet model sampling density function
-        Value prob = sample_distr.pdf(sign(Frame::cos_theta(si.wi)) * si.wi,
-                                      H, active);
+        Value prob = sample_distr.pdf(sign(Frame::cos_theta(si.wi)) * si.wi, H);
 
         if (has_transmission && has_reflection) {
-            Value F = fresnel_dielectric_ext(dot(si.wi, H), eta_value).first;
+            Value F = std::get<0>(fresnel(dot(si.wi, H), eta_value));
             prob *= select(reflect, F, (1.0f - F));
         }
 
@@ -363,7 +361,12 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughDielectric[" << std::endl
-            << "  distribution = " << MicrofacetDistribution<Float>::distribution_name(m_type) << "," << std::endl
+            << "  distribution = ";
+        if (m_type == EBeckmann)
+            oss << "beckmann";
+        else
+            oss << "ggx";
+        oss << "," << std::endl
             << "  sample_visible = "         << m_sample_visible << "," << std::endl
             << "  alpha_u = "                << m_alpha_u        << "," << std::endl
             << "  alpha_v = "                << m_alpha_v        << "," << std::endl

@@ -230,10 +230,10 @@ DISTRIBUTIONS = [
              ('Phi', [0, 2*np.pi, 0])
      ])),
 
-    ('Rough dielectric BSDF - smooth', SphericalDomain(),
-     BSDFAdapter("roughdielectric", """
-        <float name="alpha" value="0.05"/>
-     """), DEFAULT_SETTINGS_3),
+    # ('Rough dielectric BSDF - smooth', SphericalDomain(),
+    #  BSDFAdapter("roughdielectric", """
+    #     <float name="alpha" value="0.05"/>
+    #  """), DEFAULT_SETTINGS_3),
     ('Rough dielectric BSDF - rough', SphericalDomain(),
      BSDFAdapter("roughdielectric", """
         <float name="alpha" value="0.25"/>
