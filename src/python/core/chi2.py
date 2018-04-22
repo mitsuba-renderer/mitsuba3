@@ -93,7 +93,7 @@ class ChiSquareTest(object):
         if domain.aspect() == 0:
             self.res = [1, res]
         else:
-            self.res = [res, res*domain.aspect()]
+            self.res = [res, res * domain.aspect()]
         self.res = np.array(self.res, dtype=np.int64)
         self.ires = ires
         self.dtype = dtype
@@ -142,17 +142,24 @@ class ChiSquareTest(object):
         # A few sanity checks
         eps = 1e-4
         r = self.bounds[:, 1] - self.bounds[:, 0]
-        if not np.all((xy >= self.bounds[:, 0] - eps*r) &
-                      (xy <= self.bounds[:, 1] + eps*r)):
-            self._log("Encountered samples outside of the specified domain: %s" % str(xy))
+        oob = (xy >= self.bounds[:, 0] - eps * r) & \
+              (xy <= self.bounds[:, 1] + eps * r)
+        oob = ~np.all(oob, axis=1)
+        if np.any(oob):
+            self._log('Encountered samples outside of the specified '
+                      'domain: %s' % str(xy[oob][0, :]))
             self.fail = True
 
-        if not np.all(self.histogram >= 0):
-            self._log("Encountered a cell with negative sample weights: %s" % str(self.histogram))
+        histogram_min = np.min(self.histogram)
+        if not (histogram_min >= 0):
+            self._log('Encountered a cell with negative sample '
+                      'weights: %f' % histogram_min)
             self.fail = True
 
-        if np.sum(self.histogram) > 1.1:
-            self._log("Sample weights add up to a value greater than 1.0: %s", str(self.histogram))
+        histogram_sum = np.sum(self.histogram)
+        if histogram_sum > 1.1:
+            self._log('Sample weights add up to a value greater '
+                      'than 1.0: %f', histogram_sum)
             self.fail = True
 
     def tabulate_pdf(self):
@@ -193,12 +200,16 @@ class ChiSquareTest(object):
         self.pdf = pdf.reshape(self.res[1], self.res[0]).T
 
         # A few sanity checks
-        if not np.all(self.pdf >= 0):
-            self._log("Encountered a cell with a negative PDF value: %s" % str(self.pdf))
+        pdf_min = np.min(self.pdf)
+        if not (pdf_min >= 0):
+            self._log('Encountered a cell with a '
+                      'negative PDF value: %f' % pdf_min)
             self.fail = True
 
-        if np.sum(self.pdf) > 1.1:
-            self._log("PDF integrates to a value greater than 1.0: %s" % str(self.pdf))
+        pdf_sum = np.sum(self.pdf)
+        if pdf_sum > 1.1:
+            self._log('PDF integrates to a value greater '
+                      'than 1.0: %f' % pdf_sum)
             self.fail = True
 
     def run(self, significance_level, test_count=1):
@@ -276,16 +287,16 @@ class ChiSquareTest(object):
             np.save('chi2_histogram.npy', self.histogram)
             self._log('Not running the test for reasons listed above. Target '
                     'density and histogram were written to "chi2_pdf.npy" and '
-                    '"chi2_histogram.npy ')
+                    '"chi2_histogram.npy\"')
             return False
         elif self.p_value < significance_level \
                 or not np.isfinite(self.p_value):
             np.save('chi2_pdf.npy', self.pdf)
             np.save('chi2_histogram.npy', self.histogram)
-            self._log('***** Rejected ***** the null hypothesis (p-value'
-                    ' = %f, significance level = %f). Target density and histogram '
-                    ' were written to "chi2_pdf.npy" and "chi2_histogram.npy".' %
-                    (self.p_value, significance_level))
+            self._log('***** Rejected ***** the null hypothesis (p-value = %f,'
+                    ' significance level = %f). Target density and histogram'
+                    ' were written to "chi2_pdf.npy" and "chi2_histogram.npy".'
+                    % (self.p_value, significance_level))
             return False
 
         self._log('Accepted the null hypothesis (p-value = %f, '
@@ -486,7 +497,6 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
         return plugin.pdf(ctx, si, wo)
 
     return sample_functor, pdf_functor
-
 
 
 def InteractiveMicrofacetBSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], nn=[0, 0, 1]):

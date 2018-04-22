@@ -19,10 +19,18 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE DiscreteDistribution {
 public:
-    /// Allocate memory for a distribution with the given number of entries
+    /// Reserve memory for a distribution with the given number of entries
     explicit DiscreteDistribution(size_t n_entries = 0) {
         reserve(n_entries);
         clear();
+    }
+
+    /// Initialize the distribution with the given data
+    DiscreteDistribution(size_t size, const Float *values)
+        : DiscreteDistribution(size) {
+        for (size_t i = 0; i < size; ++i)
+            append(values[i]);
+        normalize();
     }
 
     /// Clear all entries

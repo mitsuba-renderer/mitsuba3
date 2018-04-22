@@ -60,7 +60,7 @@ public:
 
         if (any(back_side)) {
             if (ctx.component != (uint32_t) -1)
-                ctx.component -= m_nested_brdf[0]->component_count();
+                ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
 
             si.wi.z() *= -1.f;
             masked(result, back_side) = m_nested_brdf[1]->sample(ctx, si, sample1, sample2, back_side);
@@ -90,7 +90,7 @@ public:
 
         if (any(back_side)) {
             if (ctx.component != (uint32_t) -1)
-                ctx.component -= m_nested_brdf[0]->component_count();
+                ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
 
             si.wi.z() *= -1.f;
             wo.z() *= -1.f;
@@ -119,7 +119,7 @@ public:
 
         if (any(back_side)) {
             if (ctx.component != (uint32_t) -1)
-                ctx.component -= m_nested_brdf[0]->component_count();
+                ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
 
             si.wi.z() *= -1.f;
             wo.z() *= -1.f;

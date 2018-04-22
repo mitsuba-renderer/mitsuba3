@@ -77,14 +77,14 @@ public:
                         el.struct_->has_field("nz"))
                         has_vertex_normals = true;
 
-                    m_normal_offset = m_vertex_struct->field("nx").offset;
+                    m_normal_offset = (Index) m_vertex_struct->field("nx").offset;
                 }
 
                 if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
                     for (auto name : { "u", "v" })
                         m_vertex_struct->append(name, Struct::EFloat);
 
-                    m_texcoord_offset = m_vertex_struct->field("nx").offset;
+                    m_texcoord_offset = (Index) m_vertex_struct->field("nx").offset;
                 }
 
                 size_t i_struct_size = el.struct_->size();

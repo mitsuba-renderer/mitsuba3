@@ -445,4 +445,113 @@ MTS_PY_EXPORT(warp) {
         "square_to_std_normal_pdf",
         vectorize_wrapper(warp::square_to_std_normal_pdf<Point2fP>),
         "sample"_a);
+
+    // =======================================================================
+
+    using Linear2D0 = warp::Linear2D<0>;
+    using Linear2D1 = warp::Linear2D<1>;
+    using Linear2D2 = warp::Linear2D<2>;
+
+    py::class_<Linear2D0>(warp, "Linear2D0", D(warp, Linear2D))
+        .def(py::init([](py::array_t<Float> data) {
+            if (data.ndim() != 2 || data.shape(0) != data.shape(1))
+                throw std::domain_error("data array has incorrect dimension");
+            return Linear2D0(
+                (uint32_t) data.shape(0),
+                data.data()
+            );
+        }), "shape"_a)
+        .def("sample", [](const Linear2D0 *lw, const Vector2f &sample, bool active) {
+                return lw->sample(sample, (const Float *) nullptr, active);
+            }, "sample"_a, "active"_a = true, D(warp, Linear2D, sample))
+        .def("sample", enoki::vectorize_wrapper(
+            [](const Linear2D0 *lw, const Vector2fP &sample, MaskP active) {
+                return lw->sample(sample, (const FloatP *) nullptr, active);
+            }), "sample"_a, "active"_a = true)
+        .def("pdf", [](const Linear2D0 *lw, const Vector2f &pos, bool active) {
+                return lw->pdf(pos, (const Float *) nullptr, active);
+            }, "pos"_a, "active"_a = true, D(warp, Linear2D, pdf))
+        .def("pdf", enoki::vectorize_wrapper(
+            [](const Linear2D0 *lw, const Vector2fP &pos, MaskP active) {
+                return lw->pdf(pos, (const FloatP *) nullptr, active);
+            }), "pos"_a, "active"_a = true)
+        ;
+
+    py::class_<Linear2D1>(warp, "Linear2D1")
+        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values) {
+            if (data.ndim() != 3 || data.shape(1) != data.shape(2))
+                throw std::domain_error("data array has incorrect dimension");
+            if (param_values.size() == 1 || (uint32_t) param_values[0].size() != (uint32_t) data.shape(0))
+                throw std::domain_error("param_values array has incorrect dimension");
+            uint32_t param_res[1] = { (uint32_t) param_values[0].size() };
+            const Float *param_values_2[1] = { param_values[0].data() };
+            return Linear2D1(
+                (uint32_t) data.shape(1),
+                data.data(),
+                param_res,
+                param_values_2
+            );
+        }), "data"_a, "param_values"_a, D(warp, Linear2D))
+        .def("sample", [](const Linear2D2 *lw, const Vector2f &sample,
+                          Float param1, bool active) {
+                Float params[1] = { param1 };
+                return lw->sample(sample, params, active);
+            }, "sample"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, sample))
+        .def("sample", enoki::vectorize_wrapper(
+            [](const Linear2D2 *lw, const Vector2fP &sample,
+                FloatP param1, MaskP active) {
+                FloatP params[1] = { param1 };
+                return lw->sample(sample, params, active);
+            }), "sample"_a, "param1"_a, "active"_a = true)
+        .def("pdf", [](const Linear2D2 *lw, const Vector2f &pos,
+                       Float param1, bool active) {
+                Float params[1] = { param1 };
+                return lw->pdf(pos, params, active);
+            }, "pos"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, pdf))
+        .def("pdf", enoki::vectorize_wrapper(
+            [](const Linear2D2 *lw, const Vector2fP &pos,
+                FloatP param1, MaskP active) {
+                FloatP params[1] = { param1 };
+                return lw->pdf(pos, params, active);
+            }), "pos"_a, "param1"_a, "active"_a = true);
+
+    py::class_<Linear2D2>(warp, "Linear2D2")
+        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values) {
+            if (data.ndim() != 4 || data.shape(2) != data.shape(3))
+                throw std::domain_error("data array has incorrect dimension");
+            if (param_values.size() != 2 ||
+                (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
+                (uint32_t) param_values[1].size() != (uint32_t) data.shape(1))
+                throw std::domain_error("param_values array has incorrect dimension");
+            uint32_t param_res[2] = { (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size() };
+            const Float *param_values_2[2] = { param_values[0].data(), param_values[1].data() };
+            return Linear2D2(
+                (uint32_t) data.shape(2),
+                data.data(),
+                param_res,
+                param_values_2
+            );
+        }), "data"_a, "param_values"_a, D(warp, Linear2D))
+        .def("sample", [](const Linear2D2 *lw, const Vector2f &sample,
+                          Float param1, Float param2, bool active) {
+                Float params[2] = { param1, param2 };
+                return lw->sample(sample, params, active);
+            }, "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Linear2D, sample))
+        .def("sample", enoki::vectorize_wrapper(
+            [](const Linear2D2 *lw, const Vector2fP &sample,
+                FloatP param1, FloatP param2, MaskP active) {
+                FloatP params[2] = { param1, param2 };
+                return lw->sample(sample, params, active);
+            }), "sample"_a, "param1"_a, "param2"_a, "active"_a = true)
+        .def("pdf", [](const Linear2D2 *lw, const Vector2f &pos,
+                       Float param1, Float param2, bool active) {
+                Float params[2] = { param1, param2 };
+                return lw->pdf(pos, params, active);
+            }, "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Linear2D, pdf))
+        .def("pdf", enoki::vectorize_wrapper(
+            [](const Linear2D2 *lw, const Vector2fP &pos,
+                FloatP param1, FloatP param2, MaskP active) {
+                FloatP params[2] = { param1, param2 };
+                return lw->pdf(pos, params, active);
+            }), "pos"_a, "param1"_a, "param2"_a, "active"_a = true);
 }

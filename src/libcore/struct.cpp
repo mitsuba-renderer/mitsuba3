@@ -802,7 +802,6 @@ public:
 
         bool bswap = struct_->byte_order() == Struct::EBigEndian;
         const int32_t offset = (int32_t) field.offset;
-        X86Xmm temp;
 
         switch (field.type) {
             case Struct::EUInt8:

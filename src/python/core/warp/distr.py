@@ -34,7 +34,11 @@ from mitsuba.core.chi2 import (
     SpectrumAdapter, BSDFAdapter, MicrofacetAdapter,
     InteractiveMicrofacetBSDFAdapter)
 from mitsuba.render import MicrofacetDistribution
+from mitsuba.core import Bitmap, Thread
+from mitsuba.core.warp import Linear2D0, Linear2D2
+from mitsuba.test.util import fresolver_append_path
 import numpy as np
+import os
 
 
 def deg2rad(value):
@@ -42,6 +46,7 @@ def deg2rad(value):
 
 DEFAULT_SETTINGS   = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
 DEFAULT_SETTINGS_3 = {'sample_dim': 3, 'ires': 10, 'res': 101, 'parameters': []}
+
 
 DISTRIBUTIONS = [
     ('Uniform square', PlanarDomain(np.array([[0, 1],
@@ -224,4 +229,63 @@ DISTRIBUTIONS = [
              ('Theta', [0, np.pi, 0]),
              ('Phi', [0, 2*np.pi, 0])
      ])),
+]
+
+@fresolver_append_path
+def LinearWarp2D0Test():
+    fr = Thread.thread().file_resolver()
+
+    prefix = 'resources/data/tests/warp/'
+    img0 = np.array(Bitmap(fr.resolve(prefix + 'small.png')), dtype=np.float32)
+    d = Linear2D0(img0.squeeze())
+
+    def sample_functor(sample, *args):
+        return d.sample(sample, *args)
+
+    def pdf_functor(p, *args):
+        return d.pdf(p, *args)
+
+    return sample_functor, pdf_functor
+
+
+@fresolver_append_path
+def LinearWarp2D2Test():
+    fr = Thread.thread().file_resolver()
+
+    prefix = 'resources/data/tests/warp/'
+    img0 = np.array(Bitmap(fr.resolve(prefix + 'img0.png')), dtype=np.float32)
+    img1 = np.array(Bitmap(fr.resolve(prefix + 'img1.png')), dtype=np.float32)
+    img2 = np.array(Bitmap(fr.resolve(prefix + 'img2.png')), dtype=np.float32)
+    img3 = np.array(Bitmap(fr.resolve(prefix + 'img3.png')), dtype=np.float32)
+
+    tensor = np.full((2, 2, 512, 512), 0, dtype=np.float32)
+    tensor[0, 0, :, :] = img0.squeeze()
+    tensor[0, 1, :, :] = img1.squeeze()
+    tensor[1, 0, :, :] = img2.squeeze()
+    tensor[1, 1, :, :] = img3.squeeze()
+
+    d = Linear2D2(tensor, [[0, 1], [0, 1]])
+
+    def sample_functor(sample, *args):
+        return d.sample(sample, *args)
+
+    def pdf_functor(p, *args):
+        return d.pdf(p, *args)
+
+    return sample_functor, pdf_functor
+
+
+DISTRIBUTIONS += [
+    ('Hierarchical warp (small)',
+     PlanarDomain(np.array([[0, 1], [0, 1]])),
+     LinearWarp2D0Test(),
+     DEFAULT_SETTINGS),
+    ('Hierarchical warp (4D, big)',
+     PlanarDomain(np.array([[0, 1], [0, 1]])),
+     LinearWarp2D2Test(),
+     dict(DEFAULT_SETTINGS,
+         parameters=[
+             ('param0', [0, 1, 0.5]),
+             ('param1', [0, 1, 0.005])
+         ]))
 ]

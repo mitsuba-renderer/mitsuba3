@@ -1,6 +1,8 @@
 #include <mitsuba/core/atomic.h>
 #include <mitsuba/python/python.h>
 
+#include <mitsuba/core/warp.h>//XX
+
 MTS_PY_EXPORT(atomic) {
     py::class_<AtomicFloat<>>(m, "AtomicFloat", D(AtomicFloat))
         .def(py::init<Float>(), D(AtomicFloat, AtomicFloat))

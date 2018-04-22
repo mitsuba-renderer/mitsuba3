@@ -196,6 +196,9 @@ if (MSVC)
   # structure was padded due to alignment specifier
   add_compile_options("/wd4324")
 
+  # conditional expression is constant
+  add_compile_options("/wd4127")
+
   # Workaround for MSVC 2017
   add_compile_options("/wd4244")
 

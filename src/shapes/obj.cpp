@@ -218,13 +218,13 @@ public:
         if (!m_disable_vertex_normals) {
             for (auto name : { "nx", "ny", "nz" })
                 m_vertex_struct->append(name, Struct::EFloat);
-            m_normal_offset = m_vertex_struct->offset("nx");
+            m_normal_offset = (Index) m_vertex_struct->offset("nx");
         }
 
         if (!texcoords.empty()) {
             for (auto name : { "u", "v" })
                 m_vertex_struct->append(name, Struct::EFloat);
-            m_texcoord_offset = m_vertex_struct->offset("u");
+            m_texcoord_offset = (Index) m_vertex_struct->offset("u");
         }
 
         m_face_struct = new Struct();

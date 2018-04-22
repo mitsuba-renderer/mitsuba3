@@ -130,7 +130,7 @@ Value eval_spline(Value f0, Value f1, Value d0, Value d1, Value t) {
  */
 template <typename Value>
 std::pair<Value, Value> eval_spline_d(Value f0, Value f1, Value d0,
-                                        Value d1, Value t) {
+                                      Value d1, Value t) {
     Value t2 = t*t, t3 = t2*t;
     return std::make_pair(
         /* Function value */
@@ -166,7 +166,7 @@ std::pair<Value, Value> eval_spline_d(Value f0, Value f1, Value d0,
  */
 template <typename Value>
 std::pair<Value, Value> eval_spline_i(Value f0, Value f1, Value d0,
-                                        Value d1, Value t) {
+                                      Value d1, Value t) {
     Value t2 = t*t, t3 = t2*t, t4 = t2*t2;
     const Value H = Value(.5f);
     const Value T = Value(1.f / 3.f);
@@ -219,7 +219,7 @@ std::pair<Value, Value> eval_spline_i(Value f0, Value f1, Value d0,
  */
 template <bool Extrapolate = false, typename Value, typename Float>
 Value eval_1d(Float min, Float max, const Float *values,
-               uint32_t size, Value x) {
+              uint32_t size, Value x) {
     using Mask = mask_t<Value>;
     using Index = uint32_array_t<Value>;
 
@@ -278,7 +278,7 @@ Value eval_1d(Float min, Float max, const Float *values,
  */
 template <bool Extrapolate = false, typename Value, typename Float>
 Value eval_1d(const Float *nodes, const Float *values,
-               uint32_t size, Value x) {
+              uint32_t size, Value x) {
     using Mask = mask_t<Value>;
     using Index = uint32_array_t<Value>;
 
@@ -408,7 +408,7 @@ void integrate_1d(const Value *nodes, const Value *values,
  */
 template <typename Value, typename Float>
 Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
-                 Value y, Float eps = 1e-6f) {
+                Value y, Float eps = 1e-6f) {
     using Mask = mask_t<Value>;
     using Index = uint32_array_t<Value>;
 
@@ -498,7 +498,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
  */
 template <typename Value, typename Float>
 Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
-                 Value y, Float eps = 1e-6f) {
+                Value y, Float eps = 1e-6f) {
     using Mask = mask_t<Value>;
     using Index = uint32_array_t<Value>;
 
@@ -595,7 +595,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
 template <typename Value, typename Float>
 std::tuple<Value, Value, Value>
 sample_1d(Float min, Float max, const Float *values, const Float *cdf,
-                 uint32_t size, Value sample, Float eps = 1e-6f) {
+          uint32_t size, Value sample, Float eps = 1e-6f) {
     using Mask = mask_t<Value>;
     using Index = uint32_array_t<Value>;
 
@@ -994,7 +994,7 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
  */
 template <bool Extrapolate = false, typename Value, typename Float>
 Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
-               uint32_t size2, const Float *values, Value x, Value y) {
+              uint32_t size2, const Float *values, Value x, Value y) {
     using Mask = mask_t<Value>;
     using Index = int32_array_t<Value>;
 

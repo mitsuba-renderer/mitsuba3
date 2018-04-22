@@ -27,7 +27,7 @@ class WarpVisualizer(Screen):
 
     def __init__(self):
         super(WarpVisualizer, self).__init__(
-            [800, 600], 'Warp visualizer & χ² hypothesis test')
+            [1024, 768], 'Warp visualizer & χ² hypothesis test')
 
         self.set_background(Color(0, 0))
         window = Window(self, 'Warp tester')

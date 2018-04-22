@@ -195,7 +195,7 @@ template <typename Value>
 Value interval_to_tent(Value sample) {
     using Scalar = scalar_t<Value>;
 
-    sample = sample - Scalar(0.5);
+    sample -= Scalar(0.5);
     Value abs_sample = abs(sample);
 
     return copysign(
@@ -242,10 +242,10 @@ Point2 tent_to_square(Point2 p) {
 template <typename Point2, typename Value = value_t<Point2>>
 Value square_to_tent_pdf(Point2 p) {
     using Scalar = scalar_t<Point2>;
+    p = abs(p);
 
-    return select((p.x() >= Scalar(-1)) && (p.x() <= Scalar(1)) &&
-                  (p.y() >= Scalar(-1)) && (p.y() <= Scalar(1)),
-                  (Scalar(1) - abs(p.x())) * (Scalar(1) - abs(p.y())),
+    return select(p.x() <= 1 && p.y() <= 1,
+                  (Scalar(1) - p.x()) * (Scalar(1) - p.y()),
                   zero<Value>());
 }
 
@@ -646,6 +646,332 @@ Scalar square_to_rough_fiber_pdf(Vector3 v, Vector3 wi, Vector3 tangent, Float k
 
 //! @}
 // =============================================================
+
+
+/**
+ * \brief Implements a hierarchical sample warping scheme for 2D distributions
+ * with linear interpolation and an optional dependence on additional parameters
+ *
+ * This class takes a <tt>res x res</tt> floating point array as input and
+ * constructs internal data structures to efficiently map uniform variates from
+ * the unit square <tt>[0, 1]^2</tt> to a function on <tt>[0, 1]^2</tt> that
+ * linearly interpolates the input array. Note that the resolution must be a
+ * power of two--this choice was made to enable a particularly simple and
+ * efficient implementation.
+ *
+ * The mapping is constructed from a sequence of <tt>log2(res)</tt>
+ * hierarchical sample warping steps. It is bijective and generally very
+ * well-behaved, which makes it an ideal choice for structured point sets such
+ * as the Halton or Sobol sequence.
+ *
+ * The implementation also supports <em>conditional distributions</em>, i.e. 2D
+ * distributions that depend on an arbitrary number of parameters (indicated
+ * via the \c Dimension template parameter).
+ *
+ * In this case, the input array should have dimensions <tt>N0 x N1 x ... x Nn
+ * x res x res</tt>, and the <tt>param_res</tt> should be set to <tt>{ N0, N1,
+ * ..., Nn }</tt>, and <tt>param_values</tt> should contain the parameter
+ * values where the distribution is discretized. Linear interpolation is used
+ * when sampling or evaluating the distribution for in-between parameter
+ * values.
+ *
+ * \remark The Python API exposes explicitly instantiated versions of this
+ * class named Linear2D0, Linear2D1, and Linear2D2 for data that depends on 0,
+ * 1, and 2 parameters, respectively.
+ */
+template <size_t Dimension = 0>
+class Linear2D {
+private:
+    using Buffer = std::unique_ptr<Float[], enoki::aligned_deleter>;
+
+#if !defined(_MSC_VER)
+    static constexpr size_t ArraySize = Dimension;
+#else
+    static constexpr size_t ArraySize = (Dimension != 0) ? Dimension : 1;
+#endif
+
+public:
+    Linear2D(uint32_t res, const Float *data,
+             uint32_t param_res[Dimension] = nullptr,
+             const Float *param_values[Dimension] = nullptr)
+        : m_res(res), m_res_m1_f(Float(res - 1)),
+          m_inv_res_m1_f(Float(1) / Float(res - 1)) {
+        if (!math::is_power_of_two(res))
+            Throw("warp::Linear2D(): 'res' must be a power of two!");
+
+        /* Keep track of the dependence on additional parameters (optional) */
+        uint32_t max_level = log2i(res), size = res * res;
+        for (int i = (int) Dimension - 1; i >= 0; --i) {
+            if (param_res[i] < 2)
+                Throw("warp::Linear2D(): parameter resolution must be >= 2!");
+            m_param_res[i] = param_res[i];
+            m_param_values[i] = Buffer(enoki::alloc<Float>(param_res[i]));
+            memcpy(m_param_values[i].get(), param_values[i], sizeof(Float) * param_res[i]);
+            m_param_strides[i] = size;
+            size *= m_param_res[i];
+        }
+
+        /* Allocate memory for MIP hierarchy */
+        m_levels.resize(max_level + 1);
+        m_levels[max_level] = Buffer(enoki::alloc<Float>(size));
+        for (int level = max_level - 1; level >= 0; --level)
+            m_levels[level] = Buffer(enoki::alloc<Float>(size >> ((max_level - level) * 2)));
+
+        uint32_t n_slices = size / (res * res);
+        for (uint32_t slice = 0; slice < n_slices; ++slice) {
+            /* Ensure that the data is normalized */
+            double accum = 0;
+            for (uint32_t i = 0; i < res*res; ++i)
+                accum += (double) data[i];
+            Float normalization = (res * res) / accum;
+
+            /* Copy finest resolution data into hierarchy */
+            Float *target = m_levels[max_level].get() + slice * res * res;
+            for (uint32_t y = 0; y < res; ++y)
+                for (uint32_t x = 0; x < res; ++x)
+                    target[index(Vector2u(x, y), max_level)] = *data++ * normalization;
+
+            /* Correct probability density at the boundary */
+            for (uint32_t i = 0; i < res; ++i) {
+                target[index(Vector2u(0, i), max_level)] *= .5f;
+                target[index(Vector2u(res - 1, i), max_level)] *= .5f;
+                target[index(Vector2u(i, 0), max_level)] *= .5f;
+                target[index(Vector2u(i, res - 1), max_level)] *= .5f;
+            }
+
+            /* Build a MIP hierarchy */
+            uint32_t slice_res = res;
+            for (int32_t level = (int32_t) max_level - 1; level >= 0; --level) {
+                const Float *source = target;
+
+                /* Reduce slice_res by half */
+                slice_res /= 2;
+                target = m_levels[level].get() + slice * slice_res * slice_res;
+
+                /* Downsample */
+                for (uint32_t y = 0; y < slice_res; ++y) {
+                    for (uint32_t x = 0; x < slice_res; ++x) {
+                        uint32_t idx = (x + (y << level)) << 2;
+
+                        target[index(Vector2u(x, y), level)] =
+                            .25f * (source[idx] + source[idx + 1] +
+                                    source[idx + 2] + source[idx + 3]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * \brief Given a uniformly distributed 2D sample, draw a sample from the
+     * distributon (parameterized by \c param if applicable)
+     */
+    template <typename Vector2f, typename Value = value_t<Vector2f>>
+    Vector2f sample(Vector2f sample, const Value *param = nullptr,
+                    mask_t<Value> active = true) const {
+        using Vector2u = uint32_array_t<Vector2f>;
+        using UInt32   = value_t<Vector2u>;
+
+        /* Look up parameter-related indices and weights (if Dimension != 0) */
+        Value param_weight[ArraySize];
+        UInt32 slice_offset = zero<UInt32>();
+        for (size_t dim = 0; dim < Dimension; ++dim) {
+            UInt32 param_index = math::find_interval(
+                m_param_res[dim],
+                [&](UInt32 idx, mask_t<Value> active) {
+                    return gather<Value>(m_param_values[dim].get(), idx, active) <= param[dim];
+                },
+                active
+            );
+
+            Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
+                  p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
+
+            param_weight[dim] = clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+            slice_offset += m_param_strides[dim] * param_index;
+        }
+
+        /* Hierarchical sample warping */
+        uint32_t shift = 2 * ((uint32_t) m_levels.size() - 2);
+        Vector2u offset = zero<Vector2u>();
+        for (uint32_t level = 1; level < m_levels.size(); ++level) {
+            const Float *data = m_levels[level].get();
+
+            offset = sli<1>(offset);
+
+            /* Fetch values from next MIP level */
+            UInt32 offset_i = index(offset, level);
+            if (Dimension != 0)
+                offset_i += slice_offset >> shift;
+
+            Value v00 = lookup<Dimension>(data,     offset_i, param_weight, shift, active),
+                  v10 = lookup<Dimension>(data + 1, offset_i, param_weight, shift, active),
+                  v01 = lookup<Dimension>(data + 2, offset_i, param_weight, shift, active),
+                  v11 = lookup<Dimension>(data + 3, offset_i, param_weight, shift, active);
+
+            if (Dimension != 0)
+                shift -= 2;
+
+            /* Select the row */
+            Value r0 = v00 + v10,
+                  r1 = v01 + v11;
+            sample.y() *= r0 + r1;
+            mask_t<Value> mask = sample.y() > r0;
+            masked(offset.y(), mask) += 1;
+            masked(sample.y(), mask) -= r0;
+            sample.y() /= select(mask, r1, r0);
+
+            /* Select the column */
+            Value c0 = select(mask, v01, v00),
+                  c1 = select(mask, v11, v10);
+            sample.x() *= c0 + c1;
+            mask = sample.x() > c0;
+            masked(sample.x(), mask) -= c0;
+            sample.x() /= select(mask, c1, c0);
+            masked(offset.x(), mask) += 1;
+        }
+
+        /* Handle interpolation at boundaries */
+        Vector2f half = sample * .5f;
+        masked(sample, eq(offset, 0u)) = half + 0.5f;
+        masked(sample, eq(offset, m_res - 1u)) = half;
+
+        /* Linear interpolant: sample offset from tent filter */
+        return (Vector2f(offset) + warp::interval_to_tent(sample)) /
+               (m_res - 1);
+    }
+
+    /**
+     * \brief Evaluate the distribution at position \c pos. The distribution is
+     * parameterized by \c param if applicable.
+     */
+    template <typename Vector2f, typename Value = value_t<Vector2f>>
+    Value pdf(Vector2f pos, const Value *param = nullptr,
+              mask_t<Value> active = true) const {
+        using Vector2u = uint32_array_t<Vector2f>;
+        using UInt32 = value_t<Vector2u>;
+
+        /* Compute linear interpolation weights */
+        pos = max(pos, 0.f) * m_res_m1_f;
+        Vector2u p = min(Vector2u(pos), m_res - 2);
+        Vector2f w1 = pos - Vector2f(p),
+                 w0 = 1.f - w1;
+
+        /* Look up parameter-related indices and weights (if Dimension != 0) */
+        Value param_weight[ArraySize];
+        UInt32 slice_offset = zero<UInt32>();
+        for (size_t dim = 0; dim < Dimension; ++dim) {
+            UInt32 param_index = math::find_interval(
+                m_param_res[dim],
+                [&](UInt32 idx, mask_t<Value> active) {
+                    return gather<Value>(m_param_values[dim].get(), idx, active) <= param[dim];
+                },
+                active
+            );
+
+            Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
+                  p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
+
+            param_weight[dim] = clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+            slice_offset += m_param_strides[dim] * param_index;
+        }
+
+        uint32_t level = (uint32_t) m_levels.size() - 1u;
+        const Float *data = m_levels[level].get();
+
+        Value v00 = lookup<Dimension>(
+                  data, index(p + Vector2u(0, 0), level) + slice_offset,
+                  param_weight, 0, active),
+              v01 = lookup<Dimension>(
+                  data, index(p + Vector2u(0, 1), level) + slice_offset,
+                  param_weight, 0, active),
+              v10 = lookup<Dimension>(
+                  data, index(p + Vector2u(1, 0), level) + slice_offset,
+                  param_weight, 0, active),
+              v11 = lookup<Dimension>(
+                  data, index(p + Vector2u(1, 1), level) + slice_offset,
+                  param_weight, 0, active);
+
+        auto mask_l = eq(p, 0u), mask_h = eq(p, m_res - 2);
+
+        /* Correct probability density at the boundary */
+        if (unlikely(any_nested(mask_l | mask_h))) {
+            masked(v00, mask_l.x()) += v00;
+            masked(v00, mask_l.y()) += v00;
+            masked(v10, mask_h.x()) += v10;
+            masked(v10, mask_l.y()) += v10;
+            masked(v01, mask_l.x()) += v01;
+            masked(v01, mask_h.y()) += v01;
+            masked(v11, mask_h.x()) += v11;
+            masked(v11, mask_h.y()) += v11;
+        }
+
+        return fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
+                     w1.y() * fmadd(w0.x(), v01, w1.x() * v11));
+    }
+
+private:
+    /**
+     * \brief Convert from 2D pixel coordinates to an index indicating how the
+     * data is laid out in memory.
+     *
+     * The implementation stores 2x2 patches contigously in memory to
+     * improve cache locality during hierarchical traversals
+     */
+    template <typename Vector2i>
+    MTS_INLINE value_t<Vector2i> index(const Vector2i &p,
+                                       value_t<Vector2i> level) const {
+        return ((p.x() & 1u) | sli<1>((p.x() & ~1u) | (p.y() & 1u))) +
+               ((p.y() & ~1u) << level);
+    }
+
+    template <size_t Dim, typename Index, typename Value,
+              std::enable_if_t<Dim != 0, int> = 0>
+    MTS_INLINE Value lookup(const Float *data,
+                            Index i0,
+                            const Value *param_weight,
+                            uint32_t shift,
+                            mask_t<Value> active) const {
+        Index i1 = i0 + (m_param_strides[Dim - 1] >> shift);
+        Value w1 = param_weight[Dim - 1],
+              w0 = 1.f - w1;
+
+        Value v0 = lookup<Dim - 1>(data, i0, param_weight, shift, active);
+        Value v1 = lookup<Dim - 1>(data, i1, param_weight, shift, active);
+        return fmadd(v0, w0, v1 * w1);
+    }
+
+    template <size_t Dim, typename Index, typename Value,
+              std::enable_if_t<Dim == 0, int> = 0>
+    MTS_INLINE Value lookup(const Float *data, Index index,
+                            const Value *, uint32_t,
+                            mask_t<Value> active) const {
+        return gather<Value>(data, index, active);
+    }
+
+
+private:
+    /// MIP hierarchy
+    std::vector<Buffer> m_levels;
+
+    /// Resolution of lowest level
+    uint32_t m_res;
+
+    /// Stores m_res - 1 in floating point format
+    Float m_res_m1_f;
+
+    /// Stores rcp(m_res - 1) in floating point format
+    Float m_inv_res_m1_f;
+
+    /// Resolution of each parameter (optional)
+    uint32_t m_param_res[ArraySize];
+
+    ///Stride per parameter in units of sizeof(Float)
+    uint32_t m_param_strides[ArraySize];
+
+    /// Discretization of each parameter domain
+    Buffer m_param_values[ArraySize];
+};
 
 
 NAMESPACE_END(warp)

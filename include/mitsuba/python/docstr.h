@@ -1842,7 +1842,9 @@ R"doc(Discrete probability distribution
 This data structure can be used to transform uniformly distributed
 samples to a stored discrete probability distribution.)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Allocate memory for a distribution with the given number of entries)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Reserve memory for a distribution with the given number of entries)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution_2 = R"doc(Initialize the distribution with the given data)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_append =
 R"doc(Append an entry with the specified discrete probability.
@@ -8121,6 +8123,74 @@ static const char *__doc_mitsuba_variant_variant_2 = R"doc()doc";
 static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D =
+R"doc(Implements a hierarchical sample warping scheme for 2D distributions
+with linear interpolation and an optional dependence on additional
+parameters
+
+This class takes a ``res x res`` floating point array as input and
+constructs internal data structures to efficiently map uniform
+variates from the unit square ``[0, 1]^2`` to a function on ``[0,
+1]^2`` that linearly interpolates the input array. Note that the
+resolution must be a power of two--this choice was made to enable a
+particularly simple and efficient implementation.
+
+The mapping is constructed from a sequence of ``log2(res)``
+hierarchical sample warping steps. It is bijective and generally very
+well-behaved, which makes it an ideal choice for structured point sets
+such as the Halton or Sobol sequence.
+
+The implementation also supports *conditional distributions*, i.e. 2D
+distributions that depend on an arbitrary number of parameters
+(indicated via the ``Dimension`` template parameter).
+
+In this case, the input array should have dimensions ``N0 x N1 x ... x
+Nn x res x res``, and the ``param_res`` should be set to ``{ N0, N1,
+..., Nn }``, and ``param_values`` should contain the parameter values
+where the distribution is discretized. Linear interpolation is used
+when sampling or evaluating the distribution for in-between parameter
+values.
+
+Remark:
+    The Python API exposes explicitly instantiated versions of this
+    class named Linear2D0, Linear2D1, and Linear2D2 for data that
+    depends on 0, 1, and 2 parameters, respectively.)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_Linear2D = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_index =
+R"doc(Convert from 2D pixel coordinates to an index indicating how the data
+is laid out in memory.
+
+The implementation stores 2x2 patches contigously in memory to improve
+cache locality during hierarchical traversals)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_lookup = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_lookup_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_inv_res_m1_f = R"doc(Stores rcp(m_res - 1) in floating point format)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_levels = R"doc(MIP hierarchy)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_param_res = R"doc(Resolution of each parameter (optional))doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_param_strides = R"doc(Stride per parameter in units of sizeof(Float))doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_res = R"doc(Resolution of lowest level)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_res_m1_f = R"doc(Stores m_res - 1 in floating point format)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_pdf =
+R"doc(Evaluate the distribution at position ``pos``. The distribution is
+parameterized by ``param`` if applicable.)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_sample =
+R"doc(Given a uniformly distributed 2D sample, draw a sample from the
+distributon (parameterized by ``param`` if applicable))doc";
 
 static const char *__doc_mitsuba_warp_beckmann_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
 

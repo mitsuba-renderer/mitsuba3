@@ -2077,7 +2077,7 @@ public:
         bool is_mesh = shape->is_mesh();
 
         Mask hit;
-        Value u, v, t = 0.f;
+        Value u = 0.f, v = 0.f, t = 0.f;
 
         if (is_mesh)
             std::tie(hit, u, v, t) = ((const Mesh *) shape)
