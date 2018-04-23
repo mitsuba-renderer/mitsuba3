@@ -378,13 +378,13 @@ class SphericalDomain(object):
         return 2
 
     def map_forward(self, p):
-        cosTheta = -p[:, 1]
-        sinTheta = np.sqrt(1 - cosTheta * cosTheta)
-        sinPhi, cosPhi = np.sin(p[:, 0]), np.cos(p[:, 0])
+        cos_theta = -p[:, 1]
+        sin_theta = np.sqrt(np.maximum(0, 1 - cos_theta * cos_theta))
+        sin_phi, cos_phi = np.sin(p[:, 0]), np.cos(p[:, 0])
         return np.column_stack(
-            (cosPhi * sinTheta,
-             sinPhi * sinTheta,
-             cosTheta)
+            (cos_phi * sin_theta,
+             sin_phi * sin_theta,
+             cos_theta)
         )
 
     def map_backward(self, p):

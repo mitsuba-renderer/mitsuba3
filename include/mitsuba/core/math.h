@@ -253,7 +253,14 @@ template <typename T> bool is_power_of_two(T i) {
 template <typename T> T round_to_power_of_two(T i) {
     if (i <= 1)
         return 1;
-    return T(1) << (log2i<T>(i - 1) + 1);
+    return T(1) << (log2i(i - 1) + 1);
+}
+
+/// Ceiling of base-2 logarithm
+template <typename T> T log2i_ceil(T value) {
+    T result = 8 * sizeof(scalar_t<T>) - 1u - lzcnt(value);
+    masked(result, neq(value & (value - 1u), 0u)) += 1u;
+    return result;
 }
 
 /**

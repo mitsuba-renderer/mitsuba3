@@ -7259,6 +7259,8 @@ recurrence)doc";
 
 static const char *__doc_mitsuba_math_legendre_pd_diff = R"doc(Evaluate the function legendre_pd(l+1, x) - legendre_pd(l-1, x))doc";
 
+static const char *__doc_mitsuba_math_log2i_ceil = R"doc(Ceiling of base-2 logarithm)doc";
+
 static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo function)doc";
 
 static const char *__doc_mitsuba_math_round_to_power_of_two = R"doc(Round an unsigned integer to the next integer power of two)doc";
@@ -8129,16 +8131,15 @@ R"doc(Implements a hierarchical sample warping scheme for 2D distributions
 with linear interpolation and an optional dependence on additional
 parameters
 
-This class takes a ``res x res`` floating point array as input and
+This class takes a rectangular floating point array as input and
 constructs internal data structures to efficiently map uniform
 variates from the unit square ``[0, 1]^2`` to a function on ``[0,
-1]^2`` that linearly interpolates the input array. Note that the
-resolution must be a power of two--this choice was made to enable a
-particularly simple and efficient implementation.
+1]^2`` that linearly interpolates the input array.
 
-The mapping is constructed from a sequence of ``log2(res)``
-hierarchical sample warping steps. It is bijective and generally very
-well-behaved, which makes it an ideal choice for structured point sets
+The mapping is constructed from a sequence of ``log2(hmax(res))``
+hierarchical sample warping steps, where ``res`` is the input array
+resolution. It is bijective and generally very well-behaved (i.e. low
+distortion), which makes it an ideal choice for structured point sets
 such as the Halton or Sobol sequence.
 
 The implementation also supports *conditional distributions*, i.e. 2D
@@ -8146,43 +8147,61 @@ distributions that depend on an arbitrary number of parameters
 (indicated via the ``Dimension`` template parameter).
 
 In this case, the input array should have dimensions ``N0 x N1 x ... x
-Nn x res x res``, and the ``param_res`` should be set to ``{ N0, N1,
-..., Nn }``, and ``param_values`` should contain the parameter values
-where the distribution is discretized. Linear interpolation is used
-when sampling or evaluating the distribution for in-between parameter
-values.
+Nn x res.x x res.y``, and the ``param_res`` should be set to ``{ N0,
+N1, ..., Nn }``, and ``param_values`` should contain the parameter
+values where the distribution is discretized. Linear interpolation is
+used when sampling or evaluating the distribution for in-between
+parameter values.
 
 Remark:
     The Python API exposes explicitly instantiated versions of this
     class named Linear2D0, Linear2D1, and Linear2D2 for data that
     depends on 0, 1, and 2 parameters, respectively.)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_Linear2D = R"doc()doc";
+static const char *__doc_mitsuba_warp_Linear2D_Level = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_index =
+static const char *__doc_mitsuba_warp_Linear2D_Level_Level = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_Level_Level_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_Level_data = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_Level_index =
 R"doc(Convert from 2D pixel coordinates to an index indicating how the data
 is laid out in memory.
 
 The implementation stores 2x2 patches contigously in memory to improve
 cache locality during hierarchical traversals)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_lookup = R"doc()doc";
+static const char *__doc_mitsuba_warp_Linear2D_Level_lookup = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_lookup_2 = R"doc()doc";
+static const char *__doc_mitsuba_warp_Linear2D_Level_lookup_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_inv_res_m1_f = R"doc(Stores rcp(m_res - 1) in floating point format)doc";
+static const char *__doc_mitsuba_warp_Linear2D_Level_ptr = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_levels = R"doc(MIP hierarchy)doc";
+static const char *__doc_mitsuba_warp_Linear2D_Level_size = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_param_res = R"doc(Resolution of each parameter (optional))doc";
+static const char *__doc_mitsuba_warp_Linear2D_Level_width = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_Linear2D = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_invert = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_inv_patch_size = R"doc(Inverse of the above)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_levels = R"doc(MIP hierarchy over linearly interpolated patches)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_max_patch_index = R"doc(Number of bilinear patches in the X/Y dimension - 1)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_m_param_size = R"doc(Resolution of each parameter (optional))doc";
 
 static const char *__doc_mitsuba_warp_Linear2D_m_param_strides = R"doc(Stride per parameter in units of sizeof(Float))doc";
 
 static const char *__doc_mitsuba_warp_Linear2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_res = R"doc(Resolution of lowest level)doc";
+static const char *__doc_mitsuba_warp_Linear2D_m_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_res_m1_f = R"doc(Stores m_res - 1 in floating point format)doc";
+static const char *__doc_mitsuba_warp_Linear2D_m_vertex_count = R"doc(Resolution of the fine-resolution PDF data)doc";
 
 static const char *__doc_mitsuba_warp_Linear2D_pdf =
 R"doc(Evaluate the distribution at position ``pos``. The distribution is

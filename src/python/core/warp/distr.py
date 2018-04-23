@@ -240,7 +240,7 @@ def LinearWarp2D0Test():
     d = Linear2D0(img0.squeeze())
 
     def sample_functor(sample, *args):
-        return d.sample(sample, *args)
+        return d.sample(sample, *args)[0]
 
     def pdf_functor(p, *args):
         return d.pdf(p, *args)
@@ -267,7 +267,7 @@ def LinearWarp2D2Test():
     d = Linear2D2(tensor, [[0, 1], [0, 1]])
 
     def sample_functor(sample, *args):
-        return d.sample(sample, *args)
+        return d.sample(sample, *args)[0]
 
     def pdf_functor(p, *args):
         return d.pdf(p, *args)
