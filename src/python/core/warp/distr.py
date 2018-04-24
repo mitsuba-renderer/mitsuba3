@@ -243,7 +243,7 @@ def LinearWarp2D0Test():
         return d.sample(sample, *args)[0]
 
     def pdf_functor(p, *args):
-        return d.pdf(p, *args)
+        return d.eval(p, *args)
 
     return sample_functor, pdf_functor
 
@@ -270,7 +270,7 @@ def LinearWarp2D2Test():
         return d.sample(sample, *args)[0]
 
     def pdf_functor(p, *args):
-        return d.pdf(p, *args)
+        return d.eval(p, *args)
 
     return sample_functor, pdf_functor
 

@@ -672,11 +672,11 @@ Scalar square_to_rough_fiber_pdf(Vector3 v, Vector3 wi, Vector3 tangent, Float k
  * via the \c Dimension template parameter).
  *
  * In this case, the input array should have dimensions <tt>N0 x N1 x ... x Nn
- * x res.x x res.y</tt>, and the <tt>param_res</tt> should be set to <tt>{ N0,
- * N1, ..., Nn }</tt>, and <tt>param_values</tt> should contain the parameter
- * values where the distribution is discretized. Linear interpolation is used
- * when sampling or evaluating the distribution for in-between parameter
- * values.
+ * x res.y() x res.x()</tt> (where the last dimension is contiguous in memory),
+ * and the <tt>param_res</tt> should be set to <tt>{ N0, N1, ..., Nn }</tt>,
+ * and <tt>param_values</tt> should contain the parameter values where the
+ * distribution is discretized. Linear interpolation is used when sampling or
+ * evaluating the distribution for in-between parameter values.
  *
  * \remark The Python API exposes explicitly instantiated versions of this
  * class named Linear2D0, Linear2D1, and Linear2D2 for data that depends on 0,
@@ -694,17 +694,38 @@ private:
 #endif
 
 public:
+    /**
+     * Construct a hierarchical sample warping scheme for floating point
+     * data of resolution \c size.
+     *
+     * \c param_res and \c param_values are only needed for conditional
+     * distributions (see the text describing the Linear2D class).
+     *
+     * If \c normalize is set to \c false, the implementation will not
+     * re-scale the distribution so that it integrates to \c 1. It can
+     * still be sampled (proportionally), but returned density values
+     * will reflect the unnormalized values.
+     *
+     * If \c build_hierarchy is set to \c false, the implementation will not
+     * construct the hierarchy needed for sample warping, which saves memory
+     * in case this functionality is not needed (e.g. if only the interpolation
+     * in \c eval() is used). In this case, \c sample() and \c inverse()
+     * can still be called without triggering undefined behavior, but they
+     * will not return meaningful results.
+     */
     Linear2D(const Vector2u &size, const Float *data,
              uint32_t param_res[Dimension] = nullptr,
-             const Float *param_values[Dimension] = nullptr) {
+             const Float *param_values[Dimension] = nullptr,
+             bool normalize = true,
+             bool build_hierarchy = true) {
         if (any(size < 2))
             Throw("warp::Linear2D(): input array resolution must be >= 2!");
 
         /* The linear interpolant has 'size-1' patches */
-        Vector2u patches = size - 1u;
+        Vector2u n_patches = size - 1u;
 
         /* Keep track of the dependence on additional parameters (optional) */
-        uint32_t max_level   = math::log2i_ceil(hmax(patches)),
+        uint32_t max_level   = math::log2i_ceil(hmax(n_patches)),
                  slices      = 1u;
         for (int i = (int) Dimension - 1; i >= 0; --i) {
             if (param_res[i] < 2)
@@ -712,16 +733,37 @@ public:
 
             m_param_size[i] = param_res[i];
             m_param_values[i] = FloatStorage(enoki::alloc<Float>(param_res[i]));
-            memcpy(m_param_values[i].get(), param_values[i], sizeof(Float) * param_res[i]);
+            memcpy(m_param_values[i].get(), param_values[i],
+                   sizeof(Float) * param_res[i]);
             m_param_strides[i] = slices;
             slices *= m_param_size[i];
+        }
+
+        if (!build_hierarchy) {
+            m_levels.push_back(Level(size, slices));
+
+            for (uint32_t slice = 0; slice < slices; ++slice) {
+                uint32_t offset = m_levels[0].size * slice;
+
+                Float scale = 1.f;
+                if (normalize) {
+                    double sum = 0.0;
+                    for (uint32_t i = 0; i < m_levels[0].size; ++i)
+                        scale += (double) data[offset + i];
+                    scale = hprod(n_patches) / (Float) sum;
+                }
+                for (uint32_t i = 0; i < m_levels[0].size; ++i)
+                    m_levels[0].data[offset + i] = data[offset + i] * scale;
+            }
+
+            return;
         }
 
         /* Allocate memory for input array and MIP hierarchy */
         m_levels.reserve(max_level + 2);
         m_levels.push_back(Level(size, slices));
 
-        Vector2u level_size = patches;
+        Vector2u level_size = n_patches;
         for (int level = max_level; level >= 0; --level) {
             level_size += level_size & 1u; // zero-pad
             m_levels.push_back(Level(level_size, slices));
@@ -736,8 +778,8 @@ public:
             const Float *in = data + offset0;
 
             double sum = 0.0;
-            for (uint32_t y = 0; y < patches.y(); ++y) {
-                for (uint32_t x = 0; x < patches.x(); ++x) {
+            for (uint32_t y = 0; y < n_patches.y(); ++y) {
+                for (uint32_t x = 0; x < n_patches.x(); ++x) {
                     Float avg = (in[0] + in[1] + in[size.x()] +
                                  in[size.x() + 1]) * .25f;
                     sum += (double) avg;
@@ -748,14 +790,14 @@ public:
             }
 
             /* Copy and normalize fine resolution interpolant */
-            Float scale = hprod(patches) / (Float) sum;
+            Float scale = normalize ? (hprod(n_patches) / (Float) sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
                 m_levels[0].data[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
                 m_levels[1].data[offset1 + i] *= scale;
 
             /* Build a MIP hierarchy */
-            level_size = patches;
+            level_size = n_patches;
             for (uint32_t level = 2; level <= max_level + 1; ++level) {
                 const Level &l0 = m_levels[level - 1];
                 Level &l1 = m_levels[level];
@@ -774,9 +816,9 @@ public:
             }
         }
 
-        m_patch_size = 1.f / patches;
-        m_inv_patch_size = patches;
-        m_max_patch_index = patches - 1;
+        m_patch_size = 1.f / n_patches;
+        m_inv_patch_size = n_patches;
+        m_max_patch_index = n_patches - 1;
     }
 
     /**
@@ -812,7 +854,7 @@ public:
 
         /* Hierarchical sample warping */
         Vector2u offset = zero<Vector2u>();
-        for (uint32_t l = (uint32_t) m_levels.size() - 2; l != 0; --l) {
+        for (int l = (int) m_levels.size() - 2; l > 0; --l) {
             const Level &level = m_levels[l];
 
             offset = sli<1>(offset);
@@ -958,8 +1000,8 @@ public:
         masked(sample.y(), abs(r1 - r0) > 1e-4f * (r0 + r1)) *=
             (2.f * r0 + sample.y() * (r1 - r0)) / (r0 + r1);
 
-        /* Hierarchical sample warping */
-        for (uint32_t l = 1; l < (uint32_t) m_levels.size() - 1; ++l) {
+        /* Hierarchical sample warping -- reverse direction */
+        for (int l = 1; l < (int) m_levels.size() - 1; ++l) {
             const Level &level = m_levels[l];
 
             /* Fetch values from next MIP level */
@@ -1008,12 +1050,12 @@ public:
     }
 
     /**
-     * \brief Evaluate the distribution at position \c pos. The distribution is
+     * \brief Evaluate the density at position \c pos. The distribution is
      * parameterized by \c param if applicable.
      */
     template <typename Vector2f, typename Value = value_t<Vector2f>>
-    Value pdf(Vector2f pos, const Value *param = nullptr,
-              mask_t<Value> active = true) const {
+    Value eval(Vector2f pos, const Value *param = nullptr,
+               mask_t<Value> active = true) const {
         using Vector2u = uint32_array_t<Vector2f>;
         using Vector2i = int32_array_t<Vector2f>;
         using UInt32 = value_t<Vector2u>;

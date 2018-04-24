@@ -8147,11 +8147,12 @@ distributions that depend on an arbitrary number of parameters
 (indicated via the ``Dimension`` template parameter).
 
 In this case, the input array should have dimensions ``N0 x N1 x ... x
-Nn x res.x x res.y``, and the ``param_res`` should be set to ``{ N0,
-N1, ..., Nn }``, and ``param_values`` should contain the parameter
-values where the distribution is discretized. Linear interpolation is
-used when sampling or evaluating the distribution for in-between
-parameter values.
+Nn x res.y() x res.x()`` (where the last dimension is contiguous in
+memory), and the ``param_res`` should be set to ``{ N0, N1, ..., Nn
+}``, and ``param_values`` should contain the parameter values where
+the distribution is discretized. Linear interpolation is used when
+sampling or evaluating the distribution for in-between parameter
+values.
 
 Remark:
     The Python API exposes explicitly instantiated versions of this
@@ -8183,9 +8184,30 @@ static const char *__doc_mitsuba_warp_Linear2D_Level_size = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_Linear2D_Level_width = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_Linear2D = R"doc()doc";
+static const char *__doc_mitsuba_warp_Linear2D_Linear2D =
+R"doc(Construct a hierarchical sample warping scheme for floating point data
+of resolution ``size``.
 
-static const char *__doc_mitsuba_warp_Linear2D_invert = R"doc()doc";
+``param_res`` and ``param_values`` are only needed for conditional
+distributions (see the text describing the Linear2D class).
+
+If ``normalize`` is set to ``False``, the implementation will not re-
+scale the distribution so that it integrates to ``1``. It can still be
+sampled (proportionally), but returned density values will reflect the
+unnormalized values.
+
+If ``build_hierarchy`` is set to ``False``, the implementation will
+not construct the hierarchy needed for sample warping, which saves
+memory in case this functionality is not needed (e.g. if only the
+interpolation in ``eval``() is used). In this case, ``sample``() and
+``inverse``() can still be called without triggering undefined
+behavior, but they will not return meaningful results.)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_eval =
+R"doc(Evaluate the density at position ``pos``. The distribution is
+parameterized by ``param`` if applicable.)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
 
 static const char *__doc_mitsuba_warp_Linear2D_m_inv_patch_size = R"doc(Inverse of the above)doc";
 
@@ -8203,13 +8225,11 @@ static const char *__doc_mitsuba_warp_Linear2D_m_patch_size = R"doc(Size of a bi
 
 static const char *__doc_mitsuba_warp_Linear2D_m_vertex_count = R"doc(Resolution of the fine-resolution PDF data)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_pdf =
-R"doc(Evaluate the distribution at position ``pos``. The distribution is
-parameterized by ``param`` if applicable.)doc";
-
 static const char *__doc_mitsuba_warp_Linear2D_sample =
 R"doc(Given a uniformly distributed 2D sample, draw a sample from the
-distributon (parameterized by ``param`` if applicable))doc";
+distribution (parameterized by ``param`` if applicable)
+
+Returns the warped sample and associated probability density.)doc";
 
 static const char *__doc_mitsuba_warp_beckmann_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
 
