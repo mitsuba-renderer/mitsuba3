@@ -8207,7 +8207,7 @@ static const char *__doc_mitsuba_warp_Linear2D_eval =
 R"doc(Evaluate the density at position ``pos``. The distribution is
 parameterized by ``param`` if applicable.)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
+static const char *__doc_mitsuba_warp_Linear2D_inverse = R"doc(Inverse of the mapping implemented in ``sample``())doc";
 
 static const char *__doc_mitsuba_warp_Linear2D_m_inv_patch_size = R"doc(Inverse of the above)doc";
 
@@ -8230,6 +8230,8 @@ R"doc(Given a uniformly distributed 2D sample, draw a sample from the
 distribution (parameterized by ``param`` if applicable)
 
 Returns the warped sample and associated probability density.)doc";
+
+static const char *__doc_mitsuba_warp_Linear2D_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_beckmann_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
 

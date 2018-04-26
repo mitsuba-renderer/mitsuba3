@@ -470,13 +470,13 @@ MTS_PY_EXPORT(warp) {
             [](const Linear2D0 *lw, const Vector2fP &sample, MaskP active) {
                 return lw->sample(sample, (const FloatP *) nullptr, active);
             }), "sample"_a, "active"_a = true)
-        .def("invert", [](const Linear2D0 *lw, const Vector2f &invert, bool active) {
-                return lw->invert(invert, (const Float *) nullptr, active);
-            }, "invert"_a, "active"_a = true, D(warp, Linear2D, invert))
-        .def("invert", enoki::vectorize_wrapper(
-            [](const Linear2D0 *lw, const Vector2fP &invert, MaskP active) {
-                return lw->invert(invert, (const FloatP *) nullptr, active);
-            }), "invert"_a, "active"_a = true)
+        .def("inverse", [](const Linear2D0 *lw, const Vector2f &inverse, bool active) {
+                return lw->inverse(inverse, (const Float *) nullptr, active);
+            }, "inverse"_a, "active"_a = true, D(warp, Linear2D, inverse))
+        .def("inverse", enoki::vectorize_wrapper(
+            [](const Linear2D0 *lw, const Vector2fP &inverse, MaskP active) {
+                return lw->inverse(inverse, (const FloatP *) nullptr, active);
+            }), "inverse"_a, "active"_a = true)
         .def("eval", [](const Linear2D0 *lw, const Vector2f &pos, bool active) {
                 return lw->eval(pos, (const Float *) nullptr, active);
             }, "pos"_a, "active"_a = true, D(warp, Linear2D, eval))
@@ -512,17 +512,17 @@ MTS_PY_EXPORT(warp) {
                 FloatP params[1] = { param1 };
                 return lw->sample(sample, params, active);
             }), "sample"_a, "param1"_a, "active"_a = true)
-        .def("invert", [](const Linear2D1 *lw, const Vector2f &invert,
+        .def("inverse", [](const Linear2D1 *lw, const Vector2f &inverse,
                           Float param1, bool active) {
                 Float params[1] = { param1 };
-                return lw->invert(invert, params, active);
-            }, "invert"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, invert))
-        .def("invert", enoki::vectorize_wrapper(
-            [](const Linear2D1 *lw, const Vector2fP &invert,
+                return lw->inverse(inverse, params, active);
+            }, "inverse"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, inverse))
+        .def("inverse", enoki::vectorize_wrapper(
+            [](const Linear2D1 *lw, const Vector2fP &inverse,
                 FloatP param1, MaskP active) {
                 FloatP params[1] = { param1 };
-                return lw->invert(invert, params, active);
-            }), "invert"_a, "param1"_a, "active"_a = true)
+                return lw->inverse(inverse, params, active);
+            }), "inverse"_a, "param1"_a, "active"_a = true)
         .def("eval", [](const Linear2D1 *lw, const Vector2f &pos,
                        Float param1, bool active) {
                 Float params[1] = { param1 };
@@ -552,17 +552,17 @@ MTS_PY_EXPORT(warp) {
                 data.data(), param_res, param_values_2, normalize, build_hierarchy
             );
         }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Linear2D))
-        .def("invert", [](const Linear2D2 *lw, const Vector2f &invert,
+        .def("inverse", [](const Linear2D2 *lw, const Vector2f &inverse,
                           Float param1, Float param2, bool active) {
                 Float params[2] = { param1, param2 };
-                return lw->invert(invert, params, active);
-            }, "invert"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Linear2D, invert))
-        .def("invert", enoki::vectorize_wrapper(
-            [](const Linear2D2 *lw, const Vector2fP &invert,
+                return lw->inverse(inverse, params, active);
+            }, "inverse"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Linear2D, inverse))
+        .def("inverse", enoki::vectorize_wrapper(
+            [](const Linear2D2 *lw, const Vector2fP &inverse,
                 FloatP param1, FloatP param2, MaskP active) {
                 FloatP params[2] = { param1, param2 };
-                return lw->invert(invert, params, active);
-            }), "invert"_a, "param1"_a, "param2"_a, "active"_a = true)
+                return lw->inverse(inverse, params, active);
+            }), "inverse"_a, "param1"_a, "param2"_a, "active"_a = true)
         .def("sample", [](const Linear2D2 *lw, const Vector2f &sample,
                           Float param1, Float param2, bool active) {
                 Float params[2] = { param1, param2 };
@@ -608,18 +608,18 @@ MTS_PY_EXPORT(warp) {
                 data.data(), param_res, param_values_2, normalize, build_hierarchy
             );
         }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Linear2D))
-        .def("invert", [](const Linear2D3 *lw, const Vector2f &invert,
+        .def("inverse", [](const Linear2D3 *lw, const Vector2f &inverse,
                           Float param1, Float param2, Float param3, bool active) {
                 Float params[3] = { param1, param2, param3 };
-                return lw->invert(invert, params, active);
-            }, "invert"_a, "param1"_a, "param2"_a, "param3"_a,
-               "active"_a = true, D(warp, Linear2D, invert))
-        .def("invert", enoki::vectorize_wrapper(
-            [](const Linear2D3 *lw, const Vector2fP &invert,
+                return lw->inverse(inverse, params, active);
+            }, "inverse"_a, "param1"_a, "param2"_a, "param3"_a,
+               "active"_a = true, D(warp, Linear2D, inverse))
+        .def("inverse", enoki::vectorize_wrapper(
+            [](const Linear2D3 *lw, const Vector2fP &inverse,
                 FloatP param1, FloatP param2, FloatP param3, MaskP active) {
                 FloatP params[3] = { param1, param2, param3 };
-                return lw->invert(invert, params, active);
-            }), "invert"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
+                return lw->inverse(inverse, params, active);
+            }), "inverse"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
         .def("sample", [](const Linear2D3 *lw, const Vector2f &sample,
                           Float param1, Float param2, Float param3, bool active) {
                 Float params[3] = { param1, param2, param3 };

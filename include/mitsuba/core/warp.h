@@ -841,10 +841,10 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, mask_t<Value> active) {
-                    return gather<Value>(m_param_values[dim].get(), idx, active) <= param[dim];
+                    return gather<Value>(m_param_values[dim].get(), idx,
+                                         active) <= param[dim];
                 },
-                active
-            );
+                active);
 
             Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
                   p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
@@ -945,8 +945,8 @@ public:
 
     /// Inverse of the mapping implemented in \c sample()
     template <typename Vector2f, typename Value = value_t<Vector2f>>
-    Vector2f invert(Vector2f sample, const Value *param = nullptr,
-                    mask_t<Value> active = true) const {
+    Vector2f inverse(Vector2f sample, const Value *param = nullptr,
+                     mask_t<Value> active = true) const {
         using Vector2u = uint32_array_t<Vector2f>;
         using Vector2i = int32_array_t<Vector2f>;
         using UInt32   = value_t<Vector2u>;
@@ -961,10 +961,10 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, mask_t<Value> active) {
-                    return gather<Value>(m_param_values[dim].get(), idx, active) <= param[dim];
+                    return gather<Value>(m_param_values[dim].get(), idx,
+                                         active) <= param[dim];
                 },
-                active
-            );
+                active);
 
             Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
                   p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
@@ -1072,10 +1072,10 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, mask_t<Value> active) {
-                    return gather<Value>(m_param_values[dim].get(), idx, active) <= param[dim];
+                    return gather<Value>(m_param_values[dim].get(), idx,
+                                         active) <= param[dim];
                 },
-                active
-            );
+                active);
 
             Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
                   p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
@@ -1115,7 +1115,8 @@ public:
     std::string to_string() const {
         std::ostringstream oss;
         oss << "Linear2D<" << Dimension << ">[" << std::endl
-            << "  size = [" << m_levels[0].width << ", " <<  m_levels[0].size / m_levels[0].width << "]," << std::endl
+            << "  size = [" << m_levels[0].width << ", "
+            << m_levels[0].size / m_levels[0].width << "]," << std::endl
             << "  levels = " << m_levels.size() << "," << std::endl
             << "  param_size = [";
         for (size_t i = 0; i<Dimension; ++i) {
@@ -1134,7 +1135,8 @@ public:
         if (Dimension > 0)
             n_slices = m_param_strides[0] * m_param_size[0];
         oss << "]," << std::endl
-            << "  storage = { " << n_slices << " slice" << (size > 1 ? "s" : "") << ", ";
+            << "  storage = { " << n_slices << " slice" << (size > 1 ? "s" : "")
+            << ", ";
         for (size_t i = 0; i < m_levels.size(); ++i) {
             std::cout << m_levels[i].size << std::endl;
             size += m_levels[i].size * n_slices;
