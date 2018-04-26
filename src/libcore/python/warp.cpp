@@ -452,6 +452,7 @@ MTS_PY_EXPORT(warp) {
     using Linear2D0 = warp::Linear2D<0>;
     using Linear2D1 = warp::Linear2D<1>;
     using Linear2D2 = warp::Linear2D<2>;
+    using Linear2D3 = warp::Linear2D<3>;
 
     py::class_<Linear2D0>(warp, "Linear2D0", D(warp, Linear2D))
         .def(py::init([](py::array_t<Float> data, bool normalize, bool build_hierarchy) {
@@ -483,60 +484,62 @@ MTS_PY_EXPORT(warp) {
             [](const Linear2D0 *lw, const Vector2fP &pos, MaskP active) {
                 return lw->eval(pos, (const FloatP *) nullptr, active);
             }), "pos"_a, "active"_a = true)
+        .def("__repr__", &Linear2D0::to_string);
         ;
 
     py::class_<Linear2D1>(warp, "Linear2D1")
         .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_hierarchy) {
-            if (data.ndim() != 3 || data.shape(1) != data.shape(2))
+            if (data.ndim() != 3)
                 throw std::domain_error("data array has incorrect dimension");
             if (param_values.size() == 1 || (uint32_t) param_values[0].size() != (uint32_t) data.shape(0))
                 throw std::domain_error("param_values array has incorrect dimension");
             uint32_t param_res[1] = { (uint32_t) param_values[0].size() };
             const Float *param_values_2[1] = { param_values[0].data() };
             return Linear2D1(
-                (uint32_t) data.shape(1), data.data(),
-                param_res, param_values_2, normalize, build_hierarchy
+                Vector2u((uint32_t) data.shape(2), (uint32_t) data.shape(1)),
+                data.data(), param_res, param_values_2, normalize, build_hierarchy
             );
         }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Linear2D))
-        .def("sample", [](const Linear2D2 *lw, const Vector2f &sample,
+        .def("sample", [](const Linear2D1 *lw, const Vector2f &sample,
                           Float param1, bool active) {
                 Float params[1] = { param1 };
                 return lw->sample(sample, params, active);
             }, "sample"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, sample))
         .def("sample", enoki::vectorize_wrapper(
-            [](const Linear2D2 *lw, const Vector2fP &sample,
+            [](const Linear2D1 *lw, const Vector2fP &sample,
                 FloatP param1, MaskP active) {
                 FloatP params[1] = { param1 };
                 return lw->sample(sample, params, active);
             }), "sample"_a, "param1"_a, "active"_a = true)
-        .def("invert", [](const Linear2D2 *lw, const Vector2f &invert,
+        .def("invert", [](const Linear2D1 *lw, const Vector2f &invert,
                           Float param1, bool active) {
                 Float params[1] = { param1 };
                 return lw->invert(invert, params, active);
             }, "invert"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, invert))
         .def("invert", enoki::vectorize_wrapper(
-            [](const Linear2D2 *lw, const Vector2fP &invert,
+            [](const Linear2D1 *lw, const Vector2fP &invert,
                 FloatP param1, MaskP active) {
                 FloatP params[1] = { param1 };
                 return lw->invert(invert, params, active);
             }), "invert"_a, "param1"_a, "active"_a = true)
-        .def("eval", [](const Linear2D2 *lw, const Vector2f &pos,
+        .def("eval", [](const Linear2D1 *lw, const Vector2f &pos,
                        Float param1, bool active) {
                 Float params[1] = { param1 };
                 return lw->eval(pos, params, active);
             }, "pos"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, eval))
         .def("eval", enoki::vectorize_wrapper(
-            [](const Linear2D2 *lw, const Vector2fP &pos,
+            [](const Linear2D1 *lw, const Vector2fP &pos,
                 FloatP param1, MaskP active) {
                 FloatP params[1] = { param1 };
                 return lw->eval(pos, params, active);
-            }), "pos"_a, "param1"_a, "active"_a = true);
+            }), "pos"_a, "param1"_a, "active"_a = true)
+        .def("__repr__", &Linear2D1::to_string);
 
     py::class_<Linear2D2>(warp, "Linear2D2")
         .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_hierarchy) {
-            if (data.ndim() != 4 || data.shape(2) != data.shape(3))
+            if (data.ndim() != 4)
                 throw std::domain_error("data array has incorrect dimension");
             if (param_values.size() != 2 ||
                 (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
@@ -545,8 +548,8 @@ MTS_PY_EXPORT(warp) {
             uint32_t param_res[2] = { (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size() };
             const Float *param_values_2[2] = { param_values[0].data(), param_values[1].data() };
             return Linear2D2(
-                (uint32_t) data.shape(2), data.data(),
-                param_res, param_values_2, normalize, build_hierarchy
+                Vector2u((uint32_t) data.shape(3), (uint32_t) data.shape(2)),
+                data.data(), param_res, param_values_2, normalize, build_hierarchy
             );
         }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Linear2D))
         .def("invert", [](const Linear2D2 *lw, const Vector2f &invert,
@@ -581,5 +584,66 @@ MTS_PY_EXPORT(warp) {
                 FloatP param1, FloatP param2, MaskP active) {
                 FloatP params[2] = { param1, param2 };
                 return lw->eval(pos, params, active);
-            }), "pos"_a, "param1"_a, "param2"_a, "active"_a = true);
+            }), "pos"_a, "param1"_a, "param2"_a, "active"_a = true)
+        .def("__repr__", &Linear2D2::to_string);
+
+    py::class_<Linear2D3>(warp, "Linear2D3")
+        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+                         bool normalize, bool build_hierarchy) {
+            if (data.ndim() != 5)
+                throw std::domain_error("data array has incorrect dimension");
+            if (param_values.size() != 2 ||
+                (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
+                (uint32_t) param_values[1].size() != (uint32_t) data.shape(1) ||
+                (uint32_t) param_values[2].size() != (uint32_t) data.shape(2))
+                throw std::domain_error("param_values array has incorrect dimension");
+            uint32_t param_res[3] = { (uint32_t) param_values[0].size(),
+                                      (uint32_t) param_values[1].size(),
+                                      (uint32_t) param_values[2].size() };
+            const Float *param_values_2[3] = { param_values[0].data(),
+                                               param_values[1].data(),
+                                               param_values[2].data() };
+            return Linear2D3(
+                Vector2u((uint32_t) data.shape(4), (uint32_t) data.shape(3)),
+                data.data(), param_res, param_values_2, normalize, build_hierarchy
+            );
+        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Linear2D))
+        .def("invert", [](const Linear2D3 *lw, const Vector2f &invert,
+                          Float param1, Float param2, Float param3, bool active) {
+                Float params[3] = { param1, param2, param3 };
+                return lw->invert(invert, params, active);
+            }, "invert"_a, "param1"_a, "param2"_a, "param3"_a,
+               "active"_a = true, D(warp, Linear2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Linear2D3 *lw, const Vector2fP &invert,
+                FloatP param1, FloatP param2, FloatP param3, MaskP active) {
+                FloatP params[3] = { param1, param2, param3 };
+                return lw->invert(invert, params, active);
+            }), "invert"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
+        .def("sample", [](const Linear2D3 *lw, const Vector2f &sample,
+                          Float param1, Float param2, Float param3, bool active) {
+                Float params[3] = { param1, param2, param3 };
+                return lw->sample(sample, params, active);
+            }, "sample"_a, "param1"_a, "param2"_a, "param3"_a,
+               "active"_a = true, D(warp, Linear2D, sample))
+        .def("sample", enoki::vectorize_wrapper(
+            [](const Linear2D3 *lw, const Vector2fP &sample,
+                FloatP param1, FloatP param2, FloatP param3, MaskP active) {
+                FloatP params[3] = { param1, param2, param3 };
+                return lw->sample(sample, params, active);
+            }), "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
+        .def("eval", [](const Linear2D3 *lw, const Vector2f &pos,
+                       Float param1, Float param2, Float param3, bool active) {
+                Float params[3] = { param1, param2, param3 };
+                return lw->eval(pos, params, active);
+            }, "pos"_a, "param1"_a, "param2"_a, "param3"_a,
+               "active"_a = true, D(warp, Linear2D, eval))
+        .def("eval", enoki::vectorize_wrapper(
+            [](const Linear2D3 *lw, const Vector2fP &pos,
+                FloatP param1, FloatP param2, FloatP param3, MaskP active) {
+                FloatP params[3] = { param1, param2, param3 };
+                return lw->eval(pos, params, active);
+            }), "pos"_a, "param1"_a, "param2"_a,
+                "param3"_a, "active"_a = true)
+        .def("__repr__", &Linear2D3::to_string);
 }

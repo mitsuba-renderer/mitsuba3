@@ -4,6 +4,7 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/vector.h>
+#include <mitsuba/core/util.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -834,7 +835,7 @@ public:
         using UInt32   = value_t<Vector2u>;
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
-        Value param_weight[ArraySize];
+        Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
             UInt32 param_index = math::find_interval(
@@ -848,7 +849,9 @@ public:
             Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
                   p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
 
-            param_weight[dim] = clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+            param_weight[2 * dim + 1] =
+                clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+            param_weight[2 * dim] = 1.f - param_weight[2 * dim + 1];
             slice_offset += m_param_strides[dim] * param_index;
         }
 
@@ -952,7 +955,7 @@ public:
         const Level &level = m_levels[0];
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
-        Value param_weight[ArraySize];
+        Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
             UInt32 param_index = math::find_interval(
@@ -966,7 +969,9 @@ public:
             Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
                   p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
 
-            param_weight[dim] = clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+            param_weight[2 * dim + 1] =
+                clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+            param_weight[2 * dim] = 1.f - param_weight[2 * dim + 1];
             slice_offset += m_param_strides[dim] * param_index;
         }
 
@@ -1061,7 +1066,7 @@ public:
         using UInt32 = value_t<Vector2u>;
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
-        Value param_weight[ArraySize];
+        Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
             UInt32 param_index = math::find_interval(
@@ -1075,7 +1080,9 @@ public:
             Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
                   p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
 
-            param_weight[dim] = clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+            param_weight[2 * dim + 1] =
+                clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+            param_weight[2 * dim] = 1.f - param_weight[2 * dim + 1];
             slice_offset += m_param_strides[dim] * param_index;
         }
 
@@ -1103,6 +1110,38 @@ public:
         return select(all(pos >= 0 && pos <= m_inv_patch_size),
                 fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
                       w1.y() * fmadd(w0.x(), v01, w1.x() * v11)), 0.f);
+    }
+
+    std::string to_string() const {
+        std::ostringstream oss;
+        oss << "Linear2D<" << Dimension << ">[" << std::endl
+            << "  size = [" << m_levels[0].width << ", " <<  m_levels[0].size / m_levels[0].width << "]," << std::endl
+            << "  levels = " << m_levels.size() << "," << std::endl
+            << "  param_size = [";
+        for (size_t i = 0; i<Dimension; ++i) {
+            if (i != 0)
+                oss << ", ";
+            oss << m_param_size[i];
+        }
+        oss << "]," << std::endl
+            << "  param_strides = [";
+        for (size_t i = 0; i<Dimension; ++i) {
+            if (i != 0)
+                oss << ", ";
+            oss << m_param_strides[i];
+        }
+        size_t n_slices = 1, size = 0;
+        if (Dimension > 0)
+            n_slices = m_param_strides[0] * m_param_size[0];
+        oss << "]," << std::endl
+            << "  storage = { " << n_slices << " slice" << (size > 1 ? "s" : "") << ", ";
+        for (size_t i = 0; i < m_levels.size(); ++i) {
+            std::cout << m_levels[i].size << std::endl;
+            size += m_levels[i].size * n_slices;
+        }
+        oss << util::mem_string(size) << " }"<< std::endl
+            << "]";
+        return oss.str();
     }
 
 private:
@@ -1142,11 +1181,12 @@ private:
                                 const Value *param_weight,
                                 mask_t<Value> active) const {
             Index i1 = i0 + param_strides[Dim - 1] * size;
-            Value w1 = param_weight[Dim - 1],
-                  w0 = 1.f - w1;
 
-            Value v0 = lookup<Dim - 1>(i0, param_strides, param_weight, active);
-            Value v1 = lookup<Dim - 1>(i1, param_strides, param_weight, active);
+            Value w0 = param_weight[2 * Dim - 2],
+                  w1 = param_weight[2 * Dim - 1],
+                  v0 = lookup<Dim - 1>(i0, param_strides, param_weight, active),
+                  v1 = lookup<Dim - 1>(i1, param_strides, param_weight, active);
+
             return fmadd(v0, w0, v1 * w1);
         }
 
