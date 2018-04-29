@@ -38,6 +38,9 @@ public:
         ETruncReadWrite
     };
 
+    using Stream::read;
+    using Stream::write;
+
     /** \brief Constructs a new FileStream by opening the file pointed by <tt>p</tt>.
      *
      * The file is opened in read-only or read/write mode as specified by \c mode.

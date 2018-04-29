@@ -23,6 +23,9 @@ public:
         EGZipStream ///< A gzip-compatible stream
     };
 
+    using Stream::read;
+    using Stream::write;
+
     /** \brief Creates a new compression stream with the given underlying stream.
      * This new instance takes ownership of the child stream. The child stream
      * must outlive the ZStream.

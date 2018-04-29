@@ -12,6 +12,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE MemoryStream : public Stream {
 public:
+    using Stream::read;
+    using Stream::write;
 
     /** \brief Creates a new memory stream, initializing the memory buffer
      * with a capacity of <tt>capacity</tt> bytes. For best performance,

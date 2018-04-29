@@ -28,17 +28,17 @@ class MTS_EXPORT_CORE Struct : public Object {
 public:
     /// Type of a field in the \c Struct
     enum EType {
+        /* Invalid/unspecified */
+        EInvalid = 0,
+
         /* Signed and unsigned integer values */
-        EInt8, EUInt8,
-        EInt16, EUInt16,
-        EInt32, EUInt32,
-        EInt64, EUInt64,
+        EUInt8,  EInt8,
+        EUInt16, EInt16,
+        EUInt32, EInt32,
+        EUInt64, EInt64,
 
         /* Floating point values */
         EFloat16, EFloat32, EFloat64,
-
-        /* Invalid/unspecified */
-        EInvalid,
 
         /* Compile-time float precision */
         #if defined(SINGLE_PRECISION)

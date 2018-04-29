@@ -38,6 +38,7 @@ add_library(mitsuba-core-obj OBJECT
   logger.cpp           ${INC_DIR}/logger.h
   math.cpp             ${INC_DIR}/math.h
   mmap.cpp             ${INC_DIR}/mmap.h
+  tensor.cpp           ${INC_DIR}/tensor.h
   mstream.cpp          ${INC_DIR}/mstream.h
   object.cpp           ${INC_DIR}/object.h
   plugin.cpp           ${INC_DIR}/plugin.h
