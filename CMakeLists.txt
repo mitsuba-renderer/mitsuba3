@@ -20,7 +20,7 @@ option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?" OFF)  # To catc
 
 option(MTS_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
 if(MTS_THROW_TRAPS_DEBUGGER)
-    add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
+  add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
 endif()
 
 # For developers: ability to disable Link Time Optimization to speed up builds
@@ -29,6 +29,8 @@ option(MTS_ENABLE_LTO "Enable Link Time Optimization?" ON)
 
 cmake_policy(SET CMP0022 NEW) # New-style link interface
 cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
+cmake_policy(SET CMP0068 NEW) # RPATH settings on macOS don't affect install_name.
+
 
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
@@ -381,10 +383,6 @@ endfunction(add_plugin)
 # Initialize CMake variables
 set(MITSUBA_DIST "" CACHE INTERNAL "")
 set(MITSUBA_TEST_DIRECTORIES "" CACHE INTERNAL "")
-
-# For the Mitsuba plugins and libraries, don't set a build/install rpath
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH "")
 
 # Register the Mitsuba codebase
 add_subdirectory(src)
