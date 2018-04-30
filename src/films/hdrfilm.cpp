@@ -184,8 +184,6 @@ public:
         if (extension != proper_extension)
             filename.replace_extension(proper_extension);
 
-        m_storage->bitmap()->write("out.exr");
-
         Log(EInfo, "Developing \"%s\" ..", filename.string());
 
         ref<Bitmap> bitmap =
