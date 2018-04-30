@@ -68,10 +68,11 @@ SurfaceInteraction3f Scene::ray_intersect(const Ray3f &ray) const {
     ScopedPhase sp(EProfilerPhase::ERayIntersect);
     Float hit_t, cache[MTS_KD_INTERSECTION_CACHE_SIZE];
     bool hit;
+
     #if defined(MTS_DISABLE_KDTREE)
-    std::tie(hit, hit_t) = m_kdtree->ray_intersect_naive<false>(ray, cache);
+        std::tie(hit, hit_t) = m_kdtree->ray_intersect_naive<false>(ray, cache);
     #else
-    std::tie(hit, hit_t) = m_kdtree->ray_intersect<false>(ray, cache);
+        std::tie(hit, hit_t) = m_kdtree->ray_intersect<false>(ray, cache);
     #endif
 
     SurfaceInteraction3f si;
@@ -88,9 +89,9 @@ SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) cons
     MaskP hit;
 
     #if defined(MTS_DISABLE_KDTREE)
-    std::tie(hit, hit_t) = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
+        std::tie(hit, hit_t) = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
     #else
-    std::tie(hit, hit_t) = m_kdtree->ray_intersect<false>(ray, cache, active);
+        std::tie(hit, hit_t) = m_kdtree->ray_intersect<false>(ray, cache, active);
     #endif
 
     SurfaceInteraction3fP si;
@@ -103,19 +104,21 @@ SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) cons
 
 bool Scene::ray_test(const Ray3f &ray) const {
     ScopedPhase p(EProfilerPhase::ERayTest);
+
     #if defined(MTS_DISABLE_KDTREE)
-    return m_kdtree->ray_intersect_naive<true>(ray).first;
+        return m_kdtree->ray_intersect_naive<true>(ray).first;
     #else
-    return m_kdtree->ray_intersect<true>(ray).first;
+        return m_kdtree->ray_intersect<true>(ray).first;
     #endif
 }
 
 MaskP Scene::ray_test(const Ray3fP &ray, MaskP active) const {
     ScopedPhase p(EProfilerPhase::ERayTestP);
+
     #if defined(MTS_DISABLE_KDTREE)
-    return m_kdtree->ray_intersect_naive<true>(ray, (FloatP *) nullptr, active).first;
+        return m_kdtree->ray_intersect_naive<true>(ray, (FloatP *) nullptr, active).first;
     #else
-    return m_kdtree->ray_intersect<true>(ray, nullptr, active).first;
+        return m_kdtree->ray_intersect<true>(ray, nullptr, active).first;
     #endif
 }
 
@@ -181,7 +184,7 @@ Scene::sample_emitter_direction_impl(const Interaction &it, Point2 sample,
 
     // Perform a visibility test if requested
     if (test_visibility && any(active)) {
-        Ray ray(it.p, ds.d, math::Epsilon,
+        Ray ray(it.p, ds.d, math::Epsilon * (1.f + hmax(abs(it.p))),
                 ds.dist * (1.f - math::ShadowEpsilon),
                 it.time, it.wavelengths);
         Mask hit = ray_test(ray, active);

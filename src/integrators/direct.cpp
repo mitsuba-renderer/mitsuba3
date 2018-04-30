@@ -101,8 +101,8 @@ public:
             Mask valid = active && neq(bs.pdf, 0.f);
 
             // Trace the ray in the sampled direction and intersect against the scene
-            RayDifferential bdsf_ray(si.p, si.to_world(bs.wo), si.time, ray.wavelengths);
-            SurfaceInteraction si_bsdf = scene->ray_intersect(bdsf_ray, active);
+            SurfaceInteraction si_bsdf =
+                scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active);
 
             // Retain only rays that hit an emitter
             valid = valid && si_bsdf.is_valid() && si_bsdf.is_emitter();

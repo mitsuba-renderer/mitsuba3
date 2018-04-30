@@ -148,7 +148,8 @@ public:
                                      * Frame::cos_theta(bs.wo) <= 0));
 
             // Trace the ray with this new direction
-            ray = RayDifferential(si.p, si.to_world(bs.wo), si.time, ray.wavelengths);
+            ray = si.spawn_ray(si.to_world(bs.wo));
+
             // Intersect against the scene
             SurfaceInteraction3 &si_next = rs.ray_intersect(ray, active);
             hit = si_next.is_valid();

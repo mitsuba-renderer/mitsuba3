@@ -15,9 +15,11 @@ template <typename Point3_> struct Interaction {
     // =============================================================
 
     using Point3   = Point3_;
+    using Vector3  = vector3_t<Point3>;
     using Value    = value_t<Point3>;
     using Spectrum = mitsuba::Spectrum<Value>;
     using Mask     = mask_t<Value>;
+    using Ray3     = Ray<Point3>;
 
     //! @}
     // =============================================================
@@ -50,6 +52,22 @@ template <typename Point3_> struct Interaction {
         return neq(t, math::Infinity);
     }
 
+    /// Spawn a semi-infinite ray towards the given direction
+    Ray3 spawn_ray(const Vector3 &d) {
+        return Ray3(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
+                    math::Infinity, time, wavelengths);
+    }
+
+    /// Spawn a finite ray towards the given position
+    Ray3 spawn_ray_to(const Point3 &t) {
+        Vector3 d = t - p;
+        Value dist = norm(d);
+        d /= dist;
+
+        return Ray3(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
+                    dist * (1.f - math::ShadowEpsilon), time, wavelengths);
+    }
+
     //! @}
     // =============================================================
 
@@ -68,6 +86,7 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     //
     using Base = Interaction<Point3_>;
     using typename Base::Point3;
+    using typename Base::Vector3;
     using typename Base::Value;
     using typename Base::Mask;
     using typename Base::Spectrum;
@@ -76,7 +95,6 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
 
     using Point2              = point2_t<Point3>;
     using Vector2             = vector2_t<Point3>;
-    using Vector3             = vector3_t<Point3>;
     using Normal3             = normal3_t<Point3>;
 
     using Frame3              = Frame<Vector3>;

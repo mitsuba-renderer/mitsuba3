@@ -17,6 +17,8 @@ auto bind_interaction(py::module &m, const char *name) {
         .def_readwrite("p", &Type::p, D(Interaction, p))
         // Methods
         .def(py::init<>(), D(Interaction, Interaction))
+        .def("spawn_ray", &Type::spawn_ray, D(Interaction, spawn_ray))
+        .def("spawn_ray_to", &Type::spawn_ray_to, D(Interaction, spawn_ray_to))
         .def("is_valid", &Type::is_valid, D(Interaction, is_valid));
 }
 

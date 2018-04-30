@@ -2918,6 +2918,10 @@ static const char *__doc_mitsuba_Interaction_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_p = R"doc(Position of the interaction in world coordinates)doc";
 
+static const char *__doc_mitsuba_Interaction_spawn_ray = R"doc(Spawn a semi-infinite ray towards the given direction)doc";
+
+static const char *__doc_mitsuba_Interaction_spawn_ray_to = R"doc(Spawn a finite ray towards the given position)doc";
+
 static const char *__doc_mitsuba_Interaction_t = R"doc(Distance traveled along the ray)doc";
 
 static const char *__doc_mitsuba_Interaction_time = R"doc(Time value associated with the interaction)doc";

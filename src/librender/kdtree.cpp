@@ -49,7 +49,8 @@ ShapeKDTree::ShapeKDTree(const Properties &props)
 
 void ShapeKDTree::add_shape(Shape *shape) {
     Assert(!ready());
-    m_primitive_map.push_back(m_primitive_map.back() + shape->primitive_count());
+    m_primitive_map.push_back(m_primitive_map.back() +
+                              shape->primitive_count());
     m_shapes.push_back(shape);
     m_bbox.expand(shape->bbox());
 }

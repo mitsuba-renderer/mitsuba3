@@ -2220,7 +2220,7 @@ public:
                 break;
             }
         }
-        return { hit, hit ? ray.maxt : math::Infinity};
+        return { hit, hit ? ray.maxt : math::Infinity };
     }
 
     /// Vectorized ray tracing kernel
