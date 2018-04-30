@@ -740,8 +740,13 @@ public:
             slices *= m_param_size[i];
         }
 
+        m_patch_size = 1.f / n_patches;
+        m_inv_patch_size = n_patches;
+        m_max_patch_index = n_patches - 1;
+
         if (!build_hierarchy) {
-            m_levels.push_back(Level(size, slices));
+            m_levels.reserve(1);
+            m_levels.emplace_back(size, slices);
 
             for (uint32_t slice = 0; slice < slices; ++slice) {
                 uint32_t offset = m_levels[0].size * slice;
@@ -762,12 +767,12 @@ public:
 
         /* Allocate memory for input array and MIP hierarchy */
         m_levels.reserve(max_level + 2);
-        m_levels.push_back(Level(size, slices));
+        m_levels.emplace_back(size, slices);
 
         Vector2u level_size = n_patches;
         for (int level = max_level; level >= 0; --level) {
             level_size += level_size & 1u; // zero-pad
-            m_levels.push_back(Level(level_size, slices));
+            m_levels.emplace_back(level_size, slices);
             level_size = sri<1>(level_size);
         }
 
@@ -816,10 +821,6 @@ public:
                 }
             }
         }
-
-        m_patch_size = 1.f / n_patches;
-        m_inv_patch_size = n_patches;
-        m_max_patch_index = n_patches - 1;
     }
 
     /**
@@ -1137,10 +1138,8 @@ public:
         oss << "]," << std::endl
             << "  storage = { " << n_slices << " slice" << (size > 1 ? "s" : "")
             << ", ";
-        for (size_t i = 0; i < m_levels.size(); ++i) {
-            std::cout << m_levels[i].size << std::endl;
+        for (size_t i = 0; i < m_levels.size(); ++i)
             size += m_levels[i].size * n_slices;
-        }
         oss << util::mem_string(size) << " }"<< std::endl
             << "]";
         return oss.str();
