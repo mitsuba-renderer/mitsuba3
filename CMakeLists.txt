@@ -25,12 +25,20 @@ endif()
 
 # For developers: ability to disable Link Time Optimization to speed up builds
 option(MTS_ENABLE_LTO "Enable Link Time Optimization?" ON)
+
 # ----------------------------------
 
-cmake_policy(SET CMP0022 NEW) # New-style link interface
-cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
-cmake_policy(SET CMP0068 NEW) # RPATH settings on macOS don't affect install_name.
+if (POLICY CMP0022)
+  cmake_policy(SET CMP0022 NEW) # New-style link interface
+endif()
 
+if (POLICY CMP0056)
+  cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
+endif()
+
+if (POLICY CMP0068)
+  cmake_policy(SET CMP0068 NEW) # RPATH settings on macOS don't affect install_name.
+endif()
 
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)

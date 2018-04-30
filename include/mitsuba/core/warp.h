@@ -755,7 +755,7 @@ public:
                 if (normalize) {
                     double sum = 0.0;
                     for (uint32_t i = 0; i < m_levels[0].size; ++i)
-                        scale += (double) data[offset + i];
+                        sum += (double) data[offset + i];
                     scale = hprod(n_patches) / (Float) sum;
                 }
                 for (uint32_t i = 0; i < m_levels[0].size; ++i)
@@ -953,7 +953,7 @@ public:
         using UInt32   = value_t<Vector2u>;
         using Mask     = mask_t<Value>;
 
-        const Level &level = m_levels[0];
+        const Level &level0 = m_levels[0];
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];
@@ -979,19 +979,19 @@ public:
         /* Fetch values at corners of bilinear patch */
         sample *= m_inv_patch_size;
         Vector2u offset = min(Vector2u(Vector2i(sample)), m_max_patch_index);
-        UInt32 offset_i = offset.x() + offset.y() * level.width;
+        UInt32 offset_i = offset.x() + offset.y() * level0.width;
 
-        Value v00 = level.template lookup<Dimension>(
+        Value v00 = level0.template lookup<Dimension>(
             offset_i, m_param_strides, param_weight, active);
 
-        Value v10 = level.template lookup<Dimension>(
+        Value v10 = level0.template lookup<Dimension>(
             offset_i + 1, m_param_strides, param_weight, active);
 
-        Value v01 = level.template lookup<Dimension>(
-            offset_i + level.width, m_param_strides, param_weight, active);
+        Value v01 = level0.template lookup<Dimension>(
+            offset_i + level0.width, m_param_strides, param_weight, active);
 
-        Value v11 = level.template lookup<Dimension>(
-            offset_i + level.width + 1, m_param_strides, param_weight, active);
+        Value v11 = level0.template lookup<Dimension>(
+            offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
         sample -= Vector2f(Vector2i(offset));
 
@@ -1011,32 +1011,32 @@ public:
             const Level &level = m_levels[l];
 
             /* Fetch values from next MIP level */
-            UInt32 offset_i = level.index(offset & ~1u);
+            offset_i = level.index(offset & ~1u);
             if (Dimension != 0)
                 offset_i += slice_offset * level.size;
 
-            Value v00 = level.template lookup<Dimension>(
+            v00 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
             offset_i += 1u;
 
-            Value v10 = level.template lookup<Dimension>(
+            v10 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
             offset_i += 1u;
 
-            Value v01 = level.template lookup<Dimension>(
+            v01 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
             offset_i += 1u;
 
-            Value v11 = level.template lookup<Dimension>(
+            v11 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
 
             Mask x_mask = neq(offset.x() & 1u, 0u),
                  y_mask = neq(offset.y() & 1u, 0u);
 
-            Value r0 = v00 + v10,
-                  r1 = v01 + v11,
-                  c0 = select(y_mask, v01, v00),
-                  c1 = select(y_mask, v11, v10);
+            r0 = v00 + v10;
+            r1 = v01 + v11;
+            c0 = select(y_mask, v01, v00);
+            c1 = select(y_mask, v11, v10);
 
             sample.y() *= select(y_mask, r1, r0);
             masked(sample.y(), y_mask) += r0;

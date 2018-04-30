@@ -198,6 +198,7 @@ def test_square_to_std_normal():
 
 def test_linear_warp():
     from mitsuba.core.warp import Linear2D0
+    np.random.seed(0)
     data = np.random.rand(7, 3)
     distr = Linear2D0(data)
     sample_in = np.random.rand(10, 2)

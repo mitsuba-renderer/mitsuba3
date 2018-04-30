@@ -113,10 +113,10 @@ public:
                 uint8_t *target = (uint8_t *) m_vertices.get();
 
                 for (size_t i = 0; i <= packet_count; ++i) {
-                    size_t size = (i != packet_count) ? i_packet_size : i_remainder_size;
+                    size_t psize = (i != packet_count) ? i_packet_size : i_remainder_size;
                     size_t count = (i != packet_count) ? elements_per_packet : remainder_count;
 
-                    stream->read(buf.get(), size);
+                    stream->read(buf.get(), psize);
                     if (unlikely(!conv->convert(count, buf.get(), target)))
                         fail("incompatible contents -- is this a triangle mesh?");
 
@@ -186,10 +186,10 @@ public:
                 uint8_t *target = (uint8_t *) m_faces.get();
 
                 for (size_t i = 0; i <= packet_count; ++i) {
-                    size_t size = (i != packet_count) ? i_packet_size : i_remainder_size;
+                    size_t psize = (i != packet_count) ? i_packet_size : i_remainder_size;
                     size_t count = (i != packet_count) ? elements_per_packet : remainder_count;
 
-                    stream->read(buf.get(), size);
+                    stream->read(buf.get(), psize);
                     if (unlikely(!conv->convert(count, buf.get(), target)))
                         fail("incompatible contents -- is this a triangle mesh?");
 
