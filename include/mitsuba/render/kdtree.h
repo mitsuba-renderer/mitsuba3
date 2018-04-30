@@ -2150,7 +2150,7 @@ public:
                 bool left_first  = (ray.o[axis] < split) ||
                                    (ray.o[axis] == split && ray.d[axis] >= 0.f),
                      start_after = t_plane < mint,
-                     end_before  = t_plane > maxt || t_plane <= 0.f || !std::isfinite(t_plane),
+                     end_before  = t_plane > maxt || t_plane < 0.f || !std::isfinite(t_plane),
                      single_node = start_after || end_before;
 
                 /* If we only need to visit one node, just pick the correct one and continue */
@@ -2267,7 +2267,7 @@ public:
                     MaskP left_first        = (ray.o[axis] < split) ||
                                               (eq(ray.o[axis], split) && ray.d[axis] >= 0.f),
                           start_after       = t_plane < mint,
-                          end_before        = t_plane > maxt || t_plane <= 0.f || !enoki::isfinite(t_plane),
+                          end_before        = t_plane > maxt || t_plane < 0.f || !enoki::isfinite(t_plane),
                           single_node       = start_after || end_before,
                           visit_left        = eq(end_before, left_first),
                           visit_only_left   = single_node &&  visit_left,
