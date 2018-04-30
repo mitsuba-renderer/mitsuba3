@@ -4,6 +4,7 @@ project(mitsuba CXX)
 
 # ---------- User options ----------
 option(MTS_DOUBLE_PRECISION  "Compile renderer in double precision?" OFF)
+option(MTS_ENOKI_DISABLE_APPROX_MATH "Disable Enoki approximate math library" OFF)
 if (UNIX)
   option(MTS_ENABLE_PROFILER   "Enable sampling profiler" ON)
 endif()
@@ -320,6 +321,13 @@ if (MTS_DOUBLE_PRECISION)
 else()
   add_definitions(-DSINGLE_PRECISION)
   message(STATUS "Mitsuba: compiling using single precision.")
+endif()
+
+if (MTS_ENOKI_DISABLE_APPROX_MATH)
+  message(STATUS "Mitsuba: disabling Enoki's approximate math library.")
+  add_definitions(-DENOKI_APPROX_DEFAULT=0)
+else()
+  message(STATUS "Mitsuba: using Enoki's approximate math library.")
 endif()
 
 if (MTS_ENABLE_PROFILER)
