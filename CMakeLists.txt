@@ -40,6 +40,10 @@ if (POLICY CMP0068)
   cmake_policy(SET CMP0068 NEW) # RPATH settings on macOS don't affect install_name.
 endif()
 
+set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH "")
+
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
 include(TestBigEndian)
