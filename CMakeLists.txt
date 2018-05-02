@@ -1,5 +1,5 @@
 # This is the main CMake build file used to compile Mitsuba
-cmake_minimum_required (VERSION 2.8.12)
+cmake_minimum_required (VERSION 3.2.0)
 project(mitsuba CXX)
 
 # ---------- User options ----------
@@ -16,7 +16,7 @@ endif()
 # On Linux:
 #   export LD_LIBRARY_PATH=<path to libasan.so>
 option(MTS_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
-option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?" OFF)  # To catch use of unitialized memory
+option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?"  OFF) # To catch use of unitialized memory
 
 option(MTS_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
 if(MTS_THROW_TRAPS_DEBUGGER)
@@ -24,7 +24,7 @@ if(MTS_THROW_TRAPS_DEBUGGER)
 endif()
 
 # For developers: ability to disable Link Time Optimization to speed up builds
-option(MTS_ENABLE_LTO "Enable Link Time Optimization?" ON)
+option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 
 # ----------------------------------
 
@@ -36,13 +36,18 @@ if (POLICY CMP0056)
   cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
 endif()
 
+if (POLICY CMP0058)
+  cmake_policy(SET CMP0058 NEW) # Ninja requires custom command byproducts to be explicit.
+endif()
+
+if (POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW) # MACOSX_RPATH is enabled by default
+endif()
+set(CMAKE_MACOSX_RPATH ON)
+
 if (POLICY CMP0068)
   cmake_policy(SET CMP0068 NEW) # RPATH settings on macOS don't affect install_name.
 endif()
-
-set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH "")
 
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
@@ -108,11 +113,6 @@ endif()
 # Enable folders for projects in Visual Studio
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-endif()
-
-# Enable default rpaths
-if (APPLE)
-  set(CMAKE_MACOSX_RPATH ON)
 endif()
 
 # Build the dependencies
@@ -395,6 +395,15 @@ endfunction(add_plugin)
 # Initialize CMake variables
 set(MITSUBA_DIST "" CACHE INTERNAL "")
 set(MITSUBA_TEST_DIRECTORIES "" CACHE INTERNAL "")
+
+# Rpath handling for OSX and Linux
+if (APPLE)
+  set(CMAKE_BUILD_RPATH "@loader_path")
+  SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+elseif (UNIX)
+  SET(CMAKE_INSTALL_RPATH "\$ORIGIN")
+  SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif()
 
 # Register the Mitsuba codebase
 add_subdirectory(src)

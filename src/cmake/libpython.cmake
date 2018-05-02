@@ -77,7 +77,9 @@ function(add_mitsuba_python_library TARGET_NAME NAME)
   add_dist(python/mitsuba/${NAME}/${TARGET_NAME})
 
   if (APPLE)
-    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path/..")
+    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path/../../..")
+  elseif(UNIX)
+    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/../../..")
   endif()
 
   set_target_properties(${TARGET_NAME} ${TARGET_NAME}-obj PROPERTIES FOLDER mitsuba-python)
@@ -87,7 +89,10 @@ endfunction()
 add_dist(python/nanogui-python)
 if (APPLE)
   set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "@loader_path/..")
+elseif(UNIX)
+  set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "$ORIGIN/..")
 endif()
+set_target_properties(nanogui-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
 # mkdoc support
 include("cmake/mkdoc.cmake")
