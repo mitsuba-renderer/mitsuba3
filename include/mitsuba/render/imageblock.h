@@ -152,7 +152,7 @@ public:
      */
     MaskP put(const Point2fP &pos, const FloatP *value, MaskP active = true);
 
-    /// Clear everything to zero
+    /// Clear everything to zero.
     void clear() { m_bitmap->clear(); }
 
     // =============================================================

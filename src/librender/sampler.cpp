@@ -5,6 +5,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 Sampler::Sampler(const Properties &props) {
     m_sample_count = props.size_("sample_count", 4);
+    if (props.has_property("seed"))
+        seed(props.size_("seed"));
 }
 
 Sampler::~Sampler() { }

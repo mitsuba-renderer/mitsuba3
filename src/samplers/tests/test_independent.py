@@ -51,3 +51,13 @@ def test03_clone(sampler):
         assert np.all(sampler.next_2d() != sampler2.next_2d())
         assert np.all(sampler.next_1d_p() != sampler2.next_1d_p())
         assert np.all(sampler.next_2d_p() != sampler2.next_2d_p())
+
+
+def test04_seed_vectorized(sampler):
+    """For a given seed, the first lane of a sampled packet should be equal
+    to the sample of a scalar independent sampler."""
+    for seed in range(10):
+        sampler.seed(seed)
+        assert sampler.next_1d() == sampler.next_1d_p()[0]
+        p = sampler.next_2d_p()
+        assert np.allclose(sampler.next_2d(), p[0, :])

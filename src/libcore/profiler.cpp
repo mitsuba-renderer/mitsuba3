@@ -139,7 +139,7 @@ void Profiler::print_report() {
 
     prefix_length += max_indent * 2 + 10;
 
-    Log(EInfo, "Profile (hierarchical):");
+    Log(EInfo, "\U000023F1  Profile (hierarchical):");
     for (auto kv : hierarchical_results) {
         int indent = 4;
         auto slash_index = kv.first.find_last_of("/");
@@ -158,7 +158,7 @@ void Profiler::print_report() {
             kv.second / Float(event_count_total) * 100.f);
     }
 
-    Log(EInfo, "Profile (flat):");
+    Log(EInfo, "\U000023F1  Profile (flat):");
     for (auto kv : leaf_results_sorted) {
         Log(EInfo, "    %s%s%.2f%%", kv.first,
             std::string(prefix_length - kv.first.length() - 4, ' '),

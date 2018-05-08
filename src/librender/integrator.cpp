@@ -1,18 +1,18 @@
+#include <enoki/morton.h>
+#include <mitsuba/core/profiler.h>
+#include <mitsuba/core/progress.h>
+#include <mitsuba/core/timer.h>
+#include <mitsuba/core/util.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spiral.h>
-#include <mitsuba/core/util.h>
-#include <mitsuba/core/warp.h>
-#include <mitsuba/core/timer.h>
-#include <mitsuba/core/profiler.h>
-#include <mitsuba/core/progress.h>
-#include <enoki/morton.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-Integrator::Integrator(const Properties &/*props*/) { }
+Integrator::Integrator(const Properties &/*props*/) {}
 
 SamplingIntegrator::SamplingIntegrator(const Properties &props)
     : Integrator(props) {
@@ -23,6 +23,8 @@ SamplingIntegrator::SamplingIntegrator(const Properties &props)
         m_block_size = b;
         Log(EWarn, "Setting block size to next higher power of two: %i", m_block_size);
     }
+
+    m_timeout = props.float_("timeout", -1.0f);
 }
 
 SamplingIntegrator::~SamplingIntegrator() { }
@@ -33,22 +35,25 @@ void SamplingIntegrator::cancel() {
 
 bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     ScopedPhase sp(EProfilerPhase::ERender);
+    m_stop = false;
+    m_render_timer.reset();
+
     ref<Sensor> sensor = scene->sensor();
     ref<Film> film = sensor->film();
 
     size_t n_cores = util::core_count();
     size_t sample_count = scene->sampler()->sample_count();
     film->clear();
-    m_stop = false;
 
     Log(EInfo, "Starting render job (%ix%i, %i sample%s, %i core%s)",
         film->crop_size().x(), film->crop_size().y(),
         sample_count, sample_count == 1 ? "" : "s",
         n_cores, n_cores == 1 ? "" : "s");
+    if (m_timeout > 0.0f)
+        Log(EInfo, "Timeout specified: %.2f seconds.", m_timeout);
 
     Spiral spiral(film, m_block_size);
 
-    Timer timer;
     ThreadEnvironment env;
     ref<ProgressReporter> progress = new ProgressReporter("Rendering");
     tbb::spin_mutex mutex;
@@ -64,7 +69,7 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
             ref<ImageBlock> block =
                 new ImageBlock(Bitmap::EXYZAW, Vector2i(m_block_size), film->reconstruction_filter());
             Point2fX points;
-            for (auto i = range.begin(); i != range.end() && !m_stop; ++i) {
+            for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
                 Vector2i offset, size;
                 std::tie(offset, size) = spiral.next_block();
 
@@ -98,7 +103,7 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
 
     if (!m_stop)
         Log(EInfo, "Rendering finished. (took %s)",
-            util::time_string(timer.value(), true));
+            util::time_string(m_render_timer.value(), true));
 
     return !m_stop;
 }
@@ -120,13 +125,13 @@ void SamplingIntegrator::render_block_scalar(const Scene *scene,
     Point2f aperture_sample(.5f);
     Vector2f inv_resolution = 1.f / sensor->film()->crop_size();
 
-    for (uint32_t i = 0; i < pixel_count && !m_stop; ++i) {
+    for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
         Point2u p = enoki::morton_decode<Point2u>(i);
         if (any(p >= block->size()))
             continue;
 
         p += block->offset();
-        for (uint32_t j = 0; j < sample_count && !m_stop; ++j) {
+        for (uint32_t j = 0; j < sample_count && !should_stop(); ++j) {
             Vector2f position_sample = p + rs.next_2d();
 
             if (needs_aperture_sample)
@@ -174,6 +179,7 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
 
         size_t max_pixel_count = m_block_size * m_block_size,
                n_entries = 0;
+        // TODO: this scales poorly for large sample counts and / or CPU counts.
         set_slices(points, max_pixel_count * sample_count);
         for (uint32_t i = 0; i < max_pixel_count; ++i) {
             Point2u p = enoki::morton_decode<Point2u>(i);
@@ -200,7 +206,7 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
     Float diff_scale_factor = rsqrt((Float) sampler->sample_count());
     UInt32P index = index_sequence<UInt32P>();
 
-    for (size_t i = 0; i < packets(points) && !m_stop; ++i) {
+    for (size_t i = 0; i < packets(points) && !should_stop(); ++i) {
         MaskP active = index < slices(points);
         Vector2fP position_sample =
             packet(points, i) + offset + rs.next_2d(active);

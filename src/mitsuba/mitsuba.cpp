@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
                 if (success)
                     scene->film()->develop();
                 else
-                    Throw("Rendering failed, result not saved.");
+                    Log(EWarn, "\U0000274C Rendering failed, result not saved.");
                 print_profile = true;
             }
 

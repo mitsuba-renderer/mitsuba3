@@ -1,10 +1,10 @@
-#include <mitsuba/core/thread.h>
-#include <mitsuba/core/logger.h>
-#include <mitsuba/core/jit.h>
-#include <mitsuba/core/util.h>
-#include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/simd.h>
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/jit.h>
+#include <mitsuba/core/logger.h>
+#include <mitsuba/core/simd.h>
+#include <mitsuba/core/thread.h>
+#include <mitsuba/core/util.h>
 #include <mitsuba/python/python.h>
 #include <tbb/task_scheduler_init.h>
 
@@ -45,12 +45,13 @@ MTS_PY_DECLARE(DiscreteDistribution);
 MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(MemoryMappedFile);
 MTS_PY_DECLARE(ProgressReporter);
+MTS_PY_DECLARE(coherence);
 
 PYBIND11_MODULE(mitsuba_core_ext, m_) {
-    (void) m_; /* unused */;
+    (void) m_; /* unused */
 
     // Expose some constants in the main `mitsuba` module
-    py::module m_parent = py::module::import("mitsuba");
+    py::module m_parent          = py::module::import("mitsuba");
     m_parent.attr("__version__") = MTS_VERSION;
     m_parent.attr("MTS_VERSION") = MTS_VERSION;
     m_parent.attr("MTS_YEAR")    = MTS_YEAR;
@@ -59,10 +60,10 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
 #if defined(NDEBUG)
     m_parent.attr("DEBUG")  = false;
     m_parent.attr("NDEBUG") = true;
-#else    // NDEBUG
+#else  // NDEBUG
     m_parent.attr("DEBUG")  = true;
     m_parent.attr("NDEBUG") = false;
-#endif   // NDEBUG
+#endif // NDEBUG
 
     // Import submodules of `mitsuba.core`
     py::module m = py::module::import("mitsuba.core");
@@ -70,7 +71,7 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
 #if defined(SINGLE_PRECISION)
     m.attr("float_dtype") = py::dtype("f");
 #else
-    m.attr("float_dtype") = py::dtype("d");
+    m.attr("float_dtype")   = py::dtype("d");
 #endif
     m.attr("PacketSize") = py::cast(PacketSize);
 
@@ -121,25 +122,42 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
 
     /* Append the mitsuba directory to the FileResolver search path list */
     ref<FileResolver> fr = Thread::thread()->file_resolver();
-    fs::path basePath = util::library_path().parent_path();
+    fs::path basePath    = util::library_path().parent_path();
     if (!fr->contains(basePath))
         fr->append(basePath);
 
-    auto tbb_scheduler = new tbb::task_scheduler_init();
+    /**
+     * Holds a pointer to the current TBB task scheduler.
+     * This will allow us to replace it as needed if we'd like to change the
+     * thread count from the Python side.
+     * The holder itself is heap-allocated so that it survives until we manually
+     * delete it in \ref cleanup_callback.
+     */
+    auto *scheduler_holder = new std::unique_ptr<tbb::task_scheduler_init>(
+        new tbb::task_scheduler_init());
+    m_parent.def(
+        "set_thread_count",
+        [scheduler_holder](int count) {
+            // Make sure the previous scheduler is deleted first.
+            scheduler_holder->reset(nullptr);
+            scheduler_holder->reset(new tbb::task_scheduler_init(count));
+        },
+        "count"_a = -1,
+        "Sets the maximum number of threads to be used by TBB. Defaults to "
+        "-1 (automatic).");
 
     /* Register a cleanup callback function that is invoked when
        the 'mitsuba::Object' Python type is garbage collected */
-    py::cpp_function cleanup_callback(
-        [tbb_scheduler](py::handle weakref) {
-            delete tbb_scheduler;
-            Bitmap::static_shutdown();
-            Logger::static_shutdown();
-            Thread::static_shutdown();
-            Class::static_shutdown();
-            Jit::static_shutdown();
-            weakref.dec_ref();
-        }
-    );
+    py::cpp_function cleanup_callback([scheduler_holder](py::handle weakref) {
+        delete scheduler_holder;
+
+        Bitmap::static_shutdown();
+        Logger::static_shutdown();
+        Thread::static_shutdown();
+        Class::static_shutdown();
+        Jit::static_shutdown();
+        weakref.dec_ref();
+    });
 
     (void) py::weakref(m.attr("Object"), cleanup_callback).release();
 }

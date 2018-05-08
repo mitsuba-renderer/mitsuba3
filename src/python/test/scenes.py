@@ -22,7 +22,7 @@ def empty_scene():
 
 @pytest.fixture
 @fresolver_append_path
-def teapot_scene():
+def teapot_scene(spp = 16):
     scene = load_string("""
         <scene version='2.0.0'>
             <sensor type="perspective">
@@ -41,7 +41,7 @@ def teapot_scene():
                 </film>
 
                 <sampler type="independent">
-                    <integer name="sample_count" value="16"/>
+                    <integer name="sample_count" value="{spp}"/>
                 </sampler>
             </sensor>
 
@@ -63,7 +63,7 @@ def teapot_scene():
                 <spectrum name="intensity" value="100.0f"/>
             </emitter>
         </scene>
-    """)
+    """.format(spp=spp))
     assert scene is not None
     return scene
 

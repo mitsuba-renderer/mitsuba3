@@ -130,6 +130,7 @@ public:
         if (m_bsdf_samples > 0)
             result += result_partial / (Float) m_bsdf_samples;
 
+        rs.alpha = 1.0f;
         return result;
     }
 

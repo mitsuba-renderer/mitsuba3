@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-import warnings
 
 from mitsuba.test.scenes import empty_scene, teapot_scene, make_integrator
 
@@ -24,7 +23,7 @@ def check_scene(integrator, scene):
     assert integrator.render(scene, vectorize=True) is True
     res_vector = np.array(scene.film().bitmap(), copy=True)
 
-    # Check vector and scalar match
+    # Check that vector and scalar renders match well
     # TODO: much stronger verification
     # n = float(np.prod(scene.film().size()))
     # scalar_sum = np.sum(res_scalar[:, :, :3]) / n
@@ -83,4 +82,28 @@ def test03_render_teapot(int_name, teapot_scene):
     # TODO: replace by a proper reference image once the implementation has stabilized.
     nnz = np.sum(np.sum(res[:, :, :3], axis=2) > 1e-7)
     assert (nnz >= 0.20 * n) and (nnz < 0.4 * n)
+
+@pytest.mark.parametrize(*integrators)
+def test04_render_timeout(int_name):
+    from timeit import timeit
+
+    # Very long rendering job, but interrupted by a short timeout
+    timeout = 0.5
+    integrator = make_integrator(int_name,
+                                 """<float name="timeout" value="{}"/>""".format(timeout))
+    scene = teapot_scene(spp=100000)
+
+    def wrapped_scalar():
+        assert integrator.render(scene, vectorize=False) is True
+    def wrapped_vector():
+        assert integrator.render(scene, vectorize=True) is True
+
+    scene.film().clear()
+    effective_s = timeit(wrapped_scalar, number=1)
+    scene.film().clear()
+    effective_v = timeit(wrapped_scalar, number=1)
+
+    # Check that timeout is respected +/- 0.5s.
+    assert np.allclose(timeout, effective_s, atol=0.5)
+    assert np.allclose(timeout, effective_v, atol=0.5)
 

@@ -19,6 +19,8 @@ public:
         std::string component_format = string::to_lower(
             props.string("component_format", "float16"));
 
+        m_dest_file = props.string("filename", "");
+
         if (file_format == "openexr")
             m_file_format = Bitmap::EOpenEXR;
         else if (file_format == "rgbe")
@@ -102,8 +104,23 @@ public:
         m_storage = new ImageBlock(Bitmap::EXYZAW, m_crop_size);
     }
 
+    /**
+     * Clears all channels to 0, except alpha which is set to 1.0.
+     */
     void clear() override {
+        Assert(m_storage->pixel_format() == Bitmap::EXYZAW);
         m_storage->clear();
+
+        Vector2i size = m_storage->size();
+        size_t channel_count = m_storage->channel_count();
+        size_t n_pixels = (size_t) size.x() * (size_t) size.y();
+        Float *target = static_cast<Float *>(m_storage->bitmap()->data());
+
+        target += 3; // Alpha channel, in XYZAW layout
+        for (size_t i = 0; i < n_pixels; ++i) {
+            *target = 1.0f;
+            target += channel_count;
+        }
     }
 
     void put(const ImageBlock *block) override {
@@ -184,7 +201,7 @@ public:
         if (extension != proper_extension)
             filename.replace_extension(proper_extension);
 
-        Log(EInfo, "Developing \"%s\" ..", filename.string());
+        Log(EInfo, "\U00002714  Developing \"%s\" ..", filename.string());
 
         ref<Bitmap> bitmap =
             m_storage->bitmap()->convert(m_pixel_format, m_component_format, false);

@@ -4,6 +4,7 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/timer.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>
@@ -84,6 +85,19 @@ public:
     bool render(Scene *scene, bool vectorize) override;
     void cancel() override;
 
+    /**
+     * Indicates whether \ref cancel() or a timeout have occured. Should be
+     * checked often in each integrator's main loop so that timeout is
+     * enforced accurately.
+     *
+     * Note that accurate timeouts rely on \ref m_render_timer, which needs
+     * to be reset at the beginning of the rendering phase.
+     */
+    bool should_stop() const {
+        return m_stop || (m_timeout > 0.0f &&
+                          m_render_timer.value() > 1000.0f * m_timeout);
+    }
+
     //! @}
     // =========================================================================
 
@@ -92,15 +106,23 @@ protected:
     SamplingIntegrator(const Properties &props);
     virtual ~SamplingIntegrator();
 
-    void render_block_scalar(const Scene *scene, Sampler *sampler,
-                             ImageBlock *block) const;
+    virtual void render_block_scalar(const Scene *scene, Sampler *sampler,
+                                     ImageBlock *block) const;
 
-    void render_block_vector(const Scene *scene, Sampler *sampler,
-                             ImageBlock *block, Point2fX &points) const;
+    virtual void render_block_vector(const Scene *scene, Sampler *sampler,
+                                     ImageBlock *block, Point2fX &points) const;
 
 protected:
+    /// Integrators should stop computing when this flag is set to true.
     bool m_stop;
+    /// Size of (square) image blocks to render per core.
     size_t m_block_size;
+
+    /** Maximum amount of time to spend rendering (excluding scene parsing).
+     * Specified in seconds. A negative values indicates no timeout. */
+    Float m_timeout;
+    /// Timer used to enforce the timeout.
+    Timer m_render_timer;
 };
 
 /*
@@ -125,6 +147,7 @@ protected:
 
 /// Instantiates concrete scalar and packet versions of the endpoint plugin API
 #define MTS_IMPLEMENT_INTEGRATOR()                                             \
+    using SamplingIntegrator::eval;                                            \
     Spectrumf eval(const RayDifferential3f &ray, RadianceSample3f &rs)         \
         const override {                                                       \
         return eval_impl(ray, rs, true);                                       \

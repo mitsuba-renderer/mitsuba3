@@ -17,8 +17,6 @@ def fresolver_append_path(func):
 
     The file resolver is restored to its previous state once the test's
     execution has finished.
-
-    In a function
     """
     par = os.path.dirname
 
