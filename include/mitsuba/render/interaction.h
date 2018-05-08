@@ -266,23 +266,12 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     //! @}
     // =============================================================
 
-    /// Element-by-element constructor
-    SurfaceInteraction(const Value &t, const Value &time,
-                       const Spectrum &wavelengths, const Point3 &p,
-                       const ShapePtr &shape, const Point2 &uv,
-                       const Normal3 &n, const Frame3 sh_frame,
-                       const Vector3 &dp_du, const Vector3 &dp_dv,
-                       const Vector2 &duv_dx, const Vector2 &duv_dy,
-                       const Vector3 &wi, const Index &prim_index,
-                       const ShapePtr &instance, bool has_uv_partials)
-        : Base(t, time, wavelengths, p), shape(shape), uv(uv), n(n),
-          sh_frame(sh_frame), dp_du(dp_du), dp_dv(dp_dv), duv_dx(duv_dx),
-          duv_dy(duv_dy), wi(wi), prim_index(prim_index), instance(instance),
-          has_uv_partials(has_uv_partials) { }
-
-    ENOKI_DERIVED_STRUCT(SurfaceInteraction, Base, shape, uv, n, sh_frame,
-                         dp_du, dp_dv, duv_dx, duv_dy, wi, prim_index, instance,
-                         has_uv_partials)
+    ENOKI_DERIVED_STRUCT(SurfaceInteraction, Base,
+        ENOKI_BASE_FIELDS(t, time, wavelengths, p),
+        ENOKI_DERIVED_FIELDS(shape, uv, n, sh_frame, dp_du, dp_dv,
+                             duv_dx, duv_dy, wi, prim_index, instance,
+                             has_uv_partials)
+    )
 
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
@@ -340,9 +329,9 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::Interaction, t, time, wavelengths, p);
+ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p);
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
+ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
                      shape, uv, n, sh_frame, dp_du, dp_dv, duv_dx, duv_dy, wi,
                      prim_index, instance, has_uv_partials)
 

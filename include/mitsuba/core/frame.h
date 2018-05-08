@@ -202,4 +202,4 @@ auto compute_shading_frame(const typename Vector3::Normal &n,
 
 NAMESPACE_END(mitsuba)
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::Frame, s, t, n)
+ENOKI_STRUCT_SUPPORT(mitsuba::Frame, s, t, n)

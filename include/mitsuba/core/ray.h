@@ -98,15 +98,6 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
     RayDifferential(const Base &ray)
         : Base(ray), has_differentials(false) { }
 
-    /// Element-by-element constructor
-    RayDifferential(const Point &o, const Vector &d, const Vector &d_rcp,
-                    const Value &mint, const Value &maxt, const Value &time,
-                    const Spectrum &wavelengths, const Point &o_x,
-                    const Point &o_y, const Vector &d_x, const Vector &d_y,
-                    const bool &has_differentials)
-        : Base(o, d, d_rcp, mint, maxt, time, wavelengths), o_x(o_x), o_y(o_y),
-          d_x(d_x), d_y(d_y), has_differentials(has_differentials) {}
-
     void scale_differential(Float amount) {
         o_x = fmadd(o_x - o, amount, o);
         o_y = fmadd(o_y - o, amount, o);
@@ -114,8 +105,11 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
         d_y = fmadd(d_y - d, amount, d);
     }
 
-    ENOKI_DERIVED_STRUCT(RayDifferential, Base, o_x, o_y,
-                         d_x, d_y, has_differentials)
+    ENOKI_DERIVED_STRUCT(RayDifferential, Base,
+        ENOKI_BASE_FIELDS(o, d, d_rcp, mint, maxt, time, wavelengths),
+        ENOKI_DERIVED_FIELDS(o_x, o_y, d_x, d_y, has_differentials)
+    )
+
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
@@ -140,9 +134,9 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 // Support for static & dynamic vectorization
-ENOKI_STRUCT_DYNAMIC(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
+ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::RayDifferential, o, d, d_rcp, mint, maxt,
+ENOKI_STRUCT_SUPPORT(mitsuba::RayDifferential, o, d, d_rcp, mint, maxt,
                      time, wavelengths, o_x, o_y, d_x, d_y, has_differentials)
 
 //! @}

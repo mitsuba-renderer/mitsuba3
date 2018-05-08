@@ -426,7 +426,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::Transform, matrix, inverse_transpose)
+ENOKI_STRUCT_SUPPORT(mitsuba::Transform, matrix, inverse_transpose)
 
 //! @}
 // -----------------------------------------------------------------------

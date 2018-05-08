@@ -493,7 +493,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::BSDFSample, wo, pdf, eta,
+ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample, wo, pdf, eta,
                      sampled_type, sampled_component)
 
 //! @}

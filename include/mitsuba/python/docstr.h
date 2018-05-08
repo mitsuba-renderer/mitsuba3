@@ -4297,15 +4297,13 @@ two adjacent pixels on the view plane)doc";
 
 static const char *__doc_mitsuba_RayDifferential_RayDifferential = R"doc(Construct from a Ray instance)doc";
 
-static const char *__doc_mitsuba_RayDifferential_RayDifferential_2 = R"doc(Element-by-element constructor)doc";
+static const char *__doc_mitsuba_RayDifferential_RayDifferential_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_RayDifferential_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_RayDifferential_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_RayDifferential_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_RayDifferential_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_d_x = R"doc()doc";
 
@@ -5772,15 +5770,13 @@ static const char *__doc_mitsuba_SurfaceInteraction =
 R"doc(Container for all information related to a scattering event on a
 surface)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction = R"doc(Element-by-element constructor)doc";
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
 R"doc(Returns the BSDF of the intersected shape.

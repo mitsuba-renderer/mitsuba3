@@ -212,7 +212,11 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
     //! @}
     // =============================================================
 
-    ENOKI_DERIVED_STRUCT(DirectionSample, Base, d, dist)
+    ENOKI_DERIVED_STRUCT(DirectionSample, Base,
+        ENOKI_BASE_FIELDS(p, n, uv, time, pdf, delta, object),
+        ENOKI_DERIVED_FIELDS(d, dist)
+    )
+
     ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
@@ -356,13 +360,13 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::PositionSample, p, n, uv, time,
+ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time,
                      pdf, delta, object)
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::DirectionSample, p, n, uv, time, pdf,
+ENOKI_STRUCT_SUPPORT(mitsuba::DirectionSample, p, n, uv, time, pdf,
                      delta, object, d, dist)
 
-ENOKI_STRUCT_DYNAMIC(mitsuba::RadianceSample, scene, sampler, si, alpha)
+ENOKI_STRUCT_SUPPORT(mitsuba::RadianceSample, scene, sampler, si, alpha)
 
 //! @}
 // -----------------------------------------------------------------------
