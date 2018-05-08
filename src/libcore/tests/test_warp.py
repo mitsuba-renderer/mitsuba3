@@ -196,12 +196,25 @@ def test_square_to_std_normal():
     assert(np.allclose(square_to_std_normal([0.39346, 0]), [1, 0], atol=1e-3))
 
 
-def test_linear_warp():
-    from mitsuba.core.warp import Linear2D0
+def test_hierarchical_warp():
+    from mitsuba.core.warp import Hierarchical2D0
     np.random.seed(0)
     data = np.random.rand(7, 3)
-    distr = Linear2D0(data)
+    distr = Hierarchical2D0(data)
     sample_in = np.random.rand(10, 2)
     sample_out, pdf_out = distr.sample(sample_in)
     assert np.allclose(pdf_out, distr.eval(sample_out))
-    assert np.allclose(sample_in, distr.inverse(sample_out))
+    assert np.allclose(sample_in, distr.invert(sample_out)[0])
+
+
+def test_marginal_warp():
+    from mitsuba.core.warp import Marginal2D0
+    np.random.seed(0)
+    data = np.random.rand(7, 3)
+    distr = Marginal2D0(data)
+    sample_in = np.random.rand(10, 2)
+    sample_out, pdf_out = distr.sample(sample_in)
+    print(pdf_out)
+    print(distr.eval(sample_out))
+    assert np.allclose(pdf_out, distr.eval(sample_out))
+    assert np.allclose(sample_in, distr.invert(sample_out)[0])

@@ -1,5 +1,6 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/python/python.h>
+#include <enoki/stl.h>
 
 
 MTS_PY_EXPORT(warp) {
@@ -461,94 +462,288 @@ MTS_PY_EXPORT(warp) {
 
     // =======================================================================
 
-    using Linear2D0 = warp::Linear2D<0>;
-    using Linear2D1 = warp::Linear2D<1>;
-    using Linear2D2 = warp::Linear2D<2>;
-    using Linear2D3 = warp::Linear2D<3>;
+    using Marginal2D0 = warp::Marginal2D<0>;
+    using Marginal2D1 = warp::Marginal2D<1>;
+    using Marginal2D2 = warp::Marginal2D<2>;
+    using Marginal2D3 = warp::Marginal2D<3>;
 
-    py::class_<Linear2D0>(warp, "Linear2D0", D(warp, Linear2D))
+    py::class_<Marginal2D0>(warp, "Marginal2D0", D(warp, Marginal2D))
+        .def(py::init([](py::array_t<Float> data, bool normalize, bool build_cdf) {
+            if (data.ndim() != 2)
+                throw std::domain_error("data array has incorrect dimension");
+            return Marginal2D0(
+                Vector2u((uint32_t) data.shape(1), (uint32_t) data.shape(0)),
+                data.data(), {}, {}, normalize, build_cdf
+            );
+        }), "data"_a, "normalize"_a = true, "build_cdf"_a = true)
+        .def("sample", [](const Marginal2D0 *lw, const Vector2f &sample, bool active) {
+                return lw->sample(sample, (const Float *) nullptr, active);
+            }, "sample"_a, "active"_a = true, D(warp, Marginal2D, sample))
+        .def("sample", enoki::vectorize_wrapper(
+            [](const Marginal2D0 *lw, const Vector2fP &sample, MaskP active) {
+                return lw->sample(sample, (const FloatP *) nullptr, active);
+            }), "sample"_a, "active"_a = true)
+        .def("invert", [](const Marginal2D0 *lw, const Vector2f &invert, bool active) {
+                return lw->invert(invert, (const Float *) nullptr, active);
+            }, "sample"_a, "active"_a = true, D(warp, Marginal2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Marginal2D0 *lw, const Vector2fP &invert, MaskP active) {
+                return lw->invert(invert, (const FloatP *) nullptr, active);
+            }), "sample"_a, "active"_a = true)
+        .def("eval", [](const Marginal2D0 *lw, const Vector2f &pos, bool active) {
+                return lw->eval(pos, (const Float *) nullptr, active);
+            }, "pos"_a, "active"_a = true, D(warp, Marginal2D, eval))
+        .def("eval", enoki::vectorize_wrapper(
+            [](const Marginal2D0 *lw, const Vector2fP &pos, MaskP active) {
+                return lw->eval(pos, (const FloatP *) nullptr, active);
+            }), "pos"_a, "active"_a = true)
+        .def("__repr__", &Marginal2D0::to_string);
+        ;
+
+    py::class_<Marginal2D1>(warp, "Marginal2D1")
+        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+                         bool normalize, bool build_cdf) {
+            if (data.ndim() != 3)
+                throw std::domain_error("data array has incorrect dimension");
+            if (param_values.size() == 1 || (uint32_t) param_values[0].size() != (uint32_t) data.shape(0))
+                throw std::domain_error("param_values array has incorrect dimension");
+            return Marginal2D1(
+                Vector2u((uint32_t) data.shape(2), (uint32_t) data.shape(1)),
+                data.data(), {{ (uint32_t) param_values[0].size() }},
+                {{ param_values[0].data() }}, normalize, build_cdf
+            );
+        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_cdf"_a = true, D(warp, Marginal2D))
+        .def("sample", [](const Marginal2D1 *lw, const Vector2f &sample,
+                          Float param1, bool active) {
+                Float params[1] = { param1 };
+                return lw->sample(sample, params, active);
+            }, "sample"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, sample))
+        .def("sample", enoki::vectorize_wrapper(
+            [](const Marginal2D1 *lw, const Vector2fP &sample,
+                FloatP param1, MaskP active) {
+                FloatP params[1] = { param1 };
+                return lw->sample(sample, params, active);
+            }), "sample"_a, "param1"_a, "active"_a = true)
+        .def("invert", [](const Marginal2D1 *lw, const Vector2f &invert,
+                          Float param1, bool active) {
+                Float params[1] = { param1 };
+                return lw->invert(invert, params, active);
+            }, "sample"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Marginal2D1 *lw, const Vector2fP &invert,
+                FloatP param1, MaskP active) {
+                FloatP params[1] = { param1 };
+                return lw->invert(invert, params, active);
+            }), "sample"_a, "param1"_a, "active"_a = true)
+        .def("eval", [](const Marginal2D1 *lw, const Vector2f &pos,
+                       Float param1, bool active) {
+                Float params[1] = { param1 };
+                return lw->eval(pos, params, active);
+            }, "pos"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, eval))
+        .def("eval", enoki::vectorize_wrapper(
+            [](const Marginal2D1 *lw, const Vector2fP &pos,
+                FloatP param1, MaskP active) {
+                FloatP params[1] = { param1 };
+                return lw->eval(pos, params, active);
+            }), "pos"_a, "param1"_a, "active"_a = true)
+        .def("__repr__", &Marginal2D1::to_string);
+
+    py::class_<Marginal2D2>(warp, "Marginal2D2")
+        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+                         bool normalize, bool build_cdf) {
+            if (data.ndim() != 4)
+                throw std::domain_error("data array has incorrect dimension");
+            if (param_values.size() != 2 ||
+                (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
+                (uint32_t) param_values[1].size() != (uint32_t) data.shape(1))
+                throw std::domain_error("param_values array has incorrect dimension");
+            return Marginal2D2(
+                Vector2u((uint32_t) data.shape(3), (uint32_t) data.shape(2)),
+                data.data(), {{ (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size() }},
+                {{ param_values[0].data(), param_values[1].data() }}, normalize, build_cdf
+            );
+        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_cdf"_a = true, D(warp, Marginal2D))
+        .def("sample", [](const Marginal2D2 *lw, const Vector2f &sample,
+                          Float param1, Float param2, bool active) {
+                Float params[2] = { param1, param2 };
+                return lw->sample(sample, params, active);
+            }, "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, sample))
+        .def("sample", enoki::vectorize_wrapper(
+            [](const Marginal2D2 *lw, const Vector2fP &sample,
+                FloatP param1, FloatP param2, MaskP active) {
+                FloatP params[2] = { param1, param2 };
+                return lw->sample(sample, params, active);
+            }), "sample"_a, "param1"_a, "param2"_a, "active"_a = true)
+        .def("invert", [](const Marginal2D2 *lw, const Vector2f &invert,
+                          Float param1, Float param2, bool active) {
+                Float params[2] = { param1, param2 };
+                return lw->invert(invert, params, active);
+            }, "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Marginal2D2 *lw, const Vector2fP &invert,
+                FloatP param1, FloatP param2, MaskP active) {
+                FloatP params[2] = { param1, param2 };
+                return lw->invert(invert, params, active);
+            }), "sample"_a, "param1"_a, "param2"_a, "active"_a = true)
+        .def("eval", [](const Marginal2D2 *lw, const Vector2f &pos,
+                       Float param1, Float param2, bool active) {
+                Float params[2] = { param1, param2 };
+                return lw->eval(pos, params, active);
+            }, "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, eval))
+        .def("eval", enoki::vectorize_wrapper(
+            [](const Marginal2D2 *lw, const Vector2fP &pos,
+                FloatP param1, FloatP param2, MaskP active) {
+                FloatP params[2] = { param1, param2 };
+                return lw->eval(pos, params, active);
+            }), "pos"_a, "param1"_a, "param2"_a, "active"_a = true)
+        .def("__repr__", &Marginal2D2::to_string);
+
+    py::class_<Marginal2D3>(warp, "Marginal2D3")
+        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+                         bool normalize, bool build_cdf) {
+            if (data.ndim() != 5)
+                throw std::domain_error("data array has incorrect dimension");
+            if (param_values.size() != 2 ||
+                (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
+                (uint32_t) param_values[1].size() != (uint32_t) data.shape(1) ||
+                (uint32_t) param_values[2].size() != (uint32_t) data.shape(2))
+                throw std::domain_error("param_values array has incorrect dimension");
+            return Marginal2D3(
+                Vector2u((uint32_t) data.shape(4), (uint32_t) data.shape(3)),
+                data.data(),
+                { { (uint32_t) param_values[0].size(),
+                    (uint32_t) param_values[1].size(),
+                    (uint32_t) param_values[2].size() } },
+                { { param_values[0].data(), param_values[1].data(),
+                    param_values[2].data() } },
+                normalize, build_cdf);
+        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_cdf"_a = true, D(warp, Marginal2D))
+        .def("invert", [](const Marginal2D3 *lw, const Vector2f &invert,
+                          Float param1, Float param2, Float param3, bool active) {
+                Float params[3] = { param1, param2, param3 };
+                return lw->invert(invert, params, active);
+            }, "sample"_a, "param1"_a, "param2"_a, "param3"_a,
+               "active"_a = true, D(warp, Marginal2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Marginal2D3 *lw, const Vector2fP &invert,
+                FloatP param1, FloatP param2, FloatP param3, MaskP active) {
+                FloatP params[3] = { param1, param2, param3 };
+                return lw->invert(invert, params, active);
+            }), "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
+        .def("sample", [](const Marginal2D3 *lw, const Vector2f &sample,
+                          Float param1, Float param2, Float param3, bool active) {
+                Float params[3] = { param1, param2, param3 };
+                return lw->sample(sample, params, active);
+            }, "sample"_a, "param1"_a, "param2"_a, "param3"_a,
+               "active"_a = true, D(warp, Marginal2D, sample))
+        .def("sample", enoki::vectorize_wrapper(
+            [](const Marginal2D3 *lw, const Vector2fP &sample,
+                FloatP param1, FloatP param2, FloatP param3, MaskP active) {
+                FloatP params[3] = { param1, param2, param3 };
+                return lw->sample(sample, params, active);
+            }), "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
+        .def("eval", [](const Marginal2D3 *lw, const Vector2f &pos,
+                       Float param1, Float param2, Float param3, bool active) {
+                Float params[3] = { param1, param2, param3 };
+                return lw->eval(pos, params, active);
+            }, "pos"_a, "param1"_a, "param2"_a, "param3"_a,
+               "active"_a = true, D(warp, Marginal2D, eval))
+        .def("eval", enoki::vectorize_wrapper(
+            [](const Marginal2D3 *lw, const Vector2fP &pos,
+                FloatP param1, FloatP param2, FloatP param3, MaskP active) {
+                FloatP params[3] = { param1, param2, param3 };
+                return lw->eval(pos, params, active);
+            }), "pos"_a, "param1"_a, "param2"_a,
+                "param3"_a, "active"_a = true)
+        .def("__repr__", &Marginal2D3::to_string);
+
+    using Hierarchical2D0 = warp::Hierarchical2D<0>;
+    using Hierarchical2D1 = warp::Hierarchical2D<1>;
+    using Hierarchical2D2 = warp::Hierarchical2D<2>;
+    using Hierarchical2D3 = warp::Hierarchical2D<3>;
+
+    py::class_<Hierarchical2D0>(warp, "Hierarchical2D0", D(warp, Hierarchical2D))
         .def(py::init([](py::array_t<Float> data, bool normalize, bool build_hierarchy) {
             if (data.ndim() != 2)
                 throw std::domain_error("data array has incorrect dimension");
-            return Linear2D0(
+            return Hierarchical2D0(
                 Vector2u((uint32_t) data.shape(1), (uint32_t) data.shape(0)),
-                data.data(), nullptr, nullptr, normalize, build_hierarchy
+                data.data(), {}, {}, normalize, build_hierarchy
             );
         }), "data"_a, "normalize"_a = true, "build_hierarchy"_a = true)
-        .def("sample", [](const Linear2D0 *lw, const Vector2f &sample, bool active) {
+        .def("sample", [](const Hierarchical2D0 *lw, const Vector2f &sample, bool active) {
                 return lw->sample(sample, (const Float *) nullptr, active);
-            }, "sample"_a, "active"_a = true, D(warp, Linear2D, sample))
+            }, "sample"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
         .def("sample", enoki::vectorize_wrapper(
-            [](const Linear2D0 *lw, const Vector2fP &sample, MaskP active) {
+            [](const Hierarchical2D0 *lw, const Vector2fP &sample, MaskP active) {
                 return lw->sample(sample, (const FloatP *) nullptr, active);
             }), "sample"_a, "active"_a = true)
-        .def("inverse", [](const Linear2D0 *lw, const Vector2f &inverse, bool active) {
-                return lw->inverse(inverse, (const Float *) nullptr, active);
-            }, "inverse"_a, "active"_a = true, D(warp, Linear2D, inverse))
-        .def("inverse", enoki::vectorize_wrapper(
-            [](const Linear2D0 *lw, const Vector2fP &inverse, MaskP active) {
-                return lw->inverse(inverse, (const FloatP *) nullptr, active);
-            }), "inverse"_a, "active"_a = true)
-        .def("eval", [](const Linear2D0 *lw, const Vector2f &pos, bool active) {
+        .def("invert", [](const Hierarchical2D0 *lw, const Vector2f &invert, bool active) {
+                return lw->invert(invert, (const Float *) nullptr, active);
+            }, "sample"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Hierarchical2D0 *lw, const Vector2fP &invert, MaskP active) {
+                return lw->invert(invert, (const FloatP *) nullptr, active);
+            }), "sample"_a, "active"_a = true)
+        .def("eval", [](const Hierarchical2D0 *lw, const Vector2f &pos, bool active) {
                 return lw->eval(pos, (const Float *) nullptr, active);
-            }, "pos"_a, "active"_a = true, D(warp, Linear2D, eval))
+            }, "pos"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
         .def("eval", enoki::vectorize_wrapper(
-            [](const Linear2D0 *lw, const Vector2fP &pos, MaskP active) {
+            [](const Hierarchical2D0 *lw, const Vector2fP &pos, MaskP active) {
                 return lw->eval(pos, (const FloatP *) nullptr, active);
             }), "pos"_a, "active"_a = true)
-        .def("__repr__", &Linear2D0::to_string);
+        .def("__repr__", &Hierarchical2D0::to_string);
         ;
 
-    py::class_<Linear2D1>(warp, "Linear2D1")
+    py::class_<Hierarchical2D1>(warp, "Hierarchical2D1")
         .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_hierarchy) {
             if (data.ndim() != 3)
                 throw std::domain_error("data array has incorrect dimension");
             if (param_values.size() == 1 || (uint32_t) param_values[0].size() != (uint32_t) data.shape(0))
                 throw std::domain_error("param_values array has incorrect dimension");
-            uint32_t param_res[1] = { (uint32_t) param_values[0].size() };
-            const Float *param_values_2[1] = { param_values[0].data() };
-            return Linear2D1(
+            return Hierarchical2D1(
                 Vector2u((uint32_t) data.shape(2), (uint32_t) data.shape(1)),
-                data.data(), param_res, param_values_2, normalize, build_hierarchy
+                data.data(), {{ (uint32_t) param_values[0].size() }},
+                {{ param_values[0].data() }}, normalize, build_hierarchy
             );
-        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Linear2D))
-        .def("sample", [](const Linear2D1 *lw, const Vector2f &sample,
+        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Hierarchical2D))
+        .def("sample", [](const Hierarchical2D1 *lw, const Vector2f &sample,
                           Float param1, bool active) {
                 Float params[1] = { param1 };
                 return lw->sample(sample, params, active);
-            }, "sample"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, sample))
+            }, "sample"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
         .def("sample", enoki::vectorize_wrapper(
-            [](const Linear2D1 *lw, const Vector2fP &sample,
+            [](const Hierarchical2D1 *lw, const Vector2fP &sample,
                 FloatP param1, MaskP active) {
                 FloatP params[1] = { param1 };
                 return lw->sample(sample, params, active);
             }), "sample"_a, "param1"_a, "active"_a = true)
-        .def("inverse", [](const Linear2D1 *lw, const Vector2f &inverse,
+        .def("invert", [](const Hierarchical2D1 *lw, const Vector2f &invert,
                           Float param1, bool active) {
                 Float params[1] = { param1 };
-                return lw->inverse(inverse, params, active);
-            }, "inverse"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, inverse))
-        .def("inverse", enoki::vectorize_wrapper(
-            [](const Linear2D1 *lw, const Vector2fP &inverse,
+                return lw->invert(invert, params, active);
+            }, "sample"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Hierarchical2D1 *lw, const Vector2fP &invert,
                 FloatP param1, MaskP active) {
                 FloatP params[1] = { param1 };
-                return lw->inverse(inverse, params, active);
-            }), "inverse"_a, "param1"_a, "active"_a = true)
-        .def("eval", [](const Linear2D1 *lw, const Vector2f &pos,
+                return lw->invert(invert, params, active);
+            }), "sample"_a, "param1"_a, "active"_a = true)
+        .def("eval", [](const Hierarchical2D1 *lw, const Vector2f &pos,
                        Float param1, bool active) {
                 Float params[1] = { param1 };
                 return lw->eval(pos, params, active);
-            }, "pos"_a, "param1"_a, "active"_a = true, D(warp, Linear2D, eval))
+            }, "pos"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
         .def("eval", enoki::vectorize_wrapper(
-            [](const Linear2D1 *lw, const Vector2fP &pos,
+            [](const Hierarchical2D1 *lw, const Vector2fP &pos,
                 FloatP param1, MaskP active) {
                 FloatP params[1] = { param1 };
                 return lw->eval(pos, params, active);
             }), "pos"_a, "param1"_a, "active"_a = true)
-        .def("__repr__", &Linear2D1::to_string);
+        .def("__repr__", &Hierarchical2D1::to_string);
 
-    py::class_<Linear2D2>(warp, "Linear2D2")
+    py::class_<Hierarchical2D2>(warp, "Hierarchical2D2")
         .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_hierarchy) {
             if (data.ndim() != 4)
@@ -557,49 +752,48 @@ MTS_PY_EXPORT(warp) {
                 (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
                 (uint32_t) param_values[1].size() != (uint32_t) data.shape(1))
                 throw std::domain_error("param_values array has incorrect dimension");
-            uint32_t param_res[2] = { (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size() };
-            const Float *param_values_2[2] = { param_values[0].data(), param_values[1].data() };
-            return Linear2D2(
+            return Hierarchical2D2(
                 Vector2u((uint32_t) data.shape(3), (uint32_t) data.shape(2)),
-                data.data(), param_res, param_values_2, normalize, build_hierarchy
+                data.data(), {{ (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size() }},
+                {{ param_values[0].data(), param_values[1].data() }}, normalize, build_hierarchy
             );
-        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Linear2D))
-        .def("inverse", [](const Linear2D2 *lw, const Vector2f &inverse,
-                          Float param1, Float param2, bool active) {
-                Float params[2] = { param1, param2 };
-                return lw->inverse(inverse, params, active);
-            }, "inverse"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Linear2D, inverse))
-        .def("inverse", enoki::vectorize_wrapper(
-            [](const Linear2D2 *lw, const Vector2fP &inverse,
-                FloatP param1, FloatP param2, MaskP active) {
-                FloatP params[2] = { param1, param2 };
-                return lw->inverse(inverse, params, active);
-            }), "inverse"_a, "param1"_a, "param2"_a, "active"_a = true)
-        .def("sample", [](const Linear2D2 *lw, const Vector2f &sample,
+        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Hierarchical2D))
+        .def("sample", [](const Hierarchical2D2 *lw, const Vector2f &sample,
                           Float param1, Float param2, bool active) {
                 Float params[2] = { param1, param2 };
                 return lw->sample(sample, params, active);
-            }, "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Linear2D, sample))
+            }, "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
         .def("sample", enoki::vectorize_wrapper(
-            [](const Linear2D2 *lw, const Vector2fP &sample,
+            [](const Hierarchical2D2 *lw, const Vector2fP &sample,
                 FloatP param1, FloatP param2, MaskP active) {
                 FloatP params[2] = { param1, param2 };
                 return lw->sample(sample, params, active);
             }), "sample"_a, "param1"_a, "param2"_a, "active"_a = true)
-        .def("eval", [](const Linear2D2 *lw, const Vector2f &pos,
+        .def("invert", [](const Hierarchical2D2 *lw, const Vector2f &invert,
+                          Float param1, Float param2, bool active) {
+                Float params[2] = { param1, param2 };
+                return lw->invert(invert, params, active);
+            }, "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Hierarchical2D2 *lw, const Vector2fP &invert,
+                FloatP param1, FloatP param2, MaskP active) {
+                FloatP params[2] = { param1, param2 };
+                return lw->invert(invert, params, active);
+            }), "sample"_a, "param1"_a, "param2"_a, "active"_a = true)
+        .def("eval", [](const Hierarchical2D2 *lw, const Vector2f &pos,
                        Float param1, Float param2, bool active) {
                 Float params[2] = { param1, param2 };
                 return lw->eval(pos, params, active);
-            }, "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Linear2D, eval))
+            }, "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
         .def("eval", enoki::vectorize_wrapper(
-            [](const Linear2D2 *lw, const Vector2fP &pos,
+            [](const Hierarchical2D2 *lw, const Vector2fP &pos,
                 FloatP param1, FloatP param2, MaskP active) {
                 FloatP params[2] = { param1, param2 };
                 return lw->eval(pos, params, active);
             }), "pos"_a, "param1"_a, "param2"_a, "active"_a = true)
-        .def("__repr__", &Linear2D2::to_string);
+        .def("__repr__", &Hierarchical2D2::to_string);
 
-    py::class_<Linear2D3>(warp, "Linear2D3")
+    py::class_<Hierarchical2D3>(warp, "Hierarchical2D3")
         .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_hierarchy) {
             if (data.ndim() != 5)
@@ -609,53 +803,52 @@ MTS_PY_EXPORT(warp) {
                 (uint32_t) param_values[1].size() != (uint32_t) data.shape(1) ||
                 (uint32_t) param_values[2].size() != (uint32_t) data.shape(2))
                 throw std::domain_error("param_values array has incorrect dimension");
-            uint32_t param_res[3] = { (uint32_t) param_values[0].size(),
-                                      (uint32_t) param_values[1].size(),
-                                      (uint32_t) param_values[2].size() };
-            const Float *param_values_2[3] = { param_values[0].data(),
-                                               param_values[1].data(),
-                                               param_values[2].data() };
-            return Linear2D3(
+            return Hierarchical2D3(
                 Vector2u((uint32_t) data.shape(4), (uint32_t) data.shape(3)),
-                data.data(), param_res, param_values_2, normalize, build_hierarchy
-            );
-        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Linear2D))
-        .def("inverse", [](const Linear2D3 *lw, const Vector2f &inverse,
+                data.data(),
+                { { (uint32_t) param_values[0].size(),
+                    (uint32_t) param_values[1].size(),
+                    (uint32_t) param_values[2].size() } },
+                { { param_values[0].data(), param_values[1].data(),
+                    param_values[2].data() } },
+                normalize, build_hierarchy);
+        }), "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true, D(warp, Hierarchical2D))
+        .def("invert", [](const Hierarchical2D3 *lw, const Vector2f &invert,
                           Float param1, Float param2, Float param3, bool active) {
                 Float params[3] = { param1, param2, param3 };
-                return lw->inverse(inverse, params, active);
-            }, "inverse"_a, "param1"_a, "param2"_a, "param3"_a,
-               "active"_a = true, D(warp, Linear2D, inverse))
-        .def("inverse", enoki::vectorize_wrapper(
-            [](const Linear2D3 *lw, const Vector2fP &inverse,
+                return lw->invert(invert, params, active);
+            }, "sample"_a, "param1"_a, "param2"_a, "param3"_a,
+               "active"_a = true, D(warp, Hierarchical2D, invert))
+        .def("invert", enoki::vectorize_wrapper(
+            [](const Hierarchical2D3 *lw, const Vector2fP &invert,
                 FloatP param1, FloatP param2, FloatP param3, MaskP active) {
                 FloatP params[3] = { param1, param2, param3 };
-                return lw->inverse(inverse, params, active);
-            }), "inverse"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
-        .def("sample", [](const Linear2D3 *lw, const Vector2f &sample,
+                return lw->invert(invert, params, active);
+            }), "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
+        .def("sample", [](const Hierarchical2D3 *lw, const Vector2f &sample,
                           Float param1, Float param2, Float param3, bool active) {
                 Float params[3] = { param1, param2, param3 };
                 return lw->sample(sample, params, active);
             }, "sample"_a, "param1"_a, "param2"_a, "param3"_a,
-               "active"_a = true, D(warp, Linear2D, sample))
+               "active"_a = true, D(warp, Hierarchical2D, sample))
         .def("sample", enoki::vectorize_wrapper(
-            [](const Linear2D3 *lw, const Vector2fP &sample,
+            [](const Hierarchical2D3 *lw, const Vector2fP &sample,
                 FloatP param1, FloatP param2, FloatP param3, MaskP active) {
                 FloatP params[3] = { param1, param2, param3 };
                 return lw->sample(sample, params, active);
             }), "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true)
-        .def("eval", [](const Linear2D3 *lw, const Vector2f &pos,
+        .def("eval", [](const Hierarchical2D3 *lw, const Vector2f &pos,
                        Float param1, Float param2, Float param3, bool active) {
                 Float params[3] = { param1, param2, param3 };
                 return lw->eval(pos, params, active);
             }, "pos"_a, "param1"_a, "param2"_a, "param3"_a,
-               "active"_a = true, D(warp, Linear2D, eval))
+               "active"_a = true, D(warp, Hierarchical2D, eval))
         .def("eval", enoki::vectorize_wrapper(
-            [](const Linear2D3 *lw, const Vector2fP &pos,
+            [](const Hierarchical2D3 *lw, const Vector2fP &pos,
                 FloatP param1, FloatP param2, FloatP param3, MaskP active) {
                 FloatP params[3] = { param1, param2, param3 };
                 return lw->eval(pos, params, active);
             }), "pos"_a, "param1"_a, "param2"_a,
                 "param3"_a, "active"_a = true)
-        .def("__repr__", &Linear2D3::to_string);
+        .def("__repr__", &Hierarchical2D3::to_string);
 }

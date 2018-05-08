@@ -35,7 +35,8 @@ from mitsuba.core.chi2 import (
     InteractiveMicrofacetBSDFAdapter)
 from mitsuba.render import MicrofacetDistribution
 from mitsuba.core import Bitmap, Thread
-from mitsuba.core.warp import Linear2D0, Linear2D2
+from mitsuba.core.warp import Hierarchical2D0, Hierarchical2D2
+from mitsuba.core.warp import Marginal2D0, Marginal2D2
 from mitsuba.test.util import fresolver_append_path
 import numpy as np
 import os
@@ -212,28 +213,34 @@ DISTRIBUTIONS = [
         <float name="alpha" value="0.25"/>
      """, wi=[0.970942, 0, 0.239316]), DEFAULT_SETTINGS_3),
 
-    ('Rough conductor BSDF - interactive', SphericalDomain(),
-     InteractiveMicrofacetBSDFAdapter("roughconductor", """
+    ('Rough conductor BSDF', SphericalDomain(),
+     InteractiveBSDFAdapter("roughconductor", """
         <boolean name="sample_visible" value="false"/>
         <string name="distribution" value="beckmann"/>
-    """), dict(DEFAULT_SETTINGS_3,
+        <float name="alpha_u" value="%f"/>
+        <float name="alpha_v" value="%f"/>
+    """), dict(DEFAULT_SETTINGS,
          parameters=[
+             ('theta_i', [0, 90, 30]),
+             ('phi_i', [0, 360, 0]),
              ('alpha_u', [0, 1, 0.2]),
-             ('alpha_v', [0, 1, 0.2]),
-             ('Theta', [0, np.pi, 0]),
-             ('Phi', [0, 2*np.pi, 0])
+             ('alpha_v', [0, 1, 0.2])
      ])),
-    ('Rough conductor BSDF - vis - interactive', SphericalDomain(),
-     InteractiveMicrofacetBSDFAdapter("roughconductor", """
+
+    ('Rough conductor BSDF (VNDF)', SphericalDomain(),
+     InteractiveBSDFAdapter("roughconductor", """
         <boolean name="sample_visible" value="true"/>
         <string name="distribution" value="beckmann"/>
-    """), dict(DEFAULT_SETTINGS_3,
+        <float name="alpha_u" value="%f"/>
+        <float name="alpha_v" value="%f"/>
+    """), dict(DEFAULT_SETTINGS,
          parameters=[
+             ('theta_i', [0, 90, 30]),
+             ('phi_i', [0, 360, 0]),
              ('alpha_u', [0, 1, 0.2]),
-             ('alpha_v', [0, 1, 0.2]),
-             ('Theta', [0, np.pi, 0]),
-             ('Phi', [0, 2*np.pi, 0])
+             ('alpha_v', [0, 1, 0.2])
      ])),
+     
 
     # ('Rough dielectric BSDF - smooth', SphericalDomain(),
     #  BSDFAdapter("roughdielectric", """
@@ -280,12 +287,15 @@ DISTRIBUTIONS = [
 ]
 
 @fresolver_append_path
-def LinearWarp2D0Test():
+def Warp2D0Test(hierarchical):
     fr = Thread.thread().file_resolver()
 
     prefix = 'resources/data/tests/warp/'
     img0 = np.array(Bitmap(fr.resolve(prefix + 'small.png')), dtype=np.float32)
-    d = Linear2D0(img0.squeeze())
+    if hierarchical:
+        d = Hierarchical2D0(img0.squeeze())
+    else:
+        d = Marginal2D0(img0.squeeze())
 
     def sample_functor(sample, *args):
         return d.sample(sample, *args)[0]
@@ -297,7 +307,7 @@ def LinearWarp2D0Test():
 
 
 @fresolver_append_path
-def LinearWarp2D2Test():
+def Warp2D2Test(hierarchical):
     fr = Thread.thread().file_resolver()
 
     prefix = 'resources/data/tests/warp/'
@@ -312,7 +322,10 @@ def LinearWarp2D2Test():
     tensor[1, 0, :, :] = img2.squeeze()
     tensor[1, 1, :, :] = img3.squeeze()
 
-    d = Linear2D2(tensor, [[0, 1], [0, 1]])
+    if hierarchical:
+        d = Hierarchical2D2(tensor, [[0, 1], [0, 1]])
+    else:
+        d = Marginal2D2(tensor, [[0, 1], [0, 1]])
 
     def sample_functor(sample, *args):
         return d.sample(sample, *args)[0]
@@ -326,11 +339,23 @@ def LinearWarp2D2Test():
 DISTRIBUTIONS += [
     ('Hierarchical warp (small)',
      PlanarDomain(np.array([[0, 1], [0, 1]])),
-     LinearWarp2D0Test(),
+     Warp2D0Test(hierarchical=True),
      DEFAULT_SETTINGS),
     ('Hierarchical warp (4D, big)',
      PlanarDomain(np.array([[0, 1], [0, 1]])),
-     LinearWarp2D2Test(),
+     Warp2D2Test(hierarchical=True),
+     dict(DEFAULT_SETTINGS,
+         parameters=[
+             ('param0', [0, 1, 0.5]),
+             ('param1', [0, 1, 0.005])
+         ])),
+    ('Marginal warp (small)',
+     PlanarDomain(np.array([[0, 1], [0, 1]])),
+     Warp2D0Test(hierarchical=False),
+     DEFAULT_SETTINGS),
+    ('Marginal warp (4D, big)',
+     PlanarDomain(np.array([[0, 1], [0, 1]])),
+     Warp2D2Test(hierarchical=False),
      dict(DEFAULT_SETTINGS,
          parameters=[
              ('param0', [0, 1, 0.5]),

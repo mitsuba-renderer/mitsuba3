@@ -8126,7 +8126,7 @@ static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Linear2D =
+static const char *__doc_mitsuba_warp_Hierarchical2D =
 R"doc(Implements a hierarchical sample warping scheme for 2D distributions
 with linear interpolation and an optional dependence on additional
 parameters
@@ -8156,40 +8156,17 @@ values.
 
 Remark:
     The Python API exposes explicitly instantiated versions of this
-    class named Linear2D0, Linear2D1, and Linear2D2 for data that
-    depends on 0, 1, and 2 parameters, respectively.)doc";
+    class named Hierarchical2D0, Hierarchical2D1, and Hierarchical2D2
+    for data that depends on 0, 1, and 2 parameters, respectively.)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_Level = R"doc()doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_Hierarchical2D = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_Level_Level = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Level_Level_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Level_data = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Level_index =
-R"doc(Convert from 2D pixel coordinates to an index indicating how the data
-is laid out in memory.
-
-The implementation stores 2x2 patches contigously in memory to improve
-cache locality during hierarchical traversals)doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Level_lookup = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Level_lookup_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Level_ptr = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Level_size = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Level_width = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Linear2D_Linear2D =
+static const char *__doc_mitsuba_warp_Hierarchical2D_Hierarchical2D_2 =
 R"doc(Construct a hierarchical sample warping scheme for floating point data
 of resolution ``size``.
 
 ``param_res`` and ``param_values`` are only needed for conditional
-distributions (see the text describing the Linear2D class).
+distributions (see the text describing the Hierarchical2D class).
 
 If ``normalize`` is set to ``False``, the implementation will not re-
 scale the distribution so that it integrates to ``1``. It can still be
@@ -8200,38 +8177,149 @@ If ``build_hierarchy`` is set to ``False``, the implementation will
 not construct the hierarchy needed for sample warping, which saves
 memory in case this functionality is not needed (e.g. if only the
 interpolation in ``eval``() is used). In this case, ``sample``() and
-``inverse``() can still be called without triggering undefined
+``invert``() can still be called without triggering undefined
 behavior, but they will not return meaningful results.)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_eval =
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_Level = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_Level_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_data = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_index =
+R"doc(Convert from 2D pixel coordinates to an index indicating how the data
+is laid out in memory.
+
+The implementation stores 2x2 patches contigously in memory to improve
+cache locality during hierarchical traversals)doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_lookup = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_lookup_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_ptr = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_size = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_width = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_eval =
 R"doc(Evaluate the density at position ``pos``. The distribution is
 parameterized by ``param`` if applicable.)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_inverse = R"doc(Inverse of the mapping implemented in ``sample``())doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_inv_patch_size = R"doc(Inverse of the above)doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_m_inv_patch_size = R"doc(Inverse of the above)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_levels = R"doc(MIP hierarchy over linearly interpolated patches)doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_m_levels = R"doc(MIP hierarchy over linearly interpolated patches)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_max_patch_index = R"doc(Number of bilinear patches in the X/Y dimension - 1)doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_m_max_patch_index = R"doc(Number of bilinear patches in the X/Y dimension - 1)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_param_size = R"doc(Resolution of each parameter (optional))doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_m_param_size = R"doc(Resolution of each parameter (optional))doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_param_strides = R"doc(Stride per parameter in units of sizeof(Float))doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_m_param_strides = R"doc(Stride per parameter in units of sizeof(Float))doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_m_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_m_vertex_count = R"doc(Resolution of the fine-resolution PDF data)doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_m_vertex_count = R"doc(Resolution of the fine-resolution PDF data)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_sample =
+static const char *__doc_mitsuba_warp_Hierarchical2D_sample =
 R"doc(Given a uniformly distributed 2D sample, draw a sample from the
 distribution (parameterized by ``param`` if applicable)
 
 Returns the warped sample and associated probability density.)doc";
 
-static const char *__doc_mitsuba_warp_Linear2D_to_string = R"doc()doc";
+static const char *__doc_mitsuba_warp_Hierarchical2D_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D =
+R"doc(Implements a marginal sample warping scheme for 2D distributions with
+linear interpolation and an optional dependence on additional
+parameters
+
+This class takes a rectangular floating point array as input and
+constructs internal data structures to efficiently map uniform
+variates from the unit square ``[0, 1]^2`` to a function on ``[0,
+1]^2`` that linearly interpolates the input array.
+
+The mapping is constructed via the inversion method, which is applied
+to a marginal distribution over rows, followed by a conditional
+distribution over columns.
+
+The implementation also supports *conditional distributions*, i.e. 2D
+distributions that depend on an arbitrary number of parameters
+(indicated via the ``Dimension`` template parameter).
+
+In this case, the input array should have dimensions ``N0 x N1 x ... x
+Nn x res.y() x res.x()`` (where the last dimension is contiguous in
+memory), and the ``param_res`` should be set to ``{ N0, N1, ..., Nn
+}``, and ``param_values`` should contain the parameter values where
+the distribution is discretized. Linear interpolation is used when
+sampling or evaluating the distribution for in-between parameter
+values.
+
+Remark:
+    The Python API exposes explicitly instantiated versions of this
+    class named Hierarchical2D0, Hierarchical2D1, and Hierarchical2D2
+    for data that depends on 0, 1, and 2 parameters, respectively.)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_Marginal2D = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_Marginal2D_2 =
+R"doc(Construct a marginal sample warping scheme for floating point data of
+resolution ``size``.
+
+``param_res`` and ``param_values`` are only needed for conditional
+distributions (see the text describing the Marginal2D class).
+
+If ``normalize`` is set to ``False``, the implementation will not re-
+scale the distribution so that it integrates to ``1``. It can still be
+sampled (proportionally), but returned density values will reflect the
+unnormalized values.
+
+If ``build_cdf`` is set to ``False``, the implementation will not
+construct the cdf needed for sample warping, which saves memory in
+case this functionality is not needed (e.g. if only the interpolation
+in ``eval``() is used).)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_eval =
+R"doc(Evaluate the density at position ``pos``. The distribution is
+parameterized by ``param`` if applicable.)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_lookup = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_lookup_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_col_cdf = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_data = R"doc(Density values)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_inv_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_param_size = R"doc(Resolution of each parameter (optional))doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_param_strides = R"doc(Stride per parameter in units of sizeof(Float))doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_row_cdf = R"doc(Discrete CDFs for row/column selection)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_size = R"doc(Resolution of the discretized density function)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_sample =
+R"doc(Given a uniformly distributed 2D sample, draw a sample from the
+distribution (parameterized by ``param`` if applicable)
+
+Returns the warped sample and associated probability density.)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_beckmann_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
 
