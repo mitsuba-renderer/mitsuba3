@@ -145,17 +145,5 @@ template MTS_EXPORT_CORE Point2fP square_to_std_normal(Point2fP);
 template MTS_EXPORT_CORE Float  square_to_std_normal_pdf(Point2f);
 template MTS_EXPORT_CORE FloatP square_to_std_normal_pdf(Point2fP);
 
-// ------------------------------------------------------------------------------------------
-
-template class MTS_EXPORT_CORE warp::Hierarchical2D<0>;
-template class MTS_EXPORT_CORE warp::Hierarchical2D<1>;
-template class MTS_EXPORT_CORE warp::Hierarchical2D<2>;
-template class MTS_EXPORT_CORE warp::Hierarchical2D<3>;
-
-template class MTS_EXPORT_CORE warp::Marginal2D<0>;
-template class MTS_EXPORT_CORE warp::Marginal2D<1>;
-template class MTS_EXPORT_CORE warp::Marginal2D<2>;
-template class MTS_EXPORT_CORE warp::Marginal2D<3>;
-
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)

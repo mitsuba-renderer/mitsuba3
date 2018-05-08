@@ -39,7 +39,7 @@ public:
 
         Value pdf;
         Spectrum result(0.0f);
-        auto null_index = component_count() - 1;
+        uint32_t null_index = (uint32_t) component_count() - 1;
 
         bool sample_transmission = ctx.is_enabled(ENull, null_index);
         bool sample_nested       = ctx.component == (uint32_t) -1
@@ -100,7 +100,7 @@ public:
               typename Vector3  = typename SurfaceInteraction::Vector3>
     Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                    const Vector3 &wo, const mask_t<Value> &active) const {
-        auto null_index = component_count() - 1;
+        uint32_t null_index = (uint32_t) component_count() - 1;
         bool sample_transmission = ctx.is_enabled(ENull, null_index);
         bool sample_nested       = ctx.component == (uint32_t) -1
                                    || ctx.component < null_index;
