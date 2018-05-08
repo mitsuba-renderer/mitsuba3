@@ -150,15 +150,15 @@ public:
     template <typename Scalar,
               typename Index = uint_array_t<Scalar>,
               typename Mask = mask_t<Scalar>>
-    Index sample(const Scalar &sample_value, const Mask &active = Mask(true)) const {
+    Index sample(Scalar sample_value, Mask active = true) const {
         // Note that the search range is adjusted to exclude entries at the
         // beginning and end of the distribution that have probability 0.0.
         // Otherwise we might return a indices that have no probability mass (in
         // particular for sample_value = 0 or 1).
         return math::find_interval(
             m_range_start, m_range_end,
-            [this, sample_value] (const Index &indices, const Mask &active) ENOKI_INLINE_LAMBDA {
-                return gather<Scalar>(m_cdf.data(), indices, active) <= sample_value;
+            [this, sample_value](Index idx, Mask active) ENOKI_INLINE_LAMBDA {
+                return gather<Scalar>(m_cdf.data(), idx, active) <= sample_value;
             },
             active
         );
@@ -175,11 +175,11 @@ public:
      */
     template <typename Scalar, typename Index = uint_array_t<Scalar>,
               typename Mask = mask_t<Scalar>>
-    std::pair<Index, Scalar> sample_pdf(const Scalar &sample_value,
-                                        const Mask &active = Mask(true)) const {
+    std::pair<Index, Scalar> sample_pdf(Scalar sample_value,
+                                        Mask active = true) const {
         Index index = sample(sample_value, active);
-        return std::make_pair(index, gather<Scalar>(m_cdf.data(), index + 1, active) -
-                                     gather<Scalar>(m_cdf.data(), index, active));
+        return { index, gather<Scalar>(m_cdf.data(), index + 1, active) -
+                        gather<Scalar>(m_cdf.data(), index, active) };
     }
 
     /**
@@ -195,13 +195,12 @@ public:
      */
     template <typename Scalar, typename Index = uint_array_t<Scalar>,
               typename Mask = mask_t<Scalar>>
-    std::pair<Index, Scalar> sample_reuse(const Scalar &sample_value,
-                                          const Mask &active = Mask(true)) const {
+    std::pair<Index, Scalar>
+    sample_reuse(Scalar sample_value, Mask active = true) const {
         Index index = sample(sample_value, active);
         Scalar cdf_value = gather<Scalar>(m_cdf.data(), index);
-        return std::make_pair(
-            index, (sample_value - cdf_value) /
-                       (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value));
+        return { index, (sample_value - cdf_value) /
+                        (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value) };
     }
 
     /**
@@ -222,17 +221,17 @@ public:
     template <typename Scalar, typename Index = uint_array_t<Scalar>,
               typename Mask = mask_t<Scalar>>
     std::tuple<Index, Scalar, Scalar>
-    sample_reuse_pdf(const Scalar &sample_value,
-                     const Mask &active = Mask(true)) const {
+    sample_reuse_pdf(Scalar sample_value, Mask active = true) const {
         Index index;
         Scalar pdf;
         std::tie(index, pdf) = sample_pdf(sample_value, active);
         Scalar cdf_value = gather<Scalar>(m_cdf.data(), index);
 
-        return std::make_tuple(
-            index, pdf,
+        return {
+            index,pdf,
             (sample_value - cdf_value) /
-                (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value));
+                (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value)
+        };
     }
 
 private:
