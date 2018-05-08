@@ -61,8 +61,8 @@ MTS_INLINE Point2 square_to_uniform_disk_concentric(Point2 sample) {
     using Mask   = mask_t<Value>;
     using Scalar = scalar_t<Value>;
 
-    Value x = Scalar(2) * sample.x() - Scalar(1);
-    Value y = Scalar(2) * sample.y() - Scalar(1);
+    Value x = fmsub(Scalar(2), sample.x(), Scalar(1)),
+          y = fmsub(Scalar(2), sample.y(), Scalar(1));
 
     /* Modified concencric map code with less branching (by Dave Cline), see
        http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
@@ -81,21 +81,21 @@ MTS_INLINE Point2 square_to_uniform_disk_concentric(Point2 sample) {
         }
     */
 
-    Mask is_zero = eq(x, zero<Value>()) && eq(y, zero<Value>());
+    Mask is_zero         = eq(x, zero<Value>()) &&
+                           eq(y, zero<Value>()),
+         quadrant_1_or_3 = abs(x) < abs(y);
 
-    Mask quadrant_0_or_2 = (abs(x) > abs(y));
+    Value r  = select(quadrant_1_or_3, y, x),
+          rp = select(quadrant_1_or_3, x, y);
 
-    Value r  = select(quadrant_0_or_2, x, y),
-          rp = select(quadrant_0_or_2, y, x);
+    Value phi = rp / r * Scalar(.25f * math::Pi);
+    masked(phi, quadrant_1_or_3) = Scalar(.5f * math::Pi) - phi;
+    masked(phi, is_zero) = zero<Value>();
 
-    Value phi = rp / r * Scalar(0.25f * math::Pi);
-    phi = select(quadrant_0_or_2, phi, Scalar(0.5f * math::Pi) - phi);
-    phi = select(is_zero, zero<Value>(), phi);
+    Value sin_phi, cos_phi;
+    std::tie(sin_phi, cos_phi) = sincos(phi);
 
-    auto sc = sincos(phi);
-
-    return Point2(r * sc.second,
-                  r * sc.first);
+    return Point2(r * cos_phi, r * sin_phi);
 }
 
 /// Inverse of the mapping \ref square_to_uniform_disk_concentric

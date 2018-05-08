@@ -47,7 +47,6 @@ public:
     MTS_INLINE
     Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                        const Vector3 &wo, mask_t<Value> active) const {
-        using Frame = Frame<Vector3>;
         using Frame = mitsuba::Frame<Vector3>;
 
         if (!ctx.is_enabled(EDiffuseReflection))
