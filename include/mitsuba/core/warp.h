@@ -1462,7 +1462,7 @@ public:
         UInt32 row = math::find_interval(
             row_size,
             [&](UInt32 idx, mask_t<Value> active) ENOKI_INLINE_LAMBDA {
-                return lookup<Dimension>(m_row_cdf.get(), idx, row_size,
+                return lookup<Dimension>(m_row_cdf.get(), row_offset + idx, row_size,
                                          param_weight, active) < sample.y();
             },
             active);
