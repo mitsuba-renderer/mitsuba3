@@ -32,7 +32,7 @@ from mitsuba.core import warp, float_dtype
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
 from mitsuba.core.chi2 import (
     SpectrumAdapter, BSDFAdapter, MicrofacetAdapter,
-    InteractiveMicrofacetBSDFAdapter)
+    InteractiveBSDFAdapter)
 from mitsuba.render import MicrofacetDistribution
 from mitsuba.core import Bitmap, Thread
 from mitsuba.core.warp import Hierarchical2D0, Hierarchical2D2
@@ -240,7 +240,7 @@ DISTRIBUTIONS = [
              ('alpha_u', [0, 1, 0.2]),
              ('alpha_v', [0, 1, 0.2])
      ])),
-     
+
 
     # ('Rough dielectric BSDF - smooth', SphericalDomain(),
     #  BSDFAdapter("roughdielectric", """

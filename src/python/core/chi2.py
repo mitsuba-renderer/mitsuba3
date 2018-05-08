@@ -3,6 +3,8 @@
 from __future__ import division
 import numpy as np
 import mitsuba
+from mitsuba.core import float_dtype, PCG32
+from mitsuba.core.xml import load_string
 
 
 class ChiSquareTest(object):
@@ -84,7 +86,7 @@ class ChiSquareTest(object):
     """
     def __init__(self, domain, sample_func, pdf_func, sample_dim=2,
                  sample_count=1000000, res=101, ires=6,
-                 dtype=mitsuba.core.float_dtype):
+                 dtype=float_dtype):
         self.domain = domain
         self.sample_func = sample_func
         self.pdf_func = pdf_func
@@ -111,8 +113,6 @@ class ChiSquareTest(object):
         ``(positions, weights)`` instead of just poisitions, the samples are
         considered to be weighted.
         """
-        from mitsuba.core import PCG32
-
         # Generate a table of uniform variates
         samples_in = PCG32().next_float((self.sample_count, self.sample_dim))
 
@@ -401,7 +401,6 @@ def SpectrumAdapter(value):
         if hasattr(value, 'sample'):
             return value
         else:
-            from mitsuba.core.xml import load_string
             obj = load_string(value % args)
             expanded = obj.expand()
             if len(expanded) == 1:
@@ -467,16 +466,14 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
     def make_context(n):
         si = SurfaceInteraction3fX(n)
         si.wi = np.tile(wi, (n, 1))
-        si.wavelengths = np.random.uniform(low=400, high=800,
-                                           size=(n, MTS_WAVELENGTH_SAMPLES))
-
+        si.wavelengths = np.full((n, MTS_WAVELENGTH_SAMPLES),
+                                 532, dtype=float_dtype)
         return (si, BSDFContext())
 
     def instantiate(args):
         xml = """<bsdf version="2.0.0" type="%s">
             %s
         </bsdf>""" % (bsdf_type, extra)
-        from mitsuba.core.xml import load_string
         return load_string(xml % args)
 
     def sample_functor(sample, *args):
@@ -499,66 +496,49 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
     return sample_functor, pdf_functor
 
 
-def InteractiveMicrofacetBSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], nn=[0, 0, 1]):
+def InteractiveBSDFAdapter(bsdf_type, extra):
     """
-    Adapter which permits interactive testing of BSDF
-    distributions using the Chi^2 test
+    Adapter for interactive & batch testing of BSDFs using the Chi^2 test
     """
 
-    from mitsuba.core   import Frame3f, Frame3fX, MTS_WAVELENGTH_SAMPLES
-    from mitsuba.render import BSDFContext, \
-                               SurfaceInteraction3f, SurfaceInteraction3fX
+    from mitsuba.render import BSDFContext, SurfaceInteraction3fX
+    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
 
-    def sph_to_cartesian(theta, phi):
+    def make_context(n, theta, phi):
+        theta *= np.pi / 180
+        phi *= np.pi / 180
         sin_phi, cos_phi = np.sin(phi), np.cos(phi)
         sin_theta, cos_theta = np.sin(theta), np.cos(theta)
-        return np.column_stack(
-            (cos_phi * sin_theta,
-             sin_phi * sin_theta,
-             cos_theta)
-        )
-
-    def make_context(n, wi):
-        frame = Frame3f(nn)
-        frames = Frame3fX(n)
-        frames.n = np.tile(frame.n, (n, 1))
-        frames.s = np.tile(frame.s, (n, 1))
-        frames.t = np.tile(frame.t, (n, 1))
-
-        si = SurfaceInteraction3fX()
-        si.p  = np.zeros(shape=(n, 3))
-        si.t  = 44.0
-        si.n  = np.tile(nn, (n, 1))
+        wi = np.array([cos_phi * sin_theta, sin_phi * sin_theta,
+                       cos_theta], dtype=float_dtype)
+        si = SurfaceInteraction3fX(n)
         si.wi = np.tile(wi, (n, 1))
-        si.sh_frame = frames
-        si.wavelengths = np.random.uniform(low=400, high=800,
-                                           size=(n, MTS_WAVELENGTH_SAMPLES))
-
+        si.wavelengths = np.full((n, MTS_WAVELENGTH_SAMPLES),
+                                 532, dtype=float_dtype)
         return (si, BSDFContext())
 
     def instantiate(args):
         xml = """<bsdf version="2.0.0" type="%s">
-            <float name="alpha_u" value="%s"/>
-            <float name="alpha_v" value="%s"/>
             %s
-        </bsdf>""" % (bsdf_type, str(args[0]), str(args[1]), extra)
-        from mitsuba.core.xml import load_string
-        return load_string(xml)
+        </bsdf>""" % (bsdf_type, extra)
+        return load_string(xml % args)
 
     def sample_functor(sample, *args):
-        n = sample.shape[0]
-        plugin = instantiate(args)
-        (si, ctx) = make_context(n, sph_to_cartesian(args[2], args[3]))
-        bs, weight = plugin.sample(ctx, si, sample[:, 0], sample[:, 1:])
+        plugin = instantiate(args[2:])
+        (si, ctx) = make_context(sample.shape[0], args[0], args[1])
+
+        if sample.ndim == 3:
+            bs, weight = plugin.sample(ctx, si, sample[:, 0], sample[:, 1:])
+        else:
+            bs, weight = plugin.sample(ctx, si, 0, sample)
 
         w = np.ones(weight.shape[0])
         w[np.mean(weight, axis=1) == 0] = 0
         return bs.wo, w
 
     def pdf_functor(wo, *args):
-        n = wo.shape[0]
-        plugin = instantiate(args)
-        (si, ctx) = make_context(n, sph_to_cartesian(args[2], args[3]))
+        plugin = instantiate(args[2:])
+        (si, ctx) = make_context(wo.shape[0], args[0], args[1])
         return plugin.pdf(ctx, si, wo)
 
     return sample_functor, pdf_functor

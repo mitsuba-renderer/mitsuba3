@@ -159,6 +159,27 @@ class WarpVisualizer(Screen):
             }
             '''))
 
+        self.bsdf_shader = GLShader()
+        self.bsdf_shader.init(
+            'Sample shader (BSDFs)',
+            # Vertex shader
+            translate_shader('''
+            #version 330
+            uniform mat4 mvp;
+            in vec3 position;
+            void main() {
+                gl_Position = mvp * vec4(position, 1.0);
+            }
+            '''),
+            # Fragment shader
+            translate_shader('''
+            #version 330
+            out vec4 out_color;
+            void main() {
+                out_color = vec4(vec3(1.0), 0.4);
+            }
+            '''))
+
         self.histogram_shader = GLShader()
         self.histogram_shader.init(
             'Histogram shader',
@@ -296,6 +317,12 @@ class WarpVisualizer(Screen):
             self.grid_shader.set_uniform('mvp', mvp)
             self.grid_shader.draw_array(gl.LINES, 0, self.line_count)
             gl.Disable(gl.BLEND)
+
+        distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
+        if 'BSDF' in repr(distr[2][0]):
+            self.bsdf_shader.bind()
+            self.bsdf_shader.set_uniform('mvp', mvp)
+            self.bsdf_shader.draw_array(gl.LINES, 0, 104)
 
     def draw_test_results(self):
         spacer = 20
@@ -440,7 +467,6 @@ class WarpVisualizer(Screen):
         if not self.warped_grid_box.enabled():
             self.warped_grid_box.set_checked(False)
 
-        self.density_box.set_enabled(self.warped_grid_box.checked())
         if not self.density_box.enabled():
             self.density_box.set_checked(False)
 
@@ -516,9 +542,12 @@ class WarpVisualizer(Screen):
 
             lines = sample_func(
                 np.column_stack([
-                    np.hstack([grid.ravel(), fine_grid.ravel()]), np.hstack(
-                        [fine_grid.ravel(), grid.ravel()])
+                    np.hstack([grid.ravel(), fine_grid.ravel()]),
+                    np.hstack([fine_grid.ravel(), grid.ravel()])
                 ]))
+
+            if type(lines) is tuple:
+                lines = lines[0]
 
             if self.density_box.checked():
                 pdfs = pdf_func(lines)
@@ -536,6 +565,21 @@ class WarpVisualizer(Screen):
             self.grid_shader.bind()
             self.grid_shader.upload_attrib('position', lines.T)
             self.line_count = lines.shape[0]
+
+        if 'InteractiveBSDF' in repr(distr[2][0]):
+            def sph(theta, phi):
+                return [np.cos(phi) * np.sin(theta), np.sin(phi) * np.sin(theta), np.cos(theta)]
+            res = 50
+            angles = np.linspace(0, 2*np.pi, res)
+            angles = np.array(list(zip(angles[:-1], angles[1:]))).ravel()
+            lines = np.array((np.cos(angles), np.sin(angles), np.zeros(angles.shape)))
+            theta, phi = np.array(self.parameters[:2]) * np.pi / 180
+            arrows = np.array([[0, 0, 0], sph(theta, phi),
+                               [0, 0, 0], sph(theta, phi + np.pi)])
+            lines = np.column_stack((lines, arrows.T))
+            self.bsdf_shader.bind()
+            self.bsdf_shader.upload_attrib('position', lines)
+
 
     def run_test(self):
         distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
