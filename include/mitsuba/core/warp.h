@@ -135,6 +135,34 @@ MTS_INLINE Value square_to_uniform_disk_concentric_pdf(Point2 p) {
 
 // =======================================================================
 
+/**
+ * \brief Low-distortion concentric square to square mapping (meant to be used
+ * in conjunction with another warping method that maps to the sphere)
+ */
+template <typename Point2>
+MTS_INLINE Point2 square_to_uniform_square_concentric(Point2 sample) {
+    using Value  = value_t<Point2>;
+    using Mask   = mask_t<Value>;
+    using Scalar = scalar_t<Value>;
+
+    Value x = fmsub(Scalar(2), sample.x(), Scalar(1)),
+          y = fmsub(Scalar(2), sample.y(), Scalar(1));
+
+    Mask quadrant_1_or_3 = abs(x) < abs(y);
+
+    Value r  = select(quadrant_1_or_3, y, x),
+          rp = select(quadrant_1_or_3, x, y);
+
+    Value phi = rp / r * Scalar(.125f);
+    masked(phi, quadrant_1_or_3) = Scalar(.25f) - phi;
+    masked(phi, r < 0.f) += .5f;
+    masked(phi, phi < 0.f) += 1.f;
+
+    return Point2(phi, r*r);
+}
+
+// =======================================================================
+
 /// Convert an uniformly distributed square sample into barycentric coordinates
 template <typename Point2>
 MTS_INLINE Point2 square_to_uniform_triangle(Point2 sample) {

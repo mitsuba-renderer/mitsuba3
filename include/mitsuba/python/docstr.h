@@ -8309,6 +8309,10 @@ angles)doc";
 
 static const char *__doc_mitsuba_warp_square_to_uniform_sphere_pdf = R"doc(Density of square_to_uniform_sphere() with respect to solid angles)doc";
 
+static const char *__doc_mitsuba_warp_square_to_uniform_square_concentric =
+R"doc(Low-distortion concentric square to square mapping (meant to be used
+in conjunction with another warping method that maps to the sphere))doc";
+
 static const char *__doc_mitsuba_warp_square_to_uniform_triangle =
 R"doc(Convert an uniformly distributed square sample into barycentric
 coordinates)doc";

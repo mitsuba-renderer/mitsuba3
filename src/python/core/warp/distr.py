@@ -47,12 +47,17 @@ def deg2rad(value):
 DEFAULT_SETTINGS   = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
 DEFAULT_SETTINGS_3 = {'sample_dim': 3, 'ires': 10, 'res': 101, 'parameters': []}
 
-
 DISTRIBUTIONS = [
     ('Uniform square', PlanarDomain(np.array([[0, 1],
                                               [0, 1]])),
     (lambda x: x,
      lambda x: np.ones(x.shape[0])),
+     DEFAULT_SETTINGS),
+
+    ('Uniform square (concentric)', PlanarDomain(np.array([[0, 1],
+                                              [0, 1]])),
+     (warp.square_to_uniform_square_concentric,
+      lambda x: np.ones(x.shape[0])),
      DEFAULT_SETTINGS),
 
     ('Uniform triangle', PlanarDomain(np.array([[0, 1],
