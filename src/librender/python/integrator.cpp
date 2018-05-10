@@ -49,7 +49,11 @@ MTS_PY_EXPORT(Integrator) {
                  return res;
              },
              D(Integrator, render), "scene"_a, "vectorize"_a)
-        .mdef(Integrator, cancel);
+        .mdef(Integrator, cancel)
+        .mdef(Integrator, register_callback, "cb"_a, "period"_a)
+        .mdef(Integrator, remove_callback, "index"_a)
+        .mdef(Integrator, callback_count)
+        .mdef(Integrator, notify, "bitmap"_a, "extra"_a);
 
     /// SamplingIntegrator.
     MTS_PY_CLASS(SamplingIntegrator, Integrator)
@@ -57,13 +61,14 @@ MTS_PY_EXPORT(Integrator) {
              py::overload_cast<const RayDifferential3f &, RadianceSample3f &>(
                  &SamplingIntegrator::eval, py::const_),
              D(SamplingIntegrator, eval), "ray"_a, "rs"_a)
+        // TODO: bind this vectorized variant (may need to vectorize manually).
         // .def("eval",
         //      enoki::vectorize_wrapper(
         //          py::overload_cast<const RayDifferential3fP &,
         //                            RadianceSample3fP &, MaskP>(
         //              &SamplingIntegrator::eval, py::const_)),
-        //      D(SamplingIntegrator, eval, 2),
-        //      "ray"_a, "rs"_a, "active"_a = true)
+        //      D(SamplingIntegrator, eval, 2), "ray"_a, "rs"_a, "active"_a =
+        //      true)
         .mdef(SamplingIntegrator, should_stop);
 
     /// MonteCarloIntegrator.

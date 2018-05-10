@@ -5,6 +5,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/timer.h>
+#include <mitsuba/core/tls.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>
@@ -46,6 +47,56 @@ public:
      */
     virtual void cancel() = 0;
 
+
+    // =========================================================================
+    //! @{ \name Progress reporting / callbacks
+    // =========================================================================
+    /**
+     * Signature of callbacks that may be registered. Called with:
+     * - Thread ID
+     * - Pointer to this thread's bitmap, used to accumulate the results
+     *   locally. This should typically point to the same object across calls.
+     * - Extra information (e.g. an enumeration value indicating a type of
+     *   event).
+     */
+    using CallbackFunction = std::function<void(size_t, Bitmap*, Float)>;
+
+    /**
+     * Adds a callback function, which will be called with the desired
+     * frequency.
+     * Not thread-safe.
+     *
+     * @param cb     Callback function to be called.
+     * @param period Minimum time elapsed (in seconds) between two calls. May
+     *               be zero, in which case the callback is called at each
+     *               iteration of the algorithm.
+     * @return The index of this callback (used to de-register this callback).
+     */
+    size_t register_callback(CallbackFunction cb, Float period);
+
+    /**
+     * De-registers callback at the specified index.
+     * If (size_t) -1 is passed, all callbacks are cleared.
+     */
+    void remove_callback(size_t cb_index = (size_t) -1);
+
+    size_t callback_count() const {
+        return m_callbacks.size();
+    }
+
+    /**
+     * Maybe trigger a call to the callbacks. This will be rate-limited so that
+     * the period specified by the caller is respected *per-thread* (i.e. each
+     * thread will count time independently).
+     *
+     * Callbacks are called in the order the were registered.
+     */
+    virtual void notify(Bitmap *bitmap, Float extra = 1.0f);
+
+    //! @}
+    // =========================================================================
+
+
     MTS_DECLARE_CLASS()
 protected:
     /// Create an integrator
@@ -53,6 +104,21 @@ protected:
 
     /// Virtual destructor
     virtual ~Integrator() { }
+
+protected:
+    struct CallbackInfo {
+        CallbackFunction f;
+        Float period;
+        ThreadLocal<Float> last_called;
+
+        CallbackInfo(const CallbackFunction &f, Float period)
+            : f(f), period(period) {}
+    };
+
+    /// List of registered callback functions.
+    std::vector<CallbackInfo> m_callbacks;
+    /// Timer used to enforce the callback rate limits.
+    Timer m_cb_timer;
 };
 
 /** \brief Abstract base class, which describes integrators

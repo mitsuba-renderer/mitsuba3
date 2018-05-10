@@ -9,10 +9,41 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spiral.h>
+#include <thread>
 
 NAMESPACE_BEGIN(mitsuba)
 
-Integrator::Integrator(const Properties &/*props*/) {}
+Integrator::Integrator(const Properties & /*props*/) {}
+
+size_t Integrator::register_callback(CallbackFunction cb, Float period) {
+    m_callbacks.push_back(CallbackInfo(cb, period));
+    return m_callbacks.size() - 1;
+}
+
+void Integrator::remove_callback(size_t cb_index) {
+    if (cb_index == (size_t) -1)
+        m_callbacks.clear();
+    else {
+        Assert(cb_index < m_callbacks.size());
+        m_callbacks.erase(m_callbacks.begin() + cb_index);
+    }
+}
+
+void Integrator::notify(Bitmap *bitmap, Float extra) {
+    if (m_callbacks.empty())
+        return;
+    Float current_time = m_cb_timer.value() / 1000.0f;
+    for (auto &entry : m_callbacks) {
+        auto &last_called = (Float &) entry.last_called;
+        if (last_called < 0.0f || last_called > current_time ||
+            current_time - last_called > entry.period) {
+            entry.f(Thread::thread()->id(), bitmap, extra);
+            last_called = current_time;
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
 
 SamplingIntegrator::SamplingIntegrator(const Properties &props)
     : Integrator(props) {
@@ -243,6 +274,8 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
     }
 }
 
+// -----------------------------------------------------------------------------
+
 MonteCarloIntegrator::MonteCarloIntegrator(const Properties &props)
     : SamplingIntegrator(props) {
     /// Depth to begin using russian roulette
@@ -251,9 +284,9 @@ MonteCarloIntegrator::MonteCarloIntegrator(const Properties &props)
         Throw("\"rr_depth\" must be set to a value greater than zero!");
 
     /** Longest visualized path depth (\c -1 = infinite).
-      * A value of \c 1 will visualize only directly visible light sources.
-      * \c 2 will lead to single-bounce (direct-only) illumination, and so on.
-      */
+     * A value of \c 1 will visualize only directly visible light sources.
+     * \c 2 will lead to single-bounce (direct-only) illumination, and so on.
+     */
     m_max_depth = props.int_("max_depth", -1);
     if (m_max_depth <= 0 && m_max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value"
