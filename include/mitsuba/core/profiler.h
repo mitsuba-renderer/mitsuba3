@@ -33,6 +33,10 @@ enum class EProfilerPhase : int {
     ECreateSurfaceInteractionP,  /* KDTree::create_surface_interaction() [packet] */
     EImageBlockPut,              /* ImageBlock::put() */
     EImageBlockPutP,             /* ImageBlock::put() [packet] */
+    EBSDFEvaluate,               /* BSDF::eval() and BSDF::pdf() */
+    EBSDFEvaluateP,              /* BSDF::eval() and BSDF::pdf() [packet] */
+    EBSDFSample,                 /* BSDF::sample() */
+    EBSDFSampleP,                /* BSDF::sample() [packet] */
     EProfilerPhaseCount
 };
 
@@ -53,7 +57,11 @@ constexpr const char *profiler_phase_id[int(EProfilerPhase::EProfilerPhaseCount)
     "KDTree::create_surface_interaction()",
     "KDTree::create_surface_interaction() [packet]",
     "ImageBlock::put()",
-    "ImageBlock::put() [packet]"
+    "ImageBlock::put() [packet]",
+    "BSDF::eval(), pdf()",
+    "BSDF::eval(), pdf() [packet]",
+    "BSDF::sample()",
+    "BSDF::sample() [packet]"
 };
 
 static_assert(int(EProfilerPhase::EProfilerPhaseCount) <= 64,

@@ -2,6 +2,7 @@
 
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/common.h>
+#include <mitsuba/core/profiler.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -524,27 +525,33 @@ ENOKI_CALL_SUPPORT_END(mitsuba::BSDFP)
     std::pair<BSDFSample3f, Spectrumf> sample(                                 \
             const BSDFContext &ctx, const SurfaceInteraction3f &si,            \
             Float sample1, const Point2f &sample2) const override {            \
+        ScopedPhase p(EProfilerPhase::EBSDFSample);                            \
         return sample_impl(ctx, si, sample1, sample2, true);                   \
     }                                                                          \
     std::pair<BSDFSample3fP, SpectrumfP> sample(                               \
             const BSDFContext &ctx, const SurfaceInteraction3fP &si,           \
             FloatP sample1, const Point2fP &sample2,                           \
             MaskP active = true) const override {                              \
+        ScopedPhase p(EProfilerPhase::EBSDFSampleP);                           \
         return sample_impl(ctx, si, sample1, sample2, active);                 \
     }                                                                          \
     Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,     \
                    const Vector3f &wo) const override {                        \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluate);                          \
         return eval_impl(ctx, si, wo, true);                                   \
     }                                                                          \
     SpectrumfP eval(const BSDFContext &ctx, const SurfaceInteraction3fP &si,   \
                     const Vector3fP &wo, MaskP active) const override {        \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluateP);                         \
         return eval_impl(ctx, si, wo, active);                                 \
     }                                                                          \
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,          \
               const Vector3f &wo) const override {                             \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluate);                          \
         return pdf_impl(ctx, si, wo, true);                                    \
     }                                                                          \
     FloatP pdf(const BSDFContext &ctx, const SurfaceInteraction3fP &si,        \
                const Vector3fP &wo, MaskP active) const override {             \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluateP);                         \
         return pdf_impl(ctx, si, wo, active);                                  \
     }
