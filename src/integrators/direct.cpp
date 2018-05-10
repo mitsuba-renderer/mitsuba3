@@ -86,7 +86,7 @@ public:
 
             masked(result_partial, valid) =
                 result_partial + emitter_val * bsdf_val
-                                 * mi_weight(ds.pdf, bsdf_pdf);
+                                 * mi_weight(ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf);
         }
         if (m_emitter_samples > 0)
             result += result_partial / (Float) m_emitter_samples;
@@ -124,7 +124,7 @@ public:
 
                 masked(result_partial, valid) =
                     result_partial + bsdf_val * emitter_val
-                                     * mi_weight(bs.pdf, emitter_pdf);
+                                     * mi_weight(bs.pdf * m_frac_bsdf, emitter_pdf * m_frac_lum);
             }
         }
         if (m_bsdf_samples > 0)
