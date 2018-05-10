@@ -14,7 +14,7 @@
     MTS_TOSTRING(MTS_VERSION_PATCH)
 
 /// Year of the current release
-#define MTS_YEAR "2017"
+#define MTS_YEAR "2018"
 
 /// Authors list
 #define MTS_AUTHORS "Wenzel Jakob and others (see README.md)"
