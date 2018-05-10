@@ -209,7 +209,7 @@ public:
             ptr = next + 1;
         }
 
-        m_vertex_count = (Size) vertex_map.size();
+        m_vertex_count = vertex_ctr;
         m_face_count = (Size) triangles.size();
         m_vertex_struct = new Struct();
         for (auto name : { "x", "y", "z" })
