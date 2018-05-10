@@ -104,23 +104,9 @@ public:
         m_storage = new ImageBlock(Bitmap::EXYZAW, m_crop_size);
     }
 
-    /**
-     * Clears all channels to 0, except alpha which is set to 1.0.
-     */
+    /// Resets all channels to zero.
     void clear() override {
-        Assert(m_storage->pixel_format() == Bitmap::EXYZAW);
         m_storage->clear();
-
-        Vector2i size = m_storage->size();
-        size_t channel_count = m_storage->channel_count();
-        size_t n_pixels = (size_t) size.x() * (size_t) size.y();
-        Float *target = static_cast<Float *>(m_storage->bitmap()->data());
-
-        target += 3; // Alpha channel, in XYZAW layout
-        for (size_t i = 0; i < n_pixels; ++i) {
-            *target = 1.0f;
-            target += channel_count;
-        }
     }
 
     void put(const ImageBlock *block) override {

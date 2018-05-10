@@ -94,11 +94,8 @@ def test03_clear_set_add():
     film.add_bitmap(b, multiplier=1.5)
     assert np.allclose(np.array(film.bitmap(), copy=False), (1 + 1.5) * ref,
                        atol=1e-6)
-    # Clearing clears all channels except alpha
     film.clear()
-    storage = np.array(film.bitmap(), copy=False)
-    assert np.all(storage[:, :, :3] == 0)
-    assert np.all(storage[:, :, 3] == 1)
+    assert np.all(np.array(film.bitmap(), copy=False) == 0)
     # This shouldn't affect the original bitmap that was passed.
     assert np.all(np.array(b) == ref)
 

@@ -137,8 +137,6 @@ std::tuple<Value, Value, Value, Value> fresnel(Value cos_theta_i, Value eta) {
 template <typename Value>
 std::pair<Value, Value>
 fresnel_complex_polarized(Value cos_theta_i, Complex<Value> eta) {
-    // Assert(all_nested(cos_theta_i >= 0));
-
     // Modified from "Optics" by K.D. Moeller, University Science Books, 1988
     Value cos_theta_i_2 = cos_theta_i * cos_theta_i,
           sin_theta_i_2 = 1.f - cos_theta_i_2,
