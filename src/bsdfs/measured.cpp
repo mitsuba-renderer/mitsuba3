@@ -5,9 +5,10 @@
 #include <mitsuba/render/bsdf.h>
 
 #define MTS_MARGINAL_WARP      1
+#define MTS_REVERSE_AXES       0
+
 #define MTS_SAMPLE_VNDF        1
 #define MTS_SAMPLE_LUMINANCE   1
-#define MTS_REVERSE_AXES       0
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -223,6 +224,8 @@ public:
             Value params_spec[3] = { phi_i_p, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(luminance_sample, params_spec, active);
         }
+
+        active &= Frame::cos_theta(bs.wo) > 0;
 
         return { bs, select(active, spec / bs.pdf, Spectrum(0.f)) };
     }
