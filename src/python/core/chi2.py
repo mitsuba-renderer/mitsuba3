@@ -517,11 +517,16 @@ def InteractiveBSDFAdapter(bsdf_type, extra):
                                  532, dtype=float_dtype)
         return (si, BSDFContext())
 
+    cache = [None, None]
+
     def instantiate(args):
-        xml = """<bsdf version="2.0.0" type="%s">
+        xml = ("""<bsdf version="2.0.0" type="%s">
             %s
-        </bsdf>""" % (bsdf_type, extra)
-        return load_string(xml % args)
+        </bsdf>""" % (bsdf_type, extra)) % args
+        if xml != cache[0]:
+            cache[1] = load_string(xml)
+            cache[0] = xml
+        return cache[1]
 
     def sample_functor(sample, *args):
         plugin = instantiate(args[2:])

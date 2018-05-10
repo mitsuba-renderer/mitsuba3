@@ -16,9 +16,16 @@ class MTS_EXPORT_CORE TensorFile : public MemoryMappedFile {
 public:
     /// Information about the specified field
     struct Field {
+        /// Data type (uint32, float, ...) of the tensor
         Struct::EType dtype;
+
+        /// Offset within the file
         size_t offset;
+
+        /// Specifies both rank and size along each dimension
         std::vector<size_t> shape;
+
+        /// Const pointer to the start of the tensor
         const void *data;
     };
 

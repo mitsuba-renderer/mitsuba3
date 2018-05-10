@@ -1452,8 +1452,8 @@ public:
     std::pair<Vector2f, Value> sample(Vector2f sample, const Value *param = nullptr,
                                       mask_t<Value> active = true) const {
         using Vector2u = uint32_array_t<Vector2f>;
-        using UInt32   = value_t<Vector2u>;
-        using Mask     = mask_t<Value>;
+        using UInt32 = value_t<Vector2u>;
+        using Mask = mask_t<Value>;
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];
@@ -1567,6 +1567,7 @@ public:
         using Vector2u = uint32_array_t<Vector2f>;
         using Vector2i = int32_array_t<Vector2f>;
         using UInt32 = value_t<Vector2u>;
+        using Mask = mask_t<Value>;
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];
@@ -1580,7 +1581,7 @@ public:
 
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, mask_t<Value> active) {
+                [&](UInt32 idx, Mask active) {
                     return gather<Value>(m_param_values[dim].get(), idx,
                                          active) <= param[dim];
                 },
@@ -1660,6 +1661,7 @@ public:
         using Vector2u = uint32_array_t<Vector2f>;
         using Vector2i = int32_array_t<Vector2f>;
         using UInt32 = value_t<Vector2u>;
+        using Mask = mask_t<Value>;
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];
@@ -1673,7 +1675,7 @@ public:
 
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, mask_t<Value> active) {
+                [&](UInt32 idx, Mask active) {
                     return gather<Value>(m_param_values[dim].get(), idx,
                                          active) <= param[dim];
                 },

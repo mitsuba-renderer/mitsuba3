@@ -284,6 +284,14 @@ DISTRIBUTIONS = [
     #     <rgb name="specular_reflectance" value="1.0, 0.1, 0.1"/>
     #     <rgb name="diffuse_reflectance" value="0.5, 0.5, 1.0"/>
     #  """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
+    #('Measured BSDF', SphericalDomain(),
+    # InteractiveBSDFAdapter("measured", """
+    #    <string name="filename" value="ggx_spec.bsdf"/>
+    #"""), dict(DEFAULT_SETTINGS,
+    #     parameters=[
+    #         ('theta_i', [0, 90, 30]),
+    #         ('phi_i', [0, 360, 0])
+    # ]))
 ]
 
 @fresolver_append_path
