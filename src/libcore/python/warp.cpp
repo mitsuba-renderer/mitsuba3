@@ -603,7 +603,7 @@ MTS_PY_EXPORT(warp) {
                          bool normalize, bool build_cdf) {
             if (data.ndim() != 5)
                 throw std::domain_error("data array has incorrect dimension");
-            if (param_values.size() != 2 ||
+            if (param_values.size() != 3 ||
                 (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
                 (uint32_t) param_values[1].size() != (uint32_t) data.shape(1) ||
                 (uint32_t) param_values[2].size() != (uint32_t) data.shape(2))
@@ -798,7 +798,7 @@ MTS_PY_EXPORT(warp) {
                          bool normalize, bool build_hierarchy) {
             if (data.ndim() != 5)
                 throw std::domain_error("data array has incorrect dimension");
-            if (param_values.size() != 2 ||
+            if (param_values.size() != 3 ||
                 (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
                 (uint32_t) param_values[1].size() != (uint32_t) data.shape(1) ||
                 (uint32_t) param_values[2].size() != (uint32_t) data.shape(2))
