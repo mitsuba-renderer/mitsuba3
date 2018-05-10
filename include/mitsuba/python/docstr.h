@@ -2737,7 +2737,7 @@ static const char *__doc_mitsuba_ImageBlock_channel_count = R"doc(Return the num
 
 static const char *__doc_mitsuba_ImageBlock_class = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_clear = R"doc(Clear everything to zero)doc";
+static const char *__doc_mitsuba_ImageBlock_clear = R"doc(Clear everything to zero.)doc";
 
 static const char *__doc_mitsuba_ImageBlock_height = R"doc(Return the bitmap's height in pixels)doc";
 
@@ -2867,7 +2867,19 @@ different kinds of implementations ranging from software-based path
 tracing and Markov-Chain based techniques such as Metropolis Light
 Transport up to hardware-accelerated rasterization.)doc";
 
+static const char *__doc_mitsuba_Integrator_CallbackInfo = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_CallbackInfo_CallbackInfo = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_CallbackInfo_f = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_CallbackInfo_last_called = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_CallbackInfo_period = R"doc()doc";
+
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
+
+static const char *__doc_mitsuba_Integrator_callback_count = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_cancel =
 R"doc(Cancel a running render job
@@ -2877,6 +2889,30 @@ job. In this case, render() will quit with a return value of
 ``False``.)doc";
 
 static const char *__doc_mitsuba_Integrator_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_m_callbacks = R"doc(List of registered callback functions.)doc";
+
+static const char *__doc_mitsuba_Integrator_m_cb_timer = R"doc(Timer used to enforce the callback rate limits.)doc";
+
+static const char *__doc_mitsuba_Integrator_notify =
+R"doc(Maybe trigger a call to the callbacks. This will be rate-limited so
+that the period specified by the caller is respected *per-thread*
+(i.e. each thread will count time independently).
+
+Callbacks are called in the order the were registered.)doc";
+
+static const char *__doc_mitsuba_Integrator_register_callback =
+R"doc(Adds a callback function, which will be called with the desired
+frequency. Not thread-safe.
+
+@param cb Callback function to be called. @param period Minimum time
+elapsed (in seconds) between two calls. May be zero, in which case the
+callback is called at each iteration of the algorithm. @return The
+index of this callback (used to de-register this callback).)doc";
+
+static const char *__doc_mitsuba_Integrator_remove_callback =
+R"doc(De-registers callback at the specified index. If (size_t) -1 is
+passed, all callbacks are cleared.)doc";
 
 static const char *__doc_mitsuba_Integrator_render = R"doc(Perform the main rendering job)doc";
 
@@ -4609,15 +4645,34 @@ static const char *__doc_mitsuba_SamplingIntegrator_eval_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 eval())doc";
 
-static const char *__doc_mitsuba_SamplingIntegrator_m_block_size = R"doc()doc";
+static const char *__doc_mitsuba_SamplingIntegrator_m_block_size = R"doc(Size of (square) image blocks to render per core.)doc";
 
-static const char *__doc_mitsuba_SamplingIntegrator_m_stop = R"doc()doc";
+static const char *__doc_mitsuba_SamplingIntegrator_m_render_timer = R"doc(Timer used to enforce the timeout.)doc";
+
+static const char *__doc_mitsuba_SamplingIntegrator_m_samples_per_pass =
+R"doc(Number of samples to compute for each pass over the image blocks. Must
+be a multiple of the total sample count per pixel. If set to (size_t)
+-1, all the work is done in a single pass (default).)doc";
+
+static const char *__doc_mitsuba_SamplingIntegrator_m_stop = R"doc(Integrators should stop computing when this flag is set to true.)doc";
+
+static const char *__doc_mitsuba_SamplingIntegrator_m_timeout =
+R"doc(Maximum amount of time to spend rendering (excluding scene parsing).
+Specified in seconds. A negative values indicates no timeout.)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_render = R"doc(//! @{ \name Integrator interface implementation)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_render_block_scalar = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_render_block_vector = R"doc()doc";
+
+static const char *__doc_mitsuba_SamplingIntegrator_should_stop =
+R"doc(Indicates whether cancel() or a timeout have occured. Should be
+checked often in each integrator's main loop so that timeout is
+enforced accurately.
+
+Note that accurate timeouts rely on m_render_timer, which needs to be
+reset at the beginning of the rendering phase.)doc";
 
 static const char *__doc_mitsuba_Scene = R"doc()doc";
 
@@ -5264,6 +5319,8 @@ static const char *__doc_mitsuba_Spiral_m_offset = R"doc()doc";
 
 static const char *__doc_mitsuba_Spiral_m_position = R"doc()doc";
 
+static const char *__doc_mitsuba_Spiral_m_remaining_passes = R"doc(Number of times the spiral should automatically restart.)doc";
+
 static const char *__doc_mitsuba_Spiral_m_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Spiral_m_steps = R"doc(Step counters.)doc";
@@ -5278,6 +5335,8 @@ R"doc(Return the offset and size of the next block.
 A size of zero indicates that the spiral traversal is done.)doc";
 
 static const char *__doc_mitsuba_Spiral_reset = R"doc(Reset the spiral to its initial state)doc";
+
+static const char *__doc_mitsuba_Spiral_set_passes = R"doc(Sets the number of time the spiral should automatically reset.)doc";
 
 static const char *__doc_mitsuba_Stream =
 R"doc(Abstract seekable stream class
@@ -7394,6 +7453,22 @@ static const char *__doc_mitsuba_reflect = R"doc(Reflect ``wi`` with respect to 
 static const char *__doc_mitsuba_reflect_2 = R"doc(Reflection in local coordinates)doc";
 
 static const char *__doc_mitsuba_refract =
+R"doc(Refract ``wi`` with respect to a given surface normal
+
+Parameter ``wi``:
+    Direction to refract
+
+Parameter ``m``:
+    Surface normal
+
+Parameter ``eta``:
+    Ratio of interior to exterior IORs at the interface.
+
+Parameter ``cos_theta_t``:
+    Cosine of the angle between the normal the the transmitted ray, as
+    computed e.g. by fresnel_dielectric_ext.)doc";
+
+static const char *__doc_mitsuba_refract_2 =
 R"doc(Refraction in local coordinates
 
 The 'cos_theta_t' and 'eta_ti' parameters are given by the last two
