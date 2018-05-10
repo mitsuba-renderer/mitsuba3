@@ -757,14 +757,14 @@ public:
         uint32_t max_level   = math::log2i_ceil(hmax(n_patches)),
                  slices      = 1u;
         for (int i = (int) Dimension - 1; i >= 0; --i) {
-            if (param_res[i] < 2)
-                Throw("warp::Hierarchical2D(): parameter resolution must be >= 2!");
+            if (param_res[i] < 1)
+                Throw("warp::Hierarchical2D(): parameter resolution must be >= 1!");
 
             m_param_size[i] = param_res[i];
             m_param_values[i] = FloatStorage(enoki::alloc<Float>(param_res[i]));
             memcpy(m_param_values[i].get(), param_values[i],
                    sizeof(Float) * param_res[i]);
-            m_param_strides[i] = slices;
+            m_param_strides[i] = param_res[i] > 1 ? slices : 0;
             slices *= m_param_size[i];
         }
 
@@ -861,15 +861,22 @@ public:
     std::pair<Vector2f, Value> sample(Vector2f sample, const Value *param = nullptr,
                                       mask_t<Value> active = true) const {
         using Vector2u = uint32_array_t<Vector2f>;
-        using UInt32   = value_t<Vector2u>;
+        using UInt32 = value_t<Vector2u>;
+        using Mask = mask_t<Value>;
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
+            if (unlikely(m_param_size[dim] == 1)) {
+                param_weight[2 * dim] = 1.f;
+                param_weight[2 * dim + 1] = 0.f;
+                continue;
+            }
+
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, mask_t<Value> active) {
+                [&](UInt32 idx, Mask active) {
                     return gather<Value>(m_param_values[dim].get(), idx,
                                          active) <= param[dim];
                 },
@@ -980,8 +987,8 @@ public:
                                       mask_t<Value> active = true) const {
         using Vector2u = uint32_array_t<Vector2f>;
         using Vector2i = int32_array_t<Vector2f>;
-        using UInt32   = value_t<Vector2u>;
-        using Mask     = mask_t<Value>;
+        using UInt32 = value_t<Vector2u>;
+        using Mask = mask_t<Value>;
 
         const Level &level0 = m_levels[0];
 
@@ -989,9 +996,15 @@ public:
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
+            if (unlikely(m_param_size[dim] == 1)) {
+                param_weight[2 * dim] = 1.f;
+                param_weight[2 * dim + 1] = 0.f;
+                continue;
+            }
+
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, mask_t<Value> active) {
+                [&](UInt32 idx, Mask active) {
                     return gather<Value>(m_param_values[dim].get(), idx,
                                          active) <= param[dim];
                 },
@@ -1100,14 +1113,21 @@ public:
         using Vector2u = uint32_array_t<Vector2f>;
         using Vector2i = int32_array_t<Vector2f>;
         using UInt32 = value_t<Vector2u>;
+        using Mask = mask_t<Value>;
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
+            if (unlikely(m_param_size[dim] == 1)) {
+                param_weight[2 * dim] = 1.f;
+                param_weight[2 * dim + 1] = 0.f;
+                continue;
+            }
+
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, mask_t<Value> active) {
+                [&](UInt32 idx, Mask active) {
                     return gather<Value>(m_param_values[dim].get(), idx,
                                          active) <= param[dim];
                 },
@@ -1145,9 +1165,8 @@ public:
         Value v11 = level0.template lookup<Dimension>(
             offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
-        return select(all(pos >= 0 && pos <= m_inv_patch_size),
-                fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
-                      w1.y() * fmadd(w0.x(), v01, w1.x() * v11)), 0.f);
+        return fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
+                     w1.y() * fmadd(w0.x(), v01, w1.x() * v11));
     }
 
     std::string to_string() const {
@@ -1163,6 +1182,7 @@ public:
                 if (i != 0)
                     oss << ", ";
                 oss << m_param_size[i];
+                n_slices *= m_param_size[i];
             }
             oss << "]," << std::endl
                 << "  param_strides = [";
@@ -1171,8 +1191,6 @@ public:
                     oss << ", ";
                 oss << m_param_strides[i];
             }
-            if (Dimension > 0)
-                n_slices = m_param_strides[0] * m_param_size[0];
             oss << "]," << std::endl;
         }
         oss << "  storage = { " << n_slices << " slice" << (n_slices > 1 ? "s" : "")
@@ -1334,14 +1352,14 @@ public:
         /* Keep track of the dependence on additional parameters (optional) */
         uint32_t slices = 1;
         for (int i = (int) Dimension - 1; i >= 0; --i) {
-            if (param_res[i] < 2)
-                Throw("warp::Marginal2D(): parameter resolution must be >= 2!");
+            if (param_res[i] < 1)
+                Throw("warp::Marginal2D(): parameter resolution must be >= 1!");
 
             m_param_size[i] = param_res[i];
             m_param_values[i] = FloatStorage(enoki::alloc<Float>(param_res[i]));
             memcpy(m_param_values[i].get(), param_values[i],
                    sizeof(Float) * param_res[i]);
-            m_param_strides[i] = slices;
+            m_param_strides[i] = param_res[i] > 1 ? slices : 0;
             slices *= m_param_size[i];
         }
 
@@ -1361,16 +1379,17 @@ public:
                 double sum = 0.0;
                 row_cdf[0] = 0.f;
                 for (uint32_t y = 0; y < m_size.y() - 1; ++y) {
-                    double row_sum = 0;
-                    col_cdf[y * m_size.x()] = 0;
-                    for (uint32_t x = 0; x < m_size.x() - 1; ++x) {
-                        Float v00 = data[x + y * size.x()],
-                              v10 = data[x + 1 + y * size.x()],
-                              v01 = data[x + (y + 1) * size.x()],
-                              v11 = data[x + 1 + (y + 1) * size.x()],
+                    size_t i = y * size.x();
+                    col_cdf[i] = 0;
+                    double row_sum = 0.0;
+                    for (uint32_t x = 0; x < m_size.x() - 1; ++x, ++i) {
+                        Float v00 = data[i],
+                              v10 = data[i + 1],
+                              v01 = data[i + size.x()],
+                              v11 = data[i + 1 + size.x()],
                               avg = .25f * (v00 + v10 + v01 + v11);
                         row_sum += (double) avg;
-                        col_cdf[x + 1 + y * m_size.x()] = (Float) row_sum;
+                        col_cdf[i + 1] = (Float) row_sum;
                     }
                     sum += row_sum;
                     row_cdf[y + 1] = (Float) sum;
@@ -1401,11 +1420,12 @@ public:
                 if (normalize) {
                     double sum = 0.0;
                     for (uint32_t y = 0; y < m_size.y() - 1; ++y) {
-                        for (uint32_t x = 0; x < m_size.x() - 1; ++x) {
-                            Float v00 = data[x + y * size.x()],
-                                  v10 = data[x + 1 + y * size.x()],
-                                  v01 = data[x + (y + 1) * size.x()],
-                                  v11 = data[x + 1 + (y + 1) * size.x()],
+                        size_t i = y * size.x();
+                        for (uint32_t x = 0; x < m_size.x() - 1; ++x, ++i) {
+                            Float v00 = data[i],
+                                  v10 = data[i + 1],
+                                  v01 = data[i + size.x()],
+                                  v11 = data[i + 1 + size.x()],
                                   avg = .25f * (v00 + v10 + v01 + v11);
                             sum += (double) avg;
                         }
@@ -1433,14 +1453,21 @@ public:
                                       mask_t<Value> active = true) const {
         using Vector2u = uint32_array_t<Vector2f>;
         using UInt32   = value_t<Vector2u>;
+        using Mask     = mask_t<Value>;
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
+            if (unlikely(m_param_size[dim] == 1)) {
+                param_weight[2 * dim] = 1.f;
+                param_weight[2 * dim + 1] = 0.f;
+                continue;
+            }
+
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, mask_t<Value> active) {
+                [&](UInt32 idx, Mask active) {
                     return gather<Value>(m_param_values[dim].get(), idx,
                                          active) <= param[dim];
                 },
@@ -1456,24 +1483,24 @@ public:
         }
 
         /* Sample the row first */
-        uint32_t row_size = m_size.y();
-        UInt32 row_offset = slice_offset * row_size;
+        UInt32 row_offset = slice_offset * m_size.y();
 
         UInt32 row = math::find_interval(
-            row_size,
-            [&](UInt32 idx, mask_t<Value> active) ENOKI_INLINE_LAMBDA {
-                return lookup<Dimension>(m_row_cdf.get(), row_offset + idx, row_size,
+            m_size.y(),
+            [&](UInt32 idx, Mask active) ENOKI_INLINE_LAMBDA {
+                return lookup<Dimension>(m_row_cdf.get(), row_offset + idx, m_size.y(),
                                          param_weight, active) < sample.y();
             },
             active);
 
         /* Re-scale uniform variate */
         Value row_cdf_0 = lookup<Dimension>(m_row_cdf.get(), row_offset + row,
-                                            row_size, param_weight, active),
+                                            m_size.y(), param_weight, active),
               row_cdf_1 = lookup<Dimension>(m_row_cdf.get(), row_offset + row + 1,
-                                            row_size, param_weight, active);
+                                            m_size.y(), param_weight, active);
 
-        sample.y() = (sample.y() - row_cdf_0) / (row_cdf_1 - row_cdf_0);
+        sample.y() -= row_cdf_0;
+        masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
 
         /* Sample the column next */
         uint32_t size = hprod(m_size);
@@ -1484,7 +1511,7 @@ public:
 
         UInt32 col = math::find_interval(
             m_size.x(),
-            [&](UInt32 idx, mask_t<Value> active) ENOKI_INLINE_LAMBDA {
+            [&](UInt32 idx, Mask active) ENOKI_INLINE_LAMBDA {
                 return lookup<Dimension>(m_col_cdf.get(), col_offset + idx, size,
                                          param_weight, active) < sample.x();
             },
@@ -1496,11 +1523,12 @@ public:
               col_cdf_1 = lookup<Dimension>(m_col_cdf.get(), col_offset + col + 1,
                                             size, param_weight, active);
 
-        sample.x() = (sample.x() - col_cdf_0) / (col_cdf_1 - col_cdf_0);
+        sample.x() -= col_cdf_0;
+        masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
 
         UInt32 index = col_offset + col;
 
-        /* Sample a indexition on the bilinear patch */
+        /* Sample a position on the bilinear patch */
         Value v00 = lookup<Dimension>(m_data.get(), index, size,
                                       param_weight, active),
               v10 = lookup<Dimension>(m_data.get() + 1, index, size,
@@ -1544,6 +1572,12 @@ public:
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
+            if (unlikely(m_param_size[dim] == 1)) {
+                param_weight[2 * dim] = 1.f;
+                param_weight[2 * dim + 1] = 0.f;
+                continue;
+            }
+
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, mask_t<Value> active) {
@@ -1566,7 +1600,7 @@ public:
         Vector2u offset = min(Vector2u(sample), m_size - 2u);
         UInt32 offset_i = offset.x() + offset.y() * m_size.x();
 
-        uint32_t size = hprod(m_size), row_size = m_size.y();
+        uint32_t size = hprod(m_size);
         if (Dimension != 0)
             offset_i += slice_offset * size;
 
@@ -1596,12 +1630,12 @@ public:
             (2.f * r0 + sample.y() * (r1 - r0)) / (r0 + r1);
 
         UInt32 col_offset = slice_offset * size + offset.y() * m_size.x();
-        UInt32 row_offset = slice_offset * row_size;
+        UInt32 row_offset = slice_offset * m_size.y();
 
         Value row_cdf_0 = lookup<Dimension>(m_row_cdf.get(), row_offset + offset.y() ,
-                                            row_size, param_weight, active),
+                                            m_size.y(), param_weight, active),
               row_cdf_1 = lookup<Dimension>(m_row_cdf.get(), row_offset + offset.y() + 1,
-                                            row_size, param_weight, active),
+                                            m_size.y(), param_weight, active),
               col_cdf_0 = lookup<Dimension>(m_col_cdf.get(), col_offset + offset.x(),
                                             size, param_weight, active),
               col_cdf_1 = lookup<Dimension>(m_col_cdf.get(), col_offset + offset.x() + 1,
@@ -1631,6 +1665,12 @@ public:
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
+            if (unlikely(m_param_size[dim] == 1)) {
+                param_weight[2 * dim] = 1.f;
+                param_weight[2 * dim + 1] = 0.f;
+                continue;
+            }
+
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, mask_t<Value> active) {
@@ -1669,9 +1709,8 @@ public:
               v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, index, size,
                                       param_weight, active);
 
-        return select(all(pos >= 0 && pos <= m_inv_patch_size),
-                fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
-                      w1.y() * fmadd(w0.x(), v01, w1.x() * v11)), 0.f);
+        return fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
+                     w1.y() * fmadd(w0.x(), v01, w1.x() * v11));
     }
 
     std::string to_string() const {
@@ -1685,6 +1724,7 @@ public:
                 if (i != 0)
                     oss << ", ";
                 oss << m_param_size[i];
+                n_slices *= m_param_size[i];
             }
             oss << "]," << std::endl
                 << "  param_strides = [";
@@ -1693,8 +1733,6 @@ public:
                     oss << ", ";
                 oss << m_param_strides[i];
             }
-            if (Dimension > 0)
-                n_slices = m_param_strides[0] * m_param_size[0];
             oss << "]," << std::endl;
         }
         oss << "  storage = { " << n_slices << " slice" << (n_slices > 1 ? "s" : "")
@@ -1752,7 +1790,6 @@ private:
     FloatStorage m_row_cdf;
     FloatStorage m_col_cdf;
 };
-
 //! @}
 // =======================================================================
 
