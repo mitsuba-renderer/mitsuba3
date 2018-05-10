@@ -51,10 +51,10 @@ Scene::Scene(const Properties &props) {
     for (auto emitter: m_emitters)
         emitter->create_shape(this);
 
-    if (m_sensors.size() > 0) {
-        if (m_sensors.size() > 1)
-            Throw("Only one sensor is supported ATM.");
+    if (!m_sensors.empty()) {
         m_sampler = m_sensors.front()->sampler();
+        if (m_sensors.size() > 1)
+            Throw("Only one sensor is supported at the moment.");
     }
 }
 

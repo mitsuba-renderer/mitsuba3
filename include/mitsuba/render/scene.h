@@ -188,10 +188,15 @@ public:
     /// Return the current sensor
     const Sensor* sensor() const { return m_sensors.front(); }
 
-    /// Return the current emitter
+    /// Return the list of emitters
     std::vector<ref<Emitter>> &emitters() { return m_emitters; }
-    /// Return the current emitter
+    /// Return the list of emitters
     const std::vector<ref<Emitter>> &emitters() const { return m_emitters; }
+
+    /// Return the list of sensors
+    std::vector<ref<Sensor>> &sensors() { return m_sensors; }
+    /// Return the list of sensors
+    const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
 
     /// True if the scene has an environment emitter
     bool has_environment_emitter() const { return false; }
