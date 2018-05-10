@@ -203,16 +203,20 @@ struct XMLParseContext {
 };
 
 /// Helper function to check if attributes are fully specified
-static void check_attributes(XMLSource &src, const pugi::xml_node &node, std::set<std::string> &&attrs) {
+static void check_attributes(XMLSource &src, const pugi::xml_node &node,
+                             std::set<std::string> &&attrs, bool expect_all = true) {
+    bool found_one = false;
     for (auto attr : node.attributes()) {
         auto it = attrs.find(attr.name());
         if (it == attrs.end())
             src.throw_error(node, "unexpected attribute \"%s\" in element \"%s\"", attr.name(), node.name());
         attrs.erase(it);
+        found_one = true;
     }
-    if (!attrs.empty())
+    if (!attrs.empty() && (!found_one || expect_all))
         src.throw_error(node, "missing attribute \"%s\" in element \"%s\"", *attrs.begin(), node.name());
 }
+
 
 /// Helper function to split the 'value' attribute into X/Y/Z components
 void expand_value_to_xyz(XMLSource &src, pugi::xml_node &node) {
@@ -537,10 +541,10 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
                     Properties props2("srgb");
                     try {
-                        props2.set_color("color", Color3f(
-                            detail::stof(tokens[0]),
-                            detail::stof(tokens[1]),
-                            detail::stof(tokens[2])));
+                        Color3f col(detail::stof(tokens[0]),
+                                    detail::stof(tokens[1]),
+                                    detail::stof(tokens[2]));
+                        props2.set_color("color", col);
                     } catch (...) {
                         src.throw_error(node, "could not parse RGB value \"%s\"", node.attribute("value").value());
                     }
@@ -638,7 +642,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
             case ERotate: {
                     detail::expand_value_to_xyz(src, node);
-                    check_attributes(src, node, { "angle", "x", "y", "z" });
+                    check_attributes(src, node, { "angle", "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node);
                     std::string angle = node.attribute("angle").value();
                     Float angle_float;
@@ -653,7 +657,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
             case ETranslate: {
                     detail::expand_value_to_xyz(src, node);
-                    check_attributes(src, node, { "x", "y", "z" });
+                    check_attributes(src, node, { "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node);
                     ctx.transform = Transform4f::translate(vec) * ctx.transform;
                 }
@@ -661,7 +665,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
             case EScale: {
                     detail::expand_value_to_xyz(src, node);
-                    check_attributes(src, node, { "x", "y", "z" });
+                    check_attributes(src, node, { "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node, 1.f);
                     ctx.transform = Transform4f::scale(vec) * ctx.transform;
                 }
