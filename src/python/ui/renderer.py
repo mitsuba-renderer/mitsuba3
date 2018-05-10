@@ -18,7 +18,7 @@ from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
                      Alignment, Orientation, ImageView)
 from nanogui import glfw, entypo
 
-from renderer_thread import RendererThread
+from .renderer_thread import RendererThread
 
 class CustomViewer(ImageView):
     """
