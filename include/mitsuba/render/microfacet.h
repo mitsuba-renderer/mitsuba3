@@ -294,7 +294,8 @@ public:
             /* Step 4: compute normal & PDF */
             Normal3 m = normalize(Vector3(-slope.x(), -slope.y(), 1));
 
-            Value pdf = smith_g1(wi, m) * abs_dot(wi, m) / Frame::cos_theta(wi);
+            Value pdf = eval(m) * smith_g1(wi, m) * abs_dot(wi, m) /
+                        Frame::cos_theta(wi);
 
             return { m, pdf };
         }
