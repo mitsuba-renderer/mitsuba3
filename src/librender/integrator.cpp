@@ -49,6 +49,7 @@ SamplingIntegrator::SamplingIntegrator(const Properties &props)
     : Integrator(props) {
     m_block_size = props.size_("block_size", MTS_BLOCK_SIZE);
     size_t b = math::round_to_power_of_two(m_block_size);
+    m_samples_per_pass = props.size_("samples_per_pass", (size_t) -1);
 
     if (b != m_block_size) {
         m_block_size = b;
@@ -72,61 +73,77 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     ref<Sensor> sensor = scene->sensor();
     ref<Film> film = sensor->film();
 
-    size_t n_cores = util::core_count();
-    size_t sample_count = scene->sampler()->sample_count();
+    size_t n_cores          = util::core_count();
+    size_t total_spp        = scene->sampler()->sample_count();
+    size_t samples_per_pass = (m_samples_per_pass == (size_t) -1)
+                                  ? total_spp
+                                  : std::min(m_samples_per_pass, total_spp);
+    if ((total_spp % samples_per_pass) != 0)
+        Throw("sample_count (%d) must be a multiple of samples_per_pass (%d).",
+              total_spp, samples_per_pass);
+
+    size_t n_passes = ceil(total_spp / (Float) samples_per_pass);
     film->clear();
 
-    Log(EInfo, "Starting render job (%ix%i, %i sample%s, %i core%s)",
+    Log(EInfo, "Starting render job (%ix%i, %i sample%s,%s %i core%s)",
         film->crop_size().x(), film->crop_size().y(),
-        sample_count, sample_count == 1 ? "" : "s",
+        total_spp, total_spp == 1 ? "" : "s",
+        n_passes > 1 ? tfm::format(" %d passes,", n_passes) : "",
         n_cores, n_cores == 1 ? "" : "s");
     if (m_timeout > 0.0f)
         Log(EInfo, "Timeout specified: %.2f seconds.", m_timeout);
 
-    Spiral spiral(film, m_block_size);
+    Spiral spiral(film, m_block_size, n_passes);
 
     ThreadEnvironment env;
     ref<ProgressReporter> progress = new ProgressReporter("Rendering");
     tbb::spin_mutex mutex;
     size_t blocks_done = 0;
+    // Total number of blocks to be handled, including multiple passes.
+    Float total_blocks = (spiral.block_count() * n_passes);
     size_t grain_count = std::max(
-        (size_t) 1, (size_t) std::rint(spiral.block_count() / Float(n_cores * 2)));
+        (size_t) 1, (size_t) std::rint(total_blocks / Float(n_cores * 2)));
 
     tbb::parallel_for(
-        tbb::blocked_range<size_t>(0, spiral.block_count(), grain_count),
+        tbb::blocked_range<size_t>(0, total_blocks, grain_count),
         [&](const tbb::blocked_range<size_t> &range) {
             ScopedSetThreadEnvironment set_env(env);
             ref<Sampler> sampler = scene->sampler()->clone();
             ref<ImageBlock> block =
                 new ImageBlock(Bitmap::EXYZAW, Vector2i(m_block_size), film->reconstruction_filter());
+
             Point2fX points;
+            // For each block
             for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
                 Vector2i offset, size;
                 std::tie(offset, size) = spiral.next_block();
-
-                // Ensure that the sample generation is fully deterministic
-                sampler->seed((size_t) offset.x() +
-                              (size_t) offset.y() * (size_t) film->crop_size().x());
-
                 if (hprod(size) == 0)
                     Throw("Internal error -- generated empty image block!");
-
                 if (size != block->size())
                     block = new ImageBlock(Bitmap::EXYZAW, size, film->reconstruction_filter());
-
                 block->set_offset(offset);
 
+                // Ensure that the sample generation is fully deterministic
+                size_t seed = (size_t) offset.x() +
+                              (size_t) offset.y() * (size_t) film->crop_size().x();
+                if (n_passes > 1)
+                    seed += i * hprod(film->crop_size());
+                sampler->seed(seed);
+
                 if (vectorize)
-                    render_block_vector(scene, sampler, block, points);
+                    render_block_vector(scene, sampler, block, points,
+                                        samples_per_pass);
                 else
-                    render_block_scalar(scene, sampler, block);
+                    render_block_scalar(scene, sampler, block,
+                                        samples_per_pass);
 
                 film->put(block);
 
                 /* locked */ {
                     tbb::spin_mutex::scoped_lock lock(mutex);
                     blocks_done++;
-                    progress->update(blocks_done / (Float) spiral.block_count());
+                    progress->update(blocks_done / (Float) total_blocks);
+                    notify(film->bitmap());
                 }
             }
         }
@@ -141,11 +158,14 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
 
 void SamplingIntegrator::render_block_scalar(const Scene *scene,
                                              Sampler *sampler,
-                                             ImageBlock *block) const {
+                                             ImageBlock *block,
+                                             size_t sample_count_) const {
     const Sensor *sensor = scene->sensor();
     block->clear();
-    uint32_t pixel_count = (uint32_t) (m_block_size * m_block_size),
-             sample_count = (uint32_t) sampler->sample_count();
+    uint32_t pixel_count  = (uint32_t)(m_block_size * m_block_size),
+             sample_count = (uint32_t)(sample_count_ == (size_t) -1
+                                           ? sampler->sample_count()
+                                           : sample_count_);
 
     RadianceSample3f rs(scene, sampler);
     bool needs_aperture_sample = sensor->needs_aperture_sample();
@@ -199,10 +219,12 @@ void SamplingIntegrator::render_block_scalar(const Scene *scene,
 void SamplingIntegrator::render_block_vector(const Scene *scene,
                                              Sampler *sampler,
                                              ImageBlock *block,
-                                             Point2fX &points) const {
+                                             Point2fX &points,
+                                             size_t sample_count_) const {
     const Sensor *sensor = scene->sensor();
     block->clear();
-    uint32_t sample_count = (uint32_t) sampler->sample_count();
+    uint32_t sample_count = (uint32_t)(
+        sample_count_ == (size_t) -1 ? sampler->sample_count() : sample_count_);
 
     if (block->size().x() != block->size().y()
         || (uint32_t) hprod(block->size()) * sample_count

@@ -25,7 +25,7 @@ NAMESPACE_BEGIN(mitsuba)
 class MTS_EXPORT_RENDER Spiral : public Object {
 public:
     /// Create a new spiral generator for the given film and block size
-    Spiral(const Film *film, size_t block_size);
+    Spiral(const Film *film, size_t block_size, size_t passes = 1);
 
     /// Return the maximum block size
     size_t max_block_size() const { return m_block_size; }
@@ -35,6 +35,13 @@ public:
 
     /// Reset the spiral to its initial state
     void reset();
+
+    /**
+     * Sets the number of time the spiral should automatically reset.
+     */
+    void set_passes(size_t passes) {
+        m_remaining_passes = passes;
+    }
 
     /**
      * \brief Return the offset and size of the next block.
@@ -62,12 +69,13 @@ protected:
              m_blocks;      //< Number of blocks in each direction.
 
     Point2i  m_position;    //< Relative position of the current block.
-
     /// Direction where the spiral is currently headed.
     int m_current_direction;
-
     /// Step counters.
     int m_steps_left, m_steps;
+
+    /// Number of times the spiral should automatically restart.
+    size_t m_remaining_passes;
 
     /// Protects the spiral's state (thread safety).
     tbb::spin_mutex m_mutex;

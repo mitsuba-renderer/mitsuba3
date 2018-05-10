@@ -4,9 +4,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Spiral::Spiral(const Film *film, size_t block_size)
+Spiral::Spiral(const Film *film, size_t block_size, size_t passes)
     : m_block_size(block_size),
-      m_size(film->crop_size()), m_offset(film->crop_offset()) {
+      m_size(film->crop_size()), m_offset(film->crop_offset()),
+      m_remaining_passes(passes) {
 
     m_blocks = Vector2i(ceil(Vector2f(m_size) / m_block_size));
     m_block_count = hprod(Vector2s(m_blocks));
@@ -26,8 +27,14 @@ std::pair<Vector2i, Vector2i> Spiral::next_block() {
     // Reimplementation of the spiraling block generator by Adam Arbree.
     std::lock_guard<tbb::spin_mutex> lock(m_mutex);
 
-    if (m_block_count == m_block_counter)
-        return { Vector2i(0), Vector2i(0) };
+    if (m_block_count == m_block_counter) {
+        if (m_remaining_passes > 1) {
+            --m_remaining_passes;
+            reset();
+        }
+        else
+            return { Vector2i(0), Vector2i(0) };
+    }
 
     Vector2i offset(m_position * (int) m_block_size);
     Vector2i size = min((int) m_block_size, m_size - offset);

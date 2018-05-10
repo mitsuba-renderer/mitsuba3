@@ -173,16 +173,22 @@ protected:
     virtual ~SamplingIntegrator();
 
     virtual void render_block_scalar(const Scene *scene, Sampler *sampler,
-                                     ImageBlock *block) const;
+                                     ImageBlock *block,
+                                     size_t sample_count = size_t(-1)) const;
 
     virtual void render_block_vector(const Scene *scene, Sampler *sampler,
-                                     ImageBlock *block, Point2fX &points) const;
+                                     ImageBlock *block, Point2fX &points,
+                                     size_t sample_count = size_t(-1)) const;
 
 protected:
     /// Integrators should stop computing when this flag is set to true.
     bool m_stop;
     /// Size of (square) image blocks to render per core.
     size_t m_block_size;
+    /** Number of samples to compute for each pass over the image blocks.
+     * Must be a multiple of the total sample count per pixel.
+     * If set to (size_t) -1, all the work is done in a single pass (default). */
+    size_t m_samples_per_pass;
 
     /** Maximum amount of time to spend rendering (excluding scene parsing).
      * Specified in seconds. A negative values indicates no timeout. */
