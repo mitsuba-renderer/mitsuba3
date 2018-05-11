@@ -46,8 +46,9 @@ TensorFile::TensorFile(const fs::path &filename)
             shape[j] = (size_t) size_value;
         }
 
-        m_fields[name] = Field{ (Struct::EType) dtype, offset, shape,
-                                (const uint8_t *) data() + offset };
+        m_fields[name] =
+            Field{ (Struct::EType) dtype, static_cast<size_t>(offset), shape,
+                   (const uint8_t *) data() + offset };
     }
 }
 

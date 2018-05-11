@@ -70,9 +70,6 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     m_stop = false;
     m_render_timer.reset();
 
-    if (scene->emitters().empty())
-        Throw("At least one emitter must be specified!");
-
     if (scene->sensors().empty())
         Throw("A sensor must be specified!");
 

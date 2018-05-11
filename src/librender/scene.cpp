@@ -169,31 +169,34 @@ Scene::sample_emitter_direction_impl(const Interaction &it, Point2 sample,
     using Index = uint_array_t<Value>;
     using Ray = Ray<Point<Value, 3>>;
 
-    // Randomly pick an emitter according to the precomputed emitter distribution
-    Index index;
-    Value emitter_pdf;
-    std::tie(index, emitter_pdf, sample.x()) =
-        m_emitter_distr.sample_reuse_pdf(sample.x());
-    EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
-
-    // Sample a direction towards the emitter
     DirectionSample ds;
-    Spectrum spec;
-    std::tie(ds, spec) = emitter->sample_direction(it, sample, active);
-    active = active && neq(ds.pdf, 0.f);
+    Spectrum spec = 0.f;
 
-    // Perform a visibility test if requested
-    if (test_visibility && any(active)) {
-        Ray ray(it.p, ds.d, math::Epsilon * (1.f + hmax(abs(it.p))),
-                ds.dist * (1.f - math::ShadowEpsilon),
-                it.time, it.wavelengths);
-        Mask hit = ray_test(ray, active);
-        masked(spec, hit) = Spectrum(0.f);
+    if (likely(!m_emitters.empty())) {
+        // Randomly pick an emitter according to the precomputed emitter distribution
+        Index index;
+        Value emitter_pdf;
+        std::tie(index, emitter_pdf, sample.x()) =
+            m_emitter_distr.sample_reuse_pdf(sample.x());
+        EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
+
+        // Sample a direction towards the emitter
+        std::tie(ds, spec) = emitter->sample_direction(it, sample, active);
+        active = active && neq(ds.pdf, 0.f);
+
+        // Perform a visibility test if requested
+        if (test_visibility && any(active)) {
+            Ray ray(it.p, ds.d, math::Epsilon * (1.f + hmax(abs(it.p))),
+                    ds.dist * (1.f - math::ShadowEpsilon),
+                    it.time, it.wavelengths);
+            Mask hit = ray_test(ray, active);
+            masked(spec, hit) = Spectrum(0.f);
+        }
+
+        // Account for the discrete probability of sampling this emitter
+        ds.pdf *= emitter_pdf;
+        spec /= emitter_pdf;
     }
-
-    // Account for the discrete probability of sampling this emitter
-    ds.pdf *= emitter_pdf;
-    spec /= emitter_pdf;
 
     return { ds, spec };
 }
