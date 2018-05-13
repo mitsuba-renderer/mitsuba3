@@ -5,15 +5,14 @@
 #include <mitsuba/render/bsdf.h>
 
 /// Defines the details of the parameterization. Do not change this.
-#define MTS_MARGINAL_WARP      1
-#define MTS_REVERSE_AXES       0
-#define MTS_WARP_VNDF          1
+#define MTS_MARGINAL_WARP      1 // Use marginal or hierarchical warp?
+#define MTS_REVERSE_AXES       0 // Marginalize over phi_m or theta_m?
 
 /// Set to 1 to fall back to cosine-weighted sampling (for debugging)
 #define MTS_SAMPLE_DIFFUSE     0
 
 /// Sample the luminance map before warping by the NDF/VNDF?
-#define MTS_SAMPLE_LUMINANCE   1
+#define MTS_SAMPLE_LUMINANCE   0
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -41,7 +40,6 @@ public:
         auto theta_i = tf->field("theta_i");
         auto phi_i = tf->field("phi_i");
         auto vndf = tf->field("vndf");
-        auto ndf = tf->field("ndf");
         auto spectra = tf->field("spectra");
         auto luminance = tf->field("luminance");
         auto wavelengths = tf->field("wavelengths");
@@ -64,9 +62,6 @@ public:
               vndf.shape[0] == phi_i.shape[0] &&
               vndf.shape[1] == theta_i.shape[0] &&
 
-              ndf.shape.size() == 2 &&
-              ndf.dtype == Struct::EFloat32 &&
-
               luminance.shape.size() == 4 &&
               luminance.dtype == Struct::EFloat32 &&
               luminance.shape[0] == phi_i.shape[0] &&
@@ -85,13 +80,37 @@ public:
 
         m_phi_relative = phi_i.shape[0] <= 2;
 
-        /* Construct VNDF warp data structure */
-        m_ndf = Warp2D0(Vector2u(ndf.shape[1], ndf.shape[0]), (Float *) ndf.data);
-
-        /* Construct VNDF warp data structure */
-        m_vndf = Warp2D2(
+        /* Construct VNDF warp and interpolation data structure */
+        m_vndf_interp = Warp2D2(
             Vector2u(vndf.shape[3], vndf.shape[2]),
             (Float *) vndf.data,
+            {{ (uint32_t) phi_i.shape[0],
+               (uint32_t) theta_i.shape[0] }},
+            {{ (const Float *) phi_i.data,
+               (const Float *) theta_i.data }},
+            false, false
+        );
+
+        std::unique_ptr<Float[]> vndf_weighted(
+            new Float[phi_i.shape[0] * theta_i.shape[0] *
+                      vndf.shape[3] * vndf.shape[2]]);
+        const Float *vndf_in = (Float *) vndf.data;
+        Float *vndf_out = vndf_weighted.get();
+
+        for (size_t i = 0; i < phi_i.shape[0] * theta_i.shape[0]; ++i) {
+            for (size_t j = 0; j < vndf.shape[2]; ++j) {
+                for (size_t k = 0; k < vndf.shape[3]; ++k) {
+                    Float u = Float(k) / Float(vndf.shape[3] - 1);
+                    *vndf_out++ =
+                        *vndf_in++ * (2.f * sqr(math::Pi) * u *
+                                      std::sin(sqr(u) * .5f * math::Pi));
+                }
+            }
+        }
+
+        m_vndf_sampler = Warp2D2(
+            Vector2u(vndf.shape[3], vndf.shape[2]),
+            vndf_weighted.get(),
             {{ (uint32_t) phi_i.shape[0],
                (uint32_t) theta_i.shape[0] }},
             {{ (const Float *) phi_i.data,
@@ -126,9 +145,12 @@ public:
             (const char *) description.data + description.shape[0]
         );
 
-        Log(EInfo, "Loaded material \"%s\" (resolution %i x %i x %i x %i x %i)",
+        Log(EInfo,
+            "Loaded material \"%s\" (Data resolution %i x %i x %i x %i x %i, "
+            "VNDF resolution %i x %i x %i x %i)",
             description_str, spectra.shape[0], spectra.shape[1],
-            spectra.shape[3], spectra.shape[4], spectra.shape[2]);
+            spectra.shape[3], spectra.shape[4], spectra.shape[2], vndf.shape[0],
+            vndf.shape[1], vndf.shape[2], vndf.shape[3]);
     }
 
     template <typename SurfaceInteraction, typename Value, typename Point2,
@@ -171,13 +193,9 @@ public:
                 luminance_pdf = 1.f;
             #endif
 
-            #if MTS_WARP_VNDF == 1
-                std::tie(ndf_sample, ndf_pdf) =
-                    m_vndf.sample(luminance_sample, params, active);
-            #else
-                std::tie(ndf_sample, ndf_pdf) =
-                    m_ndf.sample(luminance_sample, params, active);
-            #endif
+            std::tie(ndf_sample, ndf_pdf) =
+                m_vndf_sampler.sample(luminance_sample, params, active);
+            Vector2 u = ndf_sample;
 
             #if MTS_REVERSE_AXES == 1
                 std::swap(ndf_sample.x(), ndf_sample.y());
@@ -219,7 +237,7 @@ public:
 
             Vector2 u(
                 sqrt(2.f / math::Pi * theta_m),
-                (phi_m - phi_i) * math::InvTwoPi
+                (m_phi_relative ? (phi_m - phi_i) : phi_m) * math::InvTwoPi
             );
 
             u[1] = u[1] - floor(u[1]);
@@ -228,13 +246,8 @@ public:
                 std::swap(u[0], u[1]);
             #endif
 
-            #if MTS_WARP_VNDF == 1
-                std::tie(luminance_sample, luminance_pdf) =
-                    m_vndf.invert(u, params, active);
-            #else
-                std::tie(luminance_sample, luminance_pdf) =
-                    m_ndf.invert(u, params, active);
-            #endif
+            std::tie(luminance_sample, luminance_pdf) =
+                m_vndf_sampler.invert(u, params, active);
         #endif // MTS_SAMPLE_DIFFUSE
 
         bs.eta = 1.f;
@@ -246,6 +259,8 @@ public:
             Value params_spec[3] = { phi_i_p, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(luminance_sample, params_spec, active);
         }
+
+        spec *= m_vndf_interp.eval(u, params) / (4 * dot(m, si.wi));
 
         active &= Frame::cos_theta(bs.wo) > 0;
 
@@ -281,7 +296,8 @@ public:
         );
 
         u[1] = u[1] - floor(u[1]);
-        masked(phi_i, phi_i < 0.f) += m_phi_relative ? math::Pi : (2.f * math::Pi);
+        masked(phi_i, phi_i < 0.f) +=
+            m_phi_relative ? math::Pi : (2.f * math::Pi);
 
         #if MTS_REVERSE_AXES == 1
             std::swap(u[0], u[1]);
@@ -290,17 +306,15 @@ public:
         Vector2 sample;
         Value pdf;
         Value params[2] = { phi_i, theta_i };
-        #if MTS_WARP_VNDF == 1
-            std::tie(sample, pdf) = m_vndf.invert(u, params, active);
-        #else
-            std::tie(sample, pdf) = m_ndf.invert(u, params, active);
-        #endif
+        std::tie(sample, pdf) = m_vndf_sampler.invert(u, params, active);
 
         Spectrum spec;
         for (size_t i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i) {
             Value params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
+
+        spec *= m_vndf_interp.eval(u, params) / (4 * dot(m, si.wi));
 
         return spec & active;
     }
@@ -347,11 +361,7 @@ public:
             #endif
 
             Value params[2] = { phi_i, theta_i };
-            #if MTS_WARP_VNDF == 1
-                std::tie(ndf_sample, ndf_pdf) = m_vndf.invert(u, params, active);
-            #else
-                std::tie(ndf_sample, ndf_pdf) = m_ndf.invert(u, params, active);
-            #endif
+            std::tie(ndf_sample, ndf_pdf) = m_vndf_sampler.invert(u, params, active);
 
             #if MTS_SAMPLE_LUMINANCE == 1
                 luminance_pdf = m_luminance.eval(ndf_sample, params, active);
@@ -379,8 +389,8 @@ public:
         std::ostringstream oss;
         oss << "Measured[" << std::endl
             << "  filename = \"" << m_name << "\"," << std::endl
-            << "  ndf = " << string::indent(m_ndf.to_string()) << "," << std::endl
-            << "  vndf = " << string::indent(m_vndf.to_string()) << "," << std::endl
+            << "  vndf_interp = " << string::indent(m_vndf_interp.to_string()) << "," << std::endl
+            << "  vndf_sampler = " << string::indent(m_vndf_sampler.to_string()) << "," << std::endl
             << "  luminance = " << string::indent(m_luminance.to_string()) << "," << std::endl
             << "  spectra = " << string::indent(m_spectra.to_string()) << std::endl
             << "]";
@@ -392,8 +402,8 @@ public:
 
 private:
     std::string m_name;
-    Warp2D0 m_ndf;
-    Warp2D2 m_vndf;
+    Warp2D2 m_vndf_interp;
+    Warp2D2 m_vndf_sampler;
     Warp2D2 m_luminance;
     Warp2D3 m_spectra;
     bool m_phi_relative;
