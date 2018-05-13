@@ -3,11 +3,17 @@
 #include <mitsuba/core/tensor.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/microfacet.h>
 
+/// Defines the details of the parameterization. Do not change this.
 #define MTS_MARGINAL_WARP      1
 #define MTS_REVERSE_AXES       0
+#define MTS_WARP_VNDF          1
 
-#define MTS_SAMPLE_VNDF        1
+/// Set to 1 to fall back to cosine-weighted sampling (for debugging)
+#define MTS_SAMPLE_DIFFUSE     0
+
+/// Sample the luminance map before warping by the NDF/VNDF?
 #define MTS_SAMPLE_LUMINANCE   1
 
 NAMESPACE_BEGIN(mitsuba)
@@ -15,9 +21,11 @@ NAMESPACE_BEGIN(mitsuba)
 class Measured final : public BSDF {
 public:
     #if MTS_MARGINAL_WARP == 1
+        using Warp2D0 = warp::Marginal2D<0>;
         using Warp2D2 = warp::Marginal2D<2>;
         using Warp2D3 = warp::Marginal2D<3>;
     #else
+        using Warp2D0 = warp::Hierarchical2D<0>;
         using Warp2D2 = warp::Hierarchical2D<2>;
         using Warp2D3 = warp::Hierarchical2D<3>;
     #endif
@@ -34,6 +42,7 @@ public:
         auto theta_i = tf->field("theta_i");
         auto phi_i = tf->field("phi_i");
         auto vndf = tf->field("vndf");
+        auto ndf = tf->field("ndf");
         auto spectra = tf->field("spectra");
         auto luminance = tf->field("luminance");
         auto wavelengths = tf->field("wavelengths");
@@ -55,7 +64,9 @@ public:
               vndf.dtype == Struct::EFloat32 &&
               vndf.shape[0] == phi_i.shape[0] &&
               vndf.shape[1] == theta_i.shape[0] &&
-              vndf.shape[2] == vndf.shape[3] &&
+
+              ndf.shape.size() == 2 &&
+              ndf.dtype == Struct::EFloat32 &&
 
               luminance.shape.size() == 4 &&
               luminance.dtype == Struct::EFloat32 &&
@@ -70,15 +81,17 @@ public:
               spectra.shape[2] == wavelengths.shape[0] &&
               spectra.shape[3] == spectra.shape[4] &&
 
-              vndf.shape[2] == luminance.shape[2] &&
-              vndf.shape[2] == spectra.shape[3]))
-              Throw("Invalid file structure");
+              luminance.shape[2] == spectra.shape[3]))
+              Throw("Invalid file structure: %s", tf->to_string());
 
         m_phi_relative = phi_i.shape[0] <= 2;
 
-        /* Construct NDF warp data structure */
+        /* Construct VNDF warp data structure */
+        m_ndf = Warp2D0(Vector2u(ndf.shape[1], ndf.shape[0]), (Float *) ndf.data);
+
+        /* Construct VNDF warp data structure */
         m_vndf = Warp2D2(
-            Vector2u(vndf.shape[3]),
+            Vector2u(vndf.shape[3], vndf.shape[2]),
             (Float *) vndf.data,
             {{ (uint32_t) phi_i.shape[0],
                (uint32_t) theta_i.shape[0] }},
@@ -88,7 +101,7 @@ public:
 
         /* Construct Luminance warp data structure */
         m_luminance = Warp2D2(
-            Vector2u(luminance.shape[3]),
+            Vector2u(luminance.shape[3], luminance.shape[2]),
             (Float *) luminance.data,
             {{ (uint32_t) phi_i.shape[0],
                (uint32_t) theta_i.shape[0] }},
@@ -98,7 +111,7 @@ public:
 
         /* Construct spectral interpolant */
         m_spectra = Warp2D3(
-            Vector2u(vndf.shape[3]),
+            Vector2u(spectra.shape[4], spectra.shape[3]),
             (Float *) spectra.data,
             {{ (uint32_t) phi_i.shape[0],
                (uint32_t) theta_i.shape[0],
@@ -147,10 +160,10 @@ public:
 
         Value params[2] = { phi_i_p, theta_i };
 
-        Vector2 luminance_sample, vndf_sample;
-        Value luminance_pdf, vndf_pdf;
+        Vector2 luminance_sample, ndf_sample;
+        Value luminance_pdf, ndf_pdf;
 
-        #if MTS_SAMPLE_VNDF == 1
+        #if MTS_SAMPLE_DIFFUSE == 0
             #if MTS_SAMPLE_LUMINANCE == 1
                 std::tie(luminance_sample, luminance_pdf) =
                     m_luminance.sample(Vector2(sample2.y(), sample2.x()), params, active);
@@ -159,15 +172,20 @@ public:
                 luminance_pdf = 1.f;
             #endif
 
-            std::tie(vndf_sample, vndf_pdf) =
-                m_vndf.sample(luminance_sample, params, active);
-
-            #if MTS_REVERSE_AXES == 1
-                std::swap(vndf_sample.x(), vndf_sample.y());
+            #if MTS_WARP_VNDF == 1
+                std::tie(ndf_sample, ndf_pdf) =
+                    m_vndf.sample(luminance_sample, params, active);
+            #else
+                std::tie(ndf_sample, ndf_pdf) =
+                    m_ndf.sample(luminance_sample, params, active);
             #endif
 
-            Value phi_m   = vndf_sample.y() * (2.f * math::Pi),
-                  theta_m = sqr(vndf_sample.x()) * (math::Pi / 2.f);
+            #if MTS_REVERSE_AXES == 1
+                std::swap(ndf_sample.x(), ndf_sample.y());
+            #endif
+
+            Value phi_m   = ndf_sample.y() * (2.f * math::Pi),
+                  theta_m = sqr(ndf_sample.x()) * (math::Pi / 2.f);
 
             if (m_phi_relative)
                 phi_m += phi_i;
@@ -183,13 +201,13 @@ public:
                 cos_theta_m
             );
 
-            Value jacobian = enoki::max(2.f * sqr(math::Pi) * vndf_sample.x() *
+            Value jacobian = enoki::max(2.f * sqr(math::Pi) * ndf_sample.x() *
                                         sin_theta_m, 1e-3f) * 4.f * dot(si.wi, m);
 
             bs.wo = fmsub(m, 2.f * dot(m, si.wi), si.wi);
-            bs.pdf = vndf_pdf * luminance_pdf / jacobian;
-        #else // MTS_SAMPLE_VNDF
-            (void) vndf_pdf; (void) vndf_sample;
+            bs.pdf = ndf_pdf * luminance_pdf / jacobian;
+        #else // MTS_SAMPLE_DIFFUSE
+            (void) ndf_pdf; (void) ndf_sample;
 
             bs.wo = warp::square_to_cosine_hemisphere(sample2);
             bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
@@ -211,9 +229,14 @@ public:
                 std::swap(u[0], u[1]);
             #endif
 
-            std::tie(luminance_sample, luminance_pdf) =
-                m_vndf.invert(u, params, active);
-        #endif // MTS_SAMPLE_VNDF
+            #if MTS_WARP_VNDF == 1
+                std::tie(luminance_sample, luminance_pdf) =
+                    m_vndf.invert(u, params, active);
+            #else
+                std::tie(luminance_sample, luminance_pdf) =
+                    m_ndf.invert(u, params, active);
+            #endif
+        #endif // MTS_SAMPLE_DIFFUSE
 
         bs.eta = 1.f;
         bs.sampled_type = (uint32_t) EGlossyReflection;
@@ -268,7 +291,11 @@ public:
         Vector2 sample;
         Value pdf;
         Value params[2] = { phi_i, theta_i };
-        std::tie(sample, pdf) = m_vndf.invert(u, params, active);
+        #if MTS_WARP_VNDF == 1
+            std::tie(sample, pdf) = m_vndf.invert(u, params, active);
+        #else
+            std::tie(sample, pdf) = m_ndf.invert(u, params, active);
+        #endif
 
         Spectrum spec;
         for (size_t i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i) {
@@ -276,8 +303,50 @@ public:
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
 
+        //std::cout << "eval(wi  = " << si.wi << ", wo=" << wo << ")" << std::endl
+                  //<< "  value =  " << spec[0] << std::endl
+                  //<< "  ref =  " << eval_impl_microfacet(ctx, si, wo, active)[0] << std::endl;
+
         return spec & active;
     }
+
+    template <typename SurfaceInteraction, typename Vector3,
+              typename Value    = typename SurfaceInteraction::Value,
+              typename Spectrum = Spectrum<Value>>
+    MTS_INLINE
+    Spectrum eval_impl_microfacet(const BSDFContext &ctx, const SurfaceInteraction &si,
+                       const Vector3 &wo, mask_t<Value> active) const {
+        using Frame = mitsuba::Frame<Vector3>;
+
+        Value n_dot_wi = Frame::cos_theta(si.wi);
+        Value n_dot_wo = Frame::cos_theta(wo);
+
+        active &= (n_dot_wi > 0.f) && (n_dot_wo > 0.f);
+
+        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
+            return 0.f;
+
+        /* Calculate the half-direction vector */
+        Vector3 H = normalize(wo + si.wi);
+
+        /* Construct a microfacet distribution matching the
+           roughness values at the current surface position. */
+        MicrofacetDistribution<Value> distr(EGGX, 0.05f, 0.3f, true);
+
+        /* Evaluate the microfacet normal distribution */
+        Value D = distr.eval(H);
+
+        active &= neq(D, 0.f);
+
+        /* Evaluate Smith's shadow-masking function */
+        Value G = distr.G(si.wi, wo, H);
+
+        /* Evaluate the full microfacet model (except Fresnel) */
+        Value result = D * G / (4.f * Frame::cos_theta(si.wi));
+
+        return Spectrum(result) & active;
+    }
+
 
     template <typename SurfaceInteraction, typename Vector3,
               typename Value = value_t<Vector3>>
@@ -292,9 +361,9 @@ public:
         if (none(active) || !ctx.is_enabled(EGlossyReflection))
             return 0.f;
 
-        #if MTS_SAMPLE_VNDF == 0
+        #if MTS_SAMPLE_DIFFUSE == 1
             return select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
-        #else // MTS_SAMPLE_VNDF
+        #else // MTS_SAMPLE_DIFFUSE
             using Vector2 = Vector<Value, 2>;
             Vector3 m = normalize(wo + si.wi);
 
@@ -313,18 +382,22 @@ public:
             masked(phi_i, phi_i < 0.f) +=
                 m_phi_relative ? math::Pi : (2.f * math::Pi);
 
-            Vector2 vndf_sample;
-            Value vndf_pdf, luminance_pdf;
+            Vector2 ndf_sample;
+            Value ndf_pdf, luminance_pdf;
 
             #if MTS_REVERSE_AXES == 1
                 std::swap(u[0], u[1]);
             #endif
 
             Value params[2] = { phi_i, theta_i };
-            std::tie(vndf_sample, vndf_pdf) = m_vndf.invert(u, params, active);
+            #if MTS_WARP_VNDF == 1
+                std::tie(ndf_sample, ndf_pdf) = m_vndf.invert(u, params, active);
+            #else
+                std::tie(ndf_sample, ndf_pdf) = m_ndf.invert(u, params, active);
+            #endif
 
             #if MTS_SAMPLE_LUMINANCE == 1
-                luminance_pdf = m_luminance.eval(vndf_sample, params, active);
+                luminance_pdf = m_luminance.eval(ndf_sample, params, active);
             #else
                 luminance_pdf = 1.f;
             #endif
@@ -339,16 +412,17 @@ public:
                                         Frame::sin_theta(m), 1e-3f) *
                 4.f * dot(si.wi, m);
 
-            Value pdf = vndf_pdf * luminance_pdf / jacobian;
+            Value pdf = ndf_pdf * luminance_pdf / jacobian;
 
             return select(active, pdf, 0.f);
-        #endif // MTS_SAMPLE_VNDF
+        #endif // MTS_SAMPLE_DIFFUSE
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Measured[" << std::endl
             << "  filename = \"" << m_name << "\"," << std::endl
+            << "  ndf = " << string::indent(m_ndf.to_string()) << "," << std::endl
             << "  vndf = " << string::indent(m_vndf.to_string()) << "," << std::endl
             << "  luminance = " << string::indent(m_luminance.to_string()) << "," << std::endl
             << "  spectra = " << string::indent(m_spectra.to_string()) << std::endl
@@ -361,6 +435,7 @@ public:
 
 private:
     std::string m_name;
+    Warp2D0 m_ndf;
     Warp2D2 m_vndf;
     Warp2D2 m_luminance;
     Warp2D3 m_spectra;

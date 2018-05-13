@@ -1511,7 +1511,7 @@ public:
         sample.y() -= fetch_marginal(row, active);
 
         uint32_t slice_size = hprod(m_size);
-        offset =  row * m_size.x();
+        offset = row * m_size.x();
         if (Dimension != 0)
             offset += slice_offset * slice_size;
 
@@ -1611,8 +1611,9 @@ public:
         /* Fetch values at corners of bilinear patch */
         sample *= m_inv_patch_size;
         Vector2u pos = min(Vector2u(sample), m_size - 2u);
-        UInt32 offset = pos.x() + pos.y() * m_size.x();
+        sample -= Vector2f(Vector2i(pos));
 
+        UInt32 offset = pos.x() + pos.y() * m_size.x();
         uint32_t slice_size = hprod(m_size);
         if (Dimension != 0)
             offset += slice_offset * slice_size;
@@ -1626,8 +1627,6 @@ public:
                                       param_weight, active),
               v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, offset, slice_size,
                                       param_weight, active);
-
-        sample -= Vector2f(Vector2i(pos));
 
         Vector2f w1 = sample, w0 = 1.f - w1;
 
@@ -1662,7 +1661,7 @@ public:
 
         offset = pos.y();
         if (Dimension != 0)
-            offset = slice_offset * m_size.y();
+            offset += slice_offset * m_size.y();
 
         sample.y() += lookup<Dimension>(m_marginal_cdf.get(), offset,
                                         m_size.y(), param_weight, active);
