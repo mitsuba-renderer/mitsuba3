@@ -86,7 +86,7 @@ template <typename Point3_> struct PositionSample {
      * instance in path tracing with multiple importance sampling.
      */
     PositionSample(const SurfaceInteraction &si)
-        : p(si.p), n(si.n), uv(si.uv), time(si.time), pdf(0.f),
+        : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time), pdf(0.f),
           delta(false), object(reinterpret_array<ObjectPtr>(si.shape)) { }
 
     //! @}
@@ -165,6 +165,10 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
      * the density of a surface position with respect to a given reference
      * position.
      *
+     * Direction `s` is set so that it points from the reference surface to
+     * the intersected surface, as required when using e.g. the \ref Endpoint
+     * interface to compute PDF values.
+     *
      * \param it
      *     Surface interaction
      *
@@ -173,7 +177,7 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
      */
     DirectionSample(const SurfaceInteraction &it, const Interaction &ref)
         : Base(it) {
-        d    = ref.p - it.p;
+        d    = it.p - ref.p;
         dist = norm(d);
         d   /= dist;
     }
@@ -193,8 +197,9 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
      * a \a surface).
      *
      * \param ray
-     *     Reference to the ray that generated the intersection \c si
-     *     The ray origin must be located at \c si.p
+     *     Reference to the ray that generated the intersection \c si.
+     *     The ray origin must be located at the reference surface and point
+     *     towards \c si.p.
      *
      * \param si
      *     A surface intersection record (usually on an emitter).

@@ -133,15 +133,24 @@ def test04_direction_sample_construction_single():
   dist = 0.13
 ]"""
 
+    # Construct from two interactions: ds.d should start from the reference its.
+    its = SurfaceInteraction3f()
+    its.p = [20, 3, 40.02]
+    ref = Interaction3f()
+    ref.p = [1.6, -2, 35]
+    record = DirectionSample3f(its, ref)
+    d = (its.p - ref.p) / np.linalg.norm(its.p - ref.p)
+    assert np.allclose(record.d, d)
+
 
 @pytest.mark.skip("DirectionSample3fX slicing operator not working yet")
 def test05_direction_sample_construction_dynamic_and_slicing():
     refs = np.array([[0.0, 0.5, 0.7],
                      [1.0, 1.5, 0.2],
                      [-1.3, 0.0, 99.1]])
-    its = refs + 1.0
-    directions = refs - its
-    directions /= np.linalg.norm(directions, axis=0)
+    its = refs + np.random.uniform(size=refs.shape)
+    directions = its - refs
+    directions /= np.expand_dims(np.linalg.norm(directions, axis=1), 0).T
 
     pdfs = [0.99, 1.0, 0.05]
 
