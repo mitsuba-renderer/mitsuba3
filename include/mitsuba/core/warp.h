@@ -876,9 +876,9 @@ public:
 
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, Mask active) {
+                [&](UInt32 idx, Mask active_) {
                     return gather<Value>(m_param_values[dim].get(), idx,
-                                         active) <= param[dim];
+                                         active_) <= param[dim];
                 },
                 active);
 
@@ -959,20 +959,23 @@ public:
         Value v11 = level0.template lookup<Dimension>(
             offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
-        Value r0 = v00 + v10,
-              r1 = v01 + v11,
-              sum  = r0 + r1;
+        Value r0   = v00 + v10,
+              r1   = v01 + v11,
+              r0_2 = r0 * r0,
+              r1_2 = r1 * r1;
 
         /* Invert marginal CDF in the 'y' parameter */
         masked(sample.y(), abs(r0 - r1) > 1e-4f * (r0 + r1)) =
-            (r0 - safe_sqrt((sqr(r0) + sum * (r1 - r0) * sample.y()))) / (r0 - r1);
+            (r0 - safe_sqrt(r0_2 + sample.y() * (r1_2 - r0_2))) / (r0 - r1);
 
         /* Invert conditional CDF in the 'x' parameter */
-        Value c0 = fmadd(1.f - sample.y(), v00, sample.y() * v01),
-              c1 = fmadd(1.f - sample.y(), v10, sample.y() * v11);
+        Value c0   = fmadd(1.f - sample.y(), v00, sample.y() * v01),
+              c1   = fmadd(1.f - sample.y(), v10, sample.y() * v11),
+              c0_2 = c0 * c0,
+              c1_2 = c1 * c1;
 
         masked(sample.x(), abs(c0 - c1) > 1e-4f * (c0 + c1)) =
-            (c0 - safe_sqrt(sqr(c0) * (1.f - sample.x()) + sqr(c1) * sample.x())) /
+            (c0 - safe_sqrt(c0_2 + sample.x() * (c1_2 - c0_2))) /
             (c0 - c1);
 
         return {
@@ -1004,9 +1007,9 @@ public:
 
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, Mask active) {
+                [&](UInt32 idx, Mask active_) {
                     return gather<Value>(m_param_values[dim].get(), idx,
-                                         active) <= param[dim];
+                                         active_) <= param[dim];
                 },
                 active);
 
@@ -1042,14 +1045,14 @@ public:
 
         Vector2f w1 = sample, w0 = 1.f - w1;
 
-        Value c0 = fmadd(w0.y(), v00, w1.y() * v01),
-              c1 = fmadd(w0.y(), v10, w1.y() * v11),
-              pdf = fmadd(w0.x(), c0, w1.x() * c1),
-              r0 = v00 + v10,
-              r1 = v01 + v11;
+        Value c0   = fmadd(w0.y(), v00, w1.y() * v01),
+              c1   = fmadd(w0.y(), v10, w1.y() * v11),
+              pdf  = fmadd(w0.x(), c0, w1.x() * c1),
+              r0   = v00 + v10,
+              r1   = v01 + v11;
 
         masked(sample.x(), abs(c1 - c0) > 1e-4f * (c0 + c1)) *=
-            ((2.f * c0) + sample.x() * (c1 - c0)) / (c0 + c1);
+            (2.f * c0 + sample.x() * (c1 - c0)) / (c0 + c1);
 
         masked(sample.y(), abs(r1 - r0) > 1e-4f * (r0 + r1)) *=
             (2.f * r0 + sample.y() * (r1 - r0)) / (r0 + r1);
@@ -1127,9 +1130,9 @@ public:
 
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, Mask active) {
+                [&](UInt32 idx, Mask active_) {
                     return gather<Value>(m_param_values[dim].get(), idx,
-                                         active) <= param[dim];
+                                         active_) <= param[dim];
                 },
                 active);
 
@@ -1349,6 +1352,9 @@ public:
         if (any(size < 2))
             Throw("warp::Marginal2D(): input array resolution must be >= 2!");
 
+        if (build_cdf && !normalize)
+            Throw("Marginal2D: build_cdf implies normalize=true");
+
         /* Keep track of the dependence on additional parameters (optional) */
         uint32_t slices = 1;
         for (int i = (int) Dimension - 1; i >= 0; --i) {
@@ -1368,55 +1374,53 @@ public:
         m_data = FloatStorage(enoki::alloc<Float>(slices * n_values));
 
         if (build_cdf) {
-            m_col_cdf = FloatStorage(enoki::alloc<Float>(slices * n_values));
-            m_row_cdf = FloatStorage(enoki::alloc<Float>(slices * m_size.y()));
+            m_marginal_cdf = FloatStorage(enoki::alloc<Float>(slices * m_size.y()));
+            m_conditional_cdf = FloatStorage(enoki::alloc<Float>(slices * n_values));
 
-            Float *row_cdf  = m_row_cdf.get(),
-                  *col_cdf  = m_col_cdf.get(),
+            Float *marginal_cdf = m_marginal_cdf.get(),
+                  *conditional_cdf = m_conditional_cdf.get(),
                   *data_out = m_data.get();
 
             for (uint32_t slice = 0; slice < slices; ++slice) {
-                double sum = 0.0;
-                row_cdf[0] = 0.f;
-                for (uint32_t y = 0; y < m_size.y() - 1; ++y) {
+                /* Construct conditional CDF */
+                for (uint32_t y = 0; y < m_size.y(); ++y) {
+                    double sum = 0.0;
                     size_t i = y * size.x();
-                    col_cdf[i] = 0;
-                    double row_sum = 0.0;
+                    conditional_cdf[i] = 0.f;
                     for (uint32_t x = 0; x < m_size.x() - 1; ++x, ++i) {
-                        Float v00 = data[i],
-                              v10 = data[i + 1],
-                              v01 = data[i + size.x()],
-                              v11 = data[i + 1 + size.x()],
-                              avg = .25f * (v00 + v10 + v01 + v11);
-                        row_sum += (double) avg;
-                        col_cdf[i + 1] = (Float) row_sum;
+                        sum += .5 * ((double) data[i] + (double) data[i + 1]);
+                        conditional_cdf[i + 1] = (Float) sum;
                     }
-                    sum += row_sum;
-                    row_cdf[y + 1] = (Float) sum;
                 }
 
-                Float normalization = Float(1.0 / sum);
-                for (uint32_t k = 0; k < n_values; ++k)
-                    col_cdf[k] *= normalization;
-                for (uint32_t k = 0; k < m_size.y(); ++k)
-                    row_cdf[k] *= normalization;
-                if (normalize)
-                    normalization *= hprod(size - 1u);
-                else
-                    normalization = 1.f;
-                for (uint32_t k = 0; k < n_values; ++k)
-                    data_out[k] = data[k] * normalization;
+                /* Construct marginal CDF */
+                marginal_cdf[0] = 0.f;
+                double sum = 0.0;
+                for (uint32_t y = 0; y < m_size.y() - 1; ++y) {
+                    sum += .5 * ((double) conditional_cdf[(y + 1) * size.x() - 1] +
+                                 (double) conditional_cdf[(y + 2) * size.x() - 1]);
+                    marginal_cdf[y + 1] = (Float) sum;
+                }
 
-                data += n_values;
+                /* Normalize CDFs and PDF (if requested) */
+                Float normalization = 1.f / marginal_cdf[m_size.y() - 1];
+                for (size_t i = 0; i < n_values; ++i)
+                    conditional_cdf[i] *= normalization;
+                for (size_t i = 0; i < m_size.y(); ++i)
+                    marginal_cdf[i] *= normalization;
+                for (size_t i = 0; i < n_values; ++i)
+                    data_out[i] = data[i] * normalization;
+
+                marginal_cdf += m_size.y();
+                conditional_cdf += n_values;
                 data_out += n_values;
-                col_cdf += n_values;
-                row_cdf += m_size.y();
+                data += n_values;
             }
         } else {
             Float *data_out = m_data.get();
 
             for (uint32_t slice = 0; slice < slices; ++slice) {
-                Float normalization = 1.f;
+                Float normalization = 1.f / hprod(m_inv_patch_size);
                 if (normalize) {
                     double sum = 0.0;
                     for (uint32_t y = 0; y < m_size.y() - 1; ++y) {
@@ -1430,7 +1434,7 @@ public:
                             sum += (double) avg;
                         }
                     }
-                    normalization = Float(hprod(size - 1u) / sum);
+                    normalization = Float(1.0 / sum);
                 }
 
                 for (uint32_t k = 0; k < n_values; ++k)
@@ -1441,6 +1445,7 @@ public:
             }
         }
     }
+
 
     /**
      * \brief Given a uniformly distributed 2D sample, draw a sample from the
@@ -1455,6 +1460,10 @@ public:
         using UInt32 = value_t<Vector2u>;
         using Mask = mask_t<Value>;
 
+        /* Avoid degeneracies at the extrema */
+        masked(sample, sample < 1.f - math::OneMinusEpsilon) = 1.f - math::OneMinusEpsilon;
+        masked(sample, sample > math::OneMinusEpsilon) = math::OneMinusEpsilon;
+
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
@@ -1467,9 +1476,9 @@ public:
 
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, Mask active) {
+                [&](UInt32 idx, Mask active_) {
                     return gather<Value>(m_param_values[dim].get(), idx,
-                                         active) <= param[dim];
+                                         active_) <= param[dim];
                 },
                 active);
 
@@ -1483,80 +1492,83 @@ public:
         }
 
         /* Sample the row first */
-        UInt32 row_offset = slice_offset * m_size.y();
+        UInt32 offset = 0;
+        if (Dimension != 0)
+            offset = slice_offset * m_size.y();
+
+        auto fetch_marginal = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Value {
+            return lookup<Dimension>(m_marginal_cdf.get(), offset + idx,
+                                     m_size.y(), param_weight, active_);
+        };
 
         UInt32 row = math::find_interval(
             m_size.y(),
-            [&](UInt32 idx, Mask active) ENOKI_INLINE_LAMBDA {
-                return lookup<Dimension>(m_row_cdf.get(), row_offset + idx, m_size.y(),
-                                         param_weight, active) < sample.y();
+            [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Mask {
+                return fetch_marginal(idx, active_) < sample.y();
             },
             active);
 
-        /* Re-scale uniform variate */
-        Value row_cdf_0 = lookup<Dimension>(m_row_cdf.get(), row_offset + row,
-                                            m_size.y(), param_weight, active),
-              row_cdf_1 = lookup<Dimension>(m_row_cdf.get(), row_offset + row + 1,
-                                            m_size.y(), param_weight, active);
+        sample.y() -= fetch_marginal(row, active);
 
-        sample.y() -= row_cdf_0;
-        masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        uint32_t slice_size = hprod(m_size);
+        offset =  row * m_size.x();
+        if (Dimension != 0)
+            offset += slice_offset * slice_size;
+
+        Value r0 = lookup<Dimension>(m_conditional_cdf.get(),
+                                     offset + m_size.x() - 1, slice_size,
+                                     param_weight, active),
+              r1 = lookup<Dimension>(m_conditional_cdf.get(),
+                                     offset + (m_size.x() * 2 - 1), slice_size,
+                                     param_weight, active);
+
+        Mask is_const = abs(r0 - r1) < 1e-4f * (r0 + r1);
+        sample.y() = select(is_const, 2.f * sample.y(),
+            r0 - safe_sqrt(r0 * r0 - 2.f * sample.y() * (r0 - r1)));
+        sample.y() /= select(is_const, r0 + r1, r0 - r1);
 
         /* Sample the column next */
-        uint32_t size = hprod(m_size);
-        UInt32 col_offset = slice_offset * size + row * m_size.x();
+        sample.x() *= (1.f - sample.y()) * r0 + sample.y() * r1;
 
-        sample.x() *= lookup<Dimension>(m_col_cdf.get(), col_offset + m_size.x() - 1,
-                                        size, param_weight, active);
+        auto fetch_conditional = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Value {
+            Value v0 = lookup<Dimension>(m_conditional_cdf.get(), offset + idx,
+                                         slice_size, param_weight, active_),
+                  v1 = lookup<Dimension>(m_conditional_cdf.get() + m_size.x(),
+                                         offset + idx, slice_size, param_weight, active_);
+
+            return (1.f - sample.y()) * v0 + sample.y() * v1;
+        };
 
         UInt32 col = math::find_interval(
             m_size.x(),
-            [&](UInt32 idx, Mask active) ENOKI_INLINE_LAMBDA {
-                return lookup<Dimension>(m_col_cdf.get(), col_offset + idx, size,
-                                         param_weight, active) < sample.x();
+            [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Mask {
+                return fetch_conditional(idx, active_) < sample.x();
             },
             active);
 
-        /* Re-scale uniform variate */
-        Value col_cdf_0 = lookup<Dimension>(m_col_cdf.get(), col_offset + col,
-                                            size, param_weight, active),
-              col_cdf_1 = lookup<Dimension>(m_col_cdf.get(), col_offset + col + 1,
-                                            size, param_weight, active);
+        sample.x() -= fetch_conditional(col, active);
 
-        sample.x() -= col_cdf_0;
-        masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        offset += col;
 
-        UInt32 index = col_offset + col;
-
-        /* Sample a position on the bilinear patch */
-        Value v00 = lookup<Dimension>(m_data.get(), index, size,
+        Value v00 = lookup<Dimension>(m_data.get(), offset, slice_size,
                                       param_weight, active),
-              v10 = lookup<Dimension>(m_data.get() + 1, index, size,
+              v10 = lookup<Dimension>(m_data.get() + 1, offset, slice_size,
                                       param_weight, active),
-              v01 = lookup<Dimension>(m_data.get() + m_size.x(), index, size,
-                                      param_weight, active),
-              v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, index, size,
-                                      param_weight, active);
+              v01 = lookup<Dimension>(m_data.get() + m_size.x(), offset,
+                                      slice_size, param_weight, active),
+              v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, offset,
+                                      slice_size, param_weight, active),
+              c0  = fmadd((1.f - sample.y()), v00, sample.y() * v01),
+              c1  = fmadd((1.f - sample.y()), v10, sample.y() * v11);
 
-        Value r0 = v00 + v10,
-              r1 = v01 + v11,
-              sum  = r0 + r1;
-
-        /* Invert marginal CDF in the 'y' parameter */
-        masked(sample.y(), abs(r0 - r1) > 1e-4f * (r0 + r1)) =
-            (r0 - safe_sqrt((sqr(r0) + sum * (r1 - r0) * sample.y()))) / (r0 - r1);
-
-        /* Invert conditional CDF in the 'x' parameter */
-        Value c0 = fmadd(1.f - sample.y(), v00, sample.y() * v01),
-              c1 = fmadd(1.f - sample.y(), v10, sample.y() * v11);
-
-        masked(sample.x(), abs(c0 - c1) > 1e-4f * (c0 + c1)) =
-            (c0 - safe_sqrt(sqr(c0) * (1.f - sample.x()) + sqr(c1) * sample.x())) /
-            (c0 - c1);
+        is_const = abs(c0 - c1) < 1e-4f * (c0 + c1);
+        sample.x() = select(is_const, 2.f * sample.x(),
+            c0 - safe_sqrt(c0 * c0 - 2.f * sample.x() * (c0 - c1)));
+        sample.x() /= select(is_const, c0 + c1, c0 - c1);
 
         return {
             (Vector2u(col, row) + sample) * m_patch_size,
-            fmadd(1.f - sample.x(), c0, sample.x() * c1)
+            ((1.f - sample.x()) * c0 + sample.x() * c1) * hprod(m_inv_patch_size)
         };
     }
 
@@ -1581,9 +1593,9 @@ public:
 
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, Mask active) {
+                [&](UInt32 idx, Mask active_) {
                     return gather<Value>(m_param_values[dim].get(), idx,
-                                         active) <= param[dim];
+                                         active_) <= param[dim];
                 },
                 active);
 
@@ -1598,57 +1610,64 @@ public:
 
         /* Fetch values at corners of bilinear patch */
         sample *= m_inv_patch_size;
-        Vector2u offset = min(Vector2u(sample), m_size - 2u);
-        UInt32 offset_i = offset.x() + offset.y() * m_size.x();
+        Vector2u pos = min(Vector2u(sample), m_size - 2u);
+        UInt32 offset = pos.x() + pos.y() * m_size.x();
 
-        uint32_t size = hprod(m_size);
+        uint32_t slice_size = hprod(m_size);
         if (Dimension != 0)
-            offset_i += slice_offset * size;
+            offset += slice_offset * slice_size;
 
-        Value v00 = lookup<Dimension>(m_data.get(), offset_i, size,
+        /* Invert the X component */
+        Value v00 = lookup<Dimension>(m_data.get(), offset, slice_size,
                                       param_weight, active),
-              v10 = lookup<Dimension>(m_data.get() + 1, offset_i, size,
+              v10 = lookup<Dimension>(m_data.get() + 1, offset, slice_size,
                                       param_weight, active),
-              v01 = lookup<Dimension>(m_data.get() + m_size.x(), offset_i, size,
+              v01 = lookup<Dimension>(m_data.get() + m_size.x(), offset, slice_size,
                                       param_weight, active),
-              v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, offset_i, size,
+              v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, offset, slice_size,
                                       param_weight, active);
 
-        sample -= Vector2f(Vector2i(offset));
+        sample -= Vector2f(Vector2i(pos));
 
         Vector2f w1 = sample, w0 = 1.f - w1;
 
-        Value c0 = fmadd(w0.y(), v00, w1.y() * v01),
-              c1 = fmadd(w0.y(), v10, w1.y() * v11),
-              pdf = fmadd(w0.x(), c0, w1.x() * c1),
-              r0 = v00 + v10,
-              r1 = v01 + v11;
+        Value c0  = fmadd(w0.y(), v00, w1.y() * v01),
+              c1  = fmadd(w0.y(), v10, w1.y() * v11),
+              pdf = fmadd(w0.x(), c0, w1.x() * c1);
 
-        masked(sample.x(), abs(c1 - c0) > 1e-4f * (c0 + c1)) *=
-            ((2.f * c0) + sample.x() * (c1 - c0)) / (c0 + c1);
+        sample.x() *= c0 + .5f * sample.x() * (c1 - c0);
 
-        masked(sample.y(), abs(r1 - r0) > 1e-4f * (r0 + r1)) *=
-            (2.f * r0 + sample.y() * (r1 - r0)) / (r0 + r1);
+        Value v0 = lookup<Dimension>(m_conditional_cdf.get(), offset,
+                                     slice_size, param_weight, active),
+              v1 = lookup<Dimension>(m_conditional_cdf.get() + m_size.x(),
+                                     offset, slice_size, param_weight, active);
 
-        UInt32 col_offset = slice_offset * size + offset.y() * m_size.x();
-        UInt32 row_offset = slice_offset * m_size.y();
+        sample.x() += (1.f - sample.y()) * v0 + sample.y() * v1;
 
-        Value row_cdf_0 = lookup<Dimension>(m_row_cdf.get(), row_offset + offset.y() ,
-                                            m_size.y(), param_weight, active),
-              row_cdf_1 = lookup<Dimension>(m_row_cdf.get(), row_offset + offset.y() + 1,
-                                            m_size.y(), param_weight, active),
-              col_cdf_0 = lookup<Dimension>(m_col_cdf.get(), col_offset + offset.x(),
-                                            size, param_weight, active),
-              col_cdf_1 = lookup<Dimension>(m_col_cdf.get(), col_offset + offset.x() + 1,
-                                            size, param_weight, active);
+        offset = pos.y() * m_size.x();
+        if (Dimension != 0)
+            offset += slice_offset * slice_size;
 
-         sample.x() = sample.x() * (col_cdf_1 - col_cdf_0) + col_cdf_0;
-         sample.y() = sample.y() * (row_cdf_1 - row_cdf_0) + row_cdf_0;
+        Value r0 = lookup<Dimension>(m_conditional_cdf.get(),
+                                     offset + m_size.x() - 1, slice_size,
+                                     param_weight, active),
+              r1 = lookup<Dimension>(m_conditional_cdf.get(),
+                                     offset + (m_size.x() * 2 - 1), slice_size,
+                                     param_weight, active);
 
-         sample.x() /= lookup<Dimension>(m_col_cdf.get(), col_offset + m_size.x() - 1,
-                                         size, param_weight, active);
+        sample.x() /= (1.f - sample.y()) * r0 + sample.y() * r1;
 
-         return { sample, pdf };
+        /* Invert the Y component */
+        sample.y() *= r0 + .5f * sample.y() * (r1 - r0);
+
+        offset = pos.y();
+        if (Dimension != 0)
+            offset = slice_offset * m_size.y();
+
+        sample.y() += lookup<Dimension>(m_marginal_cdf.get(), offset,
+                                        m_size.y(), param_weight, active);
+
+        return { sample, pdf * hprod(m_inv_patch_size) };
     }
 
     /**
@@ -1675,9 +1694,9 @@ public:
 
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
-                [&](UInt32 idx, Mask active) {
+                [&](UInt32 idx, Mask active_) {
                     return gather<Value>(m_param_values[dim].get(), idx,
-                                         active) <= param[dim];
+                                         active_) <= param[dim];
                 },
                 active);
 
@@ -1712,7 +1731,7 @@ public:
                                       param_weight, active);
 
         return fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
-                     w1.y() * fmadd(w0.x(), v01, w1.x() * v11));
+                     w1.y() * fmadd(w0.x(), v01, w1.x() * v11)) * hprod(m_inv_patch_size);
     }
 
     std::string to_string() const {
@@ -1788,10 +1807,11 @@ private:
     /// Density values
     FloatStorage m_data;
 
-    /// Discrete CDFs for row/column selection
-    FloatStorage m_row_cdf;
-    FloatStorage m_col_cdf;
+    /// Marginal and conditional PDFs
+    FloatStorage m_marginal_cdf;
+    FloatStorage m_conditional_cdf;
 };
+
 //! @}
 // =======================================================================
 

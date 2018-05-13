@@ -1,10 +1,12 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/python/python.h>
 #include <enoki/stl.h>
-
+#include <pybind11/iostream.h>
 
 MTS_PY_EXPORT(warp) {
     MTS_PY_IMPORT_MODULE(warp, "mitsuba.core.warp");
+
+    using FloatArray = py::array_t<Float, py::array::c_style | py::array::forcecast>;
 
     warp.def(
         "square_to_uniform_disk",
@@ -468,7 +470,7 @@ MTS_PY_EXPORT(warp) {
     using Marginal2D3 = warp::Marginal2D<3>;
 
     py::class_<Marginal2D0>(warp, "Marginal2D0", D(warp, Marginal2D))
-        .def(py::init([](py::array_t<Float> data, bool normalize, bool build_cdf) {
+        .def(py::init([](FloatArray data, bool normalize, bool build_cdf) {
             if (data.ndim() != 2)
                 throw std::domain_error("data array has incorrect dimension");
             return Marginal2D0(
@@ -501,7 +503,7 @@ MTS_PY_EXPORT(warp) {
         ;
 
     py::class_<Marginal2D1>(warp, "Marginal2D1")
-        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+        .def(py::init([](FloatArray data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_cdf) {
             if (data.ndim() != 3)
                 throw std::domain_error("data array has incorrect dimension");
@@ -549,7 +551,7 @@ MTS_PY_EXPORT(warp) {
         .def("__repr__", &Marginal2D1::to_string);
 
     py::class_<Marginal2D2>(warp, "Marginal2D2")
-        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+        .def(py::init([](FloatArray data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_cdf) {
             if (data.ndim() != 4)
                 throw std::domain_error("data array has incorrect dimension");
@@ -599,7 +601,7 @@ MTS_PY_EXPORT(warp) {
         .def("__repr__", &Marginal2D2::to_string);
 
     py::class_<Marginal2D3>(warp, "Marginal2D3")
-        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+        .def(py::init([](FloatArray data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_cdf) {
             if (data.ndim() != 5)
                 throw std::domain_error("data array has incorrect dimension");
@@ -663,7 +665,7 @@ MTS_PY_EXPORT(warp) {
     using Hierarchical2D3 = warp::Hierarchical2D<3>;
 
     py::class_<Hierarchical2D0>(warp, "Hierarchical2D0", D(warp, Hierarchical2D))
-        .def(py::init([](py::array_t<Float> data, bool normalize, bool build_hierarchy) {
+        .def(py::init([](FloatArray data, bool normalize, bool build_hierarchy) {
             if (data.ndim() != 2)
                 throw std::domain_error("data array has incorrect dimension");
             return Hierarchical2D0(
@@ -696,7 +698,7 @@ MTS_PY_EXPORT(warp) {
         ;
 
     py::class_<Hierarchical2D1>(warp, "Hierarchical2D1")
-        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+        .def(py::init([](FloatArray data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_hierarchy) {
             if (data.ndim() != 3)
                 throw std::domain_error("data array has incorrect dimension");
@@ -744,7 +746,7 @@ MTS_PY_EXPORT(warp) {
         .def("__repr__", &Hierarchical2D1::to_string);
 
     py::class_<Hierarchical2D2>(warp, "Hierarchical2D2")
-        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+        .def(py::init([](FloatArray data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_hierarchy) {
             if (data.ndim() != 4)
                 throw std::domain_error("data array has incorrect dimension");
@@ -794,7 +796,7 @@ MTS_PY_EXPORT(warp) {
         .def("__repr__", &Hierarchical2D2::to_string);
 
     py::class_<Hierarchical2D3>(warp, "Hierarchical2D3")
-        .def(py::init([](py::array_t<Float> data, std::vector<std::vector<Float>> param_values,
+        .def(py::init([](FloatArray data, std::vector<std::vector<Float>> param_values,
                          bool normalize, bool build_hierarchy) {
             if (data.ndim() != 5)
                 throw std::domain_error("data array has incorrect dimension");
