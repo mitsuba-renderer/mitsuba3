@@ -3,7 +3,6 @@
 #include <mitsuba/core/tensor.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/microfacet.h>
 
 /// Defines the details of the parameterization. Do not change this.
 #define MTS_MARGINAL_WARP      1
@@ -303,50 +302,8 @@ public:
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
 
-        //std::cout << "eval(wi  = " << si.wi << ", wo=" << wo << ")" << std::endl
-                  //<< "  value =  " << spec[0] << std::endl
-                  //<< "  ref =  " << eval_impl_microfacet(ctx, si, wo, active)[0] << std::endl;
-
         return spec & active;
     }
-
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = Spectrum<Value>>
-    MTS_INLINE
-    Spectrum eval_impl_microfacet(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, mask_t<Value> active) const {
-        using Frame = mitsuba::Frame<Vector3>;
-
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
-
-        active &= (n_dot_wi > 0.f) && (n_dot_wo > 0.f);
-
-        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
-            return 0.f;
-
-        /* Calculate the half-direction vector */
-        Vector3 H = normalize(wo + si.wi);
-
-        /* Construct a microfacet distribution matching the
-           roughness values at the current surface position. */
-        MicrofacetDistribution<Value> distr(EGGX, 0.05f, 0.3f, true);
-
-        /* Evaluate the microfacet normal distribution */
-        Value D = distr.eval(H);
-
-        active &= neq(D, 0.f);
-
-        /* Evaluate Smith's shadow-masking function */
-        Value G = distr.G(si.wi, wo, H);
-
-        /* Evaluate the full microfacet model (except Fresnel) */
-        Value result = D * G / (4.f * Frame::cos_theta(si.wi));
-
-        return Spectrum(result) & active;
-    }
-
 
     template <typename SurfaceInteraction, typename Vector3,
               typename Value = value_t<Vector3>>
