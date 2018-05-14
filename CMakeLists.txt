@@ -71,6 +71,16 @@ macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES "")
 endmacro()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
+   message(FATAL_ERROR "Compilation using GCC is currently unsupported, please use Clang")
+endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
+     message(FATAL_ERROR "Your compiler is too old (found version ${CMAKE_CXX_COMPILER_VERSION}. Please use at least Clang 5.0)")
+   endif()
+endif()
+
 # Prefer libc++ in conjunction with Clang
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_FLAGS MATCHES "-stdlib=libc\\+\\+")
   CHECK_CXX_COMPILER_AND_LINKER_FLAGS(HAS_LIBCPP "-stdlib=libc++" "-stdlib=libc++")
@@ -80,7 +90,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_FLAGS MATCHES "-stdl
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
     message(STATUS "Mitsuba: using libc++.")
   else()
-    message(STATUS "Mitsuba: NOT using libc++.")
+    message(FATAL_ERROR "Mitsuba must be compiled with libc++! GCC's libstdc++ is not supported (please insteall the libc++ development headers, provided e.g. by the packages 'libc++-dev' and 'libc++abi-dev' on Debian/Ubuntu).")
   endif()
 endif()
 
@@ -113,6 +123,12 @@ endif()
 # Enable folders for projects in Visual Studio
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+endif()
+
+if (UNIX AND NOT APPLE)
+  # Fix to point the compiler to a header file (__cxxabi_config.h)
+  # on recent versions of Debian/Ubuntu
+  include_directories(/usr/include/libcxxabi)
 endif()
 
 # Build the dependencies
