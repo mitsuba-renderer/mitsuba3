@@ -1737,7 +1737,7 @@ public:
         std::ostringstream oss;
         oss << "Marginal2D<" << Dimension << ">[" << std::endl
             << "  size = " << m_size << "," << std::endl;
-        size_t n_slices = 1, size = 0;
+        size_t n_slices = 1;
         if (Dimension > 0) {
             oss << "  param_size = [";
             for (size_t i = 0; i<Dimension; ++i) {
@@ -1757,7 +1757,7 @@ public:
         }
         oss << "  storage = { " << n_slices << " slice" << (n_slices > 1 ? "s" : "")
             << ", ";
-        size += hprod(m_size) * (n_slices + 1) + n_slices * m_size.x();
+        size_t size = n_slices * (hprod(m_size) * 2 + m_size.y());
         oss << util::mem_string(size * sizeof(Float)) << " }" << std::endl
             << "]";
         return oss.str();
