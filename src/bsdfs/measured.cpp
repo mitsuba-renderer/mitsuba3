@@ -85,6 +85,12 @@ public:
         m_isotropic = phi_i.shape[0] <= 2;
         m_jacobian  = ((uint8_t *) jacobian.data)[0];
 
+        if (!m_isotropic) {
+            Float *phi_i_data = (Float *) phi_i.data;
+            m_reduction = (int) std::rint((2 * math::Pi) /
+                (phi_i_data[phi_i.shape[0] - 1] - phi_i_data[0]));
+        }
+
         /* Construct NDF interpolant data structure */
         m_ndf = Warp2D0(
             Vector2u(ndf.shape[1], ndf.shape[0]),
@@ -160,10 +166,20 @@ public:
         if (!ctx.is_enabled(EGlossyReflection))
             return { bs, 0.f };
 
-        active &= Frame::cos_theta(si.wi) > 0;
+        Vector3 wi = si.wi;
+        Value sx = -1.f, sy = -1.f;
 
-        Value theta_i = safe_acos(Frame::cos_theta(si.wi)),
-              phi_i   = atan2(si.wi.y(), si.wi.x());
+        active &= Frame::cos_theta(wi) > 0;
+
+        if (m_reduction >= 2) {
+            sy = wi.y();
+            sx = (m_reduction == 4) ? wi.x() : sy;
+            wi.x() = mulsign_neg(wi.x(), sx);
+            wi.y() = mulsign_neg(wi.y(), sy);
+        }
+
+        Value theta_i = safe_acos(Frame::cos_theta(wi)),
+              phi_i   = atan2(wi.y(), wi.x());
 
         Value params[2] = { phi_i, theta_i };
         Vector2 u_wi(theta2u(theta_i), phi2u(phi_i));
@@ -202,15 +218,15 @@ public:
             );
 
             Value jacobian = enoki::max(2.f * sqr(math::Pi) * u_m.x() *
-                                        sin_theta_m, 1e-6f) * 4.f * dot(si.wi, m);
+                                        sin_theta_m, 1e-6f) * 4.f * dot(wi, m);
 
-            bs.wo = fmsub(m, 2.f * dot(m, si.wi), si.wi);
+            bs.wo = fmsub(m, 2.f * dot(m, wi), wi);
             bs.pdf = ndf_pdf * pdf / jacobian;
         #else // MTS_SAMPLE_DIFFUSE
             bs.wo = warp::square_to_cosine_hemisphere(sample2);
             bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
 
-            Vector3 m = normalize(bs.wo + si.wi);
+            Vector3 m = normalize(bs.wo + wi);
 
             /* Cartesian -> spherical coordinates */
             Value theta_m = safe_acos(Frame::cos_theta(m)),
@@ -236,10 +252,12 @@ public:
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
 
-        if (m_jacobian) {
+        if (m_jacobian)
             spec *= m_ndf.eval(u_m, params, active) /
                     (4 * m_sigma.eval(u_wi, params, active));
-        }
+
+        bs.wo.x() = mulsign_neg(bs.wo.x(), sx);
+        bs.wo.y() = mulsign_neg(bs.wo.y(), sy);
 
         active &= Frame::cos_theta(bs.wo) > 0;
 
@@ -251,21 +269,33 @@ public:
               typename Spectrum = Spectrum<Value>>
     MTS_INLINE
     Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, mask_t<Value> active) const {
+                       const Vector3 &wo_, mask_t<Value> active) const {
         using Frame = mitsuba::Frame<Vector3>;
         using Vector2 = Vector<Value, 2>;
 
-        active &= Frame::cos_theta(si.wi) > 0.f &&
+        Vector3 wi = si.wi, wo = wo_;
+
+        active &= Frame::cos_theta(wi) > 0.f &&
                   Frame::cos_theta(wo) > 0.f;
 
         if (none(active) || !ctx.is_enabled(EGlossyReflection))
             return Spectrum(0.f);
 
-        Vector3 m = normalize(wo + si.wi);
+        if (m_reduction >= 2) {
+            Value sy = wi.y(),
+                  sx = (m_reduction == 4) ? wi.x() : sy;
+
+            wi.x() = mulsign_neg(wi.x(), sx);
+            wi.y() = mulsign_neg(wi.y(), sy);
+            wo.x() = mulsign_neg(wo.x(), sx);
+            wo.y() = mulsign_neg(wo.y(), sy);
+        }
+
+        Vector3 m = normalize(wo + wi);
 
         /* Cartesian -> spherical coordinates */
-        Value theta_i = safe_acos(Frame::cos_theta(si.wi)),
-              phi_i   = atan2(si.wi.y(), si.wi.x()),
+        Value theta_i = safe_acos(Frame::cos_theta(wi)),
+              phi_i   = atan2(wi.y(), wi.x()),
               theta_m = safe_acos(Frame::cos_theta(m)),
               phi_m   = atan2(m.y(), m.x());
 
@@ -297,24 +327,36 @@ public:
               typename Value = value_t<Vector3>>
     MTS_INLINE
     Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                   const Vector3 &wo, mask_t<Value> active) const {
+                   const Vector3 &wo_, mask_t<Value> active) const {
         using Frame = mitsuba::Frame<Vector3>;
 
-        active &= Frame::cos_theta(si.wi) > 0.f &&
+        Vector3 wi = si.wi, wo = wo_;
+
+        active &= Frame::cos_theta(wi) > 0.f &&
                   Frame::cos_theta(wo) > 0.f;
 
         if (none(active) || !ctx.is_enabled(EGlossyReflection))
             return 0.f;
 
+        if (m_reduction >= 2) {
+            Value sy = wi.y(),
+                  sx = (m_reduction == 4) ? wi.x() : sy;
+
+            wi.x() = mulsign_neg(wi.x(), sx);
+            wi.y() = mulsign_neg(wi.y(), sy);
+            wo.x() = mulsign_neg(wo.x(), sx);
+            wo.y() = mulsign_neg(wo.y(), sy);
+        }
+
         #if MTS_SAMPLE_DIFFUSE == 1
             return select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
         #else // MTS_SAMPLE_DIFFUSE
             using Vector2 = Vector<Value, 2>;
-            Vector3 m = normalize(wo + si.wi);
+            Vector3 m = normalize(wo + wi);
 
             /* Cartesian -> spherical coordinates */
-            Value theta_i = safe_acos(Frame::cos_theta(si.wi)),
-                  phi_i   = atan2(si.wi.y(), si.wi.x()),
+            Value theta_i = safe_acos(Frame::cos_theta(wi)),
+                  phi_i   = atan2(wi.y(), wi.x()),
                   theta_m = safe_acos(Frame::cos_theta(m)),
                   phi_m   = atan2(m.y(), m.x());
 
@@ -335,7 +377,7 @@ public:
             #endif
 
             Value jacobian = enoki::max(2.f * sqr(math::Pi) * u_m.x() *
-                                        Frame::sin_theta(m), 1e-6f) * 4.f * dot(si.wi, m);
+                                        Frame::sin_theta(m), 1e-6f) * 4.f * dot(wi, m);
 
             pdf = vndf_pdf * pdf / jacobian;
 
@@ -385,6 +427,7 @@ private:
     Warp2D3 m_spectra;
     bool m_isotropic;
     bool m_jacobian;
+    int m_reduction;
 };
 
 MTS_IMPLEMENT_CLASS(Measured, BSDF)
