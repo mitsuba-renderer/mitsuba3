@@ -547,3 +547,40 @@ def InteractiveBSDFAdapter(bsdf_type, extra):
         return plugin.pdf(ctx, si, wo)
 
     return sample_functor, pdf_functor
+
+
+def EnvironmentAdapter(emitter_type, extra):
+    """
+    Adapter for interactive & batch testing of environment map samplers
+    """
+
+    from mitsuba.render import Interaction3fX
+    from mitsuba.render import DirectionSample3fX
+
+    cache = [None, None]
+
+    def instantiate(args):
+        xml = ("""<emitter version="2.0.0" type="%s">
+            %s
+        </emitter>""" % (emitter_type, extra)) % args
+        if xml != cache[0]:
+            cache[1] = load_string(xml)
+            cache[0] = xml
+        return cache[1]
+
+    def sample_functor(sample, *args):
+        plugin = instantiate(args)
+        n = sample.shape[0]
+        it = Interaction3fX(n)
+        ds, weight = plugin.sample_direction(it, sample)
+        return ds.d
+
+    def pdf_functor(wo, *args):
+        plugin = instantiate(args)
+        n = wo.shape[0]
+        it = Interaction3fX(n)
+        ds = DirectionSample3fX(n)
+        ds.d = wo
+        return plugin.pdf_direction(it, ds)
+
+    return sample_functor, pdf_functor

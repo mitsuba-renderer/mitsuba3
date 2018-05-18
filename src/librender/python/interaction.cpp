@@ -3,6 +3,7 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/scene.h>
 #include <enoki/stl.h>
 
 template <typename Point3>
@@ -15,6 +16,7 @@ auto bind_interaction(py::module &m, const char *name) {
         .def_readwrite("time", &Type::time, D(Interaction, time))
         .def_readwrite("wavelengths", &Type::wavelengths, D(Interaction, wavelengths))
         .def_readwrite("p", &Type::p, D(Interaction, p))
+
         // Methods
         .def(py::init<>(), D(Interaction, Interaction))
         .def("spawn_ray", &Type::spawn_ray, D(Interaction, spawn_ray))
@@ -25,7 +27,7 @@ auto bind_interaction(py::module &m, const char *name) {
 MTS_PY_EXPORT(Interaction) {
     bind_interaction<Point3f>(m, "Interaction3f");
     auto i3fx = bind_interaction<Point3fX>(m, "Interaction3fX");
-    //bind_slicing_operators<Interaction3fX, Interaction3f>(i3fx);
+    bind_slicing_operators<Interaction3fX, Interaction3f>(i3fx);
 }
 
 template <typename Point3>
@@ -56,7 +58,7 @@ auto bind_surface_interaction(py::module &m, const char *name) {
              D(SurfaceInteraction, compute_partials))
         .def("to_world", &Type::to_world, D(SurfaceInteraction, to_world))
         .def("to_local", &Type::to_local, D(SurfaceInteraction, to_local))
-        .def("is_emitter", &Type::is_emitter, D(SurfaceInteraction, is_emitter))
+        .def("emitter", &Type::template emitter<Scene>, D(SurfaceInteraction, emitter))
         .def("is_sensor", &Type::is_sensor, D(SurfaceInteraction, is_sensor))
         .def("is_medium_transition", &Type::is_medium_transition,
              D(SurfaceInteraction, is_medium_transition))

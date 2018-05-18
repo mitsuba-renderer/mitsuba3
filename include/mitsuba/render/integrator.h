@@ -214,7 +214,6 @@ protected:
 protected:
     int m_max_depth;
     int m_rr_depth;
-    bool m_strict_normals;
 };
 
 /// Instantiates concrete scalar and packet versions of the endpoint plugin API

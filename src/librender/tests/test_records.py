@@ -136,6 +136,7 @@ def test04_direction_sample_construction_single():
     # Construct from two interactions: ds.d should start from the reference its.
     its = SurfaceInteraction3f()
     its.p = [20, 3, 40.02]
+    its.t = 1
     ref = Interaction3f()
     ref.p = [1.6, -2, 35]
     record = DirectionSample3f(its, ref)

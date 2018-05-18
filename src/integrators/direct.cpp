@@ -29,9 +29,6 @@ public:
         /// Number of samples to take using the BSDF sampling technique
         m_bsdf_samples = props.size_("bsdf_samples", shading_samples);
 
-        /// Be strict about potential inconsistencies involving shading normals?
-        m_strict_normals = props.bool_("strict_normals", false);
-
         if (m_emitter_samples + m_bsdf_samples == 0)
             Throw("Must have at least 1 BSDF or emitter sample!");
 
@@ -49,106 +46,104 @@ public:
               typename Mask            = mask_t<Value>>
     Spectrum eval_impl(const RayDifferential &ray, RadianceSample<Point3> &rs,
                        Mask active) const {
+        constexpr bool IsVectorized = is_array<Value>::value;
         using DirectionSample    = mitsuba::DirectionSample<Point3>;
         using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
         using BSDFSample         = mitsuba::BSDFSample<Point3>;
+        using Vector3            = typename SurfaceInteraction::Vector3;
+        using BSDFPtr            = typename SurfaceInteraction::BSDFPtr;
 
         const Scene *scene = rs.scene;
 
-        // Direct intersection
-        auto &si = rs.ray_intersect(ray, active);
-        active = active && si.is_valid();
-        BSDFContext ctx;
+        SurfaceInteraction &si = rs.ray_intersect(ray, active);
+        rs.alpha = select(si.is_valid(), Value(1.f), Value(0.f));
 
+        Spectrum result(0.f);
+
+        /* ----------------------- Visible emitters ----------------------- */
+
+        auto emitter = si.emitter(scene);
+        if (IsVectorized || emitter != nullptr)
+            result += emitter->eval(si, active);
+
+        active &= si.is_valid();
         if (none(active))
-            return Spectrum(0.f);
+            return result;
 
-        Spectrum result = si.emission(active);
+        /* ----------------------- Emitter sampling ----------------------- */
 
-        auto bsdf = si.bsdf(ray);
+        BSDFContext ctx;
+        BSDFPtr bsdf = si.bsdf(ray);
+        Mask sample_emitter = active && neq(bsdf->flags() & BSDF::ESmooth, 0u);
 
-        // ---------------------------------------------------- Emitter sampling
-        Spectrum result_partial = 0.f;
-        for (size_t i = 0; i < m_emitter_samples; ++i) {
-            DirectionSample ds;
-            Spectrum emitter_val;
-            std::tie(ds, emitter_val) = scene->sample_emitter_direction(
-                si, rs.next_2d(active), true, active);
-            Mask valid = active && neq(ds.pdf, 0.f);
+        if (any(sample_emitter)) {
+            for (size_t i = 0; i < m_emitter_samples; ++i) {
+                Mask active_e = sample_emitter;
+                DirectionSample ds;
+                Spectrum emitter_val;
+                std::tie(ds, emitter_val) = scene->sample_emitter_direction(
+                    si, rs.next_2d(active_e), true, active_e);
+                active_e &= neq(ds.pdf, 0.f);
 
-            // Query the BSDF for that emitter-sampled direction
-            auto wo = si.to_local(ds.d);
-            Spectrum bsdf_val = bsdf->eval(ctx, si, wo, valid);
+                /* Query the BSDF for that emitter-sampled direction */
+                Vector3 wo = si.to_local(ds.d);
+                Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
 
-            /* Weight using the probability of sampling that direction through
-               BSDF sampling. */
-            Value bsdf_pdf = bsdf->pdf(ctx, si, wo, valid);
+                /* Determine probability of having sampled that same
+                   direction using BSDF sampling. */
+                Value bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
-            masked(result_partial, valid) =
-                result_partial + emitter_val * bsdf_val
-                                 * mi_weight(ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf);
+                result[active_e] +=
+                    emitter_val * bsdf_val *
+                    mis_weight(ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) *
+                    m_weight_lum;
+            }
         }
-        if (m_emitter_samples > 0)
-            result += result_partial / (Float) m_emitter_samples;
 
-        // ------------------------------------------------------- BSDF sampling
-        result_partial = 0.f;
+        /* ------------------------ BSDF sampling ------------------------- */
+
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
             BSDFSample bs;
             Spectrum bsdf_val;
             std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(),
                                                   rs.next_2d(), active);
-            Mask valid = active && neq(bs.pdf, 0.f);
+            Mask active_b = active && any(neq(bsdf_val, 0.f));
 
             // Trace the ray in the sampled direction and intersect against the scene
             SurfaceInteraction si_bsdf =
-                scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active);
+                scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active_b);
 
             // Retain only rays that hit an emitter
-            valid = valid && si_bsdf.is_valid() && si_bsdf.is_emitter();
-            if (any(valid)) {
-                Spectrum emitter_val = si_bsdf.emission(valid);
-                // TODO: support environment lights
+            auto emitter = si_bsdf.emitter(scene);
+            active_b &= neq(emitter, nullptr);
 
-                /* Weight using the probability of sampling that direction through
-                   emitter sampling. */
+            if (any(active_b)) {
+                Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
+                Mask delta = neq(bs.sampled_type & BSDF::EDelta, 0u);
+
+                /* Determine probability of having sampled that same
+                   direction using Emitter sampling. */
                 DirectionSample ds(si_bsdf, si);
-                ds.object = si_bsdf.shape->emitter();
-                ds.delta = neq(bs.sampled_type & BSDF::EDelta, 0u);
+                ds.object = emitter;
 
-                Value emitter_pdf = select(
-                    neq(bs.sampled_type & BSDF::EDelta, 0u),
-                    Value(0.f),
-                    scene->pdf_emitter_direction(si_bsdf, ds, valid)
-                );
+                Value emitter_pdf = select(delta, 0.f,
+                    scene->pdf_emitter_direction(si_bsdf, ds, active_b));
 
-                masked(result_partial, valid) =
-                    result_partial + bsdf_val * emitter_val
-                                     * mi_weight(bs.pdf * m_frac_bsdf, emitter_pdf * m_frac_lum);
+                result[active_b] +=
+                    bsdf_val * emitter_val *
+                    mis_weight(bs.pdf * m_frac_bsdf, emitter_pdf * m_frac_lum) *
+                    m_weight_bsdf;
             }
         }
-        if (m_bsdf_samples > 0)
-            result += result_partial / (Float) m_bsdf_samples;
 
-        rs.alpha = 1.0f;
         return result;
     }
 
-    template <typename Value>
-    Value mi_weight(Value pdf_a, Value pdf_b) const {
-        pdf_a *= pdf_a;
-        pdf_b *= pdf_b;
-        return pdf_a / (pdf_a + pdf_b);
-    }
-
     std::string to_string() const override {
-        using string::indent;
-
         std::ostringstream oss;
         oss << "MIDirectIntegrator[" << std::endl
             << "  emitter_samples = " << m_emitter_samples << "," << std::endl
-            << "  bsdf_samples = " << m_bsdf_samples << "," << std::endl
-            << "  strict_normals = " << m_strict_normals << std::endl
+            << "  bsdf_samples = " << m_bsdf_samples << std::endl
             << "]";
         return oss.str();
     }
@@ -156,12 +151,18 @@ public:
     MTS_IMPLEMENT_INTEGRATOR()
     MTS_DECLARE_CLASS()
 
+protected:
+    template <typename Value> Value mis_weight(Value pdf_a, Value pdf_b) const {
+        pdf_a *= pdf_a;
+        pdf_b *= pdf_b;
+        return pdf_a / (pdf_a + pdf_b);
+    }
+
 private:
     size_t m_emitter_samples;
     size_t m_bsdf_samples;
     Float m_frac_bsdf, m_frac_lum;
     Float m_weight_bsdf, m_weight_lum;
-    bool m_strict_normals;
 };
 
 

@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 from mitsuba.core.chi2 import ChiSquareTest
 from mitsuba.core.warp.distr import DISTRIBUTIONS
+from mitsuba.test.util import fresolver_append_path
 import pytest
 
 
 @pytest.mark.parametrize("name, domain, adapter, settings", DISTRIBUTIONS)
+@fresolver_append_path
 def test_chi2(name, domain, adapter, settings):
     parameters = [o[1][2] for o in settings['parameters']]
     sample, pdf = adapter

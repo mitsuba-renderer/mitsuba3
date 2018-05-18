@@ -32,14 +32,13 @@ from mitsuba.core import warp, float_dtype
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
 from mitsuba.core.chi2 import (
     SpectrumAdapter, BSDFAdapter, MicrofacetAdapter,
-    InteractiveBSDFAdapter)
+    InteractiveBSDFAdapter, EnvironmentAdapter)
 from mitsuba.render import MicrofacetDistribution
 from mitsuba.core import Bitmap, Thread
 from mitsuba.core.warp import Hierarchical2D0, Hierarchical2D2
 from mitsuba.core.warp import Marginal2D0, Marginal2D2
 from mitsuba.test.util import fresolver_append_path
 import numpy as np
-import os
 
 
 def deg2rad(value):
@@ -274,16 +273,6 @@ DISTRIBUTIONS = [
         <spectrum name="diffuse_reflectance" value="0.9"/>
      """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
 
-    # ('Plastic BSDF', SphericalDomain(),
-    #  BSDFAdapter("plastic", """
-    #     <rgb name="specular_reflectance" value="1.0, 0.1, 0.1"/>
-    #     <rgb name="diffuse_reflectance" value="0.5, 0.5, 1.0"/>
-    #  """), DEFAULT_SETTINGS_3),
-    # ('Plastic BSDF - alternative wi', SphericalDomain(),
-    #  BSDFAdapter("plastic", """
-    #     <rgb name="specular_reflectance" value="1.0, 0.1, 0.1"/>
-    #     <rgb name="diffuse_reflectance" value="0.5, 0.5, 1.0"/>
-    #  """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
     #('Measured BSDF', SphericalDomain(),
     # InteractiveBSDFAdapter("measured", """
     #    <string name="filename" value="ggx_spec.bsdf"/>
@@ -292,6 +281,11 @@ DISTRIBUTIONS = [
     #         ('theta_i', [0, 90, 30]),
     #         ('phi_i', [0, 360, 0])
     # ]))
+
+    ('Environment map (museum)', SphericalDomain(),
+     EnvironmentAdapter("envmap", """
+        <string name="filename" value="resources/data/envmap/museum.exr"/>
+     """), DEFAULT_SETTINGS)
 ]
 
 @fresolver_append_path

@@ -10,6 +10,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 class MTS_EXPORT_RENDER Emitter : public Endpoint {
 public:
+    /// Is this an environment map light emitter?
+    virtual bool is_environment() const;
 
     MTS_DECLARE_CLASS()
 
@@ -38,5 +40,5 @@ ENOKI_CALL_SUPPORT_END(mitsuba::EmitterPtr)
 // -----------------------------------------------------------------------
 
 /// Instantiates concrete scalar and packet versions of the emitter plugin API
-#define MTS_IMPLEMENT_EMITTER() \
+#define MTS_IMPLEMENT_EMITTER()                                                \
     MTS_IMPLEMENT_ENDPOINT()

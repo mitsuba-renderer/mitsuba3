@@ -180,6 +180,7 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
         d    = it.p - ref.p;
         dist = norm(d);
         d   /= dist;
+        d[!it.is_valid()] = -it.wi; // for environment emitters
     }
 
     /// Element-by-element constructor

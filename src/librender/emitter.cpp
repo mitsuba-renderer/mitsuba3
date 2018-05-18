@@ -9,5 +9,9 @@ Emitter::Emitter(const Properties &props)
 
 Emitter::~Emitter() { }
 
+bool Emitter::is_environment() const {
+    return false;
+}
+
 MTS_IMPLEMENT_CLASS(Emitter, Endpoint)
 NAMESPACE_END(mitsuba)

@@ -313,24 +313,8 @@ MonteCarloIntegrator::MonteCarloIntegrator(const Properties &props)
      * \c 2 will lead to single-bounce (direct-only) illumination, and so on.
      */
     m_max_depth = props.int_("max_depth", -1);
-    if (m_max_depth <= 0 && m_max_depth != -1)
-        Throw("\"max_depth\" must be set to -1 (infinite) or a value"
-              " greater than zero!");
-
-    /**
-     * This parameter specifies the action to be taken when the geometric
-     * and shading normals of a surface don't agree on whether a ray is on
-     * the front or back-side of a surface.
-     *
-     * When \c strict_normals is set to \c false, the shading normal has
-     * precedence, and rendering proceeds normally at the risk of
-     * introducing small light leaks (this is the default).
-     *
-     * When \c strict_normals is set to \c true, the random walk is
-     * terminated when encountering such a situation. This may
-     * lead to silhouette darkening on badly tesselated meshes.
-     */
-    m_strict_normals = props.bool_("strict_normals", false);
+    if (m_max_depth < 0 && m_max_depth != -1)
+        Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
 }
 
 MonteCarloIntegrator::~MonteCarloIntegrator() { }

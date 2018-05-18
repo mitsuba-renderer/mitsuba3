@@ -66,6 +66,7 @@ DirectionSample Shape::sample_direction_fallback(const Interaction &it,
 
     Value dp = abs_dot(ds.d, ds.n);
     ds.pdf *= select(neq(dp, 0.f), dist_squared / dp, 0.f);
+    ds.object = this;
 
     return ds;
 }

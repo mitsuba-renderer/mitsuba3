@@ -193,11 +193,11 @@ std::ostream &operator<<(std::ostream &os, const Frame<Vector3> &f) {
  * \param frame
  *    Used to return the computed frame
  */
-template <typename Vector3>
-auto compute_shading_frame(const typename Vector3::Normal &n,
-                           const Vector3 &dp_du) {
-    auto s = normalize(dp_du - n * dot(n, dp_du));
-    return Frame<Vector3>(s, cross(n, s), n);
+template <typename Normal3, typename Vector3,
+          typename Frame = mitsuba::Frame<Vector3>>
+Frame compute_shading_frame(const Normal3 &n, const Vector3 &dp_du) {
+    Vector3 s = normalize(dp_du - n * dot(n, dp_du));
+    return Frame(s, cross(n, s), n);
 }
 
 NAMESPACE_END(mitsuba)

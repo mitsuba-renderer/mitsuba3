@@ -269,6 +269,10 @@ value_t<Spectrum> luminance(const Spectrum &spectrum, const Spectrum &wavelength
     return mean(cie1931_y(wavelengths, active) * spectrum);
 }
 
+template <typename Value> Value luminance(const Color<Value, 3> &c) {
+    return c[0] * 0.212671f + c[1] * 0.715160f + c[2] * 0.072169f;
+}
+
 /**
  * Importance sample a "importance spectrum" that concentrates the computation
  * on wavelengths that are relevant for rendering of RGB data

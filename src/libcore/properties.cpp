@@ -30,7 +30,7 @@ using VariantType = variant<
     const void *
 >;
 
-struct alignas(alignof(Transform4f)) Entry {
+struct alignas(std::max(alignof(Transform4f), alignof(void*))) Entry {
     VariantType data;
     bool queried;
 };

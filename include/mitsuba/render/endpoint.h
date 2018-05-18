@@ -115,7 +115,7 @@ public:
      *
      * The default implementation throws an exception.
      *
-     * \param it
+     * \param ref
      *    A reference position somewhere within the scene.
      *
      * \param sample
@@ -126,17 +126,17 @@ public:
      *     along with a spectral importance weight.
      */
     virtual std::pair<DirectionSample3f, Spectrumf>
-    sample_direction(const Interaction3f &it, const Point2f &sample) const;
+    sample_direction(const Interaction3f &ref, const Point2f &sample) const;
 
     virtual std::pair<DirectionSample3fP, SpectrumfP>
-    sample_direction(const Interaction3fP &it, const Point2fP &sample,
+    sample_direction(const Interaction3fP &ref, const Point2fP &sample,
                      MaskP active = true) const;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction()
     std::pair<DirectionSample3f, Spectrumf>
-    sample_direction(const Interaction3f &it, const Point2f &sample,
+    sample_direction(const Interaction3f &ref, const Point2f &sample,
                      bool /* unused */) const {
-        return sample_direction(it, sample);
+        return sample_direction(ref, sample);
     }
 
     //! @}
@@ -150,18 +150,18 @@ public:
      *    A direct sampling record, which specifies the query
      *    location.
      */
-    virtual Float pdf_direction(const Interaction3f &it,
+    virtual Float pdf_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds) const;
 
-    virtual FloatP pdf_direction(const Interaction3fP &it,
+    virtual FloatP pdf_direction(const Interaction3fP &ref,
                                  const DirectionSample3fP &ds,
                                  MaskP active) const;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_direction()
-    Float pdf_direction(const Interaction3f &it,
+    Float pdf_direction(const Interaction3f &ref,
                         const DirectionSample3f &ds,
                         bool /* unused */) const {
-        return pdf_direction(it, ds);
+        return pdf_direction(ref, ds);
     }
 
     //! @}
@@ -305,22 +305,22 @@ protected:
         return sample_ray_impl(time, sample1, sample2, sample3, active);       \
     }                                                                          \
     std::pair<DirectionSample3f, Spectrumf> sample_direction(                  \
-        const Interaction3f &it, const Point2f &sample) const override {       \
-        return sample_direction_impl(it, sample, true);                        \
+        const Interaction3f &ref, const Point2f &sample) const override {      \
+        return sample_direction_impl(ref, sample, true);                       \
     }                                                                          \
     std::pair<DirectionSample3fP, SpectrumfP> sample_direction(                \
-        const Interaction3fP &it, const Point2fP &sample, MaskP active)        \
+        const Interaction3fP &ref, const Point2fP &sample, MaskP active)       \
         const override {                                                       \
-        return sample_direction_impl(it, sample, active);                      \
+        return sample_direction_impl(ref, sample, active);                     \
     }                                                                          \
-    Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds)  \
+    Float pdf_direction(const Interaction3f &ref, const DirectionSample3f &ds) \
         const override {                                                       \
-        return pdf_direction_impl(it, ds, true);                               \
+        return pdf_direction_impl(ref, ds, true);                              \
     }                                                                          \
-    FloatP pdf_direction(const Interaction3fP &it,                             \
+    FloatP pdf_direction(const Interaction3fP &ref,                            \
                          const DirectionSample3fP &ds, MaskP active)           \
         const override {                                                       \
-        return pdf_direction_impl(it, ds, active);                             \
+        return pdf_direction_impl(ref, ds, active);                            \
     }                                                                          \
     Spectrumf eval(const SurfaceInteraction3f &si) const override {            \
         return eval_impl(si, true);                                            \

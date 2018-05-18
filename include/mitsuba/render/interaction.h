@@ -155,6 +155,8 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     //! @{ \name Methods
     // =============================================================
 
+    using Base::is_valid;
+
     /// Convert a local shading-space vector into world space
     Vector3 to_world(const Vector3 &v) const {
         return sh_frame.to_world(v);
@@ -165,17 +167,14 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
         return sh_frame.to_local(v);
     }
 
-    /// Return amount of light emitted towards the ray origin
-    template <typename Mask>
-    Spectrum emission(Mask active = true) const {
-        EmitterPtr emitter = shape->emitter();
-        if (!is_array<Value>::value && emitter == nullptr)
-            return Spectrum(0.f);
-        return emitter->eval(*this, active);
+    /// Return the emitter associated with the intersection (if any)
+    template <typename Scene = mitsuba::Scene>
+    EmitterPtr emitter(const Scene *scene) const {
+        if (std::is_array<Value>::value)
+            return select(is_valid(), shape->emitter(), scene->environment());
+        else
+            return all(is_valid()) ? shape->emitter() : scene->environment();
     }
-
-    /// Is the intersected shape also a emitter?
-    Mask is_emitter() const { return shape->is_emitter(); }
 
     /// Is the intersected shape also a sensor?
     Mask is_sensor() const { return shape->is_sensor(); }

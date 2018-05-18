@@ -1045,10 +1045,12 @@ Remark:
     bitmap, the function becomes a no-op and returns the current
     instance.
 
-pixel_format Specifies the desired pixel format component_format
-Specifies the desired component format gamma Specifies the desired
-gamma value. Special values: ``1``.0 denotes a linear space, and \c
--1.0 corresponds to sRGB.)doc";
+pixel_format Specifies the desired pixel format
+
+component_format Specifies the desired component format
+
+srgb_gamma Specifies whether a sRGB gamma ramp should be applied to
+the ouutput values.)doc";
 
 static const char *__doc_mitsuba_Bitmap_convert_2 = R"doc()doc";
 
@@ -1779,6 +1781,10 @@ R"doc(Create a direct sampling record, which can be used to *query* the
 density of a surface position with respect to a given reference
 position.
 
+Direction `s` is set so that it points from the reference surface to
+the intersected surface, as required when using e.g. the Endpoint
+interface to compute PDF values.
+
 Parameter ``it``:
     Surface interaction
 
@@ -1830,8 +1836,9 @@ R"doc(Setup this record so that it can be used to *query* the density of a
 surface position (where the reference point lies on a *surface*).
 
 Parameter ``ray``:
-    Reference to the ray that generated the intersection ``si`` The
-    ray origin must be located at ``si``.p
+    Reference to the ray that generated the intersection ``si``. The
+    ray origin must be located at the reference surface and point
+    towards ``si``.p.
 
 Parameter ``si``:
     A surface intersection record (usually on an emitter).)doc";
@@ -2044,6 +2051,14 @@ R"doc(List of 'phases' that are handled by the profiler. Note that a partial
 order is assumed -- if a method "B" can occur in a call graph of
 another method "A", then "B" must occur after "A" in the list below.)doc";
 
+static const char *__doc_mitsuba_EProfilerPhase_EBSDFEvaluate = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_EBSDFEvaluateP = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_EBSDFSample = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_EBSDFSampleP = R"doc()doc";
+
 static const char *__doc_mitsuba_EProfilerPhase_ECreateSurfaceInteraction = R"doc()doc";
 
 static const char *__doc_mitsuba_EProfilerPhase_ECreateSurfaceInteractionP = R"doc()doc";
@@ -2103,6 +2118,8 @@ static const char *__doc_mitsuba_Emitter = R"doc()doc";
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an environment map light emitter?)doc";
 
 static const char *__doc_mitsuba_Endpoint =
 R"doc(Endpoint: an abstract interface to light sources and sensors
@@ -4680,21 +4697,19 @@ static const char *__doc_mitsuba_Scene_Scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the current emitter)doc";
+static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitters)doc";
 
-static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the current emitter)doc";
+static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emitters)doc";
 
 static const char *__doc_mitsuba_Scene_eval_environment =
 R"doc(Return the environment radiance for a ray that did not intersect any
-of the scene objects.
-
-This is primarily meant for path tracing-style integrators.)doc";
+of the scene objects.)doc";
 
 static const char *__doc_mitsuba_Scene_film = R"doc(Return the current sensor's film)doc";
 
 static const char *__doc_mitsuba_Scene_film_2 = R"doc(Return the current sensor's film)doc";
 
-static const char *__doc_mitsuba_Scene_has_environment_emitter = R"doc(True if the scene has an environment emitter)doc";
+static const char *__doc_mitsuba_Scene_has_environment = R"doc(Does the scene have an environment map emitter?)doc";
 
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's integrator)doc";
 
@@ -4707,6 +4722,8 @@ static const char *__doc_mitsuba_Scene_kdtree_2 = R"doc(Return the scene's KD-tr
 static const char *__doc_mitsuba_Scene_m_emitter_distr = R"doc(Precomputed distribution of emitters' intensity.)doc";
 
 static const char *__doc_mitsuba_Scene_m_emitters = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_integrator = R"doc()doc";
 
@@ -4828,6 +4845,10 @@ static const char *__doc_mitsuba_Scene_sampler_2 = R"doc(Return the scene's samp
 static const char *__doc_mitsuba_Scene_sensor = R"doc(Return the current sensor)doc";
 
 static const char *__doc_mitsuba_Scene_sensor_2 = R"doc(Return the current sensor)doc";
+
+static const char *__doc_mitsuba_Scene_sensors = R"doc(Return the list of sensors)doc";
+
+static const char *__doc_mitsuba_Scene_sensors_2 = R"doc(Return the list of sensors)doc";
 
 static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
 
@@ -5858,13 +5879,11 @@ static const char *__doc_mitsuba_SurfaceInteraction_duv_dx = R"doc(UV partials w
 
 static const char *__doc_mitsuba_SurfaceInteraction_duv_dy = R"doc(UV partials wrt. changes in screen-space)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_emission = R"doc(Return amount of light emitted towards the ray origin)doc";
+static const char *__doc_mitsuba_SurfaceInteraction_emitter = R"doc(Return the emitter associated with the intersection (if any))doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_has_uv_partials = R"doc(Have texture coordinate partials been computed?)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_is_emitter = R"doc(Is the intersected shape also a emitter?)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_is_medium_transition = R"doc(Does the surface mark a transition between two media?)doc";
 
@@ -6398,6 +6417,34 @@ building the tree.)doc";
 static const char *__doc_mitsuba_TShapeKDTree_stop_primitives =
 R"doc(Return the number of primitives, at which recursion will stop when
 building the tree.)doc";
+
+static const char *__doc_mitsuba_TensorFile =
+R"doc(Simple exchange format for tensor data of arbitrary rank and size
+
+This class provides convenient memory-mapped read-only access to
+tensor data, usually exported from NumPy.)doc";
+
+static const char *__doc_mitsuba_TensorFile_Field = R"doc(Information about the specified field)doc";
+
+static const char *__doc_mitsuba_TensorFile_Field_data = R"doc(Const pointer to the start of the tensor)doc";
+
+static const char *__doc_mitsuba_TensorFile_Field_dtype = R"doc(Data type (uint32, float, ...) of the tensor)doc";
+
+static const char *__doc_mitsuba_TensorFile_Field_offset = R"doc(Offset within the file)doc";
+
+static const char *__doc_mitsuba_TensorFile_Field_shape = R"doc(Specifies both rank and size along each dimension)doc";
+
+static const char *__doc_mitsuba_TensorFile_TensorFile = R"doc(Map the specified file into memory)doc";
+
+static const char *__doc_mitsuba_TensorFile_class = R"doc()doc";
+
+static const char *__doc_mitsuba_TensorFile_field = R"doc(Return a data structure with information about the specified field)doc";
+
+static const char *__doc_mitsuba_TensorFile_has_field = R"doc(Does the file contain a field of the specified name?)doc";
+
+static const char *__doc_mitsuba_TensorFile_m_fields = R"doc()doc";
+
+static const char *__doc_mitsuba_TensorFile_to_string = R"doc(Return a human-readable summary)doc";
 
 static const char *__doc_mitsuba_Thread =
 R"doc(Cross-platform thread implementation
@@ -8370,11 +8417,13 @@ static const char *__doc_mitsuba_warp_Marginal2D_lookup = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_Marginal2D_lookup_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_warp_Marginal2D_m_col_cdf = R"doc()doc";
+static const char *__doc_mitsuba_warp_Marginal2D_m_conditional_cdf = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_Marginal2D_m_data = R"doc(Density values)doc";
 
 static const char *__doc_mitsuba_warp_Marginal2D_m_inv_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
+
+static const char *__doc_mitsuba_warp_Marginal2D_m_marginal_cdf = R"doc(Marginal and conditional PDFs)doc";
 
 static const char *__doc_mitsuba_warp_Marginal2D_m_param_size = R"doc(Resolution of each parameter (optional))doc";
 
@@ -8383,8 +8432,6 @@ static const char *__doc_mitsuba_warp_Marginal2D_m_param_strides = R"doc(Stride 
 static const char *__doc_mitsuba_warp_Marginal2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
 
 static const char *__doc_mitsuba_warp_Marginal2D_m_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_row_cdf = R"doc(Discrete CDFs for row/column selection)doc";
 
 static const char *__doc_mitsuba_warp_Marginal2D_m_size = R"doc(Resolution of the discretized density function)doc";
 

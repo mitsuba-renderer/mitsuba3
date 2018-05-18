@@ -43,7 +43,6 @@ def test01_create(int_name):
         integrator = make_integrator(int_name, """
                 <integer name="emitter_samples" value="3"/>
                 <integer name="bsdf_samples" value="12"/>
-                <boolean name="strict_normals" value="true"/>
             """)
         # Cannot specify both shading_samples and (emitter_samples | bsdf_samples)
         with pytest.raises(RuntimeError):
@@ -56,7 +55,6 @@ def test01_create(int_name):
         integrator = make_integrator(int_name, """
                 <integer name="rr_depth" value="5"/>
                 <integer name="max_depth" value="-1"/>
-                <boolean name="strict_normals" value="true"/>
             """)
         # Cannot use a negative `max_depth`, except -1 (unlimited depth)
         with pytest.raises(RuntimeError):

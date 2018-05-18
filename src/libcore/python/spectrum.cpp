@@ -53,10 +53,10 @@ MTS_PY_EXPORT(Spectrum) {
      .def("cie1931_y", vectorize_wrapper(&cie1931_y<SpectrumfP>),
           "wavelengths"_a, "active"_a = true, D(cie1931_y))
 
-     .def("luminance", vectorize_wrapper(&luminance<const Spectrumf &>),
-          "spectrum"_a, "wavelengths"_a, "active"_a = true, D(luminance))
-     .def("luminance", vectorize_wrapper(&luminance<SpectrumfP>),
-          "spectrum"_a, "wavelengths"_a, "active"_a = true, D(luminance))
+     //.def("luminance", vectorize_wrapper(&luminance<const Spectrumf &>),
+          //"spectrum"_a, "wavelengths"_a, "active"_a = true, D(luminance))
+     //.def("luminance", vectorize_wrapper(&luminance<SpectrumfP>),
+          //"spectrum"_a, "wavelengths"_a, "active"_a = true, D(luminance))
 
      .def("sample_rgb_spectrum", vectorize_wrapper(&sample_rgb_spectrum<Float>),
           "sample"_a, D(sample_rgb_spectrum))

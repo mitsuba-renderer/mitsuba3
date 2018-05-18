@@ -232,6 +232,8 @@ public:
               typename Mask  = mask_t<Value>>
     MTS_INLINE std::tuple<Mask, Value, Value, Value>
     ray_intersect_triangle(Index index, const Ray &ray, Mask active = true) const {
+        using Vector = typename Ray::Vector;
+
         const Index * idx = (const Index *) face(index);
 
         Point3f v0 = vertex_position(idx[0]),
@@ -241,21 +243,19 @@ public:
         Vector3f edge1 = v1 - v0,
                  edge2 = v2 - v0;
 
-        using Vector = typename Ray::Vector;
-
         Vector pvec = cross(ray.d, edge2);
         Value inv_det = rcp(dot(edge1, pvec));
 
         Vector tvec = ray.o - v0;
         Value u = dot(tvec, pvec) * inv_det;
-        active = active && (u >= 0.f) && (u <= 1.f);
+        active &= (u >= 0.f) && (u <= 1.f);
 
         Vector qvec = cross(tvec, edge1);
         Value v = dot(ray.d, qvec) * inv_det;
-        active = active && (v >= 0.f) && (u + v <= 1.f);
+        active &= (v >= 0.f) && (u + v <= 1.f);
 
         Value t = dot(edge2, qvec) * inv_det;
-        active = active && (t >= ray.mint) && (t <= ray.maxt);
+        active &= (t >= ray.mint) && (t <= ray.maxt);
 
         return std::make_tuple(active, u, v, t);
     }

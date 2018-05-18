@@ -26,6 +26,8 @@ Scene::Scene(const Properties &props) {
                 m_emitters.push_back(shape->emitter());
         } else if (emitter) {
             m_emitters.push_back(emitter);
+            if (emitter->is_environment())
+                m_environment = emitter;
         } else if (sensor) {
             m_sensors.push_back(sensor);
         } else if (integrator) {
@@ -33,14 +35,11 @@ Scene::Scene(const Properties &props) {
                 Throw("Only one integrator can be specified per scene.");
             m_integrator = integrator;
         }
-
-        // Do not throw on unsupported objects, as they may simply be declared
-        // at the scene's top level to be referenced later.
     }
 
     m_kdtree->build();
 
-    // Precompute the emitters PDF.
+    // Precompute a discrete distribution over emitters
     m_emitter_distr = DiscreteDistribution(m_emitters.size());
     for (size_t i = 0; i < m_emitters.size(); ++i)
         m_emitter_distr.append(1.f);  // Simple uniform distribution for now.
@@ -76,10 +75,15 @@ SurfaceInteraction3f Scene::ray_intersect(const Ray3f &ray) const {
     #endif
 
     SurfaceInteraction3f si;
+
     if (likely(hit)) {
         ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
         si = m_kdtree->create_surface_interaction(ray, hit_t, cache);
+    } else {
+        si.wavelengths = ray.wavelengths;
+        si.wi = -ray.d;
     }
+
     return si;
 }
 
@@ -95,10 +99,15 @@ SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) cons
     #endif
 
     SurfaceInteraction3fP si;
+
     if (likely(any(hit))) {
         ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteractionP);
         si = m_kdtree->create_surface_interaction(ray, hit_t, cache, active && hit);
+    } else {
+        si.wavelengths = ray.wavelengths;
+        si.wi = -ray.d;
     }
+
     return si;
 }
 
@@ -159,7 +168,7 @@ template <typename Interaction, typename Value, typename Spectrum,
           typename Point3, typename Point2, typename DirectionSample,
           typename Mask>
 std::pair<DirectionSample, Spectrum>
-Scene::sample_emitter_direction_impl(const Interaction &it, Point2 sample,
+Scene::sample_emitter_direction_impl(const Interaction &ref, Point2 sample,
                                      bool test_visibility, Mask active) const {
     ScopedPhase sp(is_array<Value>::value ?
             EProfilerPhase::ESampleEmitterDirectionP :
@@ -181,61 +190,59 @@ Scene::sample_emitter_direction_impl(const Interaction &it, Point2 sample,
         EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
 
         // Sample a direction towards the emitter
-        std::tie(ds, spec) = emitter->sample_direction(it, sample, active);
-        active = active && neq(ds.pdf, 0.f);
+        std::tie(ds, spec) = emitter->sample_direction(ref, sample, active);
+        active &= neq(ds.pdf, 0.f);
 
         // Perform a visibility test if requested
         if (test_visibility && any(active)) {
-            Ray ray(it.p, ds.d, math::Epsilon * (1.f + hmax(abs(it.p))),
+            Ray ray(ref.p, ds.d, math::Epsilon * (1.f + hmax(abs(ref.p))),
                     ds.dist * (1.f - math::ShadowEpsilon),
-                    it.time, it.wavelengths);
-            Mask hit = ray_test(ray, active);
-            masked(spec, hit) = Spectrum(0.f);
+                    ref.time, ref.wavelengths);
+            spec[ray_test(ray, active)] = 0.f;
         }
 
         // Account for the discrete probability of sampling this emitter
         ds.pdf *= emitter_pdf;
-        spec /= emitter_pdf;
+        spec *= rcp(emitter_pdf);
     }
 
     return { ds, spec };
 }
 
-
 std::pair<DirectionSample3f, Spectrumf>
-Scene::sample_emitter_direction(const Interaction3f &it,
+Scene::sample_emitter_direction(const Interaction3f &ref,
                                 const Point2f &sample,
                                 bool test_visibility) const {
-    return sample_emitter_direction_impl(it, sample, test_visibility, true);
+    return sample_emitter_direction_impl(ref, sample, test_visibility, true);
 }
 
 std::pair<DirectionSample3fP, SpectrumfP>
-Scene::sample_emitter_direction(const Interaction3fP &it,
+Scene::sample_emitter_direction(const Interaction3fP &ref,
                                 const Point2fP &sample,
                                 bool test_visibility,
                                 MaskP active) const {
-    return sample_emitter_direction_impl(it, sample, test_visibility, active);
+    return sample_emitter_direction_impl(ref, sample, test_visibility, active);
 }
 
 template <typename Interaction, typename DirectionSample, typename Value,
           typename Mask>
-Value Scene::pdf_emitter_direction_impl(const Interaction &it,
+Value Scene::pdf_emitter_direction_impl(const Interaction &ref,
                                         const DirectionSample &ds,
                                         Mask active) const {
     using EmitterPtr = like_t<Value, const Emitter *>;
-    return reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(it, ds, active) *
+    return reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
         m_emitter_distr[0];
 }
 
-Float Scene::pdf_emitter_direction(const Interaction3f &it,
+Float Scene::pdf_emitter_direction(const Interaction3f &ref,
                                    const DirectionSample3f &ds) const {
-    return pdf_emitter_direction_impl(it, ds, true);
+    return pdf_emitter_direction_impl(ref, ds, true);
 }
 
-FloatP Scene::pdf_emitter_direction(const Interaction3fP &it,
+FloatP Scene::pdf_emitter_direction(const Interaction3fP &ref,
                                     const DirectionSample3fP &ds,
                                     MaskP active) const {
-    return pdf_emitter_direction_impl(it, ds, active);
+    return pdf_emitter_direction_impl(ref, ds, active);
 }
 
 // =============================================================

@@ -9,21 +9,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-namespace {
-template <typename Value>
-Value mi_weight(Value pdf_a, Value pdf_b) {
-    pdf_a *= pdf_a;
-    pdf_b *= pdf_b;
-    return pdf_a / (pdf_a + pdf_b);
-};
-}  // namespace
-
-/**
- * Path tracer.
- *
- * Adapted from PBRT v3 by:
- *   Matt Pharr, Greg Humphreys, and Wenzel Jakob
- */
 class PathIntegrator : public MonteCarloIntegrator {
 public:
     PathIntegrator(const Properties &props) : MonteCarloIntegrator(props) { }
@@ -35,202 +20,131 @@ public:
               typename Point3 = typename RayDifferential::Point,
               typename RadianceSample = RadianceSample<Point3>,
               typename Value = typename RayDifferential::Value>
-    auto eval_impl(const RayDifferential &r, RadianceSample &rs,
+    auto eval_impl(RayDifferential ray, RadianceSample &rs,
                    mask_t<Value> active) const {
+        constexpr bool IsVectorized = is_array<Value>::value;
+
         using Mask                = mask_t<Value>;
         using Spectrum            = mitsuba::Spectrum<Value>;
         using BSDFSample          = mitsuba::BSDFSample<Point3>;
         using DirectionSample     = mitsuba::DirectionSample<Point3>;
         using SurfaceInteraction3 = SurfaceInteraction<Point3>;
         using BSDFPtr             = like_t<Value, const BSDF *>;
-        using Frame               = mitsuba::Frame<Point3>;
+        using EmitterPtr          = like_t<Value, const Emitter *>;
+        using Vector3             = vector3_t<Point3>;
 
-        // Some aliases and local variables
         const Scene *scene = rs.scene;
-        RayDifferential ray(r);
-        Spectrum Li(0.0f), throughput(1.0f);
-        BSDFContext ctx;
 
-        Mask scattered(false);
-        /* Tracks the accumulated effect of radiance scaling due to rays passing
-           through refractive boundaries. */
-        Value eta(1.0f);
+        /* Tracks radiance scaling due to index of refraction changes */
+        Value eta(1.f);
 
-        // Intersect ray with scene
-        SurfaceInteraction3 &si = rs.ray_intersect(ray, active);
-        Mask hit = si.is_valid();
-        active = active && hit;
-        // Used to set alpha value at this location.
-        const Mask hit_anything = active;
+        /* MIS weight for intersected emitters (set by prev. iteration) */
+        Value emission_weight(1.f);
 
-        for (int bounces = 0;; ++bounces) {
-            /* If no intersection could be found, potentially return
-               radiance from a environment luminaire if it exists */
-            if (any(!hit && (Mask(bounces == 0) || scattered))) {
-                masked(Li, active && !hit) =
-                    Li + throughput * scene->eval_environment(ray, active && !hit);
+        Spectrum throughput(1.f), result(0.f);
+
+        /* ---------------------- First intersection ---------------------- */
+
+        SurfaceInteraction3 si = rs.ray_intersect(ray, active);
+        rs.alpha = select(si.is_valid(), Value(1.0f), Value(0.0f));
+        EmitterPtr emitter = si.emitter(scene);
+
+        for (int depth = 0;; ++depth) {
+
+            /* ---------------- Intersection with emitters ---------------- */
+
+            if (IsVectorized || emitter != nullptr)
+                result[active] += emission_weight * throughput * emitter->eval(si, active);
+
+            active &= si.is_valid();
+            if (none(active) || depth >= m_max_depth)
+                break;
+
+            /* --------------------- Emitter sampling --------------------- */
+
+            BSDFContext ctx;
+            BSDFPtr bsdf = si.bsdf(ray);
+            Mask sample_emitter = active && neq(bsdf->flags() & BSDF::ESmooth, 0u);
+
+            if (likely(any(sample_emitter))) {
+                Mask active_e = sample_emitter;
+                DirectionSample ds;
+                Spectrum emitter_val;
+                std::tie(ds, emitter_val) = scene->sample_emitter_direction(
+                    si, rs.next_2d(active_e), true, active_e);
+                active_e &= neq(ds.pdf, 0.f);
+
+                /* Query the BSDF for that emitter-sampled direction */
+                Vector3 wo = si.to_local(ds.d);
+                Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
+
+                /* Determine probability of having sampled that same
+                   direction using BSDF sampling. */
+                Value bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
+
+                result[active_e] += throughput *
+                    emitter_val * bsdf_val * mis_weight(ds.pdf, bsdf_pdf);
             }
 
-            // Path termination
-            active = active && ((m_max_depth == -1) || bounces < m_max_depth);
+            /* ----------------------- BSDF sampling ---------------------- */
+
+            /* Sample BSDF * cos(theta) */
+            BSDFSample bs;
+            Spectrum bsdf_val;
+            std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(active),
+                                                  rs.next_2d(active), active);
+            throughput *= bsdf_val;
+            active &= any(neq(throughput, 0.f));
             if (none(active))
                 break;
 
-            // Include emitted radiance
-            auto is_emitter = si.is_emitter();
-            if (bounces == 0 && any(is_emitter)) {
-                masked(Li, active && is_emitter) =
-                    Li + throughput
-                         * si.emission(active && is_emitter);
-            }
-
-            BSDFPtr bsdf = si.bsdf(ray);
-
-            // TODO: handle medium transitions.
-
-            /* ============================================================== */
-            /*                  Direct illumination sampling                  */
-            /* ============================================================== */
-
-            /* Sample a light source to estimate direct illumination,
-               except for perfectly specular BSDFs. */
-            auto bsdf_flags = bsdf->flags();
-            DirectionSample ds;
-            Spectrum value;
-
-            auto not_specular = active && eq(bsdf_flags & BSDF::EDelta, 0u);
-            if (any(not_specular)) {
-                std::tie(ds, value) = scene->sample_emitter_direction(
-                        si, rs.next_2d(active), true, not_specular);
-                Assert(all_nested(value >= 0));
-
-                Mask enabled = active && not_specular && neq(ds.pdf, 0.0f);
-                // Prepare a BSDF query.
-                auto wo = si.to_local(ds.d);
-                if (m_strict_normals) {
-                    Mask same_side = (dot(si.n, ds.d) * Frame::cos_theta(wo)) > 0;
-                    enabled = enabled && same_side;
-                }
-
-                if (any(enabled)) {
-                    Spectrum bsdf_val = bsdf->eval(ctx, si, wo, enabled);
-                    enabled = enabled && any(neq(bsdf_val, 0.0f));
-
-                    /* Calculate the probability of sampling that direction
-                       using BSDF sampling. */
-                    Value bsdf_pdf = bsdf->pdf(ctx, si, wo, enabled);
-                    // Weight using the power heuristic
-                    Value weight = mi_weight(ds.pdf, bsdf_pdf);
-
-                    masked(Li, enabled) = Li + throughput * value
-                                               * bsdf_val * weight;
-                }
-            }
-
-            /* ============================================================== */
-            /*                            BSDF sampling                       */
-            /* ============================================================== */
-
-            /* Sample the BSDF (including foreshortening factor) to get the
-               next path direction. */
-            BSDFSample bs;
-            Spectrum bsdf_val;  // Used to update `throughput`
-            std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(),
-                                                  rs.next_2d(), active);
-
-            // Update ray for next path segment
-            active = active && any(bsdf_val > 0.0f) && (bs.pdf > 0.0f);
-            scattered = neq(bsdf_flags & BSDF::EDelta, 0u);
-
-            // Prevent light leaks due to the use of shading normals
-            active = active && !(Mask(m_strict_normals)
-                                 && (dot(si.sh_frame.n, si.to_world(bs.wo))
-                                     * Frame::cos_theta(bs.wo) <= 0));
-
-            // Trace the ray with this new direction
-            ray = si.spawn_ray(si.to_world(bs.wo));
-
-            // Intersect against the scene
-            SurfaceInteraction3 &si_next = rs.ray_intersect(ray, active);
-            hit = si_next.is_valid();
-
-            // Account for any emitted light (from path vertex or the environment)
-            Spectrum value_emitter(0.0f);
-            Mask hit_emitter = hit && active && si_next.is_emitter();
-            // For emitters
-            if (any(hit_emitter)) {
-                masked(value_emitter, hit_emitter) =
-                    value_emitter + si_next.emission(hit_emitter);
-                ds.set_query(ray, si_next);
-            }
-            // For stray rays
-            auto hit_environment = Mask(scene->has_environment_emitter())
-                                   && active && !hit;
-            if (any(hit_environment)) {
-                masked(value_emitter, hit_environment) =
-                    value_emitter + scene->eval_environment(ray, hit_environment);
-                hit_emitter = hit_emitter || hit_environment;
-            }
-            active = active && hit;
-
-            /* Keep track of the throughput and relative refractive index along
-               the path. */
-            throughput *= bsdf_val;
             eta *= bs.eta;
 
-            /* If a emitter was hit, estimate the local illumination and
-               weight using the power heuristic. */
-            if (any(hit_emitter)) {
-                /* Compute the prob. of generating that direction using the
-                   implemented direct illumination sampling technique. */
-                Value lum_pdf = select(
-                    neq(bs.sampled_type & BSDF::EDelta, 0u),
-                    0.0f,
-                    scene->pdf_emitter_direction(si_next, ds, hit_emitter)
-                );
-                masked(Li, hit_emitter) =
-                    Li + throughput * value_emitter * mi_weight(bs.pdf, lum_pdf);
+            /* Intersect the BSDF ray against the scene geometry */
+            ray = si.spawn_ray(si.to_world(bs.wo));
+            SurfaceInteraction3 si_bsdf = scene->ray_intersect(ray, active);
+
+            /* Determine probability of having sampled that same
+               direction using emitter sampling. */
+            emitter = si_bsdf.emitter(scene);
+            DirectionSample ds(si_bsdf, si);
+            ds.object = emitter;
+
+            if (IsVectorized || emitter != nullptr) {
+                Value emitter_pdf =
+                    select(neq(bs.sampled_type & BSDF::EDelta, 0u), 0.f,
+                           scene->pdf_emitter_direction(si, ds, active));
+
+                emission_weight = mis_weight(bs.pdf, emitter_pdf);
+            } else {
+                emission_weight = 1.f;
             }
 
-            /* ============================================================== */
-            /*                         Path termination                       */
-            /* ============================================================== */
-
-            /* Possibly terminate the path with Russian roulette, first factoring
-               out radiance scaling due to refraction. */
-            if (bounces > m_rr_depth) {
-                auto q = min(hmax(throughput) * eta * eta, 0.95f);
-                // Russian roulette termination
-                active = active && (rs.next_1d() < q);
-
-                // Adjust throughput for the surviving paths
-                throughput /= q;
-                Assert(none(active && any(enoki::isinf(throughput))));
-            }
-            active = active && any(throughput > 0.0f);
-
-            if (none(active))
-                break;  // All paths have terminated
+            si = si_bsdf;
         }
 
-        rs.alpha = select(hit_anything, Value(1.0f), Value(0.0f));
-        return Li;
+        return result;
     }
-
-    MTS_IMPLEMENT_INTEGRATOR()
 
     //! @}
     // =============================================================
 
     std::string to_string() const override {
-        std::ostringstream oss;
-        oss << "PathIntegrator[]";
-        return oss.str();
+        return tfm::format("PathIntegrator[\n"
+            "  max_depth = %i,\n"
+            "  rr_depth = %i\n"
+            "]", m_max_depth, m_rr_depth);
     }
 
+    MTS_IMPLEMENT_INTEGRATOR()
     MTS_DECLARE_CLASS()
 
 protected:
+    template <typename Value> Value mis_weight(Value pdf_a, Value pdf_b) const {
+        pdf_a *= pdf_a;
+        pdf_b *= pdf_b;
+        return pdf_a / (pdf_a + pdf_b);
+    };
 };
 
 

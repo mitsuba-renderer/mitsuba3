@@ -464,12 +464,13 @@ public:
      *
      * \ref pixel_format
      *      Specifies the desired pixel format
+     *
      * \ref component_format
      *      Specifies the desired component format
-     * \ref gamma
-     *      Specifies the desired gamma value.
-     *      Special values: \c 1.0 denotes a linear space, and
-     *      \c -1.0 corresponds to sRGB.
+     *
+     * \ref srgb_gamma
+     *      Specifies whether a sRGB gamma ramp should be applied to
+     *      the ouutput values.
      */
     ref<Bitmap> convert(EPixelFormat pixel_format,
                         Struct::EType component_format,

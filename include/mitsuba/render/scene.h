@@ -2,6 +2,7 @@
 
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
+#include <mitsuba/render/emitter.h>
 #include <mitsuba/core/ddistr.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -95,7 +96,7 @@ public:
      * the emission profile and the geometry term between the reference point
      * and the position on the emitter.
      *
-     * \param it
+     * \param ref
      *    A reference point somewhere within the scene
      *
      * \param sample
@@ -110,24 +111,24 @@ public:
      *    probability.
      */
     std::pair<DirectionSample3f, Spectrumf>
-    sample_emitter_direction(const Interaction3f &it,
+    sample_emitter_direction(const Interaction3f &ref,
                              const Point2f &sample,
                              bool test_visibility = true) const;
 
     /// Vectorized variant of \ref sample_emitter_direction
     std::pair<DirectionSample3fP, SpectrumfP>
-    sample_emitter_direction(const Interaction3fP &it,
+    sample_emitter_direction(const Interaction3fP &ref,
                              const Point2fP &sample,
                              bool test_visibility = true,
                              MaskP active = true) const;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_emitter_direction()
     std::pair<DirectionSample3f, Spectrumf>
-    sample_emitter_direction(const Interaction3f &it,
+    sample_emitter_direction(const Interaction3f &ref,
                              const Point2f &sample,
                              bool test_visibility,
                              bool /* active */) const {
-        return sample_emitter_direction(it, sample, test_visibility);
+        return sample_emitter_direction(ref, sample, test_visibility);
     }
 
     /**
@@ -135,7 +136,7 @@ public:
      * sample_emitter_direct() technique given an filled-in \ref
      * DirectionSample record.
      *
-     * \param it
+     * \param ref
      *    A reference point somewhere within the scene
      *
      * \param ds
@@ -144,31 +145,23 @@ public:
      * \return
      *    The solid angle density expressed of the sample
      */
-    Float pdf_emitter_direction(const Interaction3f &it,
+    Float pdf_emitter_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds) const;
 
     /// Vectorized version of \ref pdf_emitter_direction
-    FloatP pdf_emitter_direction(const Interaction3fP &it,
+    FloatP pdf_emitter_direction(const Interaction3fP &ref,
                                  const DirectionSample3fP &ds,
                                  MaskP active = true) const;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_emitter_direction()
-    Float pdf_emitter_direction(const Interaction3f &it,
+    Float pdf_emitter_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds,
                                 bool /* unused */) const {
-        return pdf_emitter_direction(it, ds);
+        return pdf_emitter_direction(ref, ds);
     }
 
-    /**
-     * \brief Return the environment radiance for a ray that did not intersect
-     * any of the scene objects.
-     *
-     * This is primarily meant for path tracing-style integrators.
-     */
-    template <typename Ray, typename Value = typename Ray::Value>
-    Spectrum<Value> eval_environment(const Ray &, mask_t<Value> /* active */ = true) const {
-        return 0.f;
-    }
+    /// Return the environment emitter (if any)
+    const Emitter *environment() const { return m_environment.get(); }
 
     //! @}
     // =============================================================
@@ -197,9 +190,6 @@ public:
     std::vector<ref<Sensor>> &sensors() { return m_sensors; }
     /// Return the list of sensors
     const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
-
-    /// True if the scene has an environment emitter
-    bool has_environment_emitter() const { return false; }
 
     /// Return the current sensor's film
     Film *film() { return m_sensors.front()->film(); }
@@ -231,6 +221,7 @@ protected:
     std::vector<ref<Emitter>> m_emitters;
     ref<Sampler> m_sampler;
     ref<Integrator> m_integrator;
+    ref<Emitter> m_environment;
 
     /// Precomputed distribution of emitters' intensity.
     DiscreteDistribution m_emitter_distr;

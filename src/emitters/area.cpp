@@ -24,10 +24,11 @@ public:
 
     template <typename SurfaceInteraction, typename Mask,
               typename Spectrum = typename SurfaceInteraction::Spectrum,
-              typename Frame = Frame<typename SurfaceInteraction::Point3>>
-    Spectrum eval_impl(const SurfaceInteraction &si, Mask active) const {
+              typename Frame    = Frame<typename SurfaceInteraction::Point3>>
+    MTS_INLINE Spectrum eval_impl(const SurfaceInteraction &si,
+                                  Mask active) const {
         return m_radiance->eval(si.wavelengths, active) &
-               (Frame::cos_theta(si.wi) > 0.0f);
+               (Frame::cos_theta(si.wi) > 0.f);
     }
 
     template <typename Point2,
@@ -36,7 +37,7 @@ public:
               typename Point3   = Point<Value, 3>,
               typename Ray3     = mitsuba::Ray<Point3>,
               typename Spectrum = Spectrum<Value>>
-    std::pair<Ray3, Spectrum>
+    MTS_INLINE std::pair<Ray3, Spectrum>
     sample_ray_impl(Value time,
                     Value wavelength_sample,
                     const Point2 &sample2,
@@ -63,30 +64,41 @@ public:
     }
 
     template <typename Interaction, typename Mask,
-              typename Value = typename Interaction::Value,
-              typename Point2 = typename Interaction::Point2,
-              typename Point3 = typename Interaction::Point3,
-              typename Spectrum = typename Interaction::Spectrum,
+              typename Value           = typename Interaction::Value,
+              typename Point2          = typename Interaction::Point2,
+              typename Point3          = typename Interaction::Point3,
+              typename Spectrum        = typename Interaction::Spectrum,
               typename DirectionSample = DirectionSample<Point3>>
-    std::pair<DirectionSample, Spectrum>
+    MTS_INLINE std::pair<DirectionSample, Spectrum>
     sample_direction_impl(const Interaction &it, const Point2 &sample, Mask active) const {
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
-        DirectionSample ds = m_shape->sample_direction(it, sample, active);
 
-        active = active && dot(ds.d, ds.n) < 0.0f && neq(ds.pdf, 0.0f);
+        DirectionSample ds = m_shape->sample_direction(it, sample, active);
+        active &= dot(ds.d, ds.n) < 0.f && neq(ds.pdf, 0.f);
+
         Spectrum spec = m_radiance->eval(it.wavelengths, active) / ds.pdf;
 
-        masked(ds.pdf, !active) = 0.0f;
-        masked(spec,   !active) = Spectrum(0.0f);
+        masked(ds.pdf, !active) = 0.f;
+        masked(spec,   !active) = 0.f;
+
         ds.object = this;
         return { ds, spec };
     }
 
     template <typename Interaction, typename DirectionSample, typename Mask,
               typename Value = typename DirectionSample::Value>
-    Value pdf_direction_impl(const Interaction &it, const DirectionSample &ds, Mask active) const {
-        return select(dot(ds.d, ds.n) < 0.0f,
-                      m_shape->pdf_direction(it, ds, active), 0.0f);
+    MTS_INLINE Value pdf_direction_impl(const Interaction &it,
+                                        const DirectionSample &ds,
+                                        Mask active) const {
+        return select(dot(ds.d, ds.n) < 0.f,
+                      m_shape->pdf_direction(it, ds, active), 0.f);
+    }
+
+    template <typename Ray, typename Value = typename Ray::Value,
+              typename Spectrum = mitsuba::Spectrum<Value>>
+    MTS_INLINE Spectrum eval_environment_impl(const Ray &,
+                                              mask_t<Value>) const {
+        return 0.f;
     }
 
     BoundingBox3f bbox() const override { return m_shape->bbox(); }
@@ -109,7 +121,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_radiance;
-    Float m_area_times_pi = 0.0f;
+    Float m_area_times_pi = 0.f;
 };
 
 

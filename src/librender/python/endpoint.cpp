@@ -30,7 +30,7 @@ MTS_PY_EXPORT(Endpoint) {
              enoki::vectorize_wrapper(
                 py::overload_cast<const Interaction3fP &, const Point2fP &, MaskP>(
                     &Endpoint::sample_direction, py::const_)),
-             "it"_a, "sample"_a, "active"_a = MaskP(true))
+             "it"_a, "sample"_a, "active"_a = true)
         .def("pdf_direction",
              py::overload_cast<const Interaction3f &, const DirectionSample3f &, bool>(
                 &Endpoint::pdf_direction, py::const_),
@@ -39,7 +39,7 @@ MTS_PY_EXPORT(Endpoint) {
              enoki::vectorize_wrapper(
                 py::overload_cast<const Interaction3fP &, const DirectionSample3fP &, MaskP>(
                     &Endpoint::pdf_direction, py::const_)),
-             "it"_a, "ds"_a, "active"_a = MaskP(true))
+             "it"_a, "ds"_a, "active"_a = true)
         .def("eval",
              py::overload_cast<const SurfaceInteraction3f &, bool>(
                 &Endpoint::eval, py::const_),
@@ -48,7 +48,7 @@ MTS_PY_EXPORT(Endpoint) {
              enoki::vectorize_wrapper(
                 py::overload_cast<const SurfaceInteraction3fP &, MaskP>(
                     &Endpoint::eval, py::const_)),
-             "si"_a, "active"_a = MaskP(true))
+             "si"_a, "active"_a = true)
         .mdef(Endpoint, world_transform)
         .mdef(Endpoint, needs_sample_2)
         .mdef(Endpoint, needs_sample_3)

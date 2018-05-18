@@ -130,15 +130,13 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "InterpolatedSpectrum[" << std::endl
-            << "  data = " << "[ " << std::endl
-                << string::indent(m_data)
-                << std::endl << "  ]," << std::endl
             << "  size = " << m_data.size() << "," << std::endl
             << "  lambda_min = " << m_lambda_min << "," << std::endl
             << "  lambda_max = " << m_lambda_max << "," << std::endl
             << "  interval_size = " << m_interval_size << "," << std::endl
             << "  integral = " << m_integral << "," << std::endl
-            << "  normalization = " << m_normalization << std::endl
+            << "  normalization = " << m_normalization << "," << std::endl
+            << "  data = " << "[ " << m_data << " ]" << std::endl
             << "]";
         return oss.str();
     }
