@@ -95,21 +95,22 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_FLAGS MATCHES "-stdl
 endif()
 
 # Clang/GCC address sanitizer
-if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)"))
   # Don't optimize too heavily
   if (U_CMAKE_BUILD_TYPE MATCHES REL)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O1")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -O1")
-    add_compile_options("-O1")
+    add_compile_options(-O1 -fno-optimize-sibling-calls)
   endif()
 
-  add_compile_options("-fno-omit-frame-pointer")
+  add_compile_options(-fno-omit-frame-pointer)
 
   if (MTS_SANITIZE_ADDRESS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+    message(STATUS "Mitsuba: enabling the address sanitizer.")
   endif()
 
   if (MTS_SANITIZE_MEMORY)
@@ -117,6 +118,7 @@ if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND CMAKE_CXX_COMPILER_ID MATC
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=memory")
+    message(STATUS "Mitsuba: enabling the memory sanitizer.")
   endif()
 endif()
 
@@ -243,12 +245,12 @@ if (MSVC)
   add_compile_options(/D "_USE_MATH_DEFINES")
 endif()
 
-if (U_CMAKE_BUILD_TYPE MATCHES DEBUG AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+if (U_CMAKE_BUILD_TYPE MATCHES DEBUG AND CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
   add_compile_options("-fno-limit-debug-info")
 endif()
 
 # Enable link time optimization in release mode (if possible)
-if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
   if (NOT MTS_ENABLE_LTO)
     message(STATUS "Mitsuba: LTO support disabled (MTS_ENABLE_LTO=OFF).")
   elseif (NOT CMAKE_CXX_FLAGS MATCHES "-flto")
