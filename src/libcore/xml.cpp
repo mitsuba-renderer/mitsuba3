@@ -850,7 +850,7 @@ ref<Object> load_file(const fs::path &filename_) {
     pugi::xml_node root = doc.document_element();
 
     detail::XMLParseContext ctx;
-    Properties prop; size_t arg_counter; /* Unused */
+    Properties prop; size_t arg_counter = 0; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
                                       arg_counter, 0).second;
 
