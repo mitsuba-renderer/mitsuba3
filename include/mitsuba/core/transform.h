@@ -172,7 +172,7 @@ template <typename Value> struct Transform {
     /// Create a rotation transformation around an arbitrary axis. The angle is specified in degrees
     static Transform rotate(const Vector3 &axis, const Value &angle) {
         Matrix4 matrix = enoki::rotate<Matrix4>(axis, deg_to_rad(angle));
-        return Transform(matrix, transpose(matrix));
+        return Transform(matrix, matrix);
     }
 
     /** \brief Create a perspective transformation.
