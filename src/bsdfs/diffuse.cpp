@@ -38,7 +38,7 @@ public:
 
         Spectrum value = m_reflectance->eval(si.wavelengths, active);
 
-        return { bs, select(active, value, 0.f) };
+        return { bs, select(active && bs.pdf > 0, value, 0.f) };
     }
 
     template <typename SurfaceInteraction, typename Vector3,

@@ -12,15 +12,22 @@ NAMESPACE_BEGIN(mitsuba)
 
 class EnvironmentMapEmitter : public Emitter {
 public:
+    using Warp = warp::Marginal2D<0>;
+
     EnvironmentMapEmitter(const Properties &props) : Emitter(props) {
         /* Until `create_shape` is called, we have no information
            about the scene and default to the unit bounding sphere. */
         m_bsphere = BoundingSphere3f(Point3f(0.f), 1.f);
 
+        m_scale = props.float_("scale", 1.f);
+
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
 
         m_bitmap = new Bitmap(file_path);
+
+        /* Convert to linear RGBA float bitmap, will be converted
+           into spectral profile coefficients below */
         m_bitmap = m_bitmap->convert(Bitmap::ERGBA, Bitmap::EFloat, false);
         m_name = file_path.filename().string();
 
@@ -36,14 +43,18 @@ public:
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
                 Vector4f coeff = load<Vector4f>(ptr);
                 Color3f color = head<3>(coeff);
+
+                /* Fetch spectral fit for given sRGB color value (4 coefficients) */
                 coeff = srgb_model_fetch(color);
+
+                /* Overwrite the pixel value with the coefficients */
                 store(ptr, coeff);
                 *lum_ptr++ = mitsuba::luminance(color) * sin_theta;
                 ptr += 4;
             }
         }
 
-        m_warp = warp::Marginal2D<0>(m_bitmap->size(), luminance.get());
+        m_warp = Warp(m_bitmap->size(), luminance.get());
         m_d65 = ContinuousSpectrum::D65();
     }
 
@@ -195,11 +206,12 @@ protected:
         Point2f w1 = uv - Point2f(pos),
                 w0 = 1.f - w1;
 
-        UInt32 index = pos.x() + pos.y() * m_bitmap->size().x();
+        UInt32 index = pos.x() + pos.y() * (uint32_t) m_bitmap->size().x();
 
         const Float *ptr = (const Float *) m_bitmap->data();
 
-        uint32_t width = m_bitmap->size().x() * 4;
+        uint32_t width = (uint32_t) m_bitmap->size().x() * 4;
+
         Vector4f v00 = gather<Vector4f>(ptr, index, active),
                  v10 = gather<Vector4f>(ptr + 4, index, active),
                  v01 = gather<Vector4f>(ptr + width, index, active),
@@ -212,7 +224,7 @@ protected:
 
         return (w0.y() * (w0.x() * s00 + w1.x() * s10) +
                 w1.y() * (w0.x() * s01 + w1.x() * s11)) *
-               m_d65->eval(wavelengths, active);
+               m_d65->eval(wavelengths, active) * m_scale;
     }
 
 
@@ -220,8 +232,9 @@ protected:
     std::string m_name;
     BoundingSphere3f m_bsphere;
     ref<Bitmap> m_bitmap;
-    warp::Marginal2D<0> m_warp;
+    Warp m_warp;
     ref<ContinuousSpectrum> m_d65;
+    Float m_scale;
 };
 
 MTS_IMPLEMENT_CLASS(EnvironmentMapEmitter, Emitter)

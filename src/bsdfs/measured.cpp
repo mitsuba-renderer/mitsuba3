@@ -163,13 +163,13 @@ public:
         using Frame = Frame<Vector3>;
 
         BSDFSample bs;
-        if (!ctx.is_enabled(EGlossyReflection))
+        Vector3 wi = si.wi;
+        active &= Frame::cos_theta(wi) > 0;
+
+        if (!ctx.is_enabled(EGlossyReflection) || none(active))
             return { bs, 0.f };
 
-        Vector3 wi = si.wi;
         Value sx = -1.f, sy = -1.f;
-
-        active &= Frame::cos_theta(wi) > 0;
 
         if (m_reduction >= 2) {
             sy = wi.y();

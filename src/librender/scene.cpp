@@ -26,8 +26,11 @@ Scene::Scene(const Properties &props) {
                 m_emitters.push_back(shape->emitter());
         } else if (emitter) {
             m_emitters.push_back(emitter);
-            if (emitter->is_environment())
+            if (emitter->is_environment()) {
+                if (m_environment)
+                    Throw("Only one environment emitter can be specified per scene.");
                 m_environment = emitter;
+            }
         } else if (sensor) {
             m_sensors.push_back(sensor);
         } else if (integrator) {

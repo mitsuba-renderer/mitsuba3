@@ -170,7 +170,7 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     /// Return the emitter associated with the intersection (if any)
     template <typename Scene = mitsuba::Scene>
     EmitterPtr emitter(const Scene *scene) const {
-        if (std::is_array<Value>::value)
+        if (enoki::is_array<Value>::value)
             return select(is_valid(), shape->emitter(), scene->environment());
         else
             return all(is_valid()) ? shape->emitter() : scene->environment();

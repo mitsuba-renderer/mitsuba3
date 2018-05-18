@@ -149,9 +149,9 @@ def test06_print():
     d = DiscreteDistribution(2)
     d.append(0.5)
     d.append(1.5)
-    assert(str(d) == "DiscreteDistribution[sum=2, normalized=0, cdf={0, 0.5, 2}]")
+    assert(str(d) == "DiscreteDistribution[sum=2, normalized=0, cdf=[0, 0.5, 2]]")
     d.normalize()
-    assert(str(d) == "DiscreteDistribution[sum=2, normalized=1, cdf={0, 0.25, 1}]")
+    assert(str(d) == "DiscreteDistribution[sum=2, normalized=1, cdf=[0, 0.25, 1]]")
 
 def test07_negative_append():
     if is_debug:

@@ -13,9 +13,6 @@ class PathIntegrator : public MonteCarloIntegrator {
 public:
     PathIntegrator(const Properties &props) : MonteCarloIntegrator(props) { }
 
-    // =============================================================
-    //! @{ \name Integrator interface
-    // =============================================================
     template <typename RayDifferential,
               typename Point3 = typename RayDifferential::Point,
               typename RadianceSample = RadianceSample<Point3>,
@@ -57,7 +54,18 @@ public:
                 result[active] += emission_weight * throughput * emitter->eval(si, active);
 
             active &= si.is_valid();
-            if (none(active) || depth >= m_max_depth)
+
+            /* Russian roulette: try to keep path weights equal to one,
+               while accounting for the solid angle compression at refractive
+               index boundaries. Stop with at least some probability to avoid
+               getting stuck (e.g. due to total internal reflection) */
+            if (depth > m_rr_depth) {
+                Value q = min(hmax(throughput) * eta * eta, 0.95f);
+                active &= rs.next_1d(active) < q;
+                throughput *= rcp(q);
+            }
+
+            if (none(active) || (uint32_t) depth >= (uint32_t) m_max_depth)
                 break;
 
             /* --------------------- Emitter sampling --------------------- */

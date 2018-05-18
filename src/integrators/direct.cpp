@@ -114,17 +114,17 @@ public:
                 scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active_b);
 
             // Retain only rays that hit an emitter
-            auto emitter = si_bsdf.emitter(scene);
-            active_b &= neq(emitter, nullptr);
+            auto emitter2 = si_bsdf.emitter(scene);
+            active_b &= neq(emitter2, nullptr);
 
             if (any(active_b)) {
-                Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
+                Spectrum emitter_val = emitter2->eval(si_bsdf, active_b);
                 Mask delta = neq(bs.sampled_type & BSDF::EDelta, 0u);
 
                 /* Determine probability of having sampled that same
                    direction using Emitter sampling. */
                 DirectionSample ds(si_bsdf, si);
-                ds.object = emitter;
+                ds.object = emitter2;
 
                 Value emitter_pdf = select(delta, 0.f,
                     scene->pdf_emitter_direction(si_bsdf, ds, active_b));

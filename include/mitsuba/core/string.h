@@ -11,12 +11,14 @@
 template <typename T, typename Alloc>
 std::ostream &operator<<(std::ostream &os, const std::vector<T, Alloc> &v) {
     auto it = v.begin();
+    os << "[";
     while (it != v.end()) {
         os << *it;
         it++;
         if (it != v.end())
             os << ", ";
     }
+    os << "]";
     return os;
 }
 

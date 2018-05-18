@@ -78,11 +78,16 @@ auto bind_radiance_record(py::module &m, const char *name) {
 MTS_PY_EXPORT(SamplingRecords) {
     bind_position_sample<Point3f>(m, "PositionSample3f");
     auto ps3fx = bind_position_sample<Point3fX>(m, "PositionSample3fX");
-    bind_slicing_operators<PositionSample3fX, PositionSample3f>(ps3fx);
+    ps3fx.def(py::init([](size_t n) -> PositionSample3fX {
+        return zero<PositionSample3fX>(n);
+    }));
 
     bind_direction_sample<Point3f, PositionSample3f>(m, "DirectionSample3f");
     auto dds3fx = bind_direction_sample<Point3fX, PositionSample3fX>(m, "DirectionSample3fX");
-    bind_slicing_operators<DirectionSample3fX, DirectionSample3f>(dds3fx);
+    dds3fx.def(py::init([](size_t n) -> DirectionSample3fX {
+        return zero<DirectionSample3fX>(n);
+    }));
+
 
     bind_radiance_record<Point3f>(m, "RadianceSample3f")
         // Needs to be handled separately so that we can use vectorize_wrapper.
