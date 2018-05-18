@@ -1809,6 +1809,12 @@ protected:
         );
         tbb::concurrent_vector<KDNode>().swap(ctx.node_storage);
 
+        /* Slightly avoid the bounding box to avoid numerical issues
+           involving geometry that exactly lies on the boundary */
+        Vector3f extra = (m_bbox.extents() + 1.f) * math::Epsilon;
+        m_bbox.min -= extra;
+        m_bbox.max += extra;
+
         /* ==================================================================== */
         /*         Print various tree statistics if requested by the user       */
         /* ==================================================================== */
@@ -2177,15 +2183,6 @@ public:
                 maxt = t_plane;
                 continue;
             } else if (node->primitive_count() > 0) { // Arrived at a leaf node
-                /* Check for intersections on a slightly enlarged interval to
-                   avoid rounding issues with intersections that lie exactly
-                   on a splitting plane */
-                Float delta = ((maxt - mint) + 1.f) * math::Epsilon;
-                Float temp_mint = std::max(mint - delta, ray.mint);
-                Float temp_maxt = std::min(maxt + delta, ray.maxt);
-                std::swap(ray.mint, temp_mint);
-                std::swap(ray.maxt, temp_maxt);
-
                 Index prim_start = node->primitive_offset();
                 Index prim_end = prim_start + node->primitive_count();
                 for (Index i = prim_start; i < prim_end; i++) {
@@ -2201,13 +2198,10 @@ public:
                             return { true, prim_t };
 
                         Assert(prim_t >= ray.mint && prim_t <= ray.maxt);
-                        ray.maxt = temp_maxt = prim_t;
+                        ray.maxt = prim_t;
                         hit = true;
                     }
                 }
-
-                std::swap(ray.mint, temp_mint);
-                std::swap(ray.maxt, temp_maxt);
             }
 
             if (likely(stack_index > 0)) {
@@ -2316,15 +2310,6 @@ public:
                     node = n_cur;
                     continue;
                 } else if (node->primitive_count() > 0) { // Arrived at a leaf node
-                    /* Check for intersections on a slightly enlarged interval to
-                       avoid rounding issues with intersections that lie exactly
-                       on a splitting plane */
-                    FloatP delta = ((maxt - mint) + 1.f) * math::Epsilon;
-                    FloatP temp_mint = enoki::max(mint - delta, ray.mint);
-                    FloatP temp_maxt = enoki::min(maxt + delta, ray.maxt);
-                    std::swap(ray.mint, temp_mint);
-                    std::swap(ray.maxt, temp_maxt);
-
                     Index prim_start = node->primitive_offset();
                     Index prim_end = prim_start + node->primitive_count();
                     for (Index i = prim_start; i < prim_end; i++) {
@@ -2338,13 +2323,9 @@ public:
                         if (!ShadowRay) {
                             Assert(all(!prim_hit || (prim_t >= ray.mint && prim_t <= ray.maxt)));
                             masked(ray.maxt, prim_hit) = prim_t;
-                            masked(temp_maxt, prim_hit) = prim_t;
                         }
                         hit |= prim_hit;
                     }
-
-                    std::swap(ray.mint, temp_mint);
-                    std::swap(ray.maxt, temp_maxt);
                 }
             }
 
@@ -2433,7 +2414,7 @@ public:
         si.sh_frame.t = cross(si.sh_frame.n, si.sh_frame.s);
 
         /* Incident direction in local coordinates */
-        si.wi = si.to_local(-ray.d);
+        si.wi = select(active, si.to_local(-ray.d), -ray.d);
 
         return si;
     }
