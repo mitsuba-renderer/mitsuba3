@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/render/records.h>
+#include <mitsuba/core/profiler.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -297,36 +298,44 @@ protected:
     std::pair<Ray3f, Spectrumf> sample_ray(                                    \
         Float time, Float sample1, const Point2f &sample2,                     \
         const Point2f &sample3) const override {                               \
+        ScopedPhase p(EProfilerPhase::EEndpointSample);                        \
         return sample_ray_impl(time, sample1, sample2, sample3, true);         \
     }                                                                          \
     std::pair<Ray3fP, SpectrumfP> sample_ray(                                  \
         FloatP time, FloatP sample1, const Point2fP &sample2,                  \
         const Point2fP &sample3, MaskP active) const override {                \
+        ScopedPhase p(EProfilerPhase::EEndpointSampleP);                       \
         return sample_ray_impl(time, sample1, sample2, sample3, active);       \
     }                                                                          \
     std::pair<DirectionSample3f, Spectrumf> sample_direction(                  \
         const Interaction3f &ref, const Point2f &sample) const override {      \
+        ScopedPhase p(EProfilerPhase::EEndpointSample);                        \
         return sample_direction_impl(ref, sample, true);                       \
     }                                                                          \
     std::pair<DirectionSample3fP, SpectrumfP> sample_direction(                \
         const Interaction3fP &ref, const Point2fP &sample, MaskP active)       \
         const override {                                                       \
+        ScopedPhase p(EProfilerPhase::EEndpointSampleP);                       \
         return sample_direction_impl(ref, sample, active);                     \
     }                                                                          \
     Float pdf_direction(const Interaction3f &ref, const DirectionSample3f &ds) \
         const override {                                                       \
+        ScopedPhase p(EProfilerPhase::EEndpointEvaluate);                      \
         return pdf_direction_impl(ref, ds, true);                              \
     }                                                                          \
     FloatP pdf_direction(const Interaction3fP &ref,                            \
                          const DirectionSample3fP &ds, MaskP active)           \
         const override {                                                       \
+        ScopedPhase p(EProfilerPhase::EEndpointEvaluateP);                     \
         return pdf_direction_impl(ref, ds, active);                            \
     }                                                                          \
     Spectrumf eval(const SurfaceInteraction3f &si) const override {            \
+        ScopedPhase p(EProfilerPhase::EEndpointEvaluate);                      \
         return eval_impl(si, true);                                            \
     }                                                                          \
     SpectrumfP eval(const SurfaceInteraction3fP &si, MaskP active)             \
         const override {                                                       \
+        ScopedPhase p(EProfilerPhase::EEndpointEvaluateP);                     \
         return eval_impl(si, active);                                          \
     }
 

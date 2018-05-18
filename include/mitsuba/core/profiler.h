@@ -37,6 +37,10 @@ enum class EProfilerPhase : int {
     EBSDFEvaluateP,              /* BSDF::eval() and BSDF::pdf() [packet] */
     EBSDFSample,                 /* BSDF::sample() */
     EBSDFSampleP,                /* BSDF::sample() [packet] */
+    EEndpointEvaluate,           /* Endpoint::eval() and Endpoint::pdf() */
+    EEndpointEvaluateP,          /* Endpoint::eval() and Endpoint::pdf() [packet] */
+    EEndpointSample,             /* Endpoint::sample() */
+    EEndpointSampleP,            /* Endpoint::sample() [packet] */
     EProfilerPhaseCount
 };
 
@@ -61,7 +65,11 @@ constexpr const char *profiler_phase_id[int(EProfilerPhase::EProfilerPhaseCount)
     "BSDF::eval(), pdf()",
     "BSDF::eval(), pdf() [packet]",
     "BSDF::sample()",
-    "BSDF::sample() [packet]"
+    "BSDF::sample() [packet]",
+    "Endpoint::eval(), pdf()",
+    "Endpoint::eval(), pdf() [packet]",
+    "Endpoint::sample()",
+    "Endpoint::sample() [packet]"
 };
 
 static_assert(int(EProfilerPhase::EProfilerPhaseCount) <= 64,
