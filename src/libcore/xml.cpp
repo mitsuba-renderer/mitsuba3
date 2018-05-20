@@ -547,10 +547,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     if (tokens.size() != 3)
                         src.throw_error(node, "'rgb' tag requires three values (got \"%s\")", node.attribute("value").value());
 
-                    if (within_emitter)
-                        src.throw_error(node, "The 'rgb' tag is not yet supported within emitter declarations.");
-
-                    Properties props2("srgb");
+                    Properties props2(within_emitter ? "srgb_d65" : "srgb");
                     try {
                         Color3f col(detail::stof(tokens[0]),
                                     detail::stof(tokens[1]),
