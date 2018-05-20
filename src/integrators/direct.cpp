@@ -155,7 +155,7 @@ protected:
     template <typename Value> Value mis_weight(Value pdf_a, Value pdf_b) const {
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
-        return pdf_a / (pdf_a + pdf_b);
+        return select(pdf_a > 0.0f, pdf_a / (pdf_a + pdf_b), Value(0.0f));
     }
 
 private:
