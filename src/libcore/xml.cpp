@@ -293,9 +293,20 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
 
 static std::pair<std::string, std::string>
 parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
-         ETag parent_tag, Properties &props, size_t &arg_counter, int depth,
-         bool within_emitter = false) {
+         ETag parent_tag, Properties &props, const ParameterList &param,
+         size_t &arg_counter, int depth, bool within_emitter = false) {
     try {
+        if (!param.empty()) {
+            for (auto attr: node.attributes()) {
+                std::string value = attr.value();
+                if (value.find('$') == std::string::npos)
+                    continue;
+                for (const auto &kv : param)
+                    string::replace_inplace(value, "$" + kv.first, kv.second);
+                attr.set_value(value.c_str());
+            }
+        }
+
         /* Skip over comments */
         if (node.type() == pugi::node_comment || node.type() == pugi::node_declaration)
             return std::make_pair("", "");
@@ -405,7 +416,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     for (pugi::xml_node &ch: node.children()) {
                         std::string nested_id, arg_name;
                         std::tie(arg_name, nested_id) =
-                            parse_xml(src, ctx, ch, tag, props_nested,
+                            parse_xml(src, ctx, ch, tag, props_nested, param,
                                      arg_counter_nested, depth + 1,
                                      node_name == "emitter");
                         if (!nested_id.empty())
@@ -458,7 +469,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
                     try {
                         return parse_xml(nested_src, ctx, *doc.begin(), parent_tag,
-                                         props, arg_counter, 0);
+                                         props, param, arg_counter, 0);
                     } catch (const std::exception &e) {
                         src.throw_error(node, "%s", e.what());
                     }
@@ -708,7 +719,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         }
 
         for (pugi::xml_node &ch: node.children())
-            parse_xml(src, ctx, ch, tag, props, arg_counter, depth + 1);
+            parse_xml(src, ctx, ch, tag, props, param, arg_counter, depth + 1);
 
         if (tag == ETransform)
             props.set_transform(node.attribute("name").value(), ctx.transform);
@@ -802,7 +813,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, std::string id) {
 
 NAMESPACE_END(detail)
 
-ref<Object> load_string(const std::string &string) {
+ref<Object> load_string(const std::string &string, ParameterList param) {
     ScopedPhase sp(EProfilerPhase::EInitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
@@ -821,11 +832,11 @@ ref<Object> load_string(const std::string &string) {
     detail::XMLParseContext ctx;
     Properties prop; size_t arg_counter; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
-                                      arg_counter, 0).second;
+                                      param, arg_counter, 0).second;
     return detail::instantiate_node(ctx, scene_id);
 }
 
-ref<Object> load_file(const fs::path &filename_) {
+ref<Object> load_file(const fs::path &filename_, ParameterList param) {
     ScopedPhase sp(EProfilerPhase::EInitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
@@ -852,7 +863,7 @@ ref<Object> load_file(const fs::path &filename_) {
     detail::XMLParseContext ctx;
     Properties prop; size_t arg_counter = 0; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
-                                      arg_counter, 0).second;
+                                      param, arg_counter, 0).second;
 
     if (src.modified) {
         fs::path backup = filename;

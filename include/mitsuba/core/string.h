@@ -78,6 +78,14 @@ std::string indent(const T *value, size_t amount = 2) {
     return indent((const T2 *) value, amount);
 }
 
+inline void replace_inplace(std::string &str, const std::string &source,
+                            const std::string &target) {
+    size_t pos = 0;
+    while ((pos = str.find(source, pos)) != std::string::npos) {
+        str.replace(pos, source.length(), target);
+        pos += target.length();
+    }
+}
 
 /// Remove leading and trailing characters
 extern MTS_EXPORT_CORE std::string trim(const std::string &s,

@@ -93,6 +93,10 @@ Options:
    -t <count>, --threads <count>
                Render with the specified number of threads
 
+   -D <key>=<value>, --define <key>=<value>
+               Define a constant that can referenced as "$key"
+               within the scene description
+
    -s, --scalar
                Render without vectorization support
 )";
@@ -114,10 +118,12 @@ int main(int argc, char *argv[]) {
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
     auto arg_scalar  = parser.add(StringVec { "-s", "--scalar" }, false);
     auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
+    auto arg_define  = parser.add(StringVec { "-D", "--define" }, true);
     auto arg_help = parser.add(StringVec { "-h", "--help" });
     auto arg_extra = parser.add("", true);
-    std::string error_msg;
     bool print_profile = false;
+    xml::ParameterList params;
+    std::string error_msg;
 
 #if defined(__AVX512ER__) && defined(__LINUX__)
     if (getenv("LD_PREFER_MAP_32BIT_EXEC") == nullptr) {
@@ -140,6 +146,15 @@ int main(int argc, char *argv[]) {
                 logger->set_log_level(ETrace);
             else
                 logger->set_log_level(EDebug);
+        }
+
+        while (arg_define && *arg_define) {
+            std::string value = arg_define->as_string();
+            auto sep = value.find('=');
+            if (sep == std::string::npos)
+                Throw("-D/--define: expect key=value pair!");
+            params.push_back(std::make_pair(value.substr(0, sep), value.substr(sep+1)));
+            arg_define = arg_define->next();
         }
 
         /* Initialize Intel Thread Building Blocks with the requested number of threads */
@@ -172,7 +187,7 @@ int main(int argc, char *argv[]) {
                 fr->append(scene_dir);
 
             // Try and parse a scene from the passed file.
-            ref<Object> parsed = xml::load_file(arg_extra->as_string());
+            ref<Object> parsed = xml::load_file(arg_extra->as_string(), params);
 
             auto *scene = dynamic_cast<Scene *>(parsed.get());
             if (scene) {
