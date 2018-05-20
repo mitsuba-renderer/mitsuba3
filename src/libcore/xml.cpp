@@ -35,7 +35,7 @@ NAMESPACE_BEGIN(xml)
 /* Set of supported XML tags */
 enum ETag {
     EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ERGB,
-    ETransform, ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject,
+    EColor, ETransform, ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject,
     ENamedReference, EInclude, EInvalid
 };
 
@@ -111,6 +111,7 @@ void register_class(const Class *class_) {
         (*tags)["ref"]        = ENamedReference;
         (*tags)["spectrum"]   = ESpectrum;
         (*tags)["rgb"]        = ERGB;
+        (*tags)["color"]      = EColor;
         (*tags)["include"]    = EInclude;
     }
 
@@ -537,6 +538,24 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     check_attributes(src, node, { "name", "x", "y", "z" });
                     props.set_point3f(node.attribute("name").value(),
                                       detail::parse_vector(src, node));
+                }
+                break;
+
+            case EColor : {
+                    check_attributes(src, node, { "name", "value" });
+                    std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
+
+                    if (tokens.size() != 3)
+                        src.throw_error(node, "'color' tag requires three values (got \"%s\")", node.attribute("value").value());
+
+                    try {
+                        Color3f col(detail::stof(tokens[0]),
+                                    detail::stof(tokens[1]),
+                                    detail::stof(tokens[2]));
+                        props.set_color(node.attribute("name").value(), col);
+                    } catch (...) {
+                        src.throw_error(node, "could not parse color \"%s\"", node.attribute("value").value());
+                    }
                 }
                 break;
 

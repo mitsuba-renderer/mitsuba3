@@ -35,3 +35,23 @@ def test04_d65():
 def test05_blackbody():
     bb = load_string("<spectrum version='2.0.0' type='blackbody'><float name='temperature' value='5000'/></spectrum>")
     assert np.allclose(bb.eval([350, 456, 600, 700, 840]), [0, 10997.9, 12762.4, 11812, 0])
+
+def test06_srgb_d65():
+    """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra."""
+    wavelengths = np.linspace(300, 800, 30)
+    wavelengths += (10 * np.random.uniform(size=wavelengths.shape)).astype(np.int)
+    d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
+    d65_eval = d65.eval(wavelengths)
+
+    for color in ["0, 0, 0", "1, 1, 1", "0.1, 0.2, 0.3", "34, 0.1, 62",
+                  "0.001, 0.02, 11.4"]:
+        srgb = load_string("""<spectrum version="2.0.0" type="srgb">
+                <color name="color" value="{}"/>
+            </spectrum>
+            """.format(color))
+        srgb_d65 = load_string("""<spectrum version="2.0.0" type="srgb_d65">
+                <color name="color" value="{}"/>
+            </spectrum>
+            """.format(color))
+
+        assert np.allclose(srgb_d65.eval(wavelengths), d65_eval * srgb.eval(wavelengths))
