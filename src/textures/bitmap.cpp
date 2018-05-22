@@ -50,6 +50,7 @@ public:
 
         auto uv = m_transform.transform_affine(it.uv);
         uv -= floor(uv);
+        uv.y() = 1.f - uv.y();
 
         uv *= Vector2f(m_bitmap->size() - 1u);
 
