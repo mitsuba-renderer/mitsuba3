@@ -1,6 +1,7 @@
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -50,7 +51,7 @@ public:
             return { bs, 0.0f };
         }
 
-        Spectrum opacity = m_opacity->eval(si.wavelengths, active);
+        Spectrum opacity = m_opacity->eval(si, active);
         Value prob = luminance(opacity, si.wavelengths, active);
 
         if (sample_transmission && sample_nested) {
@@ -92,7 +93,7 @@ public:
     Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                        const Vector3 &wo, const mask_t<Value> &active) const {
         return m_nested_bsdf->eval(ctx, si, wo, active)
-               * m_opacity->eval(si.wavelengths, active);
+               * m_opacity->eval(si, active);
     }
 
     template <typename SurfaceInteraction,
@@ -105,7 +106,7 @@ public:
         bool sample_nested       = ctx.component == (uint32_t) -1
                                    || ctx.component < null_index;
 
-        Value prob = luminance(m_opacity->eval(si.wavelengths, active),
+        Value prob = luminance(m_opacity->eval(si, active),
                                si.wavelengths, active);
         if (!sample_nested)
             return 0.0f;
@@ -114,8 +115,6 @@ public:
         if (sample_transmission)
             result *= prob;
         return result;
-
-        // TODO what should we do in EDiscrete case?
     }
 
     std::string to_string() const override {
@@ -133,6 +132,7 @@ protected:
     ref<ContinuousSpectrum> m_opacity;
     ref<BSDF> m_nested_bsdf;
 };
+
 MTS_IMPLEMENT_CLASS(Mask, BSDF)
 MTS_EXPORT_PLUGIN(Mask, "Mask BRDF")
 

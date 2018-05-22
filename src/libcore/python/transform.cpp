@@ -20,7 +20,32 @@ auto bind_transform(py::module &m, const char *name) {
 }
 
 MTS_PY_EXPORT(Transform) {
-    bind_transform<Float>(m, "Transform4f")
+    bind_transform<Vector3f>(m, "Transform3f")
+        .def(py::init<>(), "Initialize with the identity matrix")
+        .def(py::init<const Transform3f &>(), "Copy constructor")
+        .def(py::init([](py::array a) {
+            return new Transform3f(py::cast<Matrix3f>(a));
+        }))
+        .def(py::init<Matrix3f>(), D(Transform, Transform))
+        .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
+        .def("transform_point", [](const Transform3f &t, const Point2f &v) { return t*v; })
+        .def("transform_point", [](const Transform3f &t, const Point2fX &v) {
+            return vectorize_safe([](auto &&t, auto &&v) { return t * v; }, t, v);
+        })
+        .def("transform_vector", [](const Transform3f &t, const Vector2f &v) { return t*v; })
+        .def("transform_vector", [](const Transform3f &t, const Vector2fX &v) {
+            return vectorize_safe([](auto &&t, auto &&v) { return t * v; }, t, v);
+        })
+        .def_static("translate", &Transform3f::translate, "v"_a, D(Transform, translate))
+        .def_static("scale", &Transform3f::scale, "v"_a, D(Transform, scale))
+        .def_static("rotate", &Transform3f::rotate<3, 0>, "angle"_a, D(Transform, rotate, 2))
+        .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
+        /// Operators
+        .def(py::self == py::self)
+        .def(py::self != py::self)
+        .def(py::self * py::self);
+
+    bind_transform<Vector4f>(m, "Transform4f")
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform4f &>(), "Copy constructor")
         .def(py::init([](py::array a) {
@@ -42,17 +67,18 @@ MTS_PY_EXPORT(Transform) {
         })
         .def_static("translate", &Transform4f::translate, "v"_a, D(Transform, translate))
         .def_static("scale", &Transform4f::scale, "v"_a, D(Transform, scale))
-        .def_static("rotate", &Transform4f::rotate, "axis"_a, "angle"_a, D(Transform, rotate))
-        .def_static("perspective", &Transform4f::perspective, "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
-        .def_static("orthographic", &Transform4f::orthographic, "near"_a, "far"_a, D(Transform, orthographic))
-        .def_static("look_at", &Transform4f::look_at, "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
+        .def_static("rotate", &Transform4f::rotate<4, 0>, "axis"_a, "angle"_a, D(Transform, rotate))
+        .def_static("perspective", &Transform4f::perspective<4, 0>, "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
+        .def_static("orthographic", &Transform4f::orthographic<4, 0>, "near"_a, "far"_a, D(Transform, orthographic))
+        .def_static("look_at", &Transform4f::look_at<4, 0>, "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
         .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
+        .def("extract", &Transform4f::extract<3>, D(Transform, extract))
         /// Operators
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def(py::self * py::self);
 
-    auto t4fx = bind_transform<FloatX>(m, "Transform4fX");
+    auto t4fx = bind_transform<Vector4fX>(m, "Transform4fX");
     bind_slicing_operators<Transform4fX, Transform4f>(t4fx);
 
     py::implicitly_convertible<py::array, Transform4f>();

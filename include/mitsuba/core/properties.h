@@ -7,6 +7,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/* Forward declarations */
+class ContinuousSpectrum;
+
 /// Wrapper object used to represent named references to Object instances
 class NamedReference {
 public:
@@ -159,15 +162,15 @@ public:
 public:  // Type-specific getters and setters ----------------------------------
 
     /// Store a boolean value in the Properties instance
-    void set_bool(const std::string &name, const bool &value, bool warnDuplicates = true);
+    void set_bool(const std::string &name, const bool &value, bool warn_duplicates = true);
     /// Retrieve a boolean value
     const bool& bool_(const std::string &name) const;
     /// Retrieve a boolean value (use default value if no entry exists)
     const bool& bool_(const std::string &name, const bool &def_val) const;
 
     /// Set an integer value in the Properties instance
-    void set_int(const std::string &name, const int &value, bool warnDuplicates = true) {
-        set_long(name, (int64_t) value, warnDuplicates);
+    void set_int(const std::string &name, const int &value, bool warn_duplicates = true) {
+        set_long(name, (int64_t) value, warn_duplicates);
     }
 
     /// Retrieve an integer value
@@ -178,7 +181,7 @@ public:  // Type-specific getters and setters ----------------------------------
     }
 
     /// Store a long value in the Properties instance
-    void set_long(const std::string &name, const int64_t &value, bool warnDuplicates = true);
+    void set_long(const std::string &name, const int64_t &value, bool warn_duplicates = true);
     /// Retrieve a long value
     const int64_t& long_(const std::string &name) const;
     /// Retrieve a long value (use default value if no entry exists)
@@ -193,51 +196,51 @@ public:  // Type-specific getters and setters ----------------------------------
     size_t size_(const std::string &name, const size_t &def_val) const;
 
     /// Store a floating point value in the Properties instance
-    void set_float(const std::string &name, const Float &value, bool warnDuplicates = true);
+    void set_float(const std::string &name, const Float &value, bool warn_duplicates = true);
     /// Retrieve a floating point value
     const Float& float_(const std::string &name) const;
     /// Retrieve a floating point value (use default value if no entry exists)
     const Float& float_(const std::string &name, const Float &def_val) const;
 
     /// Store a string in the Properties instance
-    void set_string(const std::string &name, const std::string &value, bool warnDuplicates = true);
+    void set_string(const std::string &name, const std::string &value, bool warn_duplicates = true);
     /// Retrieve a string value
     const std::string& string(const std::string &name) const;
     /// Retrieve a string value (use default value if no entry exists)
     const std::string& string(const std::string &name, const std::string &def_val) const;
 
     /// Store a named reference in the Properties instance
-    void set_named_reference(const std::string &name, const NamedReference &value, bool warnDuplicates = true);
+    void set_named_reference(const std::string &name, const NamedReference &value, bool warn_duplicates = true);
     /// Retrieve a named reference value
     const NamedReference& named_reference(const std::string &name) const;
     /// Retrieve a named reference value (use default value if no entry exists)
     const NamedReference& named_reference(const std::string &name, const NamedReference &def_val) const;
 
     /// Store a 3D vector in the Properties instance
-    void set_vector3f(const std::string &name, const Vector3f &value, bool warnDuplicates = true);
+    void set_vector3f(const std::string &name, const Vector3f &value, bool warn_duplicates = true);
     /// Retrieve a 3D vector
     const Vector3f& vector3f(const std::string &name) const;
     /// Retrieve a 3D vector (use default value if no entry exists)
     const Vector3f& vector3f(const std::string &name, const Vector3f &def_val) const;
 
     /// Store a 3D point in the Properties instance
-    void set_point3f(const std::string &name, const Point3f &value, bool warnDuplicates = true);
+    void set_point3f(const std::string &name, const Point3f &value, bool warn_duplicates = true);
     /// Retrieve a 3D point
     const Point3f& point3f(const std::string &name) const;
     /// Retrieve a 3D point (use default value if no entry exists)
     const Point3f& point3f(const std::string &name, const Point3f &def_val) const;
 
     /// Store a 4x4 homogeneous coordinate transformation in the Properties instance
-    void set_transform(const std::string &name, const Transform4f &value, bool warnDuplicates = true);
+    void set_transform(const std::string &name, const Transform4f &value, bool warn_duplicates = true);
     /// Retrieve a 4x4 homogeneous coordinate transformation
     const Transform4f& transform(const std::string &name) const;
     /// Retrieve a 4x4 homogeneous coordinate transformation (use default value if no entry exists)
     const Transform4f& transform(const std::string &name, const Transform4f &def_val) const;
 
     /// Store an animated transformation in the Properties instance
-    void set_animated_transform(const std::string &name, ref<AnimatedTransform> value, bool warnDuplicates = true);
+    void set_animated_transform(const std::string &name, ref<AnimatedTransform> value, bool warn_duplicates = true);
     /// Store a (constant) animated transformation in the Properties instance
-    void set_animated_transform(const std::string &name, const Transform4f &value, bool warnDuplicates = true);
+    void set_animated_transform(const std::string &name, const Transform4f &value, bool warn_duplicates = true);
     /// Retrieve an animated transformation
     ref<AnimatedTransform> animated_transform(const std::string &name) const;
     /// Retrieve an animated transformation (use default value if no entry exists)
@@ -248,21 +251,21 @@ public:  // Type-specific getters and setters ----------------------------------
             const std::string &name, const Transform4f &def_val) const;
 
     /// Store an arbitrary object in the Properties instance
-    void set_object(const std::string &name, const ref<Object> &value, bool warnDuplicates = true);
+    void set_object(const std::string &name, const ref<Object> &value, bool warn_duplicates = true);
     /// Retrieve an arbitrary object
     const ref<Object>& object(const std::string &name) const;
     /// Retrieve an arbitrary object (use default value if no entry exists)
     const ref<Object>& object(const std::string &name, const ref<Object> &def_val) const;
 
     /// Store an arbitrary pointer in the Properties instance
-    void set_pointer(const std::string &name, const void * const &value, bool warnDuplicates = true);
+    void set_pointer(const std::string &name, const void * const &value, bool warn_duplicates = true);
     /// Retrieve an arbitrary pointer
     const void * const& pointer(const std::string &name) const;
     /// Retrieve an arbitrary pointer (use default value if no entry exists)
     const void * const& pointer(const std::string &name, const void * const &def_val) const;
 
     /// Store a color in the Properties instance
-    void set_color(const std::string &name, const Color3f &value, bool warnDuplicates = true);
+    void set_color(const std::string &name, const Color3f &value, bool warn_duplicates = true);
     /// Retrieve a color
     const Color3f& color(const std::string &name) const;
     /// Retrieve a color (use default value if no entry exists)
@@ -273,7 +276,8 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
     ref<ContinuousSpectrum> spectrum(const std::string &name,
-                                     const ref<ContinuousSpectrum> &def_val) const;
+                                     ref<ContinuousSpectrum> def_val) const;
+
     /// Retrieve a continuous spectrum (use default flat spectrum if no entry exists)
     ref<ContinuousSpectrum> spectrum(const std::string &name,
                                      Float def_val) const;

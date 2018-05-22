@@ -149,7 +149,7 @@ template <typename Scalar> struct Resampler {
 
                 double sum = 0.0;
                 for (uint32_t j = 0; j < m_taps; j++) {
-                    /* Compute the the position where the filter should be evaluated */
+                    /* Compute the position where the filter should be evaluated */
                     Float pos = m_start[i] + (int32_t) j + Float(0.5) - center;
 
                     /* Perform the evaluation and record the weight */

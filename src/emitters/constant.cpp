@@ -5,6 +5,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/kdtree.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/core/plugin.h>
 
 NAMESPACE_BEGIN(mitsuba)

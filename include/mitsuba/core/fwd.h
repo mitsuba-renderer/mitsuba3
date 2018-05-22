@@ -23,7 +23,6 @@ class AnimatedTransform;
 class Appender;
 class ArgParser;
 class Bitmap;
-class ContinuousSpectrum;
 class DefaultFormatter;
 class DummyStream;
 class FileResolver;
@@ -96,17 +95,17 @@ using BoolX    = DynamicArray<BoolP>;
 //! @{ \name Common type aliases
 // =============================================================
 
-template <typename Value, size_t Size> struct Vector;
-template <typename Value, size_t Size> struct Point;
-template <typename Value, size_t Size> struct Normal;
-template <typename Point>              struct Ray;
-template <typename Point>              struct RayDifferential;
-template <typename Point>              struct BoundingBox;
-template <typename Point>              struct BoundingSphere;
-template <typename Vector>             struct Frame;
-template <typename Value, size_t Size> struct Color;
-template <typename Value>              struct Spectrum;
-template <typename Value>              struct Transform;
+template <typename Value, size_t Size>    struct Vector;
+template <typename Value, size_t Size>    struct Point;
+template <typename Value, size_t Size>    struct Normal;
+template <typename Point>                 struct Ray;
+template <typename Point>                 struct RayDifferential;
+template <typename Point>                 struct BoundingBox;
+template <typename Point>                 struct BoundingSphere;
+template <typename Vector>                struct Frame;
+template <typename Value, size_t Size>    struct Color;
+template <typename Value>                 struct Spectrum;
+template <typename VectorN>               struct Transform;
 
 using Vector1f = Vector<Float, 1>;
 using Vector2f = Vector<Float, 2>;
@@ -227,9 +226,13 @@ using RayDifferential3f  = RayDifferential<Point3f>;
 using RayDifferential3fP = RayDifferential<Point3fP>;
 using RayDifferential3fX = RayDifferential<Point3fX>;
 
-using Transform4f  = Transform<Float>;
-using Transform4fP = Transform<FloatP>;
-using Transform4fX = Transform<FloatX>;
+using Transform3f  = Transform<Vector3f>;
+using Transform3fP = Transform<Vector3fP>;
+using Transform3fX = Transform<Vector3fX>;
+
+using Transform4f  = Transform<Vector4f>;
+using Transform4fP = Transform<Vector4fP>;
+using Transform4fX = Transform<Vector4fX>;
 
 using Color3f  = Color<Float,  3>;
 using Color3fP = Color<FloatP, 3>;

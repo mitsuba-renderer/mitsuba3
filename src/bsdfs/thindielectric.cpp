@@ -4,6 +4,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/reflection.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -20,7 +21,7 @@ public:
         // Specifies the external index of refraction at the interface
         Float ext_ior = lookup_ior(props, "ext_ior", "air");
 
-        if (int_ior < 0.0f || ext_ior < 0.0f)
+        if (int_ior < 0.f || ext_ior < 0.f)
             Throw("The interior and exterior indices of "
                   "refraction must be positive!");
 
@@ -29,8 +30,8 @@ public:
         m_eta = (ContinuousSpectrum *) PluginManager::instance()
                 ->create_object<ContinuousSpectrum>(props_eta).get();
 
-        m_specular_reflectance   = props.spectrum("specular_reflectance",   1.0f);
-        m_specular_transmittance = props.spectrum("specular_transmittance", 1.0f);
+        m_specular_reflectance   = props.spectrum("specular_reflectance",   1.f);
+        m_specular_transmittance = props.spectrum("specular_transmittance", 1.f);
     }
 
     template <typename SurfaceInteraction,
@@ -52,11 +53,12 @@ public:
         Value R, cos_theta_t, eta_ti;
         std::tie(R, cos_theta_t, std::ignore, eta_ti) = fresnel(
             abs(Frame::cos_theta(si.wi)),
-            luminance(m_eta->eval(si.wavelengths, active), si.wavelengths));
-        Value T = 1.0f - R;
+            mean(m_eta->eval(si, active)));
+
 
         // Account for internal reflections: R' = R + TRT + TR^3T + ..
-        masked(R, R < 1.0f) += T * T * R / (1.0f - R * R);
+        Value T = 1.f - R;
+        masked(R, R < 1.f) += T * T * R / (1.f - R * R);
 
         BSDFSample bs;
         Spectrum value;
@@ -67,113 +69,54 @@ public:
             bs.sampled_component = select(reflection, Index(0), Index(1));
             bs.sampled_type =
                 select(reflection, Index(EDeltaReflection), Index(ENull));
-            bs.wo = select(reflection, reflect(si.wi),
-                           refract(si.wi, cos_theta_t, eta_ti));
+            bs.wo = select(reflection, reflect(si.wi), -si.wi);
 
-            bs.pdf = select(reflection, R, 1.0f - R);
+            bs.pdf = select(reflection, R, 1.f - R);
             value  = select(reflection,
-                            m_specular_reflectance->eval(si.wavelengths,   active),
-                            m_specular_transmittance->eval(si.wavelengths, active));
+                            m_specular_reflectance->eval(si,   active),
+                            m_specular_transmittance->eval(si, active));
         } else if (sample_reflection) {
             bs.sampled_component = 0;
             bs.sampled_type = EDeltaReflection;
             bs.wo = reflect(si.wi);
 
-            bs.pdf = 1.0f;
-            value = m_specular_reflectance->eval(si.wavelengths, active) * R;
+            bs.pdf = 1.f;
+            value = m_specular_reflectance->eval(si, active) * R;
         } else if (sample_transmission) {
             bs.sampled_component = 1;
             bs.sampled_type = ENull;
-            bs.wo = refract(si.wi, cos_theta_t, eta_ti);
+            bs.wo = -si.wi;
 
-            bs.pdf = 1.0f;
-            value = m_specular_transmittance->eval(si.wavelengths, active) * (1.0f - R);
+            bs.pdf = 1.f;
+            value = m_specular_transmittance->eval(si, active) * (1.f - R);
         }
 
         return { bs, value };
     }
 
-    template <typename SurfaceInteraction,
+    template <typename SurfaceInteraction, typename Vector3,
               typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
-    Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, const mask_t<Value> &active) const {
-        using Frame = Frame<Vector3>;
-        using Mask    = mask_t<Value>;
-
-        bool sample_reflection   = ctx.is_enabled(EDeltaReflection, 0);
-        bool sample_transmission = ctx.is_enabled(ENull, 1);
-
-        Value R, cos_theta_t, eta_ti;
-        std::tie(R, cos_theta_t, std::ignore, eta_ti) =
-            fresnel(abs(Frame::cos_theta(si.wi)),
-                    luminance(m_eta->eval(si.wavelengths, active),
-                              si.wavelengths, active));
-        Value T = 1.0f - R;
-
-        // Account for internal reflections: R' = R + TRT + TR^3T + ..
-        masked(R, R < 1.0f) += T * T * R / (1.0f - R * R);
-
-        Mask reflection =
-            (Frame::cos_theta(si.wi) * Frame::cos_theta(wo) >= 0.0f);
-        auto refracted = refract(si.wi, cos_theta_t, eta_ti);
-        Mask valid_direction =
-            active &&
-                (Mask(sample_reflection) && reflection &&
-                 (abs(dot(reflect(si.wi), wo) - 1.0f) <= math::DeltaEpsilon)) ||
-            (Mask(sample_transmission) && !reflection &&
-             (abs(dot(refracted, wo) - 1.0f) <= math::DeltaEpsilon));
-
-        Spectrum value
-            = select(reflection,
-                 m_specular_reflectance->eval(si.wavelengths,   active) * R,
-                 m_specular_transmittance->eval(si.wavelengths, active) * (1.0f - R));
-
-        return select(valid_direction, value, 0.0f);
+    MTS_INLINE
+    Spectrum eval_impl(const BSDFContext &/* ctx */, const SurfaceInteraction &/* si */,
+                       const Vector3 &/* wo */, mask_t<Value> /* active */) const {
+        return 0.f;
     }
 
-    template <typename SurfaceInteraction,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3>
-    Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                   const Vector3 &wo, const mask_t<Value> &active) const {
-        using Frame = Frame<Vector3>;
-        using Mask  = mask_t<Value>;
-
-        bool sample_reflection   = ctx.is_enabled(EDeltaReflection, 0);
-        bool sample_transmission = ctx.is_enabled(ENull, 1);
-
-        Value R, cos_theta_t, eta_ti;
-        std::tie(R, cos_theta_t, std::ignore, eta_ti) =
-            fresnel(abs(Frame::cos_theta(si.wi)),
-                    luminance(m_eta->eval(si.wavelengths, active),
-                              si.wavelengths, active));
-        Value T = 1.0f - R;
-
-        // Account for internal reflections: R' = R + TRT + TR^3T + ..
-        masked(R, R < 1.0f) += T * T * R / (1.0f - R * R);
-
-        Mask reflection =
-            (Frame::cos_theta(si.wi) * Frame::cos_theta(wo) >= 0.0f);
-        auto refracted = refract(si.wi, cos_theta_t, eta_ti);
-        Mask valid_direction =
-            active &&
-                (Mask(sample_reflection) && reflection &&
-                 (abs(dot(reflect(si.wi), wo) - 1.0f) <= math::DeltaEpsilon)) ||
-            (Mask(sample_transmission) && !reflection &&
-             (abs(dot(refracted, wo) - 1.0f) <= math::DeltaEpsilon));
-
-        Value pdf = select(reflection, R, (1.0f - R));
-        return select(valid_direction, pdf, 0.0f);
+    template <typename SurfaceInteraction, typename Vector3,
+              typename Value = value_t<Vector3>>
+    MTS_INLINE
+    Value pdf_impl(const BSDFContext &/* ctx */, const SurfaceInteraction & /* si */,
+                   const Vector3 &/* wo */, mask_t<Value> /* active */) const {
+        return 0.f;
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "ThinDielectric[" << std::endl
-            << "  eta = "                    << m_eta                    << "," << std::endl
-            << "  specular_reflectance = "   << m_specular_reflectance   << "," << std::endl
-            << "  specular_transmittance = " << m_specular_transmittance << std::endl
+            << "  eta = "                    << string::indent(m_eta)                    << "," << std::endl
+            << "  specular_reflectance = "   << string::indent(m_specular_reflectance)   << "," << std::endl
+            << "  specular_transmittance = " << string::indent(m_specular_transmittance) << std::endl
             << "]";
         return oss.str();
     }

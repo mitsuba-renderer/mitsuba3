@@ -1,44 +1,6 @@
 #include <mitsuba/core/spectrum.h>
-#include <mitsuba/core/logger.h>
-#include <mitsuba/core/math.h>
-#include <mitsuba/core/plugin.h>
-#include <mitsuba/core/properties.h>
-#include <numeric>
 
 NAMESPACE_BEGIN(mitsuba)
-
-// =======================================================================
-//! @{ \name Spectrum implementation (just throws exceptions)
-// =======================================================================
-//
-Spectrumf
-ContinuousSpectrum::eval(const Spectrumf &) const { NotImplementedError("eval"); }
-
-SpectrumfP
-ContinuousSpectrum::eval(const SpectrumfP &, MaskP) const { NotImplementedError("eval_p"); }
-
-std::pair<Spectrumf, Spectrumf>
-ContinuousSpectrum::sample(const Spectrumf &) const { NotImplementedError("sample"); }
-
-std::pair<SpectrumfP, SpectrumfP>
-ContinuousSpectrum::sample(const SpectrumfP &, MaskP) const { NotImplementedError("sample_p"); }
-
-Spectrumf ContinuousSpectrum::pdf(const Spectrumf &) const { NotImplementedError("pdf"); }
-
-SpectrumfP ContinuousSpectrum::pdf(const SpectrumfP &, MaskP) const { NotImplementedError("pdf_p"); }
-
-Float ContinuousSpectrum::integral() const { NotImplementedError("integral"); }
-
-ref<ContinuousSpectrum> ContinuousSpectrum::D65(Float scale) {
-    Properties props("d65");
-    props.set_float("scale", scale);
-    auto obj = PluginManager::instance()
-            ->create_object<ContinuousSpectrum>(props);
-    return (ContinuousSpectrum *) (obj->expand()[0].get());
-}
-
-//! @}
-// =======================================================================
 
 // =======================================================================
 //! @{ \name CIE 1931 2 degree observer implementation
@@ -136,5 +98,4 @@ template MTS_EXPORT_CORE SpectrumfP cie1931_y(const SpectrumfP &lambda, mask_t<S
 //! @}
 // =======================================================================
 
-MTS_IMPLEMENT_CLASS_ALIAS(ContinuousSpectrum, "spectrum", Object)
 NAMESPACE_END(mitsuba)

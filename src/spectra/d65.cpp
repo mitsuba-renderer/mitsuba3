@@ -1,4 +1,4 @@
-#include <mitsuba/core/spectrum.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/plugin.h>
 

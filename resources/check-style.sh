@@ -22,7 +22,7 @@ errors=0
 IFS=$'\n'
 found=
 # The mt=41 sets a red background for matched tabs:
-exec 3< <(GREP_COLORS='mt=41' grep $'\t' include/**/*.h src/**/*.{cpp,h,py} -rn --color=always)
+exec 3< <(GREP_COLORS='mt=41' grep $'\t' include/**/*.h src/**/*.{cpp,py} -rn --color=always)
 while read -u 3 f; do
     if [ -z "$found" ]; then
         echo -e '\e[31m\e[01mError: found tabs instead of spaces in the following files:\e[0m'
@@ -35,7 +35,7 @@ done
 
 found=
 # The mt=41 sets a red background for matched trailing spaces
-exec 3< <(GREP_COLORS='mt=41' grep '\s\+$' include/**/*.h src/**/*.{cpp,h,py} -rn --color=always)
+exec 3< <(GREP_COLORS='mt=41' grep '\s\+$' include/**/*.h src/**/*.{cpp,py} -rn --color=always)
 while read -u 3 f; do
     if [ -z "$found" ]; then
         echo -e '\e[31m\e[01mError: found trailing spaces in the following files:\e[0m'
@@ -47,7 +47,7 @@ while read -u 3 f; do
 done
 
 found=
-exec 3< <(GREP_COLORS='mt=41' grep '^\s*{\s*$' include/**/*.h src/**/*.{cpp,h} -rn --color=always)
+exec 3< <(GREP_COLORS='mt=41' grep '^\s*{\s*$' include/**/*.h src/**/*.cpp -rn --color=always)
 while read -u 3 f; do
     if [ -z "$found" ]; then
         echo -e '\e[31m\e[01mError: braces should occur on the same line as the if/while/.. statement. Found issues in the following files: \e[0m'
@@ -59,7 +59,7 @@ while read -u 3 f; do
 done
 
 found=
-exec 3< <(grep '\<\(if\|catch\|for\|while\)(\|){' include/**/*.h src/**/*.{cpp,h,py} -rn --color=always)
+exec 3< <(grep '\<\(if\|catch\|for\|while\)(\|){' include/**/*.h src/**/*.{cpp,py} -rn --color=always)
 while read -u 3 line; do
     if [ -z "$found" ]; then
         echo -e '\e[31m\e[01mError: found the following coding style problems:\e[0m'

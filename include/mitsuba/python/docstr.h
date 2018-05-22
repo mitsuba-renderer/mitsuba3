@@ -1653,7 +1653,9 @@ static const char *__doc_mitsuba_Color_r = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_r_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum =
+static const char *__doc_mitsuba_ContinuousSpectrum = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_2 =
 R"doc(Abstract continuous spectral power distribution data type, which
 supports evaluation at arbitrary wavelengths.
 
@@ -1662,7 +1664,12 @@ Remark:
     must be continuous, but rather emphasizes that it is a function
     defined on the set of real numbers (as opposed to the discretely
     sampled spectrum, which only stores samples at a finite set of
-    wavelengths).)doc";
+    wavelengths).
+
+A continuous spectrum can also be vary with respect to a spatial
+position. The (optional) texture interface at the bottom can be
+implemented to support this. The default implementation strips the
+position information and falls back the non-textured implementation.)doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_D65 = R"doc(Convenience method returning the standard D65 illuminant.)doc";
 
@@ -1678,6 +1685,12 @@ Parameter ``wavelengths``:
 static const char *__doc_mitsuba_ContinuousSpectrum_eval_2 = R"doc(Vectorized version of eval())doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_eval_3 = R"doc(Wrapper for scalar eval() with a mask (which will be ignored))doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_4 = R"doc(Evaluate the texture at the given surface interaction)doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_5 = R"doc(Vectorized version of eval())doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_6 = R"doc(Wrapper for scalar eval() with a mask (which will be ignored))doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_integral =
 R"doc(Return the integral over the spectrum over its support
@@ -1699,6 +1712,17 @@ static const char *__doc_mitsuba_ContinuousSpectrum_pdf_2 = R"doc(Vectorized ver
 
 static const char *__doc_mitsuba_ContinuousSpectrum_pdf_3 = R"doc(Wrapper for scalar pdf() with a mask (which will be ignored))doc";
 
+static const char *__doc_mitsuba_ContinuousSpectrum_pdf_4 =
+R"doc(Return the probability distribution of the sample() method as a
+probability per unit wavelength (in units of 1/nm).
+
+Not every implementation necessarily provides this function. The
+default implementation throws an exception.)doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_pdf_5 = R"doc(Vectorized version of pdf())doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_pdf_6 = R"doc(Wrapper for scalar pdf() with a mask (which will be ignored))doc";
+
 static const char *__doc_mitsuba_ContinuousSpectrum_sample =
 R"doc(Importance sample the spectral power distribution
 
@@ -1717,6 +1741,28 @@ value divided by the sampling density))doc";
 static const char *__doc_mitsuba_ContinuousSpectrum_sample_2 = R"doc(Vectorized version of sample())doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_sample_3 = R"doc(Wrapper for scalar sample() with a mask (which will be ignored))doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_sample_4 =
+R"doc(Importance sample the (textured) spectral power distribution
+
+Not every implementation necessarily provides this function. The
+default implementation throws an exception.
+
+Parameter ``si``:
+    An interaction record describing the associated surface position
+
+Parameter ``sample``:
+    A uniform variate for each desired wavelength.
+
+Returns:
+    1. Set of sampled wavelengths specified in nanometers
+
+2. The Monte Carlo importance weight (Spectral power distribution
+value divided by the sampling density))doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_sample_5 = R"doc(Vectorized version of sample())doc";
+
+static const char *__doc_mitsuba_ContinuousSpectrum_sample_6 = R"doc(Wrapper for scalar sample() with a mask (which will be ignored))doc";
 
 static const char *__doc_mitsuba_DefaultFormatter =
 R"doc(The default formatter used to turn log messages into a human-readable
@@ -2063,6 +2109,14 @@ static const char *__doc_mitsuba_EProfilerPhase_ECreateSurfaceInteraction = R"do
 
 static const char *__doc_mitsuba_EProfilerPhase_ECreateSurfaceInteractionP = R"doc()doc";
 
+static const char *__doc_mitsuba_EProfilerPhase_EEndpointEvaluate = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_EEndpointEvaluateP = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_EEndpointSample = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_EEndpointSampleP = R"doc()doc";
+
 static const char *__doc_mitsuba_EProfilerPhase_EImageBlockPut = R"doc()doc";
 
 static const char *__doc_mitsuba_EProfilerPhase_EImageBlockPutP = R"doc()doc";
@@ -2094,6 +2148,10 @@ static const char *__doc_mitsuba_EProfilerPhase_ESampleEmitterDirectionP = R"doc
 static const char *__doc_mitsuba_EProfilerPhase_ESamplingIntegratorEval = R"doc()doc";
 
 static const char *__doc_mitsuba_EProfilerPhase_ESamplingIntegratorEvalP = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_ESpectrumEval = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_ESpectrumEvalP = R"doc()doc";
 
 static const char *__doc_mitsuba_ETransportMode =
 R"doc(Specifies the transport mode when sampling or evaluating a scattering
@@ -2256,7 +2314,7 @@ and the position on the endpoint.
 
 The default implementation throws an exception.
 
-Parameter ``it``:
+Parameter ``ref``:
     A reference position somewhere within the scene.
 
 Parameter ``sample``:
@@ -3578,8 +3636,6 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_m_max_depth = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_m_rr_depth = R"doc()doc";
 
-static const char *__doc_mitsuba_MonteCarloIntegrator_m_strict_normals = R"doc()doc";
-
 static const char *__doc_mitsuba_NamedReference = R"doc(Wrapper object used to represent named references to Object instances)doc";
 
 static const char *__doc_mitsuba_NamedReference_NamedReference = R"doc()doc";
@@ -4701,15 +4757,11 @@ static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitt
 
 static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emitters)doc";
 
-static const char *__doc_mitsuba_Scene_eval_environment =
-R"doc(Return the environment radiance for a ray that did not intersect any
-of the scene objects.)doc";
+static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 
 static const char *__doc_mitsuba_Scene_film = R"doc(Return the current sensor's film)doc";
 
 static const char *__doc_mitsuba_Scene_film_2 = R"doc(Return the current sensor's film)doc";
-
-static const char *__doc_mitsuba_Scene_has_environment = R"doc(Does the scene have an environment map emitter?)doc";
 
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's integrator)doc";
 
@@ -4737,7 +4789,7 @@ static const char *__doc_mitsuba_Scene_pdf_emitter_direction =
 R"doc(Evaluate the probability density of the sample_emitter_direct()
 technique given an filled-in DirectionSample record.
 
-Parameter ``it``:
+Parameter ``ref``:
     A reference point somewhere within the scene
 
 Parameter ``ds``:
@@ -4815,7 +4867,7 @@ Ideally, the implementation should importance sample the product of
 the emission profile and the geometry term between the reference point
 and the position on the emitter.
 
-Parameter ``it``:
+Parameter ``ref``:
     A reference point somewhere within the scene
 
 Parameter ``sample``:
@@ -6688,6 +6740,8 @@ static const char *__doc_mitsuba_Transform_Transform_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Transform_extract = R"doc(Extract a lower-dimensional submatrix)doc";
+
 static const char *__doc_mitsuba_Transform_has_scale =
 R"doc(Test for a scale component in each transform matrix by checking
 whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -6746,7 +6800,7 @@ Remark:
     In the Python API, this method is named ``transform_vector``)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul_4 =
-R"doc(Transform a 3D normal argtor
+R"doc(Transform a 3D normal vector
 
 Remark:
     In the Python API, this method is named ``transform_normal``)doc";
@@ -6793,8 +6847,12 @@ Parameter ``far``:
     Far clipping plane)doc";
 
 static const char *__doc_mitsuba_Transform_rotate =
-R"doc(Create a rotation transformation around an arbitrary axis. The angle
-is specified in degrees)doc";
+R"doc(Create a rotation transformation around an arbitrary axis in 3D. The
+angle is specified in degrees)doc";
+
+static const char *__doc_mitsuba_Transform_rotate_2 =
+R"doc(Create a rotation transformation in 2D. The angle is specified in
+degrees)doc";
 
 static const char *__doc_mitsuba_Transform_scale = R"doc(Create a scale transformation)doc";
 
@@ -6803,7 +6861,7 @@ R"doc(Transform a 3D vector/point/normal/ray by a transformation that is
 known to be an affine 3D transformation (i.e. no perspective))doc";
 
 static const char *__doc_mitsuba_Transform_transform_affine_2 =
-R"doc(Transform a 3D point (handles affine/non-perspective transformations
+R"doc(Transform a point (handles affine/non-perspective transformations
 only))doc";
 
 static const char *__doc_mitsuba_Transform_transform_affine_3 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
@@ -7276,6 +7334,8 @@ static const char *__doc_mitsuba_lookup_ior_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_luminance = R"doc()doc";
 
+static const char *__doc_mitsuba_luminance_2 = R"doc()doc";
+
 static const char *__doc_mitsuba_math_bisect =
 R"doc(Bisect a floating point interval given a predicate function
 
@@ -7376,6 +7436,8 @@ R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
 
 Returns:
     ``True`` if a solution could be found)doc";
+
+static const char *__doc_mitsuba_math_sphdir = R"doc(//! @{ \name Helper functions for spherical geometry)doc";
 
 static const char *__doc_mitsuba_math_ulpdiff =
 R"doc(Compare the difference in ULPs between a reference value and another
@@ -7512,7 +7574,7 @@ Parameter ``eta``:
     Ratio of interior to exterior IORs at the interface.
 
 Parameter ``cos_theta_t``:
-    Cosine of the angle between the normal the the transmitted ray, as
+    Cosine of the angle between the normal the transmitted ray, as
     computed e.g. by fresnel_dielectric_ext.)doc";
 
 static const char *__doc_mitsuba_refract_2 =
@@ -7589,7 +7651,7 @@ static const char *__doc_mitsuba_sample_rgb_spectrum =
 R"doc(Importance sample a "importance spectrum" that concentrates the
 computation on wavelengths that are relevant for rendering of RGB data
 
-Based on "An Improved Technique for Full Spectral Rendering"
+Based on "An Improved Technique for Full Spectral Rendering" by
 Radziszewski, Boryczko, and Alda
 
 Returns a tuple with the sampled wavelength and inverse PDF)doc";
@@ -8139,6 +8201,8 @@ number of spaces)doc";
 static const char *__doc_mitsuba_string_indent_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_string_indent_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_string_replace_inplace = R"doc()doc";
 
 static const char *__doc_mitsuba_string_starts_with = R"doc(Check if the given string starts with a specified prefix)doc";
 

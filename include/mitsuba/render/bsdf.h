@@ -518,7 +518,7 @@ ENOKI_CALL_SUPPORT_END(mitsuba::BSDFP)
 
 /*
  * \brief This macro should be used in the definition of BSDF
- * plugins to instantiate concrete versions of the the \c sample,
+ * plugins to instantiate concrete versions of the \c sample,
  * \c eval and \c pdf functions.
  */
 #define MTS_IMPLEMENT_BSDF()                                                   \

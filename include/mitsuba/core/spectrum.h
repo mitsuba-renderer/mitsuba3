@@ -107,103 +107,6 @@ struct Spectrum<enoki::detail::MaskedArray<Value_>> : enoki::detail::MaskedArray
 //! @}
 // =======================================================================
 
-
-/**
- * \brief Abstract continuous spectral power distribution data type,
- * which supports evaluation at arbitrary wavelengths.
- *
- * \remark The term 'continuous' does not imply that the underlying spectrum
- * must be continuous, but rather emphasizes that it is a function defined on
- * the set of real numbers (as opposed to the discretely sampled spectrum,
- * which only stores samples at a finite set of wavelengths).
- */
-class MTS_EXPORT_CORE ContinuousSpectrum : public Object {
-public:
-    /**
-     * Evaluate the value of the spectral power distribution
-     * at a set of wavelengths
-     *
-     * \param wavelengths
-     *     List of wavelengths specified in nanometers
-     */
-    virtual Spectrumf eval(const Spectrumf &wavelengths) const;
-
-    /// Vectorized version of \ref eval()
-    virtual SpectrumfP eval(const SpectrumfP &wavelengths,
-                            MaskP active = true) const;
-
-    /// Wrapper for scalar \ref eval() with a mask (which will be ignored)
-    Spectrumf eval(const Spectrumf &wavelengths, bool /*unused*/) const {
-        return eval(wavelengths);
-    }
-
-    /**
-     * \brief Importance sample the spectral power distribution
-     *
-     * Not every implementation necessarily provides this function. The default
-     * implementation throws an exception.
-     *
-     * \param sample
-     *     A uniform variate for each desired wavelength.
-     *
-     * \return
-     *     1. Set of sampled wavelengths specified in nanometers
-     *
-     *     2. The Monte Carlo importance weight (Spectral power
-     *        distribution value divided by the sampling density)
-     */
-    virtual std::pair<Spectrumf, Spectrumf>
-    sample(const Spectrumf &sample) const;
-
-    /// Vectorized version of \ref sample()
-    virtual std::pair<SpectrumfP, SpectrumfP>
-    sample(const SpectrumfP &sample, MaskP active = true) const;
-
-    /// Wrapper for scalar \ref sample() with a mask (which will be ignored)
-    std::pair<Spectrumf, Spectrumf>
-    sample(const Spectrumf &s, bool /*mask*/) const {
-        return sample(s);
-    }
-
-    /**
-     * \brief Return the probability distribution of the \ref sample() method
-     * as a probability per unit wavelength (in units of 1/nm).
-     *
-     * Not every implementation necessarily provides this function. The default
-     * implementation throws an exception.
-     */
-    virtual Spectrumf pdf(const Spectrumf &wavelengths) const;
-
-    /// Vectorized version of \ref pdf()
-    virtual SpectrumfP pdf(const SpectrumfP &wavelengths,
-                           MaskP active = true) const;
-
-    /// Wrapper for scalar \ref pdf() with a mask (which will be ignored)
-    Spectrumf pdf(const Spectrumf &wavelengths, bool /*mask*/) {
-        return pdf(wavelengths);
-    }
-
-    /**
-     * Return the integral over the spectrum over its support
-     *
-     * Not every implementation necessarily provides this function. The default
-     * implementation throws an exception.
-     *
-     * Even if the operation is provided, it may only return an approximation.
-     */
-    virtual Float integral() const;
-
-    /**
-     * Convenience method returning the standard D65 illuminant.
-     */
-    static ref<ContinuousSpectrum> D65(Float scale = 1.0f);
-
-    MTS_DECLARE_CLASS()
-
-protected:
-    virtual ~ContinuousSpectrum() = default;
-};
-
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
 extern MTS_EXPORT_CORE const Float cie1931_x_data[95];
 extern MTS_EXPORT_CORE const Float cie1931_y_data[95];
@@ -265,7 +168,6 @@ Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
 template <typename Spectrum>
 value_t<Spectrum> luminance(const Spectrum &spectrum, const Spectrum &wavelengths,
                             mask_t<Spectrum> active = true) {
-    // CIE_Y_integral = 106.856895
     return mean(cie1931_y(wavelengths, active) * spectrum);
 }
 
@@ -278,7 +180,7 @@ template <typename Value> Value luminance(const Color<Value, 3> &c) {
  * on wavelengths that are relevant for rendering of RGB data
  *
  * Based on "An Improved Technique for Full Spectral Rendering"
- * Radziszewski, Boryczko, and Alda
+ * by Radziszewski, Boryczko, and Alda
  *
  * Returns a tuple with the sampled wavelength and inverse PDF
  */
@@ -298,34 +200,5 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
     return { sample * (830.f - 360.f) + 360.f, 830.f - 360.f };
 #endif
 }
-
-/*
- * \brief These macros should be used in the definition of Spectrum
- * plugins to instantiate concrete versions of the the \c sample,
- * \c eval and \c pdf functions.
- */
-#define MTS_IMPLEMENT_SPECTRUM()                                               \
-    Spectrumf eval(const Spectrumf &wavelengths) const override {              \
-        return eval_impl(wavelengths, true);                                   \
-    }                                                                          \
-    SpectrumfP eval(const SpectrumfP &wavelengths, MaskP active)               \
-        const override {                                                       \
-        return eval_impl(wavelengths, active);                                 \
-    }                                                                          \
-    Spectrumf pdf(const Spectrumf &wavelengths) const override {               \
-        return pdf_impl(wavelengths, true);                                    \
-    }                                                                          \
-    SpectrumfP pdf(const SpectrumfP &wavelengths, MaskP active)                \
-        const override {                                                       \
-        return pdf_impl(wavelengths, active);                                  \
-    }                                                                          \
-    std::pair<Spectrumf, Spectrumf> sample(const Spectrumf &sample)            \
-        const override {                                                       \
-        return sample_impl(sample, true);                                      \
-    }                                                                          \
-    std::pair<SpectrumfP, SpectrumfP> sample(const SpectrumfP &sample,         \
-                                             MaskP active) const override {    \
-        return sample_impl(sample, active);                                    \
-    }
 
 NAMESPACE_END(mitsuba)

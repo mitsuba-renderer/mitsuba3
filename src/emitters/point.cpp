@@ -1,5 +1,6 @@
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/bbox.h>

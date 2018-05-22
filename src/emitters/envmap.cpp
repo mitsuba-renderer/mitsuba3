@@ -6,6 +6,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/kdtree.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/srgb.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -81,8 +82,9 @@ public:
         using Point2f  = Point<Value, 2>;
         using Vector3f = Vector<Value, 3>;
 
-        Transform<Value> trafo = m_world_transform->eval(si.time, active);
-        Vector3f v = trafo.inverse().transform_affine(-si.wi);
+        Vector3f v = m_world_transform->eval(si.time, active)
+                         .inverse()
+                         .transform_affine(-si.wi);
 
         /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(atan2(v.x(), -v.z()) * math::InvTwoPi,
@@ -125,8 +127,7 @@ public:
 
         Value inv_sin_theta = safe_rsqrt(sqr(d.x()) + sqr(d.z()));
 
-        Transform<Value> trafo = m_world_transform->eval(it.time, active);
-        d = trafo.transform_affine(d);
+        d = m_world_transform->eval(it.time, active).transform_affine(d);
 
         DirectionSample ds;
         ds.p      = it.p + d * dist;
@@ -153,8 +154,9 @@ public:
         using Vector3f = Vector<Value, 3>;
         using Point2f  = Point<Value, 2>;
 
-        Transform<Value> trafo = m_world_transform->eval(it.time, active);
-        Vector3f d = trafo.inverse().transform_affine(ds.d);
+        Vector3f d = m_world_transform->eval(it.time, active)
+                         .inverse()
+                         .transform_affine(ds.d);
 
         /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(atan2(d.x(), -d.z()) * math::InvTwoPi,
@@ -176,6 +178,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "EnvironmentMapEmitter[" << std::endl
+            << "  name = \"" << m_name << "\"," << std::endl
             << "  bitmap = " << string::indent(m_bitmap) << "," << std::endl
             << "  bsphere = " << m_bsphere << std::endl
             << "]";

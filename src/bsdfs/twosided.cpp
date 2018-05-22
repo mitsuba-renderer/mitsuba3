@@ -1,6 +1,7 @@
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/spectrum.h>
 #include <enoki/stl.h>
 
 NAMESPACE_BEGIN(mitsuba)

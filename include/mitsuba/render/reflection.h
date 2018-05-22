@@ -206,7 +206,7 @@ Vector3 reflect(const Vector3 &wi) {
  * \param wi   Direction to refract
  * \param m    Surface normal
  * \param eta  Ratio of interior to exterior IORs at the interface.
- * \param cos_theta_t Cosine of the angle between the normal the the transmitted
+ * \param cos_theta_t Cosine of the angle between the normal the transmitted
  *                    ray, as computed e.g. by \ref fresnel_dielectric_ext.
  */
 // TODO: this is not compatible with a wavelength-dependent `eta`

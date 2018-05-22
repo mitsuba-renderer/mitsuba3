@@ -1,4 +1,5 @@
-#include <mitsuba/core/spectrum.h>
+#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -15,9 +16,9 @@ NAMESPACE_BEGIN(mitsuba)
 class BlackBodySpectrum final : public ContinuousSpectrum {
 public:
     /* A few natural constants */
-    const Float c = 2.99792458e+8f;   /* Speed of light */
-    const Float h = 6.62607004e-34f;  /* Planck constant */
-    const Float k = 1.38064852e-23f;  /* Boltzmann constant */
+    const Float c = Float(2.99792458e+8);   /* Speed of light */
+    const Float h = Float(6.62607004e-34);  /* Planck constant */
+    const Float k = Float(1.38064852e-23);  /* Boltzmann constant */
 
     /* First and second radiation static constants */
     const Float c0 = 2 * h * c * c;
@@ -42,7 +43,7 @@ public:
                  per unit wavelength (nm^-1)
                  per unit steradian (sr^-1) */
         auto P = 1e-9f * c0 / (lambda5 *
-                (exp(c1 / (lambda * m_temperature)) - 1.0f));
+                (exp(c1 / (lambda * m_temperature)) - 1.f));
 
         return P & mask_valid;
     }

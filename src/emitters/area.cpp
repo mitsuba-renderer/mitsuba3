@@ -3,6 +3,7 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

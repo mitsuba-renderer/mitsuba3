@@ -47,7 +47,7 @@ bool AnimatedTransform::has_scale() const {
 }
 
 template <typename Value>
-Transform<Value> MTS_INLINE AnimatedTransform::eval_impl(Value time, mask_t<Value> active) const {
+Transform<Vector<Value, 4>> MTS_INLINE AnimatedTransform::eval_impl(Value time, mask_t<Value> active) const {
     static_assert(std::is_same<scalar_t<Value>, Float>::value, "Expected a 'float'-valued time parameter");
 
     /* Compute constants describing the layout of the 'Keyframe' data structure */
@@ -96,7 +96,7 @@ Transform<Value> MTS_INLINE AnimatedTransform::eval_impl(Value time, mask_t<Valu
     Vector3 trans1 = gather<Vector3, Stride>((Float *) m_keyframes.data() + TransOffset, idx1, active);
     Vector3 trans = trans0 * (1 - t) + trans1 * t;
 
-    return Transform<Value>(
+    return Transform<Vector<Value, 4>>(
         enoki::transform_compose(scale, quat, trans),
         enoki::transform_compose_inverse(scale, quat, trans)
     );
@@ -157,14 +157,14 @@ template Normal3fP MTS_EXPORT_CORE Transform4f::operator*(const Normal3fP&) cons
 template Ray3f     MTS_EXPORT_CORE Transform4f::operator*(const Ray3f&) const;
 template Ray3fP    MTS_EXPORT_CORE Transform4f::operator*(const Ray3fP&) const;
 
-template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Point3f&) const;
-template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Point3fP&) const;
-template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Vector3f&) const;
-template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Vector3fP&) const;
-template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Normal3f&) const;
-template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Normal3fP&) const;
-template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3f&) const;
-template auto      MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3fP&) const;
+template auto MTS_EXPORT_CORE Transform4f::transform_affine(const Vector3f&) const;
+template auto MTS_EXPORT_CORE Transform4f::transform_affine(const Vector3fP&) const;
+template auto MTS_EXPORT_CORE Transform4f::transform_affine(const Normal3f&) const;
+template auto MTS_EXPORT_CORE Transform4f::transform_affine(const Normal3fP&) const;
+template Point3f   MTS_EXPORT_CORE Transform4f::transform_affine(const Point3f&) const;
+template Point3fP  MTS_EXPORT_CORE Transform4f::transform_affine(const Point3fP&) const;
+template Ray3f     MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3f&) const;
+template Ray3fP    MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3fP&) const;
 
 MTS_IMPLEMENT_CLASS(AnimatedTransform, Object)
 NAMESPACE_END(mitsuba)

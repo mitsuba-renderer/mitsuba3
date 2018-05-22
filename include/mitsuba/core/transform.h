@@ -19,14 +19,15 @@ using Quaternion4f = enoki::Quaternion<Float>;
  * behave differently under homogeneous coordinate transformations, hence
  * the need to represent them using separate types)
  */
-template <typename Value> struct Transform {
+template <typename VectorN> struct Transform {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
 
-    using Matrix4 = Matrix<Value, 4>;
-    using Vector3 = Vector<Value, 3>;
-    using Vector4 = Vector<Value, 4>;
+    static constexpr size_t Size = std::decay_t<VectorN>::Size;
+
+    using Value   = value_t<std::decay_t<VectorN>>;
+    using Matrix  = enoki::Matrix<Value, Size>;
     using Mask    = mask_t<Value>;
 
     //! @}
@@ -36,8 +37,8 @@ template <typename Value> struct Transform {
     //! @{ \name Fields
     // =============================================================
 
-    Matrix4 matrix            = identity<Matrix4>();
-    Matrix4 inverse_transpose = identity<Matrix4>();
+    Matrix matrix            = identity<Matrix>();
+    Matrix inverse_transpose = identity<Matrix>();
 
     //! @}
     // =============================================================
@@ -47,7 +48,7 @@ template <typename Value> struct Transform {
     // =============================================================
 
     /// Initialize the transformation from the given matrix (and compute its inverse transpose)
-    Transform(const Matrix4 &value)
+    Transform(const Matrix &value)
         : matrix(value),
           inverse_transpose(enoki::inverse_transpose(value)) { }
 
@@ -63,7 +64,9 @@ template <typename Value> struct Transform {
     }
 
     /// Get the translation part of a matrix
-    Vector3 translation() const { return head<3>(matrix.coeff(3)); }
+    Vector<Value, Size - 1> translation() const {
+        return head<Size - 1>(matrix.coeff(Size - 1));
+    }
 
     /// Equality comparison operator
     bool operator==(const Transform &t) const {
@@ -86,92 +89,105 @@ template <typename Value> struct Transform {
         return operator*(input);
     }
 
-    /// Transform a 3D point (handles affine/non-perspective transformations only)
-    template <typename Value2, typename E = expr_t<Value, Value2>>
-    MTS_INLINE auto transform_affine(const Point<Value2, 3> &vec) const {
-        Array<E, 4> result = matrix.coeff(3);
-        result = fmadd(matrix.coeff(0), vec.x(), result);
-        result = fmadd(matrix.coeff(1), vec.y(), result);
-        result = fmadd(matrix.coeff(2), vec.z(), result);
+    /// Transform a point (handles affine/non-perspective transformations only)
+    template <typename T, typename Expr = expr_t<Value, T>>
+    MTS_INLINE Point<Expr, Size - 1> transform_affine(const Point<T, Size - 1> &arg) const {
+        Array<Expr, Size> result = matrix.coeff(Size - 1);
 
-        return Point<E, 3>(head<3>(result)); // no-op
+        ENOKI_UNROLL for (size_t i = 0; i < Size - 1; ++i)
+            result = fmadd(matrix.coeff(i), arg.coeff(i), result);
+
+        return head<Size - 1>(result); // no-op
     }
 
     /**
      * \brief Transform a 3D point
      * \remark In the Python API, this method is named \c transform_point
      */
-    template <typename Value2, typename E = expr_t<Value, Value2>>
-    MTS_INLINE Point<E, 3> operator*(const Point<Value2, 3> &arg) const {
-        Array<E, 4> result = matrix.coeff(3);
-        result = fmadd(matrix.coeff(0), arg.x(), result);
-        result = fmadd(matrix.coeff(1), arg.y(), result);
-        result = fmadd(matrix.coeff(2), arg.z(), result);
+    template <typename T, typename Expr = expr_t<Value, T>>
+    MTS_INLINE Point<Expr, Size - 1> operator*(const Point<T, Size - 1> &arg) const {
+        Array<Expr, Size> result = matrix.coeff(Size - 1);
 
-        auto w = result.w();
+        ENOKI_UNROLL for (size_t i = 0; i < Size - 1; ++i)
+            result = fmadd(matrix.coeff(i), arg.coeff(i), result);
+
+        Expr w = result.coeff(Size - 1);
         if (unlikely(any_nested(neq(w, 1.f))))
-            result *= rcp<Point<Value2, 3>::Approx>(w);
+            result *= rcp<Point<T, Size - 1>::Approx>(w);
 
-        return head<3>(result); // no-op
+        return head<Size - 1>(result); // no-op
     }
 
     /**
      * \brief Transform a 3D vector
      * \remark In the Python API, this method is named \c transform_vector
      */
-    template <typename Value2, typename E = expr_t<Value, Value2>>
-    MTS_INLINE Vector<E, 3> operator*(const Vector<Value2, 3> &arg) const {
-        Array<E, 4> result = matrix.coeff(0); result *= arg.x();
-        result = fmadd(matrix.coeff(1), arg.y(), result);
-        result = fmadd(matrix.coeff(2), arg.z(), result);
+    template <typename T, typename Expr = expr_t<Value, T>>
+    MTS_INLINE Vector<Expr, Size - 1> operator*(const Vector<T, Size - 1> &arg) const {
+        Array<Expr, Size> result = matrix.coeff(0);
+        result *= arg.x();
 
-        return head<3>(result); // no-op
+        ENOKI_UNROLL for (size_t i = 1; i < Size - 1; ++i)
+            result = fmadd(matrix.coeff(i), arg.coeff(i), result);
+
+        return head<Size - 1>(result); // no-op
     }
+
     /**
-     * \brief Transform a 3D normal argtor
+     * \brief Transform a 3D normal vector
      * \remark In the Python API, this method is named \c transform_normal
      */
-    template <typename Value2, typename E = expr_t<Value, Value2>>
-    MTS_INLINE Normal<E, 3> operator*(const Normal<Value2, 3> &arg) const {
-        Array<E, 4> result = inverse_transpose.coeff(0); result *= arg.x();
-        result = fmadd(inverse_transpose.coeff(1), arg.y(), result);
-        result = fmadd(inverse_transpose.coeff(2), arg.z(), result);
+    template <typename T, typename Expr = expr_t<Value, T>>
+    MTS_INLINE Normal<Expr, Size - 1> operator*(const Normal<T, Size - 1> &arg) const {
+        Array<Expr, Size> result = inverse_transpose.coeff(0);
+        result *= arg.x();
 
-        return head<3>(result); // no-op
+        ENOKI_UNROLL for (size_t i = 1; i < Size - 1; ++i)
+            result = fmadd(inverse_transpose.coeff(i), arg.coeff(i), result);
+
+        return head<Size - 1>(result); // no-op
     }
 
     /// Transform a ray (for perspective transformations)
-    template <typename Value2, typename E = expr_t<Value, Value2>,
-              typename Result = Ray<Point<E, 3>>>
-    MTS_INLINE Result operator*(const Ray<Point<Value2, 3>> &ray) const {
-        return Result(operator*(ray.o), operator*(ray.d), ray.mint, ray.maxt,
-                      ray.time, ray.wavelengths);
+    template <typename T, typename Expr = expr_t<Value, T>,
+              typename Result = Ray<Point<Expr, Size - 1>>>
+    MTS_INLINE Result operator*(const Ray<Point<T, Size - 1>> &ray) const {
+        return Result(operator*(ray.o), operator*(ray.d), ray.mint,
+                      ray.maxt, ray.time, ray.wavelengths);
     }
 
     /// Transform a ray (for affine/non-perspective transformations)
-    template <typename Value2, typename E = expr_t<Value, Value2>>
-    MTS_INLINE auto transform_affine(const Ray<Point<Value2, 3>> &ray) const {
-        return Ray<Point<E, 3>>(transform_affine(ray.o),
-                                transform_affine(ray.d), ray.mint, ray.maxt,
-                                ray.time, ray.wavelengths);
+    template <typename T, typename Expr = expr_t<Value, T>,
+              typename Result = Ray<Point<Expr, Size - 1>>>
+    MTS_INLINE Result transform_affine(const Ray<Point<T, Size - 1>> &ray) const {
+        return Result(transform_affine(ray.o), transform_affine(ray.d),
+                      ray.mint, ray.maxt, ray.time, ray.wavelengths);
     }
 
     /// Create a translation transformation
-    static Transform translate(const Vector3 &v) {
-        return Transform(enoki::translate<Matrix4>(v),
-                         transpose(enoki::translate<Matrix4>(-v)));
+    static Transform translate(const Vector<Value, Size - 1> &v) {
+        return Transform(enoki::translate<Matrix>(v),
+                         transpose(enoki::translate<Matrix>(-v)));
     }
 
     /// Create a scale transformation
-    static Transform scale(const Vector3 &v) {
-        return Transform(enoki::scale<Matrix4>(v),
+    static Transform scale(const Vector<Value, Size - 1> &v) {
+        return Transform(enoki::scale<Matrix>(v),
                          // No need to transpose a diagonal matrix.
-                         enoki::scale<Matrix4>(rcp(v)));
+                         enoki::scale<Matrix>(rcp(v)));
     }
 
-    /// Create a rotation transformation around an arbitrary axis. The angle is specified in degrees
-    static Transform rotate(const Vector3 &axis, const Value &angle) {
-        Matrix4 matrix = enoki::rotate<Matrix4>(axis, deg_to_rad(angle));
+    /// Create a rotation transformation around an arbitrary axis in 3D. The angle is specified in degrees
+    template <size_t N = Size, std::enable_if_t<N == 4, int> = 0>
+    static Transform rotate(const Vector<Value, Size - 1> &axis, const Value &angle) {
+        Matrix matrix = enoki::rotate<Matrix>(axis, deg_to_rad(angle));
+        return Transform(matrix, matrix);
+    }
+
+    /// Create a rotation transformation in 2D. The angle is specified in degrees
+    template <size_t N = Size, std::enable_if_t<N == 3, int> = 0>
+    static Transform rotate(const Value &angle) {
+        Matrix matrix = enoki::rotate<Matrix>(deg_to_rad(angle));
         return Transform(matrix, matrix);
     }
 
@@ -190,6 +206,7 @@ template <typename Value> struct Transform {
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
+    template <size_t N = Size, std::enable_if_t<N == 4, int> = 0>
     static Transform perspective(const Value &fov, const Value &near,
                                  const Value &far) {
         Value recip = 1.f / (far - near);
@@ -199,11 +216,11 @@ template <typename Value> struct Transform {
         Value tan = enoki::tan(deg_to_rad(fov * .5f)),
               cot = 1.f / tan;
 
-        Matrix4 trafo = diag<Matrix4>(Vector4(cot, cot, far * recip, 0.0f));
+        Matrix trafo = diag<Matrix>(Vector<Value, Size>(cot, cot, far * recip, 0.0f));
         trafo(2, 3) = -near * far * recip;
         trafo(3, 2) = 1.f;
 
-        Matrix4 inv_trafo = diag<Matrix4>(Vector4(tan, tan, 0.f, rcp(near)));
+        Matrix inv_trafo = diag<Matrix>(Vector<Value, Size>(tan, tan, 0.f, rcp(near)));
         inv_trafo(2, 3) = 1.f;
         inv_trafo(3, 2) = (near - far) / (far * near);
 
@@ -216,9 +233,10 @@ template <typename Value> struct Transform {
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
+    template <size_t N = Size, std::enable_if_t<N == 4, int> = 0>
     static Transform orthographic(const Value &near, const Value &far) {
-        return scale(Vector3(1.f, 1.f, 1.f / (far - near))) *
-               translate(Vector3(0.f, 0.f, -near));
+        return scale({1.f, 1.f, 1.f / (far - near)}) *
+               translate({ 0.f, 0.f, -near });
     }
 
     /** \brief Create a look-at camera transformation
@@ -227,27 +245,30 @@ template <typename Value> struct Transform {
      * \param target Target vector
      * \param up     Up vector
      */
-    static Transform look_at(const Point3f &origin,
-                             const Point3f &target,
-                             const Vector3 &up) {
+    template <size_t N = Size, std::enable_if_t<N == 4, int> = 0>
+    static Transform look_at(const Point<Value, 3> &origin,
+                             const Point<Value, 3> &target,
+                             const Vector<Value, 3> &up) {
+        using Vector3 = Vector<Value, 3>;
+
         Vector3 dir = normalize(target - origin);
         dir = normalize(dir);
         Vector3 left = normalize(cross(up, dir));
 
         Vector3 new_up = cross(dir, left);
 
-        Matrix4 result = Matrix4::from_cols(
+        Matrix result = Matrix::from_cols(
             concat(left, 0.f),
             concat(new_up, 0.f),
             concat(dir, 0.f),
             concat(origin, 1.f)
         );
 
-        Matrix4 inverse = Matrix4::from_rows(
+        Matrix inverse = Matrix::from_rows(
             concat(left, 0.f),
             concat(new_up, 0.f),
             concat(dir, 0.f),
-            Vector4(0.f, 0.f, 0.f, 1.f)
+            Vector<Value, 4>(0.f, 0.f, 0.f, 1.f)
         );
 
         inverse[3] = inverse * concat(-origin, 1.f);
@@ -268,12 +289,12 @@ template <typename Value> struct Transform {
      * whether <tt>M . M^T == I</tt> (where <tt>M</tt> is the matrix in
      * question and <tt>I</tt> is the identity).
      */
-    inline Mask has_scale() const {
+    Mask has_scale() const {
         Mask mask(false);
-        for (int i = 0; i < 3; ++i) {
-            for (int j = i; j < 3; ++j) {
+        for (size_t i = 0; i < Size - 1; ++i) {
+            for (size_t j = i; j < Size - 1; ++j) {
                 Value sum(0);
-                for (int k = 0; k < 3; ++k)
+                for (size_t k = 0; k < Size - 1; ++k)
                     sum += matrix[i][k] * matrix[j][k];
 
                 mask |= enoki::abs(sum - (i == j ? 1.f : 0.f)) > 1e-3f;
@@ -282,6 +303,31 @@ template <typename Value> struct Transform {
         return mask;
     }
 
+    /// Extract a lower-dimensional submatrix
+    template <size_t ExtractedSize = Size - 1,
+              typename Result = Transform<Vector<Value, ExtractedSize>>>
+    MTS_INLINE Result extract() const {
+        Result result;
+        for (size_t i = 0; i < ExtractedSize - 1; ++i) {
+            for (size_t j = 0; j < ExtractedSize - 1; ++j) {
+                result.matrix.coeff(i, j) = matrix.coeff(i, j);
+                result.inverse_transpose.coeff(i, j) =
+                    inverse_transpose.coeff(i, j);
+            }
+            result.matrix.coeff(ExtractedSize - 1, i) =
+                matrix.coeff(Size - 1, i);
+            result.inverse_transpose.coeff(i, ExtractedSize - 1) =
+                inverse_transpose.coeff(i, Size - 1);
+        }
+
+        result.matrix.coeff(ExtractedSize - 1, ExtractedSize - 1) =
+            matrix.coeff(Size - 1, Size - 1);
+
+        result.inverse_transpose.coeff(ExtractedSize - 1, ExtractedSize - 1) =
+            inverse_transpose.coeff(Size - 1, Size - 1);
+
+        return result;
+    }
 
     //! @}
     // =============================================================
@@ -318,13 +364,12 @@ public:
             : time(time), scale(scale), quat(quat), trans(trans) { }
 
         bool operator==(const Keyframe &f) const {
-            return (time == f.time
-                 && scale == f.scale
-                 && quat == f.quat
-                 && trans == f.trans);
+            return (time == f.time && scale == f.scale
+                 && quat == f.quat && trans == f.trans);
         }
+
         bool operator!=(const Keyframe &f) const {
-            return !(*this == f);
+            return !operator==(f);
         }
 
         ENOKI_ALIGNED_OPERATOR_NEW()
@@ -385,8 +430,9 @@ public:
         }
         return true;
     }
+
     bool operator!=(const AnimatedTransform &t) const {
-        return !(*this == t);
+        return !operator==(t);
     }
 
     /// Return a human-readable summary of this bitmap
@@ -396,7 +442,7 @@ public:
 
 protected:
     template <typename Value>
-    Transform<Value> eval_impl(Value time, mask_t<Value> active) const;
+    Transform<Vector<Value, 4>> eval_impl(Value time, mask_t<Value> active) const;
 
 private:
     Transform4f m_transform;
@@ -407,8 +453,8 @@ private:
 //! @{ \name Printing
 // -----------------------------------------------------------------------
 
-template <typename Value>
-std::ostream &operator<<(std::ostream &os, const Transform<Value> &t) {
+template <typename VectorN>
+std::ostream &operator<<(std::ostream &os, const Transform<VectorN> &t) {
     os << t.matrix;
     return os;
 }

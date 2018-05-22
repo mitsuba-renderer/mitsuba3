@@ -17,6 +17,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   sensor.cpp
   shape.cpp
   spiral.cpp
+  spectrum.cpp
 )
 
 target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render tbb)

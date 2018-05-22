@@ -1,7 +1,7 @@
 import mitsuba
 import numpy as np
 from mitsuba.core.xml import load_string
-from mitsuba.core import ContinuousSpectrum
+from mitsuba.render import ContinuousSpectrum
 import os
 
 n_samples = mitsuba.core.MTS_WAVELENGTH_SAMPLES

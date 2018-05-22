@@ -41,6 +41,8 @@ enum class EProfilerPhase : int {
     EEndpointEvaluateP,          /* Endpoint::eval() and Endpoint::pdf() [packet] */
     EEndpointSample,             /* Endpoint::sample() */
     EEndpointSampleP,            /* Endpoint::sample() [packet] */
+    ESpectrumEval,               /* ContinuousSpectrum::eval() */
+    ESpectrumEvalP,              /* ContinuousSpectrum::eval() [packet] */
     EProfilerPhaseCount
 };
 
@@ -69,7 +71,9 @@ constexpr const char *profiler_phase_id[int(EProfilerPhase::EProfilerPhaseCount)
     "Endpoint::eval(), pdf()",
     "Endpoint::eval(), pdf() [packet]",
     "Endpoint::sample()",
-    "Endpoint::sample() [packet]"
+    "Endpoint::sample() [packet]",
+    "ContinuousSpectrum::eval()",
+    "ContinuousSpectrum::eval() [packet]"
 };
 
 static_assert(int(EProfilerPhase::EProfilerPhaseCount) <= 64,

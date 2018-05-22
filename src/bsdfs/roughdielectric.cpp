@@ -6,6 +6,7 @@
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/reflection.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/sampler.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -98,7 +99,7 @@ public:
             return { bs, 0.0f };
 
         bs.pdf = microfacet_pdf;
-        Value eta_value = enoki::mean(m_eta->eval(si.wavelengths, active));
+        Value eta_value = enoki::mean(m_eta->eval(si, active));
         Value inv_eta_value = rcp(eta_value);
 
         Value F, cos_theta_t;
@@ -129,7 +130,7 @@ public:
                                 && (cos_theta_wi * Frame::cos_theta(bs.wo) > 0.0f);
             mask = mask && active;
 
-            masked(weight, mask) = weight * m_specular_reflectance->eval(si.wavelengths);
+            masked(weight, mask) = weight * m_specular_reflectance->eval(si);
 
             // Jacobian of the half-direction mapping
             masked(dwh_dwo, mask) = rcp(4.0f * dot(bs.wo, m));
@@ -160,7 +161,7 @@ public:
                 : Value(1.0f);
 
             masked(weight, mask) =
-                weight * m_specular_transmittance->eval(si.wavelengths)
+                weight * m_specular_transmittance->eval(si)
                        * (factor * factor);
 
             // Jacobian of the half-direction mapping
@@ -210,7 +211,7 @@ public:
         if (none(active))
             return Spectrum(0.0f);
 
-        Value eta_value = enoki::mean(m_eta->eval(si.wavelengths, active));
+        Value eta_value = enoki::mean(m_eta->eval(si, active));
         Value inv_eta_value = rcp(eta_value);
 
         // Compute the half-vector
@@ -255,7 +256,7 @@ public:
             Value value = F * D * G / (4.0f * abs(cos_theta_wi));
 
             masked(result, reflect && active)
-                = m_specular_reflectance->eval(si.wavelengths) * value;
+                = m_specular_reflectance->eval(si) * value;
         }
 
         if (has_transmission && any(!reflect && active)) {
@@ -275,7 +276,7 @@ public:
                 : Value(1.0f);
 
             masked(result, (!reflect && active))
-                = m_specular_transmittance->eval(si.wavelengths)
+                = m_specular_transmittance->eval(si)
                   * abs(value * factor * factor);
         }
 
@@ -295,7 +296,7 @@ public:
         bool has_transmission = ctx.is_enabled(EGlossyTransmission, 1);
         Mask reflect = (Frame::cos_theta(si.wi) * Frame::cos_theta(wo) > 0.0f);
 
-        Value eta_value     = enoki::mean(m_eta->eval(si.wavelengths, active));
+        Value eta_value     = enoki::mean(m_eta->eval(si, active));
         Value inv_eta_value = rcp(eta_value);
 
         Vector3 H;

@@ -2,47 +2,6 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Spectrum) {
-    MTS_PY_CLASS(ContinuousSpectrum, Object)
-        .def("integral", &ContinuousSpectrum::integral, D(ContinuousSpectrum, integral))
-
-        // ---------------------------------------------------------------------
-
-        .def("eval",
-             vectorize_wrapper(py::overload_cast<const Spectrumf &>(
-                 &ContinuousSpectrum::eval, py::const_)),
-             "wavelengths"_a, D(ContinuousSpectrum, eval))
-
-        .def("eval",
-             vectorize_wrapper(py::overload_cast<const SpectrumfP &, MaskP>(
-                 &ContinuousSpectrum::eval, py::const_)),
-             "wavelengths"_a, "active"_a = true, D(ContinuousSpectrum, eval, 2))
-
-        // ---------------------------------------------------------------------
-
-        .def("pdf",
-             vectorize_wrapper(py::overload_cast<const Spectrumf &>(
-                 &ContinuousSpectrum::pdf, py::const_)),
-             "wavelengths"_a, D(ContinuousSpectrum, pdf))
-
-        .def("pdf",
-             vectorize_wrapper(py::overload_cast<const SpectrumfP &, MaskP>(
-                 &ContinuousSpectrum::pdf, py::const_)),
-             "wavelengths"_a, "active"_a = true, D(ContinuousSpectrum, pdf, 2))
-
-        // ---------------------------------------------------------------------
-
-        .def("sample",
-             vectorize_wrapper(py::overload_cast<const Spectrumf &>(
-                 &ContinuousSpectrum::sample, py::const_)),
-             "sample"_a, D(ContinuousSpectrum, sample))
-
-        .def("sample",
-             vectorize_wrapper(py::overload_cast<const SpectrumfP &, MaskP>(
-                 &ContinuousSpectrum::sample, py::const_)),
-             "sample"_a, "active"_a = true, D(ContinuousSpectrum, sample, 2));
-
-        // ---------------------------------------------------------------------
-
     m.def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<const Spectrumf &>),
           "wavelengths"_a, "active"_a = true, D(cie1931_xyz))
      .def("cie1931_xyz", vectorize_wrapper(&cie1931_xyz<SpectrumfP>),

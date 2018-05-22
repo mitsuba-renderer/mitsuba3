@@ -124,6 +124,11 @@ void register_class(const Class *class_) {
     } else if (it->second != EObject) {
         (*tag_class)[tag_name] = class_;
     }
+
+    if (tag_name == "spectrum") {
+        (*tags)["texture"] = EObject;
+        (*tag_class)["texture"] = class_;
+    }
 }
 
 // Called by Class::static_shutdown()
@@ -278,15 +283,62 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
             std::string name = name_attrib.value();
             for (size_t i = 0; i < name.length() - 1; ++i) {
                 if (std::islower(name[i]) && std::isupper(name[i + 1])) {
-                    name = name.substr(0, i + 1) + std::string("_") +
-                           (char) std::tolower(name[i + 1]) + name.substr(i + 2);
-                    ++i;
+                    name = name.substr(0, i + 1) + std::string("_") + name.substr(i + 1);
+                    i += 2;
+                    while (i < name.length() && std::isupper(name[i])) {
+                        name[i] = std::tolower(name[i]);
+                        ++i;
+                    }
                 }
             }
             name_attrib.set_value(name.c_str());
         }
         for (pugi::xpath_node result: node.select_nodes("//lookAt"))
             result.node().set_name("lookat");
+
+        /* Update 'uoffset', 'voffset', 'uscale', 'vscale' to transform block */
+        for (pugi::xpath_node result : node.select_nodes(
+                 "//node()[float[@name='uoffset' or @name='voffset' or "
+                 "@name='uscale' or @name='vscale']]")) {
+            pugi::xml_node node = result.node();
+            pugi::xml_node uoffset = node.select_node("float[@name='uoffset']").node();
+            pugi::xml_node voffset = node.select_node("float[@name='voffset']").node();
+            pugi::xml_node uscale  = node.select_node("float[@name='uscale']").node();
+            pugi::xml_node vscale  = node.select_node("float[@name='vscale']").node();
+
+            Vector2f offset(0.f), scale(1.f);
+            if (uoffset) {
+                offset.x() = stof(uoffset.attribute("value").value());
+                node.remove_child(uoffset);
+            }
+            if (voffset) {
+                offset.y() = stof(voffset.attribute("value").value());
+                node.remove_child(voffset);
+            }
+            if (uscale) {
+                scale.x() = stof(uscale.attribute("value").value());
+                node.remove_child(uscale);
+            }
+            if (vscale) {
+                scale.y() = stof(vscale.attribute("value").value());
+                node.remove_child(vscale);
+            }
+
+            pugi::xml_node trafo = node.append_child("transform");
+            trafo.append_attribute("name") = "to_uv";
+
+            if (offset != Vector2f(0.f)) {
+                pugi::xml_node element = trafo.append_child("translate");
+                element.append_attribute("x") = std::to_string(offset.x()).c_str();
+                element.append_attribute("y") = std::to_string(offset.y()).c_str();
+            }
+
+            if (scale != Vector2f(1.f)) {
+                pugi::xml_node element = trafo.append_child("scale");
+                element.append_attribute("x") = std::to_string(scale.x()).c_str();
+                element.append_attribute("y") = std::to_string(scale.y()).c_str();
+            }
+        }
     }
 
     src.modified = true;
@@ -563,8 +615,12 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     check_attributes(src, node, { "name", "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
+                    if (tokens.size() == 1) {
+                        tokens.push_back(tokens[0]);
+                        tokens.push_back(tokens[0]);
+                    }
                     if (tokens.size() != 3)
-                        src.throw_error(node, "'rgb' tag requires three values (got \"%s\")", node.attribute("value").value());
+                        src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")", node.attribute("value").value());
 
                     Properties props2(within_emitter ? "srgb_d65" : "srgb");
                     try {
@@ -575,9 +631,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     } catch (...) {
                         src.throw_error(node, "could not parse RGB value \"%s\"", node.attribute("value").value());
                     }
-                    ref<Object> obj =
-                        PluginManager::instance()
-                            ->create_object<ContinuousSpectrum>(props2).get();
+                    ref<Object> obj = PluginManager::instance()->create_object(props2);
                     props.set_object(node.attribute("name").value(), obj);
                 }
                 break;
@@ -593,9 +647,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         } catch (...) {
                             src.throw_error(node, "could not parse constant spectrum \"%s\"", tokens[0]);
                         }
-                        ref<Object> obj =
-                            PluginManager::instance()
-                                ->create_object<ContinuousSpectrum>(props2).get();
+                        ref<Object> obj = PluginManager::instance()->create_object(props2);
                         auto expanded = obj->expand();
                         if (expanded.size() == 1)
                             obj = expanded[0];
@@ -653,9 +705,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_float("lambda_max", wavelengths.back());
                         props2.set_long("size", wavelengths.size());
                         props2.set_pointer("values", values.data());
-                        ref<Object> obj =
-                            PluginManager::instance()
-                                ->create_object<ContinuousSpectrum>(props2).get();
+                        ref<Object> obj = PluginManager::instance()->create_object(props2);
                         props.set_object(node.attribute("name").value(), obj);
                     }
                 }

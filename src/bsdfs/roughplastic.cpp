@@ -6,6 +6,7 @@
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/reflection.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -188,7 +189,7 @@ public:
             // Fresnel term
             Value F = std::get<0>(
                 fresnel(dot(si.wi, H),
-                        luminance(m_eta->eval(si.wavelengths, active),
+                        luminance(m_eta->eval(si, active),
                                   si.wavelengths, active)));
 
             // Smith's shadow-masking function
@@ -197,11 +198,11 @@ public:
             // Calculate the specular reflection component
             Value value = F * D * G / (4.0f * n_dot_wi);
 
-            result += m_specular_reflectance->eval(si.wavelengths, active) * value;
+            result += m_specular_reflectance->eval(si, active) * value;
         }
 
         if (has_diffuse) {
-            Spectrum diff = m_diffuse_reflectance->eval(si.wavelengths, active);
+            Spectrum diff = m_diffuse_reflectance->eval(si, active);
             // Float T12 = m_external_rough_transmittance->eval(n_dot_wi, distr.alpha());
             // Float T21 = m_external_rough_transmittance->eval(n_dot_wo, distr.alpha());
             // Float Fdr = 1.f - m_internal_rough_transmittance->evalDiffuse(distr.alpha());
@@ -214,7 +215,7 @@ public:
             else
                 diff /= 1.0f - Fdr;
 
-            result += diff * (InvPi * n_dot_wo * T12 * T21 * m_inv_eta_2->eval(si.wavelengths, active));
+            result += diff * (InvPi * n_dot_wo * T12 * T21 * m_inv_eta_2->eval(si, active));
         }
 
         masked(result, !active) = Spectrum(0.f);

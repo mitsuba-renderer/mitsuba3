@@ -1,8 +1,7 @@
+#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/srgb.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/spectrum.h>
-#include <mitsuba/core/transform.h>
-#include <mitsuba/render/srgb.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -28,6 +27,7 @@ public:
     Spectrumf eval(const Spectrumf &wavelengths) const override {
         return eval_impl(wavelengths, true);
     }
+
     SpectrumfP eval(const SpectrumfP &wavelengths,
                     MaskP active) const override {
         return eval_impl(wavelengths, active);

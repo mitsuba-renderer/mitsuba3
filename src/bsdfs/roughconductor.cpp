@@ -5,14 +5,15 @@
 #include <mitsuba/render/reflection.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 class RoughConductor : public BSDF {
 public:
     RoughConductor(const Properties &props) {
-        m_eta     = props.spectrum("eta", 0.f);
-        m_k       = props.spectrum("k", 1.f);
+        m_eta = props.spectrum("eta", 0.f);
+        m_k   = props.spectrum("k", 1.f);
 
         MicrofacetDistribution<Float> distr(props);
         m_type = distr.type();
@@ -43,8 +44,8 @@ public:
         using Frame = mitsuba::Frame<Vector3>;
 
         BSDFSample bs;
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        active &= n_dot_wi > 0.f;
+        Value cos_theta_i = Frame::cos_theta(si.wi);
+        active &= cos_theta_i > 0.f;
 
         if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
             return { bs, 0.f };
@@ -75,11 +76,11 @@ public:
         else
             weight = distr.eval(m) *
                      distr.G(si.wi, bs.wo, m) *
-                     dot(si.wi, m) / (bs.pdf * n_dot_wi);
+                     dot(si.wi, m) / (bs.pdf * cos_theta_i);
 
         /* Evaluate the Fresnel factor */
-        Complex<Spectrum> eta_c(m_eta->eval(si.wavelengths, active),
-                                m_k->eval(si.wavelengths, active));
+        Complex<Spectrum> eta_c(m_eta->eval(si, active),
+                                m_k->eval(si, active));
 
         Spectrum F = fresnel_complex(Spectrum(dot(si.wi, m)), eta_c);
 
@@ -97,10 +98,10 @@ public:
                        const Vector3 &wo, mask_t<Value> active) const {
         using Frame = mitsuba::Frame<Vector3>;
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
+        Value cos_theta_o = Frame::cos_theta(wo);
 
-        active &= (n_dot_wi > 0.f) && (n_dot_wo > 0.f);
+        active &= (cos_theta_i > 0.f) && (cos_theta_o > 0.f);
 
         if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
             return 0.f;
@@ -119,8 +120,8 @@ public:
         active &= neq(D, 0.f);
 
         /* Evaluate the Fresnel factor */
-        Complex<Spectrum> eta_c(m_eta->eval(si.wavelengths, active),
-                                m_k->eval(si.wavelengths, active));
+        Complex<Spectrum> eta_c(m_eta->eval(si, active),
+                                m_k->eval(si, active));
         Spectrum F = fresnel_complex(Spectrum(dot(si.wi, H)), eta_c);
 
         /* Evaluate Smith's shadow-masking function */
@@ -139,10 +140,10 @@ public:
                    const Vector3 &wo, mask_t<Value> active) const {
         using Frame = mitsuba::Frame<Vector3>;
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
+        Value cos_theta_o = Frame::cos_theta(wo);
 
-        active &= (n_dot_wi > 0.f) && (n_dot_wo > 0.f);
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
         if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
             return 0.f;
@@ -158,7 +159,7 @@ public:
         Value result;
         if (m_sample_visible)
             result = distr.eval(H) * distr.smith_g1(si.wi, H) /
-                     (4.f * n_dot_wi);
+                     (4.f * cos_theta_i);
         else
             result = distr.pdf(si.wi, H) / (4.f * dot(wo, H));
 
@@ -178,8 +179,8 @@ public:
             << "  sample_visible = " << m_sample_visible << "," << std::endl
             << "  alpha_u = " << m_alpha_u << "," << std::endl
             << "  alpha_v = " << m_alpha_v << "," << std::endl
-            << "  eta = " << m_eta << "," << std::endl
-            << "  k = " << m_k << std::endl
+            << "  eta = " << string::indent(m_eta) << "," << std::endl
+            << "  k = " << string::indent(m_k) << std::endl
             << "]";
         return oss.str();
     }

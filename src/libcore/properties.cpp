@@ -11,6 +11,8 @@
 #include <mitsuba/core/plugin.h>
 #include <iostream>
 
+#include <mitsuba/render/spectrum.h>
+
 #include <map>
 #include <sstream>
 
@@ -441,7 +443,8 @@ ref<ContinuousSpectrum> Properties::spectrum(const std::string &name) const {
               " <spectrum>).", name);
     }
     ref<Object> o = it->second.data;
-    if (!o->class_()->derives_from(MTS_CLASS(ContinuousSpectrum)))
+    const Class *expected = Class::for_name("ContinuousSpectrum");
+    if (!o->class_()->derives_from(expected))
         Throw("The property \"%s\" has the wrong type (expected "
               " <spectrum>).", name);
     it->second.queried = true;
@@ -450,7 +453,7 @@ ref<ContinuousSpectrum> Properties::spectrum(const std::string &name) const {
 
 /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
 ref<ContinuousSpectrum> Properties::spectrum(
-        const std::string &name, const ref<ContinuousSpectrum> &def_val) const {
+        const std::string &name, ref<ContinuousSpectrum> def_val) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         return def_val;
@@ -460,20 +463,35 @@ ref<ContinuousSpectrum> Properties::spectrum(
               " <spectrum>).", name);
     }
     ref<Object> o = it->second.data;
-    if (!o->class_()->derives_from(MTS_CLASS(ContinuousSpectrum)))
+    const Class *expected = Class::for_name("ContinuousSpectrum");
+    if (!o->class_()->derives_from(expected))
         Throw("The property \"%s\" has the wrong type (expected "
               " <spectrum>).", name);
     it->second.queried = true;
     return (ContinuousSpectrum *) o.get();
 }
+
 /// Retrieve a continuous spectrum (or create flat spectrum with default value)
 ref<ContinuousSpectrum> Properties::spectrum(
         const std::string &name, Float def_val) const {
-    Properties props("uniform");
-    props.set_float("value", def_val);
-    PluginManager *pmgr = PluginManager::instance();
-    auto flat = pmgr->create_object<ContinuousSpectrum>(props);
-    return spectrum(name, flat);
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end()) {
+        Properties props("uniform");
+        props.set_float("value", def_val);
+        return (ContinuousSpectrum *) PluginManager::instance()->create_object(props).get();
+    }
+
+    if (!it->second.data.is<ref<Object>>()) {
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <spectrum>).", name);
+    }
+    ref<Object> o = it->second.data;
+    const Class *expected = Class::for_name("ContinuousSpectrum");
+    if (!o->class_()->derives_from(expected))
+        Throw("The property \"%s\" has the wrong type (expected "
+              " <spectrum>).", name);
+    it->second.queried = true;
+    return (ContinuousSpectrum *) o.get();
 }
 
 NAMESPACE_END(mitsuba)

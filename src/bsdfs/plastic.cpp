@@ -6,6 +6,7 @@
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/reflection.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -86,10 +87,10 @@ public:
             return { bs, 0.0f };
 
         bs.eta = 1.0f;
-        Spectrum fdr_int   = m_fdr_int->eval(si.wavelengths, active);
-        Spectrum inv_eta_2 = m_inv_eta_2->eval(si.wavelengths, active);
+        Spectrum fdr_int   = m_fdr_int->eval(si, active);
+        Spectrum inv_eta_2 = m_inv_eta_2->eval(si, active);
 
-        Value eta_lum = luminance(m_eta->eval(si.wavelengths, active),
+        Value eta_lum = luminance(m_eta->eval(si, active),
                                   si.wavelengths, active);
         // TODO: should pass Spectrum to fresnel
         Value fi = std::get<0>(fresnel(n_dot_wi, eta_lum));
@@ -118,7 +119,7 @@ public:
             // Compute value for diffuse sample
             // TODO: should pass Spectrum to fresnel
             Value fo = std::get<0>(fresnel(Frame::cos_theta(bs.wo), eta_lum));
-            Spectrum diff = m_diffuse_reflectance->eval(si.wavelengths, active);
+            Spectrum diff = m_diffuse_reflectance->eval(si, active);
             if (m_nonlinear)
                 diff /= Spectrum(1.0f) - diff * fdr_int;
             else
@@ -127,13 +128,13 @@ public:
             result = diff * (inv_eta_2 * (1.0f - fi) * (1.0f - fo)
                                       / (1.0f - prob_specular));
             masked(result, sample_specular)
-                = m_specular_reflectance->eval(si.wavelengths, active) * fi / prob_specular;
+                = m_specular_reflectance->eval(si, active) * fi / prob_specular;
         } else if (has_specular) {
             bs.sampled_component = 0;
             bs.sampled_type = EDeltaReflection;
             bs.wo = reflect(si.wi);
             bs.pdf = 1.0f;
-            result = m_specular_reflectance->eval(si.wavelengths, active) * fi;
+            result = m_specular_reflectance->eval(si, active) * fi;
         } else {
             bs.sampled_component = 1;
             bs.sampled_type = EDiffuseReflection;
@@ -141,7 +142,7 @@ public:
             // TODO: should pass Spectrum to fresnel
             Value fo = std::get<0>(fresnel(Frame::cos_theta(bs.wo), eta_lum));
 
-            Spectrum diff = m_diffuse_reflectance->eval(si.wavelengths, active);
+            Spectrum diff = m_diffuse_reflectance->eval(si, active);
 
             if (m_nonlinear)
                 diff /= Spectrum(1.0f) - diff * fdr_int;
@@ -175,7 +176,7 @@ public:
         if (none(active))
             return Spectrum(0.0f);
 
-        Value eta_lum = luminance(m_eta->eval(si.wavelengths, active),
+        Value eta_lum = luminance(m_eta->eval(si, active),
                                   si.wavelengths, active);
         // TODO: should pass Spectrum to fresnel
         Value fi = std::get<0>(fresnel(n_dot_wi, eta_lum));
@@ -185,14 +186,14 @@ public:
             /* Check if the provided direction pair matches an ideal
                specular reflection; tolerate some roundoff errors */
             masked(result, active && (abs(dot(reflect(si.wi), wo) - 1.0f) < math::DeltaEpsilon))
-                = m_specular_reflectance->eval(si.wavelengths, active) * fi;
+                = m_specular_reflectance->eval(si, active) * fi;
         } else if (has_diffuse) {
             // TODO: should pass Spectrum to fresnel
             Value fo = std::get<0>(fresnel(n_dot_wo, eta_lum));
 
-            Spectrum diff      = m_diffuse_reflectance->eval(si.wavelengths, active);
-            Spectrum fdr_int   = m_fdr_int->eval(si.wavelengths, active);
-            Spectrum inv_eta_2 = m_inv_eta_2->eval(si.wavelengths, active);
+            Spectrum diff      = m_diffuse_reflectance->eval(si, active);
+            Spectrum fdr_int   = m_fdr_int->eval(si, active);
+            Spectrum inv_eta_2 = m_inv_eta_2->eval(si, active);
 
             if (m_nonlinear)
                 diff /= Spectrum(1.0f) - diff * fdr_int;
@@ -227,7 +228,7 @@ public:
         Value prob_specular = has_specular ? 1.0f : 0.0f;
         if (has_specular && has_diffuse) {
             // TODO: should pass Spectrum to fresnel
-            Value eta_lum = luminance(m_eta->eval(si.wavelengths, active),
+            Value eta_lum = luminance(m_eta->eval(si, active),
                                       si.wavelengths, active);
             Value fi = std::get<0>(fresnel(n_dot_wi, eta_lum));
             prob_specular = (fi * m_specular_sampling_weight) /

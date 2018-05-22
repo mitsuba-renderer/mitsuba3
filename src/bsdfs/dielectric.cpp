@@ -1,5 +1,6 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/reflection.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/ior.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -81,7 +82,7 @@ public:
             masked(bs.pdf, selected_reflection && sample_transmission) = F;
 
             masked(spec, selected_reflection) =
-                m_specular_reflectance->eval(si.wavelengths,
+                m_specular_reflectance->eval(si,
                                              selected_reflection) *
                 select(sample_transmission, 1.f, F);
         }
@@ -94,7 +95,7 @@ public:
             masked(bs.pdf, selected_transmission && sample_reflection) = 1.f - F;
 
             masked(spec, selected_transmission) =
-                m_specular_transmittance->eval(si.wavelengths,
+                m_specular_transmittance->eval(si,
                                                selected_transmission) *
                 factor * factor * select(sample_reflection, 1.f, 1.f - F);
         }

@@ -1,4 +1,5 @@
-#include <mitsuba/core/spectrum.h>
+#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/math.h>
 

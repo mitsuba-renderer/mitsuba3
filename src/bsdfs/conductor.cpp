@@ -1,8 +1,8 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/ior.h>
 #include <mitsuba/render/reflection.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -13,12 +13,10 @@ public:
         m_components.clear();
         m_components.push_back(EDeltaReflection | EFrontSide);
 
-        m_specular_reflectance = props.spectrum("specular_reflectance", 1.0f);
+        m_specular_reflectance = props.spectrum("specular_reflectance", 1.f);
 
-        //Float ext_eta = lookup_ior(props, "ext_eta", "air");
-
-        m_eta = props.spectrum("eta", 0.f); // TODO / ext_eta;
-        m_k   = props.spectrum("k",   1.f); // TODO / ext_eta;
+        m_eta = props.spectrum("eta", 0.f);
+        m_k   = props.spectrum("k",   1.f);
     }
 
     template <typename SurfaceInteraction,
@@ -26,98 +24,58 @@ public:
               typename Value      = typename SurfaceInteraction::Value,
               typename Point2     = typename SurfaceInteraction::Point2,
               typename Spectrum   = Spectrum<Value>>
-    std::pair<BSDFSample, Spectrum> sample_impl(
-            const BSDFContext &ctx, const SurfaceInteraction &si,
-            Value /*sample1*/, const Point2 &/*sample2*/, mask_t<Value> active) const {
-        using Vector3 = typename BSDFSample::Vector3;
-        using Frame   = Frame<Vector3>;
+    MTS_INLINE std::pair<BSDFSample, Spectrum>
+    sample_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
+                Value /* sample1 */, const Point2 & /* sample2 */,
+                mask_t<Value> active) const {
+        using Frame = Frame<typename BSDFSample::Vector3>;
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        active = active && (n_dot_wi > 0.0f);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
+        active &= cos_theta_i > 0.f;
 
         BSDFSample bs;
-        if (!ctx.is_enabled(EDeltaReflection) || none(active))
-            return { bs, 0.0f };
+        Spectrum value(0.f);
+        if (unlikely(ctx.is_enabled(EDeltaReflection) || none(active)))
+            return { bs, value };
 
         bs.sampled_component = 0;
         bs.sampled_type = EDeltaReflection;
         bs.wo  = reflect(si.wi);
-        bs.eta = 1.0f;
-        bs.pdf = 1.0f;
+        bs.eta = 1.f;
+        bs.pdf = 1.f;
 
-        Spectrum value(0.0f);
-        masked(value, active) =
-            m_specular_reflectance->eval(si.wavelengths, active) *
-            fresnel_complex(
-                n_dot_wi,
-                Complex<Value>(luminance(m_eta->eval(si.wavelengths, active),
-                                         si.wavelengths, active),
-                               luminance(m_k->eval(si.wavelengths, active),
-                                         si.wavelengths, active)));
+        Complex<Spectrum> eta(m_eta->eval(si, active),
+                              m_k  ->eval(si, active));
+
+        value = m_specular_reflectance->eval(si, active) *
+            fresnel_complex(Spectrum(cos_theta_i), eta);
+
         return { bs, value };
     }
 
-    template <typename SurfaceInteraction,
+    template <typename SurfaceInteraction, typename Vector3,
               typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
-    Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, mask_t<Value> active) const {
-        using Frame = Frame<Vector3>;
-
-        bool sample_reflection = ctx.is_enabled(EDeltaReflection);
-        if (!sample_reflection)
-            return Spectrum(0.0f);
-
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
-        /* Verify that the provided direction pair matches an ideal
-           specular reflection; tolerate some roundoff errors */
-        active = active && (n_dot_wi > 0.0f) && (n_dot_wo > 0.0f)
-                 && !(abs(dot(reflect(si.wi), wo) - 1.0f) > math::DeltaEpsilon);
-
-        if (none(active))
-            return Spectrum(0.0f);
-
-        return select(
-            active,
-            m_specular_reflectance->eval(si.wavelengths, active) *
-                fresnel_complex(
-                    n_dot_wi, Complex<Value>(
-                                  luminance(m_eta->eval(si.wavelengths, active),
-                                            si.wavelengths, active),
-                                  luminance(m_k->eval(si.wavelengths, active),
-                                            si.wavelengths, active))),
-            Spectrum(0.0f));
+    MTS_INLINE
+    Spectrum eval_impl(const BSDFContext &/* ctx */, const SurfaceInteraction &/* si */,
+                       const Vector3 &/* wo */, mask_t<Value> /* active */) const {
+        return 0.f;
     }
 
-    template <typename SurfaceInteraction,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3>
-    Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                   const Vector3 &wo, mask_t<Value> active) const {
-        using Frame = Frame<Vector3>;
-
-        bool sample_reflection = ctx.is_enabled(EDeltaReflection);
-        if (!sample_reflection)
-            return 0.0f;
-
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
-        /* Verify that the provided direction pair matches an ideal
-           specular reflection; tolerate some roundoff errors */
-        active = active && (n_dot_wi > 0.0f) && (n_dot_wo > 0.0f)
-                 && !(abs(dot(reflect(si.wi), wo) - 1.0f) > math::DeltaEpsilon);
-
-        return select(active, Value(1.0f), Value(0.0f));
+    template <typename SurfaceInteraction, typename Vector3,
+              typename Value = value_t<Vector3>>
+    MTS_INLINE
+    Value pdf_impl(const BSDFContext &/* ctx */, const SurfaceInteraction & /* si */,
+                   const Vector3 &/* wo */, mask_t<Value> /* active */) const {
+        return 0.f;
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothConductor[" << std::endl
-            << "  eta = " << m_eta << "," << std::endl
-            << "  k = "   << m_k   << "," << std::endl
-            << "  specular_reflectance = " << m_specular_reflectance << std::endl
+            << "  eta = " << string::indent(m_eta) << "," << std::endl
+            << "  k = "   << string::indent(m_k)   << "," << std::endl
+            << "  specular_reflectance = " << string::indent(m_specular_reflectance) << std::endl
             << "]";
         return oss.str();
     }

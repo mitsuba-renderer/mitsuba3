@@ -1,4 +1,4 @@
-#include <mitsuba/core/spectrum.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/srgb.h>
@@ -17,8 +17,14 @@ public:
         return srgb_model_eval(m_coeff, wavelengths);
     }
 
-    Spectrumf  eval(const Spectrumf  &wavelengths) const override { return eval_impl(wavelengths, true); }
-    SpectrumfP eval(const SpectrumfP &wavelengths, MaskP active) const override { return eval_impl(wavelengths, active); }
+    Spectrumf eval(const Spectrumf &wavelengths) const override {
+        return eval_impl(wavelengths, true);
+    }
+
+    SpectrumfP eval(const SpectrumfP &wavelengths,
+                    MaskP active) const override {
+        return eval_impl(wavelengths, active);
+    }
 
     MTS_DECLARE_CLASS()
 

@@ -1,6 +1,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -23,10 +24,10 @@ public:
                                                 mask_t<Value> active) const {
         using Frame = Frame<typename BSDFSample::Vector3>;
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
         BSDFSample bs;
 
-        active &= n_dot_wi > 0.f;
+        active &= cos_theta_i > 0.f;
         if (none(active) || !ctx.is_enabled(EDiffuseReflection))
             return { bs, 0.f };
 
@@ -36,7 +37,7 @@ public:
         bs.sampled_component = 0;
         bs.sampled_type = (uint32_t) EDiffuseReflection;
 
-        Spectrum value = m_reflectance->eval(si.wavelengths, active);
+        Spectrum value = m_reflectance->eval(si, active);
 
         return { bs, select(active && bs.pdf > 0, value, 0.f) };
     }
@@ -52,13 +53,13 @@ public:
         if (!ctx.is_enabled(EDiffuseReflection))
             return 0.f;
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
+        Value cos_theta_o = Frame::cos_theta(wo);
 
-        Spectrum value = m_reflectance->eval(si.wavelengths, active) *
-                        math::InvPi * n_dot_wo;
+        Spectrum value = m_reflectance->eval(si, active) *
+                        math::InvPi * cos_theta_o;
 
-        return select(n_dot_wi > 0.f && n_dot_wo > 0.f, value, 0.f);
+        return select(cos_theta_i > 0.f && cos_theta_o > 0.f, value, 0.f);
     }
 
     template <typename SurfaceInteraction, typename Vector3,
@@ -72,12 +73,12 @@ public:
         if (!ctx.is_enabled(EDiffuseReflection))
             return 0.f;
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
+        Value cos_theta_o = Frame::cos_theta(wo);
 
         Value pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
-        return select(n_dot_wi > 0.f && n_dot_wo > 0.f, pdf, 0.f);
+        return select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
     }
 
     std::string to_string() const override {
