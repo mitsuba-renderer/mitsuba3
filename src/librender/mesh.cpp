@@ -280,6 +280,8 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
                                          Mask active) const {
     using Point2 = point2_t<Point3>;
     using Normal3 = normal3_t<Point3>;
+    using Vector3 = vector3_t<Point3>;
+    using Vector2 = vector2_t<Point3>;
 
     /* Barycentric coordinates within triangle */
     Value b1 = cache[0],
@@ -292,37 +294,47 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
            p1 = vertex_position(fi[1], active),
            p2 = vertex_position(fi[2], active);
 
+    Vector3 dp0 = p1 - p0, dp1 = p2 - p0;
+    Vector3 dp_du = dp0, dp_dv = dp1;
+
     /* Re-interpolate intersection using barycentric coordinates */
     masked(si.p, active) = p0 * b0 + p1 * b1 + p2 * b2;
 
-    /* Tangents */
-    vector3_t<Point3> e0 = p1 - p0, e1 = p2 - p0;
-    masked(si.n, active) = normalize(cross(e1, e0));
-    masked(si.dp_du, active) = e0;
-    masked(si.dp_dv, active) = e1;
-
     /* Texture coordinates (if available) */
+    Point2 uv(b1, b2);
     if (has_vertex_texcoords()) {
         Point2 uv0 = vertex_texcoord(fi[0], active),
                uv1 = vertex_texcoord(fi[1], active),
                uv2 = vertex_texcoord(fi[2], active);
 
-        masked(si.uv, active) = uv0 * b0 + uv1 * b1 + uv2 * b2;
-    } else {
-        masked(si.uv, active) = Point2(b1, b2);
+        uv = uv0 * b0 + uv1 * b1 + uv2 * b2;
+
+        Vector2 duv0 = uv1 - uv0, duv1 = uv2 - uv0;
+
+        Value inv_det = rcp(fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()));
+        dp_du = fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
+        dp_dv = fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
     }
+    masked(si.uv, active) = uv;
 
+    /* Face normal */
+    Normal3 n = normalize(cross(dp_du, dp_dv));
+    masked(si.n, active) = n;
 
-    /* Normals (if available) */
+    /* Shading normal (if available) */
     if (has_vertex_normals()) {
         Normal3 n0 = vertex_normal(fi[0], active),
                 n1 = vertex_normal(fi[1], active),
                 n2 = vertex_normal(fi[2], active);
 
-        masked(si.sh_frame.n, active) = normalize(n0 * b0 + n1 * b1 + n2 * b2);
-    } else {
-        masked(si.sh_frame.n, active) = si.n;
+        n = normalize(n0 * b0 + n1 * b1 + n2 * b2);
     }
+
+    masked(si.sh_frame.n, active) = n;
+
+    /* Tangents */
+    masked(si.dp_du, active) = dp_du;
+    masked(si.dp_dv, active) = dp_dv;
 }
 
 void Mesh::fill_surface_interaction(const Ray3f &ray,
