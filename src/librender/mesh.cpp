@@ -294,13 +294,20 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
            p1 = vertex_position(fi[1], active),
            p2 = vertex_position(fi[2], active);
 
-    Vector3 dp0 = p1 - p0, dp1 = p2 - p0;
-    Vector3 dp_du = dp0, dp_dv = dp1;
+    Vector3 dp0 = p1 - p0,
+            dp1 = p2 - p0,
+            dp_du,
+            dp_dv;
 
     /* Re-interpolate intersection using barycentric coordinates */
     masked(si.p, active) = p0 * b0 + p1 * b1 + p2 * b2;
 
+    /* Face normal */
+    Normal3 n = normalize(cross(dp0, dp1));
+    masked(si.n, active) = n;
+
     /* Texture coordinates (if available) */
+    std::tie(dp_du, dp_dv) = coordinate_system(n);
     Point2 uv(b1, b2);
     if (has_vertex_texcoords()) {
         Point2 uv0 = vertex_texcoord(fi[0], active),
@@ -309,17 +316,18 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
 
         uv = uv0 * b0 + uv1 * b1 + uv2 * b2;
 
-        Vector2 duv0 = uv1 - uv0, duv1 = uv2 - uv0;
+        Vector2 duv0 = uv1 - uv0,
+                duv1 = uv2 - uv0;
 
-        Value inv_det = rcp(fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()));
-        dp_du = fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
-        dp_dv = fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
+        Value det     = fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
+              inv_det = rcp(det);
+
+        Mask valid = neq(det, 0.f);
+
+        dp_du[valid] = fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
+        dp_dv[valid] = fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
     }
     masked(si.uv, active) = uv;
-
-    /* Face normal */
-    Normal3 n = normalize(cross(dp_du, dp_dv));
-    masked(si.n, active) = n;
 
     /* Shading normal (if available) */
     if (has_vertex_normals()) {
