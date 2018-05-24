@@ -36,6 +36,20 @@ public:
                 ptr += 4;
             }
         }
+
+        if (props.has_property("upscale")) {
+            Float upscale = props.float_("upscale");
+
+            Vector2s old_size = m_bitmap->size(),
+                     new_size = upscale * old_size;
+
+            ref<Bitmap> new_bitmap = new Bitmap(Bitmap::ERGBA, Bitmap::EFloat,
+                                                new_size,
+                                                m_bitmap->channel_count());
+
+            m_bitmap->resample(new_bitmap);
+            m_bitmap = new_bitmap;
+        }
     }
 
     template <typename SurfaceInteraction, typename Mask,
