@@ -129,6 +129,8 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
     void map() {
         if (!fs::exists(filename))
             Log(EError, "The file \"%s\" does not exist!", filename.string().c_str());
+        if (!fs::is_regular_file(filename))
+            Log(EError, "\"%s\" is not a regular file!", filename.string().c_str());
         size = (size_t) fs::file_size(filename);
 
         #if defined(__LINUX__) || defined(__OSX__)
