@@ -36,7 +36,7 @@ NAMESPACE_BEGIN(xml)
 enum ETag {
     EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ERGB,
     EColor, ETransform, ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject,
-    ENamedReference, EInclude, EInvalid
+    ENamedReference, EInclude, EAlias, EInvalid
 };
 
 struct Version {
@@ -113,6 +113,7 @@ void register_class(const Class *class_) {
         (*tags)["rgb"]        = ERGB;
         (*tags)["color"]      = EColor;
         (*tags)["include"]    = EInclude;
+        (*tags)["alias"]      = EAlias;
     }
 
     /* Register the new class as an object tag */
@@ -196,6 +197,7 @@ struct XMLObject {
     Properties props;
     const Class *class_ = nullptr;
     std::string src_id;
+    std::string alias;
     std::function<std::string(ptrdiff_t)> offset;
     size_t location = 0;
     ref<Object> object;
@@ -491,6 +493,28 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     auto id = node.attribute("id").value();
                     auto name = node.attribute("name").value();
                     return std::make_pair(name, id);
+                }
+                break;
+
+            case EAlias: {
+                    check_attributes(src, node, { "id", "as" });
+                    auto alias_src = node.attribute("id").value();
+                    auto alias_dst = node.attribute("as").value();
+                    auto it_alias_dst = ctx.instances.find(alias_dst);
+                    if (it_alias_dst != ctx.instances.end())
+                        src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
+                            node.name(), alias_dst, src.offset(it_alias_dst->second.location));
+                    auto it_alias_src = ctx.instances.find(alias_src);
+                    if (it_alias_src == ctx.instances.end())
+                        src.throw_error(node, "referenced id \"%s\" not found", alias_src);
+
+                    auto &inst = ctx.instances[alias_dst];
+                    inst.alias = alias_src;
+                    inst.offset = src.offset;
+                    inst.src_id = src.id;
+                    inst.location = node.offset_debug();
+
+                    return std::make_pair("", "");
                 }
                 break;
 
@@ -809,6 +833,8 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, std::string id) {
 
     if (inst.object)
         return inst.object;
+    else if (!inst.alias.empty())
+        return instantiate_node(ctx, inst.alias);
 
     Properties &props = inst.props;
     auto named_references = props.named_references();
