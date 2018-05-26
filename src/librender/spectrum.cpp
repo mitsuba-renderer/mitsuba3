@@ -37,8 +37,8 @@ SpectrumfP ContinuousSpectrum::pdf(const SpectrumfP &, MaskP) const {
     NotImplementedError("pdf_p");
 }
 
-Float ContinuousSpectrum::integral() const {
-    NotImplementedError("integral");
+Float ContinuousSpectrum::mean() const {
+    NotImplementedError("mean");
 }
 
 Spectrumf ContinuousSpectrum::eval(const SurfaceInteraction3f &si) const {

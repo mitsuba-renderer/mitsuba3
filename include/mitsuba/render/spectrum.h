@@ -87,14 +87,15 @@ public:
     }
 
     /**
-     * Return the integral over the spectrum over its support
+     * Return the mean value of the spectrum over the support
+     * (MTS_WAVELENGTH_MIN..MTS_WAVELENGTH_MAX)
      *
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.
      *
      * Even if the operation is provided, it may only return an approximation.
      */
-    virtual Float integral() const;
+    virtual Float mean() const;
 
     /**
      * Convenience method returning the standard D65 illuminant.

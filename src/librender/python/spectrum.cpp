@@ -4,7 +4,7 @@
 
 MTS_PY_EXPORT(ContinuousSpectrum) {
     MTS_PY_CLASS(ContinuousSpectrum, Object)
-        .def("integral", &ContinuousSpectrum::integral, D(ContinuousSpectrum, integral))
+        .def("mean", &ContinuousSpectrum::mean, D(ContinuousSpectrum, mean))
 
         // ---------------------------------------------------------------------
 

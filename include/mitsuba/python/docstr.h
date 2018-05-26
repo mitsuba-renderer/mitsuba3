@@ -1692,8 +1692,9 @@ static const char *__doc_mitsuba_ContinuousSpectrum_eval_5 = R"doc(Vectorized ve
 
 static const char *__doc_mitsuba_ContinuousSpectrum_eval_6 = R"doc(Wrapper for scalar eval() with a mask (which will be ignored))doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_integral =
-R"doc(Return the integral over the spectrum over its support
+static const char *__doc_mitsuba_ContinuousSpectrum_mean =
+R"doc(Return the mean value of the spectrum over the support
+(MTS_WAVELENGTH_MIN..MTS_WAVELENGTH_MAX)
 
 Not every implementation necessarily provides this function. The
 default implementation throws an exception.

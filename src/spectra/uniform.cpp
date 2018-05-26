@@ -34,9 +34,7 @@ public:
         };
     }
 
-    Float integral() const override {
-        return (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * m_value;
-    }
+    Float mean() const override { return m_value; }
 
     MTS_IMPLEMENT_SPECTRUM()
     MTS_DECLARE_CLASS()

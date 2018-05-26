@@ -129,7 +129,9 @@ public:
         return { t, eval_impl(t, active_) / pdf };
     }
 
-    Float integral() const override { return m_integral; }
+    Float mean() const override {
+        return m_integral / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
+    }
 
     MTS_IMPLEMENT_SPECTRUM()
     MTS_DECLARE_CLASS()

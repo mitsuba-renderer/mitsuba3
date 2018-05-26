@@ -28,7 +28,7 @@ public:
         BSDFSample bs;
 
         active &= cos_theta_i > 0.f;
-        if (none(active) || !ctx.is_enabled(EDiffuseReflection))
+        if (unlikely(none(active) || !ctx.is_enabled(EDiffuseReflection)))
             return { bs, 0.f };
 
         bs.wo = warp::square_to_cosine_hemisphere(sample2);

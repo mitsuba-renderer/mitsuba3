@@ -124,8 +124,8 @@ public:
         };
     }
 
-    Float integral() const override {
-        return m_integral;
+    Float mean() const override {
+        return m_integral / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
     }
 
     std::string to_string() const override {
