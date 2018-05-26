@@ -36,7 +36,7 @@ NAMESPACE_BEGIN(xml)
 enum ETag {
     EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ERGB,
     EColor, ETransform, ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject,
-    ENamedReference, EInclude, EAlias, EInvalid
+    ENamedReference, EInclude, EAlias, EDefault, EInvalid
 };
 
 struct Version {
@@ -114,6 +114,7 @@ void register_class(const Class *class_) {
         (*tags)["color"]      = EColor;
         (*tags)["include"]    = EInclude;
         (*tags)["alias"]      = EAlias;
+        (*tags)["default"]    = EDefault;
     }
 
     /* Register the new class as an object tag */
@@ -348,7 +349,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
 
 static std::pair<std::string, std::string>
 parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
-         ETag parent_tag, Properties &props, const ParameterList &param,
+         ETag parent_tag, Properties &props, ParameterList &param,
          size_t &arg_counter, int depth, bool within_emitter = false) {
     try {
         if (!param.empty()) {
@@ -514,6 +515,23 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     inst.src_id = src.id;
                     inst.location = node.offset_debug();
 
+                    return std::make_pair("", "");
+                }
+                break;
+
+            case EDefault: {
+                    check_attributes(src, node, { "name", "value" });
+                    std::string name = node.attribute("name").value();
+                    std::string value = node.attribute("value").value();
+                    if (name.empty())
+                        src.throw_error(node, "<default>: name must by nonempty");
+                    bool found = false;
+                    for (auto &kv: param) {
+                        if (kv.first == name)
+                            found = true;
+                    }
+                    if (!found)
+                        param.emplace_back(name, value);
                     return std::make_pair("", "");
                 }
                 break;
