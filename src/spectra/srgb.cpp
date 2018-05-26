@@ -26,6 +26,8 @@ public:
         return eval_impl(wavelengths, active);
     }
 
+    Float mean() const override { return srgb_model_mean(m_coeff); }
+
     MTS_DECLARE_CLASS()
 
 private:

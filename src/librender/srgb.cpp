@@ -2054,4 +2054,9 @@ uint8_t srgb_coeffs[24576] = {
     0x51, 0x95, 0x99, 0x3d, 0xd7, 0xdd, 0x51, 0x95, 0x99, 0x3d, 0xd7, 0xdd
 };
 
+template MTS_EXPORT_RENDER Spectrumf srgb_model_eval(const Vector4f &, const Spectrumf &);
+template MTS_EXPORT_RENDER SpectrumfP srgb_model_eval(const Vector4fP &, const SpectrumfP &);
+template MTS_EXPORT_RENDER Float srgb_model_mean(const Vector4f &);
+template MTS_EXPORT_RENDER FloatP srgb_model_mean(const Vector4fP &);
+
 NAMESPACE_END(mitsuba)

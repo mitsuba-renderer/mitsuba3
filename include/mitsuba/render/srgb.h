@@ -8,9 +8,17 @@ NAMESPACE_BEGIN(mitsuba)
 extern MTS_EXPORT_RENDER uint8_t srgb_coeffs[24576];
 
 template <typename Vector4, typename Value>
-MTS_INLINE Value srgb_model_eval(const Vector4 &coeff, Value wavelengths) {
-    Value v = (coeff.x() * wavelengths + coeff.y()) * wavelengths + coeff.z();
-    return rcp(1.f + exp(-v)) * coeff.w();
+MTS_INLINE Value srgb_model_eval(const Vector4 &coeff, const Value &wavelengths) {
+    Value v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+    return rcp(1.f + exp(v)) * coeff.w();
+}
+
+template <typename Vector4, typename Value = value_t<Vector4>>
+MTS_INLINE Value srgb_model_mean(const Vector4 &coeff) {
+    using Vec = Array<Value, 16>;
+    Vec wavelengths = linspace<Vec>(MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
+    Vec v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+    return mean(rcp(1.f + exp(v))) * coeff.w();
 }
 
 template <typename Color3,
@@ -31,7 +39,8 @@ MTS_INLINE Vector4 srgb_model_fetch(Color3 c) {
     c = M * c;
 
     /* XYZ -> xy */
-    Vector2 xy(c.x() / c.z(), c.y() / c.z());
+    Value inv_y = rcp(c.z());
+    Vector2 xy(c.x() * inv_y, c.y() * inv_y);
 
     /* Subtract xy coordinates of blue primary */
     Vector2 bary = xy - Vector2f(0.15f, 0.06f);
@@ -64,9 +73,9 @@ MTS_INLINE Vector4 srgb_model_fetch(Color3 c) {
                      (v10 * b0.x() + v11 * b1.x()) * b1.y();
 
     return select(
-        cmax == 0,
+        eq(cmax, 0.f),
         zero<Vector4>(),
-        Vector4(interp.x(), interp.y(), interp.z(), cmax)
+        Vector4(-interp.x(), -interp.y(), -interp.z(), cmax)
     );
 }
 

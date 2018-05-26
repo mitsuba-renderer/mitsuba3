@@ -1,0 +1,17 @@
+#include <mitsuba/render/srgb.h>
+#include <mitsuba/python/python.h>
+
+MTS_PY_EXPORT(srgb) {
+    m.def("srgb_model_fetch", &srgb_model_fetch<Color3f>, D(srgb_model_fetch));
+    m.def("srgb_model_fetch", vectorize_wrapper(&srgb_model_fetch<Color3fP>));
+
+    m.def("srgb_model_eval", [](const Vector4f &coeff, const FloatX &s) {
+        FloatX result(s.size());
+        for (size_t i = 0; i < packets(s); ++i)
+            packet(result, i) = srgb_model_eval(coeff, packet(s, i));
+        return result;
+    });
+
+    m.def("srgb_model_mean", &srgb_model_mean<Vector4f>, D(srgb_model_mean));
+    m.def("srgb_model_mean", vectorize_wrapper(&srgb_model_mean<Vector4fP>));
+}

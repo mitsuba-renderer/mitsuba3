@@ -8190,6 +8190,8 @@ static const char *__doc_mitsuba_srgb_model_eval = R"doc()doc";
 
 static const char *__doc_mitsuba_srgb_model_fetch = R"doc()doc";
 
+static const char *__doc_mitsuba_srgb_model_mean = R"doc()doc";
+
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 
 static const char *__doc_mitsuba_string_indent = R"doc(Indent every line of a string by some number of spaces)doc";
