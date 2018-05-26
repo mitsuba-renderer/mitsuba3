@@ -841,7 +841,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
     return std::make_pair("", "");
 }
 
-static ref<Object> instantiate_node(XMLParseContext &ctx, std::string id) {
+static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id) {
     auto it = ctx.instances.find(id);
     if (it == ctx.instances.end())
         Throw("reference to unknown object \"%s\"!", id);
@@ -849,13 +849,16 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, std::string id) {
     auto &inst = it->second;
     tbb::spin_mutex::scoped_lock lock(inst.mutex);
 
-    if (inst.object)
+    if (inst.object) {
         return inst.object;
-    else if (!inst.alias.empty())
-        return instantiate_node(ctx, inst.alias);
+    } else if (!inst.alias.empty()) {
+        std::string alias = inst.alias;
+        lock.release();
+        return instantiate_node(ctx, alias);
+    }
 
     Properties &props = inst.props;
-    auto named_references = props.named_references();
+    const auto &named_references = props.named_references();
 
     ThreadEnvironment env;
 
