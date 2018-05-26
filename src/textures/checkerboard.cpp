@@ -22,7 +22,7 @@ public:
         auto mask = (uv - floor(uv)) > .5f;
         Spectrum result = zero<Spectrum>();
 
-        Mask m0 = eq(mask.x(), mask.y()),
+        Mask m0 = neq(mask.x(), mask.y()),
              m1 = !m0;
 
         m0 &= active; m1 &= active;
@@ -36,11 +36,16 @@ public:
         return result;
     }
 
+    Float mean() const override {
+        return .5f * (m_color0->mean() + m_color1->mean());
+    }
+
     MTS_IMPLEMENT_TEXTURE()
     MTS_DECLARE_CLASS()
+
 protected:
-    ref<ContinuousSpectrum> m_color1;
     ref<ContinuousSpectrum> m_color0;
+    ref<ContinuousSpectrum> m_color1;
     Transform3f m_transform;
 };
 
