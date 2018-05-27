@@ -438,10 +438,9 @@ ref<ContinuousSpectrum> Properties::spectrum(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         Throw("Property \"%s\" has not been specified!", name);
-    if (!it->second.data.is<ref<Object>>()) {
+    if (!it->second.data.is<ref<Object>>())
         Throw("The property \"%s\" has the wrong type (expected "
               " <spectrum>).", name);
-    }
     ref<Object> o = it->second.data;
     const Class *expected = Class::for_name("ContinuousSpectrum");
     if (!o->class_()->derives_from(expected))
@@ -457,11 +456,9 @@ ref<ContinuousSpectrum> Properties::spectrum(
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         return def_val;
-
-    if (!it->second.data.is<ref<Object>>()) {
+    if (!it->second.data.is<ref<Object>>())
         Throw("The property \"%s\" has the wrong type (expected "
               " <spectrum>).", name);
-    }
     ref<Object> o = it->second.data;
     const Class *expected = Class::for_name("ContinuousSpectrum");
     if (!o->class_()->derives_from(expected))
@@ -480,11 +477,9 @@ ref<ContinuousSpectrum> Properties::spectrum(
         props.set_float("value", def_val);
         return (ContinuousSpectrum *) PluginManager::instance()->create_object(props).get();
     }
-
-    if (!it->second.data.is<ref<Object>>()) {
+    if (!it->second.data.is<ref<Object>>())
         Throw("The property \"%s\" has the wrong type (expected "
               " <spectrum>).", name);
-    }
     ref<Object> o = it->second.data;
     const Class *expected = Class::for_name("ContinuousSpectrum");
     if (!o->class_()->derives_from(expected))

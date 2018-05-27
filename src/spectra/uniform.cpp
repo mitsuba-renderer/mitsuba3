@@ -36,6 +36,10 @@ public:
 
     Float mean() const override { return m_value; }
 
+    std::string to_string() const override {
+        return tfm::format("UniformSpectrum[value=%f]", m_value);
+    }
+
     MTS_IMPLEMENT_SPECTRUM()
     MTS_DECLARE_CLASS()
 
