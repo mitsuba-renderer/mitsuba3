@@ -396,13 +396,13 @@ public:
                 safe_sqrt(fnmadd(cos_theta_i, cos_theta_i, 1.f));
 
             /* Project onto chosen side of the hemisphere */
-            Value p1 = r * cos_phi;
-            Value p2 = r * sin_phi * select(side_mask, cos_theta_i, 1.f);
-            Value p3 = sqrt(1.f - p1 * p1 - p2 * p2);
+            Value p1 = r * cos_phi,
+                  p2 = r * sin_phi * select(side_mask, cos_theta_i, 1.f),
+                  p3 = safe_sqrt(1.f - sqr(p1) - sqr(p2));
 
             /* Convert to slope */
-            Value norm = rcp(sin_theta_i * p2 + cos_theta_i * p3);
-            return Vector2(cos_theta_i * p2 - sin_theta_i * p3, p1) * norm;
+            Value norm = rcp(fmadd(sin_theta_i, p2, cos_theta_i * p3));
+            return Vector2(fmsub(cos_theta_i, p2, sin_theta_i * p3), p1) * norm;
         }
     }
 

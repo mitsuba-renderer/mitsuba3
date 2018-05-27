@@ -59,8 +59,6 @@ public:
         Normal3 m;
         std::tie(m, bs.pdf) = distr.sample(si.wi, sample2);
 
-        active = active && neq(bs.pdf, 0.f);
-
         /* Perfect specular reflection based on the microfacet normal */
         bs.wo = reflect(si.wi, m);
         bs.eta = 1.f;
@@ -74,9 +72,8 @@ public:
         if (m_sample_visible)
             weight = distr.smith_g1(bs.wo, m);
         else
-            weight = distr.eval(m) *
-                     distr.G(si.wi, bs.wo, m) *
-                     dot(si.wi, m) / (bs.pdf * cos_theta_i);
+            weight = distr.G(si.wi, bs.wo, m) * dot(si.wi, m) /
+                     (cos_theta_i * Frame::cos_theta(m));
 
         /* Evaluate the Fresnel factor */
         Complex<Spectrum> eta_c(m_eta->eval(si, active),
@@ -87,7 +84,7 @@ public:
         /* Jacobian of the half-direction mapping */
         bs.pdf /= 4.f * dot(bs.wo, m);
 
-        return { bs, (weight * F) & active };
+        return { bs, (F * weight) & active };
     }
 
     template <typename SurfaceInteraction, typename Vector3,
@@ -98,10 +95,10 @@ public:
                        const Vector3 &wo, mask_t<Value> active) const {
         using Frame = mitsuba::Frame<Vector3>;
 
-        Value cos_theta_i = Frame::cos_theta(si.wi);
-        Value cos_theta_o = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi),
+              cos_theta_o = Frame::cos_theta(wo);
 
-        active &= (cos_theta_i > 0.f) && (cos_theta_o > 0.f);
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
         if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
             return 0.f;
