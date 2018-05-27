@@ -177,6 +177,9 @@ int main(int argc, char *argv[]) {
             Log(EInfo, "%s", isa_info());
             if (render_scalar)
                 Log(EInfo, "Vectorization disabled by --scalar flag.");
+            #if defined(DOUBLE_PRECISION)
+                Log(EWarn, "Renderer is compiled in double precision.");
+            #endif
         }
 
         while (arg_extra && *arg_extra) {
