@@ -22,6 +22,7 @@ public:
         m_name = file_path.filename().string();
 
         Float *ptr = (Float *) m_bitmap->data();
+        double mean = 0.0;
 
         for (size_t y = 0; y < m_bitmap->size().y(); ++y) {
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
@@ -30,12 +31,15 @@ public:
 
                 /* Fetch spectral fit for given sRGB color value (4 coefficients) */
                 coeff = srgb_model_fetch(color);
+                mean += (double) srgb_model_mean(coeff);
 
                 /* Overwrite the pixel value with the coefficients */
                 store(ptr, coeff);
                 ptr += 4;
             }
         }
+
+        m_mean = Float(mean / hprod(m_bitmap->size()));
 
         if (props.has_property("upscale")) {
             Float upscale = props.float_("upscale");
@@ -93,6 +97,8 @@ public:
                w1.y() * (w0.x() * s01 + w1.x() * s11);
     }
 
+    Float mean() const override { return m_mean; }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Bitmap[" << std::endl
@@ -108,6 +114,7 @@ protected:
     ref<Bitmap> m_bitmap;
     std::string m_name;
     Transform3f m_transform;
+    Float m_mean;
 };
 
 MTS_IMPLEMENT_CLASS(BitmapTexture, ContinuousSpectrum)
