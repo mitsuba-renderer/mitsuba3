@@ -33,6 +33,7 @@ public:
               typename Value      = typename SurfaceInteraction::Value,
               typename Point2     = typename SurfaceInteraction::Point2,
               typename Spectrum   = Spectrum<Value>>
+    MTS_INLINE
     std::pair<BSDFSample, Spectrum> sample_impl(
             const BSDFContext &ctx, const SurfaceInteraction &si,
             Value sample1, const Point2 &sample2, const mask_t<Value> &active) const {
@@ -90,6 +91,7 @@ public:
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
+    MTS_INLINE
     Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                        const Vector3 &wo, const mask_t<Value> &active) const {
         return m_nested_bsdf->eval(ctx, si, wo, active)
@@ -99,6 +101,7 @@ public:
     template <typename SurfaceInteraction,
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3>
+    MTS_INLINE
     Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                    const Vector3 &wo, const mask_t<Value> &active) const {
         uint32_t null_index = (uint32_t) component_count() - 1;
@@ -134,6 +137,6 @@ protected:
 };
 
 MTS_IMPLEMENT_CLASS(Mask, BSDF)
-MTS_EXPORT_PLUGIN(Mask, "Mask BRDF")
+MTS_EXPORT_PLUGIN(Mask, "Mask material")
 
 NAMESPACE_END(mitsuba)

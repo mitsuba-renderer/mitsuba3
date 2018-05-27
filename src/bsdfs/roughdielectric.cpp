@@ -14,8 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
 class RoughDielectric : public BSDF {
 public:
     RoughDielectric(const Properties &props) {
-        m_specular_reflectance   = props.spectrum("specular_reflectance",   1.0f);
-        m_specular_transmittance = props.spectrum("specular_transmittance", 1.0f);
+        m_specular_reflectance   = props.spectrum("specular_reflectance",   1.f);
+        m_specular_transmittance = props.spectrum("specular_transmittance", 1.f);
 
         // Specifies the internal index of refraction at the interface
         Float int_ior = lookup_ior(props, "int_ior", "bk7");
@@ -23,7 +23,7 @@ public:
         // Specifies the external index of refraction at the interface
         Float ext_ior = lookup_ior(props, "ext_ior", "air");
 
-        if (int_ior < 0.0f || ext_ior < 0.0f || int_ior == ext_ior)
+        if (int_ior < 0.f || ext_ior < 0.f || int_ior == ext_ior)
             Throw("The interior and exterior indices of "
                   "refraction must be positive and differ!");
 
@@ -54,6 +54,7 @@ public:
               typename Value      = typename SurfaceInteraction::Value,
               typename Point2     = typename SurfaceInteraction::Point2,
               typename Spectrum   = Spectrum<Value>>
+    MTS_INLINE
     std::pair<BSDFSample, Spectrum> sample_impl(
             const BSDFContext &ctx, const SurfaceInteraction &si, Value sample1,
             const Point2 &sample, mask_t<Value> active) const {
@@ -68,9 +69,9 @@ public:
 
         BSDFSample bs;
         if (!has_reflection && !has_transmission)
-            return { bs, 0.0f };
+            return { bs, 0.f };
 
-        Value cos_theta_wi = Frame::cos_theta(si.wi);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
@@ -86,17 +87,17 @@ public:
            Heitz and D'Eon sampling technique. */
         MicrofacetDistribution<Value> sample_distr(distr);
         if (!m_sample_visible)
-            sample_distr.scale_alpha(1.2f - 0.2f * sqrt(abs(cos_theta_wi)));
+            sample_distr.scale_alpha(1.2f - .2f * sqrt(abs(cos_theta_i)));
 
         // Sample M, the microfacet normal
         Value microfacet_pdf;
         Normal3 m;
         std::tie(m, microfacet_pdf)
-            = sample_distr.sample(sign(cos_theta_wi) * si.wi, sample);
+            = sample_distr.sample(sign(cos_theta_i) * si.wi, sample);
 
-        active = active && neq(microfacet_pdf, 0.0f);
+        active &= neq(microfacet_pdf, 0.f);
         if (none(active))
-            return { bs, 0.0f };
+            return { bs, 0.f };
 
         bs.pdf = microfacet_pdf;
         Value eta_value = enoki::mean(m_eta->eval(si, active));
@@ -107,12 +108,12 @@ public:
             fresnel(dot(si.wi, m), eta_value);
 
         Mask sampled_reflection = has_reflection;
-        Spectrum weight(1.0f);
+        Spectrum weight(1.f);
         if (has_reflection && has_transmission) {
             sampled_reflection = (sample1 <= F);
-            bs.pdf *= select(sampled_reflection, F, (1.0f - F));
+            bs.pdf *= select(sampled_reflection, F, (1.f - F));
         } else {
-            weight *= has_reflection ? F : (1.0f - F);
+            weight *= has_reflection ? F : (1.f - F);
         }
 
         Value dwh_dwo;
@@ -121,44 +122,44 @@ public:
         if (any(mask)) {
             // Perfect specular reflection based on the microfacet normal
             masked(bs.wo,  mask)               = reflect(si.wi, m);
-            masked(bs.eta, mask)               = 1.0f;
+            masked(bs.eta, mask)               = 1.f;
             masked(bs.sampled_component, mask) = 0;
             masked(bs.sampled_type, mask)      = EGlossyReflection;
 
             // Side check
             masked(active, mask) = active
-                                && (cos_theta_wi * Frame::cos_theta(bs.wo) > 0.0f);
+                                && (cos_theta_i * Frame::cos_theta(bs.wo) > 0.f);
             mask = mask && active;
 
             masked(weight, mask) = weight * m_specular_reflectance->eval(si);
 
             // Jacobian of the half-direction mapping
-            masked(dwh_dwo, mask) = rcp(4.0f * dot(bs.wo, m));
+            masked(dwh_dwo, mask) = rcp(4.f * dot(bs.wo, m));
         }
 
         // ----- Transmission sampling
-        mask = !sampled_reflection && neq(cos_theta_t, 0.0f) && active;
+        mask = !sampled_reflection && neq(cos_theta_t, 0.f) && active;
         if (any(mask)) {
             // Perfect specular transmission based on the microfacet normal
             masked(bs.wo, mask)  = refract(si.wi, m, eta_value, cos_theta_t);
-            masked(bs.eta, mask) = select(cos_theta_t < 0.0f,
+            masked(bs.eta, mask) = select(cos_theta_t < 0.f,
                                           eta_value,
                                           inv_eta_value);
             masked(bs.sampled_component, mask) = 1;
             masked(bs.sampled_type, mask) = EGlossyTransmission;
 
             // Side check
-            masked(active, mask) = active && neq(cos_theta_t, 0.0f)
-                                          && (cos_theta_wi * Frame::cos_theta(bs.wo) < 0.0f);
+            masked(active, mask) = active && neq(cos_theta_t, 0.f)
+                                          && (cos_theta_i * Frame::cos_theta(bs.wo) < 0.f);
             mask = mask && active;
 
             /* Radiance must be scaled to account for the solid angle compression
                that occurs when crossing the interface. */
             Value factor = (ctx.mode == ERadiance)
-                ? select(cos_theta_t < 0.0f,
+                ? select(cos_theta_t < 0.f,
                          inv_eta_value,
                          eta_value)
-                : Value(1.0f);
+                : Value(1.f);
 
             masked(weight, mask) =
                 weight * m_specular_transmittance->eval(si)
@@ -171,19 +172,19 @@ public:
         }
 
         if (none(active))
-            return { bs, 0.0f };
+            return { bs, 0.f };
 
         if (m_sample_visible)
             weight *= distr.smith_g1(bs.wo, m);
         else
             weight *= abs(distr.eval(m)
                       * distr.G(si.wi, bs.wo, m) * dot(si.wi, m)
-                      / (microfacet_pdf * cos_theta_wi));
+                      / (microfacet_pdf * cos_theta_i));
 
         bs.pdf *= abs(dwh_dwo);
 
         // Zero-out inactive lanes
-        masked(weight, !active) = Spectrum(0.0f);
+        masked(weight, !active) = Spectrum(0.f);
         return { bs, weight };
     }
 
@@ -191,33 +192,34 @@ public:
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
+    MTS_INLINE
     Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, mask_t<Value> active) const {
+                                  const Vector3 &wo, mask_t<Value> active) const {
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
 
-        Value cos_theta_wi = Frame::cos_theta(si.wi);
-        active = active && neq(cos_theta_wi, 0.0f);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
+        active &= neq(cos_theta_i, 0.f);
 
         // Determine the type of interaction
         bool has_reflection   = ctx.is_enabled(EGlossyReflection, 0);
         bool has_transmission = ctx.is_enabled(EGlossyTransmission, 1);
-        Mask reflect = (cos_theta_wi * Frame::cos_theta(wo) > 0.0f);
+        Mask reflect = (cos_theta_i * Frame::cos_theta(wo) > 0.f);
 
         Vector3 H;
 
-        active = active && (   (Mask(has_reflection)   && reflect)
-                            || (Mask(has_transmission) && !reflect));
+        active &= (   (Mask(has_reflection)   && reflect)
+                   || (Mask(has_transmission) && !reflect));
         if (none(active))
-            return Spectrum(0.0f);
+            return Spectrum(0.f);
 
         Value eta_value = enoki::mean(m_eta->eval(si, active));
         Value inv_eta_value = rcp(eta_value);
 
         // Compute the half-vector
         Value eta = select(reflect,
-                           Value(1.0f),                // reflection
-                           select(cos_theta_wi > 0.0f, // transmission
+                           Value(1.f),                // reflection
+                           select(cos_theta_i > 0.f, // transmission
                                   eta_value,
                                   inv_eta_value));
 
@@ -239,9 +241,9 @@ public:
         // Evaluate the microfacet normal distribution
         Value D = distr.eval(H);
 
-        active = active && neq(D, 0.0f);
+        active &= neq(D, 0.f);
         if (none(active))
-            return Spectrum(0.0f);
+            return Spectrum(0.f);
 
         // Fresnel factor
         Value F = std::get<0>(fresnel(dot(si.wi, H), eta_value));
@@ -249,11 +251,11 @@ public:
         // Smith's shadow-masking function
         Value G = distr.G(si.wi, wo, H);
 
-        Spectrum result(0.0f);
+        Spectrum result(0.f);
 
         if (has_reflection && any(reflect && active)) {
             // Compute the total amount of reflection
-            Value value = F * D * G / (4.0f * abs(cos_theta_wi));
+            Value value = F * D * G / (4.f * abs(cos_theta_i));
 
             masked(result, reflect && active)
                 = m_specular_reflectance->eval(si) * value;
@@ -262,18 +264,18 @@ public:
         if (has_transmission && any(!reflect && active)) {
             // Compute the total amount of transmission
             Value sqrt_denom = dot(si.wi, H) + eta * dot(wo, H);
-            Value value = ((1.0f - F) * D * G * eta * eta
+            Value value = ((1.f - F) * D * G * eta * eta
                 * dot(si.wi, H) * dot(wo, H)) /
-                (cos_theta_wi * sqrt_denom * sqrt_denom);
+                (cos_theta_i * sqrt_denom * sqrt_denom);
 
             /* Missing term in the original paper: account for the solid angle
                compression when tracing radiance -- this is necessary for
                bidirectional methods. */
             Value factor = (ctx.mode == ERadiance)
-                ? select(cos_theta_wi > 0.0f,
+                ? select(cos_theta_i > 0.f,
                          inv_eta_value,
                          eta_value)
-                : Value(1.0f);
+                : Value(1.f);
 
             masked(result, (!reflect && active))
                 = m_specular_transmittance->eval(si)
@@ -286,6 +288,7 @@ public:
     template <typename SurfaceInteraction,
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3>
+    MTS_INLINE
     Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                    const Vector3 &wo, mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
@@ -294,13 +297,13 @@ public:
         // Determine the type of interaction
         bool has_reflection   = ctx.is_enabled(EGlossyReflection, 0);
         bool has_transmission = ctx.is_enabled(EGlossyTransmission, 1);
-        Mask reflect = (Frame::cos_theta(si.wi) * Frame::cos_theta(wo) > 0.0f);
+        Mask reflect = (Frame::cos_theta(si.wi) * Frame::cos_theta(wo) > 0.f);
 
         Value eta_value     = enoki::mean(m_eta->eval(si, active));
         Value inv_eta_value = rcp(eta_value);
 
         Vector3 H;
-        Value dwh_dwo(0.0f);
+        Value dwh_dwo(0.f);
 
         Mask mask = (reflect && active);
         if (has_reflection && any(mask)) {
@@ -308,13 +311,13 @@ public:
             masked(H, mask) = normalize(wo + si.wi);
 
             // Jacobian of the half-direction mapping
-            masked(dwh_dwo, mask) = rcp(4.0f * dot(wo, H));
+            masked(dwh_dwo, mask) = rcp(4.f * dot(wo, H));
         }
 
         mask = !reflect && active;
         if (has_transmission && any(mask)) {
             // Compute the transmission half-vector
-            Value eta = select(Frame::cos_theta(si.wi) > 0.0f,
+            Value eta = select(Frame::cos_theta(si.wi) > 0.f,
                                eta_value,
                                inv_eta_value);
             masked(H, mask) = normalize(si.wi + wo * eta);
@@ -325,9 +328,9 @@ public:
                                     / (sqrt_denom * sqrt_denom);
         }
 
-        active = active && neq(dwh_dwo, 0.0f);
+        active &= neq(dwh_dwo, 0.f);
         if (none(active))
-            return 0.0f;
+            return 0.f;
 
         /* Ensure that the half-vector points into the
            same hemisphere as the macrosurface normal */
@@ -346,14 +349,14 @@ public:
            reduce importance sampling weights. Not needed for the
            Heitz and D'Eon sampling technique. */
         if (!m_sample_visible)
-            sample_distr.scale_alpha(1.2f - 0.2f * sqrt(abs(Frame::cos_theta(si.wi))));
+            sample_distr.scale_alpha(1.2f - .2f * sqrt(abs(Frame::cos_theta(si.wi))));
 
         // Evaluate the microfacet model sampling density function
         Value prob = sample_distr.pdf(sign(Frame::cos_theta(si.wi)) * si.wi, H);
 
         if (has_transmission && has_reflection) {
             Value F = std::get<0>(fresnel(dot(si.wi, H), eta_value));
-            prob *= select(reflect, F, (1.0f - F));
+            prob *= select(reflect, F, (1.f - F));
         }
 
         return abs(prob * dwh_dwo);
@@ -390,6 +393,6 @@ private:
 };
 
 MTS_IMPLEMENT_CLASS(RoughDielectric, BSDF)
-MTS_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric BSDF");
+MTS_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric");
 
 NAMESPACE_END(mitsuba)

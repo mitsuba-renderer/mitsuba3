@@ -50,7 +50,7 @@ public:
         Mask sample_transmission = ctx.is_enabled(EDeltaTransmission, 1);
 
         BSDFSample bs;
-        Spectrum spec = 0.f;
+        Spectrum spec(0.f);
 
         /* Evaluate the Fresnel equations for unpolarized illumination */
         Value cos_theta_i = Frame::cos_theta(si.wi);
@@ -140,6 +140,6 @@ private:
 };
 
 MTS_IMPLEMENT_CLASS(SmoothDielectric, BSDF)
-MTS_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric BSDF")
+MTS_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric")
 
 NAMESPACE_END(mitsuba)

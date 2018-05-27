@@ -14,11 +14,10 @@ class RoughPlastic : public BSDF {
 public:
     RoughPlastic(const Properties &props) {
         m_flags =  EGlossyReflection | EDiffuseReflection | EFrontSide;
-        m_components.clear();
         m_components.push_back(EGlossyReflection | EFrontSide);
         m_components.push_back(EDiffuseReflection | EFrontSide);
 
-        m_specular_reflectance = props.spectrum("specular_reflectance", 1.0f);
+        m_specular_reflectance = props.spectrum("specular_reflectance", 1.f);
         m_diffuse_reflectance  = props.spectrum("diffuse_reflectance",  0.5f);
 
         // TODO: Verify the input parameters and fix them if necessary
@@ -35,7 +34,7 @@ public:
         /// Specifies the external index of refraction at the interface
         Float ext_ior = lookup_ior(props, "ext_ior", "air");
 
-        if (int_ior < 0.0f || ext_ior < 0.0f || int_ior == ext_ior)
+        if (int_ior < 0.f || ext_ior < 0.f || int_ior == ext_ior)
             Throw("The interior and exterior indices of "
                   "refraction must be positive and differ!");
 
@@ -46,7 +45,7 @@ public:
             PluginManager::instance()
                 ->create_object<ContinuousSpectrum>(props2).get();
 
-        props2.set_float("value", 1.0f / (m_eta * m_eta), false);
+        props2.set_float("value", 1.f / (m_eta * m_eta), false);
         m_inv_eta_2 = (ContinuousSpectrum *)
             PluginManager::instance()
                 ->create_object<ContinuousSpectrum>(props2).get();
@@ -75,6 +74,7 @@ public:
               typename Value      = typename SurfaceInteraction::Value,
               typename Point2     = typename SurfaceInteraction::Point2,
               typename Spectrum   = Spectrum<Value>>
+    MTS_INLINE
     std::pair<BSDFSample, Spectrum> sample_impl(
             const BSDFContext &ctx, const SurfaceInteraction &si,
             Value sample1, const Point2 &sample2, mask_t<Value> active) const {
@@ -88,13 +88,13 @@ public:
         bool has_diffuse  = ctx.is_enabled(EDiffuseReflection, 1);
 
         BSDFSample bs;
-        bs.pdf = 0.0f;
+        bs.pdf = 0.f;
         if (!has_specular && !has_diffuse)
-            return { bs, 0.0f };
+            return { bs, 0.f };
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
 
-        active = active && (n_dot_wi > 0.0f);
+        active &= cos_theta_i > 0.f;
 
         Mask chose_specular = has_specular;
 
@@ -109,10 +109,10 @@ public:
         Value prob_specular;
         if (has_specular && has_diffuse) {
             // Find the probability of sampling the specular component
-            // prob_specular = 1.0f - m_external_rough_transmittance->eval(n_dot_wi, distr.alpha(), active);
+            // prob_specular = 1.f - m_external_rough_transmittance->eval(cos_theta_i, distr.alpha(), active);
             prob_specular = (m_specular_factor * m_specular_sampling_weight) /
                 (m_specular_factor * m_specular_sampling_weight +
-                (1.0f - m_specular_factor) * (1.0f - m_specular_sampling_weight));
+                (1.f - m_specular_factor) * (1.f - m_specular_sampling_weight));
 
             chose_specular = sample1 < prob_specular;
         }
@@ -127,25 +127,25 @@ public:
         bs.sampled_type = select(chose_specular,
                                  Index(EGlossyReflection),
                                  Index(EDiffuseReflection));
-        bs.eta = 1.0f;
+        bs.eta = 1.f;
 
         // Side check
-        active = active && !(chose_specular && (Frame::cos_theta(bs.wo) <= 0.0f));
+        active &= !(chose_specular && (Frame::cos_theta(bs.wo) <= 0.f));
 
         if (none(active))
-            return { bs, 0.0f };
+            return { bs, 0.f };
 
         // Guard against numerical imprecisions
         Value pdf = pdf_impl(ctx, si, bs.wo, active);
 
-        active = active && neq(pdf, 0.0f);
+        active &= neq(pdf, 0.f);
 
         if (none(active))
-            return { bs, 0.0f };
+            return { bs, 0.f };
 
         Spectrum result = select(active,
                                  eval_impl(ctx, si, bs.wo, active) / pdf,
-                                 Spectrum(0.0f));
+                                 Spectrum(0.f));
 
         masked(bs.pdf, active) = pdf;
 
@@ -156,6 +156,7 @@ public:
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
+    MTS_INLINE
     Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                        const Vector3 &wo, mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
@@ -163,12 +164,12 @@ public:
         bool has_specular = ctx.is_enabled(EGlossyReflection, 0);
         bool has_diffuse  = ctx.is_enabled(EDiffuseReflection, 1);
         if (!(has_specular || has_diffuse))
-            return 0.0f;
+            return 0.f;
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi);
+        Value cos_theta_o = Frame::cos_theta(wo);
 
-        active = active && ((n_dot_wi > 0.0f) && (n_dot_wo > 0.0f));
+        active &= ((cos_theta_i > 0.f) && (cos_theta_o > 0.f));
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
@@ -178,7 +179,7 @@ public:
             m_sample_visible
         );
 
-        Spectrum result(0.0f);
+        Spectrum result(0.f);
         if (has_specular) {
             // Calculate the reflection half-vector
             Vector3 H = normalize(wo + si.wi);
@@ -196,26 +197,26 @@ public:
             Value G = distr.G(si.wi, wo, H);
 
             // Calculate the specular reflection component
-            Value value = F * D * G / (4.0f * n_dot_wi);
+            Value value = F * D * G / (4.f * cos_theta_i);
 
             result += m_specular_reflectance->eval(si, active) * value;
         }
 
         if (has_diffuse) {
             Spectrum diff = m_diffuse_reflectance->eval(si, active);
-            // Float T12 = m_external_rough_transmittance->eval(n_dot_wi, distr.alpha());
-            // Float T21 = m_external_rough_transmittance->eval(n_dot_wo, distr.alpha());
+            // Float T12 = m_external_rough_transmittance->eval(cos_theta_i, distr.alpha());
+            // Float T21 = m_external_rough_transmittance->eval(cos_theta_o, distr.alpha());
             // Float Fdr = 1.f - m_internal_rough_transmittance->evalDiffuse(distr.alpha());
             Value T12 = m_specular_factor;
             Value T21 = m_specular_factor;
             Value Fdr = 1.f - m_specular_factor;
 
             if (m_nonlinear)
-                diff /= Spectrum(1.0f) - diff * Fdr;
+                diff /= Spectrum(1.f) - diff * Fdr;
             else
-                diff /= 1.0f - Fdr;
+                diff /= 1.f - Fdr;
 
-            result += diff * (InvPi * n_dot_wo * T12 * T21 * m_inv_eta_2->eval(si, active));
+            result += diff * (InvPi * cos_theta_o * T12 * T21 * m_inv_eta_2->eval(si, active));
         }
 
         masked(result, !active) = Spectrum(0.f);
@@ -225,6 +226,7 @@ public:
     template <typename SurfaceInteraction,
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3>
+    MTS_INLINE
     Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                    const Vector3 &wo, mask_t<Value> active) const {
         using Frame   = Frame<Vector3>;
@@ -232,12 +234,12 @@ public:
         bool has_specular = ctx.is_enabled(EGlossyReflection, 0);
         bool has_diffuse  = ctx.is_enabled(EDiffuseReflection, 1);
         if (!(has_specular || has_diffuse))
-            return 0.0f;
+            return 0.f;
 
-        Value n_dot_wi = Frame::cos_theta(si.wi);
-        Value n_dot_wo = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi),
+              cos_theta_o = Frame::cos_theta(wo);
 
-        active = active && ((n_dot_wi > 0.0f) && (n_dot_wo > 0.0f));
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
@@ -253,20 +255,20 @@ public:
         Value prob_diffuse, prob_specular;
         if (has_specular && has_diffuse) {
             /* Find the probability of sampling the specular component */
-            // prob_specular = 1.0f - m_external_rough_transmittance->eval(n_dot_wi, distr.alpha(), active);
+            // prob_specular = 1.f - m_external_rough_transmittance->eval(cos_theta_i, distr.alpha(), active);
             prob_specular = (m_specular_factor * m_specular_sampling_weight) /
                 (m_specular_factor * m_specular_sampling_weight +
-                (1.0f - m_specular_factor) * (1.0f - m_specular_sampling_weight));
+                (1.f - m_specular_factor) * (1.f - m_specular_sampling_weight));
 
-            prob_diffuse = 1.0f - prob_specular;
+            prob_diffuse = 1.f - prob_specular;
         } else {
-            prob_diffuse = prob_specular = 1.0f;
+            prob_diffuse = prob_specular = 1.f;
         }
 
         Value result;
         if (has_specular) {
             // Jacobian of the half-direction mapping
-            const Value dwh_dwo = rcp(4.0f * dot(wo, H));
+            const Value dwh_dwo = rcp(4.f * dot(wo, H));
 
             // Evaluate the microfacet model sampling density function
             const Value prob = distr.pdf(si.wi, H);
@@ -277,7 +279,7 @@ public:
         if (has_diffuse)
             result += prob_diffuse * warp::square_to_cosine_hemisphere_pdf(wo);
 
-        masked(result, !active) = 0.0f;
+        masked(result, !active) = 0.f;
         return result;
     }
 
@@ -296,7 +298,7 @@ public:
             << "  specular_reflectance = "     << m_specular_reflectance              << "," << std::endl
             << "  diffuse_reflectance = "      << m_diffuse_reflectance               << "," << std::endl
             << "  specular_sampling_weight = " << m_specular_sampling_weight          << "," << std::endl
-            << "  diffuse_sampling_weight = "  << (1.0f - m_specular_sampling_weight) << "," << std::endl
+            << "  diffuse_sampling_weight = "  << (1.f - m_specular_sampling_weight) << "," << std::endl
             << "  eta = "                      << m_eta                               << "," << std::endl
             << "  nonlinear = "                << m_nonlinear                         << std::endl
             << "]";
@@ -317,6 +319,6 @@ private:
 };
 
 MTS_IMPLEMENT_CLASS(RoughPlastic, BSDF)
-MTS_EXPORT_PLUGIN(RoughPlastic, "Rough plastic BRDF");
+MTS_EXPORT_PLUGIN(RoughPlastic, "Rough plastic");
 
 NAMESPACE_END(mitsuba)

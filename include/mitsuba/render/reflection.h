@@ -191,7 +191,7 @@ Value fresnel_complex(Value cos_theta_i, Complex<Value> eta) {
 /// Reflect \c wi with respect to a given surface normal
 template <typename Vector3, typename Normal3>
 Vector3 reflect(const Vector3 &wi, const Normal3 &m) {
-    return 2.f * dot(wi, m) * Vector3(m) - wi;
+    return fmsub(Vector3(m), 2.f * dot(wi, m), wi);
 }
 
 /// Reflection in local coordinates

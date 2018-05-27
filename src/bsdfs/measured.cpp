@@ -431,6 +431,6 @@ private:
 };
 
 MTS_IMPLEMENT_CLASS(Measured, BSDF)
-MTS_EXPORT_PLUGIN(Measured, "Measured BRDF")
+MTS_EXPORT_PLUGIN(Measured, "Measured material")
 
 NAMESPACE_END(mitsuba)

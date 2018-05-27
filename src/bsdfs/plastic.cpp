@@ -53,7 +53,8 @@ public:
         typename Value      = typename SurfaceInteraction::Value,
         typename Point2     = typename SurfaceInteraction::Point2,
         typename Spectrum   = Spectrum<Value>>
-    MTS_INLINE std::pair<BSDFSample, Spectrum>
+    MTS_INLINE
+    std::pair<BSDFSample, Spectrum>
     sample_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
                 Value sample1, const Point2 &sample2,
                 mask_t<Value> active) const {
@@ -124,10 +125,11 @@ public:
               typename Value    = typename SurfaceInteraction::Value,
               typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
-    MTS_INLINE Spectrum eval_impl(const BSDFContext &ctx,
-                                  const SurfaceInteraction &si,
-                                  const Vector3 &wo,
-                                  mask_t<Value> active) const {
+    MTS_INLINE
+    Spectrum eval_impl(const BSDFContext &ctx,
+                       const SurfaceInteraction &si,
+                       const Vector3 &wo,
+                       mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
 
         bool has_diffuse = ctx.is_enabled(EDiffuseReflection, 1);
@@ -155,7 +157,8 @@ public:
     template <typename SurfaceInteraction,
               typename Value   = typename SurfaceInteraction::Value,
               typename Vector3 = typename SurfaceInteraction::Vector3>
-    MTS_INLINE Value pdf_impl(const BSDFContext &ctx,
+    MTS_INLINE
+    Value pdf_impl(const BSDFContext &ctx,
                               const SurfaceInteraction &si, const Vector3 &wo,
                               mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
@@ -210,6 +213,6 @@ private:
 
 
 MTS_IMPLEMENT_CLASS(SmoothPlastic, BSDF)
-MTS_EXPORT_PLUGIN(SmoothPlastic, "Smooth plastic BRDF");
+MTS_EXPORT_PLUGIN(SmoothPlastic, "Smooth plastic");
 
 NAMESPACE_END(mitsuba)

@@ -96,6 +96,6 @@ private:
 };
 
 MTS_IMPLEMENT_CLASS(SmoothDiffuse, BSDF)
-MTS_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse BRDF")
+MTS_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material")
 
 NAMESPACE_END(mitsuba)

@@ -10,7 +10,6 @@ class SmoothConductor : public BSDF {
 public:
     SmoothConductor(const Properties &props) {
         m_flags = EDeltaReflection | EFrontSide;
-        m_components.clear();
         m_components.push_back(EDeltaReflection | EFrontSide);
 
         m_specular_reflectance = props.spectrum("specular_reflectance", 1.f);

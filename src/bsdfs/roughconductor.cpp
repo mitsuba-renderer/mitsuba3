@@ -206,6 +206,6 @@ private:
 };
 
 MTS_IMPLEMENT_CLASS(RoughConductor, BSDF)
-MTS_EXPORT_PLUGIN(RoughConductor, "Rough conductor BRDF");
+MTS_EXPORT_PLUGIN(RoughConductor, "Rough conductor");
 
 NAMESPACE_END(mitsuba)

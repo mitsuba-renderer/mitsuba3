@@ -40,6 +40,7 @@ public:
     template <typename SurfaceInteraction, typename Value, typename Point2,
               typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
               typename Spectrum   = Spectrum<Value>>
+    MTS_INLINE
     std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx_,
                                                 const SurfaceInteraction &si_,
                                                 Value sample1,
@@ -74,6 +75,7 @@ public:
     template <typename SurfaceInteraction, typename Vector3,
               typename Value    = typename SurfaceInteraction::Value,
               typename Spectrum = Spectrum<Value>>
+    MTS_INLINE
     Spectrum eval_impl(const BSDFContext &ctx_, const SurfaceInteraction &si_,
                        Vector3 wo, mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
@@ -104,6 +106,7 @@ public:
 
     template <typename SurfaceInteraction, typename Vector3,
               typename Value = value_t<Vector3>>
+    MTS_INLINE
     Value pdf_impl(const BSDFContext &ctx_, const SurfaceInteraction &si_,
                    Vector3 wo, mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
@@ -148,6 +151,6 @@ protected:
 };
 
 MTS_IMPLEMENT_CLASS(TwoSidedBRDF, BSDF)
-MTS_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided BRDF adapter");
+MTS_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter");
 
 NAMESPACE_END(mitsuba)
