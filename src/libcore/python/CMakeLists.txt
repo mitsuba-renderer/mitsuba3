@@ -34,6 +34,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   rfilter.cpp
   mmap.cpp
   progress.cpp
+  quad.cpp
 )
 
 target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core mitsuba-render tbb)

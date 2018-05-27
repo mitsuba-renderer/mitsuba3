@@ -41,11 +41,11 @@ MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(spline);
+MTS_PY_DECLARE(quad);
 MTS_PY_DECLARE(DiscreteDistribution);
 MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(MemoryMappedFile);
 MTS_PY_DECLARE(ProgressReporter);
-MTS_PY_DECLARE(coherence);
 
 PYBIND11_MODULE(mitsuba_core_ext, m_) {
     (void) m_; /* unused */
@@ -115,6 +115,7 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(qmc);
     MTS_PY_IMPORT(spline);
+    MTS_PY_IMPORT(quad);
     MTS_PY_IMPORT(DiscreteDistribution);
     MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(MemoryMappedFile);

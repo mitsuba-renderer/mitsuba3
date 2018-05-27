@@ -60,6 +60,7 @@ add_library(mitsuba-core-obj OBJECT
   warp.cpp             ${INC_DIR}/warp.h
   xml.cpp              ${INC_DIR}/xml.h
   zstream.cpp          ${INC_DIR}/zstream.h
+  quad.cpp             ${INC_DIR}/quad.h
 
   dither-matrix256.cpp
 )

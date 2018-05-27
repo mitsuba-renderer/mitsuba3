@@ -1,0 +1,173 @@
+#include <mitsuba/core/quad.h>
+
+NAMESPACE_BEGIN(mitsuba)
+NAMESPACE_BEGIN(quad)
+
+std::pair<FloatX, FloatX> gauss_legendre(int n) {
+    if (n < 1)
+        throw std::runtime_error("gauss_legendre(): n must be >= 1");
+
+    FloatX nodes, weights;
+    set_slices(nodes, n);
+    set_slices(weights, n);
+
+    if (n == 0) {
+        nodes[0] = 0.f;
+        weights[0] = 2.f;
+    } else if (n == 1) {
+        nodes[0] = (Float) -std::sqrt(1.0 / 3.0);
+        nodes[1] = -nodes[0];
+        weights[0] = weights[1] = 1.f;
+    }
+
+    n--;
+
+    int m = (n + 1) / 2;
+    for (int i = 0; i < m; ++i) {
+        /* Initial guess for this root using that of a Chebyshev polynomial */
+        double x = -std::cos((double) (2*i + 1) / (double) (2*n + 2) * math::Pi_d);
+        int it = 0;
+
+        while (true) {
+            if (++it > 20)
+                throw std::runtime_error(
+                    "gauss_lobatto(" + std::to_string(n) +
+                    "): did not converge after 20 iterations!");
+
+            /* Search for the interior roots of P_{n+1}(x) using Newton's method. */
+            std::pair<double, double> L = math::legendre_pd(n+1, x);
+            double step = L.first / L.second;
+            x -= step;
+
+            if (std::abs(step) <=
+                4 * std::abs(x) * std::numeric_limits<double>::epsilon())
+                break;
+        }
+
+        std::pair<double, double> L = math::legendre_pd(n+1, x);
+        weights[i] = weights[n - i] =
+            (Float)(2 / ((1 - x * x) * (L.second * L.second)));
+        nodes[i] = (Float) x;
+        nodes[n - i] = (Float) -x;
+        assert(i == 0 || x > nodes[i-1]);
+    }
+
+    if ((n % 2) == 0) {
+        std::pair<double, double> L = math::legendre_pd(n+1, 0.0);
+        weights[n / 2] = (Float) (2.0 / (L.second * L.second));
+        nodes[n/2] = (Float) 0;
+    }
+
+    return { nodes, weights };
+}
+
+std::pair<FloatX, FloatX> gauss_lobatto(int n) {
+    if (n < 2)
+        throw std::runtime_error("gauss_lobatto(): n must be >= 2");
+
+    FloatX nodes, weights;
+    set_slices(nodes, n);
+    set_slices(weights, n);
+
+    n--;
+    nodes[0] = -1;
+    nodes[n] =  1;
+    weights[0] = weights[n] = 2 / (Float) (n * (n+1));
+
+
+    int m = (n + 1) / 2;
+    for (int i = 1; i < m; ++i) {
+        /* Initial guess for this root -- see "On the Legendre-Gauss-Lobatto Points
+           and Weights" by Seymor V. Parter, Journal of Sci. Comp., Vol. 14, 4, 1999 */
+
+        double x = -std::cos((i + 0.25) * math::Pi_d / n - 3/(8*n*math::Pi_d * (i + 0.25)));
+        int it = 0;
+
+        while (true) {
+            if (++it > 20)
+                throw std::runtime_error(
+                    "gauss_lobatto(" + std::to_string(n) +
+                        "): did not converge after 20 iterations!");
+
+            /* Search for the interior roots of P_n'(x) using Newton's method. The same
+               roots are also shared by P_{n+1}-P_{n-1}, which is nicer to evaluate. */
+
+            std::pair<double, double> Q = math::legendre_pd_diff(n, x);
+            double step = Q.first / Q.second;
+            x -= step;
+
+            if (std::abs(step) <= 4 * std::abs(x) * std::numeric_limits<double>::epsilon())
+                break;
+        }
+
+        double l_n = math::legendre_p(n, x);
+        weights[i] = weights[n - i] = (Float) (2 / ((n * (n + 1)) * l_n * l_n));
+        nodes[i] = (Float) x;
+        nodes[n - i] = (Float) -x;
+        assert(x > nodes[i-1]);
+    }
+
+    if ((n % 2) == 0) {
+        double l_n = math::legendre_p(n, 0.0);
+        weights[n / 2] = (Float) (2 / ((n * (n + 1)) * l_n * l_n));
+        nodes[n/2] = 0;
+    }
+    return { nodes, weights };
+}
+
+std::pair<FloatX, FloatX> composite_simpson(int n) {
+    if (n % 2 != 1 || n < 3)
+        throw std::runtime_error("composite_simpson(): n must be >= 3 and odd");
+
+    FloatX nodes, weights;
+    set_slices(nodes, n);
+    set_slices(weights, n);
+
+    n = (n - 1) / 2;
+
+    Float h      = (Float) 2 / (Float) (2 * n),
+          weight = h * (Float) (1.0 / 3.0);
+
+    for (int i = 0; i < n; ++i) {
+        Float x = -1 + h * (2*i);
+        nodes[2*i]     = x;
+        nodes[2*i+1]   = x+h;
+        weights[2*i]   = (i == 0 ? 1 : 2) * weight;
+        weights[2*i+1] = 4 * weight;
+    }
+
+    nodes[2*n] = 1;
+    weights[2*n] = weight;
+    return { nodes, weights };
+}
+
+std::pair<FloatX, FloatX> composite_simpson_38(int n) {
+    if ((n - 1) % 3 != 0 || n < 4)
+        throw std::runtime_error("composite_simpson_38(): n-1 must be divisible by 3");
+
+    FloatX nodes, weights;
+    set_slices(nodes, n);
+    set_slices(weights, n);
+
+    n = (n - 1) / 3;
+
+    Float h      = (Float) 2 / (Float) (3 * n),
+          weight = h * (Float) (3.0 / 8.0);
+
+    for (int i = 0; i < n; ++i) {
+        Float x = -1 + h * (3*i);
+        nodes[3*i]     = x;
+        nodes[3*i+1]   = x+h;
+        nodes[3*i+2]   = x+2*h;
+        weights[3*i]   = (i == 0 ? 1 : 2) * weight;
+        weights[3*i+1] = 3 * weight;
+        weights[3*i+2] = 3 * weight;
+    }
+
+    nodes[3*n] = 1;
+    weights[3*n] = weight;
+    return { nodes, weights };
+}
+
+NAMESPACE_END(quad)
+NAMESPACE_END(mitsuba)
