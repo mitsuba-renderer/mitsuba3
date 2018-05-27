@@ -11,11 +11,6 @@ NAMESPACE_BEGIN(mitsuba)
 class ThinDielectric : public BSDF {
 public:
     ThinDielectric(const Properties &props) {
-        m_flags = (ENull | EDeltaReflection | EFrontSide | EBackSide);
-        m_components.clear();
-        m_components.push_back(EDeltaReflection | EFrontSide | EBackSide);
-        m_components.push_back(ENull | EFrontSide | EBackSide);
-
         // Specifies the internal index of refraction at the interface
         Float int_ior = lookup_ior(props, "int_ior", "bk7");
         // Specifies the external index of refraction at the interface
@@ -25,13 +20,14 @@ public:
             Throw("The interior and exterior indices of "
                   "refraction must be positive!");
 
-        Properties props_eta("uniform");
-        props_eta.set_float("value", int_ior / ext_ior);
-        m_eta = (ContinuousSpectrum *) PluginManager::instance()
-                ->create_object<ContinuousSpectrum>(props_eta).get();
+        m_eta = int_ior / ext_ior;
 
         m_specular_reflectance   = props.spectrum("specular_reflectance",   1.f);
         m_specular_transmittance = props.spectrum("specular_transmittance", 1.f);
+
+        m_flags = ENull | EDeltaReflection | EFrontSide | EBackSide;
+        m_components.push_back(EDeltaReflection | EFrontSide | EBackSide);
+        m_components.push_back(ENull | EFrontSide | EBackSide);
     }
 
     template <typename SurfaceInteraction,
@@ -39,6 +35,7 @@ public:
               typename Value      = typename SurfaceInteraction::Value,
               typename Point2     = typename SurfaceInteraction::Point2,
               typename Spectrum   = Spectrum<Value>>
+    MTS_INLINE
     std::pair<BSDFSample, Spectrum> sample_impl(
             const BSDFContext &ctx, const SurfaceInteraction &si,
             Value sample1, const Point2 &/*sample2*/, mask_t<Value> active) const {
@@ -50,46 +47,29 @@ public:
         bool sample_reflection   = ctx.is_enabled(EDeltaReflection, 0);
         bool sample_transmission = ctx.is_enabled(ENull, 1);
 
-        Value R, cos_theta_t, eta_ti;
-        std::tie(R, cos_theta_t, std::ignore, eta_ti) = fresnel(
-            abs(Frame::cos_theta(si.wi)),
-            mean(m_eta->eval(si, active)));
+        Value r = std::get<0>(fresnel(abs(Frame::cos_theta(si.wi)), Value(m_eta)));
 
+        // Account for internal reflections: r' = r + trt + tr^3t + ..
+        r *= 2.f / (1.f + r);
 
-        // Account for internal reflections: R' = R + TRT + TR^3T + ..
-        Value T = 1.f - R;
-        masked(R, R < 1.f) += T * T * R / (1.f - R * R);
+        Mask selected_r = active && Mask(sample_reflection) &&
+                          (!Mask(sample_transmission) || sample1 < r),
+             selected_t = active && Mask(sample_transmission) && !selected_r;
 
         BSDFSample bs;
-        Spectrum value;
+        Spectrum value(0.f);
 
-        if (sample_transmission && sample_reflection) {
-            Mask reflection = (sample1 <= R);
+        bs.wo = select(selected_r, reflect(si.wi), -si.wi);
+        bs.pdf = select(selected_r, r, 1.f - r);
+        bs.eta = 1.f;
+        bs.sampled_component = select(selected_r, Index(0), Index(1));
+        bs.sampled_type = select(selected_r, Index(EDeltaReflection), Index(ENull));
 
-            bs.sampled_component = select(reflection, Index(0), Index(1));
-            bs.sampled_type =
-                select(reflection, Index(EDeltaReflection), Index(ENull));
-            bs.wo = select(reflection, reflect(si.wi), -si.wi);
+        if (any(selected_r))
+            value[selected_r] = m_specular_reflectance->eval(si, selected_r);
 
-            bs.pdf = select(reflection, R, 1.f - R);
-            value  = select(reflection,
-                            m_specular_reflectance->eval(si,   active),
-                            m_specular_transmittance->eval(si, active));
-        } else if (sample_reflection) {
-            bs.sampled_component = 0;
-            bs.sampled_type = EDeltaReflection;
-            bs.wo = reflect(si.wi);
-
-            bs.pdf = 1.f;
-            value = m_specular_reflectance->eval(si, active) * R;
-        } else if (sample_transmission) {
-            bs.sampled_component = 1;
-            bs.sampled_type = ENull;
-            bs.wo = -si.wi;
-
-            bs.pdf = 1.f;
-            value = m_specular_transmittance->eval(si, active) * (1.f - R);
-        }
+        if (any(selected_t))
+            value[selected_t] = m_specular_reflectance->eval(si, selected_t);
 
         return { bs, value };
     }
@@ -124,12 +104,12 @@ public:
     MTS_IMPLEMENT_BSDF()
     MTS_DECLARE_CLASS()
 private:
-    ref<ContinuousSpectrum> m_eta;
+    Float m_eta;
     ref<ContinuousSpectrum> m_specular_transmittance;
     ref<ContinuousSpectrum> m_specular_reflectance;
 };
 
 MTS_IMPLEMENT_CLASS(ThinDielectric, BSDF)
-MTS_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric BRDF")
+MTS_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric")
 
 NAMESPACE_END(mitsuba)
