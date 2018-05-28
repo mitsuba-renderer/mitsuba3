@@ -62,6 +62,11 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
                 return MicrofacetDistributionP(d.type(), d.alpha_u(), d.alpha_v(),
                                                d.sample_visible()).G(wi, wo, m);
             }), "wi"_a, "wo"_a, "m"_a)
+        .def("eval_reflectance",
+            [](const MicrofacetDistribution &d, const Vector3fX &wi_, Float eta, int res) {
+                mitsuba::MicrofacetDistribution<FloatP> d2(d.type(), d.alpha_u(), d.alpha_v(), true);
+                return d2.eval_reflectance(wi_, eta, res);
+            }, "wi"_a, "eta"_a, "res"_a = -1)
         .def("sample_visible_11", &MicrofacetDistribution::sample_visible_11,
              D(MicrofacetDistribution, sample_visible_11),
              "cos_theta_i"_a, "sample"_a)

@@ -114,18 +114,18 @@ template <typename T, typename Value = expr_t<T>> Vector<Value, 3> sphdir(T thet
 template <typename Value>
 Value legendre_p(int l, Value x) {
     using Scalar = scalar_t<Value>;
-    Value l_cur = 0.f;
+    Value l_cur = Value(0.f);
 
     assert(l >= 0);
 
     if (likely(l > 1)) {
-        Value l_p_pred = 1.f, l_pred = x;
-        Scalar k0 = 3.f, k1 = 2.f, k2 = 1.f;
+        Value l_p_pred = Scalar(1), l_pred = x;
+        Value k0 = Scalar(3), k1 = Scalar(2), k2 = Scalar(1);
 
         for (int ki = 2; ki <= l; ++ki) {
             l_cur = (k0 * x * l_pred - k2  * l_p_pred) / k1;
             l_p_pred = l_pred; l_pred = l_cur;
-            k2 = k1; k0 += 2.f; k1 += 1.f;
+            k2 = k1; k0 += Scalar(2); k1 += Scalar(1);
         }
 
         return l_cur;
@@ -136,29 +136,32 @@ Value legendre_p(int l, Value x) {
 }
 
 /// Evaluate an associated Legendre polynomial using recurrence
-template <typename Scalar>
-Scalar legendre_p(int l, int m, Scalar x) {
-    Scalar p_mm = 1.f;
+template <typename Value>
+Value legendre_p(int l, int m, Value x) {
+    using Scalar = scalar_t<Value>;
+
+    Value p_mm = Scalar(1);
 
     if (likely(m > 0)) {
-        Scalar somx2 = sqrt((1.f - x) * (1.f + x));
-        Scalar fact = 1.f;
+        Value somx2 = sqrt((Scalar(1) - x) * (Scalar(1) + x));
+        Value fact = Scalar(1);
         for (int i = 1; i <= m; i++) {
             p_mm *= (-fact) * somx2;
-            fact += 2.f;
+            fact += Scalar(2);
         }
     }
 
     if (unlikely(l == m))
         return p_mm;
 
-    Scalar p_mmp1 = x * (2 * m + 1.f) * p_mm;
+    Value p_mmp1 = x * (Scalar(2) * m + Scalar(1)) * p_mm;
     if (unlikely(l == m + 1))
         return p_mmp1;
 
-    Scalar p_ll = 0.f;
+    Value p_ll = Scalar(0);
     for (int ll = m + 2; ll <= l; ++ll) {
-        p_ll = ((2 * ll - 1) * x * p_mmp1 - (ll + m - 1) * p_mm) / (ll - m);
+        p_ll = ((Scalar(2) * ll - Scalar(1)) * x * p_mmp1 -
+                (ll + m - Scalar(1)) * p_mm) / (ll - m);
         p_mm = p_mmp1;
         p_mmp1 = p_ll;
     }
@@ -172,25 +175,25 @@ std::pair<Value, Value> legendre_pd(int l, Value x) {
     using Scalar = scalar_t<Value>;
 
     assert(l >= 0);
-    Value l_cur = 0.f, d_cur = 0.f;
+    Value l_cur = Scalar(0), d_cur = Scalar(0);
 
     if (likely(l > 1)) {
-        Value l_p_pred = 1.f, l_pred = x,
-              d_p_pred = 0.f, d_pred = 1.f;
-        Scalar k0 = 3.f, k1 = 2.f, k2 = 1.f;
+        Value l_p_pred = Scalar(1), l_pred = x,
+              d_p_pred = Scalar(0), d_pred = Scalar(1);
+        Scalar k0 = Scalar(3), k1 = Scalar(2), k2 = Scalar(1);
 
         for (int ki = 2; ki <= l; ++ki) {
             l_cur = (k0 * x * l_pred - k2 * l_p_pred) / k1;
             d_cur = d_p_pred + k0 * l_pred;
             l_p_pred = l_pred; l_pred = l_cur;
             d_p_pred = d_pred; d_pred = d_cur;
-            k2 = k1; k0 += 2.f; k1 += 1.f;
+            k2 = k1; k0 += Scalar(2); k1 += Scalar(1);
         }
     } else {
         if (l == 0) {
-            l_cur = 1.f; d_cur = 0.f;
+            l_cur = Scalar(1); d_cur = Scalar(0);
         } else {
-            l_cur = x; d_cur = 1.f;
+            l_cur = x; d_cur = Scalar(1);
         }
     }
 
@@ -204,16 +207,16 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
     assert(l >= 1);
 
     if (likely(l > 1)) {
-        Value l_p_pred = 1.f, l_pred = x, l_cur = 0.f,
-              d_p_pred = 0.f, d_pred = 1.f, d_cur = 0.f;
-        Scalar k0 = 3.f, k1 = 2.f, k2 = 1.f;
+        Value l_p_pred = Scalar(1), l_pred = x, l_cur = Scalar(0),
+              d_p_pred = Scalar(0), d_pred = Scalar(1), d_cur = Scalar(0);
+        Scalar k0 = Scalar(3), k1 = Scalar(2), k2 = Scalar(1);
 
         for (int ki = 2; ki <= l; ++ki) {
             l_cur = (k0 * x * l_pred - k2 * l_p_pred) / k1;
             d_cur = d_p_pred + k0 * l_pred;
             l_p_pred = l_pred; l_pred = l_cur;
             d_p_pred = d_pred; d_pred = d_cur;
-            k2 = k1; k0 += 2.f; k1 += 1.f;
+            k2 = k1; k0 += Scalar(2); k1 += Scalar(1);
         }
 
         Value l_next = (k0 * x * l_pred - k2 * l_p_pred) / k1;
@@ -221,7 +224,8 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
 
         return std::make_pair(l_next - l_p_pred, d_next - d_p_pred);
     } else {
-        return std::make_pair(Scalar(0.5f) * (3.f*x*x-1.f) - 1.f, 3.f*x);
+        return std::make_pair(Scalar(.5) * (Scalar(3) * x * x - Scalar(1)) -
+                                  Scalar(1), Scalar(3) * x);
     }
 }
 

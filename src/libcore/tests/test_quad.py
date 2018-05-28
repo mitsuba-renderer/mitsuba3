@@ -19,4 +19,4 @@ def test03_composite_simpson():
 
 def test04_composite_simpson_38():
     assert np.allclose(composite_simpson_38(4), [np.linspace(-1, 1, 4), [0.25, 0.75, 0.75, 0.25]])
-    assert np.allclose(composite_simpson_38(7), [np.linspace(-1, 1, 7), [0.125, 0.375, 0.375, 0.25 , 0.375, 0.375, 0.125]])
+    assert np.allclose(composite_simpson_38(7), [np.linspace(-1, 1, 7), [0.125, 0.375, 0.375, 0.25 , 0.375, 0.375, 0.125]], atol=1e-6)

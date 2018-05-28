@@ -2,7 +2,6 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/reflection.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/spectrum.h>
@@ -137,8 +136,8 @@ public:
                    const Vector3 &wo, mask_t<Value> active) const {
         using Frame = mitsuba::Frame<Vector3>;
 
-        Value cos_theta_i = Frame::cos_theta(si.wi);
-        Value cos_theta_o = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi),
+              cos_theta_o = Frame::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 

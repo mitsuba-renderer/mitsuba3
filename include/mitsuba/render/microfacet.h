@@ -6,7 +6,9 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
+#include <mitsuba/core/quad.h>
 #include <mitsuba/render/common.h>
+#include <mitsuba/render/reflection.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -406,6 +408,42 @@ public:
         }
     }
 
+    template <typename T = Value, enable_if_array_t<T> = 0>
+    FloatX eval_reflectance(const Vector3fX &wi_, Float eta, int res = -1) {
+        if (!m_sample_visible)
+            Throw("eval_reflectance(): requires visible normal sampling!");
+
+        if (eta > 1)
+            res = 32;
+        else
+            res = 128;
+
+        while (res % PacketSize != 0)
+            ++res;
+
+        FloatX nodes, weights, result;
+        std::tie(nodes, weights) = quad::gauss_legendre(res);
+        set_slices(result, slices(wi_));
+
+        Vector2fX nodes_2   = meshgrid(nodes, nodes),
+                  weights_2 = meshgrid(weights, weights);
+
+        for (size_t i = 0; i < slices(wi_); ++i) {
+            Vector3f wi = slice(wi_, i);
+            FloatP accum = zero<FloatP>();
+
+            for (size_t j = 0; j < packets(nodes_2); ++j) {
+                Vector2fP node(packet(nodes_2, j)),
+                          weight(packet(weights_2, j));
+
+                node = fmadd(node, .5f, .5f);
+                accum += eval_reflectance_kernel(wi, eta, node) * hprod(weight);
+            }
+            slice(result, i) = hsum(accum) * .25f;
+        }
+        return result;
+    }
+
     ENOKI_ALIGNED_OPERATOR_NEW()
 
 protected:
@@ -423,6 +461,17 @@ protected:
         std::tie(sin_phi_2, cos_phi_2) = Frame::sincos_phi_2(v);
 
         return sin_phi_2 * sqr(m_alpha_v) + cos_phi_2 * sqr(m_alpha_u);
+    }
+
+    Value eval_reflectance_kernel(const Vector3 &wi, Value eta,
+                                  const Point2 &p) const {
+        Vector3 m = std::get<0>(sample(wi, p));
+        Vector3 wo = reflect(wi, m);
+        Value f = std::get<0>(fresnel(dot(wi, m), eta));
+        Value weight = smith_g1(wo, m) * f;
+        Mask valid = Frame::cos_theta(wo) > 0.f &&
+                     Frame::cos_theta(wi) > 0.f;
+        return select(valid, weight, 0.f);
     }
 
 protected:

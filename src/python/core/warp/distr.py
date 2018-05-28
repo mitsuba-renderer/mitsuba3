@@ -254,24 +254,18 @@ DISTRIBUTIONS = [
         <float name="alpha" value="0.25"/>
      """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
 
-    # ('Rough plastic BSDF - smooth', SphericalDomain(),
-    #  BSDFAdapter("roughplastic", """
-    #     <float name="alpha" value="0.05"/>
-    #     <spectrum name="specular_reflectance" value="0.7"/>
-    #     <spectrum name="diffuse_reflectance" value="0.0"/>
-    #  """), DEFAULT_SETTINGS_3),
+    ('Rough plastic BSDF - smooth', SphericalDomain(),
+     BSDFAdapter("roughplastic", """
+        <float name="alpha" value="0.05"/>
+        <spectrum name="specular_reflectance" value="0.7"/>
+        <spectrum name="diffuse_reflectance" value="0.1"/>
+     """), DEFAULT_SETTINGS_3),
     ('Rough plastic BSDF - rough', SphericalDomain(),
      BSDFAdapter("roughplastic", """
         <float name="alpha" value="0.25"/>
         <spectrum name="specular_reflectance" value="0.4"/>
         <spectrum name="diffuse_reflectance" value="0.9"/>
      """), DEFAULT_SETTINGS_3),
-    ('Rough plastic BSDF - rough - alternative wi', SphericalDomain(),
-     BSDFAdapter("roughplastic", """
-        <float name="alpha" value="0.25"/>
-        <spectrum name="specular_reflectance" value="0.4"/>
-        <spectrum name="diffuse_reflectance" value="0.9"/>
-     """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
 
     #('Measured BSDF', SphericalDomain(),
     # InteractiveBSDFAdapter("measured", """

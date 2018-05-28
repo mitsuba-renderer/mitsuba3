@@ -13,9 +13,6 @@ NAMESPACE_BEGIN(mitsuba)
 class SmoothPlastic : public BSDF {
 public:
     SmoothPlastic(const Properties &props) {
-        m_specular_reflectance = props.spectrum("specular_reflectance", 1.f);
-        m_diffuse_reflectance  = props.spectrum("diffuse_reflectance",  .5f);
-
         /* Specifies the internal index of refraction at the interface */
         Float int_ior = lookup_ior(props, "int_ior", "polypropylene");
 
@@ -33,12 +30,15 @@ public:
         m_fdr_int = fresnel_diffuse_reflectance(1.f / m_eta);
         m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
 
+        m_specular_reflectance = props.spectrum("specular_reflectance", 1.f);
+        m_diffuse_reflectance  = props.spectrum("diffuse_reflectance",  .5f);
+
         /* Compute weights that further steer samples towards
            the specular or diffuse components */
-        Float d_avg = m_diffuse_reflectance->mean(),
-              s_avg = m_specular_reflectance->mean();
+        Float d_mean = m_diffuse_reflectance->mean(),
+              s_mean = m_specular_reflectance->mean();
 
-        m_specular_sampling_weight = s_avg / (d_avg + s_avg);
+        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
 
         m_nonlinear = props.bool_("nonlinear", false);
 
@@ -64,8 +64,8 @@ public:
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
 
-        bool has_specular = ctx.is_enabled(EDeltaReflection, 0);
-        bool has_diffuse = ctx.is_enabled(EDiffuseReflection, 1);
+        bool has_specular = ctx.is_enabled(EDeltaReflection, 0),
+             has_diffuse = ctx.is_enabled(EDiffuseReflection, 1);
 
         Value cos_theta_i = Frame::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
@@ -87,10 +87,8 @@ public:
 
         prob_diffuse = 1.f - prob_specular;
 
-        Mask sample_specular = sample1 < prob_specular,
-             sample_diffuse = !sample_specular;
-        sample_diffuse  &= active;
-        sample_specular &= active;
+        Mask sample_specular = active && (sample1 < prob_specular),
+             sample_diffuse = active && !sample_specular;
 
         bs.eta = 1.f;
         bs.pdf = 0.f;
