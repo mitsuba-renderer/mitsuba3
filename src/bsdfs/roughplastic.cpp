@@ -54,7 +54,7 @@ public:
         MicrofacetDistribution<FloatP> distr_p(m_type, m_alpha);
         Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
         for (size_t i = 0; i < slices(wi); ++i) {
-            Float mu     = std::max(1e-6f, i * Float(1.f) / (slices(wi) - 1));
+            Float mu     = std::max((Float) 1e-6f, i * Float(1.f) / (slices(wi) - 1));
             slice(wi, i) = Vector3f(std::sqrt(1 - mu * mu), 0.f, mu);
         }
         m_external_transmittance = 1.f - distr_p.eval_reflectance(wi, m_eta);

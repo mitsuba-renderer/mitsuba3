@@ -11,6 +11,8 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
     set_slices(nodes, n);
     set_slices(weights, n);
 
+    n--;
+
     if (n == 0) {
         nodes[0] = 0.f;
         weights[0] = 2.f;
@@ -19,8 +21,6 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
         nodes[1] = -nodes[0];
         weights[0] = weights[1] = 1.f;
     }
-
-    n--;
 
     int m = (n + 1) / 2;
     for (int i = 0; i < m; ++i) {
