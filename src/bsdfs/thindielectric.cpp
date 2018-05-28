@@ -69,7 +69,7 @@ public:
             value[selected_r] = m_specular_reflectance->eval(si, selected_r);
 
         if (any(selected_t))
-            value[selected_t] = m_specular_reflectance->eval(si, selected_t);
+            value[selected_t] = m_specular_transmittance->eval(si, selected_t);
 
         return { bs, value };
     }
