@@ -188,32 +188,16 @@ Value fresnel_complex(Value cos_theta_i, Complex<Value> eta) {
     return .5f * (r_s + r_p);
 }
 
-/// Reflect \c wi with respect to a given surface normal
-template <typename Vector3, typename Normal3>
-Vector3 reflect(const Vector3 &wi, const Normal3 &m) {
-    return fmsub(Vector3(m), 2.f * dot(wi, m), wi);
-}
-
 /// Reflection in local coordinates
 template <typename Vector3>
 Vector3 reflect(const Vector3 &wi) {
     return Vector3(-wi.x(), -wi.y(), wi.z());
 }
 
-/**
- * \brief Refract \c wi with respect to a given surface normal
- *
- * \param wi   Direction to refract
- * \param m    Surface normal
- * \param eta  Ratio of interior to exterior IORs at the interface.
- * \param cos_theta_t Cosine of the angle between the normal the transmitted
- *                    ray, as computed e.g. by \ref fresnel_dielectric_ext.
- */
-// TODO: this is not compatible with a wavelength-dependent `eta`
-template <typename Vector3, typename Normal3, typename Value = value_t<Vector3>>
-Vector3 refract(const Vector3 &wi, const Normal3 &m, const Value &eta, const Value &cos_theta_t) {
-    Value scale = select(cos_theta_t < 0.0f, rcp(eta), eta);
-    return m * (dot(wi, m) * scale + cos_theta_t) - wi * scale;
+/// Reflect \c wi with respect to a given surface normal
+template <typename Vector3, typename Normal3>
+Vector3 reflect(const Vector3 &wi, const Normal3 &m) {
+    return fmsub(Vector3(m), 2.f * dot(wi, m), wi);
 }
 
 /**
@@ -225,6 +209,24 @@ Vector3 refract(const Vector3 &wi, const Normal3 &m, const Value &eta, const Val
 template <typename Vector3, typename Value>
 Vector3 refract(const Vector3 &wi, Value cos_theta_t, Value eta_ti) {
     return Vector3(-eta_ti * wi.x(), -eta_ti * wi.y(), cos_theta_t);
+}
+
+/**
+ * \brief Refract \c wi with respect to a given surface normal
+ *
+ * \param wi
+ *     Direction to refract
+ * \param m
+ *     Surface normal
+ * \param cos_theta_t
+ *     Cosine of the angle between the normal the transmitted
+ *     ray, as computed e.g. by \ref fresnel.
+ * \param eta_ti
+ *     Relative index of refraction (transmitted / incident)
+ */
+template <typename Vector3, typename Normal3, typename Value = value_t<Vector3>>
+Vector3 refract(const Vector3 &wi, const Normal3 &m, Value cos_theta_t, Value eta_ti) {
+    return fmsub(m, fmadd(dot(wi, m), eta_ti, cos_theta_t), wi * eta_ti);
 }
 
 /**

@@ -68,7 +68,7 @@ public:
         active &= neq(bs.pdf, 0.f) && Frame::cos_theta(bs.wo) > 0.f;
 
         Value weight;
-        if (m_sample_visible)
+        if (likely(m_sample_visible))
             weight = distr.smith_g1(bs.wo, m);
         else
             weight = distr.G(si.wi, bs.wo, m) * dot(si.wi, m) /
@@ -153,7 +153,7 @@ public:
                                             m_sample_visible);
 
         Value result;
-        if (m_sample_visible)
+        if (likely(m_sample_visible))
             result = distr.eval(H) * distr.smith_g1(si.wi, H) /
                      (4.f * cos_theta_i);
         else

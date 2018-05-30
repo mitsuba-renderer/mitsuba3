@@ -44,34 +44,47 @@ public:
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
 
-        bool sample_reflection   = ctx.is_enabled(EDeltaReflection, 0);
-        bool sample_transmission = ctx.is_enabled(ENull, 1);
+        bool has_reflection   = ctx.is_enabled(EDeltaReflection, 0),
+             has_transmission = ctx.is_enabled(ENull, 1);
 
         Value r = std::get<0>(fresnel(abs(Frame::cos_theta(si.wi)), Value(m_eta)));
 
-        // Account for internal reflections: r' = r + trt + tr^3t + ..
+        /* Account for internal reflections: r' = r + trt + tr^3t + .. */
         r *= 2.f / (1.f + r);
 
-        Mask selected_r = active && Mask(sample_reflection) &&
-                          (!Mask(sample_transmission) || sample1 < r),
-             selected_t = active && Mask(sample_transmission) && !selected_r;
+        Value t = 1.f - r;
 
+        /* Select the lobe to be sampled */
         BSDFSample bs;
-        Spectrum value(0.f);
+        Spectrum weight;
+        Mask selected_r;
+        if (likely(has_reflection && has_transmission)) {
+            selected_r = sample1 <= r && active;
+            weight = 1.f;
+            bs.pdf = select(selected_r, r, t);
+        } else {
+            if (has_reflection || has_transmission) {
+                selected_r = Mask(has_reflection) && active;
+                weight = has_reflection ? r : t;
+                bs.pdf = 1.f;
+            } else {
+                return { bs, 0.f };
+            }
+        }
 
         bs.wo = select(selected_r, reflect(si.wi), -si.wi);
-        bs.pdf = select(selected_r, r, 1.f - r);
         bs.eta = 1.f;
         bs.sampled_component = select(selected_r, Index(0), Index(1));
         bs.sampled_type = select(selected_r, Index(EDeltaReflection), Index(ENull));
 
         if (any(selected_r))
-            value[selected_r] = m_specular_reflectance->eval(si, selected_r);
+            weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
 
+        Mask selected_t = !selected_r && active;
         if (any(selected_t))
-            value[selected_t] = m_specular_transmittance->eval(si, selected_t);
+            weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
-        return { bs, value };
+        return { bs, select(active, weight, 0.f) };
     }
 
     template <typename SurfaceInteraction, typename Vector3,

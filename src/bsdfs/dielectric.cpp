@@ -46,61 +46,58 @@ public:
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
 
-        Mask sample_reflection   = ctx.is_enabled(EDeltaReflection, 0);
-        Mask sample_transmission = ctx.is_enabled(EDeltaTransmission, 1);
-
-        BSDFSample bs;
-        Spectrum spec(0.f);
+        bool has_reflection   = ctx.is_enabled(EDeltaReflection, 0),
+             has_transmission = ctx.is_enabled(EDeltaTransmission, 1);
 
         /* Evaluate the Fresnel equations for unpolarized illumination */
         Value cos_theta_i = Frame::cos_theta(si.wi);
 
-        Value F, cos_theta_t, eta_it, eta_ti;
-        std::tie(F, cos_theta_t, eta_it, eta_ti) = fresnel(cos_theta_i, Value(m_eta));
+        Value r_i, cos_theta_t, eta_it, eta_ti;
+        std::tie(r_i, cos_theta_t, eta_it, eta_ti) = fresnel(cos_theta_i, Value(m_eta));
+        Value t_i = 1.f - r_i;
 
         /* Lobe selection */
-        Mask selected_reflection = Mask(sample_reflection) && (!Mask(sample_transmission) || sample1 < F),
-             selected_transmission = Mask(sample_transmission) && !selected_reflection;
-        selected_reflection &= active;
-        selected_transmission &= active;
-
-        bs.sampled_component = select(selected_reflection, Index(0), Index(1));
-        bs.sampled_type      = select(selected_reflection,
-                                      Index(EDeltaReflection),
-                                      Index(EDeltaTransmission));
-
-        bs.wo                = select(selected_reflection,
-                                      reflect(si.wi),
-                                      refract(si.wi, cos_theta_t, eta_ti));
-
-        bs.eta               = select(selected_reflection, Value(1.f), eta_it);
-
-        bs.pdf               = 1.f;
-
-
-        if (any(selected_reflection)) {
-            masked(bs.pdf, selected_reflection && sample_transmission) = F;
-
-            masked(spec, selected_reflection) =
-                m_specular_reflectance->eval(si,
-                                             selected_reflection) *
-                select(sample_transmission, 1.f, F);
+        BSDFSample bs;
+        Spectrum weight;
+        Mask selected_r;
+        if (likely(has_reflection && has_transmission)) {
+            selected_r = sample1 <= r_i && active;
+            weight = 1.f;
+            bs.pdf = select(selected_r, r_i, t_i);
+        } else {
+            if (has_reflection || has_transmission) {
+                selected_r = Mask(has_reflection) && active;
+                weight = has_reflection ? r_i : t_i;
+                bs.pdf = 1.f;
+            } else {
+                return { bs, 0.f };
+            }
         }
 
-        if (any(selected_transmission)) {
+        bs.sampled_component = select(selected_r, Index(0), Index(1));
+        bs.sampled_type      = select(selected_r, Index(EDeltaReflection),
+                                                  Index(EDeltaTransmission));
+
+        bs.wo                = select(selected_r, reflect(si.wi),
+                                      refract(si.wi, cos_theta_t, eta_ti));
+
+        bs.eta               = select(selected_r, Value(1.f), eta_it);
+
+        if (any(selected_r))
+            weight[selected_r] *=
+                m_specular_reflectance->eval(si, selected_r);
+
+        Mask selected_t = !selected_r && active;
+        if (any(selected_t)) {
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
             Value factor = (ctx.mode == ERadiance) ? eta_ti : Value(1.f);
 
-            masked(bs.pdf, selected_transmission && sample_reflection) = 1.f - F;
-
-            masked(spec, selected_transmission) =
-                m_specular_transmittance->eval(si,
-                                               selected_transmission) *
-                factor * factor * select(sample_reflection, 1.f, 1.f - F);
+            weight[selected_t] *=
+                m_specular_transmittance->eval(si, selected_t) * sqr(factor);
         }
 
-        return { bs, spec };
+        return { bs, select(active, weight, 0.f) };
     }
 
     template <typename SurfaceInteraction, typename Vector3,

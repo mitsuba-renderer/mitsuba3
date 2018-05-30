@@ -148,7 +148,8 @@ def test05_spot_check():
     ctx = BSDFContext()
     si = SurfaceInteraction3f()
     si.wavelengths = [532] * MTS_WAVELENGTH_SAMPLES
-    si.wi = [np.sin(angle), 0, np.cos(angle)]
+    wi = [np.sin(angle), 0, np.cos(angle)]
+    si.wi = wi
     bsdf = example_bsdf()
 
     bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
@@ -159,3 +160,8 @@ def test05_spot_check():
     angle = 41.03641052520335 * np.pi / 180
     assert np.allclose(bs.pdf, 1 - 0.387704354691473)
     assert np.allclose(bs.wo, [-np.sin(angle), 0, -np.cos(angle)])
+
+    si.wi = bs.wo
+    bs, spec = bsdf.sample(ctx, si, 1, [0, 0])
+    assert np.allclose(bs.pdf, 1 - 0.387704354691473)
+    assert np.allclose(bs.wo, wi)
