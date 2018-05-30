@@ -34,6 +34,7 @@ static std::string build_info(int thread_count) {
 #endif
     oss << (sizeof(size_t) * 8) << "bit, ";
     oss << thread_count << " thread" << (thread_count > 1 ? "s" : "");
+    oss << ", " << PacketSize << "-wide SIMD";
     oss << ")";
 
     return oss.str();
@@ -41,7 +42,7 @@ static std::string build_info(int thread_count) {
 
 static std::string copyright_info() {
     std::ostringstream oss;
-    oss << "Copyright " << MTS_YEAR << " by " << MTS_AUTHORS;
+    oss << "Copyright " << MTS_YEAR << ", " << MTS_AUTHORS;
     return oss.str();
 }
 

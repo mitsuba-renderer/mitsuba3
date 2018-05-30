@@ -17,7 +17,7 @@
 #define MTS_YEAR "2018"
 
 /// Authors list
-#define MTS_AUTHORS "Wenzel Jakob and others (see README.md)"
+#define MTS_AUTHORS "Realistic Graphics Lab, EPFL"
 
 #include <mitsuba/core/platform.h>
 #include <mitsuba/core/fwd.h>
