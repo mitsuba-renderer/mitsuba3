@@ -22,6 +22,7 @@ ProgressReporter::ProgressReporter(const std::string &label, void *payload)
     }
 
     m_last_update = 0;
+    m_last_progress = -1.f;
 }
 
 ProgressReporter::~ProgressReporter() { }

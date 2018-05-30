@@ -5,6 +5,7 @@ NAMESPACE_BEGIN(mitsuba)
 template struct MTS_EXPORT_RENDER BSDFSample<Point3f>;
 template struct MTS_EXPORT_RENDER BSDFSample<Point3fP>;
 
+BSDF::BSDF() : m_flags(0) { }
 BSDF::~BSDF() { }
 
 std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {

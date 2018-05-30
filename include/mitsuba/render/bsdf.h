@@ -408,6 +408,7 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
+    BSDF();
     virtual ~BSDF();
 
 protected:
