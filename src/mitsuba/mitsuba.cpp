@@ -159,6 +159,8 @@ int main(int argc, char *argv[]) {
 
         /* Initialize Intel Thread Building Blocks with the requested number of threads */
         int thread_count = *arg_threads ? arg_threads->as_int() : util::core_count();
+        if (thread_count < 1)
+            Throw("Thread count must be >= 1!");
         tbb::task_scheduler_init init(thread_count);
 
         bool render_scalar = (bool) *arg_scalar;
