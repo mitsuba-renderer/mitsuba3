@@ -1,6 +1,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/plugin.h>
 #include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/srgb.h>
@@ -14,12 +15,29 @@ public:
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
+        m_name = file_path.filename().string();
+        Log(EInfo, "Loading bitmap texture from \"%s\" ..", m_name);
+
         m_bitmap = new Bitmap(file_path);
 
         /* Convert to linear RGBA float bitmap, will be converted
            into spectral profile coefficients below */
         m_bitmap = m_bitmap->convert(Bitmap::ERGBA, Bitmap::EFloat, false);
-        m_name = file_path.filename().string();
+
+        if (props.has_property("upscale")) {
+            Float upscale = props.float_("upscale");
+
+            Vector2s old_size = m_bitmap->size(),
+                     new_size = upscale * old_size;
+
+            ref<ReconstructionFilter> rfilter =
+                PluginManager::instance()->create_object<ReconstructionFilter>(
+                    Properties("tent"));
+
+            Log(EInfo, "Upsampling bitmap texture \"%s\" to %ix%i ..", m_name,
+                       new_size.x(), new_size.y());
+            m_bitmap = m_bitmap->resample(new_size, rfilter);
+        }
 
         Float *ptr = (Float *) m_bitmap->data();
         double mean = 0.0;
@@ -40,20 +58,6 @@ public:
         }
 
         m_mean = Float(mean / hprod(m_bitmap->size()));
-
-        if (props.has_property("upscale")) {
-            Float upscale = props.float_("upscale");
-
-            Vector2s old_size = m_bitmap->size(),
-                     new_size = upscale * old_size;
-
-            ref<Bitmap> new_bitmap = new Bitmap(Bitmap::ERGBA, Bitmap::EFloat,
-                                                new_size,
-                                                m_bitmap->channel_count());
-
-            m_bitmap->resample(new_bitmap);
-            m_bitmap = new_bitmap;
-        }
     }
 
     template <typename SurfaceInteraction, typename Mask,
