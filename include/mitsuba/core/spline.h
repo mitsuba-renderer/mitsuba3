@@ -329,7 +329,7 @@ void integrate_1d(Value min, Value max, const Value *values,
                   uint32_t size, Value *out) {
     const Value width = (max - min) / (size - 1);
     Value sum = 0;
-    store(out, 0);
+    store(out, sum);
     for (uint32_t idx = 0; idx < size - 1; ++idx) {
         GET_SPLINE_UNIFORM(idx);
 
@@ -368,7 +368,7 @@ template <typename Value>
 void integrate_1d(const Value *nodes, const Value *values,
                   uint32_t size, Value *out) {
     Value sum = 0;
-    store(out, 0);
+    store(out, sum);
     for (uint32_t idx = 0; idx < size - 1; ++idx) {
         GET_SPLINE_NONUNIFORM(idx);
 
@@ -830,7 +830,7 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
     w2 = select(valid_boundary_right, w2, w2 + d1);
     w3 = select(valid_boundary_right, w3 + d1 * .5f, w3);
 
-    store(weights, w0);
+    store(weights,     w0);
     store(weights + 1, w1);
     store(weights + 2, w2);
     store(weights + 3, w3);
