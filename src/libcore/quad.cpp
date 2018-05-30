@@ -49,7 +49,7 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
             (Float)(2 / ((1 - x * x) * (L.second * L.second)));
         nodes[i] = (Float) x;
         nodes[n - i] = (Float) -x;
-        assert(i == 0 || x > nodes[i-1]);
+        assert(i == 0 || (Float) x > nodes[i-1]);
     }
 
     if ((n % 2) == 0) {
@@ -104,7 +104,7 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
         weights[i] = weights[n - i] = (Float) (2 / ((n * (n + 1)) * l_n * l_n));
         nodes[i] = (Float) x;
         nodes[n - i] = (Float) -x;
-        assert(x > nodes[i-1]);
+        assert((Float) x > nodes[i-1]);
     }
 
     if ((n % 2) == 0) {
