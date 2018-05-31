@@ -18,7 +18,7 @@ from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
                      Alignment, Orientation, ImageView)
 from nanogui import glfw, entypo
 
-from .renderer_thread import RendererThread
+from .render_thread import RenderThread
 
 class CustomViewer(ImageView):
     """
@@ -96,12 +96,12 @@ class CustomViewer(ImageView):
 
 class MitsubaRenderer(Screen):
     """
-    Graphical user interface for the Mitsuba renderer.
+    Graphical user interface for the Mitsuba render.
     """
 
     def __init__(self):
         super(MitsubaRenderer, self).__init__(
-            [800, 600], "Mitsuba Renderer (v%s)" % mitsuba.MTS_VERSION)
+            [800, 600], "Mitsuba Render (v%s)" % mitsuba.MTS_VERSION)
         self.sidebar_width = 200
 
         self.render_vectorized = True
@@ -316,7 +316,7 @@ class MitsubaRenderer(Screen):
             self.worker_thread = None
 
 
-        self.worker_thread = RendererThread(
+        self.worker_thread = RenderThread(
             integrator=self.integrator, args=[self.scene],
             kwargs={'vectorize': self.render_vectorized},
             progress_callback=progress, done_callback=cb, error_callback=fail

@@ -1,7 +1,7 @@
 import mitsuba
 from mitsuba.core import Thread
 
-class RendererThread(Thread):
+class RenderThread(Thread):
     """
     Simple class used to run Mitsuba renders asynchronously using the Python API.
     Designed to be used by the render's UI.
@@ -13,7 +13,7 @@ class RendererThread(Thread):
                  done_callback = (lambda: None),
                  error_callback = (lambda: None),
                  args = [], kwargs = {}):
-        super(RendererThread, self).__init__(name="RendererThread")
+        super(RenderThread, self).__init__(name="RenderThread")
         self.integrator = integrator
         self.done = done_callback
         self.progress = progress_callback
