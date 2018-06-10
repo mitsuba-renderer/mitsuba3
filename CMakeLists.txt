@@ -329,6 +329,11 @@ elseif(MSVC)
   message(STATUS "Mitsuba: LTO support enabled.")
 endif()
 
+# Disable generation of VZEROUPPER instruction on Clang
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND U_CMAKE_BUILD_TYPE MATCHES REL)
+  add_compile_options("-mllvm" "-x86-use-vzeroupper=0")
+endif()
+
 # Set platform-specific flags
 if (WIN32)
   add_definitions(-D__WINDOWS__)
