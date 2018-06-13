@@ -107,10 +107,14 @@ struct Spectrum<enoki::detail::MaskedArray<Value_>> : enoki::detail::MaskedArray
 //! @}
 // =======================================================================
 
+#define MTS_CIE_MIN     360.f
+#define MTS_CIE_MAX     830.f
+#define MTS_CIE_SAMPLES 95
+
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
-extern MTS_EXPORT_CORE const Float cie1931_x_data[95];
-extern MTS_EXPORT_CORE const Float cie1931_y_data[95];
-extern MTS_EXPORT_CORE const Float cie1931_z_data[95];
+extern MTS_EXPORT_CORE const Float cie1931_x_data[MTS_CIE_SAMPLES];
+extern MTS_EXPORT_CORE const Float cie1931_y_data[MTS_CIE_SAMPLES];
+extern MTS_EXPORT_CORE const Float cie1931_z_data[MTS_CIE_SAMPLES];
 
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
@@ -121,10 +125,12 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths,
                                          mask_t<Expr> active = true) {
     using Index = int_array_t<Expr>;
 
-    Expr t = (wavelengths - 360.f) * 0.2f;
-    active = active && (wavelengths >= 360.f) && (wavelengths <= 830.f);
+    Expr t = (wavelengths - MTS_CIE_MIN) *
+             ((MTS_CIE_SAMPLES - 1) / (MTS_CIE_MAX - MTS_CIE_MIN));
 
-    Index i0 = min(max(Index(t), zero<Index>()), Index(95 - 2));
+    active &= wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX;
+
+    Index i0 = min(max(Index(t), zero<Index>()), Index(MTS_CIE_SAMPLES - 2));
     Index i1 = i0 + 1;
 
     Expr v0_x = gather<Expr>(cie1931_x_data, i0, active);
@@ -150,10 +156,12 @@ template <typename T, typename Expr = expr_t<T>>
 Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
     using Index = int_array_t<Expr>;
 
-    Expr t = (wavelengths - 360.f) * 0.2f;
-    active = active && (wavelengths >= 360.f) && (wavelengths <= 830.f);
+    Expr t = (wavelengths - MTS_CIE_MIN) *
+             ((MTS_CIE_SAMPLES - 1) / (MTS_CIE_MAX - MTS_CIE_MIN));
 
-    Index i0 = min(max(Index(t), zero<Index>()), Index(95-2));
+    active &= wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX;
+
+    Index i0 = min(max(Index(t), zero<Index>()), Index(MTS_CIE_SAMPLES - 2));
     Index i1 = i0 + 1;
 
     Expr v0 = gather<Expr>(cie1931_y_data, i0, active);
@@ -186,19 +194,21 @@ template <typename Value> Value luminance(const Color<Value, 3> &c) {
  */
 template <typename Value>
 std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
-#if 1
-    Value wavelengths = Float(538) -
-               atanh(Float(0.8569106254698279) -
-                     Float(1.8275019724092267) * sample) *
-               Float(138.88888888888889);
+    if (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
+        Value wavelengths = Float(538) -
+                   atanh(Float(0.8569106254698279) -
+                         Float(1.8275019724092267) * sample) *
+                   Float(138.88888888888889);
 
-    Value tmp = cosh(Float(0.0072) * (wavelengths - Float(538)));
-    Value weight = Float(253.82) * tmp * tmp;
+        Value tmp = cosh(Float(0.0072) * (wavelengths - Float(538)));
+        Value weight = Float(253.82) * tmp * tmp;
 
-    return { wavelengths, weight };
-#else
-    return { sample * (830.f - 360.f) + 360.f, 830.f - 360.f };
-#endif
+        return { wavelengths, weight };
+    } else {
+        /* Fall back to uniform sampling for other wavelength ranges */
+        return { sample * (MTS_CIE_MAX - MTS_CIE_MIN) + MTS_CIE_MIN,
+                 MTS_CIE_MAX - MTS_CIE_MIN };
+    }
 }
 
 NAMESPACE_END(mitsuba)

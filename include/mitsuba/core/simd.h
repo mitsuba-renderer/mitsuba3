@@ -36,5 +36,9 @@ template <typename T> std::string type_suffix() {
     return id;
 }
 
+/// Round an integer to a multiple of the current packet size
+inline size_t round_to_packet_size(size_t size) {
+    return (size + PacketSize - 1) / PacketSize * PacketSize;
+}
 
 NAMESPACE_END(mitsuba)
