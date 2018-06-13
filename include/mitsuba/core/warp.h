@@ -1564,7 +1564,8 @@ public:
         is_const = abs(c0 - c1) < 1e-4f * (c0 + c1);
         sample.x() = select(is_const, 2.f * sample.x(),
             c0 - safe_sqrt(c0 * c0 - 2.f * sample.x() * (c0 - c1)));
-        sample.x() /= select(is_const, c0 + c1, c0 - c1);
+        Value divisor = select(is_const, c0 + c1, c0 - c1);
+        masked(sample.x(), neq(divisor, 0.f)) /= divisor;
 
         return {
             (Vector2u(col, row) + sample) * m_patch_size,
