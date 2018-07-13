@@ -60,7 +60,7 @@ public:
         }
 
         bool has_vertex_normals = false;
-        for (auto const &el : header.elements) {
+        for (auto &el : header.elements) {
             size_t size = el.struct_->size();
             if (el.name == "vertex") {
                 m_vertex_struct = new Struct();
@@ -80,11 +80,15 @@ public:
                     m_normal_offset = (Index) m_vertex_struct->field("nx").offset;
                 }
 
+                if (el.struct_->has_field("texture_u"))
+                    el.struct_->field("texture_u").name = "u";
+                if (el.struct_->has_field("texture_v"))
+                    el.struct_->field("texture_v").name = "v";
                 if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
                     for (auto name : { "u", "v" })
                         m_vertex_struct->append(name, Struct::EFloat);
 
-                    m_texcoord_offset = (Index) m_vertex_struct->field("nx").offset;
+                    m_texcoord_offset = (Index) m_vertex_struct->field("u").offset;
                 }
 
                 size_t i_struct_size = el.struct_->size();
@@ -327,6 +331,9 @@ private:
         fmt_map["double"] = Struct::EFloat64;
 
         /* Unofficial extensions :) */
+        fmt_map["uint8"]  = Struct::EUInt8;
+        fmt_map["uint16"] = Struct::EUInt16;
+        fmt_map["uint32"] = Struct::EUInt32;
         fmt_map["long"]   = Struct::EInt64;
         fmt_map["ulong"]  = Struct::EUInt64;
         fmt_map["half"]   = Struct::EFloat16;
@@ -445,9 +452,9 @@ private:
                     switch (field.type) {
                         case Struct::EInt8: {
                                 int value;
-                                if (!(is >> value)) Throw("Could not parse \"char\" value");
+                                if (!(is >> value)) Throw("Could not parse \"char\" value for field %s", field.name);
                                 if (value < -128 || value > 127)
-                                    Throw("Could not parse \"char\" value");
+                                    Throw("Could not parse \"char\" value for field %s", field.name);
                                 out->write((int8_t) value);
                             }
                             break;
@@ -455,74 +462,72 @@ private:
                         case Struct::EUInt8: {
                                 int value;
                                 if (!(is >> value))
-                                    Throw("Could not parse \"uchar\" value (may"
-                                          " be due to non-triangular faces)");
+                                    Throw("Could not parse \"uchar\" value for field %s (may be due to non-triangular faces)", field.name);
                                 if (value < 0 || value > 255)
-                                    Throw("Could not parse \"uchar\" value (may"
-                                          " be due to non-triangular faces)");
+                                    Throw("Could not parse \"uchar\" value for field %s (may be due to non-triangular faces)", field.name);
                                 out->write((uint8_t) value);
                             }
                             break;
 
                         case Struct::EInt16: {
                                 int16_t value;
-                                if (!(is >> value)) Throw("Could not parse \"short\" value");
+                                if (!(is >> value)) Throw("Could not parse \"short\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::EUInt16: {
                                 uint16_t value;
-                                if (!(is >> value)) Throw("Could not parse \"ushort\" value");
+                                if (!(is >> value)) Throw("Could not parse \"ushort\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::EInt32: {
                                 int32_t value;
-                                if (!(is >> value)) Throw("Could not parse \"int\" value");
+                                if (!(is >> value)) Throw("Could not parse \"int\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::EUInt32: {
                                 uint32_t value;
-                                if (!(is >> value)) Throw("Could not parse \"uint\" value");
+                                if (!(is >> value)) Throw("Could not parse \"uint\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::EInt64: {
                                 int64_t value;
-                                if (!(is >> value)) Throw("Could not parse \"long\" value");
+                                if (!(is >> value)) Throw("Could not parse \"long\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::EUInt64: {
                                 uint64_t value;
-                                if (!(is >> value)) Throw("Could not parse \"ulong\" value");
+                                if (!(is >> value)) Throw("Could not parse \"ulong\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::EFloat16: {
                                 float value;
-                                if (!(is >> value)) Throw("Could not parse \"half\" value");
+                                if (!(is >> value)) Throw("Could not parse \"half\" value for field %s", field.name);
                                 out->write(enoki::half::float32_to_float16(value));
                             }
                             break;
 
                         case Struct::EFloat32: {
                                 float value;
-                                if (!(is >> value)) Throw("Could not parse \"float\" value");
+                                if (!(is >> value)) Throw("Could not parse \"float\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::EFloat64: {
                                 double value;
-                                if (!(is >> value)) Throw("Could not parse \"double\" value");
+                                if (!(is >> value)) Throw("Could not parse \"double\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;

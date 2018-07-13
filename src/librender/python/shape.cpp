@@ -68,10 +68,11 @@ MTS_PY_EXPORT(Shape) {
                       Mesh::Size>(), D(Mesh, Mesh))
         .mdef(Mesh, vertex_struct)
         .mdef(Mesh, face_struct)
-        .mdef(Mesh, write)
         .mdef(Mesh, has_vertex_normals)
-        .mdef(Mesh, recompute_bbox)
+        .mdef(Mesh, has_vertex_texcoords)
+        .mdef(Mesh, write)
         .mdef(Mesh, recompute_vertex_normals)
+        .mdef(Mesh, recompute_bbox)
         .def("vertices", [](py::object &o) {
             Mesh &m = py::cast<Mesh&>(o);
             py::dtype dtype = o.attr("vertex_struct")().attr("dtype")();

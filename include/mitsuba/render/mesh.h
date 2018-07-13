@@ -97,7 +97,7 @@ public:
 
     /// Returns the normal direction of the vertex with index \c index
     Normal3f vertex_normal(Index index) const {
-        return load<Normal3f>(vertex(index) + m_normal_offset);
+        return load_unaligned<Normal3f>(vertex(index) + m_normal_offset);
     }
 
     /// Vectorized version of \ref vertex_normal()
@@ -113,16 +113,18 @@ public:
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     Point2f vertex_texcoord(Index index) const {
-        return load<Point2f>(vertex(index) + m_texcoord_offset);
+        return load_unaligned<Point2f>(vertex(index) + m_texcoord_offset);
     }
 
     /// Vectorized version of \ref vertex_texcoord()
     Point2fP vertex_texcoord(IndexP index, MaskP active = true) const {
         index *= m_vertex_size / (uint32_t) sizeof(Float);
-        return gather<Point2fP, sizeof(Float)>(m_vertices.get() + m_texcoord_offset, index, active);
+        return gather<Point2fP, sizeof(Float)>(
+            m_vertices.get() + m_texcoord_offset, index, active);
     }
 
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref vertex_texcoord()
+    /** Compatibility wrapper, which strips the mask argument and invokes
+     * \ref vertex_texcoord() */
     Point2f vertex_texcoord(Index index, bool /* unused */) const {
         return vertex_texcoord(index);
     }

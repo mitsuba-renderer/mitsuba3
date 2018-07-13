@@ -253,14 +253,14 @@ public:
                     size_t map_index = key[1] - 1;
                     if (unlikely(map_index > texcoords.size()))
                         fail("reference to invalid texture coordinate %i!", key[1]);
-                    store(vertex_ptr + m_texcoord_offset, texcoords[key[1] - 1]);
+                    store_unaligned(vertex_ptr + m_texcoord_offset, texcoords[key[1] - 1]);
                 }
 
                 if (has_vertex_normals() && key[2]) {
                     size_t map_index = key[2] - 1;
                     if (unlikely(map_index > normals.size()))
                         fail("reference to invalid normal %i!", key[2]);
-                    store(vertex_ptr + m_normal_offset, normals[key[2] - 1]);
+                    store_unaligned(vertex_ptr + m_normal_offset, normals[key[2] - 1]);
                 }
 
                 v = v->next;
