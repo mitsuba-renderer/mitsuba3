@@ -233,7 +233,3 @@ def test11_atransform_interpolate_scale():
     assert np.allclose(vec_transform[0].matrix, trafo0.matrix)
     assert np.allclose(vec_transform[1].matrix, trafo_mid.matrix)
     assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
-
-@pytest.mark.skip("Not implemented")
-def test12_gl_frustum():
-    pass

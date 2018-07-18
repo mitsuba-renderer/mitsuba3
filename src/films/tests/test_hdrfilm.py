@@ -99,6 +99,62 @@ def test03_clear_set_add():
     # This shouldn't affect the original bitmap that was passed.
     assert np.all(np.array(b) == ref)
 
-@pytest.mark.skip("Not implemented")
-def test04_develop():
-    pass
+@pytest.mark.parametrize('file_format', ['exr', 'rgbe', 'pfm'])
+def test04_develop(file_format, tmpdir):
+    """Create a test image. Develop it to a few file format, each time reading
+    it back and checking that contents are unchanged."""
+    np.random.seed(12345 + ord(file_format[0]))
+    # Note: depending on the file format, the alpha channel may be automatically removed.
+    film = load_string("""<film version="2.0.0" type="hdrfilm">
+            <integer name="width" value="41"/>
+            <integer name="height" value="37"/>
+            <string name="file_format" value="{}"/>
+            <string name="pixel_format" value="rgba"/>
+            <string name="component_format" value="float32"/>
+        </film>""".format(file_format))
+    # Regardless of the output file format, values are stored as XYZAW (5 channels).
+    contents = np.random.uniform(size=(film.size()[1], film.size()[0], 5))
+    # RGBE and will only reconstruct well images that have similar scales on
+    # all channel (because exponent is shared between channels).
+    if file_format is "rgbe":
+        contents = 1 + 0.1 * contents
+    # Use unit weights.
+    contents[:, :, 4] = 1.0
+
+    np.array(film.bitmap(), copy=False)[:] = contents
+
+    with pytest.raises(RuntimeError):
+        # Should raise when the destination file hasn't been specified.
+        film.develop()
+
+    filename = str(tmpdir.join('test_image.' + file_format))
+    film.set_destination_file(filename, 32)
+    film.develop()
+
+    # Read back and check contents
+    other = Bitmap(filename).convert(Bitmap.EXYZAW, Struct.EFloat, srgb_gamma=False)
+    img   = np.array(other, copy=False)
+
+    if file_format == "exr":
+        assert np.allclose(img, contents, atol=1e-5)
+    else:
+        if file_format == "rgbe":
+            # RGBE is really lossy
+            if False:
+                import matplotlib.pyplot as plt
+                plt.figure()
+                plt.subplot(1, 3, 1)
+                plt.imshow(contents[:, :, :3])
+                plt.subplot(1, 3, 2)
+                plt.imshow(img[:, :, :3])
+                plt.subplot(1, 3, 3)
+                plt.imshow(np.sum(np.abs(img[:, :, :3] - contents[:, :, :3]), axis=2), cmap='coolwarm')
+                plt.colorbar()
+                plt.show()
+
+            assert np.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-2), \
+                   '\n{}\nvs\n{}\n'.format(img[:4, :4, :3], contents[:4, :4, :3])
+        else:
+            assert np.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-5)
+        # Alpha channel was ignored, alpha and weights should default to 1.0.
+        assert np.allclose(img[:, :, 3:5], 1.0, atol=1e-6)

@@ -21,7 +21,7 @@ public:
 
         m_dest_file = props.string("filename", "");
 
-        if (file_format == "openexr")
+        if (file_format == "openexr" || file_format == "exr")
             m_file_format = Bitmap::EOpenEXR;
         else if (file_format == "rgbe")
             m_file_format = Bitmap::ERGBE;
@@ -172,7 +172,7 @@ public:
 
     void develop() override {
         if (m_dest_file.empty())
-            return;
+            Throw("Destination file not specified, cannot develop.");
 
         fs::path filename = m_dest_file;
         std::string proper_extension;
