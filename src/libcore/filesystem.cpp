@@ -322,6 +322,11 @@ string_type path::str() const {
 }
 
 void path::set(const string_type &str) {
+    if (str.empty()) {
+        clear();
+        return;
+    }
+
 #if defined(__WINDOWS__)
     m_path = tokenize(str, NSTR("/\\"));
     m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == NSTR(':');
