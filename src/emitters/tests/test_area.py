@@ -10,14 +10,16 @@ from mitsuba.test.util import fresolver_append_path
 
 @fresolver_append_path
 def example_shape(filename = "data/triangle.ply", has_emitter = True):
-    return load_string(
-           "<shape version='2.0.0' type='ply'>"
-        + ("    <string name='filename' value='%s'/>" % filename)
-        + ("    <emitter type='area'/>" if has_emitter else "")
-        +  "    <transform name='to_world'>"
-           "        <translate x='10' y='-1' z='2'/>"
-           "    </transform>"
-           "</shape>")
+    return load_string("""
+        <shape version='2.0.0' type='ply'>
+            <string name='filename' value='{filename}'/>
+            {emitter}
+            <transform name='to_world'>
+                <translate x='10' y='-1' z='2'/>
+            </transform>
+        </shape>
+    """.format(filename=filename,
+               emitter="<emitter type='area'><spectrum name='radiance' value='1'/></emitter>" if has_emitter else ""))
 
 def test01_area_construct():
     e = load_string("""<emitter version="2.0.0" type="area">
@@ -39,21 +41,8 @@ def test01_area_construct():
                 </transform>
             </emitter>""")
 
-@pytest.mark.skip("Mesh position sampling is not implemented yet.")
-def test02_area_sample_position():
-    # TODO: implement this test when Mesh::sample_position is ready.
-    shape = example_shape()
-    e = shape.emitter()
-
-    p_rec = PositionSample3f()
-    p = [10, -1, 2] # Light position
-    assert np.all(e.sample_position(p_rec, [0.5, 0.5]) == 4 * Pi)
-    assert np.all(p_rec.p == p)
-    assert np.all(p_rec.n == [0, 0, 0])
-    assert p_rec.pdf == 1
-    assert p_rec.measure == EMeasure.EArea
-
-def test03_area_sample_direction():
+def test02_area_sample_direction():
+    # TODO: test vectorized variant
     shape = example_shape()
     e = shape.emitter()
     # Direction sampling is conditioned on a sampled position
@@ -72,16 +61,26 @@ def test03_area_sample_direction():
     assert np.allclose(d_rec.d, d)
     assert d_rec.pdf > 1.0
 
-@pytest.mark.skip("Mesh position sampling is not implemented yet.")
-def test04_area_sample_ray():
-    # TODO: implement this test when Mesh::sample_position is ready.
+def test03_area_sample_ray():
+    # TODO: test vectorized variant
+    from mitsuba.core import MTS_WAVELENGTH_SAMPLES, Frame3f
     shape = example_shape()
     e = shape.emitter()
-    (ray, weight) = e.sample_ray(position_sample=[0.1, 0.2],
-                                 direction_sample=[0.1, 0.5], time_sample=5)
-    assert ray.time == 5
-    assert np.all(ray.o == p)
-    assert np.all(ray.d == warp.square_to_uniform_sphere([0.1, 0.5]))
-    assert np.all(weight == 4 * Pi)
 
-# TODO: test vectorized variants
+    radiance = load_string("<spectrum type='d65' version='2.0.0'/>").expand()[0]
+    # Shifted wavelength sample
+    wav_sample = 0.44 + np.arange(MTS_WAVELENGTH_SAMPLES) / float(MTS_WAVELENGTH_SAMPLES)
+    wav_sample[wav_sample >= 1.0] -= 1.0
+    (wavs, wav_weight) = radiance.sample(wav_sample)
+
+    (ray, weight) = e.sample_ray(time=0.98, sample1=wav_sample[0],
+                                 sample2=[0.4, 0.6], sample3=[0.1, 0.2])
+    assert np.allclose(ray.time, 0.98)
+    assert np.allclose(ray.wavelengths, wavs)
+    # Position on the light source
+    assert np.allclose(ray.o, [10, -0.53524196, 2.22540331])
+    # Direction pointing out from the light source, in world coordinates.
+    warped = warp.square_to_cosine_hemisphere([0.1, 0.2])
+    assert np.allclose(ray.d, Frame3f([-1, 0, 0]).to_world(warped))
+    assert np.allclose(weight, wav_weight * shape.surface_area() * Pi)
+
