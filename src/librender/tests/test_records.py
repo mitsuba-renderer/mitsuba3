@@ -40,7 +40,7 @@ def test01_position_sample_construction_single():
            and np.all(record.uv == si.uv) \
            and record.pdf == 0.0
 
-@pytest.mark.skip("PositionSample3fX slicing operator not working yet")
+
 def test02_position_sample_construction_dynamic():
     n_records = 5
 
@@ -82,7 +82,6 @@ def test02_position_sample_construction_dynamic():
     assert np.all(records.time == si.time)
 
 
-@pytest.mark.skip("PositionSample3fX slicing operator not working yet")
 def test03_position_sample_construction_dynamic_slicing():
     n_records = 5
     records = PositionSample3fX(n_records)
@@ -93,16 +92,17 @@ def test03_position_sample_construction_dynamic_slicing():
 
     # Each entry of a dynamic record is a standard record (single)
     assert type(records[3]) is PositionSample3f
+
     # Slicing allows us to get **a copy** of one of the entries
     one_record = records[2]
     assert records[3].time == 1 \
            and np.allclose(records[3].p, [1.2, 1.5, 1.1])
-
-    # Since it is a copy, changes are **not** carried out on the original entry
+    # Warning!
+    # Since slices create a copy, changes are **not** carried out in the original entry
     records[3].time = 42.5
     assert records[3].time == 1
 
-    # However, we can assign an entire record
+    # However, assigning an entire record works as expected
     single = PositionSample3f()
     single.time = 13.3
     records[3] = single
@@ -144,8 +144,8 @@ def test04_direction_sample_construction_single():
     assert np.allclose(record.d, d)
 
 
-@pytest.mark.skip("DirectionSample3fX slicing operator not working yet")
 def test05_direction_sample_construction_dynamic_and_slicing():
+    np.random.seed(12345)
     refs = np.array([[0.0, 0.5, 0.7],
                      [1.0, 1.5, 0.2],
                      [-1.3, 0.0, 99.1]])
@@ -164,6 +164,9 @@ def test05_direction_sample_construction_dynamic_and_slicing():
     for i in range(len(pdfs)):
         it = SurfaceInteraction3f()
         it.p = its[i, :]
+        # Needs to be a "valid" (surface) interaction, otherwise interaction
+        # will be assumed to have happened on an environment emitter.
+        it.t = 0.1
         ref = Interaction3f()
         ref.p = refs[i, :]
 
@@ -171,9 +174,10 @@ def test05_direction_sample_construction_dynamic_and_slicing():
         r.pdf = pdfs[i]
         records_individual[i] = r
 
+    assert np.allclose(records_batch.p, its)
     assert np.allclose(records_batch.p, records_individual.p)
     assert np.allclose(records_batch.d, directions)
-    assert np.allclose(records_batch.d, records_individual.d)
+    assert np.allclose(records_batch.d, records_individual.d, atol=1e-6)
     assert np.allclose(records_batch.pdf, pdfs)
     assert np.allclose(records_batch.pdf, records_individual.pdf)
 

@@ -28,6 +28,7 @@ template <typename Point3_> struct PositionSample {
     using ObjectPtr            = like_t<Value, const Object *>;
     using SurfaceInteraction   = mitsuba::SurfaceInteraction<Point3>;
     using Mask                 = mask_t<Value>;
+    using Bool                 = bool_array_t<Value>;
 
     //! @}
     // =============================================================
@@ -58,8 +59,13 @@ template <typename Point3_> struct PositionSample {
     /// Probability density at the sample
     Value pdf;
 
-    /// Set if the sample was drawn from a degenerate (Dirac delta) distribution
-    Mask delta;
+    /** Set if the sample was drawn from a degenerate (Dirac delta) distribution
+     *
+     * Note: we use an array of booleans instead of a mask, so that slicing
+     * a dynamic array of PositionSample remains possible even on architectures
+     * where scalar_t<Mask> != bool (e.g. Knights Landing).
+     */
+    Bool delta;
 
     /**
       * \brief Optional: pointer to an associated object
