@@ -144,10 +144,12 @@ MTS_PY_EXPORT(AnnotatedStream) {
         .mdef(AnnotatedStream, can_read)
         .mdef(AnnotatedStream, can_write);
 
-    // Get: we can "infer" the type from type information stored in the ToC.
-    // We perform a series of try & catch until we find the right type. This is
-    // very inefficient, but better than leaking the type info abstraction, which
-    // is private to the AnnotatedStream.
+    /**
+     * Get: we can recover the type from type information stored in the ToC.
+     * We perform a series of try & catch until we find the right type. This is
+     * very inefficient, but better than leaking the type info abstraction, which
+     * is private to the AnnotatedStream.
+     */
     c.def("get", [](AnnotatedStream& s, const std::string &name) {
         const auto keys = s.keys();
         bool keyExists = find(keys.begin(), keys.end(), name) != keys.end();
@@ -162,10 +164,19 @@ MTS_PY_EXPORT(AnnotatedStream) {
             return py::cast(v);                \
         } catch (const std::runtime_error &) { }
 
+        TRY_GET_TYPE(float);
+        TRY_GET_TYPE(double);
         TRY_GET_TYPE(bool);
-        TRY_GET_TYPE(int64_t);
-        TRY_GET_TYPE(Float);
+        TRY_GET_TYPE(int32_t);
+        TRY_GET_TYPE(uint32_t);
         TRY_GET_TYPE(std::string);
+        TRY_GET_TYPE(char);
+        TRY_GET_TYPE(int64_t);
+        TRY_GET_TYPE(uint64_t);
+        TRY_GET_TYPE(int8_t);
+        TRY_GET_TYPE(uint8_t);
+        TRY_GET_TYPE(int16_t);
+        TRY_GET_TYPE(uint16_t);
 #undef TRY_GET_TYPE
 
         Throw("Key \"%s\" exists but does not have a supported type.", name);

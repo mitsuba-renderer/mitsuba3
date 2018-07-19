@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * A Stream instance must first be created and passed to to the constructor.
  * The underlying stream should either be empty or a stream that was previously
- * written with an AnnotatedStream, so that it contains a proper Table of
+ * written with an AnnotatedStream, so that it contains a valid Table of
  * Contents.
  *
  * Table of Contents: objects and variables written to the stream are

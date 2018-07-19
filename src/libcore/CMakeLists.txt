@@ -116,3 +116,11 @@ if (WIN32 OR APPLE)
   add_dependencies(mitsuba-core jpeg png16)
 endif()
 
+
+# A helper generating reference data for AnnotatedStream unit tests.
+add_executable(serialize_ref tests/serialize_ref.cpp)
+target_link_libraries(serialize_ref PRIVATE mitsuba-core)
+add_dist(serialize_ref)
+if (APPLE)
+  set_target_properties(serialize_ref PROPERTIES INSTALL_RPATH "@executable_path")
+endif()

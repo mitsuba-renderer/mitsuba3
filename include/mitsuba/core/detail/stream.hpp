@@ -2,6 +2,7 @@
 
 #include <set>
 #include <vector>
+#include <enoki/common.h>
 
 #if defined(__GNUG__)
 #  pragma GCC diagnostic push
@@ -267,39 +268,6 @@ template <typename T> struct serialization_helper<std::set<T>> {
         }
     }
 };
-
-#if 0
-template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-struct serialization_helper<Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>> {
-    typedef Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> Matrix;
-
-    static std::string type_id() {
-        return "M" + serialization_helper<Scalar>::type_id();
-    }
-
-    static void write(Stream &s, const Matrix *value, size_t count, bool swap) {
-        for (size_t i = 0; i<count; ++i) {
-            uint32_t rows = static_cast<uint32_t>(value->rows()),
-                     cols = static_cast<uint32_t>(value->cols());
-            serialization_helper<uint32_t >::write(s, &rows, 1, swap);
-            serialization_helper<uint32_t >::write(s, &cols, 1, swap);
-            serialization_helper<Scalar>::write(s, value->data(), rows*cols, swap);
-            value++;
-        }
-    }
-
-    static void read(Stream &s, Matrix *value, size_t count, bool swap) {
-        for (size_t i = 0; i<count; ++i) {
-            uint32_t rows = 0, cols = 0;
-            serialization_helper<uint32_t>::read(s, &rows, 1, swap);
-            serialization_helper<uint32_t>::read(s, &cols, 1, swap);
-            value->resize(rows, cols);
-            serialization_helper<Scalar>::read(s, value->data(), rows*cols, swap);
-            value++;
-        }
-    }
-};
-#endif
 
 NAMESPACE_END(detail)
 NAMESPACE_END(mitsuba)

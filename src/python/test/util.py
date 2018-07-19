@@ -4,6 +4,7 @@ test decorators, etc).
 """
 
 import os
+import pytest
 
 from functools import wraps
 from inspect import getframeinfo, stack
@@ -61,3 +62,13 @@ def fresolver_append_path(func):
         return res
 
     return f
+
+
+@pytest.fixture
+def tmpfile(request, tmpdir_factory):
+    """Fixture to create a temporary file"""
+    my_dir = tmpdir_factory.mktemp('tmpdir')
+    request.addfinalizer(lambda: my_dir.remove(rec=1))
+    path_value = str(my_dir.join('tmpfile'))
+    open(path_value, 'a').close()
+    return path_value

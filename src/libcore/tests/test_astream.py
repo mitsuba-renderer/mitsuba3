@@ -1,12 +1,11 @@
 import numpy as np
 import pytest
+import sys
 
-from mitsuba.core import AnnotatedStream, FileStream, MemoryStream
-from mitsuba.core import Thread, EError
-from .utils import tmpfile
+from mitsuba.core import AnnotatedStream, FileStream, MemoryStream, Thread
+from mitsuba.test.util import tmpfile, fresolver_append_path
 
 
-# TODO: more types
 test_data = {
     'a': 0,
     'b': 42,
@@ -143,14 +142,72 @@ def test03_readback(class_, args, request, tmpdir_factory):
         del astream
     stream.close()
 
+@fresolver_append_path
+def test04_reference_file():
+    """
+    Read back a specific serialized file written from C++. Checks the prefix
+    hierarchy and the entries' types (closest match to Python types).
+    This should help check that we maintain compatibility.
 
-@pytest.mark.skip(reason="Not yet implemented")
-def test05_gold_standard():
-    # TODO: test read & write against reference serialized file ("gold
-    #       standard") that is known to work. In this file, include:
-    #       - Many types
-    #       - Prefix hierarchy
-    # TODO: make sure that a file written using the Python bindings can be
-    #       read with C++, and the other way around.
+    See `serialize_ref.cpp` for the C++ code generating the serialized file.
+    """
     # TODO: also do read/write with endianness swap enabled
-    pass
+    import numpy as np
+
+    fr = Thread.thread().file_resolver()
+    fstream = FileStream(fr.resolve("resources/data/tests/reference.serialized"))
+    s = AnnotatedStream(fstream, write_mode=False)
+
+    assert set(s.keys()) == {
+        'top_char', 'top_float_nan', 'top_double_nan',
+        'prefix1.prefix1_bool', 'prefix1.prefix1_double', 'prefix1.prefix1_float',
+        'prefix1.prefix1_int16', 'prefix1.prefix2.prefix2_bool',
+        'prefix3.prefix3_int16', 'prefix3.prefix3_int32', 'prefix3.prefix3_int64',
+        'prefix3.prefix3_int8', 'prefix3.prefix3_uint16', 'prefix3.prefix3_uint32',
+        'prefix3.prefix3_uint64', 'prefix3.prefix3_uint8',
+    }
+
+    v = s.get("top_char")
+    assert isinstance(v, str if sys.version_info >= (3,0) else unicode) and v == 'a'
+    v = s.get("top_float_nan")
+    assert isinstance(v, float) and np.isnan(v)
+    v = s.get("top_double_nan")
+    assert isinstance(v, float) and np.isnan(v)
+
+    # Accessing the prefixes in a different order than they were written.
+    s.push("prefix3")
+    v = s.get("prefix3_int8")
+    assert isinstance(v, int) and v == 1
+    v = s.get("prefix3_uint8")
+    assert isinstance(v, int) and v == 1
+    v = s.get("prefix3_int16")
+    assert isinstance(v, int) and v == 1
+    v = s.get("prefix3_uint16")
+    assert isinstance(v, int) and v == 1
+    v = s.get("prefix3_int32")
+    assert isinstance(v, int) and v == 1
+    v = s.get("prefix3_uint32")
+    assert isinstance(v, int) and v == 1
+    v = s.get("prefix3_int64")
+    assert isinstance(v, int) and v == 1
+    v = s.get("prefix3_uint64")
+    assert isinstance(v, int) and v == 1
+    s.pop()
+
+    s.push("prefix1")
+    s.push("prefix2")
+    v = s.get("prefix2_bool")
+    assert isinstance(v, bool) and v == True
+    s.pop()
+    s.pop()
+
+    s.push("prefix1")
+    v = s.get("prefix1_float")
+    assert isinstance(v, float) and np.allclose(v, 1.0)
+    v = s.get("prefix1_double")
+    assert isinstance(v, float) and np.allclose(v, 1.0)
+    v = s.get("prefix1_bool")
+    assert isinstance(v, bool) and v == False
+    v = s.get("prefix1_int16")
+    assert isinstance(v, int) and v == 1
+    s.pop()

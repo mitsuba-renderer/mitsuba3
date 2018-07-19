@@ -4,7 +4,7 @@ import pytest
 
 from mitsuba.core import Stream, DummyStream, FileStream, \
                          MemoryStream, ZStream
-from .utils import tmpfile
+from mitsuba.test.util import tmpfile
 
 parameters = [
     'class_,args',
