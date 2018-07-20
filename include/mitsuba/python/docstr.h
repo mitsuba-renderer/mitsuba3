@@ -222,7 +222,7 @@ that can later be used to selectively read specific items.
 A Stream instance must first be created and passed to to the
 constructor. The underlying stream should either be empty or a stream
 that was previously written with an AnnotatedStream, so that it
-contains a proper Table of Contents.
+contains a valid Table of Contents.
 
 Table of Contents: objects and variables written to the stream are
 prepended by a field name. Contents can then be queried by field name,
@@ -602,6 +602,8 @@ static const char *__doc_mitsuba_BSDFSample_sampled_component = R"doc(Stores the
 static const char *__doc_mitsuba_BSDFSample_sampled_type = R"doc(Stores the component type that was sampled by BSDF::sample())doc";
 
 static const char *__doc_mitsuba_BSDFSample_wo = R"doc(Normalized outgoing direction in local coordinates)doc";
+
+static const char *__doc_mitsuba_BSDF_BSDF = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_BSDF_EFlagCombinations = R"doc(Convenient combinations of flags from EBSDFType)doc";
 
@@ -3556,6 +3558,10 @@ R"doc(Evaluate the microfacet distribution function
 Parameter ``m``:
     The microfacet normal)doc";
 
+static const char *__doc_mitsuba_MicrofacetDistribution_eval_reflectance = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_eval_reflectance_kernel = R"doc()doc";
+
 static const char *__doc_mitsuba_MicrofacetDistribution_is_anisotropic = R"doc(Is this an anisotropic microfacet distribution?)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_is_isotropic = R"doc(Is this an isotropic microfacet distribution?)doc";
@@ -3864,7 +3870,11 @@ static const char *__doc_mitsuba_PositionSample_PositionSample_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_delta =
 R"doc(Set if the sample was drawn from a degenerate (Dirac delta)
-distribution)doc";
+distribution
+
+Note: we use an array of booleans instead of a mask, so that slicing a
+dynamic array of PositionSample remains possible even on architectures
+where scalar_t<Mask> != bool (e.g. Knights Landing).)doc";
 
 static const char *__doc_mitsuba_PositionSample_n = R"doc(Sampled surface normal (if applicable))doc";
 
@@ -7635,11 +7645,17 @@ static const char *__doc_mitsuba_ref_ref_3 = R"doc(Copy constructor)doc";
 
 static const char *__doc_mitsuba_ref_ref_4 = R"doc(Move constructor)doc";
 
-static const char *__doc_mitsuba_reflect = R"doc(Reflect ``wi`` with respect to a given surface normal)doc";
+static const char *__doc_mitsuba_reflect = R"doc(Reflection in local coordinates)doc";
 
-static const char *__doc_mitsuba_reflect_2 = R"doc(Reflection in local coordinates)doc";
+static const char *__doc_mitsuba_reflect_2 = R"doc(Reflect ``wi`` with respect to a given surface normal)doc";
 
 static const char *__doc_mitsuba_refract =
+R"doc(Refraction in local coordinates
+
+The 'cos_theta_t' and 'eta_ti' parameters are given by the last two
+tuple entries returned by the fresnel and fresnel_polarized functions.)doc";
+
+static const char *__doc_mitsuba_refract_2 =
 R"doc(Refract ``wi`` with respect to a given surface normal
 
 Parameter ``wi``:
@@ -7648,18 +7664,14 @@ Parameter ``wi``:
 Parameter ``m``:
     Surface normal
 
-Parameter ``eta``:
-    Ratio of interior to exterior IORs at the interface.
-
 Parameter ``cos_theta_t``:
     Cosine of the angle between the normal the transmitted ray, as
-    computed e.g. by fresnel_dielectric_ext.)doc";
+    computed e.g. by fresnel.
 
-static const char *__doc_mitsuba_refract_2 =
-R"doc(Refraction in local coordinates
+Parameter ``eta_ti``:
+    Relative index of refraction (transmitted / incident))doc";
 
-The 'cos_theta_t' and 'eta_ti' parameters are given by the last two
-tuple entries returned by the fresnel and fresnel_polarized functions.)doc";
+static const char *__doc_mitsuba_round_to_packet_size = R"doc(Round an integer to a multiple of the current packet size)doc";
 
 static const char *__doc_mitsuba_rtbench_naive_planar_independent_packet = R"doc()doc";
 
