@@ -7,6 +7,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/quad.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/render/common.h>
 #include <mitsuba/render/reflection.h>
 
@@ -168,21 +169,19 @@ public:
      *     The microfacet normal
      */
     Value eval(const Vector3 &m) const {
-        Value cos_theta         = Frame::cos_theta(m),
+        Value alpha_uv = m_alpha_u * m_alpha_v,
+              cos_theta         = Frame::cos_theta(m),
               cos_theta_2       = sqr(cos_theta),
-              alpha_uv          = m_alpha_u * m_alpha_v,
-              beckmann_exponent = (sqr(m.x() / m_alpha_u) +
-                                   sqr(m.y() / m_alpha_v)) / cos_theta_2;
+              result;
 
-        Value result;
         if (m_type == EBeckmann) {
             /* Beckmann distribution function for Gaussian random surfaces */
-            result = exp(-beckmann_exponent) /
-                     (Pi * alpha_uv * sqr(cos_theta_2));
+            result = exp(-(sqr(m.x() / m_alpha_u) + sqr(m.y() / m_alpha_v)) / cos_theta_2)
+                / (Pi * alpha_uv * sqr(cos_theta_2));
         } else {
             /* GGX / Trowbridge-Reitz distribution function */
-            Value root = (1.f + beckmann_exponent) * cos_theta_2;
-            result = rcp(Pi * alpha_uv * sqr(root));
+            result = rcp(math::Pi * alpha_uv *
+                sqr(sqr(m.x() / m_alpha_u) + sqr(m.y() / m_alpha_v) + sqr(m.z())));
         }
 
         /* Prevent potential numerical issues in other stages of the model */
@@ -317,24 +316,23 @@ public:
      *     The microfacet normal
      */
     Value smith_g1(const Vector3 &v, const Vector3 &m) const {
-        Value alpha_2 = project_roughness_2(v);
-        Value tan_theta_2 = Frame::tan_theta_2(v);
-        Value result;
+        Value xy_alpha_2 = sqr(m_alpha_u * v.x()) + sqr(m_alpha_v * v.y()),
+              tan_theta_alpha_2 = xy_alpha_2 / sqr(v.z()),
+              result;
 
         if (m_type == EBeckmann) {
-            Value a = rsqrt(alpha_2 * tan_theta_2);
+            Value a = rsqrt(tan_theta_alpha_2), a_sqr = sqr(a);
             /* Use a fast and accurate (<0.35% rel. error) rational
                approximation to the shadowing-masking function */
-            Value a_sqr = sqr(a);
-            result      = select((a >= 1.6f), 1.f,
+            result = select(a >= 1.6f, 1.f,
                             (3.535f * a + 2.181f * a_sqr) /
                             (1.f + 2.276f * a + 2.577f * a_sqr));
         } else {
-            result = 2.f / (1.f + sqrt(1.f + alpha_2 * tan_theta_2));
+            result = 2.f / (1.f + sqrt(1.f + tan_theta_alpha_2));
         }
 
         /* Perpendicular incidence -- no shadowing/masking */
-        masked(result, eq(tan_theta_2, 0.f)) = 1.f;
+        masked(result, eq(xy_alpha_2, 0.f)) = 1.f;
 
         /* Ensure consistent orientation (can't see the back
            of the microfacet from the front and vice versa) */
@@ -383,28 +381,19 @@ public:
             return erfinv(Vector2(x, fmsub(2.f, sample.y(), 1.f)));
         } else {
             /* Choose a projection direction and re-scale the sample */
-            Value a = rcp(1.f + cos_theta_i);
+            Point2 p = warp::square_to_uniform_disk_concentric(sample);
 
-            Mask side_mask = sample.y() > a;
-            masked(sample.y(), side_mask) -= a;
-            sample.y() /= select(side_mask, 1.f - a, a);
-
-            /* Uniformly sample a position on a disk */
-            Value sin_phi, cos_phi, r = sqrt(sample.x());
-            masked(sample.y(), side_mask) += 1.f;
-            std::tie(sin_phi, cos_phi) = sincos(sample.y() * Pi);
-
-            Value sin_theta_i =
-                safe_sqrt(fnmadd(cos_theta_i, cos_theta_i, 1.f));
+            Value s = .5f * (1.f + cos_theta_i);
+            p.y() = lerp(safe_sqrt(1.f - sqr(p.x())), p.y(), s);
 
             /* Project onto chosen side of the hemisphere */
-            Value p1 = r * cos_phi,
-                  p2 = r * sin_phi * select(side_mask, cos_theta_i, 1.f),
-                  p3 = safe_sqrt(1.f - sqr(p1) - sqr(p2));
+            Value x = p.x(), y = p.y(),
+                  z = safe_sqrt(1.f - squared_norm(p));
 
             /* Convert to slope */
-            Value norm = rcp(fmadd(sin_theta_i, p2, cos_theta_i * p3));
-            return Vector2(fmsub(cos_theta_i, p2, sin_theta_i * p3), p1) * norm;
+            Value sin_theta_i = safe_sqrt(1.f - sqr(cos_theta_i));
+            Value norm = rcp(fmadd(sin_theta_i, y, cos_theta_i * z));
+            return Vector2(fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
         }
     }
 
