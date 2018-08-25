@@ -6,79 +6,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Calculates the polarized Fresnel reflection coefficient
- * at a planar interface between two dielectrics
- *
- * \param cos_theta_i
- *      Cosine of the angle between the normal and the incident ray
- *
- * \param eta
- *      Relative refractive index of the interface. A value greater than 1.0
- *      means that the surface normal is pointing into the region of lower
- *      density.
- *
- * \return A tuple (r_s, r_p, cos_theta_t, eta_it, eta_ti) consisting of
- *
- *     r_s         Perpendicularly polarized Fresnel reflectance ("senkrecht").
- *
- *     r_p         Parallel polarized Fresnel reflectance.
- *
- *     cos_theta_t Cosine of the angle between the normal and the transmitted ray
- *
- *     eta         Index of refraction in the direction of travel.
- *
- *     eta_it      Relative index of refraction in the direction of travel.
- *
- *     eta_ti      Reciprocal of the relative index of refraction in the
- *                 direction of travel. This also happens to be equal to
- *                 the scale factor that must be applied to the X and Y
- *                 component of the refracted direction.
- */
-template <typename Value>
-std::tuple<Value, Value, Value, Value, Value> fresnel_polarized(Value cos_theta_i, Value eta) {
-    auto outside_mask = cos_theta_i >= 0.f;
-
-    Value rcp_eta = rcp(eta),
-          eta_it = select(outside_mask, eta, rcp_eta),
-          eta_ti = select(outside_mask, rcp_eta, eta);
-
-    /* Using Snell's law, calculate the squared sine of the
-       angle between the normal and the transmitted ray */
-    Value cos_theta_t_sqr =
-        fnmadd(fnmadd(cos_theta_i, cos_theta_i, 1.f), eta_ti * eta_ti, 1.f);
-
-    /* Find the absolute cosines of the incident/transmitted rays */
-    Value cos_theta_i_abs = abs(cos_theta_i);
-    Value cos_theta_t_abs = safe_sqrt(cos_theta_t_sqr);
-
-    auto index_matched = eq(eta, 1.f),
-         special_case  = index_matched || eq(cos_theta_i_abs, 0.f);
-
-    Value a_sc = select(index_matched, Value(0.f), Value(1.f));
-
-    /* Amplitudes of reflected waves */
-    Value a_s = fnmadd(eta, cos_theta_t_abs, cos_theta_i_abs) /
-                fmadd(eta, cos_theta_t_abs, cos_theta_i_abs);
-
-    Value a_p = fmsub(eta, cos_theta_i_abs, cos_theta_t_abs) /
-                fmadd(eta, cos_theta_i_abs, cos_theta_t_abs);
-
-    masked(a_s, special_case) = a_sc;
-    masked(a_p, special_case) = a_sc;
-
-    /* Adjust the sign of the transmitted direction */
-    Value cos_theta_t = -mulsign(cos_theta_t_abs, cos_theta_i);
-
-    /* Convert from amplitudes to reflection coefficients */
-    return { a_s * a_s, a_p * a_p, cos_theta_t, eta_it, eta_ti };
-}
-
-/**
  * \brief Calculates the unpolarized Fresnel reflection coefficient
  * at a planar interface between two dielectrics
  *
  * \param cos_theta_i
- *      Cosine of the angle between the normal and the incident ray
+ *      Cosine of the angle between the surface normal and the incident ray
  *
  * \param eta
  *      Relative refractive index of the interface. A value greater than 1.0
@@ -89,9 +21,7 @@ std::tuple<Value, Value, Value, Value, Value> fresnel_polarized(Value cos_theta_
  *
  *     F           Fresnel reflection coefficient.
  *
- *     cos_theta_t Cosine of the angle between the normal and the transmitted ray
- *
- *     eta         Index of refraction in the direction of travel.
+ *     cos_theta_t Cosine of the angle between the surface normal and the transmitted ray
  *
  *     eta_it      Relative index of refraction in the direction of travel.
  *
@@ -102,18 +32,47 @@ std::tuple<Value, Value, Value, Value, Value> fresnel_polarized(Value cos_theta_
  */
 template <typename Value>
 std::tuple<Value, Value, Value, Value> fresnel(Value cos_theta_i, Value eta) {
-    Value r_s, r_p, cos_theta_t, eta_it, eta_ti;
+    auto outside_mask = cos_theta_i >= 0.f;
 
-    std::tie(r_s, r_p, cos_theta_t, eta_it, eta_ti) =
-        fresnel_polarized(cos_theta_i, eta);
+    Value rcp_eta = rcp(eta),
+          eta_it = select(outside_mask, eta, rcp_eta),
+          eta_ti = select(outside_mask, rcp_eta, eta);
 
-    return { .5f * (r_s + r_p), cos_theta_t, eta_it, eta_ti };
+    /* Using Snell's law, calculate the squared sine of the
+       angle between the surface normal and the transmitted ray */
+    Value cos_theta_t_sqr =
+        fnmadd(fnmadd(cos_theta_i, cos_theta_i, 1.f), eta_ti * eta_ti, 1.f);
+
+    /* Find the absolute cosines of the incident/transmitted rays */
+    Value cos_theta_i_abs = abs(cos_theta_i);
+    Value cos_theta_t_abs = safe_sqrt(cos_theta_t_sqr);
+
+    auto index_matched = eq(eta, 1.f),
+         special_case  = index_matched || eq(cos_theta_i_abs, 0.f);
+
+    Value r_sc = select(index_matched, Value(0.f), Value(1.f));
+
+    /* Amplitudes of reflected waves */
+    Value a_s = fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) /
+                 fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs);
+
+    Value a_p = fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) /
+                 fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs);
+
+    Value r = .5f * (sqr(a_s) + sqr(a_p));
+
+    masked(r, special_case) = r_sc;
+
+    /* Adjust the sign of the transmitted direction */
+    Value cos_theta_t = mulsign_neg(cos_theta_t_abs, cos_theta_i);
+
+    return { r, cos_theta_t, eta_it, eta_ti };
 }
 
 /**
- * \brief Calculates the polarized Fresnel reflection coefficient at a planar
- * interface having a complex-valued relative index of refraction (i.e. the
- * material conducts electrons)
+ * \brief Calculates the unpolarized Fresnel reflection coefficient at a planar
+ * interface of a conductor, i.e. a surface with a complex-valued relative index
+ * of refraction
  *
  * \remark
  *      The implementation assumes that cos_theta_i > 0, i.e. light enters
@@ -121,22 +80,16 @@ std::tuple<Value, Value, Value, Value> fresnel(Value cos_theta_i, Value eta) {
  *      assumption unless very thin layers are being simulated)
  *
  * \param cos_theta_i
- *      Cosine of the angle between the normal and the incident ray
+ *      Cosine of the angle between the surface normal and the incident ray
  *
  * \param eta
  *      Relative refractive index (complex-valued)
  *
- * \return A pair (r_s, r_p) consisting of
- *
- *     r_s         Perpendicularly polarized Fresnel reflectance ("senkrecht").
- *
- *     r_p         Parallel polarized Fresnel reflectance.
- *
+ * \return The unpolarized Fresnel reflection coefficient.
  */
 
 template <typename Value>
-std::pair<Value, Value>
-fresnel_complex_polarized(Value cos_theta_i, Complex<Value> eta) {
+Value fresnel_conductor(Value cos_theta_i, Complex<Value> eta) {
     // Modified from "Optics" by K.D. Moeller, University Science Books, 1988
     Value cos_theta_i_2 = cos_theta_i * cos_theta_i,
           sin_theta_i_2 = 1.f - cos_theta_i_2,
@@ -159,33 +112,157 @@ fresnel_complex_polarized(Value cos_theta_i, Complex<Value> eta) {
 
     Value r_p = r_s * (term_3 - term_4) / (term_3 + term_4);
 
-    return { r_s, r_p };
+    return .5f * (r_s + r_p);
 }
 
 /**
- * \brief Calculates the unpolarized Fresnel reflection coefficient at a planar
- * interface having a complex-valued relative index of refraction (i.e. the
- * material conducts electrons)
- *
- * \remark
- *      The implementation assumes that cos_theta_i > 0, i.e. light enters
- *      from *outside* of the conducting layer (generally a reasonable
- *      assumption unless very thin layers are being simulated)
+ * \brief Calculates the polarized Fresnel reflection coefficient at a planar
+ * interface between two dielectrics. Returns complex values encoding the
+ * amplitude and phase shift of the s- and p-polarized waves.
  *
  * \param cos_theta_i
- *      Cosine of the angle between the normal and the incident ray
+ *      Cosine of the angle between the surface normal and the incident ray
  *
  * \param eta
- *      Relative refractive index (complex-valued)
+ *      Complex-valued relative refractive index of the interface. A value
+ *      greater than 1.0 in the real case means that the surface normal is
+ *      pointing into the region of lower density.
  *
- * \return The unpolarized Fresnel reflection coefficient.
+ * \return A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
+ *
+ *     a_s         Perpendicularly polarized wave amplitude and phase shift.
+ *
+ *     a_p         Parallel polarized wave amplitude and phase shift.
+ *
+ *     cos_theta_t Cosine of the angle between the surface normal and the
+ *                 transmitted ray. Zero in the case of total internal reflection.
+ *
+ *     eta_it      Relative index of refraction in the direction of travel
+ *
+ *     eta_ti      Reciprocal of the relative index of refraction in the
+ *                 direction of travel. This also happens to be equal to the
+ *                 scale factor that must be applied to the X and Y component
+ *                 of the refracted direction.
  */
-
 template <typename Value>
-Value fresnel_complex(Value cos_theta_i, Complex<Value> eta) {
-    Value r_s, r_p;
-    std::tie(r_s, r_p) = fresnel_complex_polarized(cos_theta_i, eta);
-    return .5f * (r_s + r_p);
+std::tuple<Complex<Value>, Complex<Value>, Value, Value, Value>
+fresnel_polarized(Value cos_theta_i, Value eta) {
+    auto outside_mask = cos_theta_i >= 0.f;
+
+    Value rcp_eta = rcp(eta),
+          eta_it  = select(outside_mask, eta, rcp_eta),
+          eta_ti  = select(outside_mask, rcp_eta, eta);
+
+    /* Using Snell's law, calculate the squared sine of the
+       angle between the surface normal and the transmitted ray */
+    Value cos_theta_t_sqr =
+        fnmadd(fnmadd(cos_theta_i, cos_theta_i, 1.f), eta_ti * eta_ti, 1.f);
+
+    /* Find the cosines of the incident/transmitted rays */
+    Value cos_theta_i_abs = abs(cos_theta_i);
+    Complex<Value> cos_theta_t = sqrtz(cos_theta_t_sqr);
+
+    /* Choose the appropriate sign of the root (important when computing the
+       phase difference under total internal reflection, see appendix A.2 of
+       "Stellar Polarimetry" by David Clarke) */
+    cos_theta_t = mulsign(Array<Value, 2>(cos_theta_t), cos_theta_t_sqr);
+
+    /* Amplitudes of reflected waves. The sign convension of 'a_p' used here
+       matches Fresnel's original paper from 1823 and is different from some
+       contemporary references. See appendix A.1 of "Stellar Polarimetry" by
+       David Clarke for a historical perspective. */
+    Complex<Value> a_s = (-eta_it * cos_theta_t + cos_theta_i_abs) /
+                         ( eta_it * cos_theta_t + cos_theta_i_abs);
+    Complex<Value> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
+                         ( eta_it * cos_theta_i_abs + cos_theta_t);
+
+    auto index_matched = eq(eta, 1.f);
+    masked(a_s, index_matched) = 0.f;
+    masked(a_p, index_matched) = 0.f;
+
+    /* Adjust the sign of the transmitted direction */
+    Value cos_theta_t_signed =
+        select(cos_theta_t_sqr >= 0.f,
+               mulsign_neg(real(cos_theta_t), cos_theta_i), 0.f);
+
+    return { a_s, a_p, cos_theta_t_signed, eta_it, eta_ti };
+}
+
+/**
+ * \brief Calculates the polarized Fresnel reflection coefficient at a planar
+ * interface between two dielectrics or conductors. Returns complex values
+ * encoding the amplitude and phase shift of the s- and p-polarized waves.
+ *
+ * This is the most general version, which subsumes all others (at the cost of
+ * transcendental function evaluations in the complex-valued arithmetic)
+ *
+ * \param cos_theta_i
+ *      Cosine of the angle between the surface normal and the incident ray
+ *
+ * \param eta
+ *      Complex-valued relative refractive index of the interface. A value
+ *      greater than 1.0 in the real case means that the surface normal is
+ *      pointing into the region of lower density.
+ *
+ * \return A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
+ *
+ *     a_s         Perpendicularly polarized wave amplitude and phase shift.
+ *
+ *     a_p         Parallel polarized wave amplitude and phase shift.
+ *
+ *     cos_theta_t Cosine of the angle between the surface normal and the
+ *                 transmitted ray. Zero in the case of total internal reflection.
+ *
+ *     eta_it      Relative index of refraction in the direction of travel
+ *
+ *     eta_ti      Reciprocal of the relative index of refraction in the
+ *                 direction of travel. In the real-valued case, this
+ *                 also happens to be equal to the scale factor that must
+ *                 be applied to the X and Y component of the refracted
+ *                 direction.
+ */
+template <typename Value>
+std::tuple<Complex<Value>, Complex<Value>, Value, Complex<Value>, Complex<Value>>
+fresnel_polarized(Value cos_theta_i, Complex<Value> eta) {
+    auto outside_mask = cos_theta_i >= 0.f;
+
+    Complex<Value> rcp_eta = rcp(eta),
+                   eta_it  = select(outside_mask, eta, rcp_eta),
+                   eta_ti  = select(outside_mask, rcp_eta, eta);
+
+    /* Using Snell's law, calculate the squared sine of the
+       angle between the surface normal and the transmitted ray */
+    Complex<Value> cos_theta_t_sqr =
+        1.f - sqr(eta_ti) * fnmadd(cos_theta_i, cos_theta_i, 1.f);
+
+    /* Find the cosines of the incident/transmitted rays */
+    Value cos_theta_i_abs = abs(cos_theta_i);
+    Complex<Value> cos_theta_t = sqrt(cos_theta_t_sqr);
+
+    /* Choose the appropriate sign of the root (important when computing the
+       phase difference under total internal reflection, see appendix A.2 of
+       "Stellar Polarimetry" by David Clarke) */
+    cos_theta_t = mulsign(Array<Value, 2>(cos_theta_t), real(cos_theta_t_sqr));
+
+    /* Amplitudes of reflected waves. The sign convension of 'a_p' used here
+       matches Fresnel's original paper from 1823 and is different from some
+       contemporary references. See appendix A.1 of "Stellar Polarimetry" by
+       David Clarke for a historical perspective. */
+    Complex<Value> a_s = (-eta_it * cos_theta_t + cos_theta_i_abs) /
+                         ( eta_it * cos_theta_t + cos_theta_i_abs);
+    Complex<Value> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
+                         ( eta_it * cos_theta_i_abs + cos_theta_t);
+
+    auto index_matched = eq(squared_norm(eta), 1.f);
+    masked(a_s, index_matched) = 0.f;
+    masked(a_p, index_matched) = 0.f;
+
+    /* Adjust the sign of the transmitted direction */
+    Value cos_theta_t_signed =
+        select(real(cos_theta_t_sqr) >= 0.f,
+               mulsign_neg(real(cos_theta_t), cos_theta_i), 0.f);
+
+    return { a_s, a_p, cos_theta_t_signed, eta_it, eta_ti };
 }
 
 /// Reflection in local coordinates

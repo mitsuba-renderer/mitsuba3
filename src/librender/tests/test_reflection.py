@@ -1,5 +1,4 @@
-from mitsuba.render import (fresnel, fresnel_polarized,
-                            fresnel_complex_polarized)
+from mitsuba.render import (fresnel, fresnel_polarized, fresnel_conductor)
 import numpy as np
 
 
@@ -40,9 +39,9 @@ def test02_fresnel_polarized():
     # Brewster's angle
     angle = np.cos(56.3099 * np.pi / 180)
 
-    r_s, r_p, cos_theta_t, _, scale = fresnel_polarized(angle, 1.5)
-    assert np.allclose(r_s, 0.3846150939598947**2)
-    assert np.allclose(r_p, 0)
+    a_s, a_p, cos_theta_t, _, scale = fresnel_polarized(angle, 1.5)
+    assert np.allclose(a_s*a_s, 0.3846150939598947**2)
+    assert np.allclose(a_p*a_p, 0)
 
     cos_theta_i = np.linspace(-1, 1, 20)
     F, cos_theta_t, _, scale = fresnel(cos_theta_i, 1)
@@ -50,19 +49,17 @@ def test02_fresnel_polarized():
     assert np.allclose(cos_theta_t, -cos_theta_i, atol=5e-7)
 
 
-def test03_fresnel_polarized_complex():
+def test03_fresnel_conductor():
     # The conductive and diel. variants should agree given a real-valued IOR
     cos_theta_i = np.cos(np.linspace(0, np.pi / 2, 20))
 
-    r_s, r_p, cos_theta_t, _, scale = fresnel_polarized(cos_theta_i, 1.5)
-    r_s_2, r_p_2 = fresnel_complex_polarized(cos_theta_i, 1.5)
-    assert np.allclose(r_s, r_s_2)
-    assert np.allclose(r_p, r_p_2)
+    r, cos_theta_t, _, scale = fresnel(cos_theta_i, 1.5)
+    r_2 = fresnel_conductor(cos_theta_i, 1.5)
+    assert np.allclose(r, r_2)
 
-    r_s, r_p, cos_theta_t, _, scale = fresnel_polarized(cos_theta_i, 1 / 1.5)
-    r_s_2, r_p_2 = fresnel_complex_polarized(cos_theta_i, 1 / 1.5)
-    assert np.allclose(r_s, r_s_2)
-    assert np.allclose(r_p, r_p_2)
+    r, cos_theta_t, _, scale = fresnel(cos_theta_i, 1 / 1.5)
+    r_2 = fresnel_conductor(cos_theta_i, 1 / 1.5)
+    assert np.allclose(r, r_2)
 
 
 def test04_snell():
@@ -71,3 +68,44 @@ def test04_snell():
     F, cos_theta_t, _, _ = fresnel(np.cos(theta_i), 1.5)
     theta_t = np.arccos(cos_theta_t)
     np.allclose(np.sin(theta_i) - np.sin(theta_t) * 1.5, 0.0)
+
+
+def test05_phase():
+    # 180 deg phase shift for perpendicularly arriving light (air -> glass)
+    a_s, a_p, _, _, _ = fresnel_polarized(1, 1.5)
+    assert np.real(a_s) < 0 and np.real(a_p) < 0 and np.imag(a_s) == 0 and np.imag(a_p) == 0
+
+    # 180 deg phase shift only for s-polarized light below brewster's angle (air -> glass)
+    a_s, a_p, _, _, _ = fresnel_polarized(.1, 1.5)
+    assert np.real(a_s) < 0 and np.real(a_p) > 0 and np.imag(a_s) == 0 and np.imag(a_p) == 0
+
+    # No phase shift for perpendicularly arriving light (glass -> air)
+    a_s, a_p, _, _, _ = fresnel_polarized(1, 1/1.5)
+    assert np.real(a_s) > 0 and np.real(a_p) > 0 and np.imag(a_s) == 0 and np.imag(a_p) == 0
+
+    # 180 deg phase shift only for s-polarized light below brewster's angle (glass -> air)
+    b = np.arctan(1/1.5)
+    a_s, a_p, _, _, _ = fresnel_polarized(np.cos(b+0.01), 1/1.5)
+    assert np.real(a_s) > 0 and np.real(a_p) < 0 and np.imag(a_s) == 0 and np.imag(a_p) == 0
+
+
+def test06_phase_tir():
+    eta = 1/1.5
+    # Check phase shift at critical angle (total internal reflection case)
+    crit = np.arcsin(eta)
+    a_s, a_p, _, _, _ = fresnel_polarized(np.cos(crit), eta)
+
+    assert np.allclose(np.angle(a_s), 0)
+    assert np.allclose(np.angle(a_p), np.pi) or np.allclose(np.angle(a_p), -np.pi)
+
+    # Check phase shift at grazing angle (total internal reflection case)
+    a_s, a_p, _, _, _ = fresnel_polarized(0, eta)
+
+    assert np.allclose(np.angle(a_s), np.pi) or np.allclose(np.angle(a_s), -np.pi)
+    assert np.allclose(np.angle(a_p), 0)
+
+    # Location of minimum phase difference
+    cos_theta_min = np.sqrt((1 - eta**2) / (1 + eta**2))
+    phi_delta = 4*np.arctan(eta)
+    a_s, a_p, _, _, _ = fresnel_polarized(cos_theta_min, eta)
+    assert np.allclose(np.angle(a_s) - np.angle(a_p), phi_delta)

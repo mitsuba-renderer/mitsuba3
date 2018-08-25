@@ -78,7 +78,7 @@ public:
         Complex<Spectrum> eta_c(m_eta->eval(si, active),
                                 m_k->eval(si, active));
 
-        Spectrum F = fresnel_complex(Spectrum(dot(si.wi, m)), eta_c);
+        Spectrum F = fresnel_conductor(Spectrum(dot(si.wi, m)), eta_c);
 
         /* Jacobian of the half-direction mapping */
         bs.pdf /= 4.f * dot(bs.wo, m);
@@ -118,7 +118,7 @@ public:
         /* Evaluate the Fresnel factor */
         Complex<Spectrum> eta_c(m_eta->eval(si, active),
                                 m_k->eval(si, active));
-        Spectrum F = fresnel_complex(Spectrum(dot(si.wi, H)), eta_c);
+        Spectrum F = fresnel_conductor(Spectrum(dot(si.wi, H)), eta_c);
 
         /* Evaluate Smith's shadow-masking function */
         Value G = distr.G(si.wi, wo, H);

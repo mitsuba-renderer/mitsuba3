@@ -47,7 +47,7 @@ public:
                               m_k  ->eval(si, active));
 
         value = m_specular_reflectance->eval(si, active) *
-            fresnel_complex(Spectrum(cos_theta_i), eta);
+            fresnel_conductor(Spectrum(cos_theta_i), eta);
 
         return { bs, value };
     }

@@ -1309,8 +1309,8 @@ private:
  * evaluating the distribution for in-between parameter values.
  *
  * \remark The Python API exposes explicitly instantiated versions of this
- * class named Hierarchical2D0, Hierarchical2D1, and Hierarchical2D2 for data
- * that depends on 0, 1, and 2 parameters, respectively.
+ * class named Marginal2D0, Marginal2D1, and Marginal2D2 for data that depends
+ * on 0, 1, and 2 parameters, respectively.
  */
 template <size_t Dimension = 0> class Marginal2D {
 private:
@@ -1343,8 +1343,8 @@ public:
      * eval() is used).
      */
     Marginal2D(const Vector2u &size, const Float *data,
-               std::array<uint32_t, Dimension> param_res = {},
-               std::array<const Float *, Dimension> param_values = {},
+               std::array<uint32_t, Dimension> param_res = { },
+               std::array<const Float *, Dimension> param_values = { },
                bool normalize = true, bool build_cdf = true)
         : m_size(size), m_patch_size(1.f / (m_size - 1u)),
           m_inv_patch_size(size - 1u) {
@@ -1461,8 +1461,7 @@ public:
         using Mask = mask_t<Value>;
 
         /* Avoid degeneracies at the extrema */
-        masked(sample, sample < 1.f - math::OneMinusEpsilon) = 1.f - math::OneMinusEpsilon;
-        masked(sample, sample > math::OneMinusEpsilon) = math::OneMinusEpsilon;
+        sample = clamp(sample, 1.f - math::OneMinusEpsilon, math::OneMinusEpsilon);
 
         /* Look up parameter-related indices and weights (if Dimension != 0) */
         Value param_weight[2 * ArraySize];

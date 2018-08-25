@@ -7197,7 +7197,8 @@ R"doc(Calculates the unpolarized Fresnel reflection coefficient at a planar
 interface between two dielectrics
 
 Parameter ``cos_theta_i``:
-    Cosine of the angle between the normal and the incident ray
+    Cosine of the angle between the surface normal and the incident
+    ray
 
 Parameter ``eta``:
     Relative refractive index of the interface. A value greater than
@@ -7209,10 +7210,8 @@ Returns:
 
 F Fresnel reflection coefficient.
 
-cos_theta_t Cosine of the angle between the normal and the transmitted
-ray
-
-eta Index of refraction in the direction of travel.
+cos_theta_t Cosine of the angle between the surface normal and the
+transmitted ray
 
 eta_it Relative index of refraction in the direction of travel.
 
@@ -7220,10 +7219,10 @@ eta_ti Reciprocal of the relative index of refraction in the direction
 of travel. This also happens to be equal to the scale factor that must
 be applied to the X and Y component of the refracted direction.)doc";
 
-static const char *__doc_mitsuba_fresnel_complex =
+static const char *__doc_mitsuba_fresnel_conductor =
 R"doc(Calculates the unpolarized Fresnel reflection coefficient at a planar
-interface having a complex-valued relative index of refraction (i.e.
-the material conducts electrons)
+interface of a conductor, i.e. a surface with a complex-valued
+relative index of refraction
 
 Remark:
     The implementation assumes that cos_theta_i > 0, i.e. light enters
@@ -7231,36 +7230,14 @@ Remark:
     assumption unless very thin layers are being simulated)
 
 Parameter ``cos_theta_i``:
-    Cosine of the angle between the normal and the incident ray
+    Cosine of the angle between the surface normal and the incident
+    ray
 
 Parameter ``eta``:
     Relative refractive index (complex-valued)
 
 Returns:
     The unpolarized Fresnel reflection coefficient.)doc";
-
-static const char *__doc_mitsuba_fresnel_complex_polarized =
-R"doc(Calculates the polarized Fresnel reflection coefficient at a planar
-interface having a complex-valued relative index of refraction (i.e.
-the material conducts electrons)
-
-Remark:
-    The implementation assumes that cos_theta_i > 0, i.e. light enters
-    from *outside* of the conducting layer (generally a reasonable
-    assumption unless very thin layers are being simulated)
-
-Parameter ``cos_theta_i``:
-    Cosine of the angle between the normal and the incident ray
-
-Parameter ``eta``:
-    Relative refractive index (complex-valued)
-
-Returns:
-    A pair (r_s, r_p) consisting of
-
-r_s Perpendicularly polarized Fresnel reflectance ("senkrecht").
-
-r_p Parallel polarized Fresnel reflectance.)doc";
 
 static const char *__doc_mitsuba_fresnel_diffuse_reflectance =
 R"doc(Computes the diffuse unpolarized Fresnel reflectance of a dielectric
@@ -7277,33 +7254,69 @@ Returns:
 
 static const char *__doc_mitsuba_fresnel_polarized =
 R"doc(Calculates the polarized Fresnel reflection coefficient at a planar
-interface between two dielectrics
+interface between two dielectrics. Returns complex values encoding the
+amplitude and phase shift of the s- and p-polarized waves.
 
 Parameter ``cos_theta_i``:
-    Cosine of the angle between the normal and the incident ray
+    Cosine of the angle between the surface normal and the incident
+    ray
 
 Parameter ``eta``:
-    Relative refractive index of the interface. A value greater than
-    1.0 means that the surface normal is pointing into the region of
-    lower density.
+    Complex-valued relative refractive index of the interface. A value
+    greater than 1.0 in the real case means that the surface normal is
+    pointing into the region of lower density.
 
 Returns:
-    A tuple (r_s, r_p, cos_theta_t, eta_it, eta_ti) consisting of
+    A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
 
-r_s Perpendicularly polarized Fresnel reflectance ("senkrecht").
+a_s Perpendicularly polarized wave amplitude and phase shift.
 
-r_p Parallel polarized Fresnel reflectance.
+a_p Parallel polarized wave amplitude and phase shift.
 
-cos_theta_t Cosine of the angle between the normal and the transmitted
-ray
+cos_theta_t Cosine of the angle between the surface normal and the
+transmitted ray. Zero in the case of total internal reflection.
 
-eta Index of refraction in the direction of travel.
-
-eta_it Relative index of refraction in the direction of travel.
+eta_it Relative index of refraction in the direction of travel
 
 eta_ti Reciprocal of the relative index of refraction in the direction
 of travel. This also happens to be equal to the scale factor that must
 be applied to the X and Y component of the refracted direction.)doc";
+
+static const char *__doc_mitsuba_fresnel_polarized_2 =
+R"doc(Calculates the polarized Fresnel reflection coefficient at a planar
+interface between two dielectrics or conductors. Returns complex
+values encoding the amplitude and phase shift of the s- and
+p-polarized waves.
+
+This is the most general version, which subsumes all others (at the
+cost of transcendental function evaluations in the complex-valued
+arithmetic)
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the surface normal and the incident
+    ray
+
+Parameter ``eta``:
+    Complex-valued relative refractive index of the interface. A value
+    greater than 1.0 in the real case means that the surface normal is
+    pointing into the region of lower density.
+
+Returns:
+    A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
+
+a_s Perpendicularly polarized wave amplitude and phase shift.
+
+a_p Parallel polarized wave amplitude and phase shift.
+
+cos_theta_t Cosine of the angle between the surface normal and the
+transmitted ray. Zero in the case of total internal reflection.
+
+eta_it Relative index of refraction in the direction of travel
+
+eta_ti Reciprocal of the relative index of refraction in the direction
+of travel. In the real-valued case, this also happens to be equal to
+the scale factor that must be applied to the X and Y component of the
+refracted direction.)doc";
 
 static const char *__doc_mitsuba_function_traits = R"doc(Type trait to inspect the return and argument types of functions)doc";
 
@@ -8541,8 +8554,8 @@ values.
 
 Remark:
     The Python API exposes explicitly instantiated versions of this
-    class named Hierarchical2D0, Hierarchical2D1, and Hierarchical2D2
-    for data that depends on 0, 1, and 2 parameters, respectively.)doc";
+    class named Marginal2D0, Marginal2D1, and Marginal2D2 for data
+    that depends on 0, 1, and 2 parameters, respectively.)doc";
 
 static const char *__doc_mitsuba_warp_Marginal2D_Marginal2D = R"doc()doc";
 
