@@ -1,7 +1,14 @@
-# Mitsuba Renderer
+<img src="https://github.com/mitsuba-renderer/mitsuba2/raw/master/docs/images/logo_plain.png" width="120" height="120" alt="Mitsuba logo">
+
+# Mitsuba Renderer 2
 
 [![Build status](https://rglpc1.epfl.ch/jenkins/buildStatus/icon?job=mitsuba-renderer/mitsuba2/master)](https://rglpc1.epfl.ch/jenkins/blue/organizations/jenkins/mitsuba-renderer%2Fmitsuba2/activity)
 [![Build status](https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true)](https://ci.appveyor.com/project/wjakob/mitsuba2/branch/master)
+
+Mitsuba 2 is a research-oriented rendering system written in portable C++14.
+It consists of a small set of core libraries and a wide variety of plugins that
+implement functionality ranging from materials and light sources to complete
+rendering algorithms.
 
 ## Compiling
 
@@ -62,7 +69,7 @@ $ ninja pytest
 ## Staying up-to-date
 
 Mitsuba organizes its software dependencies in a hierarchy of sub-repositories
-using *git submodule*. Unfortunately, as of May 2016, pulling from the main
+using *git submodule*. Unfortunately, as of 2018, pulling from the main
 repository won't automatically keep the sub-repositories in sync, which can
 lead to various problems. The following command installs a git alias named
 ``pullall`` that automates these two steps.
