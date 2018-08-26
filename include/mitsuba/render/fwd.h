@@ -27,6 +27,9 @@ template <typename Point3> struct MediumInteraction;
 template <typename Point3> struct BSDFSample;
 template <typename Point3> struct RadianceSample;
 
+template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
+template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
+
 // -----------------------------------------------------------------------------
 // Common type aliases (non-vectorized, packet, dynamic).
 
@@ -62,6 +65,17 @@ using ShapeP   = Packet<const Shape *,   PacketSize>;
 using MediumP  = Packet<const Medium *,  PacketSize>;
 using EmitterP = Packet<const Emitter *, PacketSize>;
 using BSDFP    = Packet<const BSDF *,    PacketSize>;
+
+using StokesVectorf   = StokesVector<Float>;
+using StokesVectorSf  = StokesVector<Spectrumf>;
+using StokesVectorfP  = StokesVector<FloatP>;
+using StokesVectorSfP = StokesVector<SpectrumfP>;
+
+using MuellerMatrixf   = MuellerMatrix<Float>;
+using MuellerMatrixSf  = MuellerMatrix<Spectrumf>;
+using MuellerMatrixfP  = MuellerMatrix<FloatP>;
+using MuellerMatrixSfP = MuellerMatrix<SpectrumfP>;
+
 
 // -----------------------------------------------------------------------------
 

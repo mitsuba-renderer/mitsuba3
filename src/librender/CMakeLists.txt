@@ -26,6 +26,7 @@ add_library(mitsuba-render-obj OBJECT
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
   reflection.cpp   ${INC_DIR}/reflection.h
+  mueller.cpp      ${INC_DIR}/mueller.h
   spectrum.cpp     ${INC_DIR}/spectrum.h
 )
 

@@ -19,6 +19,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   spiral.cpp
   spectrum.cpp
   srgb.cpp
+  mueller.cpp
 )
 
 target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render tbb)

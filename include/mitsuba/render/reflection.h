@@ -124,9 +124,9 @@ Value fresnel_conductor(Value cos_theta_i, Complex<Value> eta) {
  *      Cosine of the angle between the surface normal and the incident ray
  *
  * \param eta
- *      Complex-valued relative refractive index of the interface. A value
- *      greater than 1.0 in the real case means that the surface normal is
- *      pointing into the region of lower density.
+ *      Complex-valued relative refractive index of the interface. In the real
+ *      case, a value greater than 1.0 case means that the surface normal
+ *      points into the region of lower density.
  *
  * \return A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
  *
@@ -200,9 +200,9 @@ fresnel_polarized(Value cos_theta_i, Value eta) {
  *      Cosine of the angle between the surface normal and the incident ray
  *
  * \param eta
- *      Complex-valued relative refractive index of the interface. A value
- *      greater than 1.0 in the real case means that the surface normal is
- *      pointing into the region of lower density.
+ *      Complex-valued relative refractive index of the interface. In the real
+ *      case, a value greater than 1.0 case means that the surface normal
+ *      points into the region of lower density.
  *
  * \return A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
  *

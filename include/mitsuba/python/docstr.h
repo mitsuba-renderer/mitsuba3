@@ -7262,9 +7262,9 @@ Parameter ``cos_theta_i``:
     ray
 
 Parameter ``eta``:
-    Complex-valued relative refractive index of the interface. A value
-    greater than 1.0 in the real case means that the surface normal is
-    pointing into the region of lower density.
+    Complex-valued relative refractive index of the interface. In the
+    real case, a value greater than 1.0 case means that the surface
+    normal points into the region of lower density.
 
 Returns:
     A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
@@ -7297,9 +7297,9 @@ Parameter ``cos_theta_i``:
     ray
 
 Parameter ``eta``:
-    Complex-valued relative refractive index of the interface. A value
-    greater than 1.0 in the real case means that the surface normal is
-    pointing into the region of lower density.
+    Complex-valued relative refractive index of the interface. In the
+    real case, a value greater than 1.0 case means that the surface
+    normal points into the region of lower density.
 
 Returns:
     A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
@@ -7466,6 +7466,46 @@ static const char *__doc_mitsuba_math_sphdir = R"doc(//! @{ \name Helper functio
 static const char *__doc_mitsuba_math_ulpdiff =
 R"doc(Compare the difference in ULPs between a reference value and another
 given floating point number)doc";
+
+static const char *__doc_mitsuba_mueller_depolarizer =
+R"doc(Constructs the Mueller matrix of an ideal depolarizer
+
+Parameter ``value``:
+    The value of the (0, 0) element)doc";
+
+static const char *__doc_mitsuba_mueller_rotated_element =
+R"doc(Constructs the Mueller matrix of an ideal rotator, which performs a
+counter-clockwise rotation of the electric field by 'theta' radians.)doc";
+
+static const char *__doc_mitsuba_mueller_rotator =
+R"doc(Constructs the Mueller matrix of an ideal rotator, which performs a
+counter-clockwise rotation of the electric field by 'theta' radians.)doc";
+
+static const char *__doc_mitsuba_mueller_specular_reflection =
+R"doc(Calculates the Mueller matrix of a specular reflection at an interface
+between two dielectrics or conductors.
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the surface normal and the incident
+    ray
+
+Parameter ``eta``:
+    Complex-valued relative refractive index of the interface. In the
+    real case, a value greater than 1.0 case means that the surface
+    normal points into the region of lower density.)doc";
+
+static const char *__doc_mitsuba_mueller_specular_transmission =
+R"doc(Calculates the Mueller matrix of a specular transmission at an
+interface between two dielectrics or conductors.
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the surface normal and the incident
+    ray
+
+Parameter ``eta``:
+    Complex-valued relative refractive index of the interface. A value
+    greater than 1.0 in the real case means that the surface normal is
+    pointing into the region of lower density.)doc";
 
 static const char *__doc_mitsuba_next = R"doc(//! @{ \name Template specializations)doc";
 

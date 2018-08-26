@@ -76,6 +76,7 @@ using UInt32X  = DynamicArray<UInt32P>;
 
 using Int64P   = Packet<int64_t, PacketSize>;
 using Int64X   = DynamicArray<Int64P>;
+
 using UInt64P  = Packet<uint64_t, PacketSize>;
 using UInt64X  = DynamicArray<UInt64P>;
 
