@@ -5,6 +5,14 @@
 #include <enoki/matrix.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
+/**
+ * This file provides a number of utility functions for constructing and
+ * analyzing Mueller matrices. Mueller matrices describe how a scattering
+ * interaction modifies the polarization state of light, which is assumed to be
+ * encoded as a Stokes vector. Please also refer to the header file
+ * <tt>mitsuba/render/stokes.h</tt>.
+ */
 NAMESPACE_BEGIN(mueller)
 
 /**
@@ -55,7 +63,7 @@ template <typename Value> MuellerMatrix<Value> linear_polarizer(Value value = 1.
 template <typename Value> MuellerMatrix<Value> diattenuator(Value x, Value y) {
     Value a = .5f * (x + y),
           b = .5f * (x - y),
-          c = sqrt(x*y);
+          c = sqrt(x * y);
 
     return MuellerMatrix<Value>(
         a, b, 0, 0,

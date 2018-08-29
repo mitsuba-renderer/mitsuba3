@@ -5,7 +5,13 @@ MTS_PY_EXPORT(mueller) {
     MTS_PY_IMPORT_MODULE(mueller, "mitsuba.render.mueller");
 
     mueller.def("depolarizer", &mueller::depolarizer<Float>,
-                D(mueller, depolarizer), "value"_a);
+                D(mueller, depolarizer), "value"_a = 1.f);
+
+    mueller.def("linear_polarizer", &mueller::linear_polarizer<Float>,
+                D(mueller, linear_polarizer), "value"_a = 1.f);
+
+    mueller.def("diattenuator", &mueller::diattenuator<Float>,
+                D(mueller, diattenuator), "x"_a, "y"_a);
 
     mueller.def("rotator", &mueller::rotator<Float>, D(mueller, rotator),
                 "theta"_a);

@@ -146,8 +146,7 @@ std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
 
     return std::make_pair(
         Vector3(mulsign(n.x() * n.x() * a, n.z()) + Scalar(1),
-                mulsign(b, n.z()),
-                mulsign_neg(n.x(), n.z())),
+                mulsign(b, n.z()), mulsign_neg(n.x(), n.z())),
         Vector3(b, sign + n.y() * n.y() * a, -n.y())
     );
 }

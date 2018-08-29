@@ -7467,15 +7467,34 @@ static const char *__doc_mitsuba_math_ulpdiff =
 R"doc(Compare the difference in ULPs between a reference value and another
 given floating point number)doc";
 
+static const char *__doc_mitsuba_mueller_absorber =
+R"doc(Constructs the Mueller matrix of an ideal absorber
+
+Parameter ``value``:
+    The amount of absorption.)doc";
+
 static const char *__doc_mitsuba_mueller_depolarizer =
 R"doc(Constructs the Mueller matrix of an ideal depolarizer
 
 Parameter ``value``:
     The value of the (0, 0) element)doc";
 
+static const char *__doc_mitsuba_mueller_diattenuator =
+R"doc(Constructs the Mueller matrix of a linear diattenuator, which
+attenuates the electric field components at 0 and 90 degrees by 'x'
+and 'y', * respectively.)doc";
+
+static const char *__doc_mitsuba_mueller_linear_polarizer =
+R"doc(Constructs the Mueller matrix of a linear polarizer which transmits
+linear polarization at 0 degrees.
+
+Parameter ``value``:
+    The amount of attenuation of the transmitted component (1
+    corresponds to an ideal polarizer).)doc";
+
 static const char *__doc_mitsuba_mueller_rotated_element =
-R"doc(Constructs the Mueller matrix of an ideal rotator, which performs a
-counter-clockwise rotation of the electric field by 'theta' radians.)doc";
+R"doc(Applies a counter-clockwise rotation to the mueller matrix of a given
+element.)doc";
 
 static const char *__doc_mitsuba_mueller_rotator =
 R"doc(Constructs the Mueller matrix of an ideal rotator, which performs a

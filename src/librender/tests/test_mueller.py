@@ -1,7 +1,30 @@
 import numpy as np
-from mitsuba.render.mueller import specular_reflection, specular_transmission
+from mitsuba.render.mueller import (
+    depolarizer,
+    linear_polarizer,
+    rotator,
+    rotated_element,
+    specular_reflection,
+    specular_transmission)
 
-def test01_specular_reflection():
+
+def test01_depolarizer():
+    assert np.allclose(depolarizer(.8) @ [1, .5, .5, .5], [.8, 0, 0, 0])
+
+
+def test02_rotator():
+    assert np.allclose(rotator( 45 * np.pi/180) @ [1, 1, 0, 0], [1, 0,  1, 0], atol=1e-5)
+    assert np.allclose(rotator(-45 * np.pi/180) @ [1, 1, 0, 0], [1, 0, -1, 0], atol=1e-5)
+
+# def test03_linear_polarizer():
+#     # Malus' law
+#     angle = 30 * np.pi / 180
+#     v = np.cos(angle)**2
+#     print(v)
+#     assert np.allclose(rotated_element(linear_polarizer(angle) @ [1, 1, 0, 0], [1, 0, 0]))
+
+
+def test04_specular_reflection():
     # Identity matrix (and no phase shift) at perpendicular incidence
     assert np.allclose(specular_reflection(1, 1.5), np.eye(4)*0.04)
     assert np.allclose(specular_reflection(1, 1/1.5), np.eye(4)*0.04)
@@ -31,7 +54,7 @@ def test01_specular_reflection():
     assert np.allclose(M[2:4, 2:4], [[np.cos(phi_delta), np.sin(phi_delta)], [-np.sin(phi_delta), np.cos(phi_delta)]])
 
 
-def test02_specular_transmission():
+def test05_specular_transmission():
     assert np.allclose(specular_transmission(1, 1.5), np.eye(4)*0.96, atol=1e-5)
     assert np.allclose(specular_transmission(1, 1/1.5), np.eye(4)*0.96, atol=1e-5)
     assert np.allclose(specular_transmission(1e-7, 1.5), np.zeros((4, 4)), atol=1e-5)
