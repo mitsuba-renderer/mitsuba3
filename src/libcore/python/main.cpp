@@ -24,7 +24,6 @@ MTS_PY_DECLARE(Properties);
 MTS_PY_DECLARE(ArgParser);
 MTS_PY_DECLARE(FileResolver);
 MTS_PY_DECLARE(Stream);
-MTS_PY_DECLARE(AnnotatedStream);
 MTS_PY_DECLARE(DummyStream);
 MTS_PY_DECLARE(FileStream);
 MTS_PY_DECLARE(MemoryStream);
@@ -98,7 +97,6 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     MTS_PY_IMPORT(ArgParser);
     MTS_PY_IMPORT(FileResolver);
     MTS_PY_IMPORT(Stream);
-    MTS_PY_IMPORT(AnnotatedStream);
     MTS_PY_IMPORT(DummyStream);
     MTS_PY_IMPORT(FileStream);
     MTS_PY_IMPORT(MemoryStream);

@@ -27,7 +27,7 @@ def write_contents(stream):
         if type(v) is str:
             stream.write_string(v)
         elif type(v) is int:
-            stream.write_long(v)
+            stream.write_int64(v)
         elif type(v) is float:
             stream.write_single(v)
         elif type(v) is bool:
@@ -42,7 +42,7 @@ def check_contents(stream):
         if type(v) is str:
             assert v == stream.read_string()
         elif type(v) is int:
-            assert v == stream.read_long()
+            assert v == stream.read_int64()
         elif type(v) is float:
             assert np.abs(stream.read_single() - v) / v < 1e-5
         elif type(v) is bool:
@@ -66,7 +66,7 @@ def test01_size_and_pos(class_, args, request, tmpdir_factory):
     stream.flush()
     assert stream.size() == 5
     assert stream.tell() == 5
-    stream.write_long(42)  # Long (8)
+    stream.write_int64(42)  # Long (8)
     stream.flush()
     assert stream.size() == 5 + 8
     assert stream.tell() == 5 + 8
@@ -196,7 +196,7 @@ def test06_dummy_stream():
     s.write_string('hello world')
     s.seek(0)
     with pytest.raises(RuntimeError):
-        s.read_long()
+        s.read_int64()
     s.set_byte_order(Stream.EBigEndian)
     assert str(s) == """DummyStream[
   host_byte_order = little-endian,
@@ -238,10 +238,10 @@ def test08_fstream(rw, tmpfile):
     assert s.can_write() == rw
 
     if s.can_write():
-        s.write_long(42)
+        s.write_int64(42)
         s.flush()
         s.seek(0)
-        assert s.read_long() == 42
+        assert s.read_int64() == 42
         s.seek(0)
 
         # Truncating shouldn't change the position if not necessary

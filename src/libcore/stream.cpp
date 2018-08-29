@@ -121,6 +121,5 @@ void Stream::skip(size_t amount) {
 }
 
 MTS_IMPLEMENT_CLASS(Stream, Object)
-MTS_IMPLEMENT_CLASS(DummyStream, Stream)
 
 NAMESPACE_END(mitsuba)

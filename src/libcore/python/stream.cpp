@@ -1,5 +1,4 @@
 #include <mitsuba/core/stream.h>
-#include <mitsuba/core/astream.h>
 #include <mitsuba/core/dstream.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/mstream.h>
@@ -47,7 +46,14 @@ MTS_PY_EXPORT(Stream) {
         .mdef(Stream, skip)
         .mdef(Stream, read_line)
         .mdef(Stream, write_line)
-        .DECLARE_RW(int64_t, "long")
+        .DECLARE_RW(int8_t, "int8")
+        .DECLARE_RW(uint8_t, "uint8")
+        .DECLARE_RW(int16_t, "int16")
+        .DECLARE_RW(uint16_t, "uint16")
+        .DECLARE_RW(int32_t, "int32")
+        .DECLARE_RW(uint32_t, "uint32")
+        .DECLARE_RW(int64_t, "int64")
+        .DECLARE_RW(uint64_t, "uint64")
         .DECLARE_RW(float, "single")
         .DECLARE_RW(double, "double")
         .DECLARE_RW(Float, "float")
@@ -106,82 +112,4 @@ MTS_PY_EXPORT(ZStream) {
         .def("child_stream", [](ZStream &stream) {
             return py::cast(stream.child_stream());
         }, D(ZStream, child_stream));
-
-
-}
-
-namespace {
-struct declare_astream_accessors {
-    using PyClass = pybind11::class_<mitsuba::AnnotatedStream,
-                                     mitsuba::Object,
-                                     mitsuba::ref<mitsuba::AnnotatedStream>>;
-
-    template <typename T>
-    static void apply(PyClass &c) {
-        c.def("set", [](AnnotatedStream& s,
-                        const std::string &name, const T &value) {
-            s.set(name, value);
-        }, D(AnnotatedStream, set));
-    }
-};
-
-/// Use this type alias to list the supported types. Be wary of automatic type conversions.
-// TODO: support all supported types that can occur in Python
-using methods_declarator = for_each_type<bool, int64_t, Float, std::string>;
-
-}  // end anonymous namespace
-
-MTS_PY_EXPORT(AnnotatedStream) {
-    auto c = MTS_PY_CLASS(AnnotatedStream, Object)
-        .def(py::init<ref<Stream>, bool, bool>(),
-             D(AnnotatedStream, AnnotatedStream),
-             "stream"_a, "write_mode"_a, "throw_on_missing"_a = true)
-        .mdef(AnnotatedStream, close)
-        .mdef(AnnotatedStream, push)
-        .mdef(AnnotatedStream, pop)
-        .mdef(AnnotatedStream, keys)
-        .mdef(AnnotatedStream, size)
-        .mdef(AnnotatedStream, can_read)
-        .mdef(AnnotatedStream, can_write);
-
-    /**
-     * Get: we can recover the type from type information stored in the ToC.
-     * We perform a series of try & catch until we find the right type. This is
-     * very inefficient, but better than leaking the type info abstraction, which
-     * is private to the AnnotatedStream.
-     */
-    c.def("get", [](AnnotatedStream& s, const std::string &name) {
-        const auto keys = s.keys();
-        bool keyExists = find(keys.begin(), keys.end(), name) != keys.end();
-        if (!keyExists)
-            Throw("Key \"%s\" does not exist in AnnotatedStream. Available "
-                  "keys: %s", name, s.keys());
-
-#define TRY_GET_TYPE(Type)                     \
-        try {                                  \
-            Type v;                            \
-            s.get(name, v);                    \
-            return py::cast(v);                \
-        } catch (const std::runtime_error &) { }
-
-        TRY_GET_TYPE(float);
-        TRY_GET_TYPE(double);
-        TRY_GET_TYPE(bool);
-        TRY_GET_TYPE(int32_t);
-        TRY_GET_TYPE(uint32_t);
-        TRY_GET_TYPE(std::string);
-        TRY_GET_TYPE(char);
-        TRY_GET_TYPE(int64_t);
-        TRY_GET_TYPE(uint64_t);
-        TRY_GET_TYPE(int8_t);
-        TRY_GET_TYPE(uint8_t);
-        TRY_GET_TYPE(int16_t);
-        TRY_GET_TYPE(uint16_t);
-#undef TRY_GET_TYPE
-
-        Throw("Key \"%s\" exists but does not have a supported type.", name);
-    }, D(AnnotatedStream, get), "name"_a);
-
-    // get & set declarations for many types
-    methods_declarator::recurse<declare_astream_accessors>(c);
 }

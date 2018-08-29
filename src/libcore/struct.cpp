@@ -1364,7 +1364,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EUInt16: {
                 uint16_t val = *((const uint16_t *) src);
                 if (source_swap)
-                    val = detail::swap16(val);
+                    val = detail::swap(val);
                 value.u = val;
             }
             break;
@@ -1372,7 +1372,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EInt16: {
                 int16_t val = *((const int16_t *) src);
                 if (source_swap)
-                    val = detail::swap16(val);
+                    val = detail::swap(val);
                 value.i = val;
             }
             break;
@@ -1380,7 +1380,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EUInt32: {
                 uint32_t val = *((const uint32_t *) src);
                 if (source_swap)
-                    val = detail::swap32(val);
+                    val = detail::swap(val);
                 value.u =  val;
             }
             break;
@@ -1388,7 +1388,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EInt32: {
                 int32_t val = *((const int32_t *) src);
                 if (source_swap)
-                    val = detail::swap32(val);
+                    val = detail::swap(val);
                 value.i = val;
             }
             break;
@@ -1396,7 +1396,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EUInt64: {
                 uint64_t val = *((const uint64_t *) src);
                 if (source_swap)
-                    val = detail::swap64(val);
+                    val = detail::swap(val);
                 value.u = val;
             }
             break;
@@ -1404,7 +1404,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EInt64: {
                 int64_t val = *((const int64_t *) src);
                 if (source_swap)
-                    val = detail::swap64(val);
+                    val = detail::swap(val);
                 value.i = val;
             }
             break;
@@ -1412,7 +1412,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EFloat16: {
                 uint16_t val = *((const uint16_t *) src);
                 if (source_swap)
-                    val = detail::swap16(val);
+                    val = detail::swap(val);
                 value.s = enoki::half::float16_to_float32(val);
                 value.type = Struct::EFloat32;
             }
@@ -1421,7 +1421,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EFloat32: {
                 uint32_t val = *((const uint32_t *) src);
                 if (source_swap)
-                    val = detail::swap32(val);
+                    val = detail::swap(val);
                 value.s = memcpy_cast<float>(val);
             }
             break;
@@ -1429,7 +1429,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         case Struct::EFloat64: {
                 uint64_t val = *((const uint64_t *) src);
                 if (source_swap)
-                    val = detail::swap64(val);
+                    val = detail::swap(val);
                 value.d = memcpy_cast<double>(val);
             }
             break;
@@ -1523,7 +1523,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EUInt16: {
                 uint16_t val = (uint16_t) value.u;
                 if (target_swap)
-                    val = detail::swap16(val);
+                    val = detail::swap(val);
                 *((uint16_t *) dst) = val;
             }
             break;
@@ -1531,7 +1531,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EInt16: {
                 int16_t val = (int16_t) value.i;
                 if (target_swap)
-                    val = detail::swap16(val);
+                    val = detail::swap(val);
                 *((int16_t *) dst) = val;
             }
             break;
@@ -1539,7 +1539,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EUInt32: {
                 uint32_t val = (uint32_t) value.u;
                 if (target_swap)
-                    val = detail::swap32(val);
+                    val = detail::swap(val);
                 *((uint32_t *) dst) = val;
             }
             break;
@@ -1547,7 +1547,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EInt32: {
                 int32_t val = (int32_t) value.i;
                 if (target_swap)
-                    val = detail::swap32(val);
+                    val = detail::swap(val);
                 *((int32_t *) dst) = val;
             }
             break;
@@ -1555,7 +1555,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EUInt64: {
                 uint64_t val = (uint64_t) value.u;
                 if (target_swap)
-                    val = detail::swap64(val);
+                    val = detail::swap(val);
                 *((uint64_t *) dst) = val;
             }
             break;
@@ -1563,7 +1563,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EInt64: {
                 int64_t val = (int64_t) value.i;
                 if (target_swap)
-                    val = detail::swap64(val);
+                    val = detail::swap(val);
                 *((int64_t *) dst) = val;
             }
             break;
@@ -1571,7 +1571,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EFloat16: {
                 uint16_t val = enoki::half::float32_to_float16(value.s);
                 if (target_swap)
-                    val = detail::swap16(val);
+                    val = detail::swap(val);
                 *((uint16_t *) dst) = val;
             }
             break;
@@ -1579,7 +1579,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EFloat32: {
                 uint32_t val = (uint32_t) memcpy_cast<uint32_t>(value.s);
                 if (target_swap)
-                    val = detail::swap32(val);
+                    val = detail::swap(val);
                 *((uint32_t *) dst) = val;
             }
             break;
@@ -1587,7 +1587,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         case Struct::EFloat64: {
                 uint64_t val = (uint64_t) memcpy_cast<uint64_t>(value.d);
                 if (target_swap)
-                    val = detail::swap64(val);
+                    val = detail::swap(val);
                 *((uint64_t *) dst) = val;
             }
             break;
