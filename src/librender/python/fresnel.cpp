@@ -1,7 +1,7 @@
-#include <mitsuba/render/reflection.h>
+#include <mitsuba/render/fresnel.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(reflection) {
+MTS_PY_EXPORT(fresnel) {
     // --------------------------------------------------------------------
 
     m.def("fresnel", &fresnel<float>, D(fresnel), "cos_theta_i"_a, "eta"_a);

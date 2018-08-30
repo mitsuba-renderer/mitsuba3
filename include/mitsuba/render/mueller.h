@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mitsuba/render/fwd.h>
-#include <mitsuba/render/reflection.h>
+#include <mitsuba/render/fresnel.h>
 #include <enoki/matrix.h>
 
 NAMESPACE_BEGIN(mitsuba)

@@ -22,7 +22,7 @@ MTS_PY_DECLARE(Integrator);
 MTS_PY_DECLARE(Sampler);
 MTS_PY_DECLARE(ContinuousSpectrum);
 MTS_PY_DECLARE(MicrofacetDistribution);
-MTS_PY_DECLARE(reflection);
+MTS_PY_DECLARE(fresnel);
 MTS_PY_DECLARE(srgb);
 MTS_PY_DECLARE(mueller);
 
@@ -53,7 +53,7 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(Sampler);
     MTS_PY_IMPORT(ContinuousSpectrum);
     MTS_PY_IMPORT(MicrofacetDistribution);
-    MTS_PY_IMPORT(reflection);
+    MTS_PY_IMPORT(fresnel);
     MTS_PY_IMPORT(srgb);
     MTS_PY_IMPORT(mueller);
 }

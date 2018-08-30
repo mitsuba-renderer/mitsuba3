@@ -9,7 +9,7 @@
 #include <mitsuba/core/quad.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/common.h>
-#include <mitsuba/render/reflection.h>
+#include <mitsuba/render/fresnel.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

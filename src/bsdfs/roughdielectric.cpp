@@ -5,7 +5,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
-#include <mitsuba/render/reflection.h>
+#include <mitsuba/render/fresnel.h>
 #include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/sampler.h>
 

@@ -1,4 +1,4 @@
-#include <mitsuba/render/reflection.h>
+#include <mitsuba/render/fresnel.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

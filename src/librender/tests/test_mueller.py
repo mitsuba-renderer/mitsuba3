@@ -9,19 +9,19 @@ from mitsuba.render.mueller import (
 
 
 def test01_depolarizer():
-    assert np.allclose(depolarizer(.8) @ [1, .5, .5, .5], [.8, 0, 0, 0])
+    assert np.allclose(np.dot(depolarizer(.8), [1, .5, .5, .5]), [.8, 0, 0, 0])
 
 
 def test02_rotator():
-    assert np.allclose(rotator( 45 * np.pi/180) @ [1, 1, 0, 0], [1, 0,  1, 0], atol=1e-5)
-    assert np.allclose(rotator(-45 * np.pi/180) @ [1, 1, 0, 0], [1, 0, -1, 0], atol=1e-5)
+    assert np.allclose(np.dot(rotator( 45 * np.pi/180), [1, 1, 0, 0]), [1, 0,  1, 0], atol=1e-5)
+    assert np.allclose(np.dot(rotator(-45 * np.pi/180), [1, 1, 0, 0]), [1, 0, -1, 0], atol=1e-5)
 
 # def test03_linear_polarizer():
 #     # Malus' law
 #     angle = 30 * np.pi / 180
 #     v = np.cos(angle)**2
 #     print(v)
-#     assert np.allclose(rotated_element(linear_polarizer(angle) @ [1, 1, 0, 0], [1, 0, 0]))
+#     assert np.allclose(np.dot(rotated_element(linear_polarizer(angle), [1, 1, 0, 0]), [1, 0, 0]))
 
 
 def test04_specular_reflection():

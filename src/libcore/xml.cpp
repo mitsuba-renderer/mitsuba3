@@ -303,31 +303,31 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
         for (pugi::xpath_node result : node.select_nodes(
                  "//node()[float[@name='uoffset' or @name='voffset' or "
                  "@name='uscale' or @name='vscale']]")) {
-            pugi::xml_node node = result.node();
-            pugi::xml_node uoffset = node.select_node("float[@name='uoffset']").node();
-            pugi::xml_node voffset = node.select_node("float[@name='voffset']").node();
-            pugi::xml_node uscale  = node.select_node("float[@name='uscale']").node();
-            pugi::xml_node vscale  = node.select_node("float[@name='vscale']").node();
+            pugi::xml_node n = result.node();
+            pugi::xml_node uoffset = n.select_node("float[@name='uoffset']").node();
+            pugi::xml_node voffset = n.select_node("float[@name='voffset']").node();
+            pugi::xml_node uscale  = n.select_node("float[@name='uscale']").node();
+            pugi::xml_node vscale  = n.select_node("float[@name='vscale']").node();
 
             Vector2f offset(0.f), scale(1.f);
             if (uoffset) {
                 offset.x() = stof(uoffset.attribute("value").value());
-                node.remove_child(uoffset);
+                n.remove_child(uoffset);
             }
             if (voffset) {
                 offset.y() = stof(voffset.attribute("value").value());
-                node.remove_child(voffset);
+                n.remove_child(voffset);
             }
             if (uscale) {
                 scale.x() = stof(uscale.attribute("value").value());
-                node.remove_child(uscale);
+                n.remove_child(uscale);
             }
             if (vscale) {
                 scale.y() = stof(vscale.attribute("value").value());
-                node.remove_child(vscale);
+                n.remove_child(vscale);
             }
 
-            pugi::xml_node trafo = node.append_child("transform");
+            pugi::xml_node trafo = n.append_child("transform");
             trafo.append_attribute("name") = "to_uv";
 
             if (offset != Vector2f(0.f)) {
