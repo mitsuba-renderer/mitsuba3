@@ -179,7 +179,7 @@ namespace zmq {
     protected:
         context(const context &) = delete;
         void operator=(const context &) = delete;
-    
+
     protected:
         void *ptr;
     };
@@ -284,7 +284,7 @@ namespace zmq {
                 return false;
             throw exception();
         }
-        
+
         bool sendmore(const void *buf, size_t len, int flags = 0) {
             return send(buf, len, flags | ZMQ_SNDMORE);
         }
@@ -354,7 +354,7 @@ namespace zmq {
         }
 
         bool recvmore(void *buf, size_t len, int flags = 0) {
-            if (!recv(buf, len, flags)) 
+            if (!recv(buf, len, flags))
                 return false;
             if (!more())
                 throw exception("Expected additional parts in multipart message");
