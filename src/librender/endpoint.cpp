@@ -1,6 +1,7 @@
-#include <mitsuba/render/endpoint.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/render/endpoint.h>
+#include <mitsuba/render/medium.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

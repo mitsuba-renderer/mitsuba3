@@ -1,7 +1,8 @@
 #pragma once
 
-#include <mitsuba/render/records.h>
 #include <mitsuba/core/profiler.h>
+#include <mitsuba/render/records.h>
+#include <mitsuba/render/shape.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
