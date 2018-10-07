@@ -29,30 +29,29 @@ public:
         m_flags = m_nested_bsdf->flags() | m_components.back();
     }
 
-    template <
-        typename SurfaceInteraction,
-        typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-        typename Value      = typename SurfaceInteraction::Value,
-        typename Point2     = typename SurfaceInteraction::Point2,
-        typename Spectrum   = Spectrum<Value>>
-    MTS_INLINE std::pair<BSDFSample, Spectrum>
-    sample_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                Value sample1, const Point2 &sample2,
-                const mask_t<Value> &active) const {
+    template <typename SurfaceInteraction, typename Value, typename Point2,
+              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
+              typename Spectrum   = Spectrum<Value>>
+    MTS_INLINE
+    std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx,
+                                                const SurfaceInteraction &si,
+                                                Value sample1,
+                                                const Point2 &sample2,
+                                                mask_t<Value> active) const {
         using Mask = mask_t<Value>;
 
         uint32_t null_index = (uint32_t) component_count() - 1;
 
         bool sample_transmission = ctx.is_enabled(ENull, null_index);
         bool sample_nested       = ctx.component == (uint32_t) -1
-                                   || ctx.component < null_index;
+                                || ctx.component < null_index;
 
         BSDFSample bs;
         Spectrum result(0.f);
-        if (unlikely((!sample_transmission && !sample_nested) || none(active)))
+        if (unlikely(!sample_transmission && !sample_nested))
             return { bs, result };
 
-        Value opacity = m_opacity->eval(si, active)[0];
+        Value opacity = clamp(m_opacity->eval(si, active)[0], 0.f, 1.f);
         if (sample_transmission != sample_nested)
             opacity = sample_transmission ? 1.f : 0.f;
 
@@ -63,7 +62,7 @@ public:
         bs.pdf               = 1.f - opacity;
         result               = 1.f;
 
-        Mask nested_mask = active && (sample1 < opacity);
+        Mask nested_mask = active && sample1 < opacity;
         if (any(nested_mask)) {
             sample1 /= opacity;
             auto tmp = m_nested_bsdf->sample(ctx, si, sample1, sample2, nested_mask);
@@ -74,34 +73,32 @@ public:
         return { bs, result };
     }
 
-    template <typename SurfaceInteraction,
+    template <typename SurfaceInteraction, typename Vector3,
               typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3,
               typename Spectrum = Spectrum<Value>>
     MTS_INLINE
     Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, const mask_t<Value> &active) const {
-        return m_nested_bsdf->eval(ctx, si, wo, active) *
-               m_opacity->eval(si, active)[0];
+                       const Vector3 &wo, mask_t<Value> active) const {
+        Value opacity = clamp(m_opacity->eval(si, active)[0], 0.f, 1.f);
+        return m_nested_bsdf->eval(ctx, si, wo, active) * opacity;
     }
 
-    template <typename SurfaceInteraction,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3>
+    template <typename SurfaceInteraction, typename Vector3,
+              typename Value = value_t<Vector3>>
     MTS_INLINE
     Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                   const Vector3 &wo, const mask_t<Value> &active) const {
+                   const Vector3 &wo, mask_t<Value> active) const {
         uint32_t null_index = (uint32_t) component_count() - 1;
         bool sample_transmission = ctx.is_enabled(ENull, null_index);
         bool sample_nested       = ctx.component == (uint32_t) -1
-                                   || ctx.component < null_index;
+                                || ctx.component < null_index;
 
         if (!sample_nested)
             return 0.f;
 
         Value result = m_nested_bsdf->pdf(ctx, si, wo, active);
         if (sample_transmission)
-            result *= m_opacity->eval(si, active)[0];
+            result *= clamp(m_opacity->eval(si, active)[0], 0.f, 1.f);
 
         return result;
     }

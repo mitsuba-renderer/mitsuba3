@@ -331,12 +331,18 @@ private:
         fmt_map["double"] = Struct::EFloat64;
 
         /* Unofficial extensions :) */
-        fmt_map["uint8"]  = Struct::EUInt8;
-        fmt_map["uint16"] = Struct::EUInt16;
-        fmt_map["uint32"] = Struct::EUInt32;
-        fmt_map["long"]   = Struct::EInt64;
-        fmt_map["ulong"]  = Struct::EUInt64;
-        fmt_map["half"]   = Struct::EFloat16;
+        fmt_map["uint8"]   = Struct::EUInt8;
+        fmt_map["uint16"]  = Struct::EUInt16;
+        fmt_map["uint32"]  = Struct::EUInt32;
+        fmt_map["int8"]    = Struct::EInt8;
+        fmt_map["int16"]   = Struct::EInt16;
+        fmt_map["int32"]   = Struct::EInt32;
+        fmt_map["long"]    = Struct::EInt64;
+        fmt_map["ulong"]   = Struct::EUInt64;
+        fmt_map["half"]    = Struct::EFloat16;
+        fmt_map["float16"] = Struct::EFloat16;
+        fmt_map["float32"] = Struct::EFloat32;
+        fmt_map["float64"] = Struct::EFloat64;
 
         ref<Struct> struct_;
 

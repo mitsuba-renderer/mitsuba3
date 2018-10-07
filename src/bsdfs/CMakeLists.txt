@@ -11,6 +11,7 @@ add_plugin(roughplastic roughplastic.cpp)
 add_plugin(thindielectric thindielectric.cpp)
 add_plugin(twosided twosided.cpp)
 add_plugin(measured measured.cpp)
+add_plugin(blendbsdf blendbsdf.cpp)
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)
