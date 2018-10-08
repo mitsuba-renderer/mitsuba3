@@ -14,6 +14,16 @@ MTS_PY_EXPORT(Sensor) {
                 py::overload_cast<FloatP, FloatP, const Point2fP &, const Point2fP &, MaskP>(
                     &Sensor::sample_ray_differential, py::const_)),
              "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
+        .def("sample_ray_differential_pol",
+            py::overload_cast<Float, Float, const Point2f &, const Point2f &, bool>(
+                &Sensor::sample_ray_differential_pol, py::const_),
+            D(Sensor, sample_ray_differential_pol),
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "unused"_a = true)
+        .def("sample_ray_differential_pol",
+            enoki::vectorize_wrapper(
+                py::overload_cast<FloatP, FloatP, const Point2fP &, const Point2fP &, MaskP>(
+                    &Sensor::sample_ray_differential_pol, py::const_)),
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
         .mdef(Sensor, shutter_open)
         .mdef(Sensor, shutter_open_time)
         .mdef(Sensor, needs_aperture_sample)

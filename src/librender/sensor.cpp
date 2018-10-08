@@ -109,6 +109,59 @@ Sensor::sample_ray_differential(FloatP time, FloatP sample1,
                                         sample3, active);
 }
 
+template <typename Value, typename Point2, typename RayDifferential,
+          typename Spectrum, typename Mask>
+std::pair<RayDifferential, MuellerMatrix<Spectrum>> Sensor::sample_ray_differential_pol_impl(
+    Value time, Value sample1, const Point2 &sample2, const Point2 &sample3,
+    Mask active) const {
+    using Ray3          = Ray<Point<Value, 3>>;
+    using MuellerMatrix = MuellerMatrix<Spectrum>;
+
+    Ray3 temp_ray;
+    MuellerMatrix result_spec, unused;
+
+    std::tie(temp_ray, result_spec) =
+        sample_ray_pol(time, sample1, sample2, sample3, active);
+
+    RayDifferential result_ray(temp_ray);
+
+    Vector2f dx(1.f / m_resolution.x(), 0.f);
+    Vector2f dy(0.f, 1.f / m_resolution.y());
+
+    // Sample a result_ray for X+1
+    std::tie(temp_ray, unused) =
+        sample_ray_pol(time, sample1, sample2 + dx, sample3, active);
+
+    result_ray.o_x = temp_ray.o;
+    result_ray.d_x = temp_ray.d;
+
+    // Sample a result_ray for Y+1
+    std::tie(temp_ray, unused) =
+        sample_ray_pol(time, sample1, sample2 + dy, sample3, active);
+
+    result_ray.o_y = temp_ray.o;
+    result_ray.d_y = temp_ray.d;
+    result_ray.has_differentials = true;
+
+    return { result_ray, result_spec };
+}
+
+std::pair<RayDifferential3f, MuellerMatrixSf>
+Sensor::sample_ray_differential_pol(Float time, Float sample1,
+                                    const Point2f &sample2,
+                                    const Point2f &sample3) const {
+    return sample_ray_differential_pol_impl(time, sample1, sample2,
+                                            sample3, true);
+}
+std::pair<RayDifferential3fP, MuellerMatrixSfP>
+Sensor::sample_ray_differential_pol(FloatP time, FloatP sample1,
+                                    const Point2fP &sample2,
+                                    const Point2fP &sample3,
+                                    MaskP active) const {
+    return sample_ray_differential_pol_impl(time, sample1, sample2,
+                                            sample3, active);
+}
+
 MTS_IMPLEMENT_CLASS(Sensor, Endpoint)
 
 

@@ -88,6 +88,29 @@ MTS_PY_EXPORT(BSDF) {
              ),
              "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
 
+        .def("sample_pol",
+            py::overload_cast<const BSDFContext &, const SurfaceInteraction3f &,
+                              Float, const Point2f &>(
+                &BSDF::sample_pol, py::const_),
+            "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, D(BSDF, sample_pol))
+        .def("sample_pol", enoki::vectorize_wrapper(
+            py::overload_cast<const BSDFContext &,
+                              const SurfaceInteraction3fP &,
+                              FloatP, const Point2fP &,
+                              MaskP>(&BSDF::sample_pol, py::const_)),
+            "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true,
+            D(BSDF, sample_pol))
+        .def("eval_pol",
+            py::overload_cast<const BSDFContext &, const SurfaceInteraction3f &,
+                              const Vector3f &>(
+                &BSDF::eval_pol, py::const_),
+            "ctx"_a, "si"_a, "wo"_a, D(BSDF, eval_pol))
+        .def("eval_pol", enoki::vectorize_wrapper(
+            py::overload_cast<const BSDFContext &, const SurfaceInteraction3fP &,
+                              const Vector3fP &,
+                              MaskP>(&BSDF::eval_pol, py::const_)),
+            "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval_pol))
+
         .mdef(BSDF, needs_differentials)
         .mdef(BSDF, component_count)
         .def("flags", py::overload_cast<>(&BSDF::flags, py::const_), D(BSDF, flags))

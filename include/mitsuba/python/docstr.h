@@ -215,135 +215,6 @@ static const char *__doc_mitsuba_AnimatedTransform_translation_bounds =
 R"doc(Return an axis-aligned box bounding the amount of translation
 throughout the animation sequence)doc";
 
-static const char *__doc_mitsuba_AnnotatedStream =
-R"doc(An AnnotatedStream adds a table of contents to an underlying stream
-that can later be used to selectively read specific items.
-
-A Stream instance must first be created and passed to to the
-constructor. The underlying stream should either be empty or a stream
-that was previously written with an AnnotatedStream, so that it
-contains a valid Table of Contents.
-
-Table of Contents: objects and variables written to the stream are
-prepended by a field name. Contents can then be queried by field name,
-as if using a map. A hierarchy can be created by ``push``ing and
-``pop``ing prefixes. The root of this hierarchy is the empty prefix
-"".
-
-The table of contents is automatically read from the underlying stream
-on creation and written back on destruction.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_AnnotatedStream =
-R"doc(Creates an AnnotatedStream based on the given Stream (decorator
-pattern). Anything written to the AnnotatedStream is ultimately passed
-down to the given Stream instance. The given Stream instance should
-not be destructed before this.
-
-Throws if ``write_mode`` is enabled (resp. disabled) but the
-underlying stream does not have write (resp. read) capabilities.
-
-Throws if the underlying stream has read capabilities and is not empty
-but does not correspond to a valid AnnotatedStream (i.e. it does not
-start with the kSerializedHeaderId sentry).
-
-Parameter ``write_mode``:
-    Whether to use write mode. The stream is either read-only or
-    write-only.
-
-Parameter ``throw_on_missing``:
-    Whether an error should be thrown when get is called for a missing
-    field.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_can_read = R"doc(Whether the underlying stream has read capabilities and is not closed.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_can_write =
-R"doc(Whether the underlying stream has write capabilities and is not
-closed.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_class = R"doc()doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_close =
-R"doc(Closes the annotated stream. No further read or write operations are
-permitted.
-
-\note The underlying stream is not automatically closed by this
-function. It may, however, call its own ``close`` function in its
-destructor.
-
-This function is idempotent and causes the ToC to be written out to
-the stream. It is called automatically by the destructor.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_compatibilityMode = R"doc(Whether the stream won't throw when trying to get missing fields.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_get =
-R"doc(Retrieve a field from the serialized file (only valid in read mode)
-
-Throws if the field exists but has the wrong type. Throws if the field
-is not found and ``throw_on_missing`` is true.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_get_base =
-R"doc(Attempts to seek to the position of the given field. The active prefix
-(from previous push operations) is prepended to the given ``name``.
-
-Throws if the field exists but has the wrong type. Throws if the field
-is not found and ``m_throw_on_missing`` is true.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_is_closed =
-R"doc(Whether the annotated stream has been closed (no further read or
-writes permitted))doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_keys =
-R"doc(Return all field names under the current name prefix. Nested names are
-returned with the full path prepended, e.g.: level_1.level_2.my_name)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_m_is_closed =
-R"doc(Whether the annotated stream is closed (independent of the underlying
-stream).)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_m_prefix_stack =
-R"doc(Stack of accumulated prefixes, i.e. ``m_prefix_stack.back`` is the
-full prefix path currently applied.)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_m_stream = R"doc(Underlying stream where the names and contents are written)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_m_table =
-R"doc(Maintains the mapping: full field name -> (type, position in the
-stream))doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_m_throw_on_missing = R"doc()doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_m_write_mode = R"doc()doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_pop = R"doc(Pop a name prefix from the stack)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_push =
-R"doc(Push a name prefix onto the stack (use this to isolate identically-
-named data fields).)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_read_toc =
-R"doc(Read back the table of contents from the underlying stream and update
-the in-memory ``m_table`` accordingly. Should be called on
-construction.
-
-Throws if the underlying stream does not have read capabilities.
-Throws if the underlying stream does not have start with the
-AnnotatedStream sentry (kSerializedHeaderId).)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_set = R"doc(Store a field in the serialized file (only valid in write mode))doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_set_base =
-R"doc(Attempts to associate the current position of the stream to the given
-field. The active prefix (from previous push operations) is prepended
-to the ``name`` of the field.
-
-Throws if a value was already set with that name (including prefix).)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_size = R"doc(Returns the current size of the underlying stream)doc";
-
-static const char *__doc_mitsuba_AnnotatedStream_write_toc =
-R"doc(Write back the table of contents to the underlying stream. Should be
-called on destruction.)doc";
-
 static const char *__doc_mitsuba_Appender =
 R"doc(This class defines an abstract destination for logging-relevant
 information)doc";
@@ -693,11 +564,34 @@ Parameter ``si``:
 Parameter ``wo``:
     The outgoing direction)doc";
 
-static const char *__doc_mitsuba_BSDF_eval_2 = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_eval_2 = R"doc(Vectorized version of eval())doc";
 
 static const char *__doc_mitsuba_BSDF_eval_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 eval())doc";
+
+static const char *__doc_mitsuba_BSDF_eval_pol =
+R"doc(Polarized version of eval()
+
+The resulting MuellerMatrix has the following coordinate system:
+CoordinateSystem(w_i_local) -> CoordinateSystem(w_o_local)
+SurfaceInteraction::to_world_mueller can be used to transform this
+matrix into world space. This function behaves in a very similar way
+to the unpolarized function so the documentation there applies.
+
+Returns:
+    Mueller matrix of BSDF values (multiplied by the cosine
+    foreshortening factor when a non-delta component is sampled). A
+    zero spectrum indicates that sampling failed.
+
+The Mueller matrix has the following coordinate system:
+CoordinateSystem(w_i_local) -> CoordinateSystem(w_o_local).)doc";
+
+static const char *__doc_mitsuba_BSDF_eval_pol_2 = R"doc(Vectorized version of eval_pol())doc";
+
+static const char *__doc_mitsuba_BSDF_eval_pol_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+eval_pol())doc";
 
 static const char *__doc_mitsuba_BSDF_flags = R"doc(Flags for all components combined.)doc";
 
@@ -735,7 +629,7 @@ Parameter ``si``:
 Parameter ``wo``:
     The outgoing direction)doc";
 
-static const char *__doc_mitsuba_BSDF_pdf_2 = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_pdf_2 = R"doc(Vectorized version of pdf())doc";
 
 static const char *__doc_mitsuba_BSDF_pdf_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
@@ -786,11 +680,36 @@ value: The BSDF value (multiplied by the cosine foreshortening factor
 when a non-delta component is sampled). A zero spectrum indicates that
 sampling failed.)doc";
 
-static const char *__doc_mitsuba_BSDF_sample_2 = R"doc()doc";
+static const char *__doc_mitsuba_BSDF_sample_2 = R"doc(Vectorized version of sample())doc";
 
 static const char *__doc_mitsuba_BSDF_sample_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample())doc";
+
+static const char *__doc_mitsuba_BSDF_sample_pol =
+R"doc(Polarized version of sample()
+
+Since there is no special polarized importance sampling this method
+behaves very similar to the standard one.
+
+Returns:
+    A pair (bs, value) consisting of
+
+bs: Sampling record, indicating the sampled direction, PDF values and
+other information. The contents are undefined if sampling failed.
+
+value: Mueller matrix of BSDF values (multiplied by the cosine
+foreshortening factor when a non-delta component is sampled). A zero
+spectrum indicates that sampling failed.
+
+The Mueller matrix has the following coordinate system:
+CoordinateSystem(w_i_local) -> CoordinateSystem(w_o_local).)doc";
+
+static const char *__doc_mitsuba_BSDF_sample_pol_2 = R"doc(Vectorized version of sample_pol())doc";
+
+static const char *__doc_mitsuba_BSDF_sample_pol_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+sample_pol())doc";
 
 static const char *__doc_mitsuba_BSDF_to_string = R"doc(Return a human-readable representation of the BSDF)doc";
 
@@ -2009,11 +1928,9 @@ content.)doc";
 
 static const char *__doc_mitsuba_DummyStream_DummyStream = R"doc()doc";
 
-static const char *__doc_mitsuba_DummyStream_can_read =
-R"doc(Always returns false, as nothing written to a ``DummyStream`` is
-actually written.)doc";
+static const char *__doc_mitsuba_DummyStream_can_read = R"doc()doc";
 
-static const char *__doc_mitsuba_DummyStream_can_write = R"doc(Always returns true, except if the steam is closed.)doc";
+static const char *__doc_mitsuba_DummyStream_can_write = R"doc()doc";
 
 static const char *__doc_mitsuba_DummyStream_class = R"doc()doc";
 
@@ -2023,7 +1940,7 @@ R"doc(Closes the stream. No further read or write operations are permitted.
 This function is idempotent. It may be called automatically by the
 destructor.)doc";
 
-static const char *__doc_mitsuba_DummyStream_flush = R"doc(No-op for ``DummyStream``.)doc";
+static const char *__doc_mitsuba_DummyStream_flush = R"doc()doc";
 
 static const char *__doc_mitsuba_DummyStream_is_closed = R"doc(Whether the stream is closed (no read or write are then permitted).)doc";
 
@@ -2035,24 +1952,17 @@ written, we need to maintain consistent positioning).)doc";
 
 static const char *__doc_mitsuba_DummyStream_m_size = R"doc(Size of all data written to the stream)doc";
 
-static const char *__doc_mitsuba_DummyStream_read = R"doc(Always throws, since DummyStream is write-only.)doc";
+static const char *__doc_mitsuba_DummyStream_read = R"doc(//! @{ \name Implementation of the Stream interface)doc";
 
-static const char *__doc_mitsuba_DummyStream_seek =
-R"doc(Updates the current position in the stream. Even though the
-``DummyStream`` doesn't write anywhere, position is taken into account
-to accurately compute the size of the stream.)doc";
+static const char *__doc_mitsuba_DummyStream_seek = R"doc()doc";
 
-static const char *__doc_mitsuba_DummyStream_size = R"doc(Returns the size of the stream.)doc";
+static const char *__doc_mitsuba_DummyStream_size = R"doc()doc";
 
-static const char *__doc_mitsuba_DummyStream_tell = R"doc(Returns the current position in the stream.)doc";
+static const char *__doc_mitsuba_DummyStream_tell = R"doc()doc";
 
-static const char *__doc_mitsuba_DummyStream_truncate =
-R"doc(Simply sets the current size of the stream. The position is updated to
-``min(old_position, size)``.)doc";
+static const char *__doc_mitsuba_DummyStream_truncate = R"doc()doc";
 
-static const char *__doc_mitsuba_DummyStream_write =
-R"doc(Does not actually write anything, only updates the stream's position
-and size.)doc";
+static const char *__doc_mitsuba_DummyStream_write = R"doc()doc";
 
 static const char *__doc_mitsuba_ELogLevel = R"doc(Available Log message types)doc";
 
@@ -2261,6 +2171,19 @@ static const char *__doc_mitsuba_Endpoint_eval_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 eval())doc";
 
+static const char *__doc_mitsuba_Endpoint_eval_pol =
+R"doc(Polarized version of eval()
+
+Returns:
+    Mueller matrix of the emitted radiance or importance (in standard
+    world space for the sensor profile).)doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_pol_2 = R"doc(Vectorized version of eval_pol())doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_pol_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+eval_pol())doc";
+
 static const char *__doc_mitsuba_Endpoint_m_medium = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_m_needs_sample_2 = R"doc()doc";
@@ -2292,7 +2215,7 @@ implemented by the sample_direction() method.
 Parameter ``ds``:
     A direct sampling record, which specifies the query location.)doc";
 
-static const char *__doc_mitsuba_Endpoint_pdf_direction_2 = R"doc()doc";
+static const char *__doc_mitsuba_Endpoint_pdf_direction_2 = R"doc(Vectorized version of pdf_direction())doc";
 
 static const char *__doc_mitsuba_Endpoint_pdf_direction_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
@@ -2327,11 +2250,28 @@ Returns:
     A DirectionSample instance describing the generated sample along
     with a spectral importance weight.)doc";
 
-static const char *__doc_mitsuba_Endpoint_sample_direction_2 = R"doc()doc";
+static const char *__doc_mitsuba_Endpoint_sample_direction_2 = R"doc(Vectorized version of sample_direction())doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_direction_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_direction())doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direction_pol =
+R"doc(Polarized version of sample_direction()
+
+Since there is no special polarized importance sampling this method
+behaves very similar to the standard one.
+
+Returns:
+    A DirectionSample instance describing the generated sample along
+    with a Mueller matrix of importance weights (in standard world
+    space for the sensor profile).)doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direction_pol_2 = R"doc(Vectorized version of sample_direction_pol())doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_direction_pol_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+sample_direction_pol())doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_ray =
 R"doc(Importance sample a ray proportional to the endpoint's
@@ -2370,11 +2310,27 @@ Returns:
     weights. The latter account for the difference between the profile
     and the actual used sampling density function.)doc";
 
-static const char *__doc_mitsuba_Endpoint_sample_ray_2 = R"doc(Vectorized version of sample_ray)doc";
+static const char *__doc_mitsuba_Endpoint_sample_ray_2 = R"doc(Vectorized version of sample_ray())doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_ray_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_ray())doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_ray_pol =
+R"doc(Polarized version of sample_ray()
+
+Since there is no special polarized importance sampling this method
+behaves very similar to the standard one.
+
+Returns:
+    The sampled ray and the Mueller matrix of importance weights (in
+    standard world space for the sensor profile).)doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_ray_pol_2 = R"doc(Vectorized version of sample_ray_pol)doc";
+
+static const char *__doc_mitsuba_Endpoint_sample_ray_pol_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+sample_ray_pol())doc";
 
 static const char *__doc_mitsuba_Endpoint_set_medium = R"doc(Set the medium that surrounds the emitter.)doc";
 
@@ -5014,6 +4970,24 @@ sample_ray_differential())doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray_differential_impl = R"doc()doc";
 
+static const char *__doc_mitsuba_Sensor_sample_ray_differential_pol =
+R"doc(Polarized version of sample_ray()
+
+Since there is no special polarized importance sampling this method
+behaves very similar to the standard one.
+
+Returns:
+    The sampled ray differential and the Mueller matrix of importance
+    weights (in standard world space for the sensor profile).)doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_differential_pol_2 = R"doc(Vectorized version of sample_ray_differential_pol())doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_differential_pol_3 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+sample_ray_differential_pos())doc";
+
+static const char *__doc_mitsuba_Sensor_sample_ray_differential_pol_impl = R"doc()doc";
+
 static const char *__doc_mitsuba_Sensor_sampler =
 R"doc(Return the sensor's sample generator
 
@@ -5588,12 +5562,6 @@ position by delegating to the appropriate ``serialization_helper``.
 Endianness swapping is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_Stream_write_line = R"doc(Convenience function for writing a line of text to an ASCII file)doc";
-
-static const char *__doc_mitsuba_Stream_write_temp =
-R"doc(Reads one object of type T from the stream at the current position by
-delegating to the appropriate ``serialization_helper``.
-
-Endianness swapping is handled automatically if needed.)doc";
 
 static const char *__doc_mitsuba_Struct =
 R"doc(Descriptor for specifying the contents and in-memory layout of a POD-
@@ -7024,11 +6992,51 @@ general be implemented as a series of calls to the lower-level
 serialization_helper::{read,write} functions. This way, endianness
 swapping needs only be handled at the lowest level.)doc";
 
+static const char *__doc_mitsuba_detail_serialization_helper_2 =
+R"doc(The serialization_helper<T> implementations for new types should in
+general be implemented as a series of calls to the lower-level
+serialization_helper::{read,write} functions. This way, endianness
+swapping needs only be handled at the lowest level.)doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_read =
+R"doc(Reads ``count`` values of type T from stream ``s``, starting at its
+current position. Note: ``count`` is the number of values, **not** a
+size in bytes.
+
+Support for additional types can be added in any header file by
+declaring a template specialization for your type.)doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_read_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_type_id = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_type_id_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_write =
+R"doc(Writes ``count`` values of type T into stream ``s`` starting at its
+current position. Note: ``count`` is the number of values, **not** a
+size in bytes.
+
+Support for additional types can be added in any header file by
+declaring a template specialization for your type.)doc";
+
+static const char *__doc_mitsuba_detail_serialization_helper_write_2 = R"doc()doc";
+
 static const char *__doc_mitsuba_detail_static_max =
 R"doc(Basic C++11 variant data structure
 
 Significantly redesigned version of the approach described at
 http://www.ojdip.net/2013/10/implementing-a-variant-type-in-cpp)doc";
+
+static const char *__doc_mitsuba_detail_swap = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_swap_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_swap_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_swap_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper = R"doc()doc";
 
@@ -7262,9 +7270,9 @@ Parameter ``cos_theta_i``:
     ray
 
 Parameter ``eta``:
-    Complex-valued relative refractive index of the interface. In the
-    real case, a value greater than 1.0 case means that the surface
-    normal points into the region of lower density.
+    Real-valued relative refractive index of the interface. A value
+    greater than 1.0 case means that the surface normal points into
+    the region of lower density.
 
 Returns:
     A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
@@ -8786,6 +8794,254 @@ static const char *__doc_mitsuba_xml_load_file = R"doc(Load a Mitsuba scene from
 static const char *__doc_mitsuba_xml_load_string = R"doc(Load a Mitsuba scene from an XML string)doc";
 
 static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into a human-readable representation)doc";
+
+static const char *__doc_std_hash =
+R"doc(It's useful to be able to use envelopes as a hash table key. Add a
+partial overload to STL (this is allowed by the standard))doc";
+
+static const char *__doc_std_hash_operator_call = R"doc()doc";
+
+static const char *__doc_zmq_catch_shutdown = R"doc()doc";
+
+static const char *__doc_zmq_context = R"doc()doc";
+
+static const char *__doc_zmq_context_close = R"doc()doc";
+
+static const char *__doc_zmq_context_context = R"doc()doc";
+
+static const char *__doc_zmq_context_context_2 = R"doc()doc";
+
+static const char *__doc_zmq_context_context_3 = R"doc()doc";
+
+static const char *__doc_zmq_context_context_4 = R"doc()doc";
+
+static const char *__doc_zmq_context_operator_assign = R"doc()doc";
+
+static const char *__doc_zmq_context_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_zmq_context_ptr = R"doc()doc";
+
+static const char *__doc_zmq_dump = R"doc()doc";
+
+static const char *__doc_zmq_envelope = R"doc()doc";
+
+static const char *__doc_zmq_envelope_2 = R"doc()doc";
+
+static const char *__doc_zmq_envelope_envelope = R"doc()doc";
+
+static const char *__doc_zmq_exception = R"doc()doc";
+
+static const char *__doc_zmq_exception_exception = R"doc()doc";
+
+static const char *__doc_zmq_exception_exception_2 = R"doc()doc";
+
+static const char *__doc_zmq_exception_value = R"doc()doc";
+
+static const char *__doc_zmq_exception_value_2 = R"doc()doc";
+
+static const char *__doc_zmq_exception_what = R"doc()doc";
+
+static const char *__doc_zmq_exception_what_2 = R"doc()doc";
+
+static const char *__doc_zmq_message = R"doc()doc";
+
+static const char *__doc_zmq_message_copy = R"doc()doc";
+
+static const char *__doc_zmq_message_data = R"doc()doc";
+
+static const char *__doc_zmq_message_data_2 = R"doc()doc";
+
+static const char *__doc_zmq_message_data_3 = R"doc()doc";
+
+static const char *__doc_zmq_message_data_4 = R"doc()doc";
+
+static const char *__doc_zmq_message_message = R"doc()doc";
+
+static const char *__doc_zmq_message_message_2 = R"doc()doc";
+
+static const char *__doc_zmq_message_message_3 = R"doc()doc";
+
+static const char *__doc_zmq_message_message_4 = R"doc()doc";
+
+static const char *__doc_zmq_message_message_5 = R"doc()doc";
+
+static const char *__doc_zmq_message_message_6 = R"doc()doc";
+
+static const char *__doc_zmq_message_more = R"doc()doc";
+
+static const char *__doc_zmq_message_move = R"doc()doc";
+
+static const char *__doc_zmq_message_msg = R"doc()doc";
+
+static const char *__doc_zmq_message_operator_assign = R"doc()doc";
+
+static const char *__doc_zmq_message_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_zmq_message_rebuild = R"doc()doc";
+
+static const char *__doc_zmq_message_rebuild_2 = R"doc()doc";
+
+static const char *__doc_zmq_message_rebuild_3 = R"doc()doc";
+
+static const char *__doc_zmq_message_rebuild_4 = R"doc()doc";
+
+static const char *__doc_zmq_message_size = R"doc()doc";
+
+static const char *__doc_zmq_poll = R"doc()doc";
+
+static const char *__doc_zmq_poll_2 = R"doc()doc";
+
+static const char *__doc_zmq_poll_3 = R"doc()doc";
+
+static const char *__doc_zmq_poll_4 = R"doc()doc";
+
+static const char *__doc_zmq_poll_flags = R"doc()doc";
+
+static const char *__doc_zmq_poll_flags_pollin = R"doc()doc";
+
+static const char *__doc_zmq_poll_flags_pollout = R"doc()doc";
+
+static const char *__doc_zmq_recv = R"doc()doc";
+
+static const char *__doc_zmq_recvmore = R"doc()doc";
+
+static const char *__doc_zmq_send = R"doc()doc";
+
+static const char *__doc_zmq_sendmore = R"doc()doc";
+
+static const char *__doc_zmq_socket = R"doc()doc";
+
+static const char *__doc_zmq_socket_bind = R"doc()doc";
+
+static const char *__doc_zmq_socket_bind_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_close = R"doc()doc";
+
+static const char *__doc_zmq_socket_connect = R"doc()doc";
+
+static const char *__doc_zmq_socket_connect_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_connected = R"doc()doc";
+
+static const char *__doc_zmq_socket_discard_remainder = R"doc(Gobble up the rest of a (partial) message and throw an exception)doc";
+
+static const char *__doc_zmq_socket_disconnect = R"doc()doc";
+
+static const char *__doc_zmq_socket_disconnect_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_getsockopt = R"doc()doc";
+
+static const char *__doc_zmq_socket_getsockopt_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_init = R"doc()doc";
+
+static const char *__doc_zmq_socket_more = R"doc()doc";
+
+static const char *__doc_zmq_socket_operator_assign = R"doc()doc";
+
+static const char *__doc_zmq_socket_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_operator_const_void = R"doc()doc";
+
+static const char *__doc_zmq_socket_operator_void = R"doc()doc";
+
+static const char *__doc_zmq_socket_ptr = R"doc()doc";
+
+static const char *__doc_zmq_socket_recv = R"doc()doc";
+
+static const char *__doc_zmq_socket_recv_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recv_3 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recv_4 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recv_5 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recv_6 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recvmore = R"doc()doc";
+
+static const char *__doc_zmq_socket_recvmore_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recvmore_3 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recvmore_4 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recvmore_5 = R"doc()doc";
+
+static const char *__doc_zmq_socket_recvmore_6 = R"doc()doc";
+
+static const char *__doc_zmq_socket_send = R"doc()doc";
+
+static const char *__doc_zmq_socket_send_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_send_3 = R"doc()doc";
+
+static const char *__doc_zmq_socket_send_4 = R"doc()doc";
+
+static const char *__doc_zmq_socket_send_5 = R"doc()doc";
+
+static const char *__doc_zmq_socket_send_6 = R"doc()doc";
+
+static const char *__doc_zmq_socket_send_7 = R"doc()doc";
+
+static const char *__doc_zmq_socket_sendmore = R"doc()doc";
+
+static const char *__doc_zmq_socket_sendmore_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_sendmore_3 = R"doc()doc";
+
+static const char *__doc_zmq_socket_sendmore_4 = R"doc()doc";
+
+static const char *__doc_zmq_socket_sendmore_5 = R"doc()doc";
+
+static const char *__doc_zmq_socket_sendmore_6 = R"doc()doc";
+
+static const char *__doc_zmq_socket_sendmore_7 = R"doc()doc";
+
+static const char *__doc_zmq_socket_setsockopt = R"doc()doc";
+
+static const char *__doc_zmq_socket_setsockopt_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_socket = R"doc()doc";
+
+static const char *__doc_zmq_socket_socket_2 = R"doc()doc";
+
+static const char *__doc_zmq_socket_socket_3 = R"doc()doc";
+
+static const char *__doc_zmq_socket_socket_4 = R"doc()doc";
+
+static const char *__doc_zmq_socket_type = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_dealer = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_pair = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_pub = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_pull = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_push = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_rep = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_req = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_router = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_sub = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_xpub = R"doc()doc";
+
+static const char *__doc_zmq_socket_type_xsub = R"doc()doc";
+
+static const char *__doc_zmq_socket_unbind = R"doc()doc";
+
+static const char *__doc_zmq_socket_unbind_2 = R"doc()doc";
+
+static const char *__doc_zmq_version = R"doc()doc";
+
+static const char *__doc_zmq_zmq_check = R"doc()doc";
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop

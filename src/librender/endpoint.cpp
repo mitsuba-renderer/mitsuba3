@@ -2,6 +2,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/endpoint.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/mueller.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -35,6 +36,27 @@ Endpoint::sample_ray(FloatP /*time*/, FloatP /*sample1*/,
     NotImplementedError("sample_ray_p");
 }
 
+std::pair<Ray3f, MuellerMatrixSf>
+Endpoint::sample_ray_pol(Float time, Float sample1,
+                         const Point2f &sample2,
+                         const Point2f &sample3) const {
+    Ray3f ray;
+    Spectrumf f;
+    std::tie(ray, f) = sample_ray(time, sample1, sample2, sample3);
+    return std::make_pair(ray, mueller::depolarizer(f));
+}
+
+std::pair<Ray3fP, MuellerMatrixSfP>
+Endpoint::sample_ray_pol(FloatP time, FloatP sample1,
+                         const Point2fP &sample2,
+                         const Point2fP &sample3,
+                         MaskP active) const {
+    Ray3fP ray;
+    SpectrumfP f;
+    std::tie(ray, f) = sample_ray(time, sample1, sample2, sample3, active);
+    return std::make_pair(ray, mueller::depolarizer(f));
+}
+
 std::pair<DirectionSample3f, Spectrumf>
 Endpoint::sample_direction(const Interaction3f &/*it*/,
                            const Point2f &/*sample*/) const {
@@ -46,6 +68,25 @@ Endpoint::sample_direction(const Interaction3fP &/*it*/,
                            const Point2fP &/*sample*/,
                            MaskP /*active*/) const {
     NotImplementedError("sample_direction_p");
+}
+
+std::pair<DirectionSample3f, MuellerMatrixSf>
+Endpoint::sample_direction_pol(const Interaction3f &it,
+                               const Point2f &sample) const {
+    DirectionSample3f s;
+    Spectrumf f;
+    std::tie(s, f) = sample_direction(it, sample);
+    return std::make_pair(s, mueller::depolarizer(f));
+}
+
+std::pair<DirectionSample3fP, MuellerMatrixSfP>
+Endpoint::sample_direction_pol(const Interaction3fP &it,
+                               const Point2fP &sample,
+                               MaskP active) const {
+    DirectionSample3fP s;
+    SpectrumfP f;
+    std::tie(s, f) = sample_direction(it, sample, active);
+    return std::make_pair(s, mueller::depolarizer(f));
 }
 
 Float Endpoint::pdf_direction(const Interaction3f &/*it*/,
@@ -66,6 +107,15 @@ Spectrumf Endpoint::eval(const SurfaceInteraction3f &/*si*/) const {
 SpectrumfP Endpoint::eval(const SurfaceInteraction3fP &/*si*/,
                           MaskP /*active*/) const {
     NotImplementedError("eval_p");
+}
+
+MuellerMatrixSf Endpoint::eval_pol(const SurfaceInteraction3f &si) const {
+    return mueller::depolarizer(eval(si));
+}
+
+MuellerMatrixSfP Endpoint::eval_pol(const SurfaceInteraction3fP &si,
+                                    MaskP active) const {
+    return mueller::depolarizer(eval(si, active));
 }
 
 MTS_IMPLEMENT_CLASS(Endpoint, Object)

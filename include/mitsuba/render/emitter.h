@@ -31,9 +31,13 @@ NAMESPACE_END(mitsuba)
 
 // Enable usage of array pointers for our types
 ENOKI_CALL_SUPPORT_BEGIN(mitsuba::EmitterPtr)
+ENOKI_CALL_SUPPORT(sample_ray)
 ENOKI_CALL_SUPPORT(eval)
 ENOKI_CALL_SUPPORT(sample_direction)
 ENOKI_CALL_SUPPORT(pdf_direction)
+ENOKI_CALL_SUPPORT(sample_ray_pol)
+ENOKI_CALL_SUPPORT(eval_pol)
+ENOKI_CALL_SUPPORT(sample_direction_pol)
 ENOKI_CALL_SUPPORT_END(mitsuba::EmitterPtr)
 
 //! @}

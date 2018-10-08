@@ -80,7 +80,7 @@ public:
                const Point2f &sample2,
                const Point2f &sample3) const;
 
-    /// Vectorized version of \ref sample_ray
+    /// Vectorized version of \ref sample_ray()
     virtual std::pair<Ray3fP, SpectrumfP>
     sample_ray(FloatP time,
                FloatP sample1,
@@ -96,6 +96,40 @@ public:
                const Point2f &sample3,
                bool /* unused */) const {
         return sample_ray(time, sample1, sample2, sample3);
+    }
+
+    /**
+     * \brief Polarized version of \ref sample_ray()
+     *
+     * Since there is no special polarized importance sampling
+     * this method behaves very similar to the standard one.
+     *
+     * \return
+     *    The sampled ray and the Mueller matrix of importance weights (in
+     *    standard world space for the sensor profile).
+     */
+    virtual std::pair<Ray3f, MuellerMatrixSf>
+    sample_ray_pol(Float time,
+                   Float sample1,
+                   const Point2f &sample2,
+                   const Point2f &sample3) const;
+
+    /// Vectorized version of \ref sample_ray_pol
+    virtual std::pair<Ray3fP, MuellerMatrixSfP>
+    sample_ray_pol(FloatP time,
+                   FloatP sample1,
+                   const Point2fP &sample2,
+                   const Point2fP &sample3,
+                   MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_ray_pol()
+    std::pair<Ray3f, MuellerMatrixSf>
+    sample_ray_pol(Float time,
+                   Float sample1,
+                   const Point2f &sample2,
+                   const Point2f &sample3,
+                   bool /* unused */) const {
+        return sample_ray_pol(time, sample1, sample2, sample3);
     }
 
     /**
@@ -130,6 +164,7 @@ public:
     virtual std::pair<DirectionSample3f, Spectrumf>
     sample_direction(const Interaction3f &ref, const Point2f &sample) const;
 
+    /// Vectorized version of \ref sample_direction()
     virtual std::pair<DirectionSample3fP, SpectrumfP>
     sample_direction(const Interaction3fP &ref, const Point2fP &sample,
                      MaskP active = true) const;
@@ -139,6 +174,32 @@ public:
     sample_direction(const Interaction3f &ref, const Point2f &sample,
                      bool /* unused */) const {
         return sample_direction(ref, sample);
+    }
+
+    /**
+     * \brief Polarized version of \ref sample_direction()
+     *
+     * Since there is no special polarized importance sampling
+     * this method behaves very similar to the standard one.
+     *
+     * \return
+     *    A \ref DirectionSample instance describing the generated sample
+     *    along with a Mueller matrix of importance weights (in standard world
+     *    space for the sensor profile).
+     */
+    virtual std::pair<DirectionSample3f, MuellerMatrixSf>
+    sample_direction_pol(const Interaction3f &it, const Point2f &sample) const;
+
+    /// Vectorized version of \ref sample_direction_pol()
+    virtual std::pair<DirectionSample3fP, MuellerMatrixSfP>
+    sample_direction_pol(const Interaction3fP &it, const Point2fP &sample,
+                         MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction_pol()
+    std::pair<DirectionSample3f, MuellerMatrixSf>
+    sample_direction_pol(const Interaction3f &it, const Point2f &sample,
+                         bool /* unused */) const {
+        return sample_direction_pol(it, sample);
     }
 
     //! @}
@@ -155,6 +216,7 @@ public:
     virtual Float pdf_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds) const;
 
+    /// Vectorized version of \ref pdf_direction()
     virtual FloatP pdf_direction(const Interaction3fP &ref,
                                  const DirectionSample3fP &ds,
                                  MaskP active) const;
@@ -198,6 +260,24 @@ public:
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
     Spectrumf eval(const SurfaceInteraction3f &si, bool /* unused */) const {
         return eval(si);
+    }
+
+    /**
+     * \brief Polarized version of \ref eval()
+     *
+     * \return
+     *    Mueller matrix of the emitted radiance or importance (in standard
+     *    world space for the sensor profile).
+     */
+    virtual MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si) const;
+
+    /// Vectorized version of \ref eval_pol()
+    virtual MuellerMatrixSfP eval_pol(const SurfaceInteraction3fP &si,
+                                      MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval_pol()
+    MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si, bool /* unused */) const {
+        return eval_pol(si);
     }
 
     /// Return the local space to world space transformation
@@ -338,6 +418,35 @@ protected:
         const override {                                                       \
         ScopedPhase p(EProfilerPhase::EEndpointEvaluateP);                     \
         return eval_impl(si, active);                                          \
+    }
+
+/// Instantiates concrete scalar and packet versions of the polarized endpoint plugin API
+#define MTS_IMPLEMENT_ENDPOINT_POLARIZED()                                              \
+    std::pair<Ray3f, MuellerMatrixSf> sample_ray_pol(                                    \
+        Float time, Float sample1, const Point2f &sample2,                              \
+        const Point2f &sample3) const override {                                        \
+        return sample_ray_pol_impl(time, sample1, sample2, sample3, true);              \
+    }                                                                                   \
+    std::pair<Ray3fP, MuellerMatrixSfP> sample_ray_pol(                                  \
+        FloatP time, FloatP sample1, const Point2fP &sample2,                           \
+        const Point2fP &sample3, MaskP active) const override {                         \
+        return sample_ray_pol_impl(time, sample1, sample2, sample3, active);                \
+    }                                                                                   \
+    std::pair<DirectionSample3f, MuellerMatrixSf> sample_direction_pol(                  \
+        const Interaction3f &it, const Point2f &sample) const override {                \
+        return sample_direction_pol_impl(it, sample, true);                             \
+    }                                                                                   \
+    std::pair<DirectionSample3fP, MuellerMatrixSfP> sample_direction_pol(                \
+        const Interaction3fP &it, const Point2fP &sample, MaskP active)                 \
+        const override {                                                                \
+        return sample_direction_pol_impl(it, sample, active);                           \
+    }                                                                                   \
+    MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si) const override {            \
+        return eval_pol_impl(si, true);                                                 \
+    }                                                                                   \
+    MuellerMatrixSfP eval_pol(const SurfaceInteraction3fP &si, MaskP active)             \
+        const override {                                                                \
+        return eval_pol_impl(si, active);                                               \
     }
 
 NAMESPACE_END(mitsuba)

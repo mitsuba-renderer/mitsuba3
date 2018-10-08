@@ -2,6 +2,7 @@
 
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/common.h>
+#include <mitsuba/render/mueller.h>
 #include <mitsuba/core/profiler.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -295,6 +296,7 @@ public:
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
            Float sample1, const Point2f &sample2) const = 0;
 
+    /// Vectorized version of \ref sample()
     virtual std::pair<BSDFSample3fP, SpectrumfP>
     sample(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
            FloatP sample1, const Point2fP &sample2,
@@ -305,6 +307,42 @@ public:
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
            Float sample1, const Point2f &sample2, bool /*unused*/) const {
         return sample(ctx, si, sample1, sample2);
+    }
+
+    /**
+     * \brief Polarized version of \ref sample()
+     *
+     * Since there is no special polarized importance sampling
+     * this method behaves very similar to the standard one.
+     *
+     * \return A pair (bs, value) consisting of
+     *
+     *     bs:    Sampling record, indicating the sampled direction, PDF values
+     *            and other information. The contents are undefined if sampling
+     *            failed.
+     *
+     *     value: Mueller matrix of BSDF values (multiplied by the cosine
+     *            foreshortening factor when a non-delta component is sampled).
+     *            A zero spectrum indicates that sampling failed.
+     *
+     *            The Mueller matrix has the following coordinate system:
+     *            CoordinateSystem(w_i_local) -> CoordinateSystem(w_o_local).
+     */
+    virtual std::pair<BSDFSample3f, MuellerMatrixSf>
+    sample_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+               Float sample1, const Point2f &sample2) const;
+
+    /// Vectorized version of \ref sample_pol()
+    virtual std::pair<BSDFSample3fP, MuellerMatrixSfP>
+    sample_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
+               FloatP sample1, const Point2fP &sample2,
+               MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_pol()
+    std::pair<BSDFSample3f, MuellerMatrixSf>
+    sample_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+               Float sample1, const Point2f &sample2, bool /*unused*/) const {
+        return sample_pol(ctx, si, sample1, sample2);
     }
 
     /**
@@ -335,6 +373,7 @@ public:
     virtual Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                            const Vector3f &wo) const = 0;
 
+    /// Vectorized version of \ref eval()
     virtual SpectrumfP eval(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
                             const Vector3fP &wo, MaskP active = true) const = 0;
 
@@ -342,6 +381,36 @@ public:
     Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                    const Vector3f &wo, bool /*unused*/) const {
         return eval(ctx, si, wo);
+    }
+
+    /**
+     * \brief Polarized version of \ref eval()
+     *
+     * The resulting MuellerMatrix has the following coordinate system:
+     * CoordinateSystem(w_i_local) -> CoordinateSystem(w_o_local)
+     * SurfaceInteraction::to_world_mueller can be used to transform this matrix
+     * into world space.
+     * This function behaves in a very similar way to the unpolarized function
+     * so the documentation there applies.
+     *
+     * \return Mueller matrix of BSDF values (multiplied by the cosine
+     *         foreshortening factor when a non-delta component is sampled).
+     *         A zero spectrum indicates that sampling failed.
+     *
+     *         The Mueller matrix has the following coordinate system:
+     *         CoordinateSystem(w_i_local) -> CoordinateSystem(w_o_local).
+     */
+    virtual MuellerMatrixSf eval_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                                     const Vector3f &wo) const;
+
+    /// Vectorized version of \ref eval_pol()
+    virtual MuellerMatrixSfP eval_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
+                                      const Vector3fP &wo, MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval_pol()
+    MuellerMatrixSf eval_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                             const Vector3f &wo, bool /*unused*/) const {
+        return eval_pol(ctx, si, wo);
     }
 
     /**
@@ -373,6 +442,7 @@ public:
     virtual Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                       const Vector3f &wo) const = 0;
 
+    /// Vectorized version of \ref pdf()
     virtual FloatP pdf(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
                        const Vector3fP &wo, MaskP active = true) const = 0;
 
@@ -381,7 +451,6 @@ public:
               const Vector3f &wo, bool /*unused*/) const {
         return pdf(ctx, si, wo);
     }
-
 
     // -----------------------------------------------------------------------
     //! @{ \name BSDF property accessors (components, flags, etc)
@@ -555,4 +624,26 @@ ENOKI_CALL_SUPPORT_END(mitsuba::BSDFP)
                const Vector3fP &wo, MaskP active) const override {             \
         ScopedPhase p(EProfilerPhase::EBSDFEvaluateP);                         \
         return pdf_impl(ctx, si, wo, active);                                  \
+    }
+
+/// Instantiates concrete scalar and packet versions of the polarized BSDF plugin API
+#define MTS_IMPLEMENT_BSDF_POLARIZED()                                                          \
+    std::pair<BSDFSample3f, MuellerMatrixSf> sample_pol(                                         \
+            const BSDFContext &ctx, const SurfaceInteraction3f &si,                             \
+            Float sample1, const Point2f &sample2) const override {                             \
+        return sample_pol_impl(ctx, si, sample1, sample2, true);                                \
+    }                                                                                           \
+    std::pair<BSDFSample3fP, MuellerMatrixSfP> sample_pol(                                       \
+            const BSDFContext &ctx, const SurfaceInteraction3fP &si,                            \
+            FloatP sample1, const Point2fP &sample2,                                            \
+            MaskP active = true) const override {                                               \
+        return sample_pol_impl(ctx, si, sample1, sample2, active);                              \
+    }                                                                                           \
+    MuellerMatrixSf eval_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,             \
+                                  const Vector3f &wo) const override {                          \
+        return eval_pol_impl(ctx, si, wo, true);                                                \
+    }                                                                                           \
+    MuellerMatrixSfP eval_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,           \
+                                   const Vector3fP &wo, MaskP active) const override {          \
+        return eval_pol_impl(ctx, si, wo, active);                                              \
     }

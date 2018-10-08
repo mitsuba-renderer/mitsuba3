@@ -49,6 +49,34 @@ MTS_PY_EXPORT(Endpoint) {
                 py::overload_cast<const SurfaceInteraction3fP &, MaskP>(
                     &Endpoint::eval, py::const_)),
              "si"_a, "active"_a = true)
+        .def("sample_ray_pol",
+            py::overload_cast<Float, Float, const Point2f &, const Point2f &, bool>(
+                &Endpoint::sample_ray_pol, py::const_),
+            D(Endpoint, sample_ray_pol),
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "unused"_a = true)
+        .def("sample_ray_pol",
+            enoki::vectorize_wrapper(
+                py::overload_cast<FloatP, FloatP, const Point2fP &, const Point2fP &, MaskP>(
+                    &Endpoint::sample_ray_pol, py::const_)),
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = MaskP(true))
+        .def("sample_direction_pol",
+            py::overload_cast<const Interaction3f &, const Point2f &, bool>(
+                &Endpoint::sample_direction_pol, py::const_),
+            D(Endpoint, sample_direction_pol), "it"_a, "sample"_a, "unused"_a = true)
+        .def("sample_direction_pol",
+            enoki::vectorize_wrapper(
+                py::overload_cast<const Interaction3fP &, const Point2fP &, MaskP>(
+                    &Endpoint::sample_direction_pol, py::const_)),
+            "it"_a, "sample"_a, "active"_a = MaskP(true))
+        .def("eval_pol",
+            py::overload_cast<const SurfaceInteraction3f &, bool>(
+                &Endpoint::eval_pol, py::const_),
+            D(Endpoint, eval_pol), "si"_a, "unused"_a = true)
+        .def("eval_pol",
+            enoki::vectorize_wrapper(
+                py::overload_cast<const SurfaceInteraction3fP &, MaskP>(
+                    &Endpoint::eval_pol, py::const_)),
+            "si"_a, "active"_a = MaskP(true))
         .mdef(Endpoint, world_transform)
         .mdef(Endpoint, needs_sample_2)
         .mdef(Endpoint, needs_sample_3)

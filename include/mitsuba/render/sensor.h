@@ -77,6 +77,40 @@ public:
         return sample_ray_differential(time, sample1, sample2, sample3);
     }
 
+    /**
+     * \brief Polarized version of \ref sample_ray()
+     *
+     * Since there is no special polarized importance sampling
+     * this method behaves very similar to the standard one.
+     *
+     * \return
+     *    The sampled ray differential and the Mueller matrix of importance
+     *    weights (in standard world space for the sensor profile).
+     */
+    virtual std::pair<RayDifferential3f, MuellerMatrixSf>
+    sample_ray_differential_pol(Float time,
+                                Float sample1,
+                                const Point2f &sample2,
+                                const Point2f &sample3) const;
+
+    /// Vectorized version of \ref sample_ray_differential_pol()
+    virtual std::pair<RayDifferential3fP, MuellerMatrixSfP>
+    sample_ray_differential_pol(FloatP time,
+                                FloatP sample1,
+                                const Point2fP &sample2,
+                                const Point2fP &sample3,
+                                MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_ray_differential_pos()
+    std::pair<RayDifferential3f, MuellerMatrixSf>
+    sample_ray_differential_pol(Float time,
+                                Float sample1,
+                                const Point2f &sample2,
+                                const Point2f &sample3,
+                                bool /* unused */) const {
+        return sample_ray_differential_pol(time, sample1, sample2, sample3);
+    }
+
     //! @}
     // =============================================================
 
@@ -140,6 +174,16 @@ protected:
                                  const Point2 &sample2,
                                  const Point2 &sample3,
                                  Mask active) const;
+
+    template <typename Value, typename Point2 = Point<Value, 2>,
+              typename RayDifferential = RayDifferential<Point<Value, 3>>,
+              typename Spectrum = Spectrum<Value>,
+              typename Mask = mask_t<Value>>
+    std::pair<RayDifferential, MuellerMatrix<Spectrum>>
+    sample_ray_differential_pol_impl(Value time, Value sample1,
+                                     const Point2 &sample2,
+                                     const Point2 &sample3,
+                                     Mask active) const;
 
 protected:
     ref<Film> m_film;
@@ -208,6 +252,22 @@ protected:
         const Point2fP &sample3, MaskP active) const override {                \
         return sample_ray_differential_impl(time, sample1, sample2, sample3,   \
                                             active);                           \
+    }
+
+/// Instantiates concrete scalar and packet versions of the polarized sensor plugin API
+#define MTS_IMPLEMENT_SENSOR_POLARIZED()                                            \
+    MTS_IMPLEMENT_ENDPOINT()                                                        \
+    std::pair<RayDifferential3f, MuellerMatrixSf> sample_ray_differential_pol(      \
+        Float time, Float sample1, const Point2f &sample2,                          \
+        const Point2f &sample3) const override {                                    \
+        return sample_ray_differential_pol_impl(time, sample1, sample2, sample3,    \
+                                                true);                              \
+    }                                                                               \
+    std::pair<RayDifferential3fP, MuellerMatrixSfP> sample_ray_differential_pol(    \
+        FloatP time, FloatP sample1, const Point2fP &sample2,                       \
+        const Point2fP &sample3, MaskP active) const override {                     \
+        return sample_ray_differential_pol_impl(time, sample1, sample2, sample3,    \
+                                                active);                            \
     }
 
 NAMESPACE_END(mitsuba)
