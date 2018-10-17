@@ -8,11 +8,16 @@ NAMESPACE_BEGIN(mitsuba)
 class SRGBEmitterSpectrum final : public ContinuousSpectrum {
 public:
     SRGBEmitterSpectrum(const Properties &props) {
+        if (props.has_property("scale") && props.has_property("value"))
+            Throw("Cannot specify both 'scale' and 'value'.");
+
         m_color = props.color("color");
         m_coeff = srgb_model_fetch(m_color);
 
         Properties props2("d65");
-        props2.set_float("value", props.float_("scale", 1.0f));
+        Float value =
+            props.float_(props.has_property("scale") ? "scale" : "value", 1.0f);
+        props2.set_float("value", value);
         m_d65 = (ContinuousSpectrum *) PluginManager::instance()
                     ->create_object<ContinuousSpectrum>(props2)
                     ->expand().front().get();

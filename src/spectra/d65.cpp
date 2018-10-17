@@ -27,10 +27,15 @@ const Float data[95] = {
 class D65Spectrum final : public ContinuousSpectrum {
 public:
     D65Spectrum(const Properties &props) {
+        if (props.has_property("scale") && props.has_property("value"))
+            Throw("Cannot specify both 'scale' and 'value'.");
+
         /* The default scale factor is set so that integrating
            the spectrum against the CIE curves & converting to
            sRGB yields a pixel value of (1, 1, 1) */
-        m_scale = props.float_("value", 1.f) / 10568.f;
+        m_scale =
+            props.float_(props.has_property("scale") ? "scale" : "value", 1.f);
+        m_scale *= (1.f / 10568.f);
     }
 
     std::vector<ref<Object>> expand() const override {

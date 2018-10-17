@@ -4,6 +4,7 @@
 
 MTS_PY_EXPORT(ContinuousSpectrum) {
     MTS_PY_CLASS(ContinuousSpectrum, Object)
+        .def_static("D65", &ContinuousSpectrum::D65, "scale"_a)
         .def("mean", &ContinuousSpectrum::mean, D(ContinuousSpectrum, mean))
 
         // ---------------------------------------------------------------------

@@ -70,7 +70,7 @@ SpectrumfP ContinuousSpectrum::pdf(const SurfaceInteraction3fP &si,
 
 ref<ContinuousSpectrum> ContinuousSpectrum::D65(Float scale) {
     Properties props("d65");
-    props.set_float("scale", scale);
+    props.set_float("value", scale);
     auto obj =
         PluginManager::instance()->create_object<ContinuousSpectrum>(props);
     return (ContinuousSpectrum *) (obj->expand()[0].get());
