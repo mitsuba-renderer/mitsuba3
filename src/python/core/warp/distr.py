@@ -28,6 +28,8 @@ Each entry of the DISTRIBUTIONS table is a tuple with the following entries:
 """
 
 from __future__ import division
+
+import mitsuba
 from mitsuba.core import warp, float_dtype
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
 from mitsuba.core.chi2 import (
@@ -45,7 +47,8 @@ def deg2rad(value):
     return value * np.pi / 180
 
 DEFAULT_SETTINGS   = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
-DEFAULT_SETTINGS_3 = {'sample_dim': 3, 'ires': 10, 'res': 101, 'parameters': []}
+DEFAULT_SETTINGS_1 = dict(DEFAULT_SETTINGS, sample_dim=1)
+DEFAULT_SETTINGS_3 = dict(DEFAULT_SETTINGS, sample_dim=3)
 
 DISTRIBUTIONS = [
     ('Uniform square', PlanarDomain(np.array([[0, 1],
@@ -148,11 +151,11 @@ DISTRIBUTIONS = [
         <float name="lambda_max" value="650"/>
         <string name="values" value="1, 5, 3, 6"/>
       </spectrum>"""),
-     dict(DEFAULT_SETTINGS, sample_dim=1)),
+     DEFAULT_SETTINGS_1),
 
     ('Spectrum: d65', LineDomain([360.0, 830.0]),
      SpectrumAdapter('<spectrum version="2.0.0" type="d65"/>'),
-     dict(DEFAULT_SETTINGS, sample_dim=1)),
+     DEFAULT_SETTINGS_1),
 
     ('Spectrum: blackbody', LineDomain([360.0, 830.0]),
      SpectrumAdapter('<spectrum version="2.0.0" type="blackbody">'
@@ -163,6 +166,11 @@ DISTRIBUTIONS = [
           parameters=[
               ('Temperature', [0, 8000, 3000]),
           ])),
+
+    ('Spectrum: rgb', LineDomain([360.0, 830.0]),
+     (lambda x: mitsuba.core.sample_rgb_spectrum(x)[0],
+      mitsuba.core.pdf_rgb_spectrum),
+     DEFAULT_SETTINGS_1),
 
     ('Microfact: Beckmann, all, 0.5', SphericalDomain(),
      MicrofacetAdapter(MicrofacetDistribution.EBeckmann, 0.5, False),

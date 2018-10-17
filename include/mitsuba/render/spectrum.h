@@ -82,7 +82,7 @@ public:
                            MaskP active = true) const;
 
     /// Wrapper for scalar \ref pdf() with a mask (which will be ignored)
-    Spectrumf pdf(const Spectrumf &wavelengths, bool /* active */) {
+    Spectrumf pdf(const Spectrumf &wavelengths, bool /* active */) const {
         return pdf(wavelengths);
     }
 
@@ -188,6 +188,9 @@ protected:
  * \c eval and \c pdf functions.
  */
 #define MTS_IMPLEMENT_SPECTRUM()                                               \
+    using ContinuousSpectrum::eval;                                            \
+    using ContinuousSpectrum::pdf;                                             \
+    using ContinuousSpectrum::sample;                                          \
     Spectrumf eval(const Spectrumf &wavelengths) const override {              \
         return eval_impl(wavelengths, true);                                   \
     }                                                                          \
@@ -221,6 +224,7 @@ protected:
     }
 
 #define MTS_IMPLEMENT_TEXTURE()                                                \
+    using ContinuousSpectrum::eval;                                            \
     Spectrumf eval(const SurfaceInteraction3f &si) const override {            \
         ScopedPhase p(EProfilerPhase::ESpectrumEval);                          \
         return eval_impl(si, true);                                            \

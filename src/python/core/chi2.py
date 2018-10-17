@@ -159,7 +159,7 @@ class ChiSquareTest(object):
         histogram_sum = np.sum(self.histogram)
         if histogram_sum > 1.1:
             self._log('Sample weights add up to a value greater '
-                      'than 1.0: %f', histogram_sum)
+                      'than 1.0: %f' % histogram_sum)
             self.fail = True
 
     def tabulate_pdf(self):

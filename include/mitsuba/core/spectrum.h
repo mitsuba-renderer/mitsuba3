@@ -211,4 +211,23 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
     }
 }
 
+/**
+ * PDF for the \ref sample_rgb_spectrum strategy.
+ * It is valid to call this function for a single wavelength (Float), a set
+ * of wavelengths (Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all
+ * cases, the PDF is returned per wavelength.
+ */
+template <typename Spectrum>
+Spectrum pdf_rgb_spectrum(const Spectrum &wavelengths) {
+    if (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
+        auto tmp = sech(Float(0.0072) * (wavelengths - Float(538)));
+        return select(wavelengths >= MTS_WAVELENGTH_MIN &&
+                          wavelengths <= MTS_WAVELENGTH_MAX,
+                      Float(0.003939804229326285) * tmp * tmp,
+                      zero<Spectrum>());
+    } else {
+        return Spectrum(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
+    }
+}
+
 NAMESPACE_END(mitsuba)
