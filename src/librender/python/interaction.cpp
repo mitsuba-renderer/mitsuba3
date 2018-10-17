@@ -32,11 +32,13 @@ MTS_PY_EXPORT(Interaction) {
 
 template <typename Point3>
 auto bind_surface_interaction(py::module &m, const char *name) {
-    using Type = SurfaceInteraction<Point3>;
-    using Base = typename Type::Base;
-    using Vector3 = typename Type::Vector3;
+    using Type             = SurfaceInteraction<Point3>;
+    using Base             = typename Type::Base;
+    using Vector3          = typename Type::Vector3;
     using RayDifferential3 = typename Type::RayDifferential3;
-    using Value = typename Type::Value;
+    using Value            = typename Type::Value;
+    using PositionSample3  = mitsuba::PositionSample<Point<Value, 3>>;
+    using Spectrum         = mitsuba::Spectrum<Value>;
 
     return py::class_<Type, Base>(m, name, D(SurfaceInteraction))
         // Members
@@ -54,6 +56,8 @@ auto bind_surface_interaction(py::module &m, const char *name) {
         .def_readwrite("has_uv_partials", &Type::has_uv_partials, D(SurfaceInteraction, has_uv_partials))
         // Methods
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
+        .def(py::init<const PositionSample3 &, const Spectrum &>(),
+             "ps"_a, "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
         .def("compute_partials", &Type::compute_partials, "ray"_a,
              D(SurfaceInteraction, compute_partials))
         .def("to_world", &Type::to_world, D(SurfaceInteraction, to_world))

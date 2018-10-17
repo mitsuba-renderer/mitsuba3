@@ -155,6 +155,18 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     //! @{ \name Methods
     // =============================================================
 
+    /**
+     * Construct from a position sample.
+     * Unavailable fields such as `wi` and the partial derivatives are left
+     * uninitialized.
+     * The `shape` pointer is left uninitialized because we can't guarantee that
+     * the given \ref PositionSample::object points to a Shape instance.
+     */
+    explicit SurfaceInteraction(const PositionSample<Point3> &ps,
+                                const Spectrum &wavelengths)
+        : Base(0.f, ps.time, wavelengths, ps.p), uv(ps.uv), n(ps.n),
+          sh_frame(Frame3(ps.n)), has_uv_partials(false) {}
+
     using Base::is_valid;
 
     /// Convert a local shading-space vector into world space
