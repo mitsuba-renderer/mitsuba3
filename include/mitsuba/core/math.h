@@ -34,6 +34,7 @@ static const double OneMinusEpsilon_d = 0.999999999999999888;
 static const double RecipOverflow_d   = 5.56268464626800345e-309;
 #endif
 static const double Infinity_d        = std::numeric_limits<double>::infinity();
+static const double MinFloat_d        = std::numeric_limits<double>::min();
 static const double MaxFloat_d        = std::numeric_limits<double>::max();
 static const double MachineEpsilon_d  = std::numeric_limits<double>::epsilon() / 2;
 
@@ -57,6 +58,7 @@ static const float  RecipOverflow_f   = 0x1p-128f;
 static const float  OneMinusEpsilon_f = 0.999999940395355225f;
 static const float  RecipOverflow_f   = 2.93873587705571876e-39f;
 #endif
+static const float  MinFloat_f        = std::numeric_limits<float>::min();
 static const float  MaxFloat_f        = std::numeric_limits<float>::max();
 static const float  Infinity_f        = std::numeric_limits<float>::infinity();
 static const float  MachineEpsilon_f  = std::numeric_limits<float>::epsilon() / 2;
@@ -80,6 +82,7 @@ static const Float  Epsilon           = Float(sizeof(Float) == sizeof(double) ?
                                         Epsilon_d : (double) Epsilon_f);
 static const Float  ShadowEpsilon     = Float(sizeof(Float) == sizeof(double) ?
                                         ShadowEpsilon_d : (double) ShadowEpsilon_f);
+static const Float  MinFloat          = std::numeric_limits<Float>::min();
 static const Float  MaxFloat          = std::numeric_limits<Float>::max();
 static const Float  Infinity          = std::numeric_limits<Float>::infinity();
 static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 2;

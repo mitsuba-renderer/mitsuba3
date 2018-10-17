@@ -3,6 +3,7 @@
 
 template <typename BBox> void bind_bbox(py::module &m, const char *name) {
     using Point = typename BBox::Point;
+    using Value = value_t<Point>;
 
     py::class_<BBox>(m, name, D(BoundingBox))
         .def(py::init<>(), D(BoundingBox, BoundingBox))
@@ -23,12 +24,14 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
              [](const BBox &self, const Point &p, bool strict) {
                  return strict ? self.template contains<true>(p)
                                : self.template contains<false>(p);
-             }, D(BoundingBox, contains), "p"_a, "strict"_a = false)
+             },
+             D(BoundingBox, contains), "p"_a, "strict"_a = false)
         .def("contains",
              [](const BBox &self, const BBox &bbox, bool strict) {
                  return strict ? self.template contains<true>(bbox)
                                : self.template contains<false>(bbox);
-             }, D(BoundingBox, contains, 2), "bbox"_a, "strict"_a = false)
+             },
+             D(BoundingBox, contains, 2), "bbox"_a, "strict"_a = false)
         .def("overlaps",
              [](const BBox &self, const BBox &bbox, bool strict) {
                  return strict ? self.template overlaps<true>(bbox)
@@ -36,16 +39,18 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
              },
              D(BoundingBox, overlaps), "bbox"_a, "strict"_a = false)
         .def("squared_distance",
-             py::overload_cast<const Point &>(&BBox::squared_distance, py::const_),
+             py::overload_cast<const mitsuba::Point<Value, Point::Size> &>(
+                 &BBox::template squared_distance<Value>, py::const_),
              D(BoundingBox, squared_distance))
         .def("squared_distance",
-             py::overload_cast<const BBox &>(&BBox::squared_distance, py::const_),
+             (Value (BBox::*)(const BBox &) const)(&BBox::squared_distance),
              D(BoundingBox, squared_distance, 2))
         .def("distance",
-             py::overload_cast<const Point &>(&BBox::distance, py::const_),
+             py::overload_cast<const mitsuba::Point<Value, Point::Size> &>(
+                 &BBox::template distance<Value>, py::const_),
              D(BoundingBox, distance))
         .def("distance",
-             py::overload_cast<const BBox &>(&BBox::distance, py::const_),
+             (Value (BBox::*)(const BBox &) const)(&BBox::distance),
              D(BoundingBox, distance, 2))
         .def("reset", &BBox::reset, D(BoundingBox, reset))
         .def("clip", &BBox::clip, D(BoundingBox, clip))
@@ -55,7 +60,8 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
              D(BoundingBox, expand, 2))
         .def("ray_intersect", &BBox::template ray_intersect<Ray3f>,
              D(BoundingBox, ray_intersect))
-        .def("ray_intersect", vectorize_wrapper(&BBox::template ray_intersect<Ray3fP>))
+        .def("ray_intersect",
+             vectorize_wrapper(&BBox::template ray_intersect<Ray3fP>))
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__repr__",
@@ -69,7 +75,4 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
         .def_readwrite("max", &BBox::max);
 }
 
-MTS_PY_EXPORT(BoundingBox) {
-    bind_bbox<BoundingBox3f>(m, "BoundingBox3f");
-}
-
+MTS_PY_EXPORT(BoundingBox) { bind_bbox<BoundingBox3f>(m, "BoundingBox3f"); }

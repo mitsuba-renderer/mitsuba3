@@ -9,6 +9,7 @@ public:
     IndependentSampler() : Sampler(Properties()) { }
     IndependentSampler(const Properties &props) : Sampler(props) {}
 
+public:
     ref<Sampler> clone() override {
         IndependentSampler *sampler = new IndependentSampler();
         sampler->seed(m_rng.next_uint64());

@@ -19,12 +19,15 @@ enum class EProfilerPhase : int {
     EInitScene,                  /* Scene initialization */
     ELoadGeometry,               /* Geometry loading */
     ELoadTexture,                /* Texture loading */
-    EInitKDTree,                 /* kd-tree construction*/
+    EInitKDTree,                 /* kd-tree construction */
     ERender,                     /* Integrator::render() */
     ESamplingIntegratorEval,     /* SamplingIntegrator::eval() */
     ESamplingIntegratorEvalP,    /* SamplingIntegrator::eval [packet] () */
     ESampleEmitterDirection,     /* Scene::sample_emitter_direction() */
     ESampleEmitterDirectionP,    /* Scene::sample_emitter_direction() [packet] */
+    ESampleEmitterRay,           /* Scene::sample_emitter_ray() */
+    ESampleEmitterRayP,          /* Scene::sample_emitter_ray() [packet] */
+
     ERayTest,                    /* Scene::ray_test() */
     ERayTestP,                   /* Scene::ray_test() [packet] */
     ERayIntersect,               /* Scene::ray_intersect() */
@@ -43,6 +46,7 @@ enum class EProfilerPhase : int {
     EEndpointSampleP,            /* Endpoint::sample() [packet] */
     ESpectrumEval,               /* ContinuousSpectrum::eval() */
     ESpectrumEvalP,              /* ContinuousSpectrum::eval() [packet] */
+
     EProfilerPhaseCount
 };
 
@@ -56,6 +60,8 @@ constexpr const char *profiler_phase_id[int(EProfilerPhase::EProfilerPhaseCount)
     "SamplingIntegrator::eval() [packet]",
     "Scene::sample_emitter_direction()",
     "Scene::sample_emitter_direction() [packet]",
+    "Scene::sample_emitter_ray()",
+    "Scene::sample_emitter_ray() [packet]",
     "Scene::ray_test()",
     "Scene::ray_test() [packet]",
     "Scene::ray_intersect()",

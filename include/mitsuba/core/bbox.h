@@ -168,8 +168,8 @@ template <typename Point_> struct BoundingBox {
      * \remark In the Python bindings, the 'Strict' argument is a normal
      *         function parameter with default value \c False.
      */
-    template <bool Strict = false>
-    Mask contains(const Point &p) const {
+    template <bool Strict = false, typename Value_>
+    mask_t<Value_> contains(const mitsuba::Point<Value_, Point_::Size> &p) const {
         if (Strict)
             return all((p > min) && (p < max));
         else
@@ -221,11 +221,11 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Value squared_distance(const Point &p) const {
+    template <typename Value_>
+    Value_ squared_distance(const mitsuba::Point<Value_, Point::Size> &p) const {
         return squared_norm(((min - p) && (p < min)) +
                             ((p - max) && (p > max)));
     }
-
 
     /**
      * \brief Calculate the shortest squared distance between
@@ -240,7 +240,8 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    Value distance(const Point &p) const {
+    template <typename Value_>
+    Value_ distance(const mitsuba::Point<Value_, Point::Size> &p) const {
         return enoki::sqrt(squared_distance(p));
     }
 

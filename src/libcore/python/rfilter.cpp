@@ -8,14 +8,14 @@ MTS_PY_EXPORT(rfilter) {
     auto rfilter = MTS_PY_CLASS(ReconstructionFilter, Object)
         .mdef(ReconstructionFilter, border_size)
         .mdef(ReconstructionFilter, radius)
-        .mdef(ReconstructionFilter, eval)
+        .mdef(ReconstructionFilter, eval, "x"_a)
         .def("eval_discretized",
              &ReconstructionFilter::eval_discretized<Float>,
-             D(ReconstructionFilter, eval_discretized))
+             D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)
         .def("eval_discretized",
              vectorize_wrapper(
                  &ReconstructionFilter::eval_discretized<FloatP>),
-             D(ReconstructionFilter, eval_discretized));
+             D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true);
 
     auto bc = py::enum_<EBoundaryCondition>(rfilter, "EBoundaryCondition")
         .value("EClamp", EBoundaryCondition::EClamp, D(ReconstructionFilter, EBoundaryCondition, EClamp))

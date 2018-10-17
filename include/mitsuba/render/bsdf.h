@@ -592,6 +592,9 @@ ENOKI_CALL_SUPPORT_END(mitsuba::BSDFP)
  * \c eval and \c pdf functions.
  */
 #define MTS_IMPLEMENT_BSDF()                                                   \
+    using BSDF::sample;                                                        \
+    using BSDF::eval;                                                          \
+    using BSDF::pdf;                                                           \
     std::pair<BSDFSample3f, Spectrumf> sample(                                 \
             const BSDFContext &ctx, const SurfaceInteraction3f &si,            \
             Float sample1, const Point2f &sample2) const override {            \
