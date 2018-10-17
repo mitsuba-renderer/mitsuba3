@@ -53,7 +53,11 @@ template <typename> class AtomicFloat;
 //! @{ \name Static & dynamic data types for vectorization
 // =============================================================
 
+#if defined(MTS_PACKET_SIZE)
+constexpr size_t PacketSize = MTS_PACKET_SIZE;
+#else
 constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float);
+#endif
 
 using FloatP   = Packet<Float, PacketSize>;
 using FloatX   = DynamicArray<FloatP>;
