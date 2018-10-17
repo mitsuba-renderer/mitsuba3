@@ -134,9 +134,9 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
 
     auto corner = lo - pos;
     for (int i = 0; i <= max_size.x(); ++i)
-        m_weights_x_p[i] = m_filter->eval_discretized(corner.x() + i);
+        m_weights_x_p[i] = m_filter->eval_discretized(corner.x() + i, active);
     for (int i = 0; i <= max_size.y(); ++i)
-        m_weights_y_p[i] = m_filter->eval_discretized(corner.y() + i);
+        m_weights_y_p[i] = m_filter->eval_discretized(corner.y() + i, active);
 
 
     // Rasterize the filtered sample into the framebuffer
