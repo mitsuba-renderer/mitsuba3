@@ -2058,6 +2058,10 @@ static const char *__doc_mitsuba_EProfilerPhase_ESampleEmitterDirection = R"doc(
 
 static const char *__doc_mitsuba_EProfilerPhase_ESampleEmitterDirectionP = R"doc()doc";
 
+static const char *__doc_mitsuba_EProfilerPhase_ESampleEmitterRay = R"doc()doc";
+
+static const char *__doc_mitsuba_EProfilerPhase_ESampleEmitterRayP = R"doc()doc";
+
 static const char *__doc_mitsuba_EProfilerPhase_ESamplingIntegratorEval = R"doc()doc";
 
 static const char *__doc_mitsuba_EProfilerPhase_ESamplingIntegratorEvalP = R"doc()doc";
@@ -2796,6 +2800,26 @@ static const char *__doc_mitsuba_ImageBlock_m_weights_y = R"doc()doc";
 static const char *__doc_mitsuba_ImageBlock_m_weights_y_p = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_offset = R"doc(Return the current block offset)doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_pixel_format = R"doc(Return the underlying pixel format)doc";
 
@@ -4529,6 +4553,26 @@ static const char *__doc_mitsuba_ReconstructionFilter_m_scale_factor = R"doc()do
 
 static const char *__doc_mitsuba_ReconstructionFilter_m_values = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_operator_new_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_radius = R"doc(Return the filter's width)doc";
 
 static const char *__doc_mitsuba_Resampler =
@@ -4582,6 +4626,26 @@ static const char *__doc_mitsuba_Resampler_m_taps = R"doc()doc";
 static const char *__doc_mitsuba_Resampler_m_target_res = R"doc()doc";
 
 static const char *__doc_mitsuba_Resampler_m_weights = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_delete_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_delete_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Resampler_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Resampler_resample =
 R"doc(Resample a multi-channel array and clamp the results to a specified
@@ -5881,13 +5945,19 @@ static const char *__doc_mitsuba_SurfaceInteraction =
 R"doc(Container for all information related to a scattering event on a
 surface)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction = R"doc()doc";
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction =
+R"doc(Construct from a position sample. Unavailable fields such as `wi` and
+the partial derivatives are left uninitialized. The `shape` pointer is
+left uninitialized because we can't guarantee that the given
+PositionSample::object points to a Shape instance.)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
@@ -7591,6 +7661,12 @@ static const char *__doc_mitsuba_operator_lshift_23 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_24 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_25 = R"doc()doc";
+
+static const char *__doc_mitsuba_pdf_rgb_spectrum =
+R"doc(PDF for the sample_rgb_spectrum strategy. It is valid to call this
+function for a single wavelength (Float), a set of wavelengths
+(Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all cases,
+the PDF is returned per wavelength.)doc";
 
 static const char *__doc_mitsuba_profiler_flags = R"doc()doc";
 
