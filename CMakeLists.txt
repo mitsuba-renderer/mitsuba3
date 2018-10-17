@@ -26,6 +26,13 @@ endif()
 # For developers: ability to disable Link Time Optimization to speed up builds
 option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 
+# Manually set the packet size. Useful for debugging vectorization-related issues.
+set(MTS_PACKET_SIZE ""
+    CACHE STRING "SIMD packet size. Defaults to the largest value supported by the architecture.")
+if (MTS_PACKET_SIZE)
+    add_definitions(-DMTS_PACKET_SIZE=${MTS_PACKET_SIZE})
+endif()
+
 # ----------------------------------
 
 if (POLICY CMP0022)
@@ -340,6 +347,8 @@ if (WIN32)
 elseif(UNIX)
   if(APPLE)
     add_definitions(-D__OSX__)
+    # Disable OpenGL deprecation warnings
+    add_definitions(-DGL_SILENCE_DEPRECATION)
   else()
     add_definitions(-D__LINUX__)
   endif()
