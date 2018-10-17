@@ -5,9 +5,10 @@ from mitsuba.core import PCG32, float_dtype
 from mitsuba.core.xml import load_string
 from mitsuba.render import Sampler
 
-
-@pytest.fixture
-def sampler(sample_count = 8):
+@pytest.fixture(scope="module")
+def sampler():
+    return make_sampler()
+def make_sampler(sample_count=8):
     s = load_string("""<sampler version="2.0.0" type="independent">
             <integer name="sample_count" value="%d"/>
         </sampler>""" % sample_count)
@@ -21,7 +22,7 @@ def next_float(rng, shape = None):
 
 
 def test01_construct():
-    s = sampler(sample_count=58)
+    s = make_sampler(sample_count=58)
     assert s.sample_count() == 58
 
 def test02_sample_vs_pcg32(sampler):

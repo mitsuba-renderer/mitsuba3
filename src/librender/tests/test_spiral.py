@@ -4,8 +4,10 @@ import pytest
 from mitsuba.core.xml import load_string
 from mitsuba.render import Spiral
 
-@pytest.fixture
-def film(width = 156, height = 232):
+@pytest.fixture(scope="module")
+def film():
+    return make_film()
+def make_film(width = 156, height = 232):
     f = load_string("""<film type="hdrfilm" version="2.0.0">
             <integer name="width" value="{}"/>
             <integer name="height" value="{}"/>
@@ -39,7 +41,7 @@ def test01_construct(film):
     assert s.max_block_size() == 32
 
 def test02_small_film():
-    f = film(15, 12)
+    f = make_film(15, 12)
     s = Spiral(f)
 
     (bo, bs) = s.next_block()
@@ -62,7 +64,7 @@ def test03_normal_film():
         [center + [ 2*w,  0*w], (w, w)], [center + [ 2*w,  1*w], (w, w)]
     ]
 
-    f = film(318, 322)
+    f = make_film(318, 322)
     s = Spiral(f)
 
     check_first_blocks(extract_blocks(s), expected, n_total=110)

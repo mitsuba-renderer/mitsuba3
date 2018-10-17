@@ -4,15 +4,15 @@ import pytest
 
 from mitsuba.core import Stream, DummyStream, FileStream, \
                          MemoryStream, ZStream
-from mitsuba.test.util import tmpfile
+from mitsuba.test.util import tmpfile, make_tmpfile
 
 parameters = [
     'class_,args',
     [
         (DummyStream, ()),
         (MemoryStream, (64,)),
-        (FileStream, (tmpfile, FileStream.ERead)),
-        (FileStream, (tmpfile, FileStream.ETruncReadWrite))
+        (FileStream, (make_tmpfile, FileStream.ERead)),
+        (FileStream, (make_tmpfile, FileStream.ETruncReadWrite))
     ]
 ]
 
@@ -51,7 +51,7 @@ def check_contents(stream):
 
 @pytest.mark.parametrize(*parameters)
 def test01_size_and_pos(class_, args, request, tmpdir_factory):
-    stream = class_(*[(arg if arg is not tmpfile
+    stream = class_(*[(arg if arg is not make_tmpfile
                       else arg(request, tmpdir_factory))
                       for arg in args])
 
@@ -75,7 +75,7 @@ def test01_size_and_pos(class_, args, request, tmpdir_factory):
 
 @pytest.mark.parametrize(*parameters)
 def test02_truncate(class_, args, request, tmpdir_factory):
-    stream = class_(*[(arg if arg is not tmpfile
+    stream = class_(*[(arg if arg is not make_tmpfile
                       else arg(request, tmpdir_factory))
                       for arg in args])
 
@@ -99,7 +99,7 @@ def test02_truncate(class_, args, request, tmpdir_factory):
 
 @pytest.mark.parametrize(*parameters)
 def test03_seek(class_, args, request, tmpdir_factory):
-    stream = class_(*[(arg if arg is not tmpfile
+    stream = class_(*[(arg if arg is not make_tmpfile
                       else arg(request, tmpdir_factory))
                       for arg in args])
 
@@ -135,7 +135,7 @@ def test03_seek(class_, args, request, tmpdir_factory):
 
 @pytest.mark.parametrize(*parameters)
 def test03_read_back(class_, args, request, tmpdir_factory):
-    stream = class_(*[(arg if arg is not tmpfile
+    stream = class_(*[(arg if arg is not make_tmpfile
                       else arg(request, tmpdir_factory))
                       for arg in args])
 
@@ -147,7 +147,7 @@ def test03_read_back(class_, args, request, tmpdir_factory):
 
 @pytest.mark.parametrize(*parameters)
 def test04_read_back(class_, args, request, tmpdir_factory):
-    stream = class_(*[(arg if arg is not tmpfile
+    stream = class_(*[(arg if arg is not make_tmpfile
                       else arg(request, tmpdir_factory))
                       for arg in args])
 
@@ -168,7 +168,7 @@ def test04_read_back(class_, args, request, tmpdir_factory):
 
 @pytest.mark.parametrize(*parameters)
 def test05_read_back_through_zstream(class_, args, request, tmpdir_factory):
-    stream = class_(*[(arg if arg is not tmpfile
+    stream = class_(*[(arg if arg is not make_tmpfile
                       else arg(request, tmpdir_factory))
                       for arg in args])
 

@@ -7,7 +7,7 @@ from mitsuba.core.warp import square_to_uniform_sphere
 from mitsuba.core.xml import load_string
 from mitsuba.render import BSDF, BSDFContext, SurfaceInteraction3f
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def interaction():
     si = SurfaceInteraction3f()
     si.t = 0.1

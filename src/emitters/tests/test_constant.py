@@ -4,18 +4,19 @@ import pytest
 from mitsuba.core import warp
 from mitsuba.core.math import InvFourPi, Epsilon
 from mitsuba.core.xml import load_string
-from mitsuba.render import PositionSample3f, Interaction3f
+from mitsuba.render import ContinuousSpectrum, PositionSample3f, Interaction3f
 
 
-def example_emitter(spectrum="1.0"):
+def example_emitter(spectrum = "1.0", extra = ""):
     return load_string("""
         <emitter version="2.0.0" type="constant">
             <spectrum name="radiance" value="{}"/>
+            {}
         </emitter>
-    """.format(spectrum))
+    """.format(spectrum, extra))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def interaction():
     it = Interaction3f()
     it.wavelengths = [400, 500, 600, 750]
@@ -29,7 +30,10 @@ def test01_construct():
 
 
 def test02_sample_ray():
-    e = example_emitter()
+    scale = 3.5
+    e = example_emitter(spectrum=scale)
+    d65 = ContinuousSpectrum.D65(scale=scale)
+
     ray, weight = e.sample_ray(0.3, 0.4, [0.1, 0.6], [0.9, 0.24])
     assert np.allclose(ray.time, 0.3) and np.allclose(ray.mint, Epsilon)
     # Ray should point towards the scene

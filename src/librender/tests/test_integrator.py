@@ -3,17 +3,19 @@
 import numpy as np
 import pytest
 
-from mitsuba.test.scenes import empty_scene, teapot_scene, make_integrator
+import mitsuba
+from mitsuba.test.scenes import empty_scene, teapot_scene, make_teapot_scene, \
+                                box_scene, make_box_scene, make_integrator
 
 integrators = [
     'int_name', [
         "depth",
         "direct",
-        "path"
+        "path",
     ]
 ]
 
-def check_scene(integrator, scene):
+def check_scene(integrator, scene, is_empty = False):
     # Scalar render
     assert integrator.render(scene, vectorize=False) is True
     res_scalar = np.array(scene.film().bitmap(), copy=True)
@@ -66,7 +68,7 @@ def test01_create(int_name):
 def test02_render_empty_scene(int_name, empty_scene):
     integrator = make_integrator(int_name)
 
-    (res, _) = check_scene(integrator, empty_scene)
+    (res, _) = check_scene(integrator, empty_scene, is_empty=True)
     assert np.all(res[:, :, :3] == 0)   # Pixel values
     assert np.all(res[:, :, 3]  >= 0)   # Reconstruction weights
 
@@ -81,6 +83,8 @@ def test03_render_teapot(int_name, teapot_scene):
     nnz = np.sum(np.sum(res[:, :, :3], axis=2) > 1e-7)
     assert (nnz >= 0.20 * n) and (nnz < 0.4 * n)
 
+
+@pytest.mark.skipif(mitsuba.DEBUG, reason="Timeout is unreliable in debug mode.")
 @pytest.mark.parametrize(*integrators)
 def test04_render_timeout(int_name):
     from timeit import timeit
@@ -89,7 +93,7 @@ def test04_render_timeout(int_name):
     timeout = 0.5
     integrator = make_integrator(int_name,
                                  """<float name="timeout" value="{}"/>""".format(timeout))
-    scene = teapot_scene(spp=100000)
+    scene = make_teapot_scene(spp=100000)
 
     def wrapped_scalar():
         assert integrator.render(scene, vectorize=False) is True
