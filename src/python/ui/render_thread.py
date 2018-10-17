@@ -8,7 +8,7 @@ class RenderThread(Thread):
     """
     # TODO: check interplay of GIL / threading.Thread with Mitsuba performance.
 
-    def __init__(self, integrator,
+    def __init__(self, integrator, thread_count = None,
                  progress_callback = (lambda: None),
                  done_callback = (lambda: None),
                  error_callback = (lambda: None),
@@ -20,10 +20,13 @@ class RenderThread(Thread):
         self.error = error_callback
         self.args = args
         self.kwargs = kwargs
+        self.thread_count = thread_count
 
         self.set_priority(Thread.ELowPriority)
 
     def run(self):
+        if self.thread_count is not None:
+            mitsuba.set_thread_count(self.thread_count)
         cb_idx = self.integrator.register_callback(self.progress, 0)
 
         try:
@@ -33,4 +36,6 @@ class RenderThread(Thread):
             return
         finally:
             self.integrator.remove_callback(cb_idx)
+            if self.thread_count is not None:
+                mitsuba.set_thread_count(-1)
         self.done(res)

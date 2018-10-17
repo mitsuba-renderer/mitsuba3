@@ -319,7 +319,8 @@ class MitsubaRenderer(Screen):
         self.worker_thread = RenderThread(
             integrator=self.integrator, args=[self.scene],
             kwargs={'vectorize': self.render_vectorized},
-            progress_callback=progress, done_callback=cb, error_callback=fail
+            progress_callback=progress, done_callback=cb, error_callback=fail,
+            thread_count=self.thread_count,
         )
         self.worker_thread.start()
 
@@ -337,6 +338,7 @@ class MitsubaRenderer(Screen):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='mtsgui')
     parser.add_argument('--scalar', action='store_true', default=False, help='Render in scalar mode (default: False).')
+    parser.add_argument('--threads', default=None, type=int, help='Number of threads to use (default: all).')
     parser.add_argument('scene', nargs='?', default=None, help='Path to a Mitsuba scene file (.xml).')
     args = parser.parse_args()
 
@@ -345,6 +347,7 @@ if __name__ == '__main__':
     gui.set_visible(True)
     gui.perform_layout()
     gui.render_vectorized = not args.scalar
+    gui.thread_count = args.threads
 
     if args.scene:
         gui.select_scene(filename=args.scene)
