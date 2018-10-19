@@ -60,7 +60,7 @@ template <typename Vector3_> struct Frame {
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Value sin_theta_2(const Vector3 &v) { return fnmadd(v.z(), v.z(), Scalar(1)); }
+    static Value sin_theta_2(const Vector3 &v) { return fmadd(v.x(), v.x(), sqr(v.y())); }
 
     /** \brief Give a unit direction, this function returns the tangent
      * of the elevation angle in a reference spherical coordinate system (see
