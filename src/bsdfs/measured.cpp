@@ -148,8 +148,14 @@ public:
             spectra.shape[3], spectra.shape[4], spectra.shape[2]);
     }
 
-    template <typename Vector3> auto cos_theta(const Vector3f &d) {
-        auto dist = std::sqrt(sqr(d.x()) + sqr(d.y()) + sqr(d.z() - 1.f));
+    /**
+     * Numerically stable method computing the elevation of the given
+     * (normalized) vector in the local frame.
+     * Conceptually equivalent to:
+     *     safe_acos(Frame::cos_theta(d))
+     */
+    template <typename Vector3> auto elevation(const Vector3 &d) const {
+        auto dist = sqrt(sqr(d.x()) + sqr(d.y()) + sqr(d.z() - 1.f));
         return 2.f * safe_asin(.5f * dist);
     }
 
@@ -182,7 +188,7 @@ public:
             wi.y() = mulsign_neg(wi.y(), sy);
         }
 
-        Value theta_i = cos_theta(wi),
+        Value theta_i = elevation(wi),
               phi_i   = atan2(wi.y(), wi.x());
 
         Value params[2] = { phi_i, theta_i };
@@ -233,7 +239,7 @@ public:
             Vector3 m = normalize(bs.wo + wi);
 
             /* Cartesian -> spherical coordinates */
-            Value theta_m = cos_theta(m),
+            Value theta_m = elevation(m),
                   phi_m   = atan2(m.y(), m.x());
 
             Vector2 u_m(theta2u(theta_m),
@@ -298,9 +304,9 @@ public:
         Vector3 m = normalize(wo + wi);
 
         /* Cartesian -> spherical coordinates */
-        Value theta_i = cos_theta(wi),
+        Value theta_i = elevation(wi),
               phi_i   = atan2(wi.y(), wi.x()),
-              theta_m = cos_theta(m),
+              theta_m = elevation(m),
               phi_m   = atan2(m.y(), m.x());
 
         /* Spherical coordinates -> unit coordinate system */
@@ -359,9 +365,9 @@ public:
             Vector3 m = normalize(wo + wi);
 
             /* Cartesian -> spherical coordinates */
-            Value theta_i = cos_theta(wi),
+            Value theta_i = elevation(wi),
                   phi_i   = atan2(wi.y(), wi.x()),
-                  theta_m = cos_theta(m),
+                  theta_m = elevation(m),
                   phi_m   = atan2(m.y(), m.x());
 
             /* Spherical coordinates -> unit coordinate system */
