@@ -73,10 +73,10 @@ public:
     }
 
     /// Access an entry by its index
-    template <typename Index, typename Scalar = like_t<Index, Float>>
-    Scalar operator[](Index entry) const {
-        return gather<Scalar>(m_cdf.data(), entry + 1) -
-               gather<Scalar>(m_cdf.data(), entry);
+    template <typename Index, typename Value = float_array_t<Index>>
+    Value operator[](Index entry) const {
+        return gather<Value>(m_cdf.data(), entry + 1) -
+               gather<Value>(m_cdf.data(), entry);
     }
 
     /// Have the probability densities been normalized?
@@ -136,6 +136,7 @@ public:
             m_range_end = 0;
             m_normalized = false;
         }
+
         return Float(m_sum);
     }
 
@@ -148,16 +149,16 @@ public:
      *     The discrete index associated with the sample
      */
     template <typename Scalar,
-              typename Index = uint_array_t<Scalar>,
-              typename Mask = mask_t<Scalar>>
-    Index sample(Scalar sample_value, Mask active = true) const {
-        // Note that the search range is adjusted to exclude entries at the
-        // beginning and end of the distribution that have probability 0.0.
-        // Otherwise we might return a indices that have no probability mass (in
-        // particular for sample_value = 0 or 1).
+              typename Index = uint_array_t<Scalar>>
+    Index sample(Scalar sample_value, mask_t<Scalar> active = true) const {
+        /* Note that the search range is adjusted to exclude entries at the
+           beginning and end of the distribution that have probability 0.0.
+           Otherwise we might return a indices that have no probability mass
+           (in particular for sample_value = 0 or 1). */
+
         return math::find_interval(
             m_range_start, m_range_end,
-            [this, sample_value](Index idx, Mask active) ENOKI_INLINE_LAMBDA {
+            [&](Index idx, mask_t<Index> active) ENOKI_INLINE_LAMBDA {
                 return gather<Scalar>(m_cdf.data(), idx, active) <= sample_value;
             },
             active
@@ -169,15 +170,16 @@ public:
      *
      * \param[in] sample_value
      *     A uniformly distributed sample on [0,1]
+     *
      * \return
      *     A pair with (the discrete index associated with the sample, probability
      *     value of the sample).
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>,
-              typename Mask = mask_t<Scalar>>
+    template <typename Scalar, typename Index = uint_array_t<Scalar>>
     std::pair<Index, Scalar> sample_pdf(Scalar sample_value,
-                                        Mask active = true) const {
+                                        mask_t<Scalar> active = true) const {
         Index index = sample(sample_value, active);
+
         return { index, gather<Scalar>(m_cdf.data(), index + 1, active) -
                         gather<Scalar>(m_cdf.data(), index, active) };
     }
@@ -185,7 +187,8 @@ public:
     /**
      * \brief %Transform a uniformly distributed sample to the stored distribution
      *
-     * The original sample is value adjusted so that it can be "reused".
+     * The original sample is value adjusted so that it can be reused as a
+     * uniform variate.
      *
      * \param sample_value
      *     A uniformly distributed sample on [0,1]
@@ -193,10 +196,9 @@ public:
      * \return
      *     The discrete index associated with the sample and the re-scaled sample value
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>,
-              typename Mask = mask_t<Scalar>>
+    template <typename Scalar, typename Index = uint_array_t<Scalar>>
     std::pair<Index, Scalar>
-    sample_reuse(Scalar sample_value, Mask active = true) const {
+    sample_reuse(Scalar sample_value, mask_t<Scalar> active = true) const {
         Index index = sample(sample_value, active);
         Scalar cdf_value = gather<Scalar>(m_cdf.data(), index);
         return { index, (sample_value - cdf_value) /
@@ -206,7 +208,8 @@ public:
     /**
      * \brief %Transform a uniformly distributed sample to the stored distribution.
      *
-     * The original sample is value adjusted so that it can be "reused".
+     * The original sample is value adjusted so that it can be reused as a
+     * uniform variate.
      *
      * \param sample_value
      *     A uniformly distributed sample on [0,1]
@@ -218,13 +221,10 @@ public:
      *     2. the probability value of the sample
      *     3. the re-scaled sample value
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>,
-              typename Mask = mask_t<Scalar>>
+    template <typename Scalar, typename Index = uint_array_t<Scalar>>
     std::tuple<Index, Scalar, Scalar>
-    sample_reuse_pdf(Scalar sample_value, Mask active = true) const {
-        Index index;
-        Scalar pdf;
-        std::tie(index, pdf) = sample_pdf(sample_value, active);
+    sample_reuse_pdf(Scalar sample_value, mask_t<Scalar> active = true) const {
+        auto [index, pdf] = sample_pdf(sample_value, active);
         Scalar cdf_value = gather<Scalar>(m_cdf.data(), index);
 
         return {

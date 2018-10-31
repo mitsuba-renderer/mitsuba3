@@ -48,12 +48,11 @@ public:
         using Frame = mitsuba::Frame<Vector<Value, 3>>;
 
         /* 1. Sample spectrum */
-        Spectrum wavelengths, spec_weight;
-        std::tie(wavelengths, spec_weight) = m_radiance->sample(
-            enoki::sample_shifted<Spectrum>(wavelength_sample), active);
+        auto [wavelengths, spec_weight] = m_radiance->sample(
+            math::sample_shifted<Spectrum>(wavelength_sample), active);
 
         /* 2. Sample spatial component */
-        PositionSample ps = m_shape->sample_position(time, sample2);
+        PositionSample ps = m_shape->sample_position(time, sample2, active);
 
         /* 3. Sample directional component */
         auto local = warp::square_to_cosine_hemisphere(sample3);
@@ -78,9 +77,6 @@ public:
         active &= dot(ds.d, ds.n) < 0.f && neq(ds.pdf, 0.f);
 
         Spectrum spec = m_radiance->eval(it.wavelengths, active) / ds.pdf;
-
-        masked(ds.pdf, !active) = 0.f;
-        masked(spec,   !active) = 0.f;
 
         ds.object = this;
         return { ds, spec };

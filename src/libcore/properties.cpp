@@ -54,8 +54,7 @@ struct SortKey {
 };
 
 struct Properties::PropertiesPrivate {
-    using Alloc = enoki::aligned_allocator<std::pair<const std::string, Entry>>;
-    std::map<std::string, Entry, SortKey, Alloc> entries;
+    std::map<std::string, Entry, SortKey> entries;
     std::string id, plugin_name;
 };
 

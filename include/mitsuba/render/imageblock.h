@@ -202,7 +202,6 @@ public:
     std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
-    ENOKI_ALIGNED_OPERATOR_NEW()
 
 protected:
     /// Virtual destructor

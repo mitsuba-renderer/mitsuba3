@@ -10,8 +10,7 @@ MTS_PY_EXPORT(random) {
     PCG32_
         .def(py::init<uint64_t, uint64_t>(),
              "initstate"_a = PCG32_DEFAULT_STATE,
-             "initseq"_a = index_sequence<uint64_t>() + PCG32_DEFAULT_STREAM,
-             DE(PCG32, PCG32))
+             "initseq"_a = PCG32_DEFAULT_STREAM, DE(PCG32, PCG32))
         .def(py::init<const PCG32 &>(), "Copy constructor")
         .def("seed", &PCG32::seed, "initstate"_a, "initseq"_a = 1u, DE(PCG32, seed))
         .def("next_uint32", py::overload_cast<>(&PCG32::next_uint32), DE(PCG32, next_uint32))
@@ -21,8 +20,9 @@ MTS_PY_EXPORT(random) {
                 result.mutable_data()[i] = rng.next_uint32();
             return result;
         }, "shape"_a)
-        .def("next_uint32_bounded", py::overload_cast<uint32_t>(&PCG32::next_uint32_bounded),
-            "bound"_a, DE(PCG32, next_uint32_bounded))
+        .def("next_uint32_bounded", [](PCG32 &rng, uint32_t bound) {
+                return rng.next_uint32_bounded(bound);
+            }, "bound"_a, DE(PCG32, next_uint32_bounded))
         .def("next_uint32_bounded", [](PCG32 &rng, uint32_t bound, const std::vector<size_t> &shape) {
             py::array_t<uint32_t> result(shape);
             for (py::ssize_t i = 0; i < result.size(); ++i)
@@ -36,8 +36,9 @@ MTS_PY_EXPORT(random) {
                 result.mutable_data()[i] = rng.next_uint64();
             return result;
         }, "shape"_a)
-        .def("next_uint64_bounded", py::overload_cast<uint64_t>(&PCG32::next_uint64_bounded),
-            "bound"_a, DE(PCG32, next_uint64_bounded))
+        .def("next_uint64_bounded", [](PCG32 &rng, uint64_t bound) {
+                return rng.next_uint64_bounded(bound);
+            }, "bound"_a, DE(PCG32, next_uint64_bounded))
         .def("next_uint64_bounded", [](PCG32 &rng, uint64_t bound, const std::vector<size_t> &shape) {
             py::array_t<uint64_t> result(shape);
             for (py::ssize_t i = 0; i < result.size(); ++i)

@@ -72,11 +72,8 @@ Mesh::Mesh(const std::string &name,
     m_vertex_size = (Size) m_vertex_struct->size();
     m_face_size = (Size) m_face_struct->size();
 
-    m_vertices = VertexHolder(
-        (uint8_t *) enoki::alloc((vertex_count + 1) * m_vertex_size));
-
-    m_faces = FaceHolder(
-        (uint8_t *) enoki::alloc((face_count + 1) * m_face_size));
+    m_vertices = VertexHolder(new uint8_t[(vertex_count + 1) * m_vertex_size]);
+    m_faces = VertexHolder(new uint8_t[(face_count + 1) * m_face_size]);
 
     m_mesh = true;
 }
@@ -114,8 +111,7 @@ void Mesh::recompute_vertex_normals() {
         Throw("Storing new normals in a Mesh that didn't have normals at "
               "construction time is not implemented yet.");
 
-    std::vector<Normal3f, aligned_allocator<Normal3f>> normals(
-            m_vertex_count, zero<Normal3f>());
+    std::vector<Normal3f> normals(m_vertex_count, zero<Normal3f>());
     size_t invalid_counter = 0;
     Timer timer;
 
@@ -202,7 +198,7 @@ template <typename Value, typename Point2, typename Point3,
           typename PositionSample, typename Mask>
 PositionSample Mesh::sample_position_impl(Value time, Point2 sample,
                                           Mask active) const {
-    using Index   = like_t<Value, Shape::Index>;
+    using Index   = replace_scalar_t<Value, Shape::Index>;
     using Index3  = Array<Index, 3>;
     using Normal3 = Normal<Value, 3>;
     Index face_idx;
@@ -295,19 +291,17 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
            p2 = vertex_position(fi[2], active);
 
     Vector3 dp0 = p1 - p0,
-            dp1 = p2 - p0,
-            dp_du,
-            dp_dv;
+            dp1 = p2 - p0;
 
     /* Re-interpolate intersection using barycentric coordinates */
-    masked(si.p, active) = p0 * b0 + p1 * b1 + p2 * b2;
+    si.p[active] = p0 * b0 + p1 * b1 + p2 * b2;
 
     /* Face normal */
     Normal3 n = normalize(cross(dp0, dp1));
-    masked(si.n, active) = n;
+    si.n[active] = n;
 
     /* Texture coordinates (if available) */
-    std::tie(dp_du, dp_dv) = coordinate_system(n);
+    auto [dp_du, dp_dv] = coordinate_system(n);
     Point2 uv(b1, b2);
     if (has_vertex_texcoords()) {
         Point2 uv0 = vertex_texcoord(fi[0], active),
@@ -327,7 +321,7 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
         dp_du[valid] = fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
         dp_dv[valid] = fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
     }
-    masked(si.uv, active) = uv;
+    si.uv[active] = uv;
 
     /* Shading normal (if available) */
     if (has_vertex_normals()) {
@@ -338,11 +332,11 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
         n = normalize(n0 * b0 + n1 * b1 + n2 * b2);
     }
 
-    masked(si.sh_frame.n, active) = n;
+    si.sh_frame.n[active] = n;
 
     /* Tangents */
-    masked(si.dp_du, active) = dp_du;
-    masked(si.dp_dv, active) = dp_dv;
+    si.dp_du[active] = dp_du;
+    si.dp_dv[active] = dp_dv;
 }
 
 void Mesh::fill_surface_interaction(const Ray3f &ray,
@@ -390,10 +384,10 @@ Mesh::normal_derivative_impl(const SurfaceInteraction &si,
     Value b1  = dot(du, rel), b2 = dot(dv, rel),
           a11 = dot(du, du), a12 = dot(du, dv),
           a22 = dot(dv, dv),
-          inv_det = rcp(a11 * a22 - a12 * a12);
+          inv_det = rcp<true>(a11 * a22 - a12 * a12);
 
-    Value u = ( a22 * b1 - a12 * b2) * inv_det,
-          v = (-a12 * b1 + a11 * b2) * inv_det,
+    Value u = fmsub (a22, b1, a12 * b2) * inv_det,
+          v = fnmadd(a12, b1, a11 * b2) * inv_det,
           w = 1.f - u - v;
 
     /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
@@ -410,8 +404,8 @@ Mesh::normal_derivative_impl(const SurfaceInteraction &si,
     Vector3 dndu = (n1 - n0) * il;
     Vector3 dndv = (n2 - n0) * il;
 
-    dndu -= N * dot(N, dndu);
-    dndv -= N * dot(N, dndv);
+    dndu = fnmadd(N, dot(N, dndu), dndu);
+    dndv = fnmadd(N, dot(N, dndv), dndv);
 
     return { dndu, dndv };
 }

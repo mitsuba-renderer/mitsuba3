@@ -21,6 +21,7 @@ MTS_PY_EXPORT(DiscreteDistribution) {
         .def("__getitem__", [](const DiscreteDistribution &d, const size_t &i) {
             return d[i];
         }, D(DiscreteDistribution, operator_array))
+
         .def("__getitem__", vectorize_wrapper(
             [](const DiscreteDistribution &d, const SizeP &indices) {
                 return d[indices];

@@ -92,8 +92,7 @@ public:
             sample_distr.sample(mulsign(si.wi, cos_theta_i), sample2);
         active &= neq(bs.pdf, 0.f);
 
-        Value F, cos_theta_t, eta_it, eta_ti;
-        std::tie(F, cos_theta_t, eta_it, eta_ti) =
+        auto [F, cos_theta_t, eta_it, eta_ti] =
             fresnel(dot(si.wi, m), Value(m_eta));
 
         /* Select the lobe to be sampled */

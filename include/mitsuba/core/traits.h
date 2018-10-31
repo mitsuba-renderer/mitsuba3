@@ -32,8 +32,8 @@ template <typename C, typename R, typename... A> struct function_traits<R(C::*)(
 /// Lambda function -- strip lambda closure and delegate back to ``function_traits``
 template <typename F>
 struct function_traits<
-    F, std::enable_if_t<std::is_member_function_pointer<decltype(
-           &std::remove_reference_t<F>::operator())>::value>>
+    F, std::enable_if_t<std::is_member_function_pointer_v<decltype(
+           &std::remove_reference_t<F>::operator())>>>
     : function_traits<decltype(&std::remove_reference_t<F>::operator())> { };
 
 NAMESPACE_END(mitsuba)

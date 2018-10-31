@@ -44,8 +44,8 @@ public:
     virtual Point2fP next_2d_p(MaskP active = true);
 
     template <typename T> using MaskType =
-        std::conditional_t<std::is_same<T, FloatP>::value ||
-                           std::is_same<value_t<T>, FloatP>::value, MaskP, bool>;
+        std::conditional_t<std::is_same_v<T, FloatP> ||
+                           std::is_same_v<value_t<T>, FloatP>, MaskP, bool>;
 
     /**
      * \brief Automatically selects the right variant of <tt>next_...</tt> based on

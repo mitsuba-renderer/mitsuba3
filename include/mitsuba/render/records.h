@@ -25,7 +25,7 @@ template <typename Point3_> struct PositionSample {
     using Point2               = point2_t<Point3>;
     using Normal3              = normal3_t<Point3>;
     using Value                = value_t<Point3>;
-    using ObjectPtr            = like_t<Value, const Object *>;
+    using ObjectPtr            = replace_scalar_t<Value, const Object *>;
     using SurfaceInteraction   = mitsuba::SurfaceInteraction<Point3>;
     using Mask                 = mask_t<Value>;
     using Bool                 = bool_array_t<Value>;
@@ -99,7 +99,6 @@ template <typename Point3_> struct PositionSample {
     // =============================================================
 
     ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta, object)
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 // -----------------------------------------------------------------------------
@@ -228,8 +227,6 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
         ENOKI_BASE_FIELDS(p, n, uv, time, pdf, delta, object),
         ENOKI_DERIVED_FIELDS(d, dist)
     )
-
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 // -----------------------------------------------------------------------------
@@ -246,8 +243,8 @@ template <typename Point3> struct RadianceSample {
      * \brief Make 'Scene' and 'Sampler' a dependent type so that the compiler
      * does not complain about accessing incomplete types below.
      */
-    using Scene              = std::conditional_t<is_array<Point3>::value, mitsuba::Scene,   std::nullptr_t>;
-    using Sampler            = std::conditional_t<is_array<Point3>::value, mitsuba::Sampler, std::nullptr_t>;
+    using Scene              = std::conditional_t<is_array_v<Point3>, mitsuba::Scene,   std::nullptr_t>;
+    using Sampler            = std::conditional_t<is_array_v<Point3>, mitsuba::Sampler, std::nullptr_t>;
     using Value              = value_t<Point3>;
     using Mask               = mask_t<Value>;
     using Point2             = point2_t<Point3>;
@@ -313,7 +310,6 @@ template <typename Point3> struct RadianceSample {
     // =============================================================
 
     ENOKI_STRUCT(RadianceSample, scene, sampler, si, alpha)
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 // -----------------------------------------------------------------------------

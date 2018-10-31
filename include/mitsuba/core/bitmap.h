@@ -607,7 +607,7 @@ public:
      /// Save a file using the PFM file format
      void write_pfm(Stream *stream) const;
  protected:
-     std::unique_ptr<uint8_t[], enoki::aligned_deleter> m_data;
+     std::unique_ptr<uint8_t[]> m_data;
      EPixelFormat m_pixel_format;
      Struct::EType m_component_format;
      Vector2s m_size;

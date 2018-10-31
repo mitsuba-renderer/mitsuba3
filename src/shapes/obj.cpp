@@ -60,11 +60,11 @@ public:
         };
 
         /// Temporary buffers for vertices, normals, and texture coordinates
-        std::vector<Vector3f, enoki::aligned_allocator<Vector3f>> vertices;
-        std::vector<Normal3f, enoki::aligned_allocator<Normal3f>> normals;
-        std::vector<Vector2f, enoki::aligned_allocator<Vector2f>> texcoords;
-        std::vector<Index3, enoki::aligned_allocator<Index3>> triangles;
-        std::vector<VertexBinding, enoki::aligned_allocator<VertexBinding>> vertex_map;
+        std::vector<Vector3f> vertices;
+        std::vector<Normal3f> normals;
+        std::vector<Vector2f> texcoords;
+        std::vector<Index3> triangles;
+        std::vector<VertexBinding> vertex_map;
 
         size_t vertex_guess = mmap->size() / 100;
         vertices.reserve(vertex_guess);
@@ -234,10 +234,8 @@ public:
 
         m_vertex_size = (Size) m_vertex_struct->size();
         m_face_size   = (Size) m_face_struct->size();
-        m_vertices    = VertexHolder(
-            (uint8_t *) enoki::alloc((m_vertex_count + 1) * m_vertex_size));
-        m_faces       = FaceHolder(
-            (uint8_t *) enoki::alloc((m_face_count + 1) * m_face_size));
+        m_vertices    = VertexHolder(new uint8_t[(m_vertex_count + 1) * m_vertex_size]);
+        m_faces       = FaceHolder(new uint8_t[(m_face_count + 1) * m_face_size]);
         memcpy(m_faces.get(), triangles.data(), m_face_count * m_face_size);
 
         for (const auto& v_ : vertex_map) {

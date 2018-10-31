@@ -62,12 +62,8 @@ template <typename Value, typename Point2, typename RayDifferential,
 std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
     Value time, Value sample1, const Point2 &sample2, const Point2 &sample3,
     Mask active) const {
-    using Ray3 = Ray<Point<Value, 3>>;
 
-    Ray3 temp_ray;
-    Spectrum result_spec, unused;
-
-    std::tie(temp_ray, result_spec) =
+    auto [temp_ray, result_spec] =
         sample_ray(time, sample1, sample2, sample3, active);
 
     RayDifferential result_ray(temp_ray);
@@ -76,6 +72,7 @@ std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
     Vector2f dy(0.f, 1.f / m_resolution.y());
 
     // Sample a result_ray for X+1
+    Spectrum unused;
     std::tie(temp_ray, unused) =
         sample_ray(time, sample1, sample2 + dx, sample3, active);
 

@@ -328,13 +328,14 @@ public:
     bool is_mesh() const { return m_mesh; }
 
     /// Does the surface of this shape mark a medium transition?
-    bool is_medium_transition() const { return false; /* TODO: handle media. */ }
+    bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
+                                               m_exterior_medium.get() != nullptr; }
 
     /// Return the medium that lies on the interior of this shape
-    const Medium *interior_medium() const { return nullptr; /* TODO: handle media. */ }
+    const Medium *interior_medium() const { return m_interior_medium.get(); }
 
     /// Return the medium that lies on the exterior of this shape
-    const Medium *exterior_medium() const { return nullptr; /* TODO: handle media. */ }
+    const Medium *exterior_medium() const { return m_exterior_medium.get(); }
 
     /// Return the shape's BSDF
     const BSDF *bsdf() const { return m_bsdf.get(); }
@@ -373,6 +374,7 @@ public:
     // =============================================================
 
     MTS_DECLARE_CLASS()
+    ENOKI_CALL_SUPPORT()
 
 protected:
     Shape(const Properties &props);
@@ -384,6 +386,8 @@ protected:
     ref<BSDF> m_bsdf;
     ref<Emitter> m_emitter;
     ref<Sensor> m_sensor;
+    ref<Medium> m_interior_medium;
+    ref<Medium> m_exterior_medium;
 
 private:
     // Internal
@@ -413,18 +417,19 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 // Enable usage of array pointers for our types
-ENOKI_CALL_SUPPORT_BEGIN(mitsuba::ShapeP)
-ENOKI_CALL_SUPPORT_SCALAR(is_emitter)
-ENOKI_CALL_SUPPORT_SCALAR(emitter)
-ENOKI_CALL_SUPPORT_SCALAR(is_sensor)
-ENOKI_CALL_SUPPORT_SCALAR(sensor)
-ENOKI_CALL_SUPPORT_SCALAR(bsdf)
-ENOKI_CALL_SUPPORT_SCALAR(is_medium_transition)
-ENOKI_CALL_SUPPORT_SCALAR(exterior_medium)
-ENOKI_CALL_SUPPORT_SCALAR(interior_medium)
-ENOKI_CALL_SUPPORT(normal_derivative)
-ENOKI_CALL_SUPPORT(fill_surface_interaction)
-ENOKI_CALL_SUPPORT_END(mitsuba::ShapeP)
+ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Shape)
+    ENOKI_CALL_SUPPORT_METHOD(normal_derivative)
+    ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(emitter, m_emitter, const mitsuba::Emitter *)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(sensor, m_sensor, const mitsuba::Sensor *)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(bsdf, m_bsdf, const mitsuba::BSDF *)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(interior_medium, m_interior_medium, const mitsuba::Medium *)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(exterior_medium, m_exterior_medium, const mitsuba::Medium *)
+    auto is_emitter() const { return neq(emitter(), nullptr); }
+    auto is_sensor() const { return neq(sensor(), nullptr); }
+    auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||
+                                               neq(exterior_medium(), nullptr); }
+ENOKI_CALL_SUPPORT_END(mitsuba::Shape)
 
 //! @}
 // -----------------------------------------------------------------------

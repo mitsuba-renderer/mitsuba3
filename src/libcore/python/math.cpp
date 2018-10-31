@@ -74,14 +74,18 @@ MTS_PY_EXPORT(math) {
     math.def("is_power_of_two", &math::is_power_of_two<uint64_t>, D(math, is_power_of_two));
     math.def("round_to_power_of_two", &math::round_to_power_of_two<uint64_t>, D(math, round_to_power_of_two));
 
-    math.def("linear_to_srgb", &enoki::linear_to_srgb<double>,
-             "See enoki::linear_to_srgb(double).");
-    math.def("srgb_to_linear", &enoki::srgb_to_linear<double>,
-             "See enoki::srgb_to_linear(double).");
-    math.def("linear_to_srgb", vectorize_wrapper(&enoki::linear_to_srgb<Float64P>),
-             "See enoki::linear_to_srgb(Float64P).");
-    math.def("srgb_to_linear", vectorize_wrapper(&enoki::srgb_to_linear<Float64P>),
-             "See enoki::srgb_to_linear(Float64P).");
+    math.def("linear_to_srgb",
+             vectorize_wrapper([](double &c) { return linear_to_srgb(c); }),
+             "Applies the sRGB gamma curve to the given argument.");
+    math.def("linear_to_srgb", vectorize_wrapper([](const Float64P &c) {
+                 return linear_to_srgb(c);
+             }));
+    math.def("srgb_to_linear",
+             vectorize_wrapper([](double &c) { return srgb_to_linear(c); }),
+             "Applies the inverse sRGB gamma curve to the given argument.");
+    math.def("srgb_to_linear", vectorize_wrapper([](const Float64P &c) {
+                 return srgb_to_linear(c);
+             }));
 
     math.def("chi2", [](py::array_t<double> obs, py::array_t<double> exp, double thresh) {
         if (obs.ndim() != 1 || exp.ndim() != 1 || exp.shape(0) != obs.shape(0))

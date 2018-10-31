@@ -3,7 +3,6 @@
 #include <atomic>
 #include <stdexcept>
 #include <vector>
-#include <enoki/alloc.h>
 #include <mitsuba/core/class.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -80,8 +79,6 @@ public:
      */
     virtual std::string to_string() const;
 
-    ENOKI_ALIGNED_OPERATOR_NEW()
-
 protected:
     /** \brief Virtual protected deconstructor.
      * (Will only be called by \ref ref)
@@ -113,7 +110,7 @@ public:
     /// Construct a reference from a pointer
     template <typename T2 = T>
     ref(T *ptr) : m_ptr(ptr) {
-        static_assert(std::is_base_of<Object, T2>::value,
+        static_assert(std::is_base_of_v<Object, T2>,
                       "Cannot create reference to object not inheriting from Object class.");
         if (m_ptr)
             ((Object *) m_ptr)->inc_ref();
@@ -162,7 +159,7 @@ public:
     /// Overwrite this reference with a pointer to another object
     template <typename T2 = T>
     ref& operator=(T *ptr) noexcept {
-        static_assert(std::is_base_of<Object, T2>::value,
+        static_assert(std::is_base_of_v<Object, T2>,
                       "Cannot create reference to an instance that does not"
                       " inherit from the Object class..");
         if (m_ptr != ptr) {

@@ -70,7 +70,6 @@ template <typename Point_> struct Ray {
     }
 
     ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /** \brief Ray differential -- enhances the basic ray class with
@@ -109,8 +108,6 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
         ENOKI_BASE_FIELDS(o, d, d_rcp, mint, maxt, time, wavelengths),
         ENOKI_DERIVED_FIELDS(o_x, o_y, d_x, d_y, has_differentials)
     )
-
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /// Return a string representation of the ray

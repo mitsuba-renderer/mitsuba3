@@ -15,6 +15,7 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/shape.h>
 #include <tbb/tbb.h>
+#include <cstdlib>
 
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MTS_KD_MAXDEPTH 48u
@@ -209,7 +210,7 @@ protected:
 #endif
 
     /// kd-tree node in 8 bytes.
-    struct KDNode {
+    struct alignas(8) KDNode {
         union {
             /// Inner node
             struct ENOKI_PACK {
@@ -1788,7 +1789,7 @@ protected:
         m_node_count = Size(ctx.node_storage.size());
         m_index_count = Size(ctx.index_storage.size());
 
-        m_indices.reset(enoki::alloc<Index>(m_index_count));
+        m_indices.reset(new Index[m_index_count]);
         tbb::parallel_for(
             tbb::blocked_range<Size>(0u, m_index_count, MTS_KD_GRAIN_SIZE),
             [&](const tbb::blocked_range<Size> &range) {
@@ -1799,7 +1800,7 @@ protected:
 
         tbb::concurrent_vector<Index>().swap(ctx.index_storage);
 
-        m_nodes.reset(enoki::alloc<KDNode>(m_node_count));
+        m_nodes.reset(new KDNode[m_node_count]);
         tbb::parallel_for(
             tbb::blocked_range<Size>(0u, m_node_count, MTS_KD_GRAIN_SIZE),
             [&](const tbb::blocked_range<Size> &range) {
@@ -1889,8 +1890,8 @@ protected:
     }
 
 protected:
-    std::unique_ptr<KDNode[], enoki::aligned_deleter> m_nodes;
-    std::unique_ptr<Index[],  enoki::aligned_deleter> m_indices;
+    std::unique_ptr<KDNode[]> m_nodes;
+    std::unique_ptr<Index[]> m_indices;
     Size m_node_count = 0;
     Size m_index_count = 0;
 
@@ -2097,7 +2098,7 @@ public:
             Value shape_index_v = reinterpret_array<Value>(UInt(shape_index));
             Value prim_index_v = reinterpret_array<Value>(UInt(prim_index));
 
-            if (!is_array<Value>::value) {
+            if constexpr (!is_array_v<Value>) {
                 cache[0] = shape_index_v;
                 cache[1] = prim_index_v;
             } else {
@@ -2106,7 +2107,7 @@ public:
             }
 
             if (is_mesh) {
-                if (!is_array<Value>::value) {
+                if constexpr (!is_array_v<Value>) {
                     cache[2] = u;
                     cache[3] = v;
                 } else {
@@ -2360,7 +2361,7 @@ public:
             std::tie(prim_hit, prim_t) =
                 intersect_prim<ShadowRay>(i, ray, cache, active);
 
-            if (is_array<Value>::value) {
+            if constexpr (is_array_v<Value>) {
                 masked(ray.maxt, prim_hit) = min(ray.maxt, prim_t);
                 masked(hit_t, prim_hit) = prim_t;
             } else if (all(prim_hit)) {

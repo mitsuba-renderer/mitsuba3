@@ -85,7 +85,7 @@ constexpr const char *profiler_phase_id[int(EProfilerPhase::EProfilerPhaseCount)
 static_assert(int(EProfilerPhase::EProfilerPhaseCount) <= 64,
               "List of profiler phases is limited to 64 entries");
 
-static_assert(std::extent<decltype(profiler_phase_id)>::value == int(EProfilerPhase::EProfilerPhaseCount),
+static_assert(std::extent_v<decltype(profiler_phase_id)> == int(EProfilerPhase::EProfilerPhaseCount),
               "Profiler phases and descriptions don't have matching length!");
 
 #if defined(MTS_ENABLE_PROFILER)

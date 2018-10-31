@@ -57,16 +57,13 @@ public:
 
     /// Perform a lookup into the discretized version
     template <typename T>
-    MTS_INLINE T eval_discretized(T x, const mask_t<T> &active = true) const {
-        using Int = int_array_t<T>;
-        return gather<T>(
-            m_values,
-            min(Int(MTS_FILTER_RESOLUTION), Int(abs(x * m_scale_factor))),
-            active);
+    MTS_INLINE T eval_discretized(const T &x, const mask_t<T> &active = true) const {
+        using Int = int32_array_t<T>;
+        Int index = min(Int(abs(x * m_scale_factor)), MTS_FILTER_RESOLUTION);
+        return gather<T>(m_values, index, active);
     }
 
     MTS_DECLARE_CLASS()
-    ENOKI_ALIGNED_OPERATOR_NEW()
 
 protected:
     /// Create a new reconstruction filter
@@ -287,8 +284,6 @@ template <typename Scalar> struct Resampler {
         return tfm::format("Resampler[source_res=%i, target_res=%i]",
                            m_source_res, m_target_res);
     }
-
-    ENOKI_ALIGNED_OPERATOR_NEW()
 
 private:
     template <bool Clamp, bool Resample>

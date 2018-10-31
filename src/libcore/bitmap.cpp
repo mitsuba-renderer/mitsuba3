@@ -68,8 +68,7 @@ Bitmap::Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
     rebuild_struct(channel_count);
 
     if (!m_data) {
-        m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-            enoki::alloc<uint8_t>(buffer_size()));
+        m_data = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size()]);
 
         m_owns_data = true;
     }
@@ -83,8 +82,7 @@ Bitmap::Bitmap(const Bitmap &bitmap)
       m_srgb_gamma(bitmap.m_srgb_gamma),
       m_owns_data(true) {
     size_t size = buffer_size();
-    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-        enoki::alloc<uint8_t>(size));
+    m_data = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
     memcpy(m_data.get(), bitmap.m_data.get(), size);
 }
 
@@ -687,8 +685,12 @@ std::string Bitmap::to_string() const {
         oss << "  metadata = {" << std::endl;
         for (auto it = keys.begin(); it != keys.end(); ) {
             std::string value = m_metadata.as_string(*it);
-            if (value.length() > 50)
-                value = value.substr(0, 50) + ".. [truncated]";
+            if (value.length() > 50) {
+                value = value.substr(0, 50);
+                if (value[0] == '\"')
+                    value += '\"';
+                value + ".. [truncated]";
+            }
             oss << "    " << *it << " => " << value;
             if (++it != keys.end())
                 oss << ",";
@@ -913,8 +915,7 @@ void Bitmap::read_openexr(Stream *stream) {
            pixel_count = hprod(m_size);
 
     /* Finally, allocate memory for it */
-    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-        enoki::alloc<uint8_t>(row_stride * m_size.y()));
+    m_data = std::unique_ptr<uint8_t[]>(new uint8_t[row_stride * m_size.y()]);
     m_owns_data = true;
 
     using ResampleBuffer = std::pair<std::string, ref<Bitmap>>;
@@ -1340,8 +1341,7 @@ void Bitmap::read_jpeg(Stream *stream) {
     size_t row_stride =
         (size_t) cinfo.output_width * (size_t) cinfo.output_components;
 
-    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-        enoki::alloc<uint8_t>(buffer_size()));
+    m_data = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size()]);
     m_owns_data = true;
 
     std::unique_ptr<uint8_t*[]> scanlines(new uint8_t*[m_size.y()]);
@@ -1530,8 +1530,7 @@ void Bitmap::read_png(Stream *stream) {
         m_pixel_format, m_component_format);
 
     size_t size = buffer_size();
-    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-        enoki::alloc<uint8_t>(size));
+    m_data = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
     m_owns_data = true;
 
     rows = new png_bytep[m_size.y()];
@@ -1689,7 +1688,7 @@ void Bitmap::read_ppm(Stream *stream) {
         m_pixel_format, m_component_format);
 
     size_t size = buffer_size();
-    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(enoki::alloc<uint8_t>(size));
+    m_data = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
     m_owns_data = true;
     stream->read(uint8_data(), size);
 }
@@ -1827,8 +1826,7 @@ void Bitmap::read_rgbe(Stream *stream) {
     m_component_format = Struct::EFloat32;
     m_srgb_gamma = false;
     rebuild_struct();
-    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-        enoki::alloc<uint8_t>(buffer_size()));
+    m_data = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size()]);
     m_owns_data = true;
 
     auto fs = dynamic_cast<FileStream *>(stream);
@@ -1993,8 +1991,7 @@ void Bitmap::read_pfm(Stream *stream) {
     rebuild_struct();
 
     size_t size_in_bytes = buffer_size();
-    m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-        enoki::alloc<uint8_t>(size_in_bytes));
+    m_data = std::unique_ptr<uint8_t[]>(new uint8_t[size_in_bytes]);
     m_owns_data = true;
 
     auto fs = dynamic_cast<FileStream *>(stream);
@@ -2122,8 +2119,7 @@ void Bitmap::read_bmp(Stream *stream) {
         rebuild_struct();
 
         size_t size = buffer_size();
-        m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-            enoki::alloc<uint8_t>(size));
+        m_data = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
         m_owns_data = true;
 
         auto fs = dynamic_cast<FileStream *>(stream);
@@ -2207,8 +2203,7 @@ void Bitmap::read_tga(Stream *stream) {
         size_t size = buffer_size(),
                row_size = size / m_size.y();
 
-        m_data = std::unique_ptr<uint8_t[], enoki::aligned_deleter>(
-            enoki::alloc<uint8_t>(size));
+        m_data = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
         m_owns_data = true;
         size_t channel_count = bpp / 8;
 

@@ -113,9 +113,7 @@ public:
         using Vector3 = vector3_t<Point3>;
         using DirectionSample = DirectionSample<Point3>;
 
-        Point2 uv;
-        Value pdf;
-        std::tie(uv, pdf) = m_warp.sample(sample);
+        auto [uv, pdf] = m_warp.sample(sample);
 
         Value theta = uv.y() * math::Pi,
               phi = uv.x() * (2.f * math::Pi);

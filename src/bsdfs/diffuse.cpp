@@ -53,8 +53,8 @@ public:
         if (!ctx.is_enabled(EDiffuseReflection))
             return 0.f;
 
-        Value cos_theta_i = Frame::cos_theta(si.wi);
-        Value cos_theta_o = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi),
+              cos_theta_o = Frame::cos_theta(wo);
 
         Spectrum value = m_reflectance->eval(si, active) *
                          math::InvPi * cos_theta_o;
@@ -73,8 +73,8 @@ public:
         if (!ctx.is_enabled(EDiffuseReflection))
             return 0.f;
 
-        Value cos_theta_i = Frame::cos_theta(si.wi);
-        Value cos_theta_o = Frame::cos_theta(wo);
+        Value cos_theta_i = Frame::cos_theta(si.wi),
+              cos_theta_o = Frame::cos_theta(wo);
 
         Value pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 

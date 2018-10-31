@@ -24,34 +24,33 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name Data types for RGB data
 // =======================================================================
 
-template <typename Value, size_t Size>
+template <typename Value_, size_t Size_>
 struct Color
-    : enoki::StaticArrayImpl<Value, Size,
-                             enoki::detail::approx_default<Value>::value,
-                             RoundingMode::Default, Color<Value, Size>> {
+    : enoki::StaticArrayImpl<Value_, Size_,
+                             enoki::array_approx_v<Value_>,
+                             RoundingMode::Default, false, Color<Value_, Size_>> {
 
-    static constexpr bool Approx = enoki::detail::approx_default<Value>::value;
+    static constexpr bool Approx = enoki::array_approx_v<Value_>;
 
-    using Base = enoki::StaticArrayImpl<Value, Size, Approx, RoundingMode::Default,
-                                        Color<Value, Size>>;
+    using Base = enoki::StaticArrayImpl<Value_, Size_, Approx, RoundingMode::Default,
+                                        false, Color<Value_, Size_>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
-    template <typename T> using ReplaceType = Color<T, Size>;
+    template <typename T> using ReplaceValue = Color<T, Size_>;
 
-    using MaskType = enoki::Mask<Value, Size, Approx, RoundingMode::Default>;
+    using ArrayType = Color;
+    using MaskType = enoki::Mask<Value_, Size_, Approx, RoundingMode::Default>;
 
-    using typename Base::Scalar;
+    decltype(auto) r() const { return Base::x(); }
+    decltype(auto) r() { return Base::x(); }
 
-    const Scalar &r() const { return Base::x(); }
-    Scalar &r() { return Base::x(); }
+    decltype(auto) g() const { return Base::y(); }
+    decltype(auto) g() { return Base::y(); }
 
-    const Scalar &g() const { return Base::y(); }
-    Scalar &g() { return Base::y(); }
+    decltype(auto) b() const { return Base::z(); }
+    decltype(auto) b() { return Base::z(); }
 
-    const Scalar &b() const { return Base::z(); }
-    Scalar &b() { return Base::z(); }
-
-    ENOKI_DECLARE_ARRAY(Base, Color)
+    ENOKI_ARRAY_IMPORT(Base, Color)
 };
 
 //! @}
@@ -61,24 +60,25 @@ struct Color
 //! @{ \name Data types for discretized spectral data
 // =======================================================================
 
-template <typename Value>
+template <typename Value_>
 struct Spectrum
-    : enoki::StaticArrayImpl<Value, MTS_WAVELENGTH_SAMPLES,
-                             enoki::detail::approx_default<Value>::value,
-                             RoundingMode::Default, Spectrum<Value>> {
+    : enoki::StaticArrayImpl<Value_, MTS_WAVELENGTH_SAMPLES,
+                             enoki::array_approx_v<Value_>,
+                             RoundingMode::Default, false, Spectrum<Value_>> {
 
-    static constexpr bool Approx = enoki::detail::approx_default<Value>::value;
+    static constexpr bool Approx = enoki::array_approx_v<Value_>;
 
-    using Base = enoki::StaticArrayImpl<Value, MTS_WAVELENGTH_SAMPLES, Approx,
-                                        RoundingMode::Default, Spectrum<Value>>;
+    using Base = enoki::StaticArrayImpl<Value_, MTS_WAVELENGTH_SAMPLES, Approx,
+                                        RoundingMode::Default, false, Spectrum<Value_>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
-    template <typename T> using ReplaceType = Spectrum<T>;
+    template <typename T> using ReplaceValue = Spectrum<T>;
 
-    using MaskType = enoki::Mask<Value, MTS_WAVELENGTH_SAMPLES,
+    using ArrayType = Spectrum;
+    using MaskType = enoki::Mask<Value_, MTS_WAVELENGTH_SAMPLES,
                                  Approx, RoundingMode::Default>;
 
-    ENOKI_DECLARE_ARRAY(Base, Spectrum)
+    ENOKI_ARRAY_IMPORT(Base, Spectrum)
 };
 
 //! @}
@@ -130,18 +130,18 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths,
 
     active &= wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX;
 
-    Index i0 = min(max(Index(t), zero<Index>()), Index(MTS_CIE_SAMPLES - 2));
-    Index i1 = i0 + 1;
+    Index i0 = min(max(Index(t), zero<Index>()), Index(MTS_CIE_SAMPLES - 2)),
+          i1 = i0 + 1;
 
-    Expr v0_x = gather<Expr>(cie1931_x_data, i0, active);
-    Expr v1_x = gather<Expr>(cie1931_x_data, i1, active);
-    Expr v0_y = gather<Expr>(cie1931_y_data, i0, active);
-    Expr v1_y = gather<Expr>(cie1931_y_data, i1, active);
-    Expr v0_z = gather<Expr>(cie1931_z_data, i0, active);
-    Expr v1_z = gather<Expr>(cie1931_z_data, i1, active);
+    Expr v0_x = gather<Expr>(cie1931_x_data, i0, active),
+         v1_x = gather<Expr>(cie1931_x_data, i1, active),
+         v0_y = gather<Expr>(cie1931_y_data, i0, active),
+         v1_y = gather<Expr>(cie1931_y_data, i1, active),
+         v0_z = gather<Expr>(cie1931_z_data, i0, active),
+         v1_z = gather<Expr>(cie1931_z_data, i1, active);
 
-    Expr w1 = t - Expr(i0);
-    Expr w0 = (Float) 1 - w1;
+    Expr w1 = t - Expr(i0),
+         w0 = (Float) 1 - w1;
 
     return { fmadd(w0, v0_x, w1 * v1_x) & active,
              fmadd(w0, v0_y, w1 * v1_y) & active,
@@ -161,20 +161,21 @@ Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
 
     active &= wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX;
 
-    Index i0 = min(max(Index(t), zero<Index>()), Index(MTS_CIE_SAMPLES - 2));
-    Index i1 = i0 + 1;
+    Index i0 = min(max(Index(t), zero<Index>()), Index(MTS_CIE_SAMPLES - 2)),
+          i1 = i0 + 1;
 
-    Expr v0 = gather<Expr>(cie1931_y_data, i0, active);
-    Expr v1 = gather<Expr>(cie1931_y_data, i1, active);
+    Expr v0 = gather<Expr>(cie1931_y_data, i0, active),
+         v1 = gather<Expr>(cie1931_y_data, i1, active);
 
-    Expr w1 = t - Expr(i0);
-    Expr w0 = (Float) 1 - w1;
+    Expr w1 = t - Expr(i0),
+         w0 = (Float) 1 - w1;
 
-    return (w0 * v0 + w1 * v1) & active;
+    return fmadd(w0, v0, w1 * v1) & active;
 }
 
 template <typename Spectrum>
-value_t<Spectrum> luminance(const Spectrum &spectrum, const Spectrum &wavelengths,
+value_t<Spectrum> luminance(const Spectrum &spectrum,
+                            const Spectrum &wavelengths,
                             mask_t<Spectrum> active = true) {
     return mean(cie1931_y(wavelengths, active) * spectrum);
 }

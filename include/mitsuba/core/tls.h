@@ -124,7 +124,7 @@ public:
  * This is a partial template specialization to subclasses of \ref Object.
  */
 template <typename Type> class ThreadLocal<
-        Type, typename std::enable_if<std::is_base_of<Object, Type>::value>::type>
+        Type, typename std::enable_if<std::is_base_of_v<Object, Type>>::type>
     : ThreadLocal<ref<Type>> {
 public:
     /// Update the data associated with the current thread

@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 class MTS_EXPORT_RENDER Mesh : public Shape {
 public:
-    using FaceHolder   = std::unique_ptr<uint8_t, enoki::aligned_deleter>;
-    using VertexHolder = std::unique_ptr<uint8_t, enoki::aligned_deleter>;
+    using FaceHolder   = std::unique_ptr<uint8_t[]>;
+    using VertexHolder = std::unique_ptr<uint8_t[]>;
 
     /// Create a new mesh with the given vertex and face data structures
     Mesh(const std::string &name,
@@ -43,22 +43,22 @@ public:
     const uint8_t *faces() const { return m_faces.get(); }
 
     /// Return a pointer (or packet of pointers) to a specific vertex
-    template <typename Index, typename Pointer = like_t<Index, uint8_t *>>
+    template <typename Index, typename Pointer = replace_scalar_t<Index, uint8_t *>>
     Pointer vertex(Index index) {
         return Pointer(m_vertices.get()) + m_vertex_size * index;
     }
     /// Return a pointer (or packet of pointers) to a specific vertex (const version)
-    template <typename Index, typename Pointer = like_t<Index, const uint8_t *>>
+    template <typename Index, typename Pointer = replace_scalar_t<Index, const uint8_t *>>
     Pointer vertex(Index index) const {
         return Pointer(m_vertices.get()) + m_vertex_size * index;
     }
     /// Return a pointer (or packet of pointers) to a specific face
-    template <typename Index, typename Pointer = like_t<Index, uint8_t *>>
+    template <typename Index, typename Pointer = replace_scalar_t<Index, uint8_t *>>
     Pointer face(Index index) {
         return Pointer(m_faces.get()) + m_face_size * index;
     }
     /// Return a pointer (or packet of pointers) to a specific face (const version)
-    template <typename Index, typename Pointer = like_t<Index, const uint8_t *>>
+    template <typename Index, typename Pointer = replace_scalar_t<Index, const uint8_t *>>
     Pointer face(Index index) const {
         return Pointer(m_faces.get()) + m_face_size * index;
     }
@@ -131,7 +131,7 @@ public:
 
     /// Returns the surface area of the face with index \c index
     template <typename Index,
-              typename Value = like_t<Index, Float>,
+              typename Value = replace_scalar_t<Index, Float>,
               typename Mask = mask_t<Value>>
     Value face_area(Index index, mask_t<Mask> active = true) const {
         auto fi = face_indices(index, active);
@@ -360,7 +360,7 @@ protected:
     tbb::spin_mutex m_mutex;
 };
 
-using MeshPtr = like_t<FloatP, const Mesh *>;
+using MeshPtr = replace_scalar_t<FloatP, const Mesh *>;
 
 NAMESPACE_END(mitsuba)
 
@@ -369,15 +369,18 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 // Enable usage of array pointers for our types
-ENOKI_CALL_SUPPORT_BEGIN(mitsuba::MeshPtr)
-ENOKI_CALL_SUPPORT_SCALAR(has_vertex_normals)
-ENOKI_CALL_SUPPORT_SCALAR(vertex_struct)
-ENOKI_CALL_SUPPORT(vertex)
-ENOKI_CALL_SUPPORT(vertex_position)
-ENOKI_CALL_SUPPORT(vertex_normal)
-ENOKI_CALL_SUPPORT(face)
-ENOKI_CALL_SUPPORT(fill_surface_interaction)
-ENOKI_CALL_SUPPORT_END(mitsuba::MeshPtr)
+ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Mesh)
+    ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(faces, m_faces, uint8_t*)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(vertices, m_vertices, uint8_t*)
+
+    //ENOKI_CALL_SUPPORT(face)
+    //ENOKI_CALL_SUPPORT(vertex)
+
+    //ENOKI_CALL_SUPPORT(has_vertex_normals)
+    //ENOKI_CALL_SUPPORT(vertex_position)
+    //ENOKI_CALL_SUPPORT(vertex_normal)
+ENOKI_CALL_SUPPORT_END(mitsuba::Mesh)
 
 //! @}
 // -----------------------------------------------------------------------

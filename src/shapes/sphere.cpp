@@ -152,9 +152,7 @@ public:
                   B = -2.0f * query_proj_dist,
                   C = query_dist_2 - m_radius * m_radius;
 
-            Mask solution_found;
-            Value near_t, far_t;
-            std::tie(solution_found, near_t, far_t) = math::solve_quadratic(A, B, C);
+            auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
             // The intersection couldn't be found due to roundoff errors..
             // Don't give up -- one workaround is to project the closest
@@ -215,23 +213,21 @@ public:
     template <typename Ray3, typename Value = typename Ray3::Value>
     std::pair<mask_t<Value>, Value> ray_intersect_impl(
             const Ray3 &ray, Value * /*cache*/, const mask_t<Value> &active) const {
-        using Double  = like_t<Value, double>;
-        using Vector3 = Vector<Double, 3>;
+        using Float64  = float64_array_t<Value>;
+        using Vector3 = Vector<Float64, 3>;
         using Mask    = mask_t<Value>;
 
-        Double mint = Double(ray.mint);
-        Double maxt = Double(ray.maxt);
+        Float64 mint = Float64(ray.mint);
+        Float64 maxt = Float64(ray.maxt);
 
         Vector3 o = Vector3(ray.o) - Vector<double, 3>(m_center);
         Vector3 d(ray.d);
 
-        Double A = squared_norm(d);
-        Double B = 2.0 * dot(o, d);
-        Double C = squared_norm(o) - (double) (m_radius * m_radius);
+        Float64 A = squared_norm(d);
+        Float64 B = 2.0 * dot(o, d);
+        Float64 C = squared_norm(o) - (double) (m_radius * m_radius);
 
-        Mask solution_found;
-        Double near_t, far_t;
-        std::tie(solution_found, near_t, far_t) = math::solve_quadratic(A, B, C);
+        auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
         Mask out_bounds = !((near_t <= maxt) && (far_t >= mint)); // NaN-aware conditionals
@@ -246,23 +242,21 @@ public:
 
     template <typename Ray3, typename Value = typename Ray3::Value>
     mask_t<Value> ray_test_impl(const Ray3 &ray, const mask_t<Value> &active) const {
-        using Double  = like_t<Value, double>;
-        using Vector3 = Vector<Double, 3>;
+        using Float64 = float64_array_t<Value>;
+        using Vector3 = Vector<Float64, 3>;
         using Mask    = mask_t<Value>;
 
-        Double mint = Double(ray.mint);
-        Double maxt = Double(ray.maxt);
+        Float64 mint = Float64(ray.mint);
+        Float64 maxt = Float64(ray.maxt);
 
         Vector3 o = Vector3(ray.o) - Vector<double, 3>(m_center);
         Vector3 d(ray.d);
 
-        Double A = squared_norm(d);
-        Double B = 2.0 * dot(o, d);
-        Double C = squared_norm(o) - (double) (m_radius * m_radius);
+        Float64 A = squared_norm(d);
+        Float64 B = 2.0 * dot(o, d);
+        Float64 C = squared_norm(o) - (double) (m_radius * m_radius);
 
-        Mask solution_found;
-        Double near_t, far_t;
-        std::tie(solution_found, near_t, far_t) = math::solve_quadratic(A, B, C);
+        auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
         Mask out_bounds = !((near_t <= maxt) && (far_t >= mint)); // NaN-aware conditionals
@@ -324,8 +318,7 @@ public:
                                              * Vector3(local.z() * cos_phi,
                                                        local.z() * sin_phi,
                                                        -sin(theta) * m_radius) * math::Pi;
-            Vector3 a, b;
-            std::tie(a, b) = coordinate_system(si.sh_frame.n);
+            auto [a, b] = coordinate_system(si.sh_frame.n);
             masked(si.sh_frame.s, mask) = a;
             masked(si.sh_frame.t, mask) = b;
         }

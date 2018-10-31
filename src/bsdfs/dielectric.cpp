@@ -52,8 +52,7 @@ public:
         /* Evaluate the Fresnel equations for unpolarized illumination */
         Value cos_theta_i = Frame::cos_theta(si.wi);
 
-        Value r_i, cos_theta_t, eta_it, eta_ti;
-        std::tie(r_i, cos_theta_t, eta_it, eta_ti) = fresnel(cos_theta_i, Value(m_eta));
+        auto [r_i, cos_theta_t, eta_it, eta_ti] = fresnel(cos_theta_i, Value(m_eta));
         Value t_i = 1.f - r_i;
 
         /* Lobe selection */

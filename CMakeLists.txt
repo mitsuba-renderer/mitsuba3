@@ -173,12 +173,12 @@ endif()
 # Language and optimization flags that are used to compile Mitsuba
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
   # Enable C++14
-  CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
+  CHECK_CXX_COMPILER_FLAG("-std=c++17" HAS_CPP14_FLAG)
 
   if (HAS_CPP14_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
   else()
-    message(FATAL_ERROR "Unsupported compiler -- Mitsuba requires C++14 support!")
+    message(FATAL_ERROR "Unsupported compiler -- Mitsuba requires C++17 support!")
   endif()
 
   # Set the default symbol visibility to hidden (very important to obtain small binaries)

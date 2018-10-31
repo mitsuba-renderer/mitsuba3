@@ -68,13 +68,12 @@ Scene::~Scene() { }
 
 SurfaceInteraction3f Scene::ray_intersect(const Ray3f &ray) const {
     ScopedPhase sp(EProfilerPhase::ERayIntersect);
-    Float hit_t, cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-    bool hit;
+    Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
     #if defined(MTS_DISABLE_KDTREE)
-        std::tie(hit, hit_t) = m_kdtree->ray_intersect_naive<false>(ray, cache);
+        auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache);
     #else
-        std::tie(hit, hit_t) = m_kdtree->ray_intersect<false>(ray, cache);
+        auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache);
     #endif
 
     SurfaceInteraction3f si;
@@ -92,13 +91,12 @@ SurfaceInteraction3f Scene::ray_intersect(const Ray3f &ray) const {
 
 SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) const {
     ScopedPhase sp(EProfilerPhase::ERayIntersectP);
-    FloatP hit_t, cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-    MaskP hit;
+    FloatP cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
     #if defined(MTS_DISABLE_KDTREE)
-        std::tie(hit, hit_t) = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
+        auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
     #else
-        std::tie(hit, hit_t) = m_kdtree->ray_intersect<false>(ray, cache, active);
+        auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache, active);
     #endif
 
     SurfaceInteraction3fP si;
@@ -136,9 +134,8 @@ MaskP Scene::ray_test(const Ray3fP &ray, MaskP active) const {
 
 SurfaceInteraction3f Scene::ray_intersect_naive(const Ray3f &ray) const {
     ScopedPhase sp(EProfilerPhase::ERayIntersect);
-    Float hit_t, cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-    bool hit;
-    std::tie(hit, hit_t) = m_kdtree->ray_intersect_naive<false>(ray, cache);
+    Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+    auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache);
 
     SurfaceInteraction3f si;
     if (likely(hit)) {
@@ -150,9 +147,8 @@ SurfaceInteraction3f Scene::ray_intersect_naive(const Ray3f &ray) const {
 
 SurfaceInteraction3fP Scene::ray_intersect_naive(const Ray3fP &ray, MaskP active) const {
     ScopedPhase sp(EProfilerPhase::ERayIntersectP);
-    FloatP hit_t, cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-    MaskP hit;
-    std::tie(hit, hit_t) = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
+    FloatP cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+    auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
 
     SurfaceInteraction3fP si;
     if (likely(any(hit))) {
@@ -173,11 +169,11 @@ template <typename Interaction, typename Value, typename Spectrum,
 std::pair<DirectionSample, Spectrum>
 Scene::sample_emitter_direction_impl(const Interaction &ref, Point2 sample,
                                      bool test_visibility, Mask active) const {
-    ScopedPhase sp(is_array<Value>::value ?
+    ScopedPhase sp(is_array_v<Value> ?
             EProfilerPhase::ESampleEmitterDirectionP :
             EProfilerPhase::ESampleEmitterDirection);
 
-    using EmitterPtr = like_t<Value, const Emitter *>;
+    using EmitterPtr = replace_scalar_t<Value, const Emitter *>;
     using Index = uint_array_t<Value>;
     using Ray = Ray<Point<Value, 3>>;
 
@@ -232,7 +228,7 @@ template <typename Interaction, typename DirectionSample, typename Value,
 Value Scene::pdf_emitter_direction_impl(const Interaction &ref,
                                         const DirectionSample &ds,
                                         Mask active) const {
-    using EmitterPtr = like_t<Value, const Emitter *>;
+    using EmitterPtr = replace_scalar_t<Value, const Emitter *>;
     return reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
         m_emitter_distr[0];
 }

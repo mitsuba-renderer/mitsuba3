@@ -36,7 +36,7 @@ template<typename... Args> struct variant_helper;
 
 template <typename T, typename... Args> struct variant_helper<T, Args...> {
     static bool copy(const std::type_info *type_info, const void *source, void *target)
-        noexcept(std::is_nothrow_copy_constructible<T>::value &&
+        noexcept(std::is_nothrow_copy_constructible_v<T> &&
             noexcept(variant_helper<Args...>::copy(type_info, source, target))) {
         if (type_info == &typeid(T)) {
             new (target) T(*reinterpret_cast<const T *>(source));
@@ -47,7 +47,7 @@ template <typename T, typename... Args> struct variant_helper<T, Args...> {
     }
 
     static bool move(const std::type_info *type_info, void *source, void *target)
-        noexcept(std::is_nothrow_move_constructible<T>::value &&
+        noexcept(std::is_nothrow_move_constructible_v<T> &&
             noexcept(variant_helper<Args...>::move(type_info, source, target))) {
         if (type_info == &typeid(T)) {
             new (target) T(std::move(*reinterpret_cast<T *>(source)));
@@ -58,7 +58,7 @@ template <typename T, typename... Args> struct variant_helper<T, Args...> {
     }
 
     static void destruct(const std::type_info *type_info, void *ptr)
-        noexcept(std::is_nothrow_destructible<T>::value &&
+        noexcept(std::is_nothrow_destructible_v<T> &&
             noexcept(variant_helper<Args...>::destruct(type_info, ptr))) {
         if (type_info == &typeid(T))
             reinterpret_cast<T*>(ptr)->~T();
@@ -167,7 +167,7 @@ public:
         helper_type::destruct(type_info, &data);
         type_info = &typeid(T);
         bool success;
-        if (std::is_rvalue_reference<T&&>::value)
+        if (std::is_rvalue_reference_v<T&&>)
             success = helper_type::move(type_info, &value, &data);
         else
             success = helper_type::copy(type_info, &value, &data);

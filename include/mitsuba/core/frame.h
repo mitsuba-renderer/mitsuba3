@@ -167,7 +167,6 @@ template <typename Vector3_> struct Frame {
     }
 
     ENOKI_STRUCT(Frame, s, t, n)
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /// Return a string representation of a frame

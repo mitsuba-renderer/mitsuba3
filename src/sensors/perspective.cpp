@@ -127,11 +127,12 @@ public:
         using Spectrum = mitsuba::Spectrum<Value>;
         using Vector3  = Vector<Value, 3>;
 
+        auto [wavelengths, spec_weight] = sample_rgb_spectrum(
+            math::sample_shifted<Spectrum>(wavelength_sample));
+
         Ray ray;
-        Spectrum spec_weight;
-        std::tie(ray.wavelengths, spec_weight) = sample_rgb_spectrum(
-            enoki::sample_shifted<Spectrum>(wavelength_sample));
         ray.time = time;
+        ray.wavelengths = wavelengths;
 
         /* Compute the sample position on the near plane (local camera space). */
         Point3 near_p = m_sample_to_camera *
@@ -164,11 +165,12 @@ public:
         using Spectrum = mitsuba::Spectrum<Value>;
         using Vector3 = Vector<Value, 3>;
 
+        auto [wavelengths, spec_weight] = sample_rgb_spectrum(
+            math::sample_shifted<Spectrum>(wavelength_sample));
+
         RayDifferential ray;
-        Spectrum spec_weight;
-        std::tie(ray.wavelengths, spec_weight) = sample_rgb_spectrum(
-            enoki::sample_shifted<Spectrum>(wavelength_sample));
         ray.time = time;
+        ray.wavelengths = wavelengths;
 
         /* Compute the sample position on the near plane (local camera space). */
         Point3 near_p = m_sample_to_camera *
@@ -256,7 +258,6 @@ private:
     Float m_x_fov;
     Vector3f m_dx, m_dy;
 };
-
 
 MTS_IMPLEMENT_CLASS(PerspectiveCamera, ProjectiveCamera);
 MTS_EXPORT_PLUGIN(PerspectiveCamera, "Perspective Camera");

@@ -39,14 +39,13 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
     Timer timer;
     auto primes = detail::sieve(max_base);
     Assert(primes.size() > 0);
-    m_base = std::unique_ptr<PrimeBase[], enoki::aligned_deleter>(
-        enoki::alloc<PrimeBase>(primes.size()));
+    m_base = std::unique_ptr<PrimeBase[]>(new PrimeBase[primes.size()]);
     m_base_count = primes.size();
 
     Log(EDebug, "Precomputing inverses for %i bases (%s)", m_base_count,
         util::mem_string(sizeof(PrimeBase) * primes.size()));
 
-    for (uint64_t i = 0; i< primes.size(); ++i) {
+    for (size_t i = 0; i < primes.size(); ++i) {
         PrimeBase &d = m_base[i];
         uint64_t value = primes[i];
         d.value = (uint16_t) value;

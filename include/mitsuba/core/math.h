@@ -286,133 +286,128 @@ template <typename T> T log2i_ceil(T value) {
 }
 
 /**
-* \brief Find an interval in an ordered set
-*
-* This function is very similar to \c std::upper_bound, but it uses a functor
-* rather than an actual array to permit working with procedurally defined
-* data. It returns the index \c i such that pred(i) is \c true and pred(i+1)
-* is \c false.
-*
-* This function is primarily used to locate an interval (i, i+1) for linear
-* interpolation, hence its name. To avoid issues out of bounds accesses, and
-* to deal with predicates that evaluate to \c true or \c false on the entire
-* domain, the returned left interval index is clamped to the range <tt>[left,
-* right-2]</tt>.
-*
-*/
+ * \brief Find an interval in an ordered set
+ *
+ * This function is very similar to <tt>std::upper_bound</tt>, but it uses a
+ * functor rather than an actual array to permit working with procedurally
+ * defined data. It returns the index \c i such that pred(i) is \c true and
+ * <tt>pred(i+1)</tt> is \c false.
+ *
+ * This function is primarily used to locate an interval (i, i+1) for linear
+ * interpolation, hence its name. To avoid issues with out of bounds accesses,
+ * and to deal with predicates that evaluate to \c true or \c false on the
+ * entire domain, the returned left interval index is clamped to the range
+ * <tt>[left, right-2]</tt>.
+ *
+ * In particular:
+ * (i)  If there is no index such that pred(i) is true, we return (left).
+ * (ii) If there is no index such that pred(i+1) is false, we return (right-2).
+ */
 template <typename Size, typename Predicate,
           typename Args  = typename function_traits<Predicate>::Args,
           typename Index = std::decay_t<std::tuple_element_t<0, Args>>>
-MTS_INLINE Index find_interval(const Size &left, const Size &right,
-                               const Predicate &pred) {
-    using IndexMask         = mask_t<Index>;
-    using SignedIndex       = int_array_t<Index>;
-    using IndexScalar       = scalar_t<Index>;
-    using SignedIndexScalar = scalar_t<SignedIndex>;
+static Index find_interval(Size start_, Size end_, const Predicate &pred) {
+    using SignedIndex = int_array_t<Index>;
 
-    Size initial_size = right - left;
-    Index first((IndexScalar) left + 1),
-          size((IndexScalar) initial_size - 2);
-    IndexMask active(true);
+    Index start = start_,
+          end = end_,
+          last_interval = end - 2,
+          size = last_interval - start;
+
+    mask_t<Index> active(true);
 
     while (true) {
-        /* Disable converged entries */
-        active = active && (SignedIndex(size) > 0);
-
-        if (!any_nested(active))
+        // Disable converged entries, stop when all done.
+        active &= SignedIndex(size) > 0;
+        if (none_nested(active))
             break;
 
-        Index half   = size >> 1,
-              middle = first + half;
+        Index half   = sr<1>(size),
+              middle = start + half + 1;
 
-        /* Evaluate the predicate */
-        IndexMask pred_result = IndexMask(pred(middle)) && active;
+        // Evaluate the predicate
+        mask_t<Index> mask = pred(Index(middle)) && active;
 
-        /* .. and recurse into the left or right */
-        masked(first, pred_result) = middle + 1;
+        // .. and recurse into the left or right
+        masked(start, mask) = middle;
 
-        /* Update the remaining interval size */
-        size = select(pred_result, size - (half + 1), half);
+        // Update the remaining interval size
+        size = select(mask, size - half - 1, half);
     }
 
-    return Index(clamp(
-        SignedIndex(first - 1),
-        SignedIndex(SignedIndexScalar(left)),
-        SignedIndex(SignedIndexScalar(right - 2))
-    ));
-}
-
-template <typename Size, typename Predicate>
-MTS_INLINE auto find_interval(const Size &size, const Predicate &pred) {
-    return find_interval(Size(0), size, pred);
+    return Index(max(SignedIndex(start_),
+                     min(SignedIndex(start), SignedIndex(last_interval))));
 }
 
 /**
  * \brief Find an interval in an ordered set
  *
- * This function is very similar to \c std::upper_bound, but it uses a functor
- * rather than an actual array to permit working with procedurally defined
- * data. It returns the index \c i such that pred(i) is \c true and pred(i+1)
- * is \c false. See below for special cases.
+ * This function is very similar to <tt>std::upper_bound</tt>, but it uses a
+ * functor rather than an actual array to permit working with procedurally
+ * defined data. It returns the index \c i such that pred(i) is \c true and
+ * <tt>pred(i+1)</tt> is \c false.
  *
  * This function is primarily used to locate an interval (i, i+1) for linear
- * interpolation, hence its name. To avoid issues out of bounds accesses, and
- * to deal with predicates that evaluate to \c true or \c false on the entire
- * domain, the returned left interval index is clamped to the range <tt>[left,
- * right-2]</tt>.
- * In particular:
- * If there is no index such that pred(i) is true, we return (left).
- * If there is no index such that pred(i+1) is false, we return (right-2).
+ * interpolation, hence its name. To avoid issues with out of bounds accesses,
+ * and to deal with predicates that evaluate to \c true or \c false on the
+ * entire domain, the returned left interval index is clamped to the range
+ * <tt>[left, right-2]</tt>.
  *
- * \remark This function is intended for vectorized predicates and additionally
+ * In particular:
+ * (i)  If there is no index such that pred(i) is true, we return (left).
+ * (ii) If there is no index such that pred(i+1) is false, we return (right-2).
+ *
+ * \remark This function is intended for vectorized predicatesand additionally
  * accepts a mask as an input. This mask can be used to disable some of the
- * array entries. The mask is passed to the predicate as a second parameter.
+ * computations done in the predicate, which receives it as its second parameter.
  */
 template <typename Size, typename Predicate,
           typename Args  = typename function_traits<Predicate>::Args,
           typename Index = std::decay_t<std::tuple_element_t<0, Args>>,
-          typename Mask  = std::decay_t<std::tuple_element_t<1, Args>>>
-MTS_INLINE Index find_interval(const Size &left, const Size &right,
-                               const Predicate &pred, const Mask &active_in) {
-    using IndexMask         = mask_t<Index>;
-    using SignedIndex       = int_array_t<Index>;
-    using IndexScalar       = scalar_t<Index>;
-    using SignedIndexScalar = scalar_t<SignedIndex>;
+          typename Mask>
+static Index find_interval(Size start_,
+                           Size end_,
+                           const Predicate &pred,
+                           Mask active_) {
+    using SignedIndex = int_array_t<Index>;
 
-    Size initial_size = right - left;
-    Index first((IndexScalar) left + 1),
-          size((IndexScalar) initial_size - 2);
-    IndexMask active(active_in);
+    Index start = start_,
+          end = end_,
+          last_interval = end - 2,
+          size = last_interval - start;
+
+    mask_t<Index> active(active_);
 
     while (true) {
-        /* Disable converged entries */
-        active = active && (SignedIndex(size) > 0);
-
-        if (!any_nested(active))
+        // Disable converged entries, stop when all done.
+        active &= SignedIndex(size) > 0;
+        if (none_nested(active))
             break;
 
-        Index half   = size >> 1,
-              middle = first + half;
+        Index half   = sr<1>(size),
+              middle = start + half + 1;
 
-        /* Evaluate the predicate */
-        IndexMask pred_result = IndexMask(pred(middle, Mask(active))) && active;
+        // Evaluate the predicate
+        mask_t<Index> mask = pred(Index(middle), active) && active;
 
-        /* .. and recurse into the left or right */
-        masked(first, pred_result) = middle + 1;
+        // .. and recurse into the left or right
+        masked(start, mask) = middle;
 
-        /* Update the remaining interval size */
-        size = select(pred_result, size - (half + 1), half);
+        // Update the remaining interval size
+        size = select(mask, size - half - 1, half);
     }
 
-    return Index(clamp(
-        SignedIndex(first - 1),
-        SignedIndex(SignedIndexScalar(left)),
-        SignedIndex(SignedIndexScalar(right - 2))
-    ));
+    return Index(max(SignedIndex(start_),
+                     min(SignedIndex(start), SignedIndex(last_interval))));
+}
+
+template <typename Size, typename Predicate>
+MTS_INLINE auto find_interval(Size size, const Predicate &pred) {
+    return find_interval(Size(0), size, pred);
 }
 
 template <typename Size, typename Predicate, typename Mask>
-MTS_INLINE auto find_interval(const Size &size, const Predicate &pred, const Mask &active) {
+MTS_INLINE auto find_interval(Size size, const Predicate &pred, Mask active) {
     return find_interval(Size(0), size, pred, active);
 }
 
@@ -555,6 +550,32 @@ MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &
 
 //! @}
 // -----------------------------------------------------------------------
+
+template <typename Array, size_t... Index, typename Value = value_t<Array>>
+ENOKI_INLINE Array sample_shifted(const Value &sample, std::index_sequence<Index...>) {
+    const Array shift(Index / scalar_t<Array>(Array::Size)...);
+
+    Array value = Array(sample) + shift;
+    value[value > Value(1)] -= Value(1);
+
+    return value;
+}
+
+/**
+ * \brief Map a uniformly distributed sample to an array of samples with shifts
+ *
+ * Given a floating point value \c x on the interval <tt>[0, 1]</tt> return a
+ * floating point array with values <tt>[x, x+offset, x+2*offset, ...]</tt>,
+ * where \c offset is the reciprocal of the array size. Entries that become
+ * greater than 1.0 wrap around to the other side of the unit inteval.
+ *
+ * This operation is useful to implement a type of correlated stratification in
+ * the context of Monte Carlo integration.
+ */
+template <typename Array> Array sample_shifted(const value_t<Array> &sample) {
+    return sample_shifted<Array>(
+        sample, std::make_index_sequence<Array::Size>());
+}
 
 NAMESPACE_END(math)
 NAMESPACE_END(mitsuba)

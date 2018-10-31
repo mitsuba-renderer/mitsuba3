@@ -26,8 +26,8 @@ public:
         using BSDFSample          = mitsuba::BSDFSample<Point3>;
         using DirectionSample     = mitsuba::DirectionSample<Point3>;
         using SurfaceInteraction3 = SurfaceInteraction<Point3>;
-        using BSDFPtr             = like_t<Value, const BSDF *>;
-        using EmitterPtr          = like_t<Value, const Emitter *>;
+        using BSDFPtr             = replace_scalar_t<Value, const BSDF *>;
+        using EmitterPtr          = replace_scalar_t<Value, const Emitter *>;
         using Vector3             = vector3_t<Point3>;
 
         const Scene *scene = rs.scene;

@@ -619,9 +619,7 @@ public:
 
     /// Convert a variable into a linear floating point representation
     std::pair<Key, Value> linearize(const std::pair<Key, Value> &input) {
-        Key kr;
-        Value vr;
-        std::tie(kr, vr) = input;
+        auto [kr, vr] = input;
 
         bool int_to_float = false;
         bool float_to_float = false;
@@ -724,9 +722,7 @@ public:
     /// Write a variable to memory
     void save(const Struct *struct_, const X86Gp &output,
               Struct::Field field, const std::pair<Key, Value> &kv) {
-        Key key;
-        Value value;
-        std::tie(key, value) = kv;
+        auto [key, value] = kv;
 
         #if MTS_JIT_LOG_ASSEMBLY == 1
             cc.comment(("# Save field \""+ field.name + "\"").c_str());

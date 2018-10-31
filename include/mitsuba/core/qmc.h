@@ -127,7 +127,7 @@ private:
 #endif
 
     size_t m_base_count = 0;
-    std::unique_ptr<PrimeBase[], enoki::aligned_deleter> m_base;
+    std::unique_ptr<PrimeBase[]> m_base;
     std::unique_ptr<uint16_t[]> m_permutation_storage;
     std::unique_ptr<uint16_t*[]> m_permutations;
     std::unique_ptr<uint16_t[]> m_inv_permutation_storage;

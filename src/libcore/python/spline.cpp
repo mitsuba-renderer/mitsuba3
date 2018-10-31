@@ -193,9 +193,7 @@ MTS_PY_EXPORT(spline) {
 
     spline.def("eval_spline_weights", [](Float min, Float max, uint32_t size, Float x) {
             py::array_t<Float, 4> weight;
-            int32_t offset;
-            bool result;
-            std::tie(result, offset) = spline::eval_spline_weights(
+            auto [result, offset] = spline::eval_spline_weights(
                 min, max, size, x, weight.mutable_data());
             return std::make_tuple(result, offset, weight);
         },
@@ -206,10 +204,9 @@ MTS_PY_EXPORT(spline) {
 
     spline.def("eval_spline_weights", [](const py::array_t<Float> &nodes, Float x) {
             py::array_t<Float, 4> weight;
-            int32_t offset;
-            bool result;
-            std::tie(result, offset) = spline::eval_spline_weights(
-                nodes.data(), (uint32_t) nodes.shape(0), x, weight.mutable_data());
+            auto [result, offset] = spline::eval_spline_weights(
+                nodes.data(), (uint32_t) nodes.shape(0), x,
+                weight.mutable_data());
             return std::make_tuple(result, offset, weight);
         },
         "nodes"_a, "x"_a, D(spline, eval_spline_weights, 2)

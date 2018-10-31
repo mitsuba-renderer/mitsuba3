@@ -39,4 +39,7 @@ public:
     static constexpr bool value = decltype(test(std::declval<T *>()))::value;
 };
 
+template <typename T, typename... Args>
+constexpr bool is_constructible_v = is_constructible<T, Args...>::value;
+
 NAMESPACE_END(mitsuba)

@@ -61,20 +61,15 @@ using BSDFSample3f           = BSDFSample<Point3f>;
 using BSDFSample3fP          = BSDFSample<Point3fP>;
 using BSDFSample3fX          = BSDFSample<Point3fX>;
 
-using ShapeP   = Packet<const Shape *,   PacketSize>;
-using MediumP  = Packet<const Medium *,  PacketSize>;
-using EmitterP = Packet<const Emitter *, PacketSize>;
-using BSDFP    = Packet<const BSDF *,    PacketSize>;
+using StokesVectorf          = StokesVector<Float>;
+using StokesVectorSf         = StokesVector<Spectrumf>;
+using StokesVectorfP         = StokesVector<FloatP>;
+using StokesVectorSfP        = StokesVector<SpectrumfP>;
 
-using StokesVectorf   = StokesVector<Float>;
-using StokesVectorSf  = StokesVector<Spectrumf>;
-using StokesVectorfP  = StokesVector<FloatP>;
-using StokesVectorSfP = StokesVector<SpectrumfP>;
-
-using MuellerMatrixf   = MuellerMatrix<Float>;
-using MuellerMatrixSf  = MuellerMatrix<Spectrumf>;
-using MuellerMatrixfP  = MuellerMatrix<FloatP>;
-using MuellerMatrixSfP = MuellerMatrix<SpectrumfP>;
+using MuellerMatrixf         = MuellerMatrix<Float>;
+using MuellerMatrixSf        = MuellerMatrix<Spectrumf>;
+using MuellerMatrixfP        = MuellerMatrix<FloatP>;
+using MuellerMatrixSfP       = MuellerMatrix<SpectrumfP>;
 
 
 // -----------------------------------------------------------------------------

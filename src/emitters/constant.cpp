@@ -54,9 +54,8 @@ public:
         using Ray3     = Ray<Point3>;
 
         // 1. Sample spectrum
-        Spectrum wavelengths, weight;
-        std::tie(wavelengths, weight) = m_radiance->sample(
-            enoki::sample_shifted<Spectrum>(wavelength_sample), active);
+        auto [wavelengths, weight] = m_radiance->sample(
+            math::sample_shifted<Spectrum>(wavelength_sample), active);
 
         // 2. Sample spatial component
         Vector3 v0 = warp::square_to_uniform_sphere(sample2);

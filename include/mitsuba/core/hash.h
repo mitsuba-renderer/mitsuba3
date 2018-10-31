@@ -12,17 +12,17 @@ inline size_t hash_combine(size_t hash1, size_t hash2) {
     return hash2 ^ (hash1 + 0x9e3779b9 + (hash2 << 6) + (hash2 >> 2));
 }
 
-template <typename T, typename std::enable_if<!std::is_enum<T>::value, int>::type = 0> size_t hash(const T &t) {
+template <typename T, std::enable_if_t<!std::is_enum_v<T>, int> = 0> size_t hash(const T &t) {
     return std::hash<T>()(t);
 }
 
-template <typename T, typename std::enable_if<std::is_enum<T>::value, int>::type = 0> size_t hash(const T &t) {
+template <typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0> size_t hash(const T &t) {
     /* Enum hash workaround for GCC / C++11 */
     return hash(typename std::underlying_type<T>::type(t));
 }
 
 
-template <typename Tuple, size_t Index = std::tuple_size<Tuple>::value - 1>
+template <typename Tuple, size_t Index = std::tuple_size_v<Tuple> - 1>
 struct tuple_hasher {
     size_t operator()(const Tuple &t) const {
         return hash_combine(hash(std::get<Index>(t)),

@@ -253,7 +253,7 @@ template <typename T, std::enable_if_t<sizeof(T) == 1, int> = 0> T swap(const T 
 
 template <typename T, std::enable_if_t<sizeof(T) == 2, int> = 0> T swap(const T &v) {
 #if !defined(__WINDOWS__)
-    return memcpy_cast<T>(__builtin_bswap16(memcpy_cast<uint16_t>(v)));
+    return enoki::memcpy_cast<T>(__builtin_bswap16(memcpy_cast<uint16_t>(v)));
 #else
     return memcpy_cast<T>(_byteswap_ushort(memcpy_cast<uint16_t>(v)));
 #endif
@@ -261,7 +261,7 @@ template <typename T, std::enable_if_t<sizeof(T) == 2, int> = 0> T swap(const T 
 
 template <typename T, std::enable_if_t<sizeof(T) == 4, int> = 0> T swap(const T &v) {
 #if !defined(__WINDOWS__)
-    return memcpy_cast<T>(__builtin_bswap32(memcpy_cast<uint32_t>(v)));
+    return enoki::memcpy_cast<T>(__builtin_bswap32(memcpy_cast<uint32_t>(v)));
 #else
     return memcpy_cast<T>(_byteswap_ulong(memcpy_cast<uint32_t>(v)));
 #endif
@@ -269,7 +269,7 @@ template <typename T, std::enable_if_t<sizeof(T) == 4, int> = 0> T swap(const T 
 
 template <typename T, std::enable_if_t<sizeof(T) == 8, int> = 0> T swap(const T &v) {
 #if !defined(__WINDOWS__)
-    return memcpy_cast<T>(__builtin_bswap64(memcpy_cast<uint64_t>(v)));
+    return enoki::memcpy_cast<T>(__builtin_bswap64(memcpy_cast<uint64_t>(v)));
 #else
     return memcpy_cast<T>(_byteswap_uint64(memcpy_cast<uint64_t>(v)));
 #endif
@@ -283,7 +283,7 @@ template <typename T, std::enable_if_t<sizeof(T) == 8, int> = 0> T swap(const T 
 template <typename T, typename SFINAE> struct serialization_helper {
     static std::string type_id() {
         std::string descr(2, '\0');
-        descr[0] = std::is_floating_point<T>::value ? 'f' : (std::is_signed<T>::value ? 's' : 'u');
+        descr[0] = std::is_floating_point_v<T> ? 'f' : (std::is_signed_v<T> ? 's' : 'u');
         descr[1] = '0' + sizeof(T);
         return descr;
     }

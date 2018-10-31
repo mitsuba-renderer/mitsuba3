@@ -73,7 +73,7 @@ inline std::string indent(const T &value, size_t amount = 2) {
 
 extern MTS_EXPORT_CORE std::string indent(const Object *value, size_t amount = 2);
 
-template <typename T, typename T2 = Object, std::enable_if_t<std::is_base_of<T2, T>::value, int> = 0>
+template <typename T, typename T2 = Object, std::enable_if_t<std::is_base_of_v<T2, T>, int> = 0>
 std::string indent(const T *value, size_t amount = 2) {
     return indent((const T2 *) value, amount);
 }

@@ -19,7 +19,7 @@ public:
 
     void seed(size_t seed_value) override {
         m_rng.seed(seed_value, PCG32_DEFAULT_STREAM);
-        m_rng_p.seed(seed_value, PCG32_DEFAULT_STREAM + index_sequence<UInt64P>());
+        m_rng_p.seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64P>());
     }
 
     Float next_1d() override {

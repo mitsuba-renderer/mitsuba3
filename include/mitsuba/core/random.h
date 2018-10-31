@@ -73,8 +73,8 @@ UInt32 sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
 
     ENOKI_NOUNROLL for (int i = 0; i < rounds; ++i) {
         sum += 0x9e3779b9;
-        v0 += (sli<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (sri<5>(v1) + 0xc8013ea4);
-        v1 += (sli<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (sri<5>(v0) + 0x7e95761e);
+        v0 += (sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (sr<5>(v1) + 0xc8013ea4);
+        v1 += (sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (sr<5>(v0) + 0x7e95761e);
     }
 
     return v1;
@@ -107,11 +107,11 @@ uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
 
     ENOKI_NOUNROLL for (int i = 0; i < rounds; ++i) {
         sum += 0x9e3779b9;
-        v0 += (sli<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (sri<5>(v1) + 0xc8013ea4);
-        v1 += (sli<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (sri<5>(v0) + 0x7e95761e);
+        v0 += (sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (sr<5>(v1) + 0xc8013ea4);
+        v1 += (sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (sr<5>(v0) + 0x7e95761e);
     }
 
-    return uint64_array_t<UInt32>(v0) + sli<32>(uint64_array_t<UInt32>(v1));
+    return uint64_array_t<UInt32>(v0) + sl<32>(uint64_array_t<UInt32>(v1));
 }
 
 extern template MTS_EXPORT_CORE uint64_array_t<uint32_t> sample_tea_64(uint32_t, uint32_t, int);
@@ -137,7 +137,7 @@ extern template MTS_EXPORT_CORE uint64_array_t<UInt32P>  sample_tea_64(UInt32P, 
 template <typename UInt32>
 float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4) {
     return reinterpret_array<float32_array_t<UInt32>>(
-        sri<9>(sample_tea_32(v0, v1, rounds)) | 0x3f800000u) - 1.f;
+        sr<9>(sample_tea_32(v0, v1, rounds)) | 0x3f800000u) - 1.f;
 }
 
 extern template MTS_EXPORT_CORE float32_array_t<uint32_t> sample_tea_float32(uint32_t, uint32_t, int);
@@ -164,7 +164,7 @@ extern template MTS_EXPORT_CORE float32_array_t<UInt32P>  sample_tea_float32(UIn
 template <typename UInt32>
 float64_array_t<UInt32> sample_tea_float64(UInt32 v0, UInt32 v1, int rounds = 4) {
     return reinterpret_array<float64_array_t<UInt32>>(
-        sri<12>(sample_tea_64(v0, v1, rounds)) | 0x3ff0000000000000ull) - 1.0;
+        sr<12>(sample_tea_64(v0, v1, rounds)) | 0x3ff0000000000000ull) - 1.0;
 }
 
 extern template MTS_EXPORT_CORE float64_array_t<uint32_t> sample_tea_float64(uint32_t, uint32_t, int);

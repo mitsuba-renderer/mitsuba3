@@ -333,7 +333,6 @@ template <typename VectorN> struct Transform {
     // =============================================================
 
     ENOKI_STRUCT(Transform, matrix, inverse_transpose)
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /**
@@ -371,8 +370,6 @@ public:
         bool operator!=(const Keyframe &f) const {
             return !operator==(f);
         }
-
-        ENOKI_ALIGNED_OPERATOR_NEW()
     };
 
     /// Create an empty animated transform
@@ -446,7 +443,7 @@ protected:
 
 private:
     Transform4f m_transform;
-    std::vector<Keyframe, enoki::aligned_allocator<Keyframe>> m_keyframes;
+    std::vector<Keyframe> m_keyframes;
 };
 
 // -----------------------------------------------------------------------

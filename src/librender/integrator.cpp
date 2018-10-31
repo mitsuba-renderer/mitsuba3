@@ -118,8 +118,7 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
             Point2fX points;
             // For each block
             for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
-                Vector2i offset, size;
-                std::tie(offset, size) = spiral.next_block();
+                auto [offset, size] = spiral.next_block();
                 if (hprod(size) == 0)
                     Throw("Internal error -- generated empty image block!");
                 if (size != block->size())
@@ -197,9 +196,7 @@ void SamplingIntegrator::render_block_scalar(const Scene *scene,
 
             Float wavelength_sample = rs.next_1d();
 
-            RayDifferential3f ray;
-            Spectrumf ray_weight;
-            std::tie(ray, ray_weight) = sensor->sample_ray_differential(
+            auto [ray, ray_weight] = sensor->sample_ray_differential(
                 time, wavelength_sample, position_sample * inv_resolution,
                 aperture_sample);
 
@@ -260,7 +257,7 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
          needs_time_sample = sensor->shutter_open_time() == 0;
 
     Float diff_scale_factor = rsqrt((Float) sampler->sample_count());
-    UInt32P index = index_sequence<UInt32P>();
+    UInt32P index = arange<UInt32P>();
 
     for (size_t i = 0; i < packets(points) && !should_stop(); ++i) {
         MaskP active = index < slices(points);
@@ -276,9 +273,7 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
 
         FloatP wavelength_sample = rs.next_1d(active);
 
-        RayDifferential3fP ray;
-        SpectrumfP ray_weight;
-        std::tie(ray, ray_weight) = sensor->sample_ray_differential(
+        auto [ray, ray_weight] = sensor->sample_ray_differential(
             time, wavelength_sample, position_sample * inv_resolution,
             aperture_sample, active);
 

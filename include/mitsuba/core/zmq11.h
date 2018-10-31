@@ -78,6 +78,7 @@ namespace zmq {
         ~message() noexcept {
             int rc = zmq_msg_close(&msg);
             assert(rc == 0);
+            (void) rc;
         }
 
         void rebuild() {
@@ -329,12 +330,12 @@ namespace zmq {
         inline void send(const envelope &e);
         inline void sendmore(const envelope &e);
 
-        template <typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
+        template <typename T, typename = typename std::enable_if<std::is_trivially_copyable_v<T>>::type>
         bool send(const T &value, int flags = 0) {
             return send(&value, sizeof(T), flags);
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
+        template <typename T, typename = typename std::enable_if<std::is_trivially_copyable_v<T>>::type>
         bool sendmore(const T &value, int flags = 0) {
             return sendmore(&value, sizeof(T), flags);
         }
@@ -405,12 +406,12 @@ namespace zmq {
         inline void recv(envelope &e);
         inline void recvmore(envelope &e);
 
-        template <typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
+        template <typename T, typename = typename std::enable_if<std::is_trivially_copyable_v<T>>::type>
         bool recv(T &value, int flags = 0) {
             return recv(&value, sizeof(T), flags);
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
+        template <typename T, typename = typename std::enable_if<std::is_trivially_copyable_v<T>>::type>
         bool recvmore(T &value, int flags = 0) {
             return recvmore(&value, sizeof(T), flags);
         }

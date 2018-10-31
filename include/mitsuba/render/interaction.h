@@ -72,7 +72,6 @@ template <typename Point3_> struct Interaction {
     // =============================================================
 
     ENOKI_STRUCT(Interaction, t, time, wavelengths, p);
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 /** \brief Container for all information related to a scattering
@@ -101,10 +100,10 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     using Color3              = Color<Value, 3>;
     using RayDifferential3    = RayDifferential<Point3>;
 
-    using BSDFPtr             = like_t<Value, const BSDF *>;
-    using MediumPtr           = like_t<Value, const Medium *>;
-    using ShapePtr            = like_t<Value, const Shape *>;
-    using EmitterPtr          = like_t<Value, const Emitter *>;
+    using BSDFPtr             = replace_scalar_t<Value, const BSDF *>;
+    using MediumPtr           = replace_scalar_t<Value, const Medium *>;
+    using ShapePtr            = replace_scalar_t<Value, const Shape *>;
+    using EmitterPtr          = replace_scalar_t<Value, const Emitter *>;
 
     //! @}
     // =============================================================
@@ -283,8 +282,6 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
                              duv_dx, duv_dy, wi, prim_index, instance,
                              has_uv_partials)
     )
-
-    ENOKI_ALIGNED_OPERATOR_NEW()
 };
 
 // -----------------------------------------------------------------------------

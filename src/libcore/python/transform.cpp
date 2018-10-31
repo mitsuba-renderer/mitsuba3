@@ -55,7 +55,7 @@ MTS_PY_EXPORT(Transform) {
         .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
         .def("transform_point", [](const Transform4f &t, const Point3f &v) { return t*v; })
         .def("transform_point", [](const Transform4f &t, const Point3fX &v) {
-            return vectorize_safe([](auto &&t, auto &&v) { return t * v; }, t, v);
+            return vectorize_safe([](auto&& t, auto &&v) { return t * v; }, t, v);
         })
         .def("transform_vector", [](const Transform4f &t, const Vector3f &v) { return t*v; })
         .def("transform_vector", [](const Transform4f &t, const Vector3fX &v) {

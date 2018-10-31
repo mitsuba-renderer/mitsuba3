@@ -102,8 +102,7 @@ public:
                 }
 
                 /* Allocate memory for vertices (+1 unused entry) */
-                m_vertices = VertexHolder(
-                    (uint8_t *) enoki::alloc((el.count + 1) * o_struct_size));
+                m_vertices = VertexHolder(new uint8_t[(el.count + 1) * o_struct_size]);
 
                 /* Clear unused entry */
                 memset(m_vertices.get() + o_struct_size * el.count, 0, o_struct_size);
@@ -177,8 +176,7 @@ public:
                     fail(e.what());
                 }
 
-                m_faces = FaceHolder(
-                    (uint8_t *) enoki::alloc(el.count * o_struct_size));
+                m_faces = FaceHolder(new uint8_t[el.count * o_struct_size]);
 
                 size_t packet_count     = el.count / elements_per_packet;
                 size_t remainder_count  = el.count % elements_per_packet;
@@ -291,8 +289,7 @@ public:
             ref<StructConverter> conv =
                 new StructConverter(m_face_struct, face_struct_out);
 
-            FaceHolder temp((uint8_t *) enoki::alloc(
-                face_struct_out->size() * m_face_count));
+            FaceHolder temp(new uint8_t[face_struct_out->size() * m_face_count]);
 
             if (!conv->convert(m_face_count, m_faces.get(), temp.get()))
                 Throw("PLYMesh::write(): internal error during conversion");

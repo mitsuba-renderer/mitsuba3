@@ -80,7 +80,7 @@ bool ImageBlock::put(const Point2f &pos_, const Float *value) {
     // Rasterize the filtered sample into the framebuffer
     for (int y = lo.y(), yr = 0; y <= hi.y(); ++y, ++yr) {
         const Float weightY = m_weights_y[yr];
-        auto dest = static_cast<Float *>(m_bitmap->data())
+        Float *dest = ((Float *) m_bitmap->data())
             + (y * (size_t) size.x() + lo.x()) * channels;
 
         for (int x = lo.x(), xr = 0; x <= hi.x(); ++x, ++xr) {
@@ -99,8 +99,8 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
 
     size_t channels = m_bitmap->channel_count();
 
-    // Check if all sample values are valid
     Mask is_valid(true);
+    // Check if all sample values are valid
     if (m_warn) {
         for (size_t k = 0; k < channels; ++k)
             is_valid &= enoki::isfinite(value[k]) && (value[k] >= 0);
@@ -122,58 +122,38 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Vector2i size = m_bitmap->size();
 
     // Convert to pixel coordinates within the image block
-    Point2fP pos = pos_ - .5f - (m_offset - m_border_size);
+    Point2fP pos = pos_ - (m_offset - m_border_size + .5f);
 
     // Determine the affected range of pixels
-    Point2iP lo = max(Point2iP(ceil (pos - filter_radius)), 0);
-    Point2iP hi = min(Point2iP(floor(pos + filter_radius)), size - 1);
+    Point2iP lo = max(Point2iP(ceil (pos - filter_radius)), 0),
+             hi = min(Point2iP(floor(pos + filter_radius)), size - 1);
+    Vector2iP window_size = hi - lo;
 
     // Lookup values from the pre-rasterized filter
-    Vector2iP window_sizes = hi - lo;
-    Point2i max_size(hmax(window_sizes.x()), hmax(window_sizes.y()));
+    Point2i max_size(hmax(window_size.x()),
+                     hmax(window_size.y()));
 
-    auto corner = lo - pos;
+    Point2fP corner = lo - pos;
     for (int i = 0; i <= max_size.x(); ++i)
         m_weights_x_p[i] = m_filter->eval_discretized(corner.x() + i, active);
+
     for (int i = 0; i <= max_size.y(); ++i)
         m_weights_y_p[i] = m_filter->eval_discretized(corner.y() + i, active);
 
-
     // Rasterize the filtered sample into the framebuffer
-    auto *buffer = (Float *) m_bitmap->data();
-    Mask enabled;
+    Float *buffer = (Float *) m_bitmap->data();
     for (int yr = 0; yr <= max_size.y(); ++yr) {
-        enabled = active && is_valid && (yr <= window_sizes.y());
-        auto y = lo.y() + yr;
+        Mask enabled = active && is_valid && yr <= window_size.y();
+        Int32P y = lo.y() + yr;
 
         for (int xr = 0; xr <= max_size.x(); ++xr) {
-            enabled &= xr <= window_sizes.x();
-            if (none(enabled))
-                continue;
-            // Linearized offsets: n_channels * (y * n_x + x)
-            auto offsets = channels * (y * size.x() + (lo.x() + xr));
-            auto weights = m_weights_y_p[yr] * m_weights_x_p[xr];
+            Int32P x      = lo.x() + xr,
+                   offset = channels * (y * size.x() + x);
+            FloatP weights = m_weights_y_p[yr] * m_weights_x_p[xr];
 
-            for (size_t k = 0; k < channels; ++k) {
-                FloatP weighted_value = weights * value[k];
-
-                // We need to be extra-careful about the "histogram problem". See:
-                //   http://enoki.readthedocs.io/en/master/
-                //   advanced.html#the-histogram-problem-and-conflict-detection.
-                enoki::transform<FloatP>(
-                    // Base offset into the bitmap's buffer.
-                    buffer + k,
-                    // Index of each position, relative to the base (may have
-                    // repeated values, which is why we're using `transform`).
-                    offsets,
-                    // Perform operation on active lanes only.
-                    enabled,
-                    // Operation (accumulate weighted value).
-                    [](auto &&x, auto &&wv) { x += wv; },
-                    // Reconstruction weights, values to store.
-                    weighted_value
-                );
-            }
+            enabled &= xr <= window_size.x();
+            for (size_t k = 0; k < channels; ++k)
+                scatter_add(buffer + k, offset, weights * value[k], enabled);
         }
     }
 

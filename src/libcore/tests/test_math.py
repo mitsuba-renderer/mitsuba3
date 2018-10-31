@@ -10,6 +10,7 @@ from mitsuba.core.math import round_to_power_of_two
 from mitsuba.core.math import solve_quadratic
 from mitsuba.core import PCG32
 
+
 def test01_log2i():
     assert log2i(1) == 0
     assert log2i(2) == 1
@@ -52,45 +53,47 @@ def test04_solve_quadratic():
 
 
 def test05_legendre_p():
-    assert(np.allclose(legendre_p(0, 0), 1))
-    assert(np.allclose(legendre_p(1, 0), 0))
-    assert(np.allclose(legendre_p(1, 1), 1))
-    assert(np.allclose(legendre_p(2, 0), -0.5))
-    assert(np.allclose(legendre_p(2, 1), 1))
-    assert(np.allclose(legendre_p(3, 0), 0))
+    assert np.allclose(legendre_p(0, 0), 1)
+    assert np.allclose(legendre_p(1, 0), 0)
+    assert np.allclose(legendre_p(1, 1), 1)
+    assert np.allclose(legendre_p(2, 0), -0.5)
+    assert np.allclose(legendre_p(2, 1), 1)
+    assert np.allclose(legendre_p(3, 0), 0)
 
 
 def test06_legendre_pd():
-    assert(np.allclose(legendre_pd(0, 0),   [1, 0]))
-    assert(np.allclose(legendre_pd(1, 0),   [0, 1]))
-    assert(np.allclose(legendre_pd(1, 0.5), [0.5, 1]))
-    assert(np.allclose(legendre_pd(2, 0),   [-0.5, 0]))
+    assert np.allclose(legendre_pd(0, 0),   [1, 0])
+    assert np.allclose(legendre_pd(1, 0),   [0, 1])
+    assert np.allclose(legendre_pd(1, 0.5), [0.5, 1])
+    assert np.allclose(legendre_pd(2, 0),   [-0.5, 0])
 
 
 def test07_legendre_pd_diff():
-    assert(np.allclose(legendre_pd_diff(1, 1),   np.array(legendre_pd(1+1, 1))   - np.array(legendre_pd(1-1, 1))))
-    assert(np.allclose(legendre_pd_diff(2, 1),   np.array(legendre_pd(2+1, 1))   - np.array(legendre_pd(2-1, 1))))
-    assert(np.allclose(legendre_pd_diff(3, 0),   np.array(legendre_pd(3+1, 0))   - np.array(legendre_pd(3-1, 0))))
-    assert(np.allclose(legendre_pd_diff(4, 0.1), np.array(legendre_pd(4+1, 0.1)) - np.array(legendre_pd(4-1, 0.1))))
+    assert np.allclose(legendre_pd_diff(1, 1),   np.array(legendre_pd(1+1, 1))   - np.array(legendre_pd(1-1, 1)))
+    assert np.allclose(legendre_pd_diff(2, 1),   np.array(legendre_pd(2+1, 1))   - np.array(legendre_pd(2-1, 1)))
+    assert np.allclose(legendre_pd_diff(3, 0),   np.array(legendre_pd(3+1, 0))   - np.array(legendre_pd(3-1, 0)))
+    assert np.allclose(legendre_pd_diff(4, 0.1), np.array(legendre_pd(4+1, 0.1)) - np.array(legendre_pd(4-1, 0.1)))
 
 
 def test08_find_interval():
     values = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
     # Normal queries
-    assert(np.allclose(find_interval(values, 0.05), 0))
-    assert(np.allclose(find_interval(values, 0.45), 1))
-    assert(np.allclose(find_interval(values, 0.55), 2))
-    assert(np.allclose(find_interval(values, 0.85), 3))
-    assert(np.allclose(find_interval(values, 0.75), 3))
+    assert np.allclose(find_interval(values, 0.05), 0)
+    assert np.allclose(find_interval(values, 0.45), 1)
+    assert np.allclose(find_interval(values, 0.55), 2)
+    assert np.allclose(find_interval(values, 0.85), 3)
+    assert np.allclose(find_interval(values, 0.75), 3)
+
     # Out-of-range or border queries
-    assert(np.allclose(find_interval(values, -1), 0))
-    assert(np.allclose(find_interval(values,  0), 0))
-    assert(np.allclose(find_interval(values, 1.75),  3))
+    assert np.allclose(find_interval(values, -1), 0)
+    assert np.allclose(find_interval(values,  0), 0)
+    assert np.allclose(find_interval(values, 1.75),  3)
+
     # Repeated item in the nodes: the last occurence should be selected.
     values_r = np.array([0.0, 0.25, 0.25, 0.5, 0.75, 0.75, 1.0])
-    assert(np.allclose(find_interval(values_r, 0.45), 2))
-    assert(np.allclose(find_interval(values_r, 0.25), 2))
-    assert(np.allclose(find_interval(values_r, 0.75), 5))
+    assert np.allclose(find_interval(values_r, 0.45), 2)
+    assert np.allclose(find_interval(values_r, 0.25), 2)
+    assert np.allclose(find_interval(values_r, 0.75), 5)
 
 
 def test09_find_interval_edge_cases():
@@ -100,27 +103,29 @@ def test09_find_interval_edge_cases():
     always_false = lambda _: False
 
     # Empty interval
-    assert(find_interval(0, 0, always_true) == 0)
-    assert(find_interval(0, 0, always_false) == 0)
+    assert find_interval(0, 0, always_true) == 0
+    assert find_interval(0, 0, always_false) == 0
     # Singleton
-    assert(find_interval(0, 1, always_true) == 0)
-    assert(find_interval(0, 1, always_false) == 0)
+    assert find_interval(0, 1, always_true) == 0
+    assert find_interval(0, 1, always_false) == 0
     # More elements
-    assert(find_interval(0, 2, always_true) == 0)
-    assert(find_interval(0, 2, always_false) == 0)
-    assert(find_interval(0, 11, always_true) == 9)
-    assert(find_interval(0, 11, always_false) == 0)
+    assert find_interval(0, 2, always_true) == 0
+    assert find_interval(0, 2, always_false) == 0
+    assert find_interval(0, 11, always_true) == 9
+    assert find_interval(0, 11, always_false) == 0
+
 
 def test10_find_interval_bruteforce():
     rng = PCG32()
-    for size in range(1, 40):
-        tbl = rng.next_uint32_bounded(100, (size,))
-        tbl.sort()
-        print(tbl)
-        for k in range(101):
-            result = find_interval(tbl, k)
-            assert k >= tbl[result] or k < tbl[len(tbl)-1]
-            assert result >= len(tbl) - 2 or k < tbl[result + 1]
+    for size in range(2, 20):
+        for i in range(1, 50):
+            tbl = rng.next_uint32_bounded(i, (size,))
+            tbl.sort()
+            for x in range(52):
+                r = find_interval(tbl, x)
+                assert((tbl[r] <= x or r == 0) and
+                       (tbl[r + 1] > x or (r == size - 2)))
+
 
 def test10_morton2():
     from mitsuba.core.math import morton_encode2, morton_decode2
@@ -128,6 +133,7 @@ def test10_morton2():
     v1 = morton_encode2(v0)
     v2 = morton_decode2(v1)
     assert np.all(v0 == v2)
+
 
 def test11_morton3():
     from mitsuba.core.math import morton_encode3, morton_decode3

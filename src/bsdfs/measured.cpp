@@ -205,10 +205,7 @@ public:
                     m_luminance.sample(sample, params, active);
             #endif
 
-            Vector2 u_m;
-            Value ndf_pdf;
-            std::tie(u_m, ndf_pdf) =
-                m_vndf.sample(sample, params, active);
+            auto [u_m, ndf_pdf] = m_vndf.sample(sample, params, active);
 
             Value phi_m   = u2phi(u_m.y()),
                   theta_m = u2theta(u_m.x());
@@ -217,9 +214,8 @@ public:
                 phi_m += phi_i;
 
             /* Spherical -> Cartesian coordinates */
-            Value sin_phi_m, cos_phi_m, sin_theta_m, cos_theta_m;
-            std::tie(sin_phi_m, cos_phi_m) = sincos(phi_m);
-            std::tie(sin_theta_m, cos_theta_m) = sincos(theta_m);
+            auto [sin_phi_m, cos_phi_m] = sincos(phi_m);
+            auto [sin_theta_m, cos_theta_m] = sincos(theta_m);
 
             Vector3 m(
                 cos_phi_m * sin_theta_m,
@@ -248,8 +244,7 @@ public:
             u_m[1] = u_m[1] - floor(u_m[1]);
 
             Value unused;
-            std::tie(sample, unused) =
-                m_vndf.invert(u_m, params, active);
+            std::tie(sample, unused) = m_vndf.invert(u_m, params, active);
         #endif // MTS_SAMPLE_DIFFUSE
 
         bs.eta = 1.f;
@@ -316,9 +311,8 @@ public:
 
         u_m[1] = u_m[1] - floor(u_m[1]);
 
-        Vector2 sample;
-        Value unused, params[2] = { phi_i, theta_i };
-        std::tie(sample, unused) = m_vndf.invert(u_m, params, active);
+        Value params[2] = { phi_i, theta_i };
+        auto [sample, unused] = m_vndf.invert(u_m, params, active);
 
         Spectrum spec;
         for (size_t i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i) {
@@ -377,9 +371,8 @@ public:
 
             u_m[1] = u_m[1] - floor(u_m[1]);
 
-            Vector2 sample;
-            Value vndf_pdf, params[2] = { phi_i, theta_i };
-            std::tie(sample, vndf_pdf) = m_vndf.invert(u_m, params, active);
+            Value params[2] = { phi_i, theta_i };
+            auto [sample, vndf_pdf] = m_vndf.invert(u_m, params, active);
 
             Value pdf = 1.f;
             #if MTS_SAMPLE_LUMINANCE == 1

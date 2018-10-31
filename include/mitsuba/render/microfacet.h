@@ -433,8 +433,6 @@ public:
         return result;
     }
 
-    ENOKI_ALIGNED_OPERATOR_NEW()
-
 protected:
     void configure() {
         m_alpha_u = max(m_alpha_u, 1e-4f);
