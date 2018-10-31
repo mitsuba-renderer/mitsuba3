@@ -206,6 +206,9 @@ if (CMAKE_GENERATOR STREQUAL "Ninja")
 endif()
 
 if (MSVC)
+  # Compile in C++17 mode
+  add_compile_options("/std:c++17")
+
   # Disable annoying MSVC warnings (all targets)
   add_definitions(/D "_CRT_SECURE_NO_WARNINGS" /D "_SCL_SECURE_NO_WARNINGS")
 
