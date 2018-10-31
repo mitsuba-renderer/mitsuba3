@@ -1882,11 +1882,6 @@ protected:
                 final_cost);
             Log(m_log_level, "");
         }
-
-        #if defined(__LINUX__)
-            /* Forcefully release Heap memory back to the OS */
-            malloc_trim(0);
-        #endif
     }
 
 protected:
