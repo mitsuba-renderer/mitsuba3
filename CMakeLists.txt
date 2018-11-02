@@ -210,7 +210,7 @@ if (MSVC)
   add_compile_options("/std:c++17")
 
   # Disable annoying MSVC warnings (all targets)
-  add_definitions(/D "_CRT_SECURE_NO_WARNINGS" /D "_SCL_SECURE_NO_WARNINGS")
+  add_definitions(/D "_CRT_SECURE_NO_WARNINGS" /D "_SCL_SECURE_NO_WARNINGS" /D "_SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING")
 
   # Disable secure SCL
   add_definitions(/D "_SECURE_SCL=0")

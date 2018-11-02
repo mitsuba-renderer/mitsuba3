@@ -45,6 +45,7 @@ MTS_INLINE Point2 uniform_disk_to_square(const Point2 &p) {
 template <bool TestDomain = false, typename Point2, typename Value = value_t<Point2>>
 MTS_INLINE Value square_to_uniform_disk_pdf(const Point2 &p) {
     using Scalar = scalar_t<Point2>;
+    ENOKI_MARK_USED(p);
     if constexpr (TestDomain)
         return select(squared_norm(p) > Scalar(1),
                       zero<Value>(), Value(Scalar(math::InvPi)));
@@ -125,6 +126,7 @@ MTS_INLINE Point2 uniform_disk_to_square_concentric(const Point2 &p) {
 template <bool TestDomain = false, typename Point2, typename Value = value_t<Point2>>
 MTS_INLINE Value square_to_uniform_disk_concentric_pdf(const Point2 &p) {
     using Scalar = scalar_t<Point2>;
+    ENOKI_MARK_USED(p);
     if constexpr (TestDomain)
         return select(squared_norm(p) > Scalar(1),
                       zero<Value>(), Value(Scalar(math::InvPi)));
@@ -310,7 +312,7 @@ MTS_INLINE Point2 uniform_sphere_to_square(const Vector3 &p) {
 template <bool TestDomain = false, typename Vector3, typename Value = value_t<Vector3>>
 MTS_INLINE Value square_to_uniform_sphere_pdf(const Vector3 &v) {
     using Scalar = scalar_t<Vector3>;
-
+    ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
         return select(abs(squared_norm(v) - Scalar(1)) > Scalar(math::Epsilon),
                       zero<Value>(), Value(Scalar(math::InvFourPi)));
@@ -351,6 +353,7 @@ MTS_INLINE Point2 uniform_hemisphere_to_square(const Vector3 &v) {
 template <bool TestDomain = false, typename Vector3, typename Value = value_t<Vector3>>
 MTS_INLINE Value square_to_uniform_hemisphere_pdf(const Vector3 &v) {
     using Scalar = scalar_t<Vector3>;
+    ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
         return select((abs(squared_norm(v) - Scalar(1)) > Scalar(math::Epsilon)) ||
                       (Frame<Vector3>::cos_theta(v) < Scalar(0)), zero<Value>(),
@@ -446,6 +449,7 @@ template <bool TestDomain = false,
           typename Vector3,
           typename Value = value_t<Vector3>>
 MTS_INLINE Value square_to_uniform_cone_pdf(const Vector3 &v, const Value &cos_cutoff) {
+    ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
         return select((abs(squared_norm(v) - 1) > math::Epsilon) ||
                            (Frame<Vector3>::cos_theta(v) < cos_cutoff),

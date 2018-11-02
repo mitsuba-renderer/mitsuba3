@@ -309,8 +309,8 @@ template <typename Size, typename Predicate,
 static Index find_interval(Size start_, Size end_, const Predicate &pred) {
     using SignedIndex = int_array_t<Index>;
 
-    Index start = start_,
-          end = end_,
+    Index start = (Index) start_,
+          end = (Index) end_,
           last_interval = end - 2,
           size = last_interval - start;
 
@@ -371,8 +371,8 @@ static Index find_interval(Size start_,
                            Mask active_) {
     using SignedIndex = int_array_t<Index>;
 
-    Index start = start_,
-          end = end_,
+    Index start = (Index) start_,
+          end = (Index) end_,
           last_interval = end - 2,
           size = last_interval - start;
 

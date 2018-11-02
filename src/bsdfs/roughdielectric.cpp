@@ -118,7 +118,7 @@ public:
         bs.sampled_type      = select(selected_r, Index(EGlossyReflection),
                                  Index(EGlossyTransmission));
 
-        Value dwh_dwo;
+        Value dwh_dwo = 0.f;
 
         /* Reflection sampling */
         if (any(selected_r)) {

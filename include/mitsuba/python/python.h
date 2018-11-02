@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined(_MSC_VER)
+#  pragma warning (disable:5033) // 'register' is no longer a supported storage class
+#endif
+
 #include <mitsuba/mitsuba.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>

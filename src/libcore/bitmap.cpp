@@ -689,7 +689,7 @@ std::string Bitmap::to_string() const {
                 value = value.substr(0, 50);
                 if (value[0] == '\"')
                     value += '\"';
-                value + ".. [truncated]";
+                value += ".. [truncated]";
             }
             oss << "    " << *it << " => " << value;
             if (++it != keys.end())

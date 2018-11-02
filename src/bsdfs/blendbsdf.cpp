@@ -43,7 +43,7 @@ public:
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
             if (!sample_first)
-                ctx2.component -= m_nested_bsdf[0]->component_count();
+                ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
             return m_nested_bsdf[sample_first ? 0 : 1]->sample(ctx2, si, sample1, sample2, active);
         }
 
@@ -85,7 +85,7 @@ public:
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
             if (!sample_first)
-                ctx2.component -= m_nested_bsdf[0]->component_count();
+                ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
             return m_nested_bsdf[sample_first ? 0 : 1]->eval(ctx2, si, wo, active);
         }
 
@@ -104,7 +104,7 @@ public:
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
             if (!sample_first)
-                ctx2.component -= m_nested_bsdf[0]->component_count();
+                ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
             return m_nested_bsdf[sample_first ? 0 : 1]->pdf(ctx2, si, wo, active);
         }
 

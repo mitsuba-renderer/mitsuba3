@@ -1,3 +1,4 @@
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/string.h>
 
