@@ -230,7 +230,7 @@ Value Scene::pdf_emitter_direction_impl(const Interaction &ref,
                                         Mask active) const {
     using EmitterPtr = replace_scalar_t<Value, const Emitter *>;
     return reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
-        m_emitter_distr[0];
+        m_emitter_distr.eval(0);
 }
 
 Float Scene::pdf_emitter_direction(const Interaction3f &ref,

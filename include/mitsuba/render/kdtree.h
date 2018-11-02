@@ -210,7 +210,7 @@ protected:
 #endif
 
     /// kd-tree node in 8 bytes.
-    struct alignas(8) KDNode {
+    struct KDNode {
         union {
             /// Inner node
             struct ENOKI_PACK {

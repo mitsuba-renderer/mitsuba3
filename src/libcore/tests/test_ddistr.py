@@ -27,7 +27,7 @@ def test01_construction():
     pdf_values = [1.5, 0.5, 0.3, 0.0, 0.1, 6]
     d = _get_example_distribution(False, pdf_values)
     for (i, v) in enumerate(pdf_values):
-        assert d[i] == approx(v)
+        assert d.eval(i) == approx(v)
     assert d.size() == len(pdf_values)
 
     # Clearing
@@ -44,7 +44,7 @@ def test02_normalization():
     n = sum(pdf_values)
     d = _get_example_distribution(True, pdf_values)
     for (i, v) in enumerate(pdf_values):
-        assert d[i] == approx(v / n)
+        assert d.eval(i) == approx(v / n)
     assert d.normalized()
     assert d.sum() == approx(n)
     assert d.normalization() == approx(1.0 / n)
@@ -168,37 +168,37 @@ def test07_negative_append():
             d.append(-0.5)
 
 
-#def test08_vectorized_getitem():
-#    d = _get_example_distribution(False, [0.5, 1.5, 0.0, 1.0, 5.5])
-#
-#    assert d[0] == 0.5
-#    assert d[4] == 5.5
-#    assert np.allclose(d[[0, 1]], [0.5, 1.5])
-#    assert np.allclose(d[[0, 2, 4]], [0.5, 0.0, 5.5])
-#    assert np.allclose(d[[4, 1, 2, 0]], [5.5, 1.5, 0.0, 0.5])
-#    assert np.allclose(d[[1, 2, 1, 4, 4, 0]], [1.5, 0.0, 1.5, 5.5, 5.5, 0.5])
-#
-#def test09_vectorized_sample_pdf():
-#    pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
-#    d = _get_example_distribution(False, pdf_values)
-#
-#    assert np.allclose(d.sample_pdf([0.0, 0.49, 1.0]),
-#                       ([   2,    3,   5],
-#                        [0.25, 0.25, 0.5]))
-#    assert np.allclose(d.sample_pdf([0.0, 0.49, 1.0, 0.24, 0.51]),
-#                       ([   2,    3,   5,    2,    5],
-#                        [0.25, 0.25, 0.5, 0.25, 0.50]))
-#
-#def test10_vectorized_sample_reuse_pdf():
-#    pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
-#    d = _get_example_distribution(False, pdf_values)
-#
-#    assert np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0]),
-#                       ([   2,    3,   5],
-#                        [0.25, 0.25, 0.5],
-#                        [0.00, 0.96, 1.0]))
-#
-#    assert np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0, 0.24, 0.51], True),
-#                       ([   2,    3,   5,    2,    5],
-#                        [0.25, 0.25, 0.5, 0.25, 0.50],
-#                        [0.00, 0.96, 1.0, 0.96, 0.02]))
+def test08_vectorized_getitem():
+    d = _get_example_distribution(False, [0.5, 1.5, 0.0, 1.0, 5.5])
+
+    assert d.eval(0) == 0.5
+    assert d.eval(4) == 5.5
+    assert np.allclose(d.eval([0, 1]), [0.5, 1.5])
+    assert np.allclose(d.eval([0, 2, 4]), [0.5, 0.0, 5.5])
+    assert np.allclose(d.eval([4, 1, 2, 0]), [5.5, 1.5, 0.0, 0.5])
+    assert np.allclose(d.eval([1, 2, 1, 4, 4, 0]), [1.5, 0.0, 1.5, 5.5, 5.5, 0.5])
+
+def test09_vectorized_sample_pdf():
+    pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
+    d = _get_example_distribution(False, pdf_values)
+
+    assert np.allclose(d.sample_pdf([0.0, 0.49, 1.0]),
+                       ([   2,    3,   5],
+                        [0.25, 0.25, 0.5]))
+    assert np.allclose(d.sample_pdf([0.0, 0.49, 1.0, 0.24, 0.51]),
+                       ([   2,    3,   5,    2,    5],
+                        [0.25, 0.25, 0.5, 0.25, 0.50]))
+
+def test10_vectorized_sample_reuse_pdf():
+    pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
+    d = _get_example_distribution(False, pdf_values)
+
+    assert np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0]),
+                       ([   2,    3,   5],
+                        [0.25, 0.25, 0.5],
+                        [0.00, 0.96, 1.0]))
+
+    assert np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0, 0.24, 0.51], True),
+                       ([   2,    3,   5,    2,    5],
+                        [0.25, 0.25, 0.5, 0.25, 0.50],
+                        [0.00, 0.96, 1.0, 0.96, 0.02]))

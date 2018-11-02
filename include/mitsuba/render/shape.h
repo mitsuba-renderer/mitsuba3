@@ -374,7 +374,7 @@ public:
     // =============================================================
 
     MTS_DECLARE_CLASS()
-    ENOKI_CALL_SUPPORT()
+    ENOKI_CALL_SUPPORT_FRIEND()
 
 protected:
     Shape(const Properties &props);

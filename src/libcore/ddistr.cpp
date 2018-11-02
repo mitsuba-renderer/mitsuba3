@@ -3,9 +3,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template MTS_EXPORT_CORE Float  DiscreteDistribution::operator[](uint32_t) const;
-template MTS_EXPORT_CORE FloatP DiscreteDistribution::operator[](UInt32P ) const;
-
 template MTS_EXPORT_CORE uint32_t DiscreteDistribution::sample(Float,  mask_t<Float>) const;
 template MTS_EXPORT_CORE UInt32P  DiscreteDistribution::sample(FloatP, mask_t<FloatP>) const;
 

@@ -74,9 +74,9 @@ public:
 
     /// Access an entry by its index
     template <typename Index, typename Value = float_array_t<Index>>
-    Value operator[](Index entry) const {
-        return gather<Value>(m_cdf.data(), entry + 1) -
-               gather<Value>(m_cdf.data(), entry);
+    Value eval(Index entry, mask_t<Index> active = true) const {
+        return gather<Value>(m_cdf.data(), entry + 1, active) -
+               gather<Value>(m_cdf.data(), entry, active);
     }
 
     /// Have the probability densities been normalized?

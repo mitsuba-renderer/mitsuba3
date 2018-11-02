@@ -60,7 +60,7 @@ public:
         if (any(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
                 ctx, si, sample1 / weight, sample2, m0);
-            //masked(bs, m0) = bs0;
+            masked(bs, m0) = bs0;
             masked(result, m0) = result0;
         }
 

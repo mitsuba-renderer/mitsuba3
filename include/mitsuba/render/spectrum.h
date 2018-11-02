@@ -2,7 +2,7 @@
 
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/profiler.h>
-#include <mitsuba/render/fwd.h>
+#include <mitsuba/render/interaction.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

@@ -473,7 +473,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    ENOKI_CALL_SUPPORT()
+    ENOKI_CALL_SUPPORT_FRIEND()
     MTS_DECLARE_CLASS()
 
 protected:

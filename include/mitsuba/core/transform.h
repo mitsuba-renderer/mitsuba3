@@ -29,6 +29,7 @@ template <typename VectorN> struct Transform {
     using Value   = value_t<std::decay_t<VectorN>>;
     using Matrix  = enoki::Matrix<Value, Size>;
     using Mask    = mask_t<Value>;
+    using Scalar  = scalar_t<Value>;
 
     //! @}
     // =============================================================
@@ -258,20 +259,20 @@ template <typename VectorN> struct Transform {
         Vector3 new_up = cross(dir, left);
 
         Matrix result = Matrix::from_cols(
-            concat(left, 0.f),
-            concat(new_up, 0.f),
-            concat(dir, 0.f),
-            concat(origin, 1.f)
+            concat(left, Scalar(0)),
+            concat(new_up, Scalar(0)),
+            concat(dir, Scalar(0)),
+            concat(origin, Scalar(1))
         );
 
         Matrix inverse = Matrix::from_rows(
-            concat(left, 0.f),
-            concat(new_up, 0.f),
-            concat(dir, 0.f),
+            concat(left, Scalar(0)),
+            concat(new_up, Scalar(0)),
+            concat(dir, Scalar(0)),
             Vector<Value, 4>(0.f, 0.f, 0.f, 1.f)
         );
 
-        inverse[3] = inverse * concat(-origin, 1.f);
+        inverse[3] = inverse * concat(-origin, Scalar(1));
 
         return Transform(result, transpose(inverse));
     }

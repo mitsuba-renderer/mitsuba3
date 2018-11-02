@@ -243,8 +243,7 @@ public:
 
             u_m[1] = u_m[1] - floor(u_m[1]);
 
-            Value unused;
-            std::tie(sample, unused) = m_vndf.invert(u_m, params, active);
+            std::tie(sample, std::ignore) = m_vndf.invert(u_m, params, active);
         #endif // MTS_SAMPLE_DIFFUSE
 
         bs.eta = 1.f;
