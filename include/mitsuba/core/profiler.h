@@ -2,6 +2,10 @@
 
 #pragma once
 
+#if defined(MTS_ENABLE_ITTNOTIFY)
+#  include <ittnotify.h>
+#endif
+
 #include <mitsuba/core/object.h>
 
 #if !defined(MTS_PROFILE_HASH_SIZE)
@@ -16,11 +20,12 @@ NAMESPACE_BEGIN(mitsuba)
  * "A", then "B" must occur after "A" in the list below.
  */
 enum class EProfilerPhase : int {
-    EInitScene,                  /* Scene initialization */
+    EInitScene = 0,              /* Scene initialization */
     ELoadGeometry,               /* Geometry loading */
     ELoadTexture,                /* Texture loading */
     EInitKDTree,                 /* kd-tree construction */
     ERender,                     /* Integrator::render() */
+
     ESamplingIntegratorEval,     /* SamplingIntegrator::eval() */
     ESamplingIntegratorEvalP,    /* SamplingIntegrator::eval [packet] () */
     ESampleEmitterDirection,     /* Scene::sample_emitter_direction() */
@@ -50,42 +55,51 @@ enum class EProfilerPhase : int {
     EProfilerPhaseCount
 };
 
-constexpr const char *profiler_phase_id[int(EProfilerPhase::EProfilerPhaseCount)] = {
-    "Scene initialization",
-    "Geometry loading",
-    "Texture loading",
-    "kd-tree construction",
-    "Integrator::render()",
-    "SamplingIntegrator::eval()",
-    "SamplingIntegrator::eval() [packet]",
-    "Scene::sample_emitter_direction()",
-    "Scene::sample_emitter_direction() [packet]",
-    "Scene::sample_emitter_ray()",
-    "Scene::sample_emitter_ray() [packet]",
-    "Scene::ray_test()",
-    "Scene::ray_test() [packet]",
-    "Scene::ray_intersect()",
-    "Scene::ray_intersect() [packet]",
-    "KDTree::create_surface_interaction()",
-    "KDTree::create_surface_interaction() [packet]",
-    "ImageBlock::put()",
-    "ImageBlock::put() [packet]",
-    "BSDF::eval(), pdf()",
-    "BSDF::eval(), pdf() [packet]",
-    "BSDF::sample()",
-    "BSDF::sample() [packet]",
-    "Endpoint::eval(), pdf()",
-    "Endpoint::eval(), pdf() [packet]",
-    "Endpoint::sample()",
-    "Endpoint::sample() [packet]",
-    "ContinuousSpectrum::eval()",
-    "ContinuousSpectrum::eval() [packet]"
-};
+constexpr const char
+    *profiler_phase_id[int(EProfilerPhase::EProfilerPhaseCount)] = {
+        "Scene initialization",
+        "Geometry loading",
+        "Texture loading",
+        "kd-tree construction",
+        "Integrator::render()",
+        "SamplingIntegrator::eval()",
+        "SamplingIntegrator::eval() [packet]",
+        "Scene::sample_emitter_direction()",
+        "Scene::sample_emitter_direction() [packet]",
+        "Scene::sample_emitter_ray()",
+        "Scene::sample_emitter_ray() [packet]",
+        "Scene::ray_test()",
+        "Scene::ray_test() [packet]",
+        "Scene::ray_intersect()",
+        "Scene::ray_intersect() [packet]",
+        "KDTree::create_surface_interaction()",
+        "KDTree::create_surface_interaction() [packet]",
+        "ImageBlock::put()",
+        "ImageBlock::put() [packet]",
+        "BSDF::eval(), pdf()",
+        "BSDF::eval(), pdf() [packet]",
+        "BSDF::sample()",
+        "BSDF::sample() [packet]",
+        "Endpoint::eval(), pdf()",
+        "Endpoint::eval(), pdf() [packet]",
+        "Endpoint::sample()",
+        "Endpoint::sample() [packet]",
+        "ContinuousSpectrum::eval()",
+        "ContinuousSpectrum::eval() [packet]"
+    };
+
+
+#if defined(MTS_ENABLE_ITTNOTIFY)
+extern MTS_EXPORT_CORE __itt_string_handle
+    *profiler_phase_string_handles[int(EProfilerPhase::EProfilerPhaseCount)];
+extern MTS_EXPORT_CORE __itt_domain *itt_domain;
+#endif
 
 static_assert(int(EProfilerPhase::EProfilerPhaseCount) <= 64,
               "List of profiler phases is limited to 64 entries");
 
-static_assert(std::extent_v<decltype(profiler_phase_id)> == int(EProfilerPhase::EProfilerPhaseCount),
+static_assert(std::extent_v<decltype(profiler_phase_id)> ==
+                  int(EProfilerPhase::EProfilerPhaseCount),
               "Profiler phases and descriptions don't have matching length!");
 
 #if defined(MTS_ENABLE_PROFILER)
@@ -98,16 +112,28 @@ extern MTS_EXPORT_CORE uint64_t *profiler_flags()
     __attribute__((noinline, weak, const));
 
 struct ScopedPhase {
-    ScopedPhase(EProfilerPhase p)
-        : m_target(profiler_flags()), m_flag(1ull << int(p)) {
-        if ((*m_target & m_flag) == 0)
+    ScopedPhase(EProfilerPhase phase)
+        : m_target(profiler_flags()), m_flag(1ull << int(phase)) {
+        if ((*m_target & m_flag) == 0) {
             *m_target |= m_flag;
-        else
+
+            #if defined(MTS_ENABLE_ITTNOTIFY)
+                m_phase = phase;
+                if (unlikely(int(phase) < 5))
+                    __itt_task_begin(itt_domain, __itt_null, __itt_null,
+                                     profiler_phase_string_handles[int(phase)]);
+            #endif
+        } else {
             m_flag = 0;
+        }
     }
 
     ~ScopedPhase() {
         *m_target &= ~m_flag;
+        #if defined(MTS_ENABLE_ITTNOTIFY)
+            if (m_flag != 0 && unlikely(int(m_phase) < 5))
+                __itt_task_end(itt_domain);
+        #endif
     }
 
     ScopedPhase(const ScopedPhase &) = delete;
@@ -116,6 +142,9 @@ struct ScopedPhase {
 private:
     uint64_t* m_target;
     uint64_t  m_flag;
+#if defined(MTS_ENABLE_ITTNOTIFY)
+    EProfilerPhase m_phase;
+#endif
 };
 
 class MTS_EXPORT_CORE Profiler : public Object {

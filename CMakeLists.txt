@@ -1,6 +1,6 @@
 # This is the main CMake build file used to compile Mitsuba
 cmake_minimum_required (VERSION 3.2.0)
-project(mitsuba CXX)
+project(mitsuba)
 
 # ---------- User options ----------
 option(MTS_DOUBLE_PRECISION  "Compile renderer in double precision?" OFF)
@@ -9,12 +9,19 @@ if (UNIX)
   option(MTS_ENABLE_PROFILER   "Enable sampling profiler" ON)
 endif()
 
+if (MTS_ENABLE_PROFILER)
+  option(MTS_ENABLE_ITTNOTIFY    "Enable Intel event API (useful for profiling in VTune)" OFF)
+else()
+  set(MTS_ENABLE_ITTNOTIFY       OFF CACHE BOOL " " FORCE)
+endif()
+
 # Use GCC/Clang address sanitizer?
 # NOTE: To use this in conjunction with Python plugin, you will need to call
 # On OSX:
 #   export DYLD_INSERT_LIBRARIES=<path to libclang_rt.asan_osx_dynamic.dylib>
 # On Linux:
 #   export LD_LIBRARY_PATH=<path to libasan.so>
+
 option(MTS_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
 option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?"  OFF) # To catch use of unitialized memory
 
@@ -59,6 +66,7 @@ endif()
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
 include(TestBigEndian)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
 
 # Set a default build configuration (Release)
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -150,6 +158,11 @@ include_directories(include
   ${ENOKI_INCLUDE_DIRS}
   ${TBB_INCLUDE_DIRS}
 )
+
+if (MTS_ENABLE_ITTNOTIFY)
+  include_directories(${ITT_INCLUDE_DIRS})
+  add_definitions(-DMTS_ENABLE_ITTNOTIFY=1)
+endif()
 
 # Compile with compiler warnings turned on
 if (MSVC)
@@ -381,6 +394,9 @@ endif()
 
 if (MTS_ENABLE_PROFILER)
   add_definitions(-DMTS_ENABLE_PROFILER)
+  # TODO: separate option
+  add_definitions(-DMTS_ENABLE_ITT)
+  include(src/cmake/instrumentation.cmake)
   message(STATUS "Mitsuba: sampling profiler enabled.")
 else()
   message(STATUS "Mitsuba: sampling profiler disabled.")

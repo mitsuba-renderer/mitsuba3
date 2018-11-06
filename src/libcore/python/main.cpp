@@ -2,6 +2,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/jit.h>
 #include <mitsuba/core/logger.h>
+#include <mitsuba/core/profiler.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/util.h>
@@ -79,6 +80,7 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
+    Profiler::static_initialization();
 
     // libmitsuba-core
     MTS_PY_IMPORT(filesystem);
