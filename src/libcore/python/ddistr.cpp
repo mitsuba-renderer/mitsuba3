@@ -23,7 +23,7 @@ MTS_PY_EXPORT(DiscreteDistribution) {
         }, D(DiscreteDistribution, operator_array), "index"_a)
 
         .def("eval", vectorize_wrapper(
-            [](const DiscreteDistribution &d, const SizeP &i, const mask_t<SizeP> &active) {
+            [](const DiscreteDistribution &d, SizeP i, mask_t<SizeP> active) {
                 return d.eval(i, active);
             }
         ), D(DiscreteDistribution, operator_array), "i"_a, "active"_a = true)

@@ -5,7 +5,7 @@
 [![Build status](https://rglpc1.epfl.ch/jenkins/buildStatus/icon?job=mitsuba-renderer/mitsuba2/master)](https://rglpc1.epfl.ch/jenkins/blue/organizations/jenkins/mitsuba-renderer%2Fmitsuba2/activity)
 [![Build status](https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true)](https://ci.appveyor.com/project/wjakob/mitsuba2/branch/master)
 
-Mitsuba 2 is a research-oriented rendering system written in portable C++14.
+Mitsuba 2 is a research-oriented rendering system written in portable C++17.
 It consists of a small set of core libraries and a wide variety of plugins that
 implement functionality ranging from materials and light sources to complete
 rendering algorithms.

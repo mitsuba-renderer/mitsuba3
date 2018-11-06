@@ -180,6 +180,6 @@ MTS_PY_EXPORT(Bitmap) {
             #endif
             result["data"] = py::make_tuple(size_t(bitmap.uint8_data()), false);
             result["version"] = 3;
-            return result;
+            return py::object(result);
         });
 }
