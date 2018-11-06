@@ -37,7 +37,7 @@ endif()
 if (MITSUBA_PYTEST_FOUND)
   # A single command to compile and run the tests
   add_custom_target(pytest
-    COMMAND ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/dist" "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python" ${PYTHON_EXECUTABLE} -m pytest ${PYTEST_XDIST} -rws ${MITSUBA_TEST_DIRECTORIES}
+    COMMAND ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}/dist" "PYTHONPATH=${CMAKE_BINARY_DIR}/dist/python" ${PYTHON_EXECUTABLE} -m pytest ${PYTEST_XDIST} -rws ${MITSUBA_TEST_DIRECTORIES}
     DEPENDS mitsuba-python python-copy dist-copy
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dist
     USES_TERMINAL
