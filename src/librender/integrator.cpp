@@ -76,11 +76,10 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     ref<Sensor> sensor = scene->sensor();
     ref<Film> film = sensor->film();
 
-    size_t n_cores          = util::core_count();
+    size_t n_threads        = __global_thread_count;
     size_t total_spp        = scene->sampler()->sample_count();
     size_t samples_per_pass = (m_samples_per_pass == (size_t) -1)
-                                  ? total_spp
-                                  : std::min(m_samples_per_pass, total_spp);
+                               ? total_spp : std::min(m_samples_per_pass, total_spp);
     if ((total_spp % samples_per_pass) != 0)
         Throw("sample_count (%d) must be a multiple of samples_per_pass (%d).",
               total_spp, samples_per_pass);
@@ -88,11 +87,11 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     size_t n_passes = ceil(total_spp / (Float) samples_per_pass);
     film->clear();
 
-    Log(EInfo, "Starting render job (%ix%i, %i sample%s,%s %i core%s)",
+    Log(EInfo, "Starting render job (%ix%i, %i sample%s,%s %i thread%s)",
         film->crop_size().x(), film->crop_size().y(),
         total_spp, total_spp == 1 ? "" : "s",
         n_passes > 1 ? tfm::format(" %d passes,", n_passes) : "",
-        n_cores, n_cores == 1 ? "" : "s");
+        n_threads, n_threads == 1 ? "" : "s");
     if (m_timeout > 0.0f)
         Log(EInfo, "Timeout specified: %.2f seconds.", m_timeout);
 
@@ -105,7 +104,7 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     // Total number of blocks to be handled, including multiple passes.
     Float total_blocks = (spiral.block_count() * n_passes);
     size_t grain_count = std::max(
-        (size_t) 1, (size_t) std::rint(total_blocks / Float(n_cores * 2)));
+        (size_t) 1, (size_t) std::rint(total_blocks / Float(n_threads * 2)));
 
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0, total_blocks, grain_count),

@@ -199,4 +199,6 @@ private:
 #endif
 };
 
+extern MTS_EXPORT_CORE size_t __global_thread_count;
+
 NAMESPACE_END(mitsuba)

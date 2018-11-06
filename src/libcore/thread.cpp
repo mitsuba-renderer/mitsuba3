@@ -21,6 +21,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+size_t __global_thread_count = 0;
 static ThreadLocal<Thread> *self = nullptr;
 static std::atomic<uint32_t> thread_id { 0 };
 #if defined(__LINUX__) || defined(__OSX__)
@@ -515,6 +516,8 @@ void Thread::static_initialization() {
     #endif
     ThreadLocalBase::static_initialization();
     ThreadLocalBase::register_thread();
+
+    __global_thread_count = util::core_count();
 
     self = new ThreadLocal<Thread>();
     Thread *main_thread = new MainThread();

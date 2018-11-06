@@ -159,10 +159,11 @@ int main(int argc, char *argv[]) {
         }
 
         /* Initialize Intel Thread Building Blocks with the requested number of threads */
-        int thread_count = *arg_threads ? arg_threads->as_int() : util::core_count();
-        if (thread_count < 1)
+        if (*arg_threads)
+            __global_thread_count = arg_threads->as_int();
+        if (__global_thread_count < 1)
             Throw("Thread count must be >= 1!");
-        tbb::task_scheduler_init init(thread_count);
+        tbb::task_scheduler_init init(__global_thread_count);
 
         bool render_scalar = (bool) *arg_scalar;
 
@@ -173,9 +174,9 @@ int main(int argc, char *argv[]) {
             fr->append(base_path);
 
         if (!*arg_extra || *arg_help) {
-            help(thread_count);
+            help(__global_thread_count);
         } else {
-            Log(EInfo, "%s", build_info(thread_count));
+            Log(EInfo, "%s", build_info(__global_thread_count));
             Log(EInfo, "%s", copyright_info());
             Log(EInfo, "%s", isa_info());
             if (render_scalar)
