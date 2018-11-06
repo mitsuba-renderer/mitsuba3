@@ -20,8 +20,8 @@ class Sphere : public Shape {
 public:
     Sphere(const Properties &props) : Shape(props) {
         m_object_to_world =
-            Transform4f::translate(Vector3f(props.point3f("center", Point3f(0.0f))));
-        m_radius = props.float_("radius", 1.0f);
+            Transform4f::translate(Vector3f(props.point3f("center", Point3f(0.f))));
+        m_radius = props.float_("radius", 1.f);
 
         if (props.has_property("to_world")) {
             Transform4f object_to_world = props.transform("to_world");
@@ -29,7 +29,7 @@ public:
             // Remove the scale from the object-to-world transform
             m_object_to_world =
                 object_to_world
-                * Transform4f::scale(Vector3f(1.0f / radius))
+                * Transform4f::scale(Vector3f(1.f / radius))
                 * m_object_to_world;
             m_radius *= radius;
         }
@@ -38,9 +38,9 @@ public:
         m_flip_normals = props.bool_("flip_normals", false);
         m_center = m_object_to_world * Point3f(0, 0, 0);
         m_world_to_object = m_object_to_world.inverse();
-        m_inv_surface_area = 1.0f / (4.0f * math::Pi * m_radius * m_radius);
+        m_inv_surface_area = 1.f / (4.f * math::Pi * m_radius * m_radius);
 
-        if (m_radius <= 0.0f)
+        if (m_radius <= 0.f)
             Throw("Cannot create spheres of radius <= 0");
 
         if (is_emitter())
@@ -49,34 +49,33 @@ public:
 
     BoundingBox3f bbox() const override {
         BoundingBox3f bbox;
-        bbox.min = m_center - Vector3f(m_radius);
-        bbox.max = m_center + Vector3f(m_radius);
+        bbox.min = m_center - m_radius;
+        bbox.max = m_center + m_radius;
         return bbox;
     }
 
     Float surface_area() const override {
-        return 4.0f * math::Pi * m_radius * m_radius;
+        return 4.f * math::Pi * m_radius * m_radius;
     }
 
     // =============================================================
     //! @{ \name Sampling routines
     // =============================================================
+
     template <typename Point2, typename Value = value_t<Point2>>
     auto sample_position_impl(Value time, const Point2 &sample,
-                              const mask_t<Value> &/*active*/) const {
+                              mask_t<Value> /* active */) const {
         using Point3   = point3_t<Point2>;
-        using Normal3  = normal3_t<Point2>;
 
         auto v = warp::square_to_uniform_sphere(sample);
 
         PositionSample<Point3> ps;
-        ps.p = Point3(v * m_radius) + m_center;
-        ps.n = Normal3(v);
+        ps.p = fmadd(v, m_radius, m_center);
+        ps.n = v;
         if (m_flip_normals)
-            ps.n *= -1.0f;
-        // TODO: fill UVs?
+            ps.n = -ps.n;
         ps.time = time;
-        ps.delta = (m_radius != 0.0f);
+        ps.delta = m_radius != 0.f;
         ps.pdf = m_inv_surface_area;
 
         return ps;
@@ -84,8 +83,8 @@ public:
 
     template <typename PositionSample3,
               typename Value = typename PositionSample3::Value>
-    Value pdf_position_impl(PositionSample3 &/*p_rec*/,
-                            const mask_t<Value> &/*active*/) const {
+    Value pdf_position_impl(PositionSample3 &/* p_rec */,
+                            mask_t<Value> /* active */) const {
         return m_inv_surface_area;
     }
 
@@ -98,7 +97,7 @@ public:
               typename Value = value_t<Point2>>
     auto sample_direction_impl(
             const Interaction3 &it, const Point2 &sample,
-            const mask_t<Value> &active) const {
+            mask_t<Value> active) const {
         using Vector3 = vector3_t<Point2>;
         using Normal3 = normal3_t<Point2>;
         using Point3  = point3_t<Point2>;
@@ -116,14 +115,14 @@ public:
         // sphere as seen from 'it.p'
         const Value sin_alpha = m_radius * inv_ref_dist;
 
-        Mask ref_outside     = active && (sin_alpha < (1.0f - math::Epsilon));
+        Mask ref_outside     = active && (sin_alpha < (1.f - math::Epsilon));
         Mask not_ref_outside = active && !ref_outside;
 
         // TODO: simplify this to avoid masked assignments
         if (any(ref_outside)) {
             // The reference point lies outside of the sphere.
             // => sample based on the projected cone.
-            Value cos_alpha = enoki::safe_sqrt(1.0f - sin_alpha * sin_alpha);
+            Value cos_alpha = enoki::safe_sqrt(1.f - sin_alpha * sin_alpha);
 
             masked(ds.d, ref_outside) = Frame3(
                 ref_to_center * inv_ref_dist).to_world(
@@ -148,8 +147,8 @@ public:
             const Value   query_proj_dist = dot(query_to_center, ds.d);
 
             // Try to find the intersection point between the sampled ray and the sphere.
-            Value A = 1.0f,
-                  B = -2.0f * query_proj_dist,
+            Value A = 1.f,
+                  B = -2.f * query_proj_dist,
                   C = query_dist_2 - m_radius * m_radius;
 
             auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
@@ -182,21 +181,21 @@ public:
         }
 
         if (m_flip_normals)
-            ds.n *= -1.0f;
-        ds.delta = (m_radius != 0.0f);
+            ds.n *= -1.f;
+        ds.delta = (m_radius != 0.f);
         return ds;
     }
 
     template <typename Interaction3, typename DirectionSample3,
               typename Value = typename Interaction3::Value>
     Value pdf_direction_impl(const Interaction3 &it, const DirectionSample3 &ds,
-                             const mask_t<Value> &/*active*/) const {
+                             const mask_t<Value> &/* active */) const {
         using Vector3 = typename DirectionSample3::Vector3;
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
         Value sin_alpha = m_radius * rcp(norm(m_center - it.p)),
-              cos_alpha = enoki::safe_sqrt(1.0f - sin_alpha * sin_alpha);
+              cos_alpha = enoki::safe_sqrt(1.f - sin_alpha * sin_alpha);
 
-        return select(sin_alpha < (1.0f - math::Epsilon),
+        return select(sin_alpha < (1.f - math::Epsilon),
             // Reference point lies outside the sphere
             warp::square_to_uniform_cone_pdf(Vector3(0, 0, 0), cos_alpha),
             m_inv_surface_area * ds.dist * ds.dist / abs_dot(ds.d, ds.n)
@@ -230,14 +229,14 @@ public:
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
-        Mask out_bounds = !((near_t <= maxt) && (far_t >= mint)); // NaN-aware conditionals
+        Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+
         // Sphere fully contains the segment of the ray
-        Mask in_bounds = (near_t < mint) && (far_t > maxt);
+        Mask in_bounds = near_t < mint && far_t > maxt;
 
-        Mask valid_intersection = solution_found && (!out_bounds) && (!in_bounds);
-        Value t = select(near_t < mint, far_t, near_t);
+        Mask valid_intersection = active && solution_found && !out_bounds && !in_bounds;
 
-        return { valid_intersection && active, t };
+        return { valid_intersection, select(near_t < mint, far_t, near_t) };
     }
 
     template <typename Ray3, typename Value = typename Ray3::Value>
@@ -271,7 +270,7 @@ public:
               typename Value = typename SurfaceInteraction3::Value>
     void fill_intersection_record_impl(const Ray3 &ray, const Value * /*cache*/,
                                        SurfaceInteraction3 &si,
-                                       const mask_t<Value> &active) const {
+                                       mask_t<Value> active) const {
         using Vector3 = typename SurfaceInteraction3::Vector3;
         using Mask    = mask_t<Value>;
 
@@ -284,17 +283,17 @@ public:
         Value   theta = safe_acos(local.z() / m_radius);
         Value   phi   = atan2(local.y(), local.x());
 
-        masked(phi, phi < 0.0f) += 2.0f * math::Pi;
+        masked(phi, phi < 0.f) += 2.f * math::Pi;
 
         masked(si.uv.x(), active) = phi * math::InvTwoPi;
         masked(si.uv.y(), active) = theta * math::InvPi;
         masked(si.dp_du,  active) = m_object_to_world * Vector3(
-            -local.y(), local.x(), 0.0f) * (2.0f * math::Pi);
+            -local.y(), local.x(), 0.f) * (2.f * math::Pi);
         masked(si.sh_frame.n, active) = normalize(si.p - m_center);
         Value z_rad = sqrt(local.x() * local.x() + local.y() * local.y());
         masked(si.shape, active) = this;
 
-        Mask z_rad_gt_0  = (z_rad > 0.0f);
+        Mask z_rad_gt_0  = (z_rad > 0.f);
         Mask z_rad_leq_0 = !z_rad_gt_0;
 
         if (any(z_rad_gt_0 && active)) {
@@ -313,7 +312,7 @@ public:
         if (any(z_rad_leq_0 && active)) {
             Mask mask = z_rad_leq_0 && active;
             // avoid a singularity
-            const Value cos_phi = 0.0f, sin_phi = 1.0f;
+            const Value cos_phi = 0.f, sin_phi = 1.f;
             masked(si.dp_dv, mask) = m_object_to_world
                                              * Vector3(local.z() * cos_phi,
                                                        local.z() * sin_phi,
@@ -336,11 +335,9 @@ public:
               typename Value   = typename SurfaceInteraction3::Value,
               typename Vector3 = typename SurfaceInteraction3::Vector3>
     std::pair<Vector3, Vector3> normal_derivative_impl(
-            const SurfaceInteraction3 &si, bool, const mask_t<Value> &) const {
-        Value inv_radius = (m_flip_normals ? -1.0f : 1.0f) / m_radius;
-        Vector3 dn_du = si.dp_du * inv_radius;
-        Vector3 dn_dv = si.dp_dv * inv_radius;
-        return { dn_du , dn_dv };
+            const SurfaceInteraction3 &si, bool, mask_t<Value>) const {
+        Value inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
+        return { si.dp_du * inv_radius, si.dp_dv * inv_radius };
     }
 
     //! @}

@@ -25,16 +25,16 @@ public:
     Rectangle(const Properties &props) : Shape(props) {
         m_object_to_world = props.transform("to_world", Transform4f());
         if (props.bool_("flip_normals", false))
-            m_object_to_world = m_object_to_world * Transform4f::scale(Vector3f(1.0f, 1.0f, -1.0f));
+            m_object_to_world = m_object_to_world * Transform4f::scale(Vector3f(1.f, 1.f, -1.f));
 
         m_world_to_object = m_object_to_world.inverse();
 
-        m_dp_du = m_object_to_world * Vector3f(2.0f, 0.0f, 0.0f);
-        m_dp_dv = m_object_to_world * Vector3f(0.0f, 2.0f, 0.0f);
-        Normal3f normal = normalize(m_object_to_world * Normal3f(0.0f, 0.0f, 1.0f));
+        m_dp_du = m_object_to_world * Vector3f(2.f, 0.f, 0.f);
+        m_dp_dv = m_object_to_world * Vector3f(0.f, 2.f, 0.f);
+        Normal3f normal = normalize(m_object_to_world * Normal3f(0.f, 0.f, 1.f));
         m_frame = Frame<Vector3f>(normalize(m_dp_du), normalize(m_dp_dv), normal);
 
-        m_inv_surface_area = 1.0f / surface_area();
+        m_inv_surface_area = 1.f / surface_area();
         if (abs(dot(normalize(m_dp_du), normalize(m_dp_dv))) > math::Epsilon)
             Throw("The `to_world` transformation contains shear, which is not"
                   " supported by the Rectangle shape.");
@@ -45,10 +45,10 @@ public:
 
     BoundingBox3f bbox() const override {
         BoundingBox3f bbox;
-        bbox.expand(m_object_to_world * Point3f(-1.0f, -1.0f, 0.0f));
-        bbox.expand(m_object_to_world * Point3f( 1.0f, -1.0f, 0.0f));
-        bbox.expand(m_object_to_world * Point3f( 1.0f,  1.0f, 0.0f));
-        bbox.expand(m_object_to_world * Point3f(-1.0f,  1.0f, 0.0f));
+        bbox.expand(m_object_to_world * Point3f(-1.f, -1.f, 0.f));
+        bbox.expand(m_object_to_world * Point3f( 1.f, -1.f, 0.f));
+        bbox.expand(m_object_to_world * Point3f( 1.f,  1.f, 0.f));
+        bbox.expand(m_object_to_world * Point3f(-1.f,  1.f, 0.f));
         return bbox;
     }
 
@@ -66,9 +66,9 @@ public:
         using Normal3  = normal3_t<Point2>;
 
         PositionSample<Point3> ps;
-        ps.p = m_object_to_world * Point3(sample.x() * 2.0f - 1.0f,
-                                          sample.y() * 2.0f - 1.0f,
-                                          0.0f);
+        ps.p = m_object_to_world * Point3(sample.x() * 2.f - 1.f,
+                                          sample.y() * 2.f - 1.f,
+                                          0.f);
         ps.n    = Normal3(m_frame.n);
         ps.pdf  = m_inv_surface_area;
         ps.uv   = sample;
@@ -97,7 +97,7 @@ public:
         ds.dist  = sqrt(dist_squared);
         ds.d    /= ds.dist;
         Value dp = abs_dot(ds.d, ds.n);
-        ds.pdf  *= select(neq(dp, 0.0f), dist_squared / dp, Value(0.0f));
+        ds.pdf  *= select(neq(dp, 0.f), dist_squared / dp, Value(0.f));
 
         return ds;
     }
@@ -109,7 +109,7 @@ public:
         Value pdf = pdf_position_impl(ds, active),
               dp  = abs_dot(ds.d, ds.n);
 
-        return pdf * select(neq(dp, 0.0f), (ds.dist * ds.dist) / dp, 0.0f);
+        return pdf * select(neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
     }
 
     //! @}
@@ -129,8 +129,11 @@ public:
         Point3 local = ray(t);
 
         // Intersection is within ray segment and within rectangle.
-        active = active && (t >= ray.mint && t <= ray.maxt)
-                        && (abs(local.x()) <= 1.0f) && (abs(local.y()) <= 1.0f);
+        active = active && t >= ray.mint
+                        && t <= ray.maxt
+                        && abs(local.x()) <= 1.f
+                        && abs(local.y()) <= 1.f;
+
         t = select(active, t, Value(math::Infinity));
 
         if (cache) {
@@ -149,8 +152,10 @@ public:
         Value t      = -ray.o.z() / ray.d.z();
         Point3 local = ray(t);
         // Intersection is within ray segment and within rectangle.
-        return active && (t >= ray.mint && t <= ray.maxt)
-                      && (abs(local.x()) <= 1.0f) && (abs(local.y()) <= 1.0f);
+        return active && t >= ray.mint
+                      && t <= ray.maxt
+                      && abs(local.x()) <= 1.f
+                      && abs(local.y()) <= 1.f;
     }
 
     template <typename Ray3,
@@ -158,7 +163,7 @@ public:
               typename Value = typename SurfaceInteraction3::Value>
     void fill_intersection_record_impl(const Ray3 &ray, const Value *cache,
                                        SurfaceInteraction3 &si,
-                                       const mask_t<Value> &active) const {
+                                       mask_t<Value> active) const {
         using Point2  = typename SurfaceInteraction3::Point2;
 
         masked(si.n,          active) = m_frame.n;
@@ -169,8 +174,8 @@ public:
         masked(si.p,          active) = ray(si.t);
         masked(si.time,       active) = ray.time;
         masked(si.instance,   active) = nullptr;
-        masked(si.uv,         active) = Point2(0.5f * (cache[0] + 1.0f),
-                                               0.5f * (cache[1] + 1.0f));
+        masked(si.uv,         active) = Point2(.5f * (cache[0] + 1.f),
+                                               .5f * (cache[1] + 1.f));
     }
 
     template <typename SurfaceInteraction3,
@@ -178,7 +183,7 @@ public:
               typename Vector3 = typename SurfaceInteraction3::Vector3>
     std::pair<Vector3, Vector3> normal_derivative_impl(
             const SurfaceInteraction3 &/*si*/, bool, const mask_t<Value> &) const {
-        return { Vector3(0.0f), Vector3(0.0f) };
+        return { Vector3(0.f), Vector3(0.f) };
     }
 
     Size primitive_count() const override { return 1; }
