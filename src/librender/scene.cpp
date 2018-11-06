@@ -7,6 +7,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/core/profiler.h>
+#include <mitsuba/core/plugin.h>
 #include <enoki/stl.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -39,8 +40,41 @@ Scene::Scene(const Properties &props) {
             m_integrator = integrator;
         }
     }
-
     m_kdtree->build();
+
+    if (m_sensors.size() == 0) {
+        Log(EWarn, "No sensors found! Instantiating a perspective camera..");
+        Properties props("perspective");
+        props.set_float("fov", 45.0f);
+
+        /* Create a perspective camera with a 45 deg. field of view
+           and positioned so that it can see the entire scene */
+        BoundingBox3f bbox = m_kdtree->bbox();
+        if (bbox.valid()) {
+            Point3f center = bbox.center();
+            Vector3f extents = bbox.extents();
+
+            Float distance =
+                hmax(extents) / (2.f * std::tan(45.f * .5f * math::Pi / 180));
+
+            props.set_float("far_clip", hmax(extents) * 5 + distance);
+            props.set_float("near_clip", distance / 100);
+
+            props.set_float("focus_distance", distance + extents.z() / 2);
+            props.set_transform(
+                "to_world", Transform4f::translate(Vector3f(
+                                center.x(), center.y(), bbox.min.z() - distance)));
+        }
+
+        m_sensors.push_back(
+            PluginManager::instance()->create_object<Sensor>(props));
+    }
+
+    if (!m_integrator) {
+        Log(EWarn, "No integrator found! Instantiating a path tracer..");
+        m_integrator = PluginManager::instance()->create_object<Integrator>(
+            Properties("path"));
+    }
 
     // Precompute a discrete distribution over emitters
     m_emitter_distr = DiscreteDistribution(m_emitters.size());
