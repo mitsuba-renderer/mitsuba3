@@ -394,8 +394,6 @@ endif()
 
 if (MTS_ENABLE_PROFILER)
   add_definitions(-DMTS_ENABLE_PROFILER)
-  # TODO: separate option
-  add_definitions(-DMTS_ENABLE_ITT)
   include(src/cmake/instrumentation.cmake)
   message(STATUS "Mitsuba: sampling profiler enabled.")
 else()

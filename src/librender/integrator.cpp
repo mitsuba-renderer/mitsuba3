@@ -13,7 +13,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Integrator::Integrator(const Properties & /*props*/) {}
+Integrator::Integrator(const Properties & /* props */) { }
 
 size_t Integrator::register_callback(CallbackFunction cb, Float period) {
     m_callbacks.push_back(CallbackInfo(cb, period));
@@ -114,6 +114,7 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
             ref<Sampler> sampler = scene->sampler()->clone();
             ref<ImageBlock> block =
                 new ImageBlock(Bitmap::EXYZAW, Vector2i(m_block_size), film->reconstruction_filter());
+            scoped_flush_denormals flush_denormals(true);
 
             Point2fX points;
             // For each block
