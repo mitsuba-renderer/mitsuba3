@@ -287,7 +287,7 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
         /* ImageBlock::put */ {
             ScopedPhase p(EProfilerPhase::EImageBlockPutP);
             block->put(position_sample, ray.wavelengths,
-                       ray_weight * result, rs.alpha);
+                       ray_weight * result, rs.alpha, active);
         }
 
         index += (uint32_t) PacketSize;
