@@ -22,7 +22,7 @@ public:
 
         /* Convert to linear RGBA float bitmap, will be converted
            into spectral profile coefficients below */
-        m_bitmap = m_bitmap->convert(Bitmap::ERGBA, Bitmap::EFloat, false);
+        m_bitmap = m_bitmap->convert(Bitmap::ERGB, Bitmap::EFloat, false);
 
         if (props.has_property("upscale")) {
             Float upscale = props.float_("upscale");
@@ -44,16 +44,15 @@ public:
 
         for (size_t y = 0; y < m_bitmap->size().y(); ++y) {
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
-                Vector4f coeff = load<Vector4f>(ptr);
-                Color3f color = head<3>(coeff);
+                Color3f rgb = load_unaligned<Vector3f>(ptr);
 
-                /* Fetch spectral fit for given sRGB color value (4 coefficients) */
-                coeff = srgb_model_fetch(color);
+                /* Fetch spectral fit for given sRGB color value (3 coefficients) */
+                Vector3f coeff = srgb_model_fetch(rgb);
                 mean += (double) srgb_model_mean(coeff);
 
                 /* Overwrite the pixel value with the coefficients */
-                store(ptr, coeff);
-                ptr += 4;
+                store_unaligned(ptr, coeff);
+                ptr += 3;
             }
         }
 
@@ -68,7 +67,7 @@ public:
         using UInt32   = uint32_array_t<Value>;
         using Point2u  = Point<UInt32, 2>;
         using Point2f  = Point<Value, 2>;
-        using Vector4f = Vector<Value, 4>;
+        using Vector3f = Vector<Value, 3>;
 
         auto uv = m_transform.transform_affine(it.uv);
         uv -= floor(uv);
@@ -85,20 +84,21 @@ public:
 
         const Float *ptr = (const Float *) m_bitmap->data();
 
-        uint32_t width = (uint32_t) m_bitmap->size().x() * 4;
+        uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
 
-        Vector4f v00 = gather<Vector4f>(ptr, index, active),
-                 v10 = gather<Vector4f>(ptr + 4, index, active),
-                 v01 = gather<Vector4f>(ptr + width, index, active),
-                 v11 = gather<Vector4f>(ptr + width + 4, index, active);
+        Vector3f v00 = gather<Vector3f>(ptr, index, active),
+                 v10 = gather<Vector3f>(ptr + 3, index, active),
+                 v01 = gather<Vector3f>(ptr + width, index, active),
+                 v11 = gather<Vector3f>(ptr + width + 3, index, active);
 
         Spectrum s00 = srgb_model_eval(v00, it.wavelengths),
                  s10 = srgb_model_eval(v10, it.wavelengths),
                  s01 = srgb_model_eval(v01, it.wavelengths),
-                 s11 = srgb_model_eval(v11, it.wavelengths);
+                 s11 = srgb_model_eval(v11, it.wavelengths),
+                 s0 = fmadd(w0.x(), s00, w1.x() * s10),
+                 s1 = fmadd(w0.x(), s01, w1.x() * s11);
 
-        return w0.y() * (w0.x() * s00 + w1.x() * s10) +
-               w1.y() * (w0.x() * s01 + w1.x() * s11);
+        return fmadd(w0.y(), s0, w1.y() * s1);
     }
 
     Float mean() const override { return m_mean; }

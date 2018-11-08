@@ -75,23 +75,23 @@ Transform<Vector<Value, 4>> MTS_INLINE AnimatedTransform::eval_impl(Value time, 
     Index idx1 = idx0 + 1;
 
     /* Compute the relative time value in [0, 1] */
-    Value t0 = gather<Value, Stride>(m_keyframes.data(), idx0, active),
-          t1 = gather<Value, Stride>(m_keyframes.data(), idx1, active),
+    Value t0 = gather<Value, Stride, false>(m_keyframes.data(), idx0, active),
+          t1 = gather<Value, Stride, false>(m_keyframes.data(), idx1, active),
           t  = min(max((time - t0) / (t1 - t0), 0.f), 1.f);
 
     /* Interpolate the scale matrix */
-    Matrix3 scale0 = gather<Matrix3, Stride>((Float *) m_keyframes.data() + ScaleOffset, idx0, active),
-            scale1 = gather<Matrix3, Stride>((Float *) m_keyframes.data() + ScaleOffset, idx1, active),
+    Matrix3 scale0 = gather<Matrix3, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx0, active),
+            scale1 = gather<Matrix3, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx1, active),
             scale = scale0 * (1 - t) + scale1 * t;
 
     /* Interpolate the rotation quaternion */
-    Quaternion4 quat0 = gather<Quaternion4, Stride>((Float *) m_keyframes.data() + QuatOffset, idx0, active),
-                quat1 = gather<Quaternion4, Stride>((Float *) m_keyframes.data() + QuatOffset, idx1, active),
+    Quaternion4 quat0 = gather<Quaternion4, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx0, active),
+                quat1 = gather<Quaternion4, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx1, active),
                 quat = enoki::slerp(quat0, quat1, t);
 
     /* Interpolate the translation component */
-    Vector3 trans0 = gather<Vector3, Stride>((Float *) m_keyframes.data() + TransOffset, idx0, active),
-            trans1 = gather<Vector3, Stride>((Float *) m_keyframes.data() + TransOffset, idx1, active),
+    Vector3 trans0 = gather<Vector3, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx0, active),
+            trans1 = gather<Vector3, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx1, active),
             trans = trans0 * (1 - t) + trans1 * t;
 
     return Transform<Vector<Value, 4>>(

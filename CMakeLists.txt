@@ -15,6 +15,8 @@ else()
   set(MTS_ENABLE_ITTNOTIFY       OFF CACHE BOOL " " FORCE)
 endif()
 
+option(MTS_DISABLE_VECTORIZATION "Disable vectorization?" OFF)
+
 # Use GCC/Clang address sanitizer?
 # NOTE: To use this in conjunction with Python plugin, you will need to call
 # On OSX:
@@ -36,8 +38,11 @@ option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 # Manually set the packet size. Useful for debugging vectorization-related issues.
 set(MTS_PACKET_SIZE ""
     CACHE STRING "SIMD packet size. Defaults to the largest value supported by the architecture.")
-if (MTS_PACKET_SIZE)
-    add_definitions(-DMTS_PACKET_SIZE=${MTS_PACKET_SIZE})
+if (MTS_DISABLE_VECTORIZATION)
+  add_definitions(-DENOKI_DISABLE_VECTORIZATION=1)
+  message(STATUS "Mitsuba: vectorization is *disabled*!")
+elseif (MTS_PACKET_SIZE)
+  add_definitions(-DMTS_PACKET_SIZE=${MTS_PACKET_SIZE})
 endif()
 
 # ----------------------------------
@@ -485,6 +490,17 @@ foreach(ITEM ${MITSUBA_DIST})
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_FILE})
   list(APPEND MITSUBA_DIST_OUT ${OUTPUT_FILE})
 endforeach()
+
+macro (add_file DST SRC)
+  set(OUTPUT_FILE ${CMAKE_BINARY_DIR}/dist/${DST})
+  add_custom_command(
+    OUTPUT ${OUTPUT_FILE} DEPENDS ${SRC} ${ARGN}
+    COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${OUTPUT_FILE})
+  list(APPEND MITSUBA_DIST_OUT ${OUTPUT_FILE})
+endmacro()
+
+add_file(data/srgb.coeff ${CMAKE_BINARY_DIR}/ext_build/rgb2spec/srgb.coeff rgb2spec_opt_run)
+
 
 add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})
 set_property(TARGET dist-copy PROPERTY FOLDER misc)

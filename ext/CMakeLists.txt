@@ -143,7 +143,8 @@ set(TBB_BUILD_TBBMALLOC       OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
 add_subdirectory(tbb)
 set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
-set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include PARENT_SCOPE)
+set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include)
+set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
 
 set_property(TARGET glfw glfw_objects nanogui nanogui-obj PROPERTY FOLDER "dependencies")
 set(EIGEN_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/ext/eigen PARENT_SCOPE)
@@ -178,6 +179,13 @@ set_property(TARGET libzmq PROPERTY FOLDER "dependencies")
 
 # tinyformat include path
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
+
+# build rgb2spec
+add_subdirectory(rgb2spec)
+set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
+set_property(TARGET rgb2spec         PROPERTY FOLDER "dependencies")
+set_property(TARGET rgb2spec_opt     PROPERTY FOLDER "dependencies")
+set_property(TARGET rgb2spec_opt_run PROPERTY FOLDER "dependencies")
 
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   # Build asmjit

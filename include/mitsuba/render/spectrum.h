@@ -3,6 +3,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/render/interaction.h>
+#include <mitsuba/render/shape.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
