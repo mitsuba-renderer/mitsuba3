@@ -24,7 +24,7 @@ pipeline {
 rm -Rf build
 mkdir -p build
 cd build
-cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DMTS_DOUBLE_PRECISION=OFF ..
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DMTS_DOUBLE_PRECISION=OFF -DMTS_ENABLE_PROFILER=OFF ..
 ninja'''
             }
         }
@@ -40,7 +40,7 @@ python3.4 -m pytest -v'''
 rm -Rf build
 mkdir -p build
 cd build
-cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DMTS_DOUBLE_PRECISION=ON ..
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DMTS_DOUBLE_PRECISION=ON -DMTS_ENABLE_PROFILER=OFF ..
 ninja'''
             }
         }
