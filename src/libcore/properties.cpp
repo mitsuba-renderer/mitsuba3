@@ -16,6 +16,7 @@
 
 #include <map>
 #include <sstream>
+#include <cstdlib>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -45,11 +46,14 @@ struct SortKey {
             ++i;
         a = a.substr(i);
         b = b.substr(i);
-        try {
-            return std::stoi(a) < std::stoi(b);
-        } catch (...) {
+        char *end1 = nullptr,
+             *end2 = nullptr;
+        long l1 = std::strtol(a.c_str(), &end1, 10);
+        long l2 = std::strtol(b.c_str(), &end2, 10);
+        if (*end1 == '\0' && *end2 == '\0')
+            return l1 < l2;
+        else
             return a < b;
-        }
     }
 };
 
