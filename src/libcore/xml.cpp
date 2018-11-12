@@ -869,7 +869,13 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
             for (uint32_t i = range.begin(); i != range.end(); ++i) {
                 auto &kv = named_references[i];
                 try {
-                    ref<Object> obj = instantiate_node(ctx, kv.second);
+                    ref<Object> obj;
+
+                    // Isolate from parent talks to prevent deadlocks
+                    tbb::this_task_arena::isolate([&] {
+                        obj = instantiate_node(ctx, kv.second);
+                    });
+
                     // Give the object a chance to recursively expand into sub-objects
                     std::vector<ref<Object>> children = obj->expand();
                     if (children.empty()) {
