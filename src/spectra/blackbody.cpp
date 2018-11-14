@@ -133,7 +133,7 @@ public:
         return m_integral / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
     }
 
-    MTS_IMPLEMENT_SPECTRUM()
+    MTS_IMPLEMENT_SPECTRUM_ALL()
     MTS_DECLARE_CLASS()
 
 private:

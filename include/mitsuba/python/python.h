@@ -78,3 +78,28 @@ void bind_slicing_operators(ClassBinding &c) {
     ;
 }
 
+template <typename Source, typename Target> void pybind11_type_alias() {
+    auto &types = pybind11::detail::get_internals().registered_types_cpp;
+    auto it = types.find(std::type_index(typeid(Source)));
+    if (it == types.end())
+        throw std::runtime_error("pybind11_type_alias(): source type not found!");
+    types[std::type_index(typeid(Target))] = it->second;
+}
+
+
+template <typename Class, typename... Args> auto bind_array(py::module &m, const char *name) {
+    return py::class_<Class, Args...>(m, name)
+        .def("__len__", &Class::size)
+        .def("__repr__", [](const Class &a) {
+            std::ostringstream oss;
+            oss << a;
+            return oss.str();
+        })
+        .def(py::self == py::self)
+        .def(py::self != py::self)
+        .def("__getitem__", [](const Class &a, size_t index) {
+            if (index >= a.size())
+                throw py::index_error();
+            return a.coeff(index);
+        });
+}

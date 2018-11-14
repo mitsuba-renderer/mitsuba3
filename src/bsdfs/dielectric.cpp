@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 /// Smooth dielectric material.
 class SmoothDielectric final : public BSDF {
 public:
-    SmoothDielectric(const Properties &props) {
+    SmoothDielectric(const Properties &props) : BSDF(props) {
         m_flags = EDeltaReflection | EFrontSide | EBackSide
                   | EDeltaTransmission | EFrontSide | EBackSide | ENonSymmetric;
 
@@ -116,6 +116,10 @@ public:
         return 0.f;
     }
 
+    std::vector<ref<Object>> children() override {
+        return { m_specular_reflectance.get(), m_specular_transmittance.get() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothDielectric[" << std::endl
@@ -126,7 +130,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 
 private:

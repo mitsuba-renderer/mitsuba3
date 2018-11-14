@@ -1,5 +1,6 @@
 #include <mitsuba/python/python.h>
 
+MTS_PY_DECLARE(autodiff);
 MTS_PY_DECLARE(ETransportMode);
 MTS_PY_DECLARE(EMeasure);
 MTS_PY_DECLARE(Scene);
@@ -31,6 +32,7 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
 
     py::module m = py::module::import("mitsuba.render");
 
+    MTS_PY_IMPORT(autodiff);
     MTS_PY_IMPORT(ETransportMode);
     MTS_PY_IMPORT(EMeasure);
     MTS_PY_IMPORT(Scene);

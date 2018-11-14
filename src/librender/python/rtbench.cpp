@@ -6,8 +6,8 @@
 MTS_PY_EXPORT(rt) {
     MTS_PY_IMPORT_MODULE(rt, "mitsuba.render.rtbench");
 
+#if !defined(MTS_USE_EMBREE)
     using namespace rtbench;
-
     rt.def("planar_morton_scalar", planar_morton_scalar, "kdtree"_a, "N"_a);
     rt.def("planar_morton_packet", planar_morton_packet, "kdtree"_a, "N"_a);
     rt.def("planar_morton_scalar_shadow", planar_morton_scalar_shadow, "kdtree"_a, "N"_a);
@@ -41,4 +41,5 @@ MTS_PY_EXPORT(rt) {
     rt.def("naive_spherical_independent_packet", naive_spherical_independent_packet, "kdtree"_a, "N"_a);
     rt.def("naive_spherical_independent_scalar_shadow", naive_spherical_independent_scalar_shadow, "kdtree"_a, "N"_a);
     rt.def("naive_spherical_independent_packet_shadow", naive_spherical_independent_packet_shadow, "kdtree"_a, "N"_a);
+#endif
 }

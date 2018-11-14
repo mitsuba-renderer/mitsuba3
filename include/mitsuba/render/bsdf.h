@@ -3,6 +3,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/common.h>
 #include <mitsuba/render/mueller.h>
+#include <mitsuba/render/autodiff.h>
 #include <mitsuba/core/profiler.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -154,7 +155,7 @@ template <typename Point3_> struct BSDFSample {
  * \sa BSDFContext
  * \sa BSDFSample
  */
-class MTS_EXPORT_RENDER BSDF : public Object {
+class MTS_EXPORT_RENDER BSDF : public DifferentiableObject {
 public:
     /**
      * \brief This list of flags is used to classify the different
@@ -295,18 +296,26 @@ public:
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
            Float sample1, const Point2f &sample2) const = 0;
 
-    /// Vectorized version of \ref sample()
-    virtual std::pair<BSDFSample3fP, SpectrumfP>
-    sample(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
-           FloatP sample1, const Point2fP &sample2,
-           MaskP active = true) const = 0;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample()
     std::pair<BSDFSample3f, Spectrumf>
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
            Float sample1, const Point2f &sample2, bool /* unused */) const {
         return sample(ctx, si, sample1, sample2);
     }
+
+    /// Vectorized version of \ref sample()
+    virtual std::pair<BSDFSample3fP, SpectrumfP>
+    sample(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
+           FloatP sample1, const Point2fP &sample2,
+           MaskP active = true) const = 0;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample()
+    virtual std::pair<BSDFSample3fD, SpectrumfD>
+    sample(const BSDFContext &ctx, const SurfaceInteraction3fD &si,
+           FloatD sample1, const Point2fD &sample2,
+           MaskD active = true) const = 0;
+#endif
 
     /**
      * \brief Polarized version of \ref sample()
@@ -331,18 +340,26 @@ public:
     sample_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                Float sample1, const Point2f &sample2) const;
 
-    /// Vectorized version of \ref sample_pol()
-    virtual std::pair<BSDFSample3fP, MuellerMatrixSfP>
-    sample_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
-               FloatP sample1, const Point2fP &sample2,
-               MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_pol()
     std::pair<BSDFSample3f, MuellerMatrixSf>
     sample_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                Float sample1, const Point2f &sample2, bool /* unused */) const {
         return sample_pol(ctx, si, sample1, sample2);
     }
+
+    /// Vectorized version of \ref sample_pol()
+    virtual std::pair<BSDFSample3fP, MuellerMatrixSfP>
+    sample_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
+               FloatP sample1, const Point2fP &sample2,
+               MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample_pol()
+    virtual std::pair<BSDFSample3fD, MuellerMatrixSfD>
+    sample_pol(const BSDFContext &ctx, const SurfaceInteraction3fD &si,
+               FloatD sample1, const Point2fD &sample2,
+               MaskD active = true) const;
+#endif
 
     /**
      * \brief Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo)
@@ -372,15 +389,21 @@ public:
     virtual Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                            const Vector3f &wo) const = 0;
 
-    /// Vectorized version of \ref eval()
-    virtual SpectrumfP eval(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
-                            const Vector3fP &wo, MaskP active = true) const = 0;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
     Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                    const Vector3f &wo, bool /* unused */) const {
         return eval(ctx, si, wo);
     }
+
+    /// Vectorized version of \ref eval()
+    virtual SpectrumfP eval(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
+                            const Vector3fP &wo, MaskP active = true) const = 0;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval()
+    virtual SpectrumfD eval(const BSDFContext &ctx, const SurfaceInteraction3fD &si,
+                            const Vector3fD &wo, MaskD active = true) const = 0;
+#endif
 
     /**
      * \brief Polarized version of \ref eval()
@@ -402,15 +425,21 @@ public:
     virtual MuellerMatrixSf eval_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                      const Vector3f &wo) const;
 
-    /// Vectorized version of \ref eval_pol()
-    virtual MuellerMatrixSfP eval_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
-                                      const Vector3fP &wo, MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval_pol()
     MuellerMatrixSf eval_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                              const Vector3f &wo, bool /* unused */) const {
         return eval_pol(ctx, si, wo);
     }
+
+    /// Vectorized version of \ref eval_pol()
+    virtual MuellerMatrixSfP eval_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
+                                      const Vector3fP &wo, MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval_pol()
+    virtual MuellerMatrixSfD eval_pol(const BSDFContext &ctx, const SurfaceInteraction3fD &si,
+                                      const Vector3fD &wo, MaskD active = true) const;
+#endif
 
     /**
      * \brief Compute the probability per unit solid angle of sampling a
@@ -441,15 +470,21 @@ public:
     virtual Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                       const Vector3f &wo) const = 0;
 
-    /// Vectorized version of \ref pdf()
-    virtual FloatP pdf(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
-                       const Vector3fP &wo, MaskP active = true) const = 0;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf()
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, bool /* unused */) const {
         return pdf(ctx, si, wo);
     }
+
+    /// Vectorized version of \ref pdf()
+    virtual FloatP pdf(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
+                       const Vector3fP &wo, MaskP active = true) const = 0;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref pdf()
+    virtual FloatD pdf(const BSDFContext &ctx, const SurfaceInteraction3fD &si,
+                       const Vector3fD &wo, MaskD active = true) const = 0;
+#endif
 
     // -----------------------------------------------------------------------
     //! @{ \name BSDF property accessors (components, flags, etc)
@@ -467,6 +502,9 @@ public:
     /// Flags for a specific component of this BSDF.
     uint32_t flags(size_t i) const { Assert(i < m_components.size()); return m_components[i]; }
 
+    /// Return a string identifier
+    std::string id() const override;
+
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
@@ -477,7 +515,7 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
-    BSDF();
+    BSDF(const Properties &props);
     virtual ~BSDF();
 
 protected:
@@ -486,6 +524,9 @@ protected:
 
     /// Flags for each component of this BSDF.
     std::vector<uint32_t> m_components;
+
+    /// Identifier (if available)
+    std::string m_id;
 };
 
 
@@ -496,28 +537,94 @@ namespace {
         oss << "{ ";
 
 #define is_set(mask) (type_mask & mask) == mask
-        if (is_set(BSDF::EAll)) { oss << "all "; type_mask &= ~BSDF::EAll; }
-        if (is_set(BSDF::EReflection)) { oss << "reflection "; type_mask &= ~BSDF::EReflection; }
-        if (is_set(BSDF::ETransmission)) { oss << "transmission "; type_mask &= ~BSDF::ETransmission; }
-        if (is_set(BSDF::ESmooth)) { oss << "smooth "; type_mask &= ~BSDF::ESmooth; }
-        if (is_set(BSDF::EDiffuse)) { oss << "diffuse "; type_mask &= ~BSDF::EDiffuse; }
-        if (is_set(BSDF::EGlossy)) { oss << "glossy "; type_mask &= ~BSDF::EGlossy; }
-        if (is_set(BSDF::EDelta)) { oss << "delta"; type_mask &= ~BSDF::EDelta; }
-        if (is_set(BSDF::EDelta1D)) { oss << "delta_1d "; type_mask &= ~BSDF::EDelta1D; }
-        if (is_set(BSDF::EDiffuseReflection)) { oss << "diffuse_reflection "; type_mask &= ~BSDF::EDiffuseReflection; }
-        if (is_set(BSDF::EDiffuseTransmission)) { oss << "diffuse_transmission "; type_mask &= ~BSDF::EDiffuseTransmission; }
-        if (is_set(BSDF::EGlossyReflection)) { oss << "glossy_reflection "; type_mask &= ~BSDF::EGlossyReflection; }
-        if (is_set(BSDF::EGlossyTransmission)) { oss << "glossy_transmission "; type_mask &= ~BSDF::EGlossyTransmission; }
-        if (is_set(BSDF::EDeltaReflection)) { oss << "delta_reflection "; type_mask &= ~BSDF::EDeltaReflection; }
-        if (is_set(BSDF::EDeltaTransmission)) { oss << "delta_transmission "; type_mask &= ~BSDF::EDeltaTransmission; }
-        if (is_set(BSDF::EDelta1DReflection)) { oss << "delta_1d_reflection "; type_mask &= ~BSDF::EDelta1DReflection; }
-        if (is_set(BSDF::EDelta1DTransmission)) { oss << "delta_1d_transmission "; type_mask &= ~BSDF::EDelta1DTransmission; }
-        if (is_set(BSDF::ENull)) { oss << "null "; type_mask &= ~BSDF::ENull; }
-        if (is_set(BSDF::EAnisotropic)) { oss << "anisotropic "; type_mask &= ~BSDF::EAnisotropic; }
-        if (is_set(BSDF::EFrontSide)) { oss << "front_side "; type_mask &= ~BSDF::EFrontSide; }
-        if (is_set(BSDF::EBackSide)) { oss << "back_side "; type_mask &= ~BSDF::EBackSide; }
-        if (is_set(BSDF::ESpatiallyVarying)) { oss << "spatially_varying "; type_mask &= ~BSDF::ESpatiallyVarying; }
-        if (is_set(BSDF::ENonSymmetric)) { oss << "non_symmetric "; type_mask &= ~BSDF::ENonSymmetric; }
+        if (is_set(BSDF::EAll)) {
+            oss << "all ";
+            type_mask &= ~BSDF::EAll;
+        }
+        if (is_set(BSDF::EReflection)) {
+            oss << "reflection ";
+            type_mask &= ~BSDF::EReflection;
+        }
+        if (is_set(BSDF::ETransmission)) {
+            oss << "transmission ";
+            type_mask &= ~BSDF::ETransmission;
+        }
+        if (is_set(BSDF::ESmooth)) {
+            oss << "smooth ";
+            type_mask &= ~BSDF::ESmooth;
+        }
+        if (is_set(BSDF::EDiffuse)) {
+            oss << "diffuse ";
+            type_mask &= ~BSDF::EDiffuse;
+        }
+        if (is_set(BSDF::EGlossy)) {
+            oss << "glossy ";
+            type_mask &= ~BSDF::EGlossy;
+        }
+        if (is_set(BSDF::EDelta)) {
+            oss << "delta";
+            type_mask &= ~BSDF::EDelta;
+        }
+        if (is_set(BSDF::EDelta1D)) {
+            oss << "delta_1d ";
+            type_mask &= ~BSDF::EDelta1D;
+        }
+        if (is_set(BSDF::EDiffuseReflection)) {
+            oss << "diffuse_reflection ";
+            type_mask &= ~BSDF::EDiffuseReflection;
+        }
+        if (is_set(BSDF::EDiffuseTransmission)) {
+            oss << "diffuse_transmission ";
+            type_mask &= ~BSDF::EDiffuseTransmission;
+        }
+        if (is_set(BSDF::EGlossyReflection)) {
+            oss << "glossy_reflection ";
+            type_mask &= ~BSDF::EGlossyReflection;
+        }
+        if (is_set(BSDF::EGlossyTransmission)) {
+            oss << "glossy_transmission ";
+            type_mask &= ~BSDF::EGlossyTransmission;
+        }
+        if (is_set(BSDF::EDeltaReflection)) {
+            oss << "delta_reflection ";
+            type_mask &= ~BSDF::EDeltaReflection;
+        }
+        if (is_set(BSDF::EDeltaTransmission)) {
+            oss << "delta_transmission ";
+            type_mask &= ~BSDF::EDeltaTransmission;
+        }
+        if (is_set(BSDF::EDelta1DReflection)) {
+            oss << "delta_1d_reflection ";
+            type_mask &= ~BSDF::EDelta1DReflection;
+        }
+        if (is_set(BSDF::EDelta1DTransmission)) {
+            oss << "delta_1d_transmission ";
+            type_mask &= ~BSDF::EDelta1DTransmission;
+        }
+        if (is_set(BSDF::ENull)) {
+            oss << "null ";
+            type_mask &= ~BSDF::ENull;
+        }
+        if (is_set(BSDF::EAnisotropic)) {
+            oss << "anisotropic ";
+            type_mask &= ~BSDF::EAnisotropic;
+        }
+        if (is_set(BSDF::EFrontSide)) {
+            oss << "front_side ";
+            type_mask &= ~BSDF::EFrontSide;
+        }
+        if (is_set(BSDF::EBackSide)) {
+            oss << "back_side ";
+            type_mask &= ~BSDF::EBackSide;
+        }
+        if (is_set(BSDF::ESpatiallyVarying)) {
+            oss << "spatially_varying ";
+            type_mask &= ~BSDF::ESpatiallyVarying;
+        }
+        if (is_set(BSDF::ENonSymmetric)) {
+            oss << "non_symmetric ";
+            type_mask &= ~BSDF::ENonSymmetric;
+        }
 #undef is_set
 
         Assert(type_mask == 0);
@@ -560,96 +667,4 @@ SurfaceInteraction<Point3>::bsdf(const RayDifferential3 &ray) {
 // -----------------------------------------------------------------------
 NAMESPACE_END(mitsuba)
 
-// -----------------------------------------------------------------------
-//! @{ \name Enoki accessors for dynamic vectorization
-// -----------------------------------------------------------------------
-
-ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample, wo, pdf, eta,
-                     sampled_type, sampled_component)
-
-//! @}
-// -----------------------------------------------------------------------
-
-
-// -----------------------------------------------------------------------
-//! @{ \name Enoki support for packets of BSDF pointers
-// -----------------------------------------------------------------------
-
-ENOKI_CALL_SUPPORT_BEGIN(mitsuba::BSDF)
-    ENOKI_CALL_SUPPORT_METHOD(sample)
-    ENOKI_CALL_SUPPORT_METHOD(eval)
-    ENOKI_CALL_SUPPORT_METHOD(pdf)
-    ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
-
-    auto needs_differentials() const { return neq(flags() & mitsuba::BSDF::ENeedsDifferentials, 0); }
-ENOKI_CALL_SUPPORT_END(mitsuba::BSDF)
-
-//! @}
-// -----------------------------------------------------------------------
-
-/*
- * \brief This macro should be used in the definition of BSDF
- * plugins to instantiate concrete versions of the \c sample,
- * \c eval and \c pdf functions.
- */
-#define MTS_IMPLEMENT_BSDF()                                                   \
-    using BSDF::sample;                                                        \
-    using BSDF::eval;                                                          \
-    using BSDF::pdf;                                                           \
-    std::pair<BSDFSample3f, Spectrumf> sample(                                 \
-            const BSDFContext &ctx, const SurfaceInteraction3f &si,            \
-            Float sample1, const Point2f &sample2) const override {            \
-        ScopedPhase p(EProfilerPhase::EBSDFSample);                            \
-        return sample_impl(ctx, si, sample1, sample2, true);                   \
-    }                                                                          \
-    std::pair<BSDFSample3fP, SpectrumfP> sample(                               \
-            const BSDFContext &ctx, const SurfaceInteraction3fP &si,           \
-            FloatP sample1, const Point2fP &sample2,                           \
-            MaskP active = true) const override {                              \
-        ScopedPhase p(EProfilerPhase::EBSDFSampleP);                           \
-        return sample_impl(ctx, si, sample1, sample2, active);                 \
-    }                                                                          \
-    Spectrumf eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,     \
-                   const Vector3f &wo) const override {                        \
-        ScopedPhase p(EProfilerPhase::EBSDFEvaluate);                          \
-        return eval_impl(ctx, si, wo, true);                                   \
-    }                                                                          \
-    SpectrumfP eval(const BSDFContext &ctx, const SurfaceInteraction3fP &si,   \
-                    const Vector3fP &wo, MaskP active) const override {        \
-        ScopedPhase p(EProfilerPhase::EBSDFEvaluateP);                         \
-        return eval_impl(ctx, si, wo, active);                                 \
-    }                                                                          \
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,          \
-              const Vector3f &wo) const override {                             \
-        ScopedPhase p(EProfilerPhase::EBSDFEvaluate);                          \
-        return pdf_impl(ctx, si, wo, true);                                    \
-    }                                                                          \
-    FloatP pdf(const BSDFContext &ctx, const SurfaceInteraction3fP &si,        \
-               const Vector3fP &wo, MaskP active) const override {             \
-        ScopedPhase p(EProfilerPhase::EBSDFEvaluateP);                         \
-        return pdf_impl(ctx, si, wo, active);                                  \
-    }
-
-/// Instantiates concrete scalar and packet versions of the polarized BSDF plugin API
-#define MTS_IMPLEMENT_BSDF_POLARIZED()                                         \
-    std::pair<BSDFSample3f, MuellerMatrixSf> sample_pol(                       \
-        const BSDFContext &ctx, const SurfaceInteraction3f &si, Float sample1, \
-        const Point2f &sample2) const override {                               \
-        return sample_pol_impl(ctx, si, sample1, sample2, true);               \
-    }                                                                          \
-    std::pair<BSDFSample3fP, MuellerMatrixSfP> sample_pol(                     \
-        const BSDFContext &ctx, const SurfaceInteraction3fP &si,               \
-        FloatP sample1, const Point2fP &sample2, MaskP active = true)          \
-        const override {                                                       \
-        return sample_pol_impl(ctx, si, sample1, sample2, active);             \
-    }                                                                          \
-    MuellerMatrixSf eval_pol(const BSDFContext &ctx,                           \
-                             const SurfaceInteraction3f &si,                   \
-                             const Vector3f &wo) const override {              \
-        return eval_pol_impl(ctx, si, wo, true);                               \
-    }                                                                          \
-    MuellerMatrixSfP eval_pol(                                                 \
-        const BSDFContext &ctx, const SurfaceInteraction3fP &si,               \
-        const Vector3fP &wo, MaskP active) const override {                    \
-        return eval_pol_impl(ctx, si, wo, active);                             \
-    }
+#include "detail/bsdf.inl"

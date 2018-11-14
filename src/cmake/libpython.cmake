@@ -1,10 +1,10 @@
 include_directories(
   ${PYBIND11_INCLUDE_DIRS}
-  ${EIGEN_INCLUDE_DIRS}
-  ${TINYFORMAT_INCLUDE_DIRS}
-  ${ASMJIT_INCLUDE_DIRS}
-  ${ZLIB_INCLUDE_DIR}
-  ${NANOGUI_INCLUDE_DIRS}
+#  ${EIGEN_INCLUDE_DIRS}
+#  ${TINYFORMAT_INCLUDE_DIRS}
+#  ${ASMJIT_INCLUDE_DIRS}
+#  ${ZLIB_INCLUDE_DIR}
+#  ${NANOGUI_INCLUDE_DIRS}
 )
 
 # The mitsuba-python target depends on all the mitsuba_*_ext
@@ -93,6 +93,17 @@ elseif(UNIX)
   set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "$ORIGIN/..")
 endif()
 set_target_properties(nanogui-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+
+# Copy enoki python library to 'dist' folder
+if (MTS_ENABLE_AUTODIFF)
+  add_dist(python/enoki-python)
+  if (APPLE)
+    set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "@loader_path/..")
+  elseif(UNIX)
+    set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "$ORIGIN/..")
+  endif()
+  set_target_properties(enoki-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+endif()
 
 # mkdoc support
 include("cmake/mkdoc.cmake")

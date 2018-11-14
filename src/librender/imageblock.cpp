@@ -64,11 +64,11 @@ bool ImageBlock::put(const Point2f &pos_, const Float *value) {
     Vector2i size = m_bitmap->size();
 
     // Convert to pixel coordinates within the image block
-    Point2f pos = pos_ - .5f - (m_offset - m_border_size);
+    Point2f pos = pos_ - (m_offset - m_border_size + .5f);
 
     // Determine the affected range of pixels
-    Point2i lo = max(Point2i(ceil (pos - filter_radius)), 0);
-    Point2i hi = min(Point2i(floor(pos + filter_radius)), size - 1);
+    Point2i lo = max(ceil2int <Point2i>(pos - filter_radius), 0),
+            hi = min(floor2int<Point2i>(pos + filter_radius), size - 1);
 
     // Lookup values from the pre-rasterized filter
     for (int x = lo.x(), idx = 0; x <= hi.x(); ++x)
@@ -130,7 +130,7 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Point2fP pos = pos_ - (m_offset - m_border_size + .5f);
 
     // Determine the affected range of pixels
-    Point2iP lo = max(ceil2int<Point2iP> (pos - filter_radius), 0),
+    Point2iP lo = max(ceil2int <Point2iP>(pos - filter_radius), 0),
              hi = min(floor2int<Point2iP>(pos + filter_radius), size - 1);
     Vector2iP window_size = hi - lo;
 
@@ -164,6 +164,42 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
 
     return active;
 }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+MaskD ImageBlock::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
+    using Mask = mask_t<FloatD>;
+
+    uint32_t channels = (uint32_t) m_bitmap->channel_count();
+    Mask is_valid(true);
+
+    // Check if all sample values are valid
+    if (m_warn) {
+        Mask is_valid = true;
+        for (size_t k = 0; k < channels; ++k)
+            is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
+
+        if (any(active && !is_valid))
+            Log(EWarn, "ImageBlock::put(): invalid (negative/NaN) sample values detected!");
+    }
+
+    Vector2u size = m_bitmap->size();
+
+    // Convert to pixel coordinates within the image block
+    Point2fD pos = pos_ - (m_offset - m_border_size + .5f);
+
+    // Determine the affected range of pixels
+    Point2uD pos_u = min(floor2int<Point2uD>(pos + .5f), size - 1);
+    Int32D index = pos_u.y() * size.x() + pos_u.x();
+
+    while (m_bitmap->channel_count() != m_bitmap_d.size())
+        m_bitmap_d.push_back(zero<FloatD>(hprod(m_bitmap->size())));
+
+    for (uint32_t k = 0; k < channels; ++k)
+        scatter_add(m_bitmap_d[k], value[k], index, is_valid);
+
+    return is_valid;
+}
+#endif
 
 std::string ImageBlock::to_string() const {
     std::ostringstream oss;

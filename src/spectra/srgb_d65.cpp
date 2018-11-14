@@ -11,11 +11,11 @@ public:
         if (props.has_property("scale") && props.has_property("value"))
             Throw("Cannot specify both 'scale' and 'value'.");
 
-        m_color = props.color("color");
-        Float intensity = hmax(m_color) * 2.f;
-        m_color /= intensity;
+        Color3f color = props.color("color");
+        Float intensity = hmax(color) * 2.f;
+        color /= intensity;
 
-        m_coeff = srgb_model_fetch(m_color);
+        m_coeff = srgb_model_fetch(color);
 
         Properties props2("d65");
         Float value =
@@ -24,29 +24,35 @@ public:
         m_d65 = (ContinuousSpectrum *) PluginManager::instance()
                     ->create_object<ContinuousSpectrum>(props2)
                     ->expand().front().get();
+
+        #if defined(MTS_ENABLE_AUTODIFF)
+            m_coeff_d = m_coeff;
+        #endif
     }
 
     template <typename Value, typename Mask = mask_t<Value>>
     MTS_INLINE Value eval_impl(Value wavelengths, Mask active) const {
         return m_d65->eval(wavelengths, active) *
-               srgb_model_eval(m_coeff, wavelengths);
+               srgb_model_eval(coeff<Value>(), wavelengths);
     }
 
-    Spectrumf eval(const Spectrumf &wavelengths) const override {
-        return eval_impl(wavelengths, true);
+#if defined(MTS_ENABLE_AUTODIFF)
+    void put_parameters(DifferentiableParameters &dp) override {
+        dp.put(this, "coeff", m_coeff_d);
     }
+#endif
 
-    SpectrumfP eval(const SpectrumfP &wavelengths,
-                    MaskP active) const override {
-        return eval_impl(wavelengths, active);
-    }
-
+    MTS_IMPLEMENT_SPECTRUM_EVAL_ALL()
+    MTS_AUTODIFF_GETTER(coeff, m_coeff, m_coeff_d)
     MTS_DECLARE_CLASS()
 
 private:
-    Color3f m_color;
-    Vector4f m_coeff;
+    Vector3f m_coeff;
     ref<ContinuousSpectrum> m_d65;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    Vector3fD m_coeff_d;
+#endif
 };
 
 MTS_IMPLEMENT_CLASS(SRGBEmitterSpectrum, ContinuousSpectrum)

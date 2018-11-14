@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class ThinDielectric final : public BSDF {
 public:
-    ThinDielectric(const Properties &props) {
+    ThinDielectric(const Properties &props) : BSDF(props) {
         // Specifies the internal index of refraction at the interface
         Float int_ior = lookup_ior(props, "int_ior", "bk7");
         // Specifies the external index of refraction at the interface
@@ -114,7 +114,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 private:
     Float m_eta;

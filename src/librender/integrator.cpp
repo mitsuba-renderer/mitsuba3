@@ -34,12 +34,12 @@ void Integrator::remove_callback(size_t cb_index) {
 void Integrator::notify(Bitmap *bitmap, Float extra) {
     if (m_callbacks.empty())
         return;
-    Float current_time = m_cb_timer.value() / 1000.0f;
+    Float current_time = m_cb_timer.value() / 1000.f;
     for (auto &entry : m_callbacks) {
         auto &last_called = (Float &) entry.last_called;
-        if (last_called < 0.0f || last_called > current_time ||
+        if (last_called < 0.f || last_called > current_time ||
             current_time - last_called > entry.period) {
-            entry.f(Thread::thread()->id(), bitmap, extra);
+            entry.f(Thread::thread()->thread_id(), bitmap, extra);
             last_called = current_time;
         }
     }
@@ -58,10 +58,27 @@ SamplingIntegrator::SamplingIntegrator(const Properties &props)
         Log(EWarn, "Setting block size to next higher power of two: %i", m_block_size);
     }
 
-    m_timeout = props.float_("timeout", -1.0f);
+    m_timeout = props.float_("timeout", -1.f);
 }
 
 SamplingIntegrator::~SamplingIntegrator() { }
+
+Spectrumf SamplingIntegrator::eval(const RayDifferential3f &,
+                                   RadianceSample3f &) const {
+    NotImplementedError("eval");
+}
+
+SpectrumfP SamplingIntegrator::eval(const RayDifferential3fP &,
+                                    RadianceSample3fP &, MaskP) const {
+    NotImplementedError("eval_p");
+}
+
+#if defined(MTS_ENABLE_AUTODIFF)
+SpectrumfD SamplingIntegrator::eval(const RayDifferential3fD &,
+                                    RadianceSample3fD &, MaskD) const {
+    NotImplementedError("eval_d");
+}
+#endif
 
 void SamplingIntegrator::cancel() {
     m_stop = true;
@@ -70,10 +87,6 @@ void SamplingIntegrator::cancel() {
 bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     ScopedPhase sp(EProfilerPhase::ERender);
     m_stop = false;
-    m_render_timer.reset();
-
-    if (scene->sensors().empty())
-        Throw("A sensor must be specified!");
 
     ref<Sensor> sensor = scene->sensor();
     ref<Film> film = sensor->film();
@@ -94,7 +107,7 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
         total_spp, total_spp == 1 ? "" : "s",
         n_passes > 1 ? tfm::format(" %d passes,", n_passes) : "",
         n_threads, n_threads == 1 ? "" : "s");
-    if (m_timeout > 0.0f)
+    if (m_timeout > 0.f)
         Log(EInfo, "Timeout specified: %.2f seconds.", m_timeout);
 
     Spiral spiral(film, m_block_size, n_passes);
@@ -108,6 +121,7 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     size_t grain_count = std::max(
         (size_t) 1, (size_t) std::rint(total_blocks / Float(n_threads * 2)));
 
+    m_render_timer.reset();
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0, total_blocks, grain_count),
         [&](const tbb::blocked_range<size_t> &range) {

@@ -103,7 +103,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "AreaLight[" << std::endl
-            << "  radiance = " << m_radiance << "," << std::endl
+            << "  radiance = " << string::indent(m_radiance) << "," << std::endl
             << "  surface_area = ";
         if (m_shape) oss << m_shape->surface_area();
         else         oss << "  <no shape attached!>";
@@ -114,7 +114,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_EMITTER()
+    MTS_IMPLEMENT_EMITTER_ALL()
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_radiance;

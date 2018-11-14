@@ -58,17 +58,23 @@ MTS_PY_EXPORT(Integrator) {
     /// SamplingIntegrator.
     MTS_PY_CLASS(SamplingIntegrator, Integrator)
         .def("eval",
-             py::overload_cast<const RayDifferential3f &, RadianceSample3f &>(
+             py::overload_cast<const RayDifferential3f &, RadianceSample3f &, bool>(
                  &SamplingIntegrator::eval, py::const_),
-             D(SamplingIntegrator, eval), "ray"_a, "rs"_a)
-        // TODO: bind this vectorized variant (may need to vectorize manually).
-        // .def("eval",
-        //      enoki::vectorize_wrapper(
-        //          py::overload_cast<const RayDifferential3fP &,
-        //                            RadianceSample3fP &, MaskP>(
-        //              &SamplingIntegrator::eval, py::const_)),
-        //      D(SamplingIntegrator, eval, 2), "ray"_a, "rs"_a, "active"_a =
-        //      true)
+             D(SamplingIntegrator, eval), "ray"_a, "rs"_a, "unused"_a = true)
+#if 0
+         .def("eval",
+              enoki::vectorize_wrapper(
+                  py::overload_cast<const RayDifferential3fP &,
+                                    RadianceSample3fP &, MaskP>(
+                      &SamplingIntegrator::eval, py::const_)),
+              "ray"_a, "rs"_a, "active"_a = true)
+#endif
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("eval",
+             py::overload_cast<const RayDifferential3fD &, RadianceSample3fD &, MaskD>(
+                 &SamplingIntegrator::eval, py::const_),
+             "ray"_a, "rs"_a, "active"_a = true)
+#endif
         .mdef(SamplingIntegrator, should_stop);
 
     /// MonteCarloIntegrator.

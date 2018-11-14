@@ -7,7 +7,7 @@
 
 MTS_PY_EXPORT(Shape) {
     using Index = Shape::Index;
-    MTS_PY_CLASS(Shape, Object)
+    MTS_PY_CLASS(Shape, DifferentiableObject)
         .def("ray_intersect",
              py::overload_cast<const Ray3f &, bool>(
                  &Shape::ray_intersect, py::const_),
@@ -92,4 +92,12 @@ MTS_PY_EXPORT(Shape) {
             py::dtype dtype = o.attr("face_struct")().attr("dtype")();
             return py::array(dtype, m.face_count(), m.faces(), o);
         }, D(Mesh, faces));
+
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    using ShapeD = enoki::DiffArray<enoki::CUDAArray<const Shape *>>;
+
+    bind_array<ShapeD>(m, "ShapeD")
+        .def("bsdf", [](const ShapeD &a) { return a->bsdf(); });
+#endif
 }

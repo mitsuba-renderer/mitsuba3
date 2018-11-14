@@ -34,6 +34,11 @@ public:
     /// Retrieve the next packet of values from the current sample
     virtual FloatP next_1d_p(MaskP active = true);
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref next_1d()
+    virtual FloatD next_1d_d(MaskD active = true);
+#endif
+
     /// Retrieve the next two component values from the current sample
     virtual Point2f next_2d();
 
@@ -43,9 +48,13 @@ public:
     /// Retrieve the next packet of 2D values from the current sample
     virtual Point2fP next_2d_p(MaskP active = true);
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref next_2d()
+    virtual Point2fD next_2d_d(MaskD active = true);
+#endif
+
     template <typename T> using MaskType =
-        std::conditional_t<std::is_same_v<T, FloatP> ||
-                           std::is_same_v<value_t<T>, FloatP>, MaskP, bool>;
+        std::conditional_t<(array_size_v<T> == 2), mask_t<value_t<T>>, mask_t<T>>;
 
     /**
      * \brief Automatically selects the right variant of <tt>next_...</tt> based on
@@ -69,11 +78,17 @@ protected:
 // =============================================================
 //! @{ \name Template specializations
 // =============================================================
-//
-template<> MTS_INLINE Float    Sampler::next<Float>(bool /*active*/)   { return next_1d(); }
-template<> MTS_INLINE FloatP   Sampler::next<FloatP>(MaskP active)     { return next_1d_p(active); }
-template<> MTS_INLINE Point2f  Sampler::next<Point2f>(bool /*active*/) { return next_2d(); }
-template<> MTS_INLINE Point2fP Sampler::next<Point2fP>(MaskP active)   { return next_2d_p(active); }
+
+template<> MTS_INLINE Float    Sampler::next<Float>(bool /* active */)   { return next_1d(); }
+template<> MTS_INLINE Point2f  Sampler::next<Point2f>(bool /* active */) { return next_2d(); }
+
+template<> MTS_INLINE FloatP   Sampler::next<FloatP>(MaskP active)       { return next_1d_p(active); }
+template<> MTS_INLINE Point2fP Sampler::next<Point2fP>(MaskP active)     { return next_2d_p(active); }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    template<> MTS_INLINE FloatD   Sampler::next<FloatD>(MaskD active)       { return next_1d_d(active); }
+    template<> MTS_INLINE Point2fD Sampler::next<Point2fD>(MaskD active)     { return next_2d_d(active); }
+#endif
 
 //! @}
 // =============================================================

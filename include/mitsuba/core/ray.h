@@ -119,7 +119,7 @@ std::ostream &operator<<(std::ostream &os, const Ray<Point> &r) {
        << "  mint = " << r.mint << "," << std::endl
        << "  maxt = " << r.maxt << "," << std::endl
        << "  time = " << r.time << "," << std::endl
-       << "  wavelengths = " << r.wavelengths << std::endl
+       << "  wavelengths = " << string::indent(r.wavelengths, 16) << std::endl
        << "]";
     return os;
 }

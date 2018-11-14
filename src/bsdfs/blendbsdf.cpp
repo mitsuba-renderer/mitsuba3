@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class BlendBSDF final : public BSDF {
 public:
-    BlendBSDF(const Properties &props) {
+    BlendBSDF(const Properties &props) : BSDF(props) {
         int bsdf_index = 0;
         for (auto &kv : props.objects()) {
             auto *bsdf = dynamic_cast<BSDF *>(kv.second.get());
@@ -123,7 +123,11 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    std::vector<ref<Object>> children() override {
+        return { m_nested_bsdf[0].get(), m_nested_bsdf[1].get(), m_weight.get() };
+    }
+
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 protected:
     ref<ContinuousSpectrum> m_weight;

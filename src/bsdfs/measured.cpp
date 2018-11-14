@@ -18,7 +18,7 @@ public:
     using Warp2D2 = warp::Marginal2D<2>;
     using Warp2D3 = warp::Marginal2D<3>;
 
-    Measured(const Properties &props) {
+    Measured(const Properties &props) : BSDF(props) {
         m_flags = EGlossyReflection | EFrontSide;
 
         auto fs = Thread::thread()->file_resolver();
@@ -400,7 +400,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 
 private:

@@ -5,10 +5,6 @@
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/core/ddistr.h>
 
-#if defined(MTS_USE_EMBREE)
-    #include <embree3/rtcore.h>
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
 
 class MTS_EXPORT_RENDER Scene : public Object {
@@ -35,13 +31,18 @@ public:
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray) const;
 
-    /// Vectorized version of \ref ray_intersect
-    SurfaceInteraction3fP ray_intersect(const Ray3fP &ray, MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect()
     SurfaceInteraction3f ray_intersect(const Ray3f &ray, bool /* unused */) const {
         return ray_intersect(ray);
     }
+
+    /// Vectorized version of \ref ray_intersect
+    SurfaceInteraction3fP ray_intersect(const Ray3fP &ray, MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref ray_intersect
+    SurfaceInteraction3fD ray_intersect(const Ray3fD &ray, MaskD active = true) const;
+#endif
 
     /**
      * \brief Intersect a ray against all primitives stored in the scene
@@ -61,27 +62,34 @@ public:
      */
     bool ray_test(const Ray3f &ray) const;
 
-    /// Vectorized version of \ref ray_test
-    MaskP ray_test(const Ray3fP &ray, MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_test()
     bool ray_test(const Ray3f &ray, bool /* unused */) const {
         return ray_test(ray);
     }
 
+    /// Vectorized version of \ref ray_test
+    MaskP ray_test(const Ray3fP &ray, MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref ray_test
+    MaskD ray_test(const Ray3fD &ray, MaskD active = true) const;
+#endif
+
+#if !defined(MTS_USE_EMBREE)
     /**
-     * \brief Ray intersection using the naive (brute force) method. Exposed
-     * for testing purposes.
+     * \brief Ray intersection using brute force search. Used in
+     * unit tests to validate the kdtree-based ray tracer.
      */
     SurfaceInteraction3f ray_intersect_naive(const Ray3f &ray) const;
-
-    /// Vectorized version of \ref ray_intersect_naive
-    SurfaceInteraction3fP ray_intersect_naive(const Ray3fP &ray, MaskP active = true) const;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect_naive()
     SurfaceInteraction3f ray_intersect_naive(const Ray3f &ray, bool /* unused */) const {
         return ray_intersect_naive(ray);
     }
+
+    /// Vectorized version of \ref ray_intersect_naive
+    SurfaceInteraction3fP ray_intersect_naive(const Ray3fP &ray, MaskP active = true) const;
+#endif
 
     //! @}
     // =============================================================
@@ -119,13 +127,6 @@ public:
                              const Point2f &sample,
                              bool test_visibility = true) const;
 
-    /// Vectorized variant of \ref sample_emitter_direction
-    std::pair<DirectionSample3fP, SpectrumfP>
-    sample_emitter_direction(const Interaction3fP &ref,
-                             const Point2fP &sample,
-                             bool test_visibility = true,
-                             MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_emitter_direction()
     std::pair<DirectionSample3f, Spectrumf>
     sample_emitter_direction(const Interaction3f &ref,
@@ -134,6 +135,22 @@ public:
                              bool /* active */) const {
         return sample_emitter_direction(ref, sample, test_visibility);
     }
+
+    /// Vectorized variant of \ref sample_emitter_direction
+    std::pair<DirectionSample3fP, SpectrumfP>
+    sample_emitter_direction(const Interaction3fP &ref,
+                             const Point2fP &sample,
+                             bool test_visibility = true,
+                             MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable variant of \ref sample_emitter_direction
+    std::pair<DirectionSample3fD, SpectrumfD>
+    sample_emitter_direction(const Interaction3fD &ref,
+                             const Point2fD &sample,
+                             bool test_visibility = true,
+                             MaskD active = true) const;
+#endif
 
     /**
      * \brief Evaluate the probability density of the  \ref
@@ -152,17 +169,24 @@ public:
     Float pdf_emitter_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds) const;
 
-    /// Vectorized version of \ref pdf_emitter_direction
-    FloatP pdf_emitter_direction(const Interaction3fP &ref,
-                                 const DirectionSample3fP &ds,
-                                 MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_emitter_direction()
     Float pdf_emitter_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds,
                                 bool /* unused */) const {
         return pdf_emitter_direction(ref, ds);
     }
+
+    /// Vectorized version of \ref pdf_emitter_direction
+    FloatP pdf_emitter_direction(const Interaction3fP &ref,
+                                 const DirectionSample3fP &ds,
+                                 MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref pdf_emitter_direction
+    FloatD pdf_emitter_direction(const Interaction3fD &ref,
+                                 const DirectionSample3fD &ds,
+                                 MaskD active = true) const;
+#endif
 
     /// Return the environment emitter (if any)
     const Emitter *environment() const { return m_environment.get(); }
@@ -175,10 +199,14 @@ public:
     //! @{ \name Accessors
     // =============================================================
 
+    const BoundingBox3f &bbox() const { return m_bbox; }
+
+#if !defined(MTS_USE_EMBREE)
     /// Return the scene's KD-tree
     const ShapeKDTree *kdtree() const { return m_kdtree; }
     /// Return the scene's KD-tree
     ShapeKDTree *kdtree() { return m_kdtree; }
+#endif
 
     /// Return the current sensor
     Sensor* sensor() { return m_sensors.front(); }
@@ -186,14 +214,19 @@ public:
     const Sensor* sensor() const { return m_sensors.front(); }
 
     /// Return the list of emitters
-    std::vector<ref<Emitter>> &emitters() { return m_emitters; }
+    auto &emitters() { return m_emitters; }
     /// Return the list of emitters
-    const std::vector<ref<Emitter>> &emitters() const { return m_emitters; }
+    const auto &emitters() const { return m_emitters; }
 
     /// Return the list of sensors
     std::vector<ref<Sensor>> &sensors() { return m_sensors; }
     /// Return the list of sensors
     const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
+
+    /// Return the list of shapes
+    auto &shapes() { return m_shapes; }
+    /// Return the list of shapes
+    const auto &shapes() const { return m_shapes; }
 
     /// Return the current sensor's film
     Film *film() { return m_sensors.front()->film(); }
@@ -210,6 +243,9 @@ public:
     /// Return the scene's integrator
     const Integrator* integrator() const { return m_integrator; }
 
+    // Return a list of objects that are referenced or owned by the scene
+    std::vector<ref<Object>> children() override;
+
     //! @}
     // =============================================================
 
@@ -218,22 +254,54 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
+    /// Virtual destructor
     virtual ~Scene();
 
+#if defined(MTS_USE_EMBREE)
+    void embree_init();
+    void embree_release();
+    void embree_register(Shape *shape);
+    void embree_build();
+#endif
+
+#if defined(MTS_USE_OPTIX)
+    void optix_init(uint32_t n_shapes);
+    void optix_release();
+    void optix_register(Shape *shape);
+    void optix_build();
+#endif
+
+protected:
+    BoundingBox3f m_bbox;
+#if !defined(MTS_USE_EMBREE)
     ref<ShapeKDTree> m_kdtree;
-    std::vector<ref<Sensor>> m_sensors;
+#endif
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    std::vector<ref<Emitter>, enoki::cuda_host_allocator<ref<Emitter>>> m_emitters;
+#else
     std::vector<ref<Emitter>> m_emitters;
+#endif
+
+    std::vector<ref<Shape>> m_shapes;
+    std::vector<ref<Sensor>> m_sensors;
+    std::vector<ref<Object>> m_children;
     ref<Sampler> m_sampler;
     ref<Integrator> m_integrator;
     ref<Emitter> m_environment;
     /// Whether monochrome mode is enabled.
     bool m_monochrome = false;
 
-    /// Precomputed distribution of emitters' intensity.
+    /// Sampling distribution for emitters
     DiscreteDistribution m_emitter_distr;
 
 #if defined(MTS_USE_EMBREE)
     RTCScene m_embree_scene;
+#endif
+
+#if defined(MTS_USE_OPTIX)
+    struct OptixState;
+    OptixState *m_optix_state = nullptr;
 #endif
 
 private:

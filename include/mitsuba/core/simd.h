@@ -4,6 +4,11 @@
 #include <enoki/array.h>
 #include <enoki/dynamic.h>
 
+#if defined(MTS_ENABLE_AUTODIFF)
+#  include <enoki/cuda.h>
+#  include <enoki/autodiff.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename T>
@@ -34,6 +39,10 @@ template <typename T> std::string type_suffix() {
 
     if (is_static_array_v<value_t<T>>)
         id += 'P';
+    else if (is_diff_array_v<value_t<T>>)
+        id += 'D';
+    else if (is_cuda_array_v<value_t<T>>)
+        id += 'C';
     else if (is_dynamic_array_v<value_t<T>>)
         id += 'X';
 

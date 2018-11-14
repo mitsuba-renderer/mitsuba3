@@ -7,6 +7,12 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Linear interpolant of a regularly sampled spectrum
 class InterpolatedSpectrum final : public ContinuousSpectrum {
+#if defined(MTS_ENABLE_AUTODIFF)
+    using FloatVector = std::vector<Float, enoki::cuda_host_allocator<Float>>;
+#else
+    using FloatVector = std::vector<Float>;
+#endif
+
 public:
     /**
      * \brief Construct a linearly interpolated spectrum
@@ -44,7 +50,7 @@ public:
         } else {
             size_t size = props.size_("size");
             const Float *values = (Float *) props.pointer("values");
-            m_data = std::vector<Float>(values, values + size);
+            m_data = FloatVector(values, values + size);
         }
 
         if (m_data.size() < 2)
@@ -99,9 +105,9 @@ public:
         using Index = uint_array_t<Value>;
 
         Value t = (lambda - m_lambda_min) * m_inv_interval_size;
-        active  = active && (lambda >= m_lambda_min) && (lambda <= m_lambda_max);
+        active &= lambda >= m_lambda_min && lambda <= m_lambda_max;
 
-        Index i0 = min(max(Index(t), zero<Index>()), Index(m_size_minus_2)),
+        Index i0 = clamp(Index(t), zero<Index>(), Index(m_size_minus_2)),
               i1 = i0 + Index(1);
 
         Value v0 = gather<Value>(m_data.data(), i0, active),
@@ -165,16 +171,16 @@ public:
             << "  interval_size = " << m_interval_size << "," << std::endl
             << "  integral = " << m_integral << "," << std::endl
             << "  normalization = " << m_normalization << "," << std::endl
-            << "  data = " << "[ " << m_data << " ]" << std::endl
+            << "  data = " << m_data << std::endl
             << "]";
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SPECTRUM()
+    MTS_IMPLEMENT_SPECTRUM_ALL()
     MTS_DECLARE_CLASS()
 
 private:
-    std::vector<Float> m_data, m_cdf;
+    FloatVector m_data, m_cdf;
     uint32_t m_size_minus_2;
     Float m_lambda_min;
     Float m_lambda_max;

@@ -12,7 +12,7 @@ Makefile
 # Ninja
 /.ninja_deps
 /.ninja_log
-/*.ninja
+*.ninja
 
 # Miscellaneous;
 /ext_build
@@ -24,6 +24,9 @@ Makefile
 Testing
 /.cache
 /.ipynb_checkpoints
+/.pytest_cache
+librender_ptx.h
+librender_ptx.cpp
 
 # SublimeText
 *.sublime-project

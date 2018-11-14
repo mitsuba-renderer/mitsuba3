@@ -22,7 +22,7 @@ public:
 
     ref<Shape> create_shape(const Scene *scene) override {
         // Create a bounding sphere that surrounds the scene
-        m_bsphere = scene->kdtree()->bbox().bounding_sphere();
+        m_bsphere = scene->bbox().bounding_sphere();
         m_bsphere.radius = max(math::Epsilon, m_bsphere.radius * 1.5f);
 
         Properties props("sphere");
@@ -130,7 +130,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_EMITTER()
+    MTS_IMPLEMENT_EMITTER_ALL()
     MTS_DECLARE_CLASS()
 protected:
     ref<ContinuousSpectrum> m_radiance;

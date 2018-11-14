@@ -7,8 +7,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 class SmoothDiffuse final : public BSDF {
 public:
-    SmoothDiffuse(const Properties &props) {
-        m_reflectance = props.spectrum("reflectance", 0.5f);
+    SmoothDiffuse(const Properties &props) : BSDF(props) {
+        m_reflectance = props.spectrum("reflectance", .5f);
         m_flags = EDiffuseReflection | EFrontSide;
         m_components.push_back(m_flags);
     }
@@ -25,17 +25,18 @@ public:
         using Frame = Frame<typename BSDFSample::Vector3>;
 
         Value cos_theta_i = Frame::cos_theta(si.wi);
-        BSDFSample bs;
+        BSDFSample bs = zero<BSDFSample>();
 
         active &= cos_theta_i > 0.f;
-        if (unlikely(none(active) || !ctx.is_enabled(EDiffuseReflection)))
+        if (unlikely(none_or<false>(active) ||
+                     !ctx.is_enabled(EDiffuseReflection)))
             return { bs, 0.f };
 
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
         bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
         bs.eta = 1.f;
-        bs.sampled_component = 0;
         bs.sampled_type = (uint32_t) EDiffuseReflection;
+        bs.sampled_component = 0;
 
         Spectrum value = m_reflectance->eval(si, active);
 
@@ -89,7 +90,9 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    std::vector<ref<Object>> children() override { return { m_reflectance.get() }; }
+
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_reflectance;

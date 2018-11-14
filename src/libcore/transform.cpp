@@ -111,6 +111,15 @@ Transform4fP AnimatedTransform::eval(FloatP time, MaskP active) const {
     return eval_impl(time, active);
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+Transform4fD AnimatedTransform::eval(FloatD, MaskD) const {
+    if (likely(size() <= 1))
+        return m_transform;
+    else
+        Throw("AnimatedTransform: animations not supported in autodiff mode!");
+}
+#endif
+
 BoundingBox3f AnimatedTransform::translation_bounds() const {
     if (m_keyframes.empty()) {
         auto p = m_transform * Point3f(0.0f);

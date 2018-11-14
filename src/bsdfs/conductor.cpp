@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class SmoothConductor final : public BSDF {
 public:
-    SmoothConductor(const Properties &props) {
+    SmoothConductor(const Properties &props) : BSDF(props) {
         m_flags = EDeltaReflection | EFrontSide;
         m_components.push_back(EDeltaReflection | EFrontSide);
 
@@ -69,6 +69,10 @@ public:
         return 0.f;
     }
 
+    std::vector<ref<Object>> children() override {
+        return { m_specular_reflectance.get(), m_eta.get(), m_k.get() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothConductor[" << std::endl
@@ -79,7 +83,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_specular_reflectance;

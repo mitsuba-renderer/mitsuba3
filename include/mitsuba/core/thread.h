@@ -74,7 +74,7 @@ public:
     bool is_critical() const;
 
     /// Return a unique ID that is associated with this thread
-    static uint32_t id();
+    static uint32_t thread_id();
 
     /// Return the name of this thread
     const std::string &name() const;

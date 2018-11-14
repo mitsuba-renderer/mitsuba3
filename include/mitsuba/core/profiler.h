@@ -8,6 +8,10 @@
 
 #include <mitsuba/core/object.h>
 
+#if !defined(NDEBUG)
+#  include <mitsuba/render/autodiff.h>
+#endif
+
 #if !defined(MTS_PROFILE_HASH_SIZE)
 #  define MTS_PROFILE_HASH_SIZE 256
 #endif
@@ -47,8 +51,10 @@ enum class EProfilerPhase : int {
     EBSDFSampleP,                /* BSDF::sample() [packet] */
     EEndpointEvaluate,           /* Endpoint::eval() and Endpoint::pdf() */
     EEndpointEvaluateP,          /* Endpoint::eval() and Endpoint::pdf() [packet] */
-    EEndpointSample,             /* Endpoint::sample() */
-    EEndpointSampleP,            /* Endpoint::sample() [packet] */
+    EEndpointSampleRay,          /* Endpoint::sample_ray() */
+    EEndpointSampleRayP,         /* Endpoint::sample_ray() [packet] */
+    EEndpointSampleDirection,    /* Endpoint::sample_direction() */
+    EEndpointSampleDirectionP,   /* Endpoint::sample_direction() [packet] */
     ESpectrumEval,               /* ContinuousSpectrum::eval() */
     ESpectrumEvalP,              /* ContinuousSpectrum::eval() [packet] */
 
@@ -82,8 +88,10 @@ constexpr const char
         "BSDF::sample() [packet]",
         "Endpoint::eval(), pdf()",
         "Endpoint::eval(), pdf() [packet]",
-        "Endpoint::sample()",
-        "Endpoint::sample() [packet]",
+        "Endpoint::sample_ray()",
+        "Endpoint::sample_ray() [packet]",
+        "Endpoint::sample_direction()",
+        "Endpoint::sample_direction() [packet]",
         "ContinuousSpectrum::eval()",
         "ContinuousSpectrum::eval() [packet]"
     };
@@ -123,6 +131,10 @@ struct ScopedPhase {
                     __itt_task_begin(itt_domain, __itt_null, __itt_null,
                                      profiler_phase_string_handles[int(phase)]);
             #endif
+
+            #if !defined(NDEBUG) && defined(MTS_ENABLE_AUTODIFF)
+                //FloatD::push_prefix_(profiler_phase_id[int(phase)]);
+            #endif
         } else {
             m_flag = 0;
         }
@@ -133,6 +145,11 @@ struct ScopedPhase {
         #if defined(MTS_ENABLE_ITTNOTIFY)
             if (m_flag != 0 && unlikely(int(m_phase) < 5))
                 __itt_task_end(itt_domain);
+        #endif
+
+        #if !defined(NDEBUG) && defined(MTS_ENABLE_AUTODIFF)
+            //if (m_flag != 0)
+                //FloatD::pop_prefix_();
         #endif
     }
 
@@ -157,7 +174,9 @@ public:
 private:
     Profiler() = delete;
 };
+
 #else
+
 /* Profiler not supported on this platform */
 struct ScopedPhase { ScopedPhase(EProfilerPhase) { } };
 class Profiler {
@@ -166,6 +185,7 @@ public:
     static void static_shutdown() { }
     static void print_report() { }
 };
+
 #endif
 
 NAMESPACE_END(mitsuba)

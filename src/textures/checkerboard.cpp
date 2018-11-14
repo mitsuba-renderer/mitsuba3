@@ -40,7 +40,7 @@ public:
         return .5f * (m_color0->mean() + m_color1->mean());
     }
 
-    MTS_IMPLEMENT_TEXTURE()
+    MTS_IMPLEMENT_TEXTURE_ALL()
     MTS_DECLARE_CLASS()
 
 protected:

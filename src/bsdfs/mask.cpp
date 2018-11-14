@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class Mask final : public BSDF {
 public:
-    Mask(const Properties &props) {
+    Mask(const Properties &props) : BSDF(props) {
         for (auto &kv : props.objects()) {
             auto *bsdf = dynamic_cast<BSDF *>(kv.second.get());
             if (bsdf) {
@@ -103,6 +103,10 @@ public:
         return result;
     }
 
+    std::vector<ref<Object>> children() override {
+        return { m_opacity.get(), m_nested_bsdf.get() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Mask[" << std::endl
@@ -112,7 +116,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 protected:
     ref<ContinuousSpectrum> m_opacity;

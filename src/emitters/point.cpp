@@ -32,7 +32,7 @@ public:
     std::pair<Ray3, Spectrum>
     sample_ray_impl(Value time,
                     Value wavelength_sample,
-                    const Point2 &/*pos_sample*/,
+                    const Point2 &/* pos_sample */,
                     const Point2 &dir_sample,
                     Mask active) const {
         auto [wavelengths, spec_weight] = m_intensity->sample(
@@ -109,7 +109,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_EMITTER()
+    MTS_IMPLEMENT_EMITTER_ALL()
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_intensity;

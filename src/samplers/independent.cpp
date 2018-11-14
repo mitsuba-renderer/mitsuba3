@@ -30,6 +30,12 @@ public:
         return next_float_p(active);
     }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    FloatD next_1d_d(MaskD active) override {
+        return next_float_c(detach(active));
+    }
+#endif
+
     Point2f next_2d() override {
         Float f1 = next_float(),
               f2 = next_float();
@@ -42,12 +48,18 @@ public:
         return Point2fP(f1, f2);
     }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    Point2fD next_2d_d(MaskD active) override {
+        FloatC f1 = next_float_c(detach(active)),
+               f2 = next_float_c(detach(active));
+        return Point2fD(f1, f2);
+    }
+#endif
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "IndependentSampler[" << std::endl
-            << "  sample_count = " << m_sample_count << "," << std::endl
-            << "  rng = " << string::indent(m_rng) << "," << std::endl
-            << "  rng_p = " << string::indent(m_rng_p) << std::endl
+            << "  sample_count = " << m_sample_count << std::endl
             << "]";
         return oss.str();
     }
@@ -71,9 +83,33 @@ protected:
         #endif
     }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    MTS_INLINE FloatC next_float_c(MaskC active) {
+        if (!m_rng_c || m_rng_c->state.size() != active.size()) {
+            m_rng_c = std::unique_ptr<PCG32C>(new PCG32C());
+            if (m_rng_c->state.size() != 1)
+                throw std::runtime_error("next_float_c(): Requested sample "
+                                         "array has incorrect shape.");
+
+            m_rng_c->seed(m_rng_c->state,
+                          PCG32_DEFAULT_STREAM + arange<UInt64C>(active.size()));
+        }
+
+        #if defined(SINGLE_PRECISION)
+            return m_rng_c->next_float32(active);
+        #else
+            return m_rng_c->next_float64(active);
+        #endif
+    }
+#endif
+
 protected:
     PCG32 m_rng;
     PCG32P m_rng_p;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    std::unique_ptr<PCG32C> m_rng_c;
+#endif
 };
 
 MTS_IMPLEMENT_CLASS(IndependentSampler, Sampler);

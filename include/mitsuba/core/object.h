@@ -55,11 +55,21 @@ public:
      *
      * In some cases, an \ref Object instance is merely a container for a
      * number of sub-objects. In the context of Mitsuba, an example would be a
-     * sun & sky emitter instantiated via XML, which recursively expands into a
-     * sun & separate sky emitter. This functionality is supported by any
-     * Mitsuba object, hence it is located this level.
+     * combined sun & sky emitter instantiated via XML, which recursively
+     * expands into a separate sun & sky instance. This functionality is
+     * supported by any Mitsuba object, hence it is located this level.
      */
     virtual std::vector<ref<Object>> expand() const;
+
+    /**
+     * \brief Return a list of objects that are referenced or owned by this
+     * instance.
+     *
+     * An example would be a texture used by a shading model. This method
+     * can used to iterate over the scene graph. The default implementation
+     * returns an empty list.
+     */
+    virtual std::vector<ref<Object>> children();
 
     /**
      * \brief Return a \ref Class instance containing run-time type information
@@ -67,6 +77,9 @@ public:
      * \sa Class
      */
     virtual const Class *class_() const;
+
+    /// Return an identifier of the current instance (if available)
+    virtual std::string id() const;
 
     /**
      * \brief Return a human-readable string representation of the object's

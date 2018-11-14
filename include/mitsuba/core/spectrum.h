@@ -113,17 +113,17 @@ struct Spectrum<enoki::detail::MaskedArray<Value_>> : enoki::detail::MaskedArray
 #define MTS_CIE_SAMPLES 95
 
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
-extern MTS_EXPORT_CORE const Float cie1931_x_data[MTS_CIE_SAMPLES];
-extern MTS_EXPORT_CORE const Float cie1931_y_data[MTS_CIE_SAMPLES];
-extern MTS_EXPORT_CORE const Float cie1931_z_data[MTS_CIE_SAMPLES];
+extern MTS_EXPORT_CORE const Float *cie1931_x_data;
+extern MTS_EXPORT_CORE const Float *cie1931_y_data;
+extern MTS_EXPORT_CORE const Float *cie1931_z_data;
 
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
  * in nanometers
  */
-template <typename T, typename Expr = expr_t<T>>
-Array<Expr, 3> cie1931_xyz(const T &wavelengths,
-                           mask_t<Expr> active = true) {
+template <typename T, typename Expr = expr_t<T>,
+          typename Result = Array<Expr, 3>>
+Result cie1931_xyz(const T &wavelengths, mask_t<Expr> active = true) {
     using Index = int_array_t<Expr>;
 
     Expr t = (wavelengths - MTS_CIE_MIN) *
@@ -131,7 +131,7 @@ Array<Expr, 3> cie1931_xyz(const T &wavelengths,
 
     active &= wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX;
 
-    Index i0 = min(max(Index(t), zero<Index>()), Index(MTS_CIE_SAMPLES - 2)),
+    Index i0 = clamp(Index(t), zero<Index>(), Index(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
     Expr v0_x = gather<Expr>(cie1931_x_data, i0, active),
@@ -144,10 +144,9 @@ Array<Expr, 3> cie1931_xyz(const T &wavelengths,
     Expr w1 = t - Expr(i0),
          w0 = (Float) 1 - w1;
 
-    return Array<Expr, 3>(fmadd(w0, v0_x, w1 * v1_x),
-                          fmadd(w0, v0_y, w1 * v1_y),
-                          fmadd(w0, v0_z, w1 * v1_z)) &
-           Array<mask_t<Expr>, 3>(active);
+    return Result(fmadd(w0, v0_x, w1 * v1_x),
+                  fmadd(w0, v0_y, w1 * v1_y),
+                  fmadd(w0, v0_z, w1 * v1_z)) & mask_t<Result>(active);
 }
 
 /**
@@ -163,7 +162,7 @@ Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
 
     active &= wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX;
 
-    Index i0 = min(max(Index(t), zero<Index>()), Index(MTS_CIE_SAMPLES - 2)),
+    Index i0 = clamp(Index(t), zero<Index>(), Index(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
     Expr v0 = gather<Expr>(cie1931_y_data, i0, active),

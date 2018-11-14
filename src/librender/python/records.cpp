@@ -78,18 +78,21 @@ auto bind_radiance_record(py::module &m, const char *name) {
 MTS_PY_EXPORT(SamplingRecords) {
     bind_position_sample<Point3f>(m, "PositionSample3f");
     auto ps3fx = bind_position_sample<Point3fX>(m, "PositionSample3fX");
-    ps3fx.def(py::init([](size_t n) -> PositionSample3fX {
-        return zero<PositionSample3fX>(n);
-    }));
     bind_slicing_operators<PositionSample3fX, PositionSample3f>(ps3fx);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    auto ps3fd = bind_position_sample<Point3fD>(m, "PositionSample3fD");
+    bind_slicing_operators<PositionSample3fD, PositionSample3f>(ps3fd);
+#endif
 
     bind_direction_sample<Point3f, PositionSample3f>(m, "DirectionSample3f");
     auto dds3fx = bind_direction_sample<Point3fX, PositionSample3fX>(m, "DirectionSample3fX");
-    dds3fx.def(py::init([](size_t n) -> DirectionSample3fX {
-        return zero<DirectionSample3fX>(n);
-    }));
     bind_slicing_operators<DirectionSample3fX, DirectionSample3f>(dds3fx);
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    auto dds3fd = bind_direction_sample<Point3fD, PositionSample3fD>(m, "DirectionSample3fD");
+    bind_slicing_operators<DirectionSample3fD, DirectionSample3f>(dds3fd);
+#endif
 
     bind_radiance_record<Point3f>(m, "RadianceSample3f")
         // Needs to be handled separately so that we can use vectorize_wrapper.
@@ -102,7 +105,7 @@ MTS_PY_EXPORT(SamplingRecords) {
     auto rs3fx = bind_radiance_record<Point3fX>(m, "RadianceSample3fX")
         .def("ray_intersect", enoki::vectorize_wrapper(
                 &RadianceSample3fP::ray_intersect
-             ), "ray"_a, "active"_a, D(RadianceSample, ray_intersect))
+             ), "ray"_a, "active"_a = true, D(RadianceSample, ray_intersect))
         .def("next_1d", enoki::vectorize_wrapper(
                 &RadianceSample3fP::next_1d
              ), D(RadianceSample, next_1d))
@@ -112,4 +115,14 @@ MTS_PY_EXPORT(SamplingRecords) {
         ;
 
     bind_slicing_operators<RadianceSample3fX, RadianceSample3f>(rs3fx);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    bind_radiance_record<Point3fD>(m, "RadianceSample3fD")
+        // Needs to be handled separately so that we can use vectorize_wrapper.
+        .def("ray_intersect", &RadianceSample3fD::ray_intersect,
+             "ray"_a, "active"_a = true, D(RadianceSample, ray_intersect))
+        .def("next_1d", &RadianceSample3fD::next_1d, D(RadianceSample, next_1d))
+        .def("next_2d", &RadianceSample3fD::next_2d, D(RadianceSample, next_2d))
+        ;
+#endif
 }

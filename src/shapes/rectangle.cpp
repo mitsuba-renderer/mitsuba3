@@ -175,8 +175,8 @@ public:
         si.dp_dv      = m_dp_dv;
         si.p          = ray(si.t);
         si.time       = ray.time;
-        si.uv         = Point2(.5f * (cache[0] + 1.f),
-                               .5f * (cache[1] + 1.f));
+        si.uv         = Point2(fmadd(cache[0], .5f, .5f),
+                               fmadd(cache[1], .5f, .5f));
 
         si_out[active] = si;
     }
@@ -204,7 +204,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SHAPE()
+    MTS_IMPLEMENT_SHAPE_ALL()
     MTS_DECLARE_CLASS()
 private:
     Transform4f m_object_to_world;

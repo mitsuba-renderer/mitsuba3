@@ -1,5 +1,41 @@
 set(INC_DIR "../../include/mitsuba/render")
 
+set(LIBRENDER_EXTRA_SRC "")
+set(LIBRENDER_EXTRA_LIB "")
+
+if (MTS_ENABLE_AUTODIFF)
+  # Glob up PTX files
+  file(GLOB resources "${PROJECT_SOURCE_DIR}/resources/ptx/*.ptx")
+
+  # Concatenate resource files into a comma separated string
+  string (REGEX REPLACE "([^\\]|^);" "\\1," resources_string "${resources}")
+  string (REGEX REPLACE "[\\](.)" "\\1" resources_string "${resources_string}")
+
+  # Create command line for running bin2c cmake script
+  set(bin2c_cmdline
+    -DOUTPUT_C=librender_ptx.cpp
+    -DOUTPUT_H=librender_ptx.h
+    "-DINPUT_FILES=${resources_string}"
+    -P "${PROJECT_SOURCE_DIR}/ext/nanogui/resources/bin2c.cmake")
+
+  # Run bin2c on resource files
+  add_custom_command(
+    OUTPUT librender_ptx.cpp librender_ptx.h
+    COMMAND ${CMAKE_COMMAND} ARGS ${bin2c_cmdline}
+    DEPENDS ${resources}
+    COMMENT "Running bin2c"
+    PRE_BUILD VERBATIM)
+
+  set(LIBRENDER_EXTRA_SRC librender_ptx.cpp librender_ptx.h scene_optix.cpp)
+  set(LIBRENDER_EXTRA_LIB optix)
+endif()
+
+if (MTS_USE_EMBREE)
+  set(LIBRENDER_EXTRA_SRC ${LIBRENDER_EXTRA_SRC} scene_embree.cpp)
+else()
+  set(LIBRENDER_EXTRA_SRC ${LIBRENDER_EXTRA_SRC} scene_native.cpp)
+endif()
+
 include_directories(
   ${RGB2SPEC_INCLUDE_DIRS}
 )
@@ -24,7 +60,6 @@ add_library(mitsuba-render-obj OBJECT
   microfacet.cpp   ${INC_DIR}/microfacet.h
   rtbench.cpp      ${INC_DIR}/rtbench.h
   sampler.cpp      ${INC_DIR}/sampler.h
-  scene.cpp        ${INC_DIR}/scene.h
   sensor.cpp       ${INC_DIR}/sensor.h
   shape.cpp        ${INC_DIR}/shape.h
   spiral.cpp       ${INC_DIR}/spiral.h
@@ -32,6 +67,9 @@ add_library(mitsuba-render-obj OBJECT
   fresnel.cpp      ${INC_DIR}/fresnel.h
   mueller.cpp      ${INC_DIR}/mueller.h
   spectrum.cpp     ${INC_DIR}/spectrum.h
+  autodiff.cpp     ${INC_DIR}/autodiff.h
+  scene.cpp        ${INC_DIR}/scene.h
+  ${LIBRENDER_EXTRA_SRC}
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
@@ -45,7 +83,7 @@ target_link_libraries(mitsuba-render
 )
 
 # Link to Intel's Thread Building Blocks
-target_link_libraries(mitsuba-render PRIVATE tbb)
+target_link_libraries(mitsuba-render PRIVATE tbb ${LIBRENDER_EXTRA_LIB})
 
 # Link to libcore
 target_link_libraries(mitsuba-render PUBLIC mitsuba-core)

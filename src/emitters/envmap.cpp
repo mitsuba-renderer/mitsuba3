@@ -42,7 +42,7 @@ public:
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
                 Color3f rgb = load_unaligned<Vector3f>(ptr);
                 Float scale = hmax(rgb) * 2.f;
-                Color3f rgb_norm = rgb / scale;
+                Color3f rgb_norm = rgb / std::max((Float) 1e-8, scale);
 
                 /* Fetch spectral fit for given sRGB color value */
                 Vector4f coeff = concat(srgb_model_fetch(rgb_norm), scale);
@@ -61,7 +61,7 @@ public:
 
     ref<Shape> create_shape(const Scene *scene) override {
         // Create a bounding sphere that surrounds the scene
-        m_bsphere = scene->kdtree()->bbox().bounding_sphere();
+        m_bsphere = scene->bbox().bounding_sphere();
         m_bsphere.radius = max(math::Epsilon, m_bsphere.radius * 1.5f);
 
         Properties props("sphere");
@@ -190,7 +190,7 @@ public:
         return true;
     }
 
-    MTS_IMPLEMENT_EMITTER()
+    MTS_IMPLEMENT_EMITTER_ALL()
     MTS_DECLARE_CLASS()
 
 protected:

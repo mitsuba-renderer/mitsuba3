@@ -118,7 +118,7 @@ public:
                 emission_weight = mis_weight(bs.pdf, emitter_pdf);
             }
 
-            si = si_bsdf;
+            si = std::move(si_bsdf);
         }
 
         return result;
@@ -134,14 +134,14 @@ public:
             "]", m_max_depth, m_rr_depth);
     }
 
-    MTS_IMPLEMENT_INTEGRATOR()
+    MTS_IMPLEMENT_INTEGRATOR_ALL()
     MTS_DECLARE_CLASS()
 
 protected:
     template <typename Value> Value mis_weight(Value pdf_a, Value pdf_b) const {
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
-        return select(pdf_a > 0.0f, pdf_a / (pdf_a + pdf_b), Value(0.0f));
+        return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), Value(0.f));
     };
 };
 

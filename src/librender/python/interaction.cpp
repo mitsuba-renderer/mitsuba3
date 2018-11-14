@@ -33,6 +33,11 @@ MTS_PY_EXPORT(Interaction) {
     bind_interaction<Point3f>(m, "Interaction3f");
     auto i3fx = bind_interaction<Point3fX>(m, "Interaction3fX");
     bind_slicing_operators<Interaction3fX, Interaction3f>(i3fx);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    auto s3fd = bind_interaction<Point3fD>(m, "Interaction3fD");
+    bind_slicing_operators<Interaction3fD, Interaction3f>(s3fd);
+#endif
 }
 
 template <typename Point3>
@@ -99,4 +104,9 @@ MTS_PY_EXPORT(SurfaceInteraction) {
 
     auto si3fx = bind_surface_interaction<Point3fX>(m, "SurfaceInteraction3fX");
     bind_slicing_operators<SurfaceInteraction3fX, SurfaceInteraction3f>(si3fx);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    auto si3fd = bind_surface_interaction<Point3fD>(m, "SurfaceInteraction3fD");
+    bind_slicing_operators<SurfaceInteraction3fD, SurfaceInteraction3f>(si3fd);
+#endif
 }

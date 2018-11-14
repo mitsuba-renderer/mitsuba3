@@ -47,7 +47,6 @@ public:
      */
     virtual void cancel() = 0;
 
-
     // =========================================================================
     //! @{ \name Progress reporting / callbacks
     // =========================================================================
@@ -133,12 +132,7 @@ public:
      * used to store additional information about the result.
      */
     virtual Spectrumf eval(const RayDifferential3f &ray,
-                           RadianceSample3f &rs) const = 0;
-
-    /// Vectorized variant of \ref eval.
-    virtual SpectrumfP eval(const RayDifferential3fP &ray,
-                            RadianceSample3fP &rs,
-                            MaskP active = true) const = 0;
+                           RadianceSample3f &rs) const;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
     Spectrumf eval(const RayDifferential3f &ray, RadianceSample3f &rs,
@@ -146,11 +140,24 @@ public:
         return eval(ray, rs);
     }
 
+    /// Vectorized variant of \ref eval.
+    virtual SpectrumfP eval(const RayDifferential3fP &ray,
+                            RadianceSample3fP &rs,
+                            MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable variant of \ref eval.
+    virtual SpectrumfD eval(const RayDifferential3fD &ray,
+                            RadianceSample3fD &rs,
+                            MaskD active = true) const;
+#endif
+
     // =========================================================================
     //! @{ \name Integrator interface implementation
     // =========================================================================
 
     bool render(Scene *scene, bool vectorize) override;
+
     void cancel() override;
 
     /**
@@ -218,16 +225,6 @@ protected:
     int m_rr_depth;
 };
 
-/// Instantiates concrete scalar and packet versions of the endpoint plugin API
-#define MTS_IMPLEMENT_INTEGRATOR()                                             \
-    using SamplingIntegrator::eval;                                            \
-    Spectrumf eval(const RayDifferential3f &ray, RadianceSample3f &rs)         \
-        const override {                                                       \
-        return eval_impl(ray, rs, true);                                       \
-    }                                                                          \
-    SpectrumfP eval(const RayDifferential3fP &ray, RadianceSample3fP &rs,      \
-                    MaskP active) const override {                             \
-        return eval_impl(ray, rs, active);                                     \
-    }
-
 NAMESPACE_END(mitsuba)
+
+#include "detail/integrator.inl"

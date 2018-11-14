@@ -1,62 +1,53 @@
 #include <mitsuba/core/properties.h>
-#include <mitsuba/render/emitter.h>
+#include <mitsuba/core/plugin.h>
+#include <mitsuba/render/scene.h>
 #include <mitsuba/render/kdtree.h>
 #include <mitsuba/render/integrator.h>
-#include <mitsuba/render/records.h>
-#include <mitsuba/render/sampler.h>
-#include <mitsuba/render/scene.h>
-#include <mitsuba/render/sensor.h>
-#include <mitsuba/core/profiler.h>
-#include <mitsuba/core/plugin.h>
 #include <enoki/stl.h>
-
-#if defined(ENOKI_X86_AVX512F)
-#  define MTS_RAY_WIDTH 16
-#elif defined(ENOKI_X86_AVX2)
-#  define MTS_RAY_WIDTH 8
-#elif defined(ENOKI_X86_SSE42) || defined(ENOKI_ARM_NEON)
-#  define MTS_RAY_WIDTH 4
-#else
-#  define MTS_RAY_WIDTH 1
-#endif
-
-#define JOIN(x, y) JOIN_AGAIN(x, y)
-#define JOIN_AGAIN(x, y) x ## y
-#define RTCRayHitW    JOIN(RTCRayHit,    MTS_RAY_WIDTH)
-#define RTCRayW       JOIN(RTCRay,       MTS_RAY_WIDTH)
-#define rtcIntersectW JOIN(rtcIntersect, MTS_RAY_WIDTH)
-#define rtcOccludedW  JOIN(rtcOccluded,  MTS_RAY_WIDTH)
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if defined(MTS_USE_EMBREE)
-static RTCDevice __embree_device = nullptr;
-#endif
-
 Scene::Scene(const Properties &props) {
-    m_kdtree = new ShapeKDTree(props);
-    m_monochrome = props.bool_("monochrome");
+    #if !defined(MTS_USE_EMBREE)
+        m_kdtree = new ShapeKDTree(props);
+    #else
+        embree_init();
+    #endif
 
-#if defined(MTS_USE_EMBREE)
-    if (!__embree_device)
-        __embree_device = rtcNewDevice("");
-
-    m_embree_scene = rtcNewScene(__embree_device);
-#endif
+    #if defined(MTS_USE_OPTIX)
+        uint32_t n_shapes = 0;
+        for (auto &kv : props.objects()) {
+            Shape *shape = dynamic_cast<Shape *>(kv.second.get());
+            if (shape)
+                ++n_shapes;
+        }
+        optix_init(n_shapes);
+    #endif
 
     for (auto &kv : props.objects()) {
+        m_children.push_back(kv.second.get());
+
         Shape *shape           = dynamic_cast<Shape *>(kv.second.get());
         Emitter *emitter       = dynamic_cast<Emitter *>(kv.second.get());
         Sensor *sensor         = dynamic_cast<Sensor *>(kv.second.get());
         Integrator *integrator = dynamic_cast<Integrator *>(kv.second.get());
 
         if (shape) {
-            m_kdtree->add_shape(shape);
+            m_shapes.push_back(shape);
+            #if !defined(MTS_USE_EMBREE)
+                m_kdtree->add_shape(shape);
+            #else
+                embree_register(shape);
+            #endif
+
+            #if defined(MTS_USE_OPTIX)
+                optix_register(shape);
+            #endif
+
             if (shape->emitter())
                 m_emitters.push_back(shape->emitter());
-            #if defined(MTS_USE_EMBREE)
-                rtcAttachGeometry(m_embree_scene, shape->embree_geometry(__embree_device));
-            #endif
+
+            m_bbox.expand(shape->bbox());
         } else if (emitter) {
             m_emitters.push_back(emitter);
             if (emitter->is_environment()) {
@@ -72,7 +63,6 @@ Scene::Scene(const Properties &props) {
             m_integrator = integrator;
         }
     }
-    m_kdtree->build();
 
     if (m_sensors.size() == 0) {
         Log(EWarn, "No sensors found! Instantiating a perspective camera..");
@@ -83,10 +73,9 @@ Scene::Scene(const Properties &props) {
 
         /* Create a perspective camera with a 45 deg. field of view
            and positioned so that it can see the entire scene */
-        BoundingBox3f bbox = m_kdtree->bbox();
-        if (bbox.valid()) {
-            Point3f center = bbox.center();
-            Vector3f extents = bbox.extents();
+        if (m_bbox.valid()) {
+            Point3f center = m_bbox.center();
+            Vector3f extents = m_bbox.extents();
 
             Float distance =
                 hmax(extents) / (2.f * std::tan(45.f * .5f * math::Pi / 180));
@@ -97,7 +86,7 @@ Scene::Scene(const Properties &props) {
             sensor_props.set_float("focus_distance", distance + extents.z() / 2);
             sensor_props.set_transform(
                 "to_world", Transform4f::translate(Vector3f(
-                                center.x(), center.y(), bbox.min.z() - distance)));
+                                center.x(), center.y(), m_bbox.min.z() - distance)));
         }
 
         m_sensors.push_back(
@@ -112,10 +101,14 @@ Scene::Scene(const Properties &props) {
         m_integrator = PluginManager::instance()->create_object<Integrator>(props_integrator);
     }
 
-#if defined(MTS_USE_EMBREE)
-        Timer timer;
-        rtcCommitScene(m_embree_scene);
-        Log(EInfo, "Embree finished. (took %s)", util::time_string(timer.value()));
+    #if !defined(MTS_USE_EMBREE)
+        m_kdtree->build();
+    #else
+        embree_build();
+    #endif
+
+    #if defined(MTS_USE_OPTIX)
+        optix_build();
     #endif
 
     // Precompute a discrete distribution over emitters
@@ -137,228 +130,16 @@ Scene::Scene(const Properties &props) {
 }
 
 Scene::~Scene() {
+    #if defined(MTS_USE_OPTIX)
+        optix_release();
+    #endif
+
     #if defined(MTS_USE_EMBREE)
-        rtcReleaseScene(m_embree_scene);
+        embree_release();
     #endif
 }
 
-// =============================================================
-//! Ray tracing-related methods
-// =============================================================
-
-SurfaceInteraction3f Scene::ray_intersect(const Ray3f &ray) const {
-    ScopedPhase sp(EProfilerPhase::ERayIntersect);
-    #if !defined(MTS_USE_EMBREE)
-        Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-
-        #if defined(MTS_DISABLE_KDTREE)
-            auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache);
-        #else
-            auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache);
-        #endif
-
-        SurfaceInteraction3f si;
-
-        if (likely(hit)) {
-            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
-            si = m_kdtree->create_surface_interaction(ray, hit_t, cache);
-        } else {
-            si.wavelengths = ray.wavelengths;
-            si.wi = -ray.d;
-        }
-
-        return si;
-    #else
-        RTCIntersectContext context;
-        rtcInitIntersectContext(&context);
-
-        RTCRayHit rh;
-        rh.ray.org_x = ray.o.x();
-        rh.ray.org_y = ray.o.y();
-        rh.ray.org_z = ray.o.z();
-        rh.ray.tnear = ray.mint;
-        rh.ray.dir_x = ray.d.x();
-        rh.ray.dir_y = ray.d.y();
-        rh.ray.dir_z = ray.d.z();
-        rh.ray.time = 0;
-        rh.ray.tfar = ray.maxt;
-        rh.ray.mask = 0;
-        rh.ray.id = 0;
-        rh.ray.flags = 0;
-        rtcIntersect1(m_embree_scene, &context, &rh);
-
-        SurfaceInteraction3f si;
-        if (rh.ray.tfar != ray.maxt) {
-            float cache[4];
-            cache[0] = reinterpret_array<float>(rh.hit.geomID);
-            cache[1] = reinterpret_array<float>(rh.hit.primID);
-            cache[2] = rh.hit.u;
-            cache[3] = rh.hit.v;
-
-            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
-            si = m_kdtree->create_surface_interaction(ray, rh.ray.tfar, cache);
-        } else {
-            si.wavelengths = ray.wavelengths;
-            si.wi = -ray.d;
-        }
-        return si;
-    #endif
-}
-
-SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) const {
-    ScopedPhase sp(EProfilerPhase::ERayIntersectP);
-    #if !defined(MTS_USE_EMBREE)
-        FloatP cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-
-        #if defined(MTS_DISABLE_KDTREE)
-            auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
-        #else
-            auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache, active);
-        #endif
-
-        SurfaceInteraction3fP si;
-
-        if (likely(any(hit))) {
-            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteractionP);
-            si = m_kdtree->create_surface_interaction(ray, hit_t, cache, active && hit);
-        } else {
-            si.wavelengths = ray.wavelengths;
-            si.wi = -ray.d;
-        }
-    #else
-        RTCIntersectContext context;
-        rtcInitIntersectContext(&context);
-        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-
-        alignas(alignof(FloatP)) int valid[MTS_RAY_WIDTH];
-        store(valid, select(active, Int32P(-1), Int32P(0)));
-
-        RTCRayHitW rh;
-        store(rh.ray.org_x, ray.o.x());
-        store(rh.ray.org_y, ray.o.y());
-        store(rh.ray.org_z, ray.o.z());
-        store(rh.ray.tnear, ray.mint);
-        store(rh.ray.dir_x, ray.d.x());
-        store(rh.ray.dir_y, ray.d.y());
-        store(rh.ray.dir_z, ray.d.z());
-        store(rh.ray.time, FloatP(0));
-        store(rh.ray.tfar, ray.maxt);
-        store(rh.ray.mask, UInt32P(0));
-        store(rh.ray.id, UInt32P(0));
-        store(rh.ray.flags, UInt32P(0));
-
-        rtcIntersectW(valid, m_embree_scene, &context, &rh);
-
-        SurfaceInteraction3fP si;
-        MaskP hit = active && neq(load<FloatP>(rh.ray.tfar), ray.maxt);
-
-        if (likely(any(hit))) {
-            FloatP cache[4];
-            cache[0] = reinterpret_array<FloatP>(load<UInt32P>(rh.hit.geomID));
-            cache[1] = reinterpret_array<FloatP>(load<UInt32P>(rh.hit.primID));
-            cache[2] = load<FloatP>(rh.hit.u);
-            cache[3] = load<FloatP>(rh.hit.v);
-
-            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteractionP);
-            si = m_kdtree->create_surface_interaction(ray, load<FloatP>(rh.ray.tfar), cache, hit);
-        } else {
-            si.wavelengths = ray.wavelengths;
-            si.wi = -ray.d;
-        }
-        si.t[!hit] = math::Infinity;
-    #endif
-
-    return si;
-}
-
-bool Scene::ray_test(const Ray3f &ray) const {
-    ScopedPhase p(EProfilerPhase::ERayTest);
-
-    #if defined(MTS_DISABLE_KDTREE)
-        return m_kdtree->ray_intersect_naive<true>(ray).first;
-    #elif defined(MTS_USE_EMBREE)
-        RTCIntersectContext context;
-        rtcInitIntersectContext(&context);
-
-        RTCRay ray2;
-        ray2.org_x = ray.o.x();
-        ray2.org_y = ray.o.y();
-        ray2.org_z = ray.o.z();
-        ray2.tnear = ray.mint;
-        ray2.dir_x = ray.d.x();
-        ray2.dir_y = ray.d.y();
-        ray2.dir_z = ray.d.z();
-        ray2.time = 0;
-        ray2.tfar = ray.maxt;
-        ray2.mask = 0;
-        ray2.id = 0;
-        ray2.flags = 0;
-        rtcOccluded1(m_embree_scene, &context, &ray2);
-        return ray2.tfar != ray.maxt;
-    #else
-        return m_kdtree->ray_intersect<true>(ray).first;
-    #endif
-}
-
-MaskP Scene::ray_test(const Ray3fP &ray, MaskP active) const {
-    ScopedPhase p(EProfilerPhase::ERayTestP);
-
-    #if defined(MTS_DISABLE_KDTREE)
-        return m_kdtree->ray_intersect_naive<true>(ray, (FloatP *) nullptr, active).first;
-    #elif defined(MTS_USE_EMBREE)
-        RTCIntersectContext context;
-        rtcInitIntersectContext(&context);
-        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-
-        alignas(alignof(FloatP)) int valid[MTS_RAY_WIDTH];
-        store(valid, select(active, Int32P(-1), Int32P(0)));
-
-        RTCRayW ray2;
-        store(ray2.org_x, ray.o.x());
-        store(ray2.org_y, ray.o.y());
-        store(ray2.org_z, ray.o.z());
-        store(ray2.tnear, ray.mint);
-        store(ray2.dir_x, ray.d.x());
-        store(ray2.dir_y, ray.d.y());
-        store(ray2.dir_z, ray.d.z());
-        store(ray2.time, FloatP(0));
-        store(ray2.tfar, ray.maxt);
-        store(ray2.mask, UInt32P(0));
-        store(ray2.id, UInt32P(0));
-        store(ray2.flags, UInt32P(0));
-        rtcOccludedW(valid, m_embree_scene, &context, &ray2);
-        return active && neq(load<FloatP>(ray2.tfar), ray.maxt);
-    #else
-        return m_kdtree->ray_intersect<true>(ray, nullptr, active).first;
-    #endif
-}
-
-SurfaceInteraction3f Scene::ray_intersect_naive(const Ray3f &ray) const {
-    ScopedPhase sp(EProfilerPhase::ERayIntersect);
-    Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-    auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache);
-
-    SurfaceInteraction3f si;
-    if (likely(hit)) {
-        ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
-        si = m_kdtree->create_surface_interaction(ray, hit_t, cache);
-    }
-    return si;
-}
-
-SurfaceInteraction3fP Scene::ray_intersect_naive(const Ray3fP &ray, MaskP active) const {
-    ScopedPhase sp(EProfilerPhase::ERayIntersectP);
-    FloatP cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-    auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
-
-    SurfaceInteraction3fP si;
-    if (likely(any(hit))) {
-        ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteractionP);
-        si = m_kdtree->create_surface_interaction(ray, hit_t, cache, active && hit);
-    }
-    return si;
-}
-
+std::vector<ref<Object>> Scene::children() { return m_children; }
 
 // =============================================================
 //! Sampling-related methods
@@ -367,10 +148,10 @@ SurfaceInteraction3fP Scene::ray_intersect_naive(const Ray3fP &ray, MaskP active
 template <typename Interaction, typename Value, typename Spectrum,
           typename Point3, typename Point2, typename DirectionSample,
           typename Mask>
-std::pair<DirectionSample, Spectrum>
+MTS_INLINE std::pair<DirectionSample, Spectrum>
 Scene::sample_emitter_direction_impl(const Interaction &ref, Point2 sample,
                                      bool test_visibility, Mask active) const {
-    ScopedPhase sp(is_array_v<Value> ?
+    ScopedPhase sp(is_static_array_v<Value> ?
             EProfilerPhase::ESampleEmitterDirectionP :
             EProfilerPhase::ESampleEmitterDirection);
 
@@ -394,7 +175,7 @@ Scene::sample_emitter_direction_impl(const Interaction &ref, Point2 sample,
         active &= neq(ds.pdf, 0.f);
 
         // Perform a visibility test if requested
-        if (test_visibility && any(active)) {
+        if (test_visibility && any_or<true>(active)) {
             Ray ray(ref.p, ds.d, math::Epsilon * (1.f + hmax(abs(ref.p))),
                     ds.dist * (1.f - math::ShadowEpsilon),
                     ref.time, ref.wavelengths);
@@ -424,11 +205,21 @@ Scene::sample_emitter_direction(const Interaction3fP &ref,
     return sample_emitter_direction_impl(ref, sample, test_visibility, active);
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<DirectionSample3fD, SpectrumfD>
+Scene::sample_emitter_direction(const Interaction3fD &ref,
+                                const Point2fD &sample,
+                                bool test_visibility,
+                                MaskD active) const {
+    return sample_emitter_direction_impl(ref, sample, test_visibility, active);
+}
+#endif
+
 template <typename Interaction, typename DirectionSample, typename Value,
           typename Mask>
-Value Scene::pdf_emitter_direction_impl(const Interaction &ref,
-                                        const DirectionSample &ds,
-                                        Mask active) const {
+MTS_INLINE Value Scene::pdf_emitter_direction_impl(const Interaction &ref,
+                                                   const DirectionSample &ds,
+                                                   Mask active) const {
     using EmitterPtr = replace_scalar_t<Value, const Emitter *>;
     return reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
         m_emitter_distr.eval(0);
@@ -445,15 +236,24 @@ FloatP Scene::pdf_emitter_direction(const Interaction3fP &ref,
     return pdf_emitter_direction_impl(ref, ds, active);
 }
 
-// =============================================================
-//! @{ \name Explicit template instantiations & misc.
-// =============================================================
+#if defined(MTS_ENABLE_AUTODIFF)
+FloatD Scene::pdf_emitter_direction(const Interaction3fD &ref,
+                                    const DirectionSample3fD &ds,
+                                    MaskD active) const {
+    return pdf_emitter_direction_impl(ref, ds, active);
+}
+#endif
+
 std::string Scene::to_string() const {
-    return tfm::format("Scene[\n"
-        "  kdtree = %s\n"
-        "]",
-        string::indent(m_kdtree->to_string())
-    );
+    std::ostringstream oss;
+    oss << "Scene[" << std::endl
+        << "  children = [" << std::endl;
+    for (auto shape : m_children)
+        oss << "    " << string::indent(shape->to_string(), 4)
+            << "," << std::endl;
+    oss << "  ]"<< std::endl
+        << "]";
+    return oss.str();
 }
 
 MTS_IMPLEMENT_CLASS(Scene, Object)

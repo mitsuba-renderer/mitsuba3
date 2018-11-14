@@ -103,14 +103,13 @@ public:
         using Mask    = mask_t<Value>;
         using DirectionSample3 = mitsuba::DirectionSample<Point3>;
 
-        DirectionSample3 result;
+        DirectionSample3 result = zero<DirectionSample3>();
 
         Vector3 dc_v = m_center - it.p;
         Value dc_2 = squared_norm(dc_v);
 
         Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::Epsilon) :
                                                         (1.f - math::Epsilon));
-
         Mask outside_mask = active && dc_2 > sqr(radius_adj);
         if (likely(any(outside_mask))) {
             Value inv_dc            = rsqrt(dc_2),
@@ -268,6 +267,29 @@ public:
         using Mask    = mask_t<Value>;
 
         SurfaceInteraction3 si(si_out);
+
+        if constexpr (is_diff_array_v<Value>) {
+            // Recompute the intersection if derivative information is desired.
+            Vector3 o = ray.o - m_center;
+            Value A = squared_norm(ray.d);
+            Value B = 2.f * dot(o, ray.d);
+            Value C = squared_norm(o) - sqr(m_radius);
+
+            auto [solution_found, near_t, far_t] =
+                math::solve_quadratic(A, B, C);
+
+            // Sphere doesn't intersect with the segment on the ray
+            Mask out_bounds = !(near_t <= ray.maxt && far_t >= ray.mint); // NaN-aware conditionals
+
+            // Sphere fully contains the segment of the ray
+            Mask in_bounds = near_t < ray.mint && far_t > ray.maxt;
+
+            Mask valid_intersection =
+                active && solution_found && !out_bounds && !in_bounds;
+
+            si.t[valid_intersection] = select(near_t < ray.mint, far_t, near_t);
+        }
+
         si.sh_frame.n = normalize(ray(si.t) - m_center);
 
         // Re-project onto the sphere to improve accuracy
@@ -335,8 +357,8 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SHAPE()
-    MTS_IMPLEMENT_SHAPE_SAMPLE_DIRECTION()
+    MTS_IMPLEMENT_SHAPE_ALL()
+    MTS_IMPLEMENT_SHAPE_SAMPLE_DIRECTION_ALL()
     MTS_DECLARE_CLASS()
 private:
     Transform4f m_object_to_world;

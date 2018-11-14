@@ -6,7 +6,7 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name CIE 1931 2 degree observer implementation
 // =======================================================================
 
-const Float cie1931_x_data[95] = {
+static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
     Float(0.000129900000), Float(0.000232100000), Float(0.000414900000), Float(0.000741600000),
     Float(0.001368000000), Float(0.002236000000), Float(0.004243000000), Float(0.007650000000),
     Float(0.014310000000), Float(0.023190000000), Float(0.043510000000), Float(0.077630000000),
@@ -30,10 +30,8 @@ const Float cie1931_x_data[95] = {
     Float(0.000166150500), Float(0.000117413000), Float(0.000083075270), Float(0.000058706520),
     Float(0.000041509940), Float(0.000029353260), Float(0.000020673830), Float(0.000014559770),
     Float(0.000010253980), Float(0.000007221456), Float(0.000005085868), Float(0.000003581652),
-    Float(0.000002522525), Float(0.000001776509), Float(0.000001251141)
-};
+    Float(0.000002522525), Float(0.000001776509), Float(0.000001251141),
 
-const Float cie1931_y_data[95] = {
     Float(0.000003917000), Float(0.000006965000), Float(0.000012390000), Float(0.000022020000),
     Float(0.000039000000), Float(0.000064000000), Float(0.000120000000), Float(0.000217000000),
     Float(0.000396000000), Float(0.000640000000), Float(0.001210000000), Float(0.002180000000),
@@ -57,10 +55,8 @@ const Float cie1931_y_data[95] = {
     Float(0.000060000000), Float(0.000042400000), Float(0.000030000000), Float(0.000021200000),
     Float(0.000014990000), Float(0.000010600000), Float(0.000007465700), Float(0.000005257800),
     Float(0.000003702900), Float(0.000002607800), Float(0.000001836600), Float(0.000001293400),
-    Float(0.000000910930), Float(0.000000641530), Float(0.000000451810)
-};
+    Float(0.000000910930), Float(0.000000641530), Float(0.000000451810),
 
-const Float cie1931_z_data[95] = {
     Float(0.000606100000), Float(0.001086000000), Float(0.001946000000), Float(0.003486000000),
     Float(0.006450001000), Float(0.010549990000), Float(0.020050010000), Float(0.036210000000),
     Float(0.067850010000), Float(0.110200000000), Float(0.207400000000), Float(0.371300000000),
@@ -86,6 +82,28 @@ const Float cie1931_z_data[95] = {
     Float(0.000000000000), Float(0.000000000000), Float(0.000000000000), Float(0.000000000000),
     Float(0.000000000000), Float(0.000000000000), Float(0.000000000000)
 };
+
+const Float *cie1931_x_data = nullptr;
+const Float *cie1931_y_data = nullptr;
+const Float *cie1931_z_data = nullptr;
+
+static Float *cie_alloc() {
+    Float *src = (Float *) cie1931_tbl;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    const size_t size = MTS_CIE_SAMPLES * 3 * sizeof(Float);
+    src = (Float *) cuda_host_malloc(size);
+    memcpy(src, cie1931_tbl, size);
+#endif
+
+    cie1931_x_data = src;
+    cie1931_y_data = src + MTS_CIE_SAMPLES;
+    cie1931_z_data = src + MTS_CIE_SAMPLES * 2;
+
+    return nullptr;
+}
+
+static const Float *cie1931_dummy = cie_alloc();
 
 template MTS_EXPORT_CORE
 Array<Spectrumf, 3> cie1931_xyz(const Spectrumf &lambda, mask_t<Spectrumf>);

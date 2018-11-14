@@ -133,6 +133,7 @@ public:
      */
     bool put(const Point2f &pos, const Float *value);
 
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref put()
     bool put(const Point2f &pos, const Float *value, bool) {
         return put(pos, value);
     }
@@ -154,6 +155,11 @@ public:
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
     MaskP put(const Point2fP &pos, const FloatP *value, MaskP active = true);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of put()
+    MaskD put(const Point2fD &pos, const FloatD *value, MaskD active = true);
+#endif
 
     /// Clear everything to zero.
     void clear() { m_bitmap->clear(); }
@@ -199,6 +205,14 @@ public:
     /// Return a pointer to the underlying bitmap representation (const version)
     const Bitmap *bitmap() const { return m_bitmap.get(); }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Return the differentiable variables representing the image (one per channel)
+    std::vector<FloatD> &bitmap_d() { return m_bitmap_d; }
+
+    /// Return the differentiable variable representing the image (one per channel)
+    const std::vector<FloatD> &bitmap_d() const { return m_bitmap_d; }
+#endif
+
     //! @}
     // =============================================================
 
@@ -220,6 +234,10 @@ protected:
     bool m_warn;
     /// Whether monochrome mode is enabled.
     bool m_monochrome = false;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    std::vector<FloatD> m_bitmap_d;
+#endif
 };
 
 NAMESPACE_END(mitsuba)

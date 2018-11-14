@@ -2,11 +2,13 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/sensor.h>
+#include <mitsuba/render/medium.h>
 #include <mitsuba/core/plugin.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-Shape::Shape(const Properties &props) {
+Shape::Shape(const Properties &props) : m_id(props.id()) {
     for (auto &kv : props.objects()) {
         auto emitter = dynamic_cast<Emitter *>(kv.second.get());
         auto bsdf = dynamic_cast<BSDF *>(kv.second.get());
@@ -35,6 +37,8 @@ Shape::Shape(const Properties &props) {
 
 Shape::~Shape() { }
 
+std::string Shape::id() const { return m_id; }
+
 PositionSample3f Shape::sample_position(Float /* time */,
                                         const Point2f& /* sample */) const {
     NotImplementedError("sample_position");
@@ -45,6 +49,14 @@ PositionSample3fP Shape::sample_position(FloatP /* time */,
                                          MaskP /* active */) const {
     NotImplementedError("sample_position_p");
 }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+PositionSample3fD Shape::sample_position(FloatD /* time */,
+                                         const Point2fD& /* sample */,
+                                         MaskD /* active */) const {
+    NotImplementedError("sample_position_d");
+}
+#endif
 
 Float Shape::pdf_position(const PositionSample3f& /* ps */) const {
     NotImplementedError("pdf_position");
@@ -60,11 +72,23 @@ RTCGeometry Shape::embree_geometry(RTCDevice) const {
 }
 #endif
 
+#if defined(MTS_USE_OPTIX)
+RTgeometrytriangles Shape::optix_geometry(RTcontext) {
+    NotImplementedError("optix_geometry");
+}
+#endif
+
+#if defined(MTS_ENABLE_AUTODIFF)
+FloatD Shape::pdf_position(const PositionSample3fD& /* ps */, MaskD /* active */) const {
+    NotImplementedError("pdf_position_d");
+}
+#endif
+
 template <typename Interaction, typename Value, typename Point2,
-          typename Point3, typename DirectionSample, typename Mask>
+          typename Point3, typename DirectionSample>
 DirectionSample Shape::sample_direction_fallback(const Interaction &it,
                                                  const Point2 &sample,
-                                                 Mask active) const {
+                                                 mask_t<Value> active) const {
     DirectionSample ds(sample_position(it.time, sample, active));
     ds.d = ds.p - it.p;
 
@@ -80,10 +104,10 @@ DirectionSample Shape::sample_direction_fallback(const Interaction &it,
 }
 
 template <typename Interaction, typename DirectionSample,
-          typename Value, typename Mask>
+          typename Value>
 Value Shape::pdf_direction_fallback(const Interaction &,
                                     const DirectionSample &ds,
-                                    Mask active) const {
+                                    mask_t<Value> active) const {
     Value pdf = pdf_position(ds, active),
            dp = abs_dot(ds.d, ds.n);
 
@@ -103,6 +127,14 @@ DirectionSample3fP Shape::sample_direction(const Interaction3fP& it,
     return sample_direction_fallback(it, sample, active);
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+DirectionSample3fD Shape::sample_direction(const Interaction3fD& it,
+                                           const Point2fD& sample,
+                                           MaskD active) const {
+    return sample_direction_fallback(it, sample, active);
+}
+#endif
+
 Float Shape::pdf_direction(const Interaction3f& it,
                            const DirectionSample3f& ds) const {
     return pdf_direction_fallback(it, ds, true);
@@ -113,6 +145,14 @@ FloatP Shape::pdf_direction(const Interaction3fP& it,
                             MaskP active) const {
     return pdf_direction_fallback(it, ds, active);
 }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+FloatD Shape::pdf_direction(const Interaction3fD& it,
+                            const DirectionSample3fD& ds,
+                            MaskD active) const {
+    return pdf_direction_fallback(it, ds, active);
+}
+#endif
 
 std::pair<bool, Float> Shape::ray_intersect(const Ray3f& /* ray */,
                                             Float* /* cache */) const {
@@ -125,6 +165,14 @@ std::pair<MaskP, FloatP> Shape::ray_intersect(const Ray3fP& /* ray */,
     NotImplementedError("ray_intersect_p");
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<MaskD, FloatD> Shape::ray_intersect(const Ray3fD& /* ray */,
+                                              FloatD* /* cache */,
+                                              MaskD /* active */) const {
+    NotImplementedError("ray_intersect_d");
+}
+#endif
+
 bool Shape::ray_test(const Ray3f &ray) const {
     Float unused[MTS_KD_INTERSECTION_CACHE_SIZE];
     return ray_intersect(ray, unused).first;
@@ -134,6 +182,13 @@ MaskP Shape::ray_test(const Ray3fP &ray, MaskP active) const {
     FloatP unused[MTS_KD_INTERSECTION_CACHE_SIZE];
     return ray_intersect(ray, unused, active).first;
 }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+MaskD Shape::ray_test(const Ray3fD &ray, MaskD active) const {
+    FloatD unused[MTS_KD_INTERSECTION_CACHE_SIZE];
+    return ray_intersect(ray, unused, active).first;
+}
+#endif
 
 void Shape::fill_surface_interaction(const Ray3f & /* ray */,
                                      const Float * /* cache */,
@@ -147,6 +202,15 @@ void Shape::fill_surface_interaction(const Ray3fP & /* ray */,
                                      MaskP /* active */) const {
     NotImplementedError("fill_surface_interaction_p");
 }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+void Shape::fill_surface_interaction(const Ray3fD & /* ray */,
+                                     const FloatD * /* cache */,
+                                     SurfaceInteraction3fD & /* si */,
+                                     MaskD /* active */) const {
+    NotImplementedError("fill_surface_interaction_d");
+}
+#endif
 
 SurfaceInteraction3f Shape::ray_intersect(const Ray3f &ray) const {
     SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
@@ -181,6 +245,15 @@ Shape::normal_derivative(const SurfaceInteraction3fP & /* si */,
     NotImplementedError("normal_derivative_p");
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<Vector3fD, Vector3fD>
+Shape::normal_derivative(const SurfaceInteraction3fD & /* si */,
+                         bool /* shading_frame */,
+                         MaskD /* active */) const {
+    NotImplementedError("normal_derivative_d");
+}
+#endif
+
 Float Shape::surface_area() const { NotImplementedError("surface_area"); }
 
 BoundingBox3f Shape::bbox(Index) const {
@@ -199,6 +272,23 @@ Shape::Size Shape::primitive_count() const {
 
 Shape::Size Shape::effective_primitive_count() const {
     return primitive_count();
+}
+
+std::vector<ref<Object>> Shape::children() {
+    std::vector<ref<Object>> result;
+
+    if (m_bsdf)
+        result.push_back(m_bsdf.get());
+    if (m_emitter)
+        result.push_back(m_emitter.get());
+    if (m_sensor)
+        result.push_back(m_sensor.get());
+    if (m_interior_medium)
+        result.push_back(m_interior_medium.get());
+    if (m_exterior_medium)
+        result.push_back(m_exterior_medium.get());
+
+    return result;
 }
 
 MTS_IMPLEMENT_CLASS(Shape, Object)

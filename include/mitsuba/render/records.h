@@ -242,8 +242,8 @@ template <typename Point3> struct RadianceSample {
      * \brief Make 'Scene' and 'Sampler' a dependent type so that the compiler
      * does not complain about accessing incomplete types below.
      */
-    using Scene              = std::conditional_t<is_array_v<Point3>, mitsuba::Scene,   std::nullptr_t>;
-    using Sampler            = std::conditional_t<is_array_v<Point3>, mitsuba::Sampler, std::nullptr_t>;
+    using Scene              = identity_t<mitsuba::Scene, Point3 /* ignored */>;
+    using Sampler            = identity_t<mitsuba::Sampler, Point3 /* ignored */>;
     using Value              = value_t<Point3>;
     using Mask               = mask_t<Value>;
     using Point2             = point2_t<Point3>;
@@ -350,10 +350,20 @@ std::ostream &operator<<(std::ostream &os,
                          const RadianceSample<Point3> &record) {
     os << "RadianceSample[" << std::endl
        << "  scene = ";
-    if (record.scene == nullptr) os << "[ not set ]"; else os << record.scene;
+
+    if (record.scene == nullptr)
+        os << "[ not set ]";
+    else
+        os << string::indent(record.scene);
+
     os << "," << std::endl
        << "  sampler = ";
-    if (record.sampler == nullptr) os << "[ not set ]"; else os << record.sampler;
+
+    if (record.sampler == nullptr)
+        os << "[ not set ]";
+    else
+        os << string::indent(record.sampler);
+
     os << "," << std::endl
        << "  si = " << string::indent(record.si) << std::endl
        << "  alpha = " << record.alpha << std::endl

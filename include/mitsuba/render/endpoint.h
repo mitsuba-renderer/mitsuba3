@@ -81,14 +81,6 @@ public:
                const Point2f &sample2,
                const Point2f &sample3) const;
 
-    /// Vectorized version of \ref sample_ray()
-    virtual std::pair<Ray3fP, SpectrumfP>
-    sample_ray(FloatP time,
-               FloatP sample1,
-               const Point2fP &sample2,
-               const Point2fP &sample3,
-               MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_ray()
     std::pair<Ray3f, Spectrumf>
     sample_ray(Float time,
@@ -98,6 +90,24 @@ public:
                bool /* unused */) const {
         return sample_ray(time, sample1, sample2, sample3);
     }
+
+    /// Vectorized version of \ref sample_ray()
+    virtual std::pair<Ray3fP, SpectrumfP>
+    sample_ray(FloatP time,
+               FloatP sample1,
+               const Point2fP &sample2,
+               const Point2fP &sample3,
+               MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample_ray()
+    virtual std::pair<Ray3fD, SpectrumfD>
+    sample_ray(FloatD time,
+               FloatD sample1,
+               const Point2fD &sample2,
+               const Point2fD &sample3,
+               MaskD active = true) const;
+#endif
 
     /**
      * \brief Polarized version of \ref sample_ray()
@@ -115,14 +125,6 @@ public:
                    const Point2f &sample2,
                    const Point2f &sample3) const;
 
-    /// Vectorized version of \ref sample_ray_pol
-    virtual std::pair<Ray3fP, MuellerMatrixSfP>
-    sample_ray_pol(FloatP time,
-                   FloatP sample1,
-                   const Point2fP &sample2,
-                   const Point2fP &sample3,
-                   MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_ray_pol()
     std::pair<Ray3f, MuellerMatrixSf>
     sample_ray_pol(Float time,
@@ -132,6 +134,24 @@ public:
                    bool /* unused */) const {
         return sample_ray_pol(time, sample1, sample2, sample3);
     }
+
+    /// Vectorized version of \ref sample_ray_pol
+    virtual std::pair<Ray3fP, MuellerMatrixSfP>
+    sample_ray_pol(FloatP time,
+                   FloatP sample1,
+                   const Point2fP &sample2,
+                   const Point2fP &sample3,
+                   MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample_ray_pol
+    virtual std::pair<Ray3fD, MuellerMatrixSfD>
+    sample_ray_pol(FloatD time,
+                   FloatD sample1,
+                   const Point2fD &sample2,
+                   const Point2fD &sample3,
+                   MaskD active = true) const;
+#endif
 
     /**
      * \brief Given a reference point in the scene, sample a direction from the
@@ -163,19 +183,30 @@ public:
      *     along with a spectral importance weight.
      */
     virtual std::pair<DirectionSample3f, Spectrumf>
-    sample_direction(const Interaction3f &ref, const Point2f &sample) const;
-
-    /// Vectorized version of \ref sample_direction()
-    virtual std::pair<DirectionSample3fP, SpectrumfP>
-    sample_direction(const Interaction3fP &ref, const Point2fP &sample,
-                     MaskP active = true) const;
+    sample_direction(const Interaction3f &ref,
+                     const Point2f &sample) const;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction()
     std::pair<DirectionSample3f, Spectrumf>
-    sample_direction(const Interaction3f &ref, const Point2f &sample,
+    sample_direction(const Interaction3f &ref,
+                     const Point2f &sample,
                      bool /* unused */) const {
         return sample_direction(ref, sample);
     }
+
+    /// Vectorized version of \ref sample_direction()
+    virtual std::pair<DirectionSample3fP, SpectrumfP>
+    sample_direction(const Interaction3fP &ref,
+                     const Point2fP &sample,
+                     MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample_direction()
+    virtual std::pair<DirectionSample3fD, SpectrumfD>
+    sample_direction(const Interaction3fD &ref,
+                     const Point2fD &sample,
+                     MaskD active = true) const;
+#endif
 
     /**
      * \brief Polarized version of \ref sample_direction()
@@ -189,19 +220,30 @@ public:
      *    space for the sensor profile).
      */
     virtual std::pair<DirectionSample3f, MuellerMatrixSf>
-    sample_direction_pol(const Interaction3f &it, const Point2f &sample) const;
-
-    /// Vectorized version of \ref sample_direction_pol()
-    virtual std::pair<DirectionSample3fP, MuellerMatrixSfP>
-    sample_direction_pol(const Interaction3fP &it, const Point2fP &sample,
-                         MaskP active = true) const;
+    sample_direction_pol(const Interaction3f &it,
+                         const Point2f &sample) const;
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction_pol()
     std::pair<DirectionSample3f, MuellerMatrixSf>
-    sample_direction_pol(const Interaction3f &it, const Point2f &sample,
+    sample_direction_pol(const Interaction3f &it,
+                         const Point2f &sample,
                          bool /* unused */) const {
         return sample_direction_pol(it, sample);
     }
+
+    /// Vectorized version of \ref sample_direction_pol()
+    virtual std::pair<DirectionSample3fP, MuellerMatrixSfP>
+    sample_direction_pol(const Interaction3fP &it,
+                         const Point2fP &sample,
+                         MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample_direction_pol()
+    virtual std::pair<DirectionSample3fD, MuellerMatrixSfD>
+    sample_direction_pol(const Interaction3fD &it,
+                         const Point2fD &sample,
+                         MaskD active = true) const;
+#endif
 
     //! @}
     // =============================================================
@@ -217,17 +259,24 @@ public:
     virtual Float pdf_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds) const;
 
-    /// Vectorized version of \ref pdf_direction()
-    virtual FloatP pdf_direction(const Interaction3fP &ref,
-                                 const DirectionSample3fP &ds,
-                                 MaskP active) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_direction()
     Float pdf_direction(const Interaction3f &ref,
                         const DirectionSample3f &ds,
                         bool /* unused */) const {
         return pdf_direction(ref, ds);
     }
+
+    /// Vectorized version of \ref pdf_direction()
+    virtual FloatP pdf_direction(const Interaction3fP &ref,
+                                 const DirectionSample3fP &ds,
+                                 MaskP active) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref pdf_direction()
+    virtual FloatD pdf_direction(const Interaction3fD &ref,
+                                 const DirectionSample3fD &ds,
+                                 MaskD active) const;
+#endif
 
     //! @}
     // =============================================================
@@ -255,13 +304,20 @@ public:
      */
     virtual Spectrumf eval(const SurfaceInteraction3f &si) const;
 
-    virtual SpectrumfP eval(const SurfaceInteraction3fP &si,
-                            MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
     Spectrumf eval(const SurfaceInteraction3f &si, bool /* unused */) const {
         return eval(si);
     }
+
+    /// Vectorized version of \ref eval()
+    virtual SpectrumfP eval(const SurfaceInteraction3fP &si,
+                            MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval()
+    virtual SpectrumfD eval(const SurfaceInteraction3fD &si,
+                            MaskD active = true) const;
+#endif
 
     /**
      * \brief Polarized version of \ref eval()
@@ -272,14 +328,20 @@ public:
      */
     virtual MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si) const;
 
-    /// Vectorized version of \ref eval_pol()
-    virtual MuellerMatrixSfP eval_pol(const SurfaceInteraction3fP &si,
-                                      MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval_pol()
     MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si, bool /* unused */) const {
         return eval_pol(si);
     }
+
+    /// Vectorized version of \ref eval_pol()
+    virtual MuellerMatrixSfP eval_pol(const SurfaceInteraction3fP &si,
+                                      MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval_pol()
+    virtual MuellerMatrixSfD eval_pol(const SurfaceInteraction3fD &si,
+                                      MaskD active = true) const;
+#endif
 
     /// Return the local space to world space transformation
     const AnimatedTransform *world_transform() const {
@@ -353,9 +415,7 @@ public:
      *     A pointer to the associated scene (the created shape is
      *     allowed to depend on it)
      */
-    virtual ref<Shape> create_shape(const Scene * /*scene*/) {
-        return nullptr;
-    }
+    virtual ref<Shape> create_shape(const Scene *scene);
 
     //! @}
     // =============================================================
@@ -377,79 +437,6 @@ protected:
     bool m_monochrome = false;
 };
 
-/// Instantiates concrete scalar and packet versions of the endpoint plugin API
-#define MTS_IMPLEMENT_ENDPOINT()                                               \
-    std::pair<Ray3f, Spectrumf> sample_ray(                                    \
-        Float time, Float sample1, const Point2f &sample2,                     \
-        const Point2f &sample3) const override {                               \
-        ScopedPhase p(EProfilerPhase::EEndpointSample);                        \
-        return sample_ray_impl(time, sample1, sample2, sample3, true);         \
-    }                                                                          \
-    std::pair<Ray3fP, SpectrumfP> sample_ray(                                  \
-        FloatP time, FloatP sample1, const Point2fP &sample2,                  \
-        const Point2fP &sample3, MaskP active) const override {                \
-        ScopedPhase p(EProfilerPhase::EEndpointSampleP);                       \
-        return sample_ray_impl(time, sample1, sample2, sample3, active);       \
-    }                                                                          \
-    std::pair<DirectionSample3f, Spectrumf> sample_direction(                  \
-        const Interaction3f &ref, const Point2f &sample) const override {      \
-        ScopedPhase p(EProfilerPhase::EEndpointSample);                        \
-        return sample_direction_impl(ref, sample, true);                       \
-    }                                                                          \
-    std::pair<DirectionSample3fP, SpectrumfP> sample_direction(                \
-        const Interaction3fP &ref, const Point2fP &sample, MaskP active)       \
-        const override {                                                       \
-        ScopedPhase p(EProfilerPhase::EEndpointSampleP);                       \
-        return sample_direction_impl(ref, sample, active);                     \
-    }                                                                          \
-    Float pdf_direction(const Interaction3f &ref, const DirectionSample3f &ds) \
-        const override {                                                       \
-        ScopedPhase p(EProfilerPhase::EEndpointEvaluate);                      \
-        return pdf_direction_impl(ref, ds, true);                              \
-    }                                                                          \
-    FloatP pdf_direction(const Interaction3fP &ref,                            \
-                         const DirectionSample3fP &ds, MaskP active)           \
-        const override {                                                       \
-        ScopedPhase p(EProfilerPhase::EEndpointEvaluateP);                     \
-        return pdf_direction_impl(ref, ds, active);                            \
-    }                                                                          \
-    Spectrumf eval(const SurfaceInteraction3f &si) const override {            \
-        ScopedPhase p(EProfilerPhase::EEndpointEvaluate);                      \
-        return eval_impl(si, true);                                            \
-    }                                                                          \
-    SpectrumfP eval(const SurfaceInteraction3fP &si, MaskP active)             \
-        const override {                                                       \
-        ScopedPhase p(EProfilerPhase::EEndpointEvaluateP);                     \
-        return eval_impl(si, active);                                          \
-    }
-
-/// Instantiates concrete scalar and packet versions of the polarized endpoint plugin API
-#define MTS_IMPLEMENT_ENDPOINT_POLARIZED()                                              \
-    std::pair<Ray3f, MuellerMatrixSf> sample_ray_pol(                                   \
-        Float time, Float sample1, const Point2f &sample2,                              \
-        const Point2f &sample3) const override {                                        \
-        return sample_ray_pol_impl(time, sample1, sample2, sample3, true);              \
-    }                                                                                   \
-    std::pair<Ray3fP, MuellerMatrixSfP> sample_ray_pol(                                 \
-        FloatP time, FloatP sample1, const Point2fP &sample2,                           \
-        const Point2fP &sample3, MaskP active) const override {                         \
-        return sample_ray_pol_impl(time, sample1, sample2, sample3, active);            \
-    }                                                                                   \
-    std::pair<DirectionSample3f, MuellerMatrixSf> sample_direction_pol(                 \
-        const Interaction3f &it, const Point2f &sample) const override {                \
-        return sample_direction_pol_impl(it, sample, true);                             \
-    }                                                                                   \
-    std::pair<DirectionSample3fP, MuellerMatrixSfP> sample_direction_pol(               \
-        const Interaction3fP &it, const Point2fP &sample, MaskP active)                 \
-        const override {                                                                \
-        return sample_direction_pol_impl(it, sample, active);                           \
-    }                                                                                   \
-    MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si) const override {           \
-        return eval_pol_impl(si, true);                                                 \
-    }                                                                                   \
-    MuellerMatrixSfP eval_pol(const SurfaceInteraction3fP &si, MaskP active)            \
-        const override {                                                                \
-        return eval_pol_impl(si, active);                                               \
-    }
-
 NAMESPACE_END(mitsuba)
+
+#include "detail/endpoint.inl"

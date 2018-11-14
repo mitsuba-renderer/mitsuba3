@@ -1491,7 +1491,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
         auto range = f.range();
 
         if (f.flags & Struct::ENormalized)
-            value.f *= range.second;
+            value.f *= (Float) range.second;
 
         double d = (double) value.f;
 

@@ -112,7 +112,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_TEXTURE()
+    MTS_IMPLEMENT_TEXTURE_ALL()
     MTS_DECLARE_CLASS()
 protected:
     ref<Bitmap> m_bitmap;

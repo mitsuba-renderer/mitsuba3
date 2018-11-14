@@ -1,4 +1,3 @@
-#include <mutex>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/transform.h>
@@ -7,6 +6,17 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/records.h>
+#include <mutex>
+
+#if defined(MTS_USE_EMBREE)
+    #include <embree3/rtcore.h>
+#endif
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    #include <optix.h>
+    #include <optix_cuda_interop.h>
+#endif
+
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -79,20 +89,6 @@ Mesh::Mesh(const std::string &name,
 }
 
 Mesh::~Mesh() { }
-
-#if defined(MTS_USE_EMBREE)
-RTCGeometry Mesh::embree_geometry(RTCDevice device) const {
-    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, m_vertices.get(),
-            0, m_vertex_size, m_vertex_count);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, m_faces.get(),
-            0, m_face_size, m_face_count);
-
-    rtcCommitGeometry(geom);
-    return geom;
-}
-#endif
 
 void Mesh::write(Stream *) const {
     NotImplementedError("write");
@@ -269,6 +265,14 @@ PositionSample3fP Mesh::sample_position(FloatP time,
     return sample_position_impl(time, sample, active);
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+PositionSample3fD Mesh::sample_position(FloatD time,
+                                        const Point2fD &sample,
+                                        MaskD active) const {
+    return sample_position_impl(time, sample, active);
+}
+#endif
+
 template <typename PositionSample, typename Value, typename Mask>
 Value Mesh::pdf_position_impl(const PositionSample &, Mask) const {
     ensure_table_ready();
@@ -283,9 +287,13 @@ FloatP Mesh::pdf_position(const PositionSample3fP &ps, MaskP active) const {
     return pdf_position_impl(ps, active);
 }
 
+FloatD Mesh::pdf_position(const PositionSample3fD &ps, MaskD active) const {
+    return pdf_position_impl(ps, active);
+}
+
 template <typename Ray, typename Value, typename Point3,
           typename SurfaceInteraction, typename Mask>
-void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
+void Mesh::fill_surface_interaction_impl(const Ray &ray, const Value *cache,
                                          SurfaceInteraction &si,
                                          Mask active) const {
     using Point2 = point2_t<Point3>;
@@ -293,10 +301,13 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
     using Vector3 = vector3_t<Point3>;
     using Vector2 = vector2_t<Point3>;
 
-    /* Barycentric coordinates within triangle */
+    ENOKI_MARK_USED(ray);
+
+    // Barycentric coordinates within triangle
     Value b1 = cache[0],
-          b2 = cache[1],
-          b0 = 1.f - b1 - b2;
+          b2 = cache[1];
+
+    Value b0 = 1.f - b1 - b2;
 
     auto fi = face_indices(si.prim_index, active);
 
@@ -307,14 +318,14 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
     Vector3 dp0 = p1 - p0,
             dp1 = p2 - p0;
 
-    /* Re-interpolate intersection using barycentric coordinates */
+    // Re-interpolate intersection using barycentric coordinates
     si.p[active] = p0 * b0 + p1 * b1 + p2 * b2;
 
-    /* Face normal */
+    // Face normal
     Normal3 n = normalize(cross(dp0, dp1));
     si.n[active] = n;
 
-    /* Texture coordinates (if available) */
+    // Texture coordinates (if available)
     auto [dp_du, dp_dv] = coordinate_system(n);
     Point2 uv(b1, b2);
     if (has_vertex_texcoords()) {
@@ -337,7 +348,7 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
     }
     si.uv[active] = uv;
 
-    /* Shading normal (if available) */
+    // Shading normal (if available)
     if (has_vertex_normals()) {
         Normal3 n0 = vertex_normal(fi[0], active),
                 n1 = vertex_normal(fi[1], active),
@@ -348,7 +359,7 @@ void Mesh::fill_surface_interaction_impl(const Ray &, const Value *cache,
 
     si.sh_frame.n[active] = n;
 
-    /* Tangents */
+    // Tangents
     si.dp_du[active] = dp_du;
     si.dp_dv[active] = dp_dv;
 }
@@ -365,6 +376,7 @@ void Mesh::fill_surface_interaction(const Ray3fP &ray,
                                     MaskP active) const {
     fill_surface_interaction_impl(ray, cache, si, active);
 }
+
 
 template <typename SurfaceInteraction, typename Value, typename Vector3,
           typename Mask>
@@ -390,15 +402,15 @@ Mesh::normal_derivative_impl(const SurfaceInteraction &si,
             n2 = vertex_normal(fi[2], active);
 
     Vector3 rel = si.p - p0,
-            du  = p1   - p0,
-            dv  = p2   - p0;
+            du  = p1 - p0,
+            dv  = p2 - p0;
 
     /* Solve a least squares problem to determine
        the UV coordinates within the current triangle */
     Value b1  = dot(du, rel), b2 = dot(dv, rel),
           a11 = dot(du, du), a12 = dot(du, dv),
           a22 = dot(dv, dv),
-          inv_det = rcp<true>(a11 * a22 - a12 * a12);
+          inv_det = rcp(a11 * a22 - a12 * a12);
 
     Value u = fmsub (a22, b1, a12 * b2) * inv_det,
           v = fnmadd(a12, b1, a11 * b2) * inv_det,
@@ -412,7 +424,7 @@ Mesh::normal_derivative_impl(const SurfaceInteraction &si,
     */
 
     Normal3 N(u * n1 + v * n2 + w * n0);
-    Value il = rsqrt<true>(squared_norm(N));
+    Value il = rsqrt(squared_norm(N));
     N *= il;
 
     Vector3 dndu = (n1 - n0) * il;
@@ -449,8 +461,8 @@ size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output,
     bool  cur_is_inside = (distance >= 0);
     size_t out_count    = 0;
 
-    for (size_t i=0; i<in_count; ++i) {
-        size_t next_idx = i+1;
+    for (size_t i = 0; i < in_count; ++i) {
+        size_t next_idx = i + 1;
         if (next_idx == in_count)
             next_idx = 0;
 
@@ -488,7 +500,7 @@ size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output,
 }  // end namespace
 
 BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
-    /* Reserve room for some additional vertices */
+    // Reserve room for some additional vertices
     Point3d vertices1[max_vertices], vertices2[max_vertices];
     size_t nVertices = 3;
 
@@ -554,6 +566,188 @@ std::string Mesh::to_string() const {
         << "]";
     return oss.str();
 }
+
+#if defined(MTS_USE_EMBREE)
+RTCGeometry Mesh::embree_geometry(RTCDevice device) const {
+    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, m_vertices.get(),
+            0, m_vertex_size, m_vertex_count);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, m_faces.get(),
+            0, m_face_size, m_face_count);
+
+    rtcCommitGeometry(geom);
+    return geom;
+}
+#endif
+
+#if defined(MTS_ENABLE_AUTODIFF)
+#define rt_check(err)  __rt_check (m_optix_context, err, __FILE__, __LINE__)
+
+static void __rt_check(RTcontext context, RTresult errval, const char *file,
+                       const int line) {
+    if (errval != RT_SUCCESS) {
+        const char *message;
+        rtContextGetErrorString(context, errval, &message);
+        fprintf(stderr,
+                "rt_check(): OptiX API error = %04d (%s) in "
+                "%s:%i.\n", (int) errval, message, file, line);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void Mesh::put_parameters(DifferentiableParameters &dp) {
+    dp.put(this, "vertex_positions", m_vertex_positions_d);
+    if (has_vertex_texcoords())
+        dp.put(this, "vertex_texcoords", m_vertex_texcoords_d);
+}
+
+void Mesh::parameters_changed() {
+    UInt32D vertex_range   = arange<UInt32D>(m_vertex_count),
+            vertex_range_2 = vertex_range * 2,
+            vertex_range_3 = vertex_range * 3,
+            face_range_3   = arange<UInt32D>(m_face_count) * 3;
+
+    Index *faces_ptr = nullptr;
+    rt_check(rtBufferGetDevicePointer(m_optix_faces_buf, 0, (void **) &faces_ptr));
+    for (size_t i = 0; i < 3; ++i)
+        scatter(faces_ptr + i, m_faces_d[i], face_range_3);
+
+    float *vertex_positions_ptr = nullptr;
+    rt_check(rtBufferGetDevicePointer(m_optix_vertex_positions_buf, 0,
+                                      (void **) &vertex_positions_ptr));
+
+    for (size_t i = 0; i < 3; ++i)
+        scatter(vertex_positions_ptr + i, m_vertex_positions_d[i], vertex_range_3);
+
+    if (has_vertex_texcoords()) {
+        float *vertex_texcoords_ptr = nullptr;
+        rt_check(rtBufferGetDevicePointer(m_optix_vertex_texcoords_buf, 0,
+                                          (void **) &vertex_texcoords_ptr));
+        for (size_t i = 0; i < 2; ++i)
+            scatter(vertex_texcoords_ptr + i, m_vertex_texcoords_d[i], vertex_range_2);
+    }
+
+    if (has_vertex_normals()) {
+        if (requires_gradient(m_vertex_positions_d)) {
+            m_vertex_normals_d = zero<Vector3fD>(m_vertex_count);
+            Vector3fD v[3] = {
+                gather<Vector3fD>(m_vertex_positions_d, m_faces_d.x()),
+                gather<Vector3fD>(m_vertex_positions_d, m_faces_d.y()),
+                gather<Vector3fD>(m_vertex_positions_d, m_faces_d.z())
+            };
+            Normal3fD n = normalize(cross(v[1] - v[0], v[2] - v[0]));
+
+            /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
+               by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
+            for (int i = 0; i < 3; ++i) {
+                Vector3fD d0 = v[(i + 1) % 3] - v[i];
+                Vector3fD d1 = v[(i + 2) % 3] - v[i];
+                FloatD face_angle = acos(dot(d0, d1));
+                scatter_add(m_vertex_normals_d, n * face_angle, m_faces_d[i]);
+            }
+
+            m_vertex_normals_d = normalize(m_vertex_normals_d);
+        }
+
+        float *vertex_normals_ptr = nullptr;
+        rt_check(rtBufferGetDevicePointer(m_optix_vertex_normals_buf, 0,
+                                          (void **) &vertex_normals_ptr));
+        for (size_t i = 0; i < 3; ++i)
+            scatter(vertex_normals_ptr + i, m_vertex_normals_d[i], vertex_range_3);
+    }
+
+    rt_check(rtGeometryTrianglesSetTriangleIndices(
+        m_optix_geometry, m_optix_faces_buf, 0, 3 * sizeof(unsigned int),
+        RT_FORMAT_UNSIGNED_INT3));
+
+    rt_check(rtGeometryTrianglesSetVertices(
+        m_optix_geometry, m_vertex_count, m_optix_vertex_positions_buf, 0,
+        3 * sizeof(float), RT_FORMAT_FLOAT3));
+}
+
+template <typename Value, size_t Dim, typename Func,
+          typename Result = Array<DiffArray<CUDAArray<Value>>, Dim>>
+Result cuda_upload(size_t size, Func func) {
+    Value *tmp = (Value *) cuda_host_malloc(size * Dim * sizeof(Value));
+
+    for (size_t i = 0; i < size; ++i) {
+        auto value = func(i);
+        for (size_t j = 0; j < Dim; ++j)
+            tmp[i + j * size] = value[j];
+    }
+
+    Result result;
+    for (size_t j = 0; j < Dim; ++j) {
+        void *dst = cuda_malloc(size * sizeof(Value));
+        cuda_memcpy_to_device_async(dst, tmp + j * size,
+                                    size * sizeof(Value));
+        result[j] = CUDAArray<Value>::map(dst, size, true);
+    }
+
+    cuda_host_free(tmp);
+
+    return result;
+}
+
+RTgeometrytriangles Mesh::optix_geometry(RTcontext context) {
+    if (m_optix_geometry != nullptr)
+        throw std::runtime_error("OptiX geometry was already created!");
+    m_optix_context = context;
+
+    /// Face indices
+    rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_faces_buf));
+    rt_check(rtBufferSetFormat(m_optix_faces_buf, RT_FORMAT_UNSIGNED_INT3));
+    rt_check(rtBufferSetSize1D(m_optix_faces_buf, m_face_count));
+    m_faces_d = cuda_upload<Index, 3>(
+        m_face_count, [this](size_t i) { return face_indices(i); });
+
+    // Vertex positions
+    rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_positions_buf));
+    rt_check(rtBufferSetFormat(m_optix_vertex_positions_buf, RT_FORMAT_FLOAT3));
+    rt_check(rtBufferSetSize1D(m_optix_vertex_positions_buf, m_vertex_count));
+    m_vertex_positions_d = cuda_upload<float, 3>(
+        m_vertex_count, [this](size_t i) { return vertex_position(i); });
+
+    // Vertex texture coordinates
+    rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_texcoords_buf));
+    rt_check(rtBufferSetFormat(m_optix_vertex_texcoords_buf, RT_FORMAT_FLOAT2));
+    rt_check(rtBufferSetSize1D(
+        m_optix_vertex_texcoords_buf, has_vertex_texcoords() ? m_vertex_count : 0));
+    if (has_vertex_texcoords())
+        m_vertex_texcoords_d = cuda_upload<float, 2>(
+            m_vertex_count, [this](size_t i) { return vertex_texcoord(i); });
+
+    // Vertex normals
+    rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_normals_buf));
+    rt_check(rtBufferSetFormat(m_optix_vertex_normals_buf, RT_FORMAT_FLOAT3));
+    rt_check(rtBufferSetSize1D(
+        m_optix_vertex_normals_buf, has_vertex_normals() ? m_vertex_count : 0));
+    if (has_vertex_normals())
+        m_vertex_normals_d = cuda_upload<float, 3>(
+            m_vertex_count, [this](size_t i) { return vertex_normal(i); });
+
+    rt_check(rtGeometryTrianglesCreate(context, &m_optix_geometry));
+    rt_check(rtGeometryTrianglesSetPrimitiveCount(m_optix_geometry, m_face_count));
+    rt_check(rtGeometryTrianglesSetFlagsPerMaterial(
+        m_optix_geometry, 0, RT_GEOMETRY_FLAG_DISABLE_ANYHIT));
+    parameters_changed();
+
+    RTvariable faces_var, vertex_positions_var, vertex_normals_var, vertex_texcoords_var;
+    rt_check(rtGeometryTrianglesDeclareVariable(m_optix_geometry, "faces", &faces_var));
+    rt_check(rtGeometryTrianglesDeclareVariable(m_optix_geometry, "vertex_positions", &vertex_positions_var));
+    rt_check(rtGeometryTrianglesDeclareVariable(m_optix_geometry, "vertex_normals", &vertex_normals_var));
+    rt_check(rtGeometryTrianglesDeclareVariable(m_optix_geometry, "vertex_texcoords", &vertex_texcoords_var));
+
+    rt_check(rtVariableSetObject(faces_var, m_optix_faces_buf));
+    rt_check(rtVariableSetObject(vertex_positions_var, m_optix_vertex_positions_buf));
+    rt_check(rtVariableSetObject(vertex_normals_var, m_optix_vertex_normals_buf));
+    rt_check(rtVariableSetObject(vertex_texcoords_var, m_optix_vertex_texcoords_buf));
+
+    return m_optix_geometry;
+}
+#endif
+
 
 MTS_IMPLEMENT_CLASS(Mesh, Shape)
 NAMESPACE_END(mitsuba)

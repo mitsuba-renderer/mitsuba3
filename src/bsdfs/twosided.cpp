@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class TwoSidedBRDF final : public BSDF {
 public:
-    TwoSidedBRDF(const Properties &props) {
+    TwoSidedBRDF(const Properties &props) : BSDF(props) {
         auto bsdfs = props.objects();
         if (bsdfs.size() > 0)
             m_nested_brdf[0] = dynamic_cast<BSDF *>(bsdfs[0].second.get());
@@ -146,7 +146,7 @@ public:
     }
 
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 protected:
     ref<BSDF> m_nested_brdf[2];

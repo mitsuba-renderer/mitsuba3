@@ -21,7 +21,13 @@ MTS_PY_EXPORT(Endpoint) {
              enoki::vectorize_wrapper(
                 py::overload_cast<FloatP, FloatP, const Point2fP &, const Point2fP &, MaskP>(
                     &Endpoint::sample_ray, py::const_)),
-             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = MaskP(true))
+             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("sample_ray",
+            py::overload_cast<FloatD, FloatD, const Point2fD &, const Point2fD &, MaskD>(
+                &Endpoint::sample_ray, py::const_),
+             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
+#endif
         .def("sample_direction",
              py::overload_cast<const Interaction3f &, const Point2f &, bool>(
                 &Endpoint::sample_direction, py::const_),
@@ -58,7 +64,7 @@ MTS_PY_EXPORT(Endpoint) {
             enoki::vectorize_wrapper(
                 py::overload_cast<FloatP, FloatP, const Point2fP &, const Point2fP &, MaskP>(
                     &Endpoint::sample_ray_pol, py::const_)),
-            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = MaskP(true))
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
         .def("sample_direction_pol",
             py::overload_cast<const Interaction3f &, const Point2f &, bool>(
                 &Endpoint::sample_direction_pol, py::const_),
@@ -67,7 +73,7 @@ MTS_PY_EXPORT(Endpoint) {
             enoki::vectorize_wrapper(
                 py::overload_cast<const Interaction3fP &, const Point2fP &, MaskP>(
                     &Endpoint::sample_direction_pol, py::const_)),
-            "it"_a, "sample"_a, "active"_a = MaskP(true))
+            "it"_a, "sample"_a, "active"_a = true)
         .def("eval_pol",
             py::overload_cast<const SurfaceInteraction3f &, bool>(
                 &Endpoint::eval_pol, py::const_),
@@ -76,7 +82,7 @@ MTS_PY_EXPORT(Endpoint) {
             enoki::vectorize_wrapper(
                 py::overload_cast<const SurfaceInteraction3fP &, MaskP>(
                     &Endpoint::eval_pol, py::const_)),
-            "si"_a, "active"_a = MaskP(true))
+            "si"_a, "active"_a = true)
         .mdef(Endpoint, world_transform)
         .mdef(Endpoint, needs_sample_2)
         .mdef(Endpoint, needs_sample_3)

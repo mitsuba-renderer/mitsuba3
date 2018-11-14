@@ -76,7 +76,7 @@ MTS_PY_EXPORT(Thread) {
         .mdef(Thread, is_critical)
         .mdef(Thread, set_name)
         .mdef(Thread, name)
-        .mdef(Thread, id)
+        .mdef(Thread, thread_id)
         .mdef(Thread, logger)
         .mdef(Thread, set_logger)
         .mdef(Thread, set_file_resolver)

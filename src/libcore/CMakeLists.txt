@@ -17,8 +17,8 @@ add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
   ${INC_DIR}/jit.h
-  ${INC_DIR}/platform.h
   ${INC_DIR}/simd.h
+  ${INC_DIR}/platform.h
   ${INC_DIR}/variant.h
 
   string.cpp           ${INC_DIR}/string.h
@@ -124,4 +124,9 @@ endif()
 if (WIN32 OR APPLE)
   add_dist(jpeg png16)
   add_dependencies(mitsuba-core jpeg png16)
+endif()
+
+if (MTS_ENABLE_AUTODIFF)
+  add_dist(enoki-autodiff enoki-cuda)
+  target_link_libraries(mitsuba-core PUBLIC enoki-autodiff enoki-cuda cuda)
 endif()

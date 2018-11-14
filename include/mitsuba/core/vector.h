@@ -149,8 +149,7 @@ template <typename T> using normal3_t = Normal<value_t<T>, 3>;
 
 
 /// Complete the set {a} to an orthonormal basis {a, b, c}
-template <typename Vector3,
-          std::enable_if_t<!enoki::is_dynamic_v<Vector3>, int> = 0>
+template <typename Vector3>
 std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
     using Value = value_t<Vector3>;
     using Scalar = scalar_t<Vector3>;
@@ -170,15 +169,6 @@ std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
                 mulsign_neg(n.x(), n.z())),
         Vector3(b, sign + sqr(n.y()) * a, -n.y())
     };
-}
-
-/// Complete the set {a} to an orthonormal basis {a, b, c}
-template <typename Vector3,
-          std::enable_if_t<enoki::is_dynamic_v<Vector3>, int> = 0>
-std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
-    return enoki::vectorize([](auto &&n_) {
-        return coordinate_system<Vector3fP>(n_);
-    }, n);
 }
 
 NAMESPACE_END(mitsuba)

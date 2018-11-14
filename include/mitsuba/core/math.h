@@ -306,37 +306,47 @@ template <typename T> T log2i_ceil(T value) {
 template <typename Size, typename Predicate,
           typename Args  = typename function_traits<Predicate>::Args,
           typename Index = std::decay_t<std::tuple_element_t<0, Args>>>
-static Index find_interval(Size start_, Size end_, const Predicate &pred) {
+static Index find_interval(Size start, Size end, const Predicate &pred) {
     using SignedIndex = int_array_t<Index>;
 
-    Index start = (Index) start_,
-          end = (Index) end_,
-          last_interval = end - 2,
-          size = last_interval - start;
+    Index pos = (Index) start,
+          last_interval = (Index) end - 2,
+          size = last_interval - pos;
 
     mask_t<Index> active(true);
 
-    while (true) {
-        // Disable converged entries, stop when all done.
-        active &= SignedIndex(size) > 0;
-        if (none_nested(active))
-            break;
+    Size iterations = 0;
+    if constexpr (is_dynamic_v<Index>)
+        iterations = end - start < 2 ? 0 : (log2i(end - start - 2) + 1);
+    ENOKI_MARK_USED(iterations);
 
-        Index half   = sr<1>(size),
-              middle = start + half + 1;
+    while (true) {
+        if constexpr (!is_dynamic_v<Index>) {
+            // Disable converged entries, stop when all done.
+            active &= SignedIndex(size) > 0;
+            if (none_nested(active))
+                break;
+        } else {
+            if (iterations-- == 0)
+                break;
+        }
+
+        Index half     = sr<1>(size),
+              half_p_1 = half + 1,
+              middle   = pos + half_p_1;
 
         // Evaluate the predicate
         mask_t<Index> mask = pred(Index(middle)) && active;
 
         // .. and recurse into the left or right
-        masked(start, mask) = middle;
+        masked(pos, mask) = middle;
 
         // Update the remaining interval size
-        size = select(mask, size - half - 1, half);
+        size = select(mask, size - half_p_1, half);
     }
 
-    return Index(max(SignedIndex(start_),
-                     min(SignedIndex(start), SignedIndex(last_interval))));
+    return Index(max(SignedIndex(start),
+                     min(SignedIndex(pos), SignedIndex(last_interval))));
 }
 
 /**
@@ -365,40 +375,50 @@ template <typename Size, typename Predicate,
           typename Args  = typename function_traits<Predicate>::Args,
           typename Index = std::decay_t<std::tuple_element_t<0, Args>>,
           typename Mask>
-static Index find_interval(Size start_,
-                           Size end_,
+static Index find_interval(Size start,
+                           Size end,
                            const Predicate &pred,
                            Mask active_) {
     using SignedIndex = int_array_t<Index>;
 
-    Index start = (Index) start_,
-          end = (Index) end_,
-          last_interval = end - 2,
-          size = last_interval - start;
+    Index pos = (Index) start,
+          last_interval = (Index) end - 2,
+          size = last_interval - pos;
 
     mask_t<Index> active(active_);
 
-    while (true) {
-        // Disable converged entries, stop when all done.
-        active &= SignedIndex(size) > 0;
-        if (none_nested(active))
-            break;
+    Size iterations = 0;
+    if constexpr (is_dynamic_v<Index>)
+        iterations = end - start < 2 ? 0 : (log2i(end - start - 2) + 1);
+    ENOKI_MARK_USED(iterations);
 
-        Index half   = sr<1>(size),
-              middle = start + half + 1;
+    while (true) {
+        if constexpr (!is_dynamic_v<Index>) {
+            // Disable converged entries, stop when all done.
+            active &= SignedIndex(size) > 0;
+            if (none_nested(active))
+                break;
+        } else {
+            if (iterations-- == 0)
+                break;
+        }
+
+        Index half     = sr<1>(size),
+              half_p_1 = half + 1,
+              middle   = pos + half_p_1;
 
         // Evaluate the predicate
         mask_t<Index> mask = pred(Index(middle), active) && active;
 
         // .. and recurse into the left or right
-        masked(start, mask) = middle;
+        masked(pos, mask) = middle;
 
         // Update the remaining interval size
-        size = select(mask, size - half - 1, half);
+        size = select(mask, size - half_p_1, half);
     }
 
-    return Index(max(SignedIndex(start_),
-                     min(SignedIndex(start), SignedIndex(last_interval))));
+    return Index(max(SignedIndex(start),
+                     min(SignedIndex(pos), SignedIndex(last_interval))));
 }
 
 template <typename Size, typename Predicate>

@@ -22,12 +22,12 @@ public:
               typename Mask = mask_t<Value>>
     Spectrum eval_impl(const RayDifferential &ray, RadianceSample &rs, Mask active) const {
         auto const &si = rs.ray_intersect(ray, active);
-        Float scale = norm(rs.scene->kdtree()->bbox().extents());
+        Float scale = norm(rs.scene->bbox().extents());
 
         return select(si.is_valid(), si.t / scale, 0.f);
     }
 
-    MTS_IMPLEMENT_INTEGRATOR()
+    MTS_IMPLEMENT_INTEGRATOR_ALL()
     MTS_DECLARE_CLASS()
 };
 

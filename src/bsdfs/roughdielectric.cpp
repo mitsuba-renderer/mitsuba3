@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class RoughDielectric final : public BSDF {
 public:
-    RoughDielectric(const Properties &props) {
+    RoughDielectric(const Properties &props) : BSDF(props) {
         m_specular_reflectance   = props.spectrum("specular_reflectance",   1.f);
         m_specular_transmittance = props.spectrum("specular_transmittance", 1.f);
 
@@ -330,7 +330,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 
 private:

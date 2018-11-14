@@ -6,9 +6,20 @@
 NAMESPACE_BEGIN(mitsuba)
 
 using Matrix2f     = enoki::Matrix<Float, 2>;
+using Matrix2fP    = enoki::Matrix<FloatP, 2>;
+using Matrix2fD    = enoki::Matrix<FloatD, 2>;
+
 using Matrix3f     = enoki::Matrix<Float, 3>;
+using Matrix3fP    = enoki::Matrix<FloatP, 3>;
+using Matrix3fD    = enoki::Matrix<FloatD, 3>;
+
 using Matrix4f     = enoki::Matrix<Float, 4>;
-using Quaternion4f = enoki::Quaternion<Float>;
+using Matrix4fP    = enoki::Matrix<FloatP, 4>;
+using Matrix4fD    = enoki::Matrix<FloatD, 4>;
+
+using Quaternion4f  = enoki::Quaternion<Float>;
+using Quaternion4fP = enoki::Quaternion<FloatP>;
+using Quaternion4fD = enoki::Quaternion<FloatD>;
 
 /**
  * \brief Encapsulates a 4x4 homogeneous coordinate transformation along with
@@ -112,11 +123,7 @@ template <typename VectorN> struct Transform {
         ENOKI_UNROLL for (size_t i = 0; i < Size - 1; ++i)
             result = fmadd(matrix.coeff(i), arg.coeff(i), result);
 
-        Expr w = result.coeff(Size - 1);
-        if (unlikely(any_nested(neq(w, 1.f))))
-            result *= rcp<Point<T, Size - 1>::Approx>(w);
-
-        return head<Size - 1>(result); // no-op
+        return head<Size - 1>(result) / result.coeff(Size - 1);
     }
 
     /**
@@ -421,11 +428,16 @@ public:
     /// Look up an interpolated transform at the given time
     Transform4f eval(Float time) const;
 
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
+    Transform4f eval(Float time, bool /* unused */) const { return eval(time); }
+
     /// Vectorized version of \ref eval()
     Transform4fP eval(FloatP time, MaskP active = true) const;
 
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
-    Transform4f eval(Float time, bool /* unused */) const { return eval(time); }
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval()
+    Transform4fD eval(FloatD time, MaskD active = true) const;
+#endif
 
     /**
      * \brief Return an axis-aligned box bounding the amount of translation

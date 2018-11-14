@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class RoughPlastic final : public BSDF {
 public:
-    RoughPlastic(const Properties &props) {
+    RoughPlastic(const Properties &props) : BSDF(props) {
         /// Specifies the internal index of refraction at the interface
         Float int_ior = lookup_ior(props, "int_ior", "polypropylene");
 
@@ -258,6 +258,10 @@ public:
         return result;
     }
 
+    std::vector<ref<Object>> children() override {
+        return { m_diffuse_reflectance.get(), m_specular_reflectance.get() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughPlastic[" << std::endl
@@ -278,7 +282,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_diffuse_reflectance;

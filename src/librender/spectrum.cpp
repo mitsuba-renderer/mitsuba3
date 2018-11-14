@@ -19,6 +19,12 @@ SpectrumfP ContinuousSpectrum::eval(const SpectrumfP &, MaskP) const {
     NotImplementedError("eval_p");
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+SpectrumfD ContinuousSpectrum::eval(const SpectrumfD &, MaskD) const {
+    NotImplementedError("eval_d");
+}
+#endif
+
 std::pair<Spectrumf, Spectrumf>
 ContinuousSpectrum::sample(const Spectrumf &) const {
     NotImplementedError("sample");
@@ -29,6 +35,13 @@ std::pair<SpectrumfP, SpectrumfP> ContinuousSpectrum::sample(const SpectrumfP &,
     NotImplementedError("sample_p");
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<SpectrumfD, SpectrumfD> ContinuousSpectrum::sample(const SpectrumfD &,
+                                                             MaskD) const {
+    NotImplementedError("sample_d");
+}
+#endif
+
 Spectrumf ContinuousSpectrum::pdf(const Spectrumf &) const {
     NotImplementedError("pdf");
 }
@@ -36,6 +49,13 @@ Spectrumf ContinuousSpectrum::pdf(const Spectrumf &) const {
 SpectrumfP ContinuousSpectrum::pdf(const SpectrumfP &, MaskP) const {
     NotImplementedError("pdf_p");
 }
+
+
+#if defined(MTS_ENABLE_AUTODIFF)
+SpectrumfD ContinuousSpectrum::pdf(const SpectrumfD &, MaskD) const {
+    NotImplementedError("pdf_d");
+}
+#endif
 
 Float ContinuousSpectrum::mean() const {
     NotImplementedError("mean");
@@ -49,6 +69,12 @@ SpectrumfP ContinuousSpectrum::eval(const SurfaceInteraction3fP &si, MaskP activ
     return eval(si.wavelengths, active);
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+SpectrumfD ContinuousSpectrum::eval(const SurfaceInteraction3fD &si, MaskD active) const {
+    return eval(si.wavelengths, active);
+}
+#endif
+
 std::pair<Spectrumf, Spectrumf>
 ContinuousSpectrum::sample(const SurfaceInteraction3f &, const Spectrumf &sample_) const {
     return sample(sample_);
@@ -59,14 +85,26 @@ ContinuousSpectrum::sample(const SurfaceInteraction3fP &, const SpectrumfP &samp
     return sample(sample_, active);
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<SpectrumfD, SpectrumfD>
+ContinuousSpectrum::sample(const SurfaceInteraction3fD &, const SpectrumfD &sample_, MaskD active) const {
+    return sample(sample_, active);
+}
+#endif
+
 Spectrumf ContinuousSpectrum::pdf(const SurfaceInteraction3f &si) const {
     return pdf(si.wavelengths);
 }
 
-SpectrumfP ContinuousSpectrum::pdf(const SurfaceInteraction3fP &si,
-                                   MaskP active) const {
+SpectrumfP ContinuousSpectrum::pdf(const SurfaceInteraction3fP &si, MaskP active) const {
     return pdf(si.wavelengths, active);
 }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+SpectrumfD ContinuousSpectrum::pdf(const SurfaceInteraction3fD &si, MaskD active) const {
+    return pdf(si.wavelengths, active);
+}
+#endif
 
 ref<ContinuousSpectrum> ContinuousSpectrum::D65(Float scale, bool monochrome) {
     if (unlikely(monochrome)) {

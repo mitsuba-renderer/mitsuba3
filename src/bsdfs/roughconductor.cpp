@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class RoughConductor final : public BSDF {
 public:
-    RoughConductor(const Properties &props) {
+    RoughConductor(const Properties &props) : BSDF(props) {
         m_eta = props.spectrum("eta", 0.f);
         m_k   = props.spectrum("k", 1.f);
 
@@ -181,7 +181,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 
 private:

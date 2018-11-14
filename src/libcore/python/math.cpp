@@ -70,7 +70,7 @@ MTS_PY_EXPORT(math) {
     }, D(math, find_interval));
 
     math.def("ulpdiff", &math::ulpdiff<Float>, D(math, ulpdiff));
-    math.def("log2i", &enoki::log2i<uint64_t>);
+    math.def("log2i", [](uint64_t v) { return enoki::log2i<uint64_t>(v); } );
     math.def("is_power_of_two", &math::is_power_of_two<uint64_t>, D(math, is_power_of_two));
     math.def("round_to_power_of_two", &math::round_to_power_of_two<uint64_t>, D(math, round_to_power_of_two));
 

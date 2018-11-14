@@ -52,7 +52,7 @@ MTS_PY_EXPORT(BSDFSample) {
 }
 
 MTS_PY_EXPORT(BSDF) {
-    auto bsdf = MTS_PY_CLASS(BSDF, Object)
+    auto bsdf = MTS_PY_CLASS(BSDF, DifferentiableObject)
         .def("sample",
              py::overload_cast<const BSDFContext &, const SurfaceInteraction3f &,
                                Float, const Point2f &>(
@@ -143,4 +143,10 @@ MTS_PY_EXPORT(BSDF) {
         .value("EDelta1D", BSDF::EDelta1D, D(BSDF, EFlagCombinations, EDelta1D))
         .value("EAll", BSDF::EAll, D(BSDF, EFlagCombinations, EAll))
         .export_values();
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    using BSDFD = enoki::DiffArray<enoki::CUDAArray<const BSDF *>>;
+
+    bind_array<BSDFD>(m, "BSDFD");
+#endif
 }

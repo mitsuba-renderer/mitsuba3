@@ -59,12 +59,12 @@ using Mask = mask_t<FloatP>;
 
 std::string ShapeKDTree::to_string() const {
     std::ostringstream oss;
-    oss << "ShapeKDTree[" << std::endl;
-    oss << "  shapes = [" << std::endl;
+    oss << "ShapeKDTreeKDTree[" << std::endl
+        << "  shapes = [" << std::endl;
     for (auto shape : m_shapes)
-        oss << "    " << string::indent(shape->to_string(), 4) << "," << std::endl;
-    oss << "  ]" << std::endl;
-    oss << "]";
+        oss << "    " << string::indent(shape->to_string(), 4)
+            << "," << std::endl;
+    oss << "  ]" << std::endl << "]";
     return oss.str();
 }
 

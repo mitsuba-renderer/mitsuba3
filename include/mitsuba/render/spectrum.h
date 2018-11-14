@@ -21,7 +21,7 @@ NAMESPACE_BEGIN(mitsuba)
  * this. The default implementation strips the position information and falls
  * back the non-textured implementation.
  */
-class MTS_EXPORT_RENDER ContinuousSpectrum : public Object {
+class MTS_EXPORT_RENDER ContinuousSpectrum : public DifferentiableObject {
 public:
     /**
      * Evaluate the value of the spectral power distribution
@@ -32,14 +32,20 @@ public:
      */
     virtual Spectrumf eval(const Spectrumf &wavelengths) const;
 
-    /// Vectorized version of \ref eval()
-    virtual SpectrumfP eval(const SpectrumfP &wavelengths,
-                            MaskP active = true) const;
-
     /// Wrapper for scalar \ref eval() with a mask (which will be ignored)
     Spectrumf eval(const Spectrumf &wavelengths, bool /* active */) const {
         return eval(wavelengths);
     }
+
+    /// Vectorized version of \ref eval()
+    virtual SpectrumfP eval(const SpectrumfP &wavelengths,
+                            MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval()
+    virtual SpectrumfD eval(const SpectrumfD &wavelengths,
+                            MaskD active = true) const;
+#endif
 
     /**
      * \brief Importance sample the spectral power distribution
@@ -54,20 +60,26 @@ public:
      *     1. Set of sampled wavelengths specified in nanometers
      *
      *     2. The Monte Carlo importance weight (Spectral power
-     *        distribution value divided by the sampling density)
+     *        density value divided by the sampling density)
      */
     virtual std::pair<Spectrumf, Spectrumf>
     sample(const Spectrumf &sample) const;
-
-    /// Vectorized version of \ref sample()
-    virtual std::pair<SpectrumfP, SpectrumfP>
-    sample(const SpectrumfP &sample, MaskP active = true) const;
 
     /// Wrapper for scalar \ref sample() with a mask (which will be ignored)
     std::pair<Spectrumf, Spectrumf>
     sample(const Spectrumf &s, bool /* active */) const {
         return sample(s);
     }
+
+    /// Vectorized version of \ref sample()
+    virtual std::pair<SpectrumfP, SpectrumfP>
+    sample(const SpectrumfP &sample, MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample()
+    virtual std::pair<SpectrumfD, SpectrumfD>
+    sample(const SpectrumfD &sample, MaskD active = true) const;
+#endif
 
     /**
      * \brief Return the probability distribution of the \ref sample() method
@@ -78,14 +90,20 @@ public:
      */
     virtual Spectrumf pdf(const Spectrumf &wavelengths) const;
 
-    /// Vectorized version of \ref pdf()
-    virtual SpectrumfP pdf(const SpectrumfP &wavelengths,
-                           MaskP active = true) const;
-
     /// Wrapper for scalar \ref pdf() with a mask (which will be ignored)
     Spectrumf pdf(const Spectrumf &wavelengths, bool /* active */) const {
         return pdf(wavelengths);
     }
+
+    /// Vectorized version of \ref pdf()
+    virtual SpectrumfP pdf(const SpectrumfP &wavelengths,
+                           MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref pdf()
+    virtual SpectrumfD pdf(const SpectrumfD &wavelengths,
+                           MaskD active = true) const;
+#endif
 
     /**
      * Return the mean value of the spectrum over the support
@@ -116,14 +134,20 @@ public:
     /// Evaluate the texture at the given surface interaction
     virtual Spectrumf eval(const SurfaceInteraction3f &si) const;
 
-    /// Vectorized version of \ref eval()
-    virtual SpectrumfP eval(const SurfaceInteraction3fP &si,
-                            MaskP active = true) const;
-
     /// Wrapper for scalar \ref eval() with a mask (which will be ignored)
     Spectrumf eval(const SurfaceInteraction3f &si, bool /* active */) const {
         return eval(si);
     }
+
+    /// Vectorized version of \ref eval()
+    virtual SpectrumfP eval(const SurfaceInteraction3fP &si,
+                            MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval()
+    virtual SpectrumfD eval(const SurfaceInteraction3fD &si,
+                            MaskD active = true) const;
+#endif
 
     /**
      * \brief Importance sample the (textured) spectral power distribution
@@ -146,15 +170,23 @@ public:
     virtual std::pair<Spectrumf, Spectrumf>
     sample(const SurfaceInteraction3f &si, const Spectrumf &sample) const;
 
-    /// Vectorized version of \ref sample()
-    virtual std::pair<SpectrumfP, SpectrumfP>
-    sample(const SurfaceInteraction3fP &si, const SpectrumfP &sample, MaskP active = true) const;
-
     /// Wrapper for scalar \ref sample() with a mask (which will be ignored)
     std::pair<Spectrumf, Spectrumf>
     sample(const SurfaceInteraction3f &si, const Spectrumf &sample_, bool /* active */) const {
         return sample(si, sample_);
     }
+
+    /// Vectorized version of \ref sample()
+    virtual std::pair<SpectrumfP, SpectrumfP>
+    sample(const SurfaceInteraction3fP &si, const SpectrumfP &sample,
+           MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample()
+    virtual std::pair<SpectrumfD, SpectrumfD>
+    sample(const SurfaceInteraction3fD &si, const SpectrumfD &sample,
+           MaskD active = true) const;
+#endif
 
     /**
      * \brief Return the probability distribution of the \ref sample() method
@@ -165,14 +197,20 @@ public:
      */
     virtual Spectrumf pdf(const SurfaceInteraction3f &si) const;
 
-    /// Vectorized version of \ref pdf()
-    virtual SpectrumfP pdf(const SurfaceInteraction3fP &si,
-                           MaskP active = true) const;
-
     /// Wrapper for scalar \ref pdf() with a mask (which will be ignored)
     Spectrumf pdf(const SurfaceInteraction3f &si, bool /* active */) const {
         return pdf(si);
     }
+
+    /// Vectorized version of \ref pdf()
+    virtual SpectrumfP pdf(const SurfaceInteraction3fP &si,
+                           MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref pdf()
+    virtual SpectrumfD pdf(const SurfaceInteraction3fD &si,
+                           MaskD active = true) const;
+#endif
 
     //! @}
     // ======================================================================
@@ -183,57 +221,6 @@ protected:
     virtual ~ContinuousSpectrum();
 };
 
-/*
- * \brief These macros should be used in the definition of Spectrum
- * plugins to instantiate concrete versions of the \c sample,
- * \c eval and \c pdf functions.
- */
-#define MTS_IMPLEMENT_SPECTRUM()                                               \
-    using ContinuousSpectrum::eval;                                            \
-    using ContinuousSpectrum::pdf;                                             \
-    using ContinuousSpectrum::sample;                                          \
-    Spectrumf eval(const Spectrumf &wavelengths) const override {              \
-        return eval_impl(wavelengths, true);                                   \
-    }                                                                          \
-    SpectrumfP eval(const SpectrumfP &wavelengths, MaskP active)               \
-        const override {                                                       \
-        return eval_impl(wavelengths, active);                                 \
-    }                                                                          \
-    Spectrumf pdf(const Spectrumf &wavelengths) const override {               \
-        return pdf_impl(wavelengths, true);                                    \
-    }                                                                          \
-    SpectrumfP pdf(const SpectrumfP &wavelengths, MaskP active)                \
-        const override {                                                       \
-        return pdf_impl(wavelengths, active);                                  \
-    }                                                                          \
-    std::pair<Spectrumf, Spectrumf> sample(const Spectrumf &sample)            \
-        const override {                                                       \
-        return sample_impl(sample, true);                                      \
-    }                                                                          \
-    std::pair<SpectrumfP, SpectrumfP> sample(const SpectrumfP &sample,         \
-                                             MaskP active) const override {    \
-        return sample_impl(sample, active);                                    \
-    }                                                                          \
-    Spectrumf eval(const SurfaceInteraction3f &si) const override {            \
-        ScopedPhase p(EProfilerPhase::ESpectrumEval);                          \
-        return eval_impl(si.wavelengths, true);                                \
-    }                                                                          \
-    SpectrumfP eval(const SurfaceInteraction3fP &si, MaskP active)             \
-        const override {                                                       \
-        ScopedPhase p(EProfilerPhase::ESpectrumEvalP);                         \
-        return eval_impl(si.wavelengths, active);                              \
-    }
-
-#define MTS_IMPLEMENT_TEXTURE()                                                \
-    using ContinuousSpectrum::eval;                                            \
-    Spectrumf eval(const SurfaceInteraction3f &si) const override {            \
-        ScopedPhase p(EProfilerPhase::ESpectrumEval);                          \
-        return eval_impl(si, true);                                            \
-    }                                                                          \
-    SpectrumfP eval(const SurfaceInteraction3fP &si, MaskP active)             \
-        const override {                                                       \
-        ScopedPhase p(EProfilerPhase::ESpectrumEvalP);                         \
-        return eval_impl(si, active);                                          \
-    }
-
 NAMESPACE_END(mitsuba)
+
+#include "detail/spectrum.inl"

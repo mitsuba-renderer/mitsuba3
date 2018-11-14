@@ -18,6 +18,11 @@ NAMESPACE_BEGIN(mitsuba)
  * \ingroup libcore
  */
 class MTS_EXPORT_CORE DiscreteDistribution {
+#if defined(MTS_ENABLE_AUTODIFF)
+    using FloatVector = std::vector<Float, enoki::cuda_host_allocator<Float>>;
+#else
+    using FloatVector = std::vector<Float>;
+#endif
 public:
     /// Reserve memory for a distribution with the given number of entries
     explicit DiscreteDistribution(size_t n_entries = 0) {
@@ -36,7 +41,7 @@ public:
     /// Clear all entries
     void clear() {
         m_cdf.clear();
-        m_cdf.push_back(0.0f);
+        m_cdf.push_back(0.f);
         m_normalized = false;
         m_sum = 0.0;
         m_normalization = std::numeric_limits<Float>::quiet_NaN();
@@ -108,9 +113,7 @@ public:
      * Note that if n values have been appended, there will be (n+1) entries
      * in this CDF (the first one being 0).
      */
-    const std::vector<Float>& cdf() const {
-        return m_cdf;
-    }
+    const FloatVector& cdf() const { return m_cdf; }
 
     /**
      * \brief Normalize the distribution
@@ -128,7 +131,7 @@ public:
             m_normalization = Float(1.0 / m_sum);
             for (size_t i = 1; i < m_cdf.size(); ++i)
                 m_cdf[i] *= m_normalization;
-            m_cdf[m_cdf.size() - 1] = 1.0f;
+            m_cdf[m_cdf.size() - 1] = 1.f;
             m_normalized = true;
         } else {
             m_normalization = std::numeric_limits<Float>::infinity();
@@ -177,7 +180,7 @@ public:
      */
     template <typename Value, typename Index = uint_array_t<Value>>
     std::pair<Index, Value> sample_pdf(Value sample_value,
-                                        mask_t<Value> active = true) const {
+                                       mask_t<Value> active = true) const {
         Index index = sample(sample_value, active);
 
         return { index, gather<Value>(m_cdf.data(), index + 1, active) -
@@ -229,13 +232,13 @@ public:
               cdf1 = gather<Value>(m_cdf.data(), index + 1, active);
 
         return {
-            index,pdf,
+            index, pdf,
             (sample_value - cdf0) / (cdf1 - cdf0)
         };
     }
 
 private:
-    std::vector<Float> m_cdf;
+    FloatVector m_cdf;
     uint32_t m_range_start; //< Index in m_cdf corresponding to the first entry with positive probability.
     uint32_t m_range_end;   //< 1 + the last index of m_cdf with positive probability, or 0 when there is none.
     Float m_normalization;  //< Normalization constant (or infinity)

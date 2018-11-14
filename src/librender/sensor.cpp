@@ -100,6 +100,7 @@ Sensor::sample_ray_differential(Float time, Float sample1,
     return sample_ray_differential_impl(time, sample1, sample2,
                                         sample3, true);
 }
+
 std::pair<RayDifferential3fP, SpectrumfP>
 Sensor::sample_ray_differential(FloatP time, FloatP sample1,
                                 const Point2fP &sample2,
@@ -108,6 +109,17 @@ Sensor::sample_ray_differential(FloatP time, FloatP sample1,
     return sample_ray_differential_impl(time, sample1, sample2,
                                         sample3, active);
 }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<RayDifferential3fD, SpectrumfD>
+Sensor::sample_ray_differential(FloatD time, FloatD sample1,
+                                const Point2fD &sample2,
+                                const Point2fD &sample3,
+                                MaskD active) const {
+    return sample_ray_differential_impl(time, sample1, sample2,
+                                        sample3, active);
+}
+#endif
 
 template <typename Value, typename Point2, typename RayDifferential,
           typename Spectrum, typename Mask>
@@ -153,6 +165,7 @@ Sensor::sample_ray_differential_pol(Float time, Float sample1,
     return sample_ray_differential_pol_impl(time, sample1, sample2,
                                             sample3, true);
 }
+
 std::pair<RayDifferential3fP, MuellerMatrixSfP>
 Sensor::sample_ray_differential_pol(FloatP time, FloatP sample1,
                                     const Point2fP &sample2,
@@ -161,6 +174,17 @@ Sensor::sample_ray_differential_pol(FloatP time, FloatP sample1,
     return sample_ray_differential_pol_impl(time, sample1, sample2,
                                             sample3, active);
 }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<RayDifferential3fD, MuellerMatrixSfD>
+Sensor::sample_ray_differential_pol(FloatD time, FloatD sample1,
+                                    const Point2fD &sample2,
+                                    const Point2fD &sample3,
+                                    MaskD active) const {
+    return sample_ray_differential_pol_impl(time, sample1, sample2,
+                                            sample3, active);
+}
+#endif
 
 MTS_IMPLEMENT_CLASS(Sensor, Endpoint)
 

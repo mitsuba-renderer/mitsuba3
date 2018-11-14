@@ -9,7 +9,10 @@
 
 using Index = Shape::Index;
 
+extern py::object py_cast(Object *o);
+
 MTS_PY_EXPORT(ShapeKDTree) {
+#if !defined(MTS_USE_EMBREE)
     MTS_PY_CLASS(ShapeKDTree, Object)
         .def(py::init<const Properties &>(), D(ShapeKDTree, ShapeKDTree))
         .mdef(ShapeKDTree, add_shape)
@@ -28,6 +31,9 @@ MTS_PY_EXPORT(ShapeKDTree) {
         .def("__len__", &ShapeKDTree::primitive_count)
         .def("bbox", [] (ShapeKDTree &s) { return s.bbox(); })
         .mdef(ShapeKDTree, build);
+#else
+    ENOKI_MARK_USED(m);
+#endif
 }
 
 MTS_PY_EXPORT(Scene) {
@@ -41,8 +47,7 @@ MTS_PY_EXPORT(Scene) {
         .def("ray_intersect",
              enoki::vectorize_wrapper(
                 py::overload_cast<const Ray3fP &, MaskP>(&Scene::ray_intersect, py::const_)
-             ),
-             "ray"_a, "active"_a = true)
+             ), "ray"_a, "active"_a = true)
 
         // Shadow rays
         .def("ray_test",
@@ -51,9 +56,31 @@ MTS_PY_EXPORT(Scene) {
         .def("ray_test",
              enoki::vectorize_wrapper(
                 py::overload_cast<const Ray3fP &, MaskP>(&Scene::ray_test, py::const_)
-             ),
-             "ray"_a, "active"_a = true)
+             ), "ray"_a, "active"_a = true)
 
+        /// Emitter sampling
+        .def("sample_emitter_direction",
+             py::overload_cast<const Interaction3f &, const Point2f &, bool, bool>(
+                &Scene::sample_emitter_direction, py::const_),
+             "ref"_a, "sample"_a, "test_visibility"_a = true, "unused"_a = true,
+             D(Scene, sample_emitter_direction))
+
+        .def("sample_emitter_direction", enoki::vectorize_wrapper(
+                py::overload_cast<const Interaction3fP &, const Point2fP &, bool, MaskP>(
+                    &Scene::sample_emitter_direction, py::const_)),
+             "ref"_a, "sample"_a, "test_visibility"_a = true, "mask"_a = true)
+
+        .def("pdf_emitter_direction",
+             py::overload_cast<const Interaction3f &, const DirectionSample3f &, bool>(
+                &Scene::pdf_emitter_direction, py::const_),
+             "ref"_a, "ds"_a, "unused"_a = true, D(Scene, pdf_emitter_direction))
+
+        .def("pdf_emitter_direction", enoki::vectorize_wrapper(
+                py::overload_cast<const Interaction3fP &, const DirectionSample3fP &, MaskP>(
+                    &Scene::pdf_emitter_direction, py::const_)),
+             "ref"_a, "ds"_a, "active"_a = true)
+
+#if !defined(MTS_USE_EMBREE)
         // Full intersection (brute force, for testing)
         .def("ray_intersect_naive",
              py::overload_cast<const Ray3f &, bool>(&Scene::ray_intersect_naive, py::const_),
@@ -63,23 +90,41 @@ MTS_PY_EXPORT(Scene) {
                 py::overload_cast<const Ray3fP &, MaskP>(&Scene::ray_intersect_naive, py::const_)
              ),
              "ray"_a, "active"_a = true)
-#if 0
+#endif
 
-        // Sampling
-        .def("sample_emitter_direct",
-             py::overload_cast<DirectSample3f &, const Point2f &, bool>(
-                &Scene::sample_emitter_direct, py::const_),
-             "d_rec"_a, "sample"_a, "test_visibility"_a = true,
-             D(Scene, sample_emitter_direct))
-        .mdef(Scene, pdf_emitter_direct, "d_rec"_a)
-        .mdef(Scene, sample_attenuated_emitter_direct, "d_rec"_a, "its"_a,
-              "medium"_a, "interactions"_a, "sample"_a, "sampler"_a = nullptr)
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("ray_intersect",
+             py::overload_cast<const Ray3fD &, MaskD>(&Scene::ray_intersect, py::const_),
+             "ray"_a, "active"_a = true)
+        .def("ray_test",
+             py::overload_cast<const Ray3fD &, MaskD>(&Scene::ray_test, py::const_),
+             "ray"_a, "active"_a = true)
+
+        .def("sample_emitter_direction",
+                py::overload_cast<const Interaction3fD &, const Point2fD &, bool, MaskD>(
+                    &Scene::sample_emitter_direction, py::const_),
+             "ref"_a, "sample"_a, "test_visibility"_a = true, "mask"_a = true)
+
+        .def("pdf_emitter_direction",
+             py::overload_cast<const Interaction3fD &, const DirectionSample3fD &, MaskD>(
+                &Scene::pdf_emitter_direction, py::const_),
+             "ref"_a, "ds"_a, "active"_a = true, D(Scene, pdf_emitter_direction))
 #endif
 
         // Accessors
+#if !defined(MTS_USE_EMBREE)
         .def("kdtree",     py::overload_cast<>(&Scene::kdtree),     D(Scene, kdtree))
+#endif
+        .def("bbox", &Scene::bbox, D(Scene, bbox))
         .def("sensor",     py::overload_cast<>(&Scene::sensor),     D(Scene, sensor))
         .def("film",       py::overload_cast<>(&Scene::film),       D(Scene, film))
         .def("sampler",    py::overload_cast<>(&Scene::sampler),    D(Scene, sampler))
-        .def("integrator", py::overload_cast<>(&Scene::integrator), D(Scene, integrator));
+        .def("shapes",     py::overload_cast<>(&Scene::shapes),     D(Scene, shapes))
+        .def("integrator", [](Scene &scene) {
+            SamplingIntegrator *si = dynamic_cast<SamplingIntegrator *>(scene.integrator());
+            if (si)
+                return py::cast(si);
+            else
+                return py::cast(scene.integrator());
+        }, D(Scene, integrator));
 }

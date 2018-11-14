@@ -1,5 +1,6 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/autodiff.h>
 
 template <typename Type, typename... Args, typename... Args2>
 auto bind_ray(Args2&&... args2) {
@@ -46,7 +47,17 @@ MTS_PY_EXPORT(Ray) {
     auto r3fx = bind_ray<Ray3fX>(m, "Ray3fX", D(Ray));
     bind_slicing_operators<Ray3fX, Ray3f>(r3fx);
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    auto r3fd = bind_ray<Ray3fD>(m, "Ray3fD", D(Ray));
+    bind_slicing_operators<Ray3fD, Ray3f>(r3fd);
+#endif
+
     bind_ray_differential<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential));
-    auto rd3fx = bind_ray_differential<RayDifferential3fX>(m, "RayDifferential3fX", D(RayDifferential));
+    auto rd3fx = bind_ray_differential<RayDifferential3fX, Ray3fX>(m, "RayDifferential3fX", D(RayDifferential));
     bind_slicing_operators<RayDifferential3fX, RayDifferential3f>(rd3fx);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    auto rd3fd = bind_ray_differential<RayDifferential3fD, Ray3fD>(m, "RayDifferential3fD", D(RayDifferential));
+    bind_slicing_operators<RayDifferential3fD, RayDifferential3f>(rd3fd);
+#endif
 }

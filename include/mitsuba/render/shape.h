@@ -1,11 +1,8 @@
 #pragma once
 
 #include <mitsuba/render/records.h>
+#include <mitsuba/render/autodiff.h>
 #include <mitsuba/core/bbox.h>
-
-#if defined(MTS_USE_EMBREE)
-    #include <embree3/rtcore.h>
-#endif
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -16,13 +13,11 @@ NAMESPACE_BEGIN(mitsuba)
  * computing ray intersections, and bounding shapes within ray intersection
  * acceleration data structures.
  */
-class MTS_EXPORT_RENDER Shape : public Object {
+class MTS_EXPORT_RENDER Shape : public DifferentiableObject {
 public:
     // Use 32 bit indices to keep track of indices to conserve memory
     using Index  = uint32_t;
-    using IndexP = UInt32P;
     using Size   = uint32_t;
-    using SizeP  = UInt32P;
 
     // =============================================================
     //! @{ \name Sampling routines
@@ -48,17 +43,23 @@ public:
     virtual PositionSample3f sample_position(Float time,
                                              const Point2f &sample) const;
 
-    /// Vectorized version of \ref sample_position.
-    virtual PositionSample3fP sample_position(FloatP time,
-                                              const Point2fP &sample,
-                                              MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_position()
     PositionSample3f sample_position(Float time,
                                      const Point2f &sample,
                                      bool /* unused */) const {
         return sample_position(time, sample);
     }
+
+    /// Vectorized version of \ref sample_position.
+    virtual PositionSample3fP sample_position(FloatP time,
+                                              const Point2fP &sample,
+                                              MaskP active = true) const;
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample_position.
+    virtual PositionSample3fD sample_position(FloatD time,
+                                              const Point2fD &sample,
+                                              MaskD active = true) const;
+#endif
 
     /**
      * \brief Query the probability density of \ref sample_position() for
@@ -72,15 +73,21 @@ public:
      */
     virtual Float pdf_position(const PositionSample3f &ps) const;
 
-    /// Vectorized version of \ref pdf_position.
-    virtual FloatP pdf_position(const PositionSample3fP &ps,
-                                MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_position()
     Float pdf_position(const PositionSample3f &ps,
                        bool /* unused */) const {
         return pdf_position(ps);
     }
+
+    /// Vectorized version of \ref pdf_position.
+    virtual FloatP pdf_position(const PositionSample3fP &ps,
+                                MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref pdf_position.
+    virtual FloatD pdf_position(const PositionSample3fD &ps,
+                                MaskD active = true) const;
+#endif
 
     /**
      * \brief Sample a direction towards this shape with respect to solid
@@ -112,17 +119,24 @@ public:
     virtual DirectionSample3f sample_direction(const Interaction3f &it,
                                                const Point2f &sample) const;
 
-    /// Vectorized version of \ref sample_direction.
-    virtual DirectionSample3fP sample_direction(const Interaction3fP &it,
-                                                const Point2fP &sample,
-                                                MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction()
     DirectionSample3f sample_direction(const Interaction3f &it,
                                        const Point2f &sample,
                                        bool /* unused */) const {
         return sample_direction(it, sample);
     }
+
+    /// Vectorized version of \ref sample_direction.
+    virtual DirectionSample3fP sample_direction(const Interaction3fP &it,
+                                                const Point2fP &sample,
+                                                MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref sample_direction.
+    virtual DirectionSample3fD sample_direction(const Interaction3fD &it,
+                                                const Point2fD &sample,
+                                                MaskD active = true) const;
+#endif
 
     /**
      * \brief Query the probability density of \ref sample_direction()
@@ -139,17 +153,24 @@ public:
     virtual Float pdf_direction(const Interaction3f &it,
                                 const DirectionSample3f &ds) const;
 
-    /// Vectorized version of \ref pdf_direction.
-    virtual FloatP pdf_direction(const Interaction3fP &it,
-                                 const DirectionSample3fP &ds,
-                                 MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_direction()
     Float pdf_direction(const Interaction3f &it,
                         const DirectionSample3f &ds,
                         bool /* unused */) const {
         return pdf_direction(it, ds);
     }
+
+    /// Vectorized version of \ref pdf_direction.
+    virtual FloatP pdf_direction(const Interaction3fP &it,
+                                 const DirectionSample3fP &ds,
+                                 MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref pdf_direction.
+    virtual FloatD pdf_direction(const Interaction3fD &it,
+                                 const DirectionSample3fD &ds,
+                                 MaskD active = true) const;
+#endif
 
     //! @}
     // =============================================================
@@ -179,15 +200,20 @@ public:
      */
     virtual std::pair<bool, Float> ray_intersect(const Ray3f &ray, Float *cache) const;
 
-    /// Vectorized variant of \ref ray_intersect.
-    virtual std::pair<MaskP, FloatP> ray_intersect(const Ray3fP &ray, FloatP *cache,
-                                                   MaskP active) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect()
     std::pair<bool, Float> ray_intersect(const Ray3f &ray, Float *cache,
                                          bool /* unused */) const {
         return ray_intersect(ray, cache);
     }
+
+    /// Vectorized version of \ref ray_intersect.
+    virtual std::pair<MaskP, FloatP> ray_intersect(const Ray3fP &ray, FloatP *cache,
+                                                   MaskP active) const;
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref ray_intersect.
+    virtual std::pair<MaskD, FloatD> ray_intersect(const Ray3fD &ray, FloatD *cache,
+                                                   MaskD active) const;
+#endif
 
     /**
      * \brief Fast ray shadow test
@@ -206,13 +232,18 @@ public:
      */
     virtual bool ray_test(const Ray3f &ray) const;
 
-    /// Vectorized variant of \ref ray_test.
-    virtual MaskP ray_test(const Ray3fP &ray, MaskP active) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_test()
     bool ray_test(const Ray3f &ray, bool /* unused */) const {
         return ray_test(ray);
     }
+
+    /// Vectorized version of \ref ray_test.
+    virtual MaskP ray_test(const Ray3fP &ray, MaskP active) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref ray_test.
+    virtual MaskD ray_test(const Ray3fD &ray, MaskD active) const;
+#endif
 
     /**
      * \brief Given a surface intersection found by \ref ray_intersect(), fill
@@ -231,12 +262,6 @@ public:
                                           const Float *cache,
                                           SurfaceInteraction3f &si) const;
 
-    /// Vectorized version of \ref fill_surface_interaction()
-    virtual void fill_surface_interaction(const Ray3fP &ray,
-                                          const FloatP *cache,
-                                          SurfaceInteraction3fP &si,
-                                          MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref fill_surface_interaction()
     void fill_surface_interaction(const Ray3f &ray,
                                   const Float *cache,
@@ -244,6 +269,20 @@ public:
                                   bool /* unused */) const {
         fill_surface_interaction(ray, cache, si);
     }
+
+    /// Vectorized version of \ref fill_surface_interaction()
+    virtual void fill_surface_interaction(const Ray3fP &ray,
+                                          const FloatP *cache,
+                                          SurfaceInteraction3fP &si,
+                                          MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref fill_surface_interaction()
+    virtual void fill_surface_interaction(const Ray3fD &ray,
+                                          const FloatD *cache,
+                                          SurfaceInteraction3fD &si,
+                                          MaskD active = true) const;
+#endif
 
     /**
      * \brief Test for an intersection and return detailed information
@@ -257,13 +296,13 @@ public:
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray) const;
 
-    /// Vectorized version of \ref ray_intersect()
-    SurfaceInteraction3fP ray_intersect(const Ray3fP &ray, MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect
     SurfaceInteraction3f ray_intersect(const Ray3f &ray, bool /* unused */) const {
         return ray_intersect(ray);
     }
+
+    /// Vectorized version of \ref ray_intersect()
+    SurfaceInteraction3fP ray_intersect(const Ray3fP &ray, MaskP active = true) const;
 
     //! @}
     // =============================================================
@@ -328,12 +367,6 @@ public:
     normal_derivative(const SurfaceInteraction3f &si,
                       bool shading_frame = true) const;
 
-    /// Vectorized version of \ref normal_derivative()
-    virtual std::pair<Vector3fP, Vector3fP>
-    normal_derivative(const SurfaceInteraction3fP &si,
-                      bool shading_frame = true,
-                      MaskP active = true) const;
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref normal_derivative()
     std::pair<Vector3f, Vector3f>
     normal_derivative(const SurfaceInteraction3f &si,
@@ -341,12 +374,29 @@ public:
         return normal_derivative(si, shading_frame);
     }
 
+    /// Vectorized version of \ref normal_derivative()
+    virtual std::pair<Vector3fP, Vector3fP>
+    normal_derivative(const SurfaceInteraction3fP &si,
+                      bool shading_frame = true,
+                      MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref normal_derivative()
+    virtual std::pair<Vector3fD, Vector3fD>
+    normal_derivative(const SurfaceInteraction3fD &si,
+                      bool shading_frame = true,
+                      MaskD active = true) const;
+#endif
+
     //! @}
     // =============================================================
 
     // =============================================================
     //! @{ \name Miscellaneous
     // =============================================================
+
+    /// Return a string identifier
+    std::string id() const override;
 
     /// Is this shape a triangle mesh?
     bool is_mesh() const { return m_mesh; }
@@ -399,6 +449,14 @@ public:
     virtual RTCGeometry embree_geometry(RTCDevice device) const;
 #endif
 
+#if defined(MTS_USE_OPTIX)
+    /// Return the OptiX version of this shape
+    virtual RTgeometrytriangles optix_geometry(RTcontext context);
+#endif
+
+    // Return a list of objects that are referenced or owned by the shape
+    std::vector<ref<Object>> children() override;
+
     //! @}
     // =============================================================
 
@@ -417,6 +475,7 @@ protected:
     ref<Sensor> m_sensor;
     ref<Medium> m_interior_medium;
     ref<Medium> m_exterior_medium;
+    std::string m_id;
 
 private:
     // Internal
@@ -425,122 +484,18 @@ private:
               typename Value = typename Interaction::Value,
               typename Point2 = Point<Value, 2>,
               typename Point3 = Point<Value, 3>,
-              typename DirectionSample = mitsuba::DirectionSample<Point3>,
-              typename Mask = mask_t<Value>>
+              typename DirectionSample = mitsuba::DirectionSample<Point3>>
     DirectionSample sample_direction_fallback(const Interaction &it,
-                                           const Point2 &sample,
-                                           Mask mask) const;
+                                              const Point2 &sample,
+                                              mask_t<Value> mask) const;
 
     template <typename Interaction, typename DirectionSample,
-              typename Value = typename Interaction::Value,
-              typename Mask = mask_t<Value>>
+              typename Value = typename Interaction::Value>
     Value pdf_direction_fallback(const Interaction &it,
                                  const DirectionSample &ds,
-                                 Mask mask) const;
+                                 mask_t<Value> mask) const;
 };
 
 NAMESPACE_END(mitsuba)
 
-// -----------------------------------------------------------------------
-//! @{ \name Enoki support for packets of Shape pointers
-// -----------------------------------------------------------------------
-
-// Enable usage of array pointers for our types
-ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Shape)
-    ENOKI_CALL_SUPPORT_METHOD(normal_derivative)
-    ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(emitter, m_emitter, const mitsuba::Emitter *)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(sensor, m_sensor, const mitsuba::Sensor *)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(bsdf, m_bsdf, const mitsuba::BSDF *)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(interior_medium, m_interior_medium, const mitsuba::Medium *)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(exterior_medium, m_exterior_medium, const mitsuba::Medium *)
-    auto is_emitter() const { return neq(emitter(), nullptr); }
-    auto is_sensor() const { return neq(sensor(), nullptr); }
-    auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||
-                                               neq(exterior_medium(), nullptr); }
-ENOKI_CALL_SUPPORT_END(mitsuba::Shape)
-
-//! @}
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-//! @{ \name Macro for template implementation of shape's functions
-// -----------------------------------------------------------------------
-
-/*
- * \brief This macro should be used in the definition of Shape
- * plugins to instantiate concrete versions of the functions.
- */
-#define MTS_IMPLEMENT_SHAPE()                                                            \
-    PositionSample3f sample_position(Float time, const Point2f &sample) const override { \
-        return sample_position_impl(time, sample, true);                                 \
-    }                                                                                    \
-    PositionSample3fP sample_position(FloatP time, const Point2fP &sample,               \
-                                      MaskP active) const override {                     \
-        return sample_position_impl(time, sample, active);                               \
-    }                                                                                    \
-    Float pdf_position(const PositionSample3f &ps) const override {                      \
-        return pdf_position_impl(ps, true);                                              \
-    }                                                                                    \
-    FloatP pdf_position(const PositionSample3fP &ps,                                     \
-                        MaskP active) const override {                                   \
-        return pdf_position_impl(ps, active);                                            \
-    }                                                                                    \
-    std::pair<bool, Float> ray_intersect(const Ray3f &ray,                               \
-                                         Float * cache) const override {                 \
-        return ray_intersect_impl(ray, cache, true);                                     \
-    }                                                                                    \
-    std::pair<MaskP, FloatP> ray_intersect(const Ray3fP &ray, FloatP * cache,            \
-                                           MaskP active) const override {                \
-        return ray_intersect_impl(ray, cache, active);                                   \
-    }                                                                                    \
-    bool ray_test(const Ray3f &ray) const override {                                     \
-        return ray_test_impl(ray, true);                                                 \
-    }                                                                                    \
-    MaskP ray_test(const Ray3fP &ray, MaskP active) const override {                     \
-        return ray_test_impl(ray, active);                                               \
-    }                                                                                    \
-                                                                                         \
-    void fill_surface_interaction(const Ray3f &ray, const Float *cache,                  \
-                                  SurfaceInteraction3f &si) const override {             \
-        fill_surface_interaction_impl(ray, cache, si, true);                             \
-    }                                                                                    \
-    void fill_surface_interaction(const Ray3fP &ray, const FloatP *cache,                \
-                                  SurfaceInteraction3fP &si,                             \
-                                  MaskP active) const override {                         \
-        fill_surface_interaction_impl(ray, cache, si, active);                           \
-    }                                                                                    \
-                                                                                         \
-    std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,      \
-                                                    bool shading_frame) const override { \
-        return normal_derivative_impl(si, shading_frame, true);                          \
-    }                                                                                    \
-    std::pair<Vector3fP, Vector3fP> normal_derivative(const SurfaceInteraction3fP &si,   \
-                                                      bool shading_frame,                \
-                                                      MaskP active) const override {     \
-        return normal_derivative_impl(si, shading_frame, active);                        \
-    }
-
-
-#define MTS_IMPLEMENT_SHAPE_SAMPLE_DIRECTION()                                           \
-    DirectionSample3f sample_direction(const Interaction3f &it,                          \
-                                       const Point2f &sample) const override {           \
-        return sample_direction_impl(it, sample, true);                                  \
-    }                                                                                    \
-    DirectionSample3fP sample_direction(const Interaction3fP &it,                        \
-                                        const Point2fP &sample,                          \
-                                        MaskP active) const override {                   \
-        return sample_direction_impl(it, sample, active);                                \
-    }                                                                                    \
-    Float pdf_direction(const Interaction3f &it,                                         \
-                        const DirectionSample3f &ds) const override {                    \
-        return pdf_direction_impl(it, ds, true);                                         \
-    }                                                                                    \
-    FloatP pdf_direction(const Interaction3fP &it, const DirectionSample3fP &ds,         \
-                         MaskP active) const override {                                  \
-        return pdf_direction_impl(it, ds, active);                                       \
-    }                                                                                    \
-                                                                                         \
-
-//! @}
-// -----------------------------------------------------------------------
+#include "detail/shape.inl"

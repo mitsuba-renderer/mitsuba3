@@ -43,97 +43,141 @@ public:
     const uint8_t *faces() const { return m_faces.get(); }
 
     /// Return a pointer (or packet of pointers) to a specific vertex
-    template <typename Index, typename Pointer = replace_scalar_t<Index, uint8_t *>>
-    Pointer vertex(Index index) {
-        return Pointer(m_vertices.get()) + m_vertex_size * index;
+    template <typename Index, typename VertexPtr = replace_scalar_t<Index, uint8_t *>>
+    MTS_INLINE VertexPtr vertex(const Index &index) {
+        return VertexPtr(m_vertices.get()) + m_vertex_size * index;
     }
+
     /// Return a pointer (or packet of pointers) to a specific vertex (const version)
-    template <typename Index, typename Pointer = replace_scalar_t<Index, const uint8_t *>>
-    Pointer vertex(Index index) const {
-        return Pointer(m_vertices.get()) + m_vertex_size * index;
+    template <typename Index, typename VertexPtr = replace_scalar_t<Index, const uint8_t *>>
+    MTS_INLINE VertexPtr vertex(const Index &index) const {
+        return VertexPtr(m_vertices.get()) + m_vertex_size * index;
     }
+
     /// Return a pointer (or packet of pointers) to a specific face
-    template <typename Index, typename Pointer = replace_scalar_t<Index, uint8_t *>>
-    Pointer face(Index index) {
-        return Pointer(m_faces.get()) + m_face_size * index;
+    template <typename Index, typename FacePtr = replace_scalar_t<Index, uint8_t *>>
+    MTS_INLINE FacePtr face(const Index &index) {
+        return FacePtr(m_faces.get()) + m_face_size * index;
     }
+
     /// Return a pointer (or packet of pointers) to a specific face (const version)
-    template <typename Index, typename Pointer = replace_scalar_t<Index, const uint8_t *>>
-    Pointer face(Index index) const {
-        return Pointer(m_faces.get()) + m_face_size * index;
+    template <typename Index, typename FacePtr = replace_scalar_t<Index, const uint8_t *>>
+    MTS_INLINE FacePtr face(const Index &index) const {
+        return FacePtr(m_faces.get()) + m_face_size * index;
     }
 
     /// Returns the face indices associated with triangle \c index
-    Vector3i face_indices(Index index) const {
-        return load<Vector3i>(face(index));
-    }
-
-    /// Vectorized version of \ref face_indices()
-    Vector3iP face_indices(IndexP index, MaskP active = true) const {
-        index *= m_face_size / (uint32_t) sizeof(Index);
-        return gather<Vector3iP, sizeof(Index)>(m_faces.get(), index, active);
+    MTS_INLINE Vector3u face_indices(const Index &index) const {
+        return load<Vector3u>(face(index));
     }
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref face_indices()
-    Vector3i face_indices(Index index, bool /* unused */) const {
+    template <typename Mask>
+    Vector3i face_indices(Index index, Mask/* unused */) const {
         return face_indices(index);
     }
 
+    /// Vectorized version of \ref face_indices()
+    template <typename Index, typename Mask, enable_if_array_t<Index> = 0,
+              typename Index3 = Array<Index, 3>,
+              typename Result = uint32_array_t<Index3>>
+    MTS_INLINE Result face_indices(Index index, const Mask &active = true) const {
+        if constexpr (!is_diff_array_v<Index>) {
+            index *= scalar_t<Index>(m_face_size / sizeof(uint32_t));
+            return gather<Result, sizeof(Shape::Index)>(
+                m_faces.get(), Index3(index, index + 1u, index + 2u), active);
+        }
+#if defined(MTS_ENABLE_AUTODIFF)
+        else {
+            return gather<Result, sizeof(Shape::Index)>(m_faces_d, index, active);
+        }
+#endif
+    }
+
     /// Returns the world-space position of the vertex with index \c index
-    Point3f vertex_position(Index index) const {
+    MTS_INLINE Point3f vertex_position(const Index &index) const {
         return load<Point3f>(vertex(index));
     }
 
-    /// Vectorized version of \ref vertex_position()
-    Point3fP vertex_position(IndexP index, MaskP active = true) const {
-        index *= m_vertex_size / (uint32_t) sizeof(Float);
-        return gather<Point3fP, sizeof(Float)>(m_vertices.get(), index, active);
-    }
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref vertex_position()
-    Point3f vertex_position(Index index, bool /* unused */) const {
+    MTS_INLINE Point3f vertex_position(Index index, bool /* unused */) const {
         return vertex_position(index);
     }
 
+    /// Vectorized version of \ref vertex_position()
+    template <typename Index, typename Mask, enable_if_array_t<Index> = 0,
+              typename Index3 = Array<Index, 3>,
+              typename Result = Point<float_array_t<Index>, 3>>
+    MTS_INLINE Result vertex_position(Index index, const Mask &active = true) const {
+        if constexpr (!is_diff_array_v<Index>) {
+            index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
+            return gather<Result, sizeof(Float)>(
+                m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
+        }
+#if defined(MTS_ENABLE_AUTODIFF)
+        else {
+            return gather<Result, sizeof(float)>(m_vertex_positions_d, index, active);
+        }
+#endif
+    }
+
     /// Returns the normal direction of the vertex with index \c index
-    Normal3f vertex_normal(Index index) const {
+    MTS_INLINE Normal3f vertex_normal(const Index &index) const {
         return load_unaligned<Normal3f>(vertex(index) + m_normal_offset);
     }
 
-    /// Vectorized version of \ref vertex_normal()
-    Normal3fP vertex_normal(IndexP index, MaskP active = true) const {
-        index *= m_vertex_size / (uint32_t) sizeof(Float);
-        return gather<Normal3fP, sizeof(Float)>(m_vertices.get() + m_normal_offset, index, active);
-    }
-
     /// Compatibility wrapper, which strips the mask argument and invokes \ref vertex_normal()
-    Normal3f vertex_normal(Index index, bool /* unused */) const {
+    MTS_INLINE Normal3f vertex_normal(Index index, bool /* unused */) const {
         return vertex_normal(index);
     }
 
+    /// Vectorized version of \ref vertex_position()
+    template <typename Index, typename Mask, enable_if_array_t<Index> = 0,
+              typename Index3 = Array<Index, 3>,
+              typename Result = Normal<float_array_t<Index>, 3>>
+    MTS_INLINE Result vertex_normal(Index index, const Mask &active = true) const {
+        if constexpr (!is_diff_array_v<Index>) {
+            index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
+            return gather<Result, sizeof(Float)>(
+                m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
+        }
+#if defined(MTS_ENABLE_AUTODIFF)
+        else {
+            return gather<Result, sizeof(float)>(m_vertex_normals_d, index, active);
+        }
+#endif
+    }
+
     /// Returns the UV texture coordinates of the vertex with index \c index
-    Point2f vertex_texcoord(Index index) const {
+    MTS_INLINE Point2f vertex_texcoord(Index index) const {
         return load_unaligned<Point2f>(vertex(index) + m_texcoord_offset);
     }
 
-    /// Vectorized version of \ref vertex_texcoord()
-    Point2fP vertex_texcoord(IndexP index, MaskP active = true) const {
-        index *= m_vertex_size / (uint32_t) sizeof(Float);
-        return gather<Point2fP, sizeof(Float)>(
-            m_vertices.get() + m_texcoord_offset, index, active);
-    }
-
-    /** Compatibility wrapper, which strips the mask argument and invokes
-     * \ref vertex_texcoord() */
-    Point2f vertex_texcoord(Index index, bool /* unused */) const {
+    /// Compatibility wrapper, which strips the mask argument and invokes vertex_texcoord()
+    MTS_INLINE Point2f vertex_texcoord(Index index, bool /* unused */) const {
         return vertex_texcoord(index);
     }
 
+    /// Vectorized version of \ref vertex_texcoord()
+    template <typename Index, typename Mask, enable_if_array_t<Index> = 0,
+              typename Index2 = Array<Index, 2>,
+              typename Result = Point<float_array_t<Index>, 2>>
+    MTS_INLINE Result vertex_texcoord(Index index, const Mask &active = true) const {
+        if constexpr (!is_diff_array_v<Index>) {
+            index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
+            return gather<Result, sizeof(Float)>(
+                m_vertices.get() + m_texcoord_offset, Index2(index, index + 1u), active);
+        }
+#if defined(MTS_ENABLE_AUTODIFF)
+        else {
+            return gather<Result, sizeof(float)>(m_vertex_texcoords_d, index, active);
+        }
+#endif
+    }
+
     /// Returns the surface area of the face with index \c index
-    template <typename Index,
-              typename Value = replace_scalar_t<Index, Float>,
-              typename Mask = mask_t<Value>>
-    Value face_area(Index index, mask_t<Mask> active = true) const {
+    template <typename Index, typename Value = float_array_t<Index>>
+    Value face_area(Index index, mask_t<Value> active = true) const {
         auto fi = face_indices(index, active);
 
         auto p0 = vertex_position(fi[0], active),
@@ -187,12 +231,21 @@ public:
                                               const Point2fP &sample,
                                               MaskP active = true) const override;
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    virtual PositionSample3fD sample_position(FloatD time,
+                                              const Point2fD &sample,
+                                              MaskD active = true) const override;
+#endif
+
     using Shape::pdf_position;
 
     virtual Float pdf_position(const PositionSample3f &ps) const override;
 
     virtual FloatP pdf_position(const PositionSample3fP &ps,
                                 MaskP active = true) const override;
+
+    virtual FloatD pdf_position(const PositionSample3fD &ps,
+                                MaskD active = true) const override;
 
     using Shape::fill_surface_interaction;
 
@@ -232,42 +285,55 @@ public:
      *    \c v contains the first two components of the intersection in
      *    barycentric coordinates
      */
-    template <typename Ray,
-              typename Value = typename Ray::Value,
+    template <typename Index, typename Ray,
+              typename Value = expr_t<typename Ray::Value, float_array_t<Index>>,
               typename Mask  = mask_t<Value>>
     MTS_INLINE std::tuple<Mask, Value, Value, Value>
-    ray_intersect_triangle(Index index, const Ray &ray, Mask active = true) const {
-        using Vector = typename Ray::Vector;
+    ray_intersect_triangle(const Index &index, const Ray &ray,
+                           identity_t<Mask> active = true) const {
+        using Point3 = mitsuba::Point<Value, 3>;
+        using Vector3 = mitsuba::Vector<Value, 3>;
 
-        const Index * idx = (const Index *) face(index);
+        auto fi = face_indices(index, active);
 
-        Point3f v0 = vertex_position(idx[0]),
-                v1 = vertex_position(idx[1]),
-                v2 = vertex_position(idx[2]);
+        Point3 p0 = vertex_position(fi[0], active),
+               p1 = vertex_position(fi[1], active),
+               p2 = vertex_position(fi[2], active);
 
-        Vector3f edge1 = v1 - v0,
-                 edge2 = v2 - v0;
+        Vector3 e1 = p1 - p0, e2 = p2 - p0;
 
-        Vector pvec = cross(ray.d, edge2);
-        Value inv_det = rcp(dot(edge1, pvec));
+        Vector3 pvec = cross(ray.d, e2);
+        Value inv_det = rcp(dot(e1, pvec));
 
-        Vector tvec = ray.o - v0;
+        Vector3 tvec = ray.o - p0;
         Value u = dot(tvec, pvec) * inv_det;
-        active &= (u >= 0.f) && (u <= 1.f);
+        active &= u >= 0.f && u <= 1.f;
 
-        Vector qvec = cross(tvec, edge1);
+        Vector3 qvec = cross(tvec, e1);
         Value v = dot(ray.d, qvec) * inv_det;
-        active &= (v >= 0.f) && (u + v <= 1.f);
+        active &= v >= 0.f && u + v <= 1.f;
 
-        Value t = dot(edge2, qvec) * inv_det;
-        active &= (t >= ray.mint) && (t <= ray.maxt);
+        Value t = dot(e2, qvec) * inv_det;
+        active &= t >= ray.mint && t <= ray.maxt;
 
-        return std::make_tuple(active, u, v, t);
+        return { active, u, v, t };
     }
 
 #if defined(MTS_USE_EMBREE)
     /// Return the Embree version of this shape
     virtual RTCGeometry embree_geometry(RTCDevice device) const override;
+#endif
+
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Register all differentiable parameters with the container \c dp
+    void put_parameters(DifferentiableParameters &dp) override;
+
+    /// Update internal data structures after applying changes to parameters
+    void parameters_changed() override;
+
+    /// Return the OptiX version of this shape
+    virtual RTgeometrytriangles optix_geometry(RTcontext context) override;
 #endif
 
     /// @}
@@ -356,13 +422,28 @@ protected:
     ref<Struct> m_vertex_struct;
     ref<Struct> m_face_struct;
 
-    /// Flag that can be set by the user to disable loading of vertex normals
+    /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_disable_vertex_normals = false;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /* Differentiable versions of the above */
+    Point3uD m_faces_d;
+    Point3fD m_vertex_positions_d;
+    Normal3fD m_vertex_normals_d;
+    Point2fD m_vertex_texcoords_d;
+
+    RTcontext m_optix_context = nullptr;
+    RTgeometrytriangles m_optix_geometry = nullptr;
+    RTbuffer m_optix_faces_buf = nullptr;
+    RTbuffer m_optix_vertex_positions_buf = nullptr;
+    RTbuffer m_optix_vertex_normals_buf = nullptr;
+    RTbuffer m_optix_vertex_texcoords_buf = nullptr;
+#endif
 
     /**
      * Surface area distribution -- generated on demand when \ref
-     * prepare_sampling_table() is first calls. The value of \ref
-     * m_surface_area is negative until it has been computed.
+     * prepare_sampling_table() is first called. The value of \ref
+     * m_surface_area is negative until this has taken place.
      */
     DiscreteDistribution m_area_distribution;
     Float m_surface_area = -1.f;
@@ -370,27 +451,6 @@ protected:
     tbb::spin_mutex m_mutex;
 };
 
-using MeshPtr = replace_scalar_t<FloatP, const Mesh *>;
-
 NAMESPACE_END(mitsuba)
 
-// -----------------------------------------------------------------------
-//! @{ \name Enoki support for packets of Mesh pointers
-// -----------------------------------------------------------------------
-
-// Enable usage of array pointers for our types
-ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Mesh)
-    ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(faces, m_faces, uint8_t*)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(vertices, m_vertices, uint8_t*)
-
-    //ENOKI_CALL_SUPPORT(face)
-    //ENOKI_CALL_SUPPORT(vertex)
-
-    //ENOKI_CALL_SUPPORT(has_vertex_normals)
-    //ENOKI_CALL_SUPPORT(vertex_position)
-    //ENOKI_CALL_SUPPORT(vertex_normal)
-ENOKI_CALL_SUPPORT_END(mitsuba::Mesh)
-
-//! @}
-// -----------------------------------------------------------------------
+#include "detail/mesh.inl"

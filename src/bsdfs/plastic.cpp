@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class SmoothPlastic final : public BSDF {
 public:
-    SmoothPlastic(const Properties &props) {
+    SmoothPlastic(const Properties &props) : BSDF(props) {
         /* Specifies the internal index of refraction at the interface */
         Float int_ior = lookup_ior(props, "int_ior", "polypropylene");
 
@@ -60,7 +60,6 @@ public:
                 mask_t<Value> active) const {
         using Index   = typename BSDFSample::Index;
         using Vector3 = typename BSDFSample::Vector3;
-        using Index   = uint32_array_t<Value>;
         using Frame   = Frame<Vector3>;
         using Mask    = mask_t<Value>;
 
@@ -183,13 +182,17 @@ public:
         return select(active, pdf, 0.f);
     }
 
+    std::vector<ref<Object>> children() override {
+        return { m_diffuse_reflectance.get(), m_specular_reflectance.get() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothPlastic[" << std::endl
             << "  specular_reflectance = "     << m_specular_reflectance              << "," << std::endl
             << "  diffuse_reflectance = "      << m_diffuse_reflectance               << "," << std::endl
             << "  specular_sampling_weight = " << m_specular_sampling_weight          << "," << std::endl
-            << "  specular_sampling_weight = "  << (1.f - m_specular_sampling_weight)  << "," << std::endl
+            << "  specular_sampling_weight = " << (1.f - m_specular_sampling_weight)  << "," << std::endl
             << "  nonlinear = "                << (int) m_nonlinear                   << "," << std::endl
             << "  eta = "                      << m_eta                               << "," << std::endl
             << "  fdr_int = "                  << m_fdr_int                           << "," << std::endl
@@ -198,7 +201,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF()
+    MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_diffuse_reflectance;

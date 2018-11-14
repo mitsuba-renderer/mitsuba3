@@ -49,6 +49,10 @@ NAMESPACE_BEGIN(mitsuba)
 using PCG32  = enoki::PCG32<uint32_t>;
 using PCG32P = enoki::PCG32<UInt32P>;
 
+#if defined(ENOKI_AUTODIFF)
+using PCG32C = enoki::PCG32<UInt32C, 1>;
+#endif
+
 /**
  * \brief Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.

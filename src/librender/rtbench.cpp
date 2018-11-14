@@ -6,6 +6,8 @@
 #include <mitsuba/core/random.h>
 #include <enoki/morton.h>
 
+#if !defined(MTS_USE_EMBREE)
+
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(rtbench)
 
@@ -64,7 +66,7 @@ template <typename Point2> auto gen_ray_planar(const Scene *scene) {
     using Point3 = point3_t<Point2>;
     using Ray3 = Ray<Point3>;
 
-    BoundingBox3f b = scene->kdtree()->bbox();
+    BoundingBox3f b = scene->bbox();
 
     return [b](const Point2 &sample) -> Ray3 {
         return Ray3(Point3(b.min.x() * (1 - sample.x()) + b.max.x() * sample.x(),
@@ -77,7 +79,7 @@ template <typename Point2> auto gen_ray_sphere(const Scene *scene) {
     using Point3 = point3_t<Point2>;
     using Ray3 = Ray<Point3>;
 
-    BoundingBox3f b = scene->kdtree()->bbox();
+    BoundingBox3f b = scene->bbox();
     Point3 center = b.center();
     Float radius = norm(b.extents()) * .5f;
 
@@ -241,3 +243,5 @@ std::pair<Float, size_t> naive_spherical_independent_packet_shadow(const Scene *
 
 NAMESPACE_END(rtbench)
 NAMESPACE_END(mitsuba)
+
+#endif

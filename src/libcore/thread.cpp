@@ -23,7 +23,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 size_t __global_thread_count = 0;
 static ThreadLocal<Thread> *self = nullptr;
-static std::atomic<uint32_t> thread_id { 0 };
+static std::atomic<uint32_t> thread_ctr { 0 };
 #if defined(__LINUX__) || defined(__OSX__)
 static pthread_key_t this_thread_id;
 #elif defined(__WINDOWS__)
@@ -169,7 +169,7 @@ int Thread::core_affinity() const {
     return d->core_affinity;
 }
 
-uint32_t Thread::id() {
+uint32_t Thread::thread_id() {
 #if defined(__WINDOWS__)
     return this_thread_id;
 #elif defined(__OSX__) || defined(__LINUX__)
@@ -369,7 +369,7 @@ void Thread::dispatch() {
 
     ThreadLocalBase::register_thread();
 
-    uint32_t id = thread_id++;
+    uint32_t id = thread_ctr++;
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
     #elif defined(__WINDOWS__)

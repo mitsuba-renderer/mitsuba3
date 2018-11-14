@@ -335,7 +335,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SHAPE()
+    MTS_IMPLEMENT_SHAPE_ALL()
     MTS_DECLARE_CLASS()
 private:
     Transform4f m_object_to_world;

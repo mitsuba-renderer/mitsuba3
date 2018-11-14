@@ -2387,14 +2387,12 @@ public:
         using Point2 = typename SurfaceInteraction::Point2;
         using UInt = uint_array_t<Value>;
 
-        Assert(any(active));
-
         UInt shape_index = reinterpret_array<UInt>(cache[0]);
         UInt prim_index = reinterpret_array<UInt>(cache[1]);
 
-        SurfaceInteraction si;
+        SurfaceInteraction si = zero<SurfaceInteraction>(slices(active));
 
-        /* Fill in basic information common to all shapes */
+        // Fill in basic information common to all shapes
         si.t = t;
         si.time = ray.time;
         si.wavelengths = ray.wavelengths;
@@ -2403,14 +2401,15 @@ public:
         si.instance = nullptr;
         si.duv_dx = si.duv_dy = zero<Point2>();
 
-        /* Ask shape(s) to fill in the rest using the cache */
+        // Ask shape(s) to fill in the rest using the cache
         si.shape->fill_surface_interaction(ray, cache + 2, si, active);
 
-        /* Gram-schmidt orthogonalization to compute local shading frame */
-        si.sh_frame.s = normalize(fnmadd(si.sh_frame.n, dot(si.sh_frame.n, si.dp_du), si.dp_du));
+        // Gram-schmidt orthogonalization to compute local shading frame
+        si.sh_frame.s = normalize(
+            fnmadd(si.sh_frame.n, dot(si.sh_frame.n, si.dp_du), si.dp_du));
         si.sh_frame.t = cross(si.sh_frame.n, si.sh_frame.s);
 
-        /* Incident direction in local coordinates */
+        // Incident direction in local coordinates
         si.wi = select(active, si.to_local(-ray.d), -ray.d);
 
         return si;

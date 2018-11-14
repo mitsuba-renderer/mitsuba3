@@ -311,7 +311,7 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Point3> &it)
         os << "SurfaceInteraction[" << std::endl
            << "  t = " << it.t << "," << std::endl
            << "  time = " << it.time << "," << std::endl
-           << "  wavelengths = " << it.wavelengths << "," << std::endl
+           << "  wavelengths = " << string::indent(it.wavelengths, 16) << "," << std::endl
            << "  p = " << string::indent(it.p, 6) << "," << std::endl
            << "  shape = " << string::indent(it.shape, 2) << "," << std::endl
            << "  uv = " << string::indent(it.uv, 7) << "," << std::endl
