@@ -11,8 +11,14 @@
 #include "details/cie1931.h"
 #include "details/lu.h"
 
+// Choose a parallelization scheme
 #if defined(RGB2SPEC_USE_TBB)
 #  include <tbb/tbb.h>
+#elif defined(_OPENMP)
+#  define RGB2SPEC_USE_OPENMP 1
+#elif defined(__APPLE__)
+#  define RGB2SPEC_USE_GCD    1
+#  include <dispatch/dispatch.h>
 #endif
 
 /// Discretization of quadrature scheme
@@ -34,6 +40,7 @@ enum Gamut {
     REC2020,
     ERGB,
     XYZ,
+    NO_GAMUT,
 };
 
 double sigmoid(double x) {
@@ -126,6 +133,9 @@ void init_tables(Gamut gamut) {
             memcpy(xyz_to_rgb, xyz_to_rec2020, sizeof(double) * 9);
             memcpy(rgb_to_xyz, rec2020_to_xyz, sizeof(double) * 9);
             break;
+
+        default:
+            throw std::runtime_error("init_gamut(): invalid/unsupported gamut.");
     }
 
     for (int i = 0; i < CIE_FINE_SAMPLES; ++i) {
@@ -238,12 +248,35 @@ double gauss_newton(const double rgb[3], double coeffs[3], int it = 15) {
     return std::sqrt(r);
 }
 
+static Gamut parse_gamut(const char *str) {
+    if (!strcasecmp(str, "sRGB"))
+        return SRGB;
+    if (!strcasecmp(str, "eRGB"))
+        return ERGB;
+    if (!strcasecmp(str, "XYZ"))
+        return XYZ;
+    if (!strcasecmp(str, "ProPhotoRGB"))
+        return ProPhotoRGB;
+    if (!strcasecmp(str, "ACES2065_1"))
+        return ACES2065_1;
+    if (!strcasecmp(str, "REC2020"))
+        return REC2020;
+    return NO_GAMUT;
+}
+
 int main(int argc, char **argv) {
-    init_tables(SRGB);
-    if (argc != 3) {
-        printf("Syntax: rgb2spec_opt <resolution> <output>\n");
+    if (argc < 3) {
+        printf("Syntax: rgb2spec_opt <resolution> <output> [<gamut>]\n"
+               "where <gamut> is one of sRGB,eRGB,XYZ,ProPhotoRGB,ACES2065_1,REC2020\n");
         exit(-1);
     }
+    Gamut gamut = SRGB;
+    if (argc > 3) gamut = parse_gamut(argv[3]);
+    if (gamut == NO_GAMUT) {
+        fprintf(stderr, "Could not parse gamut `%s'!\n", argv[3]);
+        exit(-1);
+    }
+    init_tables(gamut);
 
     const int res = atoi(argv[1]);
     if (res == 0) {
@@ -251,7 +284,7 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
-    printf("Optimizing ");
+    printf("Optimizing spectra ");
 
     float *scale = new float[res];
     for (int k = 0; k < res; ++k)
@@ -260,10 +293,14 @@ int main(int argc, char **argv) {
     size_t bufsize = 3*3*res*res*res;
     float *out = new float[bufsize];
 
+#if defined(RGB2SPEC_USE_OPENMP)
+#  pragma omp parallel for collapse(2) default(none) schedule(dynamic) shared(stdout,scale,out)
+#endif
     for (int l = 0; l < 3; ++l) {
 #if defined(RGB2SPEC_USE_TBB)
         tbb::parallel_for(0, res, [&](size_t j) {
-
+#elif defined(RGB2SPEC_USE_GCD)
+        dispatch_apply(res, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
         for (int j = 0; j < res; ++j) {
 #endif
@@ -321,7 +358,7 @@ int main(int argc, char **argv) {
                 }
             }
         }
-#if defined(RGB2SPEC_USE_TBB)
+#if defined(RGB2SPEC_USE_TBB) || defined(RGB2SPEC_USE_GCD)
         );
 #endif
     }
@@ -338,5 +375,5 @@ int main(int argc, char **argv) {
     delete[] out;
     delete[] scale;
     fclose(f);
-    printf("\n");
+    printf(" done.\n");
 }
