@@ -27,7 +27,7 @@ public:
 
         /* Convert to linear RGB float bitmap, will be converted
            into spectral profile coefficients below */
-        m_bitmap = m_bitmap->convert(Bitmap::ERGB, Bitmap::EFloat, false);
+        m_bitmap = m_bitmap->convert(Bitmap::ERGBA, Bitmap::EFloat, false);
         m_name = file_path.filename().string();
 
         std::unique_ptr<Float[]> luminance(new Float[hprod(m_bitmap->size())]);
@@ -35,29 +35,26 @@ public:
         Float *ptr = (Float *) m_bitmap->data(),
               *lum_ptr = (Float *) luminance.get();
 
-        m_scale = 0;
-        for (size_t i = 0; i < hprod(m_bitmap->size())*3; ++i)
-            m_scale = std::max(m_scale, ptr[i]);
-        Float inv_scale = 1.f / m_scale;
-
         for (size_t y = 0; y < m_bitmap->size().y(); ++y) {
             Float sin_theta =
                 std::sin(y / Float(m_bitmap->size().y() - 1) * math::Pi);
 
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
-                Color3f rgb = clamp(inv_scale * load_unaligned<Vector3f>(ptr), 0.f, 1.f);
+                Color3f rgb = load_unaligned<Vector3f>(ptr);
+                Float scale = hmax(rgb) * 2.f;
+                Color3f rgb_norm = rgb / scale;
 
                 /* Fetch spectral fit for given sRGB color value */
-                Vector3f coeff = srgb_model_fetch(rgb);
+                Vector4f coeff = concat(srgb_model_fetch(rgb_norm), scale);
 
                 /* Overwrite the pixel value with the coefficients */
                 *lum_ptr++ = mitsuba::luminance(rgb) * sin_theta;
                 store_unaligned(ptr, coeff);
-                ptr += 3;
+                ptr += 4;
             }
         }
 
-        m_scale *= props.float_("scale", 1.f);
+        m_scale = props.float_("scale", 1.f);
         m_warp = Warp(m_bitmap->size(), luminance.get());
         m_d65 = ContinuousSpectrum::D65();
     }
@@ -202,7 +199,7 @@ protected:
         using Value    = value_t<Point2f>;
         using UInt32   = uint32_array_t<Value>;
         using Point2u  = Point<UInt32, 2>;
-        using Vector3f = Vector<Value, 3>;
+        using Vector4f = Vector<Value, 4>;
 
         uv *= Vector2f(m_bitmap->size() - 1u);
 
@@ -215,22 +212,25 @@ protected:
 
         const Float *ptr = (const Float *) m_bitmap->data();
 
-        uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
+        uint32_t width = (uint32_t) m_bitmap->size().x() * 4;
 
-        Vector3f v00 = gather<Vector3f>(ptr, index, active),
-                 v10 = gather<Vector3f>(ptr + 3, index, active),
-                 v01 = gather<Vector3f>(ptr + width, index, active),
-                 v11 = gather<Vector3f>(ptr + width + 3, index, active);
+        Vector4f v00 = gather<Vector4f>(ptr, index, active),
+                 v10 = gather<Vector4f>(ptr + 4, index, active),
+                 v01 = gather<Vector4f>(ptr + width, index, active),
+                 v11 = gather<Vector4f>(ptr + width + 4, index, active);
 
         Spectrum s00 = srgb_model_eval(v00, wavelengths),
                  s10 = srgb_model_eval(v10, wavelengths),
                  s01 = srgb_model_eval(v01, wavelengths),
                  s11 = srgb_model_eval(v11, wavelengths),
-                 s0 = fmadd(w0.x(), s00, w1.x() * s10),
-                 s1 = fmadd(w0.x(), s01, w1.x() * s11);
+                 s0  = fmadd(w0.x(), s00, w1.x() * s10),
+                 s1  = fmadd(w0.x(), s01, w1.x() * s11),
+                 f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w()),
+                 f1  = fmadd(w0.x(), v01.w(), w1.x() * v11.w()),
+                 s   = fmadd(w0.y(), s0, w1.y() * s1),
+                 f   = fmadd(w0.y(), f0, w1.y() * f1);
 
-        return fmadd(w0.y(), s0, w1.y() * s1) *
-               m_d65->eval(wavelengths, active) * m_scale;
+        return s * f * m_d65->eval(wavelengths, active) * m_scale;
     }
 
 protected:
