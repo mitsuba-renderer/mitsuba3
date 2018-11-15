@@ -69,10 +69,6 @@ static std::string isa_info() {
     if (enoki::has_arm_32)          oss << " arm";
     if (enoki::has_arm_64)          oss << " aarch64";
 
-#if defined(ENOKI_USE_MEMKIND)
-    if (hbw_check_available() == 0) oss << " hbm";
-#endif
-
     return oss.str();
 }
 

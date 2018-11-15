@@ -1,5 +1,6 @@
 #if defined(_MSC_VER)
 #  define NOMINMAX
+#  define strcasecmp _stricmp
 #endif
 
 #include <cmath>
