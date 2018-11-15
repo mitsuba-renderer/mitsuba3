@@ -118,20 +118,15 @@ done:
 #endif
 }
 
-void trap_debugger() {
+bool detect_debugger() {
 #if defined(__LINUX__)
     char exePath[PATH_MAX];
     memset(exePath, 0, PATH_MAX);
     std::string procPath = tfm::format("/proc/%i/exe", getppid());
 
     if (readlink(procPath.c_str(), exePath, PATH_MAX) != -1) {
-        if (strstr(exePath, "bin/gdb") || strstr(exePath, "bin/lldb")) {
-            #if defined(__i386__) || defined(__x86_64__)
-                __asm__ ("int $3");
-            #else
-                __builtin_trap();
-            #endif
-        }
+        if (strstr(exePath, "bin/gdb") || strstr(exePath, "bin/lldb"))
+            return true;
     }
 #elif defined(__OSX__)
     int                 mib[4];
@@ -146,10 +141,26 @@ void trap_debugger() {
     sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, nullptr, 0);
 
     if (info.kp_proc.p_flag & P_TRACED)
-        __asm__ ("int $3");
+        return true;
 #elif defined(__WINDOWS__)
     if (IsDebuggerPresent())
-        __debugbreak();
+        return true;
+#endif
+    return false;
+}
+
+void trap_debugger() {
+    if (!detect_debugger())
+        return;
+
+#if defined(__LINUX__) || defined(__OSX__)
+    #if defined(__i386__) || defined(__x86_64__) || defined(__OSX__)
+        __asm__ ("int $3");
+    #else
+        __builtin_trap();
+    #endif
+#elif defined(__WINDOWS__)
+    __debugbreak();
 #endif
 }
 

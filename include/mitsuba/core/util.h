@@ -28,6 +28,9 @@ extern MTS_EXPORT_CORE std::string time_string(Float time, bool precise = false)
 /// Turn a memory size into a human-readable string
 extern MTS_EXPORT_CORE std::string mem_string(size_t size, bool precise = false);
 
+/// Returns 'true' if the application is running inside a debugger
+extern MTS_EXPORT_CORE bool detect_debugger();
+
 /// Generate a trap instruction if running in a debugger; otherwise, return.
 extern MTS_EXPORT_CORE void trap_debugger();
 

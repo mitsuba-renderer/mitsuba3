@@ -1,5 +1,6 @@
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/core/logger.h>
+#include <mitsuba/core/util.h>
 
 #if defined(MTS_ENABLE_PROFILER)
 #include <sys/time.h>
@@ -56,21 +57,23 @@ static void profiler_callback(int, siginfo_t *, void *) {
 }
 
 void Profiler::static_initialization() {
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_sigaction = profiler_callback;
-    sa.sa_flags = SA_RESTART | SA_SIGINFO;
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGPROF, &sa, nullptr))
-        Throw("profiler_start(): failure in sigaction(): %s", strerror(errno));
+    if (!util::detect_debugger()) {
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_sigaction = profiler_callback;
+        sa.sa_flags = SA_RESTART | SA_SIGINFO;
+        sigemptyset(&sa.sa_mask);
+        if (sigaction(SIGPROF, &sa, nullptr))
+            Throw("profiler_start(): failure in sigaction(): %s", strerror(errno));
 
-    itimerval timer;
-    timer.it_interval.tv_sec = 0;
-    timer.it_interval.tv_usec = 1000000 / 100; // 100 Hz sampling
-    timer.it_value = timer.it_interval;
+        itimerval timer;
+        timer.it_interval.tv_sec = 0;
+        timer.it_interval.tv_usec = 1000000 / 100; // 100 Hz sampling
+        timer.it_value = timer.it_interval;
 
-    if (setitimer(ITIMER_PROF, &timer, nullptr))
-        Throw("profiler_start(): failure in setitimer(): %s", strerror(errno));
+        if (setitimer(ITIMER_PROF, &timer, nullptr))
+            Throw("profiler_start(): failure in setitimer(): %s", strerror(errno));
+    }
 
     #if defined(MTS_ENABLE_ITTNOTIFY)
         itt_domain = __itt_domain_create("ch.epfl.rgl.mitsuba2");
@@ -82,6 +85,9 @@ void Profiler::static_initialization() {
 }
 
 void Profiler::static_shutdown() {
+    if (util::detect_debugger())
+        return;
+
     itimerval timer;
     timer.it_interval.tv_sec = 0;
     timer.it_interval.tv_usec = 0;
