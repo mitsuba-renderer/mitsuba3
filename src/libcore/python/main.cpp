@@ -142,6 +142,7 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
             // Make sure the previous scheduler is deleted first.
             scheduler_holder->reset(nullptr);
             scheduler_holder->reset(new tbb::task_scheduler_init(count));
+            __global_thread_count = count;
         },
         "count"_a = -1,
         "Sets the maximum number of threads to be used by TBB. Defaults to "
