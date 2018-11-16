@@ -66,49 +66,17 @@ static const char *__doc_enoki_PCG32_next_uint32 = R"doc(Generate a uniformly di
 
 static const char *__doc_enoki_PCG32_next_uint32_2 = R"doc(Masked version of next_uint32)doc";
 
-static const char *__doc_enoki_PCG32_next_uint32_bounded = R"doc(Generate a uniformly distributed number, r, where 0 <= r < bound)doc";
-
-static const char *__doc_enoki_PCG32_next_uint32_bounded_2 =
-R"doc(Vectorized version of next_uint32_bounded
-
-This function keeps track of which SIMD lanes have already finished
-and stops advancing the associated PRNGs)doc";
+static const char *__doc_enoki_PCG32_next_uint32_bounded = R"doc(Generate a uniformly distributed integer r, where 0 <= r < bound)doc";
 
 static const char *__doc_enoki_PCG32_next_uint64 = R"doc(Generate a uniformly distributed unsigned 64-bit random number)doc";
 
 static const char *__doc_enoki_PCG32_next_uint64_2 = R"doc(Masked version of next_uint64)doc";
 
-static const char *__doc_enoki_PCG32_next_uint64_bounded = R"doc(Generate a uniformly distributed number, r, where 0 <= r < bound)doc";
-
-static const char *__doc_enoki_PCG32_next_uint64_bounded_2 =
-R"doc(Vectorized version of next_uint64_bounded
-
-This function keeps track of which SIMD lanes have already finished
-and stops advancing the associated PRNGs)doc";
-
-static const char *__doc_enoki_PCG32_operator_delete = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_operator_delete_6 = R"doc()doc";
+static const char *__doc_enoki_PCG32_next_uint64_bounded = R"doc(Generate a uniformly distributed integer r, where 0 <= r < bound)doc";
 
 static const char *__doc_enoki_PCG32_operator_eq = R"doc(Equality operator)doc";
 
 static const char *__doc_enoki_PCG32_operator_ne = R"doc(Inequality operator)doc";
-
-static const char *__doc_enoki_PCG32_operator_new = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_operator_new_2 = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_operator_new_3 = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_operator_new_4 = R"doc()doc";
 
 static const char *__doc_enoki_PCG32_operator_sub = R"doc(Compute the distance between two PCG32 pseudorandom number generators)doc";
 
@@ -147,29 +115,9 @@ static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc(Represents a
 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_Keyframe = R"doc()doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_delete_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_eq = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_ne = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_Keyframe_quat = R"doc(Rotation quaternion)doc";
 
@@ -445,26 +393,6 @@ static const char *__doc_mitsuba_BSDFSample_eta = R"doc(Relative index of refrac
 static const char *__doc_mitsuba_BSDFSample_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDFSample_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample_pdf = R"doc(Probability density at the sample)doc";
 
@@ -1291,29 +1219,9 @@ static const char *__doc_mitsuba_BoundingBox_min = R"doc(< Component-wise minimu
 
 static const char *__doc_mitsuba_BoundingBox_minor_axis = R"doc(Return the dimension index with the shortest associated side length)doc";
 
-static const char *__doc_mitsuba_BoundingBox_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_delete_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_BoundingBox_operator_eq = R"doc(Test for equality against another bounding box)doc";
 
 static const char *__doc_mitsuba_BoundingBox_operator_ne = R"doc(Test for inequality against another bounding box)doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingBox_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BoundingBox_overlaps =
 R"doc(Check two axis-aligned bounding boxes for possible overlap.
@@ -1394,29 +1302,9 @@ static const char *__doc_mitsuba_BoundingSphere_empty = R"doc(Return whether thi
 
 static const char *__doc_mitsuba_BoundingSphere_expand = R"doc(Expand the bounding sphere radius to contain another point.)doc";
 
-static const char *__doc_mitsuba_BoundingSphere_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_delete_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_BoundingSphere_operator_eq = R"doc(Equality test against another bounding sphere)doc";
 
 static const char *__doc_mitsuba_BoundingSphere_operator_ne = R"doc(Inequality test against another bounding sphere)doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_BoundingSphere_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BoundingSphere_radius = R"doc()doc";
 
@@ -1554,8 +1442,6 @@ static const char *__doc_mitsuba_Color_Color = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_Color_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Color_Color_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_Color_b = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_b_2 = R"doc()doc";
@@ -1567,8 +1453,6 @@ static const char *__doc_mitsuba_Color_g_2 = R"doc()doc";
 static const char *__doc_mitsuba_Color_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Color_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_r = R"doc()doc";
 
@@ -1775,29 +1659,11 @@ static const char *__doc_mitsuba_DirectionSample_d = R"doc(Unit direction from t
 
 static const char *__doc_mitsuba_DirectionSample_dist = R"doc(Distance from the reference point to the target shape)doc";
 
+static const char *__doc_mitsuba_DirectionSample_operator_array = R"doc()doc";
+
 static const char *__doc_mitsuba_DirectionSample_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_set_query =
 R"doc(Setup this record so that it can be used to *query* the density of a
@@ -1835,6 +1701,8 @@ in this CDF (the first one being 0).)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_clear = R"doc(Clear all entries)doc";
 
+static const char *__doc_mitsuba_DiscreteDistribution_eval = R"doc(Access an entry by its index)doc";
+
 static const char *__doc_mitsuba_DiscreteDistribution_m_cdf = R"doc()doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_m_normalization = R"doc()doc";
@@ -1864,8 +1732,6 @@ Returns:
 
 static const char *__doc_mitsuba_DiscreteDistribution_normalized = R"doc(Have the probability densities been normalized?)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_operator_array = R"doc(Access an entry by its index)doc";
-
 static const char *__doc_mitsuba_DiscreteDistribution_reserve = R"doc(Reserve memory for a certain number of entries)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_sample =
@@ -1890,7 +1756,8 @@ Returns:
 static const char *__doc_mitsuba_DiscreteDistribution_sample_reuse =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
 
-The original sample is value adjusted so that it can be "reused".
+The original sample is value adjusted so that it can be reused as a
+uniform variate.
 
 Parameter ``sample_value``:
     A uniformly distributed sample on [0,1]
@@ -1902,7 +1769,8 @@ Returns:
 static const char *__doc_mitsuba_DiscreteDistribution_sample_reuse_pdf =
 R"doc(%Transform a uniformly distributed sample to the stored distribution.
 
-The original sample is value adjusted so that it can be "reused".
+The original sample is value adjusted so that it can be reused as a
+uniform variate.
 
 Parameter ``sample_value``:
     A uniformly distributed sample on [0,1]
@@ -2618,29 +2486,9 @@ static const char *__doc_mitsuba_Frame_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_operator_assign_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Frame_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_operator_delete_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_Frame_operator_eq = R"doc(Equality test)doc";
 
 static const char *__doc_mitsuba_Frame_operator_ne = R"doc(Inequality test)doc";
-
-static const char *__doc_mitsuba_Frame_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Frame_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_s = R"doc()doc";
 
@@ -2800,26 +2648,6 @@ static const char *__doc_mitsuba_ImageBlock_m_weights_y = R"doc()doc";
 static const char *__doc_mitsuba_ImageBlock_m_weights_y_p = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_offset = R"doc(Return the current block offset)doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_pixel_format = R"doc(Return the underlying pixel format)doc";
 
@@ -2989,26 +2817,6 @@ static const char *__doc_mitsuba_Interaction_is_valid = R"doc(Is the current int
 static const char *__doc_mitsuba_Interaction_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Interaction_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_p = R"doc(Position of the interaction in world coordinates)doc";
 
@@ -3554,26 +3362,6 @@ static const char *__doc_mitsuba_MicrofacetDistribution_m_sample_visible = R"doc
 
 static const char *__doc_mitsuba_MicrofacetDistribution_m_type = R"doc()doc";
 
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_operator_new_4 = R"doc()doc";
-
 static const char *__doc_mitsuba_MicrofacetDistribution_pdf =
 R"doc(Returns the density function associated with the sample() function.
 
@@ -3641,13 +3429,9 @@ static const char *__doc_mitsuba_Normal_Normal = R"doc()doc";
 
 static const char *__doc_mitsuba_Normal_Normal_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Normal_Normal_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_Normal_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Normal_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Normal_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Object =
 R"doc(Object base class with builtin reference counting
@@ -3701,26 +3485,6 @@ object, hence it is located this level.)doc";
 static const char *__doc_mitsuba_Object_inc_ref = R"doc(Increase the object's reference count by one)doc";
 
 static const char *__doc_mitsuba_Object_m_ref_count = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Object_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Object_ref_count = R"doc(Return the current reference count)doc";
 
@@ -3814,13 +3578,9 @@ static const char *__doc_mitsuba_Point_Point = R"doc()doc";
 
 static const char *__doc_mitsuba_Point_Point_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Point_Point_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_Point_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Point_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Point_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample =
 R"doc(Generic sampling record for positions
@@ -3869,26 +3629,6 @@ to this object.)doc";
 static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_p = R"doc(Sampled position)doc";
 
@@ -4233,26 +3973,6 @@ static const char *__doc_mitsuba_RadianceSample_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_RadianceSample_operator_assign_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_RadianceSample_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_RadianceSample_operator_new_4 = R"doc()doc";
-
 static const char *__doc_mitsuba_RadianceSample_ray_intersect =
 R"doc(Search for a ray intersection
 
@@ -4415,29 +4135,11 @@ static const char *__doc_mitsuba_RayDifferential_o_x = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_o_y = R"doc()doc";
 
+static const char *__doc_mitsuba_RayDifferential_operator_array = R"doc()doc";
+
 static const char *__doc_mitsuba_RayDifferential_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_RayDifferential_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_scale_differential = R"doc()doc";
 
@@ -4472,26 +4174,6 @@ static const char *__doc_mitsuba_Ray_operator_assign = R"doc()doc";
 static const char *__doc_mitsuba_Ray_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_operator_call = R"doc(Return the position of a point along the ray)doc";
-
-static const char *__doc_mitsuba_Ray_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_reverse = R"doc(Return a ray that points into the opposite direction)doc";
 
@@ -4553,26 +4235,6 @@ static const char *__doc_mitsuba_ReconstructionFilter_m_scale_factor = R"doc()do
 
 static const char *__doc_mitsuba_ReconstructionFilter_m_values = R"doc()doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_operator_new_4 = R"doc()doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_radius = R"doc(Return the filter's width)doc";
 
 static const char *__doc_mitsuba_Resampler =
@@ -4626,26 +4288,6 @@ static const char *__doc_mitsuba_Resampler_m_taps = R"doc()doc";
 static const char *__doc_mitsuba_Resampler_m_target_res = R"doc()doc";
 
 static const char *__doc_mitsuba_Resampler_m_weights = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Resampler_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Resampler_resample =
 R"doc(Resample a multi-channel array and clamp the results to a specified
@@ -5203,6 +4845,10 @@ static const char *__doc_mitsuba_Shape_m_bsdf = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_m_emitter = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_m_exterior_medium = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_m_interior_medium = R"doc()doc";
+
 static const char *__doc_mitsuba_Shape_m_mesh = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_m_sensor = R"doc()doc";
@@ -5394,13 +5040,9 @@ static const char *__doc_mitsuba_Spectrum_Spectrum = R"doc()doc";
 
 static const char *__doc_mitsuba_Spectrum_Spectrum_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Spectrum_Spectrum_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_Spectrum_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Spectrum_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Spectrum_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Spiral =
 R"doc(Generates a spiral of blocks to be rendered.
@@ -5982,7 +5624,7 @@ static const char *__doc_mitsuba_SurfaceInteraction_duv_dy = R"doc(UV partials w
 
 static const char *__doc_mitsuba_SurfaceInteraction_emitter = R"doc(Return the emitter associated with the intersection (if any))doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_has_uv_partials = R"doc(Have texture coordinate partials been computed?)doc";
+static const char *__doc_mitsuba_SurfaceInteraction_has_uv_partials = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
 
@@ -5994,29 +5636,11 @@ static const char *__doc_mitsuba_SurfaceInteraction_n = R"doc(Geometric normal)d
 
 static const char *__doc_mitsuba_SurfaceInteraction_normal_derivative = R"doc(Calls the suitable implementation of Shape::normal_derivative())doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_operator_array = R"doc()doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_delete_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_prim_index = R"doc(Primitive index, e.g. the triangle ID (if applicable))doc";
 
@@ -6820,18 +6444,6 @@ static const char *__doc_mitsuba_Transform_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_operator_assign_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_operator_delete_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_operator_delete_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_Transform_operator_eq = R"doc(Equality comparison operator)doc";
 
 static const char *__doc_mitsuba_Transform_operator_mul = R"doc(Concatenate transformations)doc";
@@ -6857,14 +6469,6 @@ Remark:
 static const char *__doc_mitsuba_Transform_operator_mul_5 = R"doc(Transform a ray (for perspective transformations))doc";
 
 static const char *__doc_mitsuba_Transform_operator_ne = R"doc(Inequality comparison operator)doc";
-
-static const char *__doc_mitsuba_Transform_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_orthographic =
 R"doc(Create an orthographic transformation, which maps Z to [0,1] and
@@ -6925,13 +6529,9 @@ static const char *__doc_mitsuba_Vector_Vector = R"doc()doc";
 
 static const char *__doc_mitsuba_Vector_Vector_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Vector_Vector_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_Vector_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Vector_operator_assign_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Vector_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream =
 R"doc(Transparent compression/decompression stream based on ``zlib``.
@@ -7480,38 +7080,43 @@ R"doc(Find an interval in an ordered set
 This function is very similar to ``std::upper_bound``, but it uses a
 functor rather than an actual array to permit working with
 procedurally defined data. It returns the index ``i`` such that
-pred(i) is ``True`` and pred(i+1) is ``False``.
+pred(i) is ``True`` and ``pred(i+1)`` is ``False``.
 
 This function is primarily used to locate an interval (i, i+1) for
-linear interpolation, hence its name. To avoid issues out of bounds
-accesses, and to deal with predicates that evaluate to ``True`` or
-``False`` on the entire domain, the returned left interval index is
-clamped to the range ``[left, right-2]``.)doc";
+linear interpolation, hence its name. To avoid issues with out of
+bounds accesses, and to deal with predicates that evaluate to ``True``
+or ``False`` on the entire domain, the returned left interval index is
+clamped to the range ``[left, right-2]``.
 
-static const char *__doc_mitsuba_math_find_interval_2 = R"doc()doc";
+In particular: (i) If there is no index such that pred(i) is true, we
+return (left). (ii) If there is no index such that pred(i+1) is false,
+we return (right-2).)doc";
 
-static const char *__doc_mitsuba_math_find_interval_3 =
+static const char *__doc_mitsuba_math_find_interval_2 =
 R"doc(Find an interval in an ordered set
 
 This function is very similar to ``std::upper_bound``, but it uses a
 functor rather than an actual array to permit working with
 procedurally defined data. It returns the index ``i`` such that
-pred(i) is ``True`` and pred(i+1) is ``False``. See below for special
-cases.
+pred(i) is ``True`` and ``pred(i+1)`` is ``False``.
 
 This function is primarily used to locate an interval (i, i+1) for
-linear interpolation, hence its name. To avoid issues out of bounds
-accesses, and to deal with predicates that evaluate to ``True`` or
-``False`` on the entire domain, the returned left interval index is
-clamped to the range ``[left, right-2]``. In particular: If there is
-no index such that pred(i) is true, we return (left). If there is no
-index such that pred(i+1) is false, we return (right-2).
+linear interpolation, hence its name. To avoid issues with out of
+bounds accesses, and to deal with predicates that evaluate to ``True``
+or ``False`` on the entire domain, the returned left interval index is
+clamped to the range ``[left, right-2]``.
+
+In particular: (i) If there is no index such that pred(i) is true, we
+return (left). (ii) If there is no index such that pred(i+1) is false,
+we return (right-2).
 
 Remark:
-    This function is intended for vectorized predicates and
+    This function is intended for vectorized predicatesand
     additionally accepts a mask as an input. This mask can be used to
-    disable some of the array entries. The mask is passed to the
-    predicate as a second parameter.)doc";
+    disable some of the computations done in the predicate, which
+    receives it as its second parameter.)doc";
+
+static const char *__doc_mitsuba_math_find_interval_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_math_find_interval_4 = R"doc()doc";
 
@@ -7532,6 +7137,20 @@ static const char *__doc_mitsuba_math_log2i_ceil = R"doc(Ceiling of base-2 logar
 static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo function)doc";
 
 static const char *__doc_mitsuba_math_round_to_power_of_two = R"doc(Round an unsigned integer to the next integer power of two)doc";
+
+static const char *__doc_mitsuba_math_sample_shifted = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_math_sample_shifted_2 =
+R"doc(Map a uniformly distributed sample to an array of samples with shifts
+
+Given a floating point value ``x`` on the interval ``[0, 1]`` return a
+floating point array with values ``[x, x+offset, x+2*offset, ...]``,
+where ``offset`` is the reciprocal of the array size. Entries that
+become greater than 1.0 wrap around to the other side of the unit
+inteval.
+
+This operation is useful to implement a type of correlated
+stratification in the context of Monte Carlo integration.)doc";
 
 static const char *__doc_mitsuba_math_solve_quadratic =
 R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
@@ -7612,6 +7231,8 @@ static const char *__doc_mitsuba_next_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_next_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_add = R"doc(Adding a vector to a point should always yield a point)doc";
+
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
 static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
@@ -7661,6 +7282,10 @@ static const char *__doc_mitsuba_operator_lshift_23 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_24 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_25 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
+
+static const char *__doc_mitsuba_operator_sub_2 = R"doc(Ssubtracting a vector from a point should always yield a point)doc";
 
 static const char *__doc_mitsuba_pdf_rgb_spectrum =
 R"doc(PDF for the sample_rgb_spectrum strategy. It is valid to call this
@@ -8503,6 +8128,8 @@ R"doc(Convenience function which computes an array size/type suffix (like
 '2u' or '3fP'))doc";
 
 static const char *__doc_mitsuba_util_core_count = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
+
+static const char *__doc_mitsuba_util_detect_debugger = R"doc(Returns 'true' if the application is running inside a debugger)doc";
 
 static const char *__doc_mitsuba_util_library_path = R"doc(Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>)doc";
 

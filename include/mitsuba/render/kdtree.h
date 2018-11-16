@@ -2384,6 +2384,7 @@ public:
                                                              const Value *cache,
                                                              Mask active = true) const {
         using ShapePtr = typename SurfaceInteraction::ShapePtr;
+        using Point2 = typename SurfaceInteraction::Point2;
         using UInt = uint_array_t<Value>;
 
         Assert(any(active));
@@ -2400,13 +2401,13 @@ public:
         si.shape = gather<ShapePtr>(m_shapes.data(), shape_index, active);
         si.prim_index = prim_index;
         si.instance = nullptr;
-        si.has_uv_partials = false;
+        si.duv_dx = si.duv_dy = zero<Point2>();
 
         /* Ask shape(s) to fill in the rest using the cache */
         si.shape->fill_surface_interaction(ray, cache + 2, si, active);
 
         /* Gram-schmidt orthogonalization to compute local shading frame */
-        si.sh_frame.s = normalize(si.dp_du - si.sh_frame.n * dot(si.sh_frame.n, si.dp_du));
+        si.sh_frame.s = normalize(fnmadd(si.sh_frame.n, dot(si.sh_frame.n, si.dp_du), si.dp_du));
         si.sh_frame.t = cross(si.sh_frame.n, si.sh_frame.s);
 
         /* Incident direction in local coordinates */

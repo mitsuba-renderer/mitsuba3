@@ -53,11 +53,11 @@ auto bind_surface_interaction(py::module &m, const char *name) {
         .def_readwrite("wi", &Type::wi, D(SurfaceInteraction, wi))
         .def_readwrite("prim_index", &Type::prim_index, D(SurfaceInteraction, prim_index))
         .def_readwrite("instance", &Type::instance, D(SurfaceInteraction, instance))
-        .def_readwrite("has_uv_partials", &Type::has_uv_partials, D(SurfaceInteraction, has_uv_partials))
         // Methods
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
         .def(py::init<const PositionSample3 &, const Spectrum &>(),
              "ps"_a, "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
+        .def("has_uv_partials", &Type::has_uv_partials, D(SurfaceInteraction, has_uv_partials))
         .def("compute_partials", &Type::compute_partials, "ray"_a,
              D(SurfaceInteraction, compute_partials))
         .def("to_world", &Type::to_world, D(SurfaceInteraction, to_world))

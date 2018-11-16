@@ -13,12 +13,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Simple analytic rectangle, for use e.g. as a ground plane or area emitter.
+ * \brief Flat, rectangular shape, e.g. for use as a ground plane or area emitter.
  *
  * By default, the rectangle covers the XY-range [-1, 1]^2 and has a surface
- * normal that points into the positive $Z$ direction.
- * To change the rectangle scale, rotation, or translation, use the
- * \ref to_world parameter.
+ * normal that points into the positive $Z$ direction. To change the rectangle
+ * scale, rotation, or translation, use the 'to_world' parameter.
  */
 class Rectangle : public Shape {
 public:
@@ -59,17 +58,17 @@ public:
     // =============================================================
     //! @{ \name Sampling routines
     // =============================================================
+
     template <typename Point2, typename Value = value_t<Point2>>
     auto sample_position_impl(Value time, const Point2 &sample,
                               const mask_t<Value> &/*active*/) const {
         using Point3   = point3_t<Point2>;
-        using Normal3  = normal3_t<Point2>;
 
         PositionSample<Point3> ps;
         ps.p = m_object_to_world * Point3(sample.x() * 2.f - 1.f,
                                           sample.y() * 2.f - 1.f,
                                           0.f);
-        ps.n    = Normal3(m_frame.n);
+        ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.uv   = sample;
         ps.time = time;
@@ -79,15 +78,15 @@ public:
 
     template <typename PositionSample3,
               typename Value = typename PositionSample3::Value>
-    Value pdf_position_impl(PositionSample3 &/*p_rec*/,
-                            const mask_t<Value> &/*active*/) const {
+    Value pdf_position_impl(const PositionSample3 &/* ps */,
+                            mask_t<Value> /* active */) const {
         return m_inv_surface_area;
     }
 
     template <typename Interaction3, typename Point2,
               typename Value = value_t<Point2>>
     auto sample_direction_impl(const Interaction3 &it, const Point2 &sample,
-                               const mask_t<Value> &active) const {
+                               mask_t<Value> active) const {
         using DirectionSample = DirectionSample<typename Interaction3::Point3>;
 
         DirectionSample ds = sample_position_impl(it.time, sample, active);
@@ -96,16 +95,18 @@ public:
         Value dist_squared = squared_norm(ds.d);
         ds.dist  = sqrt(dist_squared);
         ds.d    /= ds.dist;
+
         Value dp = abs_dot(ds.d, ds.n);
-        ds.pdf  *= select(neq(dp, 0.f), dist_squared / dp, Value(0.f));
+        ds.pdf *= select(neq(dp, 0.f), dist_squared / dp, Value(0.f));
 
         return ds;
     }
 
     template <typename Interaction3, typename DirectionSample3,
               typename Value = typename Interaction3::Value>
-    Value pdf_direction_impl(const Interaction3 &/*it*/, const DirectionSample3 &ds,
-                             const mask_t<Value> &active) const {
+    Value pdf_direction_impl(const Interaction3 &/* it */,
+                             const DirectionSample3 &ds,
+                             mask_t<Value> active) const {
         Value pdf = pdf_position_impl(ds, active),
               dp  = abs_dot(ds.d, ds.n);
 
@@ -128,7 +129,7 @@ public:
         Value t      = -ray.o.z() / ray.d.z();
         Point3 local = ray(t);
 
-        // Intersection is within ray segment and within rectangle.
+        // Is intersection within ray segment and rectangle?
         active = active && t >= ray.mint
                         && t <= ray.maxt
                         && abs(local.x()) <= 1.f
@@ -151,7 +152,8 @@ public:
         Ray3 ray     = m_world_to_object * ray_;
         Value t      = -ray.o.z() / ray.d.z();
         Point3 local = ray(t);
-        // Intersection is within ray segment and within rectangle.
+
+        // Is intersection within ray segment and rectangle?
         return active && t >= ray.mint
                       && t <= ray.maxt
                       && abs(local.x()) <= 1.f
@@ -161,21 +163,23 @@ public:
     template <typename Ray3,
               typename SurfaceInteraction3,
               typename Value = typename SurfaceInteraction3::Value>
-    void fill_intersection_record_impl(const Ray3 &ray, const Value *cache,
-                                       SurfaceInteraction3 &si,
+    void fill_surface_interaction_impl(const Ray3 &ray, const Value *cache,
+                                       SurfaceInteraction3 &si_out,
                                        mask_t<Value> active) const {
         using Point2  = typename SurfaceInteraction3::Point2;
 
-        masked(si.n,          active) = m_frame.n;
-        masked(si.sh_frame.n, active) = m_frame.n;
-        masked(si.shape,      active) = this;
-        masked(si.dp_du,      active) = m_dp_du;
-        masked(si.dp_dv,      active) = m_dp_dv;
-        masked(si.p,          active) = ray(si.t);
-        masked(si.time,       active) = ray.time;
-        masked(si.instance,   active) = nullptr;
-        masked(si.uv,         active) = Point2(.5f * (cache[0] + 1.f),
-                                               .5f * (cache[1] + 1.f));
+        SurfaceInteraction3 si(si_out);
+
+        si.n          = m_frame.n;
+        si.sh_frame.n = m_frame.n;
+        si.dp_du      = m_dp_du;
+        si.dp_dv      = m_dp_dv;
+        si.p          = ray(si.t);
+        si.time       = ray.time;
+        si.uv         = Point2(.5f * (cache[0] + 1.f),
+                               .5f * (cache[1] + 1.f));
+
+        si_out[active] = si;
     }
 
     template <typename SurfaceInteraction3,

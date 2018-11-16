@@ -25,7 +25,6 @@ def test01_intersection_construction():
     si.wi = [31, 32, 33]
     si.prim_index = 34
     si.instance = None
-    si.has_uv_partials = False
     assert repr(si) == """SurfaceInteraction[
   t = 1,
   time = 2,
@@ -41,10 +40,11 @@ def test01_intersection_construction():
   ],
   dp_du = [18, 19, 20],
   dp_dv = [21, 22, 23],
+  duv_dx = [24, 25],
+  duv_dy = [26, 27],
   wi = [31, 32, 33],
   prim_index = 34,
-  instance = nullptr,
-  has_uv_partials = 0,
+  instance = nullptr
 ]"""
 
 
@@ -93,7 +93,6 @@ def test02_intersection_partials():
     assert(np.allclose(px1, px2))
     assert(np.allclose(py1, py2))
 
-    si.has_uv_partials = False
     si.compute_partials(r)
 
     assert(np.allclose(si.duv_dx, [0, 0]))

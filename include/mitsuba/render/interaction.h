@@ -144,9 +144,6 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     /// Stores a pointer to the parent instance (if applicable)
     ShapePtr instance = nullptr;
 
-    /// Have texture coordinate partials been computed?
-    bool has_uv_partials;
-
     //! @}
     // =============================================================
 
@@ -164,7 +161,7 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     explicit SurfaceInteraction(const PositionSample<Point3> &ps,
                                 const Spectrum &wavelengths)
         : Base(0.f, ps.time, wavelengths, ps.p), uv(ps.uv), n(ps.n),
-          sh_frame(Frame3(ps.n)), has_uv_partials(false) {}
+          sh_frame(Frame3(ps.n)) { }
 
     using Base::is_valid;
 
@@ -238,7 +235,7 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
 
     /// Computes texture coordinate partials
     void compute_partials(const RayDifferential3 &ray) {
-        if (has_uv_partials || !ray.has_differentials)
+        if (!ray.has_differentials)
             return;
 
         /* Compute interaction with the two offset rays */
@@ -269,18 +266,19 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
 
         duv_dy = Vector2(fmsub(a11, b0y, a01 * b1y) * inv_det,
                          fmsub(a00, b1y, a01 * b0y) * inv_det);
-
-        has_uv_partials = true;
     }
 
     //! @}
     // =============================================================
 
+    bool has_uv_partials() const {
+        return any_nested(neq(duv_dx, 0.f) || neq(duv_dy, 0.f));
+    }
+
     ENOKI_DERIVED_STRUCT(SurfaceInteraction, Base,
         ENOKI_BASE_FIELDS(t, time, wavelengths, p),
         ENOKI_DERIVED_FIELDS(shape, uv, n, sh_frame, dp_du, dp_dv,
-                             duv_dx, duv_dy, wi, prim_index, instance,
-                             has_uv_partials)
+                             duv_dx, duv_dy, wi, prim_index, instance)
     )
 };
 
@@ -311,21 +309,20 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Point3> &it)
            << "  time = " << it.time << "," << std::endl
            << "  wavelengths = " << it.wavelengths << "," << std::endl
            << "  p = " << string::indent(it.p, 6) << "," << std::endl
-           << "  shape = " << string::indent(it.shape, 10) << "," << std::endl
+           << "  shape = " << string::indent(it.shape, 2) << "," << std::endl
            << "  uv = " << string::indent(it.uv, 7) << "," << std::endl
            << "  n = " << string::indent(it.n, 6) << "," << std::endl
            << "  sh_frame = " << string::indent(it.sh_frame, 2) << "," << std::endl
            << "  dp_du = " << string::indent(it.dp_du, 10) << "," << std::endl
            << "  dp_dv = " << string::indent(it.dp_dv, 10) << "," << std::endl;
 
-        if (it.has_uv_partials)
+        if (it.has_uv_partials())
             os << "  duv_dx = " << string::indent(it.duv_dx, 11) << "," << std::endl
                << "  duv_dy = " << string::indent(it.duv_dy, 11) << "," << std::endl;
 
         os << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl
-           << "  instance = " << string::indent(it.instance, 13) << "," << std::endl
-           << "  has_uv_partials = " << it.has_uv_partials << "," << std::endl
+           << "  instance = " << string::indent(it.instance, 13) << std::endl
            << "]";
     }
     return os;
@@ -341,7 +338,7 @@ ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p);
 
 ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
                      shape, uv, n, sh_frame, dp_du, dp_dv, duv_dx, duv_dy, wi,
-                     prim_index, instance, has_uv_partials)
+                     prim_index, instance)
 
 //! @}
 // -----------------------------------------------------------------------

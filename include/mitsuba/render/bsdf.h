@@ -550,7 +550,7 @@ typename SurfaceInteraction<Point3>::BSDFPtr
 SurfaceInteraction<Point3>::bsdf(const RayDifferential3 &ray) {
     const BSDFPtr bsdf = shape->bsdf();
 
-    if (!has_uv_partials && any(bsdf->needs_differentials()))
+    if (!has_uv_partials() && any(bsdf->needs_differentials()))
         compute_partials(ray);
 
     return bsdf;

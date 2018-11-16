@@ -40,8 +40,10 @@ public:
         m_world_to_object = m_object_to_world.inverse();
         m_inv_surface_area = 1.f / (4.f * math::Pi * m_radius * m_radius);
 
-        if (m_radius <= 0.f)
-            Throw("Cannot create spheres of radius <= 0");
+        if (m_radius <= 0.f) {
+            m_radius = std::abs(m_radius);
+            m_flip_normals = !m_flip_normals;
+        }
 
         if (is_emitter())
             emitter()->set_shape(this);
@@ -65,13 +67,13 @@ public:
     template <typename Point2, typename Value = value_t<Point2>>
     auto sample_position_impl(Value time, const Point2 &sample,
                               mask_t<Value> /* active */) const {
-        using Point3   = point3_t<Point2>;
+        using Point3 = point3_t<Point2>;
 
-        auto v = warp::square_to_uniform_sphere(sample);
+        Point3 p = warp::square_to_uniform_sphere(sample);
 
         PositionSample<Point3> ps;
-        ps.p = fmadd(v, m_radius, m_center);
-        ps.n = v;
+        ps.p = fmadd(p, m_radius, m_center);
+        ps.n = p;
         if (m_flip_normals)
             ps.n = -ps.n;
         ps.time = time;
@@ -83,7 +85,7 @@ public:
 
     template <typename PositionSample3,
               typename Value = typename PositionSample3::Value>
-    Value pdf_position_impl(PositionSample3 &/* p_rec */,
+    Value pdf_position_impl(PositionSample3 &/* ps */,
                             mask_t<Value> /* active */) const {
         return m_inv_surface_area;
     }
@@ -219,12 +221,12 @@ public:
         Float64 mint = Float64(ray.mint);
         Float64 maxt = Float64(ray.maxt);
 
-        Vector3 o = Vector3(ray.o) - Vector<double, 3>(m_center);
+        Vector3 o = Vector3(ray.o) - Vector3d(m_center);
         Vector3 d(ray.d);
 
         Float64 A = squared_norm(d);
         Float64 B = 2.0 * dot(o, d);
-        Float64 C = squared_norm(o) - (double) (m_radius * m_radius);
+        Float64 C = squared_norm(o) - sqr((double) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -234,7 +236,8 @@ public:
         // Sphere fully contains the segment of the ray
         Mask in_bounds = near_t < mint && far_t > maxt;
 
-        Mask valid_intersection = active && solution_found && !out_bounds && !in_bounds;
+        Mask valid_intersection =
+            active && solution_found && !out_bounds && !in_bounds;
 
         return { valid_intersection, select(near_t < mint, far_t, near_t) };
     }
@@ -248,87 +251,75 @@ public:
         Float64 mint = Float64(ray.mint);
         Float64 maxt = Float64(ray.maxt);
 
-        Vector3 o = Vector3(ray.o) - Vector<double, 3>(m_center);
+        Vector3 o = Vector3(ray.o) - Vector3d(m_center);
         Vector3 d(ray.d);
 
         Float64 A = squared_norm(d);
         Float64 B = 2.0 * dot(o, d);
-        Float64 C = squared_norm(o) - (double) (m_radius * m_radius);
+        Float64 C = squared_norm(o) - sqr((double) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
-        Mask out_bounds = !((near_t <= maxt) && (far_t >= mint)); // NaN-aware conditionals
-        // Sphere fully contains the segment of the ray
-        Mask in_bounds  = ((near_t < mint) && (far_t > maxt));
+        Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
-        return solution_found && (!out_bounds) && (!in_bounds) && active;
+        // Sphere fully contains the segment of the ray
+        Mask in_bounds  = near_t < mint && far_t > maxt;
+
+        return solution_found && !out_bounds && !in_bounds && active;
     }
 
     template <typename Ray3,
               typename SurfaceInteraction3,
               typename Value = typename SurfaceInteraction3::Value>
-    void fill_intersection_record_impl(const Ray3 &ray, const Value * /*cache*/,
-                                       SurfaceInteraction3 &si,
+    void fill_surface_interaction_impl(const Ray3 &ray, const Value* /* cache */,
+                                       SurfaceInteraction3 &si_out,
                                        mask_t<Value> active) const {
         using Vector3 = typename SurfaceInteraction3::Vector3;
+        using Point2  = typename SurfaceInteraction3::Point2;
         using Mask    = mask_t<Value>;
 
-        masked(si.p, active) = ray(si.t);
+        SurfaceInteraction3 si(si_out);
+        si.sh_frame.n = normalize(ray(si.t) - m_center);
 
-        // Re-project onto the sphere to limit cancellation effects
-        masked(si.p, active) = m_center + normalize(si.p - m_center) * m_radius;
+        // Re-project onto the sphere to improve accuracy
+        si.p = fmadd(si.sh_frame.n, m_radius, m_center);
 
-        Vector3 local = m_world_to_object * (si.p - m_center);
-        Value   theta = safe_acos(local.z() / m_radius);
-        Value   phi   = atan2(local.y(), local.x());
+        Vector3 local   = m_world_to_object * (si.p - m_center),
+                d       = local / m_radius;
+
+        Value   rd_2    = sqr(d.x()) + sqr(d.y()),
+                theta   = 2.f * safe_asin(.5f * sqrt(rd_2 + sqr(d.z() - 1.f))),
+                phi     = atan2(d.y(), d.x());
 
         masked(phi, phi < 0.f) += 2.f * math::Pi;
 
-        masked(si.uv.x(), active) = phi * math::InvTwoPi;
-        masked(si.uv.y(), active) = theta * math::InvPi;
-        masked(si.dp_du,  active) = m_object_to_world * Vector3(
-            -local.y(), local.x(), 0.f) * (2.f * math::Pi);
-        masked(si.sh_frame.n, active) = normalize(si.p - m_center);
-        Value z_rad = sqrt(local.x() * local.x() + local.y() * local.y());
-        masked(si.shape, active) = this;
+        si.uv = Point2(phi * math::InvTwoPi, theta * math::InvPi);
+        si.dp_du = Vector3(-local.y(), local.x(), 0.f);
 
-        Mask z_rad_gt_0  = (z_rad > 0.f);
-        Mask z_rad_leq_0 = !z_rad_gt_0;
+        Value rd      = sqrt(rd_2),
+              inv_rd  = rcp(rd),
+              cos_phi = d.x() * inv_rd,
+              sin_phi = d.y() * inv_rd;
 
-        if (any(z_rad_gt_0 && active)) {
-            Mask mask = z_rad_gt_0 && active;
-            Value inv_z_rad = rcp(z_rad),
-                  cos_phi   = local.x() * inv_z_rad,
-                  sin_phi   = local.y() * inv_z_rad;
-            masked(si.dp_dv, mask) = m_object_to_world
-                                            * Vector3(local.z() * cos_phi,
-                                                      local.z() * sin_phi,
-                                                      -sin(theta) * m_radius) * math::Pi;
-            masked(si.sh_frame.s, mask) = normalize(si.dp_du);
-            masked(si.sh_frame.t, mask) = normalize(si.dp_dv);
-        }
+        si.dp_dv = Vector3(local.z() * cos_phi,
+                           local.z() * sin_phi,
+                           -rd * m_radius);
 
-        if (any(z_rad_leq_0 && active)) {
-            Mask mask = z_rad_leq_0 && active;
-            // avoid a singularity
-            const Value cos_phi = 0.f, sin_phi = 1.f;
-            masked(si.dp_dv, mask) = m_object_to_world
-                                             * Vector3(local.z() * cos_phi,
-                                                       local.z() * sin_phi,
-                                                       -sin(theta) * m_radius) * math::Pi;
-            auto [a, b] = coordinate_system(si.sh_frame.n);
-            masked(si.sh_frame.s, mask) = a;
-            masked(si.sh_frame.t, mask) = b;
-        }
+        Mask singularity_mask = active && eq(rd, 0.f);
+        if (unlikely(any(singularity_mask)))
+            si.dp_dv[singularity_mask] = Vector3(m_radius, 0.f, 0.f);
+
+        si.dp_du = m_object_to_world * si.dp_du * (2.f * math::Pi);
+        si.dp_dv = m_object_to_world * si.dp_dv * math::Pi;
 
         if (m_flip_normals)
-            masked(si.sh_frame.n, active) = -si.sh_frame.n;
+            si.sh_frame.n = -si.sh_frame.n;
 
-        masked(si.n,        active) = si.sh_frame.n;
-        masked(si.instance, active) = nullptr;
-        masked(si.time,     active) = ray.time;
-        si.has_uv_partials = false;
+        si.n = si.sh_frame.n;
+        si.time = ray.time;
+
+        si_out[active] = si;
     }
 
     template <typename SurfaceInteraction3,

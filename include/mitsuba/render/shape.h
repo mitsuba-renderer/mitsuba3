@@ -493,12 +493,12 @@ ENOKI_CALL_SUPPORT_END(mitsuba::Shape)
                                                                                          \
     void fill_surface_interaction(const Ray3f &ray, const Float *cache,                  \
                                   SurfaceInteraction3f &si) const override {             \
-        fill_intersection_record_impl(ray, cache, si, true);                             \
+        fill_surface_interaction_impl(ray, cache, si, true);                             \
     }                                                                                    \
     void fill_surface_interaction(const Ray3fP &ray, const FloatP *cache,                \
                                   SurfaceInteraction3fP &si,                             \
                                   MaskP active) const override {                         \
-        fill_intersection_record_impl(ray, cache, si, active);                           \
+        fill_surface_interaction_impl(ray, cache, si, active);                           \
     }                                                                                    \
                                                                                          \
     std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,      \
