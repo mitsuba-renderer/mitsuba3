@@ -241,6 +241,26 @@ public:
         fill_surface_interaction(ray, cache, si);
     }
 
+    /**
+     * \brief Test for an intersection and return detailed information
+     *
+     * This operation combines the prior \ref ray_intersect() and \ref
+     * fill_surface_interaction() operations in case intersection with a single
+     * shape is desired.
+     *
+     * \param ray
+     *     The ray to be tested for an intersection
+     */
+    SurfaceInteraction3f ray_intersect(const Ray3f &ray) const;
+
+    /// Vectorized version of \ref ray_intersect()
+    SurfaceInteraction3fP ray_intersect(const Ray3fP &ray, MaskP active = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect
+    SurfaceInteraction3f ray_intersect(const Ray3f &ray, bool /* unused */) const {
+        return ray_intersect(ray);
+    }
+
     //! @}
     // =============================================================
 

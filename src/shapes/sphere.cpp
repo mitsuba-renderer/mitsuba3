@@ -65,8 +65,8 @@ public:
     // =============================================================
 
     template <typename Point2, typename Value = value_t<Point2>>
-    auto sample_position_impl(Value time, const Point2 &sample,
-                              mask_t<Value> /* active */) const {
+    MTS_INLINE auto sample_position_impl(Value time, const Point2 &sample,
+                                         mask_t<Value> /* active */) const {
         using Point3 = point3_t<Point2>;
 
         Point3 p = warp::square_to_uniform_sphere(sample);
@@ -74,8 +74,10 @@ public:
         PositionSample<Point3> ps;
         ps.p = fmadd(p, m_radius, m_center);
         ps.n = p;
+
         if (m_flip_normals)
             ps.n = -ps.n;
+
         ps.time = time;
         ps.delta = m_radius != 0.f;
         ps.pdf = m_inv_surface_area;
@@ -85,113 +87,99 @@ public:
 
     template <typename PositionSample3,
               typename Value = typename PositionSample3::Value>
-    Value pdf_position_impl(PositionSample3 &/* ps */,
-                            mask_t<Value> /* active */) const {
+    MTS_INLINE Value pdf_position_impl(PositionSample3 & /* ps */,
+                                       mask_t<Value> /* active */) const {
         return m_inv_surface_area;
     }
 
-    /**
-     * Improved sampling strategy given in
-     * "Monte Carlo techniques for direct lighting calculations" by
-     * Shirley, P. and Wang, C. and Zimmerman, K. (TOG 1996)
-     */
     template <typename Interaction3, typename Point2,
               typename Value = value_t<Point2>>
-    auto sample_direction_impl(
+    MTS_INLINE auto sample_direction_impl(
             const Interaction3 &it, const Point2 &sample,
             mask_t<Value> active) const {
         using Vector3 = vector3_t<Point2>;
-        using Normal3 = normal3_t<Point2>;
         using Point3  = point3_t<Point2>;
         using Frame3  = Frame<Vector3>;
         using Mask    = mask_t<Value>;
+        using DirectionSample3 = mitsuba::DirectionSample<Point3>;
 
-        // TODO: should initialize with sample_position and / or set all fields?
-        DirectionSample<Point3> ds;
+        DirectionSample3 result;
 
-        const Vector3 ref_to_center = m_center - it.p;
-        const Value ref_dist_2 = squared_norm(ref_to_center);
-        const Value inv_ref_dist = rcp(sqrt(ref_dist_2));
+        Vector3 dc_v = m_center - it.p;
+        Value dc_2 = squared_norm(dc_v);
 
-        // Sine of the angle of the cone containing the
-        // sphere as seen from 'it.p'
-        const Value sin_alpha = m_radius * inv_ref_dist;
+        Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::Epsilon) :
+                                                        (1.f - math::Epsilon));
 
-        Mask ref_outside     = active && (sin_alpha < (1.f - math::Epsilon));
-        Mask not_ref_outside = active && !ref_outside;
+        Mask outside_mask = active && dc_2 > sqr(radius_adj);
+        if (likely(any(outside_mask))) {
+            Value inv_dc            = rsqrt(dc_2),
+                  sin_theta_max     = m_radius * inv_dc,
+                  sin_theta_max_2   = sqr(sin_theta_max),
+                  inv_sin_theta_max = rcp(sin_theta_max),
+                  cos_theta_max     = safe_sqrt(1.f - sin_theta_max_2);
 
-        // TODO: simplify this to avoid masked assignments
-        if (any(ref_outside)) {
-            // The reference point lies outside of the sphere.
-            // => sample based on the projected cone.
-            Value cos_alpha = enoki::safe_sqrt(1.f - sin_alpha * sin_alpha);
+            /* Fall back to a Taylor series expansion for small angles, where
+               the standard approach suffers from severe cancellation errors */
+            Value sin_theta_2 = select(sin_theta_max_2 > 0.00068523f, /* sin^2(1.5 deg) */
+                                       1.f - sqr(fmadd(cos_theta_max - 1.f, sample.x(), 1.f)),
+                                       sin_theta_max_2 * sample.x()),
+                  cos_theta = safe_sqrt(1.f - sin_theta_2);
 
-            masked(ds.d, ref_outside) = Frame3(
-                ref_to_center * inv_ref_dist).to_world(
-                    warp::square_to_uniform_cone(sample, cos_alpha)
-            );
-            masked(ds.pdf, ref_outside) = warp::square_to_uniform_cone_pdf(
-                Vector3(0, 0, 0), cos_alpha
-            );
+            /* Based on https://www.akalin.com/sampling-visible-sphere */
+            Value cos_alpha = sin_theta_2 * inv_sin_theta_max +
+                              cos_theta * safe_sqrt(fnmadd(sin_theta_2, sqr(inv_sin_theta_max), 1.f)),
+                  sin_alpha = safe_sqrt(fnmadd(cos_alpha, cos_alpha, 1.f));
 
-            // Distance to the projection of the sphere center
-            // onto the ray (it.p, ds.d)
-            const Value proj_dist = dot(ref_to_center, ds.d);
+            auto [sin_phi, cos_phi] = sincos(sample.y() * (2.f * math::Pi));
 
-            // To avoid numerical problems move the query point to the
-            // intersection of the of the original direction ray and a plane
-            // with normal ref_to_center which goes through the sphere's center
-            const Value base_t = ref_dist_2 / proj_dist;
-            const Point3 query = it.p + ds.d * base_t;
+            Vector3 d = Frame3(dc_v * -inv_dc).to_world(Vector3(
+                cos_phi * sin_alpha,
+                sin_phi * sin_alpha,
+                cos_alpha));
 
-            const Vector3 query_to_center = m_center - query;
-            const Value   query_dist_2    = squared_norm(query_to_center);
-            const Value   query_proj_dist = dot(query_to_center, ds.d);
-
-            // Try to find the intersection point between the sampled ray and the sphere.
-            Value A = 1.f,
-                  B = -2.f * query_proj_dist,
-                  C = query_dist_2 - m_radius * m_radius;
-
-            auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
-
-            // The intersection couldn't be found due to roundoff errors..
-            // Don't give up -- one workaround is to project the closest
-            // ray position onto the sphere
-            masked(near_t, !solution_found) = query_proj_dist;
-
-            masked(ds.dist, ref_outside) = base_t + near_t;
-            masked(ds.n,    ref_outside) = normalize(
-                ds.d * near_t - query_to_center);
-            masked(ds.p,    ref_outside) = m_center + ds.n * m_radius;
-        }
-
-        if (any(!ref_outside)) {
-            // The reference point lies inside the sphere
-            // => use uniform sphere sampling.
-            Vector3 d = warp::square_to_uniform_sphere(sample);
-
-            masked(ds.p, not_ref_outside) = m_center + d * m_radius;
-            masked(ds.n, not_ref_outside) = Normal3(d);
-            masked(ds.d, not_ref_outside) = ds.p - it.p;
+            DirectionSample3 ds = zero<DirectionSample3>();
+            ds.p        = fmadd(d, m_radius, m_center);
+            ds.n        = d;
+            ds.d        = ds.p - it.p;
 
             Value dist2 = squared_norm(ds.d);
-            masked(ds.dist, not_ref_outside) = sqrt(dist2);
-            masked(ds.d,    not_ref_outside) = ds.d / ds.dist;
-            masked(ds.pdf,  not_ref_outside) = m_inv_surface_area * dist2
-                                                  / abs_dot(ds.d, ds.n);
+            ds.dist     = sqrt(dist2);
+            ds.d        = ds.d / ds.dist;
+            ds.pdf      = warp::square_to_uniform_cone_pdf(zero<Vector3>(), cos_theta_max);
+
+            result[outside_mask] = ds;
         }
 
+        Mask inside_mask = andnot(active, outside_mask);
+        if (unlikely(any(inside_mask))) {
+            Vector3 d = warp::square_to_uniform_sphere(sample);
+            DirectionSample3 ds = zero<DirectionSample3>();
+            ds.p        = fmadd(d, m_radius, m_center);
+            ds.n        = d;
+            ds.d        = ds.p - it.p;
+
+            Value dist2 = squared_norm(ds.d);
+            ds.dist     = sqrt(dist2);
+            ds.d        = ds.d / ds.dist;
+            ds.pdf      = m_inv_surface_area * dist2 / abs_dot(ds.d, ds.n);
+
+            result[inside_mask] = ds;
+        }
+
+        result.time = it.time;
+        result.delta = m_radius != 0;
+
         if (m_flip_normals)
-            ds.n *= -1.f;
-        ds.delta = (m_radius != 0.f);
-        return ds;
+            result.n = -result.n;
+
+        return result;
     }
 
     template <typename Interaction3, typename DirectionSample3,
               typename Value = typename Interaction3::Value>
-    Value pdf_direction_impl(const Interaction3 &it, const DirectionSample3 &ds,
-                             const mask_t<Value> &/* active */) const {
+    MTS_INLINE Value pdf_direction_impl(const Interaction3 &it, const DirectionSample3 &ds,
+                                        mask_t<Value> /* active */) const {
         using Vector3 = typename DirectionSample3::Vector3;
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
         Value sin_alpha = m_radius * rcp(norm(m_center - it.p)),
@@ -199,8 +187,8 @@ public:
 
         return select(sin_alpha < (1.f - math::Epsilon),
             // Reference point lies outside the sphere
-            warp::square_to_uniform_cone_pdf(Vector3(0, 0, 0), cos_alpha),
-            m_inv_surface_area * ds.dist * ds.dist / abs_dot(ds.d, ds.n)
+            warp::square_to_uniform_cone_pdf(zero<Vector3>(), cos_alpha),
+            m_inv_surface_area * sqr(ds.dist) / abs_dot(ds.d, ds.n)
         );
     }
 
@@ -212,8 +200,8 @@ public:
     // =============================================================
 
     template <typename Ray3, typename Value = typename Ray3::Value>
-    std::pair<mask_t<Value>, Value> ray_intersect_impl(
-            const Ray3 &ray, Value * /*cache*/, const mask_t<Value> &active) const {
+    MTS_INLINE std::pair<mask_t<Value>, Value> ray_intersect_impl(
+            const Ray3 &ray, Value* /* cache */, mask_t<Value> active) const {
         using Float64  = float64_array_t<Value>;
         using Vector3 = Vector<Float64, 3>;
         using Mask    = mask_t<Value>;
@@ -243,7 +231,7 @@ public:
     }
 
     template <typename Ray3, typename Value = typename Ray3::Value>
-    mask_t<Value> ray_test_impl(const Ray3 &ray, const mask_t<Value> &active) const {
+    MTS_INLINE mask_t<Value> ray_test_impl(const Ray3 &ray, mask_t<Value> active) const {
         using Float64 = float64_array_t<Value>;
         using Vector3 = Vector<Float64, 3>;
         using Mask    = mask_t<Value>;
@@ -272,9 +260,9 @@ public:
     template <typename Ray3,
               typename SurfaceInteraction3,
               typename Value = typename SurfaceInteraction3::Value>
-    void fill_surface_interaction_impl(const Ray3 &ray, const Value* /* cache */,
-                                       SurfaceInteraction3 &si_out,
-                                       mask_t<Value> active) const {
+    MTS_INLINE void fill_surface_interaction_impl(const Ray3 &ray, const Value* /* cache */,
+                                                  SurfaceInteraction3 &si_out,
+                                                  mask_t<Value> active) const {
         using Vector3 = typename SurfaceInteraction3::Vector3;
         using Point2  = typename SurfaceInteraction3::Point2;
         using Mask    = mask_t<Value>;
@@ -289,7 +277,7 @@ public:
                 d       = local / m_radius;
 
         Value   rd_2    = sqr(d.x()) + sqr(d.y()),
-                theta   = 2.f * safe_asin(.5f * sqrt(rd_2 + sqr(d.z() - 1.f))),
+                theta   = unit_angle_z(d),
                 phi     = atan2(d.y(), d.x());
 
         masked(phi, phi < 0.f) += 2.f * math::Pi;
@@ -325,9 +313,9 @@ public:
     template <typename SurfaceInteraction3,
               typename Value   = typename SurfaceInteraction3::Value,
               typename Vector3 = typename SurfaceInteraction3::Vector3>
-    std::pair<Vector3, Vector3> normal_derivative_impl(
+    MTS_INLINE std::pair<Vector3, Vector3> normal_derivative_impl(
             const SurfaceInteraction3 &si, bool, mask_t<Value>) const {
-        Value inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
+        Float inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
         return { si.dp_du * inv_radius, si.dp_dv * inv_radius };
     }
 

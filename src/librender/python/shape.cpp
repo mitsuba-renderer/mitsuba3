@@ -8,6 +8,14 @@
 MTS_PY_EXPORT(Shape) {
     using Index = Shape::Index;
     MTS_PY_CLASS(Shape, Object)
+        .def("ray_intersect",
+             py::overload_cast<const Ray3f &, bool>(
+                 &Shape::ray_intersect, py::const_),
+             D(Shape, ray_intersect), "ray"_a, "active"_a = true)
+        .def("ray_intersect",
+             enoki::vectorize_wrapper(py::overload_cast<const Ray3fP &, MaskP>(
+                 &Shape::ray_intersect, py::const_)),
+             D(Shape, ray_intersect), "ray"_a, "active"_a = true)
         .def("sample_position",
              py::overload_cast<Float, const Point2f &, bool>(
                  &Shape::sample_position, py::const_),

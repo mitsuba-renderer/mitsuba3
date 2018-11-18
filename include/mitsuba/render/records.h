@@ -28,7 +28,6 @@ template <typename Point3_> struct PositionSample {
     using ObjectPtr            = replace_scalar_t<Value, const Object *>;
     using SurfaceInteraction   = mitsuba::SurfaceInteraction<Point3>;
     using Mask                 = mask_t<Value>;
-    using Bool                 = bool_array_t<Value>;
 
     //! @}
     // =============================================================
@@ -65,7 +64,7 @@ template <typename Point3_> struct PositionSample {
      * a dynamic array of PositionSample remains possible even on architectures
      * where scalar_t<Mask> != bool (e.g. Knights Landing).
      */
-    Bool delta;
+    Mask delta;
 
     /**
       * \brief Optional: pointer to an associated object

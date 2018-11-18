@@ -140,6 +140,26 @@ void Shape::fill_surface_interaction(const Ray3fP & /* ray */,
     NotImplementedError("fill_surface_interaction_p");
 }
 
+SurfaceInteraction3f Shape::ray_intersect(const Ray3f &ray) const {
+    SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+    Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+    bool success = false;
+    std::tie(success, si.t) = ray_intersect(ray, cache);
+    if (success)
+        fill_surface_interaction(ray, cache, si);
+    return si;
+}
+
+SurfaceInteraction3fP Shape::ray_intersect(const Ray3fP &ray, MaskP active) const {
+    SurfaceInteraction3fP si = zero<SurfaceInteraction3fP>();
+    FloatP cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+    MaskP success = false;
+    std::tie(success, si.t) = ray_intersect(ray, cache, active);
+    if (any(success && active))
+        fill_surface_interaction(ray, cache, si, success && active);
+    return si;
+}
+
 std::pair<Vector3f, Vector3f>
 Shape::normal_derivative(const SurfaceInteraction3f & /* si */,
                          bool /* shading_frame */) const {

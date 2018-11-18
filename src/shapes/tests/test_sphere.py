@@ -39,7 +39,7 @@ def test02_bbox():
         assert np.allclose(b.extents(), 2 * r)
 
 
-def test04_ray_intersect_transform():
+def test03_ray_intersect_transform():
     for r in [1, 3]:
         s = example_scene(radius=r,
                           extra="""<transform name="to_world">
@@ -81,3 +81,35 @@ def test04_ray_intersect_transform():
                         dv = (si_v.uv - si.uv) / eps
                         assert(np.allclose(dv, [0, 1], atol=2e-2))
 
+
+def test04_sample_direct():
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import Interaction3f
+    from mitsuba.core import Ray3f
+    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
+    import numpy as np
+
+    sphere = load_string('<shape type="sphere" version="2.0.0"/>')
+
+    def sample_cone(sample, cos_theta_max):
+        cos_theta = (1 - sample[1]) + sample[1] * cos_theta_max
+        sin_theta = np.sqrt(1 - cos_theta * cos_theta)
+        phi = 2 * np.pi * sample[0]
+        s, c = np.sin(phi), np.cos(phi)
+        return np.array([c * sin_theta, s * sin_theta, cos_theta])
+
+    it = Interaction3f()
+    it.p = [0, 0, -3]
+    it.t = 0
+    wl = np.zeros(MTS_WAVELENGTH_SAMPLES)
+    sin_cone_angle = 1.0 / it.p[-1]
+    cos_cone_angle = np.sqrt(1 - sin_cone_angle**2)
+
+    for xi_1 in np.linspace(0, 1, 10):
+        for xi_2 in np.linspace(1e-3, 1 - 1e-3, 10):
+            sample = sphere.sample_direction(it, [xi_2, 1 - xi_1])
+            d = sample_cone([xi_1, xi_2], cos_cone_angle)
+            its = sphere.ray_intersect(Ray3f(it.p, d, 0, wl))
+            assert np.allclose(d, sample.d, atol=1e-5, rtol=1e-5)
+            assert np.allclose(its.t, sample.dist, atol=1e-5, rtol=1e-5)
+            assert np.allclose(its.p, sample.p, atol=1e-5, rtol=1e-5)

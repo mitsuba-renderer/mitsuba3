@@ -94,10 +94,10 @@ static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 
 //! @{ \name Helper functions for spherical geometry
 // -----------------------------------------------------------------------
 
-template <typename T, typename Value = expr_t<T>> Vector<Value, 3> sphdir(T theta, T phi) {
-    Value sin_theta, cos_theta, sin_phi, cos_phi;
-    std::tie(sin_theta, cos_theta) = sincos(theta);
-    std::tie(sin_phi, cos_phi) = sincos(phi);
+template <typename T, typename Value = expr_t<T>>
+Vector<Value, 3> sphdir(const T &theta, const T &phi) {
+    auto [sin_theta, cos_theta] = sincos(theta);
+    auto [sin_phi, cos_phi] = sincos(phi);
 
     return Vector<Value, 3>(
         cos_phi * sin_theta,

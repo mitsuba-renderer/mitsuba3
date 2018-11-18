@@ -60,8 +60,8 @@ public:
     // =============================================================
 
     template <typename Point2, typename Value = value_t<Point2>>
-    auto sample_position_impl(Value time, const Point2 &sample,
-                              const mask_t<Value> &/*active*/) const {
+    MTS_INLINE auto sample_position_impl(Value time, const Point2 &sample,
+                                         mask_t<Value> /* active */) const {
         using Point3   = point3_t<Point2>;
 
         PositionSample<Point3> ps;
@@ -78,15 +78,15 @@ public:
 
     template <typename PositionSample3,
               typename Value = typename PositionSample3::Value>
-    Value pdf_position_impl(const PositionSample3 &/* ps */,
-                            mask_t<Value> /* active */) const {
+    MTS_INLINE Value pdf_position_impl(const PositionSample3 &/* ps */,
+                                       mask_t<Value> /* active */) const {
         return m_inv_surface_area;
     }
 
     template <typename Interaction3, typename Point2,
               typename Value = value_t<Point2>>
-    auto sample_direction_impl(const Interaction3 &it, const Point2 &sample,
-                               mask_t<Value> active) const {
+    MTS_INLINE auto sample_direction_impl(const Interaction3 &it, const Point2 &sample,
+                                          mask_t<Value> active) const {
         using DirectionSample = DirectionSample<typename Interaction3::Point3>;
 
         DirectionSample ds = sample_position_impl(it.time, sample, active);
@@ -104,9 +104,9 @@ public:
 
     template <typename Interaction3, typename DirectionSample3,
               typename Value = typename Interaction3::Value>
-    Value pdf_direction_impl(const Interaction3 &/* it */,
-                             const DirectionSample3 &ds,
-                             mask_t<Value> active) const {
+    MTS_INLINE Value pdf_direction_impl(const Interaction3 &/* it */,
+                                        const DirectionSample3 &ds,
+                                        mask_t<Value> active) const {
         Value pdf = pdf_position_impl(ds, active),
               dp  = abs_dot(ds.d, ds.n);
 
@@ -121,8 +121,8 @@ public:
     // =============================================================
 
     template <typename Ray3, typename Value = typename Ray3::Value>
-    std::pair<mask_t<Value>, Value> ray_intersect_impl(
-            const Ray3 &ray_, Value *cache, mask_t<Value> active) const {
+    MTS_INLINE std::pair<mask_t<Value>, Value> ray_intersect_impl(
+        const Ray3 &ray_, Value *cache, mask_t<Value> active) const {
         using Point3 = Point<Value, 3>;
 
         Ray3 ray     = m_world_to_object * ray_;
@@ -146,7 +146,7 @@ public:
     }
 
     template <typename Ray3, typename Value = typename Ray3::Value>
-    mask_t<Value> ray_test_impl(const Ray3 &ray_, mask_t<Value> active) const {
+    MTS_INLINE mask_t<Value> ray_test_impl(const Ray3 &ray_, mask_t<Value> active) const {
         using Point3 = Point<Value, 3>;
 
         Ray3 ray     = m_world_to_object * ray_;
@@ -163,9 +163,9 @@ public:
     template <typename Ray3,
               typename SurfaceInteraction3,
               typename Value = typename SurfaceInteraction3::Value>
-    void fill_surface_interaction_impl(const Ray3 &ray, const Value *cache,
-                                       SurfaceInteraction3 &si_out,
-                                       mask_t<Value> active) const {
+    MTS_INLINE void fill_surface_interaction_impl(const Ray3 &ray, const Value *cache,
+                                                  SurfaceInteraction3 &si_out,
+                                                  mask_t<Value> active) const {
         using Point2  = typename SurfaceInteraction3::Point2;
 
         SurfaceInteraction3 si(si_out);
@@ -185,8 +185,8 @@ public:
     template <typename SurfaceInteraction3,
               typename Value   = typename SurfaceInteraction3::Value,
               typename Vector3 = typename SurfaceInteraction3::Vector3>
-    std::pair<Vector3, Vector3> normal_derivative_impl(
-            const SurfaceInteraction3 &/*si*/, bool, const mask_t<Value> &) const {
+    MTS_INLINE std::pair<Vector3, Vector3> normal_derivative_impl(
+            const SurfaceInteraction3 &/*si*/, bool, mask_t<Value>) const {
         return { Vector3(0.f), Vector3(0.f) };
     }
 
