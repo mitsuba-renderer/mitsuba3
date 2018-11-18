@@ -97,24 +97,29 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Assert(m_filter != nullptr);
     using Mask = mask_t<FloatP>;
 
-    size_t channels = m_bitmap->channel_count();
+    uint32_t channels = (uint32_t) m_bitmap->channel_count();
 
-    Mask is_valid(true);
     // Check if all sample values are valid
     if (m_warn) {
+        Mask is_valid = true;
         for (size_t k = 0; k < channels; ++k)
-            is_valid &= enoki::isfinite(value[k]) && (value[k] >= 0);
+            is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
 
         if (unlikely(any(active && !is_valid))) {
             std::ostringstream oss;
-            oss << "Invalid sample value(s): [";
-            for (size_t i = 0; i < channels; ++i) {
-                oss << value[i];
-                if (i + 1 < channels)
-                    oss << ", ";
+            for (size_t i = 0; i < PacketSize; ++i) {
+                if (is_valid[i])
+                    continue;
+                oss << "Invalid sample value(s): [";
+                for (uint32_t j = 0; j < channels; ++j) {
+                    oss << value[j].coeff(i);
+                    if (j + 1 < channels)
+                        oss << ", ";
+                }
             }
             oss << "]";
             Log(EWarn, "%s", oss.str());
+            active &= is_valid;
         }
     }
 
@@ -125,8 +130,8 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Point2fP pos = pos_ - (m_offset - m_border_size + .5f);
 
     // Determine the affected range of pixels
-    Point2iP lo = max(Point2iP(ceil (pos - filter_radius)), 0),
-             hi = min(Point2iP(floor(pos + filter_radius)), size - 1);
+    Point2iP lo = max(ceil2int<Point2iP> (pos - filter_radius), 0),
+             hi = min(floor2int<Point2iP>(pos + filter_radius), size - 1);
     Vector2iP window_size = hi - lo;
 
     // Lookup values from the pre-rasterized filter
@@ -134,30 +139,30 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
                      hmax(window_size.y()));
 
     Point2fP corner = lo - pos;
-    for (int i = 0; i <= max_size.x(); ++i)
-        m_weights_x_p[i] = m_filter->eval_discretized(corner.x() + i, active);
+    ENOKI_NOUNROLL for (int i = 0; i <= max_size.x(); ++i)
+        m_weights_x_p[i] = m_filter->eval_discretized(corner.x() + (Float) i, active);
 
-    for (int i = 0; i <= max_size.y(); ++i)
-        m_weights_y_p[i] = m_filter->eval_discretized(corner.y() + i, active);
+    ENOKI_NOUNROLL for (int i = 0; i <= max_size.y(); ++i)
+        m_weights_y_p[i] = m_filter->eval_discretized(corner.y() + (Float) i, active);
 
     // Rasterize the filtered sample into the framebuffer
     Float *buffer = (Float *) m_bitmap->data();
-    for (int yr = 0; yr <= max_size.y(); ++yr) {
-        Mask enabled = active && is_valid && yr <= window_size.y();
+    ENOKI_NOUNROLL for (int yr = 0; yr <= max_size.y(); ++yr) {
+        Mask enabled = active && yr <= window_size.y();
         Int32P y = lo.y() + yr;
 
-        for (int xr = 0; xr <= max_size.x(); ++xr) {
+        ENOKI_NOUNROLL for (int xr = 0; xr <= max_size.x(); ++xr) {
             Int32P x      = lo.x() + xr,
                    offset = channels * (y * size.x() + x);
             FloatP weights = m_weights_y_p[yr] * m_weights_x_p[xr];
 
             enabled &= xr <= window_size.x();
-            for (size_t k = 0; k < channels; ++k)
+            ENOKI_NOUNROLL for (uint32_t k = 0; k < channels; ++k)
                 scatter_add(buffer + k, offset, weights * value[k], enabled);
         }
     }
 
-    return is_valid;
+    return active;
 }
 
 std::string ImageBlock::to_string() const {
