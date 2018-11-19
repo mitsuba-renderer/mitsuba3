@@ -86,10 +86,10 @@ public:
 
         uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
 
-        Vector3f v00 = gather<Vector3f>(ptr, index, active),
-                 v10 = gather<Vector3f>(ptr + 3, index, active),
-                 v01 = gather<Vector3f>(ptr + width, index, active),
-                 v11 = gather<Vector3f>(ptr + width + 3, index, active);
+        Vector3f v00 = gather<Vector3f, 0, true>(ptr, index, active),
+                 v10 = gather<Vector3f, 0, true>(ptr + 3, index, active),
+                 v01 = gather<Vector3f, 0, true>(ptr + width, index, active),
+                 v11 = gather<Vector3f, 0, true>(ptr + width + 3, index, active);
 
         Spectrum s00 = srgb_model_eval(v00, it.wavelengths),
                  s10 = srgb_model_eval(v10, it.wavelengths),

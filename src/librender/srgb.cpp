@@ -1,5 +1,8 @@
 #include <mitsuba/render/srgb.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/plugin.h>
+#include <mitsuba/core/properties.h>
 #include <rgb2spec.h>
 #include <tbb/tbb.h>
 
@@ -33,6 +36,31 @@ Vector3f srgb_model_fetch(const Color3f &c) {
     rgb2spec_fetch(model, rgb, out);
 
     return Vector3f(out[0], out[1], out[2]);
+}
+
+Color3f srgb_model_eval_rgb(const Vector3f &coeff) {
+    ref<ContinuousSpectrum> d65 =
+        PluginManager::instance()->create_object<ContinuousSpectrum>(
+            Properties("d65"));
+    auto expanded = d65->expand();
+    if (expanded.size() == 1)
+        d65 = (ContinuousSpectrum *) expanded[0].get();
+
+    Vector3f accum = zero<Vector3f>();
+    for (size_t i = 0; i < 1000; ++i) {
+        Float lambda = i * (1.f / 999.f) * (830.f - 360.f) + 360.f;
+        accum += cie1931_xyz(lambda) * srgb_model_eval(coeff, lambda) *
+                 d65->eval(Spectrumf(lambda))[0];
+    }
+    accum *= (830.f - 360.f) / 1000.f;
+
+    Matrix3f xyz_to_srgb(
+         3.240479, -1.537150, -0.498535,
+        -0.969256,  1.875991,  0.041556,
+         0.055648, -0.204043,  1.057311
+    );
+
+    return xyz_to_srgb * accum;
 }
 
 NAMESPACE_END(mitsuba)

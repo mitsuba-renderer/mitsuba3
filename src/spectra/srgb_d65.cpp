@@ -12,12 +12,15 @@ public:
             Throw("Cannot specify both 'scale' and 'value'.");
 
         m_color = props.color("color");
+        Float intensity = hmax(m_color) * 2.f;
+        m_color /= intensity;
+
         m_coeff = srgb_model_fetch(m_color);
 
         Properties props2("d65");
         Float value =
             props.float_(props.has_property("scale") ? "scale" : "value", 1.0f);
-        props2.set_float("value", value);
+        props2.set_float("value", value * intensity);
         m_d65 = (ContinuousSpectrum *) PluginManager::instance()
                     ->create_object<ContinuousSpectrum>(props2)
                     ->expand().front().get();

@@ -121,8 +121,8 @@ extern MTS_EXPORT_CORE const Float cie1931_z_data[MTS_CIE_SAMPLES];
  * in nanometers
  */
 template <typename T, typename Expr = expr_t<T>>
-std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths,
-                                         mask_t<Expr> active = true) {
+Array<Expr, 3> cie1931_xyz(const T &wavelengths,
+                           mask_t<Expr> active = true) {
     using Index = int_array_t<Expr>;
 
     Expr t = (wavelengths - MTS_CIE_MIN) *
@@ -143,9 +143,10 @@ std::tuple<Expr, Expr, Expr> cie1931_xyz(const T &wavelengths,
     Expr w1 = t - Expr(i0),
          w0 = (Float) 1 - w1;
 
-    return { fmadd(w0, v0_x, w1 * v1_x) & active,
-             fmadd(w0, v0_y, w1 * v1_y) & active,
-             fmadd(w0, v0_z, w1 * v1_z) & active };
+    return Array<Expr, 3>(fmadd(w0, v0_x, w1 * v1_x),
+                          fmadd(w0, v0_y, w1 * v1_y),
+                          fmadd(w0, v0_z, w1 * v1_z)) &
+           Array<mask_t<Expr>, 3>(active);
 }
 
 /**

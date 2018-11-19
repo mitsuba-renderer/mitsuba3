@@ -665,14 +665,18 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")", node.attribute("value").value());
 
                     Properties props2(within_emitter ? "srgb_d65" : "srgb");
+                    Color3f col;
                     try {
-                        Color3f col(detail::stof(tokens[0]),
-                                    detail::stof(tokens[1]),
-                                    detail::stof(tokens[2]));
+                        col = Color3f(detail::stof(tokens[0]),
+                                      detail::stof(tokens[1]),
+                                      detail::stof(tokens[2]));
+
                         props2.set_color("color", col);
                     } catch (...) {
                         src.throw_error(node, "could not parse RGB value \"%s\"", node.attribute("value").value());
                     }
+                    if (!within_emitter && any(col < 0 || col > 1))
+                        src.throw_error(node, "invalid RGB reflectance value, must be in the range [0, 1]!");
                     ref<Object> obj = PluginManager::instance()->create_object(props2);
                     props.set_object(node.attribute("name").value(), obj);
                 }

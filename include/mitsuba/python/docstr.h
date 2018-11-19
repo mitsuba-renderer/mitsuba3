@@ -4944,6 +4944,22 @@ static const char *__doc_mitsuba_Shape_ray_intersect_3 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 ray_intersect())doc";
 
+static const char *__doc_mitsuba_Shape_ray_intersect_4 =
+R"doc(Test for an intersection and return detailed information
+
+This operation combines the prior ray_intersect() and
+fill_surface_interaction() operations in case intersection with a
+single shape is desired.
+
+Parameter ``ray``:
+    The ray to be tested for an intersection)doc";
+
+static const char *__doc_mitsuba_Shape_ray_intersect_5 = R"doc(Vectorized version of ray_intersect())doc";
+
+static const char *__doc_mitsuba_Shape_ray_intersect_6 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+ray_intersect)doc";
+
 static const char *__doc_mitsuba_Shape_ray_test =
 R"doc(Fast ray shadow test
 
@@ -8059,7 +8075,9 @@ Returns:
 
 static const char *__doc_mitsuba_srgb_model_eval = R"doc()doc";
 
-static const char *__doc_mitsuba_srgb_model_fetch = R"doc()doc";
+static const char *__doc_mitsuba_srgb_model_eval_rgb = R"doc(Sanity check: convert the coefficients back to sRGB)doc";
+
+static const char *__doc_mitsuba_srgb_model_fetch = R"doc(Look up the model coefficients for a sRGB color value)doc";
 
 static const char *__doc_mitsuba_srgb_model_mean = R"doc()doc";
 

@@ -79,7 +79,7 @@ public:
         Spectrum spec = m_radiance->eval(it.wavelengths, active) / ds.pdf;
 
         ds.object = this;
-        return { ds, spec };
+        return { ds, spec & active };
     }
 
     template <typename Interaction, typename DirectionSample, typename Mask,
