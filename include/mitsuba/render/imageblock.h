@@ -100,7 +100,7 @@ public:
         Assert(m_bitmap->pixel_format() == Bitmap::EXYZAW,
                "This `put` variant requires XYZAW internal storage format.");
 
-        Array<Spectrum, 3> XYZ = cie1931_xyz(wavelengths);
+        Array<Spectrum, 3> XYZ = cie1931_xyz(wavelengths, active);
         Value Xs = enoki::mean(XYZ.x() * value),
               Ys = enoki::mean(XYZ.y() * value),
               Zs = enoki::mean(XYZ.z() * value);
