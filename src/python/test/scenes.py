@@ -3,10 +3,11 @@ import pytest
 from mitsuba.core.xml import load_string
 from mitsuba.test.util import fresolver_append_path
 
+
 @pytest.fixture
 def empty_scene():
     return make_empty_scene()
-def make_empty_scene():
+def make_empty_scene(spp = 16):
     scene = load_string("""
         <scene version='2.0.0'>
             <sensor type="perspective">
@@ -15,18 +16,21 @@ def make_empty_scene():
                     <integer name="height" value="146"/>
                 </film>
 
-                <sampler type="independent"/>
+                <sampler type="independent">
+                    <integer name="sample_count" value="{spp}"/>
+                </sampler>
             </sensor>
         </scene>
-    """)
+    """.format(spp=spp))
     assert scene is not None
     return scene
+
 
 @pytest.fixture
 def teapot_scene():
     return make_teapot_scene()
 @fresolver_append_path
-def make_teapot_scene(spp = 16):
+def make_teapot_scene(spp = 32):
     scene = load_string("""
         <scene version='2.0.0'>
             <sensor type="perspective">
@@ -208,7 +212,7 @@ def make_museum_plane_scene(spp = 16, roughness = 0.01):
 
             <bsdf type="roughconductor" id="glossy">
                 <float name="alpha" value="{roughness}"/>
-                <rgb name="eta" value="0.8, 1.3, 1.4"/>
+                <rgb name="eta" value="0.8, 1.0, 1.0"/>
                 <rgb name="k" value="1.0, 1.0, 1.0"/>
             </bsdf>
 
@@ -235,8 +239,40 @@ def make_museum_plane_scene(spp = 16, roughness = 0.01):
     assert scene is not None
     return scene
 
+
 def make_integrator(kind, xml = ""):
     integrator = load_string("<integrator version='2.0.0' type='%s'>"
                              "%s</integrator>" % (kind, xml))
     assert integrator is not None
     return integrator
+
+
+"""
+Per-channel (RGBA) average pixel value for the scenes in this file.
+"""
+SCENES = {
+    'empty': {
+        'depth':    [0.0, 0.0, 0.0, 0.0],
+        'direct':   [0.0, 0.0, 0.0, 0.0],
+        'full':     [0.0, 0.0, 0.0, 0.0],
+        'factory':  make_empty_scene,
+    },
+    'teapot': {
+        'depth':    [38.350136, 30.179583, 28.941216, 0.22523145],
+        'direct':   [0.043047577, 0.04305204, 0.34495372, 0.22522855],
+        'full':     [0.043445505, 0.042756516, 0.35079345, 0.22523242],
+        'factory':  make_teapot_scene,
+    },
+    'box': {
+        'depth':    [131.11356, 103.17979, 98.93546, 1.0],
+        'direct':   [0.18221837, 0.18150339, 0.18413211, 1.0],
+        'full':     [0.6124875, 0.5084453, 0.5047617, 1.0],
+        'factory':  make_box_scene,
+    },
+    'museum_plane': {
+        'depth':    [84.34244, 66.37664, 63.645847, 0.6803148],
+        'direct':   [0.17339748, 0.10094113, 0.07784132, 0.68031573],
+        'full':     [0.17339082, 0.10093706, 0.07783183, 0.6803182],
+        'factory':  make_museum_plane_scene
+    },
+}
