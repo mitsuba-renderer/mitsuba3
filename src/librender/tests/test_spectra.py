@@ -8,10 +8,10 @@ n_samples = mitsuba.core.MTS_WAVELENGTH_SAMPLES
 
 def test01_cie1931():
     """CIE 1931 observer"""
-    X, Y, Z = mitsuba.core.cie1931_xyz([600])
-    assert np.allclose(X[0], 1.0622)
-    assert np.allclose(Y[0], 0.631)
-    assert np.allclose(Z[0], 0.0008)
+    XYZw = mitsuba.core.cie1931_xyz([600])
+    assert np.allclose(XYZw[0, 0], 1.0622)
+    assert np.allclose(XYZw[0, 1], 0.631)
+    assert np.allclose(XYZw[0, 2], 0.0008)
 
     Y = mitsuba.core.cie1931_y([600])
     assert np.allclose(Y[0], 0.631)
@@ -39,24 +39,33 @@ def test05_blackbody():
     assert np.allclose(bb.eval([350, 456, 600, 700, 840]), [0, 10997.9, 12762.4, 11812, 0])
 
 def test06_srgb_d65():
-    """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra."""
+    """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra,
+    with intensity factored out when evaluating the sRGB model."""
+    np.random.seed(12345)
     wavelengths = np.linspace(300, 800, 30)
     wavelengths += (10 * np.random.uniform(size=wavelengths.shape)).astype(np.int)
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
     d65_eval = d65.eval(wavelengths)
 
-    for color in ["0, 0, 0", "1, 1, 1", "0.1, 0.2, 0.3", "34, 0.1, 62",
-                  "0.001, 0.02, 11.4"]:
-        srgb = load_string("""<spectrum version="2.0.0" type="srgb">
-                <color name="color" value="{}"/>
-            </spectrum>
-            """.format(color))
-        srgb_d65 = load_string("""<spectrum version="2.0.0" type="srgb_d65">
-                <color name="color" value="{}"/>
-            </spectrum>
-            """.format(color))
+    for color in [[0, 0, 0], [1, 1, 1], [0.1, 0.2, 0.3], [34, 0.1, 62],
+                  [0.001, 0.02, 11.4]]:
+        intensity  = (np.max(color) * 2.0) or 1.0
+        normalized = np.array(color) / intensity
 
-        assert np.allclose(srgb_d65.eval(wavelengths), d65_eval * srgb.eval(wavelengths))
+        srgb = load_string("""
+            <spectrum version="2.0.0" type="srgb">
+                <color name="color" value="{}"/>
+            </spectrum>
+        """.format(', '.join(map(str, normalized))))
+
+        srgb_d65 = load_string("""
+            <spectrum version="2.0.0" type="srgb_d65">
+                <color name="color" value="{}"/>
+            </spectrum>
+        """.format(', '.join(map(str, color))))
+
+        assert np.allclose(srgb_d65.eval(wavelengths),
+                           d65_eval * intensity * srgb.eval(wavelengths))
 
 def test07_sample_rgb_spectrum():
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will

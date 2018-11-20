@@ -14,9 +14,9 @@ def convert_to_xyz(wavelengths, spectrum):
     responses = cie1931_xyz(wavelengths)
     xyz = np.zeros(shape=(3,))
     for li in range(N_SAMPLES):
-        xyz[0] += spectrum[li] * responses[0][li]
-        xyz[1] += spectrum[li] * responses[1][li]
-        xyz[2] += spectrum[li] * responses[2][li]
+        xyz[0] += spectrum[li] * responses[li, 0]
+        xyz[1] += spectrum[li] * responses[li, 1]
+        xyz[2] += spectrum[li] * responses[li, 2]
     xyz /= float(N_SAMPLES)
     return xyz
 

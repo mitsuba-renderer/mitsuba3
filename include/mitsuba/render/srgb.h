@@ -19,7 +19,11 @@ MTS_INLINE Value srgb_model_mean(const Vector3 &coeff) {
     return mean(fmadd(.5f * v, rsqrt(fmadd(v, v, 1.f)), .5f));
 }
 
-/// Look up the model coefficients for a sRGB color value
+/**
+ * Look up the model coefficients for a sRGB color value
+ * @param  c An sRGB color value where all components are in [0, 1].
+ * @return   Coefficients for use with \ref srgb_model_eval
+ */
 extern MTS_EXPORT_RENDER Vector3f srgb_model_fetch(const Color3f &c);
 
 /// Sanity check: convert the coefficients back to sRGB

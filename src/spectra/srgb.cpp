@@ -1,6 +1,6 @@
-#include <mitsuba/render/spectrum.h>
-#include <mitsuba/core/transform.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/transform.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/srgb.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -9,6 +9,10 @@ class SRGBSpectrum final : public ContinuousSpectrum {
 public:
     SRGBSpectrum(const Properties &props) {
         m_color = props.color("color");
+        if (any(m_color < 0 || m_color > 1))
+            Throw("Invalid RGB reflectance value %s, must be in the range "
+                  "[0, 1]!", m_color);
+
         m_coeff = srgb_model_fetch(m_color);
     }
 
