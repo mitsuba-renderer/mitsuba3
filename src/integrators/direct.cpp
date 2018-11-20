@@ -46,11 +46,12 @@ public:
               typename Mask            = mask_t<Value>>
     Spectrum eval_impl(const RayDifferential &ray, RadianceSample<Point3> &rs,
                        Mask active) const {
-        constexpr bool IsVectorized = is_array<Value>::value;
+        constexpr bool IsVectorized = is_array_v<Value>;
         using DirectionSample    = mitsuba::DirectionSample<Point3>;
         using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
         using BSDFSample         = mitsuba::BSDFSample<Point3>;
         using Vector3            = typename SurfaceInteraction::Vector3;
+        using EmitterPtr         = typename SurfaceInteraction::EmitterPtr;
         using BSDFPtr            = typename SurfaceInteraction::BSDFPtr;
 
         const Scene *scene = rs.scene;
@@ -62,7 +63,7 @@ public:
 
         /* ----------------------- Visible emitters ----------------------- */
 
-        auto emitter = si.emitter(scene);
+        EmitterPtr emitter = si.emitter(scene);
         if (IsVectorized || emitter != nullptr)
             result += emitter->eval(si, active);
 

@@ -38,7 +38,7 @@ public:
             Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
         };
 
-        Log(EInfo, "Loading mesh from \"%s\" ..", m_name);
+        Log(EDebug, "Loading mesh from \"%s\" ..", m_name);
         if (!fs::exists(file_path))
             fail("file not found");
 
@@ -209,7 +209,7 @@ public:
         if (stream->tell() != stream->size())
             fail("invalid file -- trailing content");
 
-        Log(EInfo, "\"%s\": read %i faces, %i vertices (%s in %s)",
+        Log(EDebug, "\"%s\": read %i faces, %i vertices (%s in %s)",
             m_name,
             m_face_count,
             m_vertex_count,

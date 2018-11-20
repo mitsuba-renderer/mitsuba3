@@ -45,7 +45,7 @@ public:
                       .c_str(), m_name, args...);
         };
 
-        Log(EInfo, "Loading mesh from \"%s\" ..", m_name);
+        Log(EDebug, "Loading mesh from \"%s\" ..", m_name);
         if (!fs::exists(file_path))
             fail("file not found");
 
@@ -265,7 +265,7 @@ public:
             }
         }
 
-        Log(EInfo, "\"%s\": read %i faces, %i vertices (%s in %s)",
+        Log(EDebug, "\"%s\": read %i faces, %i vertices (%s in %s)",
             m_name, m_face_count, m_vertex_count,
             util::mem_string(m_face_count * m_face_struct->size() +
                              m_vertex_count * m_vertex_struct->size()),

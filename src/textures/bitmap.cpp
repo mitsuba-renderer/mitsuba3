@@ -16,7 +16,7 @@ public:
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
-        Log(EInfo, "Loading bitmap texture from \"%s\" ..", m_name);
+        Log(EDebug, "Loading bitmap texture from \"%s\" ..", m_name);
 
         m_bitmap = new Bitmap(file_path);
 
@@ -24,9 +24,8 @@ public:
            into spectral profile coefficients below */
         m_bitmap = m_bitmap->convert(Bitmap::ERGB, Bitmap::EFloat, false);
 
-        if (props.has_property("upscale")) {
-            Float upscale = props.float_("upscale");
-
+        Float upscale = props.float_("upscale", 1.f);
+        if (upscale != 1.f) {
             Vector2s old_size = m_bitmap->size(),
                      new_size = upscale * old_size;
 
