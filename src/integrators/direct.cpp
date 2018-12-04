@@ -106,8 +106,8 @@ public:
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
             BSDFSample bs;
             Spectrum bsdf_val;
-            std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(),
-                                                  rs.next_2d(), active);
+            std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(active),
+                                                  rs.next_2d(active), active);
             Mask active_b = active && any(neq(bsdf_val, 0.f));
 
             // Trace the ray in the sampled direction and intersect against the scene

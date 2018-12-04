@@ -148,9 +148,9 @@ public:
      * \return
      *     The discrete index associated with the sample
      */
-    template <typename Scalar,
-              typename Index = uint_array_t<Scalar>>
-    Index sample(Scalar sample_value, mask_t<Scalar> active = true) const {
+    template <typename Value,
+              typename Index = uint_array_t<Value>>
+    Index sample(Value sample_value, mask_t<Value> active = true) const {
         /* Note that the search range is adjusted to exclude entries at the
            beginning and end of the distribution that have probability 0.0.
            Otherwise we might return a indices that have no probability mass
@@ -159,7 +159,7 @@ public:
         return math::find_interval(
             m_range_start, m_range_end,
             [&](Index idx, mask_t<Index> active) ENOKI_INLINE_LAMBDA {
-                return gather<Scalar>(m_cdf.data(), idx, active) <= sample_value;
+                return gather<Value>(m_cdf.data(), idx, active) <= sample_value;
             },
             active
         );
@@ -175,13 +175,13 @@ public:
      *     A pair with (the discrete index associated with the sample, probability
      *     value of the sample).
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>>
-    std::pair<Index, Scalar> sample_pdf(Scalar sample_value,
-                                        mask_t<Scalar> active = true) const {
+    template <typename Value, typename Index = uint_array_t<Value>>
+    std::pair<Index, Value> sample_pdf(Value sample_value,
+                                        mask_t<Value> active = true) const {
         Index index = sample(sample_value, active);
 
-        return { index, gather<Scalar>(m_cdf.data(), index + 1, active) -
-                        gather<Scalar>(m_cdf.data(), index, active) };
+        return { index, gather<Value>(m_cdf.data(), index + 1, active) -
+                        gather<Value>(m_cdf.data(), index, active) };
     }
 
     /**
@@ -196,13 +196,13 @@ public:
      * \return
      *     The discrete index associated with the sample and the re-scaled sample value
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>>
-    std::pair<Index, Scalar>
-    sample_reuse(Scalar sample_value, mask_t<Scalar> active = true) const {
+    template <typename Value, typename Index = uint_array_t<Value>>
+    std::pair<Index, Value>
+    sample_reuse(Value sample_value, mask_t<Value> active = true) const {
         Index index = sample(sample_value, active);
-        Scalar cdf_value = gather<Scalar>(m_cdf.data(), index);
-        return { index, (sample_value - cdf_value) /
-                        (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value) };
+        Value cdf0 = gather<Value>(m_cdf.data(), index, active),
+              cdf1 = gather<Value>(m_cdf.data(), index + 1, active);
+        return { index, (sample_value - cdf0) / (cdf1 - cdf0) };
     }
 
     /**
@@ -221,16 +221,16 @@ public:
      *     2. the probability value of the sample
      *     3. the re-scaled sample value
      */
-    template <typename Scalar, typename Index = uint_array_t<Scalar>>
-    std::tuple<Index, Scalar, Scalar>
-    sample_reuse_pdf(Scalar sample_value, mask_t<Scalar> active = true) const {
+    template <typename Value, typename Index = uint_array_t<Value>>
+    std::tuple<Index, Value, Value>
+    sample_reuse_pdf(Value sample_value, mask_t<Value> active = true) const {
         auto [index, pdf] = sample_pdf(sample_value, active);
-        Scalar cdf_value = gather<Scalar>(m_cdf.data(), index);
+        Value cdf0 = gather<Value>(m_cdf.data(), index, active),
+              cdf1 = gather<Value>(m_cdf.data(), index + 1, active);
 
         return {
             index,pdf,
-            (sample_value - cdf_value) /
-                (gather<Scalar>(m_cdf.data(), index + 1) - cdf_value)
+            (sample_value - cdf0) / (cdf1 - cdf0)
         };
     }
 
