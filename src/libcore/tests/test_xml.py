@@ -37,9 +37,9 @@ def test05_duplicate_id():
             <shape type="ply" id="my_id"/>
         </scene>
         """)
-    e.match('Error while loading "<string>" \(at line 4, col 14\):'
-        ' "shape" has duplicate id "my_id" \(previous was at line 3,'
-        ' col 14\)')
+    e.match('Error while loading "<string>" \\(at line 4, col 14\\):'
+        ' "shape" has duplicate id "my_id" \\(previous was at line 3,'
+        ' col 14\\)')
 
 
 def test06_reserved_id():
@@ -152,7 +152,7 @@ def test15_incorrect_parameter_type():
                       <float name="filename" value="1.0"/>
                    </shape></scene>""")
     e.match('The property "filename" has the wrong type'
-        ' \(expected <string>\).')
+        ' \\(expected <string>\\).')
 
 
 def test16_invalid_integer():
