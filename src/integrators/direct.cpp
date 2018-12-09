@@ -46,10 +46,8 @@ public:
               typename Mask            = mask_t<Value>>
     Spectrum eval_impl(const RayDifferential &ray, RadianceSample<Point3> &rs,
                        Mask active) const {
-        constexpr bool IsVectorized = is_array_v<Value>;
         using DirectionSample    = mitsuba::DirectionSample<Point3>;
         using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
-        using BSDFSample         = mitsuba::BSDFSample<Point3>;
         using Vector3            = typename SurfaceInteraction::Vector3;
         using EmitterPtr         = typename SurfaceInteraction::EmitterPtr;
         using BSDFPtr            = typename SurfaceInteraction::BSDFPtr;
@@ -63,9 +61,9 @@ public:
 
         /* ----------------------- Visible emitters ----------------------- */
 
-        EmitterPtr emitter = si.emitter(scene);
-        if (IsVectorized || emitter != nullptr)
-            result += emitter->eval(si, active);
+        EmitterPtr emitter_vis = si.emitter(scene, active);
+        if (any(neq(emitter_vis, nullptr)))
+            result += emitter_vis->eval(si, active);
 
         active &= si.is_valid();
         if (none(active))
@@ -104,10 +102,9 @@ public:
         /* ------------------------ BSDF sampling ------------------------- */
 
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
-            BSDFSample bs;
-            Spectrum bsdf_val;
-            std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(active),
-                                                  rs.next_2d(active), active);
+            auto [bs, bsdf_val] = bsdf->sample(ctx, si, rs.next_1d(active),
+                                               rs.next_2d(active), active);
+
             Mask active_b = active && any(neq(bsdf_val, 0.f));
 
             // Trace the ray in the sampled direction and intersect against the scene
@@ -115,17 +112,17 @@ public:
                 scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active_b);
 
             // Retain only rays that hit an emitter
-            auto emitter2 = si_bsdf.emitter(scene);
-            active_b &= neq(emitter2, nullptr);
+            EmitterPtr emitter = si_bsdf.emitter(scene, active_b);
+            active_b &= neq(emitter, nullptr);
 
             if (any(active_b)) {
-                Spectrum emitter_val = emitter2->eval(si_bsdf, active_b);
+                Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
                 Mask delta = neq(bs.sampled_type & BSDF::EDelta, 0u);
 
                 /* Determine probability of having sampled that same
                    direction using Emitter sampling. */
                 DirectionSample ds(si_bsdf, si);
-                ds.object = emitter2;
+                ds.object = emitter;
 
                 Value emitter_pdf = select(delta, 0.f,
                     scene->pdf_emitter_direction(si, ds, active_b));

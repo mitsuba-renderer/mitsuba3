@@ -19,11 +19,8 @@ public:
               typename Value = typename RayDifferential::Value>
     auto eval_impl(RayDifferential ray, RadianceSample &rs,
                    mask_t<Value> active) const {
-        constexpr bool IsVectorized = is_array<Value>::value;
-
         using Mask                = mask_t<Value>;
         using Spectrum            = mitsuba::Spectrum<Value>;
-        using BSDFSample          = mitsuba::BSDFSample<Point3>;
         using DirectionSample     = mitsuba::DirectionSample<Point3>;
         using SurfaceInteraction3 = SurfaceInteraction<Point3>;
         using BSDFPtr             = replace_scalar_t<Value, const BSDF *>;
@@ -43,14 +40,14 @@ public:
         /* ---------------------- First intersection ---------------------- */
 
         SurfaceInteraction3 si = rs.ray_intersect(ray, active);
-        rs.alpha = select(si.is_valid(), Value(1.0f), Value(0.0f));
+        rs.alpha = select(si.is_valid(), Value(1.f), Value(0.f));
         EmitterPtr emitter = si.emitter(scene);
 
         for (int depth = 0;; ++depth) {
 
             /* ---------------- Intersection with emitters ---------------- */
 
-            if (IsVectorized || emitter != nullptr)
+            if (any(neq(emitter, nullptr)))
                 result[active] += emission_weight * throughput * emitter->eval(si, active);
 
             active &= si.is_valid();
@@ -60,7 +57,7 @@ public:
                index boundaries. Stop with at least some probability to avoid
                getting stuck (e.g. due to total internal reflection) */
             if (depth > m_rr_depth) {
-                Value q = min(hmax(throughput) * eta * eta, 0.95f);
+                Value q = min(hmax(throughput) * sqr(eta), .95f);
                 active &= rs.next_1d(active) < q;
                 throughput *= rcp(q);
             }
@@ -72,13 +69,10 @@ public:
 
             BSDFContext ctx;
             BSDFPtr bsdf = si.bsdf(ray);
-            Mask sample_emitter = active && neq(bsdf->flags() & BSDF::ESmooth, 0u);
+            Mask active_e = active && neq(bsdf->flags() & BSDF::ESmooth, 0u);
 
-            if (likely(any(sample_emitter))) {
-                Mask active_e = sample_emitter;
-                DirectionSample ds;
-                Spectrum emitter_val;
-                std::tie(ds, emitter_val) = scene->sample_emitter_direction(
+            if (likely(any(active_e))) {
+                auto [ds, emitter_val] = scene->sample_emitter_direction(
                     si, rs.next_2d(active_e), true, active_e);
                 active_e &= neq(ds.pdf, 0.f);
 
@@ -97,10 +91,8 @@ public:
             /* ----------------------- BSDF sampling ---------------------- */
 
             /* Sample BSDF * cos(theta) */
-            BSDFSample bs;
-            Spectrum bsdf_val;
-            std::tie(bs, bsdf_val) = bsdf->sample(ctx, si, rs.next_1d(active),
-                                                  rs.next_2d(active), active);
+            auto [bs, bsdf_val] = bsdf->sample(ctx, si, rs.next_1d(active),
+                                               rs.next_2d(active), active);
             throughput *= bsdf_val;
             active &= any(neq(throughput, 0.f));
             if (none(active))
@@ -114,18 +106,16 @@ public:
 
             /* Determine probability of having sampled that same
                direction using emitter sampling. */
-            emitter = si_bsdf.emitter(scene);
+            emitter = si_bsdf.emitter(scene, active);
             DirectionSample ds(si_bsdf, si);
             ds.object = emitter;
 
-            if (IsVectorized || emitter != nullptr) {
+            if (any(neq(emitter, nullptr))) {
                 Value emitter_pdf =
                     select(neq(bs.sampled_type & BSDF::EDelta, 0u), 0.f,
                            scene->pdf_emitter_direction(si, ds, active));
 
                 emission_weight = mis_weight(bs.pdf, emitter_pdf);
-            } else {
-                emission_weight = 1.f;
             }
 
             si = si_bsdf;

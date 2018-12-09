@@ -177,11 +177,12 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
 
     /// Return the emitter associated with the intersection (if any)
     template <typename Scene = mitsuba::Scene>
-    EmitterPtr emitter(const Scene *scene) const {
-        if (enoki::is_array<Value>::value)
-            return select(is_valid(), shape->emitter(), scene->environment());
+    EmitterPtr emitter(const Scene *scene, mask_t<Value> active = true) const {
+        ENOKI_MARK_USED(active);
+        if constexpr (enoki::is_array_v<Value>)
+            return select(is_valid(), shape->emitter(active), scene->environment());
         else
-            return all(is_valid()) ? shape->emitter() : scene->environment();
+            return is_valid() ? shape->emitter() : scene->environment();
     }
 
     /// Is the intersected shape also a sensor?

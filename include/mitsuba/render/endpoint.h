@@ -422,29 +422,29 @@ protected:
 
 /// Instantiates concrete scalar and packet versions of the polarized endpoint plugin API
 #define MTS_IMPLEMENT_ENDPOINT_POLARIZED()                                              \
-    std::pair<Ray3f, MuellerMatrixSf> sample_ray_pol(                                    \
+    std::pair<Ray3f, MuellerMatrixSf> sample_ray_pol(                                   \
         Float time, Float sample1, const Point2f &sample2,                              \
         const Point2f &sample3) const override {                                        \
         return sample_ray_pol_impl(time, sample1, sample2, sample3, true);              \
     }                                                                                   \
-    std::pair<Ray3fP, MuellerMatrixSfP> sample_ray_pol(                                  \
+    std::pair<Ray3fP, MuellerMatrixSfP> sample_ray_pol(                                 \
         FloatP time, FloatP sample1, const Point2fP &sample2,                           \
         const Point2fP &sample3, MaskP active) const override {                         \
-        return sample_ray_pol_impl(time, sample1, sample2, sample3, active);                \
+        return sample_ray_pol_impl(time, sample1, sample2, sample3, active);            \
     }                                                                                   \
-    std::pair<DirectionSample3f, MuellerMatrixSf> sample_direction_pol(                  \
+    std::pair<DirectionSample3f, MuellerMatrixSf> sample_direction_pol(                 \
         const Interaction3f &it, const Point2f &sample) const override {                \
         return sample_direction_pol_impl(it, sample, true);                             \
     }                                                                                   \
-    std::pair<DirectionSample3fP, MuellerMatrixSfP> sample_direction_pol(                \
+    std::pair<DirectionSample3fP, MuellerMatrixSfP> sample_direction_pol(               \
         const Interaction3fP &it, const Point2fP &sample, MaskP active)                 \
         const override {                                                                \
         return sample_direction_pol_impl(it, sample, active);                           \
     }                                                                                   \
-    MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si) const override {            \
+    MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si) const override {           \
         return eval_pol_impl(si, true);                                                 \
     }                                                                                   \
-    MuellerMatrixSfP eval_pol(const SurfaceInteraction3fP &si, MaskP active)             \
+    MuellerMatrixSfP eval_pol(const SurfaceInteraction3fP &si, MaskP active)            \
         const override {                                                                \
         return eval_pol_impl(si, active);                                               \
     }

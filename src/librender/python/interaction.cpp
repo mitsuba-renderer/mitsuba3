@@ -67,7 +67,8 @@ auto bind_surface_interaction(py::module &m, const char *name) {
              D(SurfaceInteraction, compute_partials))
         .def("to_world", &Type::to_world, D(SurfaceInteraction, to_world))
         .def("to_local", &Type::to_local, D(SurfaceInteraction, to_local))
-        .def("emitter", &Type::template emitter<Scene>, D(SurfaceInteraction, emitter))
+        .def("emitter", &Type::template emitter<Scene>, D(SurfaceInteraction, emitter),
+                "scene"_a, "active"_a=true)
         .def("is_sensor", &Type::is_sensor, D(SurfaceInteraction, is_sensor))
         .def("is_medium_transition", &Type::is_medium_transition,
              D(SurfaceInteraction, is_medium_transition))
