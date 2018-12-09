@@ -128,7 +128,7 @@ public:
                 ds.object = emitter2;
 
                 Value emitter_pdf = select(delta, 0.f,
-                    scene->pdf_emitter_direction(si_bsdf, ds, active_b));
+                    scene->pdf_emitter_direction(si, ds, active_b));
 
                 result[active_b] +=
                     bsdf_val * emitter_val *
