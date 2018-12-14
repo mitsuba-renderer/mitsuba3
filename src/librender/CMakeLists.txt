@@ -50,6 +50,16 @@ target_link_libraries(mitsuba-render PRIVATE tbb)
 # Link to libcore
 target_link_libraries(mitsuba-render PUBLIC mitsuba-core)
 
+# Link to Embree
+if (MTS_USE_EMBREE)
+  if (APPLE)
+      target_link_libraries(mitsuba-render PRIVATE $<TARGET_FILE:embree>)
+  else()
+      target_link_libraries(mitsuba-render PRIVATE embree)
+  endif()
+  add_dist(embree)
+endif()
+
 # Copy to 'dist' directory
 add_dist(mitsuba-render)
 

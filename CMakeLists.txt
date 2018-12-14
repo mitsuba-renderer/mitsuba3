@@ -3,19 +3,15 @@ cmake_minimum_required (VERSION 3.2.0)
 project(mitsuba)
 
 # ---------- User options ----------
-option(MTS_DOUBLE_PRECISION  "Compile renderer in double precision?" OFF)
-option(MTS_DISABLE_APPROX_MATH "Disable Enoki approximate math library" OFF)
+option(MTS_DOUBLE_PRECISION      "Compile renderer in double precision?" OFF)
+option(MTS_DISABLE_APPROX_MATH   "Disable Enoki approximate math library" OFF)
+option(MTS_DISABLE_VECTORIZATION "Disable Enoki vectorization?" OFF)
+option(MTS_USE_EMBREE            "Use Embree for ray tracing operations?" OFF)
+
 if (UNIX)
-  option(MTS_ENABLE_PROFILER   "Enable sampling profiler" ON)
-endif()
-
-if (MTS_ENABLE_PROFILER)
+  option(MTS_ENABLE_PROFILER     "Enable sampling profiler" ON)
   option(MTS_ENABLE_ITTNOTIFY    "Enable Intel event API (useful for profiling in VTune)" OFF)
-else()
-  set(MTS_ENABLE_ITTNOTIFY       OFF CACHE BOOL " " FORCE)
 endif()
-
-option(MTS_DISABLE_VECTORIZATION "Disable vectorization?" OFF)
 
 # Use GCC/Clang address sanitizer?
 # NOTE: To use this in conjunction with Python plugin, you will need to call
@@ -35,7 +31,7 @@ endif()
 # For developers: ability to disable Link Time Optimization to speed up builds
 option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 
-# Manually set the packet size. Useful for debugging vectorization-related issues.
+# Option to manually set the packet size. Useful for debugging vectorization-related issues.
 set(MTS_PACKET_SIZE ""
     CACHE STRING "SIMD packet size. Defaults to the largest value supported by the architecture.")
 if (MTS_DISABLE_VECTORIZATION)
@@ -43,6 +39,17 @@ if (MTS_DISABLE_VECTORIZATION)
   message(STATUS "Mitsuba: vectorization is *disabled*!")
 elseif (MTS_PACKET_SIZE)
   add_definitions(-DMTS_PACKET_SIZE=${MTS_PACKET_SIZE})
+endif()
+
+# Catch unsupported combinations
+if (MTS_DOUBLE_PRECISION AND MTS_USE_EMBREE)
+  message(WARNING "Embree is not supported when compiling in double precision!")
+  set(MTS_USE_EMBREE OFF CACHE BOOL "Use Embree for ray tracing operations?" FORCE)
+endif()
+
+if (MTS_ENABLE_ITTNOTIFY AND NOT MTS_ENABLE_PROFILER)
+  message(WARNING "The Intel Event API is only supported in conjunction with Mitsuba's internal profiler.")
+  set(MTS_ENABLE_ITTNOTIFY OFF CACHE BOOL "Enable Intel event API (useful for profiling in VTune)" FORCE)
 endif()
 
 # ----------------------------------
@@ -167,6 +174,15 @@ include_directories(include
 if (MTS_ENABLE_ITTNOTIFY)
   include_directories(${ITT_INCLUDE_DIRS})
   add_definitions(-DMTS_ENABLE_ITTNOTIFY=1)
+  message(STATUS "Mitsuba: emitting profiling events with Intel ITT.")
+endif()
+
+if (MTS_USE_EMBREE)
+  include_directories(${EMBREE_INCLUDE_DIRS})
+  add_definitions(-DMTS_USE_EMBREE=1)
+  message(STATUS "Mitsuba: using Embree ray tracing kernels.")
+else()
+  message(STATUS "Mitsuba: using builtin ray tracing kernels.")
 endif()
 
 # Compile with compiler warnings turned on
@@ -399,7 +415,6 @@ endif()
 
 if (MTS_ENABLE_PROFILER)
   add_definitions(-DMTS_ENABLE_PROFILER)
-  include(src/cmake/instrumentation.cmake)
   message(STATUS "Mitsuba: sampling profiler enabled.")
 else()
   message(STATUS "Mitsuba: sampling profiler disabled.")
@@ -500,7 +515,6 @@ macro (add_file DST SRC)
 endmacro()
 
 add_file(data/srgb.coeff ${CMAKE_BINARY_DIR}/ext_build/rgb2spec/srgb.coeff rgb2spec_opt_run)
-
 
 add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})
 set_property(TARGET dist-copy PROPERTY FOLDER misc)
