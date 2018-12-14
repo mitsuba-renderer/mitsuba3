@@ -1,10 +1,10 @@
-import mitsuba
 import numpy as np
-from mitsuba.core.xml import load_string
-from mitsuba.render import ContinuousSpectrum
-import os
 
-n_samples = mitsuba.core.MTS_WAVELENGTH_SAMPLES
+import mitsuba
+from mitsuba.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, \
+                         MTS_WAVELENGTH_SAMPLES
+from mitsuba.core.xml import load_string
+
 
 def test01_cie1931():
     """CIE 1931 observer"""
@@ -30,12 +30,15 @@ def test04_d65():
     """d65: Spot check the model in a few places, the chi^2 test will ensure
     that sampling works."""
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
-    assert np.allclose(d65.eval([350, 456, 600, 700, 840]), np.array([0, 117.49, 90.0062, 71.6091, 0]) / 10568.0)
+    assert np.allclose(d65.eval([350, 456, 600, 700, 840]),
+                       np.array([0, 117.49, 90.0062, 71.6091, 0]) / 10568.0)
 
 def test05_blackbody():
     """blackbody: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
-    bb = load_string("<spectrum version='2.0.0' type='blackbody'><float name='temperature' value='5000'/></spectrum>")
+    bb = load_string("""<spectrum version='2.0.0' type='blackbody'>
+        <float name='temperature' value='5000'/>
+    </spectrum>""")
     assert np.allclose(bb.eval([350, 456, 600, 700, 840]), [0, 10997.9, 12762.4, 11812, 0])
 
 def test06_srgb_d65():
@@ -70,8 +73,7 @@ def test06_srgb_d65():
 def test07_sample_rgb_spectrum():
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
-    from mitsuba.core import sample_rgb_spectrum, pdf_rgb_spectrum, \
-                             MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX
+    from mitsuba.core import sample_rgb_spectrum, pdf_rgb_spectrum
 
     def spot_check(sample, expected_wav, expected_weight):
         wav, weight = sample_rgb_spectrum(sample)
@@ -80,11 +82,45 @@ def test07_sample_rgb_spectrum():
         assert np.allclose(weight, expected_weight)
         assert np.allclose(pdf, 1.0 / weight)
 
-    if (mitsuba.core.MTS_WAVELENGTH_MIN == 360
-        and mitsuba.core.MTS_WAVELENGTH_MAX == 830):
+    if (MTS_WAVELENGTH_MIN == 360 and MTS_WAVELENGTH_MAX == 830):
         spot_check(0.1, 424.343, 465.291)
         spot_check(0.5, 545.903, 254.643)
         spot_check(0.8, 635.381, 400.432)
         # PDF is zero outside the range
-        assert pdf_rgb_spectrum(mitsuba.core.MTS_WAVELENGTH_MIN - 10.0) == 0.0
-        assert pdf_rgb_spectrum(mitsuba.core.MTS_WAVELENGTH_MAX + 0.5)  == 0.0
+        assert pdf_rgb_spectrum(MTS_WAVELENGTH_MIN - 10.0) == 0.0
+        assert pdf_rgb_spectrum(MTS_WAVELENGTH_MAX + 0.5)  == 0.0
+
+def test08_rgb2spec_fetch_eval_mean():
+    from mitsuba.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
+
+    rgb_values = np.array([
+        [0, 0, 0],
+        [0.0129831, 0.0129831, 0.0129831],
+        [0.0241576, 0.0241576, 0.0241576],
+        [0.0423114, 0.0423114, 0.0423114],
+        [0.0561285, 0.0561285, 0.0561285],
+        [0.0703601, 0.0703601, 0.0703601],
+        [0.104617, 0.104617, 0.104617],
+        [0.171441, 0.171441, 0.171441],
+        [0.242281, 0.242281, 0.242281],
+        [0.814846, 0.814846, 0.814846],
+        [0.913098, 0.913098, 0.913098],
+        [0.930111, 0.930111, 0.930111],
+        [0.955973, 0.955973, 0.955973],
+        [0.973445, 0.973445, 0.973445],
+        [0.982251, 0.982251, 0.982251],
+        [0.991102, 0.991102, 0.991102],
+        [1, 1, 1],
+    ])
+    wavelengths = np.linspace(MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, MTS_WAVELENGTH_SAMPLES)
+
+    for i in range(rgb_values.shape[0]):
+        rgb = rgb_values[i, :]
+        assert np.all((rgb >= 0.0) & (rgb <= 1.0)), "Invalid RGB attempted"
+        coeff = srgb_model_fetch(rgb)
+        mean  = srgb_model_mean(coeff)
+        value = srgb_model_eval(coeff, wavelengths)
+
+        assert not np.any(np.isnan(coeff)), "{} => coeff = {}".format(rgb, coeff)
+        assert not np.any(np.isnan(mean)),  "{} => mean = {}".format(rgb, mean)
+        assert not np.any(np.isnan(value)), "{} => value = {}".format(rgb, value)

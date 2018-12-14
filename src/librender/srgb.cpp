@@ -31,6 +31,11 @@ Vector3f srgb_model_fetch(const Color3f &c) {
         }
     }
 
+    if (c == Vector3f(0.f))
+        return Vector3f(0.f, 0.f, -math::Infinity);
+    else if (c == Vector3f(1.f))
+        return Vector3f(0.f, 0.f,  math::Infinity);
+
     float rgb[3] = { (float) c.r(), (float) c.g(), (float) c.b() };
     float out[3];
     rgb2spec_fetch(model, rgb, out);
