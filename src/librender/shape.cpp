@@ -52,6 +52,12 @@ FloatP Shape::pdf_position(const PositionSample3fP& /* ps */, MaskP /* active */
     NotImplementedError("pdf_position_p");
 }
 
+#if defined(MTS_USE_EMBREE)
+RTCGeometry Shape::embree_geometry(RTCDevice) const {
+    NotImplementedError("embree_geometry");
+}
+#endif
+
 template <typename Interaction, typename Value, typename Point2,
           typename Point3, typename DirectionSample, typename Mask>
 DirectionSample Shape::sample_direction_fallback(const Interaction &it,

@@ -3,6 +3,10 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/core/bbox.h>
 
+#if defined(MTS_USE_EMBREE)
+    #include <embree3/rtcore.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**
@@ -389,6 +393,11 @@ public:
      * the same value as \ref primitive_count().
      */
     virtual Size effective_primitive_count() const;
+
+#if defined(MTS_USE_EMBREE)
+    /// Return the Embree version of this shape
+    virtual RTCGeometry embree_geometry(RTCDevice device) const;
+#endif
 
     //! @}
     // =============================================================

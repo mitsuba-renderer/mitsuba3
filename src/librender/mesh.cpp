@@ -80,6 +80,20 @@ Mesh::Mesh(const std::string &name,
 
 Mesh::~Mesh() { }
 
+#if defined(MTS_USE_EMBREE)
+RTCGeometry Mesh::embree_geometry(RTCDevice device) const {
+    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, m_vertices.get(),
+            0, m_vertex_size, m_vertex_count);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, m_faces.get(),
+            0, m_face_size, m_face_count);
+
+    rtcCommitGeometry(geom);
+    return geom;
+}
+#endif
+
 void Mesh::write(Stream *) const {
     NotImplementedError("write");
 }

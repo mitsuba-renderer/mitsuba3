@@ -10,10 +10,38 @@
 #include <mitsuba/core/plugin.h>
 #include <enoki/stl.h>
 
+#if defined(ENOKI_X86_AVX512F)
+#  define MTS_RAY_WIDTH 16
+#elif defined(ENOKI_X86_AVX2)
+#  define MTS_RAY_WIDTH 8
+#elif defined(ENOKI_X86_SSE42)
+#  define MTS_RAY_WIDTH 4
+#else
+#  error Expected to use vectorization
+#endif
+
+#define JOIN(x, y) JOIN_AGAIN(x, y)
+#define JOIN_AGAIN(x, y) x ## y
+#define RTCRayHitW    JOIN(RTCRayHit,    MTS_RAY_WIDTH)
+#define RTCRayW       JOIN(RTCRay,       MTS_RAY_WIDTH)
+#define rtcIntersectW JOIN(rtcIntersect, MTS_RAY_WIDTH)
+#define rtcOccludedW  JOIN(rtcOccluded,  MTS_RAY_WIDTH)
+
 NAMESPACE_BEGIN(mitsuba)
+
+#if defined(MTS_USE_EMBREE)
+static RTCDevice __embree_device = nullptr;
+#endif
 
 Scene::Scene(const Properties &props) {
     m_kdtree = new ShapeKDTree(props);
+
+#if defined(MTS_USE_EMBREE)
+    if (!__embree_device)
+        __embree_device = rtcNewDevice("");
+
+    m_embree_scene = rtcNewScene(__embree_device);
+#endif
 
     for (auto &kv : props.objects()) {
         Shape *shape           = dynamic_cast<Shape *>(kv.second.get());
@@ -25,6 +53,9 @@ Scene::Scene(const Properties &props) {
             m_kdtree->add_shape(shape);
             if (shape->emitter())
                 m_emitters.push_back(shape->emitter());
+            #if defined(MTS_USE_EMBREE)
+                rtcAttachGeometry(m_embree_scene, shape->embree_geometry(__embree_device));
+            #endif
         } else if (emitter) {
             m_emitters.push_back(emitter);
             if (emitter->is_environment()) {
@@ -76,6 +107,12 @@ Scene::Scene(const Properties &props) {
             Properties("path"));
     }
 
+    #if defined(MTS_USE_EMBREE)
+        Timer timer;
+        rtcCommitScene(m_embree_scene);
+        Log(EInfo, "Embree finished. (took %s)", util::time_string(timer.value()));
+    #endif
+
     // Precompute a discrete distribution over emitters
     m_emitter_distr = DiscreteDistribution(m_emitters.size());
     for (size_t i = 0; i < m_emitters.size(); ++i)
@@ -94,7 +131,11 @@ Scene::Scene(const Properties &props) {
     }
 }
 
-Scene::~Scene() { }
+Scene::~Scene() {
+    #if defined(MTS_USE_EMBREE)
+        rtcReleaseScene(m_embree_scene);
+    #endif
+}
 
 // =============================================================
 //! Ray tracing-related methods
@@ -102,46 +143,125 @@ Scene::~Scene() { }
 
 SurfaceInteraction3f Scene::ray_intersect(const Ray3f &ray) const {
     ScopedPhase sp(EProfilerPhase::ERayIntersect);
-    Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+    #if !defined(MTS_USE_EMBREE)
+        Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
-    #if defined(MTS_DISABLE_KDTREE)
-        auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache);
+        #if defined(MTS_DISABLE_KDTREE)
+            auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache);
+        #else
+            auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache);
+        #endif
+
+        SurfaceInteraction3f si;
+
+        if (likely(hit)) {
+            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
+            si = m_kdtree->create_surface_interaction(ray, hit_t, cache);
+        } else {
+            si.wavelengths = ray.wavelengths;
+            si.wi = -ray.d;
+        }
+
+        return si;
     #else
-        auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache);
+        RTCIntersectContext context;
+        rtcInitIntersectContext(&context);
+
+        RTCRayHit rh;
+        rh.ray.org_x = ray.o.x();
+        rh.ray.org_y = ray.o.y();
+        rh.ray.org_z = ray.o.z();
+        rh.ray.tnear = ray.mint;
+        rh.ray.dir_x = ray.d.x();
+        rh.ray.dir_y = ray.d.y();
+        rh.ray.dir_z = ray.d.z();
+        rh.ray.time = 0;
+        rh.ray.tfar = ray.maxt;
+        rh.ray.mask = 0;
+        rh.ray.id = 0;
+        rh.ray.flags = 0;
+        rtcIntersect1(m_embree_scene, &context, &rh);
+
+        SurfaceInteraction3f si;
+        if (rh.ray.tfar != ray.maxt) {
+            float cache[4];
+            cache[0] = reinterpret_array<float>(rh.hit.geomID);
+            cache[1] = reinterpret_array<float>(rh.hit.primID);
+            cache[2] = rh.hit.u;
+            cache[3] = rh.hit.v;
+
+            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
+            si = m_kdtree->create_surface_interaction(ray, rh.ray.tfar, cache);
+        } else {
+            si.wavelengths = ray.wavelengths;
+            si.wi = -ray.d;
+        }
+        return si;
     #endif
-
-    SurfaceInteraction3f si;
-
-    if (likely(hit)) {
-        ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
-        si = m_kdtree->create_surface_interaction(ray, hit_t, cache);
-    } else {
-        si.wavelengths = ray.wavelengths;
-        si.wi = -ray.d;
-    }
-
-    return si;
 }
 
 SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) const {
     ScopedPhase sp(EProfilerPhase::ERayIntersectP);
-    FloatP cache[MTS_KD_INTERSECTION_CACHE_SIZE];
+    #if !defined(MTS_USE_EMBREE)
+        FloatP cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
-    #if defined(MTS_DISABLE_KDTREE)
-        auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
+        #if defined(MTS_DISABLE_KDTREE)
+            auto [hit, hit_t] = m_kdtree->ray_intersect_naive<false>(ray, cache, active);
+        #else
+            auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache, active);
+        #endif
+
+        SurfaceInteraction3fP si;
+
+        if (likely(any(hit))) {
+            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteractionP);
+            si = m_kdtree->create_surface_interaction(ray, hit_t, cache, active && hit);
+        } else {
+            si.wavelengths = ray.wavelengths;
+            si.wi = -ray.d;
+        }
     #else
-        auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache, active);
+        RTCIntersectContext context;
+        rtcInitIntersectContext(&context);
+        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
+        alignas(alignof(FloatP)) int valid[MTS_RAY_WIDTH];
+        for (size_t i = 0; i < MTS_RAY_WIDTH; ++i)
+            valid[i] = active[i] ? -1 : 0;
+
+        RTCRayHitW rh;
+        store(rh.ray.org_x, ray.o.x());
+        store(rh.ray.org_y, ray.o.y());
+        store(rh.ray.org_z, ray.o.z());
+        store(rh.ray.tnear, ray.mint);
+        store(rh.ray.dir_x, ray.d.x());
+        store(rh.ray.dir_y, ray.d.y());
+        store(rh.ray.dir_z, ray.d.z());
+        store(rh.ray.time, FloatP(0));
+        store(rh.ray.tfar, ray.maxt);
+        store(rh.ray.mask, UInt32P(0));
+        store(rh.ray.id, UInt32P(0));
+        store(rh.ray.flags, UInt32P(0));
+
+        rtcIntersectW(valid, m_embree_scene, &context, &rh);
+
+        SurfaceInteraction3fP si;
+        MaskP hit = neq(load<FloatP>(rh.ray.tfar), ray.maxt);
+
+        if (likely(any(hit))) {
+            FloatP cache[4];
+            cache[0] = reinterpret_array<FloatP>(load<UInt32P>(rh.hit.geomID));
+            cache[1] = reinterpret_array<FloatP>(load<UInt32P>(rh.hit.primID));
+            cache[2] = load<FloatP>(rh.hit.u);
+            cache[3] = load<FloatP>(rh.hit.v);
+
+            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
+            si = m_kdtree->create_surface_interaction(ray, load<FloatP>(rh.ray.tfar), cache, active && hit);
+        } else {
+            si.wavelengths = ray.wavelengths;
+            si.wi = -ray.d;
+        }
     #endif
-
-    SurfaceInteraction3fP si;
-
-    if (likely(any(hit))) {
-        ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteractionP);
-        si = m_kdtree->create_surface_interaction(ray, hit_t, cache, active && hit);
-    } else {
-        si.wavelengths = ray.wavelengths;
-        si.wi = -ray.d;
-    }
 
     return si;
 }
@@ -151,6 +271,25 @@ bool Scene::ray_test(const Ray3f &ray) const {
 
     #if defined(MTS_DISABLE_KDTREE)
         return m_kdtree->ray_intersect_naive<true>(ray).first;
+    #elif defined(MTS_USE_EMBREE)
+        RTCIntersectContext context;
+        rtcInitIntersectContext(&context);
+
+        RTCRay ray2;
+        ray2.org_x = ray.o.x();
+        ray2.org_y = ray.o.y();
+        ray2.org_z = ray.o.z();
+        ray2.tnear = ray.mint;
+        ray2.dir_x = ray.d.x();
+        ray2.dir_y = ray.d.y();
+        ray2.dir_z = ray.d.z();
+        ray2.time = 0;
+        ray2.tfar = ray.maxt;
+        ray2.mask = 0;
+        ray2.id = 0;
+        ray2.flags = 0;
+        rtcOccluded1(m_embree_scene, &context, &ray2);
+        return ray2.tfar != ray.maxt;
     #else
         return m_kdtree->ray_intersect<true>(ray).first;
     #endif
@@ -161,6 +300,31 @@ MaskP Scene::ray_test(const Ray3fP &ray, MaskP active) const {
 
     #if defined(MTS_DISABLE_KDTREE)
         return m_kdtree->ray_intersect_naive<true>(ray, (FloatP *) nullptr, active).first;
+    #elif defined(MTS_USE_EMBREE)
+        RTCIntersectContext context;
+        rtcInitIntersectContext(&context);
+        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
+        alignas(alignof(FloatP)) int valid[MTS_RAY_WIDTH];
+        for (size_t i = 0; i < MTS_RAY_WIDTH; ++i)
+            valid[i] = active[i] ? -1 : 0;
+
+        RTCRayW ray2;
+
+        store(ray2.org_x, ray.o.x());
+        store(ray2.org_y, ray.o.y());
+        store(ray2.org_z, ray.o.z());
+        store(ray2.tnear, ray.mint);
+        store(ray2.dir_x, ray.d.x());
+        store(ray2.dir_y, ray.d.y());
+        store(ray2.dir_z, ray.d.z());
+        store(ray2.time, FloatP(0));
+        store(ray2.tfar, ray.maxt);
+        store(ray2.mask, UInt32P(0));
+        store(ray2.id, UInt32P(0));
+        store(ray2.flags, UInt32P(0));
+        rtcOccludedW(valid, m_embree_scene, &context, &ray2);
+        return neq(load<FloatP>(ray2.tfar), ray.maxt);
     #else
         return m_kdtree->ray_intersect<true>(ray, nullptr, active).first;
     #endif

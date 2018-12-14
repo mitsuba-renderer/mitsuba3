@@ -262,6 +262,11 @@ public:
         return std::make_tuple(active, u, v, t);
     }
 
+#if defined(MTS_USE_EMBREE)
+    /// Return the Embree version of this shape
+    virtual RTCGeometry embree_geometry(RTCDevice device) const override;
+#endif
+
     /// @}
     // =========================================================================
 

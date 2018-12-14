@@ -5,6 +5,10 @@
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/core/ddistr.h>
 
+#if defined(MTS_USE_EMBREE)
+    #include <embree3/rtcore.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 class MTS_EXPORT_RENDER Scene : public Object {
@@ -225,6 +229,10 @@ protected:
 
     /// Precomputed distribution of emitters' intensity.
     DiscreteDistribution m_emitter_distr;
+
+#if defined(MTS_USE_EMBREE)
+    RTCScene m_embree_scene;
+#endif
 
 private:
     template <typename Interaction,
