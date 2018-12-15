@@ -182,6 +182,10 @@ int main(int argc, char *argv[]) {
             #endif
         }
 
+        #if !defined(NDEBUG)
+            Log(EWarn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
+        #endif
+
         while (arg_extra && *arg_extra) {
             filesystem::path filename(arg_extra->as_string());
             // Add the scene file's directory to the search path.
