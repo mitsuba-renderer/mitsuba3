@@ -226,8 +226,7 @@ SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) cons
         context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
         alignas(alignof(FloatP)) int valid[MTS_RAY_WIDTH];
-        for (size_t i = 0; i < MTS_RAY_WIDTH; ++i)
-            valid[i] = active[i] ? -1 : 0;
+        store(valid, select(active, Int32P(-1), Int32P(0)));
 
         RTCRayHitW rh;
         store(rh.ray.org_x, ray.o.x());
@@ -246,7 +245,7 @@ SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) cons
         rtcIntersectW(valid, m_embree_scene, &context, &rh);
 
         SurfaceInteraction3fP si;
-        MaskP hit = neq(load<FloatP>(rh.ray.tfar), ray.maxt);
+        MaskP hit = active && neq(load<FloatP>(rh.ray.tfar), ray.maxt);
 
         if (likely(any(hit))) {
             FloatP cache[4];
@@ -255,12 +254,13 @@ SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) cons
             cache[2] = load<FloatP>(rh.hit.u);
             cache[3] = load<FloatP>(rh.hit.v);
 
-            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteraction);
-            si = m_kdtree->create_surface_interaction(ray, load<FloatP>(rh.ray.tfar), cache, active && hit);
+            ScopedPhase sp2(EProfilerPhase::ECreateSurfaceInteractionP);
+            si = m_kdtree->create_surface_interaction(ray, load<FloatP>(rh.ray.tfar), cache, hit);
         } else {
             si.wavelengths = ray.wavelengths;
             si.wi = -ray.d;
         }
+        si.t[!hit] = math::Infinity;
     #endif
 
     return si;
@@ -306,11 +306,9 @@ MaskP Scene::ray_test(const Ray3fP &ray, MaskP active) const {
         context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
         alignas(alignof(FloatP)) int valid[MTS_RAY_WIDTH];
-        for (size_t i = 0; i < MTS_RAY_WIDTH; ++i)
-            valid[i] = active[i] ? -1 : 0;
+        store(valid, select(active, Int32P(-1), Int32P(0)));
 
         RTCRayW ray2;
-
         store(ray2.org_x, ray.o.x());
         store(ray2.org_y, ray.o.y());
         store(ray2.org_z, ray.o.z());
@@ -324,7 +322,7 @@ MaskP Scene::ray_test(const Ray3fP &ray, MaskP active) const {
         store(ray2.id, UInt32P(0));
         store(ray2.flags, UInt32P(0));
         rtcOccludedW(valid, m_embree_scene, &context, &ray2);
-        return neq(load<FloatP>(ray2.tfar), ray.maxt);
+        return active && neq(load<FloatP>(ray2.tfar), ray.maxt);
     #else
         return m_kdtree->ray_intersect<true>(ray, nullptr, active).first;
     #endif
