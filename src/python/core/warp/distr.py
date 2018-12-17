@@ -145,10 +145,10 @@ DISTRIBUTIONS = [
          ])
     ),
 
-    ('Spectrum: test', LineDomain([300.0, 700.0]),
+    ('Spectrum: test', LineDomain([300.0, 850.0]),
      SpectrumAdapter("""<spectrum version="2.0.0" type="interpolated">
-        <float name="lambda_min" value="400"/>
-        <float name="lambda_max" value="650"/>
+        <float name="lambda_min" value="300"/>
+        <float name="lambda_max" value="850"/>
         <string name="values" value="1, 5, 3, 6"/>
       </spectrum>"""),
      DEFAULT_SETTINGS_1),

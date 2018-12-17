@@ -29,7 +29,9 @@ public:
         m_lambda_max = props.float_("lambda_max");
 
         if (props.type("values") == Properties::EString) {
-            std::vector<std::string> values_str = string::tokenize(props.string("values"), " ,");
+            std::vector<std::string> values_str =
+                string::tokenize(props.string("values"), " ,");
+
             m_data.resize(values_str.size());
             int ctr = 0;
             for (const auto &s : values_str) {
@@ -45,8 +47,34 @@ public:
             m_data = std::vector<Float>(values, values + size);
         }
 
+        if (m_data.size() < 2)
+            Throw("InterpolatedSpectrum must have at least 2 entries!");
+
         size_t size = m_data.size();
         m_interval_size = Float((double(m_lambda_max) - double(m_lambda_min)) / (size - 1));
+
+        if (m_interval_size <= 0)
+            Throw("InterpolatedSpectrum: interval size must be positive!");
+
+        bool expanded = false;
+        while (m_lambda_min > MTS_WAVELENGTH_MIN) {
+            m_data.insert(m_data.begin(), m_data[0]);
+            m_lambda_min -= m_interval_size;
+            size += 1;
+            expanded = true;
+        }
+
+        while (m_lambda_max < MTS_WAVELENGTH_MAX) {
+            m_data.push_back(m_data[m_data.size() - 1]);
+            m_lambda_max += m_interval_size;
+            size += 1;
+            expanded = true;
+        }
+
+        if (expanded)
+            Log(EWarn, "InterpolatedSpectrum was expanded to cover wavelength range [%.1f, %.1f]",
+                       MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
+
         m_inv_interval_size = Float((size - 1) / (double(m_lambda_max) - double(m_lambda_min)));
         m_size_minus_2 = uint32_t(size - 2);
 
@@ -73,14 +101,14 @@ public:
         Value t = (lambda - m_lambda_min) * m_inv_interval_size;
         active  = active && (lambda >= m_lambda_min) && (lambda <= m_lambda_max);
 
-        Index i0 = min(max(Index(t), zero<Index>()), Index(m_size_minus_2));
-         Index i1 = i0 + Index(1);
+        Index i0 = min(max(Index(t), zero<Index>()), Index(m_size_minus_2)),
+              i1 = i0 + Index(1);
 
-        Value v0 = gather<Value>(m_data.data(), i0, active);
-        Value v1 = gather<Value>(m_data.data(), i1, active);
+        Value v0 = gather<Value>(m_data.data(), i0, active),
+              v1 = gather<Value>(m_data.data(), i1, active);
 
-        Value w1 = t - Value(i0);
-        Value w0 = (Float) 1 - w1;
+        Value w1 = t - Value(i0),
+              w0 = (Float) 1 - w1;
 
         return (w0 * v0 + w1 * v1) & active;
     }
@@ -106,8 +134,8 @@ public:
 
         Index i1 = i0 + Index(1);
 
-        Value f0 = gather<Value>(m_data.data(), i0, active);
-        Value f1 = gather<Value>(m_data.data(), i1, active);
+        Value f0 = gather<Value>(m_data.data(), i0, active),
+              f1 = gather<Value>(m_data.data(), i1, active);
 
         /* Reuse the sample */
         sample = (sample - gather<Value>(m_cdf.data(), i0)) * m_inv_interval_size;
