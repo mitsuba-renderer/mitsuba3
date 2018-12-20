@@ -48,13 +48,14 @@ public:
                                                 mask_t<Value> active) const {
         using Vector3 = typename BSDFSample::Vector3;
         using Frame = Frame<Vector3>;
+        using Mask = mask_t<Value>;
         using Result = std::pair<BSDFSample, Spectrum>;
 
         SurfaceInteraction si(si_);
         BSDFContext ctx(ctx_);
 
-        auto front_side = Frame::cos_theta(si.wi) > 0.f && active;
-        auto back_side = Frame::cos_theta(si.wi) < 0.f && active;
+        Mask front_side = Frame::cos_theta(si.wi) > 0.f && active;
+        Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
         Result result = zero<Result>();
 
         if (any(front_side))
@@ -66,7 +67,7 @@ public:
 
             si.wi.z() *= -1.f;
             masked(result, back_side) = m_nested_brdf[1]->sample(ctx, si, sample1, sample2, back_side);
-            masked(result.first.wo, back_side) *= -1.f;
+            masked(result.first.wo.z(), back_side) *= -1.f;
         }
 
         return result;
@@ -78,15 +79,15 @@ public:
     MTS_INLINE
     Spectrum eval_impl(const BSDFContext &ctx_, const SurfaceInteraction &si_,
                        Vector3 wo, mask_t<Value> active) const {
-        using Frame = Frame<Vector3>;
         using Frame = mitsuba::Frame<Vector3>;
+        using Mask = mask_t<Value>;
 
         SurfaceInteraction si(si_);
         BSDFContext ctx(ctx_);
         Spectrum result = 0.f;
 
-        auto front_side = Frame::cos_theta(si.wi) > 0.f && active;
-        auto back_side = Frame::cos_theta(si.wi) < 0.f && active;
+        Mask front_side = Frame::cos_theta(si.wi) > 0.f && active;
+        Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
 
         if (any(front_side))
             result = m_nested_brdf[0]->eval(ctx, si, wo, front_side);
@@ -110,13 +111,14 @@ public:
     Value pdf_impl(const BSDFContext &ctx_, const SurfaceInteraction &si_,
                    Vector3 wo, mask_t<Value> active) const {
         using Frame = Frame<Vector3>;
+        using Mask = mask_t<Value>;
 
         SurfaceInteraction si(si_);
         BSDFContext ctx(ctx_);
         Value result = 0.f;
 
-        auto front_side = Frame::cos_theta(si.wi) > 0.f && active;
-        auto back_side = Frame::cos_theta(si.wi) < 0.f && active;
+        Mask front_side = Frame::cos_theta(si.wi) > 0.f && active;
+        Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
 
         if (any(front_side))
             result = m_nested_brdf[0]->pdf(ctx, si, wo, front_side);
