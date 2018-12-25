@@ -267,7 +267,11 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Cylinder[" << std::endl
+            << "  p0 = "  << m_object_to_world * Point3f(0.f, 0.f, 0.f) << "," << std::endl
+            << "  p1 = "  << m_object_to_world * Point3f(0.f, 0.f, m_length) << "," << std::endl
             << "  radius = "  << m_radius << "," << std::endl
+            << "  length = "  << m_length << "," << std::endl
+            << "  bsdf = " << string::indent(bsdf()->to_string()) << std::endl
             << "]";
         return oss.str();
     }

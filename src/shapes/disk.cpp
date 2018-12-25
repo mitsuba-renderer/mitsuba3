@@ -175,9 +175,10 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Disk[" << std::endl
-            << "  object_to_world = " << string::indent(m_object_to_world) << "," << std::endl
-            << "  frame = " << string::indent(m_frame) << "," << std::endl
-            << "  inv_surface_area = " << m_inv_surface_area << "," << std::endl
+            << "  center = "  << m_object_to_world * Point3f(0.f, 0.f, 0.f) << "," << std::endl
+            << "  n = "  << m_object_to_world * Normal3f(0.f, 0.f, 1.f) << "," << std::endl
+            << "  du = "  << norm(m_object_to_world * Normal3f(1.f, 0.f, 0.f)) << "," << std::endl
+            << "  dv = "  << norm(m_object_to_world * Normal3f(0.f, 1.f, 0.f)) << "," << std::endl
             << "  bsdf = " << string::indent(bsdf()->to_string()) << std::endl
             << "]";
         return oss.str();
