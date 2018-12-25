@@ -2,6 +2,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
@@ -470,11 +471,10 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
                     size_t arg_counter_nested = 0;
                     for (pugi::xml_node &ch: node.children()) {
-                        std::string nested_id, arg_name;
-                        std::tie(arg_name, nested_id) =
+                        auto [arg_name, nested_id] =
                             parse_xml(src, ctx, ch, tag, props_nested, param,
-                                     arg_counter_nested, depth + 1,
-                                     node_name == "emitter");
+                                      arg_counter_nested, depth + 1,
+                                      node_name == "emitter");
                         if (!nested_id.empty())
                             props_nested.set_named_reference(arg_name, nested_id);
                     }
@@ -538,7 +538,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
             case EInclude: {
                     check_attributes(src, node, { "filename" });
-                    fs::path filename = node.attribute("filename").value();
+                    ref<FileResolver> fs = Thread::thread()->file_resolver();
+                    fs::path filename = fs->resolve(node.attribute("filename").value());
                     if (!fs::exists(filename))
                         src.throw_error(node, "included file \"%s\" not found", filename);
 
@@ -563,8 +564,17 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             result.description());
 
                     try {
-                        return parse_xml(nested_src, ctx, *doc.begin(), parent_tag,
-                                         props, param, arg_counter, 0);
+                        if (std::string(doc.begin()->name()) == "scene") {
+                            for (pugi::xml_node &ch: doc.begin()->children()) {
+                                auto [arg_name, nested_id] = parse_xml(nested_src, ctx, ch, parent_tag,
+                                          props, param, arg_counter, 1);
+                                if (!nested_id.empty())
+                                    props.set_named_reference(arg_name, nested_id);
+                            }
+                        } else {
+                            return parse_xml(nested_src, ctx, *doc.begin(), parent_tag,
+                                             props, param, arg_counter, 0);
+                        }
                     } catch (const std::exception &e) {
                         src.throw_error(node, "%s", e.what());
                     }
