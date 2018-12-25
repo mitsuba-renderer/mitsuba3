@@ -1,5 +1,6 @@
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
 
 template <typename T>
@@ -71,6 +72,8 @@ MTS_PY_EXPORT(Transform) {
         .def_static("perspective", &Transform4f::perspective<4, 0>, "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
         .def_static("orthographic", &Transform4f::orthographic<4, 0>, "near"_a, "far"_a, D(Transform, orthographic))
         .def_static("look_at", &Transform4f::look_at<4, 0>, "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
+        .def_static("from_frame", &Transform4f::from_frame<Vector3f>, "frame"_a, D(Transform, from_frame))
+        .def_static("to_frame", &Transform4f::to_frame<Vector3f>, "frame"_a, D(Transform, to_frame))
         .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
         .def("extract", &Transform4f::extract<3>, D(Transform, extract))
         /// Operators

@@ -486,25 +486,6 @@ ENOKI_CALL_SUPPORT_END(mitsuba::Shape)
                         MaskP active) const override {                                   \
         return pdf_position_impl(ps, active);                                            \
     }                                                                                    \
-                                                                                         \
-    DirectionSample3f sample_direction(const Interaction3f &it,                          \
-                                       const Point2f &sample) const override {           \
-        return sample_direction_impl(it, sample, true);                                  \
-    }                                                                                    \
-    DirectionSample3fP sample_direction(const Interaction3fP &it,                        \
-                                        const Point2fP &sample,                          \
-                                        MaskP active) const override {                   \
-        return sample_direction_impl(it, sample, active);                                \
-    }                                                                                    \
-    Float pdf_direction(const Interaction3f &it,                                         \
-                        const DirectionSample3f &ds) const override {                    \
-        return pdf_direction_impl(it, ds, true);                                         \
-    }                                                                                    \
-    FloatP pdf_direction(const Interaction3fP &it, const DirectionSample3fP &ds,         \
-                         MaskP active) const override {                                  \
-        return pdf_direction_impl(it, ds, active);                                       \
-    }                                                                                    \
-                                                                                         \
     std::pair<bool, Float> ray_intersect(const Ray3f &ray,                               \
                                          Float * cache) const override {                 \
         return ray_intersect_impl(ray, cache, true);                                     \
@@ -539,6 +520,27 @@ ENOKI_CALL_SUPPORT_END(mitsuba::Shape)
                                                       MaskP active) const override {     \
         return normal_derivative_impl(si, shading_frame, active);                        \
     }
+
+
+#define MTS_IMPLEMENT_SHAPE_SAMPLE_DIRECTION()                                           \
+    DirectionSample3f sample_direction(const Interaction3f &it,                          \
+                                       const Point2f &sample) const override {           \
+        return sample_direction_impl(it, sample, true);                                  \
+    }                                                                                    \
+    DirectionSample3fP sample_direction(const Interaction3fP &it,                        \
+                                        const Point2fP &sample,                          \
+                                        MaskP active) const override {                   \
+        return sample_direction_impl(it, sample, active);                                \
+    }                                                                                    \
+    Float pdf_direction(const Interaction3f &it,                                         \
+                        const DirectionSample3f &ds) const override {                    \
+        return pdf_direction_impl(it, ds, true);                                         \
+    }                                                                                    \
+    FloatP pdf_direction(const Interaction3fP &it, const DirectionSample3fP &ds,         \
+                         MaskP active) const override {                                  \
+        return pdf_direction_impl(it, ds, active);                                       \
+    }                                                                                    \
+                                                                                         \
 
 //! @}
 // -----------------------------------------------------------------------

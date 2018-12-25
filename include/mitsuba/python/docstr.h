@@ -6431,6 +6431,8 @@ static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_extract = R"doc(Extract a lower-dimensional submatrix)doc";
 
+static const char *__doc_mitsuba_Transform_from_frame = R"doc()doc";
+
 static const char *__doc_mitsuba_Transform_has_scale =
 R"doc(Test for a scale component in each transform matrix by checking
 whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -6524,6 +6526,8 @@ R"doc(Create a rotation transformation in 2D. The angle is specified in
 degrees)doc";
 
 static const char *__doc_mitsuba_Transform_scale = R"doc(Create a scale transformation)doc";
+
+static const char *__doc_mitsuba_Transform_to_frame = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_transform_affine =
 R"doc(Transform a 3D vector/point/normal/ray by a transformation that is
@@ -8077,7 +8081,10 @@ static const char *__doc_mitsuba_srgb_model_eval = R"doc()doc";
 
 static const char *__doc_mitsuba_srgb_model_eval_rgb = R"doc(Sanity check: convert the coefficients back to sRGB)doc";
 
-static const char *__doc_mitsuba_srgb_model_fetch = R"doc(Look up the model coefficients for a sRGB color value)doc";
+static const char *__doc_mitsuba_srgb_model_fetch =
+R"doc(Look up the model coefficients for a sRGB color value @param c An sRGB
+color value where all components are in [0, 1]. @return Coefficients
+for use with srgb_model_eval)doc";
 
 static const char *__doc_mitsuba_srgb_model_mean = R"doc()doc";
 

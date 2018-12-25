@@ -277,6 +277,32 @@ template <typename VectorN> struct Transform {
         return Transform(result, transpose(inverse));
     }
 
+    /// Creates a transformation that converts from the standard basis to 'frame'
+    template <typename Vector3, size_t N = Size, std::enable_if_t<N == 4, int> = 0>
+    static Transform to_frame(const Frame<Vector3> &frame) {
+        Matrix result = Matrix::from_cols(
+            concat(frame.s, Scalar(0)),
+            concat(frame.t, Scalar(0)),
+            concat(frame.n, Scalar(0)),
+            Vector<Value, 4>(0.f, 0.f, 0.f, 1.f)
+        );
+
+        return Transform(result, result);
+    }
+
+    /// Creates a transformation that converts from 'frame' to the standard basis
+    template <typename Vector3, size_t N = Size, std::enable_if_t<N == 4, int> = 0>
+    static Transform from_frame(const Frame<Vector3> &frame) {
+        Matrix result = Matrix::from_rows(
+            concat(frame.s, Scalar(0)),
+            concat(frame.t, Scalar(0)),
+            concat(frame.n, Scalar(0)),
+            Vector<Value, 4>(0.f, 0.f, 0.f, 1.f)
+        );
+
+        return Transform(result, result);
+    }
+
     //! @}
     // =============================================================
 

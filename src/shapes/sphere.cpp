@@ -336,6 +336,7 @@ public:
     }
 
     MTS_IMPLEMENT_SHAPE()
+    MTS_IMPLEMENT_SHAPE_SAMPLE_DIRECTION()
     MTS_DECLARE_CLASS()
 private:
     Transform4f m_object_to_world;
