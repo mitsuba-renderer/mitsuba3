@@ -64,9 +64,68 @@ public:
                 p1 = m_object_to_world * Point3f(0.f, 0.f, m_length);
 
         /* To bound the cylinder, it is sufficient to find the
-           smallest box containing the two circles at the endpoints.
-           This can be done component-wise as follows */
+           smallest box containing the two circles at the endpoints. */
         return BoundingBox3f(min(p0 - x, p1 - x), max(p0 + x, p1 + x));
+    }
+
+    BoundingBox3f bbox(Index, const BoundingBox3f &clip) const override {
+        using FloatP8         = Packet<Float, 8>;
+        using MaskP8          = mask_t<FloatP8>;
+        using Point3fP8       = Point<FloatP8, 3>;
+        using Vector3fP8      = Vector<FloatP8, 3>;
+        using BoundingBox3fP8 = BoundingBox<Point3fP8>;
+
+        Point3f cyl_p  = m_object_to_world.transform_affine(Point3f(0.f, 0.f, 0.f));
+        Vector3f cyl_d = m_object_to_world.transform_affine(Vector3f(0.f, 0.f, m_length));
+
+        // Compute a base bounding box
+        BoundingBox3f bbox(this->bbox());
+        bbox.clip(clip);
+
+        /* Now forget about the cylinder ends and intersect an infinite
+           cylinder with each bounding box face, then compute a bounding
+           box of the resulting ellipses. */
+        Point3fP8 face_p = zero<Point3fP8>();
+        Vector3fP8 face_n = zero<Vector3fP8>();
+
+        for (size_t i = 0; i < 3; ++i) {
+            face_p.coeff(i,  i * 2 + 0) = bbox.min.coeff(i);
+            face_p.coeff(i,  i * 2 + 1) = bbox.max.coeff(i);
+            face_n.coeff(i,  i * 2 + 0) = -1.f;
+            face_n.coeff(i,  i * 2 + 1) = 1.f;
+        }
+
+        /* Project the cylinder direction onto the plane */
+        FloatP8 dp = dot(cyl_d, face_n);
+        MaskP8 valid = neq(dp, 0.f);
+
+        /* Compute semimajor/minor axes of ellipse */
+        Vector3fP8 v1 = fnmadd(face_n, dp, cyl_d);
+        FloatP8 v1_n2 = squared_norm(v1);
+        v1 = select(neq(v1_n2, 0.f), v1 * rsqrt(v1_n2),
+                    coordinate_system(face_n).first);
+        Vector3fP8 v2 = cross(face_n, v1);
+
+        /* Compute length of axes */
+        v1 *= m_radius / abs(dp);
+        v2 *= m_radius;
+
+        /* Compute center of ellipse */
+        FloatP8 t = dot(face_n, face_p - cyl_p) / dp;
+        Point3fP8 center = fmadd(Vector3fP8(cyl_d), t, Vector3fP8(cyl_p));
+        center[neq(face_n, 0.f)] = face_p;
+
+        /* Compute ellipse minima and maxima */
+        Vector3fP8 x = sqrt(sqr(v1) + sqr(v2));
+        BoundingBox3fP8 ellipse_bounds(center - x, center + x);
+        MaskP8 ellipse_overlap = valid && bbox.overlaps(ellipse_bounds);
+        ellipse_bounds.clip(bbox);
+
+        return BoundingBox3f(
+            hmin_inner(select(ellipse_overlap, ellipse_bounds.min,
+                              Point3fP8(std::numeric_limits<Float>::infinity()))),
+            hmax_inner(select(ellipse_overlap, ellipse_bounds.max,
+                              Point3fP8(-std::numeric_limits<Float>::infinity()))));
     }
 
     Float surface_area() const override {
