@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 /**
  * Cylinder shape.
  */
-class Cylinder : public Shape {
+class Cylinder final : public Shape {
 public:
     Cylinder(const Properties &props) : Shape(props) {
         m_radius = props.float_("radius", 1.f);

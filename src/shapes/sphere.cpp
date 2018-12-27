@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 /**
  * Sphere shape.
  */
-class Sphere : public Shape {
+class Sphere final : public Shape {
 public:
     Sphere(const Properties &props) : Shape(props) {
         m_object_to_world =

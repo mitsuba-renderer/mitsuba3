@@ -14,8 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
  * This class is parameterized by the underlying point data structure,
  * which permits the use of different scalar types and dimensionalities, e.g.
  * \code
- * BoundingBox<Vector3i> integerBBox(Point3i(0, 1, 3), Point3i(4, 5, 6));
- * BoundingBox<Vector2d> doubleBBox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
+ * BoundingBox<Point3i> integer_bbox(Point3i(0, 1, 3), Point3i(4, 5, 6));
+ * BoundingBox<Point2d> double_bbox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
  * \endcode
  *
  * \tparam T The underlying point data type (e.g. \c Point2d)

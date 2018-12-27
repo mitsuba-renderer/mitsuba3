@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class SmoothConductor : public BSDF {
+class SmoothConductor final : public BSDF {
 public:
     SmoothConductor(const Properties &props) {
         m_flags = EDeltaReflection | EFrontSide;

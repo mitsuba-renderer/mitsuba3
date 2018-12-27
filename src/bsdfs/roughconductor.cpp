@@ -8,7 +8,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class RoughConductor : public BSDF {
+class RoughConductor final : public BSDF {
 public:
     RoughConductor(const Properties &props) {
         m_eta = props.spectrum("eta", 0.f);

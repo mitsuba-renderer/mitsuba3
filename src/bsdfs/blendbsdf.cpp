@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class BlendBSDF : public BSDF {
+class BlendBSDF final : public BSDF {
 public:
     BlendBSDF(const Properties &props) {
         int bsdf_index = 0;

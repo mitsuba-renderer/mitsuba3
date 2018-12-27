@@ -20,7 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
  * surface normal points into the positive $Z$ direction. To change the disk
  * scale, rotation, or translation, use the 'to_world' parameter.
  */
-class Disk : public Shape {
+class Disk final : public Shape {
 public:
     Disk(const Properties &props) : Shape(props) {
         m_object_to_world = props.transform("to_world", Transform4f());

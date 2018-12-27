@@ -12,7 +12,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class RoughPlastic : public BSDF {
+class RoughPlastic final : public BSDF {
 public:
     RoughPlastic(const Properties &props) {
         /// Specifies the internal index of refraction at the interface

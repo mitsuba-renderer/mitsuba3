@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(mitsuba)
  * normal that points into the positive $Z$ direction. To change the rectangle
  * scale, rotation, or translation, use the 'to_world' parameter.
  */
-class Rectangle : public Shape {
+class Rectangle final : public Shape {
 public:
     Rectangle(const Properties &props) : Shape(props) {
         m_object_to_world = props.transform("to_world", Transform4f());
@@ -33,7 +33,7 @@ public:
         Normal3f normal = normalize(m_object_to_world * Normal3f(0.f, 0.f, 1.f));
         m_frame = Frame<Vector3f>(normalize(m_dp_du), normalize(m_dp_dv), normal);
 
-        m_inv_surface_area = 1.f / surface_area();
+        m_inv_surface_area = rcp(surface_area());
         if (abs(dot(normalize(m_dp_du), normalize(m_dp_dv))) > math::Epsilon)
             Throw("The `to_world` transformation contains shear, which is not"
                   " supported by the Rectangle shape.");
@@ -44,10 +44,10 @@ public:
 
     BoundingBox3f bbox() const override {
         BoundingBox3f bbox;
-        bbox.expand(m_object_to_world * Point3f(-1.f, -1.f, 0.f));
-        bbox.expand(m_object_to_world * Point3f( 1.f, -1.f, 0.f));
-        bbox.expand(m_object_to_world * Point3f( 1.f,  1.f, 0.f));
-        bbox.expand(m_object_to_world * Point3f(-1.f,  1.f, 0.f));
+        bbox.expand(m_object_to_world.transform_affine(Point3f(-1.f, -1.f, 0.f)));
+        bbox.expand(m_object_to_world.transform_affine(Point3f( 1.f, -1.f, 0.f)));
+        bbox.expand(m_object_to_world.transform_affine(Point3f( 1.f,  1.f, 0.f)));
+        bbox.expand(m_object_to_world.transform_affine(Point3f(-1.f,  1.f, 0.f)));
         return bbox;
     }
 
@@ -65,9 +65,8 @@ public:
         using Point3   = point3_t<Point2>;
 
         PositionSample<Point3> ps;
-        ps.p = m_object_to_world * Point3(sample.x() * 2.f - 1.f,
-                                          sample.y() * 2.f - 1.f,
-                                          0.f);
+        ps.p = m_object_to_world.transform_affine(
+            Point3(sample.x() * 2.f - 1.f, sample.y() * 2.f - 1.f, 0.f));
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.uv   = sample;
@@ -125,8 +124,8 @@ public:
         const Ray3 &ray_, Value *cache, mask_t<Value> active) const {
         using Point3 = Point<Value, 3>;
 
-        Ray3 ray     = m_world_to_object * ray_;
-        Value t      = -ray.o.z() / ray.d.z();
+        Ray3 ray     = m_world_to_object.transform_affine(ray_);
+        Value t      = -ray.o.z() * ray.d_rcp.z();
         Point3 local = ray(t);
 
         // Is intersection within ray segment and rectangle?
@@ -149,8 +148,8 @@ public:
     MTS_INLINE mask_t<Value> ray_test_impl(const Ray3 &ray_, mask_t<Value> active) const {
         using Point3 = Point<Value, 3>;
 
-        Ray3 ray     = m_world_to_object * ray_;
-        Value t      = -ray.o.z() / ray.d.z();
+        Ray3 ray     = m_world_to_object.transform_affine(ray_);
+        Value t      = -ray.o.z() * ray.d_rcp.z();
         Point3 local = ray(t);
 
         // Is intersection within ray segment and rectangle?
@@ -186,7 +185,7 @@ public:
               typename Value   = typename SurfaceInteraction3::Value,
               typename Vector3 = typename SurfaceInteraction3::Vector3>
     MTS_INLINE std::pair<Vector3, Vector3> normal_derivative_impl(
-            const SurfaceInteraction3 &/*si*/, bool, mask_t<Value>) const {
+            const SurfaceInteraction3 &/* si */, bool, mask_t<Value>) const {
         return { Vector3(0.f), Vector3(0.f) };
     }
 

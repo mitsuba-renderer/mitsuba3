@@ -8,7 +8,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class ThinDielectric : public BSDF {
+class ThinDielectric final : public BSDF {
 public:
     ThinDielectric(const Properties &props) {
         // Specifies the internal index of refraction at the interface

@@ -7,7 +7,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class PointLight : public Emitter {
+class PointLight final : public Emitter {
 public:
     PointLight(const Properties &props) : Emitter(props) {
         if (props.has_property("position")) {
@@ -52,7 +52,7 @@ public:
               typename Value = typename Interaction::Value,
               typename Spectrum = typename Interaction::Spectrum,
               typename DirectionSample = DirectionSample<Point3>>
-    std::pair<DirectionSample, Spectrum>
+    MTS_INLINE std::pair<DirectionSample, Spectrum>
     sample_direction_impl(const Interaction &it,
                           const Point2 & /*sample*/,
                           Mask active) const {
@@ -78,20 +78,20 @@ public:
 
     template <typename Interaction, typename DirectionSample, typename Mask,
               typename Value = typename DirectionSample::Value>
-    Value pdf_direction_impl(const Interaction &, const DirectionSample &, Mask) const {
+    MTS_INLINE Value pdf_direction_impl(const Interaction &, const DirectionSample &, Mask) const {
         return 0.f;
     }
 
     template <typename SurfaceInteraction, typename Mask,
               typename Spectrum = typename SurfaceInteraction::Spectrum>
-    Spectrum eval_impl(const SurfaceInteraction &, Mask) const {
+    MTS_INLINE Spectrum eval_impl(const SurfaceInteraction &, Mask) const {
         return 0.f;
     }
 
     template <typename Ray,
               typename Value    = typename Ray::Value,
               typename Spectrum = mitsuba::Spectrum<Value>>
-    Spectrum eval_environment_impl(const Ray &, mask_t<Value>) const {
+    MTS_INLINE Spectrum eval_environment_impl(const Ray &, mask_t<Value>) const {
         return 0.f;
     }
 

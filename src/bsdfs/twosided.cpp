@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class TwoSidedBRDF : public BSDF {
+class TwoSidedBRDF final : public BSDF {
 public:
     TwoSidedBRDF(const Properties &props) {
         auto bsdfs = props.objects();

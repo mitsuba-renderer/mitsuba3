@@ -11,7 +11,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class EnvironmentMapEmitter : public Emitter {
+class EnvironmentMapEmitter final : public Emitter {
 public:
     using Warp = warp::Marginal2D<0>;
 

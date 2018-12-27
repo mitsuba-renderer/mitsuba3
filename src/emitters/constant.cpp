@@ -10,7 +10,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class ConstantBackgroundEmitter : public Emitter {
+class ConstantBackgroundEmitter final : public Emitter {
 public:
     ConstantBackgroundEmitter(const Properties &props) : Emitter(props) {
         /* Until `create_shape` is called, we have no information

@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class Mask : public BSDF {
+class Mask final : public BSDF {
 public:
     Mask(const Properties &props) {
         for (auto &kv : props.objects()) {

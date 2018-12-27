@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class PerspectiveCamera : public ProjectiveCamera {
+class PerspectiveCamera final : public ProjectiveCamera {
 public:
     // =============================================================
     //! @{ \name Constructors
@@ -117,11 +117,11 @@ public:
     // =============================================================
 
     template <typename Point2, typename Value, typename Mask = mask_t<Value>>
-    auto sample_ray_impl(Value time,
-                         Value wavelength_sample,
-                         const Point2& position_sample,
-                         const Point2& /* aperture_sample */,
-                         Mask active) const {
+    MTS_INLINE auto sample_ray_impl(Value time,
+                                    Value wavelength_sample,
+                                    const Point2& position_sample,
+                                    const Point2& /* aperture_sample */,
+                                    Mask active) const {
         using Point3   = Point<Value, 3>;
         using Ray      = mitsuba::Ray<Point3>;
         using Spectrum = mitsuba::Spectrum<Value>;
@@ -155,11 +155,11 @@ public:
 
     template <typename Point2, typename Value = value_t<Point2>,
               typename Mask = mask_t<Value>>
-    auto sample_ray_differential_impl(Value time,
-                                      Value wavelength_sample,
-                                      const Point2&  position_sample,
-                                      const Point2& /*aperture_sample*/,
-                                      Mask active) const {
+    MTS_INLINE auto sample_ray_differential_impl(Value time,
+                                                 Value wavelength_sample,
+                                                 const Point2&  position_sample,
+                                                 const Point2& /*aperture_sample*/,
+                                                 Mask active) const {
         using Point3 = Point<Value, 3>;
         using RayDifferential = mitsuba::RayDifferential<Point3>;
         using Spectrum = mitsuba::Spectrum<Value>;

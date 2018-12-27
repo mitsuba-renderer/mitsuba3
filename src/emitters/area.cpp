@@ -7,7 +7,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class AreaLight : public Emitter {
+class AreaLight final : public Emitter {
 public:
     AreaLight(const Properties &props) : Emitter(props) {
         if (props.has_property("to_world"))

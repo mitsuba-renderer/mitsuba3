@@ -160,16 +160,16 @@ std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
        Christophe Hery, Andrew Kensler, Max Liani,
        and Ryusuke Villemin (JCGT Vol 6, No 1, 2017) */
 
-    Value sign = enoki::sign(n.z());
+    Value sign = enoki::sign(n.z()),
+          a    = -rcp(sign + n.z()),
+          b    = n.x() * n.y() * a;
 
-    Value a = -rcp<Vector3::Approx>(sign + n.z());
-    Value b = n.x() * n.y() * a;
-
-    return std::make_pair(
-        Vector3(mulsign(n.x() * n.x() * a, n.z()) + Scalar(1),
-                mulsign(b, n.z()), mulsign_neg(n.x(), n.z())),
-        Vector3(b, sign + n.y() * n.y() * a, -n.y())
-    );
+    return {
+        Vector3(mulsign(sqr(n.x()) * a, n.z()) + Scalar(1),
+                mulsign(b, n.z()),
+                mulsign_neg(n.x(), n.z())),
+        Vector3(b, sign + sqr(n.y()) * a, -n.y())
+    };
 }
 
 /// Complete the set {a} to an orthonormal basis {a, b, c}

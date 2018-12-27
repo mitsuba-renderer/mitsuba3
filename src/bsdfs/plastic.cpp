@@ -10,7 +10,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class SmoothPlastic : public BSDF {
+class SmoothPlastic final : public BSDF {
 public:
     SmoothPlastic(const Properties &props) {
         /* Specifies the internal index of refraction at the interface */

@@ -11,7 +11,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class RoughDielectric : public BSDF {
+class RoughDielectric final : public BSDF {
 public:
     RoughDielectric(const Properties &props) {
         m_specular_reflectance   = props.spectrum("specular_reflectance",   1.f);
