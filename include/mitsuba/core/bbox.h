@@ -168,9 +168,9 @@ template <typename Point_> struct BoundingBox {
      * \remark In the Python bindings, the 'Strict' argument is a normal
      *         function parameter with default value \c False.
      */
-    template <bool Strict = false, typename Value_>
-    mask_t<Value_> contains(const mitsuba::Point<Value_, Point_::Size> &p) const {
-        if (Strict)
+    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    Result contains(const mitsuba::Point<T, Point::Size> &p) const {
+        if constexpr (Strict)
             return all((p > min) && (p < max));
         else
             return all((p >= min) && (p <= max));
@@ -190,9 +190,9 @@ template <typename Point_> struct BoundingBox {
      * \remark In the Python bindings, the 'Strict' argument is a normal
      *         function parameter with default value \c False.
      */
-    template <bool Strict = false>
-    bool contains(const BoundingBox &bbox) const {
-        if (Strict)
+    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    Result contains(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
+        if constexpr (Strict)
             return all((bbox.min > min) && (bbox.max < max));
         else
             return all((bbox.min >= min) && (bbox.max <= max));
@@ -209,9 +209,9 @@ template <typename Point_> struct BoundingBox {
      *
      * \return \c true If overlap was detected.
      */
-    template <bool Strict = false>
-    bool overlaps(const BoundingBox &bbox) const {
-        if (Strict)
+    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    Result overlaps(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
+        if constexpr (Strict)
             return all((bbox.min < max) && (bbox.max > min));
         else
             return all((bbox.min <= max) && (bbox.max >= min));
@@ -221,27 +221,27 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    template <typename Value_>
-    Value_ squared_distance(const mitsuba::Point<Value_, Point::Size> &p) const {
-        return squared_norm(((min - p) && (p < min)) +
-                            ((p - max) && (p > max)));
+    template <typename T, typename Result = expr_t<T, Value>>
+    Result squared_distance(const mitsuba::Point<T, Point::Size> &p) const {
+        return squared_norm(((min - p) & (p < min)) + ((p - max) & (p > max)));
     }
 
     /**
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Value squared_distance(const BoundingBox &bbox) const {
-        return squared_norm(((min - bbox.max) && (bbox.max < min)) +
-                            ((bbox.min - max) && (bbox.min > max)));
+    template <typename T, typename Result = expr_t<T, Value>>
+    Result squared_distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
+        return squared_norm(((min - bbox.max) & (bbox.max < min)) +
+                            ((bbox.min - max) & (bbox.min > max)));
     }
 
     /**
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    template <typename Value_>
-    Value_ distance(const mitsuba::Point<Value_, Point::Size> &p) const {
+    template <typename T, typename Result = expr_t<T, Value>>
+    Result distance(const mitsuba::Point<T, Point::Size> &p) const {
         return enoki::sqrt(squared_distance(p));
     }
 
@@ -249,7 +249,8 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    Value distance(const BoundingBox &bbox) const {
+    template <typename T, typename Result = expr_t<T, Value>>
+    Result distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
         return enoki::sqrt(squared_distance(bbox));
     }
 
@@ -266,19 +267,22 @@ template <typename Point_> struct BoundingBox {
     }
 
     /// Clip this bounding box to another bounding box
-    void clip(const BoundingBox &bbox) {
+    template <typename T>
+    void clip(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) {
         min = enoki::max(min, bbox.min);
         max = enoki::min(max, bbox.max);
     }
 
     /// Expand the bounding box to contain another point
-    void expand(const Point &p) {
+    template <typename T>
+    void expand(const mitsuba::Point<T, Point::Size> &p) {
         min = enoki::min(min, p);
         max = enoki::max(max, p);
     }
 
     /// Expand the bounding box to contain another bounding box
-    void expand(const BoundingBox &bbox) {
+    template <typename T>
+    void expand(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) {
         min = enoki::min(min, bbox.min);
         max = enoki::max(max, bbox.max);
     }
@@ -325,10 +329,10 @@ template <typename Point_> struct BoundingBox {
     }
 
     /// Create a bounding sphere, which contains the axis-aligned box
-    template <typename BoundingSphere = BoundingSphere<Point>>
-    BoundingSphere bounding_sphere() const {
+    template <typename Result = BoundingSphere<Point>>
+    Result bounding_sphere() const {
         Point c = center();
-        return BoundingSphere3f(c, norm(c - max));
+        return { c, norm(c - max) };
     }
 
     Point min; ///< Component-wise minimum

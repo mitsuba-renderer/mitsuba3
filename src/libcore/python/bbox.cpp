@@ -53,10 +53,11 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
              (Value (BBox::*)(const BBox &) const)(&BBox::distance),
              D(BoundingBox, distance, 2))
         .def("reset", &BBox::reset, D(BoundingBox, reset))
-        .def("clip", &BBox::clip, D(BoundingBox, clip))
-        .def("expand", py::overload_cast<const Point &>(&BBox::expand),
+        .def("clip", (void (BBox::*)(const BBox &)) &BBox::clip,
+             D(BoundingBox, clip))
+        .def("expand", (void (BBox::*)(const Point &)) &BBox::expand,
              D(BoundingBox, expand))
-        .def("expand", py::overload_cast<const BBox &>(&BBox::expand),
+        .def("expand", (void (BBox::*)(const BBox &)) &BBox::expand,
              D(BoundingBox, expand, 2))
         .def("ray_intersect", &BBox::template ray_intersect<Ray3f>,
              D(BoundingBox, ray_intersect))
