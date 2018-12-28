@@ -103,7 +103,7 @@ public:
     /// Vectorized version of \ref vertex_normal()
     Normal3fP vertex_normal(IndexP index, MaskP active = true) const {
         index *= m_vertex_size / (uint32_t) sizeof(Float);
-        return gather<Point3fP, sizeof(Float)>(m_vertices.get() + m_normal_offset, index, active);
+        return gather<Normal3fP, sizeof(Float)>(m_vertices.get() + m_normal_offset, index, active);
     }
 
     /// Compatibility wrapper, which strips the mask argument and invokes \ref vertex_normal()

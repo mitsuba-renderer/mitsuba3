@@ -182,7 +182,7 @@ def test18_invalid_boolean():
 
 def test19_invalid_vector():
     err_str = 'could not parse floating point value "a"'
-    err_str2 = '"value" attribute must have exactly 3 elements'
+    err_str2 = '"value" attribute must have exactly 1 or 3 elements'
     err_str3 = 'can\'t mix and match "value" and "x"/"y"/"z" attributes'
 
     with pytest.raises(Exception) as e:

@@ -232,13 +232,19 @@ static void check_attributes(XMLSource &src, const pugi::xml_node &node,
 void expand_value_to_xyz(XMLSource &src, pugi::xml_node &node) {
     if (node.attribute("value")) {
         auto list = string::tokenize(node.attribute("value").value());
-        if (list.size() != 3)
-            src.throw_error(node, "\"value\" attribute must have exactly 3 elements");
-        else if (node.attribute("x") || node.attribute("y") || node.attribute("z"))
+        if (node.attribute("x") || node.attribute("y") || node.attribute("z"))
             src.throw_error(node, "can't mix and match \"value\" and \"x\"/\"y\"/\"z\" attributes");
-        node.append_attribute("x") = list[0].c_str();
-        node.append_attribute("y") = list[1].c_str();
-        node.append_attribute("z") = list[2].c_str();
+        if (list.size() == 1) {
+            node.append_attribute("x") = list[0].c_str();
+            node.append_attribute("y") = list[0].c_str();
+            node.append_attribute("z") = list[0].c_str();
+        } else if (list.size() == 3) {
+            node.append_attribute("x") = list[0].c_str();
+            node.append_attribute("y") = list[1].c_str();
+            node.append_attribute("z") = list[2].c_str();
+        } else {
+            src.throw_error(node, "\"value\" attribute must have exactly 1 or 3 elements");
+        }
         node.remove_attribute("value");
     }
 }
