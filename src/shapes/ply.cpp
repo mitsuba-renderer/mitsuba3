@@ -176,7 +176,7 @@ public:
                     fail(e.what());
                 }
 
-                m_faces = FaceHolder(new uint8_t[el.count * o_struct_size]);
+                m_faces = FaceHolder(new uint8_t[(el.count + 1) * o_struct_size]);
 
                 size_t packet_count     = el.count / elements_per_packet;
                 size_t remainder_count  = el.count % elements_per_packet;
@@ -214,7 +214,7 @@ public:
             m_face_count,
             m_vertex_count,
             util::mem_string(m_face_count * m_face_struct->size() +
-                            m_vertex_count * m_vertex_struct->size()),
+                             m_vertex_count * m_vertex_struct->size()),
             util::time_string(timer.value())
         );
 

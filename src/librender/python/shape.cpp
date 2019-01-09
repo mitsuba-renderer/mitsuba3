@@ -78,6 +78,7 @@ MTS_PY_EXPORT(Shape) {
         .mdef(Mesh, face_struct)
         .mdef(Mesh, has_vertex_normals)
         .mdef(Mesh, has_vertex_texcoords)
+        .mdef(Mesh, has_vertex_colors)
         .mdef(Mesh, write)
         .mdef(Mesh, recompute_vertex_normals)
         .mdef(Mesh, recompute_bbox)

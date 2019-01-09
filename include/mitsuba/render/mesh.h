@@ -149,6 +149,9 @@ public:
     /// Does this mesh have per-vertex texture coordinates?
     bool has_vertex_texcoords() const { return m_texcoord_offset != 0; }
 
+    /// Does this mesh have per-vertex texture colors?
+    bool has_vertex_colors() const { return m_color_offset != 0; }
+
     /// @}
     // =========================================================================
 
@@ -340,6 +343,8 @@ protected:
     Index m_normal_offset = 0;
     /// Byte offset of the texture coordinate data within the vertex buffer
     Index m_texcoord_offset = 0;
+    /// Byte offset of the color data within the vertex buffer
+    Index m_color_offset = 0;
 
     std::string m_name;
     BoundingBox3f m_bbox;

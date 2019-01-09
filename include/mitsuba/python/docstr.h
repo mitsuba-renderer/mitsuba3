@@ -1128,8 +1128,8 @@ which permits the use of different scalar types and dimensionalities,
 e.g.
 
 ```
-BoundingBox<Vector3i> integerBBox(Point3i(0, 1, 3), Point3i(4, 5, 6));
-BoundingBox<Vector2d> doubleBBox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
+BoundingBox<Point3i> integer_bbox(Point3i(0, 1, 3), Point3i(4, 5, 6));
+BoundingBox<Point2d> double_bbox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
 ```
 
 Template parameter ``T``:
@@ -3144,6 +3144,8 @@ static const char *__doc_mitsuba_Mesh_fill_surface_interaction_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_fill_surface_interaction_impl = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_has_vertex_colors = R"doc(Does this mesh have per-vertex texture colors?)doc";
+
 static const char *__doc_mitsuba_Mesh_has_vertex_normals = R"doc(Does this mesh have per-vertex normals?)doc";
 
 static const char *__doc_mitsuba_Mesh_has_vertex_texcoords = R"doc(Does this mesh have per-vertex texture coordinates?)doc";
@@ -3154,6 +3156,8 @@ prepare_sampling_table() is first calls. The value of m_surface_area
 is negative until it has been computed.)doc";
 
 static const char *__doc_mitsuba_Mesh_m_bbox = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_color_offset = R"doc(Byte offset of the color data within the vertex buffer)doc";
 
 static const char *__doc_mitsuba_Mesh_m_disable_vertex_normals = R"doc(Flag that can be set by the user to disable loading of vertex normals)doc";
 
@@ -6431,7 +6435,9 @@ static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_extract = R"doc(Extract a lower-dimensional submatrix)doc";
 
-static const char *__doc_mitsuba_Transform_from_frame = R"doc()doc";
+static const char *__doc_mitsuba_Transform_from_frame =
+R"doc(Creates a transformation that converts from 'frame' to the standard
+basis)doc";
 
 static const char *__doc_mitsuba_Transform_has_scale =
 R"doc(Test for a scale component in each transform matrix by checking
@@ -6527,7 +6533,9 @@ degrees)doc";
 
 static const char *__doc_mitsuba_Transform_scale = R"doc(Create a scale transformation)doc";
 
-static const char *__doc_mitsuba_Transform_to_frame = R"doc()doc";
+static const char *__doc_mitsuba_Transform_to_frame =
+R"doc(Creates a transformation that converts from the standard basis to
+'frame')doc";
 
 static const char *__doc_mitsuba_Transform_transform_affine =
 R"doc(Transform a 3D vector/point/normal/ray by a transformation that is
