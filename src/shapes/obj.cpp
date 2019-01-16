@@ -251,7 +251,8 @@ public:
                     size_t map_index = key[1] - 1;
                     if (unlikely(map_index > texcoords.size()))
                         fail("reference to invalid texture coordinate %i!", key[1]);
-                    store_unaligned(vertex_ptr + m_texcoord_offset, texcoords[key[1] - 1]);
+                    store_unaligned(vertex_ptr + m_texcoord_offset,
+                                    texcoords[map_index]);
                 }
 
                 if (has_vertex_normals() && key[2]) {

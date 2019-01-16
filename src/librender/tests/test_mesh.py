@@ -1,5 +1,4 @@
 import numpy as np
-import os
 import pytest
 
 from mitsuba.core import Struct, float_dtype
@@ -181,34 +180,36 @@ def test05_load_simple_mesh():
         assert np.allclose(vertices[4].tolist(), [290, 0, 114, 0.9534, 0, 0.301709], atol=1e-3)
 
 
-@fresolver_append_path
-def test06_load_obj_with_face_normals():
+@pytest.mark.parametrize('mesh_format', ['obj', 'ply', 'serialized'])
+@pytest.mark.parametrize('features', ['normals', 'uv', 'normals_uv'])
+@pytest.mark.parametrize('face_normals', [True, False])
+def test06_load_various_features(mesh_format, features, face_normals):
     """Tests the OBJ & PLY loaders with combinations of vertex / face normals,
     presence and absence of UVs, etc."""
-    for mesh_format in ["obj", "ply"]:
-        for features in ['normals', 'uv', 'normals_uv']:
-            for face_normals in [True, False]:
-                shape = load_string("""
-                    <scene version="2.0.0">
-                        <shape type="{0}">
-                            <string name="filename" value="resources/data/tests/{0}/rectangle_{1}.{0}" />
-                            <boolean name="face_normals" value="{2}" />
-                        </shape>
-                    </scene>
-                """.format(mesh_format, features, str(face_normals).lower())).kdtree()[0]
-                assert shape.has_vertex_normals() == (not face_normals)
+    def test():
+        shape = load_string("""
+            <scene version="2.0.0">
+                <shape type="{0}">
+                    <string name="filename" value="resources/data/tests/{0}/rectangle_{1}.{0}" />
+                    <boolean name="face_normals" value="{2}" />
+                </shape>
+            </scene>
+        """.format(mesh_format, features, str(face_normals).lower())).kdtree()[0]
+        assert shape.has_vertex_normals() == (not face_normals)
 
-                vertices = shape.vertices()
-                (v0, v2, v3) = [vertices[i].tolist() for i in [0, 2, 3]]
+        vertices = shape.vertices()
+        (v0, v2, v3) = [vertices[i].tolist() for i in [0, 2, 3]]
 
-                assert np.allclose(v0[:3], [-2.85, 0.000, -7.600], atol=1e-3)
-                assert np.allclose(v2[:3], [2.85, 0.0, 0.599999], atol=1e-3)
-                assert np.allclose(v3[:3], [2.85, 0.0, -7.600000], atol=1e-3)
-                if 'uv' in features:
-                    assert shape.has_vertex_texcoords()
-                    assert np.allclose(v0[-2:], [0.950589, 0.988416], atol=1e-3)
-                    assert np.allclose(v2[-2:], [0.025105, 0.689127], atol=1e-3)
-                    assert np.allclose(v3[-2:], [0.950589, 0.689127], atol=1e-3)
-                if shape.has_vertex_normals():
-                    for v in [v0, v2, v3]:
-                        assert np.allclose(v[3:6], [0.0, 1.0, 0.0])
+        assert np.allclose(v0[:3], [-2.85, 0.000, -7.600], atol=1e-3)
+        assert np.allclose(v2[:3], [2.85, 0.0, 0.599999], atol=1e-3)
+        assert np.allclose(v3[:3], [2.85, 0.0, -7.600000], atol=1e-3)
+        if 'uv' in features:
+            assert shape.has_vertex_texcoords()
+            assert np.allclose(v0[-2:], [0.950589, 0.988416], atol=1e-3)
+            assert np.allclose(v2[-2:], [0.025105, 0.689127], atol=1e-3)
+            assert np.allclose(v3[-2:], [0.950589, 0.689127], atol=1e-3)
+        if shape.has_vertex_normals():
+            for v in [v0, v2, v3]:
+                assert np.allclose(v[3:6], [0.0, 1.0, 0.0])
+
+    return fresolver_append_path(test)()

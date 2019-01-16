@@ -38,7 +38,7 @@ public:
             fail("file not found");
 
         // Object-space to world-space transformation
-        Transform to_world = props.transform("to_world", Transform4f());
+        Transform4f to_world = props.transform("to_world", Transform4f());
 
         /// When the file contains multiple meshes, this index specifies which one to load
         int shape_index = props.int_("shape_index", 0);
@@ -154,8 +154,14 @@ public:
         bool double_precision = flags & EDoublePrecision;
         read_helper(stream, double_precision, m_vertex_struct->offset("x"), 3);
 
-        if (flags & EHasNormals)
-            read_helper(stream, double_precision, m_vertex_struct->offset("nx"), 3);
+        if (flags & EHasNormals) {
+            if (m_disable_vertex_normals)
+                // Skip over vertex normals provided in the file.
+                advance_helper(stream, double_precision, 3);
+            else
+                read_helper(stream, double_precision,
+                            m_vertex_struct->offset("nx"), 3);
+        }
 
         if (flags & EHasTexcoords)
             read_helper(stream, double_precision, m_vertex_struct->offset("u"), 2);
@@ -174,6 +180,7 @@ public:
             util::time_string(timer.value())
         );
 
+        // Post-processing
         for (Size i = 0; i < m_vertex_count; ++i) {
             Point3f p = to_world * vertex_position(i);
             store_unaligned(vertex(i), p);
@@ -182,6 +189,11 @@ public:
             if (has_vertex_normals()) {
                 Normal3f n = normalize(to_world * vertex_normal(i));
                 store_unaligned(vertex(i) + m_normal_offset, n);
+            }
+
+            if (has_vertex_texcoords()) {
+                Point2f uv = vertex_texcoord(i);
+                store_unaligned(vertex(i) + m_texcoord_offset, uv);
             }
         }
 
@@ -229,6 +241,21 @@ public:
                         dst[d] = (double) src[d];
                 }
             }
+        }
+    }
+
+    /**
+     * Simply advances the stream without outputing to the mesh.
+     * Since compressed streams do not provide `tell` and `seek`
+     * implementations, we have to read and discard the data.
+     */
+    void advance_helper(Stream *stream, bool dp, size_t dim) {
+        if (dp) {
+            std::unique_ptr<double[]> values(new double[m_vertex_count * dim]);
+            stream->read_array(values.get(), m_vertex_count * dim);
+        } else {
+            std::unique_ptr<float[]> values(new float[m_vertex_count * dim]);
+            stream->read_array(values.get(), m_vertex_count * dim);
         }
     }
 
