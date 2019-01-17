@@ -102,6 +102,7 @@ public:
         }
 
         m_storage = new ImageBlock(Bitmap::EXYZAW, m_crop_size);
+        m_storage->set_offset(m_crop_offset);
     }
 
     /// Resets all channels to zero.

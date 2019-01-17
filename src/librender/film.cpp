@@ -26,7 +26,9 @@ Film::Film(const Properties &props) : Object() {
         m_crop_size.x() <= 0 || m_crop_size.y() <= 0 ||
         m_crop_offset.x() + m_crop_size.x() > m_size.x() ||
         m_crop_offset.y() + m_crop_size.y() > m_size.y() ) {
-        Log(EError, "Invalid crop window specification!");
+        Throw("Invalid crop window specification!\n"
+              "offset %s + crop size %s vs full size %s",
+              m_crop_offset, m_crop_size, m_size);
     }
 
     /* If set to true, regions slightly outside of the film

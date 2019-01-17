@@ -196,9 +196,11 @@ void SamplingIntegrator::render_block_scalar(const Scene *scene,
 
             Float wavelength_sample = rs.next_1d();
 
+            auto adjusted_position =
+                (position_sample - sensor->film()->crop_offset()) *
+                inv_resolution;
             auto [ray, ray_weight] = sensor->sample_ray_differential(
-                time, wavelength_sample, position_sample * inv_resolution,
-                aperture_sample);
+                time, wavelength_sample, adjusted_position, aperture_sample);
 
             ray.scale_differential(diff_scale_factor);
 
@@ -273,9 +275,11 @@ void SamplingIntegrator::render_block_vector(const Scene *scene,
 
         FloatP wavelength_sample = rs.next_1d(active);
 
+        auto adjusted_position =
+            (position_sample - sensor->film()->crop_offset()) * inv_resolution;
         auto [ray, ray_weight] = sensor->sample_ray_differential(
-            time, wavelength_sample, position_sample * inv_resolution,
-            aperture_sample, active);
+            time, wavelength_sample, adjusted_position, aperture_sample,
+            active);
 
         ray.scale_differential(diff_scale_factor);
 
