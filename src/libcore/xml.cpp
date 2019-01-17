@@ -80,11 +80,32 @@ struct Version {
 
 NAMESPACE_BEGIN(detail)
 
+/// Throws if non-whitespace characters are found after the given index.
+void check_whitespace_only(const std::string &s, size_t offset) {
+    for (size_t i = offset; i < s.size(); ++i) {
+        if (!std::isspace(static_cast<unsigned char>(s[i])))
+            Throw("Invalid trailing characters while parsing float from string"
+                  " \"%s\"", s);
+    }
+}
+
+inline Float stof(const std::string &s) {
+    size_t offset = 0;
 #if defined(SINGLE_PRECISION)
-    inline Float stof(const std::string &s) { return std::stof(s); }
+    Float result = std::stof(s, &offset);
 #else
-    inline Float stof(const std::string &s) { return std::stod(s); }
+    Float result = std::stod(s, &offset);
 #endif
+    check_whitespace_only(s, offset);
+    return result;
+}
+
+inline int64_t stoll(const std::string &s) {
+    size_t offset = 0;
+    int64_t result = std::stoll(s, &offset);
+    check_whitespace_only(s, offset);
+    return result;
+}
 
 
 static std::unordered_map<std::string, ETag> *tags = nullptr;
@@ -611,7 +632,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     std::string value = node.attribute("value").value();
                     int64_t value_long;
                     try {
-                        value_long = int64_t(std::stoll(value));
+                        value_long = detail::stoll(value);
                     } catch (...) {
                         src.throw_error(node, "could not parse integer value \"%s\"", value);
                     }

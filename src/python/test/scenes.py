@@ -58,17 +58,17 @@ def make_teapot_scene(spp = 32):
                         value="resources/data/ply/teapot.ply"/>
 
                 <bsdf type="diffuse">
-                    <rgb name="reflectance" value="0.1f, 0.1f, 0.8f"/>
+                    <rgb name="reflectance" value="0.1, 0.1, 0.8"/>
                 </bsdf>
             </shape>
 
             <emitter type="point">
                 <point name="position" x="2.0" y="-6.0" z="4.5"/>
-                <spectrum name="intensity" value="300.0f"/>
+                <spectrum name="intensity" value="300.0"/>
             </emitter>
             <emitter type="point">
                 <point name="position" x="-3.0" y="-3.0" z="-0.5"/>
-                <spectrum name="intensity" value="100.0f"/>
+                <spectrum name="intensity" value="100.0"/>
             </emitter>
         </scene>
     """.format(spp=spp))
@@ -106,7 +106,7 @@ def make_box_scene(spp = 16):
             </sensor>
 
             <bsdf type="diffuse" id="neutral">
-                <rgb name="reflectance" value="1.0f, 1.0f, 1.0f"/>
+                <rgb name="reflectance" value="1.0, 1.0, 1.0"/>
             </bsdf>
 
             <shape type="ply">
@@ -173,7 +173,7 @@ def make_box_scene(spp = 16):
                 <ref id="neutral"/>
 
                 <emitter type="area">
-                    <spectrum name="radiance" value="3.0f"/>
+                    <spectrum name="radiance" value="3.0"/>
                 </emitter>
             </shape>
         </scene>

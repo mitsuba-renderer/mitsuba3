@@ -16,10 +16,7 @@ Makefile
 
 # Miscellaneous;
 /ext_build
-/build
-/build-debug
-/build_debug
-/build-double
+/build*
 /dist
 *.dir
 *~
@@ -28,7 +25,11 @@ Testing
 /.cache
 /.ipynb_checkpoints
 
-# Visual studio
+# SublimeText
+*.sublime-project
+*.sublime-workspace
+
+# Visual Studio / VS Code
 *.vcxproj
 mitsuba.sdf
 mitsuba.sln

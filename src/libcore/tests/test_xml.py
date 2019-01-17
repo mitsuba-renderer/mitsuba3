@@ -152,23 +152,50 @@ def test15_incorrect_parameter_type():
                       <float name="filename" value="1.0"/>
                    </shape></scene>""")
     e.match('The property "filename" has the wrong type'
-        ' \\(expected <string>\\).')
+            ' \\(expected <string>\\).')
 
 
 def test16_invalid_integer():
-    with pytest.raises(Exception) as e:
-        load_string("""<scene version="2.0.0">
-                   <integer name="10" value="a"/>
-                   </scene>""")
-    e.match('could not parse integer value "a".')
+    def test_input(value, valid):
+        expected = (r'.*unreferenced property ."test_number".*' if valid
+                    else r'could not parse integer value "{}".'.format(value))
+        with pytest.raises(Exception, match=expected):
+            load_string("""<scene version="2.0.0">
+                       <integer name="test_number" value="{}"/>
+                       </scene>""".format(value))
+    test_input("a", False)
+    test_input("50.5", False)
+    test_input("50f", False)
+    test_input("50 a", False)
+    test_input("50 10", False)
+    test_input("50, 10", False)
+    test_input("1e10", False)
+    test_input("1e-5", False)
+    test_input("42", True)
+    test_input("1000   ", True)
+    test_input("  50    ", True)
 
 
 def test17_invalid_float():
-    with pytest.raises(Exception) as e:
-        load_string("""<scene version="2.0.0">
-                   <float name="10" value="a"/>
-                   </scene>""")
-    e.match('could not parse floating point value "a".')
+    def test_input(value, valid):
+        expected = (r'.*unreferenced property ."test_number".*' if valid
+                    else r'could not parse floating point value "{}".'.format(value))
+        with pytest.raises(Exception, match=expected):
+            load_string("""<scene version="2.0.0">
+                       <float name="test_number" value="{}"/>
+                       </scene>""".format(value))
+    test_input("a", False)
+    test_input("50.0 43", False)
+    test_input("50.0.5", False)
+    test_input("50.0, 0.5", False)
+    test_input("50.0 a", False)
+    test_input("35.f", False)
+    test_input("42", True)
+    test_input("50.0", True)
+    test_input("  50.0    ", True)
+    test_input("1e-5", True)
+    test_input("1e10", True)
+    test_input("1e+12", True)
 
 
 def test18_invalid_boolean():

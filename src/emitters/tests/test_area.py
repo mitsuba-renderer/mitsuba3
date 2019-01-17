@@ -23,7 +23,7 @@ def example_shape(filename = "data/triangle.ply", has_emitter = True):
 
 def test01_area_construct():
     e = load_string("""<emitter version="2.0.0" type="area">
-            <spectrum name="radiance" value="1000f"/>
+            <spectrum name="radiance" value="1000"/>
         </emitter>""")
     assert e is not None
 

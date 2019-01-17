@@ -56,10 +56,10 @@ def test02_pdf(interaction):
 def test03_sample_eval_pdf(interaction):
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
         <bsdf type="diffuse">
-            <rgb name="reflectance" value="0.1f, 0.1f, 0.1f"/>
+            <rgb name="reflectance" value="0.1, 0.1, 0.1"/>
         </bsdf>
         <bsdf type="diffuse">
-            <rgb name="reflectance" value="0.9f, 0.9f, 0.9f"/>
+            <rgb name="reflectance" value="0.9, 0.9, 0.9"/>
         </bsdf>
     </bsdf>""")
 
