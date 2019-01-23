@@ -1,10 +1,11 @@
 import numpy as np
 import pytest
-from mitsuba.core      import Ray3f, Ray3fX
+
+import mitsuba
+from mitsuba.core      import Ray3f
 from mitsuba.core.xml  import load_string
 from mitsuba.core.math import Pi
 from mitsuba.core      import MTS_WAVELENGTH_SAMPLES
-from mitsuba.render    import Shape
 
 def example_disk(scale = (1, 1, 1), translate = (0, 0, 0)):
     return load_string("""<shape version="2.0.0" type="cylinder">
@@ -26,6 +27,7 @@ def example_scene(scale = (1, 1, 1), translate = (0, 0, 0)):
     </scene>""".format(scale[0], scale[1], scale[2],
                        translate[0], translate[1], translate[2]))
 
+
 def test01_create():
     s = example_disk()
     assert s is not None
@@ -45,6 +47,8 @@ def test02_bbox():
             assert np.allclose(b.max, +np.array([r, r, l]))
 
 
+@pytest.mark.xfail(condition=mitsuba.USE_EMBREE,
+                   reason="Shape intersections not implemented with Embree")
 def test03_ray_intersect():
     for r in [1, 2, 4]:
         for l in [1, 5]:
@@ -52,7 +56,6 @@ def test03_ray_intersect():
 
             # grid size
             n = 10
-            inv_n = 1.0 / n
 
             wl = np.zeros(MTS_WAVELENGTH_SAMPLES)
 
@@ -90,10 +93,10 @@ def test03_ray_intersect():
                         if si_u.is_valid():
                             dp_du = (si_u.p - si.p) / eps
                             dn_du = (si_u.n - si.n) / eps
-                            assert(np.allclose(dp_du, si.dp_du, atol=2e-2))
-                            assert(np.allclose(dn_du, dn[0], atol=2e-2))
+                            assert np.allclose(dp_du, si.dp_du, atol=2e-2)
+                            assert np.allclose(dn_du, dn[0], atol=2e-2)
                         if si_v.is_valid():
                             dp_dv = (si_v.p - si.p) / eps
                             dn_dv = (si_v.n - si.n) / eps
-                            assert(np.allclose(dp_dv, si.dp_dv, atol=2e-2))
-                            assert(np.allclose(dn_dv, dn[1], atol=2e-2))
+                            assert np.allclose(dp_dv, si.dp_dv, atol=2e-2)
+                            assert np.allclose(dn_dv, dn[1], atol=2e-2)

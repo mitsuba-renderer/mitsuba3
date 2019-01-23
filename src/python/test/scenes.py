@@ -117,14 +117,16 @@ def make_box_scene(spp = 16):
                 <ref id="neutral"/>
             </shape>
 
-            <shape type="rectangle"> <!-- Bottom -->
+            <shape type="obj"> <!-- Bottom -->
+                <string name="filename" value="resources/data/obj/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                 </transform>
                 <ref id="neutral"/>
             </shape>
 
-            <shape type="rectangle">  <!-- Left -->
+            <shape type="obj">  <!-- Left -->
+                <string name="filename" value="resources/data/obj/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                     <rotate x="0" y="1" z="0" angle="90"/>
@@ -135,7 +137,8 @@ def make_box_scene(spp = 16):
                 </bsdf>
             </shape>
 
-            <shape type="rectangle">  <!-- Back -->
+            <shape type="obj">  <!-- Back -->
+                <string name="filename" value="resources/data/obj/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                     <rotate x="1" y="0" z="0" angle="90"/>
@@ -144,7 +147,8 @@ def make_box_scene(spp = 16):
                 <ref id="neutral"/>
             </shape>
 
-            <shape type="rectangle">  <!-- Right -->
+            <shape type="obj">  <!-- Right -->
+                <string name="filename" value="resources/data/obj/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                     <rotate x="0" y="1" z="0" angle="-90"/>
@@ -155,7 +159,8 @@ def make_box_scene(spp = 16):
                 </bsdf>
             </shape>
 
-            <shape type="rectangle">  <!-- Top -->
+            <shape type="obj">  <!-- Top -->
+                <string name="filename" value="resources/data/obj/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                     <rotate x="0" y="1" z="0" angle="180"/>
@@ -164,7 +169,8 @@ def make_box_scene(spp = 16):
                 <ref id="neutral"/>
             </shape>
 
-            <shape type="rectangle">  <!-- Small emitter -->
+            <shape type="obj">  <!-- Small emitter -->
+                <string name="filename" value="resources/data/obj/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="3" y="3" z="3"/>
                     <rotate x="0" y="1" z="0" angle="180"/>
@@ -216,7 +222,8 @@ def make_museum_plane_scene(spp = 16, roughness = 0.01):
                 <rgb name="k" value="1.0, 1.0, 1.0"/>
             </bsdf>
 
-            <shape type="rectangle">
+            <shape type="obj">
+                <string name="filename" value="resources/data/obj/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="10" y="10" z="10"/>
                     <lookat origin="0,   0, 0"

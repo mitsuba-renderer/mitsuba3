@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+
+import mitsuba
 from mitsuba.core      import Ray3f, Ray3fX
 from mitsuba.core.xml  import load_string
 
@@ -12,11 +14,13 @@ def example_rectangle(scale = (1, 1, 1), translate = (0, 0, 0)):
     </shape>""".format(scale[0], scale[1], scale[2],
                        translate[0], translate[1], translate[2]))
 
+
 def test01_create():
     s = example_rectangle()
     assert s is not None
     assert s.primitive_count() == 1
     assert np.allclose(s.surface_area(), 4.0)
+
 
 def test02_bbox():
     sy = 2.5
@@ -33,6 +37,9 @@ def test02_bbox():
             assert np.allclose(b.min, translate - np.array([sx, sy, 0.0]))
             assert np.allclose(b.max, translate + np.array([sx, sy, 0.0]))
 
+
+@pytest.mark.xfail(condition=mitsuba.USE_EMBREE,
+                   reason="Shape intersections not implemented with Embree")
 def test03_ray_intersect():
     scene = load_string("""<scene version="2.0.0">
         <shape type="rectangle">

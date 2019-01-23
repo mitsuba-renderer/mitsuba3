@@ -1,10 +1,10 @@
 import numpy as np
+import pytest
 
-from mitsuba.core.xml  import load_string
-from mitsuba.core      import Ray3f
-from mitsuba.render    import Shape
+import mitsuba
+from mitsuba.core      import MTS_WAVELENGTH_SAMPLES, Ray3f
 from mitsuba.core.math import Pi
-from mitsuba.core      import MTS_WAVELENGTH_SAMPLES
+from mitsuba.core.xml  import load_string
 
 def example_sphere(radius = 1.0):
     return load_string("""<shape version='2.0.0' type='sphere'>
@@ -38,7 +38,8 @@ def test02_bbox():
         assert np.all(b.max == r)
         assert np.allclose(b.extents(), 2 * r)
 
-
+@pytest.mark.xfail(condition=mitsuba.USE_EMBREE,
+                   reason="Shape intersections not implemented with Embree")
 def test03_ray_intersect_transform():
     for r in [1, 3]:
         s = example_scene(radius=r,
@@ -76,18 +77,14 @@ def test03_ray_intersect_transform():
                     si_v = s.ray_intersect(ray_v)
                     if si_u.is_valid():
                         du = (si_u.uv - si.uv) / eps
-                        assert(np.allclose(du, [1, 0], atol=2e-2))
+                        assert np.allclose(du, [1, 0], atol=2e-2)
                     if si_v.is_valid():
                         dv = (si_v.uv - si.uv) / eps
-                        assert(np.allclose(dv, [0, 1], atol=2e-2))
+                        assert np.allclose(dv, [0, 1], atol=2e-2)
 
 
 def test04_sample_direct():
-    from mitsuba.core.xml import load_string
     from mitsuba.render import Interaction3f
-    from mitsuba.core import Ray3f
-    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
-    import numpy as np
 
     sphere = load_string('<shape type="sphere" version="2.0.0"/>')
 

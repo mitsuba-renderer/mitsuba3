@@ -65,6 +65,12 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     m_parent.attr("NDEBUG") = false;
 #endif // NDEBUG
 
+#if defined(MTS_USE_EMBREE)
+    m_parent.attr("USE_EMBREE")  = true;
+#else
+    m_parent.attr("USE_EMBREE")  = false;
+#endif
+
     // Import submodules of `mitsuba.core`
     py::module m = py::module::import("mitsuba.core");
 
