@@ -1,5 +1,6 @@
 #pragma once
 
+#include <enoki/matrix.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/shape.h>

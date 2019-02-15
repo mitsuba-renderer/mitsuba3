@@ -194,6 +194,8 @@ set(ZMQ_BUILD_TESTS OFF CACHE BOOL " " FORCE)
 set(LIBZMQ_PEDANTIC OFF CACHE BOOL " " FORCE)
 add_subdirectory(zeromq)
 set_property(TARGET libzmq PROPERTY FOLDER "dependencies")
+set(ZMQ_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zeromq/include)
+set(ZMQ_INCLUDE_DIR ${ZMQ_INCLUDE_DIR} PARENT_SCOPE)
 
 # tinyformat include path
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)

@@ -1,8 +1,9 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
-#include <mitsuba/core/string.h>
+#include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/string.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
