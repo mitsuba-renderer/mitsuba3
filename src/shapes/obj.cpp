@@ -36,9 +36,14 @@ public:
     }
 
     OBJMesh(const Properties &props) : Mesh(props) {
+        /* Causes all texture coordinates to be vertically flipped.
+           Enabled by default, for consistence with the Mitsuba 1 behavior. */
+        bool flip_tex_coords = props.bool_("flip_tex_coords", true);
+
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
+
 
         auto fail = [&](const char *descr, auto... args) {
             Throw(("Error while loading OBJ file \"%s\": " + std::string(descr))
@@ -133,6 +138,9 @@ public:
                     uv[i] = strtof(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
+                if (flip_tex_coords)
+                    uv.y() = 1.f - uv.y();
+
                 texcoords.push_back(uv);
             } else if (cur[0] == 'f' && (cur[1] == ' ' || cur[1] == '\t')) {
                 // Face specification
