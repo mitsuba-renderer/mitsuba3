@@ -113,8 +113,8 @@ def test09_system_specific_tests():
         drive_letter_regexp = re.compile('^[A-Z]:')
         assert drive_letter_regexp.match(str(path_here))
         assert drive_letter_regexp.match(str(fs.absolute(path_here_relative)))
-        assert fs.path('C:\hello').is_absolute()
-        assert fs.path('..\hello').is_relative()
+        assert fs.path('C:\\hello').is_absolute()
+        assert fs.path('..\\hello').is_relative()
 
         # Both kinds of separators should be accepted
         assert fs.path('../hello/world').native() == '..\\hello\\world'

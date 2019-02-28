@@ -158,7 +158,7 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
 
             enabled &= xr <= window_size.x();
             ENOKI_NOUNROLL for (uint32_t k = 0; k < channels; ++k)
-                scatter_add(buffer + k, offset, weights * value[k], enabled);
+                scatter_add(buffer + k, weights * value[k], offset, enabled);
         }
     }
 
