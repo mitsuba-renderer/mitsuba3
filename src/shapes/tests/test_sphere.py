@@ -6,6 +6,8 @@ from mitsuba.core      import MTS_WAVELENGTH_SAMPLES, Ray3f
 from mitsuba.core.math import Pi
 from mitsuba.core.xml  import load_string
 
+UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
+
 def example_sphere(radius = 1.0):
     return load_string("""<shape version='2.0.0' type='sphere'>
         <float name="radius" value="{}"/>
@@ -38,8 +40,8 @@ def test02_bbox():
         assert np.all(b.max == r)
         assert np.allclose(b.extents(), 2 * r)
 
-@pytest.mark.xfail(condition=mitsuba.USE_EMBREE,
-                   reason="Shape intersections not implemented with Embree")
+@pytest.mark.xfail(condition=UNSUPPORTED,
+                   reason="Shape intersections not implemented with Embree or OptiX")
 def test03_ray_intersect_transform():
     for r in [1, 3]:
         s = example_scene(radius=r,

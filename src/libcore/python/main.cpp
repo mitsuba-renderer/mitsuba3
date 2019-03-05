@@ -71,6 +71,11 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
 #else
     m_parent.attr("USE_EMBREE")  = false;
 #endif
+#if defined(MTS_USE_OPTIX)
+    m_parent.attr("USE_OPTIX")  = true;
+#else
+    m_parent.attr("USE_OPTIX")  = false;
+#endif
 
     // Import submodules of `mitsuba.core`
     py::module m = py::module::import("mitsuba.core");

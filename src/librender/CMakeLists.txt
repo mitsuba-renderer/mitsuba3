@@ -28,6 +28,7 @@ if (MTS_ENABLE_AUTODIFF)
 
   set(LIBRENDER_EXTRA_SRC librender_ptx.cpp librender_ptx.h scene_optix.cpp)
   set(LIBRENDER_EXTRA_LIB optix)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 if (MTS_USE_EMBREE)

@@ -7,6 +7,8 @@ from mitsuba.core.xml  import load_string
 from mitsuba.core.math import Pi
 from mitsuba.core      import MTS_WAVELENGTH_SAMPLES
 
+UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
+
 def example_disk(scale = (1, 1, 1), translate = (0, 0, 0)):
     return load_string("""<shape version="2.0.0" type="disk">
         <transform name="to_world">
@@ -51,8 +53,8 @@ def test02_bbox():
             assert np.allclose(b.max, translate + np.array([sx, sy, 0.0]))
 
 
-@pytest.mark.xfail(condition=mitsuba.USE_EMBREE,
-                   reason="Shape intersections not implemented with Embree")
+@pytest.mark.xfail(condition=UNSUPPORTED,
+                   reason="Shape intersections not implemented with Embree or OptiX")
 def test03_ray_intersect():
     for r in [1, 3, 5]:
         for translate in [np.array([0.0, 0.0, 0.0]),

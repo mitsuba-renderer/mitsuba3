@@ -5,6 +5,8 @@ import mitsuba
 from mitsuba.core      import Ray3f, Ray3fX
 from mitsuba.core.xml  import load_string
 
+UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
+
 def example_rectangle(scale = (1, 1, 1), translate = (0, 0, 0)):
     return load_string("""<shape version="2.0.0" type="rectangle">
         <transform name="to_world">
@@ -38,8 +40,8 @@ def test02_bbox():
             assert np.allclose(b.max, translate + np.array([sx, sy, 0.0]))
 
 
-@pytest.mark.xfail(condition=mitsuba.USE_EMBREE,
-                   reason="Shape intersections not implemented with Embree")
+@pytest.mark.xfail(condition=UNSUPPORTED,
+                   reason="Shape intersections not implemented with Embree or OptiX")
 def test03_ray_intersect():
     scene = load_string("""<scene version="2.0.0">
         <shape type="rectangle">
