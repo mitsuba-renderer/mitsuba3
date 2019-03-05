@@ -244,8 +244,10 @@ public:
     virtual FloatP pdf_position(const PositionSample3fP &ps,
                                 MaskP active = true) const override;
 
+#if defined(MTS_ENABLE_AUTODIFF)
     virtual FloatD pdf_position(const PositionSample3fD &ps,
                                 MaskD active = true) const override;
+#endif
 
     using Shape::fill_surface_interaction;
 
@@ -293,8 +295,9 @@ public:
                            identity_t<Mask> active = true) const {
         using Point3 = mitsuba::Point<Value, 3>;
         using Vector3 = mitsuba::Vector<Value, 3>;
+        using Size = replace_scalar_t<Value, uint32_t>;
 
-        auto fi = face_indices(index, active);
+        auto fi = face_indices(Size(index), active);
 
         Point3 p0 = vertex_position(fi[0], active),
                p1 = vertex_position(fi[1], active),

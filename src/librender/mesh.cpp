@@ -287,9 +287,11 @@ FloatP Mesh::pdf_position(const PositionSample3fP &ps, MaskP active) const {
     return pdf_position_impl(ps, active);
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
 FloatD Mesh::pdf_position(const PositionSample3fD &ps, MaskD active) const {
     return pdf_position_impl(ps, active);
 }
+#endif
 
 template <typename Ray, typename Value, typename Point3,
           typename SurfaceInteraction, typename Mask>

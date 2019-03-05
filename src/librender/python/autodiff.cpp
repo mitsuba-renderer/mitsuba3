@@ -3,6 +3,7 @@
 #include <mitsuba/core/transform.h>
 #include <map>
 
+#if defined(MTS_ENABLE_AUTODIFF)
 namespace mitsuba {
     struct DifferentiableParameters::Details {
         std::string m_prefix;
@@ -61,6 +62,7 @@ namespace mitsuba {
     };
 
 };
+#endif
 
 MTS_PY_EXPORT(autodiff) {
     ENOKI_MARK_USED(m);
