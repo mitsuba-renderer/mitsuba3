@@ -87,8 +87,8 @@ template <typename Source, typename Target> void pybind11_type_alias() {
 }
 
 
-template <typename Class, typename... Args> auto bind_array(py::module &m, const char *name) {
-    return py::class_<Class, Args...>(m, name)
+template <typename Class, typename... Args, typename... Extra> auto bind_array(py::module &m, const char *name, const Extra&... extra) {
+    return py::class_<Class, Args...>(m, name, extra...)
         .def("__len__", &Class::size)
         .def("__repr__", [](const Class &a) {
             std::ostringstream oss;

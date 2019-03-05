@@ -61,7 +61,6 @@ public:
 
         /* ----------------------- Visible emitters ----------------------- */
 
-        std::cout << "Query emitter" << std::endl;
         EmitterPtr emitter_vis = si.emitter(scene, active);
         if (any_or<true>(neq(emitter_vis, nullptr)))
             result += emitter_vis->eval(si, active);
@@ -72,7 +71,6 @@ public:
 
         /* ----------------------- Emitter sampling ----------------------- */
 
-        std::cout << "Sample emitter.." << std::endl;
         BSDFContext ctx;
         BSDFPtr bsdf = si.bsdf(ray);
         Mask sample_emitter = active && neq(bsdf->flags() & BSDF::ESmooth, 0u);
@@ -88,7 +86,6 @@ public:
 
                 /* Query the BSDF for that emitter-sampled direction */
                 Vector3 wo = si.to_local(ds.d);
-                std::cout << "Query BSDF and PDF" << std::endl;
                 Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
 
                 /* Determine probability of having sampled that same
@@ -104,7 +101,6 @@ public:
 
         /* ------------------------ BSDF sampling ------------------------- */
 
-        std::cout << "Sample BSDF" << std::endl;
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, rs.next_1d(active),
                                                rs.next_2d(active), active);
@@ -112,7 +108,6 @@ public:
             Mask active_b = active && any(neq(bsdf_val, 0.f));
 
             // Trace the ray in the sampled direction and intersect against the scene
-            std::cout << "Spawning ray to intersection" << std::endl;
             SurfaceInteraction si_bsdf =
                 scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active_b);
 
@@ -121,7 +116,6 @@ public:
             active_b &= neq(emitter, nullptr);
 
             if (any_or<true>(active_b)) {
-                std::cout << "Eval emitter for BSDF sample" << std::endl;
                 Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
                 Mask delta = neq(bs.sampled_type & BSDF::EDelta, 0u);
 

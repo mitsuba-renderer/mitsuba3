@@ -97,7 +97,8 @@ MTS_PY_EXPORT(Shape) {
 #if defined(MTS_ENABLE_AUTODIFF)
     using ShapeD = enoki::DiffArray<enoki::CUDAArray<const Shape *>>;
 
-    bind_array<ShapeD>(m, "ShapeD")
-        .def("bsdf", [](const ShapeD &a) { return a->bsdf(); });
+    bind_array<ShapeD>(m, "ShapeD", py::module::import("enoki").attr("UInt64D"))
+        .def("bsdf", [](const ShapeD &a) { return a->bsdf(); })
+        .def("emitter", [](const ShapeD &a) { return a->emitter(); });
 #endif
 }

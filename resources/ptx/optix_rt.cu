@@ -125,3 +125,7 @@ RT_PROGRAM void ray_miss() {
         out_t[launch_index] = CUDART_INF_F;
     }
 }
+
+RT_PROGRAM void ray_err() {
+    rtPrintExceptionDetails();
+}

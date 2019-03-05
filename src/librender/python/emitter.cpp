@@ -8,4 +8,9 @@
 MTS_PY_EXPORT(Emitter) {
     auto emitter = MTS_PY_CLASS(Emitter, Endpoint)
         ;
+#if defined(MTS_ENABLE_AUTODIFF)
+    using EmitterD = enoki::DiffArray<enoki::CUDAArray<const Emitter *>>;
+
+    bind_array<EmitterD>(m, "EmitterD", py::module::import("enoki").attr("UInt64D"));
+#endif
 }

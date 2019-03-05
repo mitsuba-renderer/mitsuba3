@@ -32,31 +32,20 @@ struct Scene::OptixState {
     RTmaterial material;
     RTprogram attr_prog;
     RTgeometrygroup group;
-    uint32_t shape_index = 0;
+    uint32_t shape_index = 0, n_shapes = 0;
 };
 
 void Scene::optix_init(uint32_t n_shapes) {
     m_optix_state = new Scene::OptixState();
     auto &s = *m_optix_state;
 
-    uint32_t rtx_enabled = 1;
-    rt_check(rtGlobalSetAttribute(RT_GLOBAL_ATTRIBUTE_ENABLE_RTX,
-                                  sizeof(rtx_enabled), &rtx_enabled));
-
     rt_check(rtContextCreate(&s.context));
-    rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 0));
+
     rt_check(rtContextSetRayTypeCount(s.context, 1));
     rt_check(rtContextSetEntryPointCount(s.context, 2));
-    rt_check(rtContextSetStackSize(s.context, 100));
-    rt_check(rtContextSetMaxTraceDepth(s.context, 1));
-    rt_check(rtContextSetMaxCallableProgramDepth(s.context, 1));
-#if 0
-    rt_check(rtContextSetUsageReportCallback(
-        s.context,
-        (RTusagereportcallback)([](int, const char *descr, const char *msg, void *) -> void {
-            std::cout << descr << " " << msg;
-        }), 3, nullptr));
-#endif
+    rt_check(rtContextSetStackSize(s.context, 0));
+    rt_check(rtContextSetMaxTraceDepth(s.context, 0));
+    rt_check(rtContextSetMaxCallableProgramDepth(s.context, 0));
 
     const char *var_names[kOptixVariableCount] = {
         "in_mask",         "in_ox",       "in_oy",       "in_oz",
@@ -81,18 +70,35 @@ void Scene::optix_init(uint32_t n_shapes) {
             fmt = RT_FORMAT_UNSIGNED_BYTE;
         rt_check(rtBufferCreate(s.context, RT_BUFFER_INPUT, &s.var_buf[i]));
         rt_check(rtBufferSetFormat(s.var_buf[i], fmt));
-        rt_check(rtBufferSetSize1D(s.var_buf[i], 1));
-        rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 1));
+        rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
+        rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
         rt_check(rtContextDeclareVariable(s.context, var_names[i], &var_obj[i]));
         rt_check(rtVariableSetObject(var_obj[i], s.var_buf[i]));
     }
 
-    RTprogram prog[5];
+    RTprogram prog[6];
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_gen_closest", &prog[0]));
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_gen_any", &prog[1]));
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_miss", &prog[2]));
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_hit", &prog[3]));
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_attr_ptx, "ray_attr", &prog[4]));
+
+#if !defined(MTS_OPTIX_DEBUG)
+        rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 0));
+        rt_check(rtContextSetPrintEnabled(s.context, 0));
+#else
+        rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_err", &prog[5]));
+        rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 1));
+        rt_check(rtContextSetPrintEnabled(s.context, 1));
+        rt_check(rtContextSetPrintBufferSize(s.context, 4096));
+        rt_check(rtContextSetUsageReportCallback(
+            s.context,
+            (RTusagereportcallback)([](int, const char *descr, const char *msg, void *) -> void {
+                std::cout << descr << " " << msg;
+            }), 3, nullptr));
+        rt_check(rtContextSetExceptionProgram(s.context, 0, prog[5]));
+        rt_check(rtContextSetExceptionProgram(s.context, 1, prog[5]));
+#endif
 
     rt_check(rtContextSetRayGenerationProgram(s.context, 0, prog[0]));
     rt_check(rtContextSetRayGenerationProgram(s.context, 1, prog[1]));
@@ -113,6 +119,7 @@ void Scene::optix_init(uint32_t n_shapes) {
     RTvariable top_object;
     rt_check(rtContextDeclareVariable(s.context, "top_object", &top_object));
     rt_check(rtVariableSetObject(top_object, s.group));
+    s.n_shapes = n_shapes;
 }
 
 void Scene::optix_release() {
@@ -132,18 +139,19 @@ void Scene::optix_register(Shape *shape) {
     rt_check(rtGeometryInstanceSetGeometryTriangles(tri_inst, tri));
 
     RTvariable shape_ptr_var;
-    rt_check(rtGeometryInstanceDeclareVariable(tri_inst, "shape_ptr", &shape_ptr_var));
-    rt_check(rtVariableSet1ull(shape_ptr_var, (uintptr_t) shape));
-
     rt_check(rtGeometryInstanceSetMaterialCount(tri_inst, 1));
     rt_check(rtGeometryInstanceSetMaterial(tri_inst, 0, s.material));
-    rt_check(rtGeometryGroupSetChild(s.group, s.shape_index++, tri_inst));
+    rt_check(rtGeometryGroupSetChild(s.group, s.shape_index, tri_inst));
+
+    rt_check(rtGeometryInstanceDeclareVariable(tri_inst, "shape_ptr", &shape_ptr_var));
+    rt_check(rtVariableSet1ull(shape_ptr_var, (uintptr_t) shape));
+    s.shape_index++;
 }
 
 void Scene::optix_build() {
     auto &s = *m_optix_state;
     Log(EInfo, "Validating and building scene in OptiX.");
-    cuda_eval();
+    Assert(s.shape_index == s.n_shapes);
     rt_check(rtContextValidate(s.context));
     rt_check(rtContextLaunch1D(s.context, 0, 0));
 }
