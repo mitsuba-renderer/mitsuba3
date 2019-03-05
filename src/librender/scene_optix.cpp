@@ -199,13 +199,13 @@ SurfaceInteraction3fD Scene::ray_intersect(const Ray3fD &ray_, MaskD active) con
     auto &s = *m_optix_state;
     for (size_t i = 0; i < kOptixVariableCount; ++i) {
         if (cuda_ptr[i]) {
+            rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
             rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID,
                                               (void *) cuda_ptr[i]));
-            rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
         } else {
+            rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
             rt_check(
                 rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
-            rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
         }
     }
 
@@ -270,13 +270,13 @@ MaskD Scene::ray_test(const Ray3fD &ray_, MaskD active) const {
     auto &s = *m_optix_state;
     for (size_t i = 0; i < kOptixVariableCount; ++i) {
         if (cuda_ptr[i]) {
+            rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
             rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID,
                                               (void *) cuda_ptr[i]));
-            rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
         } else {
+            rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
             rt_check(
                 rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
-            rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
         }
     }
 
