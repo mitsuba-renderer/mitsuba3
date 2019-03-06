@@ -189,7 +189,7 @@ MaskD ImageBlock::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
 
     // Determine the affected range of pixels
     Point2uD pos_u = min(floor2int<Point2uD>(pos + .5f), size - 1);
-    Int32D index = pos_u.y() * size.x() + pos_u.x();
+    UInt32D index = pos_u.y() * (uint32_t) size.x() + pos_u.x();
 
     while (m_bitmap->channel_count() != m_bitmap_d.size())
         m_bitmap_d.push_back(zero<FloatD>(hprod(m_bitmap->size())));

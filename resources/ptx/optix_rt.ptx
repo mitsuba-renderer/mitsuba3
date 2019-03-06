@@ -57,7 +57,6 @@
 .global .align 1 .b8 out_shape_ptr[1];
 .global .align 1 .b8 out_primitive_id[1];
 .global .align 1 .b8 out_hit[1];
-.global .align 1 .b8 prd[1];
 .global .align 4 .b8 _ZN21rti_internal_typeinfo10top_objectE[8] = {82, 97, 121, 0, 4, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo9shape_ptrE[8] = {82, 97, 121, 0, 8, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo12launch_indexE[8] = {82, 97, 121, 0, 4, 0, 0, 0};
@@ -68,7 +67,6 @@
 .global .align 4 .b8 _ZN21rti_internal_typeinfo5dp_duE[8] = {82, 97, 121, 0, 12, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo5dp_dvE[8] = {82, 97, 121, 0, 12, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo3rayE[8] = {82, 97, 121, 0, 36, 0, 0, 0};
-.global .align 4 .b8 _ZN21rti_internal_typeinfo3prdE[8] = {82, 97, 121, 0, 1, 0, 0, 0};
 .global .align 8 .u64 _ZN21rti_internal_register20reg_bitness_detectorE;
 .global .align 8 .u64 _ZN21rti_internal_register24reg_exception_64_detail0E;
 .global .align 8 .u64 _ZN21rti_internal_register24reg_exception_64_detail1E;
@@ -103,7 +101,6 @@
 .global .align 1 .b8 _ZN21rti_internal_typename5dp_duE[7] = {102, 108, 111, 97, 116, 51, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename5dp_dvE[7] = {102, 108, 111, 97, 116, 51, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename3rayE[4] = {82, 97, 121, 0};
-.global .align 1 .b8 _ZN21rti_internal_typename3prdE[11] = {80, 101, 114, 82, 97, 121, 68, 97, 116, 97, 0};
 .global .align 4 .u32 _ZN21rti_internal_typeenum10top_objectE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum9shape_ptrE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum12launch_indexE = 4919;
@@ -114,7 +111,6 @@
 .global .align 4 .u32 _ZN21rti_internal_typeenum5dp_duE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum5dp_dvE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum3rayE = 4919;
-.global .align 4 .u32 _ZN21rti_internal_typeenum3prdE = 4919;
 .global .align 1 .b8 _ZN21rti_internal_semantic10top_objectE[1];
 .global .align 1 .b8 _ZN21rti_internal_semantic9shape_ptrE[1];
 .global .align 1 .b8 _ZN21rti_internal_semantic12launch_indexE[14] = {114, 116, 76, 97, 117, 110, 99, 104, 73, 110, 100, 101, 120, 0};
@@ -125,7 +121,6 @@
 .global .align 1 .b8 _ZN21rti_internal_semantic5dp_duE[16] = {97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 100, 112, 95, 100, 117, 0};
 .global .align 1 .b8 _ZN21rti_internal_semantic5dp_dvE[16] = {97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 100, 112, 95, 100, 118, 0};
 .global .align 1 .b8 _ZN21rti_internal_semantic3rayE[13] = {114, 116, 67, 117, 114, 114, 101, 110, 116, 82, 97, 121, 0};
-.global .align 1 .b8 _ZN21rti_internal_semantic3prdE[10] = {114, 116, 80, 97, 121, 108, 111, 97, 100, 0};
 .global .align 1 .b8 _ZN23rti_internal_annotation10top_objectE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation9shape_ptrE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation12launch_indexE[1];
@@ -136,7 +131,6 @@
 .global .align 1 .b8 _ZN23rti_internal_annotation5dp_duE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation5dp_dvE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation3rayE[1];
-.global .align 1 .b8 _ZN23rti_internal_annotation3prdE[1];
 .global .align 1 .b8 $str[64] = {67, 97, 117, 103, 104, 116, 32, 82, 84, 95, 69, 88, 67, 69, 80, 84, 73, 79, 78, 95, 83, 84, 65, 67, 75, 95, 79, 86, 69, 82, 70, 76, 79, 87, 10, 32, 32, 108, 97, 117, 110, 99, 104, 32, 105, 110, 100, 101, 120, 32, 58, 32, 37, 100, 44, 32, 37, 100, 44, 32, 37, 100, 10, 0};
 .global .align 1 .b8 $str1[70] = {67, 97, 117, 103, 104, 116, 32, 82, 84, 95, 69, 88, 67, 69, 80, 84, 73, 79, 78, 95, 84, 82, 65, 67, 69, 95, 68, 69, 80, 84, 72, 95, 69, 88, 67, 69, 69, 68, 69, 68, 10, 32, 32, 108, 97, 117, 110, 99, 104, 32, 105, 110, 100, 101, 120, 32, 58, 32, 37, 100, 44, 32, 37, 100, 44, 32, 37, 100, 10, 0};
 .global .align 1 .b8 $str2[236] = {67, 97, 117, 103, 104, 116, 32, 82, 84, 95, 69, 88, 67, 69, 80, 84, 73, 79, 78, 95, 66, 85, 70, 70, 69, 82, 95, 73, 78, 68, 69, 88, 95, 79, 85, 84, 95, 79, 70, 95, 66, 79, 85, 78, 68, 83, 10, 32, 32, 108, 97, 117, 110, 99, 104, 32, 105, 110, 100, 101, 120, 32, 32, 32, 58, 32, 37, 100, 44, 32, 37, 100, 44, 32, 37, 100, 10, 32, 32, 100, 105, 109, 101, 110, 115, 105, 111, 110, 97, 108, 105, 116, 121, 32, 58, 32, 37, 100, 10, 32, 32, 98, 117, 102, 102, 101, 114, 32, 100, 101, 116, 97, 105, 108, 115, 32, 58, 32, 37, 115, 10, 32, 32, 98, 117, 102, 102, 101, 114, 32, 73, 68, 32, 32, 32, 32, 32, 32, 58, 32, 37, 100, 10, 32, 32, 115, 105, 122, 101, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 58, 32, 37, 108, 108, 100, 120, 37, 108, 108, 100, 120, 37, 108, 108, 100, 10, 32, 32, 101, 108, 101, 109, 101, 110, 116, 32, 115, 105, 122, 101, 32, 32, 32, 58, 32, 37, 100, 10, 32, 32, 97, 99, 99, 101, 115, 115, 101, 100, 32, 105, 110, 100, 101, 120, 32, 58, 32, 37, 108, 108, 100, 44, 32, 37, 108, 108, 100, 44, 32, 37, 108, 108, 100, 10, 0};

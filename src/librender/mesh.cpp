@@ -227,7 +227,7 @@ PositionSample Mesh::sample_position_impl(Value time, Point2 sample,
     Point2 b = warp::square_to_uniform_triangle(sample);
 
     PositionSample ps;
-    ps.p     = p0 + (e0 * b.x()) + (e1 * b.y());
+    ps.p     = p0 + e0 * b.x() + e1 * b.y();
     ps.time  = time;
     ps.pdf   = m_inv_surface_area;
     ps.delta = false;

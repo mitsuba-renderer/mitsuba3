@@ -167,7 +167,7 @@ Scene::sample_emitter_direction_impl(const Interaction &ref, Point2 sample,
         Index index;
         Value emitter_pdf;
         std::tie(index, emitter_pdf, sample.x()) =
-            m_emitter_distr.sample_reuse_pdf(sample.x());
+            m_emitter_distr.sample_reuse_pdf(sample.x(), active);
         EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
 
         // Sample a direction towards the emitter

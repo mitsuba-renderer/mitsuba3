@@ -116,7 +116,7 @@ public:
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Result, sizeof(float)>(m_vertex_positions_d, index, active);
+            return gather<Result, sizeof(Float)>(m_vertex_positions_d, index, active);
         }
 #endif
     }
@@ -143,7 +143,7 @@ public:
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Result, sizeof(float)>(m_vertex_normals_d, index, active);
+            return gather<Result, sizeof(Float)>(m_vertex_normals_d, index, active);
         }
 #endif
     }
@@ -170,7 +170,7 @@ public:
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Result, sizeof(float)>(m_vertex_texcoords_d, index, active);
+            return gather<Result, sizeof(Float)>(m_vertex_texcoords_d, index, active);
         }
 #endif
     }

@@ -205,6 +205,7 @@ public:
         Index index = sample(sample_value, active);
         Value cdf0 = gather<Value>(m_cdf.data(), index, active),
               cdf1 = gather<Value>(m_cdf.data(), index + 1, active);
+
         return { index, (sample_value - cdf0) / (cdf1 - cdf0) };
     }
 

@@ -152,6 +152,7 @@ void Scene::optix_build() {
     auto &s = *m_optix_state;
     Log(EInfo, "Validating and building scene in OptiX.");
     Assert(s.shape_index == s.n_shapes);
+    cuda_eval();
     rt_check(rtContextValidate(s.context));
     rt_check(rtContextLaunch1D(s.context, 0, 0));
 }
@@ -214,6 +215,7 @@ SurfaceInteraction3fD Scene::ray_intersect(const Ray3fD &ray_, MaskD active) con
     si.time = ray.time;
     si.wavelengths = ray.wavelengths;
     si.instance = nullptr;
+    si.duv_dx = si.duv_dy = 0.f;
 
     // Gram-schmidt orthogonalization to compute local shading frame
     si.sh_frame.s = normalize(

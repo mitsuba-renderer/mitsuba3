@@ -35,8 +35,6 @@ rtBuffer<bool> out_hit;
 
 struct PerRayData { };
 
-rtDeclareVariable(PerRayData, prd, rtPayload, );
-
 RT_PROGRAM void ray_gen_closest() {
     float3 ro = make_float3(in_ox[launch_index],
                             in_oy[launch_index],

@@ -61,8 +61,6 @@ public:
 
         /* ----------------------- Visible emitters ----------------------- */
 
-        cuda_eval(); std::cout << "Emitter..." << std::endl;
-
         EmitterPtr emitter_vis = si.emitter(scene, active);
         if (any_or<true>(neq(emitter_vis, nullptr)))
             result += emitter_vis->eval(si, active);
@@ -76,7 +74,6 @@ public:
         BSDFContext ctx;
         BSDFPtr bsdf = si.bsdf(ray);
         Mask sample_emitter = active && neq(bsdf->flags() & BSDF::ESmooth, 0u);
-        cuda_eval(); std::cout << "Sample mitter..." << std::endl;
 
         if (any_or<true>(sample_emitter)) {
             for (size_t i = 0; i < m_emitter_samples; ++i) {
@@ -90,7 +87,6 @@ public:
                 /* Query the BSDF for that emitter-sampled direction */
                 Vector3 wo = si.to_local(ds.d);
 
-        cuda_eval(); std::cout << "Eval BSDF..." << std::endl;
                 Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
 
                 /* Determine probability of having sampled that same
@@ -106,7 +102,6 @@ public:
 
         /* ------------------------ BSDF sampling ------------------------- */
 
-        cuda_eval(); std::cout << "Sample BSDF ..." << std::endl;
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, rs.next_1d(active),
                                                rs.next_2d(active), active);
@@ -122,7 +117,6 @@ public:
             active_b &= neq(emitter, nullptr);
 
             if (any_or<true>(active_b)) {
-                cuda_eval(); std::cout << "Eval emitter..." << std::endl;
                 Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
                 Mask delta = neq(bs.sampled_type & BSDF::EDelta, 0u);
 
