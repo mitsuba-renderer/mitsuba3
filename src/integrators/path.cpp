@@ -47,7 +47,7 @@ public:
 
             /* ---------------- Intersection with emitters ---------------- */
 
-            if (any(neq(emitter, nullptr)))
+            if (any_or<true>(neq(emitter, nullptr)))
                 result[active] += emission_weight * throughput * emitter->eval(si, active);
 
             active &= si.is_valid();
@@ -71,7 +71,7 @@ public:
             BSDFPtr bsdf = si.bsdf(ray);
             Mask active_e = active && neq(bsdf->flags() & BSDF::ESmooth, 0u);
 
-            if (likely(any(active_e))) {
+            if (likely(any_or<true>(active_e))) {
                 auto [ds, emitter_val] = scene->sample_emitter_direction(
                     si, rs.next_2d(active_e), true, active_e);
                 active_e &= neq(ds.pdf, 0.f);
@@ -110,7 +110,7 @@ public:
             DirectionSample ds(si_bsdf, si);
             ds.object = emitter;
 
-            if (any(neq(emitter, nullptr))) {
+            if (any_or<true>(neq(emitter, nullptr))) {
                 Value emitter_pdf =
                     select(neq(bs.sampled_type & BSDF::EDelta, 0u), 0.f,
                            scene->pdf_emitter_direction(si, ds, active));

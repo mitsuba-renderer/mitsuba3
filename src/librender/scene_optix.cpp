@@ -154,7 +154,12 @@ void Scene::optix_build() {
     Assert(s.shape_index == s.n_shapes);
     cuda_eval();
     rt_check(rtContextValidate(s.context));
-    rt_check(rtContextLaunch1D(s.context, 0, 0));
+    RTresult rt = rtContextLaunch1D(s.context, 0, 0);
+    if (rt == RT_ERROR_MEMORY_ALLOCATION_FAILED) {
+        cuda_malloc_trim();
+        rt = rtContextLaunch1D(s.context, 0, 0);
+    }
+    rt_check(rt);
 }
 
 SurfaceInteraction3fD Scene::ray_intersect(const Ray3fD &ray_, MaskD active) const {
@@ -210,7 +215,12 @@ SurfaceInteraction3fD Scene::ray_intersect(const Ray3fD &ray_, MaskD active) con
         }
     }
 
-    rt_check(rtContextLaunch1D(s.context, 0, ray_count));
+    RTresult rt = rtContextLaunch1D(s.context, 0, ray_count);
+    if (rt == RT_ERROR_MEMORY_ALLOCATION_FAILED) {
+        cuda_malloc_trim();
+        rt = rtContextLaunch1D(s.context, 0, ray_count);
+    }
+    rt_check(rt);
 
     si.time = ray.time;
     si.wavelengths = ray.wavelengths;
@@ -282,7 +292,12 @@ MaskD Scene::ray_test(const Ray3fD &ray_, MaskD active) const {
         }
     }
 
-    rt_check(rtContextLaunch1D(s.context, 1, ray_count));
+    RTresult rt = rtContextLaunch1D(s.context, 1, ray_count);
+    if (rt == RT_ERROR_MEMORY_ALLOCATION_FAILED) {
+        cuda_malloc_trim();
+        rt = rtContextLaunch1D(s.context, 1, ray_count);
+    }
+    rt_check(rt);
 
     return hit;
 }
