@@ -59,6 +59,10 @@ public:
         }
 
         m_mean = Float(mean / hprod(m_bitmap->size()));
+
+#if defined(MTS_ENABLE_AUTODIFF)
+        m_bitmap_d = FloatC::copy(m_bitmap->data(), hprod(m_bitmap->size()) * 3);
+#endif
     }
 
     template <typename SurfaceInteraction, typename Mask,
@@ -86,10 +90,20 @@ public:
 
         uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
 
-        Vector3f v00 = gather<Vector3f, 0, true>(ptr, index, active),
-                 v10 = gather<Vector3f, 0, true>(ptr + 3, index, active),
-                 v01 = gather<Vector3f, 0, true>(ptr + width, index, active),
-                 v11 = gather<Vector3f, 0, true>(ptr + width + 3, index, active);
+        Vector3f v00, v10, v01, v11;
+        if constexpr (is_diff_array_v<Value>) {
+            #if defined(MTS_ENABLE_AUTODIFF)
+                v00 = gather<Vector3f, 0, true>(m_bitmap_d, index, active);
+                v10 = gather<Vector3f, 0, true>(m_bitmap_d, index + 3, active);
+                v01 = gather<Vector3f, 0, true>(m_bitmap_d, index + width, active);
+                v11 = gather<Vector3f, 0, true>(m_bitmap_d, index + width + 3, active);
+            #endif
+        } else {
+            v00 = gather<Vector3f, 0, true>(ptr, index, active);
+            v10 = gather<Vector3f, 0, true>(ptr + 3, index, active);
+            v01 = gather<Vector3f, 0, true>(ptr + width, index, active);
+            v11 = gather<Vector3f, 0, true>(ptr + width + 3, index, active);
+        }
 
         Spectrum s00 = srgb_model_eval(v00, it.wavelengths),
                  s10 = srgb_model_eval(v10, it.wavelengths),
@@ -102,6 +116,12 @@ public:
     }
 
     Float mean() const override { return m_mean; }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    void put_parameters(DifferentiableParameters &dp) override {
+        dp.put(this, "bitmap", m_bitmap_d);
+    }
+#endif
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -116,6 +136,11 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     ref<Bitmap> m_bitmap;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    Vector3fD m_bitmap_d;
+#endif
+
     std::string m_name;
     Transform3f m_transform;
     Float m_mean;

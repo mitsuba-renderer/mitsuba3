@@ -20,6 +20,12 @@ public:
     void seed(size_t seed_value) override {
         m_rng.seed(seed_value, PCG32_DEFAULT_STREAM);
         m_rng_p.seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64P>());
+
+#if defined(MTS_ENABLE_AUTODIFF)
+        if (m_rng_c)
+            m_rng_c->seed(seed_value,
+                          PCG32_DEFAULT_STREAM + arange<UInt64C>(m_rng_c->state.size()));
+#endif
     }
 
     Float next_1d() override {
