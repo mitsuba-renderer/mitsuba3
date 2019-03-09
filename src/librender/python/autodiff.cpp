@@ -27,6 +27,7 @@ namespace mitsuba {
                 default: throw std::runtime_error("DifferentiableParameters::getitem:Unsupported type!");
             }
         }
+
         void setitem(const std::string &key, py::object obj) {
             auto it = d->entries.find(key);
             if (it == d->entries.end())
@@ -42,6 +43,7 @@ namespace mitsuba {
             }
             std::get<0>(value)->parameters_changed();
         }
+
         std::vector<std::string> keys() {
             std::vector<std::string> result;
             result.reserve(d->entries.size());
@@ -56,6 +58,19 @@ namespace mitsuba {
             for (auto &kv: d->entries)
                 result.emplace_back(kv.first, getitem(kv.first));
             return result;
+        }
+
+        void keep(const std::vector<std::string> &keys) {
+            std::map<std::string, std::tuple<DifferentiableObject *, void *, size_t>> entries;
+            for (const std::string &k : keys) {
+                auto it = d->entries.find(k);
+                if (it == d->entries.end())
+                    throw std::runtime_error("DifferentiableParameters::keep():"
+                                             " could not find parameter \"" +
+                                             k + "\"");
+                entries.emplace(*it);
+            }
+            d->entries = entries;
         }
     protected:
         virtual ~PyDifferentiableParameters() = default;
@@ -78,6 +93,7 @@ MTS_PY_EXPORT(autodiff) {
         .def("set_prefix", &DifferentiableParameters::set_prefix)
         .def("keys", &PyDifferentiableParameters::keys)
         .def("items", &PyDifferentiableParameters::items)
+        .def("keep", &PyDifferentiableParameters::keep)
         .def("__len__", &PyDifferentiableParameters::size)
         .def("__getitem__", &PyDifferentiableParameters::getitem)
         .def("__setitem__", &PyDifferentiableParameters::setitem);
