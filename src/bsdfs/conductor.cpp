@@ -34,7 +34,7 @@ public:
 
         BSDFSample bs;
         Spectrum value(0.f);
-        if (unlikely(none(active) || !ctx.is_enabled(EDeltaReflection)))
+        if (unlikely(none_or<false>(active) || !ctx.is_enabled(EDeltaReflection)))
             return { bs, value };
 
         bs.sampled_component = 0;

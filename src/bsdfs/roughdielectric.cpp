@@ -121,7 +121,7 @@ public:
         Value dwh_dwo = 0.f;
 
         /* Reflection sampling */
-        if (any(selected_r)) {
+        if (any_or<true>(selected_r)) {
             /* Perfect specular reflection based on the microfacet normal */
             bs.wo[selected_r] = reflect(si.wi, m);
 
@@ -135,7 +135,7 @@ public:
         }
 
         /* Transmission sampling */
-        if (any(selected_t)) {
+        if (any_or<true>(selected_t)) {
             /* Perfect specular transmission based on the microfacet normal */
             bs.wo[selected_t]  = refract(si.wi, m, cos_theta_t, eta_ti);
 
@@ -222,13 +222,13 @@ public:
         Mask eval_r = Mask(has_reflection) && reflect && active,
              eval_t = Mask(has_transmission) && !reflect && active;
 
-        if (any(eval_r)) {
+        if (any_or<true>(eval_r)) {
             Value value = F * D * G / (4.f * abs(cos_theta_i));
 
             result[eval_r] = m_specular_reflectance->eval(si, eval_r) * value;
         }
 
-        if (any(eval_t)) {
+        if (any_or<true>(eval_t)) {
             // Compute the total amount of transmission
             Value value =
                 ((1.f - F) * D * G * eta * eta * dot(si.wi, m) * dot(wo, m)) /

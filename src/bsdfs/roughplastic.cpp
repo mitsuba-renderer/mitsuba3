@@ -89,7 +89,7 @@ public:
 
         BSDFSample bs;
         Spectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || none(active)))
+        if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return { bs, result };
 
         Value t_i = lerp_gather<Value>(m_external_transmittance.data(),
@@ -111,7 +111,7 @@ public:
 
         bs.eta = 1.f;
 
-        if (any(sample_specular)) {
+        if (any_or<true>(sample_specular)) {
             MicrofacetDistribution<Value> distr(m_type, m_alpha, m_sample_visible);
             Normal3 m = std::get<0>(distr.sample(si.wi, sample2));
 
@@ -120,7 +120,7 @@ public:
             masked(bs.sampled_type, sample_specular) = Index(EGlossyReflection);
         }
 
-        if (any(sample_diffuse)) {
+        if (any_or<true>(sample_diffuse)) {
             masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
             masked(bs.sampled_component, sample_diffuse) = Index(1);
             masked(bs.sampled_type, sample_diffuse) = Index(EDiffuseReflection);
@@ -153,7 +153,7 @@ public:
         MicrofacetDistribution<Value> distr(m_type, m_alpha, m_sample_visible);
 
         Spectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || none(active)))
+        if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return result;
 
         if (has_specular) {
@@ -225,7 +225,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely((!has_specular && !has_diffuse) || none(active)))
+        if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return 0.f;
 
         Value t_i = lerp_gather<Value>(m_external_transmittance.data(),

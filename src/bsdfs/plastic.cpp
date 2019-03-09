@@ -71,7 +71,7 @@ public:
 
         BSDFSample bs;
         Spectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || none(active)))
+        if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return { bs, result };
 
         /* Determine which component should be sampled */
@@ -92,7 +92,7 @@ public:
         bs.eta = 1.f;
         bs.pdf = 0.f;
 
-        if (any(sample_specular)) {
+        if (any_or<true>(sample_specular)) {
             masked(bs.wo, sample_specular) = reflect(si.wi);
             masked(bs.pdf, sample_specular) = prob_specular;
             masked(bs.sampled_component, sample_specular) = Index(0);
@@ -102,7 +102,7 @@ public:
             masked(result, sample_specular) = spec;
         }
 
-        if (any(sample_diffuse)) {
+        if (any_or<true>(sample_diffuse)) {
             masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
             masked(bs.pdf, sample_diffuse) = prob_diffuse * warp::square_to_cosine_hemisphere_pdf(bs.wo);
             masked(bs.sampled_component, sample_diffuse) = Index(1);
@@ -136,7 +136,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!has_diffuse || none(active)))
+        if (unlikely(!has_diffuse || none_or<false>(active)))
             return 0.f;
 
         Value f_i = std::get<0>(fresnel(cos_theta_i, Value(m_eta))),
@@ -165,7 +165,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(EDiffuseReflection, 1) || none(active)))
+        if (unlikely(!ctx.is_enabled(EDiffuseReflection, 1) || none_or<false>(active)))
             return 0.f;
 
         Value prob_diffuse = 1.f;

@@ -46,7 +46,7 @@ public:
         Value cos_theta_i = Frame::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
+        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none_or<false>(active)))
             return { bs, 0.f };
 
         /* Construct a microfacet distribution matching the
@@ -99,7 +99,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
+        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none_or<false>(active)))
             return 0.f;
 
         /* Calculate the half-direction vector */
@@ -141,7 +141,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none(active)))
+        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none_or<false>(active)))
             return 0.f;
 
         /* Calculate the half-direction vector */

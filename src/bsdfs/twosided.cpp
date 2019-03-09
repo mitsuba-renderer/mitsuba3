@@ -58,10 +58,10 @@ public:
         Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
         Result result = zero<Result>();
 
-        if (any(front_side))
+        if (any_or<true>(front_side))
             masked(result, front_side) = m_nested_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
 
-        if (any(back_side)) {
+        if (any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
                 ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
 
@@ -89,10 +89,10 @@ public:
         Mask front_side = Frame::cos_theta(si.wi) > 0.f && active;
         Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
 
-        if (any(front_side))
+        if (any_or<true>(front_side))
             result = m_nested_brdf[0]->eval(ctx, si, wo, front_side);
 
-        if (any(back_side)) {
+        if (any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
                 ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
 
@@ -120,10 +120,10 @@ public:
         Mask front_side = Frame::cos_theta(si.wi) > 0.f && active;
         Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
 
-        if (any(front_side))
+        if (any_or<true>(front_side))
             result = m_nested_brdf[0]->pdf(ctx, si, wo, front_side);
 
-        if (any(back_side)) {
+        if (any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
                 ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
 

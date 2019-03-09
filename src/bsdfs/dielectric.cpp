@@ -82,12 +82,12 @@ public:
 
         bs.eta               = select(selected_r, Value(1.f), eta_it);
 
-        if (any(selected_r))
+        if (any_or<true>(selected_r))
             weight[selected_r] *=
                 m_specular_reflectance->eval(si, selected_r);
 
         Mask selected_t = !selected_r && active;
-        if (any(selected_t)) {
+        if (any_or<true>(selected_t)) {
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
             Value factor = (ctx.mode == ERadiance) ? eta_ti : Value(1.f);

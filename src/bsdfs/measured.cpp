@@ -176,7 +176,7 @@ public:
         Vector3 wi = si.wi;
         active &= Frame::cos_theta(wi) > 0;
 
-        if (!ctx.is_enabled(EGlossyReflection) || none(active))
+        if (!ctx.is_enabled(EGlossyReflection) || none_or<false>(active))
             return { bs, 0.f };
 
         Value sx = -1.f, sy = -1.f;
@@ -282,7 +282,7 @@ public:
         active &= Frame::cos_theta(wi) > 0.f &&
                   Frame::cos_theta(wo) > 0.f;
 
-        if (none(active) || !ctx.is_enabled(EGlossyReflection))
+        if (!ctx.is_enabled(EGlossyReflection) || none_or<false>(active))
             return Spectrum(0.f);
 
         if (m_reduction >= 2) {
@@ -338,7 +338,7 @@ public:
         active &= Frame::cos_theta(wi) > 0.f &&
                   Frame::cos_theta(wo) > 0.f;
 
-        if (none(active) || !ctx.is_enabled(EGlossyReflection))
+        if (!ctx.is_enabled(EGlossyReflection) || none_or<false>(active))
             return 0.f;
 
         if (m_reduction >= 2) {

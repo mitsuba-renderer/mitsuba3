@@ -77,11 +77,11 @@ public:
         bs.sampled_component = select(selected_r, Index(0), Index(1));
         bs.sampled_type = select(selected_r, Index(EDeltaReflection), Index(ENull));
 
-        if (any(selected_r))
+        if (any_or<true>(selected_r))
             weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
 
         Mask selected_t = !selected_r && active;
-        if (any(selected_t))
+        if (any_or<true>(selected_t))
             weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
         return { bs, select(active, weight, 0.f) };

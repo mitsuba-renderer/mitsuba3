@@ -57,14 +57,14 @@ public:
         Mask m0 = active && sample1 >  weight,
              m1 = active && sample1 <= weight;
 
-        if (any(m0)) {
+        if (any_or<true>(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
                 ctx, si, sample1 / weight, sample2, m0);
             masked(bs, m0) = bs0;
             masked(result, m0) = result0;
         }
 
-        if (any(m1)) {
+        if (any_or<true>(m1)) {
             auto [bs1, result1] = m_nested_bsdf[1]->sample(
                 ctx, si, (sample1 + weight) / (1.f - weight), sample2, m1);
             masked(bs, m1) = bs1;

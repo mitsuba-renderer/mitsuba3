@@ -367,7 +367,7 @@ public:
             sample.x() *= 1.f + maxval + InvSqrtPi *
                           tan_theta_i * exp(-sqr(cot_theta_i));
 
-            /* Two Newton iterations */
+            /* Three Newton iterations */
             ENOKI_NOUNROLL for (size_t i = 0; i < 3; ++i) {
                 Value slope = erfinv(x),
                       value = 1.f + x + InvSqrtPi * tan_theta_i *
