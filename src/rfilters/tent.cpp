@@ -13,18 +13,22 @@ class TentFilter final : public ReconstructionFilter {
 public:
     TentFilter(const Properties &props) : ReconstructionFilter(props) {
         m_radius = 1.0f;
+        m_inv_radius = 1.f / m_radius;
         init_discretization();
     }
 
-    Float eval(Float x) const override {
-        return std::max((Float) 0.0f, 1.0f - std::abs(x / m_radius));
+    template <typename Value> Value eval_impl(Value x) const {
+        return max(0.f, 1.f - abs(x * m_inv_radius));
     }
 
     std::string to_string() const override {
         return tfm::format("TentFilter[radius=%f]", m_radius);
     }
 
+    MTS_IMPLEMENT_RFILTER_ALL()
     MTS_DECLARE_CLASS()
+private:
+    Float m_inv_radius;
 };
 
 MTS_IMPLEMENT_CLASS(TentFilter, ReconstructionFilter);

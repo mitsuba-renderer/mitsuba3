@@ -4,11 +4,11 @@ NAMESPACE_BEGIN(mitsuba)
 
 ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
                        const ReconstructionFilter *filter, size_t channels,
-                       bool warn, bool monochrome)
+                       bool warn, bool monochrome, bool border, bool normalize)
     : m_offset(0), m_size(size), m_filter(filter), m_weights_x(nullptr),
       m_weights_y(nullptr), m_weights_x_p(nullptr), m_weights_y_p(nullptr),
-      m_warn(warn), m_monochrome(monochrome) {
-    m_border_size = filter ? filter->border_size() : 0;
+      m_warn(warn), m_monochrome(monochrome), m_normalize(normalize) {
+    m_border_size = (filter != nullptr && border) ? filter->border_size() : 0;
 
     // Allocate a small bitmap data structure for the block
     m_bitmap = new Bitmap(fmt, Struct::EType::EFloat,
@@ -77,6 +77,17 @@ bool ImageBlock::put(const Point2f &pos_, const Float *value) {
     for (int y = lo.y(), idx = 0; y <= hi.y(); ++y)
         m_weights_y[idx++] = m_filter->eval_discretized(y - pos.y());
 
+    if (ENOKI_UNLIKELY(m_normalize)) {
+        Float wx = 0.f, wy = 0.f;
+        for (int x = 0; x <= hi.x() - lo.x(); ++x)
+            wx += m_weights_x[x];
+        for (int y = 0; y <= hi.y() - lo.y(); ++y)
+            wy += m_weights_y[y];
+        Float factor = rcp(wx * wy);
+        for (int x = 0; x <= hi.x() - lo.x(); ++x)
+            m_weights_x[x] *= factor;
+    }
+
     // Rasterize the filtered sample into the framebuffer
     for (int y = lo.y(), yr = 0; y <= hi.y(); ++y, ++yr) {
         const Float weightY = m_weights_y[yr];
@@ -90,6 +101,7 @@ bool ImageBlock::put(const Point2f &pos_, const Float *value) {
                 *dest++ += weight * value[k];
         }
     }
+
     return true;
 }
 
@@ -138,12 +150,23 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Point2i max_size(hmax(window_size.x()),
                      hmax(window_size.y()));
 
-    Point2fP corner = lo - pos;
+    Point2fP base = lo - pos;
     ENOKI_NOUNROLL for (int i = 0; i <= max_size.x(); ++i)
-        m_weights_x_p[i] = m_filter->eval_discretized(corner.x() + (Float) i, active);
+        m_weights_x_p[i] = m_filter->eval_discretized(base.x() + (Float) i, active);
 
     ENOKI_NOUNROLL for (int i = 0; i <= max_size.y(); ++i)
-        m_weights_y_p[i] = m_filter->eval_discretized(corner.y() + (Float) i, active);
+        m_weights_y_p[i] = m_filter->eval_discretized(base.y() + (Float) i, active);
+
+    if (ENOKI_UNLIKELY(m_normalize)) {
+        FloatP wx = 0.f, wy = 0.f;
+        for (int x = 0; x <= max_size.x(); ++x)
+            wx += m_weights_x_p[x];
+        for (int y = 0; y <= max_size.y(); ++y)
+            wy += m_weights_y_p[y];
+        FloatP factor = rcp(wx * wy);
+        for (int x = 0; x <= max_size.x(); ++x)
+            m_weights_x_p[x] *= factor;
+    }
 
     // Rasterize the filtered sample into the framebuffer
     Float *buffer = (Float *) m_bitmap->data();
@@ -167,37 +190,76 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
 
 #if defined(MTS_ENABLE_AUTODIFF)
 MaskD ImageBlock::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
-    using Mask = mask_t<FloatD>;
+    Assert(m_filter != nullptr);
 
     uint32_t channels = (uint32_t) m_bitmap->channel_count();
-    Mask is_valid(true);
+    MaskD is_valid(true);
 
     // Check if all sample values are valid
     if (m_warn) {
-        Mask is_valid = true;
+        MaskD is_valid = true;
         for (size_t k = 0; k < channels; ++k)
             is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
 
         if (any(active && !is_valid))
             Log(EWarn, "ImageBlock::put(): invalid (negative/NaN) sample values detected!");
+
+        active &= is_valid;
     }
 
-    Vector2u size = m_bitmap->size();
+    Vector2i size = Vector2i(m_bitmap->size());
 
     // Convert to pixel coordinates within the image block
     Point2fD pos = pos_ - (m_offset - m_border_size + .5f);
 
     // Determine the affected range of pixels
-    Point2uD pos_u = min(floor2int<Point2uD>(pos + .5f), size - 1);
-    UInt32D index = pos_u.y() * (uint32_t) size.x() + pos_u.x();
+    Float filter_radius = m_filter->radius();
+    Point2iD lo = max(ceil2int <Point2iD>(pos - filter_radius), 0),
+             hi = min(floor2int<Point2iD>(pos + filter_radius), size - 1);
+
+    Point2fD base = lo - pos;
 
     while (m_bitmap->channel_count() != m_bitmap_d.size())
         m_bitmap_d.push_back(zero<FloatD>(hprod(m_bitmap->size())));
 
-    for (uint32_t k = 0; k < channels; ++k)
-        scatter_add(m_bitmap_d[k], value[k], index, is_valid);
+    int n = (int) std::ceil(m_filter->radius() * 2);
+    std::vector<FloatD> weights_x_d(n), weights_y_d(n);
 
-    return is_valid;
+    for (int k = 0; k < n; ++k) {
+        Point2fD p = base + (Float) k;
+        weights_x_d[k] = m_filter->eval(p.x());
+        weights_y_d[k] = m_filter->eval(p.y());
+    }
+
+    if (ENOKI_UNLIKELY(m_normalize)) {
+        FloatD wx = 0.f, wy = 0.f;
+        for (int k = 0; k < n; ++k) {
+            wx += weights_x_d[k];
+            wy += weights_y_d[k];
+        }
+
+        FloatD factor = rcp(wx * wy);
+        for (int k = 0; k < n; ++k)
+            weights_x_d[k] *= factor;
+    }
+
+    for (int yr = 0; yr < n; ++yr) {
+        Int32D y = lo.y() + yr;
+        MaskD enabled = active && y <= hi.y();
+
+        for (int xr = 0; xr < n; ++xr) {
+            Int32D x     = lo.x() + xr,
+                   index = y * (int32_t) size.x() + x;
+
+            enabled &= x <= hi.x();
+
+            FloatD weight = weights_x_d[xr] * weights_y_d[yr];
+            for (uint32_t k = 0; k < channels; ++k)
+                scatter_add(m_bitmap_d[k], value[k] * weight, index, enabled);
+        }
+    }
+
+    return active;
 }
 #endif
 

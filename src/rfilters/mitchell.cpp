@@ -22,28 +22,26 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x) const override {
-        x = std::abs(x);
+    template <typename Value> Value eval_impl(Value x) const {
+        x = abs(x);
+        Value x2 = sqr(x), x3 = x2*x;
 
-        Float x2 = x*x, x3 = x2*x;
+        Value result = (1.f / 6.f) * select(
+           x < 1,
+           (12.f - 9.f * m_b - 6.f * m_c) * x3 +
+               (-18.f + 12.f * m_b + 6.f * m_c) * x2 + (6.f - 2.f * m_b),
+           (-m_b - 6.f * m_c) * x3 + (6.f * m_b + 30.f * m_c) * x2 +
+               (-12.f * m_b - 48.f * m_c) * x + (8.f * m_b + 24.f * m_c)
+        );
 
-        if (x < 1) {
-            return 1.f / 6.0f *
-                   ((12 - 9 * m_b - 6 * m_c) * x3 +
-                    (-18 + 12 * m_b + 6 * m_c) * x2 + (6 - 2 * m_b));
-        } else if (x < 2) {
-            return 1.f / 6.0f *
-                   ((-m_b - 6 * m_c) * x3 + (6 * m_b + 30 * m_c) * x2 +
-                    (-12 * m_b - 48 * m_c) * x + (8 * m_b + 24 * m_c));
-        } else {
-            return 0.0f;
-        }
+        return select(x < 2.f, result, 0.f);
     }
 
     std::string to_string() const override {
         return tfm::format("MitchellNetravaliFilter[radius=%f, B=%f, C=%f]", m_radius, m_b, m_c);
     }
 
+    MTS_IMPLEMENT_RFILTER_ALL()
     MTS_DECLARE_CLASS()
 protected:
     Float m_b, m_c;

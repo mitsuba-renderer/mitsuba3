@@ -17,18 +17,20 @@ public:
            samplers (Hammersley and Halton in particular) place samples
            at positions like (0, 0). Without such an epsilon and rounding
            errors, samples may end up not contributing to any pixel. */
-        m_radius = props.float_("radius", 0.5f) + 1e-5f;
+        m_radius = props.float_("radius", .5f) + math::Epsilon;
         init_discretization();
     }
 
-    Float eval(Float x) const override {
-        return std::abs(x) <= m_radius ? 1.0f : 0.0f;
+    template <typename Value>
+    Value eval_impl(Value x) const {
+        return select(abs(x) <= m_radius, Value(1.f), Value(0.f));
     }
 
     std::string to_string() const override {
         return tfm::format("BoxFilter[radius=%f]", m_radius);
     }
 
+    MTS_IMPLEMENT_RFILTER_ALL()
     MTS_DECLARE_CLASS()
 };
 

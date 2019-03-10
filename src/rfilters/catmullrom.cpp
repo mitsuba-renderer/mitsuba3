@@ -10,33 +10,32 @@ NAMESPACE_BEGIN(mitsuba)
 class CatmullRomFilter final : public ReconstructionFilter {
 public:
     CatmullRomFilter(const Properties &props) : ReconstructionFilter(props) {
-        m_radius = 2.0f;
+        m_radius = 2.f;
         init_discretization();
     }
 
-    Float eval(Float x) const override {
-        x = std::abs(x);
+    template <typename Value> Value eval_impl(Value x) const {
+        x = abs(x);
 
-        Float x2 = x*x, x3 = x2*x;
-        Float B = 0.0f, C = 0.5f;
+        Value x2 = sqr(x), x3 = x2*x,
+              B = 0.f, C = .5f;
 
-        if (x < 1) {
-            return 1.f / 6.f *
-                   ((12 - 9 * B - 6 * C) * x3 + (-18 + 12 * B + 6 * C) * x2 +
-                    (6 - 2 * B));
-        } else if (x < 2) {
-            return 1.f / 6.f *
-                   ((-B - 6 * C) * x3 + (6 * B + 30 * C) * x2 +
-                    (-12 * B - 48 * C) * x + (8 * B + 24 * C));
-        } else {
-            return 0.0f;
-        }
+        Value result = (1.f / 6.f) * select(
+           x < 1,
+           (12.f - 9.f * B - 6.f * C) * x3 +
+               (-18.f + 12.f * B + 6.f * C) * x2 + (6.f - 2.f * B),
+           (-B - 6.f * C) * x3 + (6.f * B + 30.f * C) * x2 +
+               (-12.f * B - 48.f * C) * x + (8.f * B + 24.f * C)
+        );
+
+        return select(x < 2.f, result, 0.f);
     }
 
     std::string to_string() const override {
         return tfm::format("CatmullRomFilter[radius=%f]", m_radius);
     }
 
+    MTS_IMPLEMENT_RFILTER_ALL()
     MTS_DECLARE_CLASS()
 };
 

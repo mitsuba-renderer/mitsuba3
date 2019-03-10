@@ -55,7 +55,15 @@ public:
     /// Evaluate the filter function
     virtual Float eval(Float x) const = 0;
 
-    /// Perform a lookup into the discretized version
+    /// Evaluate the filter function (vectorized version)
+    virtual FloatP eval(FloatP x) const = 0;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Evaluate the filter function (differentiable version)
+    virtual FloatD eval(FloatD x) const = 0;
+#endif
+
+    /// Evaluate a discretized version of the filter (generally faster than 'eval')
     template <typename T>
     MTS_INLINE T eval_discretized(const T &x, const mask_t<T> &active = true) const {
         using Int = int32_array_t<T>;
@@ -409,3 +417,21 @@ operator<<(std::ostream &os,
            const ReconstructionFilter::EBoundaryCondition &value);
 
 NAMESPACE_END(mitsuba)
+
+#define MTS_IMPLEMENT_RFILTER_SCALAR()                                         \
+    Float eval(Float x) const override { return eval_impl(x); }
+
+#define MTS_IMPLEMENT_RFILTER_PACKET()                                         \
+    FloatP eval(FloatP x) const override { return eval_impl(x); }
+
+#if !defined(MTS_ENABLE_AUTODIFF)
+#  define MTS_IMPLEMENT_RFILTER_AUTODIFF()
+#else
+#  define MTS_IMPLEMENT_RFILTER_AUTODIFF()                                     \
+    FloatD eval(FloatD x) const override { return eval_impl(x); }
+#endif
+
+#define MTS_IMPLEMENT_RFILTER_ALL()                                            \
+    MTS_IMPLEMENT_RFILTER_SCALAR()                                             \
+    MTS_IMPLEMENT_RFILTER_PACKET()                                             \
+    MTS_IMPLEMENT_RFILTER_AUTODIFF()

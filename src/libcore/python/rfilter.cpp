@@ -8,7 +8,17 @@ MTS_PY_EXPORT(rfilter) {
     auto rfilter = MTS_PY_CLASS(ReconstructionFilter, Object)
         .mdef(ReconstructionFilter, border_size)
         .mdef(ReconstructionFilter, radius)
-        .mdef(ReconstructionFilter, eval, "x"_a)
+        .def("eval",
+             py::overload_cast<Float>(&ReconstructionFilter::eval, py::const_),
+             D(ReconstructionFilter, eval), "x"_a)
+        .def("eval",
+             enoki::vectorize_wrapper(py::overload_cast<FloatP>(&ReconstructionFilter::eval, py::const_)),
+             D(ReconstructionFilter, eval), "x"_a)
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("eval",
+             py::overload_cast<FloatD>(&ReconstructionFilter::eval, py::const_),
+             D(ReconstructionFilter, eval), "x"_a)
+#endif
         .def("eval_discretized",
              &ReconstructionFilter::eval_discretized<Float>,
              D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)

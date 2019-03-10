@@ -45,15 +45,26 @@ public:
      *    otherwise pass 0 so that channels are set automatically from the
      *    pixel format.
      *
+     * \param border
+     *    Allocate a border region around the image block to support
+     *    contributions to adjacent pixels when using wide (i.e. non-box)
+     *    reconstruction filters?
+     *
      * \param warn
      *    Warn when writing bad sample values?
+     *
+     * \param normalize
+     *    Ensure that splats created via ``ImageBlock::put()`` add a
+     *    unit amount of energy?
      */
     ImageBlock(Bitmap::EPixelFormat fmt,
                const Vector2i &size,
                const ReconstructionFilter *filter = nullptr,
                size_t channels = 0,
                bool warn = true,
-               bool monochrome = false);
+               bool monochrome = false,
+               bool border = true,
+               bool normalize = false);
 
     /// Accumulate another image block into this one
     void put(const ImageBlock *block) {
@@ -231,9 +242,7 @@ protected:
     const ReconstructionFilter *m_filter;
     Float  *m_weights_x  , *m_weights_y;
     FloatP *m_weights_x_p, *m_weights_y_p;
-    bool m_warn;
-    /// Whether monochrome mode is enabled.
-    bool m_monochrome = false;
+    bool m_warn, m_monochrome, m_normalize;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     std::vector<FloatD> m_bitmap_d;

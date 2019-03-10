@@ -8,9 +8,9 @@
 MTS_PY_EXPORT(ImageBlock) {
     MTS_PY_CLASS(ImageBlock, Object)
         .def(py::init<Bitmap::EPixelFormat, const Vector2i &,
-                      const ReconstructionFilter *, size_t, bool, bool>(),
+                      const ReconstructionFilter *, size_t, bool, bool, bool>(),
              "fmt"_a, "size"_a, "filter"_a = nullptr, "channels"_a = 0,
-             "warn"_a = true, "monochrome"_a = false)
+             "warn"_a = true, "monochrome"_a, "border"_a = true, "normalize"_a = false)
 
         .def("put", (void (ImageBlock::*)(const ImageBlock *)) &ImageBlock::put,
              D(ImageBlock, put), "block"_a)
@@ -21,7 +21,21 @@ MTS_PY_EXPORT(ImageBlock) {
         .def("put", enoki::vectorize_wrapper(&ImageBlock::put<Point2fP, SpectrumfP>),
              "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a, "active"_a = true)
 
+        .def("put", [](ImageBlock &ib, const Point2f &pos,
+                       const std::vector<Float> &data, bool mask) {
+                 if (data.size() != ib.channel_count())
+                     throw std::runtime_error("Incompatible channel count!");
+                 ib.put(pos, data.data(), mask);
+             }, "pos"_a, "data"_a, "unused"_a = true)
+
 #if defined(MTS_ENABLE_AUTODIFF)
+        .def("put", [](ImageBlock &ib, const Point2fD &pos,
+                       const std::vector<FloatD> &data, MaskD mask) {
+                 if (data.size() != ib.channel_count())
+                     throw std::runtime_error("Incompatible channel count!");
+                 ib.put(pos, data.data(), mask);
+              }, "pos"_a, "data"_a, "unused"_a = true)
+
         .def("put", &ImageBlock::put<Point2fD, SpectrumfD>,
              "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a, "active"_a = true)
 #endif

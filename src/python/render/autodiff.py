@@ -3,8 +3,9 @@ from mitsuba.core import Bitmap
 from mitsuba.render import DifferentiableParameters, \
     RadianceSample3fD, ImageBlock
 
-from enoki import UInt32D, BoolD, FloatC, FloatD, Vector2fD, select, \
-    eq, rcp, set_requires_gradient, detach, gradient, sqr, sqrt
+from enoki import UInt32D, BoolD, FloatC, FloatD, Vector2fD, Vector3fD, \
+    Vector4fD, Matrix4fD, select, eq, rcp, set_requires_gradient, \
+    detach, gradient, sqr, sqrt
 
 
 def indent(s, amount=2):
@@ -13,7 +14,7 @@ def indent(s, amount=2):
 
 
 class SGD:
-    def __init__(self, params, lr, momentum = 0):
+    def __init__(self, params, lr, momentum=0):
         """
         Implements basic stochastic gradient descent with a fixed learning rate
         and, optionally, momentum (0.9 is a typical parameter value).
@@ -22,7 +23,7 @@ class SGD:
         self.lr = lr
         self.params = params
         self.momentum = momentum
-        self.state = { }
+        self.state = {}
 
         for k, p in params.items():
             set_requires_gradient(p)
@@ -43,7 +44,8 @@ class SGD:
             if self.momentum == 0:
                 self.params[k] = detach(p) - self.lr * gradient(p)
             else:
-                self.state[k] = self.momentum * self.state[k] + self.lr * gradient(p)
+                self.state[k] = self.momentum * self.state[k] + \
+                                self.lr * gradient(p)
                 self.params[k] = detach(p) - self.state[k]
             set_requires_gradient(p)
 
@@ -77,7 +79,7 @@ class Adam:
         self.beta_2 = beta_2
         self.epsilon = epsilon
         self.params = params
-        self.state = { }
+        self.state = {}
 
         for k, p in params.items():
             set_requires_gradient(p)
@@ -144,11 +146,14 @@ def get_differentiable_parameters(scene):
     return params
 
 
-def render(scene, spp = 8):
+def render(scene, spp=None):
     sensor = scene.sensor()
     film = sensor.film()
     sampler = sensor.sampler()
     film_size = film.size()
+    if spp is None:
+        spp = sampler.sample_count()
+
     pos = UInt32D.arange(film_size[0] * film_size[1] * spp) / spp
 
     scale = Vector2fD(1.0 / film_size[0], 1.0 / film_size[1])
@@ -174,12 +179,13 @@ def render(scene, spp = 8):
     wavelengths = rays.wavelengths
     del weights, rs, rays
 
-    block = ImageBlock(Bitmap.EXYZAW, film.crop_size(), warn=False)
+    block = ImageBlock(Bitmap.EXYZAW, film.crop_size(), warn=False,
+                       filter=film.reconstruction_filter(), border=False)
     block.put(position_sample, wavelengths, result, 1)
     return block
 
 
-def render_rgb(scene, spp = 8):
+def render_rgb(scene, spp=None):
     block = render(scene, spp)
 
     X, Y, Z, A, W = block.bitmap_d()
@@ -193,7 +199,7 @@ def render_rgb(scene, spp = 8):
     )
 
 
-def render_y(scene, spp = 128):
+def render_y(scene, spp=None):
     block = render(scene, spp)
     X, Y, Z, A, W = block.bitmap_d()
     W = select(eq(W, 0), 0, rcp(W))

@@ -20,24 +20,29 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x) const override {
-        x = std::abs(x);
+    template <typename Value> Value eval_impl(Value x) const {
+        x = abs(x);
 
-        if (x < math::Epsilon)
-            return 1.f;
-        else if (x > m_radius)
-            return 0.f;
+        Value x1     = math::Pi * x,
+              x2     = x1 / m_radius,
+              result = (sin(x1) * sin(x2)) / (x1 * x2);
 
-        Float x1 = math::Pi * x;
-        Float x2 = x1 / m_radius;
-
-        return (std::sin(x1) * std::sin(x2)) / (x1 * x2);
+        return select(
+            x < math::Epsilon,
+            1.f,
+            select(
+                x > m_radius,
+                0.f,
+                result
+            )
+        );
     }
 
     std::string to_string() const override {
         return tfm::format("LanczosSincFilter[lobes=%f]", m_radius);
     }
 
+    MTS_IMPLEMENT_RFILTER_ALL()
     MTS_DECLARE_CLASS()
 };
 
