@@ -657,8 +657,11 @@ typename SurfaceInteraction<Point3>::BSDFPtr
 SurfaceInteraction<Point3>::bsdf(const RayDifferential3 &ray) {
     const BSDFPtr bsdf = shape->bsdf();
 
-    if (!has_uv_partials() && any(bsdf->needs_differentials()))
-        compute_partials(ray);
+    /// TODO: revisit the 'false' default for autodiff mode once there are actually BRDFs using differentials
+    if constexpr (!is_diff_array_v<Point3>) {
+        if (!has_uv_partials() && any(bsdf->needs_differentials()))
+            compute_partials(ray);
+    }
 
     return bsdf;
 }

@@ -95,7 +95,7 @@ public:
                                                rs.next_2d(active), active);
             throughput *= bsdf_val;
             active &= any(neq(throughput, 0.f));
-            if (none(active))
+            if (none_or<false>(active))
                 break;
 
             eta *= bs.eta;

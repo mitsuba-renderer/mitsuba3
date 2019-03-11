@@ -542,7 +542,7 @@ MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &
     Value discrim = fmsub(b, b, Scalar(4) * a * c);
     active &= linear_case || (discrim >= 0);
 
-    if (likely(any(active))) {
+    if (likely(any_or<true>(active))) {
         Value sqrt_discrim = sqrt(discrim);
 
         /* Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)

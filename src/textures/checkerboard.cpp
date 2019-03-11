@@ -27,10 +27,10 @@ public:
 
         m0 &= active; m1 &= active;
 
-        if (any(m0))
+        if (any_or<true>(m0))
             result[m0] = m_color0->eval(it, m0);
 
-        if (any(m1))
+        if (any_or<true>(m1))
             result[m1] = m_color1->eval(it, m1);
 
         return result;
