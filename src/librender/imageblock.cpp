@@ -222,7 +222,9 @@ MaskD ImageBlock::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
     while (m_bitmap->channel_count() != m_bitmap_d.size())
         m_bitmap_d.push_back(zero<FloatD>(hprod(m_bitmap->size())));
 
-    int n = (int) std::ceil(m_filter->radius() * 2);
+    /// Subtraction of 2*math::Epsilon ensures that we only do 1 scatter_add
+    /// instead of the conservative 4 when using the box filter
+    int n = (int) std::ceil((m_filter->radius() - 2*math::Epsilon) * 2);
     std::vector<FloatD> weights_x_d(n), weights_y_d(n);
 
     for (int k = 0; k < n; ++k) {
