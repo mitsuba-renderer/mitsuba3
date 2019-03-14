@@ -22,11 +22,13 @@ public:
         m_rng_p.seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64P>());
 
 #if defined(MTS_ENABLE_AUTODIFF)
-        UInt64C idx = arange<UInt64C>(m_rng_c->state.size()),
-                seed_value_c = (uint64_t) seed_value;
-        if (m_rng_c)
+        if (m_rng_c) {
+            UInt64C idx = arange<UInt64C>(m_rng_c->state.size()),
+                    seed_value_c = (uint64_t) seed_value;
+
             m_rng_c->seed(sample_tea_64(seed_value_c, idx),
                           sample_tea_64(idx, seed_value_c));
+        }
 #endif
     }
 
