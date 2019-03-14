@@ -22,9 +22,11 @@ public:
         m_rng_p.seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64P>());
 
 #if defined(MTS_ENABLE_AUTODIFF)
+        UInt64C idx = arange<UInt64C>(m_rng_c->state.size()),
+                seed_value_c = (uint64_t) seed_value;
         if (m_rng_c)
-            m_rng_c->seed(seed_value,
-                          PCG32_DEFAULT_STREAM + arange<UInt64C>(m_rng_c->state.size()));
+            m_rng_c->seed(sample_tea_64(seed_value_c, idx),
+                          sample_tea_64(idx, seed_value_c));
 #endif
     }
 
@@ -97,8 +99,11 @@ protected:
                 throw std::runtime_error("next_float_c(): Requested sample "
                                          "array has incorrect shape.");
 
-            m_rng_c->seed(m_rng_c->state,
-                          PCG32_DEFAULT_STREAM + arange<UInt64C>(active.size()));
+            UInt64C idx = arange<UInt64C>(active.size()),
+                    seed_value_c = 0;
+
+            m_rng_c->seed(sample_tea_64(seed_value_c, idx),
+                          sample_tea_64(idx, seed_value_c));
         }
 
         #if defined(SINGLE_PRECISION)
