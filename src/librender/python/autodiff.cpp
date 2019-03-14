@@ -16,7 +16,7 @@ namespace mitsuba {
         py::object getitem(const std::string &key) {
             auto it = d->entries.find(key);
             if (it == d->entries.end())
-                throw py::key_error();
+                throw py::key_error(key);
             auto value = it->second;
             switch (std::get<2>(value)) {
                 case 1 : return py::cast((FloatD *) std::get<1>(value), py::return_value_policy::reference);
@@ -31,7 +31,7 @@ namespace mitsuba {
         void setitem(const std::string &key, py::object obj) {
             auto it = d->entries.find(key);
             if (it == d->entries.end())
-                throw py::key_error();
+                throw py::key_error(key);
             auto value = it->second;
             switch (std::get<2>(value)) {
                 case 1 : *((FloatD *) std::get<1>(value)) = py::cast<FloatD>(obj); break;

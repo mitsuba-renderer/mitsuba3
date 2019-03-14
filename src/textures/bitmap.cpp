@@ -86,19 +86,20 @@ public:
 
         UInt32 index = pos.x() + pos.y() * (uint32_t) m_bitmap->size().x();
 
-        const Float *ptr = (const Float *) m_bitmap->data();
-
-        uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
-
         Vector3f v00, v10, v01, v11;
         if constexpr (is_diff_array_v<Value>) {
+            uint32_t width = (uint32_t) m_bitmap->size().x();
+
             #if defined(MTS_ENABLE_AUTODIFF)
-                v00 = gather<Vector3f, 0, true>(m_bitmap_d, index, active);
-                v10 = gather<Vector3f, 0, true>(m_bitmap_d, index + 3, active);
-                v01 = gather<Vector3f, 0, true>(m_bitmap_d, index + width, active);
-                v11 = gather<Vector3f, 0, true>(m_bitmap_d, index + width + 3, active);
+                v00 = gather<Vector3f>(m_bitmap_d, index, active);
+                v10 = gather<Vector3f>(m_bitmap_d, index + 1u, active);
+                v01 = gather<Vector3f>(m_bitmap_d, index + width, active);
+                v11 = gather<Vector3f>(m_bitmap_d, index + width + 1u, active);
             #endif
         } else {
+            uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
+            const Float *ptr = (const Float *) m_bitmap->data();
+
             v00 = gather<Vector3f, 0, true>(ptr, index, active);
             v10 = gather<Vector3f, 0, true>(ptr + 3, index, active);
             v01 = gather<Vector3f, 0, true>(ptr + width, index, active);
@@ -138,7 +139,7 @@ protected:
     ref<Bitmap> m_bitmap;
 
 #if defined(MTS_ENABLE_AUTODIFF)
-    Vector3fD m_bitmap_d;
+    FloatD m_bitmap_d;
 #endif
 
     std::string m_name;
