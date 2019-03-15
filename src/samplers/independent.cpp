@@ -95,11 +95,12 @@ protected:
 
 #if defined(MTS_ENABLE_AUTODIFF)
     MTS_INLINE FloatC next_float_c(MaskC active) {
-        if (!m_rng_c || m_rng_c->state.size() != active.size()) {
-            m_rng_c = std::unique_ptr<PCG32C>(new PCG32C());
-            if (m_rng_c->state.size() != 1)
+        if (!m_rng_c || (m_rng_c->state.size() != active.size() && active.size() != 1)) {
+            if (m_rng_c != nullptr && m_rng_c->state.size() != 1)
                 throw std::runtime_error("next_float_c(): Requested sample "
                                          "array has incorrect shape.");
+
+            m_rng_c = std::unique_ptr<PCG32C>(new PCG32C());
 
             UInt64C idx = arange<UInt64C>(active.size()),
                     seed_value_c = 0;
