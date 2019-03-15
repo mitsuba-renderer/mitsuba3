@@ -2614,8 +2614,17 @@ Parameter ``channels``:
     pass 0 so that channels are set automatically from the pixel
     format.
 
+Parameter ``border``:
+    Allocate a border region around the image block to support
+    contributions to adjacent pixels when using wide (i.e. non-box)
+    reconstruction filters?
+
 Parameter ``warn``:
-    Warn when writing bad sample values?)doc";
+    Warn when writing bad sample values?
+
+Parameter ``normalize``:
+    Ensure that splats created via ``ImageBlock::put()`` add a unit
+    amount of energy?)doc";
 
 static const char *__doc_mitsuba_ImageBlock_bitmap = R"doc(Return a pointer to the underlying bitmap representation)doc";
 
@@ -2639,7 +2648,9 @@ static const char *__doc_mitsuba_ImageBlock_m_border_size = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_filter = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_m_monochrome = R"doc(Whether monochrome mode is enabled.)doc";
+static const char *__doc_mitsuba_ImageBlock_m_monochrome = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_m_normalize = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_offset = R"doc()doc";
 
@@ -3214,8 +3225,6 @@ static const char *__doc_mitsuba_Mesh_normal_derivative_impl = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_pdf_position = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_pdf_position_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_pdf_position_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_pdf_position_impl = R"doc()doc";
 
@@ -4001,6 +4010,14 @@ static const char *__doc_mitsuba_Properties_string = R"doc(Retrieve a string val
 
 static const char *__doc_mitsuba_Properties_string_2 = R"doc(Retrieve a string value (use default value if no entry exists))doc";
 
+static const char *__doc_mitsuba_Properties_texture3d = R"doc(Retrieve a 3D texture)doc";
+
+static const char *__doc_mitsuba_Properties_texture3d_2 = R"doc(Retrieve a 3D texture (use the provided texture if no entry exists))doc";
+
+static const char *__doc_mitsuba_Properties_texture3d_3 =
+R"doc(Retrieve a 3D texture (use default constant texture if no entry
+exists))doc";
+
 static const char *__doc_mitsuba_Properties_transform = R"doc(Retrieve a 4x4 homogeneous coordinate transformation)doc";
 
 static const char *__doc_mitsuba_Properties_transform_2 =
@@ -4291,7 +4308,11 @@ static const char *__doc_mitsuba_ReconstructionFilter_class = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_eval = R"doc(Evaluate the filter function)doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_eval_discretized = R"doc(Perform a lookup into the discretized version)doc";
+static const char *__doc_mitsuba_ReconstructionFilter_eval_2 = R"doc(Evaluate the filter function (vectorized version))doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_eval_discretized =
+R"doc(Evaluate a discretized version of the filter (generally faster than
+'eval'))doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_init_discretization = R"doc(Mandatory initialization prior to calls to eval_discretized())doc";
 
@@ -6283,6 +6304,39 @@ and Metal.
 
 Wraps nanogui::Texture and adds a new constructor for creating
 textures from mitsuba::Bitmap instances.)doc";
+
+static const char *__doc_mitsuba_Texture3D = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_2 = R"doc(Abstract base class for spatially varying 3D textures.)doc";
+
+static const char *__doc_mitsuba_Texture3D_Texture3D = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_bbox = R"doc(Returns the bounding box of the 3d texture)doc";
+
+static const char *__doc_mitsuba_Texture3D_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_eval = R"doc(Evaluate the texture at the given surface interaction)doc";
+
+static const char *__doc_mitsuba_Texture3D_eval_2 = R"doc(Vectorized version of eval())doc";
+
+static const char *__doc_mitsuba_Texture3D_eval_3 = R"doc(Wrapper for scalar eval() with a mask (which will be ignored))doc";
+
+static const char *__doc_mitsuba_Texture3D_is_inside_impl = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_m_bbox = R"doc(Bounding box)doc";
+
+static const char *__doc_mitsuba_Texture3D_m_world_to_local = R"doc(Used to bring points in world coordinates to local coordinates.)doc";
+
+static const char *__doc_mitsuba_Texture3D_max = R"doc(Returns the maximum value of the texture over all dimensions.)doc";
+
+static const char *__doc_mitsuba_Texture3D_mean =
+R"doc(Returns the (possibly approximate) mean value of the texture over all
+dimensions. May remain unimplemented, the default implementation
+throws an exception.)doc";
+
+static const char *__doc_mitsuba_Texture3D_to_string = R"doc(Returns a human-reable summary)doc";
+
+static const char *__doc_mitsuba_Texture3D_update_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
 
