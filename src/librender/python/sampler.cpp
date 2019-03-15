@@ -15,7 +15,8 @@ MTS_PY_EXPORT(Sampler) {
              },
              D(Sampler, next_1d_p))
 #if defined(MTS_ENABLE_AUTODIFF)
-        .def("next_1d_d", &Sampler::next_1d_d, "active"_a)
+        .def("next_1d_d", py::overload_cast<MaskD>(&Sampler::next_1d_d), "active"_a)
+        .def("next_1d_d", py::overload_cast<UInt32D, MaskD>(&Sampler::next_1d_d), "index"_a, "active"_a)
 #endif
         .def("next_2d", py::overload_cast<>(&Sampler::next_2d),
              D(Sampler, next_2d))
@@ -27,7 +28,8 @@ MTS_PY_EXPORT(Sampler) {
              },
              D(Sampler, next_2d_p))
 #if defined(MTS_ENABLE_AUTODIFF)
-        .def("next_2d_d", &Sampler::next_2d_d, "active"_a)
+        .def("next_2d_d", py::overload_cast<MaskD>(&Sampler::next_2d_d), "active"_a)
+        .def("next_2d_d", py::overload_cast<UInt32D, MaskD>(&Sampler::next_2d_d), "index"_a, "active"_a)
 #endif
         .mdef(Sampler, sample_count);
 }

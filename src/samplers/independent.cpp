@@ -44,6 +44,10 @@ public:
     FloatD next_1d_d(MaskD active) override {
         return next_float_c(detach(active));
     }
+
+    FloatD next_1d_d(UInt32D index, MaskD active) override {
+        return next_float_c(detach(index), detach(active));
+    }
 #endif
 
     Point2f next_2d() override {
@@ -62,6 +66,12 @@ public:
     Point2fD next_2d_d(MaskD active) override {
         FloatC f1 = next_float_c(detach(active)),
                f2 = next_float_c(detach(active));
+        return Point2fD(f1, f2);
+    }
+
+    Point2fD next_2d_d(UInt32D index, MaskD active) override {
+        FloatC f1 = next_float_c(detach(index), detach(active)),
+               f2 = next_float_c(detach(index), detach(active));
         return Point2fD(f1, f2);
     }
 #endif
@@ -113,6 +123,17 @@ protected:
             return m_rng_c->next_float32(active);
         #else
             return m_rng_c->next_float64(active);
+        #endif
+    }
+
+    MTS_INLINE FloatC next_float_c(UInt32C index, MaskC active) {
+        if (!m_rng_c)
+            throw std::runtime_error("next_float_c(): RNG is uninitialized!");
+
+        #if defined(SINGLE_PRECISION)
+            return m_rng_c->next_float32(index, active);
+        #else
+            return m_rng_c->next_float64(index, active);
         #endif
     }
 #endif

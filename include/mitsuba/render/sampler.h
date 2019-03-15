@@ -37,6 +37,9 @@ public:
 #if defined(MTS_ENABLE_AUTODIFF)
     /// Differentiable version of \ref next_1d()
     virtual FloatD next_1d_d(MaskD active = true);
+
+    /// Sparse, differentiable version of \ref next_1d()
+    virtual FloatD next_1d_d(UInt32D index, MaskD active = true);
 #endif
 
     /// Retrieve the next two component values from the current sample
@@ -51,6 +54,9 @@ public:
 #if defined(MTS_ENABLE_AUTODIFF)
     /// Differentiable version of \ref next_2d()
     virtual Point2fD next_2d_d(MaskD active = true);
+
+    /// Sparse, differentiable version of \ref next_2d()
+    virtual Point2fD next_2d_d(UInt32D index, MaskD active = true);
 #endif
 
     template <typename T> using MaskType =

@@ -20,6 +20,8 @@ Point2fP Sampler::next_2d_p(MaskP) { NotImplementedError("next_2d_p"); }
 #if defined(MTS_ENABLE_AUTODIFF)
 FloatD Sampler::next_1d_d(MaskD) { NotImplementedError("next_1d_d"); }
 Point2fD Sampler::next_2d_d(MaskD) { NotImplementedError("next_2d_d"); }
+FloatD Sampler::next_1d_d(UInt32D, MaskD) { NotImplementedError("next_1d_d"); }
+Point2fD Sampler::next_2d_d(UInt32D, MaskD) { NotImplementedError("next_2d_d"); }
 #endif
 
 MTS_IMPLEMENT_CLASS(Sampler, Object);
