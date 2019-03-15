@@ -59,13 +59,13 @@ protected:
  * performance in the normal case.
  */
 #define MTS_AUTODIFF_GETTER(value, attr, attr_d)                               \
-    template <typename Value> MTS_INLINE decltype(auto) value() {              \
+    template <typename Value> MTS_INLINE auto &value() {                       \
         if constexpr (is_diff_array_v<Value>)                                  \
             return attr_d;                                                     \
         else                                                                   \
             return attr;                                                       \
     }                                                                          \
-    template <typename Value> MTS_INLINE decltype(auto) value() const {        \
+    template <typename Value> MTS_INLINE const auto &value() const {           \
         if constexpr (is_diff_array_v<Value>)                                  \
             return attr_d;                                                     \
         else                                                                   \
@@ -75,10 +75,8 @@ protected:
 #else // !MTS_ENABLE_AUTODIFF
 
 #define MTS_AUTODIFF_GETTER(value, attr, attr_d)                               \
-    template <typename Value> MTS_INLINE decltype(auto) value() {              \
-        return attr;                                                           \
-    }                                                                          \
-    template <typename Value> MTS_INLINE decltype(auto) value() const {        \
+    template <typename Value> MTS_INLINE auto &value() { return attr; }        \
+    template <typename Value> MTS_INLINE const auto &value() const {           \
         return attr;                                                           \
     }
 
