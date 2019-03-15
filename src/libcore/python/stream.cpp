@@ -108,7 +108,7 @@ MTS_PY_EXPORT(ZStream) {
     c.def(py::init<Stream*, ZStream::EStreamType, int>(), D(ZStream, ZStream),
           "child_stream"_a,
           "streamType"_a = ZStream::EDeflateStream,
-          "level"_a = Z_DEFAULT_COMPRESSION)
+          "level"_a = -1)
         .def("child_stream", [](ZStream &stream) {
             return py::cast(stream.child_stream());
         }, D(ZStream, child_stream));

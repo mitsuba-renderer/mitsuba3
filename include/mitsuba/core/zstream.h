@@ -1,7 +1,11 @@
 #pragma once
 
 #include <mitsuba/core/stream.h>
-#include <zlib.h>
+
+extern "C" {
+    struct z_stream_s;
+    typedef struct z_stream_s z_stream;
+};
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -31,7 +35,7 @@ public:
      * must outlive the ZStream.
      */
     ZStream(Stream *child_stream, EStreamType stream_type = EDeflateStream,
-            int level = Z_DEFAULT_COMPRESSION);
+            int level = -1);
 
     /// Returns a string representation
     std::string to_string() const override;
@@ -124,10 +128,10 @@ protected:
 
 private:
     ref<Stream> m_child_stream;
-    z_stream m_deflate_stream, m_inflate_stream;
+    std::unique_ptr<z_stream> m_deflate_stream, m_inflate_stream;
     uint8_t m_deflate_buffer[detail::kZStreamBufferSize];
     uint8_t m_inflate_buffer[detail::kZStreamBufferSize];
-    bool m_didWrite;
+    bool m_did_write;
 };
 
 NAMESPACE_END(mitsuba)
