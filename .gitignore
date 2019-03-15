@@ -33,6 +33,7 @@ librender_ptx.cpp
 *.sublime-workspace
 
 # Visual Studio / VS Code
+**/.vscode/*
 *.vcxproj
 mitsuba.sdf
 mitsuba.sln

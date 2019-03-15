@@ -66,6 +66,11 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     m_parent.attr("NDEBUG") = false;
 #endif // NDEBUG
 
+#if defined(MTS_ENABLE_AUTODIFF)
+    m_parent.attr("ENABLE_AUTODIFF")  = true;
+#else
+    m_parent.attr("ENABLE_AUTODIFF")  = false;
+#endif
 #if defined(MTS_USE_EMBREE)
     m_parent.attr("USE_EMBREE")  = true;
 #else

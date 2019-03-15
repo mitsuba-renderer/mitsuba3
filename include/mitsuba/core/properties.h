@@ -7,8 +7,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/* Forward declarations */
+// Forward declarations
 class ContinuousSpectrum;
+class Texture3D;
 
 /// Wrapper object used to represent named references to Object instances
 class NamedReference {
@@ -273,14 +274,20 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a continuous spectrum
     ref<ContinuousSpectrum> spectrum(const std::string &name) const;
-
     /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
     ref<ContinuousSpectrum> spectrum(const std::string &name,
                                      ref<ContinuousSpectrum> def_val) const;
-
     /// Retrieve a continuous spectrum (use default flat spectrum if no entry exists)
     ref<ContinuousSpectrum> spectrum(const std::string &name,
                                      Float def_val) const;
+
+    /// Retrieve a 3D texture
+    ref<Texture3D> texture3d(const std::string &name) const;
+    /// Retrieve a 3D texture (use the provided texture if no entry exists)
+    ref<Texture3D> texture3d(const std::string &name,
+                            ref<Texture3D> def_val) const;
+    /// Retrieve a 3D texture (use default constant texture if no entry exists)
+    ref<Texture3D> texture3d(const std::string &name, Float def_val) const;
 
 private:
     struct PropertiesPrivate;

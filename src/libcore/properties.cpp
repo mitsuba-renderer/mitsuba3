@@ -3,20 +3,19 @@
 #  define _ENABLE_EXTENDED_ALIGNED_STORAGE
 #endif
 
-#include <mitsuba/core/properties.h>
+#include <cstdlib>
+#include <iostream>
+#include <map>
+#include <sstream>
 
 #include <mitsuba/core/logger.h>
+#include <mitsuba/core/plugin.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/variant.h>
-#include <mitsuba/core/plugin.h>
-#include <iostream>
-
 #include <mitsuba/render/spectrum.h>
-
-#include <map>
-#include <sstream>
-#include <cstdlib>
+#include <mitsuba/render/texture3d.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -479,7 +478,8 @@ ref<ContinuousSpectrum> Properties::spectrum(
     if (it == d->entries.end()) {
         Properties props("uniform");
         props.set_float("value", def_val);
-        return (ContinuousSpectrum *) PluginManager::instance()->create_object(props).get();
+        return (ContinuousSpectrum *) PluginManager::instance()
+            ->create_object(props).get();
     }
     if (!it->second.data.is<ref<Object>>())
         Throw("The property \"%s\" has the wrong type (expected "
@@ -491,6 +491,63 @@ ref<ContinuousSpectrum> Properties::spectrum(
               " <spectrum>).", name);
     it->second.queried = true;
     return (ContinuousSpectrum *) o.get();
+}
+
+/// Retrieve a 3D texture
+ref<Texture3D> Properties::texture3d(const std::string &name) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        Throw("Property \"%s\" has not been specified!", name);
+    if (!it->second.data.is<ref<Object>>())
+        Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+              name);
+    ref<Object> o         = it->second.data;
+    const Class *expected = Class::for_name("Texture3D");
+    if (!o->class_()->derives_from(expected))
+        Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+              name);
+    it->second.queried = true;
+    return (Texture3D *) o.get();
+}
+
+/// Retrieve a 3D texture (use the provided texture if no entry exists)
+ref<Texture3D> Properties::texture3d(const std::string &name,
+                                     ref<Texture3D> def_val) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        return def_val;
+    if (!it->second.data.is<ref<Object>>())
+        Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+              name);
+    ref<Object> o         = it->second.data;
+    const Class *expected = Class::for_name("Texture3D");
+    if (!o->class_()->derives_from(expected))
+        Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+              name);
+    it->second.queried = true;
+    return (Texture3D *) o.get();
+}
+
+/// Retrieve a 3D texture (use default constant texture if no entry exists)
+ref<Texture3D> Properties::texture3d(const std::string &name,
+                                     Float def_val) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end()) {
+        Properties props("constant3d");
+        props.set_float("color", def_val);
+        return (Texture3D *) PluginManager::instance()
+            ->create_object(props).get();
+    }
+    if (!it->second.data.is<ref<Object>>())
+        Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+              name);
+    ref<Object> o         = it->second.data;
+    const Class *expected = Class::for_name("Texture3D");
+    if (!o->class_()->derives_from(expected))
+        Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+              name);
+    it->second.queried = true;
+    return (Texture3D *) o.get();
 }
 
 NAMESPACE_END(mitsuba)

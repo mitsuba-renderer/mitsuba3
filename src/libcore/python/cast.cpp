@@ -3,6 +3,7 @@
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/render/integrator.h>
@@ -10,8 +11,8 @@
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
-#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture3d.h>
 
 #define PY_CAST(Name) {                                                        \
         Name *temp = dynamic_cast<Name *>(o);                                  \
@@ -25,6 +26,7 @@ py::object py_cast(Object *o) {
     PY_CAST(Mesh);
     PY_CAST(Shape);
     PY_CAST(ContinuousSpectrum);
+    PY_CAST(Texture3D);
     PY_CAST(ReconstructionFilter);
 
     PY_CAST(ProjectiveCamera);

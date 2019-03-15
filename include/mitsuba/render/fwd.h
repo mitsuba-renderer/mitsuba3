@@ -20,6 +20,7 @@ class Scene;
 class Sensor;
 class Shape;
 class ShapeKDTree;
+class Texture3D;
 
 template <typename Point3> struct DirectionSample;
 template <typename Point3> struct PositionSample;

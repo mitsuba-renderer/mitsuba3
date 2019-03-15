@@ -19,6 +19,12 @@ MTS_PY_EXPORT(ContinuousSpectrum) {
                  &ContinuousSpectrum::eval, py::const_)),
              "wavelengths"_a, "active"_a = true)
 
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("eval",
+             py::overload_cast<const SpectrumfD &, MaskD>(&ContinuousSpectrum::eval, py::const_),
+             "wavelengths"_a, "active"_a = true)
+#endif
+
         // ---------------------------------------------------------------------
 
         .def("eval",
@@ -28,6 +34,13 @@ MTS_PY_EXPORT(ContinuousSpectrum) {
         .def("eval",
              vectorize_wrapper(py::overload_cast<const SurfaceInteraction3fP &, MaskP>(
                  &ContinuousSpectrum::eval, py::const_)), "si"_a, "active"_a = true)
+
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("eval",
+             py::overload_cast<const SurfaceInteraction3fD &, MaskD>(
+                &ContinuousSpectrum::eval, py::const_),
+             "si"_a, "active"_a = true)
+#endif
 
         // ---------------------------------------------------------------------
 
@@ -41,6 +54,12 @@ MTS_PY_EXPORT(ContinuousSpectrum) {
                  &ContinuousSpectrum::sample, py::const_)),
              "sample"_a, "active"_a = true)
 
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("sample",
+             py::overload_cast<const SpectrumfD &, MaskD>(&ContinuousSpectrum::sample, py::const_),
+             "sample"_a, "active"_a = true)
+#endif
+
         // ---------------------------------------------------------------------
 
         .def("sample",
@@ -52,6 +71,12 @@ MTS_PY_EXPORT(ContinuousSpectrum) {
              vectorize_wrapper(py::overload_cast<const SurfaceInteraction3fP &, const SpectrumfP &, MaskP>(
                  &ContinuousSpectrum::sample, py::const_)),
              "si"_a, "sample"_a, "active"_a = true)
+
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("sample",
+             py::overload_cast<const SurfaceInteraction3fD &, const SpectrumfD &, MaskD>(&ContinuousSpectrum::sample, py::const_),
+             "si"_a, "sample"_a, "active"_a = true)
+#endif
 
 
         // ---------------------------------------------------------------------
@@ -66,6 +91,12 @@ MTS_PY_EXPORT(ContinuousSpectrum) {
                  &ContinuousSpectrum::pdf, py::const_)),
              "wavelengths"_a, "active"_a = true)
 
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("pdf",
+             py::overload_cast<const SpectrumfD &, MaskD>(&ContinuousSpectrum::pdf, py::const_),
+             "wavelengths"_a, "active"_a = true)
+#endif
+
         // ---------------------------------------------------------------------
 
         .def("pdf",
@@ -76,7 +107,14 @@ MTS_PY_EXPORT(ContinuousSpectrum) {
         .def("pdf",
              vectorize_wrapper(py::overload_cast<const SurfaceInteraction3fP &, MaskP>(
                  &ContinuousSpectrum::pdf, py::const_)),
-             "si"_a, "active"_a = true);
+             "si"_a, "active"_a = true)
+
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("pdf",
+             py::overload_cast<const SurfaceInteraction3fD &, MaskD>(&ContinuousSpectrum::pdf, py::const_),
+             "si"_a, "active"_a = true)
+#endif
+        ;
 
         // ---------------------------------------------------------------------
 }

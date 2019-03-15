@@ -5,22 +5,23 @@ add_mitsuba_python_library(mitsuba_render_ext render
   emitter.cpp
   endpoint.cpp
   film.cpp
+  fresnel.cpp
   imageblock.cpp
   integrator.cpp
   interaction.cpp
   main.cpp
   microfacet.cpp
+  mueller.cpp
   records.cpp
-  fresnel.cpp
   rtbench.cpp
   sampler.cpp
   scene.cpp
   sensor.cpp
   shape.cpp
-  spiral.cpp
   spectrum.cpp
+  spiral.cpp
   srgb.cpp
-  mueller.cpp
+  texture3d.cpp
 )
 
 target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render tbb)
