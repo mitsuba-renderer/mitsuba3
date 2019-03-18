@@ -2058,6 +2058,8 @@ eval_pol())doc";
 
 static const char *__doc_mitsuba_Endpoint_m_medium = R"doc()doc";
 
+static const char *__doc_mitsuba_Endpoint_m_monochrome = R"doc(Whether monochrome mode is enabled.)doc";
+
 static const char *__doc_mitsuba_Endpoint_m_needs_sample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_m_needs_sample_3 = R"doc()doc";
@@ -2398,6 +2400,8 @@ static const char *__doc_mitsuba_Film_m_filter = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_high_quality_edges = R"doc()doc";
 
+static const char *__doc_mitsuba_Film_m_monochrome = R"doc(Whether monochrome mode is enabled.)doc";
+
 static const char *__doc_mitsuba_Film_m_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_put = R"doc(Merge an image block into the film)doc";
@@ -2633,6 +2637,8 @@ static const char *__doc_mitsuba_ImageBlock_m_border_size = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_filter = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_m_monochrome = R"doc(Whether monochrome mode is enabled.)doc";
+
 static const char *__doc_mitsuba_ImageBlock_m_offset = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_size = R"doc()doc";
@@ -2779,6 +2785,8 @@ static const char *__doc_mitsuba_Integrator_class = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_m_callbacks = R"doc(List of registered callback functions.)doc";
 
 static const char *__doc_mitsuba_Integrator_m_cb_timer = R"doc(Timer used to enforce the callback rate limits.)doc";
+
+static const char *__doc_mitsuba_Integrator_m_monochrome = R"doc(Whether monochrome mode is enabled.)doc";
 
 static const char *__doc_mitsuba_Integrator_notify =
 R"doc(Maybe trigger a call to the callbacks. This will be rate-limited so
@@ -4457,6 +4465,8 @@ static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_integrator = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_kdtree = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_monochrome = R"doc(Whether monochrome mode is enabled.)doc";
 
 static const char *__doc_mitsuba_Scene_m_sampler = R"doc()doc";
 
@@ -7321,6 +7331,8 @@ function for a single wavelength (Float), a set of wavelengths
 (Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all cases,
 the PDF is returned per wavelength.)doc";
 
+static const char *__doc_mitsuba_pdf_uniform_spectrum = R"doc()doc";
+
 static const char *__doc_mitsuba_profiler_flags = R"doc()doc";
 
 static const char *__doc_mitsuba_quad_composite_simpson =
@@ -7644,6 +7656,8 @@ Parameter ``rounds``:
 Returns:
     A uniformly distributed floating point number on the interval
     ``[0, 1)``)doc";
+
+static const char *__doc_mitsuba_sample_uniform_spectrum = R"doc()doc";
 
 static const char *__doc_mitsuba_spline_eval_1d =
 R"doc(Evaluate a cubic spline interpolant of a *uniformly* sampled 1D
@@ -8149,6 +8163,8 @@ static const char *__doc_mitsuba_struct_traits_10 = R"doc()doc";
 static const char *__doc_mitsuba_struct_traits_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_struct_traits_12 = R"doc()doc";
+
+static const char *__doc_mitsuba_to_xyz = R"doc()doc";
 
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 
