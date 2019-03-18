@@ -3,7 +3,11 @@
 
 MTS_PY_EXPORT(srgb) {
     m.def("srgb_model_fetch", &srgb_model_fetch, D(srgb_model_fetch));
-    m.def("srgb_model_eval_rgb", &srgb_model_eval_rgb, D(srgb_model_eval_rgb));
+    m.def("srgb_model_eval_rgb", &srgb_model_eval_rgb<float>, D(srgb_model_eval_rgb));
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    m.def("srgb_model_eval_rgb", &srgb_model_eval_rgb<FloatD>, D(srgb_model_eval_rgb));
+#endif
 
     m.def("srgb_model_eval", [](const Vector3f &coeff, const FloatX &s) {
         FloatX result(s.size());

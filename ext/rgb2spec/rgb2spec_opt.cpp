@@ -12,6 +12,26 @@
 #include "details/cie1931.h"
 #include "details/lu.h"
 
+/*
+   Potential coefficient conventions:
+
+   RGB2SPEC_MAPPING == 1:
+      Compute coefficients for polynomials defined on the interval [360, 830].
+      This variant is the fastest to evaluate in a renderer.
+
+   RGB2SPEC_MAPPING == 2:
+      Evaluate the polynomial at wavelengths [445.772, 539.285, 602.785],
+      which correspond to the peaks of the CIE RGB color matching curves.
+      The polynomial can be reconstructed from these values via a 3x3
+      matrix multiplication. This mapping is more linear and better-suited
+      for optimization purposes.
+
+*/
+
+#if !defined(RGB2SPEC_MAPPING)
+#  define RGB2SPEC_MAPPING 1
+#endif
+
 // Choose a parallelization scheme
 #if defined(RGB2SPEC_USE_TBB)
 #  include <tbb/tbb.h>
@@ -325,15 +345,32 @@ int main(int argc, char **argv) {
                     double resid = gauss_newton(rgb, coeffs);
                     (void) resid;
 
-                    double c0 = 360.0, c1 = 1.0 / (830.0 - 360.0);
                     double A = coeffs[0], B = coeffs[1], C = coeffs[2];
 
                     size_t idx = ((l*res + k) * res + j)*res+i;
+#if RGB2SPEC_MAPPING == 1
+                    double c0 = 360.0, c1 = 1.0 / (830.0 - 360.0);
 
-                    out[3*idx + 0] = float(A*(sqr(c1)));
-                    out[3*idx + 1] = float(B*c1 - 2*A*c0*(sqr(c1)));
-                    out[3*idx + 2] = float(C - B*c0*c1 + A*(sqr(c0*c1)));
-                    //out[3*idx + 2] = resid;
+                    double As = A*(sqr(c1)),
+                           Bs = B*c1 - 2*A*c0*(sqr(c1)),
+                           Cs = C - B*c0*c1 + A*(sqr(c0*c1));
+
+                    out[3*idx + 0] = float(As);
+                    out[3*idx + 1] = float(Bs);
+                    out[3*idx + 2] = float(Cs);
+#elif RGB2SPEC_MAPPING == 2
+                    auto eval = [&](double x) { return (A*x + B)*x + C; };
+
+                    double Rs = eval((602.785 - 360.0) / (830.0 - 360.0)),
+                           Gs = eval((539.285 - 360.0) / (830.0 - 360.0)),
+                           Bs = eval((445.772 - 360.0) / (830.0 - 360.0));
+
+                    out[3*idx + 0] = float(Rs);
+                    out[3*idx + 1] = float(Gs);
+                    out[3*idx + 2] = float(Bs);
+#else
+#  error RGB_SPEC_MAPPING has unexpected value.
+#endif
                 }
 
                 memset(coeffs, 0, sizeof(double)*3);
@@ -347,15 +384,32 @@ int main(int argc, char **argv) {
                     double resid = gauss_newton(rgb, coeffs);
                     (void) resid;
 
-                    double c0 = 360.0, c1 = 1.0 / (830.0 - 360.0);
                     double A = coeffs[0], B = coeffs[1], C = coeffs[2];
 
                     size_t idx = ((l*res + k) * res + j)*res+i;
+#if RGB2SPEC_MAPPING == 1
+                    double c0 = 360.0, c1 = 1.0 / (830.0 - 360.0);
 
-                    out[3*idx + 0] = float(A*(sqr(c1)));
-                    out[3*idx + 1] = float(B*c1 - 2*A*c0*(sqr(c1)));
-                    out[3*idx + 2] = float(C - B*c0*c1 + A*(sqr(c0*c1)));
-                    //out[3*idx + 2] = resid;
+                    double As = A*(sqr(c1)),
+                           Bs = B*c1 - 2*A*c0*(sqr(c1)),
+                           Cs = C - B*c0*c1 + A*(sqr(c0*c1));
+
+                    out[3*idx + 0] = float(As);
+                    out[3*idx + 1] = float(Bs);
+                    out[3*idx + 2] = float(Cs);
+#elif RGB2SPEC_MAPPING == 2
+                    auto eval = [&](double x) { return (A*x + B)*x + C; };
+
+                    double Rs = eval((602.785 - 360.0) / (830.0 - 360.0)),
+                           Gs = eval((539.285 - 360.0) / (830.0 - 360.0)),
+                           Bs = eval((445.772 - 360.0) / (830.0 - 360.0));
+
+                    out[3*idx + 0] = float(Rs);
+                    out[3*idx + 1] = float(Gs);
+                    out[3*idx + 2] = float(Bs);
+#else
+#  error RGB_SPEC_MAPPING has unexpected value.
+#endif
                 }
             }
         }

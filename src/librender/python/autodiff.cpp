@@ -41,7 +41,9 @@ namespace mitsuba {
                 case 16 : *((Matrix4fD *) std::get<1>(value)) = py::cast<Matrix4fD>(obj); break;
                 default: throw std::runtime_error("DifferentiableParameters::setitem: unsupported type!");
             }
-            std::get<0>(value)->parameters_changed();
+            DifferentiableObject *diff_obj = std::get<0>(value);
+            if (diff_obj)
+                diff_obj->parameters_changed();
         }
 
         std::vector<std::string> keys() {
@@ -88,12 +90,38 @@ MTS_PY_EXPORT(autodiff) {
     dc.def("put_parameters", &DifferentiableObject::put_parameters);
 
     py::class_<DifferentiableParameters, Object, ref<DifferentiableParameters>>(m, "DifferentiableParametersBase");
-    py::class_<PyDifferentiableParameters, DifferentiableParameters, ref<PyDifferentiableParameters>>(m, "DifferentiableParameters")
+    py::class_<PyDifferentiableParameters, DifferentiableParameters,
+               ref<PyDifferentiableParameters>>(m, "DifferentiableParameters")
         .def(py::init<>())
         .def("set_prefix", &DifferentiableParameters::set_prefix)
         .def("keys", &PyDifferentiableParameters::keys)
         .def("items", &PyDifferentiableParameters::items)
         .def("keep", &PyDifferentiableParameters::keep)
+        .def("put",
+             [](PyDifferentiableParameters &dp, const std::string &name, FloatD &v) {
+                 dp.put(nullptr, name, v);
+             },
+             py::keep_alive<1, 2>())
+        .def("put",
+             [](PyDifferentiableParameters &dp, const std::string &name, Vector2fD &v) {
+                 dp.put(nullptr, name, v);
+             },
+             py::keep_alive<1, 2>())
+        .def("put",
+             [](PyDifferentiableParameters &dp, const std::string &name, Vector3fD &v) {
+                 dp.put(nullptr, name, v);
+             },
+             py::keep_alive<1, 2>())
+        .def("put",
+             [](PyDifferentiableParameters &dp, const std::string &name, Vector4fD &v) {
+                 dp.put(nullptr, name, v);
+             },
+             py::keep_alive<1, 2>())
+        .def("put",
+             [](PyDifferentiableParameters &dp, const std::string &name, Matrix4fD &v) {
+                 dp.put(nullptr, name, v);
+             },
+             py::keep_alive<1, 2>())
         .def("__len__", &PyDifferentiableParameters::size)
         .def("__getitem__", &PyDifferentiableParameters::getitem)
         .def("__setitem__", &PyDifferentiableParameters::setitem);

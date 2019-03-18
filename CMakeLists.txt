@@ -215,6 +215,7 @@ if (MTS_ENABLE_AUTODIFF)
   link_directories(${MTS_OPTIX_PATH}/lib64)
   add_definitions(-DMTS_USE_OPTIX=1)
   add_definitions(-DMTS_ENABLE_AUTODIFF=1)
+  add_definitions(-DRGB2SPEC_MAPPING=2)
 endif()
 
 # Compile with compiler warnings turned on

@@ -23,6 +23,7 @@ MTS_PY_EXPORT(autodiff) {
     pybind11_type_alias<Array<FloatD, 4>, Vector4fD>();
     pybind11_type_alias<Array<FloatD, 4>, Point4fD>();
 
+    pybind11_type_alias<Array<FloatD, 3>, Color3fD>();
     pybind11_type_alias<Array<FloatD, 4>, SpectrumfD>();
 #endif
 }

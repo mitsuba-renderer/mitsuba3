@@ -209,19 +209,6 @@ set(ZMQ_INCLUDE_DIR ${ZMQ_INCLUDE_DIR} PARENT_SCOPE)
 # tinyformat include path
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 
-# build rgb2spec
-
-# Disable annoying MSVC warnings
-if (MSVC)
-  add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
-endif()
-
-add_subdirectory(rgb2spec)
-set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
-set_property(TARGET rgb2spec         PROPERTY FOLDER "dependencies")
-set_property(TARGET rgb2spec_opt     PROPERTY FOLDER "dependencies")
-set_property(TARGET rgb2spec_opt_run PROPERTY FOLDER "dependencies")
-
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   # Build asmjit
   set(ASMJIT_BUILD_X64 TRUE)
@@ -241,6 +228,18 @@ if (MTS_ENABLE_ITTNOTIFY)
   set(ITT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/IntelSEAPI/ittnotify/include PARENT_SCOPE)
   set_property(TARGET ittnotify PROPERTY FOLDER "dependencies")
 endif()
+
+# Disable annoying MSVC warnings in rgb2spec build
+if (MSVC)
+  add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
+endif()
+
+# build rgb2spec
+add_subdirectory(rgb2spec)
+set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
+set_property(TARGET rgb2spec         PROPERTY FOLDER "dependencies")
+set_property(TARGET rgb2spec_opt     PROPERTY FOLDER "dependencies")
+set_property(TARGET rgb2spec_opt_run PROPERTY FOLDER "dependencies")
 
 mark_as_advanced(
   EMBREE_ADDRESS_SANITIZER EMBREE_BACKFACE_CULLING EMBREE_FILTER_FUNCTION

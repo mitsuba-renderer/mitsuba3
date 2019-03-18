@@ -221,10 +221,10 @@ protected:
                  v01 = gather<Vector4f>(ptr + width, index, active),
                  v11 = gather<Vector4f>(ptr + width + 4, index, active);
 
-        Spectrum s00 = srgb_model_eval(v00, wavelengths),
-                 s10 = srgb_model_eval(v10, wavelengths),
-                 s01 = srgb_model_eval(v01, wavelengths),
-                 s11 = srgb_model_eval(v11, wavelengths),
+        Spectrum s00 = srgb_model_eval(head<3>(v00), wavelengths),
+                 s10 = srgb_model_eval(head<3>(v10), wavelengths),
+                 s01 = srgb_model_eval(head<3>(v01), wavelengths),
+                 s11 = srgb_model_eval(head<3>(v11), wavelengths),
                  s0  = fmadd(w0.x(), s00, w1.x() * s10),
                  s1  = fmadd(w0.x(), s01, w1.x() * s11),
                  f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w()),
