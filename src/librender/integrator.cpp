@@ -13,7 +13,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Integrator::Integrator(const Properties & /* props */) { }
+Integrator::Integrator(const Properties & props) {
+    m_monochrome = props.bool_("monochrome");
+}
 
 size_t Integrator::register_callback(CallbackFunction cb, Float period) {
     m_callbacks.push_back(CallbackInfo(cb, period));
@@ -112,7 +114,8 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
             ScopedSetThreadEnvironment set_env(env);
             ref<Sampler> sampler = scene->sampler()->clone();
             ref<ImageBlock> block =
-                new ImageBlock(Bitmap::EXYZAW, Vector2i(m_block_size), film->reconstruction_filter());
+                new ImageBlock(Bitmap::EXYZAW, Vector2i(m_block_size),
+                               film->reconstruction_filter(), 0, true, m_monochrome);
             scoped_flush_denormals flush_denormals(true);
 
             Point2fX points;
@@ -122,7 +125,8 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
                 if (hprod(size) == 0)
                     Throw("Internal error -- generated empty image block!");
                 if (size != block->size())
-                    block = new ImageBlock(Bitmap::EXYZAW, size, film->reconstruction_filter());
+                    block = new ImageBlock(Bitmap::EXYZAW, size, film->reconstruction_filter(), 0,
+                                           true, m_monochrome);
                 block->set_offset(offset);
 
                 // Ensure that the sample generation is fully deterministic

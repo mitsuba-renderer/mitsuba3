@@ -39,8 +39,11 @@ Sensor::Sensor(const Properties &props)
     auto pmgr = PluginManager::instance();
     if (!m_film) {
         // Instantiate an high dynamic range film if none was specified
+        Properties props("hdrfilm");
+        props.set_bool("monochrome", m_monochrome);
+        props.mark_queried("monochrome");
         m_film = static_cast<Film *>(
-            pmgr->create_object<Film>(Properties("hdrfilm")));
+            pmgr->create_object<Film>(props));
     }
 
     if (!m_sampler) {

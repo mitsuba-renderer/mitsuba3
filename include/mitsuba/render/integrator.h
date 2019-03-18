@@ -119,6 +119,8 @@ protected:
     std::vector<CallbackInfo> m_callbacks;
     /// Timer used to enforce the callback rate limits.
     Timer m_cb_timer;
+    /// Whether monochrome mode is enabled.
+    bool m_monochrome = false;
 };
 
 /** \brief Abstract base class, which describes integrators

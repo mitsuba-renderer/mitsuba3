@@ -33,9 +33,14 @@ public:
                   " found %s instead.", file_format);
         }
 
-        if (pixel_format == "luminance")
+        if (pixel_format == "luminance" || m_monochrome) {
             m_pixel_format = Bitmap::EY;
-        else if (pixel_format == "luminance_alpha")
+            if (pixel_format != "luminance")
+                Log(EWarn,
+                    "Monochrome mode enabled, setting film output pixel format "
+                    "to 'luminance' (was %s).",
+                    pixel_format);
+        } else if (pixel_format == "luminance_alpha")
             m_pixel_format = Bitmap::EYA;
         else if (pixel_format == "rgb")
             m_pixel_format = Bitmap::ERGB;
@@ -45,10 +50,12 @@ public:
             m_pixel_format = Bitmap::EXYZ;
         else if (pixel_format == "xyza")
             m_pixel_format = Bitmap::EXYZA;
-        else
+        else {
             Throw("The \"pixel_format\" parameter must either be equal to "
                   "\"luminance\", \"luminance_alpha\", \"rgb\", \"rgba\", "
-                  " \"xyz\", \"xyza\"." " Found %s.", pixel_format);
+                  " \"xyz\", \"xyza\". Found %s.",
+                  pixel_format);
+        }
 
         if (component_format == "float16")
             m_component_format = Struct::EFloat16;
@@ -101,7 +108,8 @@ public:
             }
         }
 
-        m_storage = new ImageBlock(Bitmap::EXYZAW, m_crop_size);
+        m_storage = new ImageBlock(Bitmap::EXYZAW, m_crop_size, nullptr, 0,
+                                   true, m_monochrome);
         m_storage->set_offset(m_crop_offset);
     }
 

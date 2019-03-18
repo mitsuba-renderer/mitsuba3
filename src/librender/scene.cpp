@@ -35,6 +35,7 @@ static RTCDevice __embree_device = nullptr;
 
 Scene::Scene(const Properties &props) {
     m_kdtree = new ShapeKDTree(props);
+    m_monochrome = props.bool_("monochrome");
 
 #if defined(MTS_USE_EMBREE)
     if (!__embree_device)
@@ -77,6 +78,8 @@ Scene::Scene(const Properties &props) {
         Log(EWarn, "No sensors found! Instantiating a perspective camera..");
         Properties props("perspective");
         props.set_float("fov", 45.0f);
+        props.set_bool("monochrome", m_monochrome);
+        props.mark_queried("monochrome");
 
         /* Create a perspective camera with a 45 deg. field of view
            and positioned so that it can see the entire scene */
@@ -103,11 +106,13 @@ Scene::Scene(const Properties &props) {
 
     if (!m_integrator) {
         Log(EWarn, "No integrator found! Instantiating a path tracer..");
-        m_integrator = PluginManager::instance()->create_object<Integrator>(
-            Properties("path"));
+        Properties props("path");
+        props.set_bool("monochrome", m_monochrome);
+        props.mark_queried("monochrome");
+        m_integrator = PluginManager::instance()->create_object<Integrator>(props);
     }
 
-    #if defined(MTS_USE_EMBREE)
+#if defined(MTS_USE_EMBREE)
         Timer timer;
         rtcCommitScene(m_embree_scene);
         Log(EInfo, "Embree finished. (took %s)", util::time_string(timer.value()));

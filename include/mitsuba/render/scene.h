@@ -226,6 +226,8 @@ protected:
     ref<Sampler> m_sampler;
     ref<Integrator> m_integrator;
     ref<Emitter> m_environment;
+    /// Whether monochrome mode is enabled.
+    bool m_monochrome = false;
 
     /// Precomputed distribution of emitters' intensity.
     DiscreteDistribution m_emitter_distr;

@@ -15,7 +15,7 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.spectrum("radiance", ContinuousSpectrum::D65());
+        m_radiance = props.spectrum("radiance", ContinuousSpectrum::D65(1.f, m_monochrome));
     }
 
     void set_shape(Shape *shape) override {

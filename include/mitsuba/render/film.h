@@ -115,6 +115,8 @@ protected:
     Point2i  m_crop_offset;
     bool m_high_quality_edges;
     ref<ReconstructionFilter> m_filter;
+    /// Whether monochrome mode is enabled.
+    bool m_monochrome = false;
 };
 
 NAMESPACE_END(mitsuba)

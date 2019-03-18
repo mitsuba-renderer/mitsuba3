@@ -39,7 +39,8 @@ def test05_blackbody():
     bb = load_string("""<spectrum version='2.0.0' type='blackbody'>
         <float name='temperature' value='5000'/>
     </spectrum>""")
-    assert np.allclose(bb.eval([350, 456, 600, 700, 840]), [0, 10997.9, 12762.4, 11812, 0])
+    assert np.allclose(bb.eval([350, 456, 600, 700, 840]),
+                       [0, 10997.9, 12762.4, 11812, 0])
 
 def test06_srgb_d65():
     """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra,

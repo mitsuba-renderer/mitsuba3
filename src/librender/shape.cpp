@@ -25,9 +25,11 @@ Shape::Shape(const Properties &props) {
     }
 
     if (!m_bsdf) {
-        /* Create a default diffuse BSDF */
-        m_bsdf = PluginManager::instance()->create_object<BSDF>(
-            Properties("diffuse"));
+        // Create a default diffuse BSDF
+        Properties props2("diffuse");
+        props2.set_bool("monochrome", props.bool_("monochrome"));
+        props2.mark_queried("monochrome");
+        m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 }
 

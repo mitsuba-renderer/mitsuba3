@@ -15,6 +15,7 @@ from .mesh_generation import create_stairs
 def make_synthetic_scene(n_steps):
     props = Properties("scene")
     props["_unnamed_0"] = create_stairs(n_steps)
+    props["monochrome"] = False
     return Scene(props)
 
 

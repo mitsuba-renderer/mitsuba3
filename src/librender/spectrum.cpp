@@ -68,14 +68,21 @@ SpectrumfP ContinuousSpectrum::pdf(const SurfaceInteraction3fP &si,
     return pdf(si.wavelengths, active);
 }
 
-ref<ContinuousSpectrum> ContinuousSpectrum::D65(Float scale) {
+ref<ContinuousSpectrum> ContinuousSpectrum::D65(Float scale, bool monochrome) {
+    if (unlikely(monochrome)) {
+        Properties props("uniform");
+        // Should output 1 by default.
+        props.set_float("value", scale / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
+        auto obj = PluginManager::instance()->create_object<ContinuousSpectrum>(props);
+        return (ContinuousSpectrum *) (obj.get());
+    }
+
     Properties props("d65");
     props.set_float("value", scale);
     auto obj =
         PluginManager::instance()->create_object<ContinuousSpectrum>(props);
     return (ContinuousSpectrum *) (obj->expand()[0].get());
 }
-
 
 //! @}
 // =======================================================================

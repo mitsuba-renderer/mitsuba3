@@ -15,11 +15,13 @@ using ParameterList = std::vector<std::pair<std::string, std::string>>;
 
 /// Load a Mitsuba scene from an XML file
 extern MTS_EXPORT_CORE ref<Object> load_file(const fs::path &path,
-                                             ParameterList parameters = ParameterList());
+                                             ParameterList parameters = ParameterList(),
+                                             bool monochrome = false);
 
 /// Load a Mitsuba scene from an XML string
 extern MTS_EXPORT_CORE ref<Object> load_string(const std::string &string,
-                                               ParameterList parameters = ParameterList());
+                                               ParameterList parameters = ParameterList(),
+                                               bool monochrome = false);
 
 NAMESPACE_END(xml)
 NAMESPACE_END(mitsuba)

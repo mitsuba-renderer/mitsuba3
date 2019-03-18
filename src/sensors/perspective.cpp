@@ -127,8 +127,9 @@ public:
         using Spectrum = mitsuba::Spectrum<Value>;
         using Vector3  = Vector<Value, 3>;
 
-        auto [wavelengths, spec_weight] = sample_rgb_spectrum(
-            math::sample_shifted<Spectrum>(wavelength_sample));
+        auto wav_sample = math::sample_shifted<Spectrum>(wavelength_sample);
+        auto [wavelengths, spec_weight] =
+            m_monochrome ? sample_uniform_spectrum(wav_sample) : sample_rgb_spectrum(wav_sample);
 
         Ray ray;
         ray.time = time;

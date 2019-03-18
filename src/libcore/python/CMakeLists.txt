@@ -3,38 +3,38 @@ add_mitsuba_python_library(mitsuba_core_ext core
 
   # libcore
   appender.cpp
-  atomic.cpp
-  filesystem.cpp
-  formatter.cpp
-  logger.cpp
-  math.cpp
-  util.cpp
-  object.cpp
-  properties.cpp
-  random.cpp
-  stream.cpp
-  thread.cpp
   argparser.cpp
-  xml.cpp
-  fresolver.cpp
-  vector.cpp
+  atomic.cpp
   bbox.cpp
-  bsphere.cpp
-  frame.cpp
-  transform.cpp
-  ray.cpp
-  struct.cpp
   bitmap.cpp
-  spectrum.cpp
-  warp.cpp
-  qmc.cpp
-  spline.cpp
+  bsphere.cpp
   cast.cpp
   ddistr.cpp
-  rfilter.cpp
+  filesystem.cpp
+  formatter.cpp
+  frame.cpp
+  fresolver.cpp
+  logger.cpp
+  math.cpp
   mmap.cpp
+  object.cpp
   progress.cpp
+  properties.cpp
+  qmc.cpp
   quad.cpp
+  random.cpp
+  ray.cpp
+  rfilter.cpp
+  spectrum.cpp
+  spline.cpp
+  stream.cpp
+  struct.cpp
+  thread.cpp
+  transform.cpp
+  util.cpp
+  vector.cpp
+  warp.cpp
+  xml.cpp
 )
 
 target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core mitsuba-render tbb)

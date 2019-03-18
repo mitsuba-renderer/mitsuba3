@@ -17,7 +17,7 @@ public:
            about the scene and default to the unit bounding sphere. */
         m_bsphere = BoundingSphere3f(Point3f(0.f), 1.f);
 
-        m_radiance = props.spectrum("radiance", ContinuousSpectrum::D65());
+        m_radiance = props.spectrum("radiance", ContinuousSpectrum::D65(1.f, m_monochrome));
     }
 
     ref<Shape> create_shape(const Scene *scene) override {
@@ -28,6 +28,8 @@ public:
         Properties props("sphere");
         props.set_point3f("center", m_bsphere.center);
         props.set_float("radius", m_bsphere.radius);
+        props.set_bool("monochrome", m_monochrome);
+        props.mark_queried("monochrome");
 
         // Sphere is "looking in" towards the scene
         props.set_bool("flip_normals", true);

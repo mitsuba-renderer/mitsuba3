@@ -96,6 +96,10 @@ Options:
 
    -s, --scalar
                Render without vectorization support
+
+   -m, --monochrome
+               Render in monochrome mode. No spectral color management will take
+               place and a single-channel luminance image will be computed.
 )";
 }
 
@@ -116,6 +120,7 @@ int main(int argc, char *argv[]) {
     auto arg_scalar  = parser.add(StringVec { "-s", "--scalar" }, false);
     auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
     auto arg_define  = parser.add(StringVec { "-D", "--define" }, true);
+    auto arg_monochrome = parser.add(StringVec{ "-m", "--monochrome" }, false);
     auto arg_help = parser.add(StringVec { "-h", "--help" });
     auto arg_extra = parser.add("", true);
     bool print_profile = false;
@@ -134,7 +139,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     try {
-        /* Parse all command line options */
+        // Parse all command line options
         parser.parse(argc, argv);
 
         if (*arg_verbose) {
@@ -154,16 +159,20 @@ int main(int argc, char *argv[]) {
             arg_define = arg_define->next();
         }
 
-        /* Initialize Intel Thread Building Blocks with the requested number of threads */
+        // Initialize Intel Thread Building Blocks with the requested number of threads
         if (*arg_threads)
             __global_thread_count = arg_threads->as_int();
         if (__global_thread_count < 1)
             Throw("Thread count must be >= 1!");
         tbb::task_scheduler_init init(__global_thread_count);
 
+        // Scalar mode
         bool render_scalar = (bool) *arg_scalar;
 
-        /* Append the mitsuba directory to the FileResolver search path list */
+        // Monochrome mode
+        bool render_monochrome = (bool) *arg_monochrome;
+
+        // Append the mitsuba directory to the FileResolver search path list
         ref<FileResolver> fr = Thread::thread()->file_resolver();
         filesystem::path base_path = util::library_path().parent_path();
         if (!fr->contains(base_path))
@@ -177,6 +186,8 @@ int main(int argc, char *argv[]) {
             Log(EInfo, "%s", isa_info());
             if (render_scalar)
                 Log(EInfo, "Vectorization disabled by --scalar flag.");
+            if (render_monochrome)
+                Log(EInfo, "\U0001F39E Monochrome mode enabled.");
             #if defined(DOUBLE_PRECISION)
                 Log(EWarn, "Renderer is compiled in double precision.");
             #endif
@@ -194,7 +205,7 @@ int main(int argc, char *argv[]) {
                 fr->append(scene_dir);
 
             // Try and parse a scene from the passed file.
-            ref<Object> parsed = xml::load_file(arg_extra->as_string(), params);
+            ref<Object> parsed = xml::load_file(arg_extra->as_string(), params, render_monochrome);
 
             auto *scene = dynamic_cast<Scene *>(parsed.get());
             if (scene) {

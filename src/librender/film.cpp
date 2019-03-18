@@ -56,6 +56,8 @@ Film::Film(const Properties &props) : Object() {
                 Properties("gaussian"))
         );
     }
+
+    m_monochrome = props.bool_("monochrome");
 }
 
 Film::~Film() { }

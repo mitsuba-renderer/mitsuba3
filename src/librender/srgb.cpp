@@ -1,8 +1,8 @@
-#include <mitsuba/render/srgb.h>
-#include <mitsuba/render/spectrum.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/srgb.h>
 #include <rgb2spec.h>
 #include <tbb/tbb.h>
 
@@ -44,12 +44,7 @@ Vector3f srgb_model_fetch(const Color3f &c) {
 }
 
 Color3f srgb_model_eval_rgb(const Vector3f &coeff) {
-    ref<ContinuousSpectrum> d65 =
-        PluginManager::instance()->create_object<ContinuousSpectrum>(
-            Properties("d65"));
-    auto expanded = d65->expand();
-    if (expanded.size() == 1)
-        d65 = (ContinuousSpectrum *) expanded[0].get();
+    ref<ContinuousSpectrum> d65 = ContinuousSpectrum::D65();
 
     Vector3f accum = zero<Vector3f>();
     for (size_t i = 0; i < 1000; ++i) {

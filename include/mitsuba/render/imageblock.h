@@ -52,7 +52,8 @@ public:
                const Vector2i &size,
                const ReconstructionFilter *filter = nullptr,
                size_t channels = 0,
-               bool warn = true);
+               bool warn = true,
+               bool monochrome = false);
 
     /// Accumulate another image block into this one
     void put(const ImageBlock *block) {
@@ -100,13 +101,16 @@ public:
         Assert(m_bitmap->pixel_format() == Bitmap::EXYZAW,
                "This `put` variant requires XYZAW internal storage format.");
 
-        Array<Spectrum, 3> XYZ = cie1931_xyz(wavelengths, active);
-        Value Xs = enoki::mean(XYZ.x() * value),
-              Ys = enoki::mean(XYZ.y() * value),
-              Zs = enoki::mean(XYZ.z() * value);
-
-        Array<Value, 5> values(Xs, Ys, Zs, alpha, 1.0f);
-        return put(pos, values.data(), active);
+        if (unlikely(m_monochrome)) {
+            // Factors computed so that we obtain a grayscale value after RGB conversion
+            Array<Value, 5> values(0.9504699764424493f * value.y(), value.y(),
+                                   1.0888299918185522f * value.y(), alpha, 1.0f);
+            return put(pos, values.data(), active);
+        } else {
+            auto xyz = to_xyz(value, wavelengths, active);
+            Array<Value, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.0f);
+            return put(pos, values.data(), active);
+        }
     }
 
     /**
@@ -214,6 +218,8 @@ protected:
     Float  *m_weights_x  , *m_weights_y;
     FloatP *m_weights_x_p, *m_weights_y_p;
     bool m_warn;
+    /// Whether monochrome mode is enabled.
+    bool m_monochrome = false;
 };
 
 NAMESPACE_END(mitsuba)

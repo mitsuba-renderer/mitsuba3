@@ -1,9 +1,9 @@
-#include <mitsuba/core/properties.h>
-#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/plugin.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/render/interaction.h>
+#include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/srgb.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -44,6 +44,9 @@ public:
         for (size_t y = 0; y < m_bitmap->size().y(); ++y) {
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
                 Color3f rgb = load_unaligned<Vector3f>(ptr);
+
+                if (props.bool_("monochrome"))
+                    rgb = luminance(rgb);
 
                 /* Fetch spectral fit for given sRGB color value (3 coefficients) */
                 Vector3f coeff = srgb_model_fetch(rgb);

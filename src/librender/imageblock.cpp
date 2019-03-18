@@ -4,10 +4,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
                        const ReconstructionFilter *filter, size_t channels,
-                       bool warn)
+                       bool warn, bool monochrome)
     : m_offset(0), m_size(size), m_filter(filter), m_weights_x(nullptr),
       m_weights_y(nullptr), m_weights_x_p(nullptr), m_weights_y_p(nullptr),
-      m_warn(warn) {
+      m_warn(warn), m_monochrome(monochrome) {
     m_border_size = filter ? filter->border_size() : 0;
 
     // Allocate a small bitmap data structure for the block

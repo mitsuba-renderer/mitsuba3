@@ -9,6 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 Endpoint::Endpoint(const Properties &props) {
     m_world_transform =
         props.animated_transform("to_world", Transform4f()).get();
+    m_monochrome = props.bool_("monochrome");
 }
 
 Endpoint::~Endpoint() { }

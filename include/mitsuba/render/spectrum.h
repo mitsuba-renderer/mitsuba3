@@ -101,7 +101,7 @@ public:
     /**
      * Convenience method returning the standard D65 illuminant.
      */
-    static ref<ContinuousSpectrum> D65(Float scale = 1.f);
+    static ref<ContinuousSpectrum> D65(Float scale = 1.f, bool monochrome = false);
 
     // ======================================================================
     //! @{ \name Texture interface implementation

@@ -1,25 +1,25 @@
+#include <cctype>
+#include <fstream>
+#include <set>
+#include <unordered_map>
+
 #include <mitsuba/core/class.h>
 #include <mitsuba/core/filesystem.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
-#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/plugin.h>
+#include <mitsuba/core/profiler.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/vector.h>
-#include <mitsuba/core/vector.h>
 #include <mitsuba/core/xml.h>
-#include <mitsuba/core/profiler.h>
+#include <mitsuba/render/spectrum.h>
 #include <pugixml.hpp>
 #include <tbb/tbb.h>
-
-#include <fstream>
-#include <set>
-#include <unordered_map>
-#include <cctype>
 
 /// Linux <sys/sysmacros.h> defines these as macros .. :(
 #if defined(major)
@@ -231,6 +231,14 @@ struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
+    bool monochrome = false;
+
+    Properties properties(const std::string &type) const {
+        Properties props(type);
+        props.set_bool("monochrome", monochrome, false);
+        props.mark_queried("monochrome");
+        return props;
+    }
 };
 
 /// Helper function to check if attributes are fully specified
@@ -483,7 +491,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                 type      = node.attribute("type").value(),
                                 node_name = node.name();
 
-                    Properties props_nested(type);
+                    Properties props_nested = ctx.properties(type);
                     props_nested.set_id(id);
 
                     auto it_inst = ctx.instances.find(id);
@@ -683,6 +691,11 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         Color3f col(detail::stof(tokens[0]),
                                     detail::stof(tokens[1]),
                                     detail::stof(tokens[2]));
+
+                        // Monochrome mode: replace by luminance
+                        if (ctx.monochrome)
+                            col = luminance(col);
+
                         props.set_color(node.attribute("name").value(), col);
                     } catch (...) {
                         src.throw_error(node, "could not parse color \"%s\"", node.attribute("value").value());
@@ -701,7 +714,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     if (tokens.size() != 3)
                         src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")", node.attribute("value").value());
 
-                    Properties props2(within_emitter ? "srgb_d65" : "srgb");
+                    Properties props2 = ctx.properties(within_emitter ? "srgb_d65" : "srgb");
                     Color3f col;
                     try {
                         col = Color3f(detail::stof(tokens[0]),
@@ -714,8 +727,20 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     }
                     if (!within_emitter && any(col < 0 || col > 1))
                         src.throw_error(node, "invalid RGB reflectance value, must be in the range [0, 1]!");
-                    ref<Object> obj = PluginManager::instance()->create_object(props2);
-                    props.set_object(node.attribute("name").value(), obj);
+
+                    if (!ctx.monochrome) {
+                        ref<Object> obj = PluginManager::instance()->create_object(props2);
+                        props.set_object(node.attribute("name").value(), obj);
+                    } else {
+                        // Monochrome mode: replace by a uniform spectrum
+                        Float lum = luminance(props2.color("color"));
+                        // if (within_emitter)
+                        //     lum /= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
+                        props2 = ctx.properties("uniform");
+                        props2.set_float("value", lum);
+                        auto obj = PluginManager::instance()->create_object(props2);
+                        props.set_object(node.attribute("name").value(), obj);
+                    }
                 }
                 break;
 
@@ -724,17 +749,28 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
                     if (tokens.size() == 1) {
-                        Properties props2(within_emitter ? "d65" : "uniform");
+                        Properties props2 = ctx.properties(within_emitter ? "d65" : "uniform");
                         try {
                             props2.set_float("value", detail::stof(tokens[0]));
                         } catch (...) {
                             src.throw_error(node, "could not parse constant spectrum \"%s\"", tokens[0]);
                         }
+
+                        // Monochrome mode: replace by a uniform spectrum.
+                        if (ctx.monochrome) {
+                            props2.set_plugin_name("uniform");
+                            props2.set_float("value",
+                                             props2.float_("value") /
+                                                 (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN),
+                                             false);
+                        }
+
                         ref<Object> obj = PluginManager::instance()->create_object(props2);
-                        auto expanded = obj->expand();
+                        auto expanded   = obj->expand();
                         if (expanded.size() == 1)
                             obj = expanded[0];
                         props.set_object(node.attribute("name").value(), obj);
+
                     } else {
                         /* Parse wavelength:value pairs, where wavelengths are
                            expected to be specified in increasing order.
@@ -783,13 +819,39 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         if (!is_regular)
                             Throw("Not implemented yet: irregularly sampled spectra.");
 
-                        Properties props2("interpolated");
+                        Properties props2 = ctx.properties("interpolated");
                         props2.set_float("lambda_min", wavelengths.front());
                         props2.set_float("lambda_max", wavelengths.back());
                         props2.set_long("size", wavelengths.size());
                         props2.set_pointer("values", values.data());
                         ref<Object> obj = PluginManager::instance()->create_object(props2);
-                        props.set_object(node.attribute("name").value(), obj);
+
+                        if (!ctx.monochrome) {
+                            props.set_object(node.attribute("name").value(), obj);
+                        } else {
+                            /* Monochrome mode: replace by the equivalent
+                               uniform spectrum by pre-integrating against the
+                               CIE Y matching curve. */
+                            auto *spectrum = (ContinuousSpectrum *) obj.get();
+                            Float average  = 0.f;
+
+                            for (Spectrumf wav = MTS_WAVELENGTH_MIN; all(wav <= MTS_WAVELENGTH_MAX);
+                                 wav += 1.f) {
+                                Spectrumf Yw = cie1931_y(wav);
+                                average += (Yw * spectrum->eval(wav)).x();
+                            }
+                            if (within_emitter)
+                                average /= MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN;
+                            else
+                                /* Divide by integral of the CIE y matching
+                                 * curve */
+                                average *= 0.0093583;
+
+                            props2 = ctx.properties("uniform");
+                            props2.set_float("value", average);
+                            obj = PluginManager::instance()->create_object(props2);
+                            props.set_object(node.attribute("name").value(), obj);
+                        }
                     }
                 }
                 break;
@@ -973,7 +1035,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
 NAMESPACE_END(detail)
 
-ref<Object> load_string(const std::string &string, ParameterList param) {
+ref<Object> load_string(const std::string &string, ParameterList param, bool monochrome) {
     ScopedPhase sp(EProfilerPhase::EInitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
@@ -990,13 +1052,15 @@ ref<Object> load_string(const std::string &string, ParameterList param) {
 
     pugi::xml_node root = doc.document_element();
     detail::XMLParseContext ctx;
-    Properties prop; size_t arg_counter; /* Unused */
+    ctx.monochrome = monochrome;
+    Properties prop = ctx.properties("");
+    size_t arg_counter; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
                                       param, arg_counter, 0).second;
     return detail::instantiate_node(ctx, scene_id);
 }
 
-ref<Object> load_file(const fs::path &filename_, ParameterList param) {
+ref<Object> load_file(const fs::path &filename_, ParameterList param, bool monochrome) {
     ScopedPhase sp(EProfilerPhase::EInitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
@@ -1021,7 +1085,9 @@ ref<Object> load_file(const fs::path &filename_, ParameterList param) {
     pugi::xml_node root = doc.document_element();
 
     detail::XMLParseContext ctx;
-    Properties prop; size_t arg_counter = 0; /* Unused */
+    ctx.monochrome = monochrome;
+    Properties prop = ctx.properties("");
+    size_t arg_counter = 0; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
                                       param, arg_counter, 0).second;
 

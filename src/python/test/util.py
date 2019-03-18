@@ -4,10 +4,10 @@ test decorators, etc).
 """
 
 import os
-import pytest
-
 from functools import wraps
 from inspect import getframeinfo, stack
+
+import pytest
 from mitsuba.core import Thread, FileResolver
 
 

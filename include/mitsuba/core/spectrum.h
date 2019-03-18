@@ -1,10 +1,11 @@
 #pragma once
 
+#include <utility>
+
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/simd.h>
-#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -174,11 +175,19 @@ Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
     return fmadd(w0, v0, w1 * v1) & active;
 }
 
+template <typename Spectrum, typename Value = value_t<Spectrum>>
+Array<Value, 3> to_xyz(const Spectrum &value, const Spectrum &wavelengths,
+                       mask_t<Value> active = true) {
+    auto XYZw = cie1931_xyz(wavelengths, active);
+    return Array<Value, 3>(enoki::mean(XYZw.x() * value), enoki::mean(XYZw.y() * value),
+                           enoki::mean(XYZw.z() * value));
+}
+
 template <typename Spectrum>
-value_t<Spectrum> luminance(const Spectrum &spectrum,
+value_t<Spectrum> luminance(const Spectrum &value,
                             const Spectrum &wavelengths,
                             mask_t<Spectrum> active = true) {
-    return mean(cie1931_y(wavelengths, active) * spectrum);
+    return mean(cie1931_y(wavelengths, active) * value);
 }
 
 template <typename Value> Value luminance(const Color<Value, 3> &c) {
@@ -196,20 +205,19 @@ template <typename Value> Value luminance(const Color<Value, 3> &c) {
  */
 template <typename Value>
 std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
-    if (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
-        Value wavelengths = Float(538) -
-                   atanh(Float(0.8569106254698279) -
-                         Float(1.8275019724092267) * sample) *
-                   Float(138.88888888888889);
+    if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
+        Value wavelengths =
+            Float(538) - atanh(Float(0.8569106254698279) -
+                               Float(1.8275019724092267) * sample) *
+                             Float(138.88888888888889);
 
-        Value tmp = cosh(Float(0.0072) * (wavelengths - Float(538)));
+        Value tmp    = cosh(Float(0.0072) * (wavelengths - Float(538)));
         Value weight = Float(253.82) * tmp * tmp;
 
         return { wavelengths, weight };
     } else {
-        /* Fall back to uniform sampling for other wavelength ranges */
-        return { sample * (MTS_CIE_MAX - MTS_CIE_MIN) + MTS_CIE_MIN,
-                 MTS_CIE_MAX - MTS_CIE_MIN };
+        // Fall back to uniform sampling for other wavelength ranges
+        return sample_uniform_spectrum(sample);
     }
 }
 
@@ -221,15 +229,24 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
  */
 template <typename Spectrum>
 Spectrum pdf_rgb_spectrum(const Spectrum &wavelengths) {
-    if (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
+    if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
         auto tmp = sech(Float(0.0072) * (wavelengths - Float(538)));
-        return select(wavelengths >= MTS_WAVELENGTH_MIN &&
-                          wavelengths <= MTS_WAVELENGTH_MAX,
-                      Float(0.003939804229326285) * tmp * tmp,
-                      zero<Spectrum>());
+        return select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
+                      Float(0.003939804229326285) * tmp * tmp, zero<Spectrum>());
     } else {
-        return Spectrum(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
+        return pdf_uniform_spectrum(wavelengths);
     }
+}
+
+template <typename Value>
+std::pair<Value, Value> sample_uniform_spectrum(const Value &sample) {
+    return { sample * (MTS_CIE_MAX - MTS_CIE_MIN) + MTS_CIE_MIN,
+             MTS_CIE_MAX - MTS_CIE_MIN };
+}
+
+template <typename Spectrum>
+Spectrum pdf_uniform_spectrum(const Spectrum &/*wavelengths*/) {
+    return Spectrum(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
 }
 
 NAMESPACE_END(mitsuba)

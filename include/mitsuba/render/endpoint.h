@@ -373,6 +373,8 @@ protected:
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
     bool m_needs_sample_3 = true;
+    /// Whether monochrome mode is enabled.
+    bool m_monochrome = false;
 };
 
 /// Instantiates concrete scalar and packet versions of the endpoint plugin API

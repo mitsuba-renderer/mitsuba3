@@ -19,7 +19,7 @@ public:
                 Transform4f::translate(Vector3f(props.point3f("position"))));
         }
 
-        m_intensity = props.spectrum("intensity", ContinuousSpectrum::D65());
+        m_intensity = props.spectrum("intensity", ContinuousSpectrum::D65(1.f, m_monochrome));
         m_needs_sample_3 = false;
     }
 

@@ -56,7 +56,7 @@ public:
 
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(m_bitmap->size(), luminance.get());
-        m_d65 = ContinuousSpectrum::D65();
+        m_d65 = ContinuousSpectrum::D65(1.f, m_monochrome);
     }
 
     ref<Shape> create_shape(const Scene *scene) override {
@@ -67,6 +67,8 @@ public:
         Properties props("sphere");
         props.set_point3f("center", m_bsphere.center);
         props.set_float("radius", m_bsphere.radius);
+        props.set_bool("monochrome", m_monochrome);
+        props.mark_queried("monochrome");
 
         // Sphere is "looking in" towards the scene
         props.set_bool("flip_normals", true);
