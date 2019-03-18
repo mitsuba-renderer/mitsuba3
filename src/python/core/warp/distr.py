@@ -127,7 +127,7 @@ DISTRIBUTIONS = [
       warp.square_to_von_mises_fisher_pdf),
      dict(DEFAULT_SETTINGS,
          parameters=[
-             ('Concentration', [0, 100, 10])
+             ('Concentration', [0, 100, 2])
          ])),
 
     ('Rough fiber distribution', SphericalDomain(),

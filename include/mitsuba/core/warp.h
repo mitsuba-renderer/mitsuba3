@@ -592,7 +592,7 @@ MTS_INLINE Value square_to_von_mises_fisher_pdf(const Vector3 &v, Float kappa) {
     if (unlikely(kappa == 0))
         return Value(Scalar(math::InvFourPi));
     else
-        return exp(kappa * (v.z() - Scalar(1))) * Scalar(kappa * math::InvTwoPi) *
+        return exp(kappa * (v.z() - Scalar(1))) * Scalar(kappa * math::InvTwoPi) /
                (Scalar(1) - exp(Scalar(-2 * kappa)));
 }
 
