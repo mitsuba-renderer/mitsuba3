@@ -52,6 +52,7 @@ template <typename Value> Color<Value, 3> srgb_model_eval_rgb(const Vector<Value
         d65 = (ContinuousSpectrum *) expanded[0].get();
 
     const size_t n_samples = ((MTS_CIE_SAMPLES - 1) * 3 + 1);
+    set_label(coeff, "coeff");
 
     Vector<Value, 3> accum = 0.f;
     Float h = (MTS_CIE_MAX - MTS_CIE_MIN) / (n_samples - 1);
@@ -66,8 +67,17 @@ template <typename Value> Color<Value, 3> srgb_model_eval_rgb(const Vector<Value
         else
             weight *= 3.f;
 
-        accum += Vector<Value, 3>(weight * d65->eval(Spectrumf(lambda))[0] * cie1931_xyz(lambda)) *
-                 srgb_model_eval(coeff, Value(lambda));
+        Vector<Value, 3> weight_v = weight * d65->eval(Spectrumf(lambda))[0] * cie1931_xyz(lambda);
+        Value lambda_v = Value(lambda);
+
+        Value model_eval = srgb_model_eval(coeff, lambda_v);
+
+        accum = fmadd(weight_v, model_eval, accum);
+
+        set_label(lambda_v, ("lambda_" + std::to_string(i)).c_str());
+        set_label(weight_v, ("weight_" + std::to_string(i)).c_str());
+        set_label(accum, ("accum_" + std::to_string(i)).c_str());
+        set_label(model_eval, ("model_eval_" + std::to_string(i)).c_str());
     }
 
     Matrix3f xyz_to_srgb(
