@@ -5,7 +5,7 @@ from mitsuba.render import DifferentiableParameters, \
 
 from enoki import UInt32D, BoolD, FloatC, FloatD, Vector2fD, Vector3fD, \
     Vector4fD, Matrix4fD, select, eq, rcp, set_requires_gradient, \
-    detach, gradient, set_gradient, sqr, sqrt, cuda_malloc_trim
+    detach, gradient, slices, set_gradient, sqr, sqrt, cuda_malloc_trim
 
 
 def indent(s, amount=2):
@@ -42,11 +42,14 @@ class SGD:
 
     def step(self):
         for k, p in self.params.items():
+            g_p = gradient(p)
+            if slices(g_p) == 0:
+                continue
             if self.momentum == 0:
-                self.params[k] = detach(p) - self.lr * gradient(p)
+                self.params[k] = detach(p) - self.lr * g_p
             else:
                 self.state[k] = self.momentum * self.state[k] + \
-                                self.lr * gradient(p)
+                                self.lr * g_p
                 self.params[k] = detach(p) - self.state[k]
             set_requires_gradient(p)
 
@@ -107,6 +110,8 @@ class Adam:
 
         for k, p in self.params.items():
             g_t = gradient(p)
+            if slices(g_t) == 0:
+                continue
             m_tp, v_tp = self.state[k]
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_t
             v_t = self.beta_2 * v_tp + (1 - self.beta_2) * sqr(g_t)
