@@ -65,25 +65,25 @@ public:
      * domain.
      */
     template <typename Point3, typename Value = value_t<Point3>>
-    MTS_INLINE auto trilinear_interpolation(Point3 p, const mask_t<Value> &active) const {
-        using Index    = replace_scalar_t<Value, uint32_t>;
-        using Index3   = replace_scalar_t<Point3, uint32_t>;
+    MTS_INLINE auto trilinear_interpolation(Point3 p, mask_t<Value> active) const {
+        using Index    = uint32_array_t<Value>;
+        using Index3   = uint32_array_t<Point3>;
         using Spectrum = mitsuba::Spectrum<Value>;
-        using Mask     = mask_t<Value>;
 
-        Index3 resolution(m_nx, m_ny, m_nz);
-        p = enoki::max(0.f, p * resolution - 0.5f);
+        p *= Point3(m_nx - 1.f, m_ny - 1.f, m_nz - 1.f);
+
         // Integer part
         Index3 pi  = enoki::floor2int<Index3>(p);
-        Index3 pi2 = enoki::min(pi + 1, resolution - 1);
-        // Fractional part
-        Point3 f  = p - Point3(pi);
-        Point3 rf = 1.f - f;
 
-        auto *d      = (Float *) data<Value>().data();
-        auto wgather = [&](const Index &index, const Mask &active) {
+        active &= all(pi >= 0 && (pi + 1) < Index3(m_nx, m_ny, m_nz));
+
+        // Fractional part
+        Point3 f  = p - Point3(pi),
+               rf = 1.f - f;
+
+        auto wgather = [&](const Index &index) {
             if constexpr (!is_diff_array_v<Index>) {
-                return gather<Value>(d, index, active);
+                return gather<Value>(m_data.data(), index, active);
             }
 #if defined(MTS_ENABLE_AUTODIFF)
             else {
@@ -92,22 +92,28 @@ public:
 #endif
         };
 
-        Value d000 = wgather((pi.z() * m_ny + pi.y()) * m_nx + pi.x(), active),
-              d001 = wgather((pi.z() * m_ny + pi.y()) * m_nx + pi2.x(), active),
-              d010 = wgather((pi.z() * m_ny + pi2.y()) * m_nx + pi.x(), active),
-              d011 = wgather((pi.z() * m_ny + pi2.y()) * m_nx + pi2.x(), active),
-              d100 = wgather((pi2.z() * m_ny + pi.y()) * m_nx + pi.x(), active),
-              d101 = wgather((pi2.z() * m_ny + pi.y()) * m_nx + pi2.x(), active),
-              d110 = wgather((pi2.z() * m_ny + pi2.y()) * m_nx + pi.x(), active),
-              d111 = wgather((pi2.z() * m_ny + pi2.y()) * m_nx + pi2.x(), active);
+        Index index = fmadd(fmadd(pi.z(), m_ny, pi.y()), m_nx, pi.x());
 
-        Value interpolated = ((d000 * rf.x() + d001 * f.x()) * rf.y() +
-                              (d010 * rf.x() + d011 * f.x()) * f.y()) *
-                                 rf.z() +
-                             ((d100 * rf.x() + d101 * f.x()) * rf.y() +
-                              (d110 * rf.x() + d111 * f.x()) * f.y()) *
-                                 f.z();
-        return Spectrum(interpolated);
+        Value d000 = wgather(index),
+              d001 = wgather(index + 1),
+              d010 = wgather(index + m_nx),
+              d011 = wgather(index + m_nx + 1),
+              d100 = wgather(index + m_ny),
+              d101 = wgather(index + m_ny + 1),
+              d110 = wgather(index + m_ny + m_nx),
+              d111 = wgather(index + m_ny + m_nx + 1);
+
+        Value d00 = fmadd(d000, rf.x(), d001 * f.x()),
+              d01 = fmadd(d010, rf.x(), d011 * f.x()),
+              d10 = fmadd(d100, rf.x(), d101 * f.x()),
+              d11 = fmadd(d110, rf.x(), d111 * f.x());
+
+        Value d0 = fmadd(d00, rf.y(), d01 * f.y()),
+              d1 = fmadd(d10, rf.y(), d11 * f.y());
+
+        Value d = fmadd(d0, rf.z(), d1 * f.z());
+
+        return Spectrum(d);
     }
 
     template <typename Interaction,
