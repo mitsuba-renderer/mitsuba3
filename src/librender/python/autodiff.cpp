@@ -101,27 +101,27 @@ MTS_PY_EXPORT(autodiff) {
              [](PyDifferentiableParameters &dp, const std::string &name, FloatD &v) {
                  dp.put(nullptr, name, v);
              },
-             py::keep_alive<1, 2>())
+             py::keep_alive<1, 3>())
         .def("put",
              [](PyDifferentiableParameters &dp, const std::string &name, Vector2fD &v) {
                  dp.put(nullptr, name, v);
              },
-             py::keep_alive<1, 2>())
+             py::keep_alive<1, 3>())
         .def("put",
              [](PyDifferentiableParameters &dp, const std::string &name, Vector3fD &v) {
                  dp.put(nullptr, name, v);
              },
-             py::keep_alive<1, 2>())
+             py::keep_alive<1, 3>())
         .def("put",
              [](PyDifferentiableParameters &dp, const std::string &name, Vector4fD &v) {
                  dp.put(nullptr, name, v);
              },
-             py::keep_alive<1, 2>())
+             py::keep_alive<1, 3>())
         .def("put",
              [](PyDifferentiableParameters &dp, const std::string &name, Matrix4fD &v) {
                  dp.put(nullptr, name, v);
              },
-             py::keep_alive<1, 2>())
+             py::keep_alive<1, 3>())
         .def("__len__", &PyDifferentiableParameters::size)
         .def("__getitem__", &PyDifferentiableParameters::getitem)
         .def("__setitem__", &PyDifferentiableParameters::setitem);
