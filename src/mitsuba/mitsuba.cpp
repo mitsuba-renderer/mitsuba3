@@ -100,6 +100,9 @@ Options:
    -m, --monochrome
                Render in monochrome mode. No spectral color management will take
                place and a single-channel luminance image will be computed.
+
+   -o <filename>, --output <filename>
+               Write the output image to the file denoted by "filename"
 )";
 }
 
@@ -121,6 +124,7 @@ int main(int argc, char *argv[]) {
     auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
     auto arg_define  = parser.add(StringVec { "-D", "--define" }, true);
     auto arg_monochrome = parser.add(StringVec{ "-m", "--monochrome" }, false);
+    auto arg_output = parser.add(StringVec{ "-o", "--output" }, true);
     auto arg_help = parser.add(StringVec { "-h", "--help" });
     auto arg_extra = parser.add("", true);
     bool print_profile = false;
@@ -203,6 +207,11 @@ int main(int argc, char *argv[]) {
             auto scene_dir = filename.parent_path();
             if (!fr->contains(scene_dir))
                 fr->append(scene_dir);
+
+            if (*arg_output) {
+                filesystem::path output(arg_output->as_string());
+                filename = filename.parent_path() / output;
+            }
 
             // Try and parse a scene from the passed file.
             ref<Object> parsed = xml::load_file(arg_extra->as_string(), params, render_monochrome);
