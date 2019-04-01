@@ -92,16 +92,19 @@ public:
 #endif
         };
 
+        // (z * ny + y) * nx + x
         Index index = fmadd(fmadd(pi.z(), m_ny, pi.y()), m_nx, pi.x());
 
+        scalar_t<Index> z_offset = m_ny * m_nx;
         Value d000 = wgather(index),
               d001 = wgather(index + 1),
               d010 = wgather(index + m_nx),
               d011 = wgather(index + m_nx + 1),
-              d100 = wgather(index + m_ny),
-              d101 = wgather(index + m_ny + 1),
-              d110 = wgather(index + m_ny + m_nx),
-              d111 = wgather(index + m_ny + m_nx + 1);
+
+              d100 = wgather(index + z_offset),
+              d101 = wgather(index + z_offset + 1),
+              d110 = wgather(index + z_offset + m_nx),
+              d111 = wgather(index + z_offset + m_nx + 1);
 
         Value d00 = fmadd(d000, rf.x(), d001 * f.x()),
               d01 = fmadd(d010, rf.x(), d011 * f.x()),
