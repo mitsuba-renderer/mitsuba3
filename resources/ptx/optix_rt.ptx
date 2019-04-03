@@ -18,6 +18,7 @@
 )
 ;
 .global .align 4 .b8 top_object[4];
+.global .align 8 .u64 accel;
 .global .align 8 .u64 shape_ptr;
 .global .align 4 .u32 launch_index;
 .global .align 4 .b8 p[12];
@@ -58,6 +59,7 @@
 .global .align 1 .b8 out_primitive_id[1];
 .global .align 1 .b8 out_hit[1];
 .global .align 4 .b8 _ZN21rti_internal_typeinfo10top_objectE[8] = {82, 97, 121, 0, 4, 0, 0, 0};
+.global .align 4 .b8 _ZN21rti_internal_typeinfo5accelE[8] = {82, 97, 121, 0, 8, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo9shape_ptrE[8] = {82, 97, 121, 0, 8, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo12launch_indexE[8] = {82, 97, 121, 0, 4, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo1pE[8] = {82, 97, 121, 0, 12, 0, 0, 0};
@@ -92,6 +94,7 @@
 .global .align 4 .u32 _ZN21rti_internal_register14reg_rayIndex_yE;
 .global .align 4 .u32 _ZN21rti_internal_register14reg_rayIndex_zE;
 .global .align 1 .b8 _ZN21rti_internal_typename10top_objectE[9] = {114, 116, 79, 98, 106, 101, 99, 116, 0};
+.global .align 1 .b8 _ZN21rti_internal_typename5accelE[7] = {118, 111, 105, 100, 32, 42, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename9shape_ptrE[19] = {117, 110, 115, 105, 103, 110, 101, 100, 32, 108, 111, 110, 103, 32, 108, 111, 110, 103, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename12launch_indexE[13] = {117, 110, 115, 105, 103, 110, 101, 100, 32, 105, 110, 116, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename1pE[7] = {102, 108, 111, 97, 116, 51, 0};
@@ -102,6 +105,7 @@
 .global .align 1 .b8 _ZN21rti_internal_typename5dp_dvE[7] = {102, 108, 111, 97, 116, 51, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename3rayE[4] = {82, 97, 121, 0};
 .global .align 4 .u32 _ZN21rti_internal_typeenum10top_objectE = 4919;
+.global .align 4 .u32 _ZN21rti_internal_typeenum5accelE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum9shape_ptrE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum12launch_indexE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum1pE = 4919;
@@ -112,6 +116,7 @@
 .global .align 4 .u32 _ZN21rti_internal_typeenum5dp_dvE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum3rayE = 4919;
 .global .align 1 .b8 _ZN21rti_internal_semantic10top_objectE[1];
+.global .align 1 .b8 _ZN21rti_internal_semantic5accelE[1];
 .global .align 1 .b8 _ZN21rti_internal_semantic9shape_ptrE[1];
 .global .align 1 .b8 _ZN21rti_internal_semantic12launch_indexE[14] = {114, 116, 76, 97, 117, 110, 99, 104, 73, 110, 100, 101, 120, 0};
 .global .align 1 .b8 _ZN21rti_internal_semantic1pE[12] = {97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 112, 0};
@@ -122,6 +127,7 @@
 .global .align 1 .b8 _ZN21rti_internal_semantic5dp_dvE[16] = {97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 100, 112, 95, 100, 118, 0};
 .global .align 1 .b8 _ZN21rti_internal_semantic3rayE[13] = {114, 116, 67, 117, 114, 114, 101, 110, 116, 82, 97, 121, 0};
 .global .align 1 .b8 _ZN23rti_internal_annotation10top_objectE[1];
+.global .align 1 .b8 _ZN23rti_internal_annotation5accelE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation9shape_ptrE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation12launch_indexE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation1pE[1];

@@ -4,6 +4,7 @@
 using namespace optix;
 
 rtDeclareVariable(rtObject, top_object, , );
+rtDeclareVariable(void *, accel, , );
 rtDeclareVariable(unsigned long long, shape_ptr, , );
 rtDeclareVariable(unsigned int, launch_index, rtLaunchIndex, );
 

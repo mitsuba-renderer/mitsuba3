@@ -605,7 +605,6 @@ void Mesh::put_parameters(DifferentiableParameters &dp) {
 }
 
 void Mesh::parameters_changed() {
-#if 0
     UInt32D vertex_range   = arange<UInt32D>(m_vertex_count),
             vertex_range_2 = vertex_range * 2,
             vertex_range_3 = vertex_range * 3,
@@ -659,55 +658,17 @@ void Mesh::parameters_changed() {
         for (size_t i = 0; i < 3; ++i)
             scatter(vertex_normals_ptr + i, m_vertex_normals_d[i], vertex_range_3);
     }
-#endif
-    Index *faces_ptr = nullptr;
-    rt_check(rtBufferMap(m_optix_faces_buf, (void **) &faces_ptr));
-    for (size_t i = 0; i < m_face_count; ++i) {
-        auto v = face_indices(i);
-        for (size_t j = 0; j < 3; ++j)
-            faces_ptr[i*3+j] = v[j];
+
+    if (m_optix_geometry_ready) {
+        // Mark acceleration data structure dirty
+        RTcontext context;
+        RTvariable accel_var;
+        RTacceleration accel;
+        rt_check(rtGeometryTrianglesGetContext(m_optix_geometry, &context));
+        rt_check(rtContextQueryVariable(context, "accel", &accel_var));
+        rt_check(rtVariableGetUserData(accel_var, sizeof(void *), (void *) &accel));
+        rt_check(rtAccelerationMarkDirty(accel));
     }
-
-    rt_check(rtBufferUnmap(m_optix_faces_buf));
-
-    float *vertex_positions_ptr = nullptr;
-    rt_check(rtBufferMap(m_optix_vertex_positions_buf, (void **) &vertex_positions_ptr));
-    for (size_t i = 0; i < m_vertex_count; ++i) {
-        auto v = vertex_position(i);
-        for (size_t j = 0; j < 3; ++j)
-            vertex_positions_ptr[i*3+j] = v[j];
-    }
-    rt_check(rtBufferUnmap(m_optix_vertex_positions_buf));
-
-    if (has_vertex_texcoords()) {
-        float *vertex_texcoords_ptr = nullptr;
-        rt_check(rtBufferMap(m_optix_vertex_texcoords_buf, (void **) &vertex_texcoords_ptr));
-        for (size_t i = 0; i < m_vertex_count; ++i) {
-            auto v = vertex_texcoord(i);
-            for (size_t j = 0; j < 2; ++j)
-                vertex_texcoords_ptr[i*2+j] = v[j];
-        }
-        rt_check(rtBufferUnmap(m_optix_vertex_texcoords_buf));
-    }
-
-    if (has_vertex_normals()) {
-        float *vertex_normals_ptr = nullptr;
-        rt_check(rtBufferMap(m_optix_vertex_normals_buf, (void **) &vertex_normals_ptr));
-        for (size_t i = 0; i < m_vertex_count; ++i) {
-            auto v = vertex_normal(i);
-            for (size_t j = 0; j < 3; ++j)
-                vertex_normals_ptr[i*3+j] = v[j];
-        }
-        rt_check(rtBufferUnmap(m_optix_vertex_normals_buf));
-    }
-
-    rt_check(rtGeometryTrianglesSetTriangleIndices(
-        m_optix_geometry, m_optix_faces_buf, 0, 3 * sizeof(unsigned int),
-        RT_FORMAT_UNSIGNED_INT3));
-
-    rt_check(rtGeometryTrianglesSetVertices(
-        m_optix_geometry, m_vertex_count, m_optix_vertex_positions_buf, 0,
-        3 * sizeof(float), RT_FORMAT_FLOAT3));
 }
 
 template <typename Value, size_t Dim, typename Func,
@@ -773,7 +734,16 @@ RTgeometrytriangles Mesh::optix_geometry(RTcontext context) {
 
     rt_check(rtGeometryTrianglesCreate(context, &m_optix_geometry));
     rt_check(rtGeometryTrianglesSetPrimitiveCount(m_optix_geometry, m_face_count));
+
     parameters_changed();
+
+    rt_check(rtGeometryTrianglesSetTriangleIndices(
+        m_optix_geometry, m_optix_faces_buf, 0, 3 * sizeof(unsigned int),
+        RT_FORMAT_UNSIGNED_INT3));
+
+    rt_check(rtGeometryTrianglesSetVertices(
+        m_optix_geometry, m_vertex_count, m_optix_vertex_positions_buf, 0,
+        3 * sizeof(float), RT_FORMAT_FLOAT3));
 
     RTvariable faces_var, vertex_positions_var, vertex_normals_var, vertex_texcoords_var;
     rt_check(rtGeometryTrianglesDeclareVariable(m_optix_geometry, "faces", &faces_var));
@@ -788,6 +758,8 @@ RTgeometrytriangles Mesh::optix_geometry(RTcontext context) {
 
     rt_check(rtGeometryTrianglesSetMaterialCount(m_optix_geometry, 1));
     rt_check(rtGeometryTrianglesSetFlagsPerMaterial(m_optix_geometry, 0, RT_GEOMETRY_FLAG_DISABLE_ANYHIT));
+
+    m_optix_geometry_ready = true;
 
     return m_optix_geometry;
 }

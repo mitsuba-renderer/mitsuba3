@@ -31,6 +31,7 @@ struct Scene::OptixState {
     RTbuffer var_buf[kOptixVariableCount];
     RTmaterial material;
     RTprogram attr_prog;
+    RTacceleration accel;
     RTgeometrygroup group;
     uint32_t shape_index = 0, n_shapes = 0;
 };
@@ -108,17 +109,21 @@ void Scene::optix_init(uint32_t n_shapes) {
     rt_check(rtMaterialSetClosestHitProgram(s.material, 0, prog[3]));
     s.attr_prog = prog[4];
 
-    RTacceleration accel;
-    rt_check(rtAccelerationCreate(s.context, &accel));
-    rt_check(rtAccelerationSetBuilder(accel, "Trbvh"));
+    rt_check(rtAccelerationCreate(s.context, &s.accel));
+    rt_check(rtAccelerationSetBuilder(s.accel, "Trbvh"));
 
     rt_check(rtGeometryGroupCreate(s.context, &s.group));
-    rt_check(rtGeometryGroupSetAcceleration(s.group, accel));
+    rt_check(rtGeometryGroupSetAcceleration(s.group, s.accel));
     rt_check(rtGeometryGroupSetChildCount(s.group, n_shapes));
 
     RTvariable top_object;
     rt_check(rtContextDeclareVariable(s.context, "top_object", &top_object));
     rt_check(rtVariableSetObject(top_object, s.group));
+
+    RTvariable accel;
+    rt_check(rtContextDeclareVariable(s.context, "accel", &accel));
+    rt_check(rtVariableSetUserData(accel, sizeof(void *), &s.accel));
+
     s.n_shapes = n_shapes;
 }
 

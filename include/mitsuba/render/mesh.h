@@ -441,6 +441,8 @@ protected:
     RTbuffer m_optix_vertex_positions_buf = nullptr;
     RTbuffer m_optix_vertex_normals_buf = nullptr;
     RTbuffer m_optix_vertex_texcoords_buf = nullptr;
+
+    bool m_optix_geometry_ready = false;
 #endif
 
     /**
