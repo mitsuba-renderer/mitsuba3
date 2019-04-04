@@ -643,9 +643,9 @@ void Mesh::parameters_changed() {
             /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
                by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
             for (int i = 0; i < 3; ++i) {
-                Vector3fD d0 = v[(i + 1) % 3] - v[i];
-                Vector3fD d1 = v[(i + 2) % 3] - v[i];
-                FloatD face_angle = acos(dot(d0, d1));
+                Vector3fD d0 = normalize(v[(i + 1) % 3] - v[i]);
+                Vector3fD d1 = normalize(v[(i + 2) % 3] - v[i]);
+                FloatD face_angle = safe_acos(dot(d0, d1));
                 scatter_add(m_vertex_normals_d, n * face_angle, m_faces_d[i]);
             }
 
