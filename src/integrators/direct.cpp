@@ -93,10 +93,9 @@ public:
                    direction using BSDF sampling. */
                 Value bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
-                result[active_e] +=
-                    emitter_val * bsdf_val *
-                    mis_weight(ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) *
-                    m_weight_lum;
+                Value mis = select(ds.delta, Value(1.f), mis_weight(
+                    ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
+                result[active_e] += emitter_val * bsdf_val * mis;
             }
         }
 
