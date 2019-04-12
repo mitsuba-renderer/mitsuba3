@@ -20,8 +20,7 @@ class SGD:
         and, optionally, momentum (0.9 is a typical parameter value).
         """
         assert momentum >= 0 and momentum < 1
-        # Ensure that the JIT does not consider the learning rate as a literal
-        self.lr = FloatC(lr) * 1
+        self.lr = FloatC(lr, literal=False)
         self.params = params
         self.momentum = momentum
         self.state = {}
@@ -99,9 +98,9 @@ class Adam:
                 raise "Adam: invalid parameter type " + str(t)
             self.state[k] = (detach(t.zero(size)), detach(t.zero(size)))
 
-        self.beta_1_t = FloatC(1)
-        self.beta_2_t = FloatC(1)
-        self.lr = FloatC(lr) * 1
+        self.beta_1_t = FloatC(1, literal=False)
+        self.beta_2_t = FloatC(1, literal=False)
+        self.lr = FloatC(lr, literal=False)
 
     def step(self):
         self.beta_1_t *= self.beta_1
