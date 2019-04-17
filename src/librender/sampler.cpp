@@ -12,6 +12,7 @@ Sampler::Sampler(const Properties &props) {
 Sampler::~Sampler() { }
 
 void Sampler::seed(size_t) { NotImplementedError("seed"); }
+void Sampler::seed(size_t, size_t) { NotImplementedError("seed"); }
 Float Sampler::next_1d() { NotImplementedError("next_1d"); }
 FloatP Sampler::next_1d_p(MaskP) { NotImplementedError("next_1d_p"); }
 Point2f Sampler::next_2d() { NotImplementedError("next_2d"); }

@@ -6,8 +6,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 class IndependentSampler final : public Sampler {
 public:
-    IndependentSampler() : Sampler(Properties()) { }
-    IndependentSampler(const Properties &props) : Sampler(props) {}
+    IndependentSampler() : Sampler(Properties()), m_seed_value(0) {}
+    IndependentSampler(const Properties &props) : Sampler(props), m_seed_value(0) {}
 
 public:
     ref<Sampler> clone() override {
@@ -18,19 +18,35 @@ public:
     }
 
     void seed(size_t seed_value) override {
+        m_seed_value = seed_value;
         m_rng.seed(seed_value, PCG32_DEFAULT_STREAM);
         m_rng_p.seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64P>());
 
 #if defined(MTS_ENABLE_AUTODIFF)
-        if (m_rng_c) {
-            UInt64C idx = arange<UInt64C>(m_rng_c->state.size()),
-                    seed_value_c = (uint64_t) seed_value;
-
-            m_rng_c->seed(sample_tea_64(seed_value_c, idx),
-                          sample_tea_64(idx, seed_value_c));
-        }
+        if (m_rng_c)
+            seed_c(seed_value, m_rng_c->state.size());
 #endif
     }
+#if defined(MTS_ENABLE_AUTODIFF)
+    void seed(size_t seed_value, size_t size) override {
+        m_seed_value = seed_value;
+        m_rng.seed(seed_value, PCG32_DEFAULT_STREAM);
+        m_rng_p.seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64P>());
+
+        seed_c(seed_value, size);
+    }
+
+    // Creates a new FloatC RNG with the specified state size and seed.
+    void seed_c(size_t seed_value, size_t size) {
+        m_rng_c = std::unique_ptr<PCG32C>(new PCG32C());
+
+        UInt64C idx = arange<UInt64C>(size),
+                seed_value_c = (uint64_t) seed_value;
+
+        m_rng_c->seed(sample_tea_64(seed_value_c, idx),
+                      sample_tea_64(idx, seed_value_c));
+    }
+#endif
 
     Float next_1d() override {
         return next_float();
@@ -110,13 +126,7 @@ protected:
                 throw std::runtime_error("next_float_c(): Requested sample "
                                          "array has incorrect shape.");
 
-            m_rng_c = std::unique_ptr<PCG32C>(new PCG32C());
-
-            UInt64C idx = arange<UInt64C>(active.size()),
-                    seed_value_c = 0;
-
-            m_rng_c->seed(sample_tea_64(seed_value_c, idx),
-                          sample_tea_64(idx, seed_value_c));
+            seed_c(m_seed_value, active.size());
         }
 
         #if defined(SINGLE_PRECISION)
@@ -141,6 +151,7 @@ protected:
 protected:
     PCG32 m_rng;
     PCG32P m_rng_p;
+    size_t m_seed_value;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     std::unique_ptr<PCG32C> m_rng_c;
