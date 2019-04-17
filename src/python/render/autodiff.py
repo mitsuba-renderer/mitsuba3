@@ -219,11 +219,26 @@ def get_differentiable_parameters(scene):
     return params
 
 
+# ------------------------------------------------------------ Differentiable rendering
+
 def render(scene, spp=None, pixel_format='y'):
+    if pixel_format not in ['y', 'xyz', 'rgb']:
+        raise Exception('Unknown pixel format "%s" -- must be one '
+                        'of "y", "xyz", or "rgb"' % pixel_format)
+
+    integrator = scene.integrator()
+    block = render_path(scene, spp)
+
+    floats = image_to_float_d(block, pixel_format)
+    del block
+    return floats
+
+
+def render_path(scene, spp=None):
     sensor = scene.sensor()
     film = sensor.film()
     sampler = sensor.sampler()
-    film_size = film.size()
+    film_size = film.crop_size()
     if spp is None:
         spp = sampler.sample_count()
 
@@ -254,29 +269,11 @@ def render(scene, spp=None, pixel_format='y'):
 
     block = ImageBlock(Bitmap.EXYZAW, film.crop_size(), warn=False,
                        filter=film.reconstruction_filter(), border=False)
+    block.clear_d()
     block.put(position_sample, wavelengths, result, 1)
-    del result
-    del wavelengths
-    del position_sample
 
-    X, Y, Z, A, W = block.bitmap_d()
-    del block, A
-    W = select(eq(W, 0), 0, rcp(W))
-    X *= W; Y *= W; Z *= W
-
-    if pixel_format == 'y':
-        return Y
-    elif pixel_format == 'xyz':
-        return Vector3fD(X, Y, Z)
-    elif pixel_format == 'rgb':
-        return Vector3fD(
-             3.240479 * X + -1.537150 * Y + -0.498535 * Z,
-            -0.969256 * X +  1.875991 * Y +  0.041556 * Z,
-             0.055648 * X + -0.204043 * Y +  1.057311 * Z
-        )
-    else:
-        raise Exception('Unknown pixel format "%s" -- must be one '
-                        'of "y", "xyz", or "rgb"' % pixel_format)
+    del result, wavelengths, position_sample
+    return block
 
 
 def render_torch(scene, params=None, **kwargs):
@@ -288,6 +285,7 @@ def render_torch(scene, params=None, **kwargs):
         import torch
 
         class Render(torch.autograd.Function):
+
             @staticmethod
             def forward(ctx, *args):
                 assert len(args) % 2 == 0
