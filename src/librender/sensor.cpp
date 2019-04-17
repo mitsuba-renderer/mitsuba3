@@ -54,7 +54,6 @@ Sensor::Sensor(const Properties &props)
     }
 
     m_aspect = m_film->size().x() / (Float) m_film->size().y();
-
     m_resolution = Vector2f(m_film->crop_size());
 }
 
@@ -185,6 +184,11 @@ Sensor::sample_ray_differential_pol(FloatD time, FloatD sample1,
                                             sample3, active);
 }
 #endif
+
+void Sensor::set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) {
+    m_film->set_crop_window(crop_size, crop_offset);
+    m_resolution = Vector2f(m_film->crop_size());
+}
 
 MTS_IMPLEMENT_CLASS(Sensor, Endpoint)
 

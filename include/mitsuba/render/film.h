@@ -81,6 +81,12 @@ public:
     /// Return the offset of the crop window
     const Point2i &crop_offset() const { return m_crop_offset; }
 
+    /**
+     * Set the size and offset of the crop window.
+     * Values stored in the film may be reset when crop size changes.
+     */
+    virtual void set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset);
+
     /// Return the image reconstruction filter (const version)
     const ReconstructionFilter *reconstruction_filter() const {
         return m_filter.get();
@@ -109,6 +115,9 @@ protected:
 
     /// Virtual destructor
     virtual ~Film();
+
+    /// Throws if the crop window specification is invalid.
+    void check_valid_crop_window() const;
 
 protected:
     Vector2i m_size, m_crop_size;

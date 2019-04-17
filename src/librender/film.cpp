@@ -22,14 +22,7 @@ Film::Film(const Properties &props) : Object() {
         props.int_("crop_width", m_size.x()),
         props.int_("crop_height", m_size.y())
     );
-    if (m_crop_offset.x() < 0 || m_crop_offset.y() < 0 ||
-        m_crop_size.x() <= 0 || m_crop_size.y() <= 0 ||
-        m_crop_offset.x() + m_crop_size.x() > m_size.x() ||
-        m_crop_offset.y() + m_crop_size.y() > m_size.y() ) {
-        Throw("Invalid crop window specification!\n"
-              "offset %s + crop size %s vs full size %s",
-              m_crop_offset, m_crop_size, m_size);
-    }
+    check_valid_crop_window();
 
     /* If set to true, regions slightly outside of the film
        plane will also be sampled, which improves the image
@@ -61,6 +54,22 @@ Film::Film(const Properties &props) : Object() {
 }
 
 Film::~Film() { }
+
+void Film::set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) {
+    m_crop_size   = crop_size;
+    m_crop_offset = crop_offset;
+    check_valid_crop_window();
+}
+
+void Film::check_valid_crop_window() const {
+    if (m_crop_offset.x() < 0 || m_crop_offset.y() < 0 || m_crop_size.x() <= 0 ||
+        m_crop_size.y() <= 0 || m_crop_offset.x() + m_crop_size.x() > m_size.x() ||
+        m_crop_offset.y() + m_crop_size.y() > m_size.y()) {
+        Throw("Invalid crop window specification!\n"
+              "offset %s + crop size %s vs full size %s",
+              m_crop_offset, m_crop_size, m_size);
+    }
+}
 
 MTS_IMPLEMENT_CLASS(Film, Object);
 NAMESPACE_END(mitsuba)

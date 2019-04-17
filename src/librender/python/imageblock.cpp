@@ -54,5 +54,9 @@ MTS_PY_EXPORT(ImageBlock) {
 #if defined(MTS_ENABLE_AUTODIFF)
         .def("bitmap_d", py::overload_cast<>(&ImageBlock::bitmap_d))
 #endif
-        .mdef(ImageBlock, clear);
+        .mdef(ImageBlock, clear)
+#if defined(MTS_ENABLE_AUTODIFF)
+        .mdef(ImageBlock, clear_d)
+#endif
+        ;
 }

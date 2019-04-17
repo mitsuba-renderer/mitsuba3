@@ -263,6 +263,13 @@ MaskD ImageBlock::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
 
     return active;
 }
+
+void ImageBlock::clear_d() {
+    m_bitmap_d.resize(m_bitmap->channel_count());
+    for (size_t i = 0; i < m_bitmap_d.size(); ++i)
+        m_bitmap_d[i] = zero<FloatD>(hprod(m_bitmap->size()));
+}
+
 #endif
 
 std::string ImageBlock::to_string() const {

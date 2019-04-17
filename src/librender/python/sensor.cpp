@@ -33,6 +33,7 @@ MTS_PY_EXPORT(Sensor) {
         .mdef(Sensor, shutter_open)
         .mdef(Sensor, shutter_open_time)
         .mdef(Sensor, needs_aperture_sample)
+        .mdef(Sensor, set_crop_window, "crop_size"_a, "crop_offset"_a)
         .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
         .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler));
 

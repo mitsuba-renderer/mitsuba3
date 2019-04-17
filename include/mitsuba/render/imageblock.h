@@ -174,6 +174,9 @@ public:
 
     /// Clear everything to zero.
     void clear() { m_bitmap->clear(); }
+#if defined(MTS_ENABLE_AUTODIFF)
+    void clear_d();
+#endif
 
     // =============================================================
     //! @{ \name Accesors

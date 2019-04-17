@@ -113,6 +113,15 @@ public:
         m_storage->set_offset(m_crop_offset);
     }
 
+    void set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) override {
+        if (m_crop_size != crop_size)
+            m_storage = new ImageBlock(Bitmap::EXYZAW, crop_size);
+        m_crop_size = crop_size;
+        m_crop_offset = crop_offset;
+        check_valid_crop_window();
+        m_storage->set_offset(m_crop_offset);
+    }
+
     /// Resets all channels to zero.
     void clear() override {
         m_storage->clear();

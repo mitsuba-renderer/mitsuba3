@@ -24,5 +24,6 @@ MTS_PY_EXPORT(Film) {
         .mdef(Film, size)
         .mdef(Film, crop_size)
         .mdef(Film, crop_offset)
+        .mdef(Film, set_crop_window)
         .def("reconstruction_filter", py::overload_cast<>(&Film::reconstruction_filter, py::const_));
 }

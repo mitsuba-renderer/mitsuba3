@@ -144,6 +144,9 @@ public:
     /// Does the sampling technique require a sample for the aperture position?
     bool needs_aperture_sample() const { return m_needs_sample_3; }
 
+    /// Updates the film's crop window, and adjusts any state accordingly.
+    virtual void set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset);
+
     /// Return the \ref Film instance associated with this sensor
     Film *film() { return m_film; }
 

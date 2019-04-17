@@ -63,6 +63,11 @@ public:
         if (m_world_transform->has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
+        update_camera_transforms();
+        m_needs_sample_3 = false;
+    }
+
+    void update_camera_transforms() {
         Vector2f film_size   = Vector2f(m_film->size()),
                  crop_size   = Vector2f(m_film->crop_size()),
                  rel_size    = crop_size / film_size;
@@ -223,6 +228,11 @@ public:
               typename Frame = Frame<typename SurfaceInteraction::Point3>>
     Spectrum eval_impl(const SurfaceInteraction & /* si */, Mask /* active */) const {
         NotImplementedError("eval");
+    }
+
+    void set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) override {
+        Sensor::set_crop_window(crop_size, crop_offset);
+        update_camera_transforms();
     }
 
     //! @}
