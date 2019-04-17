@@ -188,9 +188,6 @@ public:
                                  MaskD active = true) const;
 #endif
 
-    /// Return the environment emitter (if any)
-    const Emitter *environment() const { return m_environment.get(); }
-
     //! @}
     // =============================================================
 
@@ -209,19 +206,29 @@ public:
 #endif
 
     /// Return the current sensor
-    Sensor* sensor() { return m_sensors.front(); }
+    Sensor* sensor() { return m_sensors[m_current_sensor]; }
     /// Return the current sensor
-    const Sensor* sensor() const { return m_sensors.front(); }
+    const Sensor* sensor() const { return m_sensors[m_current_sensor]; }
+    /// Return the list of sensors
+    std::vector<ref<Sensor>> &sensors() { return m_sensors; }
+    /// Return the list of sensors
+    const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
+    /// Sets the current sensor from the given index.
+    void set_current_sensor(size_t index) {
+        if (index >= m_sensors.size())
+            Throw("Invalid sensor index %d, expected index in [0, %d).",
+                  index, m_sensors.size());
+        m_current_sensor = index;
+        m_sampler = m_sensors[m_current_sensor]->sampler();
+    }
 
     /// Return the list of emitters
     auto &emitters() { return m_emitters; }
     /// Return the list of emitters
     const auto &emitters() const { return m_emitters; }
 
-    /// Return the list of sensors
-    std::vector<ref<Sensor>> &sensors() { return m_sensors; }
-    /// Return the list of sensors
-    const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
+    /// Return the environment emitter (if any)
+    const Emitter *environment() const { return m_environment.get(); }
 
     /// Return the list of shapes
     auto &shapes() { return m_shapes; }
@@ -284,6 +291,7 @@ protected:
 #endif
 
     std::vector<ref<Shape>> m_shapes;
+    size_t m_current_sensor;
     std::vector<ref<Sensor>> m_sensors;
     std::vector<ref<Object>> m_children;
     ref<Sampler> m_sampler;

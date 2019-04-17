@@ -44,8 +44,10 @@ Scene::Scene(const Properties &props) {
                 optix_register(shape);
             #endif
 
-            if (shape->emitter())
+            if (shape->is_emitter())
                 m_emitters.push_back(shape->emitter());
+            if (shape->is_sensor())
+                m_sensors.push_back(shape->sensor());
 
             m_bbox.expand(shape->bbox());
         } else if (emitter) {
@@ -122,11 +124,8 @@ Scene::Scene(const Properties &props) {
     for (auto emitter: m_emitters)
         emitter->create_shape(this);
 
-    if (!m_sensors.empty()) {
-        m_sampler = m_sensors.front()->sampler();
-        if (m_sensors.size() > 1)
-            Throw("Only one sensor is supported at the moment.");
-    }
+    Assert(!m_sensors.empty());
+    set_current_sensor(0);
 }
 
 Scene::~Scene() {
@@ -229,13 +228,11 @@ Float Scene::pdf_emitter_direction(const Interaction3f &ref,
                                    const DirectionSample3f &ds) const {
     return pdf_emitter_direction_impl(ref, ds, true);
 }
-
 FloatP Scene::pdf_emitter_direction(const Interaction3fP &ref,
                                     const DirectionSample3fP &ds,
                                     MaskP active) const {
     return pdf_emitter_direction_impl(ref, ds, active);
 }
-
 #if defined(MTS_ENABLE_AUTODIFF)
 FloatD Scene::pdf_emitter_direction(const Interaction3fD &ref,
                                     const DirectionSample3fD &ds,

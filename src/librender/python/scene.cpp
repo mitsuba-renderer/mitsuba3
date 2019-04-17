@@ -117,14 +117,25 @@ MTS_PY_EXPORT(Scene) {
 #endif
         .def("bbox", &Scene::bbox, D(Scene, bbox))
         .def("sensor",     py::overload_cast<>(&Scene::sensor),     D(Scene, sensor))
+        .def("sensors",     py::overload_cast<>(&Scene::sensors),     D(Scene, sensors))
+        .mdef(Scene, set_current_sensor, "index"_a)
+        .def("emitters",     py::overload_cast<>(&Scene::emitters),     D(Scene, emitters))
+        .mdef(Scene, environment)
         .def("film",       py::overload_cast<>(&Scene::film),       D(Scene, film))
         .def("sampler",    py::overload_cast<>(&Scene::sampler),    D(Scene, sampler))
         .def("shapes",     py::overload_cast<>(&Scene::shapes),     D(Scene, shapes))
         .def("integrator", [](Scene &scene) {
-            SamplingIntegrator *si = dynamic_cast<SamplingIntegrator *>(scene.integrator());
-            if (si)
-                return py::cast(si);
-            else
-                return py::cast(scene.integrator());
-        }, D(Scene, integrator));
+#define PY_CAST(Name) {                                                        \
+        Name *temp = dynamic_cast<Name *>(o);                                  \
+        if (temp)                                                              \
+            return py::cast(temp);                                             \
+    }
+            Integrator *o = scene.integrator();
+            PY_CAST(MonteCarloIntegrator);
+            PY_CAST(SamplingIntegrator);
+            return py::cast(o);
+
+#undef PY_CAST
+        }, D(Scene, integrator))
+        .def("__repr__", &Scene::to_string);
 }

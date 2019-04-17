@@ -428,6 +428,8 @@ public:
 
     /// Return the area sensor associated with this shape (if any)
     const Sensor *sensor() const { return m_sensor.get(); }
+    /// Return the area sensor associated with this shape (if any)
+    Sensor *sensor() { return m_sensor.get(); }
 
     /**
      * \brief Returns the number of sub-primitives that make up this shape
