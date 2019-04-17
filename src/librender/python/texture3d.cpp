@@ -45,6 +45,20 @@ MTS_PY_EXPORT(Texture3D) {
                  &Texture3D::eval, py::const_),
              D(Texture3D, eval), "it"_a, "active"_a = true)
 #endif
+        .def("eval_gradient",
+             py::overload_cast<const Interaction3f &, bool>(&Texture3D::eval_gradient,
+                                                            py::const_),
+             D(Texture3D, eval_gradient), "it"_a, "active"_a = true)
+        .def("eval_gradient",
+             vectorize_wrapper(py::overload_cast<const Interaction3fP &, MaskP>(
+                 &Texture3D::eval_gradient, py::const_)),
+             D(Texture3D, eval_gradient), "it"_a, "active"_a = true)
+#if defined(MTS_ENABLE_AUTODIFF)
+        .def("eval_gradient",
+             py::overload_cast<const Interaction3fD &, const MaskD &>(
+                 &Texture3D::eval_gradient, py::const_),
+             D(Texture3D, eval_gradient), "it"_a, "active"_a = true)
+#endif
         .mdef(Texture3D, mean)
         .mdef(Texture3D, max)
         .mdef(Texture3D, bbox)

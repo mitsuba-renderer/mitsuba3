@@ -19,15 +19,27 @@ Texture3D::~Texture3D() {}
 Spectrumf Texture3D::eval(const Interaction3f & /*it*/) const {
     NotImplementedError("eval");
 }
-
 SpectrumfP Texture3D::eval(const Interaction3fP & /*it*/,
                            MaskP /*active*/) const {
-    NotImplementedError("eval");
+    NotImplementedError("eval_p");
 }
-
 #if defined(MTS_ENABLE_AUTODIFF)
 SpectrumfD Texture3D::eval(const Interaction3fD &, const MaskD &) const {
     NotImplementedError("eval_d");
+}
+#endif
+
+std::pair<Spectrumf, Vector3f> Texture3D::eval_gradient(const Interaction3f & /*it*/) const {
+    NotImplementedError("eval_gradient");
+}
+std::pair<SpectrumfP, Vector3fP> Texture3D::eval_gradient(const Interaction3fP & /*it*/,
+                                                          MaskP /*active*/) const {
+    NotImplementedError("eval_gradient_p");
+}
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<SpectrumfD, Vector3fD> Texture3D::eval_gradient(const Interaction3fD &,
+                                                          const MaskD &) const {
+    NotImplementedError("eval_gradient_d");
 }
 #endif
 
