@@ -4,17 +4,27 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+void DifferentiableObject::parameters_changed() { }
+
 #if defined(MTS_ENABLE_AUTODIFF)
 struct DifferentiableParameters::Details {
     std::string prefix;
     std::map<std::string, std::tuple<DifferentiableObject *, void *, size_t>> entries;
+
+    Details() {}
+    Details(const Details &other)
+        : prefix(other.prefix), entries(other.entries) {}
+    Details &operator=(const Details &other) = delete;
 };
 
 
 void DifferentiableObject::put_parameters(DifferentiableParameters &) { }
-void DifferentiableObject::parameters_changed() { }
 
 DifferentiableParameters::DifferentiableParameters() : d(new Details()) { }
+
+DifferentiableParameters::DifferentiableParameters(const DifferentiableParameters &other)
+    : d(new Details(*other.d)) {}
+
 DifferentiableParameters::~DifferentiableParameters() { }
 
 void DifferentiableParameters::set_prefix(const std::string &prefix) {

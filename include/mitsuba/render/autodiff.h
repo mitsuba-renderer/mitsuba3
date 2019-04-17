@@ -19,6 +19,8 @@ class MTS_EXPORT_RENDER DifferentiableParameters : public Object {
     struct Details;
 public:
     DifferentiableParameters();
+    DifferentiableParameters(const DifferentiableParameters &other);
+    DifferentiableParameters &operator=(const DifferentiableParameters &) = delete;
 
     /// Set a prefix that will be appended to subsequent \put() calls
     void set_prefix(const std::string &prefix);
@@ -95,10 +97,10 @@ public:
 
     /// Register all differentiable parameters with the container \c dp
     virtual void put_parameters(DifferentiableParameters &dp);
+#endif
 
     /// Update internal data structures after applying changes to parameters
     virtual void parameters_changed();
-#endif
 
     MTS_DECLARE_CLASS()
 };

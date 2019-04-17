@@ -12,6 +12,10 @@ namespace mitsuba {
 
     class PyDifferentiableParameters : public DifferentiableParameters {
     public:
+        PyDifferentiableParameters() : DifferentiableParameters() {}
+        PyDifferentiableParameters(const PyDifferentiableParameters &other)
+            : DifferentiableParameters(other) {}
+
         size_t size() { return d->entries.size() == 0; }
         py::object getitem(const std::string &key) {
             auto it = d->entries.find(key);
@@ -66,10 +70,12 @@ namespace mitsuba {
             std::map<std::string, std::tuple<DifferentiableObject *, void *, size_t>> entries;
             for (const std::string &k : keys) {
                 auto it = d->entries.find(k);
-                if (it == d->entries.end())
-                    throw std::runtime_error("DifferentiableParameters::keep():"
-                                             " could not find parameter \"" +
-                                             k + "\"");
+                if (it == d->entries.end()) {
+                    throw std::runtime_error(tfm::format(
+                        "DifferentiableParameters::keep(): could not find "
+                        "parameter \"%s\". Available keys are:\n%s",
+                        k, this->keys()));
+                }
                 entries.emplace(*it);
             }
             d->entries = entries;
@@ -87,12 +93,14 @@ MTS_PY_EXPORT(autodiff) {
     auto dc = MTS_PY_CLASS(DifferentiableObject, Object);
 
 #if defined(MTS_ENABLE_AUTODIFF)
-    dc.def("put_parameters", &DifferentiableObject::put_parameters);
+    dc.def("put_parameters", &DifferentiableObject::put_parameters)
+      .def("parameters_changed", &DifferentiableObject::parameters_changed);
 
     py::class_<DifferentiableParameters, Object, ref<DifferentiableParameters>>(m, "DifferentiableParametersBase");
     py::class_<PyDifferentiableParameters, DifferentiableParameters,
                ref<PyDifferentiableParameters>>(m, "DifferentiableParameters")
         .def(py::init<>())
+        .def(py::init<const PyDifferentiableParameters &>(), "other"_a, "Copy constructor")
         .def("set_prefix", &DifferentiableParameters::set_prefix)
         .def("keys", &PyDifferentiableParameters::keys)
         .def("items", &PyDifferentiableParameters::items)
