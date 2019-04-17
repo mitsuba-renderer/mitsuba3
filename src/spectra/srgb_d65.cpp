@@ -31,7 +31,7 @@ public:
     }
 
     template <typename Value, typename Mask = mask_t<Value>>
-    MTS_INLINE Value eval_impl(Value wavelengths, Mask active) const {
+    MTS_INLINE Value eval_impl(const Value &wavelengths, Mask active) const {
         return m_d65->eval(wavelengths, active) *
                srgb_model_eval(coeff<Value>(), wavelengths);
     }

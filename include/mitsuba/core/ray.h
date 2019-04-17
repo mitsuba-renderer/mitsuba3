@@ -19,7 +19,8 @@ NAMESPACE_BEGIN(mitsuba)
  * ray-object intersection code may produce undefined results.
  */
 template <typename Point_> struct Ray {
-    static constexpr size_t Size = Point_::Size;
+    static constexpr size_t Size = array_size_v<Point_>;
+
     using Point                  = Point_;
     using Value                  = value_t<Point>;
     using Vector                 = mitsuba::Vector<Value, Size>;

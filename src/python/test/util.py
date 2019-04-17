@@ -29,6 +29,8 @@ def fresolver_append_path(func):
 
     # Heuristic to find the project's root directory
     def is_root(path):
+        if not path:
+            return False
         children = os.listdir(path)
         return ('ext' in children) and ('include' in children) \
                and ('src' in children) and ('resources' in children)

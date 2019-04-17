@@ -197,7 +197,7 @@ SurfaceInteraction3fD Scene::ray_intersect(const Ray3fD &ray_, MaskD active) con
         si.sh_frame.n.x().data(), si.sh_frame.n.y().data(), si.sh_frame.n.z().data(),
         // Out: Texture space derivative (U)
         si.dp_du.x().data(), si.dp_du.y().data(), si.dp_du.z().data(),
-        // Ovt: Textvre space derivative (V)
+        // Ovt: Texture space derivative (V)
         si.dp_dv.x().data(), si.dp_dv.y().data(), si.dp_dv.z().data(),
         // Out: Shape pointer (on host)
         si.shape.data(),

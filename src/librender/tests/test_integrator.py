@@ -132,7 +132,7 @@ def test06_render_timeout(int_name):
     scene.film().clear()
     effective_s = timeit(wrapped_scalar, number=1)
     scene.film().clear()
-    effective_v = timeit(wrapped_scalar, number=1)
+    effective_v = timeit(wrapped_vector, number=1)
 
     # Check that timeout is respected +/- 0.5s.
     assert np.allclose(timeout, effective_s, atol=0.5)

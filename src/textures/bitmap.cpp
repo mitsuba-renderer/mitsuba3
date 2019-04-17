@@ -88,14 +88,13 @@ public:
 
         Vector3f v00, v10, v01, v11;
         if constexpr (is_diff_array_v<Value>) {
+#if defined(MTS_ENABLE_AUTODIFF)
             uint32_t width = (uint32_t) m_bitmap->size().x();
-
-            #if defined(MTS_ENABLE_AUTODIFF)
-                v00 = gather<Vector3f>(m_bitmap_d, index, active);
-                v10 = gather<Vector3f>(m_bitmap_d, index + 1u, active);
-                v01 = gather<Vector3f>(m_bitmap_d, index + width, active);
-                v11 = gather<Vector3f>(m_bitmap_d, index + width + 1u, active);
-            #endif
+            v00 = gather<Vector3f>(m_bitmap_d, index, active);
+            v10 = gather<Vector3f>(m_bitmap_d, index + 1u, active);
+            v01 = gather<Vector3f>(m_bitmap_d, index + width, active);
+            v11 = gather<Vector3f>(m_bitmap_d, index + width + 1u, active);
+#endif
         } else {
             uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
             const Float *ptr = (const Float *) m_bitmap->data();

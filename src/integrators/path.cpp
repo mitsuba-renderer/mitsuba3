@@ -90,8 +90,7 @@ public:
             }
 
             /* ----------------------- BSDF sampling ---------------------- */
-
-            /* Sample BSDF * cos(theta) */
+            // Sample BSDF * cos(theta)
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, rs.next_1d(active),
                                                rs.next_2d(active), active);
             throughput *= bsdf_val;
@@ -101,7 +100,7 @@ public:
 
             eta *= bs.eta;
 
-            /* Intersect the BSDF ray against the scene geometry */
+            // Intersect the BSDF ray against the scene geometry
             ray = si.spawn_ray(si.to_world(bs.wo));
             SurfaceInteraction3 si_bsdf = scene->ray_intersect(ray, active);
 

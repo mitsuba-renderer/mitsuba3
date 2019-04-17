@@ -1764,8 +1764,9 @@ protected:
         if (prim_count == 0) {
             Log(EWarn, "kd-tree contains no geometry!");
             ctx.node_storage[0].set_leaf_node(0, 0);
+            m_bbox.min = 0.f;
+            m_bbox.max = 0.f;
         } else {
-
             Log(m_log_level, "Creating a preliminary index list (%s)",
                 util::mem_string(prim_count * sizeof(Index)).c_str());
 

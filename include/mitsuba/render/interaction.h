@@ -53,13 +53,13 @@ template <typename Point3_> struct Interaction {
     }
 
     /// Spawn a semi-infinite ray towards the given direction
-    Ray3 spawn_ray(const Vector3 &d) {
+    Ray3 spawn_ray(const Vector3 &d) const {
         return Ray3(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
                     math::Infinity, time, wavelengths);
     }
 
     /// Spawn a finite ray towards the given position
-    Ray3 spawn_ray_to(const Point3 &t) {
+    Ray3 spawn_ray_to(const Point3 &t) const {
         Vector3 d = t - p;
         Value dist = norm(d);
         d /= dist;
