@@ -1640,6 +1640,8 @@ be used to enumerate differentiable model parameters.)doc";
 
 static const char *__doc_mitsuba_DifferentiableObject_class = R"doc()doc";
 
+static const char *__doc_mitsuba_DifferentiableObject_parameters_changed = R"doc(Update internal data structures after applying changes to parameters)doc";
+
 static const char *__doc_mitsuba_DirectionSample =
 R"doc(Record for solid-angle based area sampling techniques
 
@@ -2396,6 +2398,8 @@ static const char *__doc_mitsuba_Film_bitmap =
 R"doc(Returns a pointer to the underlying image storage, or nullptr if there
 is none.)doc";
 
+static const char *__doc_mitsuba_Film_check_valid_crop_window = R"doc(Throws if the crop window specification is invalid.)doc";
+
 static const char *__doc_mitsuba_Film_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_clear = R"doc(Clear the film)doc";
@@ -2445,6 +2449,10 @@ static const char *__doc_mitsuba_Film_reconstruction_filter = R"doc(Return the i
 static const char *__doc_mitsuba_Film_set_bitmap =
 R"doc(Overwrite the film with the given bitmap. The size of the given bitmap
 has to match to current size.)doc";
+
+static const char *__doc_mitsuba_Film_set_crop_window =
+R"doc(Set the size and offset of the crop window. Values stored in the film
+may be reset when crop size changes.)doc";
 
 static const char *__doc_mitsuba_Film_set_destination_file = R"doc(Set the target filename (with or without extension))doc";
 
@@ -4541,6 +4549,8 @@ static const char *__doc_mitsuba_Scene_m_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_children = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_m_current_sensor = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_m_emitter_distr = R"doc(Sampling distribution for emitters)doc";
 
 static const char *__doc_mitsuba_Scene_m_emitters = R"doc()doc";
@@ -4675,6 +4685,8 @@ static const char *__doc_mitsuba_Scene_sensor_2 = R"doc(Return the current senso
 static const char *__doc_mitsuba_Scene_sensors = R"doc(Return the list of sensors)doc";
 
 static const char *__doc_mitsuba_Scene_sensors_2 = R"doc(Return the list of sensors)doc";
+
+static const char *__doc_mitsuba_Scene_set_current_sensor = R"doc(Sets the current sensor from the given index.)doc";
 
 static const char *__doc_mitsuba_Scene_shapes = R"doc(Return the list of shapes)doc";
 
@@ -4814,6 +4826,8 @@ This is the *root* sampler, which will later be cloned a number of
 times to provide each participating worker thread with its own
 instance (see Scene::sampler()). Therefore, this sampler should never
 be used for anything except creating clones.)doc";
+
+static const char *__doc_mitsuba_Sensor_set_crop_window = R"doc(Updates the film's crop window, and adjusts any state accordingly.)doc";
 
 static const char *__doc_mitsuba_Sensor_shutter_open = R"doc(Return the time value of the shutter opening event)doc";
 
@@ -5153,6 +5167,8 @@ static const char *__doc_mitsuba_Shape_sample_position_3 = R"doc(Vectorized vers
 
 static const char *__doc_mitsuba_Shape_sensor = R"doc(Return the area sensor associated with this shape (if any))doc";
 
+static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the area sensor associated with this shape (if any))doc";
+
 static const char *__doc_mitsuba_Shape_surface_area =
 R"doc(Return the shape's surface area.
 
@@ -5225,9 +5241,13 @@ R"doc(Return the offset and size of the next block.
 
 A size of zero indicates that the spiral traversal is done.)doc";
 
-static const char *__doc_mitsuba_Spiral_reset = R"doc(Reset the spiral to its initial state)doc";
+static const char *__doc_mitsuba_Spiral_reset =
+R"doc(Reset the spiral to its initial state. Does not affect the number of
+passes.)doc";
 
-static const char *__doc_mitsuba_Spiral_set_passes = R"doc(Sets the number of time the spiral should automatically reset.)doc";
+static const char *__doc_mitsuba_Spiral_set_passes =
+R"doc(Sets the number of time the spiral should automatically reset. Not
+affected by a call to reset.)doc";
 
 static const char *__doc_mitsuba_Stream =
 R"doc(Abstract seekable stream class
@@ -6321,6 +6341,14 @@ static const char *__doc_mitsuba_Texture3D_eval_2 = R"doc(Vectorized version of 
 
 static const char *__doc_mitsuba_Texture3D_eval_3 = R"doc(Wrapper for scalar eval() with a mask (which will be ignored))doc";
 
+static const char *__doc_mitsuba_Texture3D_eval_gradient =
+R"doc(Evaluate the texture at the given surface interaction as well as its
+gradients)doc";
+
+static const char *__doc_mitsuba_Texture3D_eval_gradient_2 = R"doc(Vectorized version of eval_gradient())doc";
+
+static const char *__doc_mitsuba_Texture3D_eval_gradient_3 = R"doc(Wrapper for scalar eval_gradient() with a mask (which will be ignored))doc";
+
 static const char *__doc_mitsuba_Texture3D_is_inside_impl = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture3D_m_bbox = R"doc(Bounding box)doc";
@@ -6760,7 +6788,7 @@ static const char *__doc_mitsuba_ZStream_m_deflate_buffer = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream_m_deflate_stream = R"doc()doc";
 
-static const char *__doc_mitsuba_ZStream_m_didWrite = R"doc()doc";
+static const char *__doc_mitsuba_ZStream_m_did_write = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream_m_inflate_buffer = R"doc()doc";
 
