@@ -1,63 +1,131 @@
-from mitsuba.core import Bitmap
+from contextlib import contextmanager
+import numpy as np
 
-from mitsuba.render import DifferentiableParameters, \
-    RadianceSample3fD, ImageBlock
+from mitsuba.core import Bitmap, EDebug, Log
+from mitsuba.render import (DifferentiableParameters, RadianceSample3fD, ImageBlock)
+from mitsuba.render.autodiff_utils import (compute_size, indent, image_to_float_d)
 
-from enoki import UInt32D, BoolD, FloatC, FloatD, Vector2fD, Vector3fD, \
-    Vector4fD, Matrix4fD, select, eq, rcp, set_requires_gradient, \
-    detach, gradient, slices, set_gradient, sqr, sqrt, cuda_malloc_trim
-
-
-def indent(s, amount=2):
-    return '\n'.join((' ' * amount if i > 0 else '') + l
-                     for i, l in enumerate(s.splitlines()))
+from enoki import (UInt32D, BoolD, FloatC, FloatD, Vector2fD, Vector3fD,
+                   Vector4fD, Matrix4fD, select, eq, rcp, set_requires_gradient,
+                   gather, detach, gradient, slices, set_gradient, sqr, sqrt, cuda_malloc_trim)
 
 
-class SGD:
+# ------------------------------------------------------------ Optimizers
+class Optimizer:
+
+    def __init__(self, params, lr):
+        # Ensure that the JIT does not consider the learning rate as a literal
+        self.lr = FloatC(lr, literal=False)
+        self.params = params
+        self.gradients_acc = {}
+        self.gradients_acc_count = 0
+        self.state = {}
+        for k, p in self.params.items():
+            set_requires_gradient(p)
+            self.reset(k)
+
+    def reset(self, _):
+        pass
+
+    def accumulate_gradients(self):
+        """
+        Retrieve gradients from the parameters and accumulate their values
+        values until the next time `step` is called.
+        Useful for e.g. block-based rendering.
+        """
+        for k, p in self.params.items():
+            g = gradient(p)
+            if slices(g) <= 0:
+                continue
+            if k not in self.gradients_acc:
+                self.gradients_acc[k] = FloatC.full(0., len(g))
+            self.gradients_acc[k] += g
+        self.gradients_acc_count += 1
+
+    def compute_gradients(self):
+        """
+        Returns either the average gradients collected with `accumulate_gradients`,
+        or the current gradient values if not available.
+        Any accumulated gradients are cleared!
+        """
+        if self.gradients_acc:
+            gg = {k: g / self.gradients_acc_count for k, g in self.gradients_acc.items()}
+            self.gradients_acc.clear()
+            self.gradients_acc_count = 0
+            return gg
+        # There was no call to `accumulate_gradients`
+        return {k: gradient(p) for k, p in self.params.items()}
+
+    @contextmanager
+    def no_gradients(self):
+        """Temporarily disables gradients for the optimized parameters."""
+        for _, p in self.params.items():
+            set_requires_gradient(p, False)
+        try:
+            yield
+        finally:
+            for _, p in self.params.items():
+                set_requires_gradient(p, True)
+
+
+class DummyOptimizer(Optimizer):
+    """An optimizer which applies a "no-op" step, simply detaching the parameter
+    from this iteration's graph."""
+
+    def __init__(self, params):
+        super(DummyOptimizer, self).__init__(params, 0.)
+
+    def step(self):
+        for k, p in self.params.items():
+            self.params[k] = detach(p)
+            set_requires_gradient(p)
+
+    def __repr__(self):
+        return 'DummyOptimizer[]'
+
+
+class SGD(Optimizer):
+
     def __init__(self, params, lr, momentum=0):
         """
         Implements basic stochastic gradient descent with a fixed learning rate
         and, optionally, momentum (0.9 is a typical parameter value).
         """
+        super(SGD, self).__init__(params, lr)
         assert momentum >= 0 and momentum < 1
-        self.lr = FloatC(lr, literal=False)
-        self.params = params
         self.momentum = momentum
-        self.state = {}
 
-        for k, p in params.items():
-            set_requires_gradient(p)
-            if self.momentum > 0:
-                t = type(p)
-                if t is FloatD:
-                    size = len(p)
-                elif t is Vector2fD or t is Vector3fD or t is Vector4fD:
-                    size = len(p[0])
-                elif t is Matrix4fD:
-                    size = len(p[0, 0])
-                else:
-                    raise "SGD: invalid parameter type " + str(t)
-                self.state[k] = detach(t.zero(size))
+    def reset(self, key):
+        """Resets the state to a zero-filled array of the right dimension."""
+        p = self.params[key]
+        size = compute_size(p)
+        self.state[key] = detach(type(p).zero(size))
 
     def step(self):
+        gradients = self.compute_gradients()
         for k, p in self.params.items():
-            g_p = gradient(p)
-            if slices(g_p) == 0:
+            if compute_size(p) != compute_size(self.state[k]):
+                # Reset state if data size has changed
+                self.reset(k)
+
+            if k not in gradients:
                 continue
+            g_p = gradients[k]
+
             if self.momentum == 0:
                 self.params[k] = detach(p) - self.lr * g_p
             else:
-                self.state[k] = self.momentum * self.state[k] + \
-                                self.lr * g_p
+                self.state[k] = self.momentum * self.state[k] + self.lr * g_p
                 self.params[k] = detach(p) - self.state[k]
             set_requires_gradient(p)
 
     def __repr__(self):
-        return ('SGD[\n  lr = %.2g,\n  momentum = %.2g\n]') % \
-                (self.lr, self.momentum)
+        return 'SGD[\n  lr = {:.2g},\n  momentum = {:.2g}\n]'.format(
+            self.lr.numpy().squeeze(), self.momentum)
 
 
-class Adam:
+class Adam(Optimizer):
+
     def __init__(self, params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
         """
         Implements the optimization technique presented in
@@ -76,41 +144,38 @@ class Adam:
         ``beta_2``: controls the exponential averaging of second
         order gradient moments
         """
-        self.lr = lr
+        super(Adam, self).__init__(params, lr)
         assert beta_1 >= 0 and beta_1 < 1
         assert beta_2 >= 0 and beta_2 < 1
         self.beta_1 = beta_1
         self.beta_2 = beta_2
         self.epsilon = epsilon
-        self.params = params
-        self.state = {}
-
-        for k, p in params.items():
-            set_requires_gradient(p)
-            t = type(p)
-            if t is FloatD:
-                size = len(p)
-            elif t is Vector2fD or t is Vector3fD or t is Vector4fD:
-                size = len(p[0])
-            elif t is Matrix4fD:
-                size = len(p[0, 0])
-            else:
-                raise "Adam: invalid parameter type " + str(t)
-            self.state[k] = (detach(t.zero(size)), detach(t.zero(size)))
 
         self.beta_1_t = FloatC(1, literal=False)
         self.beta_2_t = FloatC(1, literal=False)
-        self.lr = FloatC(lr, literal=False)
+
+    def reset(self, key):
+        """Resets the state to a zero-filled array of the right dimension."""
+        p = self.params[key]
+        size = compute_size(p)
+        t = type(p)
+        self.state[key] = (detach(t.zero(size)), detach(t.zero(size)))
 
     def step(self):
         self.beta_1_t *= self.beta_1
         self.beta_2_t *= self.beta_2
         lr_t = self.lr * sqrt(1 - self.beta_2_t) / (1 - self.beta_1_t)
 
+        gradients = self.compute_gradients()
         for k, p in self.params.items():
-            g_t = gradient(p)
-            if slices(g_t) == 0:
+            if compute_size(p) != compute_size(self.state[k][0]):
+                # Reset state if data size has changed
+                self.reset(k)
+
+            if k not in gradients:
                 continue
+            g_t = gradients[k]
+
             m_tp, v_tp = self.state[k]
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_t
             v_t = self.beta_2 * v_tp + (1 - self.beta_2) * sqr(g_t)
@@ -120,9 +185,9 @@ class Adam:
             set_requires_gradient(p)
 
     def __repr__(self):
-        return ('Adam[\n  lr = %.2g,\n  beta_1 = %.2g,\n  beta_2 = %.2g,\n'
-            '  params = %s\n]') % \
-            (self.lr, self.beta_1, self.beta_2, indent(str(self.params)))
+        return ('Adam[\n  lr = {:.2g},\n  beta_1 = {:.2g},\n  beta_2 = {:.2g},\n'
+                '  params = {}\n]').format(
+                    self.lr.numpy().squeeze(), self.beta_1, self.beta_2, indent(str(self.params)))
 
 
 def get_differentiable_parameters(scene):
