@@ -79,15 +79,30 @@ public:
 
         if (expanded)
             Log(EWarn, "InterpolatedSpectrum was expanded to cover wavelength range [%.1f, %.1f]",
-                       MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
+                MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
 
         m_inv_interval_size = Float((size - 1) / (double(m_lambda_max) - double(m_lambda_min)));
         m_size_minus_2 = uint32_t(size - 2);
 
         m_cdf.resize(size);
-        m_cdf[0] = 0.f;
+#if defined(MTS_ENABLE_AUTODIFF)
+        // Copy parsed data over to the GPU
+        m_data_d = CUDAArray<Float>::copy(m_data.data(), m_data.size());
+#endif
+        parameters_changed();
+    }
 
-        /* Compute a probability mass function for each interval */
+    /// Note: this assumes that the wavelengths and number of entries have not changed.
+    void parameters_changed() override {
+#if defined(MTS_ENABLE_AUTODIFF)
+        // TODO: copy values to CPU to compute CDF?
+#endif
+
+        // Update CDF, normalization and integral from the new values
+        m_cdf[0] = 0.f;
+        size_t size = m_data.size();
+
+        // Compute a probability mass function for each interval
         double scale = 0.5 * (double(m_lambda_max) - double(m_lambda_min)) / (size - 1),
                accum = 0.0;
         for (size_t i = 1; i < size; ++i) {
@@ -95,9 +110,38 @@ public:
             m_cdf[i] = Float(accum);
         }
 
-        /* Store the normalization factor */
+        // Store the normalization factor
         m_integral = Float(accum);
         m_normalization = Float(1.0 / accum);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+        m_integral_d = m_integral;
+        m_normalization_d = m_normalization;
+        m_cdf_d = CUDAArray<Float>::copy(m_cdf.data(), m_cdf.size());
+#endif
+    }
+
+    template <typename Value, typename Index, typename Mask>
+    auto data_gather(const Index &index, const Mask &active) const {
+        if constexpr (!is_diff_array_v<Index>) {
+            return gather<Value>(m_data.data(), index, active);
+        }
+#if defined(MTS_ENABLE_AUTODIFF)
+        else {
+            return gather<Value>(m_data_d, index, active);
+        }
+#endif
+    }
+    template <typename Value, typename Index, typename Mask>
+    auto cdf_gather(const Index &index, const Mask &active) const {
+        if constexpr (!is_diff_array_v<Index>) {
+            return gather<Value>(m_cdf.data(), index, active);
+        }
+#if defined(MTS_ENABLE_AUTODIFF)
+        else {
+            return gather<Value>(m_cdf_d, index, active);
+        }
+#endif
     }
 
     template <typename Value>
@@ -110,8 +154,8 @@ public:
         Index i0 = clamp(Index(t), zero<Index>(), Index(m_size_minus_2)),
               i1 = i0 + Index(1);
 
-        Value v0 = gather<Value>(m_data.data(), i0, active),
-              v1 = gather<Value>(m_data.data(), i1, active);
+        Value v0 = data_gather<Value>(i0, active),
+              v1 = data_gather<Value>(i1, active);
 
         Value w1 = t - Value(i0),
               w0 = (Float) 1 - w1;
@@ -121,7 +165,7 @@ public:
 
     template <typename Value>
     ENOKI_INLINE Value pdf_impl(Value lambda, mask_t<Value> active) const {
-        return eval_impl(lambda, active) * m_normalization;
+        return eval_impl(lambda, active) * normalization<Value>();
     }
 
     template <typename Value>
@@ -129,24 +173,25 @@ public:
         using Index = int_array_t<Value>;
         using Mask = mask_t<Value>;
 
-        sample *= m_cdf[m_cdf.size() - 1];
+        sample *= integral<Value>();
 
+        // TODO: find_interval on differentiable m_cdf?
         Index i0 = math::find_interval(m_cdf.size(),
             [&](Index idx, Mask active) {
-                return gather<Value>(m_cdf.data(), idx, active) <= sample;
+                return cdf_gather<Value>(idx, active) <= sample;
             },
             active
         );
 
         Index i1 = i0 + Index(1);
 
-        Value f0 = gather<Value>(m_data.data(), i0, active),
-              f1 = gather<Value>(m_data.data(), i1, active);
+        Value f0 = data_gather<Value>(i0, active),
+              f1 = data_gather<Value>(i1, active);
 
-        /* Reuse the sample */
-        sample = (sample - gather<Value>(m_cdf.data(), i0)) * m_inv_interval_size;
+        // Reuse the sample
+        sample = (sample - cdf_gather<Value>(i0, active)) * m_inv_interval_size;
 
-        /* Importance sample the linear interpolant */
+        // Importance sample the linear interpolant
         Value t_linear =
             (f0 - safe_sqrt(f0 * f0 + 2.0f * sample * (f1 - f0))) / (f0 - f1);
         Value t_const  = sample / f0;
@@ -154,13 +199,19 @@ public:
 
         return {
             m_lambda_min + (Value(i0) + t) * m_interval_size,
-            Value(m_integral)
+            Value(integral<Value>())
         };
     }
 
     Float mean() const override {
         return m_integral / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
     }
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    void put_parameters(DifferentiableParameters &dp) override {
+        dp.put(this, "data", m_data_d);
+    }
+#endif
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -177,6 +228,9 @@ public:
     }
 
     MTS_IMPLEMENT_SPECTRUM_ALL()
+    MTS_AUTODIFF_GETTER(data, m_data, m_data_d)
+    MTS_AUTODIFF_GETTER(integral, m_integral, m_integral_d)
+    MTS_AUTODIFF_GETTER(normalization, m_normalization, m_normalization_d)
     MTS_DECLARE_CLASS()
 
 private:
@@ -188,6 +242,10 @@ private:
     Float m_inv_interval_size;
     Float m_integral;
     Float m_normalization;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    FloatD m_data_d, m_cdf_d, m_integral_d, m_normalization_d;
+#endif
 };
 
 MTS_IMPLEMENT_CLASS(InterpolatedSpectrum, ContinuousSpectrum)
