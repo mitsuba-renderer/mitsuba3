@@ -31,16 +31,28 @@ NAMESPACE_END(detail)
  */
 class Grid3D final : public Texture3D {
 public:
+    MTS_AUTODIFF_GETTER(data, m_data, m_data_d)
+    MTS_AUTODIFF_GETTER(nx, m_nx, m_nx_d)
+    MTS_AUTODIFF_GETTER(ny, m_ny, m_ny_d)
+    MTS_AUTODIFF_GETTER(nz, m_nz, m_nz_d)
+    MTS_AUTODIFF_GETTER(z_offset, m_z_offset, m_z_offset_d)
+
+public:
     explicit Grid3D(const Properties &props) : Texture3D(props), m_nx(0), m_ny(0), m_nz(0) {
 
         if (props.has_property("filename"))
             read_binary_file(props);
         else
             parse_string_grid(props);
-
+        m_z_offset = m_ny * m_nx;
 #if defined(MTS_ENABLE_AUTODIFF)
         // Copy parsed data over to the GPU
         m_data_d = CUDAArray<Float>::copy(m_data.data(), m_size);
+        // Avoids resolution being treated as a literal
+        m_nx_d = UInt32C::copy(&m_nx, 1);
+        m_ny_d = UInt32C::copy(&m_ny, 1);
+        m_nz_d = UInt32C::copy(&m_nz, 1);
+        m_z_offset_d = UInt32C::copy(&m_z_offset, 1);
 #endif
     }
 
@@ -59,6 +71,11 @@ public:
             m_nx *= 2;
             m_ny *= 2;
             m_nz *= 2;
+            m_z_offset = m_ny * m_nx;
+            m_nx_d *= 2;
+            m_ny_d *= 2;
+            m_nz_d *= 2;
+            m_z_offset_d = m_ny_d * m_nx_d;
             m_size = new_size;
         }
 
@@ -81,11 +98,11 @@ public:
         using Spectrum = mitsuba::Spectrum<Value>;
         using Vector3  = Vector<Value, 3>;
 
-        p *= Point3(m_nx - 1.f, m_ny - 1.f, m_nz - 1.f);
+        p *= Point3(nx<Value>() - 1.f, ny<Value>() - 1.f, nz<Value>() - 1.f);
 
         // Integer part
         Index3 pi = enoki::floor2int<Index3>(p);
-        active &= all(pi >= 0 && (pi + 1) < Index3(m_nx, m_ny, m_nz));
+        active &= all(pi >= 0 && (pi + 1) < Index3(nx<Value>(), ny<Value>(), nz<Value>()));
 
         // Fractional part
         Point3 f = p - Point3(pi), rf = 1.f - f;
@@ -102,18 +119,17 @@ public:
         };
 
         // (z * ny + y) * nx + x
-        Index index = fmadd(fmadd(pi.z(), m_ny, pi.y()), m_nx, pi.x());
+        Index index = fmadd(fmadd(pi.z(), ny<Value>(), pi.y()), nx<Value>(), pi.x());
 
-        scalar_t<Index> z_offset = m_ny * m_nx;
         Value d000 = wgather(index),
               d001 = wgather(index + 1),
-              d010 = wgather(index + m_nx),
-              d011 = wgather(index + m_nx + 1),
+              d010 = wgather(index + nx<Value>()),
+              d011 = wgather(index + nx<Value>() + 1),
 
-              d100 = wgather(index + z_offset),
-              d101 = wgather(index + z_offset + 1),
-              d110 = wgather(index + z_offset + m_nx),
-              d111 = wgather(index + z_offset + m_nx + 1);
+              d100 = wgather(index + z_offset<Value>()),
+              d101 = wgather(index + z_offset<Value>() + 1),
+              d110 = wgather(index + z_offset<Value>() + nx<Value>()),
+              d111 = wgather(index + z_offset<Value>() + nx<Value>() + 1);
 
         Value d00 = fmadd(d000, rf.x(), d001 * f.x()),
               d01 = fmadd(d010, rf.x(), d011 * f.x()),
@@ -137,9 +153,9 @@ public:
 
             // Smaller grid cells means variation is faster (-> larger gradient)
             Vector3 gradient(
-                fmadd(gx0, rf.z(), gx1 * f.z()) * (m_nx - 1),
-                fmadd(gy0, rf.z(), gy1 * f.z()) * (m_ny - 1),
-                fmadd(gz0, rf.y(), gz1 * f.y()) * (m_nz - 1)
+                fmadd(gx0, rf.z(), gx1 * f.z()) * (nx<Value>() - 1),
+                fmadd(gy0, rf.z(), gy1 * f.z()) * (ny<Value>() - 1),
+                fmadd(gz0, rf.y(), gz1 * f.y()) * (nz<Value>() - 1)
             );
             return std::pair(Spectrum(d), gradient);
         }
@@ -184,17 +200,18 @@ public:
     }
 
     MTS_IMPLEMENT_TEXTURE_3D()
-    MTS_AUTODIFF_GETTER(data, m_data, m_data_d)
     MTS_DECLARE_CLASS()
 
 protected:
     FloatX m_data;
-    size_t m_nx, m_ny, m_nz, m_size;
+    size_t m_nx, m_ny, m_nz, m_size, m_z_offset;
     double m_mean;
     Float m_max;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     FloatD m_data_d;
+    /// Maintain these variables separately to avoid
+    UInt32D m_nx_d, m_ny_d, m_nz_d, m_z_offset_d;
 #endif
 
 private:
