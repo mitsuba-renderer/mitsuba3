@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 import pytest
 
@@ -216,7 +218,7 @@ def test05_trampoline():
 def optimize_values(t3d, dp, param_name, loss, batch_size = 5, step_size = 0.1,
                     max_its = 70):
     from enoki import set_requires_gradient, backward, gradient, hsum, detach, \
-                      FloatD, Vector3fD, Vector4fD, graphviz
+                      FloatD, Vector3fD, Vector4fD
     from mitsuba.render import Interaction3fD
 
     # Prepare queries
@@ -329,3 +331,80 @@ def test07_autodiff_grid3d(side):
         target_values, final_values.numpy().astype(float_dtype)))
     assert np.allclose(final_loss, 0)
     assert np.allclose(final_values, target_values, atol=1e-4)
+
+
+@pytest.mark.skipif(not mitsuba.ENABLE_AUTODIFF, reason='Autodiff-only test')
+def test08_autodiff_grid3d_multigrid():
+    """Tests the ability of Grid3D to handle data updates with doubled resolution."""
+    from enoki import FloatD, Vector4fD, Vector3fD
+    from mitsuba.core import float_dtype
+    from mitsuba.render import Interaction3fD
+    from mitsuba.render.autodiff import get_differentiable_parameters
+
+    initial_side = 2
+    levels = 5
+    np.random.seed(1234)
+    values = np.random.uniform(size=initial_side ** 3).astype(float_dtype)
+
+    # Loaded once, will update data several times
+    t3d = load_string("""
+        <texture3d type="grid3d" version="2.0.0">
+            <integer name="side" value="{}"/>
+            <string name="values" value="{}"/>
+        </texture3d>
+    """.format(initial_side, ','.join([str(v) for v in values])))
+
+    # Re-loaded each time with the new data. Should be equivalent.
+    def load_ref(side, values):
+        return load_string("""
+            <texture3d type="grid3d" version="2.0.0">
+                <integer name="side" value="{}"/>
+                <string name="values" value="{}"/>
+            </texture3d>
+        """.format(side, ','.join([str(v) for v in values])))
+
+    def upres(side, values_):
+        from scipy.interpolate import interpn
+        values = values_.copy().reshape((side, side, side))
+
+        t = np.linspace(0, 1, side)
+        side2 = 2 * side
+        grid = np.mgrid[:side2, :side2, :side2] / (side2 - 1)
+        grid = grid.reshape((3, -1)).T
+        interpolated = interpn((t, t, t), values, grid, method='linear')
+
+        # Sanity check: corners should match
+        interpolated2 = interpolated.reshape((side2, side2, side2))
+        sub = interpolated2[::side2-1, ::side2-1, ::side2-1]
+        sub_ref = values[::side-1, ::side-1, ::side-1]
+        assert np.allclose(sub, sub_ref), "\n{}\nvs\n{}".format(sub, sub_ref)
+
+        return interpolated
+
+    batch_size = 100
+    it = Interaction3fD(batch_size)
+    it.wavelengths = Vector4fD([
+        FloatD(np.random.uniform(size=(batch_size,),
+                                 low=MTS_WAVELENGTH_MIN, high=MTS_WAVELENGTH_MAX))
+        for _ in range(MTS_WAVELENGTH_SAMPLES)
+    ])
+    it.p = Vector3fD(np.random.uniform(size=(batch_size, 3)))
+    def check_equivalence(t3d, ref, values):
+        assert np.allclose(t3d.mean(), np.mean(values))
+        assert np.allclose(t3d.max(), np.max(values))
+        assert np.allclose(t3d.eval(it), ref.eval(it))
+
+    dp = get_differentiable_parameters(t3d)
+    param_names = list(dp.keys())
+    assert len(param_names) == 1
+    pname = param_names[0]
+
+    # Replace values with upsampled data from the previous round, check equivalence
+    side = initial_side
+    for i in range(levels):
+        if i > 0:
+            values = upres(side, values)
+            dp[pname] = FloatD(values)
+            side *= 2
+        ref = load_ref(side, values)
+        check_equivalence(t3d, ref, values)

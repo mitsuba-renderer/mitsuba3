@@ -31,8 +31,7 @@ NAMESPACE_END(detail)
  */
 class Grid3D final : public Texture3D {
 public:
-    explicit Grid3D(const Properties &props)
-        : Texture3D(props), m_nx(0), m_ny(0), m_nz(0) {
+    explicit Grid3D(const Properties &props) : Texture3D(props), m_nx(0), m_ny(0), m_nz(0) {
 
         if (props.has_property("filename"))
             read_binary_file(props);
@@ -46,14 +45,25 @@ public:
     }
 
 #if defined(MTS_ENABLE_AUTODIFF)
-    void put_parameters(DifferentiableParameters &dp) override {
-        dp.put(this, "data", m_data_d);
-    }
+    void put_parameters(DifferentiableParameters &dp) override { dp.put(this, "data", m_data_d); }
 
     /// Note: this assumes that the size has not changed.
     void parameters_changed() override {
-        m_mean = (double) hsum(m_data_d)[0] / (double) m_size;
-        m_max  = hmax(m_data_d)[0];
+        if (m_size != m_data_d.size()) {
+            // Only support a special case: resolution doubling along all axes
+            size_t new_size = m_data_d.size();
+            if (new_size != m_size * 8)
+                Throw("Unsupported Grid3D data size update: %d -> %d. Expected %d or %d (doubling "
+                      "the resolution).",
+                      m_size, new_size, m_size, m_size * 8);
+            m_nx *= 2;
+            m_ny *= 2;
+            m_nz *= 2;
+            m_size = new_size;
+        }
+
+        m_mean = (double) hsum(detach(m_data_d))[0] / (double) m_size;
+        m_max  = hmax(detach(m_data_d))[0];
     }
 #endif
 
@@ -64,22 +74,21 @@ public:
      * The passed `active` mask must disable lanes that are not within the
      * domain.
      */
-    template <typename Point3, typename Value = value_t<Point3>>
+    template <bool with_gradient, typename Point3, typename Value = value_t<Point3>>
     MTS_INLINE auto trilinear_interpolation(Point3 p, mask_t<Value> active) const {
         using Index    = uint32_array_t<Value>;
         using Index3   = uint32_array_t<Point3>;
         using Spectrum = mitsuba::Spectrum<Value>;
+        using Vector3  = Vector<Value, 3>;
 
         p *= Point3(m_nx - 1.f, m_ny - 1.f, m_nz - 1.f);
 
         // Integer part
-        Index3 pi  = enoki::floor2int<Index3>(p);
-
+        Index3 pi = enoki::floor2int<Index3>(p);
         active &= all(pi >= 0 && (pi + 1) < Index3(m_nx, m_ny, m_nz));
 
         // Fractional part
-        Point3 f  = p - Point3(pi),
-               rf = 1.f - f;
+        Point3 f = p - Point3(pi), rf = 1.f - f;
 
         auto wgather = [&](const Index &index) {
             if constexpr (!is_diff_array_v<Index>) {
@@ -116,21 +125,47 @@ public:
 
         Value d = fmadd(d0, rf.z(), d1 * f.z());
 
-        return Spectrum(d);
+        if constexpr (!with_gradient)
+            return Spectrum(d);
+        else {
+            Value gx0 = fmadd(d001 - d000, rf.y(), (d011 - d010) * f.y()),
+                  gx1 = fmadd(d101 - d100, rf.y(), (d111 - d110) * f.y()),
+                  gy0 = fmadd(d010 - d000, rf.x(), (d011 - d001) * f.x()),
+                  gy1 = fmadd(d110 - d100, rf.x(), (d111 - d101) * f.x()),
+                  gz0 = fmadd(d100 - d000, rf.x(), (d101 - d001) * f.x()),
+                  gz1 = fmadd(d110 - d010, rf.x(), (d111 - d011) * f.x());
+
+            // Smaller grid cells means variation is faster (-> larger gradient)
+            Vector3 gradient(
+                fmadd(gx0, rf.z(), gx1 * f.z()) * (m_nx - 1),
+                fmadd(gy0, rf.z(), gy1 * f.z()) * (m_ny - 1),
+                fmadd(gz0, rf.y(), gz1 * f.y()) * (m_nz - 1)
+            );
+            return std::pair(Spectrum(d), gradient);
+        }
     }
 
-    template <typename Interaction,
-              typename Value    = typename Interaction::Value,
-              typename Spectrum = mitsuba::Spectrum<Value>>
-    MTS_INLINE Spectrum eval_impl(const Interaction &it,
-                                  mask_t<Value> active) const {
-        auto p          = m_world_to_local * it.p;
-        Spectrum result = 0.f;
+    template <bool with_gradient, typename Interaction,
+              typename Value = typename Interaction::Value>
+    MTS_INLINE auto eval_impl(const Interaction &it, mask_t<Value> active) const {
+        using Spectrum = mitsuba::Spectrum<Value>;
+        using Vector3  = Vector<Value, 3>;
+
+        auto p = m_world_to_local * it.p;
         active &= all((p >= 0) && (p <= 1));
-        if (none_or<false>(active))
-            return result;
-        result[active] = trilinear_interpolation(p, active);
-        return result;
+
+        if constexpr (with_gradient) {
+            if (none_or<false>(active))
+                return std::make_pair(zero<Spectrum>(), zero<Vector3>());
+            auto [result, gradient] = trilinear_interpolation<true>(p, active);
+            return std::make_pair(select(active, result, zero<Spectrum>()),
+                                  select(active, gradient, zero<Vector3>()));
+        } else {
+            if (none_or<false>(active))
+                return zero<Spectrum>();
+            Spectrum result = trilinear_interpolation<false>(p, active);
+            return select(active, result, zero<Spectrum>());
+        }
     }
 
     Float mean() const override { return (Float) m_mean; }
@@ -140,8 +175,7 @@ public:
         std::ostringstream oss;
         oss << "Grid3D[" << std::endl
             << "  world_to_local = " << m_world_to_local << "," << std::endl
-            << "  dimensions = " << m_nx << "x" << m_ny << "x" << m_nz << ","
-            << std::endl
+            << "  dimensions = " << m_nx << "x" << m_ny << "x" << m_nz << "," << std::endl
             << "  mean = " << m_mean << "," << std::endl
             << "  max = " << m_max << "," << std::endl
             << "  data = " << m_data << std::endl
@@ -173,15 +207,15 @@ private:
     Transform4f bbox_transform(const BoundingBox3f bbox) {
         Vector3f d        = rcp(bbox.max - bbox.min);
         auto scale_transf = Transform4f::scale(d);
-        Vector3f t = -1.f * Vector3f(bbox.min.x(), bbox.min.y(), bbox.min.z());
-        auto translation = Transform4f::translate(t);
+        Vector3f t        = -1.f * Vector3f(bbox.min.x(), bbox.min.y(), bbox.min.z());
+        auto translation  = Transform4f::translate(t);
         return scale_transf * translation;
     }
 
     void read_binary_file(const Properties &props) {
         std::string filename = props.string("filename");
-        if (props.has_property("side") || props.has_property("nx") ||
-            props.has_property("ny") || props.has_property("nz"))
+        if (props.has_property("side") || props.has_property("nx") || props.has_property("ny") ||
+            props.has_property("nz"))
             Throw("Grid dimensions are already specified in the binary volume "
                   "file, cannot override them with properties side, nx, ny or "
                   "nz.");
@@ -205,9 +239,9 @@ private:
         m_ny   = read<int32_t>(f);
         m_nz   = read<int32_t>(f);
         m_size = m_nx * m_ny * m_nz;
-        if (m_size < 1)
-            Throw("Invalid grid dimensions: %d x %d x %d < 1 (must have at "
-                  "least one value)",
+        if (m_size < 8)
+            Throw("Invalid grid dimensions: %d x %d x %d < 8 (must have at "
+                  "least one value at each corner)",
                   m_nx, m_ny, m_nz);
 
         auto channels = read<int32_t>(f);
@@ -242,9 +276,9 @@ private:
         m_ny   = props.size_("ny", m_ny);
         m_nz   = props.size_("nz", m_nz);
         m_size = m_nx * m_ny * m_nz;
-        if (m_size < 1)
-            Throw("Invalid grid dimensions: %d x %d x %d < 1 (must have at "
-                  "least one value)",
+        if (m_size < 8)
+            Throw("Invalid grid dimensions: %d x %d x %d < 8 (must have at "
+                  "least one value for each corner)",
                   m_nx, m_ny, m_nz);
 
         set_slices(m_data, m_size);

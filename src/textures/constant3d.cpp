@@ -13,18 +13,22 @@ public:
 
     std::vector<ref<Object>> children() override { return { m_color.get() }; }
 
-    template <typename Interaction,
-              typename Value    = typename Interaction::Value,
-              typename Spectrum = mitsuba::Spectrum<Value>>
-    MTS_INLINE Spectrum eval_impl(const Interaction &it,
-                                  const mask_t<Value> &active) const {
+    template <bool with_gradient, typename Interaction,
+              typename Value = typename Interaction::Value>
+    MTS_INLINE auto eval_impl(const Interaction &it, const mask_t<Value> &active) const {
         using Mask      = mask_t<Value>;
+        using Spectrum  = mitsuba::Spectrum<Value>;
+        using Vector3   = Vector<Value, 3>;
         Spectrum result = 0.f;
 
         auto p         = m_world_to_local * it.p;
         Mask inside    = active && all((p >= 0) && (p <= 1));
         result[inside] = m_color->eval(it.wavelengths, inside);
-        return result;
+
+        if constexpr (with_gradient)
+            return std::make_pair(result, zero<Vector3>());
+        else
+            return result;
     }
 
     Float mean() const override { return m_color->mean(); }
