@@ -3,7 +3,7 @@ import numpy as np
 
 from mitsuba.core import Bitmap, EDebug, Log
 from mitsuba.render import (DifferentiableParameters, RadianceSample3fD, ImageBlock)
-from mitsuba.render.autodiff_utils import (compute_size, indent, image_to_float_d)
+from mitsuba.render.autodiff_utils import (compute_size, indent)
 
 from enoki import (UInt32D, BoolD, FloatC, FloatD, Vector2fD, Vector3fD,
                    Vector4fD, Matrix4fD, select, eq, rcp, set_requires_gradient,
@@ -27,7 +27,7 @@ class Optimizer:
     def reset(self, _):
         pass
 
-    def accumulate_gradients(self):
+    def accumulate_gradients(self, weight = 1):
         """
         Retrieve gradients from the parameters and accumulate their values
         values until the next time `step` is called.
@@ -39,8 +39,8 @@ class Optimizer:
                 continue
             if k not in self.gradients_acc:
                 self.gradients_acc[k] = FloatC.full(0., len(g))
-            self.gradients_acc[k] += g
-        self.gradients_acc_count += 1
+            self.gradients_acc[k] += FloatC(weight) * g
+        self.gradients_acc_count += weight
 
     def compute_gradients(self):
         """
@@ -221,17 +221,25 @@ def get_differentiable_parameters(scene):
 
 # ------------------------------------------------------------ Differentiable rendering
 
-def render(scene, spp=None, pixel_format='y'):
-    if pixel_format not in ['y', 'xyz', 'rgb']:
-        raise Exception('Unknown pixel format "%s" -- must be one '
-                        'of "y", "xyz", or "rgb"' % pixel_format)
+def render(scene, spp=None, pixel_format=Bitmap.EY):
+    supported_formats = [Bitmap.EY, Bitmap.EXYZ, Bitmap.ERGB]
+    if pixel_format not in supported_formats:
+        raise ValueError('Unknown pixel format {} -- must be one of {}'
+                         .format(pixel_format, supported_formats))
 
-    integrator = scene.integrator()
     block = render_path(scene, spp)
 
-    floats = image_to_float_d(block, pixel_format)
-    del block
-    return floats
+    # The block contains values in its `bitmap_d` storage, ensure the CPU side
+    # has the same values.
+    im = np.array(block.bitmap(), copy=False)
+    floats = block.bitmap_d()
+    for k, values in enumerate(floats):
+        if len(values) == 1:  # Allow broadcasting
+            im[:, :, k] = values.numpy()
+        else:
+            im[:, :, k] = values.numpy().reshape(im.shape[0], im.shape[1])
+
+    return block
 
 
 def render_path(scene, spp=None):
@@ -267,8 +275,9 @@ def render_path(scene, spp=None):
     wavelengths = rays.wavelengths
     del weights, rs, rays
 
+    rfilter = film.reconstruction_filter()
     block = ImageBlock(Bitmap.EXYZAW, film.crop_size(), warn=False,
-                       filter=film.reconstruction_filter(), border=False)
+                       filter=rfilter, border=(rfilter.border_size() > 0))
     block.clear_d()
     block.put(position_sample, wavelengths, result, 1)
 
@@ -291,7 +300,7 @@ def render_torch(scene, params=None, **kwargs):
                 assert len(args) % 2 == 0
                 args = dict(zip(args[0::2], args[1::2]))
 
-                pixel_format = 'y'
+                pixel_format = Bitmap.EY
                 spp = None
 
                 ctx.inputs = []

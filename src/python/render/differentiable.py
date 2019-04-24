@@ -4,16 +4,16 @@ import numpy as np
 
 import enoki
 from enoki import (UInt32D, FloatD, Vector3fD, cuda_set_log_level,
-                   gather, forward, backward, gradient, reattach, hsum, sqr)
+                   gather, forward, backward, gradient, reattach, hsum, sqr, requires_gradient)
 import mitsuba
 from mitsuba import set_thread_count
-from mitsuba.core import Log, EInfo, EDebug, Thread, Bitmap, float_dtype
+from mitsuba.core import Log, EInfo, EDebug, Thread, Bitmap, Struct, float_dtype
 from mitsuba.core.xml import load_file
-from mitsuba.render import Spiral
+from mitsuba.render import Spiral, ImageBlock
 from mitsuba.render.autodiff import (get_differentiable_parameters, render,
                                      SGD, Adam)
-from mitsuba.render.autodiff_utils import (
-    stringify_params, float_d_to_bitmap, l2 as l2_loss, compute_size, linearized_block_indices)
+from mitsuba.render.autodiff_utils import (stringify_params, float_d_to_bitmap, l2 as l2_loss,
+                                           compute_size, linearized_block_indices, image_to_float_d)
 from mitsuba.test.util import fresolver_append_path
 
 
@@ -41,12 +41,8 @@ def simple_render(scene, vectorize=False, write_to=None, pixel_format=None):
     film = scene.sensor().film()
     if write_to:
         from mitsuba.core import Struct
-        assert pixel_format is not None
-        bitmap = film.bitmap()
-        if pixel_format != 'xyz':
-            bitmap = bitmap.convert(Bitmap.EY if pixel_format == 'y' else Bitmap.ERGB,
-                                    Struct.EFloat32, False)
-        bitmap.write(write_to)
+        assert isinstance(pixel_format, Bitmap.EPixelFormat)
+        film.bitmap().convert(pixel_format, Struct.EFloat32, False).write(write_to)
     return film
 
 
@@ -65,9 +61,9 @@ def check_valid_sensors_and_refs(scene, reference_images, channel_count):
 
 
 def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
-                   log_level=0, compute_forward=False, pixel_format='rgb',
+                   log_level=0, pixel_format='rgb',
                    optimizer=None, loss_function=None, callback=None,
-                   block_size=None, image_spp=256, gradient_spp=32,
+                   block_size=None, pass_count=1, image_spp=256, gradient_spp=32,
                    verbose=False):
     """Optimizes a scene's parameters with respect to a reference image.
 
@@ -78,8 +74,6 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
                           If there are multiple sensors in the scene, then it
                           should be a list of reference images (one per sensor).
         max_iterations:   Number of iterations for the optimization algorithm.
-        compute_forward:  Whether to compute the forward gradient images for the
-                          optimized parameters.
         optimizer:        A function or constructor used to build the optimizer from
                           a DifferentiableParameters object. A reasonable default is
                           created if None.
@@ -94,6 +88,11 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
                           and loss. This enables usage of more samples per pixel, but is only valid
                           if the loss is defined as a pixelwise sum.
                           By default, renders the whole image as one block.
+        pass_count:       Number of image passes. Can be used alternatively or in
+                          conjunction with `block_size` to split the amount of work
+                          done in one render pass, e.g. due to memory constraints.
+                          The given samples per pixels are further multiplied by
+                          the pass count.
         image_spp:        Number of samples per pixel to use to compute the image (color values),
                           with gradient computation turned off. This can typically be higher than
                           the `gradient_spp` value as memory requirement is lower.
@@ -118,7 +117,7 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
     loss_function = loss_function or l2_loss
 
     # Setup multi-sensor rendering
-    channel_count = 1 if pixel_format == 'y' else 3
+    channel_count = 1 if pixel_format == Bitmap.EY else 3
     sensor_count = len(scene.sensors())
     reference_images = [image_ref_] if sensor_count == 1 else image_ref_
     check_valid_sensors_and_refs(scene, reference_images, channel_count)
@@ -128,14 +127,18 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
     if not block_size and film.crop_size()[0] != film.crop_size()[1]:
         raise ValueError("Not supported yet: non block-based rendering and non-square image.")
     block_size = block_size or film.crop_size()[0]
-    spiral = Spiral(film, block_size)
-    block_count = spiral.block_count()
+    spiral = Spiral(film, block_size, passes=pass_count)
+    block_count = spiral.block_count() * pass_count
+    found_gradients = False
 
     def render_block(i, block_i, image_ref):
         """
         Handles rendering of one block (color & gradient passes).
         Accumulates gradients and returns (color values, loss for this block).
+        Note that the loss is multiplied by the pixel count in this block to
+        allow for proper re-normalization.
         """
+        nonlocal found_gradients
         crop_size = film.crop_size()
         pixel_count = crop_size[0] * crop_size[1]
 
@@ -146,34 +149,24 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
             # Forward pass: high-quality image reconstruction, no gradients
             with opt.no_gradients():
                 scene.sampler().seed(seed, pixel_count * image_spp)
-                image = render(scene, pixel_format=pixel_format, spp=image_spp)
+                block = render(scene, pixel_format=pixel_format, spp=image_spp)
 
             # Forward pass: low-spp gradient estimate
             scene.sampler().seed(seed2, pixel_count * gradient_spp)
-            image_with_gradients = render(scene, pixel_format=pixel_format, spp=gradient_spp)
+            block_with_gradients = render(scene, pixel_format=pixel_format, spp=gradient_spp)
         else:
-            image_with_gradients = None
+            block_with_gradients = None
             scene.sampler().seed(seed2, pixel_count * gradient_spp)
-            image = render(scene, pixel_format=pixel_format, spp=gradient_spp)
+            block = render(scene, pixel_format=pixel_format, spp=gradient_spp)
 
-        # Optional: render a gradient image for a given parameter
-        if compute_forward:
-            for k in optimized_params:
-                Log(EDebug, '[ ] Computing forward image for parameter {}'.format(k))
-                forward(params[k], free_graph=False)
-                grad_bitmap = float_d_to_bitmap(gradient(image),
-                                                shape=(crop_size[1], crop_size[0], -1))
-                forward_fname = 'forward_{:03d}.exr'.format(i)
-                grad_bitmap.write(forward_fname)
-                Log(EDebug, '[+] Forward image saved to {}'.format(forward_fname))
+        # Cropped block values (differentiable)
+        block_values = image_to_float_d(block, pixel_format, crop_border=True)
 
-        # Reattach gradients
-        if image_with_gradients is not None:
-            if isinstance(image, (list, tuple)):
-                for c1, c2 in zip(image, image_with_gradients):
-                    reattach(c1, c2)
-            else:
-                reattach(image, image_with_gradients)
+        # Reattach gradients if needed
+        if block_with_gradients is not None:
+            block_gradient_values = image_to_float_d(
+                block_with_gradients, pixel_format, crop_border=True)
+            reattach(block_values, block_gradient_values)
 
         # Extract part of the reference image corresponding to this block
         linearized = linearized_block_indices(
@@ -190,28 +183,49 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
             )
 
         # Compute loss and backpropagate
-        loss = loss_function(image, block_ref)
+        # TODO: the cropped block is still not exactly right to compute the loss,
+        # since border pixels will be too dark compared to the reference
+        # ('spread' of energy by the reconstruction filter). We'd need 'high
+        # quality edges' (enlarging the block and discarding more) to get correct
+        # values at the border.
+        loss = loss_function(block_values, block_ref)
 
         Log(EDebug, '[ ] Backpropagating gradients from the loss')
-        backward(loss)
+        # Note that some blocks may not have gradients w.r.t. the parameters of interest
+        block_weight = np.product(crop_size)
+        if requires_gradient(loss):
+            backward(loss)
+            opt.accumulate_gradients(weight=block_weight)
+            found_gradients = True
 
-        opt.accumulate_gradients()
-        del image_with_gradients, block_indices
-        return image, loss.numpy().squeeze()
+        del block_indices, block_values, block_with_gradients
+        return block, block_weight * loss[0]
+
+    # ---------------------------
+    rfilter = film.reconstruction_filter()
+    bsize = rfilter.border_size()
+
+    # Image reconstructed from blocks, including border
+    reconstructed_images = [
+        ImageBlock(Bitmap.EXYZAW, film.crop_size(), warn=False,
+                   filter=rfilter, border=(bsize > 0))
+        for _ in range(sensor_count)
+    ]
 
     # ----------------------------------------------------- Main iterations
     for i in range(max_iterations):
-        image_np = [
-            np.zeros(shape=(film.size()[1], film.size()[0], channel_count), dtype=float_dtype)
-            for _ in range(sensor_count)
-        ]
+        for im in reconstructed_images:
+            im.clear()
+            im.clear_d()
         loss = 0.
 
-        # For each sensor and block
+        # For each sensor and block (including potentially multiple passes)
         for sensor_i in range(sensor_count):
             scene.set_current_sensor(sensor_i)
             spiral.reset()
+            spiral.set_passes(pass_count)
             block_i = 0
+            loss_i = 0.
             while True:
                 (offset, size) = spiral.next_block()
                 if size[0] == 0:
@@ -219,15 +233,32 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
                 scene.sensor().set_crop_window(size, offset)
 
                 image_block, block_loss = render_block(i, block_i, reference_images[sensor_i])
-                loss += block_loss
+                loss_i += block_loss
 
                 # Add block to full image
-                block_np = image_block.numpy().reshape((size[1], size[0], -1))
-                image_np[sensor_i][offset[1]:offset[1] + size[1],
-                                   offset[0]:offset[0] + size[0], :] = block_np
+                image_block.set_offset(offset)
+                assert np.all(image_block.offset() == offset) and np.all(
+                    image_block.size() == size)
+
+                # Accumulate block
+                reconstructed_images[sensor_i].put(image_block)
 
                 del image_block
                 block_i += 1
+            loss += loss_i / (pass_count * np.product(scene.sensor().film().size()))
+
+        if not found_gradients:
+            raise RuntimeError('Found no gradients associated to optimized variables '
+                               'in any of the {} blocks.\nparams = {}'.format(block_i, params))
+
+        # Convert reconstructed images and crop out border
+        images_np = []
+        for im in reconstructed_images:
+            b = im.bitmap().convert(pixel_format, Struct.EFloat32, False)
+            image_np = np.array(b, copy=True)
+            if bsize > 0:
+                image_np = image_np[bsize:-bsize, bsize:-bsize, :]
+            images_np.append(image_np)
 
         # Rendered all sensors and blocks, apply step
         if verbose:
@@ -236,7 +267,7 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
         opt.step()
         if callback:
             callback(i, params, optimized_params, opt, max_iterations,
-                     loss, image_np, image_ref_)
+                     loss, images_np, image_ref_)
 
         # Print iteration info and save current image
         if verbose:
@@ -250,7 +281,7 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
             print("[{:03d}]: loss = {:.6f}      ".format(i, loss), end='\r')
 
         for sensor_i in range(sensor_count):
-            Bitmap(image_np[sensor_i]).write(
+            Bitmap(images_np[sensor_i]).write(
                 'out_{:03d}_{:d}.exr'.format(i, sensor_i)
                 if sensor_count > 1
                 else 'out_{:03d}.exr'.format(i)
@@ -258,7 +289,7 @@ def optimize_scene(scene, optimized_params, image_ref_, max_iterations=8,
         if verbose:
             print('\n')
 
-    return params, loss, image_np
+    return params, loss, images_np
 
 
 if __name__ == '__main__':
@@ -267,8 +298,6 @@ if __name__ == '__main__':
     parser.add_argument('scene', type=str, help='Path to the scene file')
     parser.add_argument('--list', action='store_true',
                         help='List differentiable parameters in the scene and exit')
-    parser.add_argument('--forward', action='store_true',
-                        help='Also compute a forward gradients image')
     parser.add_argument('--log_level', default=0, type=int,
                         help='Verbosity level for the autodiff backend')
     parser.add_argument('--max_iterations', default=8, type=int,
@@ -287,6 +316,5 @@ if __name__ == '__main__':
 
     ref = FloatD.full(0., np.product(loaded_scene.film().size()))
 
-    differentiable_render(loaded_scene, optimized_params=args.optimized_param, image_ref=ref,
-                          max_iterations=args.max_iterations,
-                          log_level=args.log_level, compute_forward=args.forward)
+    optimize_scene(loaded_scene, optimized_params=args.optimized_param, image_ref=ref,
+                   max_iterations=args.max_iterations, log_level=args.log_level)

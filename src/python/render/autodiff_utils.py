@@ -182,10 +182,10 @@ def image_to_float_d(image, pixel_format, crop_border=True):
         for i in range(image.channel_count()):
             channels.append(FloatD(arr[:, :, i].flatten()))
         if len(channels) == 1:
-            assert pixel_format == 'y'
+            assert pixel_format == Bitmap.EY
             return channels[0]
         elif len(channels) == 3:
-            assert pixel_format == 'rgb'
+            assert pixel_format == Bitmap.ERGB
             return Vector3fD(channels[0], channels[1], channels[2])
         else:
             assert len(channels) == 5
@@ -199,11 +199,11 @@ def image_to_float_d(image, pixel_format, crop_border=True):
         Y *= W
         Z *= W
 
-    if pixel_format == 'y':
+    if pixel_format == Bitmap.EY:
         return Y
-    elif pixel_format == 'xyz':
+    elif pixel_format == Bitmap.EXYZ:
         return Vector3fD(X, Y, Z)
-    elif pixel_format == 'rgb':
+    elif pixel_format == Bitmap.ERGB:
         return Vector3fD(
             3.240479 * X + -1.537150 * Y + -0.498535 * Z,
             -0.969256 * X + 1.875991 * Y + 0.041556 * Z,

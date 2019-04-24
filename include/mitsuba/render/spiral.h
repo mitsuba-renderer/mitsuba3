@@ -33,11 +33,12 @@ public:
     /// Return the total number of blocks
     size_t block_count() { return m_block_count; }
 
-    /// Reset the spiral to its initial state
+    /// Reset the spiral to its initial state. Does not affect the number of passes.
     void reset();
 
     /**
      * Sets the number of time the spiral should automatically reset.
+     * Not affected by a call to \ref reset.
      */
     void set_passes(size_t passes) {
         m_remaining_passes = passes;
