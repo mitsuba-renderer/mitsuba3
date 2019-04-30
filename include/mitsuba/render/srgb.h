@@ -49,12 +49,24 @@ MTS_INLINE Value srgb_model_mean(const Vector3 &coeff_) {
     return mean(result);
 }
 
+#if defined(MTS_ENABLE_AUTODIFF)
+MTS_INLINE FloatD srgb_model_mean_d(const Vector3fD &coeff_) {
+    Throw("Not implemented: srgb_model_mean_d");
+    return zero<FloatD>(coeff_.size());
+}
+#endif
+
 /**
  * Look up the model coefficients for a sRGB color value
  * @param  c An sRGB color value where all components are in [0, 1].
  * @return   Coefficients for use with \ref srgb_model_eval
  */
 extern MTS_EXPORT_RENDER Vector3f srgb_model_fetch(const Color3f &c);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+/// Differentiable variant of \ref srgb_model_fetch.
+extern MTS_EXPORT_RENDER Vector3fD srgb_model_fetch_d(const Color3fD &c);
+#endif
 
 /// Sanity check: convert the coefficients back to sRGB
 template <typename Value>

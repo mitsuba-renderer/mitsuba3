@@ -89,10 +89,101 @@ template <typename Value> Color<Value, 3> srgb_model_eval_rgb(const Vector<Value
     return xyz_to_srgb * accum;
 }
 
-template MTS_EXPORT_RENDER Color<float, 3> srgb_model_eval_rgb(const Vector<float, 3> &coeff);
-
 #if defined(MTS_ENABLE_AUTODIFF)
-    template MTS_EXPORT_RENDER Color<FloatD, 3> srgb_model_eval_rgb(const Vector<FloatD, 3> &coeff);
-#endif
+
+/// Differentiable variant of \ref rgb2spec_fetch
+Vector3fD rgb2spec_fetch_d(RGB2Spec *model, const Color3fD &rgb_) {
+    Color3fD rgb_clamp = max(min(rgb_, 1.f), 0.f);
+    size_t res  = model->res;
+
+    // Compute permutations, z is max
+    MaskD r_max = (rgb_clamp.x() >= rgb_clamp.y()) & (rgb_clamp.x() >= rgb_clamp.z());
+    MaskD g_max = (rgb_clamp.y() >= rgb_clamp.x()) & (rgb_clamp.y() >= rgb_clamp.z());
+    Color3fD xyz(rgb_clamp);
+    UInt32D i(2);
+
+    masked(xyz.x(), r_max) = rgb_clamp.y();
+    masked(xyz.y(), r_max) = rgb_clamp.z();
+    masked(xyz.z(), r_max) = rgb_clamp.x();
+    masked(i, r_max)       = 0;
+
+    masked(xyz.x(), g_max) = rgb_clamp.z();
+    masked(xyz.y(), g_max) = rgb_clamp.x();
+    masked(xyz.z(), g_max) = rgb_clamp.y();
+    masked(i, g_max)       = 1;
+
+    FloatD z_d     = xyz.z();
+    FloatD scale_d = FloatD(res - 1.f) / z_d;
+    FloatD x_d     = xyz.x() * scale_d;
+    FloatD y_d     = xyz.y() * scale_d;
+
+    // Trilinearly interpolated lookup
+    UInt32D xi = min(UInt32D(x_d), UInt32D(res - 2)), yi = min(UInt32D(y_d), UInt32D(res - 2));
+
+    FloatD values = FloatC::copy(model->scale, model->res);
+    FloatD data   = FloatC::copy(model->data, res * res * res * 9);
+
+    UInt32D zi = math::find_interval(
+        model->res,
+        [&](UInt32D idx, MaskD active) { return gather<FloatD>(values, idx, active) <= z_d; },
+        true);
+
+    UInt32D offset = (((i * res + zi) * res + yi) * res + xi) * 3;
+    size_t dx      = 3;
+    size_t dy      = 3 * res;
+    size_t dz      = 3 * res * res;
+
+    FloatD scale_zi    = gather<FloatD>(values, zi);
+    FloatD scale_zi_p1 = gather<FloatD>(values, zi + 1);
+
+    // Differentiable weights
+    FloatD x1 = x_d - xi, x0 = 1.f - x1, y1 = y_d - yi, y0 = 1.f - y1,
+           z1 = (z_d - scale_zi) / (scale_zi_p1 - scale_zi), z0 = 1.f - z1;
+
+    Vector3fD output(0.f);
+
+    // Loop on the 3 coefficients
+    for (int j = 0; j < 3; ++j) {
+        // Need to do 8 gathers, and combine then with the weights
+        FloatD v000 = gather<FloatD>(data, offset);
+        FloatD v100 = gather<FloatD>(data, offset + dx);
+        FloatD v010 = gather<FloatD>(data, offset + dy);
+        FloatD v110 = gather<FloatD>(data, offset + dy + dx);
+        FloatD v001 = gather<FloatD>(data, offset + dz);
+        FloatD v101 = gather<FloatD>(data, offset + dx + dz);
+        FloatD v011 = gather<FloatD>(data, offset + dy + dz);
+        FloatD v111 = gather<FloatD>(data, offset + dy + dx + dz);
+
+        FloatD coeff = ((v000 * x0 + v100 * x1) * y0 + (v010 * x0 + v110 * x1) * y1) * z0 +
+                       ((v001 * x0 + v101 * x1) * y0 + (v011 * x0 + v111 * x1) * y1) * z1;
+
+        output[j] = coeff;
+        offset += 1;
+    }
+
+    return output;
+}
+
+Vector3fD srgb_model_fetch_d(const Color3fD &c) {
+    if (unlikely(model == nullptr)) {
+        tbb::spin_mutex::scoped_lock c(model_mutex);
+        if (model == nullptr) {
+            FileResolver *fr  = Thread::thread()->file_resolver();
+            std::string fname = fr->resolve("data/srgb.coeff").string();
+            Log(EInfo, "Loading spectral upsampling model \"data/srgb.coeff\" .. ");
+            model = rgb2spec_load(fname.c_str());
+            if (model == nullptr)
+                Throw("Could not load sRGB-to-spectrum upsampling model ('data/srgb.coeff')");
+            atexit([] { rgb2spec_free(model); });
+        }
+    }
+
+    return rgb2spec_fetch_d(model, c);
+}
+
+template MTS_EXPORT_RENDER Color<FloatD, 3> srgb_model_eval_rgb(const Vector<FloatD, 3> &coeff);
+#endif // end MTS_ENABLE_AUTODIFF
+
+template MTS_EXPORT_RENDER Color<float, 3> srgb_model_eval_rgb(const Vector<float, 3> &coeff);
 
 NAMESPACE_END(mitsuba)
