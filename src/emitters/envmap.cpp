@@ -44,10 +44,10 @@ public:
                 Float scale = hmax(rgb) * 2.f;
                 Color3f rgb_norm = rgb / std::max((Float) 1e-8, scale);
 
-                /* Fetch spectral fit for given sRGB color value */
+                // Fetch spectral fit for given sRGB color value
                 Vector4f coeff = concat(srgb_model_fetch(rgb_norm), scale);
 
-                /* Overwrite the pixel value with the coefficients */
+                // Overwrite the pixel value with the coefficients
                 *lum_ptr++ = mitsuba::luminance(rgb) * sin_theta;
                 store_unaligned(ptr, coeff);
                 ptr += 4;
@@ -57,6 +57,10 @@ public:
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(m_bitmap->size(), luminance.get());
         m_d65 = ContinuousSpectrum::D65(1.f, m_monochrome);
+
+#if defined(MTS_ENABLE_AUTODIFF)
+        m_bitmap_d = FloatC::copy(m_bitmap->data(), hprod(m_bitmap->size()) * 3);
+#endif
     }
 
     ref<Shape> create_shape(const Scene *scene) override {
@@ -198,10 +202,10 @@ protected:
     Spectrum eval_spectral(Point2f uv,
                            const Spectrum &wavelengths,
                            Mask active) const {
-        using Value    = value_t<Point2f>;
-        using UInt32   = uint32_array_t<Value>;
-        using Point2u  = Point<UInt32, 2>;
-        using Vector4f = Vector<Value, 4>;
+        using Value   = value_t<Point2f>;
+        using UInt32  = uint32_array_t<Value>;
+        using Point2u = Point<UInt32, 2>;
+        using Vector4 = Vector<Value, 4>;
 
         uv *= Vector2f(m_bitmap->size() - 1u);
 
@@ -212,14 +216,24 @@ protected:
 
         UInt32 index = pos.x() + pos.y() * (uint32_t) m_bitmap->size().x();
 
-        const Float *ptr = (const Float *) m_bitmap->data();
+        Vector4 v00, v10, v01, v11;
+        if constexpr (is_diff_array_v<Value>) {
+#if defined(MTS_ENABLE_AUTODIFF)
+            uint32_t width = (uint32_t) m_bitmap->size().x();
+            v00            = gather<Vector4>(m_bitmap_d, index, active);
+            v10            = gather<Vector4>(m_bitmap_d, index + 1u, active);
+            v01            = gather<Vector4>(m_bitmap_d, index + width, active);
+            v11            = gather<Vector4>(m_bitmap_d, index + width + 1u, active);
+#endif
+        } else {
+            uint32_t width   = (uint32_t) m_bitmap->size().x() * 4;
+            const Float *ptr = (const Float *) m_bitmap->data();
 
-        uint32_t width = (uint32_t) m_bitmap->size().x() * 4;
-
-        Vector4f v00 = gather<Vector4f>(ptr, index, active),
-                 v10 = gather<Vector4f>(ptr + 4, index, active),
-                 v01 = gather<Vector4f>(ptr + width, index, active),
-                 v11 = gather<Vector4f>(ptr + width + 4, index, active);
+            v00 = gather<Vector4>(ptr, index, active);
+            v10 = gather<Vector4>(ptr + 4, index, active);
+            v01 = gather<Vector4>(ptr + width, index, active);
+            v11 = gather<Vector4>(ptr + width + 4, index, active);
+        }
 
         Spectrum s00 = srgb_model_eval(head<3>(v00), wavelengths),
                  s10 = srgb_model_eval(head<3>(v10), wavelengths),
@@ -242,6 +256,10 @@ protected:
     Warp m_warp;
     ref<ContinuousSpectrum> m_d65;
     Float m_scale;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    FloatD m_bitmap_d;
+#endif
 };
 
 MTS_IMPLEMENT_CLASS(EnvironmentMapEmitter, Emitter)

@@ -12,13 +12,13 @@ Sampler::Sampler(const Properties &props) {
 Sampler::~Sampler() { }
 
 void Sampler::seed(size_t) { NotImplementedError("seed"); }
-void Sampler::seed(size_t, size_t) { NotImplementedError("seed"); }
 Float Sampler::next_1d() { NotImplementedError("next_1d"); }
 FloatP Sampler::next_1d_p(MaskP) { NotImplementedError("next_1d_p"); }
 Point2f Sampler::next_2d() { NotImplementedError("next_2d"); }
 Point2fP Sampler::next_2d_p(MaskP) { NotImplementedError("next_2d_p"); }
 
 #if defined(MTS_ENABLE_AUTODIFF)
+void Sampler::seed(size_t, size_t) { NotImplementedError("seed"); }
 FloatD Sampler::next_1d_d(MaskD) { NotImplementedError("next_1d_d"); }
 Point2fD Sampler::next_2d_d(MaskD) { NotImplementedError("next_2d_d"); }
 FloatD Sampler::next_1d_d(UInt32D, MaskD) { NotImplementedError("next_1d_d"); }

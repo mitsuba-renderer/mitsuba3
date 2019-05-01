@@ -327,13 +327,13 @@ template <typename Point2, typename Vector3 = vector3_t<Point2>>
 MTS_INLINE Vector3 square_to_uniform_hemisphere(const Point2 &sample) {
     using Scalar = scalar_t<Point2>;
 #if 0
-    /* Approach 1: warping method based on standard disk mapping */
+    // Approach 1: warping method based on standard disk mapping
     auto z = sample.y();
     auto tmp = safe_sqrt(Scalar(1) - z*z);
     auto sc = sincos(Scalar(2 * math::Pi) * sample.x());
     return Vector3(sc.second * tmp, sc.first * tmp, z);
 #else
-    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    // Approach 2: low-distortion warping technique based on concentric disk mapping
     Point2 p = square_to_uniform_disk_concentric(sample);
     auto z = Scalar(1) - squared_norm(p);
     p *= sqrt(z + Scalar(1));
@@ -369,10 +369,10 @@ template <typename Point2, typename Vector3 = vector3_t<Point2>>
 MTS_INLINE Vector3 square_to_cosine_hemisphere(const Point2 &sample) {
     using Scalar = scalar_t<Vector3>;
 
-    /* Low-distortion warping technique based on concentric disk mapping */
+    // Low-distortion warping technique based on concentric disk mapping
     Point2 p = square_to_uniform_disk_concentric(sample);
 
-    /* Guard against numerical imprecisions */
+    // Guard against numerical imprecisions
     auto z = safe_sqrt(Scalar(1) - p.x() * p.x() - p.y() * p.y());
 
     return Vector3(p.x(), p.y(), z);
@@ -411,7 +411,7 @@ template <typename Point2,
           typename Value   = value_t<Point2>>
 MTS_INLINE Vector3 square_to_uniform_cone(const Point2 &sample, const Value &cos_cutoff) {
 #if 0
-    /* Approach 1: warping method based on standard disk mapping */
+    // Approach 1: warping method based on standard disk mapping
     auto cos_theta = (1 - sample.y()) + sample.y() * cos_cutoff;
     auto sin_theta = safe_sqrt(1 - cos_theta * cos_theta);
 
@@ -420,7 +420,7 @@ MTS_INLINE Vector3 square_to_uniform_cone(const Point2 &sample, const Value &cos
                    sc.first * sin_theta,
                    cos_theta);
 #else
-    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    // Approach 2: low-distortion warping technique based on concentric disk mapping
     Value one_minus_cos_cutoff(1 - cos_cutoff);
     Point2 p = square_to_uniform_disk_concentric(sample);
     auto pn = squared_norm(p);
@@ -466,7 +466,7 @@ template <typename Point2,
           typename Value   = value_t<Point2>>
 MTS_INLINE Vector3 square_to_beckmann(const Point2 &sample, const Value &alpha) {
 #if 0
-    /* Approach 1: warping method based on standard disk mapping */
+    // Approach 1: warping method based on standard disk mapping
     auto sc = sincos(2.0f * math::Pi * sample.x());
 
     Value tan_theta_m_sqr = -alpha * alpha * log(1 - sample.y());
@@ -475,7 +475,7 @@ MTS_INLINE Vector3 square_to_beckmann(const Point2 &sample, const Value &alpha) 
 
     return Vector3(sin_theta_m * sc.second, sin_theta_m * sc.first, cos_theta_m);
 #else
-    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    // Approach 2: low-distortion warping technique based on concentric disk mapping
     Point2 p = square_to_uniform_disk_concentric(sample);
     Value r2 = squared_norm(p);
 
@@ -530,7 +530,7 @@ MTS_INLINE Vector3 square_to_von_mises_fisher(const Point2 &sample, Float kappa)
     assert(kappa > 0.0f);
 
 #if 0
-    /* Approach 1: warping method based on standard disk mapping */
+    // Approach 1: warping method based on standard disk mapping
 
     #if 0
         /* Approach 1.1: standard inversion method algorithm for sampling the
@@ -549,7 +549,7 @@ MTS_INLINE Vector3 square_to_von_mises_fisher(const Point2 &sample, Float kappa)
     Value sin_theta = safe_sqrt(1.0f - cos_theta * cos_theta);
     return select(mask, result, Vector3(sc.second * sin_theta, sc.first * sin_theta, cos_theta));
 #else
-    /* Approach 2: low-distortion warping technique based on concentric disk mapping */
+    // Approach 2: low-distortion warping technique based on concentric disk mapping
     Point2 p = square_to_uniform_disk_concentric(sample);
 
     Value r2 = squared_norm(p);
@@ -606,10 +606,10 @@ Vector3 square_to_rough_fiber(Point3 sample, const Vector3 &wi_, const Vector3 &
 
     Frame<Vector3> tframe(tangent);
 
-    /* Convert to local coordinate frame with Z = fiber tangent */
+    // Convert to local coordinate frame with Z = fiber tangent
     Vector3 wi = tframe.to_local(wi_);
 
-    /* Sample a point on the reflection cone */
+    // Sample a point on the reflection cone
     auto sc = sincos(2.0f * math::Pi * sample.x());
 
     Scalar cos_theta = wi.z();
@@ -617,14 +617,14 @@ Vector3 square_to_rough_fiber(Point3 sample, const Vector3 &wi_, const Vector3 &
 
     Vector3 wo(sc.second * sin_theta, sc.first * sin_theta, -cos_theta);
 
-    /* Sample a roughness perturbation from a vMF distribution */
+    // Sample a roughness perturbation from a vMF distribution
     Vector3 perturbation =
         square_to_von_mises_fisher(Point2(sample.y(), sample.z()), kappa);
 
-    /* Express perturbation relative to 'wo' */
+    // Express perturbation relative to 'wo'
     wo = Frame<Vector3>(wo).to_world(perturbation);
 
-    /* Back to global coordinate frame */
+    // Back to global coordinate frame
     return tframe.to_world(wo);
 }
 
@@ -716,7 +716,11 @@ Scalar square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vect
  */
 template <size_t Dimension = 0> class Hierarchical2D {
 private:
-    using FloatStorage = std::unique_ptr<Float[]>;
+#if defined(MTS_ENABLE_AUTODIFF)
+    using FloatStorage = std::vector<Float, enoki::cuda_host_allocator<Float>>;
+#else
+    using FloatStorage = std::vector<Float>;
+#endif
 
 #if !defined(_MSC_VER)
     static constexpr size_t ArraySize = Dimension;
@@ -754,10 +758,10 @@ public:
         if (any(size < 2))
             Throw("warp::Hierarchical2D(): input array resolution must be >= 2!");
 
-        /* The linear interpolant has 'size-1' patches */
+        // The linear interpolant has 'size-1' patches
         Vector2u n_patches = size - 1u;
 
-        /* Keep track of the dependence on additional parameters (optional) */
+        // Keep track of the dependence on additional parameters (optional)
         uint32_t max_level   = math::log2i_ceil(hmax(n_patches)),
                  slices      = 1u;
         for (int i = (int) Dimension - 1; i >= 0; --i) {
@@ -765,8 +769,8 @@ public:
                 Throw("warp::Hierarchical2D(): parameter resolution must be >= 1!");
 
             m_param_size[i] = param_res[i];
-            m_param_values[i] = FloatStorage(new Float[param_res[i]]);
-            memcpy(m_param_values[i].get(), param_values[i],
+            m_param_values[i].resize(param_res[i]);
+            memcpy(m_param_values[i].data(), param_values[i],
                    sizeof(Float) * param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? slices : 0;
             slices *= m_param_size[i];
@@ -797,7 +801,7 @@ public:
             return;
         }
 
-        /* Allocate memory for input array and MIP hierarchy */
+        // Allocate memory for input array and MIP hierarchy
         m_levels.reserve(max_level + 2);
         m_levels.emplace_back(size, slices);
 
@@ -812,7 +816,7 @@ public:
             uint32_t offset0 = m_levels[0].size * slice,
                      offset1 = m_levels[1].size * slice;
 
-            /* Integrate linear interpolant */
+            // Integrate linear interpolant
             const Float *in = data + offset0;
 
             double sum = 0.0;
@@ -827,14 +831,14 @@ public:
                 ++in;
             }
 
-            /* Copy and normalize fine resolution interpolant */
+            // Copy and normalize fine resolution interpolant
             Float scale = normalize ? (hprod(n_patches) / (Float) sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
                 m_levels[0].data[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
                 m_levels[1].data[offset1 + i] *= scale;
 
-            /* Build a MIP hierarchy */
+            // Build a MIP hierarchy
             level_size = n_patches;
             for (uint32_t level = 2; level <= max_level + 1; ++level) {
                 const Level &l0 = m_levels[level - 1];
@@ -843,7 +847,7 @@ public:
                 offset1 = l1.size * slice;
                 level_size = sr<1>(level_size + 1u);
 
-                /* Downsample */
+                // Downsample
                 for (uint32_t y = 0; y < level_size.y(); ++y) {
                     for (uint32_t x = 0; x < level_size.x(); ++x) {
                         Float *d1 = l1.ptr(Vector2u(x, y)) + offset1;
@@ -868,7 +872,7 @@ public:
         using UInt32 = value_t<Vector2u>;
         using Mask = mask_t<Value>;
 
-        /* Look up parameter-related indices and weights (if Dimension != 0) */
+        // Look up parameter-related indices and weights (if Dimension != 0)
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
@@ -881,13 +885,13 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].get(), idx,
+                    return gather<Value>(m_param_values[dim].data(), idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
+            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
+                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -895,14 +899,14 @@ public:
             slice_offset += m_param_strides[dim] * param_index;
         }
 
-        /* Hierarchical sample warping */
+        // Hierarchical sample warping
         Vector2u offset = zero<Vector2u>();
         for (int l = (int) m_levels.size() - 2; l > 0; --l) {
             const Level &level = m_levels[l];
 
             offset = sl<1>(offset);
 
-            /* Fetch values from next MIP level */
+            // Fetch values from next MIP level
             UInt32 offset_i = level.index(offset);
             if (Dimension != 0)
                 offset_i += slice_offset * level.size;
@@ -922,10 +926,10 @@ public:
             Value v11 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
 
-            /* Avoid issues with roundoff error */
+            // Avoid issues with roundoff error
             sample = clamp(sample, 0.f, 1.f);
 
-            /* Select the row */
+            // Select the row
             Value r0 = v00 + v10,
                   r1 = v01 + v11;
             sample.y() *= r0 + r1;
@@ -934,7 +938,7 @@ public:
             masked(sample.y(), mask) -= r0;
             sample.y() /= select(mask, r1, r0);
 
-            /* Select the column */
+            // Select the column
             Value c0 = select(mask, v01, v00),
                   c1 = select(mask, v11, v10);
             sample.x() *= c0 + c1;
@@ -950,7 +954,7 @@ public:
         if (Dimension != 0)
             offset_i += slice_offset * level0.size;
 
-        /* Fetch corners of bilinear patch */
+        // Fetch corners of bilinear patch
         Value v00 = level0.template lookup<Dimension>(
             offset_i, m_param_strides, param_weight, active);
 
@@ -968,11 +972,11 @@ public:
               r0_2 = r0 * r0,
               r1_2 = r1 * r1;
 
-        /* Invert marginal CDF in the 'y' parameter */
+        // Invert marginal CDF in the 'y' parameter
         masked(sample.y(), abs(r0 - r1) > 1e-4f * (r0 + r1)) =
             (r0 - safe_sqrt(r0_2 + sample.y() * (r1_2 - r0_2))) / (r0 - r1);
 
-        /* Invert conditional CDF in the 'x' parameter */
+        // Invert conditional CDF in the 'x' parameter
         Value c0   = fmadd(1.f - sample.y(), v00, sample.y() * v01),
               c1   = fmadd(1.f - sample.y(), v10, sample.y() * v11),
               c0_2 = c0 * c0,
@@ -999,7 +1003,7 @@ public:
 
         const Level &level0 = m_levels[0];
 
-        /* Look up parameter-related indices and weights (if Dimension != 0) */
+        // Look up parameter-related indices and weights (if Dimension != 0)
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
@@ -1012,13 +1016,13 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].get(), idx,
+                    return gather<Value>(m_param_values[dim].data(), idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
+            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
+                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -1026,7 +1030,7 @@ public:
             slice_offset += m_param_strides[dim] * param_index;
         }
 
-        /* Fetch values at corners of bilinear patch */
+        // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
         Vector2u offset = min(Vector2u(Vector2i(sample)), m_max_patch_index);
         UInt32 offset_i = offset.x() + offset.y() * level0.width;
@@ -1061,11 +1065,11 @@ public:
         masked(sample.y(), abs(r1 - r0) > 1e-4f * (r0 + r1)) *=
             (2.f * r0 + sample.y() * (r1 - r0)) / (r0 + r1);
 
-        /* Hierarchical sample warping -- reverse direction */
+        // Hierarchical sample warping -- reverse direction
         for (int l = 1; l < (int) m_levels.size() - 1; ++l) {
             const Level &level = m_levels[l];
 
-            /* Fetch values from next MIP level */
+            // Fetch values from next MIP level
             offset_i = level.index(offset & ~1u);
             if (Dimension != 0)
                 offset_i += slice_offset * level.size;
@@ -1101,7 +1105,7 @@ public:
             masked(sample.x(), x_mask) += c0;
             sample.x() /= c0 + c1;
 
-            /* Avoid issues with roundoff error */
+            // Avoid issues with roundoff error
             sample = clamp(sample, 0.f, 1.f);
 
             offset = sr<1>(offset);
@@ -1122,7 +1126,7 @@ public:
         using UInt32 = value_t<Vector2u>;
         using Mask = mask_t<Value>;
 
-        /* Look up parameter-related indices and weights (if Dimension != 0) */
+        // Look up parameter-related indices and weights (if Dimension != 0)
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
@@ -1135,13 +1139,13 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].get(), idx,
+                    return gather<Value>(m_param_values[dim].data(), idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
+            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
+                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -1149,7 +1153,7 @@ public:
             slice_offset += m_param_strides[dim] * param_index;
         }
 
-        /* Compute linear interpolation weights */
+        // Compute linear interpolation weights
         pos *= m_inv_patch_size;
         Vector2u offset = min(Vector2u(pos), m_max_patch_index);
         Vector2f w1 = pos - Vector2f(Vector2i(offset)),
@@ -1218,8 +1222,8 @@ private:
         Level() { }
         Level(Vector2u res, uint32_t slices) : size(hprod(res)), width(res.x()) {
             uint32_t alloc_size = size  * slices;
-            data = FloatStorage(new Float[alloc_size]);
-            memset(data.get(), 0, alloc_size * sizeof(Float));
+            data.resize(alloc_size);
+            memset(data.data(), 0, alloc_size * sizeof(Float));
         }
 
         /**
@@ -1235,8 +1239,11 @@ private:
                    ((p.y() & ~1u) * width);
         }
 
-        MTS_INLINE Float *ptr(const Vector2i &p) const {
-            return data.get() + index(p);
+        MTS_INLINE Float *ptr(const Vector2i &p) {
+            return data.data() + index(p);
+        }
+        MTS_INLINE const Float *ptr(const Vector2i &p) const {
+            return data.data() + index(p);
         }
 
         template <size_t Dim, typename Index, typename Value,
@@ -1259,7 +1266,7 @@ private:
                   std::enable_if_t<Dim == 0, int> = 0>
         MTS_INLINE Value lookup(Index index, const uint32_t *,
                                 const Value *, mask_t<Value> active) const {
-            return gather<Value>(data.get(), index, active);
+            return gather<Value>(data.data(), index, active);
         }
     };
 
@@ -1318,7 +1325,11 @@ private:
  */
 template <size_t Dimension = 0> class Marginal2D {
 private:
-    using FloatStorage = std::unique_ptr<Float[]>;
+#if defined(MTS_ENABLE_AUTODIFF)
+    using FloatStorage = std::vector<Float, enoki::cuda_host_allocator<Float>>;
+#else
+    using FloatStorage = std::vector<Float>;
+#endif
 
 #if !defined(_MSC_VER)
     static constexpr size_t ArraySize = Dimension;
@@ -1359,15 +1370,15 @@ public:
         if (build_cdf && !normalize)
             Throw("Marginal2D: build_cdf implies normalize=true");
 
-        /* Keep track of the dependence on additional parameters (optional) */
+        // Keep track of the dependence on additional parameters (optional)
         uint32_t slices = 1;
         for (int i = (int) Dimension - 1; i >= 0; --i) {
             if (param_res[i] < 1)
                 Throw("warp::Marginal2D(): parameter resolution must be >= 1!");
 
             m_param_size[i] = param_res[i];
-            m_param_values[i] = FloatStorage(new Float[param_res[i]]);
-            memcpy(m_param_values[i].get(), param_values[i],
+            m_param_values[i].resize(param_res[i]);
+            memcpy(m_param_values[i].data(), param_values[i],
                    sizeof(Float) * param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? slices : 0;
             slices *= m_param_size[i];
@@ -1375,18 +1386,18 @@ public:
 
         uint32_t n_values = hprod(size);
 
-        m_data = FloatStorage(new Float[slices * n_values]);
+        m_data.resize(slices * n_values);
 
         if (build_cdf) {
-            m_marginal_cdf = FloatStorage(new Float[slices * m_size.y()]);
-            m_conditional_cdf = FloatStorage(new Float[slices * n_values]);
+            m_marginal_cdf.resize(slices * m_size.y());
+            m_conditional_cdf.resize(slices * n_values);
 
-            Float *marginal_cdf = m_marginal_cdf.get(),
-                  *conditional_cdf = m_conditional_cdf.get(),
-                  *data_out = m_data.get();
+            Float *marginal_cdf = m_marginal_cdf.data(),
+                  *conditional_cdf = m_conditional_cdf.data(),
+                  *data_out = m_data.data();
 
             for (uint32_t slice = 0; slice < slices; ++slice) {
-                /* Construct conditional CDF */
+                // Construct conditional CDF
                 for (uint32_t y = 0; y < m_size.y(); ++y) {
                     double sum = 0.0;
                     size_t i = y * size.x();
@@ -1397,7 +1408,7 @@ public:
                     }
                 }
 
-                /* Construct marginal CDF */
+                // Construct marginal CDF
                 marginal_cdf[0] = 0.f;
                 double sum = 0.0;
                 for (uint32_t y = 0; y < m_size.y() - 1; ++y) {
@@ -1406,7 +1417,7 @@ public:
                     marginal_cdf[y + 1] = (Float) sum;
                 }
 
-                /* Normalize CDFs and PDF (if requested) */
+                // Normalize CDFs and PDF (if requested)
                 Float normalization = 1.f / marginal_cdf[m_size.y() - 1];
                 for (size_t i = 0; i < n_values; ++i)
                     conditional_cdf[i] *= normalization;
@@ -1421,7 +1432,7 @@ public:
                 data += n_values;
             }
         } else {
-            Float *data_out = m_data.get();
+            Float *data_out = m_data.data();
 
             for (uint32_t slice = 0; slice < slices; ++slice) {
                 Float normalization = 1.f / hprod(m_inv_patch_size);
@@ -1464,10 +1475,10 @@ public:
         using UInt32 = value_t<Vector2u>;
         using Mask = mask_t<Value>;
 
-        /* Avoid degeneracies at the extrema */
+        // Avoid degeneracies at the extrema
         sample = clamp(sample, 1.f - math::OneMinusEpsilon, math::OneMinusEpsilon);
 
-        /* Look up parameter-related indices and weights (if Dimension != 0) */
+        // Look up parameter-related indices and weights (if Dimension != 0)
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
@@ -1480,13 +1491,13 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].get(), idx,
+                    return gather<Value>(m_param_values[dim].data(), idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
+            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
+                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -1494,13 +1505,13 @@ public:
             slice_offset += m_param_strides[dim] * param_index;
         }
 
-        /* Sample the row first */
+        // Sample the row first
         UInt32 offset = 0;
         if (Dimension != 0)
             offset = slice_offset * m_size.y();
 
         auto fetch_marginal = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Value {
-            return lookup<Dimension>(m_marginal_cdf.get(), offset + idx,
+            return lookup<Dimension>(m_marginal_cdf.data(), offset + idx,
                                      m_size.y(), param_weight, active_);
         };
 
@@ -1518,10 +1529,10 @@ public:
         if (Dimension != 0)
             offset += slice_offset * slice_size;
 
-        Value r0 = lookup<Dimension>(m_conditional_cdf.get(),
+        Value r0 = lookup<Dimension>(m_conditional_cdf.data(),
                                      offset + m_size.x() - 1, slice_size,
                                      param_weight, active),
-              r1 = lookup<Dimension>(m_conditional_cdf.get(),
+              r1 = lookup<Dimension>(m_conditional_cdf.data(),
                                      offset + (m_size.x() * 2 - 1), slice_size,
                                      param_weight, active);
 
@@ -1530,13 +1541,13 @@ public:
             r0 - safe_sqrt(r0 * r0 - 2.f * sample.y() * (r0 - r1)));
         sample.y() /= select(is_const, r0 + r1, r0 - r1);
 
-        /* Sample the column next */
+        // Sample the column next
         sample.x() *= (1.f - sample.y()) * r0 + sample.y() * r1;
 
         auto fetch_conditional = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Value {
-            Value v0 = lookup<Dimension>(m_conditional_cdf.get(), offset + idx,
+            Value v0 = lookup<Dimension>(m_conditional_cdf.data(), offset + idx,
                                          slice_size, param_weight, active_),
-                  v1 = lookup<Dimension>(m_conditional_cdf.get() + m_size.x(),
+                  v1 = lookup<Dimension>(m_conditional_cdf.data() + m_size.x(),
                                          offset + idx, slice_size, param_weight, active_);
 
             return (1.f - sample.y()) * v0 + sample.y() * v1;
@@ -1553,13 +1564,13 @@ public:
 
         offset += col;
 
-        Value v00 = lookup<Dimension>(m_data.get(), offset, slice_size,
+        Value v00 = lookup<Dimension>(m_data.data(), offset, slice_size,
                                       param_weight, active),
-              v10 = lookup<Dimension>(m_data.get() + 1, offset, slice_size,
+              v10 = lookup<Dimension>(m_data.data() + 1, offset, slice_size,
                                       param_weight, active),
-              v01 = lookup<Dimension>(m_data.get() + m_size.x(), offset,
+              v01 = lookup<Dimension>(m_data.data() + m_size.x(), offset,
                                       slice_size, param_weight, active),
-              v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, offset,
+              v11 = lookup<Dimension>(m_data.data() + m_size.x() + 1, offset,
                                       slice_size, param_weight, active),
               c0  = fmadd((1.f - sample.y()), v00, sample.y() * v01),
               c1  = fmadd((1.f - sample.y()), v10, sample.y() * v11);
@@ -1585,7 +1596,7 @@ public:
         using UInt32 = value_t<Vector2u>;
         using Mask = mask_t<Value>;
 
-        /* Look up parameter-related indices and weights (if Dimension != 0) */
+        // Look up parameter-related indices and weights (if Dimension != 0)
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
@@ -1598,13 +1609,13 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].get(), idx,
+                    return gather<Value>(m_param_values[dim].data(), idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
+            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
+                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -1612,7 +1623,7 @@ public:
             slice_offset += m_param_strides[dim] * param_index;
         }
 
-        /* Fetch values at corners of bilinear patch */
+        // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
         Vector2u pos = min(Vector2u(sample), m_size - 2u);
         sample -= Vector2f(Vector2i(pos));
@@ -1622,14 +1633,14 @@ public:
         if (Dimension != 0)
             offset += slice_offset * slice_size;
 
-        /* Invert the X component */
-        Value v00 = lookup<Dimension>(m_data.get(), offset, slice_size,
+        // Invert the X component
+        Value v00 = lookup<Dimension>(m_data.data(), offset, slice_size,
                                       param_weight, active),
-              v10 = lookup<Dimension>(m_data.get() + 1, offset, slice_size,
+              v10 = lookup<Dimension>(m_data.data() + 1, offset, slice_size,
                                       param_weight, active),
-              v01 = lookup<Dimension>(m_data.get() + m_size.x(), offset, slice_size,
+              v01 = lookup<Dimension>(m_data.data() + m_size.x(), offset, slice_size,
                                       param_weight, active),
-              v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, offset, slice_size,
+              v11 = lookup<Dimension>(m_data.data() + m_size.x() + 1, offset, slice_size,
                                       param_weight, active);
 
         Vector2f w1 = sample, w0 = 1.f - w1;
@@ -1640,9 +1651,9 @@ public:
 
         sample.x() *= c0 + .5f * sample.x() * (c1 - c0);
 
-        Value v0 = lookup<Dimension>(m_conditional_cdf.get(), offset,
+        Value v0 = lookup<Dimension>(m_conditional_cdf.data(), offset,
                                      slice_size, param_weight, active),
-              v1 = lookup<Dimension>(m_conditional_cdf.get() + m_size.x(),
+              v1 = lookup<Dimension>(m_conditional_cdf.data() + m_size.x(),
                                      offset, slice_size, param_weight, active);
 
         sample.x() += (1.f - sample.y()) * v0 + sample.y() * v1;
@@ -1651,23 +1662,23 @@ public:
         if (Dimension != 0)
             offset += slice_offset * slice_size;
 
-        Value r0 = lookup<Dimension>(m_conditional_cdf.get(),
+        Value r0 = lookup<Dimension>(m_conditional_cdf.data(),
                                      offset + m_size.x() - 1, slice_size,
                                      param_weight, active),
-              r1 = lookup<Dimension>(m_conditional_cdf.get(),
+              r1 = lookup<Dimension>(m_conditional_cdf.data(),
                                      offset + (m_size.x() * 2 - 1), slice_size,
                                      param_weight, active);
 
         sample.x() /= (1.f - sample.y()) * r0 + sample.y() * r1;
 
-        /* Invert the Y component */
+        // Invert the Y component
         sample.y() *= r0 + .5f * sample.y() * (r1 - r0);
 
         offset = pos.y();
         if (Dimension != 0)
             offset += slice_offset * m_size.y();
 
-        sample.y() += lookup<Dimension>(m_marginal_cdf.get(), offset,
+        sample.y() += lookup<Dimension>(m_marginal_cdf.data(), offset,
                                         m_size.y(), param_weight, active);
 
         return { sample, pdf * hprod(m_inv_patch_size) };
@@ -1685,7 +1696,7 @@ public:
         using UInt32 = value_t<Vector2u>;
         using Mask = mask_t<Value>;
 
-        /* Look up parameter-related indices and weights (if Dimension != 0) */
+        // Look up parameter-related indices and weights (if Dimension != 0)
         Value param_weight[2 * ArraySize];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
@@ -1698,13 +1709,13 @@ public:
             UInt32 param_index = math::find_interval(
                 m_param_size[dim],
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].get(), idx,
+                    return gather<Value>(m_param_values[dim].data(), idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].get(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].get(), param_index + 1, active);
+            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
+                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -1712,7 +1723,7 @@ public:
             slice_offset += m_param_strides[dim] * param_index;
         }
 
-        /* Compute linear interpolation weights */
+        // Compute linear interpolation weights
         pos *= m_inv_patch_size;
         Vector2u offset = min(Vector2u(pos), m_size - 2u);
         Vector2f w1 = pos - Vector2f(Vector2i(offset)),
@@ -1724,13 +1735,13 @@ public:
         if (Dimension != 0)
             index += slice_offset * size;
 
-        Value v00 = lookup<Dimension>(m_data.get(), index, size,
+        Value v00 = lookup<Dimension>(m_data.data(), index, size,
                                       param_weight, active),
-              v10 = lookup<Dimension>(m_data.get() + 1, index, size,
+              v10 = lookup<Dimension>(m_data.data() + 1, index, size,
                                       param_weight, active),
-              v01 = lookup<Dimension>(m_data.get() + m_size.x(), index, size,
+              v01 = lookup<Dimension>(m_data.data() + m_size.x(), index, size,
                                       param_weight, active),
-              v11 = lookup<Dimension>(m_data.get() + m_size.x() + 1, index, size,
+              v11 = lookup<Dimension>(m_data.data() + m_size.x() + 1, index, size,
                                       param_weight, active);
 
         return fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
