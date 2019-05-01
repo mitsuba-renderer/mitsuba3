@@ -3,12 +3,28 @@ import numpy as np
 
 from mitsuba.core import Bitmap, EDebug, Log
 from mitsuba.render import (DifferentiableParameters, RadianceSample3fD, ImageBlock)
-from mitsuba.render.autodiff_utils import (compute_size, indent)
 
-from enoki import (UInt32D, BoolD, FloatC, FloatD, Vector2fD, Vector3fD,
-                   Vector4fD, Matrix4fD, select, eq, rcp, set_requires_gradient,
+from enoki import (UInt32D, BoolD, FloatC, FloatD, Vector2fC, Vector3fC, Vector4fC, Vector2fD, Vector3fD,
+                   Vector4fD, Matrix4fC, Matrix4fD, select, eq, rcp, set_requires_gradient,
                    gather, detach, gradient, slices, set_gradient, sqr, sqrt, cuda_malloc_trim)
 
+
+def indent(s, amount=2):
+    return '\n'.join((' ' * amount if i > 0 else '') + l
+                     for i, l in enumerate(s.splitlines()))
+
+
+def compute_size(data):
+    """Returns the length of the innermost array in `data`."""
+    t = type(data)
+    if t is FloatD or t is FloatC:
+        return len(data)
+    if (t is Vector2fD or t is Vector3fD or t is Vector4fD) or \
+       (t is Vector2fC or t is Vector3fC or t is Vector4fC):
+        return len(data[0])
+    if t is Matrix4fD or t is Matrix4fC:
+        return len(data[0, 0])
+    raise RuntimeError("Optimizer: invalid parameter type " + str(t))
 
 # ------------------------------------------------------------ Optimizers
 class Optimizer:
