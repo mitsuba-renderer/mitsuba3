@@ -73,6 +73,11 @@ public:
      */
     BoundingBox3f bbox() const { return m_bbox; };
 
+    /**
+     * Returns the resolution of the texture, defaults to "1"
+     */
+    virtual Vector3i resolution() const { return Vector3i(1, 1, 1); };
+
     //! @}
     // ======================================================================
 
