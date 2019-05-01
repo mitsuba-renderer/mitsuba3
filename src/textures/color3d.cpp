@@ -68,14 +68,16 @@ public:
         using Index3  = uint32_array_t<Point3>;
         using Vector3 = Vector<Value, 3>;
 
-        p *= Point3(nx<Value>() - 1.f, ny<Value>() - 1.f, nz<Value>() - 1.f);
+        auto max_coordinates = Point3(nx<Value>() - 1.f, ny<Value>() - 1.f, nz<Value>() - 1.f);
+        p *= max_coordinates;
 
-        // Integer part
-        Index3 pi = enoki::floor2int<Index3>(p);
-        active &= all(pi >= 0 && (pi + 1) < Index3(nx<Value>(), ny<Value>(), nz<Value>()));
+        // Integer part (clamped to include the upper bound)
+        Index3 pi  = enoki::floor2int<Index3>(p);
+        pi[active] = clamp(pi, 0, max_coordinates - 1);
 
         // Fractional part
         Point3 f = p - Point3(pi), rf = 1.f - f;
+        active &= all(pi >= 0 && (pi + 1) < Index3(nx<Value>(), ny<Value>(), nz<Value>()));
 
         auto wgather = [&](const Index &index) {
             if constexpr (!is_diff_array_v<Index>) {
