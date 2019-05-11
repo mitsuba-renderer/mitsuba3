@@ -22,6 +22,7 @@ public:
 #endif
     Float mean() const override { PYBIND11_OVERLOAD(Float, Texture3D, mean); }
     Float max() const override { PYBIND11_OVERLOAD(Float, Texture3D, max); }
+    Vector3i resolution() const override { PYBIND11_OVERLOAD(Vector3i, Texture3D, resolution); }
     std::string to_string() const override {
         PYBIND11_OVERLOAD(std::string, Texture3D, to_string);
     }
@@ -62,5 +63,6 @@ MTS_PY_EXPORT(Texture3D) {
         .mdef(Texture3D, mean)
         .mdef(Texture3D, max)
         .mdef(Texture3D, bbox)
+        .mdef(Texture3D, resolution)
         .def("__repr__", &Texture3D::to_string);
 }
