@@ -14,10 +14,10 @@
 #  define MTS_RAY_WIDTH 16
 #elif defined(ENOKI_X86_AVX2)
 #  define MTS_RAY_WIDTH 8
-#elif defined(ENOKI_X86_SSE42)
+#elif defined(ENOKI_X86_SSE42) || defined(ENOKI_ARM_NEON)
 #  define MTS_RAY_WIDTH 4
 #else
-#  error Expected to use vectorization
+#  define MTS_RAY_WIDTH 1
 #endif
 
 #define JOIN(x, y) JOIN_AGAIN(x, y)

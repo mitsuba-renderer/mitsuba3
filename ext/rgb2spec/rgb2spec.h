@@ -1,7 +1,10 @@
 #pragma once
 
 #include <stdint.h>
-#include <immintrin.h>
+
+#if defined(__SSE4_2__)
+#  include <immintrin.h>
+#endif
 
 #ifdef __cplusplus
 extern "C"

@@ -374,7 +374,8 @@ elseif(MSVC)
 endif()
 
 # Disable generation of VZEROUPPER instruction on Clang
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND U_CMAKE_BUILD_TYPE MATCHES REL)
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND U_CMAKE_BUILD_TYPE MATCHES REL
+    AND NOT (${CMAKE_SYSTEM_PROCESSOR} MATCHES "(armv7|aarch64)"))
   add_compile_options("-mllvm" "-x86-use-vzeroupper=0")
 endif()
 
