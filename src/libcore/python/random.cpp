@@ -13,7 +13,7 @@ MTS_PY_EXPORT(random) {
              "initseq"_a = PCG32_DEFAULT_STREAM, DE(PCG32, PCG32))
         .def(py::init<const PCG32 &>(), "Copy constructor")
         .def("seed", &PCG32::seed, "initstate"_a, "initseq"_a = 1u, DE(PCG32, seed))
-        .def("next_uint32", py::overload_cast<>(&PCG32::next_uint32), DE(PCG32, next_uint32))
+        .def("next_uint32", (uint32_t (PCG32::*)()) &PCG32::next_uint32, DE(PCG32, next_uint32))
         .def("next_uint32", [](PCG32 &rng, const std::vector<size_t> &shape) {
             py::array_t<uint32_t> result(shape);
             for (py::ssize_t i = 0; i < result.size(); ++i)
@@ -29,7 +29,7 @@ MTS_PY_EXPORT(random) {
                 result.mutable_data()[i] = rng.next_uint32_bounded(bound);
             return result;
         }, "bound"_a, "shape"_a)
-        .def("next_uint64", py::overload_cast<>(&PCG32::next_uint64), DE(PCG32, next_uint64))
+        .def("next_uint64", (uint64_t (PCG32::*)()) &PCG32::next_uint64, DE(PCG32, next_uint64))
         .def("next_uint64", [](PCG32 &rng, const std::vector<size_t> &shape) {
             py::array_t<uint64_t> result(shape);
             for (py::ssize_t i = 0; i < result.size(); ++i)
@@ -45,14 +45,14 @@ MTS_PY_EXPORT(random) {
                 result.mutable_data()[i] = rng.next_uint64_bounded(bound);
             return result;
         }, "bound"_a, "shape"_a)
-        .def("next_float32", py::overload_cast<>(&PCG32::next_float32), DE(PCG32, next_float32))
+        .def("next_float32", (float (PCG32::*)()) &PCG32::next_float32, DE(PCG32, next_float32))
         .def("next_float32", [](PCG32 &rng, const std::vector<size_t> &shape) {
             py::array_t<float> result(shape);
             for (py::ssize_t i = 0; i < result.size(); ++i)
                 result.mutable_data()[i] = rng.next_float32();
             return result;
         }, "shape"_a)
-        .def("next_float64", py::overload_cast<>(&PCG32::next_float64), DE(PCG32, next_float64))
+        .def("next_float64", (double (PCG32::*)()) &PCG32::next_float64, DE(PCG32, next_float64))
         .def("next_float64", [](PCG32 &rng, const std::vector<size_t> &shape) {
             py::array_t<double> result(shape);
             for (py::ssize_t i = 0; i < result.size(); ++i)
