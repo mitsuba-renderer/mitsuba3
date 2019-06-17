@@ -2,7 +2,7 @@
 
 # Mitsuba Renderer 2
 
-[![Build status](https://rglpc1.epfl.ch/jenkins/buildStatus/icon?job=mitsuba-renderer/mitsuba2/master)](https://rglpc1.epfl.ch/jenkins/blue/organizations/jenkins/mitsuba-renderer%2Fmitsuba2/activity)
+[![Build status](https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba2_Build)/statusIcon)](https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba2_Build&guest=1)
 [![Build status](https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true)](https://ci.appveyor.com/project/wjakob/mitsuba2/branch/master)
 
 Mitsuba 2 is a research-oriented rendering system written in portable C++17.
