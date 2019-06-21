@@ -9,6 +9,7 @@ path_here = fs.current_path()
 
 path1 = path_here / fs.path("dir 1" + sep + "dir 2" + sep)
 path2 = fs.path("dir 3")
+platform_system = platform.system()
 empty_path = fs.path()
 empty_path.clear()
 
@@ -109,7 +110,7 @@ def test08_make_absolute():
 
 # Assumes either Windows or a POSIX system
 def test09_system_specific_tests():
-    if (platform.system() == 'Windows'):
+    if platform_system == 'Windows':
         drive_letter_regexp = re.compile('^[A-Z]:')
         assert drive_letter_regexp.match(str(path_here))
         assert drive_letter_regexp.match(str(fs.absolute(path_here_relative)))

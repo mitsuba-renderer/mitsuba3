@@ -161,7 +161,7 @@ def test03_missing_field(param):
 def test04_missing_field_error():
     s1 = Struct().append('val1', Struct.EUInt32)
     s2 = Struct().append('val2', Struct.EUInt32)
-    with pytest.raises(RuntimeError, message='Unable to find field "val2"'):
+    with pytest.raises(RuntimeError, match='Unable to find field "val2"'):
         s = StructConverter(s1, s2)
         check_conversion(s, '@I', '@I', [1], [1])
 
