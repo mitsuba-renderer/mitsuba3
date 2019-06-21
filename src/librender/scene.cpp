@@ -106,10 +106,10 @@ Scene::Scene(const Properties &props) {
 
     if (!m_integrator) {
         Log(EWarn, "No integrator found! Instantiating a path tracer..");
-        Properties props("path");
-        props.set_bool("monochrome", m_monochrome);
-        props.mark_queried("monochrome");
-        m_integrator = PluginManager::instance()->create_object<Integrator>(props);
+        Properties props_integrator("path");
+        props_integrator.set_bool("monochrome", m_monochrome);
+        props_integrator.mark_queried("monochrome");
+        m_integrator = PluginManager::instance()->create_object<Integrator>(props_integrator);
     }
 
 #if defined(MTS_USE_EMBREE)
