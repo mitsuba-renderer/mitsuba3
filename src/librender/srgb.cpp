@@ -19,7 +19,7 @@ static tbb::spin_mutex model_mutex;
 
 Vector3f srgb_model_fetch(const Color3f &c) {
     if (unlikely(model == nullptr)) {
-        tbb::spin_mutex::scoped_lock c(model_mutex);
+        tbb::spin_mutex::scoped_lock sl(model_mutex);
         if (model == nullptr) {
             FileResolver *fr = Thread::thread()->file_resolver();
             std::string fname = fr->resolve("data/srgb.coeff").string();

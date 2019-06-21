@@ -845,7 +845,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             else
                                 /* Divide by integral of the CIE y matching
                                  * curve */
-                                average *= 0.0093583;
+                                average *= 0.0093583f;
 
                             props2 = ctx.properties("uniform");
                             props2.set_float("value", average);

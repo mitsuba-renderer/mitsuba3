@@ -201,6 +201,12 @@ set(ZMQ_INCLUDE_DIR ${ZMQ_INCLUDE_DIR} PARENT_SCOPE)
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 
 # build rgb2spec
+
+# Disable annoying MSVC warnings
+if (MSVC)
+  add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
+endif()
+
 add_subdirectory(rgb2spec)
 set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
 set_property(TARGET rgb2spec         PROPERTY FOLDER "dependencies")

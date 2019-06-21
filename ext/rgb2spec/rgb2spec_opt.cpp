@@ -328,7 +328,7 @@ int main(int argc, char **argv) {
                     double c0 = 360.0, c1 = 1.0 / (830.0 - 360.0);
                     double A = coeffs[0], B = coeffs[1], C = coeffs[2];
 
-                    int idx = ((l*res + k) * res + j)*res+i;
+                    size_t idx = ((l*res + k) * res + j)*res+i;
 
                     out[3*idx + 0] = float(A*(sqr(c1)));
                     out[3*idx + 1] = float(B*c1 - 2*A*c0*(sqr(c1)));
@@ -350,7 +350,7 @@ int main(int argc, char **argv) {
                     double c0 = 360.0, c1 = 1.0 / (830.0 - 360.0);
                     double A = coeffs[0], B = coeffs[1], C = coeffs[2];
 
-                    int idx = ((l*res + k) * res + j)*res+i;
+                    size_t idx = ((l*res + k) * res + j)*res+i;
 
                     out[3*idx + 0] = float(A*(sqr(c1)));
                     out[3*idx + 1] = float(B*c1 - 2*A*c0*(sqr(c1)));

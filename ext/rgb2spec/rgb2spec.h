@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#if defined(__SSE4_2__)
+#if defined(__SSE4_2__) || defined(__AVX__)
 #  include <immintrin.h>
 #endif
 

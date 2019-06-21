@@ -76,10 +76,10 @@ Scene::Scene(const Properties &props) {
 
     if (m_sensors.size() == 0) {
         Log(EWarn, "No sensors found! Instantiating a perspective camera..");
-        Properties props("perspective");
-        props.set_float("fov", 45.0f);
-        props.set_bool("monochrome", m_monochrome);
-        props.mark_queried("monochrome");
+        Properties sensor_props("perspective");
+        sensor_props.set_float("fov", 45.0f);
+        sensor_props.set_bool("monochrome", m_monochrome);
+        sensor_props.mark_queried("monochrome");
 
         /* Create a perspective camera with a 45 deg. field of view
            and positioned so that it can see the entire scene */
@@ -91,17 +91,17 @@ Scene::Scene(const Properties &props) {
             Float distance =
                 hmax(extents) / (2.f * std::tan(45.f * .5f * math::Pi / 180));
 
-            props.set_float("far_clip", hmax(extents) * 5 + distance);
-            props.set_float("near_clip", distance / 100);
+            sensor_props.set_float("far_clip", hmax(extents) * 5 + distance);
+            sensor_props.set_float("near_clip", distance / 100);
 
-            props.set_float("focus_distance", distance + extents.z() / 2);
-            props.set_transform(
+            sensor_props.set_float("focus_distance", distance + extents.z() / 2);
+            sensor_props.set_transform(
                 "to_world", Transform4f::translate(Vector3f(
                                 center.x(), center.y(), bbox.min.z() - distance)));
         }
 
         m_sensors.push_back(
-            PluginManager::instance()->create_object<Sensor>(props));
+            PluginManager::instance()->create_object<Sensor>(sensor_props));
     }
 
     if (!m_integrator) {
