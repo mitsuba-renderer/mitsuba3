@@ -24,9 +24,9 @@ template <typename VectorN> struct Transform {
     //! @{ \name Type declarations
     // =============================================================
 
-    static constexpr size_t Size = std::decay_t<VectorN>::Size;
+    static constexpr size_t Size = array_size_v<VectorN>;
 
-    using Value   = value_t<std::decay_t<VectorN>>;
+    using Value   = value_t<VectorN>;
     using Matrix  = enoki::Matrix<Value, Size>;
     using Mask    = mask_t<Value>;
     using Scalar  = scalar_t<Value>;

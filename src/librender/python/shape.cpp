@@ -65,7 +65,7 @@ MTS_PY_EXPORT(Shape) {
         .mdef(Shape, surface_area)
         .mdef(Shape, is_emitter)
         .mdef(Shape, is_sensor)
-        .def("emitter", py::overload_cast<>(&Shape::emitter, py::const_))
+        .def("emitter", py::overload_cast<bool>(&Shape::emitter, py::const_), "active"_a = true)
         .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
         .mdef(Shape, primitive_count)
         .mdef(Shape, effective_primitive_count)

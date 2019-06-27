@@ -46,9 +46,12 @@ Release
 # Python
 __pycache__
 *.pyc
+/.pytest_cache
 
 # Binaries
 *.dylib
 *.so
 *.dll
 /src/mitsuba/mitsuba
+/src/mtsgui/mtsgui
+/src/mtsgui/mtsgui_resources.*

@@ -21,7 +21,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \tparam T The underlying point data type (e.g. \c Point2d)
  */
 template <typename Point_> struct BoundingBox {
-    static constexpr size_t Size = Point_::Size;
+    static constexpr size_t Size = array_size_v<Point_>;
 
     using Point  = Point_;
     using Value  = value_t<Point>;

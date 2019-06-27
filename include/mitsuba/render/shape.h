@@ -368,10 +368,10 @@ public:
     bool is_emitter() const { return (bool) m_emitter; }
 
     /// Return the area emitter associated with this shape (if any)
-    const Emitter *emitter() const { return m_emitter.get(); }
+    const Emitter *emitter(bool /* unused */ = false) const { return m_emitter.get(); }
 
     /// Return the area emitter associated with this shape (if any)
-    Emitter *emitter() { return m_emitter.get(); }
+    Emitter *emitter(bool /* unused */ = false) { return m_emitter.get(); }
 
     /// Is this shape also an area sensor?
     bool is_sensor() const { return (bool) m_sensor; }

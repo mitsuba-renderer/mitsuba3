@@ -11,6 +11,7 @@ add_subdirectory(libui)
 
 # Mitsuba executables
 add_subdirectory(mitsuba)
+add_subdirectory(mtsgui)
 
 # Plugins
 add_subdirectory(bsdfs)

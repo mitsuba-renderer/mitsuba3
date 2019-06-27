@@ -424,8 +424,8 @@ public:
         #endif
 
         size_t ncoeffs =
-            to_srgb ? std::extent<decltype(to_srgb_coeffs), 1>::value :
-                      std::extent<decltype(from_srgb_coeffs), 1>::value;
+            to_srgb ? std::extent_v<decltype(to_srgb_coeffs), 1> :
+                      std::extent_v<decltype(from_srgb_coeffs), 1>;
 
         for (size_t i = 0; i < ncoeffs; ++i) {
             for (int j = 0; j < 2; ++j) {

@@ -42,6 +42,10 @@ R"doc(Generate a single precision floating point value on the interval [0,
 
 static const char *__doc_enoki_PCG32_next_float32_2 = R"doc(Masked version of next_float32)doc";
 
+static const char *__doc_enoki_PCG32_next_float32_3 =
+R"doc(Sparse version of next_float32 (only advances a subset of an array of
+RNGs))doc";
+
 static const char *__doc_enoki_PCG32_next_float64 =
 R"doc(Generate a double precision floating point value on the interval [0,
 1)
@@ -52,25 +56,29 @@ Remark:
     the resolution is still finer than in next_float(), which only
     uses 23 mantissa bits))doc";
 
-static const char *__doc_enoki_PCG32_next_float64_2 =
-R"doc(Generate a double precision floating point value on the interval [0,
-1)
+static const char *__doc_enoki_PCG32_next_float64_2 = R"doc(Masked version of next_float64)doc";
 
-Remark:
-    Since the underlying random number generator produces 32 bit
-    output, only the first 32 mantissa bits will be filled (however,
-    the resolution is still finer than in next_float(), which only
-    uses 23 mantissa bits))doc";
+static const char *__doc_enoki_PCG32_next_float64_3 =
+R"doc(Sparse version of next_float64 (only advances a subset of an array of
+RNGs))doc";
 
 static const char *__doc_enoki_PCG32_next_uint32 = R"doc(Generate a uniformly distributed unsigned 32-bit random number)doc";
 
 static const char *__doc_enoki_PCG32_next_uint32_2 = R"doc(Masked version of next_uint32)doc";
+
+static const char *__doc_enoki_PCG32_next_uint32_3 =
+R"doc(Sparse version of next_uint32 (only advances a subset of an array of
+RNGs))doc";
 
 static const char *__doc_enoki_PCG32_next_uint32_bounded = R"doc(Generate a uniformly distributed integer r, where 0 <= r < bound)doc";
 
 static const char *__doc_enoki_PCG32_next_uint64 = R"doc(Generate a uniformly distributed unsigned 64-bit random number)doc";
 
 static const char *__doc_enoki_PCG32_next_uint64_2 = R"doc(Masked version of next_uint64)doc";
+
+static const char *__doc_enoki_PCG32_next_uint64_3 =
+R"doc(Sparse version of next_uint64 (only advances a subset of an array of
+RNGs))doc";
 
 static const char *__doc_enoki_PCG32_next_uint64_bounded = R"doc(Generate a uniformly distributed integer r, where 0 <= r < bound)doc";
 
