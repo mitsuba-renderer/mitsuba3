@@ -136,6 +136,15 @@ public:
     /// Shut down the threading system
     static void static_shutdown();
 
+    /**
+     * \brief Register a new thread (e.g. TBB, Python) with Mituba thread system.
+     * Returns true upon success.
+     */
+    static bool register_external_thread(const std::string &prefix);
+
+    /// Unregister a thread (e.g. TBB, Python) from Mitsuba's thread system.
+    static bool unregister_external_thread();
+
     MTS_DECLARE_CLASS()
 
 protected:
@@ -170,10 +179,9 @@ class MTS_EXPORT_CORE ThreadEnvironment {
     friend class ScopedSetThreadEnvironment;
 public:
     ThreadEnvironment();
-    ~ThreadEnvironment();
-
-    ThreadEnvironment(const ThreadEnvironment &) = delete;
-    ThreadEnvironment& operator=(const ThreadEnvironment &) = delete;
+    ~ThreadEnvironment() = default;
+    ThreadEnvironment(const ThreadEnvironment &) = default;
+    ThreadEnvironment& operator=(const ThreadEnvironment &) = default;
 private:
     ref<Logger> m_logger;
     ref<FileResolver> m_file_resolver;

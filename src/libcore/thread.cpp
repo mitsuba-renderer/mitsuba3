@@ -70,20 +70,20 @@ protected:
     virtual ~MainThread() { }
 };
 
-/// Dummy class to associate a thread identity with the main thread
+/// Dummy class to associate a thread identity with a worker thread
 class WorkerThread : public Thread {
 public:
-    WorkerThread() : Thread(tfm::format("wrk%i", idx++)) { }
+    WorkerThread(const std::string &prefix) : Thread(tfm::format("%s%02i", prefix, m_counter++)) { }
 
-    virtual void run() override { Log(EError, "The worker thread is already running!"); }
+    virtual void run() override { Throw("The worker thread is already running!"); }
 
     MTS_DECLARE_CLASS()
 protected:
     virtual ~WorkerThread() { }
-    static std::atomic<uint32_t> idx;
+    static std::atomic<uint32_t> m_counter;
 };
 
-std::atomic<uint32_t> WorkerThread::idx{0};
+std::atomic<uint32_t> WorkerThread::m_counter{0};
 
 struct Thread::ThreadPrivate {
     std::thread thread;
@@ -443,6 +443,44 @@ std::string Thread::to_string() const {
     return oss.str();
 }
 
+bool Thread::register_external_thread(const std::string &prefix) {
+    if (!ThreadLocalBase::register_thread())
+        return false;
+
+    uint32_t id = thread_id++;
+    WorkerThread *thr = new WorkerThread(prefix);
+    #if defined(__LINUX__) || defined(__OSX__)
+        thr->d->native_handle = pthread_self();
+        pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
+    #elif defined(__WINDOWS__)
+        thr->d->native_handle = GetCurrentThread();
+        this_thread_id = id;
+    #endif
+    thr->d->running = true;
+    thr->d->tbb_thread = true;
+    *self = thr;
+
+    const std::string &thread_name = thr->name();
+    #if defined(__LINUX__)
+        pthread_setname_np(pthread_self(), thread_name.c_str());
+    #elif defined(__OSX__)
+        pthread_setname_np(thread_name.c_str());
+    #elif defined(__WINDOWS__)
+        set_thread_name_(thread_name.c_str());
+    #endif
+
+    return true;
+}
+
+bool Thread::unregister_external_thread() {
+    Thread *thr = *self;
+    if (!thr || !thr->d->tbb_thread)
+        return false;
+    thr->d->running = false;
+    ThreadLocalBase::unregister_thread();
+    return true;
+}
+
 class Thread::TaskObserver : public tbb::task_scheduler_observer {
 public:
     TaskObserver() {
@@ -450,46 +488,14 @@ public:
     }
 
     void on_scheduler_entry(bool) {
-        if (ThreadLocalBase::register_thread()) {
-            uint32_t id = thread_id++;
-            WorkerThread *thr = new WorkerThread();
-            #if defined(__LINUX__) || defined(__OSX__)
-                thr->d->native_handle = pthread_self();
-                pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
-            #elif defined(__WINDOWS__)
-                thr->d->native_handle = GetCurrentThread();
-                this_thread_id = id;
-            #endif
-            thr->d->running = true;
-            thr->d->tbb_thread = true;
-            *self = thr;
-
-            uint32_t worker_id;
-            /* critical section */ {
-                std::unique_lock<std::mutex> lock(m_mutex);
-                worker_id = m_started_counter++;
-            }
-
-            const std::string thread_name = tfm::format("tbb_%03i", worker_id);
-            #if defined(__LINUX__)
-                pthread_setname_np(pthread_self(), thread_name.c_str());
-            #elif defined(__OSX__)
-                pthread_setname_np(thread_name.c_str());
-            #elif defined(__WINDOWS__)
-                set_thread_name_(thread_name.c_str());
-            #endif
-
-            thr->set_core_affinity(worker_id);
+        if (register_external_thread("tbb")) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_started_counter++;
         }
     }
 
     void on_scheduler_exit(bool) {
-        Thread *thr = *self;
-        if (!thr || !thr->d->tbb_thread)
-            return;
-        thr->d->running = false;
-        ThreadLocalBase::unregister_thread();
-        /* critical section */ {
+        if (unregister_external_thread()) {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_stopped_counter++;
             m_cv.notify_all();
@@ -553,8 +559,6 @@ ThreadEnvironment::ThreadEnvironment() {
     m_profiler_flags = *profiler_flags();
 #endif
 }
-
-ThreadEnvironment::~ThreadEnvironment() { }
 
 ScopedSetThreadEnvironment::ScopedSetThreadEnvironment(ThreadEnvironment &env) {
     Thread *thread = Thread::thread();

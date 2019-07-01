@@ -1,7 +1,10 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/tls.h>
 #include <mitsuba/python/python.h>
+
+NAMESPACE_BEGIN(mitsuba)
 
 /**
  * Trampoline class for mitsuba::Thread, allows defining custom threads through
@@ -23,6 +26,39 @@ protected:
         PYBIND11_OVERLOAD_PURE(void, Thread, run);
     }
 };
+
+class PyScopedSetThreadEnvironment {
+public:
+    PyScopedSetThreadEnvironment(const ThreadEnvironment &env) : m_env(env) { }
+
+    void enter() {
+        if (m_ste)
+            return;
+
+        m_registered = Thread::register_external_thread("py");
+        m_ste = new ScopedSetThreadEnvironment(m_env);
+    }
+
+
+    void exit(py::handle, py::handle, py::handle) {
+        if (!m_ste)
+            return;
+
+        delete m_ste;
+        m_ste = nullptr;
+
+        if (m_registered) {
+            Thread::unregister_external_thread();
+            m_registered = false;
+        }
+    }
+
+    ThreadEnvironment m_env;
+    ScopedSetThreadEnvironment *m_ste = nullptr;
+    bool m_registered = false;
+};
+
+NAMESPACE_END(mitsuba)
 
 MTS_PY_EXPORT(Thread) {
     auto th = py::class_<Thread, Object, ref<Thread>, PyThread>(m, "Thread", D(Thread))
@@ -60,5 +96,14 @@ MTS_PY_EXPORT(Thread) {
         .value("EHighestPriority", Thread::EHighestPriority, D(Thread, EPriority, EHighestPriority))
         .value("ERealtimePriority", Thread::ERealtimePriority, D(Thread, EPriority, ERealtimePriority))
         .export_values();
+
+    py::class_<ThreadEnvironment>(m, "ThreadEnvironment", D(ThreadEnvironment))
+        .def(py::init<>());
+
+    py::class_<PyScopedSetThreadEnvironment>(m, "ScopedSetThreadEnvironment",
+                                              D(ScopedSetThreadEnvironment))
+        .def(py::init<const ThreadEnvironment &>())
+        .def("__enter__", &PyScopedSetThreadEnvironment::enter)
+        .def("__exit__", &PyScopedSetThreadEnvironment::exit);
 }
 
