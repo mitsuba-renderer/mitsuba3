@@ -1906,7 +1906,7 @@ void Bitmap::write_rgbe(Stream *stream) const {
         Throw("write_rgbe(): component format must be EFloat32!");
 
     std::string format_name;
-    if (m_pixel_format == ERGB ||  m_pixel_format == ERGBA)
+    if (m_pixel_format == ERGB || m_pixel_format == ERGBA)
         format_name = "32-bit_rle_rgbe";
     else if (m_pixel_format == EXYZ ||  m_pixel_format == EXYZA)
         format_name = "32-bit_rle_xyze";

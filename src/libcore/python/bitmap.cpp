@@ -100,8 +100,6 @@ MTS_PY_EXPORT(Bitmap) {
         .value("ERGB", Bitmap::ERGB, D(Bitmap, EPixelFormat, ERGB))
         .value("ERGBA", Bitmap::ERGBA, D(Bitmap, EPixelFormat, ERGBA))
         .value("ERGBAW", Bitmap::ERGBAW, D(Bitmap, EPixelFormat, ERGBAW))
-        .value("EBGR", Bitmap::EBGR, D(Bitmap, EPixelFormat, EBGR))
-        .value("EBGRA", Bitmap::EBGRA, D(Bitmap, EPixelFormat, EBGRA))
         .value("EXYZ", Bitmap::EXYZ, D(Bitmap, EPixelFormat, EXYZ))
         .value("EXYZA", Bitmap::EXYZA, D(Bitmap, EPixelFormat, EXYZA))
         .value("EXYZAW", Bitmap::EXYZAW, D(Bitmap, EPixelFormat, EXYZAW))
