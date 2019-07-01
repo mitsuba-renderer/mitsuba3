@@ -74,9 +74,11 @@ MTS_PY_EXPORT(Bitmap) {
         )
         .def("convert", py::overload_cast<Bitmap::EPixelFormat, Struct::EType, bool>(
              &Bitmap::convert, py::const_), D(Bitmap, convert),
-             "pixel_format"_a, "component_format"_a, "srgb_gamma"_a)
+             "pixel_format"_a, "component_format"_a, "srgb_gamma"_a,
+             py::call_guard<py::gil_scoped_release>())
         .def("convert", py::overload_cast<Bitmap *>(&Bitmap::convert, py::const_),
-             D(Bitmap, convert, 2), "target"_a)
+             D(Bitmap, convert, 2), "target"_a,
+             py::call_guard<py::gil_scoped_release>())
         .def("accumulate", py::overload_cast<const Bitmap *, Point2i,
                                              Point2i, Vector2i>(
                 &Bitmap::accumulate), D(Bitmap, accumulate),
@@ -98,6 +100,8 @@ MTS_PY_EXPORT(Bitmap) {
         .value("ERGB", Bitmap::ERGB, D(Bitmap, EPixelFormat, ERGB))
         .value("ERGBA", Bitmap::ERGBA, D(Bitmap, EPixelFormat, ERGBA))
         .value("ERGBAW", Bitmap::ERGBAW, D(Bitmap, EPixelFormat, ERGBAW))
+        .value("EBGR", Bitmap::EBGR, D(Bitmap, EPixelFormat, EBGR))
+        .value("EBGRA", Bitmap::EBGRA, D(Bitmap, EPixelFormat, EBGRA))
         .value("EXYZ", Bitmap::EXYZ, D(Bitmap, EPixelFormat, EXYZ))
         .value("EXYZA", Bitmap::EXYZA, D(Bitmap, EPixelFormat, EXYZA))
         .value("EXYZAW", Bitmap::EXYZAW, D(Bitmap, EPixelFormat, EXYZAW))
@@ -133,19 +137,21 @@ MTS_PY_EXPORT(Bitmap) {
 
     bitmap
         .def(py::init<const fs::path &, Bitmap::EFileFormat>(), "path"_a,
-             "format"_a = Bitmap::EAuto)
+             "format"_a = Bitmap::EAuto,
+             py::call_guard<py::gil_scoped_release>())
         .def(py::init<Stream *, Bitmap::EFileFormat>(), "stream"_a,
-             "format"_a = Bitmap::EAuto)
+             "format"_a = Bitmap::EAuto,
+             py::call_guard<py::gil_scoped_release>())
         .def("write",
              py::overload_cast<Stream *, Bitmap::EFileFormat, int>(
                  &Bitmap::write, py::const_),
              "stream"_a, "format"_a = Bitmap::EAuto, "quality"_a = -1,
-             D(Bitmap, write))
+             D(Bitmap, write), py::call_guard<py::gil_scoped_release>())
         .def("write",
              py::overload_cast<const fs::path &, Bitmap::EFileFormat, int>(
                  &Bitmap::write, py::const_),
              "path"_a, "format"_a = Bitmap::EAuto, "quality"_a = -1,
-             D(Bitmap, write, 2))
+             D(Bitmap, write, 2), py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("__array_interface__", [](Bitmap &bitmap) -> py::object {
             if (bitmap.struct_()->size() == 0)
                 return py::none();
