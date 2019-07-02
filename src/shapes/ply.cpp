@@ -80,10 +80,17 @@ public:
                     m_normal_offset = (Index) m_vertex_struct->field("nx").offset;
                 }
 
-                if (el.struct_->has_field("texture_u"))
+                if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
+                    /* all good */
+                } else if (el.struct_->has_field("texture_u") &&
+                           el.struct_->has_field("texture_v")) {
                     el.struct_->field("texture_u").name = "u";
-                if (el.struct_->has_field("texture_v"))
                     el.struct_->field("texture_v").name = "v";
+                } else if (el.struct_->has_field("s") &&
+                           el.struct_->has_field("t")) {
+                    el.struct_->field("s").name = "u";
+                    el.struct_->field("t").name = "v";
+                }
                 if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
                     for (auto name : { "u", "v" })
                         m_vertex_struct->append(name, Struct::EFloat);
