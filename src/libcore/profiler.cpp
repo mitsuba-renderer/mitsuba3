@@ -58,6 +58,8 @@ static void profiler_callback(int, siginfo_t *, void *) {
 
 void Profiler::static_initialization() {
     if (!util::detect_debugger()) {
+        (void) profiler_flags();
+
         struct sigaction sa;
         memset(&sa, 0, sizeof(sa));
         sa.sa_sigaction = profiler_callback;

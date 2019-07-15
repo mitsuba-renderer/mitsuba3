@@ -1,28 +1,22 @@
 #include <mitsuba/python/python.h>
+#include <mitsuba/ui/texture.h>
 
-#include <mitsuba/ui/gltexture.h>
+PYBIND11_DECLARE_HOLDER_TYPE(T, nanogui::ref<T>)
 
-MTS_PY_EXPORT(GLTexture) {
-    auto gltexture = MTS_PY_CLASS(GLTexture, Object)
-        .def(py::init<>(), D(GLTexture, GLTexture))
-        .mdef(GLTexture, set_interpolation)
-        .mdef(GLTexture, id)
-        .mdef(GLTexture, init)
-        .mdef(GLTexture, free)
-        .mdef(GLTexture, bind)
-        .mdef(GLTexture, release)
-        .mdef(GLTexture, refresh);
-
-    py::enum_<GLTexture::EInterpolation>(gltexture, "EInterpolation")
-        .value("ENearest", GLTexture::ENearest)
-        .value("ELinear", GLTexture::ELinear)
-        .value("EMipMapLinear", GLTexture::EMipMapLinear)
-        .export_values();
+MTS_PY_EXPORT(Texture) {
+    py::class_<mitsuba::Texture, nanogui::Texture, nanogui::ref<mitsuba::Texture>>(m, "Texture", D(Texture))
+        .def(py::init<const Bitmap *, nanogui::Texture::InterpolationMode,
+                      nanogui::Texture::InterpolationMode, nanogui::Texture::WrapMode>(),
+             D(Texture, Texture),"bitmap"_a,
+             "min_interpolation_mode"_a = nanogui::Texture::InterpolationMode::Bilinear,
+             "mag_interpolation_mode"_a = nanogui::Texture::InterpolationMode::Bilinear,
+             "wrap_mode"_a              = nanogui::Texture::WrapMode::ClampToEdge);
 }
 
 PYBIND11_MODULE(mitsuba_ui_ext, m_) {
     (void) m_; /* unused */
+    py::module::import("nanogui");
     py::module m = py::module::import("mitsuba.ui");
 
-    MTS_PY_IMPORT(GLTexture);
+    MTS_PY_IMPORT(Texture);
 }

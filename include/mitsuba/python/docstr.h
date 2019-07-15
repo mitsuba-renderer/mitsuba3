@@ -796,6 +796,10 @@ R"doc(This enumeration lists all pixel format types supported by the Bitmap
 class. This both determines the number of channels, and how they
 should be interpreted)doc";
 
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_EBGR = R"doc(BGR bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_EBGRA = R"doc(BGR bitmap + alpha channel)doc";
+
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EMultiChannel = R"doc(Arbitrary multi-channel bitmap without a fixed interpretation)doc";
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGB = R"doc(RGB bitmap)doc";
@@ -2548,38 +2552,6 @@ Frame description))doc";
 static const char *__doc_mitsuba_Frame_to_local = R"doc(Convert from world coordinates to local coordinates)doc";
 
 static const char *__doc_mitsuba_Frame_to_world = R"doc(Convert from local coordinates to world coordinates)doc";
-
-static const char *__doc_mitsuba_GLTexture = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_EInterpolation = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_EInterpolation_ELinear = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_EInterpolation_EMipMapLinear = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_EInterpolation_ENearest = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_GLTexture = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_bind = R"doc(Bind the texture to a specific texture unit)doc";
-
-static const char *__doc_mitsuba_GLTexture_class = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_free = R"doc(Release underlying OpenGL objects)doc";
-
-static const char *__doc_mitsuba_GLTexture_id = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_init = R"doc(Create a new uniform texture)doc";
-
-static const char *__doc_mitsuba_GLTexture_m_id = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_m_index = R"doc()doc";
-
-static const char *__doc_mitsuba_GLTexture_refresh = R"doc(Refresh the texture from the provided bitmap)doc";
-
-static const char *__doc_mitsuba_GLTexture_release = R"doc(Release/unbind the textur)doc";
-
-static const char *__doc_mitsuba_GLTexture_set_interpolation = R"doc(Set the interpolation mode)doc";
 
 static const char *__doc_mitsuba_IOREntry = R"doc()doc";
 
@@ -6208,6 +6180,38 @@ static const char *__doc_mitsuba_TensorFile_has_field = R"doc(Does the file cont
 static const char *__doc_mitsuba_TensorFile_m_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_TensorFile_to_string = R"doc(Return a human-readable summary)doc";
+
+static const char *__doc_mitsuba_Texture = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_EInterpolation = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_EInterpolation_ELinear = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_EInterpolation_EMipMapLinear = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_EInterpolation_ENearest = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_bind = R"doc(Bind the texture to a specific texture unit)doc";
+
+static const char *__doc_mitsuba_Texture_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_free = R"doc(Release underlying objects)doc";
+
+static const char *__doc_mitsuba_Texture_id = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_init = R"doc(Create a new uniform texture)doc";
+
+static const char *__doc_mitsuba_Texture_interpolation = R"doc(Return the interpolation mode)doc";
+
+static const char *__doc_mitsuba_Texture_m_interpolation = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_m_texture = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_refresh = R"doc(Refresh the texture from the provided bitmap)doc";
+
+static const char *__doc_mitsuba_Texture_release = R"doc(Release/unbind the texture)doc";
 
 static const char *__doc_mitsuba_Thread =
 R"doc(Cross-platform thread implementation

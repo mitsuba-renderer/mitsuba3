@@ -5,25 +5,33 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/profiler.h>
+#include <mitsuba/core/mstream.h>
 #include <mitsuba/render/common.h>
+#include <mitsuba/ui/texture.h>
 
 #include <nanogui/nanogui.h>
 #include <nanogui/common.h>
+#include <nanogui/opengl.h>
 #include "mtsgui_resources.h"
+
+#include <enoki/transform.h>
 
 using namespace mitsuba;
 
 NAMESPACE_BEGIN(nanogui)
 
-
 NAMESPACE_END(nanogui)
 
 class MitsubaApp : public nanogui::Screen {
 public:
-    MitsubaApp(): nanogui::Screen(Vector2i(1024, 768), "Mitsuba 2") {
+    MitsubaApp() : nanogui::Screen(Vector2i(1024, 768), "Mitsuba 2",
+            /* resizable */ true, /* fullscreen */ false,
+            /* depth_buffer */ true, /* stencil_buffer */ true,
+            /* float_buffer */ true) {
         using namespace nanogui;
         using nanogui::Vector2i;
 
+        inc_ref();
         m_contents = new Widget(this);
 
         AdvancedGridLayout *layout = new AdvancedGridLayout({30, 0}, {50, 5, 0}, 5);
@@ -51,6 +59,7 @@ public:
         new Button(recent_popup, "scene2.xml");
         new Button(recent_popup, "scene3.xml");
         new Button(menu, "Export image ..", ENTYPO_ICON_EXPORT);
+        Button *about = new Button(menu, "About", ENTYPO_ICON_HELP_WITH_CIRCLE);
 
         m_btn_play = new Button(tools, "", ENTYPO_ICON_CONTROLLER_PLAY);
         m_btn_play->set_text_color(nanogui::Color(100, 255, 100, 150));
@@ -74,7 +83,8 @@ public:
         m_btn_settings->set_tooltip("Scene configuration");
 
         auto settings_popup = m_btn_settings->popup();
-        AdvancedGridLayout *settings_layout = new AdvancedGridLayout({30, 0, 15, 50}, {0, 5, 0, 5, 0, 5, 0}, 5);
+        AdvancedGridLayout *settings_layout =
+            new AdvancedGridLayout({ 30, 0, 15, 50 }, { 0, 5, 0, 5, 0, 5, 0 }, 5);
         settings_popup->set_layout(settings_layout);
         settings_layout->set_col_stretch(0, 1);
         settings_layout->set_col_stretch(1, 1);
@@ -84,9 +94,11 @@ public:
         settings_layout->set_row_stretch(5, 1);
 
         using Anchor = nanogui::AdvancedGridLayout::Anchor;
-        settings_layout->set_anchor(new Label(settings_popup, "Integrator", "sans-bold"), Anchor(0, 0, 4, 1));
+        settings_layout->set_anchor(new Label(settings_popup, "Integrator", "sans-bold"),
+                                    Anchor(0, 0, 4, 1));
         settings_layout->set_anchor(new Label(settings_popup, "Max depth"), Anchor(1, 1));
-        settings_layout->set_anchor(new Label(settings_popup, "Sampler", "sans-bold"), Anchor(0, 4, 4, 1));
+        settings_layout->set_anchor(new Label(settings_popup, "Sampler", "sans-bold"),
+                                    Anchor(0, 4, 4, 1));
         settings_layout->set_anchor(new Label(settings_popup, "Sample count"), Anchor(1, 5));
         IntBox<uint32_t> *ib1 = new IntBox<uint32_t>(settings_popup);
         IntBox<uint32_t> *ib2 = new IntBox<uint32_t>(settings_popup);
@@ -101,8 +113,9 @@ public:
         settings_popup->set_size(Vector2i(0, 0));
         settings_popup->set_size(settings_popup->preferred_size(nvg_context()));
 
-        for (Button *b : { (Button *) m_btn_menu, m_btn_play, m_btn_stop, m_btn_reload,
-                           (Button *) m_btn_settings }) {
+        for (Button *b : { (Button *) m_btn_menu.get(), m_btn_play.get(),
+                           m_btn_stop.get(), m_btn_reload.get(),
+                           (Button *) m_btn_settings.get() }) {
             b->set_fixed_size(Vector2i(25, 25));
             PopupButton *pb = dynamic_cast<PopupButton *>(b);
             if (pb) {
@@ -112,20 +125,44 @@ public:
             }
         }
 
-        TabWidgetBase *tab = new TabWidgetBase(m_contents);
-        tab->append_tab("cbox.xml");
-        tab->append_tab("matpreview.xml");
-        tab->append_tab("hydra.xml");
-        tab->set_tabs_closeable(true);
+        TabWidget *tab = new TabWidget(m_contents);
+        m_view = new ImageView(tab);
+        m_view->set_draw_border(false);
 
-        tab->set_popup_callback([tab](int id, Screen *screen) -> Popup * {
-            Popup *popup = new Popup(screen);
-            Button *b1 = new Button(popup, "Close", ENTYPO_ICON_CIRCLE_WITH_CROSS);
-            Button *b2 = new Button(popup, "Duplicate", ENTYPO_ICON_CIRCLE_WITH_PLUS);
-            b1->set_callback([tab, id]() { tab->remove_tab(id); });
-            b2->set_callback([tab, id]() { tab->insert_tab(tab->tab_index(id), tab->tab_caption(id)); });
-            return popup;
-        });
+        mitsuba::ref<Bitmap> bitmap = new Bitmap(new MemoryStream(mitsuba_logo_png, mitsuba_logo_png_size));
+
+        m_view->set_pixel_callback(
+            [bitmap](const Vector2i &pos, char **out, size_t out_size) {
+                const uint8_t *data = (const uint8_t *) bitmap->data();
+                for (int i = 0; i < 4; ++i)
+                    snprintf(out[i], out_size, "%.3g",
+                             (double) data[4 * (pos.x() + pos.y() * bitmap->size().x()) + i]);
+            }
+        );
+
+        m_view->set_image(new mitsuba::Texture(bitmap,
+                                               mitsuba::Texture::InterpolationMode::Trilinear,
+                                               mitsuba::Texture::InterpolationMode::Nearest));
+
+        tab->append_tab("cbox.xml", m_view);
+        tab->append_tab("matpreview.xml", m_view);
+        tab->append_tab("hydra.xml", m_view);
+        tab->set_tabs_closeable(true);
+        tab->set_tabs_draggable(true);
+        tab->set_remove_children(false);
+        tab->set_padding(1);
+
+        //view->set_texture_id(nvgImageIcon(nvg_context(), mitsuba_logo));
+
+        //ImageView *view = m_view;
+        //tab->set_popup_callback([tab, view](int id, Screen *screen) -> Popup * {
+            //Popup *popup = new Popup(screen);
+            //Button *b1 = new Button(popup, "Close", ENTYPO_ICON_CROSS);
+            //Button *b2 = new Button(popup, "Duplicate", ENTYPO_ICON_PLUS);
+            //b1->set_callback([tab, id]() { tab->remove_tab(id); });
+            //b2->set_callback([tab, id, view]() { tab->insert_tab(tab->tab_index(id), tab->tab_caption(id), view); });
+            //return popup;
+        //});
 
         layout->set_anchor(tools, Anchor(0, 0, Alignment::Minimum, Alignment::Minimum));
         layout->set_anchor(tab, Anchor(1, 0, Alignment::Fill, Alignment::Fill));
@@ -145,37 +182,18 @@ public:
         progress_layout->set_anchor(label2, Anchor(2, 0));
         progress_layout->set_anchor(m_progress_bar, Anchor(4, 0));
 
+        Screen::set_resize_callback([this](const Vector2i &size) {
+            m_progress_panel->set_size(Vector2i(0, 0));
+            m_view->set_size(Vector2i(0, 0));
+            m_contents->set_size(size);
+            perform_layout();
+        });
+
         perform_layout();
-    }
+        m_view->reset();
 
-    void draw(NVGcontext* ctx) override {
-        Screen::draw(ctx);
-        int logo = nvgImageIcon(ctx, mitsuba_logo);
-
-        int iw, ih;
-        nvgImageSize(ctx, logo, &iw, &ih);
-        iw /= 2;
-        ih /= 2;
-        NVGpaint img_paint = nvgImagePattern(ctx, (m_size.x() - iw) / 2,
-                                                  (m_size.y() - ih) / 2,
-                                             iw, ih, 0, logo, 1.f);
-        nvgBeginPath(ctx);
-        nvgRect(ctx, 0, 0, m_size.x(), m_size.y());
-
-        nvgFillPaint(ctx, img_paint);
-        nvgFill(ctx);
-    }
-
-    bool resize_event(const nanogui::Vector2i& size) override {
-        if (Screen::resize_event(size))
-            return true;
-        glfwGetWindowSize(m_glfw_window, &m_size[0], &m_size[1]);
-        m_progress_panel->set_size(Vector2i(0, 0));
-        m_contents->set_size(m_size);
-        perform_layout();
-        //m_redraw = true;
-        //draw_all();
-        return false;
+        m_redraw = true;
+        draw_all();
     }
 
     bool keyboard_event(int key, int scancode, int action, int modifiers) override {
@@ -189,39 +207,49 @@ public:
     }
 
 private:
-    nanogui::Button *m_btn_play, *m_btn_stop, *m_btn_reload;
-    nanogui::PopupButton *m_btn_menu, *m_btn_settings;
-    nanogui::Widget *m_contents, *m_progress_panel;
-    nanogui::ProgressBar *m_progress_bar;
+    nanogui::ref<nanogui::Button> m_btn_play, m_btn_stop, m_btn_reload;
+    nanogui::ref<nanogui::PopupButton> m_btn_menu, m_btn_settings;
+    nanogui::ref<nanogui::Widget> m_contents, m_progress_panel;
+    nanogui::ref<nanogui::ProgressBar> m_progress_bar;
+    nanogui::ref<nanogui::ImageView> m_view;
 };
 
 int main(int argc, char *argv[]) {
-    Jit::static_initialization();
-    Class::static_initialization();
-    Thread::static_initialization();
-    Logger::static_initialization();
-    Bitmap::static_initialization();
-    Profiler::static_initialization();
+    try {
+        Jit::static_initialization();
+        Class::static_initialization();
+        Thread::static_initialization();
+        Logger::static_initialization();
+        Bitmap::static_initialization();
 
-    /* Ensure that the mitsuba-render shared library is loaded */
-    librender_nop();
+        /* Ensure that the mitsuba-render shared library is loaded */
+        librender_nop();
 
-    nanogui::init();
+        nanogui::init();
 
-    {
-        nanogui::ref<MitsubaApp> app = new MitsubaApp();
-        app->draw_all();
-        app->set_visible(true);
-        nanogui::mainloop(-1);
+        {
+            nanogui::ref<MitsubaApp> app = new MitsubaApp();
+            app->dec_ref();
+
+            // Initialize profiler after NanoGUI
+            Profiler::static_initialization();
+
+            app->draw_all();
+            app->set_visible(true);
+            nanogui::mainloop(-1);
+        }
+        nanogui::shutdown();
+
+        Profiler::static_shutdown();
+        Bitmap::static_shutdown();
+        Logger::static_shutdown();
+        Thread::static_shutdown();
+        Class::static_shutdown();
+        Jit::static_shutdown();
+    } catch (const std::exception &e) {
+        fprintf(stderr, "Critical exception during startup: %s", e.what());
+        return -1;
     }
-    nanogui::shutdown();
-
-    Profiler::static_shutdown();
-    Bitmap::static_shutdown();
-    Logger::static_shutdown();
-    Thread::static_shutdown();
-    Class::static_shutdown();
-    Jit::static_shutdown();
 
     return 0;
 }

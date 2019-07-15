@@ -9,7 +9,7 @@ add_definitions(
 set(INC_DIR "../../include/mitsuba/ui")
 
 add_library(mitsuba-ui-obj OBJECT
-  gltexture.cpp     ${INC_DIR}/gltexture.h
+  texture.cpp
 )
 
 add_library(mitsuba-ui SHARED $<TARGET_OBJECTS:mitsuba-ui-obj>)
