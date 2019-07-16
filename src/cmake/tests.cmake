@@ -5,7 +5,7 @@ if (NOT MITSUBA_PYTEST_FOUND)
   execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pytest --version --noconftest OUTPUT_QUIET ERROR_QUIET
                   RESULT_VARIABLE MITSUBA_EXEC_PYTHON_ERR_1)
   if (MITSUBA_EXEC_PYTHON_ERR_1)
-    message(WARNING "Running the tests requires pytest.  Please install it manually: \n$ ${PYTHON_EXECUTABLE} -m pip install 'pytest>=3.0.0' pytest-xdist")
+    message(WARNING "Running the tests requires pytest.  Please install it manually: \n$ ${PYTHON_EXECUTABLE} -m pip install pytest pytest-xdist")
   else()
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pytest --version -n 1 --noconftest OUTPUT_QUIET ERROR_QUIET
                     RESULT_VARIABLE MITSUBA_EXEC_PYTHON_ERR_2)

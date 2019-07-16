@@ -2,7 +2,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/filesystem.h>
-#include <cmath>
+#include <mitsuba/core/vector.h>
 
 #if defined(__LINUX__)
 #  if !defined(_GNU_SOURCE)
@@ -271,6 +271,59 @@ int terminal_width() {
     }
 
     return cached_width;
+}
+
+std::string info_build(int thread_count) {
+    std::ostringstream oss;
+    oss << "Mitsuba version " << MTS_VERSION << " (";
+    oss << MTS_BRANCH << "[" << MTS_HASH << "], ";
+#if defined(__WINDOWS__)
+    oss << "Windows, ";
+#elif defined(__LINUX__)
+    oss << "Linux, ";
+#elif defined(__OSX__)
+    oss << "Mac OS, ";
+#else
+    oss << "Unknown, ";
+#endif
+    oss << (sizeof(size_t) * 8) << "bit, ";
+    oss << thread_count << " thread" << (thread_count > 1 ? "s" : "");
+    oss << ", " << PacketSize << "-wide SIMD";
+    oss << ")";
+
+    return oss.str();
+}
+
+std::string info_copyright() {
+    std::ostringstream oss;
+    oss << "Copyright " << MTS_YEAR << ", " << MTS_AUTHORS;
+    return oss.str();
+}
+
+std::string info_features() {
+    std::ostringstream oss;
+
+    oss << "Enabled processor features:";
+    if (enoki::has_avx512f)         oss << " avx512f";
+    if (enoki::has_avx512cd)        oss << " avx512cd";
+    if (enoki::has_avx512dq)        oss << " avx512dq";
+    if (enoki::has_avx512vl)        oss << " avx512vl";
+    if (enoki::has_avx512bw)        oss << " avx512bw";
+    if (enoki::has_avx512pf)        oss << " avx512pf";
+    if (enoki::has_avx512er)        oss << " avx512er";
+    if (enoki::has_avx512vpopcntdq) oss << " avx512vpopcntdq";
+    if (enoki::has_avx2)            oss << " avx2";
+    if (enoki::has_avx)             oss << " avx";
+    if (enoki::has_fma)             oss << " fma";
+    if (enoki::has_f16c)            oss << " f16c";
+    if (enoki::has_sse42)           oss << " sse4.2";
+    if (enoki::has_x86_64)          oss << " x86_64";
+    if (enoki::has_x86_32)          oss << " x86";
+    if (enoki::has_neon)            oss << " neon";
+    if (enoki::has_arm_32)          oss << " arm";
+    if (enoki::has_arm_64)          oss << " aarch64";
+
+    return oss.str();
 }
 
 NAMESPACE_END(util)

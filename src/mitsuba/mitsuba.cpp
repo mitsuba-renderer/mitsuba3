@@ -19,90 +19,30 @@
 
 using namespace mitsuba;
 
-static std::string build_info(int thread_count) {
-    std::ostringstream oss;
-    oss << "Mitsuba version " << MTS_VERSION << " (";
-    oss << MTS_BRANCH << "[" << MTS_HASH << "], ";
-#if defined(__WINDOWS__)
-    oss << "Windows, ";
-#elif defined(__LINUX__)
-    oss << "Linux, ";
-#elif defined(__OSX__)
-    oss << "Mac OS, ";
-#else
-    oss << "Unknown, ";
-#endif
-    oss << (sizeof(size_t) * 8) << "bit, ";
-    oss << thread_count << " thread" << (thread_count > 1 ? "s" : "");
-    oss << ", " << PacketSize << "-wide SIMD";
-    oss << ")";
-
-    return oss.str();
-}
-
-static std::string copyright_info() {
-    std::ostringstream oss;
-    oss << "Copyright " << MTS_YEAR << ", " << MTS_AUTHORS;
-    return oss.str();
-}
-
-static std::string isa_info() {
-    std::ostringstream oss;
-
-    oss << "Enabled processor features:";
-    if (enoki::has_avx512f)         oss << " avx512f";
-    if (enoki::has_avx512cd)        oss << " avx512cd";
-    if (enoki::has_avx512dq)        oss << " avx512dq";
-    if (enoki::has_avx512vl)        oss << " avx512vl";
-    if (enoki::has_avx512bw)        oss << " avx512bw";
-    if (enoki::has_avx512pf)        oss << " avx512pf";
-    if (enoki::has_avx512er)        oss << " avx512er";
-    if (enoki::has_avx512vpopcntdq) oss << " avx512vpopcntdq";
-    if (enoki::has_avx2)            oss << " avx2";
-    if (enoki::has_avx)             oss << " avx";
-    if (enoki::has_fma)             oss << " fma";
-    if (enoki::has_f16c)            oss << " f16c";
-    if (enoki::has_sse42)           oss << " sse4.2";
-    if (enoki::has_x86_64)          oss << " x86_64";
-    if (enoki::has_x86_32)          oss << " x86";
-    if (enoki::has_neon)            oss << " neon";
-    if (enoki::has_arm_32)          oss << " arm";
-    if (enoki::has_arm_64)          oss << " aarch64";
-
-    return oss.str();
-}
-
 static void help(int thread_count) {
-    std::cout << build_info(thread_count) << std::endl;
-    std::cout << copyright_info() << std::endl;
-    std::cout << isa_info() << std::endl;
+    std::cout << util::info_build(thread_count) << std::endl;
+    std::cout << util::info_copyright() << std::endl;
+    std::cout << util::info_features() << std::endl;
     std::cout << R"(
 Usage: mitsuba [options] <One or more scene XML files>
 
 Options:
 
    -h, --help
-               Display this help text
+               Display this help text.
 
    -v, --verbose
-               Be more verbose (can be specified multiple times)
+               Be more verbose. (can be specified multiple times)
 
    -t <count>, --threads <count>
-               Render with the specified number of threads
+               Render with the specified number of threads.
 
    -D <key>=<value>, --define <key>=<value>
                Define a constant that can referenced as "$key"
-               within the scene description
-
-   -s, --scalar
-               Render without vectorization support
-
-   -m, --monochrome
-               Render in monochrome mode. No spectral color management will take
-               place and a single-channel luminance image will be computed.
+               within the scene description.
 
    -o <filename>, --output <filename>
-               Write the output image to the file denoted by "filename"
+               Write the output image to the file "filename".
 )";
 }
 
@@ -131,17 +71,6 @@ int main(int argc, char *argv[]) {
     xml::ParameterList params;
     std::string error_msg;
 
-#if defined(__AVX512ER__) && defined(__LINUX__)
-    if (getenv("LD_PREFER_MAP_32BIT_EXEC") == nullptr) {
-        std::cerr << "Warning: It is strongly recommended that you set the LD_PREFER_MAP_32BIT_EXEC" << std::endl
-                  << "environment variable on Xeon Phi machines to avoid misprediction penalties" << std::endl
-                  << "involving function calls across 64 bit boundaries, e.g. to Mitsuba plugins." << std::endl
-                  << "To do so, enter" << std::endl << std::endl
-                  << "   $ export LD_PREFER_MAP_32BIT_EXEC = 1" << std::endl << std::endl
-                  << "before launching Mitsuba (you'll want to put this into your .bashrc as well)." << std::endl << std::endl;
-    }
-#endif
-
     try {
         // Parse all command line options
         parser.parse(argc, argv);
@@ -159,7 +88,8 @@ int main(int argc, char *argv[]) {
             auto sep = value.find('=');
             if (sep == std::string::npos)
                 Throw("-D/--define: expect key=value pair!");
-            params.push_back(std::make_pair(value.substr(0, sep), value.substr(sep+1)));
+            params.push_back(std::make_pair(value.substr(0, sep),
+                                            value.substr(sep+1)));
             arg_define = arg_define->next();
         }
 
@@ -185,9 +115,10 @@ int main(int argc, char *argv[]) {
         if (!*arg_extra || *arg_help) {
             help(__global_thread_count);
         } else {
-            Log(EInfo, "%s", build_info(__global_thread_count));
-            Log(EInfo, "%s", copyright_info());
-            Log(EInfo, "%s", isa_info());
+            Log(EInfo, "%s", util::info_build(__global_thread_count));
+            Log(EInfo, "%s", util::info_copyright());
+            Log(EInfo, "%s", util::info_features());
+
             if (render_scalar)
                 Log(EInfo, "Vectorization disabled by --scalar flag.");
             if (render_monochrome)

@@ -65,6 +65,12 @@ add_library(mitsuba-core-obj OBJECT
   dither-matrix256.cpp
 )
 
+set_property(
+  SOURCE util.cpp
+  PROPERTY COMPILE_DEFINITIONS
+  MTS_BRANCH="${GIT_BRANCH}" MTS_HASH="${GIT_COMMIT_HASH}"
+)
+
 add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)
 set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(mitsuba-core-obj mitsuba-core PROPERTIES FOLDER mitsuba-core)

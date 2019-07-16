@@ -40,5 +40,14 @@ extern MTS_EXPORT_CORE fs::path library_path();
 /// Determine the width of the terminal window that is used to run Mitsuba
 extern MTS_EXPORT_CORE int terminal_width();
 
+/// Return human-readable information about the Mitsuba build
+extern MTS_EXPORT_CORE std::string info_build(int thread_count);
+
+/// Return human-readable information about the version
+extern MTS_EXPORT_CORE std::string info_copyright();
+
+/// Return human-readable information about the enabled processor features
+extern MTS_EXPORT_CORE std::string info_features();
+
 NAMESPACE_END(util)
 NAMESPACE_END(mitsuba)

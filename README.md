@@ -31,7 +31,7 @@ cd mitsuba2
 cmake .
 make -j 4
 
-# OR: Build using CMake & Ninja (recommended, must install Ninja first)
+# OR: Build using CMake & Ninja (recommended, must install [Ninja](https://ninja-build.org/) first)
 cmake -GNinja .
 ninja
 ```
@@ -75,10 +75,10 @@ $ ninja pytest
 ## Staying up-to-date
 
 Mitsuba organizes its software dependencies in a hierarchy of sub-repositories
-using *git submodule*. Unfortunately, as of 2018, pulling from the main
-repository won't automatically keep the sub-repositories in sync, which can
-lead to various problems. The following command installs a git alias named
-``pullall`` that automates these two steps.
+using *git submodule*. Unfortunately, pulling from the main repository won't
+automatically keep the sub-repositories in sync, which can lead to various
+problems. The following command installs a git alias named ``pullall`` that
+automates these two steps.
 
 ```bash
 git config --global alias.pullall '!f(){ git pull "$@" && git submodule update --init --recursive; }; f'
@@ -92,6 +92,10 @@ to stay in sync.
 
 ## About
 
-This project was created by [Wenzel Jakob](http://rgl.epfl.ch/people/wjakob)
+This project was created by [Wenzel Jakob](http://rgl.epfl.ch/people/wjakob).
 Significant features and/or improvements to the code were contributed by
-Merlin Nimier-David and Sébastien Speierer.
+[Merlin Nimier-David](https://merlin.nimierdavid.fr/),
+[Guillaume Loubet](https://maverick.inria.fr/Membres/Guillaume.Loubet/),
+[Sébastien Speierer](https://github.com/Speierers),
+[Delio Vicini](https://dvicini.github.io/),
+and [Tizian Zeltner](https://tizianzeltner.com/).

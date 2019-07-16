@@ -54,4 +54,4 @@ __pycache__
 *.dll
 /src/mitsuba/mitsuba
 /src/mtsgui/mtsgui
-/src/mtsgui/mtsgui_resources.*
+/src/libui/libui_resources.*
