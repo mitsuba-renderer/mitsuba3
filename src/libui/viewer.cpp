@@ -1,12 +1,16 @@
 #include <mitsuba/ui/viewer.h>
 #include <mitsuba/ui/texture.h>
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/filesystem.h>
+#include <mitsuba/core/appender.h>
 
 #include <nanogui/layout.h>
 #include <nanogui/label.h>
 #include <nanogui/popupbutton.h>
 #include <nanogui/messagedialog.h>
 #include <nanogui/textbox.h>
+#include <nanogui/textarea.h>
+#include <nanogui/vscrollpanel.h>
 #include <nanogui/tabwidget.h>
 #include <nanogui/imageview.h>
 #include <nanogui/progressbar.h>
@@ -15,6 +19,12 @@
 #include "libui_resources.h"
 
 NAMESPACE_BEGIN(mitsuba)
+
+struct MitsubaViewer::Tab {
+    int id = 0;
+    ng::ref<ng::VScrollPanel> console_panel;
+    ng::ref<ng::TextArea> console;
+};
 
 MitsubaViewer::MitsubaViewer()
     : ng::Screen(ng::Vector2i(1024, 768), "Mitsuba 2",
@@ -133,8 +143,8 @@ MitsubaViewer::MitsubaViewer()
         }
     }
 
-    TabWidget *tab = new TabWidget(m_contents);
-    m_view = new ImageView(tab);
+    m_tab_widget = new TabWidgetBase(m_contents);
+    m_view = new ImageView(m_tab_widget);
     m_view->set_draw_border(false);
 
     mitsuba::ref<Bitmap> bitmap;// = new Bitmap(new MemoryStream(mitsuba_logo_png, mitsuba_logo_png_size));
@@ -152,13 +162,21 @@ MitsubaViewer::MitsubaViewer()
                                            //mitsuba::Texture::InterpolationMode::Trilinear,
                                            //mitsuba::Texture::InterpolationMode::Nearest));
 
-    tab->append_tab("cbox.xml", m_view);
-    tab->append_tab("matpreview.xml", m_view);
-    tab->append_tab("hydra.xml", m_view);
-    tab->set_tabs_closeable(true);
-    tab->set_tabs_draggable(true);
-    tab->set_remove_children(false);
-    tab->set_padding(1);
+    m_tab_widget->set_tabs_closeable(true);
+    m_tab_widget->set_tabs_draggable(true);
+    m_tab_widget->set_padding(1);
+    m_tab_widget->set_callback([&](int /* id */) {
+        perform_layout();
+    });
+
+    m_tab_widget->set_close_callback([&](int id) {
+        for (size_t i = 0; i < m_tabs.size(); ++i) {
+            if (m_tabs[i]->id == id) {
+                close_tab_impl(m_tabs[i]);
+                break;
+            }
+        }
+    });
 
     //view->set_texture_id(nvgImageIcon(nvg_context(), mitsuba_logo));
 
@@ -173,7 +191,7 @@ MitsubaViewer::MitsubaViewer()
     //});
 
     layout->set_anchor(tools, Anchor(0, 0, Alignment::Minimum, Alignment::Minimum));
-    layout->set_anchor(tab, Anchor(1, 0, Alignment::Fill, Alignment::Fill));
+    layout->set_anchor(m_tab_widget, Anchor(1, 0, Alignment::Fill, Alignment::Fill));
 
     m_progress_panel = new Widget(m_contents);
     layout->set_anchor(m_progress_panel, Anchor(1, 2, Alignment::Fill, Alignment::Fill));
@@ -199,9 +217,83 @@ MitsubaViewer::MitsubaViewer()
 
     perform_layout();
     m_view->reset();
+}
 
-    m_redraw = true;
-    draw_all();
+class TabAppender : public Appender {
+public:
+    TabAppender(MitsubaViewer *viewer, MitsubaViewer::Tab *tab)
+        : m_viewer(viewer), m_tab(tab) { }
+
+    void append(ELogLevel level, const std::string &text) {
+        ng::async([*this, text]() {
+            m_tab->console->append_line(text);
+            m_tab->console_panel->set_scroll(1.f);
+            m_viewer->redraw();
+        });
+    }
+
+    void log_progress(Float progress, const std::string &name,
+        const std::string &formatted, const std::string &eta,
+        const void *ptr) {
+    }
+private:
+    MitsubaViewer *m_viewer;
+    MitsubaViewer::Tab *m_tab;
+};
+
+MitsubaViewer::Tab *MitsubaViewer::append_tab(const std::string &name) {
+    Tab *tab = new Tab();
+    tab->console_panel = new ng::VScrollPanel(m_tab_widget);
+    tab->console = new ng::TextArea(tab->console_panel);
+    tab->console->set_padding(5);
+    tab->console->set_font_size(16);
+    tab->console->set_font("mono");
+    tab->console->set_foreground_color(ng::Color(0.8f, 1.f));
+    m_tab_widget->set_background_color(ng::Color(0.1f, 1.f));
+    tab->id = m_tab_widget->append_tab(name);
+    m_tab_widget->set_selected_id(tab->id);
+    m_tabs.push_back(tab);
+
+    Logger *logger = Thread::thread()->logger();
+    logger->clear_appenders();
+    logger->add_appender(new TabAppender(this, tab));
+    for (int i = 0; i< 1000; ++i)
+        Log(EInfo, "Hello world %s %i", name, i);
+
+    perform_layout();
+    return tab;
+}
+
+void MitsubaViewer::load(const Tab *, const fs::path &name) {
+    std::cout << name.string() << std::endl;
+}
+
+void MitsubaViewer::close_tab_impl(const Tab *tab) {
+    m_tab_widget->remove_child(tab->console_panel.get());
+    m_tabs.erase(std::find(m_tabs.begin(), m_tabs.end(), tab));
+    delete tab;
+}
+
+void MitsubaViewer::perform_layout(NVGcontext* ctx) {
+    int tab_height = m_tab_widget->font_size() + 2 * m_theme->m_tab_button_vertical_padding,
+        padding = m_tab_widget->padding();
+
+    Vector2i position = Vector2i(padding, padding + tab_height + 1),
+             size     = m_tab_widget->size() - Vector2i(2 * padding, 2 * padding + tab_height + 1);
+
+    for (Tab *tab : m_tabs) {
+        ng::VScrollPanel *console_panel = tab->console_panel;
+
+        if (tab->id == m_tab_widget->selected_id()) {
+            console_panel->set_visible(true);
+            console_panel->set_position(position);
+            console_panel->set_size(size);
+            console_panel->perform_layout(ctx);
+        } else {
+            console_panel->set_visible(false);
+        }
+    }
+    Screen::perform_layout(ctx);
 }
 
 bool MitsubaViewer::keyboard_event(int key, int scancode, int action, int modifiers) {

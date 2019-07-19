@@ -111,21 +111,59 @@ int main(int argc, char *argv[]) {
             Throw("Thread count must be >= 1!");
         tbb::task_scheduler_init init(__global_thread_count);
 
+        // Append the mitsuba directory to the FileResolver search path list
+        ref<Thread> thread = Thread::thread();
+        ref<FileResolver> fr = thread->file_resolver();
+        filesystem::path base_path = util::library_path().parent_path();
+        if (!fr->contains(base_path))
+            fr->append(base_path);
+
         if (*arg_help) {
             help(__global_thread_count);
         } else {
             ng::init();
 
             {
-                ng::ref<MitsubaViewer> app = new MitsubaViewer();
-                app->dec_ref();
+                ng::ref<MitsubaViewer> viewer = new MitsubaViewer();
+                viewer->dec_ref();
 
                 // Initialize profiler *after* NanoGUI
                 Profiler::static_initialization();
 
-                app->draw_all();
-                app->set_visible(true);
+                ThreadEnvironment env;
+                tbb::task_group group;
+
+                while (arg_extra && *arg_extra) {
+                    filesystem::path filename(arg_extra->as_string());
+
+                    MitsubaViewer::Tab *tab = viewer->append_tab(filename.filename());
+
+                    group.run(
+                        [&env, fr, filename, tab, viewer]() {
+                            ScopedSetThreadEnvironment set_env(env);
+
+                            // Add the scene file's directory to the search path.
+                            fs::path scene_dir = filename.parent_path();
+                            ref<FileResolver> fr2 = new FileResolver(*fr);
+                            if (!fr2->contains(scene_dir))
+                                fr2->append(scene_dir);
+                            ref<Logger> logger = new Logger();
+
+                            Thread *thread = Thread::thread();
+                            thread->set_logger(logger);
+                            thread->set_file_resolver(fr2);
+                            ((MitsubaViewer *) viewer.get())->load(tab, fr2->resolve(filename));
+                        }
+                    );
+
+                    arg_extra = arg_extra->next();
+                }
+
+                viewer->draw_all();
+                viewer->set_visible(true);
                 ng::mainloop(-1);
+
+                group.wait();
             }
 
             ng::shutdown();

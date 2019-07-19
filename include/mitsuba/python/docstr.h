@@ -796,10 +796,6 @@ R"doc(This enumeration lists all pixel format types supported by the Bitmap
 class. This both determines the number of channels, and how they
 should be interpreted)doc";
 
-static const char *__doc_mitsuba_Bitmap_EPixelFormat_EBGR = R"doc(BGR bitmap)doc";
-
-static const char *__doc_mitsuba_Bitmap_EPixelFormat_EBGRA = R"doc(BGR bitmap + alpha channel)doc";
-
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EMultiChannel = R"doc(Arbitrary multi-channel bitmap without a fixed interpretation)doc";
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGB = R"doc(RGB bitmap)doc";
@@ -2239,6 +2235,8 @@ paths in order and stops once the file is found.)doc";
 
 static const char *__doc_mitsuba_FileResolver_FileResolver = R"doc(Initialize a new file resolver with the current working directory)doc";
 
+static const char *__doc_mitsuba_FileResolver_FileResolver_2 = R"doc(Copy constructor)doc";
+
 static const char *__doc_mitsuba_FileResolver_append = R"doc(Append an entry to the end of the list of search paths)doc";
 
 static const char *__doc_mitsuba_FileResolver_begin = R"doc(Return an iterator at the beginning of the list of search paths)doc";
@@ -3392,6 +3390,44 @@ Parameter ``m``:
     The microfacet normal)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_type = R"doc(Return the distribution type)doc";
+
+static const char *__doc_mitsuba_MitsubaViewer = R"doc(Main class of the Mitsuba user interface)doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_MitsubaViewer = R"doc(Create a new viewer interface)doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_Tab = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_append_tab = R"doc(Append an empty tab)doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_close_tab_impl = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_keyboard_event = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_load = R"doc(Load content (a scene or an image) into a tab)doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_btn_menu = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_btn_play = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_btn_reload = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_btn_settings = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_btn_stop = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_contents = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_progress_bar = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_progress_panel = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_tab_widget = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_tabs = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_m_view = R"doc()doc";
+
+static const char *__doc_mitsuba_MitsubaViewer_perform_layout = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator = R"doc()doc";
 
@@ -6181,37 +6217,14 @@ static const char *__doc_mitsuba_TensorFile_m_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_TensorFile_to_string = R"doc(Return a human-readable summary)doc";
 
-static const char *__doc_mitsuba_Texture = R"doc()doc";
+static const char *__doc_mitsuba_Texture =
+R"doc(Defines an abstraction for textures that works with OpenGL, OpenGL ES,
+and Metal.
 
-static const char *__doc_mitsuba_Texture_EInterpolation = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_EInterpolation_ELinear = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_EInterpolation_EMipMapLinear = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_EInterpolation_ENearest = R"doc()doc";
+Wraps nanogui::Texture and adds a new constructor for creating
+textures from mitsuba::Bitmap instances.)doc";
 
 static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_bind = R"doc(Bind the texture to a specific texture unit)doc";
-
-static const char *__doc_mitsuba_Texture_class = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_free = R"doc(Release underlying objects)doc";
-
-static const char *__doc_mitsuba_Texture_id = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_init = R"doc(Create a new uniform texture)doc";
-
-static const char *__doc_mitsuba_Texture_interpolation = R"doc(Return the interpolation mode)doc";
-
-static const char *__doc_mitsuba_Texture_m_interpolation = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_m_texture = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_refresh = R"doc(Refresh the texture from the provided bitmap)doc";
-
-static const char *__doc_mitsuba_Texture_release = R"doc(Release/unbind the texture)doc";
 
 static const char *__doc_mitsuba_Thread =
 R"doc(Cross-platform thread implementation
@@ -6375,6 +6388,10 @@ static const char *__doc_mitsuba_Thread_parent_2 = R"doc(Return the parent threa
 
 static const char *__doc_mitsuba_Thread_priority = R"doc(Return the thread priority)doc";
 
+static const char *__doc_mitsuba_Thread_register_external_thread =
+R"doc(Register a new thread (e.g. TBB, Python) with Mituba thread system.
+Returns true upon success.)doc";
+
 static const char *__doc_mitsuba_Thread_run = R"doc(The thread's run method)doc";
 
 static const char *__doc_mitsuba_Thread_set_core_affinity =
@@ -6417,6 +6434,8 @@ static const char *__doc_mitsuba_Thread_static_shutdown = R"doc(Shut down the th
 static const char *__doc_mitsuba_Thread_thread = R"doc(Return the current thread)doc";
 
 static const char *__doc_mitsuba_Thread_to_string = R"doc(Return a string representation)doc";
+
+static const char *__doc_mitsuba_Thread_unregister_external_thread = R"doc(Unregister a thread (e.g. TBB, Python) from Mitsuba's thread system.)doc";
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
 
@@ -8191,6 +8210,12 @@ R"doc(Convenience function which computes an array size/type suffix (like
 static const char *__doc_mitsuba_util_core_count = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
 static const char *__doc_mitsuba_util_detect_debugger = R"doc(Returns 'true' if the application is running inside a debugger)doc";
+
+static const char *__doc_mitsuba_util_info_build = R"doc(Return human-readable information about the Mitsuba build)doc";
+
+static const char *__doc_mitsuba_util_info_copyright = R"doc(Return human-readable information about the version)doc";
+
+static const char *__doc_mitsuba_util_info_features = R"doc(Return human-readable information about the enabled processor features)doc";
 
 static const char *__doc_mitsuba_util_library_path = R"doc(Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>)doc";
 

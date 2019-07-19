@@ -107,7 +107,8 @@ int main(int argc, char *argv[]) {
         bool render_monochrome = (bool) *arg_monochrome;
 
         // Append the mitsuba directory to the FileResolver search path list
-        ref<FileResolver> fr = Thread::thread()->file_resolver();
+        ref<Thread> thread = Thread::thread();
+        ref<FileResolver> fr = thread->file_resolver();
         filesystem::path base_path = util::library_path().parent_path();
         if (!fr->contains(base_path))
             fr->append(base_path);
@@ -134,10 +135,13 @@ int main(int argc, char *argv[]) {
 
         while (arg_extra && *arg_extra) {
             filesystem::path filename(arg_extra->as_string());
+            ref<FileResolver> fr2 = new FileResolver(*fr);
+            thread->set_file_resolver(fr2);
+
             // Add the scene file's directory to the search path.
-            auto scene_dir = filename.parent_path();
-            if (!fr->contains(scene_dir))
-                fr->append(scene_dir);
+            fs::path scene_dir = filename.parent_path();
+            if (!fr2->contains(scene_dir))
+                fr2->append(scene_dir);
 
             if (*arg_output) {
                 filesystem::path output(arg_output->as_string());

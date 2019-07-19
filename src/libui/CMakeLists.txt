@@ -1,5 +1,6 @@
 include_directories(
   ${NANOGUI_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 add_definitions(

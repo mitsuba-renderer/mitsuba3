@@ -21,6 +21,9 @@ public:
     /// Initialize a new file resolver with the current working directory
     FileResolver();
 
+    /// Copy constructor
+    FileResolver(const FileResolver &fr);
+
     /// Walk through the list of search paths and try to resolve the input path
     fs::path resolve(const fs::path &path) const;
 

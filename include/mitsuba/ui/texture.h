@@ -5,6 +5,13 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**
+ * \brief Defines an abstraction for textures that works with
+ * OpenGL, OpenGL ES, and Metal.
+ *
+ * Wraps nanogui::Texture and adds a new constructor for creating
+ * textures from \ref mitsuba::Bitmap instances.
+ */
 class MTS_EXPORT_UI Texture : public nanogui::Texture {
 public:
     using Base = nanogui::Texture;

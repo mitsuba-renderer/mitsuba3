@@ -178,7 +178,14 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     /// Return the emitter associated with the intersection (if any)
     template <typename Scene = mitsuba::Scene>
     EmitterPtr emitter(const Scene *scene, mask_t<Value> active = true) const {
-        return select(is_valid(), shape->emitter(active), scene->environment());
+        if constexpr (!is_array_v<ShapePtr>) {
+            if (is_valid())
+                return shape->emitter(active);
+            else
+                return scene->environment();
+        } else {
+            return select(is_valid(), shape->emitter(active), scene->environment());
+        }
     }
 
     /// Is the intersected shape also a sensor?

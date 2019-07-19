@@ -8,6 +8,9 @@ FileResolver::FileResolver() {
     m_paths.push_back(fs::current_path());
 }
 
+FileResolver::FileResolver(const FileResolver &fr)
+  : m_paths(fr.m_paths) { }
+
 void FileResolver::erase(const fs::path &p) {
     m_paths.erase(std::remove(m_paths.begin(), m_paths.end(), p), m_paths.end());
 }
