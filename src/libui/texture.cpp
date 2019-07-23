@@ -8,7 +8,7 @@ static nanogui::Texture::PixelFormat convert_pixel_format(Bitmap::EPixelFormat p
         case Bitmap::EYA:   return Texture::PixelFormat::RA;
         case Bitmap::ERGB:  return Texture::PixelFormat::RGB;
         case Bitmap::ERGBA: return Texture::PixelFormat::RGBA;
-        default: Throw("Texture::Texture(): unsupported pixel format!");
+        default: Throw("Texture::Texture(): unsupported pixel format '%s'!", pf);
     }
 }
 
@@ -22,7 +22,7 @@ static nanogui::Texture::ComponentFormat convert_component_format(Struct::EType 
         case Struct::EInt32:   return Texture::ComponentFormat::Int32;
         case Struct::EFloat16: return Texture::ComponentFormat::Float16;
         case Struct::EFloat32: return Texture::ComponentFormat::Float32;
-        default: Throw("Texture::Texture(): unsupported component format!");
+        default: Throw("Texture::Texture(): unsupported component format '%s'!", cf);
     }
 }
 

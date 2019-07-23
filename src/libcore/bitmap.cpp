@@ -7,6 +7,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/fstream.h>
 #include <tbb/tbb.h>
+#include <unordered_map>
 
 /* libpng */
 #include <png.h>
@@ -545,37 +546,121 @@ void Bitmap::accumulate(const Bitmap *bitmap,
     }
 }
 
-void Bitmap::read(Stream *stream, EFileFormat format) {
-    if (format == EAuto) {
-        /* Try to automatically detect the file format */
-        size_t pos = stream->tell();
-        uint8_t start[8];
-        stream->read(start, 8);
+std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
+    using FieldMap = std::unordered_multimap<std::string, std::pair<std::string, const Struct::Field *>>;
+    FieldMap fields;
+    for (size_t i = 0; i < m_struct->field_count(); ++i) {
+        const Struct::Field &field = (*m_struct)[i];
+        auto it = field.name.rfind(".");
 
-        if (start[0] == 'B' && start[1] == 'M') {
-            format = EBMP;
-        } else if (start[0] == '#' && start[1] == '?') {
-            format = ERGBE;
-        } else if (start[0] == 'P' && (start[1] == 'F' || start[1] == 'f')) {
-            format = EPFM;
-        } else if (start[0] == 'P' && start[1] == '6') {
-            format = EPPM;
-        } else if (start[0] == 0xFF && start[1] == 0xD8) {
-            format = EJPEG;
-        } else if (png_sig_cmp(start, 0, 8) == 0) {
-            format = EPNG;
-        } else if (Imf::isImfMagic((const char *) start)) {
-            format = EOpenEXR;
+        std::string prefix, suffix;
+        if (it != std::string::npos) {
+            prefix = field.name.substr(0, it);
+            suffix = field.name.substr(it + 1, field.name.length());
         } else {
-            /* Check for a TGAv2 file */
-            char footer[18];
-            stream->seek(stream->size() - 18);
-            stream->read(footer, 18);
-            if (footer[17] == 0 && strncmp(footer, "TRUEVISION-XFILE.", 17) == 0)
-                format = ETGA;
+            prefix = "<root>";
+            suffix = field.name;
         }
-        stream->seek(pos);
+        fields.emplace(prefix, std::make_pair(suffix, &field));
     }
+
+    std::vector<std::pair<std::string, ref<Bitmap>>> result;
+    for (auto it = fields.begin(); it != fields.end();) {
+        std::string prefix = it->first;
+        auto range = fields.equal_range(prefix);
+
+        FieldMap::iterator r = fields.end(), g = fields.end(),
+                           b = fields.end(), a = fields.end(),
+                           y = fields.end();
+
+        for (auto it2 = range.first; it2 != range.second; ++it2) {
+            if (it2->second.first == "R")
+                r = it2;
+            else if (it2->second.first == "G")
+                g = it2;
+            else if (it2->second.first == "B")
+                b = it2;
+            else if (it2->second.first == "A")
+                a = it2;
+            else if (it2->second.first == "Y")
+                y = it2;
+        }
+
+        bool has_rgb = r != fields.end() &&
+                       g != fields.end() &&
+                       b != fields.end(),
+             has_y   = y != fields.end(),
+             has_a   = a != fields.end();
+
+        if (has_rgb || has_y) {
+            ref<Bitmap> target = new Bitmap(
+                has_rgb
+                ? (has_a ? Bitmap::EPixelFormat::ERGBA
+                         : Bitmap::EPixelFormat::ERGB)
+                : (has_a ? Bitmap::EPixelFormat::EYA
+                         : Bitmap::EPixelFormat::EY),
+                m_component_format,
+                m_size
+            );
+            target->set_srgb_gamma(m_srgb_gamma);
+
+            ref<Struct> target_struct = new Struct(*target->struct_());
+            auto link_field = [&](const char *l, FieldMap::iterator it) {
+                target_struct->field(l).name = it->second.second->name;
+                fields.erase(it);
+            };
+
+            if (has_rgb) {
+                link_field("R", r);
+                link_field("G", g);
+                link_field("B", b);
+            } else {
+                link_field("Y", y);
+            }
+            if (has_a)
+                link_field("A", a);
+
+            StructConverter conv(m_struct, target_struct, true);
+            bool rv = conv.convert_2d(m_size.x(), m_size.y(),
+                                      uint8_data(), target->uint8_data());
+            if (!rv)
+                Throw("Bitmap::split(): conversion kernel indicated a failure!");
+            result.push_back({ prefix, target });
+        }
+
+        it = range.second;
+    }
+
+    for (auto it = fields.begin(); it != fields.end(); ++it) {
+        ref<Bitmap> target = new Bitmap(
+            Bitmap::EPixelFormat::EY,
+            m_component_format,
+            m_size
+        );
+        target->set_srgb_gamma(m_srgb_gamma);
+        ref<Struct> target_struct = new Struct(*target->struct_());
+        target_struct->field("Y").name = it->second.second->name;
+        StructConverter conv(m_struct, target_struct, true);
+        bool rv = conv.convert_2d(m_size.x(), m_size.y(),
+                                  uint8_data(), target->uint8_data());
+        if (!rv)
+            Throw("Bitmap::split(): conversion kernel indicated a failure!");
+        result.push_back({ it->first + "." + it->second.first, target });
+    }
+
+    std::sort(result.begin(), result.end(),
+              [](const std::pair<std::string, ref<Bitmap>> &v1,
+                 const std::pair<std::string, ref<Bitmap>> &v2) {
+                  return v1.first < v2.first;
+              });
+
+    return result;
+}
+
+void Bitmap::read(Stream *stream, EFileFormat format) {
+    if (format == EAuto)
+        format = detect_file_format(stream);
+
     switch (format) {
         case EBMP:     read_bmp(stream);     break;
         case EJPEG:    read_jpeg(stream);    break;
@@ -588,6 +673,40 @@ void Bitmap::read(Stream *stream, EFileFormat format) {
         default:
             Throw("Bitmap: Unknown file format!");
     }
+}
+
+Bitmap::EFileFormat Bitmap::detect_file_format(Stream *stream) {
+    EFileFormat format = EFileFormat::EUnknown;
+
+    /* Try to automatically detect the file format */
+    size_t pos = stream->tell();
+    uint8_t start[8];
+    stream->read(start, 8);
+
+    if (start[0] == 'B' && start[1] == 'M') {
+        format = EBMP;
+    } else if (start[0] == '#' && start[1] == '?') {
+        format = ERGBE;
+    } else if (start[0] == 'P' && (start[1] == 'F' || start[1] == 'f')) {
+        format = EPFM;
+    } else if (start[0] == 'P' && start[1] == '6') {
+        format = EPPM;
+    } else if (start[0] == 0xFF && start[1] == 0xD8) {
+        format = EJPEG;
+    } else if (png_sig_cmp(start, 0, 8) == 0) {
+        format = EPNG;
+    } else if (Imf::isImfMagic((const char *) start)) {
+        format = EOpenEXR;
+    } else {
+        /* Check for a TGAv2 file */
+        char footer[18];
+        stream->seek(stream->size() - 18);
+        stream->read(footer, 18);
+        if (footer[17] == 0 && strncmp(footer, "TRUEVISION-XFILE.", 17) == 0)
+            format = ETGA;
+    }
+    stream->seek(pos);
+    return format;
 }
 
 void Bitmap::write(const fs::path &path, EFileFormat format, int quality) const {

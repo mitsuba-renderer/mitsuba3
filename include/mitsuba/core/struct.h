@@ -12,11 +12,6 @@ NAMESPACE_BEGIN(mitsuba)
 #  define MTS_STRUCTCONVERTER_USE_JIT 0
 #endif
 
-/// Set this to '1' to view generated conversion code
-#if !defined(MTS_JIT_LOG_ASSEMBLY)
-#  define MTS_JIT_LOG_ASSEMBLY 0
-#endif
-
 /**
  * \brief Descriptor for specifying the contents and in-memory layout
  * of a POD-style data record
@@ -158,6 +153,9 @@ public:
         }
     };
 
+    using FieldIterator      = std::vector<Field>::iterator;
+    using FieldConstIterator = std::vector<Field>::const_iterator;
+
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
     Struct(bool pack = false, EByteOrder byte_order = EHostByteOrder);
 
@@ -165,8 +163,8 @@ public:
     Struct(const Struct &s);
 
     /// Append a new field to the \c Struct; determines size and offset automatically
-    Struct &append(const std::string &name, EType type, uint32_t flags = 0,
-                   double default_ = 0.0);
+    Struct &append(const std::string &name, EType type,
+                   uint32_t flags = 0, double default_ = 0.0);
 
     /// Append a new field to the \c Struct (manual version)
     Struct &append(Field field) { m_fields.push_back(field); return *this; }
@@ -216,16 +214,16 @@ public:
     size_t offset(const std::string &name) const { return field(name).offset; }
 
     /// Return an iterator associated with the first field
-    std::vector<Field>::const_iterator begin() const { return m_fields.cbegin(); }
+    FieldConstIterator begin() const { return m_fields.cbegin(); }
 
     /// Return an iterator associated with the first field
-    std::vector<Field>::iterator begin() { return m_fields.begin(); }
+    FieldIterator begin() { return m_fields.begin(); }
 
     /// Return an iterator associated with the end of the data structure
-    std::vector<Field>::const_iterator end() const { return m_fields.cend(); }
+    FieldConstIterator end() const { return m_fields.cend(); }
 
     /// Return an iterator associated with the end of the data structure
-    std::vector<Field>::iterator end() { return m_fields.end(); }
+    FieldIterator end() { return m_fields.end(); }
 
     /// Return a hash code associated with this \c Struct
     friend MTS_EXPORT_CORE size_t hash(const Struct &s);

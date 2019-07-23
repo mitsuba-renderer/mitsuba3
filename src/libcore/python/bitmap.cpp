@@ -115,6 +115,7 @@ MTS_PY_EXPORT(Bitmap) {
         .value("EJPEG", Bitmap::EJPEG, D(Bitmap, EFileFormat, EJPEG))
         .value("ETGA", Bitmap::ETGA, D(Bitmap, EFileFormat, ETGA))
         .value("EBMP", Bitmap::EBMP, D(Bitmap, EFileFormat, EBMP))
+        .value("EUnknown", Bitmap::EUnknown, D(Bitmap, EFileFormat, EUnknown))
         .value("EAuto", Bitmap::EAuto, D(Bitmap, EFileFormat, EAuto))
         .export_values();
 
@@ -150,6 +151,8 @@ MTS_PY_EXPORT(Bitmap) {
                  &Bitmap::write, py::const_),
              "path"_a, "format"_a = Bitmap::EAuto, "quality"_a = -1,
              D(Bitmap, write, 2), py::call_guard<py::gil_scoped_release>())
+        .def("split", &Bitmap::split, D(Bitmap, split))
+        .def_static("detect_file_format", &Bitmap::detect_file_format, D(Bitmap, detect_file_format))
         .def_property_readonly("__array_interface__", [](Bitmap &bitmap) -> py::object {
             if (bitmap.struct_()->size() == 0)
                 return py::none();

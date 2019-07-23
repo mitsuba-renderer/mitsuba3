@@ -11,6 +11,11 @@
 #include <ostream>
 #include <map>
 
+/// Set this to '1' to view generated conversion code
+#if !defined(MTS_JIT_LOG_ASSEMBLY)
+#  define MTS_JIT_LOG_ASSEMBLY 0
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /* Defined in dither-matrix256.cpp */
@@ -959,7 +964,7 @@ Struct::Struct(bool pack, EByteOrder byte_order)
 }
 
 Struct::Struct(const Struct &s)
-    : Object(), m_fields(s.m_fields), m_pack(s.m_pack),
+    : m_fields(s.m_fields), m_pack(s.m_pack),
       m_byte_order(s.m_byte_order) { }
 
 size_t Struct::size() const {

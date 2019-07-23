@@ -43,15 +43,19 @@ inline bool ends_with(const std::string &string, const std::string &suffix) {
 }
 
 /// Return a lower-case version of the given string (warning: not unicode compliant)
-inline std::string to_lower(std::string str) {
-    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
-    return str;
+inline std::string to_lower(const std::string &s) {
+    std::string result;
+    result.resize(s.length());
+    std::transform(s.begin(), s.end(), result.begin(), ::tolower);
+    return result;
 }
 
 /// Return a upper-case version of the given string (warning: not unicode compliant)
-inline std::string to_upper(std::string str) {
-    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
-    return str;
+inline std::string to_upper(const std::string &s) {
+    std::string result;
+    result.resize(s.length());
+    std::transform(s.begin(), s.end(), result.begin(), ::toupper);
+    return result;
 }
 
 /// Chop up the string given a set of delimiters (warning: not unicode compliant)

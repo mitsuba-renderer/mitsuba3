@@ -3,6 +3,8 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/appender.h>
+#include <mitsuba/core/fstream.h>
+#include <mitsuba/core/fresolver.h>
 
 #include <nanogui/layout.h>
 #include <nanogui/label.h>
@@ -224,8 +226,25 @@ public:
     TabAppender(MitsubaViewer *viewer, MitsubaViewer::Tab *tab)
         : m_viewer(viewer), m_tab(tab) { }
 
-    void append(ELogLevel level, const std::string &text) {
-        ng::async([*this, text]() {
+    void append(ELogLevel level, const std::string &text_) {
+        std::string text = text_;
+        /* Strip zero-width spaces from the message (Mitsuba uses these
+           to properly format chains of multiple exceptions) */
+        const std::string zerowidth_space = "\xe2\x80\x8b";
+        while (true) {
+            auto it = text.find(zerowidth_space);
+            if (it == std::string::npos)
+                break;
+            text = text.substr(0, it) + text.substr(it + 3);
+        }
+
+        ng::async([*this, text = std::move(text), level]() {
+            ng::Color color = ng::Color(0.5f, 1.f);
+            if (level >= EInfo)
+                color = ng::Color(0.8f, 1.f);
+            if (level >= EWarn)
+                color = ng::Color(0.8f, .5f, .5f, 1.f);
+            m_tab->console->set_foreground_color(color);
             m_tab->console->append_line(text);
             m_tab->console_panel->set_scroll(1.f);
             m_viewer->redraw();
@@ -246,7 +265,7 @@ MitsubaViewer::Tab *MitsubaViewer::append_tab(const std::string &name) {
     tab->console_panel = new ng::VScrollPanel(m_tab_widget);
     tab->console = new ng::TextArea(tab->console_panel);
     tab->console->set_padding(5);
-    tab->console->set_font_size(16);
+    tab->console->set_font_size(14);
     tab->console->set_font("mono");
     tab->console->set_foreground_color(ng::Color(0.8f, 1.f));
     m_tab_widget->set_background_color(ng::Color(0.1f, 1.f));
@@ -256,9 +275,25 @@ MitsubaViewer::Tab *MitsubaViewer::append_tab(const std::string &name) {
 
     Logger *logger = Thread::thread()->logger();
     logger->clear_appenders();
+    logger->set_log_level(EDebug);
     logger->add_appender(new TabAppender(this, tab));
-    for (int i = 0; i< 1000; ++i)
-        Log(EInfo, "Hello world %s %i", name, i);
+
+    try {
+        fs::path fname = Thread::thread()->file_resolver()->resolve(name);
+        ref<FileStream> stream = new FileStream(fname);
+        Bitmap::EFileFormat file_format = Bitmap::detect_file_format(stream);
+
+        if (file_format != Bitmap::EFileFormat::EUnknown) {
+            ref<Bitmap> bitmap = new Bitmap(stream, file_format);
+            std::vector<std::pair<std::string, ref<Bitmap>>> images = bitmap->split();
+
+            for (auto &kv: images) {
+                ng::ref<Texture> texture = new Texture(kv.second);
+            }
+        }
+    } catch (const std::exception &e) {
+        Log(EWarn, "A critical exception occurred: %s", e.what());
+    }
 
     perform_layout();
     return tab;

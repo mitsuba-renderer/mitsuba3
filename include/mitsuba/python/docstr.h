@@ -791,6 +791,8 @@ The following is supported:
 
 * Loading of uncompressed 8-bit RGB/RGBA files)doc";
 
+static const char *__doc_mitsuba_Bitmap_EFileFormat_EUnknown = R"doc(Unknown file format)doc";
+
 static const char *__doc_mitsuba_Bitmap_EPixelFormat =
 R"doc(This enumeration lists all pixel format types supported by the Bitmap
 class. This both determines the number of channels, and how they
@@ -915,6 +917,8 @@ static const char *__doc_mitsuba_Bitmap_data = R"doc(Return a pointer to the und
 
 static const char *__doc_mitsuba_Bitmap_data_2 = R"doc(Return a pointer to the underlying bitmap storage)doc";
 
+static const char *__doc_mitsuba_Bitmap_detect_file_format = R"doc(Attempt to detect the bitmap file format in a given stream)doc";
+
 static const char *__doc_mitsuba_Bitmap_has_alpha = R"doc(Return whether this image has an alpha channel)doc";
 
 static const char *__doc_mitsuba_Bitmap_height = R"doc(Return the bitmap's height in pixels)doc";
@@ -1035,6 +1039,10 @@ static const char *__doc_mitsuba_Bitmap_set_metadata = R"doc(Set the a Propertie
 static const char *__doc_mitsuba_Bitmap_set_srgb_gamma = R"doc(Specify whether the bitmap uses an sRGB gamma encoding)doc";
 
 static const char *__doc_mitsuba_Bitmap_size = R"doc(Return the bitmap dimensions in pixels)doc";
+
+static const char *__doc_mitsuba_Bitmap_split =
+R"doc(Split an multi-channel image buffer (e.g. from an OpenEXR image with
+lots of AOVs) into its constituent layers)doc";
 
 static const char *__doc_mitsuba_Bitmap_srgb_gamma = R"doc(Return whether the bitmap uses an sRGB gamma encoding)doc";
 

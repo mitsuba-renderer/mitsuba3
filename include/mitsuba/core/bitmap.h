@@ -170,6 +170,9 @@ public:
          */
         EBMP,
 
+        /// Unknown file format
+        EUnknown,
+
         /**
          * \brief Automatically detect the file format
          *
@@ -528,6 +531,15 @@ public:
     void accumulate(const Bitmap *bitmap) {
         accumulate(bitmap, Point2i(0), Point2i(0), bitmap->size());
     }
+
+    /**
+     * \brief Split an multi-channel image buffer (e.g. from an OpenEXR image
+     * with lots of AOVs) into its constituent layers
+     */
+    std::vector<std::pair<std::string, ref<Bitmap>>> split() const;
+
+    /// Attempt to detect the bitmap file format in a given stream
+    static Bitmap::EFileFormat detect_file_format(Stream *stream);
 
     /// Vertically flip the bitmap
     void vflip();
