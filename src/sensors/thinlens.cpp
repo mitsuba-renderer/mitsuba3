@@ -273,7 +273,7 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SENSOR()
+    MTS_IMPLEMENT_SENSOR_ALL()
     MTS_DECLARE_CLASS()
 
 private:

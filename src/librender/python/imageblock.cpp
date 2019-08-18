@@ -8,9 +8,9 @@
 MTS_PY_EXPORT(ImageBlock) {
     MTS_PY_CLASS(ImageBlock, Object)
         .def(py::init<Bitmap::EPixelFormat, const Vector2i &,
-                      const ReconstructionFilter *, size_t, bool, bool, bool>(),
+                      const ReconstructionFilter *, size_t, bool, bool, bool, bool>(),
              "fmt"_a, "size"_a, "filter"_a = nullptr, "channels"_a = 0,
-             "warn"_a = true, "monochrome"_a, "border"_a = true, "normalize"_a = false)
+             "warn"_a = true, "monochrome"_a = false, "border"_a = true, "normalize"_a = false)
 
         .def("put", (void (ImageBlock::*)(const ImageBlock *)) &ImageBlock::put,
              D(ImageBlock, put), "block"_a)

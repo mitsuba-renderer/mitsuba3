@@ -447,7 +447,7 @@ bool Thread::register_external_thread(const std::string &prefix) {
     if (!ThreadLocalBase::register_thread())
         return false;
 
-    uint32_t id = thread_id++;
+    uint32_t id = thread_ctr++;
     WorkerThread *thr = new WorkerThread(prefix);
     #if defined(__LINUX__) || defined(__OSX__)
         thr->d->native_handle = pthread_self();

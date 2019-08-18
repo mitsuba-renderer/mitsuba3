@@ -6362,6 +6362,8 @@ R"doc(Returns the (possibly approximate) mean value of the texture over all
 dimensions. May remain unimplemented, the default implementation
 throws an exception.)doc";
 
+static const char *__doc_mitsuba_Texture3D_resolution = R"doc(Returns the resolution of the texture, defaults to "1")doc";
+
 static const char *__doc_mitsuba_Texture3D_to_string = R"doc(Returns a human-reable summary)doc";
 
 static const char *__doc_mitsuba_Texture3D_update_bbox = R"doc()doc";
@@ -8487,6 +8489,8 @@ static const char *__doc_mitsuba_warp_Hierarchical2D_Level_lookup = R"doc()doc";
 static const char *__doc_mitsuba_warp_Hierarchical2D_Level_lookup_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_Hierarchical2D_Level_ptr = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_Hierarchical2D_Level_ptr_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_Hierarchical2D_Level_size = R"doc()doc";
 
