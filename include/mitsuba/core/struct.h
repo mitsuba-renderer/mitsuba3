@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if defined(ENOKI_X86_64) && defined(NDEBUG)
+#if defined(ENOKI_X86_64)
 #  define MTS_STRUCTCONVERTER_USE_JIT 1
 #else
 #  define MTS_STRUCTCONVERTER_USE_JIT 0

@@ -308,8 +308,10 @@ void MitsubaViewer::load(Tab *tab, const fs::path &fname) {
             ref<Bitmap> bitmap = new Bitmap(stream, file_format);
             std::vector<std::pair<std::string, ref<Bitmap>>> images = bitmap->split();
 
-            for (auto &kv: images)
-                tab->layers.emplace_back(kv.first, kv.second);
+            ng::async([tab, images = std::move(images)]() mutable {
+                for (auto &kv: images)
+                    tab->layers.emplace_back(kv.first, kv.second);
+            });
         }
     } catch (const std::exception &e) {
         Log(EWarn, "A critical exception occurred: %s", e.what());

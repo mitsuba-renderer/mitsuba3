@@ -3,19 +3,27 @@ from __future__ import unicode_literals, print_function
 import gc
 import nanogui
 import numpy as np
-import re
+import os
 
 from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
                      Label, Button, TextBox, CheckBox, ComboBox, Slider,
-                     Alignment, Orientation, GLShader, Arcball, look_at,
-                     frustum, ortho)
+                     Alignment, Orientation, Shader, Arcball, RenderPass,
+                     look_at, frustum, ortho)
 
-from nanogui import glfw, entypo, gl
+from nanogui import glfw, icons
 from nanogui import nanovg as nvg
 from mitsuba.core import PCG32, float_dtype, Bitmap, RadicalInverse
 from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain
 from mitsuba.core.warp.distr import DISTRIBUTIONS
-from mitsuba.ui import GLTexture
+from mitsuba.ui import Texture
+
+
+def load_shader(name):
+    name = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        name + '_' + nanogui.api + '.shader')
+    with open(name, 'r') as f:
+        return f.read()
 
 
 class WarpVisualizer(Screen):
@@ -71,7 +79,7 @@ class WarpVisualizer(Screen):
 
         # Chi-2 test button
         Label(window, 'χ² hypothesis test', 'sans-bold')
-        testButton = Button(window, 'Run', entypo.ICON_CHECK)
+        testButton = Button(window, 'Run', icons.FA_CHECK)
         testButton.set_background_color(Color(0, 1., 0., 0.10))
         testButton.set_callback(lambda: self.run_test())
 
@@ -88,158 +96,45 @@ class WarpVisualizer(Screen):
         self.parameter_widgets = []
         self.pending_refresh = 0
 
-        def translate_shader(source):
-            if nanogui.opengl:
-                return source
-            else: # Translate GLSL -> GLSL ES
-                source = re.sub('#version 330', '', source)
-                if 'isnan' in source:
-                    source = 'bool isnan(float f) { return f != f; }\n' + source
-                if 'out_color' in source:
-                    # Fragment shader
-                    source = re.sub(r'out vec4 out_color;', '', source)
-                    source = re.sub(r'out_color', 'gl_FragColor', source)
-                    source = re.sub(r'^\s*in ', 'varying ', source, flags=re.M)
-                    source = re.sub(r'texture', 'texture2D', source)
-                else:
-                    # Vertex shader
-                    source = re.sub(r'^\s*out ', 'varying ', source, flags=re.M)
-                    source = re.sub(r'^\s*in ', 'attribute ', source, flags=re.M)
-                    source = re.sub(r'texture', 'texture2D', source)
-                return source
+        self.render_pass = RenderPass([self])
 
-        self.point_shader = GLShader()
-        self.point_shader.init(
-            'Sample shader (points)',
-            # Vertex shader
-            translate_shader('''
-            #version 330
-            uniform mat4 mvp;
-            in vec3 position;
-            in vec3 color;
-            out vec3 frag_color;
-            void main() {
-                gl_Position = mvp * vec4(position, 1.0);
-                if (isnan(position.r)) /* nan (missing value) */
-                    frag_color = vec3(0.0);
-                else
-                    frag_color = color;
-            }
-            '''),
-            # Fragment shader
-            translate_shader('''
-            #version 330
-            in vec3 frag_color;
-            out vec4 out_color;
-            void main() {
-                if (frag_color == vec3(0.0))
-                    discard;
-                out_color = vec4(frag_color, 1.0);
-            }
-            '''))
+        self.point_shader = Shader(
+            render_pass=self.render_pass,
+            name='Sample shader (points)',
+            vertex_shader=load_shader('visualizer_points_vert'),
+            fragment_shader=load_shader('visualizer_points_frag')
+        )
 
-        self.grid_shader = GLShader()
-        self.grid_shader.init(
-            'Sample shader (grids)',
-            # Vertex shader
-            translate_shader('''
-            #version 330
-            uniform mat4 mvp;
-            in vec3 position;
-            void main() {
-                gl_Position = mvp * vec4(position, 1.0);
-            }
-            '''),
-            # Fragment shader
-            translate_shader('''
-            #version 330
-            out vec4 out_color;
-            void main() {
-                out_color = vec4(vec3(1.0), 0.4);
-            }
-            '''))
+        self.grid_shader = Shader(
+            render_pass=self.render_pass,
+            name='Sample shader (grids)',
+            vertex_shader=load_shader('visualizer_grid_vert'),
+            fragment_shader=load_shader('visualizer_grid_frag'),
+            blend_mode=Shader.BlendMode.AlphaBlend
+        )
 
-        self.bsdf_shader = GLShader()
-        self.bsdf_shader.init(
-            'Sample shader (BSDFs)',
-            # Vertex shader
-            translate_shader('''
-            #version 330
-            uniform mat4 mvp;
-            in vec3 position;
-            void main() {
-                gl_Position = mvp * vec4(position, 1.0);
-            }
-            '''),
-            # Fragment shader
-            translate_shader('''
-            #version 330
-            out vec4 out_color;
-            void main() {
-                out_color = vec4(vec3(1.0), 0.4);
-            }
-            '''))
+        self.bsdf_shader = Shader(
+            render_pass=self.render_pass,
+            name='Sample shader (BSDFs)',
+            vertex_shader=load_shader('visualizer_grid_vert'),
+            fragment_shader=load_shader('visualizer_grid_frag')
+        )
 
-        self.histogram_shader = GLShader()
-        self.histogram_shader.init(
-            'Histogram shader',
-            # Vertex shader
-            translate_shader('''
-            #version 330
-            uniform mat4 mvp;
-            in vec2 position;
-            out vec2 uv;
-            void main() {
-                gl_Position = mvp * vec4(position, 0.0, 1.0);
-                uv = position;
-            }
-            '''),
-            # Fragment shader
-            translate_shader('''
-            #version 330
-            out vec4 out_color;
-            uniform sampler2D tex;
-            in vec2 uv;
-            /* http://paulbourke.net/texture_colour/colourspace/ */
-            vec3 colormap(float v, float vmin, float vmax) {
-                vec3 c = vec3(1.0);
-                if (v < vmin)
-                    v = vmin;
-                if (v > vmax)
-                    v = vmax;
-                float dv = vmax - vmin;
-                if (v < (vmin + 0.25 * dv)) {
-                    c.r = 0.0;
-                    c.g = 4.0 * (v - vmin) / dv;
-                } else if (v < (vmin + 0.5 * dv)) {
-                    c.r = 0.0;
-                    c.b = 1.0 + 4.0 * (vmin + 0.25 * dv - v) / dv;
-                } else if (v < (vmin + 0.75 * dv)) {
-                    c.r = 4.0 * (v - vmin - 0.5 * dv) / dv;
-                    c.b = 0.0;
-                } else {
-                    c.g = 1.0 + 4.0 * (vmin + 0.75 * dv - v) / dv;
-                    c.b = 0.0;
-                }
-                return c;
-            }
-            void main() {
-                float value = texture(tex, uv).r;
-                out_color = vec4(colormap(value, 0.0, 1.0), 1.0);
-            }
-            '''))
-        self.histogram_shader.bind()
-        self.histogram_shader.upload_attrib(
+        self.histogram_shader = Shader(
+            render_pass=self.render_pass,
+            name='Histogram shader',
+            vertex_shader=load_shader('visualizer_histogram_vert'),
+            fragment_shader=load_shader('visualizer_histogram_frag')
+        )
+
+        self.histogram_shader.set_buffer(
             "position",
-            np.array(
-                [[0, 1, 1, 0], [0, 0, 1, 1]], dtype=np.float32))
-        self.histogram_shader.upload_indices(
-            np.array(
-                [[0, 2], [1, 3], [2, 0]], dtype=np.uint32))
+            np.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=np.float32))
+        self.histogram_shader.set_buffer(
+            "indices",
+            np.array([0, 2, 1, 3, 2, 0], dtype=np.uint32))
         self.arcball = Arcball()
         self.arcball.set_size(self.size())
-        self.pdf_texture = GLTexture()
-        self.histogram_texture = GLTexture()
         self.ri = RadicalInverse()
 
         self.refresh_distribution()
@@ -279,6 +174,7 @@ class WarpVisualizer(Screen):
         return False
 
     def draw_contents(self):
+        self.render_pass.resize(self.framebuffer_size())
         if self.test:
             self.draw_test_results()
         else:
@@ -290,39 +186,35 @@ class WarpVisualizer(Screen):
             self.refresh()
             self.redraw()
 
-
-
     def draw_point_cloud(self):
-        view = look_at([0, 0, 4], [0, 0, 0], [0, 1, 0])
-        view_angle, near, far = 30, 0.01, 100
-        fH = np.tan(view_angle / 360 * np.pi) * near
-        fW = fH * self.size()[0] / self.size()[1]
-        proj = frustum(-fW, fW, -fH, fH, near, far)
+        with self.render_pass:
+            view = look_at([0, 0, 4], [0, 0, 0], [0, 1, 0])
+            view_angle, near, far = 30, 0.01, 100
+            fH = np.tan(view_angle / 360 * np.pi) * near
+            fW = fH * self.size()[0] / self.size()[1]
+            proj = frustum(-fW, fW, -fH, fH, near, far)
 
-        model = self.arcball.matrix()
+            model = self.arcball.matrix()
 
-        mvp = np.dot(np.dot(proj, view), model)
+            mvp = np.dot(np.dot(proj, view), model).T
 
-        if nanogui.opengl:
-            gl.PointSize(2)
-        gl.Enable(gl.DEPTH_TEST)
-        self.point_shader.bind()
-        self.point_shader.set_uniform('mvp', mvp)
-        self.point_shader.draw_array(gl.POINTS, 0, self.point_count)
+            self.point_shader.set_buffer('mvp', mvp)
+            with self.point_shader:
+                self.point_shader.draw_array(Shader.PrimitiveType.Point,
+                    0, self.point_count, False)
 
-        if self.warped_grid_box.checked():
-            gl.Enable(gl.BLEND)
-            gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-            self.grid_shader.bind()
-            self.grid_shader.set_uniform('mvp', mvp)
-            self.grid_shader.draw_array(gl.LINES, 0, self.line_count)
-            gl.Disable(gl.BLEND)
+            if self.warped_grid_box.checked():
+                self.grid_shader.set_buffer('mvp', mvp)
+                with self.grid_shader:
+                    self.grid_shader.draw_array(Shader.PrimitiveType.Line,
+                                                0, self.line_count, False)
 
-        distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
-        if 'BSDF' in repr(distr[2][0]):
-            self.bsdf_shader.bind()
-            self.bsdf_shader.set_uniform('mvp', mvp)
-            self.bsdf_shader.draw_array(gl.LINES, 0, 104)
+            distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
+            self.bsdf_shader.set_buffer('mvp', mvp)
+            if 'InteractiveBSDF' in repr(distr[2][0]):
+                with self.bsdf_shader:
+                    self.bsdf_shader.draw_array(Shader.PrimitiveType.Line,
+                                                0, 104, False)
 
     def draw_test_results(self):
         spacer = 20
@@ -331,13 +223,14 @@ class WarpVisualizer(Screen):
         hist_height = np.int32(shape[0] / shape[1] * hist_width)
         voffset = (self.height() - hist_height) / 2
 
-        self.draw_histogram(
-            np.array([spacer, voffset]),
-            np.array([hist_width, hist_height]), self.histogram_texture)
+        with self.render_pass:
+            self.draw_histogram(
+                np.array([spacer, voffset]),
+                np.array([hist_width, hist_height]), self.histogram_texture)
 
-        self.draw_histogram(
-            np.array([2 * spacer + hist_width, voffset]),
-            np.array([hist_width, hist_height]), self.pdf_texture)
+            self.draw_histogram(
+                np.array([2 * spacer + hist_width, voffset]),
+                np.array([hist_width, hist_height]), self.pdf_texture)
 
         c = self.nvg_context()
         c.BeginFrame(self.size()[0], self.size()[1], self.pixel_ratio())
@@ -376,15 +269,14 @@ class WarpVisualizer(Screen):
     def draw_histogram(self, pos, size, tex):
         s = -(pos + 0.25) / size
         e = self.size() / size + s
-        mvp = ortho(s[0], e[0], e[1], s[1], -1, 1)
+        mvp = ortho(s[0], e[0], e[1], s[1], -1, 1).T
 
-        gl.Disable(gl.DEPTH_TEST)
-        tex.bind(0)
-        self.histogram_shader.bind()
-        self.histogram_shader.set_uniform("mvp", mvp)
-        self.histogram_shader.set_uniform("tex", 0)
-        self.histogram_shader.draw_indexed(gl.TRIANGLES, 0, 2)
-        tex.release()
+        self.histogram_shader.set_buffer("mvp", mvp)
+        self.histogram_shader.set_texture("tex", tex)
+
+        with self.histogram_shader:
+            self.histogram_shader.draw_array(Shader.PrimitiveType.Triangle,
+                                             0, 6, True)
 
     def refresh_distribution(self):
         distr = DISTRIBUTIONS[self.warp_type_box.selected_index()]
@@ -523,14 +415,13 @@ class WarpVisualizer(Screen):
         samples -= self.center
         samples *= self.scale
 
-        self.point_shader.bind()
-        self.point_shader.upload_attrib('position', samples.T)
+        self.point_shader.set_buffer('position', samples)
         self.point_count = samples.shape[0]
 
         tmp = np.linspace(0, 1, self.point_count)
         colors = np.stack((tmp, 1 - tmp, np.zeros(self.point_count))) \
             .astype(samples.dtype)
-        self.point_shader.upload_attrib('color', colors)
+        self.point_shader.set_buffer('color', colors.T)
 
         if self.warped_grid_box.checked():
             grid = np.linspace(0, 1, sqrt_val + 1)
@@ -562,8 +453,7 @@ class WarpVisualizer(Screen):
             lines -= self.center
             lines *= self.scale
 
-            self.grid_shader.bind()
-            self.grid_shader.upload_attrib('position', lines.T)
+            self.grid_shader.set_buffer('position', lines)
             self.line_count = lines.shape[0]
 
         if 'InteractiveBSDF' in repr(distr[2][0]):
@@ -577,8 +467,7 @@ class WarpVisualizer(Screen):
             arrows = np.array([[0, 0, 0], sph(theta, phi),
                                [0, 0, 0], sph(theta, phi + np.pi)])
             lines = np.column_stack((lines, arrows.T))
-            self.bsdf_shader.bind()
-            self.bsdf_shader.upload_attrib('position', lines)
+            self.bsdf_shader.set_buffer('position', np.float32(lines.T))
 
 
     def run_test(self):
@@ -607,10 +496,12 @@ class WarpVisualizer(Screen):
         max_value = np.amax(pdf) * 1.1
         pdf = (pdf - min_value) / (max_value - min_value)
         histogram = (histogram - min_value) / (max_value - min_value)
-        self.pdf_texture.init(Bitmap(np.float32(pdf)))
-        self.pdf_texture.set_interpolation(GLTexture.ENearest)
-        self.histogram_texture.init(Bitmap(np.float32(histogram)))
-        self.histogram_texture.set_interpolation(GLTexture.ENearest)
+        self.pdf_texture = Texture(Bitmap(np.float32(pdf)),
+            Texture.InterpolationMode.Nearest,
+            Texture.InterpolationMode.Nearest)
+        self.histogram_texture = Texture(Bitmap(np.float32(histogram)),
+            Texture.InterpolationMode.Nearest,
+            Texture.InterpolationMode.Nearest)
 
 
 if __name__ == '__main__':
@@ -618,7 +509,7 @@ if __name__ == '__main__':
     wv = WarpVisualizer()
     wv.set_visible(True)
     wv.perform_layout()
-    nanogui.mainloop(refresh=0)
+    nanogui.mainloop(refresh=-1)
     del wv
     gc.collect()
     nanogui.shutdown()

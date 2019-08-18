@@ -92,12 +92,13 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
 #endif
     m.attr("PacketSize") = py::cast(PacketSize);
 
+    (void) profiler_flags();
+
     Jit::static_initialization();
     Class::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
-    Profiler::static_initialization();
 
     // libmitsuba-core
     MTS_PY_IMPORT(filesystem);
