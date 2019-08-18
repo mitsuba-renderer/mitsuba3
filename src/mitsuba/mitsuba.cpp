@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
             __global_thread_count = arg_threads->as_int();
         if (__global_thread_count < 1)
             Throw("Thread count must be >= 1!");
-        tbb::task_scheduler_init init(__global_thread_count);
+        tbb::task_scheduler_init init((int) __global_thread_count);
 
         // Scalar mode
         bool render_scalar = (bool) *arg_scalar;

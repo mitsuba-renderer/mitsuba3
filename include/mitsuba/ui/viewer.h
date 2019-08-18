@@ -21,14 +21,14 @@ public:
     Tab *append_tab(const std::string &caption);
 
     /// Load content (a scene or an image) into a tab
-    void load(const Tab *tab, const fs::path &scene);
+    void load(Tab *tab, const fs::path &scene);
 
     using ng::Screen::perform_layout;
     virtual void perform_layout(NVGcontext* ctx) override;
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers) override;
 
 protected:
-    void close_tab_impl(const Tab *tab);
+    void close_tab_impl(Tab *tab);
 
 protected:
     ng::ref<ng::Button> m_btn_play, m_btn_stop, m_btn_reload;

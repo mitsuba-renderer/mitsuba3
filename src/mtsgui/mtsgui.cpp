@@ -82,7 +82,6 @@ int main(int argc, char *argv[]) {
 
     std::string error_msg;
     try {
-
         // Parse all command line options
         parser.parse(argc, argv);
 
@@ -109,7 +108,7 @@ int main(int argc, char *argv[]) {
             __global_thread_count = arg_threads->as_int();
         if (__global_thread_count < 1)
             Throw("Thread count must be >= 1!");
-        tbb::task_scheduler_init init(__global_thread_count);
+        tbb::task_scheduler_init init((int) __global_thread_count);
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
@@ -119,7 +118,7 @@ int main(int argc, char *argv[]) {
             fr->append(base_path);
 
         if (*arg_help) {
-            help(__global_thread_count);
+            help((int) __global_thread_count);
         } else {
             ng::init();
 
@@ -136,7 +135,7 @@ int main(int argc, char *argv[]) {
                 while (arg_extra && *arg_extra) {
                     filesystem::path filename(arg_extra->as_string());
 
-                    MitsubaViewer::Tab *tab = viewer->append_tab(filename.filename());
+                    MitsubaViewer::Tab *tab = viewer->append_tab(filename.filename().string());
 
                     group.run(
                         [&env, fr, filename, tab, viewer]() {
@@ -147,10 +146,8 @@ int main(int argc, char *argv[]) {
                             ref<FileResolver> fr2 = new FileResolver(*fr);
                             if (!fr2->contains(scene_dir))
                                 fr2->append(scene_dir);
-                            ref<Logger> logger = new Logger();
 
                             Thread *thread = Thread::thread();
-                            thread->set_logger(logger);
                             thread->set_file_resolver(fr2);
                             ((MitsubaViewer *) viewer.get())->load(tab, fr2->resolve(filename));
                         }

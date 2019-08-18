@@ -547,7 +547,17 @@ void Bitmap::accumulate(const Bitmap *bitmap,
 }
 
 std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
-    using FieldMap = std::unordered_multimap<std::string, std::pair<std::string, const Struct::Field *>>;
+    std::vector<std::pair<std::string, ref<Bitmap>>> result;
+
+    if (m_pixel_format != EMultiChannel) {
+        result.emplace_back("<root>", const_cast<Bitmap *>(this));
+        return result;
+    }
+
+    using FieldMap = std::unordered_multimap<
+          std::string,
+          std::pair<std::string, const Struct::Field *>>;
+
     FieldMap fields;
     for (size_t i = 0; i < m_struct->field_count(); ++i) {
         const Struct::Field &field = (*m_struct)[i];
@@ -564,7 +574,6 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
         fields.emplace(prefix, std::make_pair(suffix, &field));
     }
 
-    std::vector<std::pair<std::string, ref<Bitmap>>> result;
     for (auto it = fields.begin(); it != fields.end();) {
         std::string prefix = it->first;
         auto range = fields.equal_range(prefix);
@@ -1121,15 +1130,15 @@ void Bitmap::read_openexr(Stream *stream) {
                     Y *= scale; RY *= scale; BY *= scale;
                 }
 
-                Float R = (RY + 1) * Y,
-                      B = (BY + 1) * Y,
+                Float R = (RY + 1.f) * Y,
+                      B = (BY + 1.f) * Y,
                       G = ((Y - R * yw.x - B * yw.z) / yw.y);
 
                 if (std::is_integral<T>::value) {
                     Float scale = std::numeric_limits<T>::max();
-                    R *= R * scale + 0.5f;
-                    G *= G * scale + 0.5f;
-                    B *= B * scale + 0.5f;
+                    R *= R * scale + .5f;
+                    G *= G * scale + .5f;
+                    B *= B * scale + .5f;
                 }
 
                 data[0] = T(R); data[1] = T(G); data[2] = T(B);

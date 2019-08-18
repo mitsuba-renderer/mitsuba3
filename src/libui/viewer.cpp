@@ -5,6 +5,7 @@
 #include <mitsuba/core/appender.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/formatter.h>
 
 #include <nanogui/layout.h>
 #include <nanogui/label.h>
@@ -17,15 +18,26 @@
 #include <nanogui/imageview.h>
 #include <nanogui/progressbar.h>
 #include <nanogui/opengl.h>
+#include <nanogui/icons.h>
 
 #include "libui_resources.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
 struct MitsubaViewer::Tab {
+    struct Layer {
+        std::string name;
+        ref<Bitmap> bitmap;
+        ng::ref<Texture> texture;
+
+        Layer(const std::string &name, Bitmap *bitmap)
+            : name(name), bitmap(bitmap), texture(new Texture(bitmap)) { }
+    };
+
     int id = 0;
     ng::ref<ng::VScrollPanel> console_panel;
     ng::ref<ng::TextArea> console;
+    std::vector<Layer> layers;
 };
 
 MitsubaViewer::MitsubaViewer()
@@ -45,25 +57,28 @@ MitsubaViewer::MitsubaViewer()
     m_contents->set_layout(layout);
     m_contents->set_size(m_size);
 
+    glfwSetWindowSizeLimits(glfw_window(), 300, 200,
+                            GLFW_DONT_CARE, GLFW_DONT_CARE);
+
     Widget *tools = new Widget(m_contents);
     tools->set_layout(new BoxLayout(Orientation::Vertical,
                                     Alignment::Middle, 0, 6));
 
-    m_btn_menu = new PopupButton(tools, "", ENTYPO_ICON_MENU);
+    m_btn_menu = new PopupButton(tools, "", FA_BARS);
     Popup *menu = m_btn_menu->popup();
 
     menu->set_layout(new GroupLayout());
     menu->set_visible(true);
     menu->set_size(ng::Vector2i(200, 140));
-    new Button(menu, "Open ..", ENTYPO_ICON_FOLDER);
+    new Button(menu, "Open ..", FA_FOLDER_OPEN);
     PopupButton *recent = new PopupButton(menu, "Open Recent");
     auto recent_popup = recent->popup();
     recent_popup->set_layout(new GroupLayout());
     new Button(recent_popup, "scene1.xml");
     new Button(recent_popup, "scene2.xml");
     new Button(recent_popup, "scene3.xml");
-    new Button(menu, "Export image ..", ENTYPO_ICON_EXPORT);
-    Button *about = new Button(menu, "About", ENTYPO_ICON_HELP_WITH_CIRCLE);
+    new Button(menu, "Export image ..", FA_FILE_EXPORT);
+    Button *about = new Button(menu, "About", FA_INFO_CIRCLE);
     about->set_callback([&]() {
         auto dlg = new MessageDialog(
             this, MessageDialog::Type::Information, "About Mitsuba 2",
@@ -74,32 +89,32 @@ MitsubaViewer::MitsubaViewer()
             "In the context of scientific articles or books, please cite paper\n\n"
             "Mitsuba 2: A Retargetable Rendering System\n"
             "Merlin Nimier-David, Delio Vicini, Tizian Zeltner, and Wenzel Jakob\n"
-            "In ...\n");
+            "In Transactions on Graphics (Proceedings of SIGGRAPH Asia 2019)\n");
         dlg->message_label()->set_fixed_width(550);
         dlg->message_label()->set_font_size(20);
         perform_layout(nvg_context());
         dlg->center();
     });
 
-    m_btn_play = new Button(tools, "", ENTYPO_ICON_CONTROLLER_PLAY);
+    m_btn_play = new Button(tools, "", FA_PLAY);
     m_btn_play->set_text_color(nanogui::Color(100, 255, 100, 150));
     m_btn_play->set_callback([this]() {
-            m_btn_play->set_icon(ENTYPO_ICON_CONTROLLER_PAUS);
+            m_btn_play->set_icon(FA_PAUSE);
             m_btn_play->set_text_color(nanogui::Color(255, 255, 255, 150));
             m_btn_stop->set_enabled(true);
         }
     );
     m_btn_play->set_tooltip("Render");
 
-    m_btn_stop = new Button(tools, "", ENTYPO_ICON_CONTROLLER_STOP);
+    m_btn_stop = new Button(tools, "", FA_STOP);
     m_btn_stop->set_text_color(nanogui::Color(255, 100, 100, 150));
     m_btn_stop->set_enabled(false);
     m_btn_stop->set_tooltip("Stop rendering");
 
-    m_btn_reload = new Button(tools, "", ENTYPO_ICON_CYCLE);
+    m_btn_reload = new Button(tools, "", FA_SYNC_ALT);
     m_btn_reload->set_tooltip("Reload file");
 
-    m_btn_settings = new PopupButton(tools, "", ENTYPO_ICON_COG);
+    m_btn_settings = new PopupButton(tools, "", FA_COG);
     m_btn_settings->set_tooltip("Scene configuration");
 
     auto settings_popup = m_btn_settings->popup();
@@ -185,8 +200,8 @@ MitsubaViewer::MitsubaViewer()
     //ImageView *view = m_view;
     //tab->set_popup_callback([tab, view](int id, Screen *screen) -> Popup * {
         //Popup *popup = new Popup(screen);
-        //Button *b1 = new Button(popup, "Close", ENTYPO_ICON_CROSS);
-        //Button *b2 = new Button(popup, "Duplicate", ENTYPO_ICON_PLUS);
+        //Button *b1 = new Button(popup, "Close", FA_TIMES_CIRCLE);
+        //Button *b2 = new Button(popup, "Duplicate", FA_CLONE);
         //b1->set_callback([tab, id]() { tab->remove_tab(id); });
         //b2->set_callback([tab, id, view]() { tab->insert_tab(tab->tab_index(id), tab->tab_caption(id), view); });
         //return popup;
@@ -273,13 +288,19 @@ MitsubaViewer::Tab *MitsubaViewer::append_tab(const std::string &name) {
     m_tab_widget->set_selected_id(tab->id);
     m_tabs.push_back(tab);
 
-    Logger *logger = Thread::thread()->logger();
-    logger->clear_appenders();
-    logger->set_log_level(EDebug);
-    logger->add_appender(new TabAppender(this, tab));
+    perform_layout();
+    return tab;
+}
 
+void MitsubaViewer::load(Tab *tab, const fs::path &fname) {
     try {
-        fs::path fname = Thread::thread()->file_resolver()->resolve(name);
+        ref<Logger> logger = new Logger();
+        logger->clear_appenders();
+        logger->set_log_level(EDebug);
+        logger->add_appender(new TabAppender(this, tab));
+        logger->set_formatter(new DefaultFormatter());
+        Thread::thread()->set_logger(logger);
+
         ref<FileStream> stream = new FileStream(fname);
         Bitmap::EFileFormat file_format = Bitmap::detect_file_format(stream);
 
@@ -287,23 +308,15 @@ MitsubaViewer::Tab *MitsubaViewer::append_tab(const std::string &name) {
             ref<Bitmap> bitmap = new Bitmap(stream, file_format);
             std::vector<std::pair<std::string, ref<Bitmap>>> images = bitmap->split();
 
-            for (auto &kv: images) {
-                ng::ref<Texture> texture = new Texture(kv.second);
-            }
+            for (auto &kv: images)
+                tab->layers.emplace_back(kv.first, kv.second);
         }
     } catch (const std::exception &e) {
         Log(EWarn, "A critical exception occurred: %s", e.what());
     }
-
-    perform_layout();
-    return tab;
 }
 
-void MitsubaViewer::load(const Tab *, const fs::path &name) {
-    std::cout << name.string() << std::endl;
-}
-
-void MitsubaViewer::close_tab_impl(const Tab *tab) {
+void MitsubaViewer::close_tab_impl(Tab *tab) {
     m_tab_widget->remove_child(tab->console_panel.get());
     m_tabs.erase(std::find(m_tabs.begin(), m_tabs.end(), tab));
     delete tab;
@@ -324,6 +337,7 @@ void MitsubaViewer::perform_layout(NVGcontext* ctx) {
             console_panel->set_position(position);
             console_panel->set_size(size);
             console_panel->perform_layout(ctx);
+            console_panel->request_focus();
         } else {
             console_panel->set_visible(false);
         }

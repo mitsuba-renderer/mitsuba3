@@ -45,7 +45,7 @@ std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
         if (thread && m_has_thread) {
             oss << thread->name();
 
-            for (int i=0; i<(5 - (int) thread->name().size()); i++)
+            for (int i=0; i<(6 - (int) thread->name().size()); i++)
                 oss << ' ';
         }
 
