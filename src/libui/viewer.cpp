@@ -42,9 +42,9 @@ struct MitsubaViewer::Tab {
 
 MitsubaViewer::MitsubaViewer()
     : ng::Screen(ng::Vector2i(1024, 768), "Mitsuba 2",
-                      /* resizable */ true, /* fullscreen */ false,
-                      /* depth_buffer */ true, /* stencil_buffer */ true,
-                      /* float_buffer */ true) {
+                 /* resizable */ true, /* fullscreen */ false,
+                 /* depth_buffer */ true, /* stencil_buffer */ true,
+                 /* float_buffer */ true) {
     using namespace nanogui;
 
     inc_ref();
