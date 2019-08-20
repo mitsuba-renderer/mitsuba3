@@ -534,7 +534,10 @@ ref<Texture3D> Properties::texture3d(const std::string &name,
     const auto it = d->entries.find(name);
     if (it == d->entries.end()) {
         Properties props("constant3d");
-        props.set_float("color", def_val);
+
+        ref<Object> obj = this->spectrum("__default_spectrum", def_val).get();
+        props.set_object("color", obj);
+
         return (Texture3D *) PluginManager::instance()
             ->create_object(props).get();
     }
