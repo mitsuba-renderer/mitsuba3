@@ -37,9 +37,6 @@
 [submodule "resources/data"]
     path = resources/data
     url = https://github.com/mitsuba-renderer/mitsuba-data
-[submodule "ext/IntelSEAPI"]
-    path = ext/IntelSEAPI
-    url = https://github.com/intel/IntelSEAPI
 [submodule "ext/embree"]
     path = ext/embree
     url = https://github.com/wjakob/embree

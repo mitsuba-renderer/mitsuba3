@@ -92,8 +92,6 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
 #endif
     m.attr("PacketSize") = py::cast(PacketSize);
 
-    (void) profiler_flags();
-
     Jit::static_initialization();
     Class::static_initialization();
     Thread::static_initialization();

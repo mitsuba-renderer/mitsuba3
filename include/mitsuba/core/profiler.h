@@ -2,10 +2,6 @@
 
 #pragma once
 
-#if defined(MTS_ENABLE_ITTNOTIFY)
-#  include <ittnotify.h>
-#endif
-
 #include <mitsuba/core/object.h>
 
 #if !defined(NDEBUG)
@@ -97,12 +93,6 @@ constexpr const char
     };
 
 
-#if defined(MTS_ENABLE_ITTNOTIFY)
-extern MTS_EXPORT_CORE __itt_string_handle
-    *profiler_phase_string_handles[int(EProfilerPhase::EProfilerPhaseCount)];
-extern MTS_EXPORT_CORE __itt_domain *itt_domain;
-#endif
-
 static_assert(int(EProfilerPhase::EProfilerPhaseCount) <= 64,
               "List of profiler phases is limited to 64 entries");
 
@@ -125,13 +115,6 @@ struct ScopedPhase {
         if ((*m_target & m_flag) == 0) {
             *m_target |= m_flag;
 
-            #if defined(MTS_ENABLE_ITTNOTIFY)
-                m_phase = phase;
-                if (unlikely(int(phase) < 5))
-                    __itt_task_begin(itt_domain, __itt_null, __itt_null,
-                                     profiler_phase_string_handles[int(phase)]);
-            #endif
-
             #if !defined(NDEBUG) && defined(MTS_ENABLE_AUTODIFF)
                 //FloatD::push_prefix_(profiler_phase_id[int(phase)]);
             #endif
@@ -142,11 +125,6 @@ struct ScopedPhase {
 
     ~ScopedPhase() {
         *m_target &= ~m_flag;
-        #if defined(MTS_ENABLE_ITTNOTIFY)
-            if (m_flag != 0 && unlikely(int(m_phase) < 5))
-                __itt_task_end(itt_domain);
-        #endif
-
         #if !defined(NDEBUG) && defined(MTS_ENABLE_AUTODIFF)
             //if (m_flag != 0)
                 //FloatD::pop_prefix_();
@@ -159,9 +137,6 @@ struct ScopedPhase {
 private:
     uint64_t* m_target;
     uint64_t  m_flag;
-#if defined(MTS_ENABLE_ITTNOTIFY)
-    EProfilerPhase m_phase;
-#endif
 };
 
 class MTS_EXPORT_CORE Profiler : public Object {

@@ -11,7 +11,6 @@ option(MTS_ENABLE_AUTODIFF       "Enable derivative computation using CUDA?" OFF
 
 if (UNIX)
   option(MTS_ENABLE_PROFILER     "Enable sampling profiler" ON)
-  option(MTS_ENABLE_ITTNOTIFY    "Enable Intel event API (useful for profiling in VTune)" OFF)
 endif()
 
 # Use GCC/Clang address sanitizer?
@@ -54,11 +53,6 @@ if (MTS_ENABLE_AUTODIFF)
   endif()
 endif()
 
-
-if (MTS_ENABLE_ITTNOTIFY AND NOT MTS_ENABLE_PROFILER)
-  message(WARNING "The Intel Event API is only supported in conjunction with Mitsuba's internal profiler.")
-  set(MTS_ENABLE_ITTNOTIFY OFF CACHE BOOL "Enable Intel event API (useful for profiling in VTune)" FORCE)
-endif()
 
 # ----------------------------------
 
@@ -189,12 +183,6 @@ include_directories(include
   ${ENOKI_INCLUDE_DIRS}
   ${TBB_INCLUDE_DIRS}
 )
-
-if (MTS_ENABLE_ITTNOTIFY)
-  include_directories(${ITT_INCLUDE_DIRS})
-  add_definitions(-DMTS_ENABLE_ITTNOTIFY=1)
-  message(STATUS "Mitsuba: emitting profiling events with Intel ITT.")
-endif()
 
 if (MTS_USE_EMBREE)
   include_directories(${EMBREE_INCLUDE_DIRS})

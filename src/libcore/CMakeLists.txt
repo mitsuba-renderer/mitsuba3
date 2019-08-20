@@ -101,10 +101,6 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   add_dist(asmjit)
 endif()
 
-if (MTS_ENABLE_ITTNOTIFY)
-  target_link_libraries(mitsuba-core PRIVATE ittnotify)
-endif()
-
 # Copy to 'dist' directory
 add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq)
 

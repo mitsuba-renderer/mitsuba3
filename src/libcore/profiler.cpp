@@ -22,12 +22,6 @@ struct ProfilerSample {
 
 static std::array<ProfilerSample, MTS_PROFILE_HASH_SIZE> profiler_samples;
 
-#if defined(MTS_ENABLE_ITTNOTIFY)
-__itt_string_handle *profiler_phase_string_handles[int(
-    EProfilerPhase::EProfilerPhaseCount)] = { nullptr };
-__itt_domain *itt_domain = nullptr;
-#endif
-
 static void profiler_callback(int, siginfo_t *, void *) {
     uint64_t flags = *profiler_flags();
 
@@ -76,14 +70,6 @@ void Profiler::static_initialization() {
         if (setitimer(ITIMER_PROF, &timer, nullptr))
             Throw("profiler_start(): failure in setitimer(): %s", strerror(errno));
     }
-
-    #if defined(MTS_ENABLE_ITTNOTIFY)
-        itt_domain = __itt_domain_create("ch.epfl.rgl.mitsuba2");
-        for (size_t i = 0; i < size_t(EProfilerPhase::EProfilerPhaseCount); ++i) {
-            profiler_phase_string_handles[i] = __itt_string_handle_create(
-                profiler_phase_id[size_t(i)]);
-        }
-    #endif
 }
 
 void Profiler::static_shutdown() {
