@@ -43,7 +43,7 @@ public:
         rs.alpha = select(si.is_valid(), Value(1.f), Value(0.f));
         EmitterPtr emitter = si.emitter(scene);
 
-        for (int depth = 0;; ++depth) {
+        for (int depth = 1;; ++depth) {
 
             /* ---------------- Intersection with emitters ---------------- */
 
