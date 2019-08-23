@@ -11,7 +11,7 @@ SurfaceInteraction3f Scene::ray_intersect(const Ray3f &ray) const {
     ScopedPhase sp(EProfilerPhase::ERayIntersect);
     Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
-    auto [hit, hit_t] = m_kdtree->ray_intersect_havran<false>(ray, cache);
+    auto [hit, hit_t] = m_kdtree->ray_intersect<false>(ray, cache);
 
     SurfaceInteraction3f si;
 
@@ -47,7 +47,7 @@ SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) cons
 
 bool Scene::ray_test(const Ray3f &ray) const {
     ScopedPhase p(EProfilerPhase::ERayTest);
-    return m_kdtree->ray_intersect_havran<true>(ray).first;
+    return m_kdtree->ray_intersect<true>(ray).first;
 }
 
 MaskP Scene::ray_test(const Ray3fP &ray, MaskP active) const {
