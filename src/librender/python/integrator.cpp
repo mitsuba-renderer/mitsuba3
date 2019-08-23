@@ -79,4 +79,11 @@ MTS_PY_EXPORT(Integrator) {
 
     /// MonteCarloIntegrator.
     MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
+
+    /// PolarizedMonteCarloIntegrator.
+    MTS_PY_CLASS(PolarizedMonteCarloIntegrator, SamplingIntegrator)
+        .def("eval_pol",
+             py::overload_cast<const RayDifferential3f &, RadianceSample3f &>(
+                 &PolarizedMonteCarloIntegrator::eval_pol, py::const_),
+             D(PolarizedMonteCarloIntegrator, eval_pol), "ray"_a, "rs"_a);
 }

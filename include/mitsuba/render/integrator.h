@@ -225,6 +225,35 @@ protected:
     int m_rr_depth;
 };
 
+/*
+ * \brief Base class of all polarized Monte Carlo integrators.
+ */
+class MTS_EXPORT_RENDER PolarizedMonteCarloIntegrator : public MonteCarloIntegrator {
+public:
+    /**
+     * \brief Polarized version of \ref eval()
+     *
+     * Some integrators optionally choose to implement a variant of \ref eval()
+     * which samples the incident polarized radiance along a ray.
+     * The record passed is used to store additional information about the result.
+     */
+    virtual MuellerMatrixSf eval_pol(const RayDifferential3f &, RadianceSample3f &) const = 0;
+
+    MTS_DECLARE_CLASS()
+protected:
+    PolarizedMonteCarloIntegrator(const Properties &props);
+
+    virtual ~PolarizedMonteCarloIntegrator();
+
+    virtual void render_block_scalar(const Scene *scene, Sampler *sampler,
+                                     ImageBlock *block,
+                                     size_t sample_count = size_t(-1)) const override;
+
+    void render_block_vector(const Scene *scene, Sampler *sampler,
+                             ImageBlock *block, Point2fX &points,
+                             size_t sample_count = size_t(-1)) const override;
+};
+
 NAMESPACE_END(mitsuba)
 
 #include "detail/integrator.inl"

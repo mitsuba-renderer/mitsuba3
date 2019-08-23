@@ -336,8 +336,90 @@ MonteCarloIntegrator::MonteCarloIntegrator(const Properties &props)
 
 MonteCarloIntegrator::~MonteCarloIntegrator() { }
 
+// -----------------------------------------------------------------------------
+
+PolarizedMonteCarloIntegrator::PolarizedMonteCarloIntegrator(const Properties &props)
+    : MonteCarloIntegrator(props) { }
+
+PolarizedMonteCarloIntegrator::~PolarizedMonteCarloIntegrator() { }
+
+void PolarizedMonteCarloIntegrator::render_block_scalar(const Scene *scene, Sampler *sampler,
+                                                        ImageBlock *block,
+                                                        size_t sample_count_) const {
+    const Sensor *sensor = scene->sensor();
+    block->clear();
+    uint32_t pixel_count  = (uint32_t)(m_block_size * m_block_size),
+             sample_count = (uint32_t)(sample_count_ == (size_t) -1
+                                           ? sampler->sample_count()
+                                           : sample_count_);
+
+    RadianceSample3f rs(scene, sampler);
+    bool needs_aperture_sample = sensor->needs_aperture_sample();
+    bool needs_time_sample = sensor->shutter_open_time() > 0;
+
+    Float diff_scale_factor = rsqrt((Float) sampler->sample_count());
+
+    Point2f aperture_sample(.5f);
+    Vector2f inv_resolution = 1.f / sensor->film()->crop_size();
+
+    for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
+        Point2u p = enoki::morton_decode<Point2u>(i);
+        if (any(p >= block->size()))
+            continue;
+
+        p += block->offset();
+        for (uint32_t j = 0; j < sample_count && !should_stop(); ++j) {
+            Vector2f position_sample = p + rs.next_2d();
+
+            if (needs_aperture_sample)
+                aperture_sample = rs.next_2d();
+
+            Float time = sensor->shutter_open();
+            if (needs_time_sample)
+                time += rs.next_1d() * sensor->shutter_open_time();
+
+            Float wavelength_sample = rs.next_1d();
+
+            auto adjusted_position =
+                (position_sample - sensor->film()->crop_offset()) *
+                inv_resolution;
+            auto [ray, ray_weight] = sensor->sample_ray_differential_pol(
+                time, wavelength_sample, adjusted_position, aperture_sample);
+
+            ray.scale_differential(diff_scale_factor);
+
+            MuellerMatrixSf result;
+            /* Integrator::eval_pol */ {
+                ScopedPhase sp(EProfilerPhase::ESamplingIntegratorEval);
+                result = eval_pol(ray, rs);
+            }
+
+            result = ray_weight * result;
+
+            // Only first column of this tensor contains actual Stokes vector
+            StokesVectorSf stokes = result.col(0);
+            /* First element is intensity that is stored in final image. Due to
+               rounding errors, this can sometimes be slightly negative. */
+            Spectrumf intensity = max(0.f, stokes[0]);
+
+            /* ImageBlock::put */ {
+                ScopedPhase sp(EProfilerPhase::EImageBlockPut);
+                block->put(position_sample, ray.wavelengths,
+                           intensity, rs.alpha);
+            }
+        }
+    }
+}
+
+void PolarizedMonteCarloIntegrator::render_block_vector(const Scene * /*scene*/, Sampler * /*sampler*/,
+                                                        ImageBlock * /*block*/, Point2fX & /*points*/,
+                                                        size_t /*sample_count*/) const {
+    Throw("Polarized rendering is only implemented in \"scalar\" mode for now.");
+}
+
 MTS_IMPLEMENT_CLASS(Integrator, Object)
 MTS_IMPLEMENT_CLASS(SamplingIntegrator, Integrator)
 MTS_IMPLEMENT_CLASS(MonteCarloIntegrator, SamplingIntegrator)
+MTS_IMPLEMENT_CLASS(PolarizedMonteCarloIntegrator, MonteCarloIntegrator)
 
 NAMESPACE_END(mitsuba)

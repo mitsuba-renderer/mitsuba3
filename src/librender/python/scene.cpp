@@ -131,6 +131,7 @@ MTS_PY_EXPORT(Scene) {
             return py::cast(temp);                                             \
     }
             Integrator *o = scene.integrator();
+            PY_CAST(PolarizedMonteCarloIntegrator);
             PY_CAST(MonteCarloIntegrator);
             PY_CAST(SamplingIntegrator);
             return py::cast(o);
