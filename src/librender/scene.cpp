@@ -1,5 +1,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/plugin.h>
+#include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/kdtree.h>
 #include <mitsuba/render/integrator.h>
@@ -211,6 +212,200 @@ Scene::sample_emitter_direction(const Interaction3fD &ref,
                                 bool test_visibility,
                                 MaskD active) const {
     return sample_emitter_direction_impl(ref, sample, test_visibility, active);
+}
+#endif
+
+template <typename Interaction, typename Value, typename Spectrum,
+          typename Point3, typename Point2, typename DirectionSample,
+          typename Mask, typename MuellerMatrix>
+MTS_INLINE std::pair<DirectionSample, MuellerMatrix>
+Scene::sample_emitter_direction_pol_impl(const Interaction &ref, Point2 sample,
+                                         bool test_visibility, Mask active) const {
+    ScopedPhase sp(is_static_array_v<Value> ?
+            EProfilerPhase::ESampleEmitterDirectionP :
+            EProfilerPhase::ESampleEmitterDirection);
+
+    using EmitterPtr = replace_scalar_t<Value, const Emitter *>;
+    using Index = uint_array_t<Value>;
+    using Ray = Ray<Point<Value, 3>>;
+
+    DirectionSample ds;
+    MuellerMatrix spec = 0.f;
+
+    if (likely(!m_emitters.empty())) {
+        // Randomly pick an emitter according to the precomputed emitter distribution
+        Index index;
+        Value emitter_pdf;
+        std::tie(index, emitter_pdf, sample.x()) =
+            m_emitter_distr.sample_reuse_pdf(sample.x(), active);
+        EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
+
+        // Sample a direction towards the emitter
+        std::tie(ds, spec) = emitter->sample_direction_pol(ref, sample, active);
+        active &= neq(ds.pdf, 0.f);
+
+        // Perform a visibility test if requested
+        if (test_visibility && any_or<true>(active)) {
+            Ray ray(ref.p, ds.d, math::Epsilon * (1.f + hmax(abs(ref.p))),
+                    ds.dist * (1.f - math::ShadowEpsilon),
+                    ref.time, ref.wavelengths);
+            spec[ray_test(ray, active)] = 0.f;
+        }
+
+        // Account for the discrete probability of sampling this emitter
+        ds.pdf *= emitter_pdf;
+        spec *= rcp(emitter_pdf);
+    }
+
+    return { ds, spec };
+}
+
+std::pair<DirectionSample3f, MuellerMatrixSf>
+Scene::sample_emitter_direction_pol(const Interaction3f &ref,
+                                const Point2f &sample,
+                                bool test_visibility) const {
+    return sample_emitter_direction_pol_impl(ref, sample, test_visibility, true);
+}
+
+std::pair<DirectionSample3fP, MuellerMatrixSfP>
+Scene::sample_emitter_direction_pol(const Interaction3fP &ref,
+                                const Point2fP &sample,
+                                bool test_visibility,
+                                MaskP active) const {
+    return sample_emitter_direction_pol_impl(ref, sample, test_visibility, active);
+}
+
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<DirectionSample3fD, MuellerMatrixSfD>
+Scene::sample_emitter_direction_pol(const Interaction3fD &ref,
+                                const Point2fD &sample,
+                                bool test_visibility,
+                                MaskD active) const {
+    return sample_emitter_direction_pol_impl(ref, sample, test_visibility, active);
+}
+#endif
+
+template <typename Point3,
+          typename Value = value_t<Point3>,
+          typename Spectrum = mitsuba::Spectrum<Value>,
+          typename MuellerMatrix = MuellerMatrix<Spectrum>,
+          typename Index = uint_array_t<Value>,
+          typename Mask = mask_t<Value>>
+MuellerMatrix eval_transmittance_pol(const Scene *scene, const Point3 &p1, Mask p1_on_surface, const Point3 &p2, Mask p2_on_surface,
+                                     Value time, Spectrum wavelengths, int max_interactions, Mask active) {
+
+    using SurfaceInteraction3 = SurfaceInteraction<Point3>;
+    using Ray = Ray<Point3>;
+
+    Vector d = p2 - p1;
+    Value remaining = norm(d);
+    d /= remaining;
+
+    Value used_epsilon = math::Epsilon * (1.f + hmax(abs(p1)));
+
+    Value min_dist = select(p1_on_surface, used_epsilon, Value(0.0f));
+    Value length_factor = select(p2_on_surface, Value(1 - math::ShadowEpsilon), Value(1.0f));
+    Ray ray(p1, d, min_dist, remaining * length_factor, time, wavelengths);
+    MuellerMatrix transmittance(1.f);
+
+    int interactions = 0;
+    while (any((remaining > 0) && active) && interactions < max_interactions) {
+
+        // Intersect the transmittance ray with the scene
+        SurfaceInteraction3 si = scene->ray_intersect(ray, active);
+
+        // If intersection is found: evaluate BSDF transmission
+        Mask active_surface = active && si.is_valid();
+        if (any_or<true>(active_surface)) {
+            auto bsdf = si.bsdf(ray);
+            MuellerMatrix bsdf_val = bsdf->eval_transmission(si, si.to_local(d), active_surface);
+            masked(transmittance, active_surface) = transmittance * bsdf_val;
+        }
+
+        active &= si.is_valid() && any(neq(transmittance(0, 0), 0.f));
+
+        // Update the ray with new origin & t parameter
+        masked(ray.o, active) = si.p;
+        masked(remaining, active) -= si.t;
+        masked(ray.mint, active) = used_epsilon;
+        masked(ray.maxt, active) = remaining * length_factor;
+        interactions++;
+    }
+    return transmittance;
+}
+
+template <typename Interaction, typename Value, typename Spectrum,
+          typename Point3, typename Point2, typename DirectionSample,
+          typename Mask, typename MuellerMatrix>
+MTS_INLINE std::pair<DirectionSample, MuellerMatrix>
+Scene::sample_emitter_direction_attenuated_pol_impl(const Interaction &ref, Sampler *sampler,
+                                                    bool test_visibility, Mask active) const {
+    ScopedPhase sp(is_static_array_v<Value> ?
+            EProfilerPhase::ESampleEmitterDirectionP :
+            EProfilerPhase::ESampleEmitterDirection);
+
+    using EmitterPtr = replace_scalar_t<Value, const Emitter *>;
+    using Index = uint_array_t<Value>;
+
+    DirectionSample ds;
+    MuellerMatrix spec = 0.f;
+
+    int max_interactions = 10;
+    if (likely(!m_emitters.empty())) {
+        // Randomly pick an emitter according to the precomputed emitter distribution
+        Point2f sample = sampler->next_2d();
+        Index index;
+        Value emitter_pdf;
+        std::tie(index, emitter_pdf, sample.x()) =
+            m_emitter_distr.sample_reuse_pdf(sample.x());
+        EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
+
+        // Sample a direction towards the emitter
+        std::tie(ds, spec) = emitter->sample_direction_pol(ref, sample, active);
+        active &= neq(ds.pdf, 0.f);
+
+        // Perform a visibility test if requested
+        if (test_visibility && any_or<true>(active)) {
+            Mask is_surface_interaction = true;
+            Mask is_surface_emitter = !(emitter->is_environment());
+            MuellerMatrix tr = eval_transmittance_pol(this,
+                                                      ref.p, is_surface_interaction,
+                                                      ds.p, is_surface_emitter,
+                                                      ref.time, ref.wavelengths,
+                                                      max_interactions, active);
+            masked(spec, active) = tr * spec;
+        }
+
+        // Account for the discrete probability of sampling this emitter
+        ds.pdf *= emitter_pdf;
+        spec *= rcp(emitter_pdf);
+    }
+
+    return { ds, spec };
+}
+
+std::pair<DirectionSample3f, MuellerMatrixSf>
+Scene::sample_emitter_direction_attenuated_pol(const Interaction3f &ref,
+                                               Sampler *sampler,
+                                               bool test_visibility) const {
+    return sample_emitter_direction_attenuated_pol_impl(ref, sampler, test_visibility, true);
+}
+
+std::pair<DirectionSample3fP, MuellerMatrixSfP>
+Scene::sample_emitter_direction_attenuated_pol(const Interaction3fP &ref,
+                                               Sampler *sampler,
+                                               bool test_visibility,
+                                               MaskP active) const {
+    return sample_emitter_direction_attenuated_pol_impl(ref, sampler, test_visibility, active);
+}
+
+#if defined(MTS_ENABLE_AUTODIFF)
+std::pair<DirectionSample3fD, MuellerMatrixSfD>
+Scene::sample_emitter_direction_attenuated_pol(const Interaction3fD &ref,
+                                               Sampler *sampler,
+                                               bool test_visibility,
+                                               MaskD active) const {
+    return sample_emitter_direction_attenuated_pol_impl(ref, sampler, test_visibility, active);
 }
 #endif
 

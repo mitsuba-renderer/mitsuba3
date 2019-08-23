@@ -59,6 +59,46 @@ BSDF::eval_pol(const BSDFContext &ctx, const SurfaceInteraction3fD &si,
 }
 #endif
 
+Spectrumf
+BSDF::eval_transmission(const SurfaceInteraction3f & /* unused */,
+                const Vector3f & /* unused */) const {
+    return 0.f;
+}
+
+SpectrumfP
+BSDF::eval_transmission(const SurfaceInteraction3fP & /* unused */,
+                const Vector3fP & /* unused */, MaskP /* unused */) const {
+    return 0.f;
+}
+
+#if defined(MTS_ENABLE_AUTODIFF)
+SpectrumfD
+BSDF::eval_transmission(const SurfaceInteraction3fD & /* unused */,
+                const Vector3fD & /* unused */, MaskD /* unused */) const {
+    return 0.f;
+}
+#endif
+
+MuellerMatrixSf
+BSDF::eval_transmission_pol(const SurfaceInteraction3f &si,
+                            const Vector3f &wo) const {
+    return mueller::depolarizer(eval_transmission(si, wo));
+}
+
+MuellerMatrixSfP
+BSDF::eval_transmission_pol(const SurfaceInteraction3fP &si,
+                            const Vector3fP &wo, MaskP active) const {
+    return mueller::depolarizer(eval_transmission(si, wo, active));
+}
+
+#if defined(MTS_ENABLE_AUTODIFF)
+MuellerMatrixSfD
+BSDF::eval_transmission_pol(const SurfaceInteraction3fD &si,
+                            const Vector3fD &wo, MaskD active) const {
+    return mueller::depolarizer(eval_transmission(si, wo, active));
+}
+#endif
+
 std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {
     os << "BSDFContext[" << std::endl
         << "  mode = " << ctx.mode << "," << std::endl

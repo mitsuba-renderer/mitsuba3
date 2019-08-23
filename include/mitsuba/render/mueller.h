@@ -56,6 +56,28 @@ template <typename Value> MuellerMatrix<Value> linear_polarizer(Value value = 1.
 }
 
 /**
+ * \brief Constructs the Mueller matrix of a linear retarder which has its fast
+ * aligned vertically.
+ *
+ * This implements the general case with arbitrary phase shift and can be used
+ * to construct the common special cases of quarter-wave and half-wave plates.
+ *
+ * \param phase
+ *     The phase difference between the fast and slow axis
+ *
+ */
+template <typename Value> MuellerMatrix<Value> linear_retarder(Value phase) {
+    Value s, c;
+    std::tie(s, c) = sincos(phase);
+    return MuellerMatrix<Value>(
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, c, -s,
+        0, 0, s, c
+    );
+}
+
+/**
 * \brief Constructs the Mueller matrix of a linear diattenuator, which
 * attenuates the electric field components at 0 and 90 degrees by
 * 'x' and 'y', * respectively.
@@ -97,6 +119,20 @@ MuellerMatrix<Value> rotated_element(Value theta,
                                      const MuellerMatrix<Value> &M) {
     MuellerMatrix<Value> R = rotator(theta), Ri = transpose(R);
     return R * M * Ri;
+}
+
+/**
+ * \brief Reverse direction of propagation of the electric field. Also used for
+ * reflecting reference frames.
+ */
+template <typename Value>
+MuellerMatrix<Value> reverse(const MuellerMatrix<Value> &M) {
+    return MuellerMatrix<Value>(
+        1, 0,  0,  0,
+        0, 1,  0,  0,
+        0, 0, -1,  0,
+        0, 0,  0, -1
+    ) * M;
 }
 
 /**
@@ -178,6 +214,119 @@ MuellerMatrix<Value> specular_transmission(Value cos_theta_i, Value eta) {
         0, 0, c, 0,
         0, 0, 0, c
     );
+}
+
+/**
+ * \brief Gives the reference frame basis for a Stokes vector
+ *
+ * \param w
+ *      Direction of travel for Stokes vector (normalized)
+ *
+ * \return
+ *      The (implicitly defined) reference coordinate system basis for the
+ *      Stokes vector travelling along \ref w.
+ *
+ */
+template <typename Vector3>
+Vector3 stokes_basis(const Vector3 &w) {
+    auto [s, t] = coordinate_system(w);
+    return s;
+}
+
+/**
+ * \brief Gives the Mueller matrix that alignes the reference frames (defined by
+ * their respective basis vectors) of two collinear stokes vectors.
+ *
+ * \param forward
+ *      Direction of travel for Stokes vector (normalized)
+ *
+ * \param basis_current
+ *      Current (normalized) Stokes basis. Must be orthogonal to \c forward.
+ *
+ * \param basis_target
+ *      Target (normalized) Stokes basis. Must be orthogonal to \c forward.
+ *
+ * \return
+ *      Mueller matrix that performs the desired change of reference frames.
+ */
+template <typename Vector3,
+          typename Value = value_t<Vector3>,
+          typename MuellerMatrix = MuellerMatrix<Value>>
+MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
+                                  const Vector3 &basis_current,
+                                  const Vector3 &basis_target) {
+    Value theta = unit_angle(normalize(basis_current),
+                             normalize(basis_target));
+
+    masked(theta, dot(forward, cross(basis_current, basis_target)) < 0) *= -1.f;
+    return rotator(theta);
+}
+
+/**
+ * \brief Return the Mueller matrix for some new reference frames.
+ * This version rotates the input/output frames independently.
+ *
+ * \param M
+ *      The current Mueller matrix that operates from \c in_basis_current to \c out_basis_current.
+ *
+ * \param in_forward
+ *      Direction of travel for input Stokes vector (normalized)
+ *
+ * \param in_basis_current
+ *      Current (normalized) input Stokes basis. Must be orthogonal to \c in_forward.
+ *
+ * \param in_basis_target
+ *      Target (normalized) input Stokes basis. Must be orthogonal to \c in_forward.
+ *
+ * \param out_forward
+ *      Direction of travel for input Stokes vector (normalized)
+ *
+ * \param out_basis_current
+ *      Current (normalized) input Stokes basis. Must be orthogonal to \c out_forward.
+ *
+ * \param out_basis_target
+ *      Target (normalized) input Stokes basis. Must be orthogonal to \c out_forward.
+ *
+ * \return
+ *      New Mueller matrix that operates from \c in_basis_target to \c out_basis_target.
+ */
+template <typename Vector3,
+          typename Value = value_t<Vector3>,
+          typename MuellerMatrix = MuellerMatrix<Value>>
+MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
+                                   const Vector3 &in_forward, const Vector3 &in_basis_current, const Vector3 &in_basis_target,
+                                   const Vector3 &out_forward, const Vector3 &out_basis_current, const Vector3 &out_basis_target) {
+    MuellerMatrix R_in  = rotate_stokes_basis(in_forward, in_basis_current, in_basis_target);
+    MuellerMatrix R_out = rotate_stokes_basis(out_forward, out_basis_current, out_basis_target);
+    return R_out * M * transpose(R_in);
+}
+
+/**
+ * \brief Return the Mueller matrix for some new reference frames.
+ * This version applies the same rotation to the input/output frames.
+ *
+ * \param M
+ *      The current Mueller matrix that operates from \c basis_current to \c basis_current.
+ *
+ * \param forward
+ *      Direction of travel for input Stokes vector (normalized)
+ *
+ * \param basis_current
+ *      Current (normalized) input Stokes basis. Must be orthogonal to \c forward.
+ *
+ * \param basis_target
+ *      Target (normalized) input Stokes basis. Must be orthogonal to \c forward.
+ *
+ * \return
+ *      New Mueller matrix that operates from \c basis_target to \c basis_target.
+ */
+template <typename Vector3,
+          typename Value = value_t<Vector3>,
+          typename MuellerMatrix = MuellerMatrix<Value>>
+MuellerMatrix rotate_mueller_basis_collinear(const MuellerMatrix &M,
+                                             const Vector3 &forward, const Vector3 &basis_current, const Vector3 &basis_target) {
+    MuellerMatrix R = rotate_stokes_basis(forward, basis_current, basis_target);
+    return R * M * transpose(R);
 }
 
 NAMESPACE_END(mueller)

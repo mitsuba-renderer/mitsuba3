@@ -486,6 +486,62 @@ public:
                        const Vector3fD &wo, MaskD active = true) const = 0;
 #endif
 
+    /**
+     * \brief Evaluate the transmission  of the BSDF f(wi, -wi).
+     *
+     * This method will evaluate the null compoinent of the BSDF.
+     *
+     * Note that the incident direction does not need to be explicitly
+     * specified. It is obtained from the field <tt>si.wi</tt>.
+     *
+     * \param si
+     *     A surface interaction data structure describing the underlying
+     *     surface position. The incident direction is obtained from
+     *     the field <tt>si.wi</tt>.
+     *
+     */
+    virtual Spectrumf eval_transmission(const SurfaceInteraction3f &si, const Vector3f &wo) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval_transmission()
+    Spectrumf eval_transmission(const SurfaceInteraction3f &si, const Vector3f &wo,
+                                bool /* unused */) const {
+        return eval_transmission(si, wo);
+    }
+
+    /// Vectorized version of \ref eval_transmission()
+    virtual SpectrumfP eval_transmission(const SurfaceInteraction3fP &si, const Vector3fP &wo,
+                                         MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval_transmission()
+    virtual SpectrumfD eval_transmission(const SurfaceInteraction3fD &si, const Vector3fD &wo,
+                                         MaskD active = true) const;
+#endif
+
+    /**
+     * \brief Polarized version of \ref eval_transmission()
+     *
+     * This function behaves in a very similar way to the unpolarized function
+     * so the documentation there applies.
+     */
+    virtual MuellerMatrixSf eval_transmission_pol(const SurfaceInteraction3f &si, const Vector3f &wo) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval_transmission_pol()
+    MuellerMatrixSf eval_transmission_pol(const SurfaceInteraction3f &si, const Vector3f &wo,
+                                          bool /* unused */) const {
+        return eval_transmission_pol(si, wo);
+    }
+
+    /// Vectorized version of \ref eval_transmission_pol()
+    virtual MuellerMatrixSfP eval_transmission_pol(const SurfaceInteraction3fP &si, const Vector3fP &wo,
+                                                   MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable version of \ref eval_transmission_pol()
+    virtual MuellerMatrixSfD eval_transmission_pol(const SurfaceInteraction3fD &si, const Vector3fD &wo,
+                                                   MaskD active = true) const;
+#endif
+
     // -----------------------------------------------------------------------
     //! @{ \name BSDF property accessors (components, flags, etc)
     // -----------------------------------------------------------------------

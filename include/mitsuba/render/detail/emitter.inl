@@ -11,6 +11,7 @@ ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Emitter)
     ENOKI_CALL_SUPPORT_METHOD(sample_ray_pol)
     ENOKI_CALL_SUPPORT_METHOD(eval_pol)
     ENOKI_CALL_SUPPORT_METHOD(sample_direction_pol)
+    ENOKI_CALL_SUPPORT_METHOD(is_environment)
 ENOKI_CALL_SUPPORT_END(mitsuba::Emitter)
 
 //! @}

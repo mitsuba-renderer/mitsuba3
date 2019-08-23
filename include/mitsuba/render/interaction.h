@@ -4,6 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/ray.h>
+#include <mitsuba/render/mueller.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -99,6 +100,7 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     using Frame3              = Frame<Vector3>;
     using Color3              = Color<Value, 3>;
     using RayDifferential3    = RayDifferential<Point3>;
+    using MuellerMatrix       = MuellerMatrix<Spectrum>;
 
     using BSDFPtr             = replace_scalar_t<Value, const BSDF *>;
     using MediumPtr           = replace_scalar_t<Value, const Medium *>;
@@ -270,6 +272,82 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
 
         duv_dy = Vector2(fmsub(a11, b0y, a01 * b1y) * inv_det,
                          fmsub(a00, b1y, a01 * b0y) * inv_det);
+    }
+
+    /**
+     * \brief Converts a Mueller matrix defined in a local frame to world space
+     *
+     * A Mueller matrix operates from (implicitly) defined stokes_basis(-wi) to
+     * stokes_basis(wo).
+     * This method converts a Mueller matrix defined on directions in the local
+     * frame (wi_local, wo_local) to a Mueller matrix defined on world-space
+     * directions (wi_world, wo_world).
+     *
+     * \param M_local
+     *      The Mueller matrix in local space, e.g. returned by a BSDF.
+     *
+     * \param wi_local
+     *      Incident direction, given in local frame coordinates.
+     *
+     * \param wo_local
+     *      Outgoing direction, given in local frame coordinates.
+     *
+     * \return
+     *      Equivalent Mueller matrix that operates in world-space coordinates.
+     */
+    MuellerMatrix to_world_mueller(const MuellerMatrix &M_local,
+                                   const Vector3 &wi_local,
+                                   const Vector3 &wo_local) const {
+        Vector3 wi_world = to_world(wi_local),
+                wo_world = to_world(wo_local);
+
+        Vector3 in_basis_current = to_world(mueller::stokes_basis(-wi_local)),
+                in_basis_target  = mueller::stokes_basis(-wi_world);
+
+        Vector3 out_basis_current = to_world(mueller::stokes_basis(wo_local)),
+                out_basis_target  = mueller::stokes_basis(wo_world);
+
+        return mueller::rotate_mueller_basis(M_local,
+                                             -wi_world, in_basis_current, in_basis_target,
+                                             wo_world, out_basis_current, out_basis_target);
+    }
+
+    /**
+     * \brief Converts a Mueller matrix defined in world space to a local frame
+     *
+     * A Mueller matrix operates from (implicitly) defined stokes_basis(-wi) to
+     * stokes_basis(wo).
+     * This method converts a Mueller matrix defined on world-space directions
+     * (wi_world, wo_world) to a Mueller matrix defined on directions in the
+     * local frame (wi_local, wo_local)l
+     *
+     * \param M_world
+     *      The Mueller matrix in world-space.
+     *
+     * \param wi_world
+     *      Incident direction, given in world-space coordinates.
+     *
+     * \param wo_world
+     *      Outgoing direction, given in world-space coordinates.
+     *
+     * \return
+     *      Equivalent Mueller matrix that operates in local frame coordinates.
+     */
+    MuellerMatrix to_local_mueller(const MuellerMatrix &M_world,
+                                   const Vector3 &wi_world,
+                                   const Vector3 &wo_world) const {
+        Vector3 wi_local = to_local(wi_world),
+                wo_local = to_local(wo_world);
+
+        Vector3 in_basis_current = to_local(mueller::stokes_basis(-wi_world)),
+                in_basis_target  = mueller::stokes_basis(-wi_local);
+
+        Vector3 out_basis_current = to_local(mueller::stokes_basis(wo_world)),
+                out_basis_target  = mueller::stokes_basis(wo_local);
+
+        return mueller::rotate_mueller_basis(M_world,
+                                             -wi_local, in_basis_current, in_basis_target,
+                                             wo_local, out_basis_current, out_basis_target);
     }
 
     //! @}

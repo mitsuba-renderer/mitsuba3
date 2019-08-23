@@ -16,6 +16,10 @@ ENOKI_CALL_SUPPORT_BEGIN(mitsuba::BSDF)
     ENOKI_CALL_SUPPORT_METHOD(sample)
     ENOKI_CALL_SUPPORT_METHOD(eval)
     ENOKI_CALL_SUPPORT_METHOD(pdf)
+    ENOKI_CALL_SUPPORT_METHOD(eval_transmission)
+    ENOKI_CALL_SUPPORT_METHOD(sample_pol)
+    ENOKI_CALL_SUPPORT_METHOD(eval_pol)
+    ENOKI_CALL_SUPPORT_METHOD(eval_transmission_pol)
     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
 
     auto needs_differentials() const {
@@ -152,3 +156,67 @@ ENOKI_CALL_SUPPORT_END(mitsuba::BSDF)
     MTS_IMPLEMENT_BSDF_POLARIZED_SCALAR()                                      \
     MTS_IMPLEMENT_BSDF_POLARIZED_PACKET()                                      \
     MTS_IMPLEMENT_BSDF_POLARIZED_AUTODIFF()
+
+#define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_SCALAR()                          \
+    Spectrumf eval_transmission(const SurfaceInteraction3f &si,                \
+                                const Vector3f &wo) const override {           \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluate);                          \
+        return eval_transmission_impl(si, wo, true);                           \
+    }
+
+#define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_PACKET()                          \
+    SpectrumfP eval_transmission(const SurfaceInteraction3fP &si,              \
+                                 const Vector3fP &wo,                          \
+                                 MaskP active) const override {                \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluateP);                         \
+        return eval_transmission_impl(si, wo, active);                         \
+    }
+
+#if !defined(MTS_ENABLE_AUTODIFF)
+#  define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_AUTODIFF()
+#else
+#  define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_AUTODIFF()                      \
+    SpectrumfD eval_transmission(const SurfaceInteraction3fD &si,              \
+                                 const Vector3fD &wo,                          \
+                                 MaskD active) const override {                \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluate);                          \
+        return eval_transmission_impl(si, wo, active);                         \
+    }
+#endif
+
+#define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_ALL()                             \
+    MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_SCALAR()                              \
+    MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_PACKET()                              \
+    MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_AUTODIFF()
+
+#define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_POLARIZED_SCALAR()                \
+    MuellerMatrixSf eval_transmission_pol(const SurfaceInteraction3f &si,      \
+                                          const Vector3f &wo) const override { \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluate);                          \
+        return eval_transmission_pol_impl(si, wo, true);                       \
+    }
+
+#define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_POLARIZED_PACKET()                \
+    MuellerMatrixSfP eval_transmission_pol(const SurfaceInteraction3fP &si,    \
+                                           const Vector3fP &wo,                \
+                                           MaskP active) const override {      \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluateP);                         \
+        return eval_transmission_pol_impl(si, wo, active);                     \
+    }
+
+#if !defined(MTS_ENABLE_AUTODIFF)
+#  define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_POLARIZED_AUTODIFF()
+#else
+#  define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_POLARIZED_AUTODIFF()            \
+    MuellerMatrixSfD eval_transmission_pol(const SurfaceInteraction3fD &si,    \
+                                     const Vector3fD &wo,                      \
+                                     MaskD active) const override {            \
+        ScopedPhase p(EProfilerPhase::EBSDFEvaluate);                          \
+        return eval_transmission_pol_impl(si, wo, active);                     \
+    }
+#endif
+
+#define MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_POLARIZED_ALL()                   \
+    MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_POLARIZED_SCALAR()                    \
+    MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_POLARIZED_PACKET()                    \
+    MTS_IMPLEMENT_BSDF_EVAL_TRANSMISSION_POLARIZED_AUTODIFF()

@@ -153,6 +153,101 @@ public:
 #endif
 
     /**
+     * \brief Polarized version of \ref sample_emitter_direction()
+     *
+     * Given an arbitrary reference point in the scene, this method samples a
+     * direction from the reference point to towards an emitter.
+     *
+     * Ideally, the implementation should importance sample the product of
+     * the emission profile and the geometry term between the reference point
+     * and the position on the emitter.
+     *
+     * This version returns the polarized sample weight along the sampled ray.
+     *
+     * Note: Even though a Stokes vector is sufficient to describe emitted
+     * radiance from a light source we return a Mueller matrix here to have a
+     * symmetric endpoint interface.
+     * In the emitter case, only the first colummn of the matrix is used.
+     *
+     * \param ref
+     *    A reference point somewhere within the scene
+     *
+     * \param sample
+     *    A uniformly distributed 2D vector
+     *
+     * \param test_visibility
+     *    When set to \c true, a shadow ray will be cast to ensure that the
+     *    sampled emitter position and the reference point are mutually visible.
+     *
+     * \return
+     *    Polarized radiance received along the sampled ray divided by the
+     *    sample probability.
+     */
+    std::pair<DirectionSample3f, MuellerMatrixSf>
+    sample_emitter_direction_pol(const Interaction3f &ref,
+                                 const Point2f &sample,
+                                 bool test_visibility = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_emitter_direction_pol()
+    std::pair<DirectionSample3f, MuellerMatrixSf>
+    sample_emitter_direction_pol(const Interaction3f &ref,
+                                 const Point2f &sample,
+                                 bool test_visibility,
+                                 bool /* active */) const {
+        return sample_emitter_direction_pol(ref, sample, test_visibility);
+    }
+
+    /// Vectorized variant of \ref sample_emitter_direction_pol
+    std::pair<DirectionSample3fP, MuellerMatrixSfP>
+    sample_emitter_direction_pol(const Interaction3fP &ref,
+                                 const Point2fP &sample,
+                                 bool test_visibility = true,
+                                 MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable variant of \ref sample_emitter_direction_pol
+    std::pair<DirectionSample3fD, MuellerMatrixSfD>
+    sample_emitter_direction_pol(const Interaction3fD &ref,
+                                 const Point2fD &sample,
+                                 bool test_visibility = true,
+                                 MaskD active = true) const;
+#endif
+
+    /**
+     * \brief Modified version of \ref sample_emitter_direction_pol() that also
+     * samples accross index-matched interfaces.
+     */
+    std::pair<DirectionSample3f, MuellerMatrixSf>
+    sample_emitter_direction_attenuated_pol(const Interaction3f &ref,
+                                            Sampler *sampler,
+                                            bool test_visibility = true) const;
+
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_emitter_direction_attenuated_pol()
+    std::pair<DirectionSample3f, MuellerMatrixSf>
+    sample_emitter_direction_attenuated_pol(const Interaction3f &ref,
+                                            Sampler *sampler,
+                                            bool test_visibility,
+                                            bool /* active */) const {
+        return sample_emitter_direction_attenuated_pol(ref, sampler, test_visibility);
+    }
+
+    /// Vectorized variant of \ref sample_emitter_direction_attenuated_pol
+    std::pair<DirectionSample3fP, MuellerMatrixSfP>
+    sample_emitter_direction_attenuated_pol(const Interaction3fP &ref,
+                                            Sampler *sampler,
+                                            bool test_visibility = true,
+                                            MaskP active = true) const;
+
+#if defined(MTS_ENABLE_AUTODIFF)
+    /// Differentiable variant of \ref sample_emitter_direction_attenuated_pol
+    std::pair<DirectionSample3fD, MuellerMatrixSfD>
+    sample_emitter_direction_attenuated_pol(const Interaction3fD &ref,
+                                            Sampler *sampler,
+                                            bool test_visibility = true,
+                                            MaskD active = true) const;
+#endif
+
+    /**
      * \brief Evaluate the probability density of the  \ref
      * sample_emitter_direct() technique given an filled-in \ref
      * DirectionSample record.
@@ -325,6 +420,34 @@ private:
                                   Point2 sample,
                                   bool test_visibility,
                                   Mask active) const;
+
+    template <typename Interaction,
+              typename Value = typename Interaction::Value,
+              typename Spectrum = mitsuba::Spectrum<Value>,
+              typename Point3 = Point<Value, 3>,
+              typename Point2 = Point<Value, 2>,
+              typename DirectionSample = mitsuba::DirectionSample<Point3>,
+              typename Mask = mask_t<Value>,
+              typename MuellerMatrix = MuellerMatrix<Spectrum>>
+    std::pair<DirectionSample, MuellerMatrix>
+    sample_emitter_direction_pol_impl(const Interaction &it,
+                                      Point2 sample,
+                                      bool test_visibility,
+                                      Mask active) const;
+
+    template <typename Interaction,
+              typename Value = typename Interaction::Value,
+              typename Spectrum = mitsuba::Spectrum<Value>,
+              typename Point3 = Point<Value, 3>,
+              typename Point2 = Point<Value, 2>,
+              typename DirectionSample = mitsuba::DirectionSample<Point3>,
+              typename Mask = mask_t<Value>,
+              typename MuellerMatrix = MuellerMatrix<Spectrum>>
+    std::pair<DirectionSample, MuellerMatrix>
+    sample_emitter_direction_attenuated_pol_impl(const Interaction &it,
+                                                 Sampler *sampler,
+                                                 bool test_visibility,
+                                                 Mask active) const;
 
     template <typename Interaction,
               typename DirectionSample,

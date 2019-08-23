@@ -97,3 +97,42 @@ def test02_intersection_partials():
 
     assert(np.allclose(si.duv_dx, [0, 0]))
     assert(np.allclose(si.duv_dy, [0, 0]))
+
+
+def test03_mueller_to_world_to_local():
+    # At a few places, coordinate changes between local BSDF reference frame and
+    # world coordinates need to take place. This change also needs to be applied
+    # to Mueller matrices used in computations involving polarization state.
+    #
+    # In practice, this is always a simple rotation of reference Stokes vectors
+    # (for incident & outgoing directions) of the Mueller matrix.
+    #
+    # To test this behavior we take any Mueller matrix (e.g. linear polarizer)
+    # for some arbitrary incident/outgoing directions in world coordinates and
+    # compute the round trip going to local frame and back again.
+
+    si = SurfaceInteraction3f()
+    n = [1.0, 1.0, 1.0]
+    n /= np.linalg.norm(n)
+    si.sh_frame = Frame3f(n)
+
+    M_monochromatic = mitsuba.render.mueller.linear_polarizer(1)
+    # Assemble spectral version of Mueller matrix
+    n_spectral_samples = mitsuba.core.MTS_WAVELENGTH_SAMPLES
+    M = np.zeros((n_spectral_samples, 4, 4))
+    for i in range(n_spectral_samples):
+        M[i, :, :] = M_monochromatic
+
+    # Random incident and outgoing directions
+    wi_world = np.array([0.2, 0.0, 1.0])
+    wi_world /= np.linalg.norm(wi_world)
+    wo_world = np.array([0.0, -0.8, 1.0])
+    wo_world /= np.linalg.norm(wo_world)
+
+    wi_local = si.to_local(wi_world)
+    wo_local = si.to_local(wo_world)
+
+    M_local = si.to_local_mueller(M, wi_world, wo_world)
+    M_world = si.to_world_mueller(M_local, wi_local, wo_local)
+
+    assert np.allclose(M, M_world, atol=1e-5)
