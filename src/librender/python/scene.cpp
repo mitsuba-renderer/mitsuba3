@@ -84,7 +84,7 @@ MTS_PY_EXPORT(Scene) {
         // Full intersection (brute force, for testing)
         .def("ray_intersect_naive",
              py::overload_cast<const Ray3f &, bool>(&Scene::ray_intersect_naive, py::const_),
-             "ray"_a, "unused"_a = true, D(Scene, ray_intersect_naive))
+             "ray"_a, "unused"_a = true)  //, D(Scene, ray_intersect_naive))
         .def("ray_intersect_naive",
              enoki::vectorize_wrapper(
                 py::overload_cast<const Ray3fP &, MaskP>(&Scene::ray_intersect_naive, py::const_)
@@ -113,7 +113,7 @@ MTS_PY_EXPORT(Scene) {
 
         // Accessors
 #if !defined(MTS_USE_EMBREE)
-        .def("kdtree",     py::overload_cast<>(&Scene::kdtree),     D(Scene, kdtree))
+        .def("kdtree",     py::overload_cast<>(&Scene::kdtree))  //,     D(Scene, kdtree))
 #endif
         .def("bbox", &Scene::bbox, D(Scene, bbox))
         .def("sensor",     py::overload_cast<>(&Scene::sensor),     D(Scene, sensor))
