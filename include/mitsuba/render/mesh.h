@@ -404,8 +404,8 @@ protected:
                            Mask active) const;
 protected:
     VertexHolder m_vertices;
-    Size m_vertex_size = 0;
     FaceHolder m_faces;
+    Size m_vertex_size = 0;
     Size m_face_size = 0;
 
     /// Byte offset of the normal data within the vertex buffer

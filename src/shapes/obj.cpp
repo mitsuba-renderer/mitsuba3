@@ -253,7 +253,7 @@ public:
                 uint8_t *vertex_ptr = vertex(v->value);
                 auto key = v->key;
 
-                store(vertex_ptr, vertices[key[0] - 1]);
+                store_unaligned(vertex_ptr, vertices[key[0] - 1]);
 
                 if (key[1]) {
                     size_t map_index = key[1] - 1;
