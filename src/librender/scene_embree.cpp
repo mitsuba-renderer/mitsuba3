@@ -178,7 +178,7 @@ SurfaceInteraction3fP Scene::ray_intersect(const Ray3fP &ray, MaskP active) cons
         si.sh_frame.t = cross(si.sh_frame.n, si.sh_frame.s);
 
         // Incident direction in local coordinates
-        si.wi = select(active, si.to_local(-ray.d), -ray.d);
+        si.wi = select(hit, si.to_local(-ray.d), -ray.d);
     } else {
         si.wavelengths = ray.wavelengths;
         si.wi = -ray.d;
