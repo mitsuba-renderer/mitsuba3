@@ -59,3 +59,4 @@ __pycache__
 /src/mitsuba/mitsuba
 /src/mtsgui/mtsgui
 /src/libui/libui_resources.*
+/html

@@ -1,0 +1,40 @@
+table.docutils td, table.docutils th {
+    padding:.5em;
+}
+
+table.docutils th {
+    vertical-align:middle;
+}
+
+.toggle .header {
+    display: block;
+    clear: both;
+    padding-bottom: 1em;
+}
+
+.toggle .header:after {
+    content: " ▼";
+}
+
+.toggle .header.open:after {
+    content: " ▲";
+}
+
+.MathJax .mo { color: inherit }
+.MathJax .mi { color: inherit }
+
+div.sphinxsidebar h4 {
+    font-family: "Open Sans", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #606060;
+}
+
+div.sphinxsidebar {
+    margin: 1em;
+}
+
+div.sidebar-wrapper {
+    padding:0px;
+}

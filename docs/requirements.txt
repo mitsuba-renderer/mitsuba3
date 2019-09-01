@@ -1,0 +1,2 @@
+guzzle_sphinx_theme
+pygments-mathematica

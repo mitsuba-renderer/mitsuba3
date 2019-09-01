@@ -1,0 +1,15 @@
+<!-- Based on https://stackoverflow.com/a/25543713/1130282 -->
+{% extends "!page.html" %}
+
+{% block footer %}
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+{% endblock %}
