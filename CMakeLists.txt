@@ -395,10 +395,10 @@ elseif(MSVC)
 endif()
 
 # Disable generation of VZEROUPPER instruction on Clang
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND U_CMAKE_BUILD_TYPE MATCHES REL
-    AND NOT (${CMAKE_SYSTEM_PROCESSOR} MATCHES "(armv7|aarch64)"))
-  add_compile_options("-mllvm" "-x86-use-vzeroupper=0")
-endif()
+# if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND U_CMAKE_BUILD_TYPE MATCHES REL
+#     AND NOT (${CMAKE_SYSTEM_PROCESSOR} MATCHES "(armv7|aarch64)"))
+#   add_compile_options("-mllvm" "-x86-use-vzeroupper=0")
+# endif()
 
 # Set platform-specific flags
 if (WIN32)
@@ -540,3 +540,14 @@ add_file(data/srgb.coeff ${CMAKE_BINARY_DIR}/ext_build/rgb2spec/srgb.coeff rgb2s
 
 add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})
 set_property(TARGET dist-copy PROPERTY FOLDER misc)
+
+find_package(Sphinx)
+if (Sphinx_FOUND)
+  set(SPHINX_INPUT_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/docs")
+  set(SPHINX_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
+
+  add_custom_target(mkdoc
+      ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR}" "${SPHINX_OUTPUT_DIR}"
+      COMMENT "Building HTML documentation with Sphinx"
+      USES_TERMINAL)
+endif()

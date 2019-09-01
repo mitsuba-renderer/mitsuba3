@@ -46,12 +46,12 @@ number of different tasks.
    light paths in parallel.
 
 4. Yet another type of transformation rewrites physical aspects of the
-   simulation: Mitsuba can be used as a monochromatic, RGB-based, or spectral
-   renderer. If desired, each variant can optionally account for the effects of
-   polarization.
+   simulation: Mitsuba can be used as a monochromatic renderer, RGB-based
+   renderer, or spectral renderer. Each variant can optionally account for the
+   effects of polarization if desired.
 
-In addition to the above transformations, there are several other noteworthy
-changes:
+In addition to the above transformations, there are
+several other noteworthy changes:
 
 1. Mitsuba 2 provides very fine-grained Python bindings to essentially every
    function thanks to [pybind11](https://github.com/pybind/pybind11). This
@@ -168,6 +168,12 @@ Afterwards, simply write
 git pullall
 ```
 to stay in sync.
+
+## Frequently Asked Questions
+
+- Differentiable rendering fails with the error message "Failed to load Optix library":
+It is likely that the version of OptiX installed on your system is not compatible with the video
+driver (the two must satisfy version requirements that are detailed on the OptiX website).
 
 ## About
 

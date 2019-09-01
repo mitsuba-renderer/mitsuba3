@@ -105,5 +105,5 @@ if (MTS_ENABLE_AUTODIFF)
   set_target_properties(enoki-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
-# mkdoc support
-include("cmake/mkdoc.cmake")
+# docstring generation support
+include("cmake/docstrings.cmake")

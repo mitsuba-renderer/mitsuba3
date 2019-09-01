@@ -1,6 +1,6 @@
-# mkdoc support: automatic docstrings for the Python bindings from the C++ headers.
+# Automatic generation of docstrings for the Python bindings from the C++ headers.
 
-# Compute compilation flags for 'mkdoc' target, which extracts docstrings from the C++ header files
+# Compute compilation flags for 'docstrings' target, which extracts docstrings from the C++ header files
 if (NOT WIN32)
   string(REPLACE " " ";" MKDOC_CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
   get_property(MKDOC_INCLUDE_DIRECTORIES DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
@@ -27,7 +27,7 @@ if (NOT WIN32)
   list(REMOVE_ITEM MKDOC_CXX_FLAGS_LIST "-fno-fat-lto-objects")
   list(REMOVE_ITEM MKDOC_CXX_FLAGS_LIST "-flto")
 
-  add_custom_target(mkdoc USES_TERMINAL COMMAND
+  add_custom_target(docstrings USES_TERMINAL COMMAND
     python3 ${PROJECT_SOURCE_DIR}/ext/pybind11/tools/mkdoc.py
     ${MKDOC_CXX_FLAGS_LIST} -DNANOGUI_USE_OPENGL
     -Wno-pragma-once-outside-header
