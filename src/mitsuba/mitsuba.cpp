@@ -41,6 +41,10 @@ Options:
                Define a constant that can referenced as "$key"
                within the scene description.
 
+   -u, --update
+               When specified, Mitsuba will update the scene's
+               XML description to the latest version.
+
    -o <filename>, --output <filename>
                Write the output image to the file "filename".
 )";
@@ -65,6 +69,7 @@ int main(int argc, char *argv[]) {
     auto arg_define  = parser.add(StringVec { "-D", "--define" }, true);
     auto arg_monochrome = parser.add(StringVec{ "-m", "--monochrome" }, false);
     auto arg_output = parser.add(StringVec{ "-o", "--output" }, true);
+    auto arg_update = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_help = parser.add(StringVec { "-h", "--help" });
     auto arg_extra = parser.add("", true);
     bool print_profile = false;
@@ -149,7 +154,8 @@ int main(int argc, char *argv[]) {
             }
 
             // Try and parse a scene from the passed file.
-            ref<Object> parsed = xml::load_file(arg_extra->as_string(), params, render_monochrome);
+            ref<Object> parsed = xml::load_file(arg_extra->as_string(), params,
+                    render_monochrome, *arg_update);
 
             auto *scene = dynamic_cast<Scene *>(parsed.get());
             if (scene) {

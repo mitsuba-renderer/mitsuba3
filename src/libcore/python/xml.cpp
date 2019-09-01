@@ -9,11 +9,13 @@ MTS_PY_EXPORT(xml) {
 
     xml.def(
         "load_file",
-        [](const std::string &name, const xml::ParameterList &param, bool monochrome) {
+        [](const std::string &name, const xml::ParameterList &param,
+           bool monochrome, bool update_scene) {
             py::gil_scoped_release release;
-            return py_cast(xml::load_file(name, param, monochrome));
+            return py_cast(xml::load_file(name, param, monochrome, update_scene));
         },
-        "path"_a, "parameters"_a = py::list(), "monochrome"_a = false, D(xml, load_file));
+        "path"_a, "parameters"_a = py::list(), "monochrome"_a = false,
+        "update_scene"_a = false, D(xml, load_file));
 
     xml.def(
         "load_string",

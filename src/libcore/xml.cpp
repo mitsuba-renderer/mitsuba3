@@ -1060,7 +1060,8 @@ ref<Object> load_string(const std::string &string, ParameterList param, bool mon
     return detail::instantiate_node(ctx, scene_id);
 }
 
-ref<Object> load_file(const fs::path &filename_, ParameterList param, bool monochrome) {
+ref<Object> load_file(const fs::path &filename_, ParameterList param,
+                      bool monochrome, bool write_update) {
     ScopedPhase sp(EProfilerPhase::EInitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
@@ -1091,7 +1092,7 @@ ref<Object> load_file(const fs::path &filename_, ParameterList param, bool monoc
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
                                       param, arg_counter, 0).second;
 
-    if (src.modified) {
+    if (src.modified && write_update) {
         fs::path backup = filename;
         backup.replace_extension(".bak");
         Log(EInfo, "Writing updated \"%s\" .. (backup at \"%s\")", filename, backup);
