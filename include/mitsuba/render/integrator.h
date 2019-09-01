@@ -36,7 +36,7 @@ NAMESPACE_BEGIN(mitsuba)
 class MTS_EXPORT_RENDER Integrator : public Object {
 public:
     /// Perform the main rendering job
-    virtual bool render(Scene *scene, bool vectorize) = 0;
+    virtual bool render(Scene *scene) = 0;
 
     /**
      * \brief Cancel a running render job
@@ -156,7 +156,7 @@ public:
     //! @{ \name Integrator interface implementation
     // =========================================================================
 
-    bool render(Scene *scene, bool vectorize) override;
+    bool render(Scene *scene) override;
 
     void cancel() override;
 

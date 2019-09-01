@@ -52,11 +52,14 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     (void) m_; /* unused */
 
     // Expose some constants in the main `mitsuba` module
-    py::module m_parent          = py::module::import("mitsuba");
-    m_parent.attr("__version__") = MTS_VERSION;
-    m_parent.attr("MTS_VERSION") = MTS_VERSION;
-    m_parent.attr("MTS_YEAR")    = MTS_YEAR;
-    m_parent.attr("MTS_AUTHORS") = MTS_AUTHORS;
+    py::module m_parent = py::module::import("mitsuba");
+    m_parent.attr("__version__")       = MTS_VERSION;
+    m_parent.attr("MTS_VERSION")       = MTS_VERSION;
+    m_parent.attr("MTS_VERSION_MAJOR") = MTS_VERSION_MAJOR;
+    m_parent.attr("MTS_VERSION_MINOR") = MTS_VERSION_MINOR;
+    m_parent.attr("MTS_VERSION_PATCH") = MTS_VERSION_PATCH;
+    m_parent.attr("MTS_YEAR")          = MTS_YEAR;
+    m_parent.attr("MTS_AUTHORS")       = MTS_AUTHORS;
 
 #if defined(NDEBUG)
     m_parent.attr("DEBUG")  = false;

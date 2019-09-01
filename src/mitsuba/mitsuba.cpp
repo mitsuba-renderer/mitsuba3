@@ -64,7 +64,6 @@ int main(int argc, char *argv[]) {
     ArgParser parser;
     using StringVec = std::vector<std::string>;
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
-    auto arg_scalar  = parser.add(StringVec { "-s", "--scalar" }, false);
     auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
     auto arg_define  = parser.add(StringVec { "-D", "--define" }, true);
     auto arg_monochrome = parser.add(StringVec{ "-m", "--monochrome" }, false);
@@ -105,9 +104,6 @@ int main(int argc, char *argv[]) {
             Throw("Thread count must be >= 1!");
         tbb::task_scheduler_init init((int) __global_thread_count);
 
-        // Scalar mode
-        bool render_scalar = (bool) *arg_scalar;
-
         // Monochrome mode
         bool render_monochrome = (bool) *arg_monochrome;
 
@@ -125,8 +121,6 @@ int main(int argc, char *argv[]) {
             Log(EInfo, "%s", util::info_copyright());
             Log(EInfo, "%s", util::info_features());
 
-            if (render_scalar)
-                Log(EInfo, "Vectorization disabled by --scalar flag.");
             if (render_monochrome)
                 Log(EInfo, "\U0001F39E Monochrome mode enabled.");
             #if defined(DOUBLE_PRECISION)
@@ -166,7 +160,7 @@ int main(int argc, char *argv[]) {
                 if (!integrator)
                     Throw("No integrator specified for scene: %s", scene->to_string());
 
-                bool success = integrator->render(scene, !render_scalar);
+                bool success = integrator->render(scene);
                 if (success)
                     scene->film()->develop();
                 else

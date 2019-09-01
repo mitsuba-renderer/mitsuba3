@@ -28,7 +28,7 @@ static void profiler_callback(int, siginfo_t *, void *) {
     uint64_t bucket_id =
         std::hash<uint64_t>{}(flags) % (profiler_samples.size() - 1);
 
-    /* Hash table with linear probing */
+    // Hash table with linear probing
     size_t tries = 0;
     while (tries < profiler_samples.size()) {
         ProfilerSample &bucket = profiler_samples[bucket_id];

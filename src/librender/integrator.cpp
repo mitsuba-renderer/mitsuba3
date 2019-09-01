@@ -84,7 +84,7 @@ void SamplingIntegrator::cancel() {
     m_stop = true;
 }
 
-bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
+bool SamplingIntegrator::render(Scene *scene) {
     ScopedPhase sp(EProfilerPhase::ERender);
     m_stop = false;
 
@@ -117,13 +117,11 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
     tbb::spin_mutex mutex;
     size_t blocks_done = 0;
     // Total number of blocks to be handled, including multiple passes.
-    Float total_blocks = (spiral.block_count() * n_passes);
-    size_t grain_count = std::max(
-        (size_t) 1, (size_t) std::rint(total_blocks / Float(n_threads * 2)));
+    Float total_blocks = spiral.block_count() * n_passes;
 
     m_render_timer.reset();
     tbb::parallel_for(
-        tbb::blocked_range<size_t>(0, total_blocks, grain_count),
+        tbb::blocked_range<size_t>(0, total_blocks, 1),
         [&](const tbb::blocked_range<size_t> &range) {
             ScopedSetThreadEnvironment set_env(env);
             ref<Sampler> sampler = scene->sampler()->clone();
@@ -150,12 +148,8 @@ bool SamplingIntegrator::render(Scene *scene, bool vectorize) {
                     seed += i * hprod(film->crop_size());
                 sampler->seed(seed);
 
-                if (vectorize)
-                    render_block_vector(scene, sampler, block, points,
-                                        samples_per_pass);
-                else
-                    render_block_scalar(scene, sampler, block,
-                                        samples_per_pass);
+                render_block_scalar(scene, sampler, block,
+                                    samples_per_pass);
 
                 film->put(block);
 

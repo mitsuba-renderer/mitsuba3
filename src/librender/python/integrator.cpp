@@ -30,7 +30,7 @@ MTS_PY_EXPORT(Integrator) {
     /// Integrator (base class).
     MTS_PY_CLASS(Integrator, Object)
         .def("render",
-             [&](Integrator &integrator, Scene *scene, bool vectorize) {
+             [&](Integrator &integrator, Scene *scene) {
                  py::gil_scoped_release release;
 
 #if MTS_HANDLE_SIGINT
@@ -39,7 +39,7 @@ MTS_PY_EXPORT(Integrator) {
                  sigint_handler_prev = signal(SIGINT, sigint_handler);
 #endif
 
-                 bool res = integrator.render(scene, vectorize);
+                 bool res = integrator.render(scene);
 
 #if MTS_HANDLE_SIGINT
                  // Restore previous signal handler
@@ -48,7 +48,7 @@ MTS_PY_EXPORT(Integrator) {
 
                  return res;
              },
-             D(Integrator, render), "scene"_a, "vectorize"_a)
+             D(Integrator, render), "scene"_a)
         .mdef(Integrator, cancel)
         .mdef(Integrator, register_callback, "cb"_a, "period"_a)
         .mdef(Integrator, remove_callback, "index"_a)
