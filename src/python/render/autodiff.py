@@ -1,12 +1,13 @@
 from contextlib import contextmanager
-import numpy as np
 
 from mitsuba.core import Bitmap, EDebug, Log
-from mitsuba.render import (DifferentiableParameters, RadianceSample3fD, ImageBlock)
+from mitsuba.render import (DifferentiableParameters, RadianceSample3fD,
+                            ImageBlock)
 
-from enoki import (UInt32D, BoolD, FloatC, FloatD, Vector2fC, Vector3fC, Vector4fC, Vector2fD, Vector3fD,
-                   Vector4fD, Matrix4fC, Matrix4fD, select, eq, rcp, set_requires_gradient,
-                   gather, detach, gradient, slices, set_gradient, sqr, sqrt, cuda_malloc_trim)
+from enoki import (UInt32D, BoolD, FloatC, FloatD, Vector2fC, Vector3fC,
+    Vector4fC, Vector2fD, Vector3fD, Vector4fD, Matrix4fC, Matrix4fD, select,
+    eq, rcp, set_requires_gradient, gather, detach, gradient, slices,
+    set_gradient, sqr, sqrt, cuda_malloc_trim)
 
 
 def indent(s, amount=2):
@@ -14,21 +15,9 @@ def indent(s, amount=2):
                      for i, l in enumerate(s.splitlines()))
 
 
-def compute_size(data):
-    """Returns the length of the innermost array in `data`."""
-    t = type(data)
-    if t is FloatD or t is FloatC:
-        return len(data)
-    if (t is Vector2fD or t is Vector3fD or t is Vector4fD) or \
-       (t is Vector2fC or t is Vector3fC or t is Vector4fC):
-        return len(data[0])
-    if t is Matrix4fD or t is Matrix4fC:
-        return len(data[0, 0])
-    raise RuntimeError("Optimizer: invalid parameter type " + str(t))
-
 # ------------------------------------------------------------ Optimizers
-class Optimizer:
 
+class Optimizer:
     def __init__(self, params, lr):
         # Ensure that the JIT does not consider the learning rate as a literal
         self.lr = FloatC(lr, literal=False)
@@ -38,12 +27,13 @@ class Optimizer:
         self.state = {}
         for k, p in self.params.items():
             set_requires_gradient(p)
+            self.params[k] = p
             self.reset(k)
 
     def reset(self, _):
         pass
 
-    def accumulate_gradients(self, weight = 1):
+    def accumulate_gradients(self, weight=1):
         """
         Retrieve gradients from the parameters and accumulate their values
         values until the next time `step` is called.
@@ -101,7 +91,6 @@ class DummyOptimizer(Optimizer):
 
 
 class SGD(Optimizer):
-
     def __init__(self, params, lr, momentum=0):
         """
         Implements basic stochastic gradient descent with a fixed learning rate
@@ -114,13 +103,13 @@ class SGD(Optimizer):
     def reset(self, key):
         """Resets the state to a zero-filled array of the right dimension."""
         p = self.params[key]
-        size = compute_size(p)
+        size = slices(p)
         self.state[key] = detach(type(p).zero(size))
 
     def step(self):
         gradients = self.compute_gradients()
         for k, p in self.params.items():
-            if compute_size(p) != compute_size(self.state[k]):
+            if slices(p) != slices(self.state[k]):
                 # Reset state if data size has changed
                 self.reset(k)
 
@@ -129,11 +118,14 @@ class SGD(Optimizer):
             g_p = gradients[k]
 
             if self.momentum == 0:
-                self.params[k] = detach(p) - self.lr * g_p
+                u = detach(p) - self.lr * g_p
             else:
                 self.state[k] = self.momentum * self.state[k] + self.lr * g_p
-                self.params[k] = detach(p) - self.state[k]
-            set_requires_gradient(p)
+                u = detach(p) - self.state[k]
+
+            u = type(p)(u)
+            set_requires_gradient(u)
+            self.params[k] = u
 
     def __repr__(self):
         return 'SGD[\n  lr = {:.2g},\n  momentum = {:.2g}\n]'.format(
@@ -141,7 +133,6 @@ class SGD(Optimizer):
 
 
 class Adam(Optimizer):
-
     def __init__(self, params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
         """
         Implements the optimization technique presented in
@@ -173,7 +164,7 @@ class Adam(Optimizer):
     def reset(self, key):
         """Resets the state to a zero-filled array of the right dimension."""
         p = self.params[key]
-        size = compute_size(p)
+        size = slices(p)
         t = type(p)
         self.state[key] = (detach(t.zero(size)), detach(t.zero(size)))
 
@@ -184,7 +175,7 @@ class Adam(Optimizer):
 
         gradients = self.compute_gradients()
         for k, p in self.params.items():
-            if compute_size(p) != compute_size(self.state[k][0]):
+            if slices(p) != slices(self.state[k][0]):
                 # Reset state if data size has changed
                 self.reset(k)
 
@@ -196,9 +187,10 @@ class Adam(Optimizer):
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_t
             v_t = self.beta_2 * v_tp + (1 - self.beta_2) * sqr(g_t)
             self.state[k] = (m_t, v_t)
-            self.params[k] = detach(p) - lr_t * m_t / \
-                (sqrt(v_t) + self.epsilon)
-            set_requires_gradient(p)
+            u = detach(p) - lr_t * m_t / (sqrt(v_t) + self.epsilon)
+            u = type(p)(u)
+            set_requires_gradient(u)
+            self.params[k] = u
 
     def __repr__(self):
         return ('Adam[\n  lr = {:.2g},\n  beta_1 = {:.2g},\n  beta_2 = {:.2g},\n'
@@ -237,28 +229,8 @@ def get_differentiable_parameters(scene):
 
 # ------------------------------------------------------------ Differentiable rendering
 
-def render(scene, spp=None, pixel_format=Bitmap.EY):
-    supported_formats = [Bitmap.EY, Bitmap.EXYZ, Bitmap.ERGB]
-    if pixel_format not in supported_formats:
-        raise ValueError('Unknown pixel format {} -- must be one of {}'
-                         .format(pixel_format, supported_formats))
 
-    block = render_path(scene, spp)
-
-    # The block contains values in its `bitmap_d` storage, ensure the CPU side
-    # has the same values.
-    im = np.array(block.bitmap(), copy=False)
-    floats = block.bitmap_d()
-    for k, values in enumerate(floats):
-        if len(values) == 1:  # Allow broadcasting
-            im[:, :, k] = values.numpy()
-        else:
-            im[:, :, k] = values.numpy().reshape(im.shape[0], im.shape[1])
-
-    return block
-
-
-def render_path(scene, spp=None):
+def render_block(scene, spp=None):
     sensor = scene.sensor()
     film = sensor.film()
     sampler = sensor.sampler()
@@ -301,6 +273,31 @@ def render_path(scene, spp=None):
     return block
 
 
+def render(scene, spp, pixel_format):
+    supported_formats = [Bitmap.EY, Bitmap.EXYZ, Bitmap.ERGB]
+
+    # Assume that the block has format XYZAW
+    block = render_block(scene, spp)
+    X, Y, Z, A, W = block.bitmap_d()
+    del block, A
+    W = select(eq(W, 0), 0, rcp(W))
+    X *= W; Y *= W; Z *= W
+
+    if pixel_format == Bitmap.EY:
+        return Y
+    elif pixel_format == Bitmap.EXYZ:
+        return Vector3fD(X, Y, Z)
+    elif pixel_format == Bitmap.ERGB:
+        return Vector3fD(
+             3.240479 * X + -1.537150 * Y + -0.498535 * Z,
+            -0.969256 * X +  1.875991 * Y +  0.041556 * Z,
+             0.055648 * X + -0.204043 * Y +  1.057311 * Z
+        )
+    else:
+        raise ValueError('Unknown pixel format {} -- must be one of {}'
+                         .format(pixel_format, supported_formats))
+
+
 def render_torch(scene, params=None, **kwargs):
     # Delayed import of PyTorch dependency
     ns = globals()
@@ -310,16 +307,15 @@ def render_torch(scene, params=None, **kwargs):
         import torch
 
         class Render(torch.autograd.Function):
-
             @staticmethod
-            def forward(ctx, *args):
+            def forward(ctx, scene, params, *args):
                 assert len(args) % 2 == 0
                 args = dict(zip(args[0::2], args[1::2]))
 
                 pixel_format = Bitmap.EY
                 spp = None
 
-                ctx.inputs = []
+                ctx.inputs = [None, None]
                 for k, v in args.items():
                     if k == 'spp':
                         spp = v
@@ -327,7 +323,7 @@ def render_torch(scene, params=None, **kwargs):
                         pixel_format = v
                     else:
                         value = type(params[k])(v)
-                        set_requires_gradient(value)
+                        set_requires_gradient(value, v.requires_grad)
                         params[k] = value
                         ctx.inputs.append(None)
                         ctx.inputs.append(value)
@@ -346,20 +342,24 @@ def render_torch(scene, params=None, **kwargs):
             def backward(ctx, grad_output):
                 if type(ctx.output) is FloatD:
                     set_gradient(ctx.output, FloatD(grad_output))
-                else:
+                elif type(ctx.output) is Vector3fD:
                     set_gradient(ctx.output, Vector3fD(grad_output))
+                else:
+                    raise Exception("Unsupported output type!")
 
                 FloatD.backward()
                 result = tuple(gradient(i).torch() if i is not None else None
                                for i in ctx.inputs)
                 del ctx.output
                 del ctx.inputs
+                cuda_malloc_trim()
                 return result
 
         render_torch = Render.apply
         ns['render_torch_helper'] = render_torch
 
-    result = render_torch(*[num for elem in kwargs.items() for num in elem])
+    result = render_torch(scene, params,
+        *[num for elem in kwargs.items() for num in elem])
     film_size = scene.film().size()
 
     return result.reshape(film_size[1], film_size[0], -1).squeeze()
