@@ -10,17 +10,16 @@ NAMESPACE_BEGIN(mitsuba)
 
 /** \brief Generic surface interaction data structure
  */
-template <typename Point3_> struct Interaction {
+template <typename Float, typename Spectrum> struct Interaction {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
 
-    using Point3   = Point3_;
-    using Vector3  = vector3_t<Point3>;
-    using Value    = value_t<Point3>;
-    using Spectrum = mitsuba::Spectrum<Value>;
-    using Mask     = mask_t<Value>;
-    using Ray3     = Ray<Point3>;
+    using Float    = Float_;
+    using Mask     = mask_t<Float>;
+    using Point3f  = Point<Float, 3>;
+    using Vector3f = Vector<Float, 3>;
+    using Ray3f    = Ray<Point3f>;
 
     //! @}
     // =============================================================
@@ -30,16 +29,16 @@ template <typename Point3_> struct Interaction {
     // =============================================================
 
     /// Distance traveled along the ray
-    Value t = math::Infinity;
+    Float t = math::Infinity;
 
     /// Time value associated with the interaction
-    Value time;
+    Float time;
 
     /// Wavelengths associated with the ray that produced this interaction
-    Spectrum wavelengths;
+    Wavelengths wavelengths;
 
     /// Position of the interaction in world coordinates
-    Point3 p;
+    Point3f p;
 
     //! @}
     // =============================================================
@@ -54,19 +53,19 @@ template <typename Point3_> struct Interaction {
     }
 
     /// Spawn a semi-infinite ray towards the given direction
-    Ray3 spawn_ray(const Vector3 &d) const {
-        return Ray3(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
-                    math::Infinity, time, wavelengths);
+    Ray3f spawn_ray(const Vector3f &d) const {
+        return Ray3f(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
+                     math::Infinity, time, wavelengths);
     }
 
     /// Spawn a finite ray towards the given position
-    Ray3 spawn_ray_to(const Point3 &t) const {
+    Ray3f spawn_ray_to(const Point3f &t) const {
         Vector3 d = t - p;
         Value dist = norm(d);
         d /= dist;
 
-        return Ray3(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
-                    dist * (1.f - math::ShadowEpsilon), time, wavelengths);
+        return Ray3f(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
+                     dist * (1.f - math::ShadowEpsilon), time, wavelengths);
     }
 
     //! @}

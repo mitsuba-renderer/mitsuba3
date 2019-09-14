@@ -33,63 +33,162 @@ template <typename Point3> struct RadianceSample;
 template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
 template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
 
-// -----------------------------------------------------------------------------
-// Common type aliases (non-vectorized, packet, dynamic, differentiable).
+template <typename Float_, typename Spectrum_> struct Aliases {
+    using Float    = Float_;
+    using Spectrum = Spectrum_;
 
-using PositionSample3f       = PositionSample<Point3f>;
-using PositionSample3fP      = PositionSample<Point3fP>;
-using PositionSample3fX      = PositionSample<Point3fX>;
-using PositionSample3fD      = PositionSample<Point3fD>;
+    using Mask    = mask_t<Float>;
 
-using DirectionSample3f      = DirectionSample<Point3f>;
-using DirectionSample3fP     = DirectionSample<Point3fP>;
-using DirectionSample3fX     = DirectionSample<Point3fX>;
-using DirectionSample3fD     = DirectionSample<Point3fD>;
+    using Int32   =   int32_array_t<Float>;
+    using UInt32  =  uint32_array_t<Float>;
+    using Int64   =   int64_array_t<Float>;
+    using UInt64  =  uint64_array_t<Float>;
+    using Float64 = float64_array_t<Float>;
 
-using RadianceSample3f       = RadianceSample<Point3f>;
-using RadianceSample3fP      = RadianceSample<Point3fP>;
-using RadianceSample3fX      = RadianceSample<Point3fX>;
-using RadianceSample3fD      = RadianceSample<Point3fD>;
+    using Vector1i = Vector<Int32, 1>;
+    using Vector2i = Vector<Int32, 2>;
+    using Vector3i = Vector<Int32, 3>;
+    using Vector4i = Vector<Int32, 4>;
 
-using Interaction3f          = Interaction<Point3f>;
-using Interaction3fP         = Interaction<Point3fP>;
-using Interaction3fX         = Interaction<Point3fX>;
-using Interaction3fD         = Interaction<Point3fD>;
+    using Vector1u = Vector<UInt32, 1>;
+    using Vector2u = Vector<UInt32, 2>;
+    using Vector3u = Vector<UInt32, 3>;
+    using Vector4u = Vector<UInt32, 4>;
 
-using SurfaceInteraction3f   = SurfaceInteraction<Point3f>;
-using SurfaceInteraction3fP  = SurfaceInteraction<Point3fP>;
-using SurfaceInteraction3fX  = SurfaceInteraction<Point3fX>;
-using SurfaceInteraction3fD  = SurfaceInteraction<Point3fD>;
+    using Vector1f = Vector<Float, 1>;
+    using Vector2f = Vector<Float, 2>;
+    using Vector3f = Vector<Float, 3>;
+    using Vector4f = Vector<Float, 4>;
 
-using MediumInteraction3f    = MediumInteraction<Point3f>;
-using MediumInteraction3fP   = MediumInteraction<Point3fP>;
-using MediumInteraction3fX   = MediumInteraction<Point3fX>;
-using MediumInteraction3fD   = MediumInteraction<Point3fD>;
+    using Vector1d = Vector<Float64, 1>;
+    using Vector2d = Vector<Float64, 2>;
+    using Vector3d = Vector<Float64, 3>;
+    using Vector4d = Vector<Float64, 4>;
 
-using BSDFSample3f           = BSDFSample<Point3f>;
-using BSDFSample3fP          = BSDFSample<Point3fP>;
-using BSDFSample3fX          = BSDFSample<Point3fX>;
-using BSDFSample3fD          = BSDFSample<Point3fD>;
+    using Point1i = Point<Int32, 1>;
+    using Point2i = Point<Int32, 2>;
+    using Point3i = Point<Int32, 3>;
+    using Point4i = Point<Int32, 4>;
 
-using StokesVectorf          = StokesVector<Float>;
-using StokesVectorfP         = StokesVector<FloatP>;
-using StokesVectorfX         = StokesVector<FloatX>;
-using StokesVectorfD         = StokesVector<FloatD>;
+    using Point1u = Point<UInt32, 1>;
+    using Point2u = Point<UInt32, 2>;
+    using Point3u = Point<UInt32, 3>;
+    using Point4u = Point<UInt32, 4>;
 
-using StokesVectorSf         = StokesVector<Spectrumf>;
-using StokesVectorSfP        = StokesVector<SpectrumfP>;
-using StokesVectorSfX        = StokesVector<SpectrumfX>;
-using StokesVectorSfD        = StokesVector<SpectrumfD>;
+    using Point1f = Point<Float, 1>;
+    using Point2f = Point<Float, 2>;
+    using Point3f = Point<Float, 3>;
+    using Point4f = Point<Float, 4>;
 
-using MuellerMatrixf         = MuellerMatrix<Float>;
-using MuellerMatrixfP        = MuellerMatrix<FloatP>;
-using MuellerMatrixfX        = MuellerMatrix<FloatX>;
-using MuellerMatrixfD        = MuellerMatrix<FloatD>;
+    using Point1d = Point<Float64, 1>;
+    using Point2d = Point<Float64, 2>;
+    using Point3d = Point<Float64, 3>;
+    using Point4d = Point<Float64, 4>;
 
-using MuellerMatrixSf        = MuellerMatrix<Spectrumf>;
-using MuellerMatrixSfP       = MuellerMatrix<SpectrumfP>;
-using MuellerMatrixSfX       = MuellerMatrix<SpectrumfX>;
-using MuellerMatrixSfD       = MuellerMatrix<SpectrumfD>;
+    using Normal3f = Normal<Float, 3>;
+    using Normal3d = Normal<Float64, 3>;
+
+    using Color3f  = Color<Float, 3>;
+
+    using BoundingBox1f = BoundingBox<Point1f>;
+    using BoundingBox2f = BoundingBox<Point2f>;
+    using BoundingBox3f = BoundingBox<Point3f>;
+    using BoundingBox4f = BoundingBox<Point4f>;
+
+    using Frame3f              = Frame<Vector3f>;
+    using Ray3f                = Ray<Point3f, Spectrum>;
+    using RayDifferential3f    = RayDifferential<Point3f, Spectrum>;
+    using Transform3f          = Transform<Vector3f>;
+    using Transform4f          = Transform<Vector4f>;
+
+    using PositionSample3f     = PositionSample<Point3f>;
+    using DirectionSample3f    = DirectionSample<Point3f>;
+    using Interaction3f        = Interaction<Point3f>;
+    using SurfaceInteraction3f = SurfaceInteraction<Point3f>;
+    using MediumInteraction3f  = MediumInteraction<Point3f>;
+    using BSDFSample3f         = BSDFSample<Point3f>;
+
+    using Sampler              = mitsuba::Sampler<Float>;
+    using Shape                = mitsuba::Shape<Float>;
+    using Integrator           = mitsuba::Integrator<Float, Spectrum>;
+    using BSDF                 = mitsuba::BSDF<Float, Spectrum>;
+    using Sensor               = mitsuba::Sensor<Float, Spectrum>;
+    using Emitter              = mitsuba::Emitter<Float, Spectrum>;
+    using Medium               = mitsuba::Medium<Float, Spectrum>;
+
+    using EmitterPtr           = replace_scalar_t<Float, const Emitter *>;
+    using BSDFPtr              = replace_scalar_t<Float, const BSDF *>;
+    using ShapePtr             = replace_scalar_t<Float, const Shape *>;
+};
+
+#define MTS_IMPORT_TYPES()                                                                         \
+    using Aliases              = mitsuba::Aliases<Float, Spectrum>;                                \
+    using Mask                 = typename Aliases::Mask;                                           \
+    using Int32                = typename Aliases::Int32;                                          \
+    using UInt32               = typename Aliases::UInt32;                                         \
+    using Int64                = typename Aliases::Int64;                                          \
+    using UInt64               = typename Aliases::UInt64;                                         \
+    using Float64              = typename Aliases::Float64;                                        \
+    using Vector1i             = typename Aliases::Vector1i;                                       \
+    using Vector2i             = typename Aliases::Vector2i;                                       \
+    using Vector3i             = typename Aliases::Vector3i;                                       \
+    using Vector4i             = typename Aliases::Vector4i;                                       \
+    using Vector1u             = typename Aliases::Vector1u;                                       \
+    using Vector2u             = typename Aliases::Vector2u;                                       \
+    using Vector3u             = typename Aliases::Vector3u;                                       \
+    using Vector4u             = typename Aliases::Vector4u;                                       \
+    using Vector1f             = typename Aliases::Vector1f;                                       \
+    using Vector2f             = typename Aliases::Vector2f;                                       \
+    using Vector3f             = typename Aliases::Vector3f;                                       \
+    using Vector4f             = typename Aliases::Vector4f;                                       \
+    using Vector1d             = typename Aliases::Vector1d;                                       \
+    using Vector2d             = typename Aliases::Vector2d;                                       \
+    using Vector3d             = typename Aliases::Vector3d;                                       \
+    using Vector4d             = typename Aliases::Vector4d;                                       \
+    using Point1i              = typename Aliases::Point1i;                                        \
+    using Point2i              = typename Aliases::Point2i;                                        \
+    using Point3i              = typename Aliases::Point3i;                                        \
+    using Point4i              = typename Aliases::Point4i;                                        \
+    using Point1u              = typename Aliases::Point1u;                                        \
+    using Point2u              = typename Aliases::Point2u;                                        \
+    using Point3u              = typename Aliases::Point3u;                                        \
+    using Point4u              = typename Aliases::Point4u;                                        \
+    using Point1f              = typename Aliases::Point1f;                                        \
+    using Point2f              = typename Aliases::Point2f;                                        \
+    using Point3f              = typename Aliases::Point3f;                                        \
+    using Point4f              = typename Aliases::Point4f;                                        \
+    using Point1d              = typename Aliases::Point1d;                                        \
+    using Point2d              = typename Aliases::Point2d;                                        \
+    using Point3d              = typename Aliases::Point3d;                                        \
+    using Point4d              = typename Aliases::Point4d;                                        \
+    using Normal3f             = typename Aliases::Normal3f;                                       \
+    using Normal3d             = typename Aliases::Normal3d;                                       \
+    using Color3f              = typename Aliases::Color3f;                                        \
+    using BoundingBox1f        = typename Aliases::BoundingBox1f;                                  \
+    using BoundingBox2f        = typename Aliases::BoundingBox2f;                                  \
+    using BoundingBox3f        = typename Aliases::BoundingBox3f;                                  \
+    using BoundingBox4f        = typename Aliases::BoundingBox4f;                                  \
+    using Frame3f              = typename Aliases::Frame3f;                                        \
+    using Ray3f                = typename Aliases::Ray3f;                                          \
+    using RayDifferential3f    = typename Aliases::RayDifferential3f;                              \
+    using Transform3f          = typename Aliases::Transform3f;                                    \
+    using Transform4f          = typename Aliases::Transform4f;                                    \
+    using PositionSample3f     = typename Aliases::PositionSample3f;                               \
+    using DirectionSample3f    = typename Aliases::DirectionSample3f;                              \
+    using Interaction3f        = typename Aliases::Interaction3f;                                  \
+    using SurfaceInteraction3f = typename Aliases::SurfaceInteraction3f;                           \
+    using MediumInteraction3f  = typename Aliases::MediumInteraction3f;                            \
+    using BSDFSample3f         = typename Aliases::BSDFSample3f;                                   \
+    using Sampler              = typename Aliases::Sampler;                                        \
+    using Shape                = typename Aliases::Shape;                                          \
+    using Integrator           = typename Aliases::Integrator;                                     \
+    using BSDF                 = typename Aliases::BSDF;                                           \
+    using Sensor               = typename Aliases::Sensor;                                         \
+    using Emitter              = typename Aliases::Emitter;                                        \
+    using Medium               = typename Aliases::Medium;                                         \
+    using EmitterPtr           = typename Aliases::EmitterPtr;                                     \
+    using BSDFPtr              = typename Aliases::BSDFPtr;                                        \
+    using ShapePtr             = typename Aliases::ShapePtr;
 
 // -----------------------------------------------------------------------------
 

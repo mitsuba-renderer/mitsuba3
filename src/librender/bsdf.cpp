@@ -6,6 +6,107 @@ NAMESPACE_BEGIN(mitsuba)
 BSDF::BSDF(const Properties &props) : m_flags(0), m_id(props.id()) { }
 BSDF::~BSDF() { }
 
+template <typename Index>
+std::string type_mask_to_string(Index type_mask) {
+    std::ostringstream oss;
+    oss << "{ ";
+
+#define is_set(mask) (type_mask & mask) == mask
+    if (is_set(BSDFFlags::All)) {
+        oss << "all ";
+        type_mask &= ~BSDFFlags::All;
+    }
+    if (is_set(BSDFFlags::Reflection)) {
+        oss << "reflection ";
+        type_mask &= ~BSDFFlags::Reflection;
+    }
+    if (is_set(BSDFFlags::Transmission)) {
+        oss << "transmission ";
+        type_mask &= ~BSDFFlags::Transmission;
+    }
+    if (is_set(BSDFFlags::Smooth)) {
+        oss << "smooth ";
+        type_mask &= ~BSDFFlags::Smooth;
+    }
+    if (is_set(BSDF::Diffuse)) {
+        oss << "diffuse ";
+        type_mask &= ~BSDF::Diffuse;
+    }
+    if (is_set(BSDF::Glossy)) {
+        oss << "glossy ";
+        type_mask &= ~BSDF::Glossy;
+    }
+    if (is_set(BSDF::Delta)) {
+        oss << "delta";
+        type_mask &= ~BSDF::Delta;
+    }
+    if (is_set(BSDF::Delta1D)) {
+        oss << "delta_1d ";
+        type_mask &= ~BSDF::Delta1D;
+    }
+    if (is_set(BSDF::DiffuseReflection)) {
+        oss << "diffuse_reflection ";
+        type_mask &= ~BSDF::DiffuseReflection;
+    }
+    if (is_set(BSDF::DiffuseTransmission)) {
+        oss << "diffuse_transmission ";
+        type_mask &= ~BSDF::DiffuseTransmission;
+    }
+    if (is_set(BSDF::GlossyReflection)) {
+        oss << "glossy_reflection ";
+        type_mask &= ~BSDF::GlossyReflection;
+    }
+    if (is_set(BSDF::GlossyTransmission)) {
+        oss << "glossy_transmission ";
+        type_mask &= ~BSDF::GlossyTransmission;
+    }
+    if (is_set(BSDF::DeltaReflection)) {
+        oss << "delta_reflection ";
+        type_mask &= ~BSDF::DeltaReflection;
+    }
+    if (is_set(BSDF::DeltaTransmission)) {
+        oss << "delta_transmission ";
+        type_mask &= ~BSDF::DeltaTransmission;
+    }
+    if (is_set(BSDF::Delta1DReflection)) {
+        oss << "delta_1d_reflection ";
+        type_mask &= ~BSDF::Delta1DReflection;
+    }
+    if (is_set(BSDF::Delta1DTransmission)) {
+        oss << "delta_1d_transmission ";
+        type_mask &= ~BSDF::Delta1DTransmission;
+    }
+    if (is_set(BSDF::Null)) {
+        oss << "null ";
+        type_mask &= ~BSDF::Null;
+    }
+    if (is_set(BSDF::Anisotropic)) {
+        oss << "anisotropic ";
+        type_mask &= ~BSDF::Anisotropic;
+    }
+    if (is_set(BSDF::FrontSide)) {
+        oss << "front_side ";
+        type_mask &= ~BSDF::FrontSide;
+    }
+    if (is_set(BSDF::BackSide)) {
+        oss << "back_side ";
+        type_mask &= ~BSDF::BackSide;
+    }
+    if (is_set(BSDF::SpatiallyVarying)) {
+        oss << "spatially_varying ";
+        type_mask &= ~BSDF::SpatiallyVarying;
+    }
+    if (is_set(BSDF::NonSymmetric)) {
+        oss << "non_symmetric ";
+        type_mask &= ~BSDF::NonSymmetric;
+    }
+#undef is_set
+
+    Assert(type_mask == 0);
+    oss << "}";
+    return oss.str();
+}
+
 std::string BSDF::id() const { return m_id; }
 
 std::pair<BSDFSample3f, MuellerMatrixSf>
@@ -110,6 +211,15 @@ std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {
     else
         os << ctx.component;
     os  << std::endl << "]";
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const TransportMode &mode) {
+    switch (mode) {
+        case Radiance:   os << "radiance"; break;
+        case Importance: os << "importance"; break;
+        default:         os << "invalid"; break;
+    }
     return os;
 }
 

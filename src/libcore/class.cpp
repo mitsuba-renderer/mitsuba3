@@ -19,14 +19,12 @@ const Class *m_class = nullptr;
 
 Class::Class(const std::string &name, const std::string &parent,
              bool abstract, ConstructFunctor constr,
-             UnserializeFunctor unser)
-    : Class(name, name, parent, abstract, constr, unser) { }
-
-Class::Class(const std::string &name, const std::string &alias,
-             const std::string &parent, bool abstract,
-             ConstructFunctor constr, UnserializeFunctor unser)
+             UnserializeFunctor unser, const std::string &alias)
     : m_name(name), m_alias(alias), m_parent_name(parent),
       m_abstract(abstract), m_constr(constr), m_unser(unser) {
+
+    if (m_alias.empty())
+        m_alias = name;
 
     if (!__classes)
         __classes = new std::map<std::string, Class *>();

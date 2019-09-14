@@ -1,3 +1,11 @@
+/*
+    Mitsuba 2: A Retargetable Forward and Inverse Renderer
+    Copyright 2019, Realistic Graphics Lab, EPFL.
+
+    All rights reserved. Use of this source code is governed by a
+    BSD-style license that can be found in the LICENSE.txt file.
+*/
+
 #pragma once
 
 #if !defined(NAMESPACE_BEGIN)
@@ -19,10 +27,10 @@
 #  define MTS_INLINE    __attribute__((always_inline)) inline
 #endif
 
-#define MTS_MODULE_CORE 1
+#define MTS_MODULE_CORE   1
 #define MTS_MODULE_RENDER 2
-#define MTS_MODULE_UI 3
-#define MTS_MODULE_BIDIR 4
+#define MTS_MODULE_UI     3
+#define MTS_MODULE_BIDIR  4
 
 #if MTS_BUILD_MODULE == MTS_MODULE_CORE
 #  define MTS_EXPORT_CORE MTS_EXPORT
@@ -72,15 +80,6 @@
 #define MTS_CAT(a, b)                              MTS_CAT_HELPER(a, b)
 
 NAMESPACE_BEGIN(mitsuba)
-
-/* Define a 'Float' data type with customizable precision */
-#if defined(DOUBLE_PRECISION)
-    using Float = double;
-#elif defined(SINGLE_PRECISION)
-    using Float = float;
-#else
-#  error No precision flag was defined!
-#endif
 
 /* Reduce namespace pollution from windows.h */
 #if defined(__WINDOWS__)

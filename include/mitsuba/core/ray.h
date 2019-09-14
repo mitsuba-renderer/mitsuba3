@@ -18,13 +18,14 @@ NAMESPACE_BEGIN(mitsuba)
  * \ref update() to compute the componentwise reciprocals as well, or Mitsuba's
  * ray-object intersection code may produce undefined results.
  */
-template <typename Point_> struct Ray {
+template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = array_size_v<Point_>;
 
     using Point                  = Point_;
     using Value                  = value_t<Point>;
     using Vector                 = mitsuba::Vector<Value, Size>;
-    using Spectrum               = mitsuba::Spectrum<Value>;
+    using Spectrum               = Spectrum_;
+    using Wavelength             = wavelength_t<Spectrum_>;
 
     Point o;                     ///< Ray origin
     Vector d;                    ///< Ray direction
@@ -32,24 +33,30 @@ template <typename Point_> struct Ray {
     Value mint = math::Epsilon;  ///< Minimum position on the ray segment
     Value maxt = math::Infinity; ///< Maximum position on the ray segment
     Value time = 0.f;            ///< Time value associated with this ray
-    Spectrum wavelengths;        ///< Wavelength packet associated with the ray
+    Wavelength wavelength;       ///< Wavelength packet associated with the ray
 
     /// Construct a new ray (o, d) at time 'time'
-    Ray(const Point &o, const Vector &d, Value time, const Spectrum &wavelengths)
-        : o(o), d(d), d_rcp(rcp(d)), time(time), wavelengths(wavelengths) { }
+    Ray(const Point &o, const Vector &d, Value time,
+        const Wavelength &wavelength)
+        : o(o), d(d), d_rcp(rcp(d)), time(time),
+          wavelength(wavelength) { }
 
     /// Construct a new ray (o, d) with time
-    Ray(const Point &o, const Vector &d, const Value &t) : o(o), d(d), time(t) {
+    Ray(const Point &o, const Vector &d, const Value &t)
+        : o(o), d(d), time(t) {
         update();
     }
 
     /// Construct a new ray (o, d) with bounds
-    Ray(const Point &o, const Vector &d, Value mint, Value maxt, Value time, const Spectrum &wavelengths)
-        : o(o), d(d), d_rcp(rcp(d)), mint(mint), maxt(maxt), time(time), wavelengths(wavelengths) { }
+    Ray(const Point &o, const Vector &d, Value mint, Value maxt,
+        Value time, const Wavelength &wavelengt)
+        : o(o), d(d), d_rcp(rcp(d)), mint(mint), maxt(maxt),
+          time(time), wavelength(wavelength) { }
 
     /// Copy a ray, but change the [mint, maxt] interval
     Ray(const Ray &r, Value mint, Value maxt)
-        : o(r.o), d(r.d), d_rcp(r.d_rcp), mint(mint), maxt(maxt), time(r.time) { }
+        : o(r.o), d(r.d), d_rcp(r.d_rcp), mint(mint), maxt(maxt),
+          time(r.time) { }
 
     /// Update the reciprocal ray directions after changing 'd'
     void update() { d_rcp = rcp(d); }
@@ -60,35 +67,30 @@ template <typename Point_> struct Ray {
     /// Return a ray that points into the opposite direction
     Ray reverse() const {
         Ray result;
-        result.o           = o;
-        result.d           = -d;
-        result.d_rcp       = -d_rcp;
-        result.mint        = mint;
-        result.maxt        = maxt;
-        result.time        = time;
-        result.wavelengths = wavelengths;
+        result.o          = o;
+        result.d          = -d;
+        result.d_rcp      = -d_rcp;
+        result.mint       = mint;
+        result.maxt       = maxt;
+        result.time       = time;
+        result.wavelength = wavelength;
         return result;
     }
 
-    ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
+    ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelength)
 };
 
 /** \brief Ray differential -- enhances the basic ray class with
     offset rays for two adjacent pixels on the view plane */
-template <typename Point_> struct RayDifferential : Ray<Point_> {
-    using Base = Ray<Point_>;
+template <typename Point_, typename Spectrum_>
+struct RayDifferential : Ray<Point_, Spectrum_> {
+    using Base = Ray<Point_, Spectrum_>;
     using Base::Base;
 
     using typename Base::Point;
     using typename Base::Vector;
-    using typename Base::Value;
-    using typename Base::Spectrum;
     using Base::o;
     using Base::d;
-    using Base::d_rcp;
-    using Base::mint;
-    using Base::maxt;
-    using Base::time;
 
     Point o_x, o_y;
     Vector d_x, d_y;
@@ -106,22 +108,23 @@ template <typename Point_> struct RayDifferential : Ray<Point_> {
     }
 
     ENOKI_DERIVED_STRUCT(RayDifferential, Base,
-        ENOKI_BASE_FIELDS(o, d, d_rcp, mint, maxt, time, wavelengths),
+        ENOKI_BASE_FIELDS(o, d, d_rcp, mint, maxt, time, wavelength),
         ENOKI_DERIVED_FIELDS(o_x, o_y, d_x, d_y, has_differentials)
     )
 };
 
 /// Return a string representation of the ray
-template <typename Point>
-std::ostream &operator<<(std::ostream &os, const Ray<Point> &r) {
+template <typename Point, typename Spectrum>
+std::ostream &operator<<(std::ostream &os, const Ray<Point, Spectrum> &r) {
     os << "Ray" << type_suffix<Point>() << "[" << std::endl
        << "  o = " << string::indent(r.o, 6) << "," << std::endl
        << "  d = " << string::indent(r.d, 6) << "," << std::endl
        << "  mint = " << r.mint << "," << std::endl
        << "  maxt = " << r.maxt << "," << std::endl
-       << "  time = " << r.time << "," << std::endl
-       << "  wavelengths = " << string::indent(r.wavelengths, 16) << std::endl
-       << "]";
+       << "  time = " << r.time << "," << std::endl;
+    if constexpr (sizeof(r.wavelength) > 0)
+        os << "  wavelength = " << string::indent(r.wavelength, 15) << std::endl;
+    os << "]";
     return os;
 }
 
@@ -132,10 +135,10 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 // Support for static & dynamic vectorization
-ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
+ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelength)
 
 ENOKI_STRUCT_SUPPORT(mitsuba::RayDifferential, o, d, d_rcp, mint, maxt,
-                     time, wavelengths, o_x, o_y, d_x, d_y, has_differentials)
+                     time, wavelength, o_x, o_y, d_x, d_y, has_differentials)
 
 //! @}
 // -----------------------------------------------------------------------

@@ -8,12 +8,12 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /// Available Log message types
-enum ELogLevel : int {
-    ETrace = 0,   ///< Trace message, for extremely verbose debugging
-    EDebug = 100, ///< Debug message, usually turned off
-    EInfo  = 200, ///< More relevant debug / information message
-    EWarn  = 300, ///< Warning message
-    EError = 400  ///< Error message, causes an exception to be thrown
+enum LogLevel : int {
+    Trace = 0,   ///< Trace message, for extremely verbose debugging
+    Debug = 100, ///< Debug message, usually turned off
+    Info  = 200, ///< More relevant debug / information message
+    Warn  = 300, ///< Warning message
+    Error = 400  ///< Error message, causes an exception to be thrown
 };
 
 /**
@@ -28,7 +28,7 @@ enum ELogLevel : int {
 class MTS_EXPORT_CORE Logger : public Object {
 public:
     /// Construct a new logger with the given minimum log level
-    Logger(ELogLevel log_level = EDebug);
+    Logger(LogLevel log_level = Debug);
 
     /**
      * \brief Process a log message
@@ -41,7 +41,7 @@ public:
      * \note This function is not exposed in the Python bindings.
      *       Instead, please use \cc mitsuba.core.Log
      */
-    void log(ELogLevel level, const Class *class_, const char *filename,
+    void log(LogLevel level, const Class *class_, const char *filename,
              int line, const std::string &message);
 
     /**
@@ -54,12 +54,12 @@ public:
      *    context of a progress message. When rendering a scene, it
      *    will usually contain a pointer to the associated \c RenderJob.
      */
-    void log_progress(Float progress, const std::string &name,
+    void log_progress(float progress, const std::string &name,
         const std::string &formatted, const std::string &eta,
         const void *ptr = nullptr);
 
     /// Set the log level (everything below will be ignored)
-    void set_log_level(ELogLevel level);
+    void set_log_level(LogLevel level);
 
     /**
      * \brief Set the error log level (this level and anything above will throw
@@ -69,13 +69,13 @@ public:
      * errors. But \a level must always be less than \ref EError, i.e. it isn't
      * possible to cause errors not to throw an exception.
      */
-    void set_error_level(ELogLevel level);
+    void set_error_level(LogLevel level);
 
     /// Return the current log level
-    ELogLevel log_level() const { return m_log_level; }
+    LogLevel log_level() const { return m_log_level; }
 
     /// Return the current error level
-    ELogLevel error_level() const;
+    LogLevel error_level() const;
 
     /// Add an appender to this logger
     void add_appender(Appender *appender);
@@ -125,18 +125,18 @@ protected:
 
 private:
     struct LoggerPrivate;
-    ELogLevel m_log_level;
+    LogLevel m_log_level;
     std::unique_ptr<LoggerPrivate> d;
 };
 
 NAMESPACE_BEGIN(detail)
 
 [[noreturn]] extern MTS_EXPORT_CORE
-void Throw(ELogLevel level, const Class *class_, const char *file,
+void Throw(LogLevel level, const Class *class_, const char *file,
            int line, const std::string &msg);
 
 template <typename... Args> MTS_INLINE
-static void Log(ELogLevel level, const Class *class_,
+static void Log(LogLevel level, const Class *class_,
                 const char *filename, int line, Args &&... args) {
     auto logger = mitsuba::Thread::thread()->logger();
     if (logger && level >= logger->log_level())

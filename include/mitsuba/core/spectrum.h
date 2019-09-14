@@ -25,7 +25,7 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name Data types for RGB data
 // =======================================================================
 
-template <typename Value_, size_t Size_>
+template <typename Value_, size_t Size_ = 3>
 struct Color
     : enoki::StaticArrayImpl<Value_, Size_,
                              enoki::array_approx_v<Value_>,
@@ -51,6 +51,9 @@ struct Color
     decltype(auto) b() const { return Base::z(); }
     decltype(auto) b() { return Base::z(); }
 
+    decltype(auto) a() const { return Base::w(); }
+    decltype(auto) a() { return Base::w(); }
+
     ENOKI_ARRAY_IMPORT(Base, Color)
 };
 
@@ -61,26 +64,43 @@ struct Color
 //! @{ \name Data types for discretized spectral data
 // =======================================================================
 
-template <typename Value_>
+template <typename Value_, size_t Size_ = MTS_WAVELENGTH_SAMPLES>
 struct Spectrum
-    : enoki::StaticArrayImpl<Value_, MTS_WAVELENGTH_SAMPLES,
+    : enoki::StaticArrayImpl<Value_, Size_,
                              enoki::array_approx_v<Value_>,
                              RoundingMode::Default, false, Spectrum<Value_>> {
 
     static constexpr bool Approx = enoki::array_approx_v<Value_>;
 
-    using Base = enoki::StaticArrayImpl<Value_, MTS_WAVELENGTH_SAMPLES, Approx,
+    using Base = enoki::StaticArrayImpl<Value_, Size_, Approx,
                                         RoundingMode::Default, false, Spectrum<Value_>>;
 
     /// Helper alias used to transition between vector types (used by enoki::vectorize)
-    template <typename T> using ReplaceValue = Spectrum<T>;
+    template <typename T> using ReplaceValue = Spectrum<T, Size_>;
 
     using ArrayType = Spectrum;
-    using MaskType = enoki::Mask<Value_, MTS_WAVELENGTH_SAMPLES,
-                                 Approx, RoundingMode::Default>;
+    using MaskType = enoki::Mask<Value_, Size_, Approx, RoundingMode::Default>;
 
     ENOKI_ARRAY_IMPORT(Base, Spectrum)
 };
+
+NAMESPACE_BEGIN(detail)
+
+template <typename T> struct wavelength {
+    struct type { };
+};
+
+template <typename Value, size_t Size> struct wavelength<Spectrum<Value, Size>> {
+    using type = Spectrum<Value, Size>;
+};
+
+template <typename T> struct wavelength<Matrix<T, 4, true>> {
+    using type = typename wavelength<T>::type;
+};
+
+NAMESPACE_END(detail)
+
+template <typename T> using wavelength_t = typename detail::wavelength<T>::type;
 
 //! @}
 // =======================================================================
@@ -142,7 +162,7 @@ Result cie1931_xyz(const T &wavelengths, mask_t<Expr> active = true) {
          v1_z = gather<Expr>(cie1931_z_data, i1, active);
 
     Expr w1 = t - Expr(i0),
-         w0 = (Float) 1 - w1;
+         w0 = 1.f - w1;
 
     return Result(fmadd(w0, v0_x, w1 * v1_x),
                   fmadd(w0, v0_y, w1 * v1_y),
@@ -169,7 +189,7 @@ Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
          v1 = gather<Expr>(cie1931_y_data, i1, active);
 
     Expr w1 = t - Expr(i0),
-         w0 = (Float) 1 - w1;
+         w0 = 1.f - w1;
 
     return fmadd(w0, v0, w1 * v1) & active;
 }
@@ -178,7 +198,8 @@ template <typename Spectrum, typename Value = value_t<Spectrum>>
 Array<Value, 3> to_xyz(const Spectrum &value, const Spectrum &wavelengths,
                        mask_t<Value> active = true) {
     auto XYZw = cie1931_xyz(wavelengths, active);
-    return Array<Value, 3>(enoki::mean(XYZw.x() * value), enoki::mean(XYZw.y() * value),
+    return Array<Value, 3>(enoki::mean(XYZw.x() * value),
+                           enoki::mean(XYZw.y() * value),
                            enoki::mean(XYZw.z() * value));
 }
 
@@ -206,12 +227,11 @@ template <typename Value>
 std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
         Value wavelengths =
-            Float(538) - atanh(Float(0.8569106254698279) -
-                               Float(1.8275019724092267) * sample) *
-                             Float(138.88888888888889);
+            538.f - atanh(0.8569106254698279f -
+                          1.8275019724092267f * sample) * 138.88888888888889f;
 
-        Value tmp    = cosh(Float(0.0072) * (wavelengths - Float(538)));
-        Value weight = Float(253.82) * tmp * tmp;
+        Value tmp    = cosh(0.0072f * (wavelengths - 538.f));
+        Value weight = 253.82f * tmp * tmp;
 
         return { wavelengths, weight };
     } else {
@@ -229,9 +249,9 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
 template <typename Spectrum>
 Spectrum pdf_rgb_spectrum(const Spectrum &wavelengths) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
-        auto tmp = sech(Float(0.0072) * (wavelengths - Float(538)));
+        auto tmp = sech(0.0072f * (wavelengths - 538.f));
         return select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
-                      Float(0.003939804229326285) * tmp * tmp, zero<Spectrum>());
+                      0.003939804229326285f * tmp * tmp, zero<Spectrum>());
     } else {
         return pdf_uniform_spectrum(wavelengths);
     }

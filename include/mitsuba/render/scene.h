@@ -458,4 +458,7 @@ private:
                                      Mask active) const;
 };
 
+/// Dummy function which can be called to ensure that the librender shared library is loaded
+extern MTS_EXPORT_RENDER void librender_nop();
+
 NAMESPACE_END(mitsuba)

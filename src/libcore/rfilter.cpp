@@ -31,5 +31,5 @@ std::ostream &operator<<(std::ostream &os, const ReconstructionFilter::EBoundary
     return os;
 }
 
-MTS_IMPLEMENT_CLASS_ALIAS(ReconstructionFilter, "rfilter", Object)
+MTS_IMPLEMENT_CLASS(ReconstructionFilter, Object, "rfilter")
 NAMESPACE_END(mitsuba)

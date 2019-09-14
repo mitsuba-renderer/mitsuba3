@@ -100,8 +100,7 @@ template <typename Value> MuellerMatrix<Value> diattenuator(Value x, Value y) {
   * counter-clockwise rotation of the electric field by 'theta' radians.
   */
 template <typename Value> MuellerMatrix<Value> rotator(Value theta) {
-    Value s, c;
-    std::tie(s, c) = sincos(2.f * theta);
+    Value [s, c] = sincos(2.f * theta);
     return MuellerMatrix<Value>(
         1, 0, 0, 0,
         0, c, -s, 0,
@@ -194,11 +193,11 @@ MuellerMatrix<Value> specular_transmission(Value cos_theta_i, Value eta) {
     std::tie(a_s, a_p, cos_theta_t, eta_it, eta_ti) =
         fresnel_polarized(cos_theta_i, eta);
 
-    /* Unit conversion factor */
+    // Unit conversion factor
     Value factor = -eta_it * select(abs(cos_theta_i) > 1e-8f,
                                     cos_theta_t / cos_theta_i, 0.f);
 
-    /* Compute transmission amplitudes */
+    // Compute transmission amplitudes
     Value a_s_r = real(a_s) + 1.f,
           a_p_r = (1.f - real(a_p)) * eta_ti;
 
@@ -294,8 +293,12 @@ template <typename Vector3,
           typename Value = value_t<Vector3>,
           typename MuellerMatrix = MuellerMatrix<Value>>
 MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
-                                   const Vector3 &in_forward, const Vector3 &in_basis_current, const Vector3 &in_basis_target,
-                                   const Vector3 &out_forward, const Vector3 &out_basis_current, const Vector3 &out_basis_target) {
+                                   const Vector3 &in_forward,
+                                   const Vector3 &in_basis_current,
+                                   const Vector3 &in_basis_target,
+                                   const Vector3 &out_forward,
+                                   const Vector3 &out_basis_current,
+                                   const Vector3 &out_basis_target) {
     MuellerMatrix R_in  = rotate_stokes_basis(in_forward, in_basis_current, in_basis_target);
     MuellerMatrix R_out = rotate_stokes_basis(out_forward, out_basis_current, out_basis_target);
     return R_out * M * transpose(R_in);
@@ -324,7 +327,9 @@ template <typename Vector3,
           typename Value = value_t<Vector3>,
           typename MuellerMatrix = MuellerMatrix<Value>>
 MuellerMatrix rotate_mueller_basis_collinear(const MuellerMatrix &M,
-                                             const Vector3 &forward, const Vector3 &basis_current, const Vector3 &basis_target) {
+                                             const Vector3 &forward,
+                                             const Vector3 &basis_current,
+                                             const Vector3 &basis_target) {
     MuellerMatrix R = rotate_stokes_basis(forward, basis_current, basis_target);
     return R * M * transpose(R);
 }

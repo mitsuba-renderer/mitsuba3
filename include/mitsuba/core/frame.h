@@ -14,27 +14,27 @@ NAMESPACE_BEGIN(mitsuba)
  * coordinate system whose pole is aligned with the \c n axis (e.g. \ref
  * cos_theta(), \ref sin_phi(), etc.).
  */
-template <typename Vector3_> struct Frame {
-    using Vector3 = Vector3_;
-    using Value  = value_t<Vector3>;
-    using Scalar = scalar_t<Value>;
-    using Vector2 = mitsuba::Vector<Value, 2>;
-    using Normal3 = mitsuba::Normal<Value, 3>;
-    Vector3 s, t;
-    Normal3 n;
+template <typename Vector3f_> struct Frame {
+    using Vector3f = Vector3f_;
+    using Float    = value_t<Vector3f>;
+    using Vector2f = Vector<Float, 2>;
+    using Normal3f = Normal<Float, 3>;
+
+    Vector3f s, t;
+    Normal3f n;
 
     /// Construct a new coordinate frame from a single vector
-    Frame(const Vector3 &v) : n(v) {
+    Frame(const Vector3f &v) : n(v) {
         std::tie(s, t) = coordinate_system(v);
     }
 
     /// Convert from world coordinates to local coordinates
-    Vector3 to_local(const Vector3 &v) const {
-        return Vector3(dot(v, s), dot(v, t), dot(v, n));
+    Vector3f to_local(const Vector3f &v) const {
+        return Vector3f(dot(v, s), dot(v, t), dot(v, n));
     }
 
     /// Convert from local coordinates to world coordinates
-    Vector3 to_world(const Vector3 &v) const {
+    Vector3f to_world(const Vector3f &v) const {
         return s * v.x() + t * v.y() + n * v.z();
     }
 
@@ -42,32 +42,32 @@ template <typename Vector3_> struct Frame {
      * elevation angle in a reference spherical coordinate system (see the \ref
      * Frame description)
      */
-    static Value cos_theta(const Vector3 &v) { return v.z(); }
+    static Float cos_theta(const Vector3f &v) { return v.z(); }
 
     /** \brief Give a unit direction, this function returns the square cosine
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Value cos_theta_2(const Vector3 &v) { return sqr(v.z()); }
+    static Float cos_theta_2(const Vector3f &v) { return sqr(v.z()); }
 
     /** \brief Give a unit direction, this function returns the sine
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Value sin_theta(const Vector3 &v) { return safe_sqrt(sin_theta_2(v)); }
+    static Float sin_theta(const Vector3f &v) { return safe_sqrt(sin_theta_2(v)); }
 
     /** \brief Give a unit direction, this function returns the square sine
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Value sin_theta_2(const Vector3 &v) { return fmadd(v.x(), v.x(), sqr(v.y())); }
+    static Float sin_theta_2(const Vector3f &v) { return fmadd(v.x(), v.x(), sqr(v.y())); }
 
     /** \brief Give a unit direction, this function returns the tangent
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Value tan_theta(const Vector3 &v) {
-        Value temp = fnmadd(v.z(), v.z(), Scalar(1));
+    static Float tan_theta(const Vector3f &v) {
+        Float temp = fnmadd(v.z(), v.z(), 1.f);
         return safe_sqrt(temp) / v.z();
     }
 
@@ -75,46 +75,46 @@ template <typename Vector3_> struct Frame {
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Value tan_theta_2(const Vector3 &v) {
-        Value temp = fnmadd(v.z(), v.z(), Scalar(1));
-        return max(temp, Scalar(0)) / sqr(v.z());
+    static Float tan_theta_2(const Vector3f &v) {
+        Float temp = fnmadd(v.z(), v.z(), 1.f);
+        return max(temp, 0.f) / sqr(v.z());
     }
 
     /** \brief Give a unit direction, this function returns the sine of the
      * azimuth in a reference spherical coordinate system (see the \ref Frame
      * description)
      */
-    static Value sin_phi(const Vector3 &v) {
-        Value sin_theta_2 = Frame::sin_theta_2(v),
+    static Float sin_phi(const Vector3f &v) {
+        Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = rsqrt(Frame::sin_theta_2(v));
-        return select(abs(sin_theta_2) <= 4 * math::MachineEpsilon, Scalar(0),
-                      clamp(v.y() * inv_sin_theta, Scalar(-1), Scalar(1)));
+        return select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon, 0.f,
+                      clamp(v.y() * inv_sin_theta, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the cosine of the
      * azimuth in a reference spherical coordinate system (see the \ref Frame
      * description)
      */
-    static Value cos_phi(const Vector3 &v) {
-        Value sin_theta_2 = Frame::sin_theta_2(v),
+    static Float cos_phi(const Vector3f &v) {
+        Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = rsqrt(Frame::sin_theta_2(v));
-        return select(abs(sin_theta_2) <= 4 * math::MachineEpsilon, Scalar(1),
-                      clamp(v.x() * inv_sin_theta, Scalar(-1), Scalar(1)));
+        return select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon, 1.f,
+                      clamp(v.x() * inv_sin_theta, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the sine and cosine
      * of the azimuth in a reference spherical coordinate system (see the \ref
      * Frame description)
      */
-    static std::pair<Value, Value> sincos_phi(const Vector3 &v) {
-        Value sin_theta_2 = Frame::sin_theta_2(v),
+    static std::pair<Float, Float> sincos_phi(const Vector3f &v) {
+        Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = rsqrt(Frame::sin_theta_2(v));
 
-        Vector2 result = head<2>(v) * inv_sin_theta;
+        Vector2f result = head<2>(v) * inv_sin_theta;
 
-        result = select(abs(sin_theta_2) <= 4 * math::MachineEpsilon,
-                        Vector2(Scalar(1), Scalar(0)),
-                        clamp(result, Scalar(-1), Scalar(1)));
+        result = select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon,
+                        Vector2f(1.f, 0.f),
+                        clamp(result, -1.f, 1.f));
 
         return { result.y(), result.x() };
     }
@@ -123,55 +123,54 @@ template <typename Vector3_> struct Frame {
      * the azimuth in a reference spherical coordinate system (see the \ref
      * Frame description)
      */
-    static Value sin_phi_2(const Vector3 &v) {
-        Value sin_theta_2 = Frame::sin_theta_2(v);
-        return select(abs(sin_theta_2) <= 4 * math::MachineEpsilon, Scalar(0),
-                      clamp(sqr(v.y()) / sin_theta_2, Scalar(-1), Scalar(1)));
+    static Float sin_phi_2(const Vector3f &v) {
+        Float sin_theta_2 = Frame::sin_theta_2(v);
+        return select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon, 0.f,
+                      clamp(sqr(v.y()) / sin_theta_2, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the squared cosine of
      * the azimuth in a reference spherical coordinate system (see the \ref
      * Frame description)
      */
-    static Value cos_phi_2(const Vector3 &v) {
-        Value sin_theta_2 = Frame::sin_theta_2(v);
-        return select(abs(sin_theta_2) <= 4 * math::MachineEpsilon, Scalar(1),
-                      clamp(sqr(v.x()) / sin_theta_2, Scalar(-1), Scalar(1)));
+    static Float cos_phi_2(const Vector3f &v) {
+        Float sin_theta_2 = Frame::sin_theta_2(v);
+        return select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon, 1.f,
+                      clamp(sqr(v.x()) / sin_theta_2, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the squared sine
      * and cosine of the azimuth in a reference spherical coordinate system
      * (see the \ref Frame description)
      */
-    static std::pair<Value, Value> sincos_phi_2(const Vector3 &v) {
-        Value sin_theta_2 = Frame::sin_theta_2(v),
+    static std::pair<Float, Float> sincos_phi_2(const Vector3f &v) {
+        Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta_2 = rcp(sin_theta_2);
 
-        Vector2 result = sqr(head<2>(v)) * inv_sin_theta_2;
+        Vector2f result = sqr(head<2>(v)) * inv_sin_theta_2;
 
-        result = select(abs(sin_theta_2) <= 4 * math::MachineEpsilon,
-                        Vector2(Scalar(1), Scalar(0)),
-                        clamp(result, Scalar(-1), Scalar(1)));
+        result = select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon,
+                        Vector2f(1.f, 0.f), clamp(result, -1.f, 1.f));
 
         return { result.y(), result.x() };
     }
 
     /// Equality test
     bool operator==(const Frame &frame) const {
-        return frame.s == s && frame.t == t && frame.n == n;
+        return all(eq(frame.s, s) && eq(frame.t, t) && eq(frame.n, n));
     }
 
     /// Inequality test
     bool operator!=(const Frame &frame) const {
-        return frame.s != s || frame.t != t || frame.n != n;
+        return any(neq(frame.s, s) || neq(frame.t, t) || neq(frame.n, n));
     }
 
     ENOKI_STRUCT(Frame, s, t, n)
 };
 
 /// Return a string representation of a frame
-template <typename Vector3>
-std::ostream &operator<<(std::ostream &os, const Frame<Vector3> &f) {
+template <typename Vector3f>
+std::ostream &operator<<(std::ostream &os, const Frame<Vector3f> &f) {
     os << "Frame[" << std::endl
        << "  s = " << string::indent(f.s, 6) << "," << std::endl
        << "  t = " << string::indent(f.t, 6) << "," << std::endl
@@ -186,16 +185,18 @@ std::ostream &operator<<(std::ostream &os, const Frame<Vector3> &f) {
  *
  * \param n
  *    A shading normal at a surface position
+ *
  * \param dp_du
  *    Position derivative of the underlying parameterization with respect to
  *    the 'u' coordinate
+ *
  * \param frame
  *    Used to return the computed frame
  */
-template <typename Normal3, typename Vector3,
-          typename Frame = mitsuba::Frame<Vector3>>
-Frame compute_shading_frame(const Normal3 &n, const Vector3 &dp_du) {
-    Vector3 s = normalize(dp_du - n * dot(n, dp_du));
+template <typename Normal3f, typename Vector3f,
+          typename Frame = mitsuba::Frame<Vector3f>>
+Frame compute_shading_frame(const Normal3f &n, const Vector3f &dp_du) {
+    Vector3f s = normalize(fnmadd(n, dot(n, dp_du), dp_du));
     return Frame(s, cross(n, s), n);
 }
 

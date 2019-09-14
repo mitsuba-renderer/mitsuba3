@@ -3,9 +3,6 @@ cmake_minimum_required (VERSION 3.2.0)
 project(mitsuba)
 
 # ---------- User options ----------
-option(MTS_DOUBLE_PRECISION      "Compile renderer in double precision?" OFF)
-option(MTS_DISABLE_APPROX_MATH   "Disable Enoki approximate math library" OFF)
-option(MTS_DISABLE_VECTORIZATION "Disable Enoki vectorization?" OFF)
 option(MTS_USE_EMBREE            "Use Embree for ray tracing operations?" OFF)
 option(MTS_ENABLE_AUTODIFF       "Enable derivative computation using CUDA?" OFF)
 
@@ -30,16 +27,6 @@ endif()
 
 # For developers: ability to disable Link Time Optimization to speed up builds
 option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
-
-# Option to manually set the packet size. Useful for debugging vectorization-related issues.
-set(MTS_PACKET_SIZE ""
-    CACHE STRING "SIMD packet size. Defaults to the largest value supported by the architecture.")
-if (MTS_DISABLE_VECTORIZATION)
-  add_definitions(-DENOKI_DISABLE_VECTORIZATION=1)
-  message(STATUS "Mitsuba: vectorization is *disabled*!")
-elseif (MTS_PACKET_SIZE)
-  add_definitions(-DMTS_PACKET_SIZE=${MTS_PACKET_SIZE})
-endif()
 
 # Catch unsupported combinations
 if (MTS_DOUBLE_PRECISION AND MTS_USE_EMBREE)
@@ -418,21 +405,6 @@ if (IS_BIG_ENDIAN)
   add_definitions(-DBIG_ENDIAN)
 else()
   add_definitions(-DLITTLE_ENDIAN)
-endif()
-
-if (MTS_DOUBLE_PRECISION)
-  add_definitions(-DDOUBLE_PRECISION)
-  message(STATUS "Mitsuba: compiling using double precision.")
-else()
-  add_definitions(-DSINGLE_PRECISION)
-  message(STATUS "Mitsuba: compiling using single precision.")
-endif()
-
-if (MTS_DISABLE_APPROX_MATH)
-  message(STATUS "Mitsuba: disabling Enoki's approximate math library.")
-  add_definitions(-DENOKI_APPROX_DEFAULT=0)
-else()
-  message(STATUS "Mitsuba: using Enoki's approximate math library.")
 endif()
 
 if (MTS_ENABLE_PROFILER)

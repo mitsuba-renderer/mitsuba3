@@ -49,7 +49,6 @@ add_library(mitsuba-render-obj OBJECT
 
   autodiff.cpp     ${INC_DIR}/autodiff.h
   bsdf.cpp         ${INC_DIR}/bsdf.h
-  common.cpp       ${INC_DIR}/common.h
   emitter.cpp      ${INC_DIR}/emitter.h
   endpoint.cpp     ${INC_DIR}/endpoint.h
   film.cpp         ${INC_DIR}/film.h

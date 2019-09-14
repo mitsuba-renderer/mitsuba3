@@ -5,22 +5,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-using Matrix2f     = enoki::Matrix<Float, 2>;
-using Matrix2fP    = enoki::Matrix<FloatP, 2>;
-using Matrix2fD    = enoki::Matrix<FloatD, 2>;
-
-using Matrix3f     = enoki::Matrix<Float, 3>;
-using Matrix3fP    = enoki::Matrix<FloatP, 3>;
-using Matrix3fD    = enoki::Matrix<FloatD, 3>;
-
-using Matrix4f     = enoki::Matrix<Float, 4>;
-using Matrix4fP    = enoki::Matrix<FloatP, 4>;
-using Matrix4fD    = enoki::Matrix<FloatD, 4>;
-
-using Quaternion4f  = enoki::Quaternion<Float>;
-using Quaternion4fP = enoki::Quaternion<FloatP>;
-using Quaternion4fD = enoki::Quaternion<FloatD>;
-
 /**
  * \brief Encapsulates a 4x4 homogeneous coordinate transformation along with
  * its inverse transpose
@@ -30,17 +14,14 @@ using Quaternion4fD = enoki::Quaternion<FloatD>;
  * behave differently under homogeneous coordinate transformations, hence
  * the need to represent them using separate types)
  */
-template <typename VectorN> struct Transform {
+template <typename Float, size_t Size> struct Transform {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
 
-    static constexpr size_t Size = array_size_v<VectorN>;
-
-    using Value   = value_t<VectorN>;
-    using Matrix  = enoki::Matrix<Value, Size>;
-    using Mask    = mask_t<Value>;
-    using Scalar  = scalar_t<Value>;
+    using Matrix  = enoki::Matrix<Float, Size>;
+    using Mask    = mask_t<Float>;
+    using Scalar  = scalar_t<Float>;
 
     //! @}
     // =============================================================
@@ -76,7 +57,7 @@ template <typename VectorN> struct Transform {
     }
 
     /// Get the translation part of a matrix
-    Vector<Value, Size - 1> translation() const {
+    Vector<Float, Size - 1> translation() const {
         return head<Size - 1>(matrix.coeff(Size - 1));
     }
 
@@ -102,7 +83,7 @@ template <typename VectorN> struct Transform {
     }
 
     /// Transform a point (handles affine/non-perspective transformations only)
-    template <typename T, typename Expr = expr_t<Value, T>>
+    template <typename T, typename Expr = expr_t<Float, T>>
     MTS_INLINE Point<Expr, Size - 1> transform_affine(const Point<T, Size - 1> &arg) const {
         Array<Expr, Size> result = matrix.coeff(Size - 1);
 
@@ -116,7 +97,7 @@ template <typename VectorN> struct Transform {
      * \brief Transform a 3D point
      * \remark In the Python API, this method is named \c transform_point
      */
-    template <typename T, typename Expr = expr_t<Value, T>>
+    template <typename T, typename Expr = expr_t<Float, T>>
     MTS_INLINE Point<Expr, Size - 1> operator*(const Point<T, Size - 1> &arg) const {
         Array<Expr, Size> result = matrix.coeff(Size - 1);
 
@@ -130,7 +111,7 @@ template <typename VectorN> struct Transform {
      * \brief Transform a 3D vector
      * \remark In the Python API, this method is named \c transform_vector
      */
-    template <typename T, typename Expr = expr_t<Value, T>>
+    template <typename T, typename Expr = expr_t<Float, T>>
     MTS_INLINE Vector<Expr, Size - 1> operator*(const Vector<T, Size - 1> &arg) const {
         Array<Expr, Size> result = matrix.coeff(0);
         result *= arg.x();
@@ -145,7 +126,7 @@ template <typename VectorN> struct Transform {
      * \brief Transform a 3D normal vector
      * \remark In the Python API, this method is named \c transform_normal
      */
-    template <typename T, typename Expr = expr_t<Value, T>>
+    template <typename T, typename Expr = expr_t<Float, T>>
     MTS_INLINE Normal<Expr, Size - 1> operator*(const Normal<T, Size - 1> &arg) const {
         Array<Expr, Size> result = inverse_transpose.coeff(0);
         result *= arg.x();
@@ -157,44 +138,44 @@ template <typename VectorN> struct Transform {
     }
 
     /// Transform a ray (for perspective transformations)
-    template <typename T, typename Expr = expr_t<Value, T>,
-              typename Result = Ray<Point<Expr, Size - 1>>>
-    MTS_INLINE Result operator*(const Ray<Point<T, Size - 1>> &ray) const {
+    template <typename T, typename Spectrum, typename Expr = expr_t<Float, T>,
+              typename Result = Ray<Point<Expr, Size - 1>, Spectrum>>
+    MTS_INLINE Result operator*(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
         return Result(operator*(ray.o), operator*(ray.d), ray.mint,
                       ray.maxt, ray.time, ray.wavelengths);
     }
 
     /// Transform a ray (for affine/non-perspective transformations)
-    template <typename T, typename Expr = expr_t<Value, T>,
-              typename Result = Ray<Point<Expr, Size - 1>>>
-    MTS_INLINE Result transform_affine(const Ray<Point<T, Size - 1>> &ray) const {
+    template <typename T, typename Spectrum, typename Expr = expr_t<Float, T>,
+              typename Result = Ray<Point<Expr, Size - 1>, Spectrum>>
+    MTS_INLINE Result transform_affine(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
         return Result(transform_affine(ray.o), transform_affine(ray.d),
                       ray.mint, ray.maxt, ray.time, ray.wavelengths);
     }
 
     /// Create a translation transformation
-    static Transform translate(const Vector<Value, Size - 1> &v) {
+    static Transform translate(const Vector<Float, Size - 1> &v) {
         return Transform(enoki::translate<Matrix>(v),
                          transpose(enoki::translate<Matrix>(-v)));
     }
 
     /// Create a scale transformation
-    static Transform scale(const Vector<Value, Size - 1> &v) {
+    static Transform scale(const Vector<Float, Size - 1> &v) {
         return Transform(enoki::scale<Matrix>(v),
                          // No need to transpose a diagonal matrix.
                          enoki::scale<Matrix>(rcp(v)));
     }
 
     /// Create a rotation transformation around an arbitrary axis in 3D. The angle is specified in degrees
-    template <size_t N = Size, std::enable_if_t<N == 4, int> = 0>
-    static Transform rotate(const Vector<Value, Size - 1> &axis, const Value &angle) {
+    template <size_t N = Size, enable_if_t<N == 4> = 0>
+    static Transform rotate(const Vector<Float, Size - 1> &axis, const Float &angle) {
         Matrix matrix = enoki::rotate<Matrix>(axis, deg_to_rad(angle));
         return Transform(matrix, matrix);
     }
 
     /// Create a rotation transformation in 2D. The angle is specified in degrees
-    template <size_t N = Size, std::enable_if_t<N == 3, int> = 0>
-    static Transform rotate(const Value &angle) {
+    template <size_t N = Size, enable_if_t<N == 3> = 0>
+    static Transform rotate(const Float &angle) {
         Matrix matrix = enoki::rotate<Matrix>(deg_to_rad(angle));
         return Transform(matrix, matrix);
     }
@@ -214,23 +195,22 @@ template <typename VectorN> struct Transform {
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
-    template <size_t N = Size, std::enable_if_t<N == 4, int> = 0>
-    static Transform perspective(const Value &fov, const Value &near,
-                                 const Value &far) {
-        Value recip = 1.f / (far - near);
+    template <size_t N = Size, enable_if_t<N == 4> = 0>
+    static Transform perspective(Float fov, Float near_, Float far_) {
+        Float recip = 1.f / (far_ - near_);
 
         /* Perform a scale so that the field of view is mapped
            to the interval [-1, 1] */
-        Value tan = enoki::tan(deg_to_rad(fov * .5f)),
+        Float tan = enoki::tan(deg_to_rad(fov * .5f)),
               cot = 1.f / tan;
 
-        Matrix trafo = diag<Matrix>(Vector<Value, Size>(cot, cot, far * recip, 0.0f));
-        trafo(2, 3) = -near * far * recip;
+        Matrix trafo = diag<Matrix>(Vector<Float, Size>(cot, cot, far_ * recip, 0.f));
+        trafo(2, 3) = -near_ * far_ * recip;
         trafo(3, 2) = 1.f;
 
-        Matrix inv_trafo = diag<Matrix>(Vector<Value, Size>(tan, tan, 0.f, rcp(near)));
+        Matrix inv_trafo = diag<Matrix>(Vector<Float, Size>(tan, tan, 0.f, rcp(near_)));
         inv_trafo(2, 3) = 1.f;
-        inv_trafo(3, 2) = (near - far) / (far * near);
+        inv_trafo(3, 2) = (near_ - far_) / (far_ * near_);
 
         return Transform(trafo, transpose(inv_trafo));
     }
@@ -241,10 +221,10 @@ template <typename VectorN> struct Transform {
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
-    template <size_t N = Size, std::enable_if_t<N == 4, int> = 0>
-    static Transform orthographic(const Value &near, const Value &far) {
-        return scale({1.f, 1.f, 1.f / (far - near)}) *
-               translate({ 0.f, 0.f, -near });
+    template <size_t N = Size, enable_if_t<N == 4> = 0>
+    static Transform orthographic(Float near_, Float far_) {
+        return scale({1.f, 1.f, 1.f / (far_ - near_)}) *
+               translate({ 0.f, 0.f, -near_ });
     }
 
     /** \brief Create a look-at camera transformation
@@ -253,11 +233,11 @@ template <typename VectorN> struct Transform {
      * \param target Target vector
      * \param up     Up vector
      */
-    template <size_t N = Size, std::enable_if_t<N == 4, int> = 0>
-    static Transform look_at(const Point<Value, 3> &origin,
-                             const Point<Value, 3> &target,
-                             const Vector<Value, 3> &up) {
-        using Vector3 = Vector<Value, 3>;
+    template <size_t N = Size, enable_if_t<N == 4> = 0>
+    static Transform look_at(const Point<Float, 3> &origin,
+                             const Point<Float, 3> &target,
+                             const Vector<Float, 3> &up) {
+        using Vector3 = Vector<Float, 3>;
 
         Vector3 dir = normalize(target - origin);
         dir = normalize(dir);
@@ -276,7 +256,7 @@ template <typename VectorN> struct Transform {
             concat(left, Scalar(0)),
             concat(new_up, Scalar(0)),
             concat(dir, Scalar(0)),
-            Vector<Value, 4>(0.f, 0.f, 0.f, 1.f)
+            Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         );
 
         inverse[3] = inverse * concat(-origin, Scalar(1));
@@ -285,26 +265,26 @@ template <typename VectorN> struct Transform {
     }
 
     /// Creates a transformation that converts from the standard basis to 'frame'
-    template <typename Vector3, size_t N = Size, std::enable_if_t<N == 4, int> = 0>
+    template <typename Vector3, size_t N = Size, enable_if_t<N == 4> = 0>
     static Transform to_frame(const Frame<Vector3> &frame) {
         Matrix result = Matrix::from_cols(
             concat(frame.s, Scalar(0)),
             concat(frame.t, Scalar(0)),
             concat(frame.n, Scalar(0)),
-            Vector<Value, 4>(0.f, 0.f, 0.f, 1.f)
+            Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         );
 
         return Transform(result, result);
     }
 
     /// Creates a transformation that converts from 'frame' to the standard basis
-    template <typename Vector3, size_t N = Size, std::enable_if_t<N == 4, int> = 0>
+    template <typename Vector3, size_t N = Size, enable_if_t<N == 4> = 0>
     static Transform from_frame(const Frame<Vector3> &frame) {
         Matrix result = Matrix::from_rows(
             concat(frame.s, Scalar(0)),
             concat(frame.t, Scalar(0)),
             concat(frame.n, Scalar(0)),
-            Vector<Value, 4>(0.f, 0.f, 0.f, 1.f)
+            Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         );
 
         return Transform(result, result);
@@ -327,7 +307,7 @@ template <typename VectorN> struct Transform {
         Mask mask(false);
         for (size_t i = 0; i < Size - 1; ++i) {
             for (size_t j = i; j < Size - 1; ++j) {
-                Value sum(0);
+                Float sum = 0.f;
                 for (size_t k = 0; k < Size - 1; ++k)
                     sum += matrix[i][k] * matrix[j][k];
 
@@ -339,7 +319,7 @@ template <typename VectorN> struct Transform {
 
     /// Extract a lower-dimensional submatrix
     template <size_t ExtractedSize = Size - 1,
-              typename Result = Transform<Vector<Value, ExtractedSize>>>
+              typename Result = Transform<Float, ExtractedSize>>
     MTS_INLINE Result extract() const {
         Result result;
         for (size_t i = 0; i < ExtractedSize - 1; ++i) {
@@ -379,6 +359,13 @@ template <typename VectorN> struct Transform {
  */
 class MTS_EXPORT_CORE AnimatedTransform : public Object {
 public:
+    using Float        = float;
+    using Vector3f     = Vector<Float, 3>;
+    using Point3f      = Point<Float, 3>;
+    using Matrix3f     = Matrix<Float, 3>;
+    using Quaternion4f = Quaternion<Float>;
+    using Transform4f  = Transform<Float, 4>;
+
     /// Represents a single keyframe in an animated transform
     struct Keyframe {
         /// Time value associated with this keyframe
@@ -393,7 +380,8 @@ public:
         /// 3D translation
         Vector3f trans;
 
-        Keyframe(const Float time, const Matrix3f &scale, const Quaternion4f &quat, const Vector3f &trans)
+        Keyframe(const Float time, const Matrix3f &scale,
+                 const Quaternion4f &quat, const Vector3f &trans)
             : time(time), scale(scale), quat(quat), trans(trans) { }
 
         bool operator==(const Keyframe &f) const {
@@ -409,41 +397,36 @@ public:
     /// Create an empty animated transform
     AnimatedTransform() = default;
 
-    /** Create a constant "animated" transform.
-     * The provided transformation will be used as long as no keyframes
-     * are specified. However, it will be overwritten as soon as the
-     * first keyframe is appended.
+    /**
+     * \brief Create an AnimatedTransform instance that is initialized with a
+     * constant transform
+     *
+     * The provided transformation will be used as long as no keyframes are
+     * specified. However, it will be overwritten as soon as the first keyframe
+     * is appended.
      */
-    AnimatedTransform(const Transform4f &trafo)
+    template <typename T>
+    AnimatedTransform(const Transform<T, 4> &trafo)
       : m_transform(trafo) { }
 
     virtual ~AnimatedTransform();
 
     /// Append a keyframe to the current animated transform
-    void append(Float time, const Transform4f &trafo);
+    template <typename Float>
+    void append(Float time, const Transform<Float, 4> &trafo);
 
     /// Append a keyframe to the current animated transform
     void append(const Keyframe &keyframe);
 
     /// Look up an interpolated transform at the given time
-    Transform4f eval(Float time) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
-    Transform4f eval(Float time, bool /* unused */) const { return eval(time); }
-
-    /// Vectorized version of \ref eval()
-    Transform4fP eval(FloatP time, MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref eval()
-    Transform4fD eval(FloatD time, MaskD active = true) const;
-#endif
+    template <typename Float>
+    Transform<Float, 4> eval(Float time, mask_t<Float> active = true) const;
 
     /**
      * \brief Return an axis-aligned box bounding the amount of translation
      * throughout the animation sequence
      */
-    BoundingBox3f translation_bounds() const;
+    BoundingBox<Point3f> translation_bounds() const;
 
     /// Determine whether the transformation involves any kind of scaling
     bool has_scale() const;
@@ -455,17 +438,7 @@ public:
     const Keyframe &operator[](size_t i) const { return m_keyframes[i]; }
 
     /// Equality comparison operator
-    bool operator==(const AnimatedTransform &t) const {
-        if (m_transform != t.m_transform ||
-            m_keyframes.size() != t.m_keyframes.size()) {
-            return false;
-        }
-        for (size_t i = 0; i < m_keyframes.size(); ++i) {
-            if (m_keyframes[i] != t.m_keyframes[i])
-                return false;
-        }
-        return true;
-    }
+    bool operator==(const AnimatedTransform &t) const;
 
     bool operator!=(const AnimatedTransform &t) const {
         return !operator==(t);
@@ -476,10 +449,6 @@ public:
 
     MTS_DECLARE_CLASS()
 
-protected:
-    template <typename Value>
-    Transform<Vector<Value, 4>> eval_impl(Value time, mask_t<Value> active) const;
-
 private:
     Transform4f m_transform;
     std::vector<Keyframe> m_keyframes;
@@ -489,8 +458,8 @@ private:
 //! @{ \name Printing
 // -----------------------------------------------------------------------
 
-template <typename VectorN>
-std::ostream &operator<<(std::ostream &os, const Transform<VectorN> &t) {
+template <typename Float, size_t Size>
+std::ostream &operator<<(std::ostream &os, const Transform<Float, Size> &t) {
     os << t.matrix;
     return os;
 }

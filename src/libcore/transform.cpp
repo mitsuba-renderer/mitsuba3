@@ -130,6 +130,17 @@ BoundingBox3f AnimatedTransform::translation_bounds() const {
     return BoundingBox3f();
 }
 
+    bool AnimatedTransform::operator==(const AnimatedTransform &t) const {
+        if (m_transform != t.m_transform ||
+            m_keyframes.size() != t.m_keyframes.size())
+            return false;
+        for (size_t i = 0; i < m_keyframes.size(); ++i) {
+            if (m_keyframes[i] != t.m_keyframes[i])
+                return false;
+        }
+        return true;
+    }
+
 std::string AnimatedTransform::to_string() const {
     std::ostringstream oss;
     oss << "AnimatedTransform[" << std::endl

@@ -13,72 +13,25 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Integrator::Integrator(const Properties & props) {
-    m_monochrome = props.bool_("monochrome");
-}
-
-size_t Integrator::register_callback(CallbackFunction cb, Float period) {
-    m_callbacks.push_back(CallbackInfo(cb, period));
-    return m_callbacks.size() - 1;
-}
-
-void Integrator::remove_callback(size_t cb_index) {
-    if (cb_index == (size_t) -1)
-        m_callbacks.clear();
-    else {
-        Assert(cb_index < m_callbacks.size());
-        m_callbacks.erase(m_callbacks.begin() + cb_index);
-    }
-}
-
-void Integrator::notify(Bitmap *bitmap, Float extra) {
-    if (m_callbacks.empty())
-        return;
-    Float current_time = m_cb_timer.value() / 1000.f;
-    for (auto &entry : m_callbacks) {
-        auto &last_called = (Float &) entry.last_called;
-        if (last_called < 0.f || last_called > current_time ||
-            current_time - last_called > entry.period) {
-            entry.f(Thread::thread()->thread_id(), bitmap, extra);
-            last_called = current_time;
-        }
-    }
-}
+Integrator::Integrator(const Properties &props) { }
 
 // -----------------------------------------------------------------------------
 
 SamplingIntegrator::SamplingIntegrator(const Properties &props)
     : Integrator(props) {
-    m_block_size = props.size_("block_size", MTS_BLOCK_SIZE);
-    size_t b = math::round_to_power_of_two(m_block_size);
-    m_samples_per_pass = props.size_("samples_per_pass", (size_t) -1);
-
-    if (b != m_block_size) {
-        m_block_size = b;
-        Log(EWarn, "Setting block size to next higher power of two: %i", m_block_size);
+    m_block_size = (uint32_t) props.size_("block_size", MTS_BLOCK_SIZE);
+    uint32_t block_size = math::round_to_power_of_two(m_block_size);
+    if (block_size != m_block_size) {
+        m_block_size = block_size;
+        Log(EWarn, "Setting block size from %i to next higher power of two: %i", block_size,
+            m_block_size);
     }
 
+    m_samples_per_pass = (uint32_t) props.size_("samples_per_pass", (size_t) -1);
     m_timeout = props.float_("timeout", -1.f);
 }
 
 SamplingIntegrator::~SamplingIntegrator() { }
-
-Spectrumf SamplingIntegrator::eval(const RayDifferential3f &,
-                                   RadianceSample3f &) const {
-    NotImplementedError("eval");
-}
-
-SpectrumfP SamplingIntegrator::eval(const RayDifferential3fP &,
-                                    RadianceSample3fP &, MaskP) const {
-    NotImplementedError("eval_p");
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-SpectrumfD SamplingIntegrator::eval(const RayDifferential3fD &,
-                                    RadianceSample3fD &, MaskD) const {
-    NotImplementedError("eval_d");
-}
-#endif
 
 void SamplingIntegrator::cancel() {
     m_stop = true;
@@ -230,86 +183,6 @@ void SamplingIntegrator::render_block_scalar(const Scene *scene,
     }
 }
 
-void SamplingIntegrator::render_block_vector(const Scene *scene,
-                                             Sampler *sampler,
-                                             ImageBlock *block,
-                                             Point2fX &points,
-                                             size_t sample_count_) const {
-    const Sensor *sensor = scene->sensor();
-    block->clear();
-    uint32_t sample_count = (uint32_t)(
-        sample_count_ == (size_t) -1 ? sampler->sample_count() : sample_count_);
-
-    if (block->size().x() != block->size().y()
-        || (uint32_t) hprod(block->size()) * sample_count
-           != (uint32_t) slices(points)) {
-
-        size_t max_pixel_count = m_block_size * m_block_size,
-               n_entries = 0;
-        // TODO: this scales poorly for large sample counts and / or CPU counts.
-        set_slices(points, max_pixel_count * sample_count);
-        for (uint32_t i = 0; i < max_pixel_count; ++i) {
-            Point2u p = enoki::morton_decode<Point2u>(i);
-            if (any(p >= block->size()))
-                continue;
-            Point2f pf = Point2f(p);
-
-            for (uint32_t j = 0; j < sample_count; ++j)
-                slice(points, n_entries++) = pf;
-        }
-        set_slices(points, n_entries);
-    }
-
-    Vector2f inv_resolution = 1.f / sensor->film()->crop_size();
-
-    Vector2fP offset = block->offset(),
-              aperture_sample = .5f;
-
-    RadianceSample3fP rs(scene, sampler);
-
-    bool needs_aperture_sample = sensor->needs_aperture_sample(),
-         needs_time_sample = sensor->shutter_open_time() == 0;
-
-    Float diff_scale_factor = rsqrt((Float) sampler->sample_count());
-    UInt32P index = arange<UInt32P>();
-
-    for (size_t i = 0; i < packets(points) && !should_stop(); ++i) {
-        MaskP active = index < slices(points);
-        Vector2fP position_sample =
-            packet(points, i) + offset + rs.next_2d(active);
-
-        if (needs_aperture_sample)
-            aperture_sample = rs.next_2d(active);
-
-        FloatP time = sensor->shutter_open();
-        if (needs_time_sample)
-            time += rs.next_1d(active) * sensor->shutter_open_time();
-
-        FloatP wavelength_sample = rs.next_1d(active);
-
-        auto adjusted_position =
-            (position_sample - sensor->film()->crop_offset()) * inv_resolution;
-        auto [ray, ray_weight] = sensor->sample_ray_differential(
-            time, wavelength_sample, adjusted_position, aperture_sample,
-            active);
-
-        ray.scale_differential(diff_scale_factor);
-
-        SpectrumfP result;
-        /* Integrator::eval */ {
-            ScopedPhase p(EProfilerPhase::ESamplingIntegratorEvalP);
-            result = eval(ray, rs);
-        }
-        /* ImageBlock::put */ {
-            ScopedPhase p(EProfilerPhase::EImageBlockPutP);
-            block->put(position_sample, ray.wavelengths,
-                       ray_weight * result, rs.alpha, active);
-        }
-
-        index += (uint32_t) PacketSize;
-    }
-}
-
 // -----------------------------------------------------------------------------
 
 MonteCarloIntegrator::MonteCarloIntegrator(const Properties &props)
@@ -329,87 +202,6 @@ MonteCarloIntegrator::MonteCarloIntegrator(const Properties &props)
 }
 
 MonteCarloIntegrator::~MonteCarloIntegrator() { }
-
-// -----------------------------------------------------------------------------
-
-PolarizedMonteCarloIntegrator::PolarizedMonteCarloIntegrator(const Properties &props)
-    : MonteCarloIntegrator(props) { }
-
-PolarizedMonteCarloIntegrator::~PolarizedMonteCarloIntegrator() { }
-
-void PolarizedMonteCarloIntegrator::render_block_scalar(const Scene *scene, Sampler *sampler,
-                                                        ImageBlock *block,
-                                                        size_t sample_count_) const {
-    const Sensor *sensor = scene->sensor();
-    block->clear();
-    uint32_t pixel_count  = (uint32_t)(m_block_size * m_block_size),
-             sample_count = (uint32_t)(sample_count_ == (size_t) -1
-                                           ? sampler->sample_count()
-                                           : sample_count_);
-
-    RadianceSample3f rs(scene, sampler);
-    bool needs_aperture_sample = sensor->needs_aperture_sample();
-    bool needs_time_sample = sensor->shutter_open_time() > 0;
-
-    Float diff_scale_factor = rsqrt((Float) sampler->sample_count());
-
-    Point2f aperture_sample(.5f);
-    Vector2f inv_resolution = 1.f / sensor->film()->crop_size();
-
-    for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
-        Point2u p = enoki::morton_decode<Point2u>(i);
-        if (any(p >= block->size()))
-            continue;
-
-        p += block->offset();
-        for (uint32_t j = 0; j < sample_count && !should_stop(); ++j) {
-            Vector2f position_sample = p + rs.next_2d();
-
-            if (needs_aperture_sample)
-                aperture_sample = rs.next_2d();
-
-            Float time = sensor->shutter_open();
-            if (needs_time_sample)
-                time += rs.next_1d() * sensor->shutter_open_time();
-
-            Float wavelength_sample = rs.next_1d();
-
-            auto adjusted_position =
-                (position_sample - sensor->film()->crop_offset()) *
-                inv_resolution;
-            auto [ray, ray_weight] = sensor->sample_ray_differential_pol(
-                time, wavelength_sample, adjusted_position, aperture_sample);
-
-            ray.scale_differential(diff_scale_factor);
-
-            MuellerMatrixSf result;
-            /* Integrator::eval_pol */ {
-                ScopedPhase sp(EProfilerPhase::ESamplingIntegratorEval);
-                result = eval_pol(ray, rs);
-            }
-
-            result = ray_weight * result;
-
-            // Only first column of this tensor contains actual Stokes vector
-            StokesVectorSf stokes = result.col(0);
-            /* First element is intensity that is stored in final image. Due to
-               rounding errors, this can sometimes be slightly negative. */
-            Spectrumf intensity = max(0.f, stokes[0]);
-
-            /* ImageBlock::put */ {
-                ScopedPhase sp(EProfilerPhase::EImageBlockPut);
-                block->put(position_sample, ray.wavelengths,
-                           intensity, rs.alpha);
-            }
-        }
-    }
-}
-
-void PolarizedMonteCarloIntegrator::render_block_vector(const Scene * /*scene*/, Sampler * /*sampler*/,
-                                                        ImageBlock * /*block*/, Point2fX & /*points*/,
-                                                        size_t /*sample_count*/) const {
-    Throw("Polarized rendering is only implemented in \"scalar\" mode for now.");
-}
 
 MTS_IMPLEMENT_CLASS(Integrator, Object)
 MTS_IMPLEMENT_CLASS(SamplingIntegrator, Integrator)

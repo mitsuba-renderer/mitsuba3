@@ -45,47 +45,17 @@ public:
      *
      * \param unser
      *     Pointer to a unserialization construction function
-     */
-    Class(const std::string &name,
-          const std::string &parent,
-          bool abstract = false,
-          ConstructFunctor constr = nullptr,
-          UnserializeFunctor unser = nullptr);
-
-    /**
-     * \brief Construct a new class descriptor
-     *
-     * This constructor additionally takes an alias name that is used to refer
-     * to instances of this type in Mitsuba's scene specification language.
-     *
-     * This method should never be called manually. Instead, use the \ref
-     * MTS_IMPLEMENT_CLASS_ALIAS macro to automatically do this for you.
-     *
-     * \param name
-     *     Name of the class
      *
      * \param alias
-     *     Name used to refer to instances of this type in Mitsuba's
-     *     scene description language (usually the same as \c name)
-     *
-     * \param parent
-     *     Name of the parent class
-     *
-     * \param abstract
-     *     \c true if the class contains pure virtual methods
-     *
-     * \param constr
-     *     Pointer to a default construction function
-     *
-     * \param unser
-     *     Pointer to a unserialization construction function
+     *     Optional: name used to refer to instances of this type in Mitsuba's
+     *     scene description language
      */
     Class(const std::string &name,
-          const std::string &alias,
           const std::string &parent,
           bool abstract = false,
           ConstructFunctor constr = nullptr,
-          UnserializeFunctor unser = nullptr);
+          UnserializeFunctor unser = nullptr,
+          const std::string &alias = "");
 
     /// Return the name of the represented class
     const std::string &name() const { return m_name; }
@@ -184,20 +154,32 @@ private:
  * };
  * \endcode
  */
-#define MTS_DECLARE_CLASS() \
-    virtual const Class *class_() const override; \
-public: \
+#define MTS_DECLARE_CLASS()                                                                        \
+    virtual const Class *class_() const override;                                                  \
+public:                                                                                            \
     static Class *m_class;
 
-
 NAMESPACE_BEGIN(detail)
-template <typename T, typename std::enable_if<is_constructible_v<T, const Properties &>, int>::type = 0>
+/// Replacement for std::is_constructible which also works when the destructor is not accessible
+template <typename T, typename... Args> struct is_constructible {
+private:
+    static std::false_type test(...);
+    template <typename T2 = T>
+    static std::true_type test(decltype(new T2(std::declval<Args>()...)) value);
+public:
+    static constexpr bool value = decltype(test(std::declval<T *>()))::value;
+};
+
+template <typename T, typename... Args>
+constexpr bool is_constructible_v = is_constructible<T, Args...>::value;
+
+template <typename T, typename std::enable_if_t<is_constructible_v<T, const Properties &>, int> = 0>
 Class::ConstructFunctor get_construct_functor() { return [](const Properties &p) -> Object * { return new T(p); }; }
-template <typename T, typename std::enable_if<!is_constructible_v<T, const Properties &>, int>::type = 0>
+template <typename T, typename std::enable_if_t<!is_constructible_v<T, const Properties &>, int> = 0>
 Class::ConstructFunctor get_construct_functor() { return nullptr; }
-template <typename T, typename std::enable_if<is_constructible_v<T, Stream *>, int>::type = 0>
+template <typename T, typename std::enable_if_t<is_constructible_v<T, Stream *>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return [](Stream *s) -> Object * { return new T(s); }; }
-template <typename T, typename std::enable_if<!is_constructible_v<T, Stream *>, int>::type = 0>
+template <typename T, typename std::enable_if_t<!is_constructible_v<T, Stream *>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
 NAMESPACE_END(detail)
 
@@ -214,31 +196,45 @@ NAMESPACE_END(detail)
  * MTS_IMPLEMENT_CLASS(MyObject, Object)
  * \endcode
  *
- * \param Name Name of the class
- * \param Parent Name of the parent class
+ * \param Name
+ *     Name of the class
+ *
+ * \param Parent
+ *     Name of the parent class
  */
-#define MTS_IMPLEMENT_CLASS(Name, Parent) \
-    Class *Name::m_class = new Class(#Name, #Parent, \
-            std::is_abstract_v<Name>, \
-            ::mitsuba::detail::get_construct_functor<Name>(), \
-            ::mitsuba::detail::get_unserialize_functor<Name>()); \
+#define MTS_IMPLEMENT_CLASS(Name, Parent, ...)                                                     \
+    Class *Name::m_class = new Class(#Name, #Parent, std::is_abstract_v<Name>,                     \
+                                     ::mitsuba::detail::get_construct_functor<Name>(),             \
+                                     ::mitsuba::detail::get_unserialize_functor<Name>(),           \
+                                      ## __VA_ARGS__);                                             \
     const Class *Name::class_() const { return m_class; }
 
-#define MTS_IMPLEMENT_CLASS_ALIAS(Name, Alias, Parent) \
-    Class *Name::m_class = new Class(#Name, Alias, #Parent, \
-            std::is_abstract_v<Name>, \
-            ::mitsuba::detail::get_construct_functor<Name>(), \
-            ::mitsuba::detail::get_unserialize_functor<Name>()); \
-    const Class *Name::class_() const { return m_class; }
+/**
+ * \brief Creates basic RTTI support for a template class parameterized
+ * by a floating point and spectrum
+ *
+ * Many Mitsuba classes are actually templates that are parameterized by a
+ * floating point type and a spectral type that is used to represent color
+ * information. This macro should be used instead of \ref MTS_IMPLEMENT_CLASS
+ * when \c Name refers to such a template class.
+ *
+ * \param Name
+ *     Name of the class
+ *
+ * \param Parent
+ *     Name of the parent class
+ */
+#define MTS_IMPLEMENT_CLASS_TEMPLATE(Name, Parent, ...)                                            \
+    template <typename Value, typename Spectrum>                                                   \
+    Class *Name<Value, Spectrum>::m_class =                                                        \
+        new Class(#Name, #Parent, std::is_abstract_v<Name>,                                        \
+                  ::mitsuba::detail::get_construct_functor<Name>(),                                \
+                  ::mitsuba::detail::get_unserialize_functor<Name>(), ##__VA_ARGS__);              \
+    template <typename Value, typename Spectrum>                                                   \
+    const Class *Name<Value, Spectrum>::class_() const {                                           \
+        return m_class;                                                                            \
+    }
 
 extern MTS_EXPORT_CORE const Class *m_class;
-
-#define MTS_EXPORT_PLUGIN(name, descr) \
-    extern "C" { \
-        MTS_EXPORT Object *CreateObject(const Properties &props) { \
-            return new name(props); \
-        } \
-        MTS_EXPORT const char *Description = descr; \
-    }
 
 NAMESPACE_END(mitsuba)

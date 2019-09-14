@@ -149,8 +149,6 @@ eval())doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_eval_3 = R"doc(Vectorized version of eval())doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_eval_4 = R"doc(Differentiable version of eval())doc";
-
 static const char *__doc_mitsuba_AnimatedTransform_eval_impl = R"doc()doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Determine whether the transformation involves any kind of scaling)doc";
@@ -508,8 +506,6 @@ eval())doc";
 
 static const char *__doc_mitsuba_BSDF_eval_3 = R"doc(Vectorized version of eval())doc";
 
-static const char *__doc_mitsuba_BSDF_eval_4 = R"doc(Differentiable version of eval())doc";
-
 static const char *__doc_mitsuba_BSDF_eval_pol =
 R"doc(Polarized version of eval()
 
@@ -532,8 +528,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 eval_pol())doc";
 
 static const char *__doc_mitsuba_BSDF_eval_pol_3 = R"doc(Vectorized version of eval_pol())doc";
-
-static const char *__doc_mitsuba_BSDF_eval_pol_4 = R"doc(Differentiable version of eval_pol())doc";
 
 static const char *__doc_mitsuba_BSDF_flags = R"doc(Flags for all components combined.)doc";
 
@@ -580,8 +574,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 pdf())doc";
 
 static const char *__doc_mitsuba_BSDF_pdf_3 = R"doc(Vectorized version of pdf())doc";
-
-static const char *__doc_mitsuba_BSDF_pdf_4 = R"doc(Differentiable version of pdf())doc";
 
 static const char *__doc_mitsuba_BSDF_sample =
 R"doc(Importance sample the BSDF model
@@ -634,8 +626,6 @@ sample())doc";
 
 static const char *__doc_mitsuba_BSDF_sample_3 = R"doc(Vectorized version of sample())doc";
 
-static const char *__doc_mitsuba_BSDF_sample_4 = R"doc(Differentiable version of sample())doc";
-
 static const char *__doc_mitsuba_BSDF_sample_pol =
 R"doc(Polarized version of sample()
 
@@ -660,8 +650,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_pol())doc";
 
 static const char *__doc_mitsuba_BSDF_sample_pol_3 = R"doc(Vectorized version of sample_pol())doc";
-
-static const char *__doc_mitsuba_BSDF_sample_pol_4 = R"doc(Differentiable version of sample_pol())doc";
 
 static const char *__doc_mitsuba_BSDF_to_string = R"doc(Return a human-readable representation of the BSDF)doc";
 
@@ -1523,15 +1511,11 @@ static const char *__doc_mitsuba_ContinuousSpectrum_eval_2 = R"doc(Wrapper for s
 
 static const char *__doc_mitsuba_ContinuousSpectrum_eval_3 = R"doc(Vectorized version of eval())doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_eval_4 = R"doc(Differentiable version of eval())doc";
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_4 = R"doc(Evaluate the texture at the given surface interaction)doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_eval_5 = R"doc(Evaluate the texture at the given surface interaction)doc";
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_5 = R"doc(Wrapper for scalar eval() with a mask (which will be ignored))doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_eval_6 = R"doc(Wrapper for scalar eval() with a mask (which will be ignored))doc";
-
-static const char *__doc_mitsuba_ContinuousSpectrum_eval_7 = R"doc(Vectorized version of eval())doc";
-
-static const char *__doc_mitsuba_ContinuousSpectrum_eval_8 = R"doc(Differentiable version of eval())doc";
+static const char *__doc_mitsuba_ContinuousSpectrum_eval_6 = R"doc(Vectorized version of eval())doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_mean =
 R"doc(Return the mean value of the spectrum over the support
@@ -1554,20 +1538,16 @@ static const char *__doc_mitsuba_ContinuousSpectrum_pdf_2 = R"doc(Wrapper for sc
 
 static const char *__doc_mitsuba_ContinuousSpectrum_pdf_3 = R"doc(Vectorized version of pdf())doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_pdf_4 = R"doc(Differentiable version of pdf())doc";
-
-static const char *__doc_mitsuba_ContinuousSpectrum_pdf_5 =
+static const char *__doc_mitsuba_ContinuousSpectrum_pdf_4 =
 R"doc(Return the probability distribution of the sample() method as a
 probability per unit wavelength (in units of 1/nm).
 
 Not every implementation necessarily provides this function. The
 default implementation throws an exception.)doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_pdf_6 = R"doc(Wrapper for scalar pdf() with a mask (which will be ignored))doc";
+static const char *__doc_mitsuba_ContinuousSpectrum_pdf_5 = R"doc(Wrapper for scalar pdf() with a mask (which will be ignored))doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_pdf_7 = R"doc(Vectorized version of pdf())doc";
-
-static const char *__doc_mitsuba_ContinuousSpectrum_pdf_8 = R"doc(Differentiable version of pdf())doc";
+static const char *__doc_mitsuba_ContinuousSpectrum_pdf_6 = R"doc(Vectorized version of pdf())doc";
 
 static const char *__doc_mitsuba_ContinuousSpectrum_sample =
 R"doc(Importance sample the spectral power distribution
@@ -1588,9 +1568,7 @@ static const char *__doc_mitsuba_ContinuousSpectrum_sample_2 = R"doc(Wrapper for
 
 static const char *__doc_mitsuba_ContinuousSpectrum_sample_3 = R"doc(Vectorized version of sample())doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_sample_4 = R"doc(Differentiable version of sample())doc";
-
-static const char *__doc_mitsuba_ContinuousSpectrum_sample_5 =
+static const char *__doc_mitsuba_ContinuousSpectrum_sample_4 =
 R"doc(Importance sample the (textured) spectral power distribution
 
 Not every implementation necessarily provides this function. The
@@ -1608,11 +1586,9 @@ Returns:
 2. The Monte Carlo importance weight (Spectral power distribution
 value divided by the sampling density))doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_sample_6 = R"doc(Wrapper for scalar sample() with a mask (which will be ignored))doc";
+static const char *__doc_mitsuba_ContinuousSpectrum_sample_5 = R"doc(Wrapper for scalar sample() with a mask (which will be ignored))doc";
 
-static const char *__doc_mitsuba_ContinuousSpectrum_sample_7 = R"doc(Vectorized version of sample())doc";
-
-static const char *__doc_mitsuba_ContinuousSpectrum_sample_8 = R"doc(Differentiable version of sample())doc";
+static const char *__doc_mitsuba_ContinuousSpectrum_sample_6 = R"doc(Vectorized version of sample())doc";
 
 static const char *__doc_mitsuba_DefaultFormatter =
 R"doc(The default formatter used to turn log messages into a human-readable
@@ -1664,53 +1640,7 @@ be used to enumerate differentiable model parameters.)doc";
 
 static const char *__doc_mitsuba_DifferentiableObject_class = R"doc()doc";
 
-static const char *__doc_mitsuba_DifferentiableObject_operator_delete = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableObject_operator_delete_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableObject_operator_delete_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableObject_operator_delete_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableObject_operator_new = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableObject_operator_new_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableObject_operator_new_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableObject_operator_new_4 = R"doc()doc";
-
 static const char *__doc_mitsuba_DifferentiableObject_parameters_changed = R"doc(Update internal data structures after applying changes to parameters)doc";
-
-static const char *__doc_mitsuba_DifferentiableObject_put_parameters = R"doc(Register all differentiable parameters with the container ``dp``)doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters =
-R"doc(Container for differentiable scene parameters
-
-This data structure stores a list of differentiable scene parameters.
-Mitsuba objects (e.g. BRDFs, textures, etc.) can deposit information
-about differentiable scene parameters (via put()) that are then
-accessible in an optimization context (e.g. via PyTorch).)doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_Details = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_DifferentiableParameters = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_DifferentiableParameters_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_class = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_d = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_operator_assign = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_put = R"doc(Record a reference to a differentiable parameter)doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_put_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_set_prefix = R"doc(Set a prefix that will be appended to subsequent \put() calls)doc";
-
-static const char *__doc_mitsuba_DifferentiableParameters_to_string = R"doc(Return a human-readable string representation)doc";
 
 static const char *__doc_mitsuba_DirectionSample =
 R"doc(Record for solid-angle based area sampling techniques
@@ -2147,8 +2077,6 @@ eval())doc";
 
 static const char *__doc_mitsuba_Endpoint_eval_3 = R"doc(Vectorized version of eval())doc";
 
-static const char *__doc_mitsuba_Endpoint_eval_4 = R"doc(Differentiable version of eval())doc";
-
 static const char *__doc_mitsuba_Endpoint_eval_pol =
 R"doc(Polarized version of eval()
 
@@ -2161,8 +2089,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 eval_pol())doc";
 
 static const char *__doc_mitsuba_Endpoint_eval_pol_3 = R"doc(Vectorized version of eval_pol())doc";
-
-static const char *__doc_mitsuba_Endpoint_eval_pol_4 = R"doc(Differentiable version of eval_pol())doc";
 
 static const char *__doc_mitsuba_Endpoint_m_medium = R"doc()doc";
 
@@ -2203,8 +2129,6 @@ pdf_direction())doc";
 
 static const char *__doc_mitsuba_Endpoint_pdf_direction_3 = R"doc(Vectorized version of pdf_direction())doc";
 
-static const char *__doc_mitsuba_Endpoint_pdf_direction_4 = R"doc(Differentiable version of pdf_direction())doc";
-
 static const char *__doc_mitsuba_Endpoint_sample_direction =
 R"doc(Given a reference point in the scene, sample a direction from the
 reference point towards the endpoint (ideally proportional to the
@@ -2240,8 +2164,6 @@ sample_direction())doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_direction_3 = R"doc(Vectorized version of sample_direction())doc";
 
-static const char *__doc_mitsuba_Endpoint_sample_direction_4 = R"doc(Differentiable version of sample_direction())doc";
-
 static const char *__doc_mitsuba_Endpoint_sample_direction_pol =
 R"doc(Polarized version of sample_direction()
 
@@ -2258,8 +2180,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_direction_pol())doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_direction_pol_3 = R"doc(Vectorized version of sample_direction_pol())doc";
-
-static const char *__doc_mitsuba_Endpoint_sample_direction_pol_4 = R"doc(Differentiable version of sample_direction_pol())doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_ray =
 R"doc(Importance sample a ray proportional to the endpoint's
@@ -2304,8 +2224,6 @@ sample_ray())doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_ray_3 = R"doc(Vectorized version of sample_ray())doc";
 
-static const char *__doc_mitsuba_Endpoint_sample_ray_4 = R"doc(Differentiable version of sample_ray())doc";
-
 static const char *__doc_mitsuba_Endpoint_sample_ray_pol =
 R"doc(Polarized version of sample_ray()
 
@@ -2321,8 +2239,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_ray_pol())doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_ray_pol_3 = R"doc(Vectorized version of sample_ray_pol)doc";
-
-static const char *__doc_mitsuba_Endpoint_sample_ray_pol_4 = R"doc(Differentiable version of sample_ray_pol)doc";
 
 static const char *__doc_mitsuba_Endpoint_set_medium = R"doc(Set the medium that surrounds the emitter.)doc";
 
@@ -2724,14 +2640,6 @@ static const char *__doc_mitsuba_ImageBlock_bitmap_2 =
 R"doc(Return a pointer to the underlying bitmap representation (const
 version))doc";
 
-static const char *__doc_mitsuba_ImageBlock_bitmap_d =
-R"doc(Return the differentiable variables representing the image (one per
-channel))doc";
-
-static const char *__doc_mitsuba_ImageBlock_bitmap_d_2 =
-R"doc(Return the differentiable variable representing the image (one per
-channel))doc";
-
 static const char *__doc_mitsuba_ImageBlock_border_size = R"doc(Return the border region used by the reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ImageBlock_channel_count = R"doc(Return the number of channels stored by the image block)doc";
@@ -2740,13 +2648,9 @@ static const char *__doc_mitsuba_ImageBlock_class = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_clear = R"doc(Clear everything to zero.)doc";
 
-static const char *__doc_mitsuba_ImageBlock_clear_d = R"doc()doc";
-
 static const char *__doc_mitsuba_ImageBlock_height = R"doc(Return the bitmap's height in pixels)doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_bitmap = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_m_bitmap_d = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_border_size = R"doc()doc";
 
@@ -2844,8 +2748,6 @@ Parameter ``value``:
 Returns:
     ``False`` if one of the sample values was *invalid*, e.g. NaN or
     negative. A warning is also printed if ``m_warn`` is enabled.)doc";
-
-static const char *__doc_mitsuba_ImageBlock_put_6 = R"doc(Differentiable version of put())doc";
 
 static const char *__doc_mitsuba_ImageBlock_set_offset =
 R"doc(Set the current block offset. This corresponds to the offset from a
@@ -3236,8 +3138,6 @@ static const char *__doc_mitsuba_Mesh_bbox_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_embree_geometry = R"doc(Return the Embree version of this shape)doc";
-
 static const char *__doc_mitsuba_Mesh_ensure_table_ready =
 R"doc(Ensures that the sampling table is ready. This function is not really
 const, but only makes (thread-safe) writes to m_area_distribution,
@@ -3302,8 +3202,6 @@ static const char *__doc_mitsuba_Mesh_m_face_struct = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_faces = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_faces_d = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_m_inv_surface_area = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_mutex = R"doc()doc";
@@ -3311,20 +3209,6 @@ static const char *__doc_mitsuba_Mesh_m_mutex = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_normal_offset = R"doc(Byte offset of the normal data within the vertex buffer)doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_context = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_faces_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_geometry = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_geometry_ready = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_normals_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_positions_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_texcoords_buf = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_surface_area = R"doc()doc";
 
@@ -3334,15 +3218,9 @@ static const char *__doc_mitsuba_Mesh_m_to_world = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_vertex_normals_d = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_vertex_positions_d = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_m_vertex_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_struct = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_vertex_texcoords_d = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
 
@@ -3352,15 +3230,9 @@ static const char *__doc_mitsuba_Mesh_normal_derivative_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_normal_derivative_impl = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
-
-static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc(Update internal data structures after applying changes to parameters)doc";
-
 static const char *__doc_mitsuba_Mesh_pdf_position = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_pdf_position_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_pdf_position_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_pdf_position_impl = R"doc()doc";
 
@@ -3371,8 +3243,6 @@ Computes the surface area and sets up m_area_distribution. Thread-
 safe, since it uses a mutex.)doc";
 
 static const char *__doc_mitsuba_Mesh_primitive_count = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_put_parameters = R"doc(Register all differentiable parameters with the container ``dp``)doc";
 
 static const char *__doc_mitsuba_Mesh_ray_intersect_triangle =
 R"doc(Ray-triangle intersection test
@@ -3400,8 +3270,6 @@ static const char *__doc_mitsuba_Mesh_recompute_vertex_normals = R"doc(Compute s
 static const char *__doc_mitsuba_Mesh_sample_position = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_sample_position_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_sample_position_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_sample_position_impl = R"doc()doc";
 
@@ -3862,6 +3730,10 @@ triangle mesh or a position on the aperture of a sensor. When
 applicable, such positions are stored in the ``uv`` attribute.)doc";
 
 static const char *__doc_mitsuba_Profiler = R"doc()doc";
+
+static const char *__doc_mitsuba_Profiler_Profiler = R"doc()doc";
+
+static const char *__doc_mitsuba_Profiler_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Profiler_print_report = R"doc()doc";
 
@@ -4446,8 +4318,6 @@ static const char *__doc_mitsuba_ReconstructionFilter_eval = R"doc(Evaluate the 
 
 static const char *__doc_mitsuba_ReconstructionFilter_eval_2 = R"doc(Evaluate the filter function (vectorized version))doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_eval_3 = R"doc(Evaluate the filter function (differentiable version))doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_eval_discretized =
 R"doc(Evaluate a discretized version of the filter (generally faster than
 'eval'))doc";
@@ -4584,10 +4454,6 @@ static const char *__doc_mitsuba_Sampler_next_1d_2 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_1d())doc";
 
-static const char *__doc_mitsuba_Sampler_next_1d_d = R"doc(Differentiable version of next_1d())doc";
-
-static const char *__doc_mitsuba_Sampler_next_1d_d_2 = R"doc(Sparse, differentiable version of next_1d())doc";
-
 static const char *__doc_mitsuba_Sampler_next_1d_p = R"doc(Retrieve the next packet of values from the current sample)doc";
 
 static const char *__doc_mitsuba_Sampler_next_2d = R"doc(Retrieve the next two component values from the current sample)doc";
@@ -4596,20 +4462,11 @@ static const char *__doc_mitsuba_Sampler_next_2d_2 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_2d())doc";
 
-static const char *__doc_mitsuba_Sampler_next_2d_d = R"doc(Differentiable version of next_2d())doc";
-
-static const char *__doc_mitsuba_Sampler_next_2d_d_2 = R"doc(Sparse, differentiable version of next_2d())doc";
-
 static const char *__doc_mitsuba_Sampler_next_2d_p = R"doc(Retrieve the next packet of 2D values from the current sample)doc";
 
 static const char *__doc_mitsuba_Sampler_sample_count = R"doc(Return the number of samples per pixel)doc";
 
 static const char *__doc_mitsuba_Sampler_seed = R"doc(Deterministically seed the underlying RNG, if any)doc";
-
-static const char *__doc_mitsuba_Sampler_seed_2 =
-R"doc(Deterministically seed the underlying RNG, if any. Also reset the
-differentiable-mode RNG's state size (or initialize it if it wasn't
-created).)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator =
 R"doc(Abstract base class, which describes integrators capable of computing
@@ -4630,8 +4487,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 eval())doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_eval_3 = R"doc(Vectorized variant of eval.)doc";
-
-static const char *__doc_mitsuba_SamplingIntegrator_eval_4 = R"doc(Differentiable variant of eval.)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_m_block_size = R"doc(Size of (square) image blocks to render per core.)doc";
 
@@ -4664,8 +4519,6 @@ reset at the beginning of the rendering phase.)doc";
 
 static const char *__doc_mitsuba_Scene = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_OptixState = R"doc()doc";
-
 static const char *__doc_mitsuba_Scene_Scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_bbox = R"doc(//! @{ \name Accessors)doc";
@@ -4673,14 +4526,6 @@ static const char *__doc_mitsuba_Scene_bbox = R"doc(//! @{ \name Accessors)doc";
 static const char *__doc_mitsuba_Scene_children = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_class = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_embree_build = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_embree_init = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_embree_register = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_embree_release = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitters)doc";
 
@@ -4696,13 +4541,15 @@ static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's int
 
 static const char *__doc_mitsuba_Scene_integrator_2 = R"doc(Return the scene's integrator)doc";
 
+static const char *__doc_mitsuba_Scene_kdtree = R"doc(Return the scene's KD-tree)doc";
+
+static const char *__doc_mitsuba_Scene_kdtree_2 = R"doc(Return the scene's KD-tree)doc";
+
 static const char *__doc_mitsuba_Scene_m_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_children = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_current_sensor = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_m_embree_scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_emitter_distr = R"doc(Sampling distribution for emitters)doc";
 
@@ -4712,23 +4559,15 @@ static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_integrator = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_m_monochrome = R"doc(Whether monochrome mode is enabled.)doc";
+static const char *__doc_mitsuba_Scene_m_kdtree = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_m_optix_state = R"doc()doc";
+static const char *__doc_mitsuba_Scene_m_monochrome = R"doc(Whether monochrome mode is enabled.)doc";
 
 static const char *__doc_mitsuba_Scene_m_sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_sensors = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_optix_build = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_optix_init = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_optix_register = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_optix_release = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_pdf_emitter_direction =
 R"doc(Evaluate the probability density of the sample_emitter_direct()
@@ -4748,8 +4587,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 pdf_emitter_direction())doc";
 
 static const char *__doc_mitsuba_Scene_pdf_emitter_direction_3 = R"doc(Vectorized version of pdf_emitter_direction)doc";
-
-static const char *__doc_mitsuba_Scene_pdf_emitter_direction_4 = R"doc(Differentiable version of pdf_emitter_direction)doc";
 
 static const char *__doc_mitsuba_Scene_pdf_emitter_direction_impl = R"doc()doc";
 
@@ -4772,7 +4609,15 @@ ray_intersect())doc";
 
 static const char *__doc_mitsuba_Scene_ray_intersect_3 = R"doc(Vectorized version of ray_intersect)doc";
 
-static const char *__doc_mitsuba_Scene_ray_intersect_4 = R"doc(Differentiable version of ray_intersect)doc";
+static const char *__doc_mitsuba_Scene_ray_intersect_naive =
+R"doc(Ray intersection using brute force search. Used in unit tests to
+validate the kdtree-based ray tracer.)doc";
+
+static const char *__doc_mitsuba_Scene_ray_intersect_naive_2 =
+R"doc(Compatibility wrapper, which strips the mask argument and invokes
+ray_intersect_naive())doc";
+
+static const char *__doc_mitsuba_Scene_ray_intersect_naive_3 = R"doc(Vectorized version of ray_intersect_naive)doc";
 
 static const char *__doc_mitsuba_Scene_ray_test =
 R"doc(Intersect a ray against all primitives stored in the scene and *only*
@@ -4795,8 +4640,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 ray_test())doc";
 
 static const char *__doc_mitsuba_Scene_ray_test_3 = R"doc(Vectorized version of ray_test)doc";
-
-static const char *__doc_mitsuba_Scene_ray_test_4 = R"doc(Differentiable version of ray_test)doc";
 
 static const char *__doc_mitsuba_Scene_sample_emitter_direction =
 R"doc(Direct illumination sampling routine
@@ -4829,8 +4672,6 @@ sample_emitter_direction())doc";
 
 static const char *__doc_mitsuba_Scene_sample_emitter_direction_3 = R"doc(Vectorized variant of sample_emitter_direction)doc";
 
-static const char *__doc_mitsuba_Scene_sample_emitter_direction_4 = R"doc(Differentiable variant of sample_emitter_direction)doc";
-
 static const char *__doc_mitsuba_Scene_sample_emitter_direction_impl = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_sampler = R"doc(Return the scene's sampler)doc";
@@ -4857,6 +4698,14 @@ static const char *__doc_mitsuba_ScopedPhase = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedPhase_ScopedPhase = R"doc()doc";
 
+static const char *__doc_mitsuba_ScopedPhase_ScopedPhase_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_ScopedPhase_m_flag = R"doc()doc";
+
+static const char *__doc_mitsuba_ScopedPhase_m_target = R"doc()doc";
+
+static const char *__doc_mitsuba_ScopedPhase_operator_assign = R"doc()doc";
+
 static const char *__doc_mitsuba_ScopedSetThreadEnvironment =
 R"doc(RAII-style class to temporarily switch to another thread's logger/file
 resolver)doc";
@@ -4868,6 +4717,8 @@ static const char *__doc_mitsuba_ScopedSetThreadEnvironment_ScopedSetThreadEnvir
 static const char *__doc_mitsuba_ScopedSetThreadEnvironment_m_file_resolver = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedSetThreadEnvironment_m_logger = R"doc()doc";
+
+static const char *__doc_mitsuba_ScopedSetThreadEnvironment_m_profiler_flags = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedSetThreadEnvironment_operator_assign = R"doc()doc";
 
@@ -4940,8 +4791,6 @@ sample_ray_differential())doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray_differential_3 = R"doc(Vectorized version of sample_ray_differential)doc";
 
-static const char *__doc_mitsuba_Sensor_sample_ray_differential_4 = R"doc(Differentiable version of sample_ray_differential)doc";
-
 static const char *__doc_mitsuba_Sensor_sample_ray_differential_impl = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray_differential_pol =
@@ -4959,8 +4808,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_ray_differential_pos())doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray_differential_pol_3 = R"doc(Vectorized version of sample_ray_differential_pol())doc";
-
-static const char *__doc_mitsuba_Sensor_sample_ray_differential_pol_4 = R"doc(Differentiable version of sample_ray_differential_pol())doc";
 
 static const char *__doc_mitsuba_Sensor_sample_ray_differential_pol_impl = R"doc()doc";
 
@@ -5080,8 +4927,6 @@ the scene by this shape
 Includes instanced geometry. The default implementation simply returns
 the same value as primitive_count().)doc";
 
-static const char *__doc_mitsuba_Shape_embree_geometry = R"doc(Return the Embree version of this shape)doc";
-
 static const char *__doc_mitsuba_Shape_emitter = R"doc(Return the area emitter associated with this shape (if any))doc";
 
 static const char *__doc_mitsuba_Shape_emitter_2 = R"doc(Return the area emitter associated with this shape (if any))doc";
@@ -5106,8 +4951,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 fill_surface_interaction())doc";
 
 static const char *__doc_mitsuba_Shape_fill_surface_interaction_3 = R"doc(Vectorized version of fill_surface_interaction())doc";
-
-static const char *__doc_mitsuba_Shape_fill_surface_interaction_4 = R"doc(Differentiable version of fill_surface_interaction())doc";
 
 static const char *__doc_mitsuba_Shape_id = R"doc(Return a string identifier)doc";
 
@@ -5159,10 +5002,6 @@ normal_derivative())doc";
 
 static const char *__doc_mitsuba_Shape_normal_derivative_3 = R"doc(Vectorized version of normal_derivative())doc";
 
-static const char *__doc_mitsuba_Shape_normal_derivative_4 = R"doc(Differentiable version of normal_derivative())doc";
-
-static const char *__doc_mitsuba_Shape_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
-
 static const char *__doc_mitsuba_Shape_pdf_direction =
 R"doc(Query the probability density of sample_direction()
 
@@ -5181,8 +5020,6 @@ pdf_direction())doc";
 
 static const char *__doc_mitsuba_Shape_pdf_direction_3 = R"doc(Vectorized version of pdf_direction.)doc";
 
-static const char *__doc_mitsuba_Shape_pdf_direction_4 = R"doc(Differentiable version of pdf_direction.)doc";
-
 static const char *__doc_mitsuba_Shape_pdf_direction_fallback = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_pdf_position =
@@ -5200,8 +5037,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 pdf_position())doc";
 
 static const char *__doc_mitsuba_Shape_pdf_position_3 = R"doc(Vectorized version of pdf_position.)doc";
-
-static const char *__doc_mitsuba_Shape_pdf_position_4 = R"doc(Differentiable version of pdf_position.)doc";
 
 static const char *__doc_mitsuba_Shape_primitive_count =
 R"doc(Returns the number of sub-primitives that make up this shape
@@ -5234,9 +5069,7 @@ ray_intersect())doc";
 
 static const char *__doc_mitsuba_Shape_ray_intersect_3 = R"doc(Vectorized version of ray_intersect.)doc";
 
-static const char *__doc_mitsuba_Shape_ray_intersect_4 = R"doc(Differentiable version of ray_intersect.)doc";
-
-static const char *__doc_mitsuba_Shape_ray_intersect_5 =
+static const char *__doc_mitsuba_Shape_ray_intersect_4 =
 R"doc(Test for an intersection and return detailed information
 
 This operation combines the prior ray_intersect() and
@@ -5246,11 +5079,11 @@ single shape is desired.
 Parameter ``ray``:
     The ray to be tested for an intersection)doc";
 
-static const char *__doc_mitsuba_Shape_ray_intersect_6 =
+static const char *__doc_mitsuba_Shape_ray_intersect_5 =
 R"doc(Compatibility wrapper, which strips the mask argument and invokes
 ray_intersect)doc";
 
-static const char *__doc_mitsuba_Shape_ray_intersect_7 = R"doc(Vectorized version of ray_intersect())doc";
+static const char *__doc_mitsuba_Shape_ray_intersect_6 = R"doc(Vectorized version of ray_intersect())doc";
 
 static const char *__doc_mitsuba_Shape_ray_test =
 R"doc(Fast ray shadow test
@@ -5273,8 +5106,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 ray_test())doc";
 
 static const char *__doc_mitsuba_Shape_ray_test_3 = R"doc(Vectorized version of ray_test.)doc";
-
-static const char *__doc_mitsuba_Shape_ray_test_4 = R"doc(Differentiable version of ray_test.)doc";
 
 static const char *__doc_mitsuba_Shape_sample_direction =
 R"doc(Sample a direction towards this shape with respect to solid angles
@@ -5309,8 +5140,6 @@ sample_direction())doc";
 
 static const char *__doc_mitsuba_Shape_sample_direction_3 = R"doc(Vectorized version of sample_direction.)doc";
 
-static const char *__doc_mitsuba_Shape_sample_direction_4 = R"doc(Differentiable version of sample_direction.)doc";
-
 static const char *__doc_mitsuba_Shape_sample_direction_fallback = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_sample_position =
@@ -5335,8 +5164,6 @@ R"doc(Compatibility wrapper, which strips the mask argument and invokes
 sample_position())doc";
 
 static const char *__doc_mitsuba_Shape_sample_position_3 = R"doc(Vectorized version of sample_position.)doc";
-
-static const char *__doc_mitsuba_Shape_sample_position_4 = R"doc(Differentiable version of sample_position.)doc";
 
 static const char *__doc_mitsuba_Shape_sensor = R"doc(Return the area sensor associated with this shape (if any))doc";
 
@@ -6502,8 +6329,6 @@ static const char *__doc_mitsuba_Texture3D_eval_2 = R"doc(Vectorized version of 
 
 static const char *__doc_mitsuba_Texture3D_eval_3 = R"doc(Wrapper for scalar eval() with a mask (which will be ignored))doc";
 
-static const char *__doc_mitsuba_Texture3D_eval_4 = R"doc(Differentiable version of eval())doc";
-
 static const char *__doc_mitsuba_Texture3D_eval_gradient =
 R"doc(Evaluate the texture at the given surface interaction as well as its
 gradients)doc";
@@ -6511,8 +6336,6 @@ gradients)doc";
 static const char *__doc_mitsuba_Texture3D_eval_gradient_2 = R"doc(Vectorized version of eval_gradient())doc";
 
 static const char *__doc_mitsuba_Texture3D_eval_gradient_3 = R"doc(Wrapper for scalar eval_gradient() with a mask (which will be ignored))doc";
-
-static const char *__doc_mitsuba_Texture3D_eval_gradient_4 = R"doc(Differentiable version of eval_gradient())doc";
 
 static const char *__doc_mitsuba_Texture3D_is_inside_impl = R"doc()doc";
 
@@ -6554,6 +6377,8 @@ static const char *__doc_mitsuba_ThreadEnvironment_ThreadEnvironment_2 = R"doc()
 static const char *__doc_mitsuba_ThreadEnvironment_m_file_resolver = R"doc()doc";
 
 static const char *__doc_mitsuba_ThreadEnvironment_m_logger = R"doc()doc";
+
+static const char *__doc_mitsuba_ThreadEnvironment_m_profiler_flags = R"doc()doc";
 
 static const char *__doc_mitsuba_ThreadEnvironment_operator_assign = R"doc()doc";
 
@@ -7605,10 +7430,6 @@ static const char *__doc_mitsuba_next_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_next_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_next_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_next_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_operator_add = R"doc(Adding a vector to a point should always yield a point)doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
@@ -7672,6 +7493,8 @@ function for a single wavelength (Float), a set of wavelengths
 the PDF is returned per wavelength.)doc";
 
 static const char *__doc_mitsuba_pdf_uniform_spectrum = R"doc()doc";
+
+static const char *__doc_mitsuba_profiler_flags = R"doc()doc";
 
 static const char *__doc_mitsuba_quad_composite_simpson =
 R"doc(Computes the nodes and weights of a composite Simpson quadrature rule
@@ -8446,11 +8269,7 @@ R"doc(Look up the model coefficients for a sRGB color value @param c An sRGB
 color value where all components are in [0, 1]. @return Coefficients
 for use with srgb_model_eval)doc";
 
-static const char *__doc_mitsuba_srgb_model_fetch_d = R"doc(Differentiable variant of srgb_model_fetch.)doc";
-
 static const char *__doc_mitsuba_srgb_model_mean = R"doc()doc";
-
-static const char *__doc_mitsuba_srgb_model_mean_d = R"doc()doc";
 
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 

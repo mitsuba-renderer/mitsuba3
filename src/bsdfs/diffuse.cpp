@@ -5,7 +5,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class SmoothDiffuse final : public BSDF {
+template <typename Float, typename Spectrum>
+class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
     SmoothDiffuse(const Properties &props) : BSDF(props) {
         m_reflectance = props.spectrum("reflectance", .5f);
@@ -13,9 +14,6 @@ public:
         m_components.push_back(m_flags);
     }
 
-    template <typename SurfaceInteraction, typename Value, typename Point2,
-              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-              typename Spectrum   = Spectrum<Value>>
     MTS_INLINE
     std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx,
                                                 const SurfaceInteraction &si,

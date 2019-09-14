@@ -22,9 +22,9 @@ template <typename Point3_> struct PositionSample {
     // =============================================================
 
     using Point3               = Point3_;
-    using Point2               = point2_t<Point3>;
-    using Normal3              = normal3_t<Point3>;
     using Value                = value_t<Point3>;
+    using Point2               = Point<Value, 2>;
+    using Normal3              = Normal<Value, 3>;
     using ObjectPtr            = replace_scalar_t<Value, const Object *>;
     using SurfaceInteraction   = mitsuba::SurfaceInteraction<Point3>;
     using Mask                 = mask_t<Value>;
@@ -226,89 +226,6 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
         ENOKI_BASE_FIELDS(p, n, uv, time, pdf, delta, object),
         ENOKI_DERIVED_FIELDS(d, dist)
     )
-};
-
-// -----------------------------------------------------------------------------
-
-/**
- * \brief Radiance query record data structure used by \ref SamplingIntegrator
- */
-template <typename Point3> struct RadianceSample {
-    // =============================================================
-    //! @{ \name Type declarations
-    // =============================================================
-
-    /**
-     * \brief Make 'Scene' and 'Sampler' a dependent type so that the compiler
-     * does not complain about accessing incomplete types below.
-     */
-    using Scene              = identity_t<mitsuba::Scene, Point3 /* ignored */>;
-    using Sampler            = identity_t<mitsuba::Sampler, Point3 /* ignored */>;
-    using Value              = value_t<Point3>;
-    using Mask               = mask_t<Value>;
-    using Point2             = point2_t<Point3>;
-    using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
-    using RayDifferential    = mitsuba::RayDifferential<Point3>;
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name Fields
-    // =============================================================
-
-    /// Pointer to the associated scene
-    const Scene *scene;
-
-    /// Sample generator
-    Sampler *sampler;
-
-    /// Surface interaction data structure
-    SurfaceInteraction si;
-
-    /// Opacity value of the associated pixel
-    Value alpha;
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name Constructor and convenience methods.
-    // =============================================================
-    /// Construct a radiance query record for the given scene and sampler
-    RadianceSample(const Scene *scene, Sampler *sampler)
-        : scene(scene), sampler(sampler) { }
-
-    /**
-     * \brief Search for a ray intersection
-     *
-     * This function does several things at once: if the
-     * intersection has already been provided, it returns.
-     *
-     * Otherwise, it
-     * 1. performs the ray intersection
-     * 2. computes the transmittance due to participating media
-     *   and stores it in \c transmittance.
-     * 3. sets the alpha value
-     *
-     * \return \c true if there is a valid intersection.
-     */
-    SurfaceInteraction& ray_intersect(const RayDifferential &ray, const Mask &active) {
-        si = scene->ray_intersect(ray, active);
-        alpha = select(si.is_valid(), Value(1.f), Value(0.f));
-        return si;
-    }
-
-    // Retrieve a 1D sample from the \ref Sampler
-    Value next_1d(Mask active = true) { return sampler->template next<Value>(active); }
-
-    // Retrieve a 2D sample from the \ref Sampler
-    Point2 next_2d(Mask active = true) { return sampler->template next<Point2>(active); }
-
-    //! @}
-    // =============================================================
-
-    ENOKI_STRUCT(RadianceSample, scene, sampler, si, alpha)
 };
 
 // -----------------------------------------------------------------------------

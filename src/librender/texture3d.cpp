@@ -65,6 +65,6 @@ std::string Texture3D::to_string() const {
 //! @}
 // =======================================================================
 
-MTS_IMPLEMENT_CLASS_ALIAS(Texture3D, "texture3d", Object)
+MTS_IMPLEMENT_CLASS_ALIAS(Texture3D, Object)
 
 NAMESPACE_END(mitsuba)

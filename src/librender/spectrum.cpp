@@ -125,5 +125,5 @@ ref<ContinuousSpectrum> ContinuousSpectrum::D65(Float scale, bool monochrome) {
 //! @}
 // =======================================================================
 
-MTS_IMPLEMENT_CLASS_ALIAS(ContinuousSpectrum, "spectrum", Object)
+MTS_IMPLEMENT_CLASS_ALIAS(ContinuousSpectrum, Object, "spectrum")
 NAMESPACE_END(mitsuba)

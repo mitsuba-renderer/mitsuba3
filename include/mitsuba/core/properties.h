@@ -39,6 +39,12 @@ private:
  */
 class MTS_EXPORT_CORE Properties {
 public:
+    using Float       = double;
+    using Vector3f    = Vector<Float, 3>;
+    using Point3f     = Point<Float, 3>;
+    using Color3f     = Color<Float, 3>;
+    using Transform4f = Transform<Float, 4>;
+
     /// Supported types of properties
     enum EType {
         /// Boolean value (true/false)

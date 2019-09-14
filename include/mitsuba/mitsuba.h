@@ -1,3 +1,11 @@
+/*
+    Mitsuba 2: A Retargetable Forward and Inverse Renderer
+    Copyright 2019, Realistic Graphics Lab, EPFL.
+
+    All rights reserved. Use of this source code is governed by a
+    BSD-style license that can be found in the LICENSE.txt file.
+*/
+
 #pragma once
 
 #define MTS_VERSION_MAJOR 2
@@ -21,4 +29,3 @@
 
 #include <mitsuba/core/platform.h>
 #include <mitsuba/core/fwd.h>
-#include <mitsuba/core/essentials.h>

@@ -132,22 +132,6 @@ struct Normal<enoki::detail::MaskedArray<Value_>, Size_> : enoki::detail::Masked
 //! @}
 // =======================================================================
 
-// =======================================================================
-//! @{ \name Convenient point/vector type aliases that use the value
-//           type underlying another given point or vector type
-// =======================================================================
-
-template <typename T> using vector2_t = Vector<value_t<T>, 2>;
-template <typename T> using vector3_t = Vector<value_t<T>, 3>;
-template <typename T> using point2_t  = Point <value_t<T>, 2>;
-template <typename T> using point3_t  = Point <value_t<T>, 3>;
-template <typename T> using normal2_t = Normal<value_t<T>, 2>;
-template <typename T> using normal3_t = Normal<value_t<T>, 3>;
-
-//! @}
-// =======================================================================
-
-
 /// Complete the set {a} to an orthonormal basis {a, b, c}
 template <typename Vector3>
 std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {

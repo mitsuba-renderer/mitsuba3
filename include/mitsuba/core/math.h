@@ -13,79 +13,29 @@ NAMESPACE_BEGIN(math)
 //! @{ \name Useful constants in various precisions
 // -----------------------------------------------------------------------
 
-static const double E_d               = 2.71828182845904523536;
-static const double Pi_d              = 3.14159265358979323846;
-static const double InvPi_d           = 0.31830988618379067154;
-static const double InvTwoPi_d        = 0.15915494309189533577;
-static const double InvFourPi_d       = 0.07957747154594766788;
-static const double SqrtPi_d          = 1.77245385090551602793;
-static const double InvSqrtPi_d       = 0.56418958354775628695;
-static const double SqrtTwo_d         = 1.41421356237309504880;
-static const double InvSqrtTwo_d      = 0.70710678118654752440;
-static const double SqrtTwoPi_d       = 2.50662827463100050242;
-static const double InvSqrtTwoPi_d    = 0.39894228040143267794;
-static const double Epsilon_d         = 1e-7;
-static const double ShadowEpsilon_d   = 1e-5;
-#if defined(MTS_CPP17)
-static const double OneMinusEpsilon_d = 0x1.fffffffffffffp-1;
-static const double RecipOverflow_d   = 0x1p-1024;
-#else
-static const double OneMinusEpsilon_d = 0.999999999999999888;
-static const double RecipOverflow_d   = 5.56268464626800345e-309;
-#endif
-static const double Infinity_d        = std::numeric_limits<double>::infinity();
-static const double MinFloat_d        = std::numeric_limits<double>::min();
-static const double MaxFloat_d        = std::numeric_limits<double>::max();
-static const double MachineEpsilon_d  = std::numeric_limits<double>::epsilon() / 2;
-
-static const float  E_f               = (float) E_d;
-static const float  Pi_f              = (float) Pi_d;
-static const float  InvPi_f           = (float) InvPi_d;
-static const float  InvTwoPi_f        = (float) InvTwoPi_d;
-static const float  InvFourPi_f       = (float) InvFourPi_d;
-static const float  SqrtPi_f          = (float) SqrtPi_d;
-static const float  InvSqrtPi_f       = (float) InvSqrtPi_d;
-static const float  SqrtTwo_f         = (float) SqrtTwo_d;
-static const float  InvSqrtTwo_f      = (float) InvSqrtTwo_d;
-static const float  SqrtTwoPi_f       = (float) SqrtTwoPi_d;
-static const float  InvSqrtTwoPi_f    = (float) InvSqrtTwoPi_d;
-static const float  Epsilon_f         = 1e-4f;
-static const float  ShadowEpsilon_f   = 1e-3f;
-#if defined(MTS_CPP17)
-static const float  OneMinusEpsilon_f = 0x1.fffffep-1f;
-static const float  RecipOverflow_f   = 0x1p-128f;
-#else
-static const float  OneMinusEpsilon_f = 0.999999940395355225f;
-static const float  RecipOverflow_f   = 2.93873587705571876e-39f;
-#endif
-static const float  MinFloat_f        = std::numeric_limits<float>::min();
-static const float  MaxFloat_f        = std::numeric_limits<float>::max();
-static const float  Infinity_f        = std::numeric_limits<float>::infinity();
-static const float  MachineEpsilon_f  = std::numeric_limits<float>::epsilon() / 2;
-
-static const Float  E                 = (Float) E_d;
-static const Float  Pi                = (Float) Pi_d;
-static const Float  InvPi             = (Float) InvPi_d;
-static const Float  InvTwoPi          = (Float) InvTwoPi_d;
-static const Float  InvFourPi         = (Float) InvFourPi_d;
-static const Float  SqrtPi            = (Float) SqrtPi_d;
-static const Float  InvSqrtPi         = (Float) InvSqrtPi_d;
-static const Float  SqrtTwo           = (Float) SqrtTwo_d;
-static const Float  InvSqrtTwo        = (Float) InvSqrtTwo_d;
-static const Float  SqrtTwoPi         = (Float) SqrtTwoPi_d;
-static const Float  InvSqrtTwoPi      = (Float) InvSqrtTwoPi_d;
-static const Float  OneMinusEpsilon   = Float(sizeof(Float) == sizeof(double) ?
-                                        OneMinusEpsilon_d : (double) OneMinusEpsilon_f);
-static const Float  RecipOverflow     = Float(sizeof(Float) == sizeof(double) ?
-                                        RecipOverflow_d : (double) RecipOverflow_f);
-static const Float  Epsilon           = Float(sizeof(Float) == sizeof(double) ?
-                                        Epsilon_d : (double) Epsilon_f);
-static const Float  ShadowEpsilon     = Float(sizeof(Float) == sizeof(double) ?
-                                        ShadowEpsilon_d : (double) ShadowEpsilon_f);
-static const Float  MinFloat          = std::numeric_limits<Float>::min();
-static const Float  MaxFloat          = std::numeric_limits<Float>::max();
-static const Float  Infinity          = std::numeric_limits<Float>::infinity();
-static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 2;
+template <typename T> constexpr auto E               = scalar_t<T>(2.71828182845904523536);
+template <typename T> constexpr auto Pi              = scalar_t<T>(3.14159265358979323846);
+template <typename T> constexpr auto TwoPi           = scalar_t<T>(6.28318530717958647692);
+template <typename T> constexpr auto InvPi           = scalar_t<T>(0.31830988618379067154);
+template <typename T> constexpr auto InvTwoPi        = scalar_t<T>(0.15915494309189533577);
+template <typename T> constexpr auto InvFourPi       = scalar_t<T>(0.07957747154594766788);
+template <typename T> constexpr auto SqrtPi          = scalar_t<T>(1.77245385090551602793);
+template <typename T> constexpr auto InvSqrtPi       = scalar_t<T>(0.56418958354775628695);
+template <typename T> constexpr auto SqrtTwo         = scalar_t<T>(1.41421356237309504880);
+template <typename T> constexpr auto InvSqrtTwo      = scalar_t<T>(0.70710678118654752440);
+template <typename T> constexpr auto SqrtTwoPi       = scalar_t<T>(2.50662827463100050242);
+template <typename T> constexpr auto InvSqrtTwoPi    = scalar_t<T>(0.39894228040143267794);
+template <typename T> constexpr auto Infinity        = std::numeric_limits<scalar_t<T>>::infinity();
+template <typename T> constexpr auto Min             = std::numeric_limits<scalar_t<T>>::min();
+template <typename T> constexpr auto Max             = std::numeric_limits<scalar_t<T>>::max();
+template <typename T> constexpr auto Epsilon         = std::numeric_limits<scalar_t<T>>::epsilon() / 2;
+template <typename T> constexpr auto OneMinusEpsilon = scalar_t<T>(sizeof(scalar_t<T>) == 8
+                                                                   ? 0x1.fffffffffffffp-1
+                                                                   : 0x1.fffffep-1);
+template <typename T> constexpr auto RecipOverflow   = scalar_t<T>(sizeof(scalar_t<T>) == 8
+                                                                   ? 0x1p-1024 : 0x1p-128);
+//template <typename T> constexpr auto Epsilon         = scalar_t<T>(sizeof(scalar_t<T>) == 8 ? 1e-7 : 1e-4);
+//template <typename T> constexpr auto ShadowEpsilon   = scalar_t<T>(sizeof(scalar_t<T>) == 8 ? 1e-5 : 1e-3);
 
 //! @}
 // -----------------------------------------------------------------------
@@ -97,7 +47,7 @@ static const Float  MachineEpsilon    = std::numeric_limits<Float>::epsilon() / 
 template <typename T, typename Value = expr_t<T>>
 Vector<Value, 3> sphdir(const T &theta, const T &phi) {
     auto [sin_theta, cos_theta] = sincos(theta);
-    auto [sin_phi, cos_phi] = sincos(phi);
+    auto [sin_phi,   cos_phi]   = sincos(phi);
 
     return Vector<Value, 3>(
         cos_phi * sin_theta,
