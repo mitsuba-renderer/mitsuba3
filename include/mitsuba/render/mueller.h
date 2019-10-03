@@ -100,7 +100,7 @@ template <typename Value> MuellerMatrix<Value> diattenuator(Value x, Value y) {
   * counter-clockwise rotation of the electric field by 'theta' radians.
   */
 template <typename Value> MuellerMatrix<Value> rotator(Value theta) {
-    Value [s, c] = sincos(2.f * theta);
+    auto [s, c] = sincos(2.f * theta);
     return MuellerMatrix<Value>(
         1, 0, 0, 0,
         0, c, -s, 0,

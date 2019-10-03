@@ -34,8 +34,8 @@ template <typename T> constexpr auto OneMinusEpsilon = scalar_t<T>(sizeof(scalar
                                                                    : 0x1.fffffep-1);
 template <typename T> constexpr auto RecipOverflow   = scalar_t<T>(sizeof(scalar_t<T>) == 8
                                                                    ? 0x1p-1024 : 0x1p-128);
+template <typename T> constexpr auto ShadowEpsilon   = scalar_t<T>(sizeof(scalar_t<T>) == 8 ? 1e-5 : 1e-3);
 //template <typename T> constexpr auto Epsilon         = scalar_t<T>(sizeof(scalar_t<T>) == 8 ? 1e-7 : 1e-4);
-//template <typename T> constexpr auto ShadowEpsilon   = scalar_t<T>(sizeof(scalar_t<T>) == 8 ? 1e-5 : 1e-3);
 
 //! @}
 // -----------------------------------------------------------------------

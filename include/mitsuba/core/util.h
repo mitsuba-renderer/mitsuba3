@@ -23,7 +23,7 @@ extern MTS_EXPORT_CORE int core_count();
  * \param precise When set to true, a higher-precision string representation
  * is generated.
  */
-extern MTS_EXPORT_CORE std::string time_string(Float time, bool precise = false);
+extern MTS_EXPORT_CORE std::string time_string(float time, bool precise = false);
 
 /// Turn a memory size into a human-readable string
 extern MTS_EXPORT_CORE std::string mem_string(size_t size, bool precise = false);

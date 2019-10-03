@@ -66,7 +66,7 @@ public:
      * exceptions).
      *
      * The value provided here can be used for instance to turn warnings into
-     * errors. But \a level must always be less than \ref EError, i.e. it isn't
+     * errors. But \a level must always be less than \ref Error, i.e. it isn't
      * possible to cause errors not to throw an exception.
      */
     void set_error_level(LogLevel level);
@@ -155,7 +155,7 @@ NAMESPACE_END(detail)
 /// Throw an exception
 #define Throw(...)                                                             \
     do {                                                                       \
-        mitsuba::detail::Throw(EError, m_class, __FILE__, __LINE__,            \
+        mitsuba::detail::Throw(Error, m_class, __FILE__, __LINE__,            \
                       tfm::format(__VA_ARGS__));                               \
     } while (0)
 

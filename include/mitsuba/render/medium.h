@@ -23,8 +23,9 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 // Enable usage of array pointers for our types
-ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Medium)
-ENOKI_CALL_SUPPORT_END(mitsuba::Medium)
+// TODO: re-enable this
+// ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Medium)
+// ENOKI_CALL_SUPPORT_END(mitsuba::Medium)
 
 //! @}
 // -----------------------------------------------------------------------

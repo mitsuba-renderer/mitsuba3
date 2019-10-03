@@ -11,8 +11,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename T>
-using float_array_t = replace_scalar_t<T, Float>;
+// template <typename T>
+// using float_array_t = replace_scalar_t<T, Float>;
 
 /// Convenience function which computes an array size/type suffix (like '2u' or '3fP')
 template <typename T> std::string type_suffix() {
@@ -50,7 +50,9 @@ template <typename T> std::string type_suffix() {
 }
 
 /// Round an integer to a multiple of the current packet size
+template <typename Float>
 inline size_t round_to_packet_size(size_t size) {
+    constexpr size_t PacketSize = Float::Size;
     return (size + PacketSize - 1) / PacketSize * PacketSize;
 }
 

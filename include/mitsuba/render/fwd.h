@@ -4,7 +4,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class BSDF;
+template <typename Float, typename Spectrum> class BSDF;
 struct BSDFContext;
 class ContinuousSpectrum;
 class DifferentiableParameters;
@@ -22,13 +22,13 @@ class Shape;
 class ShapeKDTree;
 class Texture3D;
 
-template <typename Point3> struct DirectionSample;
-template <typename Point3> struct PositionSample;
-template <typename Point3> struct Interaction;
-template <typename Point3> struct SurfaceInteraction;
-template <typename Point3> struct MediumInteraction;
-template <typename Point3> struct BSDFSample;
-template <typename Point3> struct RadianceSample;
+template <typename Float, typename Spectrum> struct DirectionSample;
+template <typename Float, typename Spectrum> struct PositionSample;
+template <typename Float, typename Spectrum> struct Interaction;
+template <typename Float, typename Spectrum> struct SurfaceInteraction;
+template <typename Float, typename Spectrum> struct MediumInteraction;
+template <typename Float, typename Spectrum> struct BSDFSample;
+template <typename Float, typename Spectrum> struct RadianceSample;
 
 template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
 template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
@@ -98,27 +98,36 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Frame3f              = Frame<Vector3f>;
     using Ray3f                = Ray<Point3f, Spectrum>;
     using RayDifferential3f    = RayDifferential<Point3f, Spectrum>;
-    using Transform3f          = Transform<Vector3f>;
-    using Transform4f          = Transform<Vector4f>;
+    using Transform3f          = Transform<Float, 3>;
+    using Transform4f          = Transform<Float, 4>;
 
-    using PositionSample3f     = PositionSample<Point3f>;
-    using DirectionSample3f    = DirectionSample<Point3f>;
-    using Interaction3f        = Interaction<Point3f>;
-    using SurfaceInteraction3f = SurfaceInteraction<Point3f>;
-    using MediumInteraction3f  = MediumInteraction<Point3f>;
-    using BSDFSample3f         = BSDFSample<Point3f>;
+    using PositionSample3f     = PositionSample<Float, Spectrum>;
+    using DirectionSample3f    = DirectionSample<Float, Spectrum>;
+    using Interaction3f        = Interaction<Float, Spectrum>;
+    using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
+    using MediumInteraction3f  = MediumInteraction<Float, Spectrum>;
+    using BSDFSample3f         = BSDFSample<Float, Spectrum>;
 
-    using Sampler              = mitsuba::Sampler<Float>;
-    using Shape                = mitsuba::Shape<Float>;
-    using Integrator           = mitsuba::Integrator<Float, Spectrum>;
+    // TODO
+    // using Sampler              = mitsuba::Sampler<Float>;
+    // using Shape                = mitsuba::Shape<Float>;
+    // using Integrator           = mitsuba::Integrator<Float, Spectrum>;
     using BSDF                 = mitsuba::BSDF<Float, Spectrum>;
-    using Sensor               = mitsuba::Sensor<Float, Spectrum>;
-    using Emitter              = mitsuba::Emitter<Float, Spectrum>;
-    using Medium               = mitsuba::Medium<Float, Spectrum>;
+    // using Sensor               = mitsuba::Sensor<Float, Spectrum>;
+    // using Emitter              = mitsuba::Emitter<Float, Spectrum>;
+    // using Medium               = mitsuba::Medium<Float, Spectrum>;
+    using Sampler              = mitsuba::Sampler;
+    using Shape                = mitsuba::Shape;
+    using Integrator           = mitsuba::Integrator;
+    // using BSDF                 = mitsuba::BSDF;
+    using Sensor               = mitsuba::Sensor;
+    using Emitter              = mitsuba::Emitter;
+    using Medium               = mitsuba::Medium;
 
-    using EmitterPtr           = replace_scalar_t<Float, const Emitter *>;
-    using BSDFPtr              = replace_scalar_t<Float, const BSDF *>;
-    using ShapePtr             = replace_scalar_t<Float, const Shape *>;
+    using BSDFPtr             = replace_scalar_t<Float, const BSDF *>;
+    using MediumPtr           = replace_scalar_t<Float, const Medium *>;
+    using ShapePtr            = replace_scalar_t<Float, const Shape *>;
+    using EmitterPtr          = replace_scalar_t<Float, const Emitter *>;
 };
 
 #define MTS_IMPORT_TYPES()                                                                         \

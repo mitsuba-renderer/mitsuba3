@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mitsuba/render/records.h>
-#include <mitsuba/render/autodiff.h>
 #include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -13,11 +12,17 @@ NAMESPACE_BEGIN(mitsuba)
  * computing ray intersections, and bounding shapes within ray intersection
  * acceleration data structures.
  */
-class MTS_EXPORT_RENDER Shape : public DifferentiableObject {
+// class MTS_EXPORT_RENDER Shape : public DifferentiableObject {
+template <typename Float, typename Value>
+class MTS_EXPORT_RENDER Shape : public Object {
 public:
+    using Aliases = Aliases<Float, Spectrum>;
+    using typename Aliases::PositionSample3f;
+
     // Use 32 bit indices to keep track of indices to conserve memory
     using Index  = uint32_t;
     using Size   = uint32_t;
+
 
     // =============================================================
     //! @{ \name Sampling routines

@@ -601,8 +601,8 @@ namespace detail {
 }
 
 /// Probability density of \ref square_to_rough_fiber()
-template <typename Vector3, typename Value = value_t<Vector3>>
-Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent, Float kappa) {
+template <typename Vector3, typename Float = value_t<Vector3>>
+Float square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent, Float kappa) {
     /**
      * Analytic density function described in "An Energy-Conserving Hair Reflectance Model"
      * by Eugene d’Eon, Guillaume Francois, Martin Hill, Joe Letteri, and Jean-Marie Aubry
@@ -611,18 +611,18 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
      * https://publons.com/publon/2803
      */
 
-    Value cos_theta_i = dot(wi, tangent),
+    Float cos_theta_i = dot(wi, tangent),
           cos_theta_o = dot(v, tangent),
           sin_theta_i = circ(cos_theta_i),
           sin_theta_o = circ(cos_theta_o);
 
-    Value c = cos_theta_i * cos_theta_o * kappa,
+    Float c = cos_theta_i * cos_theta_o * kappa,
           s = sin_theta_i * sin_theta_o * kappa;
 
     if (kappa > 10.f)
-        return exp(-c + detail::log_i0(s) - kappa + .6931f + log(.5f * kappa)) * math::InvTwoPi<Value>;
+        return exp(-c + detail::log_i0(s) - kappa + .6931f + log(.5f * kappa)) * math::InvTwoPi<Float>;
     else
-        return exp(-c) * detail::i0(s) * kappa / (2.f * sinh(kappa)) * math::InvTwoPi<Value>;
+        return exp(-c) * detail::i0(s) * kappa / (2.f * sinh(kappa)) * math::InvTwoPi<Float>;
 }
 
 //! @}

@@ -14,11 +14,11 @@ NAMESPACE_BEGIN(mitsuba)
 #endif
 
 #if !defined(MTS_WAVELENGTH_MIN)
-#  define MTS_WAVELENGTH_MIN Float(360)
+#  define MTS_WAVELENGTH_MIN 360.f
 #endif
 
 #if !defined(MTS_WAVELENGTH_MAX)
-#  define MTS_WAVELENGTH_MAX Float(830)
+#  define MTS_WAVELENGTH_MAX 830.f
 #endif
 
 // =======================================================================
@@ -133,9 +133,9 @@ struct Spectrum<enoki::detail::MaskedArray<Value_>> : enoki::detail::MaskedArray
 #define MTS_CIE_SAMPLES 95
 
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
-extern MTS_EXPORT_CORE const Float *cie1931_x_data;
-extern MTS_EXPORT_CORE const Float *cie1931_y_data;
-extern MTS_EXPORT_CORE const Float *cie1931_z_data;
+extern MTS_EXPORT_CORE const float *cie1931_x_data;
+extern MTS_EXPORT_CORE const float *cie1931_y_data;
+extern MTS_EXPORT_CORE const float *cie1931_z_data;
 
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength

@@ -87,7 +87,7 @@ template <typename Vector3f_> struct Frame {
     static Float sin_phi(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = rsqrt(Frame::sin_theta_2(v));
-        return select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon, 0.f,
+        return select(abs(sin_theta_2) <= 4.f * math::Epsilon<Float>, 0.f,
                       clamp(v.y() * inv_sin_theta, -1.f, 1.f));
     }
 
@@ -98,7 +98,7 @@ template <typename Vector3f_> struct Frame {
     static Float cos_phi(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = rsqrt(Frame::sin_theta_2(v));
-        return select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon, 1.f,
+        return select(abs(sin_theta_2) <= 4.f * math::Epsilon<Float>, 1.f,
                       clamp(v.x() * inv_sin_theta, -1.f, 1.f));
     }
 
@@ -112,7 +112,7 @@ template <typename Vector3f_> struct Frame {
 
         Vector2f result = head<2>(v) * inv_sin_theta;
 
-        result = select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon,
+        result = select(abs(sin_theta_2) <= 4.f * math::Epsilon<Float>,
                         Vector2f(1.f, 0.f),
                         clamp(result, -1.f, 1.f));
 
@@ -125,7 +125,7 @@ template <typename Vector3f_> struct Frame {
      */
     static Float sin_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
-        return select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon, 0.f,
+        return select(abs(sin_theta_2) <= 4.f * math::Epsilon<Float>, 0.f,
                       clamp(sqr(v.y()) / sin_theta_2, -1.f, 1.f));
     }
 
@@ -135,7 +135,7 @@ template <typename Vector3f_> struct Frame {
      */
     static Float cos_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
-        return select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon, 1.f,
+        return select(abs(sin_theta_2) <= 4.f * math::Epsilon<Float>, 1.f,
                       clamp(sqr(v.x()) / sin_theta_2, -1.f, 1.f));
     }
 
@@ -149,7 +149,7 @@ template <typename Vector3f_> struct Frame {
 
         Vector2f result = sqr(head<2>(v)) * inv_sin_theta_2;
 
-        result = select(abs(sin_theta_2) <= 4.f * math::MachineEpsilon,
+        result = select(abs(sin_theta_2) <= 4.f * math::Epsilon<Float>,
                         Vector2f(1.f, 0.f), clamp(result, -1.f, 1.f));
 
         return { result.y(), result.x() };

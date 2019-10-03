@@ -9,7 +9,7 @@
 #pragma once
 
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/common.h>
+#include <mitsuba/render/interaction.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -152,7 +152,7 @@ struct MTS_EXPORT_RENDER BSDFContext {
     //! @}
     // =============================================================
 
-    BSDFContext(TransportMode mode = ERadiance)
+    BSDFContext(TransportMode mode = TransportMode::Radiance)
         : mode(mode) { }
 
     BSDFContext(TransportMode mode, uint32_t type_mask, uint32_t component)
@@ -236,7 +236,7 @@ template <typename Float> struct BSDFSample3 {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(BSDFSample, wo, pdf, eta, sampled_type, sampled_component)
+    ENOKI_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
 };
 
 
@@ -265,9 +265,10 @@ template <typename Float> struct BSDFSample3 {
  * \sa BSDFSample3
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER BSDF : public DifferentiableObject {
+// class MTS_EXPORT_RENDER BSDF : public DifferentiableObject {
+class MTS_EXPORT_RENDER BSDF : public Object {
 public:
-    ENOKI_IMPORT_TYPES()
+    MTS_IMPORT_TYPES();
 
     /**
      * \brief Importance sample the BSDF model
@@ -385,7 +386,7 @@ public:
      * \brief Evaluate un-scattered transmission component of the BSDF
      *
      * This method will evaluate the un-scattered transmission (\ref
-     * Flags::Null) of the BSDF for light arriving from direction \c w.
+     * BSDFFlags::Null) of the BSDF for light arriving from direction \c w.
      * The default implementation returns zero.
      *
      * \param si
@@ -411,7 +412,7 @@ public:
 
     /// Does the implementation require access to texture-space differentials?
     bool needs_differentials(Mask /* active */ = true) const {
-        return m_flags & Flags::NeedsDifferentials;
+        return m_flags & BSDFFlags::NeedsDifferentials;
     }
 
     /// Number of components this BSDF is comprised of.

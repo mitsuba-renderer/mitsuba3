@@ -30,8 +30,8 @@ template <typename Point_, typename Spectrum_> struct Ray {
     Point o;                     ///< Ray origin
     Vector d;                    ///< Ray direction
     Vector d_rcp;                ///< Componentwise reciprocals of the ray direction
-    Value mint = math::Epsilon;  ///< Minimum position on the ray segment
-    Value maxt = math::Infinity; ///< Maximum position on the ray segment
+    Value mint = math::Epsilon<Value>;  ///< Minimum position on the ray segment
+    Value maxt = math::Infinity<Value>; ///< Maximum position on the ray segment
     Value time = 0.f;            ///< Time value associated with this ray
     Wavelength wavelength;       ///< Wavelength packet associated with the ray
 
@@ -49,7 +49,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
 
     /// Construct a new ray (o, d) with bounds
     Ray(const Point &o, const Vector &d, Value mint, Value maxt,
-        Value time, const Wavelength &wavelengt)
+        Value time, const Wavelength &wavelength)
         : o(o), d(d), d_rcp(rcp(d)), mint(mint), maxt(maxt),
           time(time), wavelength(wavelength) { }
 
@@ -87,6 +87,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     using Base = Ray<Point_, Spectrum_>;
     using Base::Base;
 
+    using typename Base::Value;
     using typename Base::Point;
     using typename Base::Vector;
     using Base::o;
@@ -100,7 +101,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     RayDifferential(const Base &ray)
         : Base(ray), has_differentials(false) { }
 
-    void scale_differential(Float amount) {
+    void scale_differential(Value amount) {
         o_x = fmadd(o_x - o, amount, o);
         o_y = fmadd(o_y - o, amount, o);
         d_x = fmadd(d_x - d, amount, d);

@@ -10,16 +10,19 @@ NAMESPACE_BEGIN(mitsuba)
 
 /** \brief Generic surface interaction data structure
  */
-template <typename Float, typename Spectrum> struct Interaction {
+template <typename Float_, typename Spectrum_>
+struct Interaction {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
 
-    using Float    = Float_;
-    using Mask     = mask_t<Float>;
-    using Point3f  = Point<Float, 3>;
-    using Vector3f = Vector<Float, 3>;
-    using Ray3f    = Ray<Point3f>;
+    using Float      = Float_;
+    using Spectrum   = Spectrum_;
+    using Mask       = mask_t<Float>;
+    using Point3f    = Point<Float, 3>;
+    using Vector3f   = Vector<Float, 3>;
+    using Ray3f      = Ray<Point3f, Spectrum>;
+    using Wavelength = wavelength_t<Spectrum_>;
 
     //! @}
     // =============================================================
@@ -29,13 +32,13 @@ template <typename Float, typename Spectrum> struct Interaction {
     // =============================================================
 
     /// Distance traveled along the ray
-    Float t = math::Infinity;
+    Float t = math::Infinity<Float>;
 
     /// Time value associated with the interaction
     Float time;
 
     /// Wavelengths associated with the ray that produced this interaction
-    Wavelengths wavelengths;
+    Wavelength wavelengths;
 
     /// Position of the interaction in world coordinates
     Point3f p;
@@ -49,23 +52,23 @@ template <typename Float, typename Spectrum> struct Interaction {
 
     /// Is the current interaction valid?
     Mask is_valid() const {
-        return neq(t, math::Infinity);
+        return neq(t, math::Infinity<Float>);
     }
 
     /// Spawn a semi-infinite ray towards the given direction
     Ray3f spawn_ray(const Vector3f &d) const {
-        return Ray3f(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
-                     math::Infinity, time, wavelengths);
+        return Ray3f(p, d, (1.f + hmax(abs(p))) * math::Epsilon<Float>,
+                     math::Infinity<Float>, time, wavelengths);
     }
 
     /// Spawn a finite ray towards the given position
     Ray3f spawn_ray_to(const Point3f &t) const {
-        Vector3 d = t - p;
-        Value dist = norm(d);
+        Vector3f d = t - p;
+        Float dist = norm(d);
         d /= dist;
 
-        return Ray3f(p, d, (1.f + hmax(abs(p))) * math::Epsilon,
-                     dist * (1.f - math::ShadowEpsilon), time, wavelengths);
+        return Ray3f(p, d, (1.f + hmax(abs(p))) * math::Epsilon<Float>,
+                     dist * (1.f - math::ShadowEpsilon<Float>), time, wavelengths);
     }
 
     //! @}
@@ -77,34 +80,37 @@ template <typename Float, typename Spectrum> struct Interaction {
 /** \brief Container for all information related to a scattering
  * event on a surface
  */
-template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
+template <typename Float_, typename Spectrum_>
+struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
     //
-    using Base = Interaction<Point3_>;
-    using typename Base::Point3;
-    using typename Base::Vector3;
+    using Base = Interaction<Float_, Spectrum_>;
+    using Aliases = Aliases<Float_, Spectrum_>;
+    using typename Base::Point3f;
+    using typename Base::Vector3f;
     using typename Base::Value;
     using typename Base::Mask;
     using typename Base::Spectrum;
 
     using Index               = uint32_array_t<Value>;
 
-    using Point2              = point2_t<Point3>;
-    using Vector2             = vector2_t<Point3>;
-    using Normal3             = normal3_t<Point3>;
+    using Point2              = Point<Value, 2>;
+    using Vector2             = Vector<Value, 2>;
+    using Normal3             = Normal<Value, 3>;
 
-    using Frame3              = Frame<Vector3>;
+    using Frame3              = Frame<Vector3f>;
     using Color3              = Color<Value, 3>;
-    using RayDifferential3    = RayDifferential<Point3>;
+    using RayDifferential3    = RayDifferential<Value, Spectrum>;
     using MuellerMatrix       = MuellerMatrix<Spectrum>;
 
-    using BSDFPtr             = replace_scalar_t<Value, const BSDF *>;
-    using MediumPtr           = replace_scalar_t<Value, const Medium *>;
-    using ShapePtr            = replace_scalar_t<Value, const Shape *>;
-    using EmitterPtr          = replace_scalar_t<Value, const Emitter *>;
+    using typename Aliases::BSDFPtr;
+    using typename Aliases::MediumPtr;
+    using typename Aliases::ShapePtr;
+    using typename Aliases::EmitterPtr;
+    using typename Aliases::PositionSample3f;
 
     //! @}
     // =============================================================
@@ -131,13 +137,13 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     Frame3 sh_frame;
 
     /// Position partials wrt. the UV parameterization
-    Vector3 dp_du, dp_dv;
+    Vector3f dp_du, dp_dv;
 
     /// UV partials wrt. changes in screen-space
     Vector2 duv_dx, duv_dy;
 
     /// Incident direction in the local shading frame
-    Vector3 wi;
+    Vector3f wi;
 
     /// Primitive index, e.g. the triangle ID (if applicable)
     Index prim_index;
@@ -159,7 +165,7 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
      * The `shape` pointer is left uninitialized because we can't guarantee that
      * the given \ref PositionSample::object points to a Shape instance.
      */
-    explicit SurfaceInteraction(const PositionSample<Point3> &ps,
+    explicit SurfaceInteraction(const PositionSample3f &ps,
                                 const Spectrum &wavelengths)
         : Base(0.f, ps.time, wavelengths, ps.p), uv(ps.uv), n(ps.n),
           sh_frame(Frame3(ps.n)) { }
@@ -167,12 +173,12 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     using Base::is_valid;
 
     /// Convert a local shading-space vector into world space
-    Vector3 to_world(const Vector3 &v) const {
+    Vector3f to_world(const Vector3f &v) const {
         return sh_frame.to_world(v);
     }
 
     /// Convert a world-space vector into local shading coordinates
-    Vector3 to_local(const Vector3 &v) const {
+    Vector3f to_local(const Vector3f &v) const {
         return sh_frame.to_local(v);
     }
 
@@ -201,7 +207,7 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
      * When \c is_medium_transition() = \c true, determine the medium that
      * contains the ray (\c this->p, \c d)
      */
-    MediumPtr target_medium(const Vector3 &d) const {
+    MediumPtr target_medium(const Vector3f &d) const {
         return target_medium(dot(d, n));
     }
 
@@ -232,7 +238,7 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
     BSDFPtr bsdf() const { return shape->bsdf(); }
 
     /// Calls the suitable implementation of \ref Shape::normal_derivative()
-    std::pair<Vector3, Vector3> normal_derivative(
+    std::pair<Vector3f, Vector3f> normal_derivative(
             bool shading_frame = true, mask_t<Value> active = true) const {
         ShapePtr target = select(neq(instance, nullptr), instance, shape);
         return target->normal_derivative(*this, shading_frame, active);
@@ -295,15 +301,15 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
      *      Equivalent Mueller matrix that operates in world-space coordinates.
      */
     MuellerMatrix to_world_mueller(const MuellerMatrix &M_local,
-                                   const Vector3 &wi_local,
-                                   const Vector3 &wo_local) const {
-        Vector3 wi_world = to_world(wi_local),
+                                   const Vector3f &wi_local,
+                                   const Vector3f &wo_local) const {
+        Vector3f wi_world = to_world(wi_local),
                 wo_world = to_world(wo_local);
 
-        Vector3 in_basis_current = to_world(mueller::stokes_basis(-wi_local)),
+        Vector3f in_basis_current = to_world(mueller::stokes_basis(-wi_local)),
                 in_basis_target  = mueller::stokes_basis(-wi_world);
 
-        Vector3 out_basis_current = to_world(mueller::stokes_basis(wo_local)),
+        Vector3f out_basis_current = to_world(mueller::stokes_basis(wo_local)),
                 out_basis_target  = mueller::stokes_basis(wo_world);
 
         return mueller::rotate_mueller_basis(M_local,
@@ -333,15 +339,15 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
      *      Equivalent Mueller matrix that operates in local frame coordinates.
      */
     MuellerMatrix to_local_mueller(const MuellerMatrix &M_world,
-                                   const Vector3 &wi_world,
-                                   const Vector3 &wo_world) const {
-        Vector3 wi_local = to_local(wi_world),
+                                   const Vector3f &wi_world,
+                                   const Vector3f &wo_world) const {
+        Vector3f wi_local = to_local(wi_world),
                 wo_local = to_local(wo_world);
 
-        Vector3 in_basis_current = to_local(mueller::stokes_basis(-wi_world)),
+        Vector3f in_basis_current = to_local(mueller::stokes_basis(-wi_world)),
                 in_basis_target  = mueller::stokes_basis(-wi_local);
 
-        Vector3 out_basis_current = to_local(mueller::stokes_basis(wo_world)),
+        Vector3f out_basis_current = to_local(mueller::stokes_basis(wo_world)),
                 out_basis_target  = mueller::stokes_basis(wo_local);
 
         return mueller::rotate_mueller_basis(M_world,
@@ -365,8 +371,8 @@ template <typename Point3_> struct SurfaceInteraction : Interaction<Point3_> {
 
 // -----------------------------------------------------------------------------
 
-template <typename Point3>
-std::ostream &operator<<(std::ostream &os, const Interaction<Point3> &it) {
+template <typename Float, typename Spectrum>
+std::ostream &operator<<(std::ostream &os, const Interaction<Float, Spectrum> &it) {
     if (none(it.is_valid())) {
         os << "Interaction[invalid]";
     } else {
@@ -380,8 +386,8 @@ std::ostream &operator<<(std::ostream &os, const Interaction<Point3> &it) {
     return os;
 }
 
-template <typename Point3>
-std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Point3> &it) {
+template <typename Float, typename Spectrum>
+std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spectrum> &it) {
     if (none(it.is_valid())) {
         os << "SurfaceInteraction[invalid]";
     } else {

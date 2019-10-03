@@ -16,18 +16,20 @@ NAMESPACE_BEGIN(mitsuba)
  * responsible sampling method must annotate the record with the associated
  * probability density and delta.
  */
-template <typename Point3_> struct PositionSample {
+template <typename Float_, typename Spectrum_>
+struct PositionSample {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
 
-    using Point3               = Point3_;
-    using Value                = value_t<Point3>;
-    using Point2               = Point<Value, 2>;
-    using Normal3              = Normal<Value, 3>;
-    using ObjectPtr            = replace_scalar_t<Value, const Object *>;
-    using SurfaceInteraction   = mitsuba::SurfaceInteraction<Point3>;
-    using Mask                 = mask_t<Value>;
+    using Float                = Float_;
+    using Spectrum             = Spectrum_;
+    using Point2               = Point<Float, 2>;
+    using Point3               = Point<Float, 2>;
+    using Normal3              = Normal<Float, 3>;
+    using ObjectPtr            = replace_scalar_t<Float, const Object *>;
+    using SurfaceInteraction   = mitsuba::SurfaceInteraction<Float, Spectrum>;
+    using Mask                 = mask_t<Float>;
 
     //! @}
     // =============================================================
@@ -53,10 +55,10 @@ template <typename Point3_> struct PositionSample {
     Point2 uv;
 
     /// Associated time value
-    Value time;
+    Float time;
 
     /// Probability density at the sample
-    Value pdf;
+    Float pdf;
 
     /** Set if the sample was drawn from a degenerate (Dirac delta) distribution
      *
@@ -118,22 +120,25 @@ template <typename Point3_> struct PositionSample {
  * recomputed: the unit direction and distance from the reference position to
  * the sampled point.
  */
-template <typename Point3_> struct DirectionSample : public PositionSample<Point3_> {
+template <typename Float_, typename Spectrum_>
+struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
 
-    using Base                 = PositionSample<Point3_>;
-    using Vector3              = vector3_t<Point3_>;
-    using Interaction          = mitsuba::Interaction<Point3_>;
-
-    using typename Base::Value;
+    using Base = PositionSample<Float_, Spectrum_>;
+    using typename Base::Float;
+    using typename Base::Spectrum;
     using typename Base::Mask;
     using typename Base::Point2;
     using typename Base::Point3;
     using typename Base::Normal3;
     using typename Base::ObjectPtr;
     using typename Base::SurfaceInteraction;
+    using Aliases = Aliases<Float, Spectrum>;
+    using typename Aliases::Interaction;
+    using typename Aliases::Vector3f;
+    using typename Aliases::Ray3f;
 
     //! @}
     // =============================================================
@@ -152,10 +157,10 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
     using Base::object;
 
     /// Unit direction from the reference point to the target shape
-    Vector3 d;
+    Vector3f d;
 
     /// Distance from the reference point to the target shape
-    Value dist;
+    Float dist;
 
     //! @}
     // =============================================================
@@ -189,8 +194,8 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
 
     /// Element-by-element constructor
     DirectionSample(const Point3 &p, const Normal3 &n, const Point2 &uv,
-                    const Value &time, const Value &pdf, const Mask &delta,
-                    const ObjectPtr &object, const Vector3 &d, const Value &dist)
+                    const Float &time, const Float &pdf, const Mask &delta,
+                    const ObjectPtr &object, const Vector3f &d, const Float &dist)
         : Base(p, n, uv, time, pdf, delta, object), d(d), dist(dist) { }
 
     /// Construct from a position sample
@@ -209,7 +214,7 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
      * \param si
      *     A surface intersection record (usually on an emitter).
      */
-    void set_query(const Ray<Point3> &ray, const SurfaceInteraction &si) {
+    void set_query(const Ray3f &ray, const SurfaceInteraction &si) {
         p = si.p;
         n = si.sh_frame.n;
         uv = si.uv;
@@ -230,10 +235,10 @@ template <typename Point3_> struct DirectionSample : public PositionSample<Point
 
 // -----------------------------------------------------------------------------
 
-template <typename Point3>
+template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os,
-                         const PositionSample<Point3> &ps) {
-    os << "PositionSample" << type_suffix<Point3>() << "["  << std::endl
+                         const PositionSample<Float, Spectrum> &ps) {
+    os << "PositionSample" << type_suffix<Float>() << "["  << std::endl
        << "  p = " << string::indent(ps.p, 6) << "," << std::endl
        << "  n = " << string::indent(ps.n, 6) << "," << std::endl
        << "  uv = " << string::indent(ps.uv, 7) << "," << std::endl
@@ -245,10 +250,10 @@ std::ostream &operator<<(std::ostream &os,
     return os;
 }
 
-template <typename Point3>
+template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os,
-                         const DirectionSample<Point3> &ds) {
-    os << "DirectionSample" << type_suffix<Point3>() << "[" << std::endl
+                         const DirectionSample<Float, Spectrum> &ds) {
+    os << "DirectionSample" << type_suffix<Float>() << "[" << std::endl
        << "  p = " << string::indent(ds.p, 6) << "," << std::endl
        << "  n = " << string::indent(ds.n, 6) << "," << std::endl
        << "  uv = " << string::indent(ds.uv, 7) << "," << std::endl
@@ -262,9 +267,9 @@ std::ostream &operator<<(std::ostream &os,
     return os;
 }
 
-template <typename Point3>
+template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os,
-                         const RadianceSample<Point3> &record) {
+                         const RadianceSample<Float, Spectrum> &record) {
     os << "RadianceSample[" << std::endl
        << "  scene = ";
 
