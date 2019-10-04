@@ -125,19 +125,19 @@ bool Properties::has_property(const std::string &name) const {
 
 namespace {
     struct PropertyTypeVisitor {
-        typedef Properties::EType Result;
+        typedef PropertyType Result;
         Result operator()(const std::nullptr_t &) { throw std::runtime_error("Internal error"); }
-        Result operator()(const bool &) { return Properties::EBool; }
-        Result operator()(const int64_t &) { return Properties::ELong; }
-        Result operator()(const Float &) { return Properties::EFloat; }
-        Result operator()(const Vector3f &) { return Properties::EVector3f; }
-        Result operator()(const Point3f &) { return Properties::EPoint3f; }
-        Result operator()(const std::string &) { return Properties::EString; }
-        Result operator()(const Transform4f &) { return Properties::ETransform; }
-        Result operator()(const Color3f &) { return Properties::EColor; }
-        Result operator()(const NamedReference &) { return Properties::ENamedReference; }
-        Result operator()(const ref<Object> &) { return Properties::EObject; }
-        Result operator()(const void *&) { return Properties::EPointer; }
+        Result operator()(const bool &) { return PropertyType::Bool; }
+        Result operator()(const int64_t &) { return PropertyType::Long; }
+        Result operator()(const Float &) { return PropertyType::Float; }
+        Result operator()(const Vector3f &) { return PropertyType::Vector3f; }
+        Result operator()(const Point3f &) { return PropertyType::Point3f; }
+        Result operator()(const std::string &) { return PropertyType::String; }
+        Result operator()(const Transform4f &) { return PropertyType::Transform; }
+        Result operator()(const Color3f &) { return PropertyType::Color; }
+        Result operator()(const NamedReference &) { return PropertyType::NamedReference; }
+        Result operator()(const ref<Object> &) { return PropertyType::Object; }
+        Result operator()(const void *&) { return PropertyType::Pointer; }
     };
 
     struct StreamVisitor {
@@ -158,7 +158,7 @@ namespace {
     };
 }
 
-Properties::EType Properties::type(const std::string &name) const {
+PropertyType Properties::type(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         Throw("type(): Could not find property named \"%s\"!", name);

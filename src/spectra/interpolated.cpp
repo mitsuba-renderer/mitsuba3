@@ -34,7 +34,7 @@ public:
         m_lambda_min = props.float_("lambda_min");
         m_lambda_max = props.float_("lambda_max");
 
-        if (props.type("values") == Properties::EString) {
+        if (props.type("values") == PropertyType::String) {
             std::vector<std::string> values_str =
                 string::tokenize(props.string("values"), " ,");
 

@@ -47,25 +47,25 @@ MTS_PY_EXPORT(Properties) {
             // We need to ask for type information to return the right cast
             auto type = p.type(key);
 
-            if (type == Properties::EBool)
+            if (type == PropertyType::Bool)
                 return py::cast(p.bool_(key));
-            else if (type == Properties::ELong)
+            else if (type == PropertyType::Long)
                 return py::cast(p.long_(key));
-            else if (type == Properties::EFloat)
+            else if (type == PropertyType::Float)
                 return py::cast(p.float_(key));
-            else if (type == Properties::EString)
+            else if (type == PropertyType::String)
                 return py::cast(p.string(key));
-            else if (type == Properties::EVector3f)
+            else if (type == PropertyType::Vector3f)
                 return py::cast(p.vector3f(key));
-            else if (type == Properties::EPoint3f)
+            else if (type == PropertyType::Point3f)
                 return py::cast(p.point3f(key));
-            else if (type == Properties::ETransform)
+            else if (type == PropertyType::Transform)
                 return py::cast(p.transform(key));
-            else if (type == Properties::EAnimatedTransform)
+            else if (type == PropertyType::AnimatedTransform)
                 return py::cast(p.animated_transform(key));
-            else if (type == Properties::EObject)
+            else if (type == PropertyType::Object)
                 return py::cast(p.object(key));
-            else if (type == Properties::EPointer)
+            else if (type == PropertyType::Pointer)
                 return py::cast(p.pointer(key));
             else {
                 throw std::runtime_error("Unsupported property type");

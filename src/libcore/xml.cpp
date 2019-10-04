@@ -1013,7 +1013,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
     auto unqueried = props.unqueried();
     if (!unqueried.empty()) {
         for (auto &v : unqueried) {
-            if (props.type(v) == Properties::EObject) {
+            if (props.type(v) == PropertyType::Object) {
                 const auto &obj = props.object(v);
                 Throw("Error while loading \"%s\" (near %s): unreferenced "
                       "object %s (within %s of type \"%s\")",

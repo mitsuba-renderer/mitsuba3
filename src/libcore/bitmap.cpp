@@ -1251,38 +1251,38 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
         Imf::addDwaCompressionLevel(header, float(quality));
 
     for (auto it = keys.begin(); it != keys.end(); ++it) {
-        Properties::EType type = metadata.type(*it);
+        PropertyType type = metadata.type(*it);
         if (*it == "pixelAspectRatio" || *it == "screenWindowWidth" ||
             *it == "screenWindowCenter")
             continue;
 
         switch (type) {
-            case Properties::EString:
+            case PropertyType::String:
                 header.insert(it->c_str(), Imf::StringAttribute(metadata.string(*it)));
                 break;
-            case Properties::ELong:
+            case PropertyType::Long:
                 header.insert(it->c_str(), Imf::IntAttribute(metadata.int_(*it)));
                 break;
-            case Properties::EFloat:
+            case PropertyType::Float:
                 #if defined(SINGLE_PRECISION)
                     header.insert(it->c_str(), Imf::FloatAttribute(metadata.float_(*it)));
                 #else
                     header.insert(it->c_str(), Imf::DoubleAttribute(metadata.float_(*it)));
                 #endif
                 break;
-            case Properties::EVector3f: {
+            case PropertyType::Vector3f: {
                     Vector3f val = metadata.vector3f(*it);
                     header.insert(it->c_str(), Imf::V3fAttribute(
                         Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
                 }
                 break;
-            case Properties::EPoint3f: {
+            case PropertyType::Point3f: {
                     Point3f val = metadata.point3f(*it);
                     header.insert(it->c_str(), Imf::V3fAttribute(
                         Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
                 }
                 break;
-            case Properties::ETransform: {
+            case PropertyType::Transform: {
                     Matrix4f val = metadata.transform(*it).matrix;
                     header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
                         (float) val(0, 0), (float) val(0, 1),

@@ -23,6 +23,34 @@ private:
     std::string m_value;
 };
 
+/// Supported types of properties
+enum class PropertyType : uint32_t {
+    /// Boolean value (true/false)
+    Bool = 0,
+    /// 64-bit signed integer
+    Long,
+    /// Floating point value
+    Float,
+    /// 3D point
+    Point3f,
+    /// 3D vector
+    Vector3f,
+    /// 4x4 transform for homogeneous coordinates
+    Transform,
+    /// An animated 4x4 transformation
+    AnimatedTransform,
+    /// Tristimulus color value
+    Color,
+    /// String
+    String,
+    /// Named reference to another named object
+    NamedReference,
+    /// Arbitrary object
+    Object,
+    /// const void* pointer (for internal communication between plugins)
+    Pointer
+};
+
 /** \brief Associative parameter map for constructing
  * subclasses of \ref Object.
  *
@@ -44,34 +72,6 @@ public:
     using Point3f     = Point<Float, 3>;
     using Color3f     = Color<Float, 3>;
     using Transform4f = Transform<Float, 4>;
-
-    /// Supported types of properties
-    enum EType {
-        /// Boolean value (true/false)
-        EBool = 0,
-        /// 64-bit signed integer
-        ELong,
-        /// Floating point value
-        EFloat,
-        /// 3D point
-        EPoint3f,
-        /// 3D vector
-        EVector3f,
-        /// 4x4 transform for homogeneous coordinates
-        ETransform,
-        /// An animated 4x4 transformation
-        EAnimatedTransform,
-        /// Tristimulus color value
-        EColor,
-        /// String
-        EString,
-        /// Named reference to another named object
-        ENamedReference,
-        /// Arbitrary object
-        EObject,
-        /// const void* pointer (for internal communication between plugins)
-        EPointer
-    };
 
     /// Construct an empty property container
     Properties();
@@ -101,7 +101,7 @@ public:
      * If no property exists under that name, an error is logged
      * and type <tt>void</tt> is returned.
      */
-    EType type(const std::string &name) const;
+    PropertyType type(const std::string &name) const;
 
     /**
      * \brief Remove a property with the specified name
