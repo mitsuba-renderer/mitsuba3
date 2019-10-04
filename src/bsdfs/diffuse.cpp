@@ -8,32 +8,36 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
-    SmoothDiffuse(const Properties &props) : BSDF(props) {
+    MTS_IMPORT_TYPES();
+    using ContinuousSpectrum = ContinuousSpectrum<Float, Spectrum>;
+    using Base = BSDF<Float, Spectrum>;
+    using Base::Base;
+    using Base::m_flags;
+    using Base::m_components;
+
+    explicit SmoothDiffuse(const Properties &props) : Base(props) {
         m_reflectance = props.spectrum("reflectance", .5f);
-        m_flags = EDiffuseReflection | EFrontSide;
+        m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
     }
 
     MTS_INLINE
-    std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx,
-                                                const SurfaceInteraction &si,
-                                                Value /* sample1 */,
-                                                const Point2 &sample2,
-                                                mask_t<Value> active) const {
-        using Frame = Frame<typename BSDFSample::Vector3>;
-
-        Value cos_theta_i = Frame::cos_theta(si.wi);
-        BSDFSample bs = zero<BSDFSample>();
+    std::pair<BSDFSample3f, Spectrum> sample_impl(const BSDFContext &ctx,
+                                                  const SurfaceInteraction3f &si,
+                                                  Float /* sample1 */, const Point2f &sample2,
+                                                  Mask active) const {
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
+        BSDFSample3f bs = zero<BSDFSample3f>();
 
         active &= cos_theta_i > 0.f;
         if (unlikely(none_or<false>(active) ||
-                     !ctx.is_enabled(EDiffuseReflection)))
+                     !ctx.is_enabled(BSDFFlags::DiffuseReflection)))
             return { bs, 0.f };
 
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
         bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
         bs.eta = 1.f;
-        bs.sampled_type = (uint32_t) EDiffuseReflection;
+        bs.sampled_type = (uint32_t) BSDFFlags::DiffuseReflection;
         bs.sampled_component = 0;
 
         Spectrum value = m_reflectance->eval(si, active);
@@ -41,41 +45,32 @@ public:
         return { bs, select(active && bs.pdf > 0, value, 0.f) };
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = Spectrum<Value>>
     MTS_INLINE
-    Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, mask_t<Value> active) const {
-        using Frame = mitsuba::Frame<Vector3>;
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
+                  Mask active) const {
 
-        if (!ctx.is_enabled(EDiffuseReflection))
+        if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return 0.f;
 
-        Value cos_theta_i = Frame::cos_theta(si.wi),
-              cos_theta_o = Frame::cos_theta(wo);
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
 
         Spectrum value = m_reflectance->eval(si, active) *
-                         math::InvPi * cos_theta_o;
+                         math::InvPi<Float> * cos_theta_o;
 
         return select(cos_theta_i > 0.f && cos_theta_o > 0.f, value, 0.f);
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value = value_t<Vector3>>
     MTS_INLINE
-    Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                   const Vector3 &wo, mask_t<Value> /* active */) const {
-        using Frame = Frame<Vector3>;
-        using Frame = mitsuba::Frame<Vector3>;
-
-        if (!ctx.is_enabled(EDiffuseReflection))
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
+              Mask /* active */) const {
+        if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return 0.f;
 
-        Value cos_theta_i = Frame::cos_theta(si.wi),
-              cos_theta_o = Frame::cos_theta(wo);
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
 
-        Value pdf = warp::square_to_cosine_hemisphere_pdf(wo);
+        Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
         return select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
     }
@@ -90,13 +85,13 @@ public:
 
     std::vector<ref<Object>> children() override { return { m_reflectance.get() }; }
 
-    MTS_IMPLEMENT_BSDF_ALL()
+    // MTS_IMPLEMENT_BSDF_ALL()
     MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_reflectance;
 };
 
-MTS_IMPLEMENT_CLASS(SmoothDiffuse, BSDF)
-MTS_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material")
+// MTS_IMPLEMENT_CLASS(SmoothDiffuse, BSDF)
+// MTS_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material")
 
 NAMESPACE_END(mitsuba)

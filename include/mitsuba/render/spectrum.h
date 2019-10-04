@@ -21,8 +21,12 @@ NAMESPACE_BEGIN(mitsuba)
  * this. The default implementation strips the position information and falls
  * back the non-textured implementation.
  */
-class MTS_EXPORT_RENDER ContinuousSpectrum : public DifferentiableObject {
+template <typename Float, typename Spectrum>
+class MTS_EXPORT_RENDER ContinuousSpectrum : public Object {
 public:
+    MTS_IMPORT_TYPES();
+    using Wavelength = wavelength_t<Spectrum>;
+
     /**
      * Evaluate the value of the spectral power distribution
      * at a set of wavelengths
@@ -30,22 +34,7 @@ public:
      * \param wavelengths
      *     List of wavelengths specified in nanometers
      */
-    virtual Spectrumf eval(const Spectrumf &wavelengths) const;
-
-    /// Wrapper for scalar \ref eval() with a mask (which will be ignored)
-    Spectrumf eval(const Spectrumf &wavelengths, bool /* active */) const {
-        return eval(wavelengths);
-    }
-
-    /// Vectorized version of \ref eval()
-    virtual SpectrumfP eval(const SpectrumfP &wavelengths,
-                            MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref eval()
-    virtual SpectrumfD eval(const SpectrumfD &wavelengths,
-                            MaskD active = true) const;
-#endif
+    virtual Spectrum eval(const Wavelength &wavelengths, Mask active = true) const;
 
     /**
      * \brief Importance sample the spectral power distribution
@@ -62,24 +51,8 @@ public:
      *     2. The Monte Carlo importance weight (Spectral power
      *        density value divided by the sampling density)
      */
-    virtual std::pair<Spectrumf, Spectrumf>
-    sample(const Spectrumf &sample) const;
-
-    /// Wrapper for scalar \ref sample() with a mask (which will be ignored)
-    std::pair<Spectrumf, Spectrumf>
-    sample(const Spectrumf &s, bool /* active */) const {
-        return sample(s);
-    }
-
-    /// Vectorized version of \ref sample()
-    virtual std::pair<SpectrumfP, SpectrumfP>
-    sample(const SpectrumfP &sample, MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample()
-    virtual std::pair<SpectrumfD, SpectrumfD>
-    sample(const SpectrumfD &sample, MaskD active = true) const;
-#endif
+    virtual std::pair<Wavelength, Spectrum>
+    sample(const Spectrum &sample, Mask active = true) const;
 
     /**
      * \brief Return the probability distribution of the \ref sample() method
@@ -88,22 +61,7 @@ public:
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.
      */
-    virtual Spectrumf pdf(const Spectrumf &wavelengths) const;
-
-    /// Wrapper for scalar \ref pdf() with a mask (which will be ignored)
-    Spectrumf pdf(const Spectrumf &wavelengths, bool /* active */) const {
-        return pdf(wavelengths);
-    }
-
-    /// Vectorized version of \ref pdf()
-    virtual SpectrumfP pdf(const SpectrumfP &wavelengths,
-                           MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref pdf()
-    virtual SpectrumfD pdf(const SpectrumfD &wavelengths,
-                           MaskD active = true) const;
-#endif
+    virtual Spectrum pdf(const Wavelength &wavelengths, Mask active = true) const;
 
     /**
      * Return the mean value of the spectrum over the support
@@ -119,7 +77,7 @@ public:
     /**
      * Convenience method returning the standard D65 illuminant.
      */
-    static ref<ContinuousSpectrum> D65(Float scale = 1.f, bool monochrome = false);
+    static ref<ContinuousSpectrum> D65(float scale = 1.f, bool monochrome = false);
 
     // ======================================================================
     //! @{ \name Texture interface implementation
@@ -132,22 +90,7 @@ public:
     // ======================================================================
 
     /// Evaluate the texture at the given surface interaction
-    virtual Spectrumf eval(const SurfaceInteraction3f &si) const;
-
-    /// Wrapper for scalar \ref eval() with a mask (which will be ignored)
-    Spectrumf eval(const SurfaceInteraction3f &si, bool /* active */) const {
-        return eval(si);
-    }
-
-    /// Vectorized version of \ref eval()
-    virtual SpectrumfP eval(const SurfaceInteraction3fP &si,
-                            MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref eval()
-    virtual SpectrumfD eval(const SurfaceInteraction3fD &si,
-                            MaskD active = true) const;
-#endif
+    virtual Spectrum eval(const SurfaceInteraction3f &si, Mask active = true) const;
 
     /**
      * \brief Importance sample the (textured) spectral power distribution
@@ -167,26 +110,8 @@ public:
      *     2. The Monte Carlo importance weight (Spectral power
      *        distribution value divided by the sampling density)
      */
-    virtual std::pair<Spectrumf, Spectrumf>
-    sample(const SurfaceInteraction3f &si, const Spectrumf &sample) const;
-
-    /// Wrapper for scalar \ref sample() with a mask (which will be ignored)
-    std::pair<Spectrumf, Spectrumf>
-    sample(const SurfaceInteraction3f &si, const Spectrumf &sample_, bool /* active */) const {
-        return sample(si, sample_);
-    }
-
-    /// Vectorized version of \ref sample()
-    virtual std::pair<SpectrumfP, SpectrumfP>
-    sample(const SurfaceInteraction3fP &si, const SpectrumfP &sample,
-           MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample()
-    virtual std::pair<SpectrumfD, SpectrumfD>
-    sample(const SurfaceInteraction3fD &si, const SpectrumfD &sample,
-           MaskD active = true) const;
-#endif
+    virtual std::pair<Wavelength, Spectrum>
+    sample(const SurfaceInteraction3f &si, const Spectrum &sample, Mask active = true) const;
 
     /**
      * \brief Return the probability distribution of the \ref sample() method
@@ -195,22 +120,7 @@ public:
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.
      */
-    virtual Spectrumf pdf(const SurfaceInteraction3f &si) const;
-
-    /// Wrapper for scalar \ref pdf() with a mask (which will be ignored)
-    Spectrumf pdf(const SurfaceInteraction3f &si, bool /* active */) const {
-        return pdf(si);
-    }
-
-    /// Vectorized version of \ref pdf()
-    virtual SpectrumfP pdf(const SurfaceInteraction3fP &si,
-                           MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref pdf()
-    virtual SpectrumfD pdf(const SurfaceInteraction3fD &si,
-                           MaskD active = true) const;
-#endif
+    virtual Spectrum pdf(const SurfaceInteraction3f &si, Mask active = true) const;
 
     //! @}
     // ======================================================================

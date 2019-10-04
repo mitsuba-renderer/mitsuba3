@@ -13,16 +13,17 @@ NAMESPACE_BEGIN(mitsuba)
  * acceleration data structures.
  */
 // class MTS_EXPORT_RENDER Shape : public DifferentiableObject {
-template <typename Float, typename Value>
+template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
-    using Aliases = Aliases<Float, Spectrum>;
-    using typename Aliases::PositionSample3f;
+    MTS_IMPORT_TYPES();
+    using typename Aliases::BSDF;
+    using typename Aliases::Medium;
+    using typename Aliases::Emitter;
 
     // Use 32 bit indices to keep track of indices to conserve memory
-    using Index  = uint32_t;
-    using Size   = uint32_t;
-
+    using Index = uint32_t;
+    using Size  = uint32_t;
 
     // =============================================================
     //! @{ \name Sampling routines
@@ -45,26 +46,8 @@ public:
      * \return
      *     A \ref PositionSample instance describing the generated sample
      */
-    virtual PositionSample3f sample_position(Float time,
-                                             const Point2f &sample) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_position()
-    PositionSample3f sample_position(Float time,
-                                     const Point2f &sample,
-                                     bool /* unused */) const {
-        return sample_position(time, sample);
-    }
-
-    /// Vectorized version of \ref sample_position.
-    virtual PositionSample3fP sample_position(FloatP time,
-                                              const Point2fP &sample,
-                                              MaskP active = true) const;
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample_position.
-    virtual PositionSample3fD sample_position(FloatD time,
-                                              const Point2fD &sample,
-                                              MaskD active = true) const;
-#endif
+    virtual PositionSample3f sample_position(Float time, const Point2f &sample,
+                                             Mask active = true) const;
 
     /**
      * \brief Query the probability density of \ref sample_position() for
@@ -76,23 +59,7 @@ public:
      * \return
      *     The probability density per unit area
      */
-    virtual Float pdf_position(const PositionSample3f &ps) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_position()
-    Float pdf_position(const PositionSample3f &ps,
-                       bool /* unused */) const {
-        return pdf_position(ps);
-    }
-
-    /// Vectorized version of \ref pdf_position.
-    virtual FloatP pdf_position(const PositionSample3fP &ps,
-                                MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref pdf_position.
-    virtual FloatD pdf_position(const PositionSample3fD &ps,
-                                MaskD active = true) const;
-#endif
+    virtual Float pdf_position(const PositionSample3f &ps, Mask active = true) const;
 
     /**
      * \brief Sample a direction towards this shape with respect to solid
@@ -121,27 +88,8 @@ public:
      * \return
      *     A \ref DirectionSample instance describing the generated sample
      */
-    virtual DirectionSample3f sample_direction(const Interaction3f &it,
-                                               const Point2f &sample) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction()
-    DirectionSample3f sample_direction(const Interaction3f &it,
-                                       const Point2f &sample,
-                                       bool /* unused */) const {
-        return sample_direction(it, sample);
-    }
-
-    /// Vectorized version of \ref sample_direction.
-    virtual DirectionSample3fP sample_direction(const Interaction3fP &it,
-                                                const Point2fP &sample,
-                                                MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample_direction.
-    virtual DirectionSample3fD sample_direction(const Interaction3fD &it,
-                                                const Point2fD &sample,
-                                                MaskD active = true) const;
-#endif
+    virtual DirectionSample3f sample_direction(const Interaction3f &it, const Point2f &sample,
+                                               Mask active = true) const;
 
     /**
      * \brief Query the probability density of \ref sample_direction()
@@ -156,26 +104,7 @@ public:
      *     The probability density per unit solid angle
      */
     virtual Float pdf_direction(const Interaction3f &it,
-                                const DirectionSample3f &ds) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_direction()
-    Float pdf_direction(const Interaction3f &it,
-                        const DirectionSample3f &ds,
-                        bool /* unused */) const {
-        return pdf_direction(it, ds);
-    }
-
-    /// Vectorized version of \ref pdf_direction.
-    virtual FloatP pdf_direction(const Interaction3fP &it,
-                                 const DirectionSample3fP &ds,
-                                 MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref pdf_direction.
-    virtual FloatD pdf_direction(const Interaction3fD &it,
-                                 const DirectionSample3fD &ds,
-                                 MaskD active = true) const;
-#endif
+                                const DirectionSample3f &ds, Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -203,22 +132,8 @@ public:
      *    sizeof(Float[P])</tt> bytes) that must be supplied to cache
      *    information about the intersection.
      */
-    virtual std::pair<bool, Float> ray_intersect(const Ray3f &ray, Float *cache) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect()
-    std::pair<bool, Float> ray_intersect(const Ray3f &ray, Float *cache,
-                                         bool /* unused */) const {
-        return ray_intersect(ray, cache);
-    }
-
-    /// Vectorized version of \ref ray_intersect.
-    virtual std::pair<MaskP, FloatP> ray_intersect(const Ray3fP &ray, FloatP *cache,
-                                                   MaskP active) const;
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref ray_intersect.
-    virtual std::pair<MaskD, FloatD> ray_intersect(const Ray3fD &ray, FloatD *cache,
-                                                   MaskD active) const;
-#endif
+    virtual std::pair<Mask, Float> ray_intersect(const Ray3f &ray, Float *cache,
+                                                 Mask active = true) const;
 
     /**
      * \brief Fast ray shadow test
@@ -235,20 +150,7 @@ public:
      * \param ray
      *     The ray to be tested for an intersection
      */
-    virtual bool ray_test(const Ray3f &ray) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_test()
-    bool ray_test(const Ray3f &ray, bool /* unused */) const {
-        return ray_test(ray);
-    }
-
-    /// Vectorized version of \ref ray_test.
-    virtual MaskP ray_test(const Ray3fP &ray, MaskP active) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref ray_test.
-    virtual MaskD ray_test(const Ray3fD &ray, MaskD active) const;
-#endif
+    virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
 
     /**
      * \brief Given a surface intersection found by \ref ray_intersect(), fill
@@ -263,31 +165,8 @@ public:
      * fill_surface_interaction(), and \c duv_dx, and \c duv_dy are left
      * uninitialized.
      */
-    virtual void fill_surface_interaction(const Ray3f &ray,
-                                          const Float *cache,
-                                          SurfaceInteraction3f &si) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref fill_surface_interaction()
-    void fill_surface_interaction(const Ray3f &ray,
-                                  const Float *cache,
-                                  SurfaceInteraction3f &si,
-                                  bool /* unused */) const {
-        fill_surface_interaction(ray, cache, si);
-    }
-
-    /// Vectorized version of \ref fill_surface_interaction()
-    virtual void fill_surface_interaction(const Ray3fP &ray,
-                                          const FloatP *cache,
-                                          SurfaceInteraction3fP &si,
-                                          MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref fill_surface_interaction()
-    virtual void fill_surface_interaction(const Ray3fD &ray,
-                                          const FloatD *cache,
-                                          SurfaceInteraction3fD &si,
-                                          MaskD active = true) const;
-#endif
+    virtual void fill_surface_interaction(const Ray3f &ray, const Float *cache,
+                                          SurfaceInteraction3f &si, Mask active = true) const;
 
     /**
      * \brief Test for an intersection and return detailed information
@@ -299,15 +178,7 @@ public:
      * \param ray
      *     The ray to be tested for an intersection
      */
-    SurfaceInteraction3f ray_intersect(const Ray3f &ray) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref ray_intersect
-    SurfaceInteraction3f ray_intersect(const Ray3f &ray, bool /* unused */) const {
-        return ray_intersect(ray);
-    }
-
-    /// Vectorized version of \ref ray_intersect()
-    SurfaceInteraction3fP ray_intersect(const Ray3fP &ray, MaskP active = true) const;
+    SurfaceInteraction3f ray_intersect(const Ray3f &ray, Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -368,30 +239,9 @@ public:
      *     The partial derivatives of the normal vector with
      *     respect to \c u and \c v.
      */
-    virtual std::pair<Vector3f, Vector3f>
-    normal_derivative(const SurfaceInteraction3f &si,
-                      bool shading_frame = true) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref normal_derivative()
-    std::pair<Vector3f, Vector3f>
-    normal_derivative(const SurfaceInteraction3f &si,
-                      bool shading_frame, bool /* unused */) const {
-        return normal_derivative(si, shading_frame);
-    }
-
-    /// Vectorized version of \ref normal_derivative()
-    virtual std::pair<Vector3fP, Vector3fP>
-    normal_derivative(const SurfaceInteraction3fP &si,
-                      bool shading_frame = true,
-                      MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref normal_derivative()
-    virtual std::pair<Vector3fD, Vector3fD>
-    normal_derivative(const SurfaceInteraction3fD &si,
-                      bool shading_frame = true,
-                      MaskD active = true) const;
-#endif
+    virtual std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
+                                                            bool shading_frame = true,
+                                                            Mask active        = true) const;
 
     //! @}
     // =============================================================
@@ -485,22 +335,11 @@ protected:
     std::string m_id;
 
 private:
-    // Internal
+    DirectionSample3f sample_direction_fallback(const Interaction3f &it, const Point2f &sample,
+                                                Mask mask) const;
 
-    template <typename Interaction,
-              typename Value = typename Interaction::Value,
-              typename Point2 = Point<Value, 2>,
-              typename Point3 = Point<Value, 3>,
-              typename DirectionSample = mitsuba::DirectionSample<Point3>>
-    DirectionSample sample_direction_fallback(const Interaction &it,
-                                              const Point2 &sample,
-                                              mask_t<Value> mask) const;
-
-    template <typename Interaction, typename DirectionSample,
-              typename Value = typename Interaction::Value>
-    Value pdf_direction_fallback(const Interaction &it,
-                                 const DirectionSample &ds,
-                                 mask_t<Value> mask) const;
+    Float pdf_direction_fallback(const Interaction3f &it, const DirectionSample3f &ds,
+                                 Mask mask) const;
 };
 
 NAMESPACE_END(mitsuba)

@@ -120,6 +120,9 @@ enum class BSDFFlags : uint32_t {
     All          = Diffuse | Glossy | Delta | Delta1D
 };
 
+constexpr enum BSDFFlags operator |(const enum BSDFFlags f1, const enum BSDFFlags f2) {
+    return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) | static_cast<uint32_t>(f2));
+}
 
 /**
  * \brief Context data structure for BSDF evaluation and sampling
@@ -171,8 +174,9 @@ struct MTS_EXPORT_RENDER BSDFContext {
      * Checks whether a given BSDF component type and BSDF component index are
      * enabled in this context.
      */
-    bool is_enabled(uint32_t type_, uint32_t component_ = 0) const {
-        return (type_mask == (uint32_t) -1 || (type_mask & type_) == type_)
+    bool is_enabled(BSDFFlags type_, uint32_t component_ = 0) const {
+        auto type_number = static_cast<uint32_t>(type_);
+        return (type_mask == (uint32_t) -1 || (type_mask & type_number) == type_number)
             && (component == (uint32_t) -1 || component == component_);
     }
 };

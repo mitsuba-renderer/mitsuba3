@@ -6,7 +6,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum> class BSDF;
 struct BSDFContext;
-class ContinuousSpectrum;
+template <typename Float, typename Spectrum> class ContinuousSpectrum;
 class DifferentiableParameters;
 class DifferentiableObject;
 class Emitter;
@@ -18,7 +18,7 @@ class Medium;
 class Sampler;
 class Scene;
 class Sensor;
-class Shape;
+template <typename Float, typename Spectrum> class Shape;
 class ShapeKDTree;
 class Texture3D;
 
@@ -109,15 +109,15 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using BSDFSample3f         = BSDFSample<Float, Spectrum>;
 
     // TODO
-    // using Sampler              = mitsuba::Sampler<Float>;
-    // using Shape                = mitsuba::Shape<Float>;
+    // using Sampler              = mitsuba::Sampler<Float, Spectrum>;
+    using Shape                = mitsuba::Shape<Float, Spectrum>;
     // using Integrator           = mitsuba::Integrator<Float, Spectrum>;
     using BSDF                 = mitsuba::BSDF<Float, Spectrum>;
     // using Sensor               = mitsuba::Sensor<Float, Spectrum>;
     // using Emitter              = mitsuba::Emitter<Float, Spectrum>;
     // using Medium               = mitsuba::Medium<Float, Spectrum>;
     using Sampler              = mitsuba::Sampler;
-    using Shape                = mitsuba::Shape;
+    // using Shape                = mitsuba::Shape;
     using Integrator           = mitsuba::Integrator;
     // using BSDF                 = mitsuba::BSDF;
     using Sensor               = mitsuba::Sensor;
@@ -187,7 +187,9 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Interaction3f        = typename Aliases::Interaction3f;                                  \
     using SurfaceInteraction3f = typename Aliases::SurfaceInteraction3f;                           \
     using MediumInteraction3f  = typename Aliases::MediumInteraction3f;                            \
-    using BSDFSample3f         = typename Aliases::BSDFSample3f;                                   \
+    using BSDFSample3f         = typename Aliases::BSDFSample3f;
+
+#define MTS_IMPORT_OBJECT_TYPES() \
     using Sampler              = typename Aliases::Sampler;                                        \
     using Shape                = typename Aliases::Shape;                                          \
     using Integrator           = typename Aliases::Integrator;                                     \
@@ -195,9 +197,10 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Sensor               = typename Aliases::Sensor;                                         \
     using Emitter              = typename Aliases::Emitter;                                        \
     using Medium               = typename Aliases::Medium;                                         \
-    using EmitterPtr           = typename Aliases::EmitterPtr;                                     \
     using BSDFPtr              = typename Aliases::BSDFPtr;                                        \
-    using ShapePtr             = typename Aliases::ShapePtr;
+    using MediumPtr            = typename Aliases::MediumPtr;                                        \
+    using ShapePtr             = typename Aliases::ShapePtr;  \
+    using EmitterPtr           = typename Aliases::EmitterPtr;
 
 // -----------------------------------------------------------------------------
 

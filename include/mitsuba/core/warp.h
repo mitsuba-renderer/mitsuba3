@@ -460,7 +460,6 @@ MTS_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const V
 template <typename Value>
 MTS_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
                                         const Value &alpha) {
-    using Mask = mask_t<Value>;
     using Frame = Frame<Vector<Value, 3>>;
 
     Value temp = Frame::tan_theta(m) / alpha,

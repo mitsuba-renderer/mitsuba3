@@ -8,7 +8,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // Forward declarations
-class ContinuousSpectrum;
+template <typename Float, typename Spectrum> class ContinuousSpectrum;
 class Texture3D;
 
 /// Wrapper object used to represent named references to Object instances
