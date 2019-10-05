@@ -18,6 +18,9 @@ NAMESPACE_BEGIN(mitsuba)
  * \ingroup libcore
  */
 class MTS_EXPORT_CORE DiscreteDistribution {
+    // TODO: decide how to templatize this class.
+    using Float = float;
+
 #if defined(MTS_ENABLE_AUTODIFF)
     using FloatVector = std::vector<Float, enoki::cuda_host_allocator<Float>>;
 #else
