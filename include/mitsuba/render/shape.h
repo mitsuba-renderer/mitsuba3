@@ -17,10 +17,10 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
     MTS_IMPORT_TYPES();
-    using typename Aliases::BSDF;
-    using typename Aliases::Medium;
-    using typename Aliases::Emitter;
-    using typename Aliases::Sensor;
+    using BSDF    = typename Aliases::BSDF;
+    using Medium  = typename Aliases::Medium;
+    using Emitter = typename Aliases::Emitter;
+    using Sensor  = typename Aliases::Sensor;
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using Index = uint32_t;

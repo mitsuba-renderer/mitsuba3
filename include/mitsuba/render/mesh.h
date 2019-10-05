@@ -9,8 +9,15 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class MTS_EXPORT_RENDER Mesh : public Shape {
+template <typename Float, typename Spectrum>
+class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
+    MTS_IMPORT_TYPES();
+    using Base = Shape<Float, Spectrum>;
+    using typename Base::Size;
+    using typename Base::Index;
+    using Base::m_mesh;
+
     using FaceHolder   = std::unique_ptr<uint8_t[]>;
     using VertexHolder = std::unique_ptr<uint8_t[]>;
 
@@ -67,117 +74,71 @@ public:
     }
 
     /// Returns the face indices associated with triangle \c index
-    MTS_INLINE Vector3u face_indices(const Index &index) const {
-        return load<Vector3u>(face(index));
-    }
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref face_indices()
-    template <typename Mask>
-    Vector3i face_indices(Index index, Mask/* unused */) const {
-        return face_indices(index);
-    }
-
-    /// Vectorized version of \ref face_indices()
-    template <typename Index, typename Mask, enable_if_array_t<Index> = 0,
-              typename Index3 = Array<Index, 3>,
-              typename Result = uint32_array_t<Index3>>
-    MTS_INLINE Result face_indices(Index index, const Mask &active = true) const {
-        if constexpr (!is_diff_array_v<Index>) {
+    MTS_INLINE Vector3u face_indices(Index index, const Mask &active = true) const {
+        if constexpr (!is_array_v<Index>) {
+            return load<Vector3u>(face(index));
+        } else if constexpr (!is_diff_array_v<Index>) {
             index *= scalar_t<Index>(m_face_size / sizeof(uint32_t));
-            return gather<Result, sizeof(Shape::Index)>(
+            return gather<Vector3u, sizeof(Index)>(
                 m_faces.get(), Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Result, sizeof(Shape::Index)>(m_faces_d, index, active);
+            return gather<Vector3u, sizeof(Index)>(m_faces_d, index, active);
         }
 #endif
     }
 
     /// Returns the world-space position of the vertex with index \c index
-    MTS_INLINE Point3f vertex_position(const Index &index) const {
-        return load<Point3f>(vertex(index));
-    }
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref vertex_position()
-    MTS_INLINE Point3f vertex_position(Index index, bool /* unused */) const {
-        return vertex_position(index);
-    }
-
-    /// Vectorized version of \ref vertex_position()
-    template <typename Index, typename Mask, enable_if_array_t<Index> = 0,
-              typename Index3 = Array<Index, 3>,
-              typename Result = Point<float_array_t<Index>, 3>>
-    MTS_INLINE Result vertex_position(Index index, const Mask &active = true) const {
-        if constexpr (!is_diff_array_v<Index>) {
+    MTS_INLINE Point3f vertex_position(Index index, const Mask &active = true) const {
+        if constexpr (!is_array_v<Index>) {
+            return load<Point3f>(vertex(index));
+        } else if constexpr (!is_diff_array_v<Index>) {
             index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
-            return gather<Result, sizeof(Float)>(
+            return gather<Point3f, sizeof(Float)>(
                 m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Result, sizeof(Float)>(m_vertex_positions_d, index, active);
+            return gather<Point3f, sizeof(Float)>(m_vertex_positions_d, index, active);
         }
 #endif
     }
 
     /// Returns the normal direction of the vertex with index \c index
-    MTS_INLINE Normal3f vertex_normal(const Index &index) const {
-        return load_unaligned<Normal3f>(vertex(index) + m_normal_offset);
-    }
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref vertex_normal()
-    MTS_INLINE Normal3f vertex_normal(Index index, bool /* unused */) const {
-        return vertex_normal(index);
-    }
-
-    /// Vectorized version of \ref vertex_position()
-    template <typename Index, typename Mask, enable_if_array_t<Index> = 0,
-              typename Index3 = Array<Index, 3>,
-              typename Result = Normal<float_array_t<Index>, 3>>
-    MTS_INLINE Result vertex_normal(Index index, const Mask &active = true) const {
-        if constexpr (!is_diff_array_v<Index>) {
+    MTS_INLINE Normal3f vertex_normal(Index index, const Mask &active = true) const {
+        if constexpr (!is_array_v<Index>) {
+            return load_unaligned<Normal3f>(vertex(index) + m_normal_offset);
+        } else if constexpr (!is_diff_array_v<Index>) {
             index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
-            return gather<Result, sizeof(Float)>(
+            return gather<Normal3f, sizeof(Float)>(
                 m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Result, sizeof(Float)>(m_vertex_normals_d, index, active);
+            return gather<Normal3f, sizeof(Float)>(m_vertex_normals_d, index, active);
         }
 #endif
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
-    MTS_INLINE Point2f vertex_texcoord(Index index) const {
-        return load_unaligned<Point2f>(vertex(index) + m_texcoord_offset);
-    }
-
-    /// Compatibility wrapper, which strips the mask argument and invokes vertex_texcoord()
-    MTS_INLINE Point2f vertex_texcoord(Index index, bool /* unused */) const {
-        return vertex_texcoord(index);
-    }
-
-    /// Vectorized version of \ref vertex_texcoord()
-    template <typename Index, typename Mask, enable_if_array_t<Index> = 0,
-              typename Index2 = Array<Index, 2>,
-              typename Result = Point<float_array_t<Index>, 2>>
-    MTS_INLINE Result vertex_texcoord(Index index, const Mask &active = true) const {
-        if constexpr (!is_diff_array_v<Index>) {
+    MTS_INLINE Point2f vertex_texcoord(Index index, const Mask &active = true) const {
+        if constexpr (!is_array_v<Index>) {
+            return load_unaligned<Point2f>(vertex(index) + m_texcoord_offset);
+        } else if constexpr (!is_diff_array_v<Index>) {
             index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
-            return gather<Result, sizeof(Float)>(
+            return gather<Point2f, sizeof(Float)>(
                 m_vertices.get() + m_texcoord_offset, Index2(index, index + 1u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Result, sizeof(Float)>(m_vertex_texcoords_d, index, active);
+            return gather<Point2f, sizeof(Float)>(m_vertex_texcoords_d, index, active);
         }
 #endif
     }
 
     /// Returns the surface area of the face with index \c index
-    template <typename Index, typename Value = float_array_t<Index>>
-    Value face_area(Index index, mask_t<Value> active = true) const {
+    Float face_area(Index index, Mask active = true) const {
         auto fi = face_indices(index, active);
 
         auto p0 = vertex_position(fi[0], active),
@@ -222,54 +183,19 @@ public:
 
     virtual Float surface_area() const override;
 
-    using Shape::sample_position;
+    virtual PositionSample3f sample_position(Float time, const Point2f &sample,
+                                             Mask active = true) const override;
 
-    virtual PositionSample3f sample_position(Float time,
-                                             const Point2f &sample) const override;
-
-    virtual PositionSample3fP sample_position(FloatP time,
-                                              const Point2fP &sample,
-                                              MaskP active = true) const override;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    virtual PositionSample3fD sample_position(FloatD time,
-                                              const Point2fD &sample,
-                                              MaskD active = true) const override;
-#endif
-
-    using Shape::pdf_position;
-
-    virtual Float pdf_position(const PositionSample3f &ps) const override;
-
-    virtual FloatP pdf_position(const PositionSample3fP &ps,
-                                MaskP active = true) const override;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    virtual FloatD pdf_position(const PositionSample3fD &ps,
-                                MaskD active = true) const override;
-#endif
-
-    using Shape::fill_surface_interaction;
+    virtual Float pdf_position(const PositionSample3f &ps, Mask active = true) const override;
 
     virtual void fill_surface_interaction(const Ray3f &ray,
                                           const Float *cache,
-                                          SurfaceInteraction3f &si) const override;
-
-    virtual void fill_surface_interaction(const Ray3fP &ray,
-                                          const FloatP *cache,
-                                          SurfaceInteraction3fP &si,
-                                          MaskP active = true) const override;
-
-    using Shape::normal_derivative;
+                                          SurfaceInteraction3f &si,
+                                          Mask active = true) const override;
 
     virtual std::pair<Vector3f, Vector3f>
     normal_derivative(const SurfaceInteraction3f &si,
-                      bool shading_frame = true) const override;
-
-    virtual std::pair<Vector3fP, Vector3fP>
-    normal_derivative(const SurfaceInteraction3fP &si,
-                      bool shading_frame = true,
-                      MaskP active = true) const override;
+                      bool shading_frame = true, Mask active = true) const override;
 
     /** \brief Ray-triangle intersection test
      *
@@ -287,36 +213,29 @@ public:
      *    \c v contains the first two components of the intersection in
      *    barycentric coordinates
      */
-    template <typename Index, typename Ray,
-              typename Value = expr_t<typename Ray::Value, float_array_t<Index>>,
-              typename Mask  = mask_t<Value>>
-    MTS_INLINE std::tuple<Mask, Value, Value, Value>
-    ray_intersect_triangle(const Index &index, const Ray &ray,
+    MTS_INLINE std::tuple<Mask, Float, Float, Float>
+    ray_intersect_triangle(const Index &index, const Ray3f &ray,
                            identity_t<Mask> active = true) const {
-        using Point3 = mitsuba::Point<Value, 3>;
-        using Vector3 = mitsuba::Vector<Value, 3>;
-        using Size = replace_scalar_t<Value, uint32_t>;
-
         auto fi = face_indices(Size(index), active);
 
-        Point3 p0 = vertex_position(fi[0], active),
-               p1 = vertex_position(fi[1], active),
-               p2 = vertex_position(fi[2], active);
+        Point3f p0 = vertex_position(fi[0], active),
+                p1 = vertex_position(fi[1], active),
+                p2 = vertex_position(fi[2], active);
 
-        Vector3 e1 = p1 - p0, e2 = p2 - p0;
+        Vector3f e1 = p1 - p0, e2 = p2 - p0;
 
-        Vector3 pvec = cross(ray.d, e2);
-        Value inv_det = rcp(dot(e1, pvec));
+        Vector3f pvec = cross(ray.d, e2);
+        Float inv_det = rcp(dot(e1, pvec));
 
-        Vector3 tvec = ray.o - p0;
-        Value u = dot(tvec, pvec) * inv_det;
+        Vector3f tvec = ray.o - p0;
+        Float u = dot(tvec, pvec) * inv_det;
         active &= u >= 0.f && u <= 1.f;
 
-        Vector3 qvec = cross(tvec, e1);
-        Value v = dot(ray.d, qvec) * inv_det;
+        Vector3f qvec = cross(tvec, e1);
+        Float v = dot(ray.d, qvec) * inv_det;
         active &= v >= 0.f && u + v <= 1.f;
 
-        Value t = dot(e2, qvec) * inv_det;
+        Float t = dot(e2, qvec) * inv_det;
         active &= t >= ray.mint && t <= ray.maxt;
 
         return { active, u, v, t };
@@ -371,37 +290,6 @@ protected:
             const_cast<Mesh *>(this)->prepare_sampling_table();
     }
 
-    template <typename Value,
-              typename Point2 = Point<Value, 2>,
-              typename Point3 = Point<Value, 3>,
-              typename PositionSample = PositionSample<Point3>,
-              typename Mask = mask_t<Value>>
-    PositionSample sample_position_impl(Value time, Point2 sample,
-                                        Mask value) const;
-
-    template <typename PositionSample,
-              typename Value = typename PositionSample::Value,
-              typename Mask  = mask_t<Value>>
-    Value pdf_position_impl(const PositionSample &ps, Mask active) const;
-
-    template <typename Ray,
-              typename Value = typename Ray::Value,
-              typename Point3 = typename Ray::Point,
-              typename SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>,
-              typename Mask = mask_t<Value>>
-    void fill_surface_interaction_impl(const Ray &ray,
-                                       const Value *cache,
-                                       SurfaceInteraction &si,
-                                       Mask active) const;
-
-    template <typename SurfaceInteraction,
-              typename Value = typename SurfaceInteraction::Value,
-              typename Vector3 = typename SurfaceInteraction::Vector3,
-              typename Mask = mask_t<Value>>
-    std::pair<Vector3, Vector3>
-    normal_derivative_impl(const SurfaceInteraction &si,
-                           bool shading_frame,
-                           Mask active) const;
 protected:
     VertexHolder m_vertices;
     FaceHolder m_faces;

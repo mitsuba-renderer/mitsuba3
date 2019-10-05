@@ -86,31 +86,29 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
-    //
-    using Base = Interaction<Float_, Spectrum_>;
-    using Aliases = Aliases<Float_, Spectrum_>;
+    using Float = Float_;
+    using Spectrum = Spectrum_;
+    using Base = Interaction<Float, Spectrum>;
+    using Aliases = Aliases<Float, Spectrum>;
+    // TODO: can we import types without the `using SurfaceInteraction` part?
+    using typename Base::Index;
+    using typename Base::Point2f;
     using typename Base::Point3f;
+    using typename Base::Vector2f;
     using typename Base::Vector3f;
+    using typename Base::Normal3f;
+    using typename Base::Frame3f;
     using typename Base::Value;
     using typename Base::Mask;
-    using typename Base::Spectrum;
-
-    using Index               = uint32_array_t<Value>;
-
-    using Point2              = Point<Value, 2>;
-    using Vector2             = Vector<Value, 2>;
-    using Normal3             = Normal<Value, 3>;
-
-    using Frame3              = Frame<Vector3f>;
-    using Color3              = Color<Value, 3>;
-    using RayDifferential3    = RayDifferential<Value, Spectrum>;
-    using MuellerMatrix       = MuellerMatrix<Spectrum>;
-
+    using typename Aliases::Scene;
+    using typename Aliases::PositionSample3f;
+    using typename Aliases::RayDifferential3f;
     using typename Aliases::BSDFPtr;
     using typename Aliases::MediumPtr;
     using typename Aliases::ShapePtr;
     using typename Aliases::EmitterPtr;
-    using typename Aliases::PositionSample3f;
+    using typename Aliases::MuellerMatrix4f;
+
 
     //! @}
     // =============================================================
@@ -128,19 +126,19 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     ShapePtr shape = nullptr;
 
     /// UV surface coordinates
-    Point2 uv;
+    Point2f uv;
 
     /// Geometric normal
-    Normal3 n;
+    Normal3f n;
 
     /// Shading frame
-    Frame3 sh_frame;
+    Frame3f sh_frame;
 
     /// Position partials wrt. the UV parameterization
     Vector3f dp_du, dp_dv;
 
     /// UV partials wrt. changes in screen-space
-    Vector2 duv_dx, duv_dy;
+    Vector2f duv_dx, duv_dy;
 
     /// Incident direction in the local shading frame
     Vector3f wi;
@@ -183,8 +181,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     }
 
     /// Return the emitter associated with the intersection (if any)
-    template <typename Scene = mitsuba::Scene>
-    EmitterPtr emitter(const Scene *scene, mask_t<Value> active = true) const {
+    EmitterPtr emitter(const Scene *scene, Mask active = true) const {
         if constexpr (!is_array_v<ShapePtr>) {
             if (is_valid())
                 return shape->emitter(active);
@@ -232,20 +229,20 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      *
      * Implementation in 'bsdf.h'
      */
-    BSDFPtr bsdf(const RayDifferential3 &ray);
+    BSDFPtr bsdf(const RayDifferential3f &ray);
 
     // Returns the BSDF of the intersected shape
     BSDFPtr bsdf() const { return shape->bsdf(); }
 
     /// Calls the suitable implementation of \ref Shape::normal_derivative()
     std::pair<Vector3f, Vector3f> normal_derivative(
-            bool shading_frame = true, mask_t<Value> active = true) const {
+            bool shading_frame = true, Mask active = true) const {
         ShapePtr target = select(neq(instance, nullptr), instance, shape);
         return target->normal_derivative(*this, shading_frame, active);
     }
 
     /// Computes texture coordinate partials
-    void compute_partials(const RayDifferential3 &ray) {
+    void compute_partials(const RayDifferential3f &ray) {
         if (!ray.has_differentials)
             return;
 
@@ -300,9 +297,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * \return
      *      Equivalent Mueller matrix that operates in world-space coordinates.
      */
-    MuellerMatrix to_world_mueller(const MuellerMatrix &M_local,
-                                   const Vector3f &wi_local,
-                                   const Vector3f &wo_local) const {
+    MuellerMatrix4f to_world_mueller(const MuellerMatrix4f &M_local, const Vector3f &wi_local,
+                                     const Vector3f &wo_local) const {
         Vector3f wi_world = to_world(wi_local),
                 wo_world = to_world(wo_local);
 
@@ -338,9 +334,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * \return
      *      Equivalent Mueller matrix that operates in local frame coordinates.
      */
-    MuellerMatrix to_local_mueller(const MuellerMatrix &M_world,
-                                   const Vector3f &wi_world,
-                                   const Vector3f &wo_world) const {
+    MuellerMatrix4f to_local_mueller(const MuellerMatrix4f &M_world, const Vector3f &wi_world,
+                                     const Vector3f &wo_world) const {
         Vector3f wi_local = to_local(wi_world),
                 wo_local = to_local(wo_world);
 

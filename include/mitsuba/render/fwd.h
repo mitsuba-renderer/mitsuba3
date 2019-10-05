@@ -17,7 +17,7 @@ class ImageBlock;
 class Integrator;
 class Medium;
 template <typename Float, typename Spectrum> class Sampler;
-class Scene;
+template <typename Float, typename Spectrum> class Scene;
 template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class Shape;
 class ShapeKDTree;
@@ -91,10 +91,17 @@ template <typename Float_, typename Spectrum_> struct Aliases {
 
     using Color3f  = Color<Float, 3>;
 
-    using BoundingBox1f = BoundingBox<Point1f>;
-    using BoundingBox2f = BoundingBox<Point2f>;
-    using BoundingBox3f = BoundingBox<Point3f>;
-    using BoundingBox4f = BoundingBox<Point4f>;
+    using StokesVector4f  = StokesVector<Float>;
+    using MuellerMatrix4f = MuellerMatrix<Float>;
+
+    using BoundingBox1f    = BoundingBox<Point1f>;
+    using BoundingBox2f    = BoundingBox<Point2f>;
+    using BoundingBox3f    = BoundingBox<Point3f>;
+    using BoundingBox4f    = BoundingBox<Point4f>;
+    using BoundingSphere1f = BoundingSphere<Point1f>;
+    using BoundingSphere2f = BoundingSphere<Point2f>;
+    using BoundingSphere3f = BoundingSphere<Point3f>;
+    using BoundingSphere4f = BoundingSphere<Point4f>;
 
     using Frame3f              = Frame<Vector3f>;
     using Ray3f                = Ray<Point3f, Spectrum>;
@@ -177,10 +184,16 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Normal3f             = typename Aliases::Normal3f;                                       \
     using Normal3d             = typename Aliases::Normal3d;                                       \
     using Color3f              = typename Aliases::Color3f;                                        \
+    using StokesVector4f       = typename Aliases::StokesVector4f;                                        \
+    using MuellerMatrix4f      = typename Aliases::MuellerMatrix4f;                                        \
     using BoundingBox1f        = typename Aliases::BoundingBox1f;                                  \
     using BoundingBox2f        = typename Aliases::BoundingBox2f;                                  \
     using BoundingBox3f        = typename Aliases::BoundingBox3f;                                  \
     using BoundingBox4f        = typename Aliases::BoundingBox4f;                                  \
+    using BoundingSphere1f     = typename Aliases::BoundingSphere1f;                                  \
+    using BoundingSphere2f     = typename Aliases::BoundingSphere2f;                                  \
+    using BoundingSphere3f     = typename Aliases::BoundingSphere3f;                                  \
+    using BoundingSphere4f     = typename Aliases::BoundingSphere4f;                                  \
     using Frame3f              = typename Aliases::Frame3f;                                        \
     using Ray3f                = typename Aliases::Ray3f;                                          \
     using RayDifferential3f    = typename Aliases::RayDifferential3f;                              \
@@ -201,6 +214,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Sensor               = typename Aliases::Sensor;                                         \
     using Emitter              = typename Aliases::Emitter;                                        \
     using Medium               = typename Aliases::Medium;                                         \
+    using Film                 = typename Aliases::Film;                                         \
     using BSDFPtr              = typename Aliases::BSDFPtr;                                        \
     using MediumPtr            = typename Aliases::MediumPtr;                                        \
     using ShapePtr             = typename Aliases::ShapePtr;  \
