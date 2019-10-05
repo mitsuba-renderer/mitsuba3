@@ -10,26 +10,33 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class ConstantBackgroundEmitter final : public Emitter {
+template <typename Float, typename Spectrum>
+class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
-    ConstantBackgroundEmitter(const Properties &props) : Emitter(props) {
+    MTS_IMPORT_TYPES()
+    using Base               = Emitter<Float, Spectrum>;
+    using Scene              = typename Aliases::Scene;
+    using Shape              = typename Aliases::Shape;
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+
+
+    ConstantBackgroundEmitter(const Properties &props) : Base(props) {
         /* Until `create_shape` is called, we have no information
            about the scene and default to the unit bounding sphere. */
         m_bsphere = BoundingSphere3f(Point3f(0.f), 1.f);
 
-        m_radiance = props.spectrum("radiance", ContinuousSpectrum::D65(1.f, m_monochrome));
+        m_radiance =
+            props.spectrum<Float, Spectrum>("radiance", ContinuousSpectrum::D65(1.f));
     }
 
     ref<Shape> create_shape(const Scene *scene) override {
         // Create a bounding sphere that surrounds the scene
         m_bsphere = scene->bbox().bounding_sphere();
-        m_bsphere.radius = max(math::Epsilon, m_bsphere.radius * 1.5f);
+        m_bsphere.radius = max(math::Epsilon<Float>, m_bsphere.radius * 1.5f);
 
         Properties props("sphere");
         props.set_point3f("center", m_bsphere.center);
         props.set_float("radius", m_bsphere.radius);
-        props.set_bool("monochrome", m_monochrome);
-        props.mark_queried("monochrome");
 
         // Sphere is "looking in" towards the scene
         props.set_bool("flip_normals", true);
@@ -37,59 +44,37 @@ public:
         return PluginManager::instance()->create_object<Shape>(props);
     }
 
-    template <typename SurfaceInteraction, typename Mask,
-              typename Spectrum = typename SurfaceInteraction::Spectrum>
-    MTS_INLINE Spectrum eval_impl(const SurfaceInteraction &si,
-                                  Mask active) const {
+    MTS_INLINE Spectrum eval_impl(const SurfaceInteraction3f &si, Mask active) const {
         return m_radiance->eval(si.wavelengths, active);
     }
 
-    template <typename Point2, typename Value = value_t<Point2>>
-    MTS_INLINE auto
-    sample_ray_impl(Value time, Value wavelength_sample, const Point2 &sample2,
-                    const Point2 &sample3, mask_t<Value> active) const {
-        using Spectrum = mitsuba::Spectrum<Value>;
-        using Point3   = Point<Value, 3>;
-        using Ray3     = Ray<Point3>;
-        using Vector3  = vector3_t<Point3>;
-        using Frame    = Frame<Vector<Value, 3>>;
-        using Ray3     = Ray<Point3>;
-
+    MTS_INLINE auto sample_ray_impl(Float time, Float wavelength_sample, const Point2f &sample2,
+                                    const Point2f &sample3, Mask active) const {
         // 1. Sample spectrum
         auto [wavelengths, weight] = m_radiance->sample(
             math::sample_shifted<Spectrum>(wavelength_sample), active);
 
         // 2. Sample spatial component
-        Vector3 v0 = warp::square_to_uniform_sphere(sample2);
+        Vector3f v0 = warp::square_to_uniform_sphere(sample2);
 
         // 3. Sample directional component
-        Vector3 v1 = warp::square_to_cosine_hemisphere(sample3);
+        Vector3f v1 = warp::square_to_cosine_hemisphere(sample3);
 
         Float r2 = m_bsphere.radius * m_bsphere.radius;
-        return std::make_pair(
-            Ray3(m_bsphere.center + v0 * m_bsphere.radius,
-                 Frame(-v0).to_world(v1), time, wavelengths),
-            (4 * math::Pi * math::Pi * r2) * weight
-        );
+        return std::make_pair(Ray3f(m_bsphere.center + v0 * m_bsphere.radius,
+                                    Frame3f(-v0).to_world(v1), time, wavelengths),
+                              (4 * math::Pi<Float> * math::Pi<Float> * r2) * weight);
     }
 
-    template <typename Interaction,
-              typename Point2 = typename Interaction::Point2,
-              typename Value  = typename Interaction::Value>
-    MTS_INLINE auto sample_direction_impl(const Interaction &it,
-                                          const Point2 &sample,
-                                          mask_t<Value> active) const {
-        using Point3   = typename Interaction::Point3;
-        using Vector3  = vector3_t<Point3>;
-        using DirectionSample = DirectionSample<Point3>;
-
-        Vector3 d = warp::square_to_uniform_sphere(sample);
+    MTS_INLINE auto sample_direction_impl(const Interaction3f &it, const Point2f &sample,
+                                          Mask active) const {
+        Vector3f d = warp::square_to_uniform_sphere(sample);
         Float dist = 2.f * m_bsphere.radius;
 
-        DirectionSample ds;
+        DirectionSample3f ds;
         ds.p      = it.p + d * dist;
         ds.n      = -d;
-        ds.uv     = Point2(0.f);
+        ds.uv     = Point2f(0.f);
         ds.time   = it.time;
         ds.pdf    = warp::square_to_uniform_sphere_pdf(d);
         ds.delta  = false;
@@ -103,17 +88,13 @@ public:
         );
     }
 
-    template <typename Interaction, typename DirectionSample,
-              typename Value = typename DirectionSample::Value>
-    MTS_INLINE Value pdf_direction_impl(const Interaction &,
-                                        const DirectionSample &ds,
-                                        mask_t<Value>) const {
+    MTS_INLINE Float pdf_direction_impl(const Interaction3f &, const DirectionSample3f &ds,
+                                        Mask) const {
         return warp::square_to_uniform_sphere_pdf(ds.d);
     }
 
+    /// This emitter does not occupy any particular region of space, return an invalid bounding box
     BoundingBox3f bbox() const override {
-        /* This emitter does not occupy any particular region
-           of space, return an invalid bounding box */
         return BoundingBox3f();
     }
 
@@ -130,13 +111,13 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_EMITTER_ALL()
+    // MTS_IMPLEMENT_EMITTER_ALL()
     MTS_DECLARE_CLASS()
 protected:
     ref<ContinuousSpectrum> m_radiance;
     BoundingSphere3f m_bsphere;
 };
 
-MTS_IMPLEMENT_CLASS(ConstantBackgroundEmitter, Emitter)
-MTS_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter");
+// MTS_IMPLEMENT_CLASS(ConstantBackgroundEmitter, Emitter)
+// MTS_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter");
 NAMESPACE_END(mitsuba)
