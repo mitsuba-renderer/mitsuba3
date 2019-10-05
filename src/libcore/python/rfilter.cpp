@@ -2,7 +2,6 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(rfilter) {
-    using EBoundaryCondition = ReconstructionFilter::EBoundaryCondition;
     using Resampler = mitsuba::Resampler<Float>;
 
     auto rfilter = MTS_PY_CLASS(ReconstructionFilter, Object)
@@ -27,12 +26,12 @@ MTS_PY_EXPORT(rfilter) {
                  &ReconstructionFilter::eval_discretized<FloatP>),
              D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true);
 
-    auto bc = py::enum_<EBoundaryCondition>(rfilter, "EBoundaryCondition")
-        .value("EClamp", EBoundaryCondition::EClamp, D(ReconstructionFilter, EBoundaryCondition, EClamp))
-        .value("ERepeat", EBoundaryCondition::ERepeat, D(ReconstructionFilter, EBoundaryCondition, ERepeat))
-        .value("EMirror", EBoundaryCondition::EMirror, D(ReconstructionFilter, EBoundaryCondition, EMirror))
-        .value("EZero", EBoundaryCondition::EZero, D(ReconstructionFilter, EBoundaryCondition, EZero))
-        .value("EOne", EBoundaryCondition::EOne, D(ReconstructionFilter, EBoundaryCondition, EOne))
+    auto bc = py::enum_<FilterBoundaryCondition>(rfilter, "FilterBoundaryCondition")
+        .value("EClamp", FilterBoundaryCondition::Clamp, D(ReconstructionFilter, FilterBoundaryCondition, EClamp))
+        .value("ERepeat", FilterBoundaryCondition::Repeat, D(ReconstructionFilter, FilterBoundaryCondition, ERepeat))
+        .value("EMirror", FilterBoundaryCondition::Mirror, D(ReconstructionFilter, FilterBoundaryCondition, EMirror))
+        .value("EZero", FilterBoundaryCondition::Zero, D(ReconstructionFilter, FilterBoundaryCondition, EZero))
+        .value("EOne", FilterBoundaryCondition::One, D(ReconstructionFilter, FilterBoundaryCondition, EOne))
         .export_values();
 
     auto resampler = py::class_<Resampler>(m, "Resampler", D(Resampler))
@@ -71,7 +70,7 @@ MTS_PY_EXPORT(rfilter) {
              D(Resampler, resample), "self"_a, "source"_a, "source_stride"_a,
              "target_stride"_a, "channels"_a);
 
-    resampler.attr("EBoundaryCondition") = bc;
+    resampler.attr("FilterBoundaryCondition") = bc;
 
     m.attr("MTS_FILTER_RESOLUTION") = MTS_FILTER_RESOLUTION;
 }

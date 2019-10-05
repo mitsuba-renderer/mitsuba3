@@ -20,8 +20,6 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Bitmap : public Object {
 public:
-    /// Boundary conditions for image resampling
-    using EBoundaryCondition = ReconstructionFilter::EBoundaryCondition;
 
     // ======================================================================
     //! @{ \name Constructors and Enumerations
@@ -391,8 +389,8 @@ public:
      */
     void resample(Bitmap *target,
                   const ReconstructionFilter *rfilter = nullptr,
-                  const std::pair<EBoundaryCondition, EBoundaryCondition> &bc =
-                      { EBoundaryCondition::EClamp, EBoundaryCondition::EClamp },
+                  const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
+                      { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
                   const std::pair<Float, Float> &bound =
                       { -math::Infinity, math::Infinity },
                   Bitmap *temp = nullptr) const;
@@ -426,8 +424,8 @@ public:
      */
     ref<Bitmap> resample(const Vector2s &res,
                          const ReconstructionFilter *rfilter = nullptr,
-                         const std::pair<EBoundaryCondition, EBoundaryCondition> &bc =
-                             { EBoundaryCondition::EClamp, EBoundaryCondition::EClamp },
+                         const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
+                             { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
                          const std::pair<Float, Float> &bound =
                              { -math::Infinity, math::Infinity }) const;
 
@@ -493,8 +491,7 @@ public:
      * component format is \ref EBitmask.
      */
     void accumulate(const Bitmap *bitmap,
-                    Point2i source_offset,
-                    Point2i target_offset,
+                    Point2i source_offset, Point2i target_offset,
                     Vector2i size);
 
     /**

@@ -10,6 +10,30 @@ NAMESPACE_BEGIN(mitsuba)
 #define MTS_FILTER_RESOLUTION 31
 
 /**
+ * \brief When resampling data to a different resolution using \ref
+ * Resampler::resample(), this enumeration specifies how lookups
+ * <em>outside</em> of the input domain are handled.
+ *
+ * \see Resampler
+ */
+enum class FilterBoundaryCondition : uint32_t {
+    /// Clamp to the outermost sample position (default)
+    Clamp = 0,
+
+    /// Assume that the input repeats in a periodic fashion
+    Repeat,
+
+    /// Assume that the input is mirrored along the boundary
+    Mirror,
+
+    /// Assume that the input function is zero outside of the defined domain
+    Zero,
+
+    /// Assume that the input function is equal to one outside of the defined domain
+    One
+};
+
+/**
  * \brief Generic interface to separable image reconstruction filters
  *
  * When resampling bitmaps or adding samples to a rendering in progress,
@@ -20,31 +44,9 @@ NAMESPACE_BEGIN(mitsuba)
  * sample, the implementation of this class internally precomputes an discrete
  * representation, whose resolution given by \ref MTS_FILTER_RESOLUTION.
  */
+template <typename Float>
 class MTS_EXPORT_CORE ReconstructionFilter : public Object {
 public:
-    /**
-     * \brief When resampling data to a different resolution using \ref
-     * Resampler::resample(), this enumeration specifies how lookups
-     * <em>outside</em> of the input domain are handled.
-     *
-     * \see Resampler
-     */
-    enum EBoundaryCondition {
-        /// Clamp to the outermost sample position (default)
-        EClamp = 0,
-
-        /// Assume that the input repeats in a periodic fashion
-        ERepeat,
-
-        /// Assume that the input is mirrored along the boundary
-        EMirror,
-
-        /// Assume that the input function is zero outside of the defined domain
-        EZero,
-
-        /// Assume that the input function is equal to one outside of the defined domain
-        EOne
-    };
 
     /// Return the filter's width
     Float radius() const { return m_radius; }
@@ -54,14 +56,6 @@ public:
 
     /// Evaluate the filter function
     virtual Float eval(Float x) const = 0;
-
-    /// Evaluate the filter function (vectorized version)
-    virtual FloatP eval(FloatP x) const = 0;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Evaluate the filter function (differentiable version)
-    virtual FloatD eval(FloatD x) const = 0;
-#endif
 
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
     template <typename T>
@@ -96,7 +90,7 @@ protected:
  *      or <tt>double</tt>)
  */
 template <typename Scalar> struct Resampler {
-    using EBoundaryCondition = ReconstructionFilter::EBoundaryCondition;
+    using Float = Scalar;
 
     /**
      * \brief Create a new Resampler object that transforms between the specified resolutions
@@ -110,7 +104,7 @@ template <typename Scalar> struct Resampler {
      * \param target_res
      *      Desired target resolution
      */
-    Resampler(const ReconstructionFilter *rfilter,
+    Resampler(const ReconstructionFilter<Scalar> *rfilter,
               uint32_t source_res, uint32_t target_res)
         : m_source_res(source_res), m_target_res(target_res) {
         if (source_res == 0 || target_res == 0)
@@ -221,15 +215,15 @@ template <typename Scalar> struct Resampler {
      * \brief Set the boundary condition that should be used when
      * looking up samples outside of the defined input domain
      *
-     * The default is \ref EBoundaryCondition::EClamp
+     * The default is \ref FilterBoundaryCondition::Clamp
      */
-    void set_boundary_condition(EBoundaryCondition bc) { m_bc = bc; }
+    void set_boundary_condition(FilterBoundaryCondition bc) { m_bc = bc; }
 
     /**
      * \brief Return the boundary condition that should be used when
      * looking up samples outside of the defined input domain
      */
-    EBoundaryCondition boundary_condition() const { return m_bc; }
+    FilterBoundaryCondition boundary_condition() const { return m_bc; }
 
     /**
      * \brief Returns the range to which resampled values will be clamped
@@ -372,24 +366,24 @@ private:
     Scalar lookup(const Scalar *source, int32_t pos, uint32_t stride, uint32_t ch) const {
         if (unlikely(pos < 0 || pos >= (int32_t) m_source_res)) {
             switch (m_bc) {
-                case EBoundaryCondition::EClamp:
+                case FilterBoundaryCondition::Clamp:
                     pos = enoki::clamp(pos, 0, (int32_t) m_source_res - 1);
                     break;
 
-                case EBoundaryCondition::ERepeat:
+                case FilterBoundaryCondition::Repeat:
                     pos = math::modulo(pos, (int32_t) m_source_res);
                     break;
 
-                case EBoundaryCondition::EMirror:
+                case FilterBoundaryCondition::Mirror:
                     pos = math::modulo(pos, 2 * (int32_t) m_source_res - 2);
                     if (pos >= (int32_t) m_source_res - 1)
                         pos = 2 * m_source_res - 2 - pos;
                     break;
 
-                case EBoundaryCondition::EOne:
+                case FilterBoundaryCondition::One:
                     return Scalar(1);
 
-                case EBoundaryCondition::EZero:
+                case FilterBoundaryCondition::Zero:
                     return Scalar(0);
             }
         }
@@ -405,16 +399,15 @@ private:
     uint32_t m_fast_start;
     uint32_t m_fast_end;
     uint32_t m_taps;
-    EBoundaryCondition m_bc = EBoundaryCondition::EClamp;
+    FilterBoundaryCondition m_bc = FilterBoundaryCondition::Clamp;
     std::pair<Scalar, Scalar> m_clamp {
         -std::numeric_limits<Scalar>::infinity(),
          std::numeric_limits<Scalar>::infinity()
     };
 };
 
-extern MTS_EXPORT_CORE std::ostream &
-operator<<(std::ostream &os,
-           const ReconstructionFilter::EBoundaryCondition &value);
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os,
+                                                const FilterBoundaryCondition &value);
 
 NAMESPACE_END(mitsuba)
 

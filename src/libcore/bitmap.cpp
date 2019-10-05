@@ -209,7 +209,7 @@ template <typename Scalar, bool Filter>
 static void
 resample(Bitmap *target, const Bitmap *source,
          const ReconstructionFilter *rfilter_,
-         const std::pair<Bitmap::EBoundaryCondition, Bitmap::EBoundaryCondition> bc,
+         const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> bc,
          const std::pair<Scalar, Scalar> &clamp, ref<Bitmap> temp) {
     ref<const ReconstructionFilter> rfilter(rfilter_);
 

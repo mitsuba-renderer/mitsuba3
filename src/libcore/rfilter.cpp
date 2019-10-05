@@ -19,13 +19,13 @@ void ReconstructionFilter::init_discretization() {
         (uint32_t) std::ceil(m_radius - .5f - 2.f*math::Epsilon);
 }
 
-std::ostream &operator<<(std::ostream &os, const ReconstructionFilter::EBoundaryCondition &value) {
+std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value) {
     switch (value) {
-        case ReconstructionFilter::EClamp: os << "clamp"; break;
-        case ReconstructionFilter::ERepeat: os << "repeat"; break;
-        case ReconstructionFilter::EMirror: os << "mirror"; break;
-        case ReconstructionFilter::EZero: os << "zero"; break;
-        case ReconstructionFilter::EOne: os << "one"; break;
+        case FilterBoundaryCondition::Clamp: os << "clamp"; break;
+        case FilterBoundaryCondition::Repeat: os << "repeat"; break;
+        case FilterBoundaryCondition::Mirror: os << "mirror"; break;
+        case FilterBoundaryCondition::Zero: os << "zero"; break;
+        case FilterBoundaryCondition::One: os << "one"; break;
         default: os << "invalid"; break;
     }
     return os;

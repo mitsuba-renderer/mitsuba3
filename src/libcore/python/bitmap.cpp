@@ -54,21 +54,21 @@ MTS_PY_EXPORT(Bitmap) {
         .def("metadata", py::overload_cast<>(&Bitmap::metadata), D(Bitmap, metadata),
              py::return_value_policy::reference_internal)
         .def("resample", py::overload_cast<Bitmap *, const ReconstructionFilter *,
-            const std::pair<Bitmap::EBoundaryCondition, Bitmap::EBoundaryCondition> &,
+            const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<Float, Float> &, Bitmap *>(&Bitmap::resample, py::const_),
             "target"_a, "rfilter"_a = py::none(),
-            "bc"_a = std::make_pair(Bitmap::EBoundaryCondition::EClamp,
-                                    Bitmap::EBoundaryCondition::EClamp),
+            "bc"_a = std::make_pair(FilterBoundaryCondition::EClamp,
+                                    FilterBoundaryCondition::EClamp),
             "clamp"_a = std::make_pair(-math::Infinity, math::Infinity),
             "temp"_a = py::none(),
             D(Bitmap, resample)
         )
         .def("resample", py::overload_cast<const Vector2s &, const ReconstructionFilter *,
-            const std::pair<Bitmap::EBoundaryCondition, Bitmap::EBoundaryCondition> &,
+            const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<Float, Float> &>(&Bitmap::resample, py::const_),
             "res"_a, "rfilter"_a = py::none(),
-            "bc"_a = std::make_pair(Bitmap::EBoundaryCondition::EClamp,
-                                    Bitmap::EBoundaryCondition::EClamp),
+            "bc"_a = std::make_pair(FilterBoundaryCondition::EClamp,
+                                    FilterBoundaryCondition::EClamp),
             "clamp"_a = std::make_pair(-math::Infinity, math::Infinity),
             D(Bitmap, resample, 2)
         )
