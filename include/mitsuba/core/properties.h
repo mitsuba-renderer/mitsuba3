@@ -278,15 +278,16 @@ public:  // Type-specific getters and setters ----------------------------------
     /// Retrieve a color (use default value if no entry exists)
     const Color3f& color(const std::string &name, const Color3f &def_val) const;
 
-    // TODO
-    // /// Retrieve a continuous spectrum
-    // ref<ContinuousSpectrum> spectrum(const std::string &name) const;
-    // /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
-    // ref<ContinuousSpectrum> spectrum(const std::string &name,
-    //                                  ref<ContinuousSpectrum> def_val) const;
-    // /// Retrieve a continuous spectrum (use default flat spectrum if no entry exists)
-    // ref<ContinuousSpectrum> spectrum(const std::string &name,
-    //                                  Float def_val) const;
+    /// Retrieve a continuous spectrum
+    template <typename Float, typename Spectrum>
+    ref<ContinuousSpectrum<Float, Spectrum>> spectrum(const std::string &name) const;
+    /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
+    template <typename Float, typename Spectrum>
+    ref<ContinuousSpectrum<Float, Spectrum>>
+    spectrum(const std::string &name, ref<ContinuousSpectrum<Float, Spectrum>> def_val) const;
+    template <typename Float, typename Spectrum>
+    /// Retrieve a continuous spectrum (use default flat spectrum if no entry exists)
+    ref<ContinuousSpectrum<Float, Spectrum>> spectrum(const std::string &name, Float def_val) const;
 
     /// Retrieve a 3D texture
     ref<Texture3D> texture3d(const std::string &name) const;

@@ -17,7 +17,7 @@ public:
 
     explicit SmoothDiffuse(const Properties &props) : Base(props) {
         // TODO
-        // m_reflectance = props.spectrum("reflectance", .5f);
+        m_reflectance = props.spectrum<Float, Spectrum>("reflectance", .5f);
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
     }
