@@ -108,6 +108,10 @@ public:
     using Scalar      = typename Vector::Scalar;
     using IndexVector = std::vector<Index>;
 
+    using BoundingBox3f = mitsuba::BoundingBox<mitsuba::Point<float, 3>>;
+    using Vector3f      = mitsuba::Vector<float, 3>;
+    using Float         = Scalar;
+
     static constexpr size_t Dimension = Vector::Size;
 
     /* ==================================================================== */
@@ -184,10 +188,10 @@ public:
     }
 
     /// Return the log level of kd-tree status messages
-    ELogLevel log_level() const { return m_log_level; }
+    LogLevel log_level() const { return m_log_level; }
 
     /// Return the log level of kd-tree status messages
-    void set_log_level(ELogLevel level) { m_log_level = level; }
+    void set_log_level(LogLevel level) { m_log_level = level; }
 
     bool ready() const { return (bool) m_nodes; }
 
@@ -1762,7 +1766,7 @@ protected:
 
         Scalar final_cost = 0;
         if (prim_count == 0) {
-            Log(EWarn, "kd-tree contains no geometry!");
+            Log(Warn, "kd-tree contains no geometry!");
             ctx.node_storage[0].set_leaf_node(0, 0);
             m_bbox.min = 0.f;
             m_bbox.max = 0.f;
@@ -1813,7 +1817,7 @@ protected:
 
         /* Slightly avoid the bounding box to avoid numerical issues
            involving geometry that exactly lies on the boundary */
-        Vector3f extra = (m_bbox.extents() + 1.f) * math::Epsilon;
+        Vector3f extra = (m_bbox.extents() + 1.f) * math::Epsilon<Scalar>;
         m_bbox.min -= extra;
         m_bbox.max += extra;
 
@@ -1899,7 +1903,7 @@ protected:
     Size m_max_bad_refines = 0;
     Size m_exact_prim_threshold = 65536;
     Size m_min_max_bins = 128;
-    ELogLevel m_log_level = EDebug;
+    LogLevel m_log_level = Debug;
     BoundingBox m_bbox;
 };
 
@@ -1914,8 +1918,12 @@ const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() cons
 
 class SurfaceAreaHeuristic3f {
 public:
-    using Size = uint32_t;
-    using Index = uint32_t;
+    // TODO: how to support double precision?
+    using Float         = float;
+    using Size          = uint32_t;
+    using Index         = uint32_t;
+    using BoundingBox3f = mitsuba::BoundingBox<mitsuba::Point<Float, 3>>;
+    using Vector3f      = Vector<Float, 3>;
 
     SurfaceAreaHeuristic3f(Float query_cost, Float traversal_cost,
                            Float empty_space_bonus)
@@ -2009,11 +2017,24 @@ private:
     Float m_empty_space_bonus;
 };
 
-class MTS_EXPORT_RENDER ShapeKDTree
-    : public TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree> {
+class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<float, 3>>, uint32_t,
+                                                          SurfaceAreaHeuristic3f, ShapeKDTree> {
 public:
+    using BoundingBox3f = mitsuba::BoundingBox<mitsuba::Point<float, 3>>;
     using Base = TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
     using Base::Scalar;
+    // TODO(!): figure out how to templatize this class
+    using Float      = Scalar;
+    using Spectrum   = mitsuba::Spectrum<Float>;
+    using Point3f    = mitsuba::Point<Float, 3>;
+    using Shape      = Shape<Float, Spectrum>;
+    using Mesh       = Mesh<Float, Spectrum>;
+    using FloatP     = Array<float, 8>;
+    using SpectrumfP = mitsuba::Spectrum<FloatP>;
+    using Point3fP   = mitsuba::Point<FloatP, 3>;
+    using MaskP      = mask_t<FloatP>;
+    using Ray3f      = Ray<Point3f, Spectrum>;
+    using Ray3fP     = Ray<Point3fP, SpectrumfP>;
 
     ShapeKDTree(const Properties &props);
     void add_shape(Shape *shape);
@@ -2023,12 +2044,12 @@ public:
 
     void build() {
         Timer timer;
-        Log(EInfo, "Building a SAH kd-tree (%i primitives) ..",
+        Log(Info, "Building a SAH kd-tree (%i primitives) ..",
             primitive_count());
 
         Base::build();
 
-        Log(EInfo, "Finished. (%s of storage, took %s)",
+        Log(Info, "Finished. (%s of storage, took %s)",
             util::mem_string(m_index_count * sizeof(Index) +
                             m_node_count * sizeof(KDNode)),
             util::time_string(timer.value())
@@ -2211,7 +2232,7 @@ public:
                 break;
             }
         }
-        return { hit, hit ? ray.maxt : math::Infinity };
+        return { hit, hit ? ray.maxt : math::Infinity<Float> };
     }
 
     /// Vectorized ray tracing kernel
@@ -2338,7 +2359,7 @@ public:
             }
         }
 
-        return { hit, select(hit, ray.maxt, math::Infinity) };
+        return { hit, select(hit, ray.maxt, math::Infinity<Float>) };
     }
 
     /// Brute force intersection routine for debugging purposes
@@ -2348,7 +2369,7 @@ public:
     std::pair<Mask, Value> ray_intersect_naive(Ray ray,
                                                Value *cache = nullptr,
                                                Mask active = true) const {
-        Value hit_t = math::Infinity;
+        Value hit_t = math::Infinity<Float>;
         Mask hit(false);
 
         for (Size i = 0; i < primitive_count(); ++i) {
@@ -2378,7 +2399,7 @@ public:
     template <typename Ray,
               typename Point3 = typename Ray::Point,
               typename Value  = typename Ray::Value,
-              typename SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>,
+              typename SurfaceInteraction = mitsuba::SurfaceInteraction<Value, mitsuba::Spectrum<Value>>,
               typename Mask = mask_t<Value>>
     MTS_INLINE SurfaceInteraction create_surface_interaction(const Ray &ray,
                                                              Value t,
