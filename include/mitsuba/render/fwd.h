@@ -1,5 +1,6 @@
 #pragma once
 
+#include <enoki/array_traits.h>
 #include <mitsuba/core/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
