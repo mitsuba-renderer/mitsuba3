@@ -10,15 +10,15 @@ struct BSDFContext;
 template <typename Float, typename Spectrum> class ContinuousSpectrum;
 class DifferentiableParameters;
 class DifferentiableObject;
-class Emitter;
-class Endpoint;
-class Film;
+template <typename Float, typename Spectrum> class Emitter;
+template <typename Float, typename Spectrum> class Endpoint;
+template <typename Float, typename Spectrum> class Film;
 class ImageBlock;
 class Integrator;
 class Medium;
-class Sampler;
+template <typename Float, typename Spectrum> class Sampler;
 class Scene;
-class Sensor;
+template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class Shape;
 class ShapeKDTree;
 class Texture3D;
@@ -110,20 +110,23 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using BSDFSample3f         = BSDFSample<Float, Spectrum>;
 
     // TODO
-    // using Sampler              = mitsuba::Sampler<Float, Spectrum>;
+    using Sampler              = mitsuba::Sampler<Float, Spectrum>;
     using Shape                = mitsuba::Shape<Float, Spectrum>;
     // using Integrator           = mitsuba::Integrator<Float, Spectrum>;
     using BSDF                 = mitsuba::BSDF<Float, Spectrum>;
-    // using Sensor               = mitsuba::Sensor<Float, Spectrum>;
-    // using Emitter              = mitsuba::Emitter<Float, Spectrum>;
+    using Sensor               = mitsuba::Sensor<Float, Spectrum>;
+    using Emitter              = mitsuba::Emitter<Float, Spectrum>;
     // using Medium               = mitsuba::Medium<Float, Spectrum>;
-    using Sampler              = mitsuba::Sampler;
+    using Film                 = mitsuba::Film<Float, Spectrum>;
+
+    // using Sampler              = mitsuba::Sampler;
     // using Shape                = mitsuba::Shape;
     using Integrator           = mitsuba::Integrator;
     // using BSDF                 = mitsuba::BSDF;
-    using Sensor               = mitsuba::Sensor;
-    using Emitter              = mitsuba::Emitter;
+    // using Sensor               = mitsuba::Sensor;
+    // using Emitter              = mitsuba::Emitter;
     using Medium               = mitsuba::Medium;
+    // using Film                 = mitsuba::Film;
 
     using BSDFPtr             = replace_scalar_t<Float, const BSDF *>;
     using MediumPtr           = replace_scalar_t<Float, const Medium *>;

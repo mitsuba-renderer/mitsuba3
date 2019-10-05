@@ -7,8 +7,11 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sampler : public Object {
 public:
+    MTS_IMPORT_TYPES()
+
     /**
      * \brief Create a clone of this sampler
      *
@@ -34,47 +37,10 @@ public:
 #endif
 
     /// Retrieve the next component value from the current sample
-    virtual Float next_1d();
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_1d()
-    Float next_1d(bool /* unused */) { return next_1d(); }
-
-    /// Retrieve the next packet of values from the current sample
-    virtual FloatP next_1d_p(MaskP active = true);
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref next_1d()
-    virtual FloatD next_1d_d(MaskD active = true);
-
-    /// Sparse, differentiable version of \ref next_1d()
-    virtual FloatD next_1d_d(UInt32D index, MaskD active = true);
-#endif
+    virtual Float next_1d(Mask active = true);
 
     /// Retrieve the next two component values from the current sample
-    virtual Point2f next_2d();
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_2d()
-    Point2f next_2d(bool /* unused */) { return next_2d(); }
-
-    /// Retrieve the next packet of 2D values from the current sample
-    virtual Point2fP next_2d_p(MaskP active = true);
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref next_2d()
-    virtual Point2fD next_2d_d(MaskD active = true);
-
-    /// Sparse, differentiable version of \ref next_2d()
-    virtual Point2fD next_2d_d(UInt32D index, MaskD active = true);
-#endif
-
-    template <typename T> using MaskType =
-        std::conditional_t<(array_size_v<T> == 2), mask_t<value_t<T>>, mask_t<T>>;
-
-    /**
-     * \brief Automatically selects the right variant of <tt>next_...</tt> based on
-     * the desired return type.
-     */
-    template <typename T> T next(MaskType<T> active = true);
+    virtual Point2f next_2d(Mask active = true);
 
     /// Return the number of samples per pixel
     size_t sample_count() const { return m_sample_count; }
@@ -88,23 +54,5 @@ protected:
 protected:
     size_t m_sample_count;
 };
-
-// =============================================================
-//! @{ \name Template specializations
-// =============================================================
-
-template<> MTS_INLINE Float    Sampler::next<Float>(bool /* active */)   { return next_1d(); }
-template<> MTS_INLINE Point2f  Sampler::next<Point2f>(bool /* active */) { return next_2d(); }
-
-template<> MTS_INLINE FloatP   Sampler::next<FloatP>(MaskP active)       { return next_1d_p(active); }
-template<> MTS_INLINE Point2fP Sampler::next<Point2fP>(MaskP active)     { return next_2d_p(active); }
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    template<> MTS_INLINE FloatD   Sampler::next<FloatD>(MaskD active)       { return next_1d_d(active); }
-    template<> MTS_INLINE Point2fD Sampler::next<Point2fD>(MaskD active)     { return next_2d_d(active); }
-#endif
-
-//! @}
-// =============================================================
 
 NAMESPACE_END(mitsuba)

@@ -17,8 +17,12 @@ NAMESPACE_BEGIN(mitsuba)
  * rendering threads first store results in an "image block", which
  * is then committed to the film using the \ref put() method.
  */
+template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Film : public Object {
 public:
+    MTS_IMPORT_TYPES();
+    using ReconstructionFilter = ReconstructionFilter<Float>;
+
     /// Clear the film
     virtual void clear() = 0;
 
@@ -124,8 +128,6 @@ protected:
     Point2i  m_crop_offset;
     bool m_high_quality_edges;
     ref<ReconstructionFilter> m_filter;
-    /// Whether monochrome mode is enabled.
-    bool m_monochrome = false;
 };
 
 NAMESPACE_END(mitsuba)

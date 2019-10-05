@@ -33,8 +33,12 @@ NAMESPACE_BEGIN(mitsuba)
  * endpoint instance keeps a reference to a medium (which may be set to \c
  * nullptr when it is surrounded by vacuum).
  */
+template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Endpoint : public Object {
 public:
+    MTS_IMPORT_TYPES();
+    using Shape = Shape<Float, Spectrum>;
+
     // =============================================================
     //! @{ \name Sampling interface
     // =============================================================
@@ -75,83 +79,10 @@ public:
      *    weights. The latter account for the difference between the profile
      *    and the actual used sampling density function.
      */
-    virtual std::pair<Ray3f, Spectrumf>
+    virtual std::pair<Ray3f, Spectrum>
     sample_ray(Float time,
-               Float sample1,
-               const Point2f &sample2,
-               const Point2f &sample3) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_ray()
-    std::pair<Ray3f, Spectrumf>
-    sample_ray(Float time,
-               Float sample1,
-               const Point2f &sample2,
-               const Point2f &sample3,
-               bool /* unused */) const {
-        return sample_ray(time, sample1, sample2, sample3);
-    }
-
-    /// Vectorized version of \ref sample_ray()
-    virtual std::pair<Ray3fP, SpectrumfP>
-    sample_ray(FloatP time,
-               FloatP sample1,
-               const Point2fP &sample2,
-               const Point2fP &sample3,
-               MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample_ray()
-    virtual std::pair<Ray3fD, SpectrumfD>
-    sample_ray(FloatD time,
-               FloatD sample1,
-               const Point2fD &sample2,
-               const Point2fD &sample3,
-               MaskD active = true) const;
-#endif
-
-    /**
-     * \brief Polarized version of \ref sample_ray()
-     *
-     * Since there is no special polarized importance sampling
-     * this method behaves very similar to the standard one.
-     *
-     * \return
-     *    The sampled ray and the Mueller matrix of importance weights (in
-     *    standard world space for the sensor profile).
-     */
-    virtual std::pair<Ray3f, MuellerMatrixSf>
-    sample_ray_pol(Float time,
-                   Float sample1,
-                   const Point2f &sample2,
-                   const Point2f &sample3) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_ray_pol()
-    std::pair<Ray3f, MuellerMatrixSf>
-    sample_ray_pol(Float time,
-                   Float sample1,
-                   const Point2f &sample2,
-                   const Point2f &sample3,
-                   bool /* unused */) const {
-        return sample_ray_pol(time, sample1, sample2, sample3);
-    }
-
-    /// Vectorized version of \ref sample_ray_pol
-    virtual std::pair<Ray3fP, MuellerMatrixSfP>
-    sample_ray_pol(FloatP time,
-                   FloatP sample1,
-                   const Point2fP &sample2,
-                   const Point2fP &sample3,
-                   MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample_ray_pol
-    virtual std::pair<Ray3fD, MuellerMatrixSfD>
-    sample_ray_pol(FloatD time,
-                   FloatD sample1,
-                   const Point2fD &sample2,
-                   const Point2fD &sample3,
-                   MaskD active = true) const;
-#endif
+               Float sample1, const Point2f &sample2, const Point2f &sample3,
+               Mask active = true) const;
 
     /**
      * \brief Given a reference point in the scene, sample a direction from the
@@ -182,68 +113,10 @@ public:
      *     A \ref DirectionSample instance describing the generated sample
      *     along with a spectral importance weight.
      */
-    virtual std::pair<DirectionSample3f, Spectrumf>
-    sample_direction(const Interaction3f &ref,
-                     const Point2f &sample) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction()
-    std::pair<DirectionSample3f, Spectrumf>
+    virtual std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
                      const Point2f &sample,
-                     bool /* unused */) const {
-        return sample_direction(ref, sample);
-    }
-
-    /// Vectorized version of \ref sample_direction()
-    virtual std::pair<DirectionSample3fP, SpectrumfP>
-    sample_direction(const Interaction3fP &ref,
-                     const Point2fP &sample,
-                     MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample_direction()
-    virtual std::pair<DirectionSample3fD, SpectrumfD>
-    sample_direction(const Interaction3fD &ref,
-                     const Point2fD &sample,
-                     MaskD active = true) const;
-#endif
-
-    /**
-     * \brief Polarized version of \ref sample_direction()
-     *
-     * Since there is no special polarized importance sampling
-     * this method behaves very similar to the standard one.
-     *
-     * \return
-     *    A \ref DirectionSample instance describing the generated sample
-     *    along with a Mueller matrix of importance weights (in standard world
-     *    space for the sensor profile).
-     */
-    virtual std::pair<DirectionSample3f, MuellerMatrixSf>
-    sample_direction_pol(const Interaction3f &it,
-                         const Point2f &sample) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_direction_pol()
-    std::pair<DirectionSample3f, MuellerMatrixSf>
-    sample_direction_pol(const Interaction3f &it,
-                         const Point2f &sample,
-                         bool /* unused */) const {
-        return sample_direction_pol(it, sample);
-    }
-
-    /// Vectorized version of \ref sample_direction_pol()
-    virtual std::pair<DirectionSample3fP, MuellerMatrixSfP>
-    sample_direction_pol(const Interaction3fP &it,
-                         const Point2fP &sample,
-                         MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample_direction_pol()
-    virtual std::pair<DirectionSample3fD, MuellerMatrixSfD>
-    sample_direction_pol(const Interaction3fD &it,
-                         const Point2fD &sample,
-                         MaskD active = true) const;
-#endif
+                     Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -257,26 +130,8 @@ public:
      *    location.
      */
     virtual Float pdf_direction(const Interaction3f &ref,
-                                const DirectionSample3f &ds) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref pdf_direction()
-    Float pdf_direction(const Interaction3f &ref,
-                        const DirectionSample3f &ds,
-                        bool /* unused */) const {
-        return pdf_direction(ref, ds);
-    }
-
-    /// Vectorized version of \ref pdf_direction()
-    virtual FloatP pdf_direction(const Interaction3fP &ref,
-                                 const DirectionSample3fP &ds,
-                                 MaskP active) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref pdf_direction()
-    virtual FloatD pdf_direction(const Interaction3fD &ref,
-                                 const DirectionSample3fD &ds,
-                                 MaskD active) const;
-#endif
+                                const DirectionSample3f &ds,
+                                Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -302,46 +157,8 @@ public:
      * \return
      *    The emitted radiance or importance
      */
-    virtual Spectrumf eval(const SurfaceInteraction3f &si) const;
+    virtual Spectrum eval(const SurfaceInteraction3f &si, Mask active = true) const;
 
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
-    Spectrumf eval(const SurfaceInteraction3f &si, bool /* unused */) const {
-        return eval(si);
-    }
-
-    /// Vectorized version of \ref eval()
-    virtual SpectrumfP eval(const SurfaceInteraction3fP &si,
-                            MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref eval()
-    virtual SpectrumfD eval(const SurfaceInteraction3fD &si,
-                            MaskD active = true) const;
-#endif
-
-    /**
-     * \brief Polarized version of \ref eval()
-     *
-     * \return
-     *    Mueller matrix of the emitted radiance or importance (in standard
-     *    world space for the sensor profile).
-     */
-    virtual MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval_pol()
-    MuellerMatrixSf eval_pol(const SurfaceInteraction3f &si, bool /* unused */) const {
-        return eval_pol(si);
-    }
-
-    /// Vectorized version of \ref eval_pol()
-    virtual MuellerMatrixSfP eval_pol(const SurfaceInteraction3fP &si,
-                                      MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref eval_pol()
-    virtual MuellerMatrixSfD eval_pol(const SurfaceInteraction3fD &si,
-                                      MaskD active = true) const;
-#endif
 
     /// Return the local space to world space transformation
     const AnimatedTransform *world_transform() const {
@@ -433,8 +250,6 @@ protected:
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
     bool m_needs_sample_3 = true;
-    /// Whether monochrome mode is enabled.
-    bool m_monochrome = false;
 };
 
 NAMESPACE_END(mitsuba)

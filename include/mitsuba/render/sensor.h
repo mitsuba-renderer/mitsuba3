@@ -12,8 +12,15 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class MTS_EXPORT_RENDER Sensor : public Endpoint {
+template <typename Float, typename Spectrum>
+class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
+    MTS_IMPORT_TYPES();
+    using Film    = Film<Float, Spectrum>;
+    using Sampler = Sampler<Float, Spectrum>;
+    using Base    = Endpoint<Float, Spectrum>;
+    using Base::m_needs_sample_3;
+
     // =============================================================
     //! @{ \name Sensor-specific sampling functions
     // =============================================================
@@ -53,80 +60,10 @@ public:
      *    importance weights. The latter account for the difference between the
      *    sensor profile and the actual used sampling density function.
      */
-    virtual std::pair<RayDifferential3f, Spectrumf>
+    virtual std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time,
-                            Float sample1,
-                            const Point2f &sample2,
-                            const Point2f &sample3) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_ray_differential()
-    std::pair<RayDifferential3f, Spectrumf>
-    sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
-                            const Point2f &sample3, bool /* unused */) const {
-        return sample_ray_differential(time, sample1, sample2, sample3);
-    }
-
-    /// Vectorized version of \ref sample_ray_differential
-    virtual std::pair<RayDifferential3fP, SpectrumfP>
-    sample_ray_differential(FloatP time,
-                            FloatP sample1,
-                            const Point2fP &sample2,
-                            const Point2fP &sample3,
-                            MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample_ray_differential
-    virtual std::pair<RayDifferential3fD, SpectrumfD>
-    sample_ray_differential(FloatD time,
-                            FloatD sample1,
-                            const Point2fD &sample2,
-                            const Point2fD &sample3,
-                            MaskD active = true) const;
-#endif
-
-    /**
-     * \brief Polarized version of \ref sample_ray()
-     *
-     * Since there is no special polarized importance sampling
-     * this method behaves very similar to the standard one.
-     *
-     * \return
-     *    The sampled ray differential and the Mueller matrix of importance
-     *    weights (in standard world space for the sensor profile).
-     */
-    virtual std::pair<RayDifferential3f, MuellerMatrixSf>
-    sample_ray_differential_pol(Float time,
-                                Float sample1,
-                                const Point2f &sample2,
-                                const Point2f &sample3) const;
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref sample_ray_differential_pos()
-    std::pair<RayDifferential3f, MuellerMatrixSf>
-    sample_ray_differential_pol(Float time,
-                                Float sample1,
-                                const Point2f &sample2,
-                                const Point2f &sample3,
-                                bool /* unused */) const {
-        return sample_ray_differential_pol(time, sample1, sample2, sample3);
-    }
-
-    /// Vectorized version of \ref sample_ray_differential_pol()
-    virtual std::pair<RayDifferential3fP, MuellerMatrixSfP>
-    sample_ray_differential_pol(FloatP time,
-                                FloatP sample1,
-                                const Point2fP &sample2,
-                                const Point2fP &sample3,
-                                MaskP active = true) const;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of \ref sample_ray_differential_pol()
-    virtual std::pair<RayDifferential3fD, MuellerMatrixSfD>
-    sample_ray_differential_pol(FloatD time,
-                                FloatD sample1,
-                                const Point2fD &sample2,
-                                const Point2fD &sample3,
-                                MaskD active = true) const;
-#endif
+                            Float sample1, const Point2f &sample2, const Point2f &sample3,
+                            Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -185,26 +122,6 @@ protected:
 
     virtual ~Sensor();
 
-    template <typename Value, typename Point2 = Point<Value, 2>,
-              typename RayDifferential = RayDifferential<Point<Value, 3>>,
-              typename Spectrum        = Spectrum<Value>,
-              typename Mask            = mask_t<Value>>
-    std::pair<RayDifferential, Spectrum>
-    sample_ray_differential_impl(Value time, Value sample1,
-                                 const Point2 &sample2,
-                                 const Point2 &sample3,
-                                 Mask active) const;
-
-    template <typename Value, typename Point2 = Point<Value, 2>,
-              typename RayDifferential = RayDifferential<Point<Value, 3>>,
-              typename Spectrum = Spectrum<Value>,
-              typename Mask = mask_t<Value>>
-    std::pair<RayDifferential, MuellerMatrix<Spectrum>>
-    sample_ray_differential_pol_impl(Value time, Value sample1,
-                                     const Point2 &sample2,
-                                     const Point2 &sample3,
-                                     Mask active) const;
-
 protected:
     ref<Film> m_film;
     ref<Sampler> m_sampler;
@@ -231,9 +148,12 @@ protected:
  *
  * \ingroup librender
  */
-class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor {
+template <typename Float, typename Spectrum>
+class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
-    using Sensor::world_transform;
+    MTS_IMPORT_TYPES();
+    using Base = Sensor<Float, Spectrum>;
+    using Base::world_transform;
 
     /// Return the near clip plane distance
     Float near_clip() const { return m_near_clip; }

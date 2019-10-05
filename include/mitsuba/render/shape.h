@@ -20,6 +20,7 @@ public:
     using typename Aliases::BSDF;
     using typename Aliases::Medium;
     using typename Aliases::Emitter;
+    using typename Aliases::Sensor;
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using Index = uint32_t;
