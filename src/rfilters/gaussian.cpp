@@ -10,13 +10,18 @@ NAMESPACE_BEGIN(mitsuba)
  * When no reconstruction filter is explicitly requested, this is the default
  * choice in Mitsuba.
  */
-class GaussianFilter final : public ReconstructionFilter {
+template <typename Float, typename Spectrum>
+class GaussianFilter final : public ReconstructionFilter<Float> {
 public:
-    GaussianFilter(const Properties &props) : ReconstructionFilter(props) {
-        /* Standard deviation */
+    using Base = ReconstructionFilter<Float>;
+    using Base::init_discretization;
+    using Base::m_radius;
+
+    GaussianFilter(const Properties &props) : Base(props) {
+        // Standard deviation
         m_stddev = props.float_("stddev", 0.5f);
 
-        /* Cut off after 4 standard deviations */
+        // Cut off after 4 standard deviations
         m_radius = 4 * m_stddev;
 
         m_alpha = -1.f / (2.f * m_stddev * m_stddev);
@@ -25,7 +30,7 @@ public:
         init_discretization();
     }
 
-    template <typename Value> Value eval_impl(Value x) const {
+    Float eval_impl(Float x) const {
         return max(0.f, exp(m_alpha * sqr(x)) - m_bias);
     }
 
@@ -33,12 +38,12 @@ public:
         return tfm::format("GaussianFilter[stddev=%.2f, radius=%.2f]", m_stddev, m_radius);
     }
 
-    MTS_IMPLEMENT_RFILTER_ALL()
+    // MTS_IMPLEMENT_RFILTER_ALL()
     MTS_DECLARE_CLASS()
 protected:
     Float m_stddev, m_alpha, m_bias;
 };
 
-MTS_IMPLEMENT_CLASS(GaussianFilter, ReconstructionFilter);
-MTS_EXPORT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
+// MTS_IMPLEMENT_CLASS(GaussianFilter, ReconstructionFilter);
+// MTS_EXPORT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
 NAMESPACE_END(mitsuba)
