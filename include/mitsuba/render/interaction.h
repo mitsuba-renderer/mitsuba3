@@ -86,30 +86,13 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
-    using Float = Float_;
+    using Float    = Float_;
     using Spectrum = Spectrum_;
-    using Base = Interaction<Float, Spectrum>;
-    using Aliases = Aliases<Float, Spectrum>;
-    // TODO: can we import types without the `using SurfaceInteraction` part?
-    using typename Base::Index;
-    using typename Base::Point2f;
-    using typename Base::Point3f;
-    using typename Base::Vector2f;
-    using typename Base::Vector3f;
-    using typename Base::Normal3f;
-    using typename Base::Frame3f;
-    using typename Base::Value;
-    using typename Base::Mask;
-    using typename Aliases::Scene;
-    using typename Aliases::PositionSample3f;
-    using typename Aliases::RayDifferential3f;
-    using typename Aliases::BSDFPtr;
-    using typename Aliases::MediumPtr;
-    using typename Aliases::ShapePtr;
-    using typename Aliases::EmitterPtr;
-    using typename Aliases::MuellerMatrix4f;
-
-
+    using Base     = Interaction<Float, Spectrum>;
+    MTS_IMPORT_TYPES_ONLY()
+    MTS_IMPORT_OBJECT_TYPES()
+    using PositionSample3f = typename Aliases::PositionSample3f;
+    using Index            = typename Aliases::UInt32;
     //! @}
     // =============================================================
 
@@ -215,7 +198,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * Returns the exterior medium when \c cos_theta > 0 and
      * the interior medium when \c cos_theta <= 0.
      */
-    MediumPtr target_medium(const Value &cos_theta) const {
+    MediumPtr target_medium(const Float &cos_theta) const {
         return select(cos_theta > 0, shape->exterior_medium(),
                                      shape->interior_medium());
     }

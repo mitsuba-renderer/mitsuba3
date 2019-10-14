@@ -28,7 +28,7 @@ template <typename Float, typename Spectrum> struct PositionSample;
 template <typename Float, typename Spectrum> struct Interaction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Spectrum> struct MediumInteraction;
-template <typename Float, typename Spectrum> struct BSDFSample;
+template <typename Float, typename Spectrum> struct BSDFSample3;
 template <typename Float, typename Spectrum> struct RadianceSample;
 
 template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
@@ -89,6 +89,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Normal3f = Normal<Float, 3>;
     using Normal3d = Normal<Float64, 3>;
 
+    using Color1f  = Color<Float, 1>;
     using Color3f  = Color<Float, 3>;
 
     using StokesVector4f  = StokesVector<Float>;
@@ -114,9 +115,10 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Interaction3f        = Interaction<Float, Spectrum>;
     using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
     using MediumInteraction3f  = MediumInteraction<Float, Spectrum>;
-    using BSDFSample3f         = BSDFSample<Float, Spectrum>;
+    using BSDFSample3f         = BSDFSample3<Float, Spectrum>;
 
     // TODO
+    using Scene                = mitsuba::Scene<Float, Spectrum>;
     using Sampler              = mitsuba::Sampler<Float, Spectrum>;
     using Shape                = mitsuba::Shape<Float, Spectrum>;
     // using Integrator           = mitsuba::Integrator<Float, Spectrum>;
@@ -141,7 +143,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using EmitterPtr          = replace_scalar_t<Float, const Emitter *>;
 };
 
-#define MTS_IMPORT_TYPES()                                                                         \
+#define MTS_IMPORT_TYPES_ONLY()                                                                    \
     using Aliases              = mitsuba::Aliases<Float, Spectrum>;                                \
     using Mask                 = typename Aliases::Mask;                                           \
     using Int32                = typename Aliases::Int32;                                          \
@@ -184,21 +186,24 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Normal3f             = typename Aliases::Normal3f;                                       \
     using Normal3d             = typename Aliases::Normal3d;                                       \
     using Color3f              = typename Aliases::Color3f;                                        \
-    using StokesVector4f       = typename Aliases::StokesVector4f;                                        \
-    using MuellerMatrix4f      = typename Aliases::MuellerMatrix4f;                                        \
-    using BoundingBox1f        = typename Aliases::BoundingBox1f;                                  \
-    using BoundingBox2f        = typename Aliases::BoundingBox2f;                                  \
-    using BoundingBox3f        = typename Aliases::BoundingBox3f;                                  \
-    using BoundingBox4f        = typename Aliases::BoundingBox4f;                                  \
-    using BoundingSphere1f     = typename Aliases::BoundingSphere1f;                                  \
-    using BoundingSphere2f     = typename Aliases::BoundingSphere2f;                                  \
-    using BoundingSphere3f     = typename Aliases::BoundingSphere3f;                                  \
-    using BoundingSphere4f     = typename Aliases::BoundingSphere4f;                                  \
+    using StokesVector4f       = typename Aliases::StokesVector4f;                                 \
+    using MuellerMatrix4f      = typename Aliases::MuellerMatrix4f;                                \
     using Frame3f              = typename Aliases::Frame3f;                                        \
     using Ray3f                = typename Aliases::Ray3f;                                          \
     using RayDifferential3f    = typename Aliases::RayDifferential3f;                              \
     using Transform3f          = typename Aliases::Transform3f;                                    \
-    using Transform4f          = typename Aliases::Transform4f;                                    \
+    using Transform4f          = typename Aliases::Transform4f;
+
+#define MTS_IMPORT_TYPES()                                                                         \
+    MTS_IMPORT_TYPES_ONLY();                                                                       \
+    using BoundingBox1f        = typename Aliases::BoundingBox1f;                                  \
+    using BoundingBox2f        = typename Aliases::BoundingBox2f;                                  \
+    using BoundingBox3f        = typename Aliases::BoundingBox3f;                                  \
+    using BoundingBox4f        = typename Aliases::BoundingBox4f;                                  \
+    using BoundingSphere1f     = typename Aliases::BoundingSphere1f;                               \
+    using BoundingSphere2f     = typename Aliases::BoundingSphere2f;                               \
+    using BoundingSphere3f     = typename Aliases::BoundingSphere3f;                               \
+    using BoundingSphere4f     = typename Aliases::BoundingSphere4f;                               \
     using PositionSample3f     = typename Aliases::PositionSample3f;                               \
     using DirectionSample3f    = typename Aliases::DirectionSample3f;                              \
     using Interaction3f        = typename Aliases::Interaction3f;                                  \
@@ -207,6 +212,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using BSDFSample3f         = typename Aliases::BSDFSample3f;
 
 #define MTS_IMPORT_OBJECT_TYPES() \
+    using Scene                 = typename Aliases::Scene;                                         \
     using Sampler              = typename Aliases::Sampler;                                        \
     using Shape                = typename Aliases::Shape;                                          \
     using Integrator           = typename Aliases::Integrator;                                     \
@@ -214,10 +220,10 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Sensor               = typename Aliases::Sensor;                                         \
     using Emitter              = typename Aliases::Emitter;                                        \
     using Medium               = typename Aliases::Medium;                                         \
-    using Film                 = typename Aliases::Film;                                         \
+    using Film                 = typename Aliases::Film;                                           \
     using BSDFPtr              = typename Aliases::BSDFPtr;                                        \
-    using MediumPtr            = typename Aliases::MediumPtr;                                        \
-    using ShapePtr             = typename Aliases::ShapePtr;  \
+    using MediumPtr            = typename Aliases::MediumPtr;                                      \
+    using ShapePtr             = typename Aliases::ShapePtr;                                       \
     using EmitterPtr           = typename Aliases::EmitterPtr;
 
 // -----------------------------------------------------------------------------

@@ -182,7 +182,7 @@ struct MTS_EXPORT_RENDER BSDFContext {
 };
 
 /// Data structure holding the result of BSDF sampling operations.
-template <typename Float> struct BSDFSample3 {
+template <typename Float, typename Spectrum> struct BSDFSample3 {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
@@ -442,10 +442,10 @@ protected:
 
 protected:
     /// Combined flags for all components of this BSDF.
-    uint32_t m_flags;
+    BSDFFlags m_flags;
 
     /// Flags for each component of this BSDF.
-    std::vector<uint32_t> m_components;
+    std::vector<BSDFFlags> m_components;
 
     /// Identifier (if available)
     std::string m_id;
@@ -461,8 +461,8 @@ extern MTS_EXPORT_RENDER std::ostream &operator<<(
 extern MTS_EXPORT_RENDER std::ostream &operator<<(std::ostream &os,
                                                   const BSDFContext& ctx);
 
-template <typename Float>
-std::ostream &operator<<(std::ostream &os, const BSDFSample3<Float>& bs) {
+template <typename Float, typename Spectrum>
+std::ostream &operator<<(std::ostream &os, const BSDFSample3<Float, Spectrum>& bs) {
     os << "BSDFSample[" << std::endl
         << "  wo = " << bs.wo << "," << std::endl
         << "  pdf = " << bs.pdf << "," << std::endl
