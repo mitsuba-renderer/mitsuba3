@@ -20,6 +20,11 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Bitmap : public Object {
 public:
+    // TODO: templatize if appropriate
+    using Float                = float;
+    using Vector2s             = Vector<size_t, 2>;
+    using Point2i              = Point<int32_t, 2>;
+    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float>;
 
     // ======================================================================
     //! @{ \name Constructors and Enumerations
@@ -391,9 +396,10 @@ public:
                   const ReconstructionFilter *rfilter = nullptr,
                   const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
                       { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
-                  const std::pair<Float, Float> &bound =
-                      { -math::Infinity, math::Infinity },
+                  const std::pair<Float, Float> &bound = kDefaultBounds,
                   Bitmap *temp = nullptr) const;
+    static constexpr std::pair<Float, Float> kDefaultBounds = { -math::Infinity<Float>,
+                                                                math::Infinity<Float> };
 
     /**
      * \brief Up- or down-sample this image to a different resolution
@@ -426,8 +432,7 @@ public:
                          const ReconstructionFilter *rfilter = nullptr,
                          const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
                              { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
-                         const std::pair<Float, Float> &bound =
-                             { -math::Infinity, math::Infinity }) const;
+                         const std::pair<Float, Float> &bound = kDefaultBounds) const;
 
     /**
      * \brief Convert the bitmap into another pixel and/or component format

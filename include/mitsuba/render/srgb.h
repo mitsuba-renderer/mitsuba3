@@ -10,6 +10,7 @@ template <typename Vector3, typename Value>
 MTS_INLINE Value srgb_model_eval(const Vector3 &coeff_, const Value &wavelengths) {
 #if RGB2SPEC_MAPPING == 2
     /// See rgb2spec.h for details on this mapping variant
+    using Matrix3f = enoki::Matrix<float, 3>;
     const Matrix3f M(1.00298e-4, -1.68405e-4,  6.81071e-5,
                     -9.87989e-2,  1.76582e-1, -7.77831e-2,
                      2.41114e+1, -4.52511e+1,  2.21398e+1);
@@ -33,6 +34,7 @@ MTS_INLINE Value srgb_model_mean(const Vector3 &coeff_) {
 
 #if RGB2SPEC_MAPPING == 2
     /// See rgb2spec.h for details on this mapping variant
+    using Matrix3f = enoki::Matrix<float, 3>;
     const Matrix3f M(1.00298e-4, -1.68405e-4,  6.81071e-5,
                     -9.87989e-2,  1.76582e-1, -7.77831e-2,
                      2.41114e+1, -4.52511e+1,  2.21398e+1);
@@ -61,15 +63,12 @@ MTS_INLINE FloatD srgb_model_mean_d(const Vector3fD &coeff_) {
  * @param  c An sRGB color value where all components are in [0, 1].
  * @return   Coefficients for use with \ref srgb_model_eval
  */
-extern MTS_EXPORT_RENDER Vector3f srgb_model_fetch(const Color3f &c);
+template <typename Color3f>
+extern MTS_EXPORT_RENDER Vector<value_t<Color3f>, 3> srgb_model_fetch(const Color3f &c);
 
-#if defined(MTS_ENABLE_AUTODIFF)
-/// Differentiable variant of \ref srgb_model_fetch.
-extern MTS_EXPORT_RENDER Vector3fD srgb_model_fetch_d(const Color3fD &c);
-#endif
 
 /// Sanity check: convert the coefficients back to sRGB
-template <typename Value>
-extern MTS_EXPORT_RENDER Color<Value, 3> srgb_model_eval_rgb(const Vector<Value, 3> &coeff);
+template <typename Float>
+extern MTS_EXPORT_RENDER Color<Float, 3> srgb_model_eval_rgb(const Vector<Float, 3> &coeff);
 
 NAMESPACE_END(mitsuba)

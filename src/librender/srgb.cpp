@@ -93,6 +93,7 @@ template <typename Value> Color<Value, 3> srgb_model_eval_rgb(const Vector<Value
 
 /// Differentiable variant of \ref rgb2spec_fetch
 Vector3fD rgb2spec_fetch_d(RGB2Spec *model, const Color3fD &rgb_) {
+    // TODO: merge with rgb2spec_fetch, with if constexpr where appropriate
     Color3fD rgb_clamp = max(min(rgb_, 1.f), 0.f);
     size_t res  = model->res;
 
@@ -165,6 +166,7 @@ Vector3fD rgb2spec_fetch_d(RGB2Spec *model, const Color3fD &rgb_) {
 }
 
 Vector3fD srgb_model_fetch_d(const Color3fD &c) {
+    // TODO: merge with rgb2spec_fetch, with if constexpr where appropriate
     if (unlikely(model == nullptr)) {
         tbb::spin_mutex::scoped_lock c(model_mutex);
         if (model == nullptr) {
