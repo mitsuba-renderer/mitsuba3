@@ -28,10 +28,12 @@ with open(fname, 'w') as f:
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    "%s\\n"' % name)
     f.write('\n\n')
+
     w('#define MTS_DECLARE_PLUGIN()')
     w('    MTS_DECLARE_CLASS()')
     w('    MTS_IMPORT_TYPES()')
     f.write('\n\n')
+
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
     w('    MTS_IMPLEMENT_CLASS_TEMPLATE(Name, Parent)')
     w('    extern "C" {')
@@ -55,6 +57,16 @@ with open(fname, 'w') as f:
     for index, (name, float_, spectrum) in enumerate(enabled):
         # TODO: this would be better with a `using` declaration
         spectrum = spectrum.replace('Float', float_)
-        w('template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+        w('    template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n\n')
+
+    w('#define MTS_IMPLEMENT_OBJECT(Name, Parent)')
+    w('    MTS_IMPLEMENT_CLASS_TEMPLATE(Name, Parent)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        # TODO: this would be better with a `using` declaration
+        spectrum = spectrum.replace('Float', float_)
+        # TODO: which export module to use? Is this instantiation useful?
+        w('    template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+
     f.write('\n')
 print('Generated configuration header: ' + fname)
