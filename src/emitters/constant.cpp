@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES()
+    MTS_DECLARE_PLUGIN()
     using Base               = Emitter<Float, Spectrum>;
     using Scene              = typename Aliases::Scene;
     using Shape              = typename Aliases::Shape;
@@ -52,7 +52,7 @@ public:
                                     const Point2f &sample3, Mask active) const {
         // 1. Sample spectrum
         auto [wavelengths, weight] = m_radiance->sample(
-            math::sample_shifted<Spectrum>(wavelength_sample), active);
+            math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
 
         // 2. Sample spatial component
         Vector3f v0 = warp::square_to_uniform_sphere(sample2);
@@ -111,13 +111,10 @@ public:
         return oss.str();
     }
 
-    // MTS_IMPLEMENT_EMITTER_ALL()
-    MTS_DECLARE_CLASS()
 protected:
     ref<ContinuousSpectrum> m_radiance;
     BoundingSphere3f m_bsphere;
 };
 
-// MTS_IMPLEMENT_CLASS(ConstantBackgroundEmitter, Emitter)
-// MTS_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter");
+MTS_IMPLEMENT_PLUGIN(ConstantBackgroundEmitter, Emitter, "Constant background emitter");
 NAMESPACE_END(mitsuba)

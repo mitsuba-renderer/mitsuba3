@@ -127,6 +127,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Emitter              = mitsuba::Emitter<Float, Spectrum>;
     // using Medium               = mitsuba::Medium<Float, Spectrum>;
     using Film                 = mitsuba::Film<Float, Spectrum>;
+    using ContinuousSpectrum   = mitsuba::ContinuousSpectrum<Float, Spectrum>;
 
     // using Sampler              = mitsuba::Sampler;
     // using Shape                = mitsuba::Shape;
@@ -137,6 +138,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Medium               = mitsuba::Medium;
     // using Film                 = mitsuba::Film;
 
+    using ObjectPtr           = replace_scalar_t<Float, const Object *>;
     using BSDFPtr             = replace_scalar_t<Float, const BSDF *>;
     using MediumPtr           = replace_scalar_t<Float, const Medium *>;
     using ShapePtr            = replace_scalar_t<Float, const Shape *>;
@@ -221,6 +223,8 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Emitter              = typename Aliases::Emitter;                                        \
     using Medium               = typename Aliases::Medium;                                         \
     using Film                 = typename Aliases::Film;                                           \
+    using ContinuousSpectrum   = typename Aliases::ContinuousSpectrum;                             \
+    using ObjectPtr            = typename Aliases::ObjectPtr;                                        \
     using BSDFPtr              = typename Aliases::BSDFPtr;                                        \
     using MediumPtr            = typename Aliases::MediumPtr;                                      \
     using ShapePtr             = typename Aliases::ShapePtr;                                       \

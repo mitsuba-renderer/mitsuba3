@@ -22,14 +22,11 @@ struct PositionSample {
     //! @{ \name Type declarations
     // =============================================================
 
-    using Float                = Float_;
-    using Spectrum             = Spectrum_;
-    using Point2               = Point<Float, 2>;
-    using Point3               = Point<Float, 2>;
-    using Normal3              = Normal<Float, 3>;
-    using ObjectPtr            = replace_scalar_t<Float, const Object *>;
-    using SurfaceInteraction   = mitsuba::SurfaceInteraction<Float, Spectrum>;
-    using Mask                 = mask_t<Float>;
+    using Float = Float_;
+    using Spectrum = Spectrum_;
+    MTS_IMPORT_TYPES_ONLY()
+    using ObjectPtr            = typename Aliases::ObjectPtr;
+    using SurfaceInteraction3f = typename Aliases::SurfaceInteraction3f;
 
     //! @}
     // =============================================================
@@ -39,10 +36,10 @@ struct PositionSample {
     // =============================================================
 
     /// Sampled position
-    Point3 p;
+    Point3f p;
 
     /// Sampled surface normal (if applicable)
-    Normal3 n;
+    Normal3f n;
 
     /**
      * \brief Optional: 2D sample position associated with the record
@@ -52,7 +49,7 @@ struct PositionSample {
      * mesh or a position on the aperture of a sensor. When applicable, such
      * positions are stored in the \c uv attribute.
      */
-    Point2 uv;
+    Point2f uv;
 
     /// Associated time value
     Float time;
@@ -92,7 +89,7 @@ struct PositionSample {
      * surface after hitting it using standard ray tracing. This happens for
      * instance in path tracing with multiple importance sampling.
      */
-    PositionSample(const SurfaceInteraction &si)
+    PositionSample(const SurfaceInteraction3f &si)
         : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time), pdf(0.f),
           delta(false), object(reinterpret_array<ObjectPtr>(si.shape)) { }
 
@@ -125,21 +122,13 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
-
-    using Base = PositionSample<Float_, Spectrum_>;
-    using typename Base::Float;
-    using typename Base::Spectrum;
-    using typename Base::Mask;
-    using typename Base::Point2;
-    using typename Base::Point3;
-    using typename Base::Normal3;
+    using Float    = Float_;
+    using Spectrum = Spectrum_;
+    using Base     = PositionSample<Float_, Spectrum_>;
+    MTS_IMPORT_TYPES_ONLY();
     using typename Base::ObjectPtr;
-    using typename Base::SurfaceInteraction;
-    using Aliases = Aliases<Float, Spectrum>;
-    using typename Aliases::Interaction;
-    using typename Aliases::Vector3f;
-    using typename Aliases::Ray3f;
-
+    using typename Base::SurfaceInteraction3f;
+    using Interaction3f = typename Aliases::Interaction3f;
     //! @}
     // =============================================================
 
@@ -184,7 +173,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      * \param ref
      *     Reference position
      */
-    DirectionSample(const SurfaceInteraction &it, const Interaction &ref)
+    DirectionSample(const SurfaceInteraction3f &it, const Interaction3f &ref)
         : Base(it) {
         d    = it.p - ref.p;
         dist = norm(d);
@@ -193,7 +182,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     }
 
     /// Element-by-element constructor
-    DirectionSample(const Point3 &p, const Normal3 &n, const Point2 &uv,
+    DirectionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
                     const Float &time, const Float &pdf, const Mask &delta,
                     const ObjectPtr &object, const Vector3f &d, const Float &dist)
         : Base(p, n, uv, time, pdf, delta, object), d(d), dist(dist) { }
@@ -214,7 +203,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      * \param si
      *     A surface intersection record (usually on an emitter).
      */
-    void set_query(const Ray3f &ray, const SurfaceInteraction &si) {
+    void set_query(const Ray3f &ray, const SurfaceInteraction3f &si) {
         p = si.p;
         n = si.sh_frame.n;
         uv = si.uv;

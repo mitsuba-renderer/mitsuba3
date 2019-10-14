@@ -37,8 +37,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Endpoint : public Object {
 public:
     MTS_IMPORT_TYPES();
-    using typename Aliases::Scene;
-    using typename Aliases::Shape;
+    using Scene = typename Aliases::Scene;
+    using Shape = typename Aliases::Shape;
 
     // =============================================================
     //! @{ \name Sampling interface

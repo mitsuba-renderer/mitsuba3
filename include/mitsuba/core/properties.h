@@ -67,7 +67,8 @@ enum class PropertyType : uint32_t {
  */
 class MTS_EXPORT_CORE Properties {
 public:
-    using Float       = double;
+    // TODO: remove this / replace by templating.
+    using Float       = float;
     using Vector3f    = Vector<Float, 3>;
     using Point3f     = Point<Float, 3>;
     using Color3f     = Color<Float, 3>;

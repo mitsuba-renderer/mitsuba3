@@ -11,9 +11,18 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
     MTS_IMPORT_TYPES();
-    MTS_IMPORT_OBJECT_TYPES();
-    // TODO: what should this be?
-    using MuellerMatrixSf = MuellerMatrix4f;
+    using Sampler              = typename Aliases::Sampler;
+    using Shape                = typename Aliases::Shape;
+    using Integrator           = typename Aliases::Integrator;
+    using BSDF                 = typename Aliases::BSDF;
+    using Sensor               = typename Aliases::Sensor;
+    using Emitter              = typename Aliases::Emitter;
+    // using Medium               = typename Aliases::Medium;
+    using Film                 = typename Aliases::Film;
+    // using BSDFPtr              = typename Aliases::BSDFPtr;
+    // using MediumPtr            = typename Aliases::MediumPtr;
+    // using ShapePtr             = typename Aliases::ShapePtr;
+    // using EmitterPtr           = typename Aliases::EmitterPtr;
 
     Scene(const Properties &props);
 
@@ -104,11 +113,11 @@ public:
      * \brief Modified version of \ref sample_emitter_direction_pol() that also
      * samples accross index-matched interfaces.
      */
-    std::pair<DirectionSample3f, MuellerMatrixSf>
-    sample_emitter_direction_attenuated_pol(const Interaction3f &ref,
-                                            Sampler *sampler,
-                                            bool test_visibility = true,
-                                            Mask active = true) const;
+    std::pair<DirectionSample3f, Spectrum>
+    sample_emitter_direction_attenuated(const Interaction3f &ref,
+                                        Sampler *sampler,
+                                        bool test_visibility = true,
+                                        Mask active = true) const;
 
     /**
      * \brief Evaluate the probability density of the  \ref

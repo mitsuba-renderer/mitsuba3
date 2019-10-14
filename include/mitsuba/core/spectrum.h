@@ -90,10 +90,12 @@ template <typename T> struct wavelength {
     struct type { };
 };
 
+template <typename Value, size_t Size> struct wavelength<Color<Value, Size>> {
+    using type = Color<Value, Size>;
+};
 template <typename Value, size_t Size> struct wavelength<Spectrum<Value, Size>> {
     using type = Spectrum<Value, Size>;
 };
-
 template <typename T> struct wavelength<Matrix<T, 4, true>> {
     using type = typename wavelength<T>::type;
 };
