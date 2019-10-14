@@ -49,7 +49,7 @@ public:
 
         /* 1. Sample spectrum */
         auto [wavelengths, spec_weight] = m_radiance->sample(
-            math::sample_shifted<Spectrum>(wavelength_sample), active);
+            math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
 
         /* 2. Sample spatial component */
         PositionSample ps = m_shape->sample_position(time, sample2, active);

@@ -36,7 +36,7 @@ public:
                     const Point2 &dir_sample,
                     Mask active) const {
         auto [wavelengths, spec_weight] = m_intensity->sample(
-            math::sample_shifted<Spectrum>(wavelength_sample), active);
+            math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
 
         const auto &trafo = m_world_transform->eval(time);
         Ray3 ray(trafo * Point3(0.f),
