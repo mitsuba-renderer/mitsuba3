@@ -6,7 +6,14 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /// Linear interpolant of a regularly sampled spectrum
-class InterpolatedSpectrum final : public ContinuousSpectrum {
+template <typename Float, typename Spectrum>
+class InterpolatedSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
+public:
+    MTS_DECLARE_PLUGIN()
+    using Base       = ContinuousSpectrum<Float, Spectrum>;
+    using Wavelength = wavelength_t<Spectrum>;
+    using Index      = replace_scalar_t<Wavelength, uint32_t>;
+
 #if defined(MTS_ENABLE_AUTODIFF)
     using FloatVector = std::vector<Float, enoki::cuda_host_allocator<Float>>;
 #else
@@ -78,7 +85,7 @@ public:
         }
 
         if (expanded)
-            Log(EWarn, "InterpolatedSpectrum was expanded to cover wavelength range [%.1f, %.1f]",
+            Log(Warn, "InterpolatedSpectrum was expanded to cover wavelength range [%.1f, %.1f]",
                 MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
 
         m_inv_interval_size = Float((size - 1) / (double(m_lambda_max) - double(m_lambda_min)));
@@ -93,7 +100,7 @@ public:
     }
 
     /// Note: this assumes that the wavelengths and number of entries have not changed.
-    void parameters_changed() override {
+    void parameters_changed() {
 #if defined(MTS_ENABLE_AUTODIFF)
         // TODO: copy values to CPU to compute CDF?
 #endif
@@ -121,85 +128,77 @@ public:
 #endif
     }
 
-    template <typename Value, typename Index, typename Mask>
-    auto data_gather(const Index &index, const Mask &active) const {
+    template <typename Wavelength>
+    Wavelength data_gather(const Index &index, const mask_t<Index> &active) const {
         if constexpr (!is_diff_array_v<Index>) {
-            return gather<Value>(m_data.data(), index, active);
+            return gather<Wavelength>(m_data.data(), index, active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Value>(m_data_d, index, active);
+            return gather<Wavelength>(m_data_d, index, active);
         }
 #endif
     }
-    template <typename Value, typename Index, typename Mask>
-    auto cdf_gather(const Index &index, const Mask &active) const {
+    template <typename Wavelength>
+    Wavelength cdf_gather(const Index &index, const mask_t<Index> &active) const {
         if constexpr (!is_diff_array_v<Index>) {
-            return gather<Value>(m_cdf.data(), index, active);
+            return gather<Wavelength>(m_cdf.data(), index, active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Value>(m_cdf_d, index, active);
+            return gather<Wavelength>(m_cdf_d, index, active);
         }
 #endif
     }
 
-    template <typename Value>
-    ENOKI_INLINE Value eval_impl(Value lambda, mask_t<Value> active) const {
-        using Index = uint_array_t<Value>;
-
-        Value t = (lambda - m_lambda_min) * m_inv_interval_size;
-        active &= lambda >= m_lambda_min && lambda <= m_lambda_max;
+    ENOKI_INLINE Spectrum eval(const Wavelength &lambda, Mask active_) const override {
+        Wavelength t = (lambda - m_lambda_min) * m_inv_interval_size;
+        mask_t<Wavelength> active = active_;
+        active &= (lambda >= m_lambda_min) && (lambda <= m_lambda_max);
 
         Index i0 = clamp(Index(t), zero<Index>(), Index(m_size_minus_2)),
               i1 = i0 + Index(1);
 
-        Value v0 = data_gather<Value>(i0, active),
-              v1 = data_gather<Value>(i1, active);
+        Wavelength v0 = data_gather<Wavelength>(i0, active),
+                   v1 = data_gather<Wavelength>(i1, active);
 
-        Value w1 = t - Value(i0),
-              w0 = (Float) 1 - w1;
+        Wavelength w1 = t - Wavelength(i0),
+                   w0 = (Float) 1 - w1;
 
         return (w0 * v0 + w1 * v1) & active;
     }
 
-    template <typename Value>
-    ENOKI_INLINE Value pdf_impl(Value lambda, mask_t<Value> active) const {
-        return eval_impl(lambda, active) * normalization<Value>();
+    ENOKI_INLINE Spectrum pdf(const Wavelength &lambda, Mask active) const override {
+        return eval(lambda, active) * m_normalization;
     }
 
-    template <typename Value>
-    ENOKI_INLINE std::pair<Value, Value> sample_impl(Value sample, mask_t<Value> active) const {
-        using Index = int_array_t<Value>;
-        using Mask = mask_t<Value>;
-
-        sample *= integral<Value>();
+    ENOKI_INLINE std::pair<Wavelength, Spectrum> sample(const Wavelength &sample_,
+                                                        Mask active) const override {
+        Wavelength sample = sample_ * m_integral;
 
         // TODO: find_interval on differentiable m_cdf?
         Index i0 = math::find_interval(m_cdf.size(),
-            [&](Index idx, Mask active) {
-                return cdf_gather<Value>(idx, active) <= sample;
+            [&](const Index &idx, const mask_t<Index> &active) {
+                return cdf_gather<Wavelength>(idx, active) <= sample;
             },
             active
         );
-
         Index i1 = i0 + Index(1);
 
-        Value f0 = data_gather<Value>(i0, active),
-              f1 = data_gather<Value>(i1, active);
+        Wavelength f0 = data_gather<Wavelength>(i0, active),
+                   f1 = data_gather<Wavelength>(i1, active);
 
         // Reuse the sample
-        sample = (sample - cdf_gather<Value>(i0, active)) * m_inv_interval_size;
+        sample = (sample - cdf_gather<Wavelength>(i0, active)) * m_inv_interval_size;
 
         // Importance sample the linear interpolant
-        Value t_linear =
-            (f0 - safe_sqrt(f0 * f0 + 2.0f * sample * (f1 - f0))) / (f0 - f1);
-        Value t_const  = sample / f0;
-        Value t = select(eq(f0, f1), t_const, t_linear);
+        Wavelength t_linear = (f0 - safe_sqrt(f0 * f0 + 2.0f * sample * (f1 - f0))) / (f0 - f1);
+        Wavelength t_const  = sample / f0;
+        Wavelength t        = select(eq(f0, f1), t_const, t_linear);
 
         return {
-            m_lambda_min + (Value(i0) + t) * m_interval_size,
-            Value(integral<Value>())
+            m_lambda_min + (Wavelength(i0) + t) * m_interval_size,
+            m_integral
         };
     }
 
@@ -227,12 +226,6 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SPECTRUM_ALL()
-    MTS_AUTODIFF_GETTER(data, m_data, m_data_d)
-    MTS_AUTODIFF_GETTER(integral, m_integral, m_integral_d)
-    MTS_AUTODIFF_GETTER(normalization, m_normalization, m_normalization_d)
-    MTS_DECLARE_CLASS()
-
 private:
     FloatVector m_data, m_cdf;
     uint32_t m_size_minus_2;
@@ -248,7 +241,6 @@ private:
 #endif
 };
 
-MTS_IMPLEMENT_CLASS(InterpolatedSpectrum, ContinuousSpectrum)
-MTS_EXPORT_PLUGIN(InterpolatedSpectrum, "Interpolated spectrum")
+MTS_IMPLEMENT_PLUGIN(InterpolatedSpectrum, ContinuousSpectrum, "Interpolated spectrum")
 
 NAMESPACE_END(mitsuba)
