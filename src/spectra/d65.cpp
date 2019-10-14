@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
  * D65 illuminant data from CIE, expressed as Relative Spectral Power Distribution,
  * normalized relative to the power at 560nm.
  */
-const Float data[95] = {
+const float data[95] = {
     46.6383f,  49.3637f,  52.0891f,  51.0323f,  49.9755f,  52.3118f,  54.6482f,  68.7015f,
     82.7549f,  87.1204f,  91.486f,   92.4589f,  93.4318f,  90.057f,   86.6823f,  95.7736f,
     104.865f,  110.936f,  117.008f,  117.41f,   117.812f,  116.336f,  114.861f,  115.392f,
@@ -24,9 +24,13 @@ const Float data[95] = {
 };
 
 /// CIE D65 spectrum discretized at 5nm intervals
-class D65Spectrum final : public ContinuousSpectrum {
+template <typename Float, typename Spectrum>
+class D65Spectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    D65Spectrum(const Properties &props) {
+    MTS_DECLARE_PLUGIN()
+    using Base = ContinuousSpectrum<Float, Spectrum>;
+
+    D65Spectrum(const Properties &props) : Base() {
         if (props.has_property("scale") && props.has_property("value"))
             Throw("Cannot specify both 'scale' and 'value'.");
 
@@ -50,8 +54,7 @@ public:
         props.set_pointer("values", (const void *) &tmp[0]);
 
         PluginManager *pmgr = PluginManager::instance();
-        ref<ContinuousSpectrum> spec =
-            pmgr->create_object<ContinuousSpectrum>(props);
+        ref<Base> spec      = pmgr->create_object<Base>(props);
 
         return std::vector<ref<Object>>(1, spec.get());
     }
@@ -64,13 +67,9 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
-
 private:
     Float m_scale;
 };
 
-MTS_IMPLEMENT_CLASS(D65Spectrum, ContinuousSpectrum)
-MTS_EXPORT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
-
+MTS_IMPLEMENT_PLUGIN(D65Spectrum, ContinuousSpectrum, "CIE D65 Spectrum")
 NAMESPACE_END(mitsuba)
