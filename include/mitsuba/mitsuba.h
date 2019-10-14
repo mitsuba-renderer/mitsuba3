@@ -27,5 +27,6 @@
 /// Authors list
 #define MTS_AUTHORS "Realistic Graphics Lab, EPFL"
 
+#include <mitsuba/core/config.h>
 #include <mitsuba/core/platform.h>
 #include <mitsuba/core/fwd.h>

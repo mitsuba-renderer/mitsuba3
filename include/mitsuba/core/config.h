@@ -16,22 +16,28 @@
         MTS_EXPORT const char *plugin_descr = Descr;                        \
         MTS_EXPORT Object *plugin_create(const char *config,                \
                                          const Properties &props) {         \
-            if (strcmp(config, "scalar-mono") == 0)                         \
-                return new Name<float, Color1f>(props);                     \
-            else if (strcmp(config, "scalar-rgb") == 0)                     \
-                return new Name<float, Color3f>(props);                     \
-            else if (strcmp(config, "scalar-spectral") == 0)                \
-                return new Name<float, Spectrumf>(props);                   \
-            else if (strcmp(config, "scalar-spectral-polarized") == 0)      \
-                return new Name<float, MuellerMatrixSf>(props);             \
-            else                                                            \
+            constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float); \
+            ENOKI_MARK_USED(PacketSize);                                    \
+            if (strcmp(config, "scalar-mono") == 0) {                       \
+                using Float = float;                                        \
+                return new Name<float, Color<Float, 1>>(props);             \
+            } else if (strcmp(config, "scalar-rgb") == 0) {                 \
+                using Float = float;                                        \
+                return new Name<float, Color<Float, 3>>(props);             \
+            } else if (strcmp(config, "scalar-spectral") == 0) {            \
+                using Float = float;                                        \
+                return new Name<float, Spectrum<Float, 4>>(props);          \
+            } else if (strcmp(config, "scalar-spectral-polarized") == 0) {  \
+                using Float = float;                                        \
+                return new Name<float, MuellerMatrix<Spectrum<Float, 4>>>(props); \
+            } else {                                                        \
                 return nullptr;                                             \
+            }                                                               \
         }                                                                   \
     }                                                                       \
                                                                             \
-    template class MTS_EXPORT_CORE Name<float, Color1f>;                    \
-    template class MTS_EXPORT_CORE Name<float, Color3f>;                    \
-    template class MTS_EXPORT_CORE Name<float, Spectrumf>;                  \
-    template class MTS_EXPORT_CORE Name<float, MuellerMatrixSf>;            \
-
+template class MTS_EXPORT_CORE Name<float, Color<float, 1>>;                \
+template class MTS_EXPORT_CORE Name<float, Color<float, 3>>;                \
+template class MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;             \
+template class MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
 
