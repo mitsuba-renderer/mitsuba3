@@ -52,7 +52,7 @@ public:
      *        density value divided by the sampling density)
      */
     virtual std::pair<Wavelength, Spectrum>
-    sample(const Spectrum &sample, Mask active = true) const;
+    sample(const Wavelength &sample, Mask active = true) const;
 
     /**
      * \brief Return the probability distribution of the \ref sample() method

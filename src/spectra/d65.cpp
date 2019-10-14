@@ -30,7 +30,7 @@ public:
     MTS_DECLARE_PLUGIN()
     using Base = ContinuousSpectrum<Float, Spectrum>;
 
-    D65Spectrum(const Properties &props) : Base() {
+    D65Spectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))
             Throw("Cannot specify both 'scale' and 'value'.");
 

@@ -1,6 +1,5 @@
 #include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/autodiff.h>
 #include <mitsuba/core/properties.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -8,8 +7,13 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief Spectrum that takes on a constant value between
  * \c MTS_WAVELENGTH_MIN * and \c MTS_WAVELENGTH_MAX
  */
-class UniformSpectrum final : public ContinuousSpectrum {
+template <typename Float, typename Spectrum>
+class UniformSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
+    MTS_DECLARE_PLUGIN()
+    using Base = ContinuousSpectrum<Float, Spectrum>;
+    using Wavelength = wavelength_t<Spectrum>;
+
     UniformSpectrum(const Properties &props) {
         m_value = props.float_("value");
 
@@ -18,29 +22,24 @@ public:
         #endif
     }
 
-    template <typename Value>
-    MTS_INLINE Value eval_impl(Value lambda, mask_t<Value> /* unused */ ) const {
-        mask_t<Value> active = (lambda >= MTS_WAVELENGTH_MIN) &&
-                               (lambda <= MTS_WAVELENGTH_MAX);
+    MTS_INLINE Spectrum eval(const Wavelength &lambda, Mask /*active*/) const override {
+        auto active = (lambda >= MTS_WAVELENGTH_MIN) &&
+                      (lambda <= MTS_WAVELENGTH_MAX);
 
-        return select(active, Value(value<Value>()), Value(0.f));
+        return select(active, Spectrum(m_value), Spectrum(0.f));
     }
 
-    template <typename Value>
-    MTS_INLINE Value pdf_impl(Value lambda, mask_t<Value> /* unused */) const {
-        mask_t<Value> active = (lambda >= MTS_WAVELENGTH_MIN) &&
-                               (lambda <= MTS_WAVELENGTH_MAX);
+    MTS_INLINE Spectrum pdf(const Wavelength &lambda, Mask /*active*/) const override {
+        auto active = (lambda >= MTS_WAVELENGTH_MIN) &&
+                      (lambda <= MTS_WAVELENGTH_MAX);
 
         return select(active,
-            Value(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Value(0.f));
+            Spectrum(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Spectrum(0.f));
     }
 
-    template <typename Value>
-    MTS_INLINE std::pair<Value, Value> sample_impl(Value sample, mask_t<Value> /* unused */) const {
-        return {
-            MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample,
-            Value(value<Value>() * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN))
-        };
+    MTS_INLINE std::pair<Wavelength, Spectrum> sample(const Wavelength &sample, Mask /*active*/) const override {
+        return { MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample,
+                 Spectrum(m_value * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)) };
     }
 
     Float mean() const override { return m_value; }
@@ -55,10 +54,6 @@ public:
         return tfm::format("UniformSpectrum[value=%f]", m_value);
     }
 
-    MTS_IMPLEMENT_SPECTRUM_ALL()
-    MTS_AUTODIFF_GETTER(value, m_value, m_value_d)
-    MTS_DECLARE_CLASS()
-
 private:
     Float m_value;
 
@@ -67,7 +62,6 @@ private:
 #endif
 };
 
-MTS_IMPLEMENT_CLASS(UniformSpectrum, ContinuousSpectrum)
-MTS_EXPORT_PLUGIN(UniformSpectrum, "Uniform spectrum")
+MTS_IMPLEMENT_PLUGIN(UniformSpectrum, ContinuousSpectrum, "Uniform spectrum")
 
 NAMESPACE_END(mitsuba)
