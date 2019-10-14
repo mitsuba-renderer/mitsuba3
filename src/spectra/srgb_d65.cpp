@@ -5,8 +5,13 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class SRGBEmitterSpectrum final : public ContinuousSpectrum {
+template <typename Float, typename Spectrum>
+class SRGBEmitterSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
+    MTS_DECLARE_PLUGIN()
+    using Base = ContinuousSpectrum<Float, Spectrum>;
+    using Wavelength = wavelength_t<Spectrum>;
+
     SRGBEmitterSpectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))
             Throw("Cannot specify both 'scale' and 'value'.");
@@ -21,8 +26,8 @@ public:
         Float value =
             props.float_(props.has_property("scale") ? "scale" : "value", 1.0f);
         props2.set_float("value", value * intensity);
-        m_d65 = (ContinuousSpectrum *) PluginManager::instance()
-                    ->create_object<ContinuousSpectrum>(props2)
+        m_d65 = (Base *) PluginManager::instance()
+                    ->create_object<Base>(props2)
                     ->expand().front().get();
 
         #if defined(MTS_ENABLE_AUTODIFF)
@@ -30,10 +35,9 @@ public:
         #endif
     }
 
-    template <typename Value, typename Mask = mask_t<Value>>
-    MTS_INLINE Value eval_impl(const Value &wavelengths, Mask active) const {
+    MTS_INLINE Spectrum eval(const Wavelength &wavelengths, Mask active) const override {
         return m_d65->eval(wavelengths, active) *
-               srgb_model_eval(coeff<Value>(), wavelengths);
+               srgb_model_eval(m_coeff, wavelengths);
     }
 
 #if defined(MTS_ENABLE_AUTODIFF)
@@ -42,20 +46,15 @@ public:
     }
 #endif
 
-    MTS_IMPLEMENT_SPECTRUM_EVAL_ALL()
-    MTS_AUTODIFF_GETTER(coeff, m_coeff, m_coeff_d)
-    MTS_DECLARE_CLASS()
-
 private:
     Vector3f m_coeff;
-    ref<ContinuousSpectrum> m_d65;
+    ref<Base> m_d65;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     Vector3fD m_coeff_d;
 #endif
 };
 
-MTS_IMPLEMENT_CLASS(SRGBEmitterSpectrum, ContinuousSpectrum)
-MTS_EXPORT_PLUGIN(SRGBEmitterSpectrum, "sRGB x D65 spectrum")
+MTS_IMPLEMENT_PLUGIN(SRGBEmitterSpectrum, ContinuousSpectrum, "sRGB x D65 spectrum")
 
 NAMESPACE_END(mitsuba)
