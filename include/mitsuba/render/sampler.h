@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
+#include <mitsuba/render/fwd.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/vector.h>

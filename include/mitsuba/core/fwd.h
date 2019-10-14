@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/platform.h>
 #include <enoki/fwd.h>
+#include <enoki/array_traits.h>
 #include <cstddef>
 #include <cstdint>
 
@@ -65,15 +66,10 @@ template <typename Point>                    struct BoundingBox;
 template <typename Point>                    struct BoundingSphere;
 template <typename Vector>                   struct Frame;
 
-using Vector1i = Vector<int32_t, 1>;
-using Vector2i = Vector<int32_t, 2>;
-using Vector3i = Vector<int32_t, 3>;
-using Vector4i = Vector<int32_t, 4>;
-
-using Vector1u = Vector<uint32_t, 1>;
-using Vector2u = Vector<uint32_t, 2>;
-using Vector3u = Vector<uint32_t, 3>;
-using Vector4u = Vector<uint32_t, 4>;
+// TODO: move to the appropriate place
+// TODO: what if scalar_t is something else, e.g. int? Can we throw a static error?
+template <typename T> constexpr bool is_single_v = std::is_same_v<scalar_t<T>, float>;
+template <typename T> constexpr bool is_double_v = std::is_same_v<scalar_t<T>, double>;
 
 //! @}
 // =============================================================

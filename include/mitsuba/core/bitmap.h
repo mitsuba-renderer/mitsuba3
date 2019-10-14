@@ -23,6 +23,7 @@ public:
     // TODO: templatize if appropriate
     using Float                = float;
     using Vector2s             = Vector<size_t, 2>;
+    using Vector2i             = Vector<int32_t, 2>;
     using Point2i              = Point<int32_t, 2>;
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float>;
 

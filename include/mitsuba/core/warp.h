@@ -664,6 +664,8 @@ Float square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
 template <typename Float, size_t Dimension = 0> class Hierarchical2D {
 private:
     using Vector2f = Vector<Float, 2>;
+    using Vector2u = Vector<replace_scalar_t<Float, uint32_t>, 2>;
+    using Vector2i = Vector<replace_scalar_t<Float, int32_t>, 2>;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     using FloatStorage = std::vector<Float, enoki::cuda_host_allocator<Float>>;
@@ -1275,6 +1277,7 @@ private:
 template <typename Float, size_t Dimension = 0> class Marginal2D {
 private:
     using Vector2f = Vector<Float, 2>;
+    using Vector2u = Vector<replace_scalar_t<Float, uint32_t>, 2>;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     using FloatStorage = std::vector<Float, enoki::cuda_host_allocator<Float>>;
