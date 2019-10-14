@@ -7,9 +7,19 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class PointLight final : public Emitter {
+template <typename Float, typename Spectrum>
+class PointLight final : public Emitter<Float, Spectrum> {
 public:
-    PointLight(const Properties &props) : Emitter(props) {
+    MTS_DECLARE_PLUGIN()
+    using Base               = Emitter<Float, Spectrum>;
+    using Scene              = typename Aliases::Scene;
+    using Shape              = typename Aliases::Shape;
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using Base::m_medium;
+    using Base::m_needs_sample_3;
+    using Base::m_world_transform;
+
+    PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {
             if (props.has_property("to_world"))
                 Throw("Only one of the parameters 'position' and 'to_world' "
@@ -19,46 +29,30 @@ public:
                 Transform4f::translate(Vector3f(props.point3f("position"))));
         }
 
-        m_intensity = props.spectrum("intensity", ContinuousSpectrum::D65(1.f, m_monochrome));
+        m_intensity = props.spectrum<Float, Spectrum>("intensity", ContinuousSpectrum::D65(1.f));
         m_needs_sample_3 = false;
     }
 
-    template <typename Point2,
-              typename Value    = value_t<Point2>,
-              typename Mask     = mask_t<Value>,
-              typename Point3   = Point<Value, 3>,
-              typename Ray3     = mitsuba::Ray<Point3>,
-              typename Spectrum = Spectrum<Value>>
-    std::pair<Ray3, Spectrum>
-    sample_ray_impl(Value time,
-                    Value wavelength_sample,
-                    const Point2 &/* pos_sample */,
-                    const Point2 &dir_sample,
-                    Mask active) const {
+    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                          const Point2f & /*pos_sample*/, const Point2f &dir_sample,
+                                          Mask active) const override {
         auto [wavelengths, spec_weight] = m_intensity->sample(
             math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
 
         const auto &trafo = m_world_transform->eval(time);
-        Ray3 ray(trafo * Point3(0.f),
+        Ray3f ray(trafo * Point3f(0.f),
                  warp::square_to_uniform_sphere(dir_sample),
                  time, wavelengths);
 
-        return { ray, spec_weight * (4.f * math::Pi) };
+        return { ray, spec_weight * (4.f * math::Pi<Float>) };
     }
 
-    template <typename Interaction, typename Mask,
-              typename Point2 = typename Interaction::Point2,
-              typename Point3 = typename Interaction::Point3,
-              typename Value = typename Interaction::Value,
-              typename Spectrum = typename Interaction::Spectrum,
-              typename DirectionSample = DirectionSample<Point3>>
-    MTS_INLINE std::pair<DirectionSample, Spectrum>
-    sample_direction_impl(const Interaction &it,
-                          const Point2 & /*sample*/,
-                          Mask active) const {
+    MTS_INLINE std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
+                                                                       const Point2f & /*sample*/,
+                                                                       Mask active) const override {
         auto trafo = m_world_transform->eval(it.time, active);
 
-        DirectionSample ds;
+        DirectionSample3f ds;
         ds.p     = trafo.translation();
         ds.n     = 0.f;
         ds.uv    = 0.f;
@@ -67,7 +61,7 @@ public:
         ds.delta = true;
         ds.d     = ds.p - it.p;
         ds.dist  = norm(ds.d);
-        Value inv_dist = rcp(ds.dist);
+        Float inv_dist = rcp(ds.dist);
         ds.d *= inv_dist;
 
         Spectrum spec = m_intensity->eval(it.wavelengths, active) *
@@ -76,15 +70,12 @@ public:
         return { ds, spec };
     }
 
-    template <typename Interaction, typename DirectionSample, typename Mask,
-              typename Value = typename DirectionSample::Value>
-    MTS_INLINE Value pdf_direction_impl(const Interaction &, const DirectionSample &, Mask) const {
+    MTS_INLINE Float pdf_direction(const Interaction3f &, const DirectionSample3f &,
+                                   Mask) const override {
         return 0.f;
     }
 
-    template <typename SurfaceInteraction, typename Mask,
-              typename Spectrum = typename SurfaceInteraction::Spectrum>
-    MTS_INLINE Spectrum eval_impl(const SurfaceInteraction &, Mask) const {
+    MTS_INLINE Spectrum eval(const SurfaceInteraction3f &, Mask) const override {
         return 0.f;
     }
 
@@ -102,13 +93,10 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_EMITTER_ALL()
-    MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_intensity;
 };
 
 
-MTS_IMPLEMENT_CLASS(PointLight, Emitter)
-MTS_EXPORT_PLUGIN(PointLight, "Point emitter");
+MTS_IMPLEMENT_PLUGIN(PointLight, Emitter, "Point emitter");
 NAMESPACE_END(mitsuba)
