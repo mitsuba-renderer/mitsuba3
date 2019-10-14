@@ -25,8 +25,7 @@ public:
            about the scene and default to the unit bounding sphere. */
         m_bsphere = BoundingSphere3f(Point3f(0.f), 1.f);
 
-        m_radiance =
-            props.spectrum<Float, Spectrum>("radiance", ContinuousSpectrum::D65(1.f));
+        m_radiance = props.spectrum<Float, Spectrum>("radiance", ContinuousSpectrum::D65(1.f));
     }
 
     ref<Shape> create_shape(const Scene *scene) override {

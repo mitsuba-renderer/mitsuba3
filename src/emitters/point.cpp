@@ -88,13 +88,6 @@ public:
         return 0.f;
     }
 
-    template <typename Ray,
-              typename Value    = typename Ray::Value,
-              typename Spectrum = mitsuba::Spectrum<Value>>
-    MTS_INLINE Spectrum eval_environment_impl(const Ray &, mask_t<Value>) const {
-        return 0.f;
-    }
-
     BoundingBox3f bbox() const override {
         return m_world_transform->translation_bounds();
     }
