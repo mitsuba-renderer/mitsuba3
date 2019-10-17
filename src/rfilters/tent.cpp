@@ -9,15 +9,21 @@ NAMESPACE_BEGIN(mitsuba)
  * otherwise, negative-lobed filters may be preferable (e.g. Mitchell-Netravali
  * or Lanczos Sinc)
  */
-class TentFilter final : public ReconstructionFilter {
+template <typename Float, typename Spectrum = void>
+class TentFilter final : public ReconstructionFilter<Float> {
 public:
-    TentFilter(const Properties &props) : ReconstructionFilter(props) {
+    MTS_DECLARE_CLASS();
+    using Base = mitsuba::ReconstructionFilter<Float>;
+    using Base::init_discretization;
+    using Base::m_radius;
+
+    TentFilter(const Properties &props) : Base(props) {
         m_radius = 1.0f;
         m_inv_radius = 1.f / m_radius;
         init_discretization();
     }
 
-    template <typename Value> Value eval_impl(Value x) const {
+    Float eval(Float x) const override {
         return max(0.f, 1.f - abs(x * m_inv_radius));
     }
 
@@ -25,12 +31,9 @@ public:
         return tfm::format("TentFilter[radius=%f]", m_radius);
     }
 
-    MTS_IMPLEMENT_RFILTER_ALL()
-    MTS_DECLARE_CLASS()
 private:
     Float m_inv_radius;
 };
 
-MTS_IMPLEMENT_CLASS(TentFilter, ReconstructionFilter);
-MTS_EXPORT_PLUGIN(TentFilter, "Tent filter");
+MTS_IMPLEMENT_PLUGIN(TentFilter, ReconstructionFilter, "Tent filter");
 NAMESPACE_END(mitsuba)
