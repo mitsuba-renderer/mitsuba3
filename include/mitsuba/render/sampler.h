@@ -28,14 +28,13 @@ public:
 
     /// Deterministically seed the underlying RNG, if any
     virtual void seed(size_t seed_value);
-#if defined(MTS_ENABLE_AUTODIFF)
     /**
      * Deterministically seed the underlying RNG, if any.
      * Also reset the differentiable-mode RNG's state size (or initialize
      * it if it wasn't created).
      */
+    // TODO: check if this is really the right interface
     virtual void seed(size_t seed_value, size_t size);
-#endif
 
     /// Retrieve the next component value from the current sample
     virtual Float next_1d(Mask active = true);

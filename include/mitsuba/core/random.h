@@ -46,12 +46,8 @@ NAMESPACE_END(enoki)
 
 NAMESPACE_BEGIN(mitsuba)
 
-using PCG32  = enoki::PCG32<uint32_t>;
-using PCG32P = enoki::PCG32<UInt32P>;
-
-#if defined(ENOKI_AUTODIFF)
-using PCG32C = enoki::PCG32<UInt32C, 1>;
-#endif
+template <typename UInt32>
+using PCG32 = enoki::PCG32<UInt32>;
 
 /**
  * \brief Generate fast and reasonably good pseudorandom numbers using the
@@ -84,9 +80,6 @@ UInt32 sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
     return v1;
 }
 
-extern template MTS_EXPORT_CORE uint32_t sample_tea_32(uint32_t, uint32_t, int);
-extern template MTS_EXPORT_CORE UInt32P  sample_tea_32(UInt32P,  UInt32P,  int);
-
 /**
  * \brief Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -118,8 +111,6 @@ uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
     return uint64_array_t<UInt32>(v0) + sl<32>(uint64_array_t<UInt32>(v1));
 }
 
-extern template MTS_EXPORT_CORE uint64_array_t<uint32_t> sample_tea_64(uint32_t, uint32_t, int);
-extern template MTS_EXPORT_CORE uint64_array_t<UInt32P>  sample_tea_64(UInt32P,  UInt32P,  int);
 
 /**
  * \brief Generate fast and reasonably good pseudorandom numbers using the
@@ -143,9 +134,6 @@ float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4)
     return reinterpret_array<float32_array_t<UInt32>>(
         sr<9>(sample_tea_32(v0, v1, rounds)) | 0x3f800000u) - 1.f;
 }
-
-extern template MTS_EXPORT_CORE float32_array_t<uint32_t> sample_tea_float32(uint32_t, uint32_t, int);
-extern template MTS_EXPORT_CORE float32_array_t<UInt32P>  sample_tea_float32(UInt32P,  UInt32P,  int);
 
 /**
  * \brief Generate fast and reasonably good pseudorandom numbers using the
@@ -171,17 +159,14 @@ float64_array_t<UInt32> sample_tea_float64(UInt32 v0, UInt32 v1, int rounds = 4)
         sr<12>(sample_tea_64(v0, v1, rounds)) | 0x3ff0000000000000ull) - 1.0;
 }
 
-extern template MTS_EXPORT_CORE float64_array_t<uint32_t> sample_tea_float64(uint32_t, uint32_t, int);
-extern template MTS_EXPORT_CORE float64_array_t<UInt32P>  sample_tea_float64(UInt32P,  UInt32P,  int);
 
 /// Alias to \ref sample_tea_float32 or \ref sample_tea_float64 based on compilation flags
-template <typename UInt32>
-auto sample_tea_float(UInt32 v0, UInt32 v1, int rounds = 4) {
-    #if defined(SINGLE_PRECISION)
+template <typename UInt>
+auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
+    if constexpr(is_single_v<UInt>)
         return sample_tea_float32(v0, v1, rounds);
-    #else
+    else
         return sample_tea_float64(v0, v1, rounds);
-    #endif
 }
 
 NAMESPACE_END(mitsuba)

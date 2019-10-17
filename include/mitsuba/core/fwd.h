@@ -66,10 +66,13 @@ template <typename Point>                    struct BoundingBox;
 template <typename Point>                    struct BoundingSphere;
 template <typename Vector>                   struct Frame;
 
-// TODO: move to the appropriate place
-// TODO: what if scalar_t is something else, e.g. int? Can we throw a static error?
-template <typename T> constexpr bool is_single_v = std::is_same_v<scalar_t<T>, float>;
-template <typename T> constexpr bool is_double_v = std::is_same_v<scalar_t<T>, double>;
+// TODO: move to the appropriate place and make more general (or throw a static error if type is unsupported)
+template <typename T>
+constexpr bool is_single_v =
+    std::is_same_v<scalar_t<T>, float> || std::is_same_v<scalar_t<T>, uint32_t>;
+template <typename T>
+constexpr bool is_double_v =
+    std::is_same_v<scalar_t<T>, double> || std::is_same_v<scalar_t<T>, uint64_t>;
 
 //! @}
 // =============================================================
