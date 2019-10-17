@@ -5,20 +5,31 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class Constant3D final : public Texture3D {
+template <typename Float, typename Spectrum>
+class Constant3D final : public Texture3D<Float, Spectrum> {
 public:
-    explicit Constant3D(const Properties &props) : Texture3D(props) {
-        m_color = props.spectrum("color", 1.f);
+    MTS_DECLARE_PLUGIN()
+    using Base = Texture3D<Float, Spectrum>;
+    using Base::m_world_to_local;
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+
+    explicit Constant3D(const Properties &props) : Base(props) {
+        m_color = props.spectrum<Float, Spectrum>("color", 1.f);
     }
 
     std::vector<ref<Object>> children() override { return { m_color.get() }; }
 
-    template <bool with_gradient, typename Interaction,
-              typename Value = typename Interaction::Value>
-    MTS_INLINE auto eval_impl(const Interaction &it, const mask_t<Value> &active) const {
-        using Mask      = mask_t<Value>;
-        using Spectrum  = mitsuba::Spectrum<Value>;
-        using Vector3   = Vector<Value, 3>;
+    MTS_INLINE Spectrum eval(const Interaction3f &it, Mask active) const override {
+        return eval_impl<false>(it, active);
+    }
+
+    MTS_INLINE std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,
+                                                           Mask active) const override {
+        return eval_impl<true>(it, active);
+    }
+
+    template <bool with_gradient>
+    MTS_INLINE auto eval_impl(const Interaction3f &it, const Mask &active) const {
         Spectrum result = 0.f;
 
         auto p         = m_world_to_local * it.p;
@@ -26,7 +37,7 @@ public:
         result[inside] = m_color->eval(it.wavelengths, inside);
 
         if constexpr (with_gradient)
-            return std::make_pair(result, zero<Vector3>());
+            return std::make_pair(result, zero<Vector3f>());
         else
             return result;
     }
@@ -43,14 +54,9 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_TEXTURE_3D()
-    MTS_DECLARE_CLASS()
-
 protected:
     ref<ContinuousSpectrum> m_color;
 };
 
-MTS_IMPLEMENT_CLASS(Constant3D, Texture3D)
-MTS_EXPORT_PLUGIN(Constant3D, "Constant 3D texture")
-
+MTS_IMPLEMENT_PLUGIN(Constant3D, Texture3D, "Constant 3D texture")
 NAMESPACE_END(mitsuba)
