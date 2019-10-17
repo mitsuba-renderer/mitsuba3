@@ -10,30 +10,31 @@ NAMESPACE_BEGIN(mitsuba)
  * It is included mainly for completeness, though some rare situations
  * may warrant its use.
  */
-class BoxFilter final : public ReconstructionFilter {
+template <typename Float, typename Spectrum = void>
+class BoxFilter final : public ReconstructionFilter<Float> {
 public:
-    BoxFilter(const Properties &props) : ReconstructionFilter(props) {
+    MTS_DECLARE_CLASS();
+    using Base = mitsuba::ReconstructionFilter<Float>;
+    using Base::init_discretization;
+    using Base::m_radius;
+
+    BoxFilter(const Properties &props) : Base(props) {
         /* Filter radius in pixels. A tiny epsilon is added, since some
            samplers (Hammersley and Halton in particular) place samples
            at positions like (0, 0). Without such an epsilon and rounding
            errors, samples may end up not contributing to any pixel. */
-        m_radius = props.float_("radius", .5f) + math::Epsilon;
+        m_radius = props.float_("radius", .5f) + math::Epsilon<Float>;
         init_discretization();
     }
 
-    template <typename Value>
-    Value eval_impl(Value x) const {
-        return select(abs(x) <= m_radius, Value(1.f), Value(0.f));
+    Float eval(Float x) const override {
+        return select(abs(x) <= m_radius, Float(1.f), Float(0.f));
     }
 
     std::string to_string() const override {
         return tfm::format("BoxFilter[radius=%f]", m_radius);
     }
-
-    MTS_IMPLEMENT_RFILTER_ALL()
-    MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS(BoxFilter, ReconstructionFilter);
-MTS_EXPORT_PLUGIN(BoxFilter, "Box filter");
+MTS_IMPLEMENT_PLUGIN(BoxFilter, ReconstructionFilter, "Box filter");
 NAMESPACE_END(mitsuba)
