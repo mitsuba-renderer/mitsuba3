@@ -21,7 +21,7 @@ template <typename Float, typename Spectrum> class Scene;
 template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class Shape;
 class ShapeKDTree;
-class Texture3D;
+template <typename Float, typename Spectrum> class Texture3D;
 
 template <typename Float, typename Spectrum> struct DirectionSample;
 template <typename Float, typename Spectrum> struct PositionSample;
@@ -128,15 +128,10 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     // using Medium               = mitsuba::Medium<Float, Spectrum>;
     using Film                 = mitsuba::Film<Float, Spectrum>;
     using ContinuousSpectrum   = mitsuba::ContinuousSpectrum<Float, Spectrum>;
+    using Texture3D            = mitsuba::Texture3D<Float, Spectrum>;
 
-    // using Sampler              = mitsuba::Sampler;
-    // using Shape                = mitsuba::Shape;
     using Integrator           = mitsuba::Integrator;
-    // using BSDF                 = mitsuba::BSDF;
-    // using Sensor               = mitsuba::Sensor;
-    // using Emitter              = mitsuba::Emitter;
     using Medium               = mitsuba::Medium;
-    // using Film                 = mitsuba::Film;
 
     using ObjectPtr           = replace_scalar_t<Float, const Object *>;
     using BSDFPtr             = replace_scalar_t<Float, const BSDF *>;
@@ -224,6 +219,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Medium               = typename Aliases::Medium;                                         \
     using Film                 = typename Aliases::Film;                                           \
     using ContinuousSpectrum   = typename Aliases::ContinuousSpectrum;                             \
+    using Texture3D            = typename Aliases::Texture3D;                                      \
     using ObjectPtr            = typename Aliases::ObjectPtr;                                        \
     using BSDFPtr              = typename Aliases::BSDFPtr;                                        \
     using MediumPtr            = typename Aliases::MediumPtr;                                      \

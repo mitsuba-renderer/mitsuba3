@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 // Forward declarations
 template <typename Float, typename Spectrum> class ContinuousSpectrum;
-class Texture3D;
+template <typename Float, typename Spectrum> class Texture3D;
 
 /// Wrapper object used to represent named references to Object instances
 class NamedReference {
@@ -291,12 +291,15 @@ public:  // Type-specific getters and setters ----------------------------------
     ref<ContinuousSpectrum<Float, Spectrum>> spectrum(const std::string &name, Float def_val) const;
 
     /// Retrieve a 3D texture
-    ref<Texture3D> texture3d(const std::string &name) const;
+    template <typename Float, typename Spectrum>
+    ref<Texture3D<Float, Spectrum>> texture3d(const std::string &name) const;
     /// Retrieve a 3D texture (use the provided texture if no entry exists)
-    ref<Texture3D> texture3d(const std::string &name,
-                            ref<Texture3D> def_val) const;
+    template <typename Float, typename Spectrum>
+    ref<Texture3D<Float, Spectrum>> texture3d(const std::string &name,
+                            ref<Texture3D<Float, Spectrum>> def_val) const;
     /// Retrieve a 3D texture (use default constant texture if no entry exists)
-    ref<Texture3D> texture3d(const std::string &name, Float def_val) const;
+    template <typename Float, typename Spectrum>
+    ref<Texture3D<Float, Spectrum>> texture3d(const std::string &name, Float def_val) const;
 
 private:
     struct PropertiesPrivate;

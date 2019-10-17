@@ -1,3 +1,5 @@
+#pragma once
+
 /// @file Helper functions for volume data handling.
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/thread.h>
