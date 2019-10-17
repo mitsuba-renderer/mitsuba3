@@ -161,7 +161,7 @@ public:
 
 protected:
     ref<Bitmap> m_bitmap;
-    static constexpr int m_channel_count = texture_channels_v<Spectrum>;
+    static constexpr size_t m_channel_count = texture_channels_v<Spectrum>;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     FloatD m_bitmap_d;

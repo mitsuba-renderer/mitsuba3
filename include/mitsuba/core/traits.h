@@ -1,5 +1,6 @@
 #pragma once
 
+#include <enoki/fwd.h>
 #include <mitsuba/mitsuba.h>
 #include <type_traits>
 #include <tuple>
@@ -56,7 +57,7 @@ struct spectral_traits<Color<Float, 1>> {
     static constexpr bool is_rgb          = false;
     static constexpr bool is_spectral     = false;
     static constexpr bool is_polarized    = false;
-    static constexpr int texture_channels = 1;
+    static constexpr size_t texture_channels = 1;
 };
 template <typename Float>
 struct spectral_traits<Color<Float, 3>> {
@@ -64,7 +65,7 @@ struct spectral_traits<Color<Float, 3>> {
     static constexpr bool is_rgb           = true;
     static constexpr bool is_spectral      = false;
     static constexpr bool is_polarized     = false;
-    static constexpr int texture_channels  = 3;
+    static constexpr size_t texture_channels  = 3;
 };
 template <typename Float, int SpectralSamples>
 struct spectral_traits<Spectrum<Float, SpectralSamples>> {
@@ -73,7 +74,7 @@ struct spectral_traits<Spectrum<Float, SpectralSamples>> {
     static constexpr bool is_spectral     = true;
     static constexpr bool is_polarized    = false;
     // The 3 sRGB spectral upsampling model coefficients are stored in textures
-    static constexpr int texture_channels = 3;
+    static constexpr size_t texture_channels = 3;
 };
 template <typename Float>
 struct spectral_traits<MuellerMatrix<Color<Float, 1>>> {
@@ -81,7 +82,7 @@ struct spectral_traits<MuellerMatrix<Color<Float, 1>>> {
     static constexpr bool is_rgb          = false;
     static constexpr bool is_spectral     = false;
     static constexpr bool is_polarized    = true;
-    static constexpr int texture_channels = 1;
+    static constexpr size_t texture_channels = 1;
 };
 template <typename Float>
 struct spectral_traits<MuellerMatrix<Color<Float, 3>>> {
@@ -89,7 +90,7 @@ struct spectral_traits<MuellerMatrix<Color<Float, 3>>> {
     static constexpr bool is_rgb          = true;
     static constexpr bool is_spectral     = false;
     static constexpr bool is_polarized    = true;
-    static constexpr int texture_channels = 3;
+    static constexpr size_t texture_channels = 3;
 };
 template <typename Float, int SpectralSamples>
 struct spectral_traits<MuellerMatrix<Spectrum<Float, SpectralSamples>>> {
@@ -98,7 +99,7 @@ struct spectral_traits<MuellerMatrix<Spectrum<Float, SpectralSamples>>> {
     static constexpr bool is_spectral     = true;
     static constexpr bool is_polarized    = true;
     // The 3 sRGB spectral upsampling model coefficients are stored in textures
-    static constexpr int texture_channels = 3;
+    static constexpr size_t texture_channels = 3;
 };
 NAMESPACE_END(detail)
 
@@ -111,7 +112,40 @@ constexpr bool is_spectral_v = detail::spectral_traits<T>::is_spectral;
 template <typename T>
 constexpr bool is_polarized_v = detail::spectral_traits<T>::is_polarized;
 template <typename T>
-constexpr int texture_channels_v = detail::spectral_traits<T>::texture_channels;
+constexpr size_t texture_channels_v = detail::spectral_traits<T>::texture_channels;
+
+//! @}
+// =============================================================
+
+// =============================================================
+//! @{ \name Buffer types
+// =============================================================
+
+NAMESPACE_BEGIN(detail)
+template <typename Float, typename Enable = void> struct float_buffer_t {};
+template <typename Float>
+struct float_buffer_t<Float, std::enable_if_t<!is_array_v<Float>>> {
+    static constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float);
+    using type = DynamicArray<Packet<Float, PacketSize>>;
+};
+template <typename FloatP>
+struct float_buffer_t<FloatP, std::enable_if_t<is_array_v<FloatP>
+                                               && !is_cuda_array_v<FloatP>>> {
+    using type = DynamicArray<FloatP>;
+};
+template <typename FloatX>
+struct float_buffer_t<FloatX, std::enable_if_t<is_dynamic_array_v<FloatX>>> {
+    using type = FloatX;
+};
+template <typename FloatCD>
+struct float_buffer_t<FloatCD, std::enable_if_t<is_cuda_array_v<FloatCD>
+                                                || is_diff_array_v<FloatCD>>> {
+    using type = FloatCD;
+};
+NAMESPACE_END(detail)
+
+template <typename Float>
+using FloatBuffer = typename detail::float_buffer_t<Float>::type;
 
 //! @}
 // =============================================================
