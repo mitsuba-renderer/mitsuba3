@@ -16,10 +16,10 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES();
-    using Base    = Endpoint<Float, Spectrum>;
+    using Base = Endpoint<Float, Spectrum>;
     using Base::m_needs_sample_3;
-    using typename Aliases::Film;
-    using typename Aliases::Sampler;
+    using Film    = typename Aliases::Film;
+    using Sampler = typename Aliases::Sampler;
 
     // =============================================================
     //! @{ \name Sensor-specific sampling functions
@@ -178,5 +178,3 @@ protected:
 };
 
 NAMESPACE_END(mitsuba)
-
-#include "detail/sensor.inl"
