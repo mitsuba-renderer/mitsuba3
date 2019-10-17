@@ -1,3 +1,5 @@
+#pragma once
+
 #define MTS_CONFIGURATIONS                                                  \
     "scalar-mono\n"                                                         \
     "scalar-rgb\n"                                                          \

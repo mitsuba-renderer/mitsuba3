@@ -24,6 +24,8 @@ fname = "include/mitsuba/core/config.h"
 with open(fname, 'w') as f:
     def w(s):
         f.write(s.ljust(75) + ' \\\n')
+    f.write('#pragma once\n\n')
+
     w('#define MTS_CONFIGURATIONS')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    "%s\\n"' % name)
