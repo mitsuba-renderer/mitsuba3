@@ -12,40 +12,35 @@ NAMESPACE_BEGIN(mitsuba)
  * bright objects with sharp edges (a directly visible light source will for
  * instance have black fringing artifacts around it).
  */
-class LanczosSincFilter final : public ReconstructionFilter {
+template <typename Float, typename Spectrum = void>
+class LanczosSincFilter final : public ReconstructionFilter<Float> {
 public:
-    LanczosSincFilter(const Properties &props)
-        : ReconstructionFilter(props) {
+    MTS_DECLARE_CLASS();
+    using Base = mitsuba::ReconstructionFilter<Float>;
+    using Base::init_discretization;
+    using Base::m_radius;
+
+    LanczosSincFilter(const Properties &props) : Base(props) {
         m_radius = (Float) props.int_("lobes", 3);
         init_discretization();
     }
 
-    template <typename Value> Value eval_impl(Value x) const {
+    Float eval(Float x) const override {
         x = abs(x);
 
-        Value x1     = math::Pi * x,
+        Float x1     = math::Pi<Float> * x,
               x2     = x1 / m_radius,
               result = (sin(x1) * sin(x2)) / (x1 * x2);
 
-        return select(
-            x < math::Epsilon,
-            1.f,
-            select(
-                x > m_radius,
-                0.f,
-                result
-            )
-        );
+        return select(x < math::Epsilon<Float>,
+                      1.f,
+                      select(x > m_radius, 0.f, result));
     }
 
     std::string to_string() const override {
         return tfm::format("LanczosSincFilter[lobes=%f]", m_radius);
     }
-
-    MTS_IMPLEMENT_RFILTER_ALL()
-    MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS(LanczosSincFilter, ReconstructionFilter);
-MTS_EXPORT_PLUGIN(LanczosSincFilter, "Lanczos Sinc filter");
+MTS_IMPLEMENT_PLUGIN(LanczosSincFilter, ReconstructionFilter, "Lanczos Sinc filter");
 NAMESPACE_END(mitsuba)

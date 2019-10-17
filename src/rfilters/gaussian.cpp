@@ -10,9 +10,10 @@ NAMESPACE_BEGIN(mitsuba)
  * When no reconstruction filter is explicitly requested, this is the default
  * choice in Mitsuba.
  */
-template <typename Float, typename Spectrum>
+template <typename Float, typename Spectrum = void>
 class GaussianFilter final : public ReconstructionFilter<Float> {
 public:
+    MTS_DECLARE_CLASS()
     using Base = ReconstructionFilter<Float>;
     using Base::init_discretization;
     using Base::m_radius;
@@ -30,7 +31,7 @@ public:
         init_discretization();
     }
 
-    Float eval_impl(Float x) const {
+    Float eval(Float x) const override {
         return max(0.f, exp(m_alpha * sqr(x)) - m_bias);
     }
 
@@ -38,12 +39,9 @@ public:
         return tfm::format("GaussianFilter[stddev=%.2f, radius=%.2f]", m_stddev, m_radius);
     }
 
-    // MTS_IMPLEMENT_RFILTER_ALL()
-    MTS_DECLARE_CLASS()
 protected:
     Float m_stddev, m_alpha, m_bias;
 };
 
-// MTS_IMPLEMENT_CLASS(GaussianFilter, ReconstructionFilter);
-// MTS_EXPORT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
+MTS_IMPLEMENT_PLUGIN(GaussianFilter, ReconstructionFilter, "Gaussian reconstruction filter");
 NAMESPACE_END(mitsuba)
