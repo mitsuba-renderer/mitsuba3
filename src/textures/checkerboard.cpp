@@ -5,19 +5,20 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class Checkerboard final : public ContinuousSpectrum {
+template <typename Float, typename Spectrum>
+class Checkerboard final : public ContinuousSpectrum<Float, Spectrum> {
 public:
+    MTS_DECLARE_PLUGIN()
+    using ContinuousSpectrum = ContinuousSpectrum<Float, Spectrum>;
+
     Checkerboard(const Properties &props) {
-        m_color0 = props.spectrum("color0", .4f);
-        m_color1 = props.spectrum("color1", .2f);
+        m_color0 = props.spectrum<Float, Spectrum>("color0", .4f);
+        m_color1 = props.spectrum<Float, Spectrum>("color1", .2f);
         m_transform = props.transform("to_uv", Transform4f()).extract();
     }
 
-    template <typename SurfaceInteraction, typename Mask,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = mitsuba::Spectrum<Value>>
-    MTS_INLINE Spectrum eval_impl(const SurfaceInteraction &it,
-                                  Mask active) const {
+    MTS_INLINE Spectrum eval(const SurfaceInteraction3f &it,
+                                  Mask active) const override {
         auto uv = m_transform.transform_affine(it.uv);
         auto mask = (uv - floor(uv)) > .5f;
         Spectrum result = zero<Spectrum>();
@@ -40,16 +41,11 @@ public:
         return .5f * (m_color0->mean() + m_color1->mean());
     }
 
-    MTS_IMPLEMENT_TEXTURE_ALL()
-    MTS_DECLARE_CLASS()
-
 protected:
     ref<ContinuousSpectrum> m_color0;
     ref<ContinuousSpectrum> m_color1;
     Transform3f m_transform;
 };
 
-MTS_IMPLEMENT_CLASS(Checkerboard, ContinuousSpectrum)
-MTS_EXPORT_PLUGIN(Checkerboard, "Checkerboard texture")
-
+MTS_IMPLEMENT_PLUGIN(Checkerboard, ContinuousSpectrum, "Checkerboard texture")
 NAMESPACE_END(mitsuba)
