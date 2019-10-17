@@ -8,52 +8,72 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class BitmapTexture final : public ContinuousSpectrum {
+/**
+ * Bilinearly interpolated image texture.
+ */
+// TODO(!): test the "single-channel texture" use-case that was added during refactoring
+template <typename Float, typename Spectrum>
+class BitmapTexture final : public ContinuousSpectrum<Float, Spectrum> {
 public:
+    MTS_DECLARE_PLUGIN()
+    using Base = ContinuousSpectrum<Float, Spectrum>;
+
     BitmapTexture(const Properties &props) {
+        using Scalar    = scalar_t<Float>;
+        using SColor3f  = Color<Scalar, 3>;
+        using SVector3f = Vector<Scalar, 3>;
+
         m_transform = props.transform("to_uv", Transform4f()).extract();
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
-        Log(EDebug, "Loading bitmap texture from \"%s\" ..", m_name);
+        Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
 
         m_bitmap = new Bitmap(file_path);
 
-        /* Convert to linear RGBA float bitmap, will be converted
-           into spectral profile coefficients below */
+        /* Convert to linear RGB float bitmap, will be converted
+           into spectral profile coefficients below (in place) */
         m_bitmap = m_bitmap->convert(Bitmap::ERGB, Bitmap::EFloat, false);
 
-        Float upscale = props.float_("upscale", 1.f);
+        // Optional texture upsampling
+        Scalar upscale = props.float_("upscale", 1.f);
         if (upscale != 1.f) {
-            Vector2s old_size = m_bitmap->size(),
-                     new_size = upscale * old_size;
+            using SVector2s = Vector<size_t, 2>;
+            using ReconstructionFilter = mitsuba::ReconstructionFilter<Float>;
 
-            ref<ReconstructionFilter> rfilter =
+            SVector2s old_size = m_bitmap->size(),
+                      new_size = upscale * old_size;
+
+            auto rfilter =
                 PluginManager::instance()->create_object<ReconstructionFilter>(
                     Properties("tent"));
 
-            Log(EInfo, "Upsampling bitmap texture \"%s\" to %ix%i ..", m_name,
+            Log(Info, "Upsampling bitmap texture \"%s\" to %ix%i ..", m_name,
                        new_size.x(), new_size.y());
             m_bitmap = m_bitmap->resample(new_size, rfilter);
         }
 
-        Float *ptr = (Float *) m_bitmap->data();
+        // Convert to spectral coefficients, monochrome or leave in RGB.
+        auto *ptr = (Scalar *) m_bitmap->data();
         double mean = 0.0;
-
         for (size_t y = 0; y < m_bitmap->size().y(); ++y) {
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
-                Color3f rgb = load_unaligned<Vector3f>(ptr);
+                // Loading from a scalar-typed buffer regardless of the value of type Float
+                SColor3f rgb = load_unaligned<SVector3f>(ptr);
 
-                if (props.bool_("monochrome"))
-                    rgb = luminance(rgb);
+                if constexpr (is_monochrome_v<Spectrum>) {
+                    Scalar lum = luminance(rgb);
+                    rgb = lum;
+                    mean += (double) lum;
+                    store_unaligned(ptr, rgb);
+                } else if constexpr (is_spectral_v<Spectrum>) {
+                    // Fetch spectral fit for given sRGB color value (3 coefficients)
+                    Vector3f coeff = srgb_model_fetch(rgb);
+                    mean += (double) srgb_model_mean(coeff);
+                    store_unaligned(ptr, coeff);
+                }
 
-                /* Fetch spectral fit for given sRGB color value (3 coefficients) */
-                Vector3f coeff = srgb_model_fetch(rgb);
-                mean += (double) srgb_model_mean(coeff);
-
-                /* Overwrite the pixel value with the coefficients */
-                store_unaligned(ptr, coeff);
                 ptr += 3;
             }
         }
@@ -65,17 +85,9 @@ public:
 #endif
     }
 
-    template <typename SurfaceInteraction, typename Mask,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = mitsuba::Spectrum<Value>>
-    MTS_INLINE Spectrum eval_impl(const SurfaceInteraction &it,
-                                  Mask active) const {
-        using UInt32   = uint32_array_t<Value>;
-        using Point2u  = Point<UInt32, 2>;
-        using Point2f  = Point<Value, 2>;
-        using Vector3f = Vector<Value, 3>;
-
-        auto uv = m_transform.transform_affine(it.uv);
+    MTS_INLINE Spectrum eval(const SurfaceInteraction3f &si,
+                             Mask active) const override {
+        Point2f uv = m_transform.transform_affine(si.uv);
         uv -= floor(uv);
         uv *= Vector2f(m_bitmap->size() - 1u);
 
@@ -87,7 +99,9 @@ public:
         UInt32 index = pos.x() + pos.y() * (uint32_t) m_bitmap->size().x();
 
         Vector3f v00, v10, v01, v11;
-        if constexpr (is_diff_array_v<Value>) {
+        // TODO: for single-channel textures, gather a single number
+        // TODO: unify this part
+        if constexpr (is_diff_array_v<Float>) {
 #if defined(MTS_ENABLE_AUTODIFF)
             uint32_t width = (uint32_t) m_bitmap->size().x();
             v00 = gather<Vector3f>(m_bitmap_d, index, active);
@@ -105,13 +119,26 @@ public:
             v11 = gather<Vector3f, 0, true>(ptr + width + 3, index, active);
         }
 
-        Spectrum s00 = srgb_model_eval(v00, it.wavelengths),
-                 s10 = srgb_model_eval(v10, it.wavelengths),
-                 s01 = srgb_model_eval(v01, it.wavelengths),
-                 s11 = srgb_model_eval(v11, it.wavelengths),
-                 s0 = fmadd(w0.x(), s00, w1.x() * s10),
-                 s1 = fmadd(w0.x(), s01, w1.x() * s11);
+        Spectrum s00, s10, s01, s11;
+        if constexpr (is_spectral_v<Spectrum>) {
+            // Evaluate spectral upsampling model from stored coefficients
+            s00 = srgb_model_eval(v00, si.wavelengths);
+            s10 = srgb_model_eval(v10, si.wavelengths);
+            s01 = srgb_model_eval(v01, si.wavelengths);
+            s11 = srgb_model_eval(v11, si.wavelengths);
+        } else if constexpr (is_monochrome_v<Spectrum>) {
+            s00 = v00.x();
+            s01 = v01.x();
+            s10 = v10.x();
+            s11 = v11.x();
+        } else {
+            // No conversion to do
+            s00 = v00; s01 = v01; s10 = v10; s11 = v11;
+        }
 
+        // Bilinear interpolation
+        Spectrum s0 = fmadd(w0.x(), s00, w1.x() * s10),
+                 s1 = fmadd(w0.x(), s01, w1.x() * s11);
         return fmadd(w0.y(), s0, w1.y() * s1);
     }
 
@@ -132,10 +159,9 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_TEXTURE_ALL()
-    MTS_DECLARE_CLASS()
 protected:
     ref<Bitmap> m_bitmap;
+    static constexpr int m_channel_count = texture_channels_v<Spectrum>;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     FloatD m_bitmap_d;
@@ -146,7 +172,6 @@ protected:
     Float m_mean;
 };
 
-MTS_IMPLEMENT_CLASS(BitmapTexture, ContinuousSpectrum)
-MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+MTS_IMPLEMENT_PLUGIN(BitmapTexture, ContinuousSpectrum, "Bitmap texture")
 
 NAMESPACE_END(mitsuba)

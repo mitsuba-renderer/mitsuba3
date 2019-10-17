@@ -44,45 +44,61 @@ constexpr bool is_double_v = detail::is_double<T>::value;
 // =============================================================
 //! @{ \name Color mode traits
 // =============================================================
+// Forward declaration
+template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
 
 NAMESPACE_BEGIN(detail)
-/// Single / double precision trait
+
 template <typename Spectrum> struct spectral_traits {};
-template <typename Float> struct spectral_traits<Color<Float, 1>> {
-    static constexpr bool is_monochrome = true;
-    static constexpr bool is_rgb        = false;
-    static constexpr bool is_spectral   = false;
-    static constexpr bool is_polarized  = false;
+template <typename Float>
+struct spectral_traits<Color<Float, 1>> {
+    static constexpr bool is_monochrome   = true;
+    static constexpr bool is_rgb          = false;
+    static constexpr bool is_spectral     = false;
+    static constexpr bool is_polarized    = false;
+    static constexpr int texture_channels = 1;
 };
-template <typename Float> struct spectral_traits<Color<Float, 3>> {
-    static constexpr bool is_monochrome = false;
-    static constexpr bool is_rgb        = true;
-    static constexpr bool is_spectral   = false;
-    static constexpr bool is_polarized  = false;
+template <typename Float>
+struct spectral_traits<Color<Float, 3>> {
+    static constexpr bool is_monochrome    = false;
+    static constexpr bool is_rgb           = true;
+    static constexpr bool is_spectral      = false;
+    static constexpr bool is_polarized     = false;
+    static constexpr int texture_channels  = 3;
 };
-template <typename Float, int SpectralSamples> struct spectral_traits<Spectrum<Float, SpectralSamples>> {
-    static constexpr bool is_monochrome = false;
-    static constexpr bool is_rgb        = false;
-    static constexpr bool is_spectral   = true;
-    static constexpr bool is_polarized  = false;
+template <typename Float, int SpectralSamples>
+struct spectral_traits<Spectrum<Float, SpectralSamples>> {
+    static constexpr bool is_monochrome   = false;
+    static constexpr bool is_rgb          = false;
+    static constexpr bool is_spectral     = true;
+    static constexpr bool is_polarized    = false;
+    // The 3 sRGB spectral upsampling model coefficients are stored in textures
+    static constexpr int texture_channels = 3;
 };
-template <typename Float> struct spectral_traits<MuellerMatrix<Color<Float, 1>>> {
-    static constexpr bool is_monochrome = true;
-    static constexpr bool is_rgb        = false;
-    static constexpr bool is_spectral   = false;
-    static constexpr bool is_polarized  = true;
+template <typename Float>
+struct spectral_traits<MuellerMatrix<Color<Float, 1>>> {
+    static constexpr bool is_monochrome   = true;
+    static constexpr bool is_rgb          = false;
+    static constexpr bool is_spectral     = false;
+    static constexpr bool is_polarized    = true;
+    static constexpr int texture_channels = 1;
 };
-template <typename Float> struct spectral_traits<MuellerMatrix<Color<Float, 3>>> {
-    static constexpr bool is_monochrome = false;
-    static constexpr bool is_rgb        = true;
-    static constexpr bool is_spectral   = false;
-    static constexpr bool is_polarized  = true;
+template <typename Float>
+struct spectral_traits<MuellerMatrix<Color<Float, 3>>> {
+    static constexpr bool is_monochrome   = false;
+    static constexpr bool is_rgb          = true;
+    static constexpr bool is_spectral     = false;
+    static constexpr bool is_polarized    = true;
+    static constexpr int texture_channels = 3;
 };
-template <typename Float, int SpectralSamples> struct spectral_traits<MuellerMatrix<Spectrum<Float, SpectralSamples>>> {
-    static constexpr bool is_monochrome = false;
-    static constexpr bool is_rgb        = false;
-    static constexpr bool is_spectral   = true;
-    static constexpr bool is_polarized  = true;
+template <typename Float, int SpectralSamples>
+struct spectral_traits<MuellerMatrix<Spectrum<Float, SpectralSamples>>> {
+    static constexpr bool is_monochrome   = false;
+    static constexpr bool is_rgb          = false;
+    static constexpr bool is_spectral     = true;
+    static constexpr bool is_polarized    = true;
+    // The 3 sRGB spectral upsampling model coefficients are stored in textures
+    static constexpr int texture_channels = 3;
 };
 NAMESPACE_END(detail)
 
@@ -94,6 +110,8 @@ template <typename T>
 constexpr bool is_spectral_v = detail::spectral_traits<T>::is_spectral;
 template <typename T>
 constexpr bool is_polarized_v = detail::spectral_traits<T>::is_polarized;
+template <typename T>
+constexpr int texture_channels_v = detail::spectral_traits<T>::texture_channels;
 
 //! @}
 // =============================================================
