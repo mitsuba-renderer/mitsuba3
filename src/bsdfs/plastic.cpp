@@ -3,20 +3,25 @@
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/ior.h>
-#include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/fresnel.h>
+#include <mitsuba/render/ior.h>
 #include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-class SmoothPlastic final : public BSDF {
+template <typename Float, typename Spectrum>
+class SmoothPlastic final : public BSDF<Float, Spectrum> {
 public:
-    SmoothPlastic(const Properties &props) : BSDF(props) {
-        /* Specifies the internal index of refraction at the interface */
+    MTS_DECLARE_PLUGIN();
+    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using SpectrumU          = depolarized_t<Spectrum>;
+
+    SmoothPlastic(const Properties &props) : Base(props) {
+        // Specifies the internal index of refraction at the interface
         Float int_ior = lookup_ior(props, "int_ior", "polypropylene");
 
-        /* Specifies the external index of refraction at the interface */
+        // Specifies the external index of refraction at the interface
         Float ext_ior = lookup_ior(props, "ext_ior", "air");
 
         if (int_ior < 0.f || ext_ior < 0.f)
@@ -30,11 +35,10 @@ public:
         m_fdr_int = fresnel_diffuse_reflectance(1.f / m_eta);
         m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
 
-        m_specular_reflectance = props.spectrum("specular_reflectance", 1.f);
-        m_diffuse_reflectance  = props.spectrum("diffuse_reflectance",  .5f);
+        m_specular_reflectance = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);
+        m_diffuse_reflectance  = props.spectrum<Float, Spectrum>("diffuse_reflectance", .5f);
 
-        /* Compute weights that further steer samples towards
-           the specular or diffuse components */
+        // Compute weights that further steer samples towards the specular or diffuse components
         Float d_mean = m_diffuse_reflectance->mean(),
               s_mean = m_specular_reflectance->mean();
 
@@ -42,40 +46,28 @@ public:
 
         m_nonlinear = props.bool_("nonlinear", false);
 
-        m_flags = EDeltaReflection | EDiffuseReflection | EFrontSide;
-        m_components.push_back(EDeltaReflection | EFrontSide);
-        m_components.push_back(EDiffuseReflection | EFrontSide);
+        m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide);
+        m_components.push_back(BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide);
+        m_flags = m_components[0] | m_components[1];
     }
 
-    template <
-        typename SurfaceInteraction,
-        typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-        typename Value      = typename SurfaceInteraction::Value,
-        typename Point2     = typename SurfaceInteraction::Point2,
-        typename Spectrum   = Spectrum<Value>>
     MTS_INLINE
-    std::pair<BSDFSample, Spectrum>
-    sample_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                Value sample1, const Point2 &sample2,
-                mask_t<Value> active) const {
-        using Index   = typename BSDFSample::Index;
-        using Vector3 = typename BSDFSample::Vector3;
-        using Frame   = Frame<Vector3>;
-        using Mask    = mask_t<Value>;
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                                             Float sample1, const Point2f &sample2,
+                                             Mask active) const override {
+        bool has_specular = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
+             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
 
-        bool has_specular = ctx.is_enabled(EDeltaReflection, 0),
-             has_diffuse = ctx.is_enabled(EDiffuseReflection, 1);
-
-        Value cos_theta_i = Frame::cos_theta(si.wi);
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample bs;
+        BSDFSample3f bs;
         Spectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return { bs, result };
 
-        /* Determine which component should be sampled */
-        Value f_i           = std::get<0>(fresnel(cos_theta_i, Value(m_eta))),
+        // Determine which component should be sampled
+        Float f_i           = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
               prob_specular = f_i * m_specular_sampling_weight,
               prob_diffuse  = (1.f - f_i) * (1.f - m_specular_sampling_weight);
 
@@ -95,8 +87,8 @@ public:
         if (any_or<true>(sample_specular)) {
             masked(bs.wo, sample_specular) = reflect(si.wi);
             masked(bs.pdf, sample_specular) = prob_specular;
-            masked(bs.sampled_component, sample_specular) = Index(0);
-            masked(bs.sampled_type, sample_specular) = Index(EDeltaReflection);
+            masked(bs.sampled_component, sample_specular) = 0;
+            masked(bs.sampled_type, sample_specular)      = +BSDFFlags::DeltaReflection;
 
             Spectrum spec = m_specular_reflectance->eval(si, sample_specular) * f_i / bs.pdf;
             masked(result, sample_specular) = spec;
@@ -105,11 +97,12 @@ public:
         if (any_or<true>(sample_diffuse)) {
             masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
             masked(bs.pdf, sample_diffuse) = prob_diffuse * warp::square_to_cosine_hemisphere_pdf(bs.wo);
-            masked(bs.sampled_component, sample_diffuse) = Index(1);
-            masked(bs.sampled_type, sample_diffuse) = Index(EDiffuseReflection);
+            masked(bs.sampled_component, sample_diffuse) = 1;
+            masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
 
-            Value f_o = std::get<0>(fresnel(Frame::cos_theta(bs.wo), Value(m_eta)));
-            Spectrum diff = m_diffuse_reflectance->eval(si, sample_diffuse);
+            Float f_o = std::get<0>(fresnel(Frame3f::cos_theta(bs.wo), Float(m_eta)));
+            // TODO: handle polarization instead of discarding it here
+            SpectrumU diff = depolarize(m_diffuse_reflectance->eval(si, sample_diffuse));
             diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : m_fdr_int);
             diff *= m_inv_eta_2 * (1.f - f_i) * (1.f - f_o) / prob_diffuse;
             masked(result, sample_diffuse) = diff;
@@ -118,31 +111,24 @@ public:
         return { bs, result };
     }
 
-    template <typename SurfaceInteraction,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3,
-              typename Spectrum = Spectrum<Value>>
     MTS_INLINE
-    Spectrum eval_impl(const BSDFContext &ctx,
-                       const SurfaceInteraction &si,
-                       const Vector3 &wo,
-                       mask_t<Value> active) const {
-        using Frame = Frame<Vector3>;
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
+                  Mask active) const override {
+        bool has_diffuse = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
 
-        bool has_diffuse = ctx.is_enabled(EDiffuseReflection, 1);
-
-        Value cos_theta_i = Frame::cos_theta(si.wi),
-              cos_theta_o = Frame::cos_theta(wo);
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
         if (unlikely(!has_diffuse || none_or<false>(active)))
             return 0.f;
 
-        Value f_i = std::get<0>(fresnel(cos_theta_i, Value(m_eta))),
-              f_o = std::get<0>(fresnel(cos_theta_o, Value(m_eta)));
+        Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
+              f_o = std::get<0>(fresnel(cos_theta_o, Float(m_eta)));
 
-        Spectrum diff = m_diffuse_reflectance->eval(si, active);
+        // TODO: handle polarization instead of discarding it here
+        SpectrumU diff = depolarize(m_diffuse_reflectance->eval(si, active));
         diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : m_fdr_int);
 
         diff *= warp::square_to_cosine_hemisphere_pdf(wo) *
@@ -151,33 +137,27 @@ public:
         return select(active, diff, zero<Spectrum>());
     }
 
-    template <typename SurfaceInteraction,
-              typename Value   = typename SurfaceInteraction::Value,
-              typename Vector3 = typename SurfaceInteraction::Vector3>
     MTS_INLINE
-    Value pdf_impl(const BSDFContext &ctx,
-                              const SurfaceInteraction &si, const Vector3 &wo,
-                              mask_t<Value> active) const {
-        using Frame = Frame<Vector3>;
-
-        Value cos_theta_i = Frame::cos_theta(si.wi),
-              cos_theta_o = Frame::cos_theta(wo);
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
+              Mask active) const override {
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(EDiffuseReflection, 1) || none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::DiffuseReflection, 1) || none_or<false>(active)))
             return 0.f;
 
-        Value prob_diffuse = 1.f;
+        Float prob_diffuse = 1.f;
 
-        if (ctx.is_enabled(EDeltaReflection, 0)) {
-            Value f_i           = std::get<0>(fresnel(cos_theta_i, Value(m_eta))),
+        if (ctx.is_enabled(BSDFFlags::DeltaReflection, 0)) {
+            Float f_i           = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
                   prob_specular = f_i * m_specular_sampling_weight;
             prob_diffuse  = (1.f - f_i) * (1.f - m_specular_sampling_weight);
             prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
         }
 
-        Value pdf = warp::square_to_cosine_hemisphere_pdf(wo) * prob_diffuse;
+        Float pdf = warp::square_to_cosine_hemisphere_pdf(wo) * prob_diffuse;
 
         return select(active, pdf, 0.f);
     }
@@ -201,8 +181,6 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF_ALL()
-    MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_diffuse_reflectance;
     ref<ContinuousSpectrum> m_specular_reflectance;
@@ -212,8 +190,5 @@ private:
     bool m_nonlinear;
 };
 
-
-MTS_IMPLEMENT_CLASS(SmoothPlastic, BSDF)
-MTS_EXPORT_PLUGIN(SmoothPlastic, "Smooth plastic");
-
+MTS_IMPLEMENT_PLUGIN(SmoothPlastic, BSDF, "Smooth plastic");
 NAMESPACE_END(mitsuba)
