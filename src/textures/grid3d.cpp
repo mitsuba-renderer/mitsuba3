@@ -37,7 +37,7 @@ public:
     using FloatBuffer = FloatBuffer<Float>;
     using DataBuffer  = Vector<FloatBuffer, m_channel_count>;
 
-    explicit Grid3D(const Properties &props) : Base(props) {
+    Grid3D(const Properties &props) : Base(props) {
         // Read volume data from the binary file, typically 1 or 3 channels
         auto meta =
             read_binary_volume_data<Float, m_channel_count>(props.string("filename"), &m_data);

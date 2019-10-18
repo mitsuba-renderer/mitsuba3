@@ -26,15 +26,13 @@ public:
      */
     virtual ref<Sampler> clone() = 0;
 
-    /// Deterministically seed the underlying RNG, if any
-    virtual void seed(size_t seed_value);
     /**
-     * Deterministically seed the underlying RNG, if any.
-     * Also reset the differentiable-mode RNG's state size (or initialize
-     * it if it wasn't created).
+     * \brief Deterministically seed the underlying RNG, if any
+     *
+     * \param size
+     *     Number of random variates to be produced (only applies to the dynamic-size implementations)
      */
-    // TODO: check if this is really the right interface
-    virtual void seed(size_t seed_value, size_t size);
+    virtual void seed(size_t seed_value, size_t size = array_size_v<Float>);
 
     /// Retrieve the next component value from the current sample
     virtual Float next_1d(Mask active = true);
