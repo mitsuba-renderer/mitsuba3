@@ -6,18 +6,37 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class ThinLensCamera final : public ProjectiveCamera {
+template <typename Float, typename Spectrum>
+class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
+    MTS_DECLARE_PLUGIN();
+    using Base = ProjectiveCamera<Float, Spectrum>;
+    // TODO: replace this with a macro
+    using Base::m_world_transform;
+    using Base::m_needs_sample_3;
+    using Base::m_film;
+    using Base::m_sampler;
+    using Base::m_resolution;
+    using Base::m_shutter_open;
+    using Base::m_shutter_open_time;
+    using Base::m_aspect;
+    using Base::m_near_clip;
+    using Base::m_far_clip;
+    using Base::m_focus_distance;
+    using Scalar     = scalar_t<Float>;
+    using Wavelength = wavelength_t<Spectrum>;
+
     // =============================================================
     //! @{ \name Constructors
     // =============================================================
 
-    ThinLensCamera(const Properties &props) : ProjectiveCamera(props) {
+    ThinLensCamera(const Properties &props) : Base(props) {
         if (props.has_property("fov") && props.has_property("focal_length"))
             Throw("Please specify either a focal length ('focal_length') or a "
                   "field of view ('fov')!");
 
-        Float fov;
+        // TODO: refactor fov parsing, sensor transform, etc to avoid code duplication
+        Scalar fov;
         std::string fov_axis;
 
         if (props.has_property("fov")) {
@@ -35,12 +54,12 @@ public:
                 f = f.substr(0, f.length()-2);
 
             char *end_ptr = nullptr;
-            Float value = (Float) strtod(f.c_str(), &end_ptr);
+            Scalar value = (Scalar) strtod(f.c_str(), &end_ptr);
             if (*end_ptr != '\0')
                 Throw("Could not parse the focal length (must be of the form "
                     "<x>mm, where <x> is a positive integer)!");
 
-            fov = 2.f * rad_to_deg(std::atan(std::sqrt(Float(36 * 36 + 24 * 24)) / (2.f * value)));
+            fov = 2.f * rad_to_deg(std::atan(std::sqrt(Scalar(36 * 36 + 24 * 24)) / (2.f * value)));
             fov_axis = "diagonal";
         }
 
@@ -50,8 +69,8 @@ public:
             m_x_fov = rad_to_deg(
                 2.f * std::atan(std::tan(.5f * deg_to_rad(fov)) * m_aspect));
         } else if (fov_axis == "diagonal") {
-            Float diagonal = 2.f * std::tan(.5f * deg_to_rad(fov));
-            Float width = diagonal / std::sqrt(1.f + 1.f / (m_aspect*m_aspect));
+            Scalar diagonal = 2.f * std::tan(.5f * deg_to_rad(fov));
+            Scalar width = diagonal / std::sqrt(1.f + 1.f / (m_aspect*m_aspect));
             m_x_fov = rad_to_deg(2.f * std::atan(width*.5f));
         } else {
             Throw("The 'fov_axis' parameter must be set to one of 'smaller', "
@@ -64,9 +83,8 @@ public:
         m_aperture_radius = props.float_("aperture_radius");
 
         if (m_aperture_radius == 0.f) {
-            Log(EWarn, "Can't have a zero aperture radius -- "
-                "setting to %f", math::Epsilon);
-            m_aperture_radius = math::Epsilon;
+            Log(Warn, "Can't have a zero aperture radius -- setting to %f", math::Epsilon<Float>);
+            m_aperture_radius = math::Epsilon<Float>;
         }
 
         if (m_world_transform->has_scale())
@@ -125,39 +143,37 @@ public:
     //! @{ \name Sampling methods (Sensor interface)
     // =============================================================
 
-    template <typename Point2, typename Value, typename Mask = mask_t<Value>>
-    MTS_INLINE auto sample_ray_impl(Value time,
-                                    Value wavelength_sample,
-                                    const Point2& position_sample,
-                                    const Point2& aperture_sample,
-                                    Mask active) const {
-        using Point3   = Point<Value, 3>;
-        using Ray      = mitsuba::Ray<Point3>;
-        using Spectrum = mitsuba::Spectrum<Value>;
-        using Vector3  = Vector<Value, 3>;
+    MTS_INLINE std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                                     const Point2f &position_sample,
+                                                     const Point2f &aperture_sample,
+                                                     Mask active) const override {
 
         auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample);
-        auto [wavelengths, spec_weight] =
-            m_monochrome ? sample_uniform_spectrum(wav_sample) : sample_rgb_spectrum(wav_sample);
-
-        Ray ray;
+        Ray3f ray;
         ray.time = time;
-        ray.wavelengths = wavelengths;
+        Spectrum wav_weight;
+        if constexpr (is_monochrome_v<Spectrum>) {
+            std::tie(ray.wavelength, wav_weight) = sample_uniform_spectrum(wav_sample);
+        } else if constexpr (is_rgb_v<Spectrum>) {
+            NotImplementedError("Sampling rays in RGB mode");
+        } else {
+            std::tie(ray.wavelength, wav_weight) = sample_rgb_spectrum(wav_sample);
+        }
 
-        /* Compute the sample position on the near plane (local camera space). */
-        Point3 near_p = m_sample_to_camera *
-                        Point3(position_sample.x(), position_sample.y(), 0.f);
+        // Compute the sample position on the near plane (local camera space).
+        Point3f near_p = m_sample_to_camera *
+                        Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        /* Aperture position */
-        Point2 tmp = m_aperture_radius * warp::square_to_uniform_disk_concentric(aperture_sample);
-        Point3 aperture_p(tmp.x(), tmp.y(), 0.f);
+        // Aperture position
+        Point2f tmp = m_aperture_radius * warp::square_to_uniform_disk_concentric(aperture_sample);
+        Point3f aperture_p(tmp.x(), tmp.y(), 0.f);
 
-        /* Sampled position on the focal plane */
-        Point3 focus_p = near_p * (m_focus_distance / near_p.z());
+        // Sampled position on the focal plane
+        Point3f focus_p = near_p * (m_focus_distance / near_p.z());
 
-        /* Convert into a normalized ray direction; adjust the ray interval accordingly. */
-        Vector3 d = normalize(Vector3(focus_p - aperture_p));
-        Value inv_z = rcp(d.z());
+        // Convert into a normalized ray direction; adjust the ray interval accordingly.
+        Vector3f d = normalize(Vector3f(focus_p - aperture_p));
+        Float inv_z = rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
@@ -166,45 +182,43 @@ public:
         ray.d = trafo * d;
         ray.update();
 
-        return std::make_pair(ray, spec_weight);
+        return std::make_pair(ray, wav_weight);
     }
 
-    template <typename Point2, typename Value = value_t<Point2>,
-              typename Mask = mask_t<Value>>
-    MTS_INLINE auto sample_ray_differential_impl(Value time,
-                                                 Value wavelength_sample,
-                                                 const Point2& position_sample,
-                                                 const Point2& aperture_sample,
-                                                 Mask active) const {
-        using Point3 = Point<Value, 3>;
-        using RayDifferential = mitsuba::RayDifferential<Point3>;
-        using Spectrum = mitsuba::Spectrum<Value>;
-        using Vector3 = Vector<Value, 3>;
+    MTS_INLINE std::pair<RayDifferential3f, Spectrum>
+    sample_ray_differential_impl(Float time, Float wavelength_sample,
+                                 const Point2f &position_sample, const Point2f &aperture_sample,
+                                 Mask active) const {
+        auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample);
 
-        auto [wavelengths, spec_weight] = sample_rgb_spectrum(
-            math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample));
-
-        RayDifferential ray;
+        RayDifferential3f ray;
         ray.time = time;
-        ray.wavelengths = wavelengths;
+        Spectrum wav_weight;
+        if constexpr (is_monochrome_v<Spectrum>) {
+            std::tie(ray.wavelength, wav_weight) = sample_uniform_spectrum(wav_sample);
+        } else if constexpr (is_rgb_v<Spectrum>) {
+            NotImplementedError("Sampling rays in RGB mode");
+        } else {
+            std::tie(ray.wavelength, wav_weight) = sample_rgb_spectrum(wav_sample);
+        }
 
-        /* Compute the sample position on the near plane (local camera space). */
-        Point3 near_p = m_sample_to_camera *
-                        Point3(position_sample.x(), position_sample.y(), 0.f);
+        // Compute the sample position on the near plane (local camera space).
+        Point3f near_p = m_sample_to_camera *
+                        Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        /* Aperture position */
-        Point2 tmp = m_aperture_radius * warp::square_to_uniform_disk_concentric(aperture_sample);
-        Point3 aperture_p(tmp.x(), tmp.y(), 0.f);
+        // Aperture position
+        Point2f tmp = m_aperture_radius * warp::square_to_uniform_disk_concentric(aperture_sample);
+        Point3f aperture_p(tmp.x(), tmp.y(), 0.f);
 
-        /* Sampled position on the focal plane */
-        Value f_dist = m_focus_distance / near_p.z();
-        Point3 focus_p   = near_p          * f_dist,
+        // Sampled position on the focal plane
+        Float f_dist = m_focus_distance / near_p.z();
+        Point3f focus_p   = near_p          * f_dist,
                focus_p_x = (near_p + m_dx) * f_dist,
                focus_p_y = (near_p + m_dy) * f_dist;
 
-        /* Convert into a normalized ray direction; adjust the ray interval accordingly. */
-        Vector3 d = normalize(Vector3(focus_p - aperture_p));
-        Value inv_z = rcp(d.z());
+        // Convert into a normalized ray direction; adjust the ray interval accordingly.
+        Vector3f d = normalize(Vector3f(focus_p - aperture_p));
+        Float inv_z = rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
@@ -215,39 +229,15 @@ public:
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = trafo * normalize(Vector3(focus_p_x - aperture_p));
-        ray.d_y = trafo * normalize(Vector3(focus_p_y - aperture_p));
+        ray.d_x = trafo * normalize(Vector3f(focus_p_x - aperture_p));
+        ray.d_y = trafo * normalize(Vector3f(focus_p_y - aperture_p));
         ray.has_differentials = true;
 
-        return std::make_pair(ray, spec_weight);
+        return std::make_pair(ray, wav_weight);
     }
 
     BoundingBox3f bbox() const override {
         return m_world_transform->translation_bounds();
-    }
-
-    template <typename Interaction, typename Mask,
-              typename Value = typename Interaction::Value,
-              typename Point2 = typename Interaction::Point2,
-              typename Point3 = typename Interaction::Point3,
-              typename Spectrum = typename Interaction::Spectrum,
-              typename DirectionSample = DirectionSample<Point3>>
-    std::pair<DirectionSample, Spectrum>
-    sample_direction_impl(const Interaction & /* it */, const Point2 & /* sample */, Mask /* active */) const {
-        NotImplementedError("sample_direct");
-    }
-
-    template <typename Interaction, typename DirectionSample, typename Mask,
-              typename Value = typename DirectionSample::Value>
-    Value pdf_direction_impl(const Interaction & /* it */, const DirectionSample & /* ds */, Mask /* active */) const {
-        NotImplementedError("pdf_direct");
-    }
-
-    template <typename SurfaceInteraction, typename Mask,
-              typename Spectrum = typename SurfaceInteraction::Spectrum,
-              typename Frame = Frame<typename SurfaceInteraction::Point3>>
-    Spectrum eval_impl(const SurfaceInteraction & /* si */, Mask /* active */) const {
-        NotImplementedError("eval");
     }
 
     //! @}
@@ -273,9 +263,6 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SENSOR_ALL()
-    MTS_DECLARE_CLASS()
-
 private:
     Transform4f m_camera_to_sample;
     Transform4f m_sample_to_camera;
@@ -286,6 +273,5 @@ private:
     Vector3f m_dx, m_dy;
 };
 
-MTS_IMPLEMENT_CLASS(ThinLensCamera, ProjectiveCamera);
-MTS_EXPORT_PLUGIN(ThinLensCamera, "Thin Lens Camera");
+MTS_IMPLEMENT_PLUGIN(ThinLensCamera, ProjectiveCamera, "Thin Lens Camera");
 NAMESPACE_END(mitsuba)
