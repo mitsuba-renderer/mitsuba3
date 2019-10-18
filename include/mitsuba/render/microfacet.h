@@ -6,8 +6,7 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
-// TODO
-// #include <mitsuba/core/quad.h>
+#include <mitsuba/core/quad.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/fresnel.h>
 
@@ -63,8 +62,8 @@ template <typename Float> class MicrofacetDistribution {
 public:
     using Spectrum = void;
     MTS_IMPORT_TYPES()
-    static constexpr Float Pi = math::Pi<Float>;
-    static constexpr Float InvSqrtPi = math::InvSqrtPi<Float>;
+    static constexpr auto Pi = math::Pi<scalar_t<Float>>;
+    static constexpr auto InvSqrtPi = math::InvSqrtPi<scalar_t<Float>>;
 
     /**
      * Create an isotropic microfacet distribution of the specified type
@@ -404,34 +403,38 @@ public:
         }
     }
 
-#if 0
-    template <typename T = Value, enable_if_array_t<T> = 0>
-    FloatX eval_reflectance(const Vector3fX &wi_, Float eta, int res = -1) {
+    // Only implemented for Float = Packet<Scalar>
+    template <typename T         = Float,
+              typename FloatX    = DynamicBuffer<T>,
+              typename Vector3fX = Vector<DynamicBuffer<T>, 3>,
+              typename = std::enable_if_t<is_array_v<T> && !is_dynamic_array_v<T>>>
+    FloatX eval_reflectance(const Vector3fX &wi_, float eta) {
+        using Vector2fX = Vector<FloatX, 2>;
+
         if (!m_sample_visible)
             Throw("eval_reflectance(): requires visible normal sampling!");
 
+        int res = 128;
         if (eta > 1)
             res = 32;
-        else
-            res = 128;
-
-        while (res % PacketSize != 0)
+        while (res % Float::Size != 0)
             ++res;
 
         FloatX nodes, weights, result;
-        std::tie(nodes, weights) = quad::gauss_legendre(res);
+        std::tie(nodes, weights) = quad::gauss_legendre<Float>(res);
         set_slices(result, slices(wi_));
 
         Vector2fX nodes_2   = meshgrid(nodes, nodes),
                   weights_2 = meshgrid(weights, weights);
 
         for (size_t i = 0; i < slices(wi_); ++i) {
-            Vector3f wi = slice(wi_, i);
-            FloatP accum = zero<FloatP>();
+            auto wi     = slice(wi_, i);
+            Float accum = zero<Float>();  // packet
 
             for (size_t j = 0; j < packets(nodes_2); ++j) {
-                Vector2fP node(packet(nodes_2, j)),
-                          weight(packet(weights_2, j));
+                // Packet
+                Vector2f node(packet(nodes_2, j)),
+                         weight(packet(weights_2, j));
 
                 node = fmadd(node, .5f, .5f);
                 accum += eval_reflectance_kernel(wi, eta, node) * hprod(weight);
@@ -440,7 +443,6 @@ public:
         }
         return result;
     }
-#endif
 
 protected:
     void configure() {

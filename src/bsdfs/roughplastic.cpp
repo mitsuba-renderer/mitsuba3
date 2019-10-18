@@ -1,8 +1,9 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/plugin.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
-#include <mitsuba/core/warp.h>
 #include <mitsuba/core/timer.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
@@ -55,17 +56,21 @@ public:
 
         m_alpha = distr.alpha();
 
-        // Precompute rough reflectance
-        // TODO!
-        MicrofacetDistribution<FloatP> distr_p(m_type, m_alpha);
-        Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
-        for (size_t i = 0; i < slices(wi); ++i) {
-            Float mu     = std::max((Float) 1e-6f, i * Float(1.f) / (slices(wi) - 1));
-            slice(wi, i) = Vector3f(std::sqrt(1 - mu * mu), 0.f, mu);
+        /* Precompute rough reflectance */ {
+            using Scalar    = scalar_t<Float>;
+            using FloatP    = Packet<Scalar>;
+            using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
+
+            MicrofacetDistribution<FloatP> distr_p(m_type, m_alpha);
+            Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
+            for (size_t i = 0; i < slices(wi); ++i) {
+                Scalar mu    = std::max((Scalar) 1e-6f, Scalar(i) / Scalar(slices(wi) - 1));
+                slice(wi, i) = Vector3f(std::sqrt(1 - mu * mu), 0.f, mu);
+            }
+            m_external_transmittance = 1.f - distr_p.eval_reflectance(wi, m_eta);
+            m_internal_reflectance =
+                mean(distr_p.eval_reflectance(wi, 1.f / m_eta) * wi.z()) * 2.f;
         }
-        m_external_transmittance = 1.f - distr_p.eval_reflectance(wi, m_eta);
-        m_internal_reflectance =
-            mean(distr_p.eval_reflectance(wi, 1.f / m_eta) * wi.z()) * 2.f;
 
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
         m_components.push_back(BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide);
@@ -164,14 +169,16 @@ public:
         }
 
         if (has_diffuse) {
+            using SpectrumU = depolarized_t<Spectrum>;
+
             Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active),
                   t_o = lerp_gather(m_external_transmittance.data(), cos_theta_o,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active);
 
-            Spectrum diff = m_diffuse_reflectance->eval(si, active);
+            SpectrumU diff = depolarize(m_diffuse_reflectance->eval(si, active));
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
-                                       : Spectrum(m_internal_reflectance));
+                                       : SpectrumU(m_internal_reflectance));
 
             result += diff * (math::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
@@ -265,8 +272,7 @@ private:
     Float m_specular_sampling_weight;
     bool m_nonlinear;
     bool m_sample_visible;
-    // TODO
-    FloatX m_external_transmittance;
+    DynamicBuffer<Float> m_external_transmittance;
     Float m_internal_reflectance;
 };
 

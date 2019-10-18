@@ -3,6 +3,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(quad)
 
+template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
 std::pair<FloatX, FloatX> gauss_legendre(int n) {
     if (n < 1)
         throw std::runtime_error("gauss_legendre(): n must be >= 1");
@@ -61,6 +62,7 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
     return { nodes, weights };
 }
 
+template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
 std::pair<FloatX, FloatX> gauss_lobatto(int n) {
     if (n < 2)
         throw std::runtime_error("gauss_lobatto(): n must be >= 2");
@@ -115,6 +117,7 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
     return { nodes, weights };
 }
 
+template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
 std::pair<FloatX, FloatX> composite_simpson(int n) {
     if (n % 2 != 1 || n < 3)
         throw std::runtime_error("composite_simpson(): n must be >= 3 and odd");
@@ -141,6 +144,7 @@ std::pair<FloatX, FloatX> composite_simpson(int n) {
     return { nodes, weights };
 }
 
+template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
 std::pair<FloatX, FloatX> composite_simpson_38(int n) {
     if ((n - 1) % 3 != 0 || n < 4)
         throw std::runtime_error("composite_simpson_38(): n-1 must be divisible by 3");
