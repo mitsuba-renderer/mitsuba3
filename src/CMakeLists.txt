@@ -4,29 +4,29 @@ if (PYTHONLIBS_FOUND)
   include("cmake/libpython.cmake")
 endif()
 
-# Mitsuba support libraries
-add_subdirectory(libcore)
-add_subdirectory(librender)
-add_subdirectory(libui)
+# # Mitsuba support libraries
+# add_subdirectory(libcore)
+# add_subdirectory(librender)
+# add_subdirectory(libui)
 
-# Mitsuba executables
-add_subdirectory(mitsuba)
-add_subdirectory(mtsgui)
+# # Mitsuba executables
+# add_subdirectory(mitsuba)
+# add_subdirectory(mtsgui)
 
-# Plugins
+# # Plugins
 add_subdirectory(bsdfs)
 add_subdirectory(emitters)
-add_subdirectory(films)
-add_subdirectory(integrators)
+# add_subdirectory(films)
+# add_subdirectory(integrators)
 add_subdirectory(rfilters)
 add_subdirectory(samplers)
 add_subdirectory(sensors)
-add_subdirectory(shapes)
+# add_subdirectory(shapes)
 add_subdirectory(spectra)
 add_subdirectory(textures)
 
-if (PYTHONLIBS_FOUND)
-  add_subdirectory(python)
-  # Test support
-  include("cmake/tests.cmake")
-endif()
+# if (PYTHONLIBS_FOUND)
+#   add_subdirectory(python)
+#   # Test support
+#   include("cmake/tests.cmake")
+# endif()
