@@ -120,8 +120,17 @@ enum class BSDFFlags : uint32_t {
     All          = Diffuse | Glossy | Delta | Delta1D
 };
 
+/// Allows or-ing of BSDFFlags
 constexpr enum BSDFFlags operator |(const enum BSDFFlags f1, const enum BSDFFlags f2) {
     return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) | static_cast<uint32_t>(f2));
+}
+/// Allows and-ing of BSDFFlags
+constexpr enum BSDFFlags operator &(const enum BSDFFlags f1, const enum BSDFFlags f2) {
+    return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
+}
+/// Allows using unary `+` for conversion from BSDFFlags to the underlying type
+constexpr auto operator+(BSDFFlags e) noexcept {
+    return static_cast<std::underlying_type_t<BSDFFlags>>(e);
 }
 
 /**
@@ -406,10 +415,10 @@ public:
     // -----------------------------------------------------------------------
 
     /// Flags for all components combined.
-    uint32_t flags(Mask /* active */ = true) const { return m_flags; }
+    BSDFFlags flags(Mask /* active */ = true) const { return m_flags; }
 
     /// Flags for a specific component of this BSDF.
-    uint32_t flags(size_t i, Mask /* active */ = true) const {
+    BSDFFlags flags(size_t i, Mask /* active */ = true) const {
         Assert(i < m_components.size());
         return m_components[i];
     }

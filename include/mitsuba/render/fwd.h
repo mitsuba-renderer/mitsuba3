@@ -184,6 +184,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Normal3f             = typename Aliases::Normal3f;                                       \
     using Normal3d             = typename Aliases::Normal3d;                                       \
     using Wavelength           = typename Aliases::Wavelength;                                     \
+    using Color1f              = typename Aliases::Color1f;                                        \
     using Color3f              = typename Aliases::Color3f;                                        \
     using StokesVector4f       = typename Aliases::StokesVector4f;                                 \
     using MuellerMatrix4f      = typename Aliases::MuellerMatrix4f;                                \

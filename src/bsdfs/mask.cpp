@@ -1,5 +1,6 @@
-#include <mitsuba/core/string.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/spectrum.h>
 
@@ -8,13 +9,12 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES();
-    using BSDF = BSDF<Float, Spectrum>;
-    using BSDF::component_count;
-    using BSDF::m_components;
-    using BSDF::m_flags;
+    MTS_DECLARE_PLUGIN()
+    MTS_USING_BASE(BSDF, component_count, m_components, m_flags)
+    using BSDF                = Base;
+    using ContinuousSpectrum1 = mitsuba::ContinuousSpectrum<Float, Color1f>;
 
-    MaskBSDF(const Properties &props) : BSDF(props) {
+    MaskBSDF(const Properties &props) : Base(props) {
         for (auto &kv : props.objects()) {
             auto *bsdf = dynamic_cast<BSDF *>(kv.second.get());
             if (bsdf) {
@@ -26,7 +26,8 @@ public:
         if (!m_nested_bsdf)
            Throw("Child BSDF not specified");
 
-        m_opacity = props.spectrum<Float, Spectrum>("opacity", 0.5f);
+        // Scalar-typed opacity texture
+        m_opacity = props.spectrum<Float, Color1f>("opacity", 0.5f);
 
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
             m_components.push_back(m_nested_bsdf->flags(i));
@@ -50,14 +51,14 @@ public:
         if (unlikely(!sample_transmission && !sample_nested))
             return { bs, result };
 
-        Float opacity = clamp(m_opacity->eval(si, active)[0], 0.f, 1.f);
+        Float opacity = eval_opacity(si, active);
         if (sample_transmission != sample_nested)
             opacity = sample_transmission ? 1.f : 0.f;
 
         bs.wo                = -si.wi;
         bs.eta               = 1.f;
         bs.sampled_component = null_index;
-        bs.sampled_type      = BSDFFlags::Null;
+        bs.sampled_type      = +BSDFFlags::Null;
         bs.pdf               = 1.f - opacity;
         result               = 1.f;
 
@@ -75,7 +76,7 @@ public:
     MTS_INLINE
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
                   Mask active) const override {
-        Float opacity = clamp(m_opacity->eval(si, active)[0], 0.f, 1.f);
+        Float opacity = eval_opacity(si, active);
         return m_nested_bsdf->eval(ctx, si, wo, active) * opacity;
     }
 
@@ -91,9 +92,30 @@ public:
 
         Float result = m_nested_bsdf->pdf(ctx, si, wo, active);
         if (sample_transmission)
-            result *= clamp(m_opacity->eval(si, active)[0], 0.f, 1.f);
+            result *= eval_opacity(si, active);
 
         return result;
+    }
+
+    MTS_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
+        // using Wavelength1 = wavelength_t<Color1f>;
+        // using SurfaceInteraction3f1 = mitsuba::SurfaceInteraction<Float, Color1f>;
+        // Wavelength1 wav = zero<SurfaceInteraction3f1>();
+        // SurfaceInteraction3f1 wav = zero<Wavelength1>();
+
+        // Color1f op;
+        // if constexpr (std::is_same_v<Spectrum, Color3f>) {
+        //     // Wavelength wav = zero<SurfaceInteraction3f>();
+        //     SurfaceInteraction3f wav = zero<Wavelength>();
+
+        //     op = m_opacity->eval(si, active);
+        // } else {
+        //     op = 0.f;
+        // }
+
+        // TODO: why is this an ambiguous call? :o
+        Color1f op = m_opacity->eval(si, active);
+        return clamp(op.x(), 0.f, 1.f);
     }
 
     std::vector<ref<Object>> children() override {
@@ -109,14 +131,10 @@ public:
         return oss.str();
     }
 
-    // MTS_IMPLEMENT_BSDF_ALL()
-    MTS_DECLARE_CLASS()
 protected:
-    ref<ContinuousSpectrum<Float, Spectrum>> m_opacity;
+    ref<ContinuousSpectrum1> m_opacity;
     ref<BSDF> m_nested_bsdf;
 };
 
-// MTS_IMPLEMENT_CLASS(MaskBSDF, BSDF)
-// MTS_EXPORT_PLUGIN(MaskBSDF, "Mask material")
-
+MTS_IMPLEMENT_PLUGIN(MaskBSDF, BSDF, "Mask material")
 NAMESPACE_END(mitsuba)
