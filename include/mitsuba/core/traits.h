@@ -18,59 +18,41 @@ NAMESPACE_BEGIN(detail)
 template <typename Spectrum> struct spectral_traits {};
 template <typename Float>
 struct spectral_traits<Color<Float, 1>> {
-    static constexpr bool is_monochrome   = true;
-    static constexpr bool is_rgb          = false;
-    static constexpr bool is_spectral     = false;
-    static constexpr bool is_polarized    = false;
+    static constexpr bool is_monochrome      = true;
+    static constexpr bool is_rgb             = false;
+    static constexpr bool is_spectral        = false;
+    static constexpr bool is_polarized       = false;
     static constexpr size_t texture_channels = 1;
 };
 
 template <typename Float>
 struct spectral_traits<Color<Float, 3>> {
-    static constexpr bool is_monochrome    = false;
-    static constexpr bool is_rgb           = true;
-    static constexpr bool is_spectral      = false;
-    static constexpr bool is_polarized     = false;
-    static constexpr size_t texture_channels  = 3;
+    static constexpr bool is_monochrome      = false;
+    static constexpr bool is_rgb             = true;
+    static constexpr bool is_spectral        = false;
+    static constexpr bool is_polarized       = false;
+    static constexpr size_t texture_channels = 3;
 };
 
 template <typename Float, int SpectralSamples>
 struct spectral_traits<Spectrum<Float, SpectralSamples>> {
-    static constexpr bool is_monochrome   = false;
-    static constexpr bool is_rgb          = false;
-    static constexpr bool is_spectral     = true;
-    static constexpr bool is_polarized    = false;
+    static constexpr bool is_monochrome      = false;
+    static constexpr bool is_rgb             = false;
+    static constexpr bool is_spectral        = true;
+    static constexpr bool is_polarized       = false;
     // The 3 sRGB spectral upsampling model coefficients are stored in textures
     static constexpr size_t texture_channels = 3;
 };
 
-template <typename Float>
-struct spectral_traits<MuellerMatrix<Color<Float, 1>>> {
-    static constexpr bool is_monochrome   = true;
-    static constexpr bool is_rgb          = false;
-    static constexpr bool is_spectral     = false;
-    static constexpr bool is_polarized    = true;
-    static constexpr size_t texture_channels = 1;
-};
-
-template <typename Float>
+template <typename T>
 struct spectral_traits<MuellerMatrix<T>> {
-    static constexpr bool is_monochrome   = false;
-    static constexpr bool is_rgb          = true;
-    static constexpr bool is_spectral     = false;
-    static constexpr bool is_polarized    = true;
-    static constexpr size_t texture_channels = 3;
+    static constexpr bool is_monochrome      = spectral_traits<T>::is_monochrome;
+    static constexpr bool is_rgb             = spectral_traits<T>::is_rgb;
+    static constexpr bool is_spectral        = spectral_traits<T>::is_spectral;
+    static constexpr bool is_polarized       = true;
+    static constexpr size_t texture_channels = spectral_traits<T>::texture_channels;
 };
 
-template <typename Float, int SpectralSamples>
-struct spectral_traits<MuellerMatrix<Spectrum<Float, SpectralSamples>>> {
-    static constexpr bool is_monochrome   = false;
-    static constexpr bool is_rgb          = false;
-    static constexpr bool is_spectral     = true;
-    static constexpr bool is_polarized    = true;
-    // The 3 sRGB spectral upsampling model coefficients are stored in textures
-    static constexpr size_t texture_channels = 3;
-};
 NAMESPACE_END(detail)
 
 template <typename T>
@@ -92,11 +74,15 @@ constexpr size_t texture_channels_v = detail::spectral_traits<T>::texture_channe
 // =============================================================
 
 NAMESPACE_BEGIN(detail)
-template <typename Value, typename Enable = void> struct dynamic_buffer_t {};
+template <typename Value, typename Enable = void>
+struct dynamic_buffer_t {};
+
 template <typename Value>
 struct dynamic_buffer_t<Value, std::enable_if_t<!is_dynamic_array_v<Value>>> {
     using type = DynamicArray<Packet<scalar_t<Value>>>;
 };
+
+template <typename Value>
 struct dynamic_buffer_t<Value, std::enable_if_t<is_dynamic_array_v<Value>>> {
     using type = Value;
 };

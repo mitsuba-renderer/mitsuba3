@@ -46,7 +46,7 @@ NAMESPACE_END(detail)
 // TODO: what if Float is a GPU array, should we upload to it directly?
 template <typename Float, size_t expected_channels>
 VolumeMetadata read_binary_volume_data(const std::string &filename,
-                                       Vector<FloatBuffer<Float>, expected_channels> *data) {
+                                       Vector<DynamicBuffer<Float>, expected_channels> *data) {
     using Scalar        = scalar_t<Float>;
     using BoundingBox3f = typename VolumeMetadata::BoundingBox3f;
     using Point3f       = typename BoundingBox3f::Point;

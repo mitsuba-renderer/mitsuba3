@@ -12,8 +12,16 @@ public:
     MTS_USING_BASE(Sampler, m_sample_count)
     using PCG32 = mitsuba::PCG32<UInt32>;
 
-    IndependentSampler() : Base(Properties()), m_seed_value(0) {}
-    IndependentSampler(const Properties &props) : Base(props), m_seed_value(0) {}
+    IndependentSampler() : Base(Properties()), m_seed_value(0) {
+        // Can't seed yet on the GPU because we don't know yet how many
+        // entries will be needed.
+        if (!is_diff_array_v<Float>)
+            seed(m_seed_value);
+    }
+    IndependentSampler(const Properties &props) : Base(props), m_seed_value(0) {
+        if (!is_diff_array_v<Float>)
+            seed(m_seed_value);
+    }
 
     ref<Base> clone() override {
         IndependentSampler *sampler = new IndependentSampler();
@@ -23,22 +31,10 @@ public:
         return sampler;
     }
 
-    /// Seed the RNG, keeping the current state size
-    void seed(size_t seed_value) override {
-        if (!m_rng)
-            m_rng = std::make_unique<PCG32>();
-
-        if constexpr (is_diff_array_v<Float>) {
-            seed(seed_value, m_rng->size());
-        } else {
-            seed(seed_value, 1);
-        }
-    }
-
     /// Seeds the RNG with the specified size, if applicable
-    void seed(size_t seed_value, size_t size) override {
+    void seed(size_t seed_value, size_t size = 1) override {
         m_seed_value = seed_value;
-        m_rng = std::make_unique<PCG32>();
+        m_rng        = std::make_unique<PCG32>();
 
         if constexpr (is_diff_array_v<Float>) {
             UInt64 idx = arange<UInt64>(size),
@@ -47,43 +43,40 @@ public:
                         sample_tea_64(detach(idx), detach(seed_value_c)));
 
         } else if constexpr (is_array_v<Float>) {
+            if (size != array_size_v<Float>)
+                Throw("Invalid size %d for packet sampler, expected %d", size, array_size_v<Float>);
+
             m_rng->seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64>());
         } else {
+            if (size != 1)
+                Throw("Invalid size %d for scalar sampler, expected 1", size);
             m_rng->seed(seed_value, PCG32_DEFAULT_STREAM);
         }
     }
 
     Float next_1d(Mask active = true) override {
-        using Scalar = scalar_t<Float>;
         if constexpr (is_diff_array_v<Float>) {
-            if (m_rng != nullptr && m_rng->state.size() != 1)
-                Throw("next_float(): Requested sample array has incorrect shape %d, expected %d.", active.size(), m_rng->size());
-            else
+            if (!m_rng) {
+                // We couldn't seed the RNG before because we didn't know
+                // the number of entries we would need. Do it now.
                 seed(m_seed_value, active.size());
+            } else if (active.size() != 1 && active.size() != m_rng->size()) {
+                Throw("next_float(): Requested sample array has incorrect shape %d, expected %d.", active.size(), m_rng->size());
+            }
         }
 
-        // TODO: how to pass indices? (GPU RNG)
-        if constexpr (std::is_same_v<Scalar, float>) {
-            return m_rng->next_float32(active);
+        if constexpr (is_double_v<scalar_t<Float>>) {
+            return m_rng->next_float64(detach(active));
         } else {
-            return m_rng->next_float64(active);
+            return m_rng->next_float32(detach(active));
         }
     }
 
     Point2f next_2d(Mask active = true) override {
-        // TODO: how to pass indices? (GPU RNG)
-        Float f1 = next_float(detach(active)),
-              f2 = next_float(detach(active));
+        Float f1 = next_1d(active),
+              f2 = next_1d(active);
         return Point2f(f1, f2);
     }
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    Point2fD next_2d_d(UInt32D index, MaskD active) override {
-        FloatC f1 = next_float_c(detach(index), detach(active)),
-               f2 = next_float_c(detach(index), detach(active));
-        return Point2fD(f1, f2);
-    }
-#endif
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -94,24 +87,8 @@ public:
     }
 
 protected:
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    MTS_INLINE FloatC next_float_c(UInt32C index, MaskC active) {
-        if (!m_rng_c)
-            throw std::runtime_error("next_float_c(): RNG is uninitialized!");
-
-        #if defined(SINGLE_PRECISION)
-            return m_rng_c->next_float32(index, active);
-        #else
-            return m_rng_c->next_float64(index, active);
-        #endif
-    }
-#endif
-
-protected:
     std::unique_ptr<PCG32> m_rng;
     size_t m_seed_value;
-
 };
 
 MTS_IMPLEMENT_PLUGIN(IndependentSampler, Sampler, "Independent Sampler");

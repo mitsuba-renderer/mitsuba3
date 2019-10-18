@@ -33,9 +33,9 @@ public:
     MTS_USING_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
 
     static constexpr int m_channel_count = texture_channels_v<Spectrum>;
-    // TODO: unify / simplify this
-    using FloatBuffer = FloatBuffer<Float>;
-    using DataBuffer  = Vector<FloatBuffer, m_channel_count>;
+    using DynamicBuffer = DynamicBuffer<Float>;
+    // TODO: linearize data storage
+    using DataBuffer    = Vector<DynamicBuffer, m_channel_count>;
 
     Grid3D(const Properties &props) : Base(props) {
         // Read volume data from the binary file, typically 1 or 3 channels
