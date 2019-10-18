@@ -30,12 +30,7 @@ template <typename Float, typename Spectrum>
 class Grid3D final : public Grid3DBase<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
-    using Base = Grid3DBase<Float, Spectrum>;
-    using Base::set_metadata;
-    using Base::m_metadata;
-    using Base::m_size;
-    using Base::m_world_to_local;
-    using Wavelength = wavelength_t<Spectrum>;
+    MTS_USING_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
 
     static constexpr int m_channel_count = texture_channels_v<Spectrum>;
     // TODO: unify / simplify this

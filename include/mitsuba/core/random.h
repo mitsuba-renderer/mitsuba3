@@ -30,6 +30,7 @@
 
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/logger.h>
+#include <mitsuba/core/traits.h>
 #include <enoki/random.h>
 
 NAMESPACE_BEGIN(enoki)

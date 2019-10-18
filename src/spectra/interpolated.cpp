@@ -10,9 +10,8 @@ template <typename Float, typename Spectrum>
 class InterpolatedSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
-    using Base       = ContinuousSpectrum<Float, Spectrum>;
-    using Wavelength = wavelength_t<Spectrum>;
-    using Index      = replace_scalar_t<Wavelength, uint32_t>;
+    using Base  = ContinuousSpectrum<Float, Spectrum>;
+    using Index = replace_scalar_t<Wavelength, uint32_t>;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     using FloatVector = std::vector<Float, enoki::cuda_host_allocator<Float>>;

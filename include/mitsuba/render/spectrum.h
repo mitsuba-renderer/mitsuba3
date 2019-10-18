@@ -25,7 +25,6 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ContinuousSpectrum : public Object {
 public:
     MTS_IMPORT_TYPES();
-    using Wavelength = wavelength_t<Spectrum>;
 
     /**
      * Evaluate the value of the spectral power distribution

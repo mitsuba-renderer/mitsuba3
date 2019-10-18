@@ -1,5 +1,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/random.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/sampler.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -8,9 +9,8 @@ template <typename Float, typename Spectrum>
 class IndependentSampler final : public Sampler<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
+    MTS_USING_BASE(Sampler, m_sample_count)
     using PCG32 = mitsuba::PCG32<UInt32>;
-    using Base  = Sampler<Float, Spectrum>;
-    using Base::m_sample_count;
 
     IndependentSampler() : Base(Properties()), m_seed_value(0) {}
     IndependentSampler(const Properties &props) : Base(props), m_seed_value(0) {}

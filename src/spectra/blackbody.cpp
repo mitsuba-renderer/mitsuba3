@@ -17,8 +17,7 @@ template <typename Float, typename Spectrum>
 class BlackBodySpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
-    using Base       = ContinuousSpectrum<Float, Spectrum>;
-    using Wavelength = wavelength_t<Spectrum>;
+    using Base = ContinuousSpectrum<Float, Spectrum>;
 
     // A few natural constants
     const Float c = Float(2.99792458e+8);   /// Speed of light

@@ -9,8 +9,7 @@ template <typename Float, typename Spectrum>
 class Constant3D final : public Texture3D<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
-    using Base = Texture3D<Float, Spectrum>;
-    using Base::m_world_to_local;
+    MTS_USING_BASE(Texture3D, m_world_to_local)
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 
     explicit Constant3D(const Properties &props) : Base(props) {

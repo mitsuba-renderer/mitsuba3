@@ -9,11 +9,8 @@ template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN();
-    using ContinuousSpectrum = ContinuousSpectrum<Float, Spectrum>;
-    using Base = BSDF<Float, Spectrum>;
-    using Base::Base;
-    using Base::m_flags;
-    using Base::m_components;
+    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 
     explicit SmoothDiffuse(const Properties &props) : Base(props) {
         m_reflectance = props.spectrum<Float, Spectrum>("reflectance", .5f);

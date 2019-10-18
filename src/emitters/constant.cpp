@@ -1,12 +1,11 @@
-#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/bsphere.h>
+#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
-#include <mitsuba/render/scene.h>
 #include <mitsuba/render/emitter.h>
-#include <mitsuba/render/kdtree.h>
+#include <mitsuba/render/scene.h>
 #include <mitsuba/render/spectrum.h>
-#include <mitsuba/core/plugin.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

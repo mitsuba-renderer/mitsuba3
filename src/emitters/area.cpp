@@ -1,8 +1,8 @@
+#include <mitsuba/core/properties.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/shape.h>
-#include <mitsuba/core/warp.h>
-#include <mitsuba/core/properties.h>
 #include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -11,12 +11,10 @@ template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
-    using Base               = Emitter<Float, Spectrum>;
+    MTS_USING_BASE(Emitter, m_shape, m_medium)
     using Scene              = typename Aliases::Scene;
     using Shape              = typename Aliases::Shape;
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
-    using Base::m_shape;
-    using Base::m_medium;
 
     AreaLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))

@@ -1,9 +1,9 @@
+#include <mitsuba/core/bbox.h>
+#include <mitsuba/core/properties.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/spectrum.h>
-#include <mitsuba/core/properties.h>
-#include <mitsuba/core/warp.h>
-#include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -11,13 +11,10 @@ template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
-    using Base               = Emitter<Float, Spectrum>;
+    MTS_USING_BASE(Emitter, m_medium, m_needs_sample_3, m_world_transform)
     using Scene              = typename Aliases::Scene;
     using Shape              = typename Aliases::Shape;
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
-    using Base::m_medium;
-    using Base::m_needs_sample_3;
-    using Base::m_world_transform;
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {

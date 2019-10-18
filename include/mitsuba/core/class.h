@@ -235,6 +235,38 @@ NAMESPACE_END(detail)
         return m_class;                                                                            \
     }
 
+
+
+#define MTS_MAP_USING_FWD_0(x, peek, ...) \
+    using Base::x; ENOKI_MAP_STMT_NEXT(peek, MTS_MAP_USING_FWD_1)(peek, __VA_ARGS__)
+#define MTS_MAP_USING_FWD_1(x, peek, ...) \
+    using Base::x; ENOKI_MAP_STMT_NEXT(peek, MTS_MAP_USING_FWD_0)(peek, __VA_ARGS__)
+
+/**
+ * \brief Declares an alias Base for the parent template class and
+ * imports the desired methods and fields with `using` declarations.
+ * This is useful when inheriting from template parents, since methods
+ * and fields must be explicitly be made visible.
+ * Note that the parent class must be templated over <Float, Spectrum>.
+ *
+ * For example,
+ *     MTS_USING_BASE(BSDF, m_flags, m_components)
+ * expands to:
+ *     using Base = BSDF<Float, Spectrum>;
+ *     using Base::m_flags;
+ *     using Base::m_components;
+ */
+#define MTS_USING_BASE(class_, ...) \
+    using Base = class_<Float, Spectrum>; \
+    ENOKI_EVAL(MTS_MAP_USING_FWD_0(__VA_ARGS__, (), 0))
+
+/**
+ * Variant of MTS_USING_BASE for parents that are only templated over Float.
+ */
+#define MTS_USING_BASE_FLOAT(class_, ...) \
+    using Base = class_<Float>; \
+    ENOKI_EVAL(MTS_MAP_USING_FWD_0(__VA_ARGS__, (), 0))
+
 extern MTS_EXPORT_CORE const Class *m_class;
 
 NAMESPACE_END(mitsuba)

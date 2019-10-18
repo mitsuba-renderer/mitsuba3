@@ -89,8 +89,9 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Normal3f = Normal<Float, 3>;
     using Normal3d = Normal<Float64, 3>;
 
-    using Color1f  = Color<Float, 1>;
-    using Color3f  = Color<Float, 3>;
+    using Wavelength = wavelength_t<Spectrum>;
+    using Color1f    = Color<Float, 1>;
+    using Color3f    = Color<Float, 3>;
 
     using StokesVector4f  = StokesVector<Float>;
     using MuellerMatrix4f = MuellerMatrix<Float>;
@@ -182,6 +183,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Point4d              = typename Aliases::Point4d;                                        \
     using Normal3f             = typename Aliases::Normal3f;                                       \
     using Normal3d             = typename Aliases::Normal3d;                                       \
+    using Wavelength           = typename Aliases::Wavelength;                                     \
     using Color3f              = typename Aliases::Color3f;                                        \
     using StokesVector4f       = typename Aliases::StokesVector4f;                                 \
     using MuellerMatrix4f      = typename Aliases::MuellerMatrix4f;                                \

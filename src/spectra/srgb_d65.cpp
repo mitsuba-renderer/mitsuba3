@@ -10,7 +10,6 @@ class SRGBEmitterSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
     using Base = ContinuousSpectrum<Float, Spectrum>;
-    using Wavelength = wavelength_t<Spectrum>;
 
     SRGBEmitterSpectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))
@@ -56,5 +55,4 @@ private:
 };
 
 MTS_IMPLEMENT_PLUGIN(SRGBEmitterSpectrum, ContinuousSpectrum, "sRGB x D65 spectrum")
-
 NAMESPACE_END(mitsuba)

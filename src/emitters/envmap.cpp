@@ -1,11 +1,10 @@
-#include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/bsphere.h>
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/bsphere.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/warp.h>
-#include <mitsuba/render/scene.h>
 #include <mitsuba/render/emitter.h>
-#include <mitsuba/render/kdtree.h>
+#include <mitsuba/render/scene.h>
 #include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/srgb.h>
 
@@ -15,13 +14,11 @@ template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN()
-    using Base               = Emitter<Float, Spectrum>;
+    MTS_USING_BASE(Emitter, m_world_transform)
     using Scene              = typename Aliases::Scene;
     using Shape              = typename Aliases::Shape;
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
-    using Wavelength         = wavelength_t<Spectrum>;
     using Warp               = warp::Marginal2D<Float, 0>;
-    using Base::m_world_transform;
 
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
         /* Until `create_shape` is called, we have no information

@@ -2,6 +2,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/spectrum.h>
 #include <mitsuba/render/srgb.h>
@@ -173,5 +174,4 @@ protected:
 };
 
 MTS_IMPLEMENT_PLUGIN(BitmapTexture, ContinuousSpectrum, "Bitmap texture")
-
 NAMESPACE_END(mitsuba)
