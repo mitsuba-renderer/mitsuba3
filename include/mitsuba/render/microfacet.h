@@ -6,23 +6,34 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
-#include <mitsuba/core/quad.h>
+// TODO
+// #include <mitsuba/core/quad.h>
 #include <mitsuba/core/warp.h>
-#include <mitsuba/render/common.h>
 #include <mitsuba/render/fresnel.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-using namespace math;
-
 /// Supported normal distribution functions
-enum EType {
+enum class MicrofacetType : uint32_t {
     /// Beckmann distribution derived from Gaussian random surfaces
-    EBeckmann = 0,
-
+    Beckmann = 0,
     /// GGX: Long-tailed distribution for very rough surfaces (aka. Trowbridge-Reitz distr.)
-    EGGX = 1
+    GGX = 1
 };
+
+MTS_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
+    switch (tp) {
+        case MicrofacetType::Beckmann:
+            os << "beckmann";
+            break;
+        case MicrofacetType::GGX:
+            os << "ggx";
+            break;
+        default:
+            Throw("Unknown microfacet distribution: %s", tp);
+    }
+    return os;
+}
 
 /**
  * \brief Implementation of the Beckman and GGX / Trowbridge-Reitz microfacet
@@ -48,14 +59,12 @@ enum EType {
  *    "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals"
  *     by Eric Heitz
  */
-template <typename Value> class MicrofacetDistribution {
+template <typename Float> class MicrofacetDistribution {
 public:
-    using Mask    = mask_t<Value>;
-    using Point2  = Point<Value, 2>;
-    using Vector2 = Vector<Value, 2>;
-    using Vector3 = Vector<Value, 3>;
-    using Normal3 = Normal<Value, 3>;
-    using Frame   = mitsuba::Frame<Vector3>;
+    using Spectrum = void;
+    MTS_IMPORT_TYPES()
+    static constexpr Float Pi = math::Pi<Float>;
+    static constexpr Float InvSqrtPi = math::InvSqrtPi<Float>;
 
     /**
      * Create an isotropic microfacet distribution of the specified type
@@ -65,7 +74,7 @@ public:
      * \param alpha
      *     The surface roughness
      */
-    MicrofacetDistribution(EType type, Value alpha, bool sample_visible = true)
+    MicrofacetDistribution(MicrofacetType type, Float alpha, bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha), m_alpha_v(alpha),
           m_sample_visible(sample_visible) {
         configure();
@@ -81,10 +90,9 @@ public:
      * \param alpha_v
      *     The surface roughness in the bitangent direction
      */
-    MicrofacetDistribution(EType type, Value alpha_u, Value alpha_v,
+    MicrofacetDistribution(MicrofacetType type, Float alpha_u, Float alpha_v,
                            bool sample_visible = true)
-        : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v),
-          m_sample_visible(sample_visible) {
+        : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v), m_sample_visible(sample_visible) {
         configure();
     }
 
@@ -92,17 +100,16 @@ public:
      * \brief Create a microfacet distribution from a Property data
      * structure
      */
-    MicrofacetDistribution(const Properties &props, EType type = EBeckmann,
-                           Value alpha_u = .1f, Value alpha_v = .1f,
-                           bool sample_visible = true)
+    MicrofacetDistribution(const Properties &props, MicrofacetType type = MicrofacetType::Beckmann,
+                           Float alpha_u = .1f, Float alpha_v = .1f, bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v) {
 
         if (props.has_property("distribution")) {
             std::string distr = string::to_lower(props.string("distribution"));
             if (distr == "beckmann")
-                m_type = EBeckmann;
+                m_type = MicrofacetType::Beckmann;
             else if (distr == "ggx")
-                m_type = EGGX;
+                m_type = MicrofacetType::GGX;
             else
                 Throw("Specified an invalid distribution \"%s\", must be "
                       "\"beckmann\" or \"ggx\"!", distr.c_str());
@@ -124,9 +131,9 @@ public:
         }
 
         if (alpha_u == 0.f || alpha_v == 0.f) {
-            Log(EWarn, "Cannot create a microfacet distribution with"
-                "alpha_u/alpha_v=0 (clamped to 10^-4). Please use the"
-                "corresponding smooth reflectance model to get zero roughness.");
+            Log(Warn,
+                "Cannot create a microfacet distribution withalpha_u/alpha_v=0 (clamped to 10^-4). "
+                "Please use thecorresponding smooth reflectance model to get zero roughness.");
         }
 
         m_sample_visible = props.bool_("sample_visible", sample_visible);
@@ -136,16 +143,16 @@ public:
 
 public:
     /// Return the distribution type
-    EType type() const { return m_type; }
+    MicrofacetType type() const { return m_type; }
 
     /// Return the roughness (isotropic case)
-    Value alpha() const { return m_alpha_u; }
+    Float alpha() const { return m_alpha_u; }
 
     /// Return the roughness along the tangent direction
-    Value alpha_u() const { return m_alpha_u; }
+    Float alpha_u() const { return m_alpha_u; }
 
     /// Return the roughness along the bitangent direction
-    Value alpha_v() const { return m_alpha_v; }
+    Float alpha_v() const { return m_alpha_v; }
 
     /// Return whether or not only visible normals are sampled?
     bool sample_visible() const { return m_sample_visible; }
@@ -157,7 +164,7 @@ public:
     bool is_anisotropic() const { return m_alpha_u != m_alpha_v; }
 
     /// Scale the roughness values by some constant
-    void scale_alpha(Value value) {
+    void scale_alpha(Float value) {
         m_alpha_u *= value;
         m_alpha_v *= value;
     }
@@ -168,23 +175,23 @@ public:
      * \param m
      *     The microfacet normal
      */
-    Value eval(const Vector3 &m) const {
-        Value alpha_uv = m_alpha_u * m_alpha_v,
-              cos_theta         = Frame::cos_theta(m),
+    Float eval(const Vector3f &m) const {
+        Float alpha_uv = m_alpha_u * m_alpha_v,
+              cos_theta         = Frame3f::cos_theta(m),
               cos_theta_2       = sqr(cos_theta),
               result;
 
-        if (m_type == EBeckmann) {
-            /* Beckmann distribution function for Gaussian random surfaces */
+        if (m_type == MicrofacetType::Beckmann) {
+            // Beckmann distribution function for Gaussian random surfaces
             result = exp(-(sqr(m.x() / m_alpha_u) + sqr(m.y() / m_alpha_v)) / cos_theta_2)
                 / (Pi * alpha_uv * sqr(cos_theta_2));
         } else {
-            /* GGX / Trowbridge-Reitz distribution function */
-            result = rcp(math::Pi * alpha_uv *
+            // GGX / Trowbridge-Reitz distribution function
+            result = rcp(Pi * alpha_uv *
                 sqr(sqr(m.x() / m_alpha_u) + sqr(m.y() / m_alpha_v) + sqr(m.z())));
         }
 
-        /* Prevent potential numerical issues in other stages of the model */
+        // Prevent potential numerical issues in other stages of the model
         return select(result * cos_theta > 1e-20f, result, 0.f);
     }
 
@@ -198,13 +205,13 @@ public:
      * \param m
      *     The microfacet normal
      */
-    Value pdf(const Vector3 &wi, const Vector3 &m) const {
-        Value result = eval(m);
+    Float pdf(const Vector3f &wi, const Vector3f &m) const {
+        Float result = eval(m);
 
         if (m_sample_visible)
-            result *= smith_g1(wi, m) * abs_dot(wi, m) / Frame::cos_theta(wi);
+            result *= smith_g1(wi, m) * abs_dot(wi, m) / Frame3f::cos_theta(wi);
         else
-            result *= Frame::cos_theta(m);
+            result *= Frame3f::cos_theta(m);
 
         return result;
     }
@@ -218,18 +225,18 @@ public:
      * \param pdf
      *    The probability density wrt. solid angles
      */
-    std::pair<Normal3, Value> sample(const Vector3 &wi,
-                                     const Point2 &sample) const {
+    std::pair<Normal3f, Float> sample(const Vector3f &wi,
+                                     const Point2f &sample) const {
         if (!m_sample_visible) {
-            Value sin_phi, cos_phi, cos_theta, cos_theta_2, alpha_2, pdf;
+            Float sin_phi, cos_phi, cos_theta, cos_theta_2, alpha_2, pdf;
 
-            /* Sample azimuth component (identical for Beckmann & GGX) */
+            // Sample azimuth component (identical for Beckmann & GGX)
             if (is_isotropic()) {
                 std::tie(sin_phi, cos_phi) = sincos((2.f * Pi) * sample.y());
 
                 alpha_2 = m_alpha_u * m_alpha_u;
             } else {
-                Value ratio  = m_alpha_v / m_alpha_u,
+                Float ratio  = m_alpha_v / m_alpha_u,
                       tmp    = ratio * tan((2.f * Pi) * sample.y());
 
                 cos_phi = rsqrt(fmadd(tmp, tmp, 1));
@@ -241,69 +248,69 @@ public:
                               sqr(sin_phi / m_alpha_v));
             }
 
-            /* Sample elevation component */
-            if (m_type == EBeckmann) {
-                /* Beckmann distribution function for Gaussian random surfaces */
+            // Sample elevation component
+            if (m_type == MicrofacetType::Beckmann) {
+                // Beckmann distribution function for Gaussian random surfaces
                 cos_theta = rsqrt(fnmadd(alpha_2, log(1.f - sample.x()), 1.f));
                 cos_theta_2 = sqr(cos_theta);
 
-                /* Compute probability density of the sampled position */
-                Value cos_theta_3 = max(cos_theta_2 * cos_theta, 1e-20f);
+                // Compute probability density of the sampled position
+                Float cos_theta_3 = max(cos_theta_2 * cos_theta, 1e-20f);
                 pdf = (1.f - sample.x()) / (Pi * m_alpha_u * m_alpha_v * cos_theta_3);
             } else {
-                /* GGX / Trowbridge-Reitz distribution function */
-                Value tan_theta_m_2 = alpha_2 * sample.x() / (1.f - sample.x());
+                // GGX / Trowbridge-Reitz distribution function
+                Float tan_theta_m_2 = alpha_2 * sample.x() / (1.f - sample.x());
                 cos_theta = rsqrt(1.f + tan_theta_m_2);
                 cos_theta_2 = sqr(cos_theta);
 
-                /* Compute probability density of the sampled position */
-                Value temp = 1.f + tan_theta_m_2 / alpha_2,
+                // Compute probability density of the sampled position
+                Float temp = 1.f + tan_theta_m_2 / alpha_2,
                       cos_theta_3 = max(cos_theta_2 * cos_theta, 1e-20f);
                 pdf = rcp(Pi * m_alpha_u * m_alpha_v * cos_theta_3 * sqr(temp));
             }
 
-            Value sin_theta = sqrt(1.f - cos_theta_2);
+            Float sin_theta = sqrt(1.f - cos_theta_2);
 
             return {
-                Normal3(cos_phi * sin_theta,
-                        sin_phi * sin_theta,
-                        cos_theta),
+                Normal3f(cos_phi * sin_theta,
+                         sin_phi * sin_theta,
+                         cos_theta),
                 pdf
             };
         } else {
-            /* Visible normal sampling. */
-            Value sin_phi, cos_phi, cos_theta;
+            // Visible normal sampling.
+            Float sin_phi, cos_phi, cos_theta;
 
-            /* Step 1: stretch wi */
-            Vector3 wi_p = normalize(Vector3(
+            // Step 1: stretch wi
+            Vector3f wi_p = normalize(Vector3f(
                 m_alpha_u * wi.x(),
                 m_alpha_v * wi.y(),
                 wi.z()
             ));
 
-            std::tie(sin_phi, cos_phi) = Frame::sincos_phi(wi_p);
-            cos_theta = Frame::cos_theta(wi_p);
+            std::tie(sin_phi, cos_phi) = Frame3f::sincos_phi(wi_p);
+            cos_theta = Frame3f::cos_theta(wi_p);
 
-            /* Step 2: simulate P22_{wi}(slope.x, slope.y, 1, 1) */
-            Vector2 slope = sample_visible_11(cos_theta, sample);
+            // Step 2: simulate P22_{wi}(slope.x, slope.y, 1, 1)
+            Vector2f slope = sample_visible_11(cos_theta, sample);
 
-            /* Step 3: rotate & unstretch */
-            slope = Vector2(
+            // Step 3: rotate & unstretch
+            slope = Vector2f(
                 fmsub(cos_phi, slope.x(), sin_phi * slope.y()) * m_alpha_u,
                 fmadd(sin_phi, slope.x(), cos_phi * slope.y()) * m_alpha_v);
 
-            /* Step 4: compute normal & PDF */
-            Normal3 m = normalize(Vector3(-slope.x(), -slope.y(), 1));
+            // Step 4: compute normal & PDF
+            Normal3f m = normalize(Vector3f(-slope.x(), -slope.y(), 1));
 
-            Value pdf = eval(m) * smith_g1(wi, m) * abs_dot(wi, m) /
-                        Frame::cos_theta(wi);
+            Float pdf = eval(m) * smith_g1(wi, m) * abs_dot(wi, m) /
+                        Frame3f::cos_theta(wi);
 
             return { m, pdf };
         }
     }
 
     /// Smith's separable shadowing-masking approximation
-    Value G(const Vector3 &wi, const Vector3 &wo, const Vector3 &m) const {
+    Float G(const Vector3f &wi, const Vector3f &wo, const Vector3f &m) const {
         return smith_g1(wi, m) * smith_g1(wo, m);
     }
 
@@ -315,13 +322,13 @@ public:
      * \param m
      *     The microfacet normal
      */
-    Value smith_g1(const Vector3 &v, const Vector3 &m) const {
-        Value xy_alpha_2 = sqr(m_alpha_u * v.x()) + sqr(m_alpha_v * v.y()),
+    Float smith_g1(const Vector3f &v, const Vector3f &m) const {
+        Float xy_alpha_2 = sqr(m_alpha_u * v.x()) + sqr(m_alpha_v * v.y()),
               tan_theta_alpha_2 = xy_alpha_2 / sqr(v.z()),
               result;
 
-        if (m_type == EBeckmann) {
-            Value a = rsqrt(tan_theta_alpha_2), a_sqr = sqr(a);
+        if (m_type == MicrofacetType::Beckmann) {
+            Float a = rsqrt(tan_theta_alpha_2), a_sqr = sqr(a);
             /* Use a fast and accurate (<0.35% rel. error) rational
                approximation to the shadowing-masking function */
             result = select(a >= 1.6f, 1.f,
@@ -331,37 +338,37 @@ public:
             result = 2.f / (1.f + sqrt(1.f + tan_theta_alpha_2));
         }
 
-        /* Perpendicular incidence -- no shadowing/masking */
+        // Perpendicular incidence -- no shadowing/masking
         masked(result, eq(xy_alpha_2, 0.f)) = 1.f;
 
         /* Ensure consistent orientation (can't see the back
            of the microfacet from the front and vice versa) */
-        masked(result, dot(v, m) * Frame::cos_theta(v) <= 0.f) = 0.f;
+        masked(result, dot(v, m) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
 
         return result;
     }
 
     /// \brief Visible normal sampling code for the alpha=1 case
-    Vector2 sample_visible_11(Value cos_theta_i, Point2 sample) const {
-        if (m_type == EBeckmann) {
+    Vector2f sample_visible_11(Float cos_theta_i, Point2f sample) const {
+        if (m_type == MicrofacetType::Beckmann) {
             /* The original inversion routine from the paper contained
                discontinuities, which causes issues for QMC integration
                and techniques like Kelemen-style MLT. The following code
                performs a numerical inversion with better behavior */
 
-            Value tan_theta_i =
+            Float tan_theta_i =
                 safe_sqrt(fnmadd(cos_theta_i, cos_theta_i, 1.f)) /
                 cos_theta_i;
-            Value cot_theta_i = rcp(tan_theta_i);
+            Float cot_theta_i = rcp(tan_theta_i);
 
             /* Search interval -- everything is parameterized
                in the erf() domain */
-            Value maxval = erf(cot_theta_i);
+            Float maxval = erf(cot_theta_i);
 
             /* Start with a good initial guess (analytic solution for
                theta_i = pi/2, which is the most nonlinear case) */
             sample = max(min(sample, 1.f - 1e-6f), 1e-6f);
-            Value x = maxval - (maxval + 1.f) * erf(sqrt(-log(sample.x())));
+            Float x = maxval - (maxval + 1.f) * erf(sqrt(-log(sample.x())));
 
             /* Normalization factor for the CDF */
             sample.x() *= 1.f + maxval + InvSqrtPi *
@@ -369,7 +376,7 @@ public:
 
             /* Three Newton iterations */
             ENOKI_NOUNROLL for (size_t i = 0; i < 3; ++i) {
-                Value slope = erfinv(x),
+                Float slope = erfinv(x),
                       value = 1.f + x + InvSqrtPi * tan_theta_i *
                               exp(-sqr(slope)) - sample.x(),
                       derivative = 1.f - slope * tan_theta_i;
@@ -378,25 +385,26 @@ public:
             }
 
             /* Now convert back into a slope value */
-            return erfinv(Vector2(x, fmsub(2.f, sample.y(), 1.f)));
+            return erfinv(Vector2f(x, fmsub(2.f, sample.y(), 1.f)));
         } else {
             /* Choose a projection direction and re-scale the sample */
-            Point2 p = warp::square_to_uniform_disk_concentric(sample);
+            Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
-            Value s = .5f * (1.f + cos_theta_i);
+            Float s = .5f * (1.f + cos_theta_i);
             p.y() = lerp(safe_sqrt(1.f - sqr(p.x())), p.y(), s);
 
             /* Project onto chosen side of the hemisphere */
-            Value x = p.x(), y = p.y(),
+            Float x = p.x(), y = p.y(),
                   z = safe_sqrt(1.f - squared_norm(p));
 
             /* Convert to slope */
-            Value sin_theta_i = safe_sqrt(1.f - sqr(cos_theta_i));
-            Value norm = rcp(fmadd(sin_theta_i, y, cos_theta_i * z));
-            return Vector2(fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
+            Float sin_theta_i = safe_sqrt(1.f - sqr(cos_theta_i));
+            Float norm = rcp(fmadd(sin_theta_i, y, cos_theta_i * z));
+            return Vector2f(fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
         }
     }
 
+#if 0
     template <typename T = Value, enable_if_array_t<T> = 0>
     FloatX eval_reflectance(const Vector3fX &wi_, Float eta, int res = -1) {
         if (!m_sample_visible)
@@ -432,6 +440,7 @@ public:
         }
         return result;
     }
+#endif
 
 protected:
     void configure() {
@@ -440,30 +449,30 @@ protected:
     }
 
     /// Compute the squared 1D roughness along direction \c v
-    Value project_roughness_2(const Vector3 &v) const {
+    Float project_roughness_2(const Vector3f &v) const {
         if (is_isotropic())
             return sqr(m_alpha_u);
 
-        Value sin_phi_2, cos_phi_2;
-        std::tie(sin_phi_2, cos_phi_2) = Frame::sincos_phi_2(v);
+        Float sin_phi_2, cos_phi_2;
+        std::tie(sin_phi_2, cos_phi_2) = Frame3f::sincos_phi_2(v);
 
         return sin_phi_2 * sqr(m_alpha_v) + cos_phi_2 * sqr(m_alpha_u);
     }
 
-    Value eval_reflectance_kernel(const Vector3 &wi, Value eta,
-                                  const Point2 &p) const {
-        Vector3 m = std::get<0>(sample(wi, p));
-        Vector3 wo = reflect(wi, m);
-        Value f = std::get<0>(fresnel(dot(wi, m), eta));
-        Value weight = smith_g1(wo, m) * f;
-        Mask valid = Frame::cos_theta(wo) > 0.f &&
-                     Frame::cos_theta(wi) > 0.f;
+    Float eval_reflectance_kernel(const Vector3f &wi, Float eta,
+                                  const Point2f &p) const {
+        Vector3f m = std::get<0>(sample(wi, p));
+        Vector3f wo = reflect(wi, m);
+        Float f = std::get<0>(fresnel(dot(wi, m), eta));
+        Float weight = smith_g1(wo, m) * f;
+        Mask valid = Frame3f::cos_theta(wo) > 0.f &&
+                     Frame3f::cos_theta(wi) > 0.f;
         return select(valid, weight, 0.f);
     }
 
 protected:
-    EType m_type;
-    Value m_alpha_u, m_alpha_v;
+    MicrofacetType m_type;
+    Float m_alpha_u, m_alpha_v;
     bool  m_sample_visible;
 };
 
@@ -471,7 +480,7 @@ template <typename T>
 std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<T> &md) {
     os << "MicrofacetDistribution[" << std::endl
        << "  type = ";
-    if (md.type() == EBeckmann)
+    if (md.type() == MicrofacetType::Beckmann)
         os << "beckmann";
     else
         os << "ggx";

@@ -8,151 +8,143 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class RoughConductor final : public BSDF {
+template <typename Float, typename Spectrum>
+class RoughConductor final : public BSDF<Float, Spectrum> {
 public:
-    RoughConductor(const Properties &props) : BSDF(props) {
-        m_eta = props.spectrum("eta", 0.f);
-        m_k   = props.spectrum("k", 1.f);
+    MTS_DECLARE_PLUGIN();
+    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using SpectrumU = depolarized_t<Spectrum>;
+
+    RoughConductor(const Properties &props) : Base(props) {
+        m_eta = props.spectrum<Float, Spectrum>("eta", 0.f);
+        m_k   = props.spectrum<Float, Spectrum>("k", 1.f);
 
         MicrofacetDistribution<Float> distr(props);
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
 
-        m_flags = EGlossyReflection | EFrontSide;
+        m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
 
         m_alpha_u = m_alpha_v = distr.alpha_u();
         if (distr.is_anisotropic()) {
             m_alpha_v = distr.alpha_v();
-            m_flags |= EAnisotropic;
+            m_flags = m_flags | BSDFFlags::Anisotropic;
         }
 
         m_components.push_back(m_flags);
     }
 
-    template <typename SurfaceInteraction, typename Value, typename Point2,
-              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-              typename Spectrum   = Spectrum<Value>>
     MTS_INLINE
-    std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx,
-                                                const SurfaceInteraction &si,
-                                                Value /* sample1 */,
-                                                const Point2 & sample2,
-                                                mask_t<Value> active) const {
-        using Vector3 = typename BSDFSample::Vector3;
-        using Normal3 = typename BSDFSample::Normal3;
-        using Frame = mitsuba::Frame<Vector3>;
-
-        BSDFSample bs;
-        Value cos_theta_i = Frame::cos_theta(si.wi);
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                                             Float /*sample1*/, const Point2f &sample2,
+                                             Mask active) const override {
+        BSDFSample3f bs;
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active)))
             return { bs, 0.f };
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution<Value> distr(m_type, m_alpha_u, m_alpha_v,
+        MicrofacetDistribution<Float> distr(m_type, m_alpha_u, m_alpha_v,
                                             m_sample_visible);
 
-        /* Sample M, the microfacet normal */
-        Normal3 m;
+        // Sample M, the microfacet normal
+        Normal3f m;
         std::tie(m, bs.pdf) = distr.sample(si.wi, sample2);
 
-        /* Perfect specular reflection based on the microfacet normal */
+        // Perfect specular reflection based on the microfacet normal
         bs.wo = reflect(si.wi, m);
         bs.eta = 1.f;
         bs.sampled_component = 0;
-        bs.sampled_type = EGlossyReflection;
+        bs.sampled_type = +BSDFFlags::GlossyReflection;
 
-        /* Ensure that this is a valid sample */
-        active &= neq(bs.pdf, 0.f) && Frame::cos_theta(bs.wo) > 0.f;
+        // Ensure that this is a valid sample
+        active &= neq(bs.pdf, 0.f) && Frame3f::cos_theta(bs.wo) > 0.f;
 
-        Value weight;
+        Float weight;
         if (likely(m_sample_visible))
             weight = distr.smith_g1(bs.wo, m);
         else
             weight = distr.G(si.wi, bs.wo, m) * dot(si.wi, m) /
-                     (cos_theta_i * Frame::cos_theta(m));
+                     (cos_theta_i * Frame3f::cos_theta(m));
 
-        /* Evaluate the Fresnel factor */
-        Complex<Spectrum> eta_c(m_eta->eval(si, active),
-                                m_k->eval(si, active));
+        // Evaluate the Fresnel factor
+        // TODO: handle polarization rather than discarding it here.
+        Complex<SpectrumU> eta_c(depolarize(m_eta->eval(si, active)),
+                                 depolarize(m_k->eval(si, active)));
 
-        Spectrum F = fresnel_conductor(Spectrum(dot(si.wi, m)), eta_c);
+        Spectrum F = fresnel_conductor(SpectrumU(dot(si.wi, m)), eta_c);
 
-        /* Jacobian of the half-direction mapping */
+        // Jacobian of the half-direction mapping
         bs.pdf /= 4.f * dot(bs.wo, m);
 
         return { bs, (F * weight) & active };
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = Spectrum<Value>>
     MTS_INLINE
-    Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, mask_t<Value> active) const {
-        using Frame = mitsuba::Frame<Vector3>;
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                       const Vector3f &wo, Mask active) const override {
 
-        Value cos_theta_i = Frame::cos_theta(si.wi),
-              cos_theta_o = Frame::cos_theta(wo);
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active)))
             return 0.f;
 
-        /* Calculate the half-direction vector */
-        Vector3 H = normalize(wo + si.wi);
+        // Calculate the half-direction vector
+        Vector3f H = normalize(wo + si.wi);
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution<Value> distr(m_type, m_alpha_u, m_alpha_v,
+        MicrofacetDistribution<Float> distr(m_type, m_alpha_u, m_alpha_v,
                                             m_sample_visible);
 
-        /* Evaluate the microfacet normal distribution */
-        Value D = distr.eval(H);
+        // Evaluate the microfacet normal distribution
+        Float D = distr.eval(H);
 
         active &= neq(D, 0.f);
 
-        /* Evaluate the Fresnel factor */
-        Complex<Spectrum> eta_c(m_eta->eval(si, active),
-                                m_k->eval(si, active));
-        Spectrum F = fresnel_conductor(Spectrum(dot(si.wi, H)), eta_c);
+        // Evaluate the Fresnel factor
+        // TODO: handle polarization rather than discarding it here.
+        Complex<SpectrumU> eta_c(depolarize(m_eta->eval(si, active)),
+                                 depolarize(m_k->eval(si, active)));
+        Spectrum F = fresnel_conductor(SpectrumU(dot(si.wi, H)), eta_c);
 
-        /* Evaluate Smith's shadow-masking function */
-        Value G = distr.G(si.wi, wo, H);
+        // Evaluate Smith's shadow-masking function
+        Float G = distr.G(si.wi, wo, H);
 
-        /* Evaluate the full microfacet model (except Fresnel) */
-        Value result = D * G / (4.f * Frame::cos_theta(si.wi));
+        // Evaluate the full microfacet model (except Fresnel)
+        Float result = D * G / (4.f * Frame3f::cos_theta(si.wi));
 
         return (F * result) & active;
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value = value_t<Vector3>>
     MTS_INLINE
-    Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction & si,
-                   const Vector3 &wo, mask_t<Value> active) const {
-        using Frame = mitsuba::Frame<Vector3>;
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f & si,
+                   const Vector3f &wo, Mask active) const override {
 
-        Value cos_theta_i = Frame::cos_theta(si.wi),
-              cos_theta_o = Frame::cos_theta(wo);
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(EGlossyReflection) || none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active)))
             return 0.f;
 
-        /* Calculate the half-direction vector */
-        Vector3 H = normalize(wo + si.wi);
+        // Calculate the half-direction vector
+        Vector3f H = normalize(wo + si.wi);
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution<Value> distr(m_type, m_alpha_u, m_alpha_v,
+        MicrofacetDistribution<Float> distr(m_type, m_alpha_u, m_alpha_v,
                                             m_sample_visible);
 
-        Value result;
+        Float result;
         if (likely(m_sample_visible))
             result = distr.eval(H) * distr.smith_g1(si.wi, H) /
                      (4.f * cos_theta_i);
@@ -166,12 +158,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughConductor[" << std::endl
-            << "  distribution = ";
-        if (m_type == EBeckmann)
-            oss << "beckmann";
-        else
-            oss << "ggx";
-        oss << "," << std::endl
+            << "  distribution = " << m_type << "," << std::endl
             << "  sample_visible = " << m_sample_visible << "," << std::endl
             << "  alpha_u = " << m_alpha_u << "," << std::endl
             << "  alpha_v = " << m_alpha_v << "," << std::endl
@@ -181,27 +168,20 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF_ALL()
-    MTS_DECLARE_CLASS()
-
 private:
     /// Specifies the type of microfacet distribution
-    EType m_type;
-
+    MicrofacetType m_type;
     /// Anisotropic roughness values
     Float m_alpha_u, m_alpha_v;
-
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
 
     /// Relative refractive index (real component)
     ref<ContinuousSpectrum> m_eta;
-
     /// Relative refractive index (imaginary component).
     ref<ContinuousSpectrum> m_k;
 };
 
-MTS_IMPLEMENT_CLASS(RoughConductor, BSDF)
-MTS_EXPORT_PLUGIN(RoughConductor, "Rough conductor");
+MTS_IMPLEMENT_PLUGIN(RoughConductor, BSDF, "Rough conductor");
 
 NAMESPACE_END(mitsuba)
