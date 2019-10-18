@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 struct IOREntry {
     const char *name;
-    Float value;
+    float value;
 };
 
 /**
@@ -49,7 +49,7 @@ static IOREntry ior_data[] = {
     { nullptr,                 0.0f }
 };
 
-static Float lookup_ior(const std::string &name) {
+static float lookup_ior(const std::string &name) {
     std::string lower_case = string::to_lower(name);
     IOREntry *ior = ior_data;
 
@@ -71,11 +71,11 @@ static Float lookup_ior(const std::string &name) {
             oss << ", ";
     }
 
-    Log(EError, "%s", oss.str().c_str());
+    Log(Error, "%s", oss.str().c_str());
     return 0.0f;
 }
 
-inline Float lookup_ior(const Properties &props, const std::string &param_name,
+inline float lookup_ior(const Properties &props, const std::string &param_name,
                         const std::string &default_value) {
     if (props.has_property(param_name) && props.type(param_name) == PropertyType::Float)
         return props.float_(param_name);
@@ -83,8 +83,8 @@ inline Float lookup_ior(const Properties &props, const std::string &param_name,
         return lookup_ior(props.string(param_name, default_value));
 }
 
-inline Float lookup_ior(const Properties &props, const std::string &param_name,
-                        Float default_value) {
+inline float lookup_ior(const Properties &props, const std::string &param_name,
+                        float default_value) {
     if (props.has_property(param_name)) {
         if (props.type(param_name) == PropertyType::Float)
             return props.float_(param_name);

@@ -5,12 +5,17 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Smooth dielectric material.
-class SmoothDielectric final : public BSDF {
+/**
+ * Smooth dielectric material.
+ */
+template <typename Float, typename Spectrum>
+class SmoothDielectric final : public BSDF<Float, Spectrum> {
 public:
-    SmoothDielectric(const Properties &props) : BSDF(props) {
-        m_flags = EDeltaReflection | EFrontSide | EBackSide
-                  | EDeltaTransmission | EFrontSide | EBackSide | ENonSymmetric;
+    MTS_DECLARE_PLUGIN();
+    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+
+    SmoothDielectric(const Properties &props) : Base(props) {
 
         // Specifies the internal index of refraction at the interface
         Float int_ior = lookup_ior(props, "int_ior", "bk7");
@@ -24,39 +29,31 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_specular_reflectance   = props.spectrum("specular_reflectance", 1.f);
-        m_specular_transmittance = props.spectrum("specular_transmittance", 1.f);
+        m_specular_reflectance   = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);
+        m_specular_transmittance = props.spectrum<Float, Spectrum>("specular_transmittance", 1.f);
 
-        m_components.push_back(EDeltaReflection | EFrontSide | EBackSide);
-        m_components.push_back(EDeltaTransmission | EFrontSide | EBackSide
-                               | ENonSymmetric);
+        m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
+                               BSDFFlags::BackSide);
+        m_components.push_back(BSDFFlags::DeltaTransmission | BSDFFlags::FrontSide |
+                               BSDFFlags::BackSide | BSDFFlags::NonSymmetric);
+        m_flags = m_components[0] | m_components[1];
     }
 
-    template <typename SurfaceInteraction, typename Value, typename Point2,
-              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-              typename Spectrum   = Spectrum<Value>>
     MTS_INLINE
-    std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx,
-                                                const SurfaceInteraction &si,
-                                                Value sample1,
-                                                const Point2 &/* sample2 */,
-                                                mask_t<Value> active) const {
-        using Vector3 = typename BSDFSample::Vector3;
-        using Index   = typename BSDFSample::Index;
-        using Frame   = Frame<Vector3>;
-        using Mask    = mask_t<Value>;
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                                           Float sample1, const Point2f & /*sample2*/,
+                                           Mask active) const override {
+        bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
+             has_transmission = ctx.is_enabled(BSDFFlags::DeltaTransmission, 1);
 
-        bool has_reflection   = ctx.is_enabled(EDeltaReflection, 0),
-             has_transmission = ctx.is_enabled(EDeltaTransmission, 1);
+        // Evaluate the Fresnel equations for unpolarized illumination
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
 
-        /* Evaluate the Fresnel equations for unpolarized illumination */
-        Value cos_theta_i = Frame::cos_theta(si.wi);
+        auto [r_i, cos_theta_t, eta_it, eta_ti] = fresnel(cos_theta_i, Float(m_eta));
+        Float t_i = 1.f - r_i;
 
-        auto [r_i, cos_theta_t, eta_it, eta_ti] = fresnel(cos_theta_i, Value(m_eta));
-        Value t_i = 1.f - r_i;
-
-        /* Lobe selection */
-        BSDFSample bs;
+        // Lobe selection
+        BSDFSample3f bs;
         Spectrum weight;
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {
@@ -73,14 +70,15 @@ public:
             }
         }
 
-        bs.sampled_component = select(selected_r, Index(0), Index(1));
-        bs.sampled_type      = select(selected_r, Index(EDeltaReflection),
-                                                  Index(EDeltaTransmission));
+        bs.sampled_component = select(selected_r, UInt32(0), UInt32(1));
+        bs.sampled_type =
+            select(selected_r, +BSDFFlags::DeltaReflection, +BSDFFlags::DeltaTransmission);
 
-        bs.wo                = select(selected_r, reflect(si.wi),
-                                      refract(si.wi, cos_theta_t, eta_ti));
+        bs.wo = select(selected_r,
+                       reflect(si.wi),
+                       refract(si.wi, cos_theta_t, eta_ti));
 
-        bs.eta               = select(selected_r, Value(1.f), eta_it);
+        bs.eta = select(selected_r, Float(1.f), eta_it);
 
         if (any_or<true>(selected_r))
             weight[selected_r] *=
@@ -90,7 +88,7 @@ public:
         if (any_or<true>(selected_t)) {
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
-            Value factor = (ctx.mode == ERadiance) ? eta_ti : Value(1.f);
+            Float factor = (ctx.mode == TransportMode::Radiance) ? eta_ti : Float(1.f);
 
             weight[selected_t] *=
                 m_specular_transmittance->eval(si, selected_t) * sqr(factor);
@@ -99,20 +97,15 @@ public:
         return { bs, select(active, weight, 0.f) };
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = Spectrum<Value>>
     MTS_INLINE
-    Spectrum eval_impl(const BSDFContext &/* ctx */, const SurfaceInteraction &/* si */,
-                       const Vector3 &/* wo */, mask_t<Value> /* active */) const {
+    Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
+                  const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value = value_t<Vector3>>
     MTS_INLINE
-    Value pdf_impl(const BSDFContext &/* ctx */, const SurfaceInteraction & /* si */,
-                   const Vector3 &/* wo */, mask_t<Value> /* active */) const {
+    Float pdf(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
+              const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;
     }
 
@@ -130,16 +123,11 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF_ALL()
-    MTS_DECLARE_CLASS()
-
 private:
     Float m_eta;
     ref<ContinuousSpectrum> m_specular_reflectance;
     ref<ContinuousSpectrum> m_specular_transmittance;
 };
 
-MTS_IMPLEMENT_CLASS(SmoothDielectric, BSDF)
-MTS_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric")
-
+MTS_IMPLEMENT_PLUGIN(SmoothDielectric, BSDF, "Smooth dielectric")
 NAMESPACE_END(mitsuba)
