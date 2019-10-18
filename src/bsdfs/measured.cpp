@@ -12,31 +12,34 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class Measured final : public BSDF {
+template <typename Float, typename Spectrum>
+class Measured final : public BSDF<Float, Spectrum> {
 public:
-    using Warp2D0 = warp::Marginal2D<0>;
-    using Warp2D2 = warp::Marginal2D<2>;
-    using Warp2D3 = warp::Marginal2D<3>;
+    MTS_DECLARE_PLUGIN();
+    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    using Warp2D0 = warp::Marginal2D<Float, 0>;
+    using Warp2D2 = warp::Marginal2D<Float, 2>;
+    using Warp2D3 = warp::Marginal2D<Float, 3>;
 
-    Measured(const Properties &props) : BSDF(props) {
-        m_flags = EGlossyReflection | EFrontSide;
+    Measured(const Properties &props) : Base(props) {
+        m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
+        m_flags = m_components[0];
 
-        auto fs = Thread::thread()->file_resolver();
+        auto fs            = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
-        m_name = file_path.filename().string();
+        m_name             = file_path.filename().string();
 
         ref<TensorFile> tf = new TensorFile(file_path);
-
-        auto theta_i = tf->field("theta_i");
-        auto phi_i = tf->field("phi_i");
-        auto ndf = tf->field("ndf");
-        auto sigma = tf->field("sigma");
-        auto vndf = tf->field("vndf");
-        auto spectra = tf->field("spectra");
-        auto luminance = tf->field("luminance");
-        auto wavelengths = tf->field("wavelengths");
-        auto description = tf->field("description");
-        auto jacobian = tf->field("jacobian");
+        auto theta_i       = tf->field("theta_i");
+        auto phi_i         = tf->field("phi_i");
+        auto ndf           = tf->field("ndf");
+        auto sigma         = tf->field("sigma");
+        auto vndf          = tf->field("vndf");
+        auto spectra       = tf->field("spectra");
+        auto luminance     = tf->field("luminance");
+        auto wavelengths   = tf->field("wavelengths");
+        auto description   = tf->field("description");
+        auto jacobian      = tf->field("jacobian");
 
         if (!(description.shape.size() == 1 &&
               description.dtype == Struct::EUInt8 &&
@@ -87,25 +90,25 @@ public:
 
         if (!m_isotropic) {
             Float *phi_i_data = (Float *) phi_i.data;
-            m_reduction = (int) std::rint((2 * math::Pi) /
+            m_reduction = (int) std::rint((2 * math::Pi<Float>) /
                 (phi_i_data[phi_i.shape[0] - 1] - phi_i_data[0]));
         }
 
-        /* Construct NDF interpolant data structure */
+        // Construct NDF interpolant data structure
         m_ndf = Warp2D0(
             Vector2u(ndf.shape[1], ndf.shape[0]),
             (Float *) ndf.data,
             { }, { }, false, false
         );
 
-        /* Construct projected surface area interpolant data structure */
+        // Construct projected surface area interpolant data structure
         m_sigma = Warp2D0(
             Vector2u(sigma.shape[1], sigma.shape[0]),
             (Float *) sigma.data,
             { }, { }, false, false
         );
 
-        /* Construct VNDF warp data structure */
+        // Construct VNDF warp data structure
         m_vndf = Warp2D2(
             Vector2u(vndf.shape[3], vndf.shape[2]),
             (Float *) vndf.data,
@@ -115,7 +118,7 @@ public:
                (const Float *) theta_i.data }}
         );
 
-        /* Construct Luminance warp data structure */
+        // Construct Luminance warp data structure
         m_luminance = Warp2D2(
             Vector2u(luminance.shape[3], luminance.shape[2]),
             (Float *) luminance.data,
@@ -125,7 +128,7 @@ public:
                (const Float *) theta_i.data }}
         );
 
-        /* Construct spectral interpolant */
+        // Construct spectral interpolant
         m_spectra = Warp2D3(
             Vector2u(spectra.shape[4], spectra.shape[3]),
             (Float *) spectra.data,
@@ -143,7 +146,7 @@ public:
             (const char *) description.data + description.shape[0]
         );
 
-        Log(EInfo, "Loaded material \"%s\" (resolution %i x %i x %i x %i x %i)",
+        Log(Info, "Loaded material \"%s\" (resolution %i x %i x %i x %i x %i)",
             description_str, spectra.shape[0], spectra.shape[1],
             spectra.shape[3], spectra.shape[4], spectra.shape[2]);
     }
@@ -152,34 +155,25 @@ public:
      * Numerically stable method computing the elevation of the given
      * (normalized) vector in the local frame.
      * Conceptually equivalent to:
-     *     safe_acos(Frame::cos_theta(d))
+     *     safe_acos(Frame3f::cos_theta(d))
      */
-    template <typename Vector3> auto elevation(const Vector3 &d) const {
+    auto elevation(const Vector3f &d) const {
         auto dist = sqrt(sqr(d.x()) + sqr(d.y()) + sqr(d.z() - 1.f));
         return 2.f * safe_asin(.5f * dist);
     }
 
-    template <typename SurfaceInteraction, typename Value, typename Point2,
-              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-              typename Spectrum   = Spectrum<Value>>
     MTS_INLINE
-    std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx,
-                                                const SurfaceInteraction &si,
-                                                Value /* sample1 */,
-                                                const Point2 &sample2,
-                                                mask_t<Value> active) const {
-        using Vector2 = Vector<Value, 2>;
-        using Vector3 = Vector<Value, 3>;
-        using Frame = Frame<Vector3>;
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                                             Float /*sample1*/, const Point2f &sample2,
+                                             Mask active) const override {
+        BSDFSample3f bs;
+        Vector3f wi = si.wi;
+        active &= Frame3f::cos_theta(wi) > 0;
 
-        BSDFSample bs;
-        Vector3 wi = si.wi;
-        active &= Frame::cos_theta(wi) > 0;
-
-        if (!ctx.is_enabled(EGlossyReflection) || none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
             return { bs, 0.f };
 
-        Value sx = -1.f, sy = -1.f;
+        Float sx = -1.f, sy = -1.f;
 
         if (m_reduction >= 2) {
             sy = wi.y();
@@ -188,71 +182,70 @@ public:
             wi.y() = mulsign_neg(wi.y(), sy);
         }
 
-        Value theta_i = elevation(wi),
+        Float theta_i = elevation(wi),
               phi_i   = atan2(wi.y(), wi.x());
 
-        Value params[2] = { phi_i, theta_i };
-        Vector2 u_wi(theta2u(theta_i), phi2u(phi_i));
+        Float params[2] = { phi_i, theta_i };
+        Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
 
-        Vector2 sample;
+        Vector2f sample;
 
-        #if MTS_SAMPLE_DIFFUSE == 0
-            sample = Vector2(sample2.y(), sample2.x());
-            Value pdf = 1.f;
+#if MTS_SAMPLE_DIFFUSE == 0
+        sample = Vector2f(sample2.y(), sample2.x());
+        Float pdf = 1.f;
 
-            #if MTS_SAMPLE_LUMINANCE == 1
-                std::tie(sample, pdf) =
-                    m_luminance.sample(sample, params, active);
-            #endif
+        #if MTS_SAMPLE_LUMINANCE == 1
+        std::tie(sample, pdf) = m_luminance.sample(sample, params, active);
+        #endif
 
-            auto [u_m, ndf_pdf] = m_vndf.sample(sample, params, active);
+        auto [u_m, ndf_pdf] = m_vndf.sample(sample, params, active);
 
-            Value phi_m   = u2phi(u_m.y()),
-                  theta_m = u2theta(u_m.x());
+        Float phi_m   = u2phi(u_m.y()),
+              theta_m = u2theta(u_m.x());
 
-            if (m_isotropic)
-                phi_m += phi_i;
+        if (m_isotropic)
+            phi_m += phi_i;
 
-            /* Spherical -> Cartesian coordinates */
-            auto [sin_phi_m, cos_phi_m] = sincos(phi_m);
-            auto [sin_theta_m, cos_theta_m] = sincos(theta_m);
+        // Spherical -> Cartesian coordinates
+        auto [sin_phi_m, cos_phi_m] = sincos(phi_m);
+        auto [sin_theta_m, cos_theta_m] = sincos(theta_m);
 
-            Vector3 m(
-                cos_phi_m * sin_theta_m,
-                sin_phi_m * sin_theta_m,
-                cos_theta_m
-            );
+        Vector3f m(
+            cos_phi_m * sin_theta_m,
+            sin_phi_m * sin_theta_m,
+            cos_theta_m
+        );
 
-            Value jacobian = enoki::max(2.f * sqr(math::Pi) * u_m.x() *
-                                        sin_theta_m, 1e-6f) * 4.f * dot(wi, m);
+        Float jacobian = enoki::max(2.f * sqr(math::Pi<Float>) * u_m.x() *
+                                    sin_theta_m, 1e-6f) * 4.f * dot(wi, m);
 
-            bs.wo = fmsub(m, 2.f * dot(m, wi), wi);
-            bs.pdf = ndf_pdf * pdf / jacobian;
-        #else // MTS_SAMPLE_DIFFUSE
-            bs.wo = warp::square_to_cosine_hemisphere(sample2);
-            bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
+        bs.wo = fmsub(m, 2.f * dot(m, wi), wi);
+        bs.pdf = ndf_pdf * pdf / jacobian;
+#else // MTS_SAMPLE_DIFFUSE
+        bs.wo = warp::square_to_cosine_hemisphere(sample2);
+        bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
 
-            Vector3 m = normalize(bs.wo + wi);
+        Vector3f m = normalize(bs.wo + wi);
 
-            /* Cartesian -> spherical coordinates */
-            Value theta_m = elevation(m),
-                  phi_m   = atan2(m.y(), m.x());
+        // Cartesian -> spherical coordinates
+        Float theta_m = elevation(m),
+              phi_m   = atan2(m.y(), m.x());
 
-            Vector2 u_m(theta2u(theta_m),
-                        phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
+        Vector2f u_m(theta2u(theta_m),
+                    phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
 
-            u_m[1] = u_m[1] - floor(u_m[1]);
+        u_m[1] = u_m[1] - floor(u_m[1]);
 
-            std::tie(sample, std::ignore) = m_vndf.invert(u_m, params, active);
-        #endif // MTS_SAMPLE_DIFFUSE
+        std::tie(sample, std::ignore) = m_vndf.invert(u_m, params, active);
+#endif // MTS_SAMPLE_DIFFUSE
 
-        bs.eta = 1.f;
-        bs.sampled_type = (uint32_t) EGlossyReflection;
+        bs.eta               = 1.f;
+        bs.sampled_type      = +BSDFFlags::GlossyReflection;
         bs.sampled_component = 0;
 
         Spectrum spec;
         for (size_t i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i) {
-            Value params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
+            Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
 
@@ -263,30 +256,24 @@ public:
         bs.wo.x() = mulsign_neg(bs.wo.x(), sx);
         bs.wo.y() = mulsign_neg(bs.wo.y(), sy);
 
-        active &= Frame::cos_theta(bs.wo) > 0;
+        active &= Frame3f::cos_theta(bs.wo) > 0;
 
         return { bs, select(active, spec / bs.pdf, Spectrum(0.f)) };
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = Spectrum<Value>>
     MTS_INLINE
-    Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo_, mask_t<Value> active) const {
-        using Frame = mitsuba::Frame<Vector3>;
-        using Vector2 = Vector<Value, 2>;
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo_,
+                  Mask active) const override {
+        Vector3f wi = si.wi, wo = wo_;
 
-        Vector3 wi = si.wi, wo = wo_;
+        active &= Frame3f::cos_theta(wi) > 0.f &&
+                  Frame3f::cos_theta(wo) > 0.f;
 
-        active &= Frame::cos_theta(wi) > 0.f &&
-                  Frame::cos_theta(wo) > 0.f;
-
-        if (!ctx.is_enabled(EGlossyReflection) || none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
             return Spectrum(0.f);
 
         if (m_reduction >= 2) {
-            Value sy = wi.y(),
+            Float sy = wi.y(),
                   sx = (m_reduction == 4) ? wi.x() : sy;
 
             wi.x() = mulsign_neg(wi.x(), sx);
@@ -295,27 +282,27 @@ public:
             wo.y() = mulsign_neg(wo.y(), sy);
         }
 
-        Vector3 m = normalize(wo + wi);
+        Vector3f m = normalize(wo + wi);
 
-        /* Cartesian -> spherical coordinates */
-        Value theta_i = elevation(wi),
+        // Cartesian -> spherical coordinates
+        Float theta_i = elevation(wi),
               phi_i   = atan2(wi.y(), wi.x()),
               theta_m = elevation(m),
               phi_m   = atan2(m.y(), m.x());
 
-        /* Spherical coordinates -> unit coordinate system */
-        Vector2 u_wi(theta2u(theta_i), phi2u(phi_i)),
+        // Spherical coordinates -> unit coordinate system
+        Vector2f u_wi(theta2u(theta_i), phi2u(phi_i)),
                 u_m (theta2u(theta_m), phi2u(
                      m_isotropic ? (phi_m - phi_i) : phi_m));
 
         u_m[1] = u_m[1] - floor(u_m[1]);
 
-        Value params[2] = { phi_i, theta_i };
+        Float params[2] = { phi_i, theta_i };
         auto [sample, unused] = m_vndf.invert(u_m, params, active);
 
         Spectrum spec;
         for (size_t i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i) {
-            Value params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
+            Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
 
@@ -326,23 +313,19 @@ public:
         return spec & active;
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value = value_t<Vector3>>
     MTS_INLINE
-    Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                   const Vector3 &wo_, mask_t<Value> active) const {
-        using Frame = mitsuba::Frame<Vector3>;
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo_,
+              Mask active) const override {
+        Vector3f wi = si.wi, wo = wo_;
 
-        Vector3 wi = si.wi, wo = wo_;
+        active &= Frame3f::cos_theta(wi) > 0.f &&
+                  Frame3f::cos_theta(wo) > 0.f;
 
-        active &= Frame::cos_theta(wi) > 0.f &&
-                  Frame::cos_theta(wo) > 0.f;
-
-        if (!ctx.is_enabled(EGlossyReflection) || none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
             return 0.f;
 
         if (m_reduction >= 2) {
-            Value sy = wi.y(),
+            Float sy = wi.y(),
                   sx = (m_reduction == 4) ? wi.x() : sy;
 
             wi.x() = mulsign_neg(wi.x(), sx);
@@ -351,40 +334,40 @@ public:
             wo.y() = mulsign_neg(wo.y(), sy);
         }
 
-        #if MTS_SAMPLE_DIFFUSE == 1
-            return select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
-        #else // MTS_SAMPLE_DIFFUSE
-            using Vector2 = Vector<Value, 2>;
-            Vector3 m = normalize(wo + wi);
+#if MTS_SAMPLE_DIFFUSE == 1
+        return select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
+#else // MTS_SAMPLE_DIFFUSE
+        Vector3f m = normalize(wo + wi);
 
-            /* Cartesian -> spherical coordinates */
-            Value theta_i = elevation(wi),
-                  phi_i   = atan2(wi.y(), wi.x()),
-                  theta_m = elevation(m),
-                  phi_m   = atan2(m.y(), m.x());
+        // Cartesian -> spherical coordinates
+        Float theta_i = elevation(wi),
+              phi_i   = atan2(wi.y(), wi.x()),
+              theta_m = elevation(m),
+              phi_m   = atan2(m.y(), m.x());
 
-            /* Spherical coordinates -> unit coordinate system */
-            Vector2 u_wi(theta2u(theta_i), phi2u(phi_i)),
-                    u_m (theta2u(theta_m), phi2u(
-                         m_isotropic ? (phi_m - phi_i) : phi_m));
+        // Spherical coordinates -> unit coordinate system
+        Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
+        Vector2f u_m (theta2u(theta_m),
+                      phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
 
-            u_m[1] = u_m[1] - floor(u_m[1]);
+        u_m[1] = u_m[1] - floor(u_m[1]);
 
-            Value params[2] = { phi_i, theta_i };
-            auto [sample, vndf_pdf] = m_vndf.invert(u_m, params, active);
+        Float params[2] = { phi_i, theta_i };
+        auto [sample, vndf_pdf] = m_vndf.invert(u_m, params, active);
 
-            Value pdf = 1.f;
-            #if MTS_SAMPLE_LUMINANCE == 1
-                pdf = m_luminance.eval(sample, params, active);
-            #endif
+        Float pdf = 1.f;
+        #if MTS_SAMPLE_LUMINANCE == 1
+        pdf = m_luminance.eval(sample, params, active);
+        #endif
 
-            Value jacobian = enoki::max(2.f * sqr(math::Pi) * u_m.x() *
-                                        Frame::sin_theta(m), 1e-6f) * 4.f * dot(wi, m);
+        Float jacobian =
+            enoki::max(2.f * sqr(math::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
+            dot(wi, m);
 
-            pdf = vndf_pdf * pdf / jacobian;
+        pdf = vndf_pdf * pdf / jacobian;
 
-            return select(active, pdf, 0.f);
-        #endif // MTS_SAMPLE_DIFFUSE
+        return select(active, pdf, 0.f);
+#endif // MTS_SAMPLE_DIFFUSE
     }
 
     std::string to_string() const override {
@@ -400,24 +383,21 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF_ALL()
-    MTS_DECLARE_CLASS()
-
 private:
     template <typename Value> Value u2theta(Value u) const {
-        return sqr(u) * (math::Pi / 2.f);
+        return sqr(u) * (math::Pi<Float> / 2.f);
     }
 
     template <typename Value> Value u2phi(Value u) const {
-        return (2.f * u - 1.f) * math::Pi;
+        return (2.f * u - 1.f) * math::Pi<Float>;
     }
 
     template <typename Value> Value theta2u(Value theta) const {
-        return sqrt(theta * (2.f / math::Pi));
+        return sqrt(theta * (2.f / math::Pi<Float>));
     }
 
     template <typename Value> Value phi2u(Value phi) const {
-        return (phi + math::Pi) * math::InvTwoPi;
+        return (phi + math::Pi<Float>) * math::InvTwoPi<Float>;
     }
 
 private:
@@ -432,7 +412,5 @@ private:
     int m_reduction;
 };
 
-MTS_IMPLEMENT_CLASS(Measured, BSDF)
-MTS_EXPORT_PLUGIN(Measured, "Measured material")
-
+MTS_IMPLEMENT_PLUGIN(Measured, BSDF, "Measured material")
 NAMESPACE_END(mitsuba)
