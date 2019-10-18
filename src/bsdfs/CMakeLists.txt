@@ -6,9 +6,9 @@ add_plugin(diffuse diffuse.cpp)
 add_plugin(measured measured.cpp)
 add_plugin(plastic plastic.cpp)
 add_plugin(roughconductor roughconductor.cpp)
+add_plugin(roughdielectric roughdielectric.cpp)
 add_plugin(thindielectric thindielectric.cpp)
 add_plugin(twosided twosided.cpp)
-# add_plugin(roughdielectric roughdielectric.cpp)
 # add_plugin(roughplastic roughplastic.cpp)
 
 # TODO: fix "ambiguous call to eval()" issue
