@@ -85,7 +85,6 @@ struct Spectrum
 };
 
 NAMESPACE_BEGIN(detail)
-
 template <typename T> struct wavelength {
     struct type { };
 };
@@ -100,9 +99,28 @@ template <typename T> struct wavelength<Matrix<T, 4, true>> {
     using type = typename wavelength<T>::type;
 };
 
+// Forward declaration
+template <typename T> using MuellerMatrix = enoki::Matrix<T, 4, true>;
+// Most spectrum types are unpolarized
+template <typename T> struct depolarized_trait {
+    using type = T;
+};
+template <typename Spectrum> struct depolarized_trait<MuellerMatrix<Spectrum>> {
+    using type = Spectrum;
+};
 NAMESPACE_END(detail)
 
 template <typename T> using wavelength_t = typename detail::wavelength<T>::type;
+template <typename T> using depolarized_t = typename detail::depolarized_trait<T>::type;
+
+template <typename T>
+constexpr depolarized_t<T> depolarize(const T& spectrum) {
+    if constexpr (std::is_same_v<depolarized_t<T>, T>)
+        return spectrum;
+    else
+        // First entry of the Mueller matrix is the unpolarized spectrum
+        return spectrum.x().x();
+}
 
 //! @}
 // =======================================================================

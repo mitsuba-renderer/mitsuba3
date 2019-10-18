@@ -9,7 +9,6 @@
 #pragma once
 
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/interaction.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

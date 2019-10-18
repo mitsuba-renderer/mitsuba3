@@ -6,66 +6,60 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class SmoothConductor final : public BSDF {
+template <typename Float, typename Spectrum>
+class SmoothConductor final : public BSDF<Float, Spectrum> {
 public:
-    SmoothConductor(const Properties &props) : BSDF(props) {
-        m_flags = EDeltaReflection | EFrontSide;
-        m_components.push_back(EDeltaReflection | EFrontSide);
+    MTS_DECLARE_PLUGIN();
+    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 
-        m_specular_reflectance = props.spectrum("specular_reflectance", 1.f);
+    SmoothConductor(const Properties &props) : Base(props) {
+        m_flags = BSDFFlags::DeltaReflection | BSDFFlags::FrontSide;
+        m_components.push_back(m_flags);
 
-        m_eta = props.spectrum("eta", 0.f);
-        m_k   = props.spectrum("k",   1.f);
+        m_specular_reflectance = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);
+
+        m_eta = props.spectrum<Float, Spectrum>("eta", 0.f);
+        m_k   = props.spectrum<Float, Spectrum>("k",   1.f);
     }
 
-    template <typename SurfaceInteraction,
-              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-              typename Value      = typename SurfaceInteraction::Value,
-              typename Point2     = typename SurfaceInteraction::Point2,
-              typename Spectrum   = Spectrum<Value>>
-    MTS_INLINE std::pair<BSDFSample, Spectrum>
-    sample_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                Value /* sample1 */, const Point2 & /* sample2 */,
-                mask_t<Value> active) const {
-        using Frame = Frame<typename BSDFSample::Vector3>;
+    MTS_INLINE std::pair<BSDFSample3f, Spectrum>
+    sample(const BSDFContext &ctx, const SurfaceInteraction3f &si, Float /*sample1*/,
+           const Point2f & /*sample2*/, Mask active) const override {
+        using SpectrumU = depolarized_t<Spectrum>;
 
-        Value cos_theta_i = Frame::cos_theta(si.wi);
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample bs;
+        BSDFSample3f bs;
         Spectrum value(0.f);
-        if (unlikely(none_or<false>(active) || !ctx.is_enabled(EDeltaReflection)))
+        if (unlikely(none_or<false>(active) || !ctx.is_enabled(BSDFFlags::DeltaReflection)))
             return { bs, value };
 
         bs.sampled_component = 0;
-        bs.sampled_type = EDeltaReflection;
+        bs.sampled_type = +BSDFFlags::DeltaReflection;
         bs.wo  = reflect(si.wi);
         bs.eta = 1.f;
         bs.pdf = 1.f;
 
-        Complex<Spectrum> eta(m_eta->eval(si, active),
-                              m_k  ->eval(si, active));
-
+        // TODO: handle polarization instead of discarding it
+        Complex<SpectrumU> eta(depolarize(m_eta->eval(si, active)),
+                               depolarize(m_k->eval(si, active)));
         value = m_specular_reflectance->eval(si, active) *
-            fresnel_conductor(Spectrum(cos_theta_i), eta);
+                fresnel_conductor(SpectrumU(cos_theta_i), eta);
 
         return { bs, value };
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = Spectrum<Value>>
     MTS_INLINE
-    Spectrum eval_impl(const BSDFContext &/* ctx */, const SurfaceInteraction &/* si */,
-                       const Vector3 &/* wo */, mask_t<Value> /* active */) const {
+    Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
+                  const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value = value_t<Vector3>>
     MTS_INLINE
-    Value pdf_impl(const BSDFContext &/* ctx */, const SurfaceInteraction & /* si */,
-                   const Vector3 &/* wo */, mask_t<Value> /* active */) const {
+    Float pdf(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
+              const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;
     }
 
@@ -83,14 +77,11 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_BSDF_ALL()
-    MTS_DECLARE_CLASS()
 private:
     ref<ContinuousSpectrum> m_specular_reflectance;
     ref<ContinuousSpectrum> m_eta, m_k;
 };
 
-MTS_IMPLEMENT_CLASS(SmoothConductor, BSDF)
-MTS_EXPORT_PLUGIN(SmoothConductor, "Smooth conductor")
+MTS_IMPLEMENT_PLUGIN(SmoothConductor, BSDF, "Smooth conductor")
 
 NAMESPACE_END(mitsuba)

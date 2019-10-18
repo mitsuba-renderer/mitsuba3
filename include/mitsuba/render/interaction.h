@@ -1,9 +1,9 @@
 #pragma once
 
-#include <mitsuba/render/fwd.h>
-#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/ray.h>
+#include <mitsuba/core/spectrum.h>
+#include <mitsuba/render/fwd.h>
 #include <mitsuba/render/mueller.h>
 
 NAMESPACE_BEGIN(mitsuba)
