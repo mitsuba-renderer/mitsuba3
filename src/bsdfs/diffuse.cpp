@@ -1,4 +1,5 @@
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/spectrum.h>

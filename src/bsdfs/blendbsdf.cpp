@@ -1,13 +1,20 @@
-#include <mitsuba/core/string.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-class BlendBSDF final : public BSDF {
+template <typename Float, typename Spectrum>
+class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
-    BlendBSDF(const Properties &props) : BSDF(props) {
+    MTS_DECLARE_PLUGIN();
+    MTS_USING_BASE(BSDF, m_flags, m_components)
+    using BSDF                = Base;
+    using ContinuousSpectrum1 = mitsuba::ContinuousSpectrum<Float, Color1f>;
+
+    BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
         for (auto &kv : props.objects()) {
             auto *bsdf = dynamic_cast<BSDF *>(kv.second.get());
@@ -18,7 +25,7 @@ public:
             }
         }
 
-        m_weight = props.spectrum("weight");
+        m_weight = props.spectrum<Float, Color1f>("weight");
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 
@@ -29,15 +36,10 @@ public:
         m_flags = m_nested_bsdf[0]->flags() | m_nested_bsdf[1]->flags();
     }
 
-    template <typename SurfaceInteraction, typename Value, typename Point2,
-              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-              typename Spectrum   = Spectrum<Value>>
     MTS_INLINE
-    std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx,
-                                                const SurfaceInteraction &si,
-                                                Value sample1,
-                                                const Point2 &sample2,
-                                                mask_t<Value> active) const {
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                                             Float sample1, const Point2f &sample2,
+                                             Mask active) const override {
 
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
@@ -47,12 +49,10 @@ public:
             return m_nested_bsdf[sample_first ? 0 : 1]->sample(ctx2, si, sample1, sample2, active);
         }
 
-        using Mask = mask_t<Value>;
-
-        BSDFSample bs;
+        BSDFSample3f bs;
         Spectrum result(0.f);
 
-        Value weight = clamp(m_weight->eval(si, active)[0], 0.f, 1.f);
+        Float weight = eval_weight(si, active);
 
         Mask m0 = active && sample1 >  weight,
              m1 = active && sample1 <= weight;
@@ -74,13 +74,9 @@ public:
         return { bs, result };
     }
 
-    template <typename SurfaceInteraction,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3,
-              typename Spectrum = Spectrum<Value>>
     MTS_INLINE
-    Spectrum eval_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                       const Vector3 &wo, const mask_t<Value> &active) const {
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
+                  Mask active) const override {
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
@@ -89,17 +85,14 @@ public:
             return m_nested_bsdf[sample_first ? 0 : 1]->eval(ctx2, si, wo, active);
         }
 
-        Value weight = clamp(m_weight->eval(si, active)[0], 0.f, 1.f);
+        Float weight = eval_weight(si, active);
         return m_nested_bsdf[0]->eval(ctx, si, wo, active) * (1 - weight) +
                m_nested_bsdf[1]->eval(ctx, si, wo, active) * weight;
     }
 
-    template <typename SurfaceInteraction,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Vector3  = typename SurfaceInteraction::Vector3>
     MTS_INLINE
-    Value pdf_impl(const BSDFContext &ctx, const SurfaceInteraction &si,
-                   const Vector3 &wo, const mask_t<Value> &active) const {
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
+              Mask active) const override {
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
@@ -108,9 +101,15 @@ public:
             return m_nested_bsdf[sample_first ? 0 : 1]->pdf(ctx2, si, wo, active);
         }
 
-        Value weight = clamp(m_weight->eval(si, active)[0], 0.f, 1.f);
+        Float weight = eval_weight(si, active);
         return m_nested_bsdf[0]->pdf(ctx, si, wo, active) * (1 - weight) +
                m_nested_bsdf[1]->pdf(ctx, si, wo, active) * weight;
+    }
+
+    MTS_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
+        // TODO: why is this an ambiguous call? :o
+        Color1f w = m_weight->eval(si, active);
+        return clamp(w.x(), 0.f, 1.f);
     }
 
     std::string to_string() const override {
@@ -127,14 +126,10 @@ public:
         return { m_nested_bsdf[0].get(), m_nested_bsdf[1].get(), m_weight.get() };
     }
 
-    MTS_IMPLEMENT_BSDF_ALL()
-    MTS_DECLARE_CLASS()
 protected:
-    ref<ContinuousSpectrum> m_weight;
+    ref<ContinuousSpectrum1> m_weight;
     ref<BSDF> m_nested_bsdf[2];
 };
 
-MTS_IMPLEMENT_CLASS(BlendBSDF, BSDF)
-MTS_EXPORT_PLUGIN(BlendBSDF, "BlendBSDF material")
-
+MTS_IMPLEMENT_PLUGIN(BlendBSDF, BSDF, "BlendBSDF material")
 NAMESPACE_END(mitsuba)
