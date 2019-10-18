@@ -120,16 +120,25 @@ enum class BSDFFlags : uint32_t {
 };
 
 /// Allows or-ing of BSDFFlags
-constexpr enum BSDFFlags operator |(const enum BSDFFlags f1, const enum BSDFFlags f2) {
+constexpr BSDFFlags operator |(BSDFFlags f1, BSDFFlags f2) {
     return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) | static_cast<uint32_t>(f2));
 }
 /// Allows and-ing of BSDFFlags
-constexpr enum BSDFFlags operator &(const enum BSDFFlags f1, const enum BSDFFlags f2) {
+constexpr BSDFFlags operator &(BSDFFlags f1, BSDFFlags f2) {
     return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
+}
+/// Allows not-ing of BSDFFlags
+constexpr BSDFFlags operator ~(BSDFFlags f1) {
+    return static_cast<BSDFFlags>(~static_cast<uint32_t>(f1));
 }
 /// Allows using unary `+` for conversion from BSDFFlags to the underlying type
 constexpr auto operator+(BSDFFlags e) noexcept {
     return static_cast<std::underlying_type_t<BSDFFlags>>(e);
+}
+
+/// Check presence of a flag in a combined BSDFFlag
+constexpr bool has_flag(BSDFFlags flags, BSDFFlags f) {
+    return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
 }
 
 /**

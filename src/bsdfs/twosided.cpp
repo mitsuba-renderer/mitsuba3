@@ -6,9 +6,14 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class TwoSidedBRDF final : public BSDF {
+template <typename Float, typename Spectrum>
+class TwoSidedBRDF final : public BSDF<Float, Spectrum> {
 public:
-    TwoSidedBRDF(const Properties &props) : BSDF(props) {
+    MTS_DECLARE_PLUGIN();
+    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    using BSDF = Base;
+
+    TwoSidedBRDF(const Properties &props) : Base(props) {
         auto bsdfs = props.objects();
         if (bsdfs.size() > 0)
             m_nested_brdf[0] = dynamic_cast<BSDF *>(bsdfs[0].second.get());
@@ -23,71 +28,62 @@ public:
             m_nested_brdf[1] = m_nested_brdf[0];
 
         // Add all nested components, overwriting any front / back side flag.
-        m_flags = (uint32_t) 0;
+        m_flags = BSDFFlags(0);
         for (size_t i = 0; i < m_nested_brdf[0]->component_count(); ++i) {
-            m_components.push_back((m_nested_brdf[0]->flags(i) & ~EBackSide) | EFrontSide);
-            m_flags |= m_components.back();
+            auto c = (m_nested_brdf[0]->flags(i) & ~BSDFFlags::BackSide);
+            m_components.push_back(c | BSDFFlags::FrontSide);
+            m_flags = m_flags | m_components.back();
         }
         for (size_t i = 0; i < m_nested_brdf[1]->component_count(); ++i) {
-            m_components.push_back((m_nested_brdf[1]->flags(i) & ~EFrontSide) | EBackSide);
-            m_flags |= m_components.back();
+            auto c = (m_nested_brdf[1]->flags(i) & ~BSDFFlags::FrontSide);
+            m_components.push_back(c | BSDFFlags::BackSide);
+            m_flags = m_flags | m_components.back();
         }
 
-        if (m_flags & BSDF::ETransmission)
+        if (has_flag(m_flags, BSDFFlags::Transmission))
             Throw("Only materials without a transmission component can be nested!");
     }
 
-    template <typename SurfaceInteraction, typename Value, typename Point2,
-              typename BSDFSample = BSDFSample<typename SurfaceInteraction::Point3>,
-              typename Spectrum   = Spectrum<Value>>
     MTS_INLINE
-    std::pair<BSDFSample, Spectrum> sample_impl(const BSDFContext &ctx_,
-                                                const SurfaceInteraction &si_,
-                                                Value sample1,
-                                                const Point2 &sample2,
-                                                mask_t<Value> active) const {
-        using Vector3 = typename BSDFSample::Vector3;
-        using Frame = Frame<Vector3>;
-        using Mask = mask_t<Value>;
-        using Result = std::pair<BSDFSample, Spectrum>;
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx_,
+                                             const SurfaceInteraction3f &si_, Float sample1,
+                                             const Point2f &sample2, Mask active) const override {
+        using Result = std::pair<BSDFSample3f, Spectrum>;
 
-        SurfaceInteraction si(si_);
+        SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
 
-        Mask front_side = Frame::cos_theta(si.wi) > 0.f && active;
-        Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
-        Result result = zero<Result>();
+        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active;
+        Mask back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
+        Result result = zero<Result>();
         if (any_or<true>(front_side))
-            masked(result, front_side) = m_nested_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
+            masked(result, front_side) =
+                m_nested_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
 
         if (any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
                 ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
 
             si.wi.z() *= -1.f;
-            masked(result, back_side) = m_nested_brdf[1]->sample(ctx, si, sample1, sample2, back_side);
+            masked(result, back_side) =
+                m_nested_brdf[1]->sample(ctx, si, sample1, sample2, back_side);
             masked(result.first.wo.z(), back_side) *= -1.f;
         }
 
         return result;
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value    = typename SurfaceInteraction::Value,
-              typename Spectrum = Spectrum<Value>>
     MTS_INLINE
-    Spectrum eval_impl(const BSDFContext &ctx_, const SurfaceInteraction &si_,
-                       Vector3 wo, mask_t<Value> active) const {
-        using Frame = mitsuba::Frame<Vector3>;
-        using Mask = mask_t<Value>;
-
-        SurfaceInteraction si(si_);
+    Spectrum eval(const BSDFContext &ctx_, const SurfaceInteraction3f &si_, const Vector3f &wo_,
+                  Mask active) const override {
+        SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
+        Vector3f wo(wo_);
         Spectrum result = 0.f;
 
-        Mask front_side = Frame::cos_theta(si.wi) > 0.f && active;
-        Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
+        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active;
+        Mask back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
         if (any_or<true>(front_side))
             result = m_nested_brdf[0]->eval(ctx, si, wo, front_side);
@@ -105,20 +101,16 @@ public:
         return result;
     }
 
-    template <typename SurfaceInteraction, typename Vector3,
-              typename Value = value_t<Vector3>>
     MTS_INLINE
-    Value pdf_impl(const BSDFContext &ctx_, const SurfaceInteraction &si_,
-                   Vector3 wo, mask_t<Value> active) const {
-        using Frame = Frame<Vector3>;
-        using Mask = mask_t<Value>;
-
-        SurfaceInteraction si(si_);
+    Float pdf(const BSDFContext &ctx_, const SurfaceInteraction3f &si_, const Vector3f &wo_,
+              Mask active) const override {
+        SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
-        Value result = 0.f;
+        Vector3f wo(wo_);
+        Float result = 0.f;
 
-        Mask front_side = Frame::cos_theta(si.wi) > 0.f && active;
-        Mask back_side  = Frame::cos_theta(si.wi) < 0.f && active;
+        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active;
+        Mask back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
         if (any_or<true>(front_side))
             result = m_nested_brdf[0]->pdf(ctx, si, wo, front_side);
@@ -145,14 +137,9 @@ public:
         return oss.str();
     }
 
-
-    MTS_IMPLEMENT_BSDF_ALL()
-    MTS_DECLARE_CLASS()
 protected:
     ref<BSDF> m_nested_brdf[2];
 };
 
-MTS_IMPLEMENT_CLASS(TwoSidedBRDF, BSDF)
-MTS_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter");
-
+MTS_IMPLEMENT_PLUGIN(TwoSidedBRDF, BSDF, "Two-sided material adapter");
 NAMESPACE_END(mitsuba)
