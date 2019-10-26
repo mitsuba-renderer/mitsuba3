@@ -4,14 +4,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Emitter::Emitter(const Properties &props)
-    : Endpoint(props) { }
+template <typename Float, typename Spectrum>
+Emitter<Float, Spectrum>::~Emitter() { }
 
-Emitter::~Emitter() { }
-
-bool Emitter::is_environment() const {
-    return false;
-}
-
-MTS_IMPLEMENT_CLASS(Emitter, Endpoint)
+MTS_IMPLEMENT_CLASS_TEMPLATE(Emitter, Endpoint)
 NAMESPACE_END(mitsuba)

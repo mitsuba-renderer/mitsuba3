@@ -6,7 +6,7 @@ endif()
 
 # # Mitsuba support libraries
 # add_subdirectory(libcore)
-# add_subdirectory(librender)
+add_subdirectory(librender)
 # add_subdirectory(libui)
 
 # # Mitsuba executables
@@ -17,7 +17,7 @@ endif()
 add_subdirectory(bsdfs)
 add_subdirectory(emitters)
 add_subdirectory(films)
-# add_subdirectory(integrators)
+add_subdirectory(integrators)
 add_subdirectory(rfilters)
 add_subdirectory(samplers)
 add_subdirectory(sensors)

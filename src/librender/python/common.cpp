@@ -1,4 +1,3 @@
-#include <mitsuba/render/common.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(TransportMode) {

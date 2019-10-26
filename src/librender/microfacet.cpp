@@ -2,7 +2,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template class MTS_EXPORT_RENDER MicrofacetDistribution<Float>;
-template class MTS_EXPORT_RENDER MicrofacetDistribution<FloatP>;
+// TODO: do we need explicit template instantiations?
 
 NAMESPACE_END(mitsuba)

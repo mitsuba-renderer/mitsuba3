@@ -1,9 +1,10 @@
 #pragma once
 
+#include <mitsuba/core/ddistr.h>
+#include <mitsuba/core/spectrum.h>
+#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
-#include <mitsuba/render/emitter.h>
-#include <mitsuba/core/ddistr.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

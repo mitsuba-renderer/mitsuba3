@@ -5,10 +5,12 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/string.h>
 #include <mitsuba/core/quad.h>
+#include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/fresnel.h>
+#include <mitsuba/render/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

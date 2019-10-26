@@ -2,6 +2,8 @@
 
 #include <enoki/array_traits.h>
 #include <mitsuba/core/fwd.h>
+#include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/traits.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

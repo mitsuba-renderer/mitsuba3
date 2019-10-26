@@ -3,27 +3,26 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Sampler::Sampler(const Properties &props) {
+template <typename Float, typename Spectrum>
+Sampler<Float, Spectrum>::Sampler(const Properties &props) {
     m_sample_count = props.size_("sample_count", 4);
     if (props.has_property("seed"))
         seed(props.size_("seed"));
 }
 
-Sampler::~Sampler() { }
+template <typename Float, typename Spectrum>
+Sampler<Float, Spectrum>::~Sampler() { }
 
-void Sampler::seed(size_t) { NotImplementedError("seed"); }
-Float Sampler::next_1d() { NotImplementedError("next_1d"); }
-FloatP Sampler::next_1d_p(MaskP) { NotImplementedError("next_1d_p"); }
-Point2f Sampler::next_2d() { NotImplementedError("next_2d"); }
-Point2fP Sampler::next_2d_p(MaskP) { NotImplementedError("next_2d_p"); }
+template <typename Float, typename Spectrum>
+void Sampler<Float, Spectrum>::seed(size_t, size_t) { NotImplementedError("seed"); }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-void Sampler::seed(size_t, size_t) { NotImplementedError("seed"); }
-FloatD Sampler::next_1d_d(MaskD) { NotImplementedError("next_1d_d"); }
-Point2fD Sampler::next_2d_d(MaskD) { NotImplementedError("next_2d_d"); }
-FloatD Sampler::next_1d_d(UInt32D, MaskD) { NotImplementedError("next_1d_d"); }
-Point2fD Sampler::next_2d_d(UInt32D, MaskD) { NotImplementedError("next_2d_d"); }
-#endif
+template <typename Float, typename Spectrum>
+Float Sampler<Float, Spectrum>::next_1d(Mask) { NotImplementedError("next_1d"); }
 
-MTS_IMPLEMENT_CLASS(Sampler, Object);
+template <typename Float, typename Spectrum>
+typename Sampler<Float, Spectrum>::Point2f Sampler<Float, Spectrum>::next_2d(Mask) {
+    NotImplementedError("next_2d");
+}
+
+MTS_IMPLEMENT_CLASS_TEMPLATE(Sampler, Object);
 NAMESPACE_END(mitsuba)
