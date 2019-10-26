@@ -140,6 +140,10 @@ constexpr auto operator+(BSDFFlags e) noexcept {
 constexpr bool has_flag(BSDFFlags flags, BSDFFlags f) {
     return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
 }
+template <typename UInt32>
+constexpr bool has_flag(const UInt32 &flags, BSDFFlags f) {
+    return neq(flags & UInt32(static_cast<uint32_t>(f)), 0u);
+}
 
 /**
  * \brief Context data structure for BSDF evaluation and sampling
@@ -423,10 +427,10 @@ public:
     // -----------------------------------------------------------------------
 
     /// Flags for all components combined.
-    BSDFFlags flags(Mask /* active */ = true) const { return m_flags; }
+    BSDFFlags flags(Mask /*active*/ = true) const { return m_flags; }
 
     /// Flags for a specific component of this BSDF.
-    BSDFFlags flags(size_t i, Mask /* active */ = true) const {
+    BSDFFlags flags(size_t i, Mask /*active*/ = true) const {
         Assert(i < m_components.size());
         return m_components[i];
     }

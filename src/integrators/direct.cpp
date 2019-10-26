@@ -6,12 +6,17 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class MIDirectIntegrator : public SamplingIntegrator {
+template <typename Float, typename Spectrum>
+class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
+    MTS_DECLARE_PLUGIN()
+    MTS_IMPORT_OBJECT_TYPES()
+    using Base = SamplingIntegrator<Float, Spectrum>;
+
     // =============================================================
     //! @{ \name Constructors
     // =============================================================
-    MIDirectIntegrator(const Properties &props) : SamplingIntegrator(props) {
+    DirectIntegrator(const Properties &props) : Base(props) {
         if (props.has_property("shading_samples")
             && (props.has_property("emitter_samples") ||
                 props.has_property("bsdf_samples"))) {
@@ -32,80 +37,64 @@ public:
         if (m_emitter_samples + m_bsdf_samples == 0)
             Throw("Must have at least 1 BSDF or emitter sample!");
 
-        size_t sum = m_emitter_samples + m_bsdf_samples;
-        m_weight_bsdf = 1.f / (Float) m_bsdf_samples;
-        m_weight_lum = 1.f / (Float) m_emitter_samples;
-        m_frac_bsdf = m_bsdf_samples / (Float) sum;
-        m_frac_lum = m_emitter_samples / (Float) sum;
+        size_t sum    = m_emitter_samples + m_bsdf_samples;
+        m_weight_bsdf = 1.f / (sFloat) m_bsdf_samples;
+        m_weight_lum  = 1.f / (sFloat) m_emitter_samples;
+        m_frac_bsdf   = m_bsdf_samples / (sFloat) sum;
+        m_frac_lum    = m_emitter_samples / (sFloat) sum;
     }
 
-    template <typename RayDifferential,
-              typename Value           = typename RayDifferential::Value,
-              typename Point3          = typename RayDifferential::Point,
-              typename Spectrum        = mitsuba::Spectrum<Value>,
-              typename Mask            = mask_t<Value>>
-    Spectrum eval_impl(const RayDifferential &ray, RadianceSample<Point3> &rs,
-                       Mask active) const {
-        using DirectionSample    = mitsuba::DirectionSample<Point3>;
-        using SurfaceInteraction = mitsuba::SurfaceInteraction<Point3>;
-        using Vector3            = typename SurfaceInteraction::Vector3;
-        using EmitterPtr         = typename SurfaceInteraction::EmitterPtr;
-        using BSDFPtr            = typename SurfaceInteraction::BSDFPtr;
-
-        const Scene *scene = rs.scene;
-
-        SurfaceInteraction &si = rs.ray_intersect(ray, active);
-        rs.alpha = select(si.is_valid(), Value(1.f), Value(0.f));
+    std::pair<Spectrum, Mask> sample(const Scene *scene, Sampler *sampler,
+                                     const RayDifferential3f &ray, Mask active) const override {
+        SurfaceInteraction3f si = scene->ray_intersect(ray, active);
+        Mask valid_ray = si.is_valid();
 
         Spectrum result(0.f);
 
         /* ----------------------- Visible emitters ----------------------- */
-
         EmitterPtr emitter_vis = si.emitter(scene, active);
         if (any_or<true>(neq(emitter_vis, nullptr)))
             result += emitter_vis->eval(si, active);
 
         active &= si.is_valid();
         if (none_or<false>(active))
-            return result;
+            return { result, valid_ray };
 
         /* ----------------------- Emitter sampling ----------------------- */
-
         BSDFContext ctx;
         BSDFPtr bsdf = si.bsdf(ray);
-        Mask sample_emitter = active && neq(bsdf->flags() & BSDF::ESmooth, 0u);
+        Mask sample_emitter = active && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
         if (any_or<true>(sample_emitter)) {
             for (size_t i = 0; i < m_emitter_samples; ++i) {
                 Mask active_e = sample_emitter;
-                DirectionSample ds;
+                DirectionSample3f ds;
                 Spectrum emitter_val;
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
-                    si, rs.next_2d(active_e), true, active_e);
+                    si, sampler->next_2d(active_e), true, active_e);
                 active_e &= neq(ds.pdf, 0.f);
 
-                /* Query the BSDF for that emitter-sampled direction */
-                Vector3 wo = si.to_local(ds.d);
+                // Query the BSDF for that emitter-sampled direction
+                Vector3f wo = si.to_local(ds.d);
 
                 Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
 
                 /* Determine probability of having sampled that same
                    direction using BSDF sampling. */
-                Value bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
+                Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
-                Value mis = select(ds.delta, Value(1.f), mis_weight(
+                Float mis = select(ds.delta, Float(1.f), mis_weight(
                     ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
                 result[active_e] += emitter_val * bsdf_val * mis;
             }
         }
 
         /* ------------------------ BSDF sampling ------------------------- */
-
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
-            auto [bs, bsdf_val] = bsdf->sample(ctx, si, rs.next_1d(active),
-                                               rs.next_2d(active), active);
+            auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
+                                               sampler->next_2d(active), active);
 
-            Mask active_b = active && any(neq(bsdf_val, 0.f));
+            Mask active_b = active && any(neq(depolarize(bsdf_val), 0.f));
 
             // Trace the ray in the sampled direction and intersect against the scene
             SurfaceInteraction si_bsdf =
@@ -117,15 +106,15 @@ public:
 
             if (any_or<true>(active_b)) {
                 Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
-                Mask delta = neq(bs.sampled_type & BSDF::EDelta, 0u);
+                Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 
                 /* Determine probability of having sampled that same
                    direction using Emitter sampling. */
-                DirectionSample ds(si_bsdf, si);
+                DirectionSample3f ds(si_bsdf, si);
                 ds.object = emitter;
 
-                Value emitter_pdf = select(delta, 0.f,
-                    scene->pdf_emitter_direction(si, ds, active_b));
+                Float emitter_pdf =
+                    select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));
 
                 result[active_b] +=
                     bsdf_val * emitter_val *
@@ -134,36 +123,30 @@ public:
             }
         }
 
-        return result;
+        return { result, valid_ray };
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "MIDirectIntegrator[" << std::endl
+        oss << "DirectIntegrator[" << std::endl
             << "  emitter_samples = " << m_emitter_samples << "," << std::endl
             << "  bsdf_samples = " << m_bsdf_samples << std::endl
             << "]";
         return oss.str();
     }
 
-    MTS_IMPLEMENT_INTEGRATOR_ALL()
-    MTS_DECLARE_CLASS()
-
-protected:
-    template <typename Value> Value mis_weight(Value pdf_a, Value pdf_b) const {
+    Float mis_weight(Float pdf_a, Float pdf_b) const {
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
-        return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), Value(0.f));
+        return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), Float(0.f));
     }
 
 private:
     size_t m_emitter_samples;
     size_t m_bsdf_samples;
-    Float m_frac_bsdf, m_frac_lum;
-    Float m_weight_bsdf, m_weight_lum;
+    sFloat m_frac_bsdf, m_frac_lum;
+    sFloat m_weight_bsdf, m_weight_lum;
 };
 
-
-MTS_IMPLEMENT_CLASS(MIDirectIntegrator, SamplingIntegrator);
-MTS_EXPORT_PLUGIN(MIDirectIntegrator, "Direct integrator");
+MTS_IMPLEMENT_PLUGIN(DirectIntegrator, SamplingIntegrator, "Direct integrator");
 NAMESPACE_END(mitsuba)
