@@ -2,12 +2,12 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
-                       const ReconstructionFilter *filter, size_t channels,
-                       bool warn, bool monochrome, bool border, bool normalize)
-    : m_offset(0), m_size(size), m_filter(filter), m_weights_x(nullptr),
-      m_weights_y(nullptr), m_weights_x_p(nullptr), m_weights_y_p(nullptr),
-      m_warn(warn), m_monochrome(monochrome), m_normalize(normalize) {
+template <typename Float, typename Spectrum>
+ImageBlock<Float, Spectrum>::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
+                                        const ReconstructionFilter *filter, size_t channels,
+                                        bool warn, bool border, bool normalize)
+    : m_offset(0), m_size(size), m_filter(filter), m_weights_x(nullptr), m_weights_y(nullptr),
+      m_warn(warn), m_normalize(normalize) {
     m_border_size = (filter != nullptr && border) ? filter->border_size() : 0;
 
     // Allocate a small bitmap data structure for the block
@@ -20,24 +20,19 @@ ImageBlock::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i &size,
         int temp_buffer_size = (int) std::ceil(2 * filter->radius()) + 1;
         m_weights_x = new Float[2 * temp_buffer_size];
         m_weights_y = m_weights_x + temp_buffer_size;
-
-        // Vectorized variant
-        m_weights_x_p = new FloatP[2 * temp_buffer_size];
-        m_weights_y_p = m_weights_x_p + temp_buffer_size;
     }
 }
 
-ImageBlock::~ImageBlock() {
+template <typename Float, typename Spectrum>
+ImageBlock<Float, Spectrum>::~ImageBlock() {
     /* Note that m_weights_y points to the same array as
        m_weights_x, so there is no need to delete it. */
     if (m_weights_x)
         delete[] m_weights_x;
-
-    if (m_weights_x_p)
-        delete[] m_weights_x_p;
 }
 
-bool ImageBlock::put(const Point2f &pos_, const Float *value) {
+template <typename Float, typename Spectrum>
+bool ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value) {
     Assert(m_filter != nullptr);
     size_t channels = m_bitmap->channel_count();
 
@@ -55,7 +50,7 @@ bool ImageBlock::put(const Point2f &pos_, const Float *value) {
                 if (i + 1 < channels) oss << ", ";
             }
             oss << "]";
-            Log(EWarn, "%s", oss.str());
+            Log(Warn, "%s", oss.str());
             return false;
         }
     }
@@ -105,7 +100,10 @@ bool ImageBlock::put(const Point2f &pos_, const Float *value) {
     return true;
 }
 
-MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
+#if 0
+// TODO: merge the scalar, vector & differentiable implementations if possible
+template <typename Float, typename Spectrum>
+MaskP ImageBlock<Float, Spectrum>::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
     Assert(m_filter != nullptr);
     using Mask = mask_t<FloatP>;
 
@@ -187,9 +185,11 @@ MaskP ImageBlock::put(const Point2fP &pos_, const FloatP *value, MaskP active) {
 
     return active;
 }
+#endif
 
 #if defined(MTS_ENABLE_AUTODIFF)
-MaskD ImageBlock::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
+template <typename Float, typename Spectrum>
+MaskD ImageBlock<Float, Spectrum>::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
     Assert(m_filter != nullptr);
 
     uint32_t channels = (uint32_t) m_bitmap->channel_count();
@@ -264,7 +264,8 @@ MaskD ImageBlock::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
     return active;
 }
 
-void ImageBlock::clear_d() {
+template <typename Float, typename Spectrum>
+void ImageBlock<Float, Spectrum>::clear_d() {
     m_bitmap_d.resize(m_bitmap->channel_count());
     for (size_t i = 0; i < m_bitmap_d.size(); ++i)
         m_bitmap_d[i] = zero<FloatD>(hprod(m_bitmap->size()));
@@ -272,7 +273,8 @@ void ImageBlock::clear_d() {
 
 #endif
 
-std::string ImageBlock::to_string() const {
+template <typename Float, typename Spectrum>
+std::string ImageBlock<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "ImageBlock[" << std::endl
         << "  offset = " << m_offset << "," << std::endl
@@ -285,5 +287,5 @@ std::string ImageBlock::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(ImageBlock, Object)
+MTS_IMPLEMENT_CLASS_TEMPLATE(ImageBlock, Object)
 NAMESPACE_END(mitsuba)

@@ -20,8 +20,12 @@ NAMESPACE_BEGIN(mitsuba)
  * border region storing contributions that are slightly outside of the block,
  * which is required to support image reconstruction filters.
  */
+template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ImageBlock : public Object {
 public:
+    MTS_IMPORT_TYPES()
+    using ReconstructionFilter = typename Aliases::ReconstructionFilter;
+
     /**
      * Construct a new image block of the requested properties
      *
@@ -62,7 +66,6 @@ public:
                const ReconstructionFilter *filter = nullptr,
                size_t channels = 0,
                bool warn = true,
-               bool monochrome = false,
                bool border = true,
                bool normalize = false);
 
@@ -101,25 +104,22 @@ public:
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    template <typename Point2, typename Spectrum,
-              typename Value = typename Point2::Value,
-              typename Mask = mask_t<Value>>
-    Mask put(const Point2 &pos,
+    Mask put(const Point2f &pos,
              const Spectrum &wavelengths,
              const Spectrum &value,
-             const Value &alpha,
+             const Float &alpha,
              Mask active = true) {
         Assert(m_bitmap->pixel_format() == Bitmap::EXYZAW,
                "This `put` variant requires XYZAW internal storage format.");
 
-        if (unlikely(m_monochrome)) {
+        if constexpr (is_monochrome_v<Spectrum>) {
             // Factors computed so that we obtain a grayscale value after RGB conversion
-            Array<Value, 5> values(0.9504699764424493f * value.y(), value.y(),
+            Array<Float, 5> values(0.9504699764424493f * value.y(), value.y(),
                                    1.0888299918185522f * value.y(), alpha, 1.0f);
             return put(pos, values.data(), active);
         } else {
             auto xyz = to_xyz(value, wavelengths, active);
-            Array<Value, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.0f);
+            Array<Float, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.0f);
             return put(pos, values.data(), active);
         }
     }
@@ -143,34 +143,6 @@ public:
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
     bool put(const Point2f &pos, const Float *value);
-
-    /// Compatibility wrapper, which strips the mask argument and invokes \ref put()
-    bool put(const Point2f &pos, const Float *value, bool) {
-        return put(pos, value);
-    }
-
-    /**
-     * \brief Store a packet of samples inside the block.
-     *
-     * \note This method is only valid if a reconstruction filter was given at
-     * the construction of the block.
-     *
-     * \param pos
-     *    Denotes the samples positions in fractional pixel coordinates.
-     *
-     * \param value
-     *    Pointer to an array containing packets for each channel of the sample
-     *    values. The array must match the length given by \ref channel_count()
-     *
-     * \return \c false if one of the sample values was \a invalid, e.g.
-     *    NaN or negative. A warning is also printed if \c m_warn is enabled.
-     */
-    MaskP put(const Point2fP &pos, const FloatP *value, MaskP active = true);
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Differentiable version of put()
-    MaskD put(const Point2fD &pos, const FloatD *value, MaskD active = true);
-#endif
 
     /// Clear everything to zero.
     void clear() { m_bitmap->clear(); }
@@ -244,8 +216,7 @@ protected:
     int m_border_size;
     const ReconstructionFilter *m_filter;
     Float  *m_weights_x  , *m_weights_y;
-    FloatP *m_weights_x_p, *m_weights_y_p;
-    bool m_warn, m_monochrome, m_normalize;
+    bool m_warn, m_normalize;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     std::vector<FloatD> m_bitmap_d;

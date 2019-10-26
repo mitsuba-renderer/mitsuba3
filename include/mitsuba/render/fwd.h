@@ -13,7 +13,7 @@ class DifferentiableObject;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
-class ImageBlock;
+template <typename Float, typename Spectrum> class ImageBlock;
 class Integrator;
 class Medium;
 template <typename Float, typename Spectrum> class Sampler;
@@ -128,6 +128,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Emitter              = mitsuba::Emitter<Float, Spectrum>;
     // using Medium               = mitsuba::Medium<Float, Spectrum>;
     using Film                 = mitsuba::Film<Float, Spectrum>;
+    using ImageBlock           = mitsuba::ImageBlock<Float, Spectrum>;
     using ContinuousSpectrum   = mitsuba::ContinuousSpectrum<Float, Spectrum>;
     using Texture3D            = mitsuba::Texture3D<Float, Spectrum>;
 
@@ -227,6 +228,7 @@ using ScalarAliases = Aliases<scalar_t<Float>, scalar_spectrum_t<Spectrum>>;
     using Emitter              = typename Aliases::Emitter;                                        \
     using Medium               = typename Aliases::Medium;                                         \
     using Film                 = typename Aliases::Film;                                           \
+    using ImageBlock           = typename Aliases::ImageBlock;                                     \
     using ContinuousSpectrum   = typename Aliases::ContinuousSpectrum;                             \
     using Texture3D            = typename Aliases::Texture3D;                                      \
     using ObjectPtr            = typename Aliases::ObjectPtr;                                        \

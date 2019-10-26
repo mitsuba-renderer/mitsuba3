@@ -12,6 +12,7 @@ add_plugin(thindielectric thindielectric.cpp)
 add_plugin(twosided twosided.cpp)
 
 # TODO: fix "ambiguous call to eval()" issue
+# (calling a single-channel texture with a SurfaceInteraction of Color3f, etc)
 # add_plugin(blendbsdf blendbsdf.cpp)
 # add_plugin(mask mask.cpp)
 
