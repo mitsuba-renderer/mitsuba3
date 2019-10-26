@@ -14,6 +14,7 @@ template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
+template <typename Float> class ReconstructionFilter;
 class Integrator;
 class Medium;
 template <typename Float, typename Spectrum> class Sampler;
@@ -129,6 +130,7 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     // using Medium               = mitsuba::Medium<Float, Spectrum>;
     using Film                 = mitsuba::Film<Float, Spectrum>;
     using ImageBlock           = mitsuba::ImageBlock<Float, Spectrum>;
+    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float>;
     using ContinuousSpectrum   = mitsuba::ContinuousSpectrum<Float, Spectrum>;
     using Texture3D            = mitsuba::Texture3D<Float, Spectrum>;
 
@@ -229,6 +231,7 @@ using ScalarAliases = Aliases<scalar_t<Float>, scalar_spectrum_t<Spectrum>>;
     using Medium               = typename Aliases::Medium;                                         \
     using Film                 = typename Aliases::Film;                                           \
     using ImageBlock           = typename Aliases::ImageBlock;                                     \
+    using ReconstructionFilter = typename Aliases::ReconstructionFilter;                           \
     using ContinuousSpectrum   = typename Aliases::ContinuousSpectrum;                             \
     using Texture3D            = typename Aliases::Texture3D;                                      \
     using ObjectPtr            = typename Aliases::ObjectPtr;                                        \

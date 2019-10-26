@@ -1,7 +1,7 @@
-#include <mitsuba/mitsuba.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fstream.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/fwd.h>
@@ -9,9 +9,15 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class HDRFilm : public Film {
+template <typename Float, typename Spectrum>
+class HDRFilm final : public Film<Float, Spectrum> {
 public:
-    HDRFilm(const Properties &props) : Film(props) {
+    MTS_DECLARE_PLUGIN()
+    MTS_USING_BASE(Film, m_size, m_crop_size, m_crop_offset, m_high_quality_edges, m_filter,
+                   check_valid_crop_window);
+    using ImageBlock = typename Aliases::ImageBlock;
+
+    HDRFilm(const Properties &props) : Base(props) {
         std::string file_format = string::to_lower(
             props.string("file_format", "openexr"));
         std::string pixel_format = string::to_lower(
@@ -33,10 +39,10 @@ public:
                   " found %s instead.", file_format);
         }
 
-        if (pixel_format == "luminance" || m_monochrome) {
+        if (pixel_format == "luminance" || is_monochrome_v<Spectrum>) {
             m_pixel_format = Bitmap::EY;
             if (pixel_format != "luminance")
-                Log(EWarn,
+                Log(Warn,
                     "Monochrome mode enabled, setting film output pixel format "
                     "to 'luminance' (was %s).",
                     pixel_format);
@@ -71,12 +77,12 @@ public:
 
         if (m_file_format == Bitmap::ERGBE) {
             if (m_pixel_format != Bitmap::ERGB) {
-                Log(EWarn, "The RGBE format only supports pixel_format=\"rgb\"."
+                Log(Warn, "The RGBE format only supports pixel_format=\"rgb\"."
                            " Overriding..");
                 m_pixel_format = Bitmap::ERGB;
             }
             if (m_component_format != Struct::EFloat32) {
-                Log(EWarn, "The RGBE format only supports "
+                Log(Warn, "The RGBE format only supports "
                            "component_format=\"float32\". Overriding..");
                 m_component_format = Struct::EFloat32;
             }
@@ -84,12 +90,12 @@ public:
         else if (m_file_format == Bitmap::EPFM) {
             // PFM output; override pixel & component format if necessary
             if (m_pixel_format != Bitmap::ERGB && m_pixel_format != Bitmap::EY) {
-                Log(EWarn, "The PFM format only supports pixel_format=\"rgb\""
+                Log(Warn, "The PFM format only supports pixel_format=\"rgb\""
                            " or \"luminance\". Overriding (setting to \"rgb\")..");
                 m_pixel_format = Bitmap::ERGB;
             }
             if (m_component_format != Struct::EFloat32) {
-                Log(EWarn, "The PFM format only supports"
+                Log(Warn, "The PFM format only supports"
                            " component_format=\"float32\". Overriding..");
                 m_component_format = Struct::EFloat32;
             }
@@ -109,7 +115,7 @@ public:
         }
 
         m_storage = new ImageBlock(Bitmap::EXYZAW, m_crop_size, nullptr, 0,
-                                   true, m_monochrome);
+                                   true);
         m_storage->set_offset(m_crop_offset);
     }
 
@@ -205,7 +211,7 @@ public:
         if (extension != proper_extension)
             filename.replace_extension(proper_extension);
 
-        Log(EInfo, "\U00002714  Developing \"%s\" ..", filename.string());
+        Log(Info, "\U00002714  Developing \"%s\" ..", filename.string());
 
         ref<Bitmap> bitmap =
             m_storage->bitmap()->convert(m_pixel_format, m_component_format, false);
@@ -249,8 +255,6 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
-
 protected:
     Bitmap::EFileFormat m_file_format;
     Bitmap::EPixelFormat m_pixel_format;
@@ -259,6 +263,5 @@ protected:
     ref<ImageBlock> m_storage;
 };
 
-MTS_IMPLEMENT_CLASS(HDRFilm, Film);
-MTS_EXPORT_PLUGIN(HDRFilm, "HDR Film");
+MTS_IMPLEMENT_PLUGIN(HDRFilm, Film, "HDR Film");
 NAMESPACE_END(mitsuba)

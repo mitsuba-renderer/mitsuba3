@@ -16,7 +16,7 @@ endif()
 # # Plugins
 add_subdirectory(bsdfs)
 add_subdirectory(emitters)
-# add_subdirectory(films)
+add_subdirectory(films)
 # add_subdirectory(integrators)
 add_subdirectory(rfilters)
 add_subdirectory(samplers)
