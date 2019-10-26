@@ -54,7 +54,7 @@ add_library(mitsuba-render-obj OBJECT
   # film.cpp         ${INC_DIR}/film.h
   # fresnel.cpp      ${INC_DIR}/fresnel.h
   # imageblock.cpp   ${INC_DIR}/imageblock.h
-  # integrator.cpp   ${INC_DIR}/integrator.h
+  integrator.cpp   ${INC_DIR}/integrator.h
   # interaction.cpp  ${INC_DIR}/interaction.h
   # kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h

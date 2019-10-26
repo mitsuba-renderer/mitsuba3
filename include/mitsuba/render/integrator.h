@@ -30,12 +30,14 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * This is the base class of all integrators; it does not make any assumptions
  * on how radiance is computed, which allows for many different kinds of
- * implementations ranging from software-based path tracing and Markov-Chain
- * based techniques such as Metropolis Light Transport up to
- * hardware-accelerated rasterization.
+ * implementations.
  */
+template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Integrator : public Object {
 public:
+    MTS_IMPORT_TYPES()
+    using Scene = typename Aliases::Scene;
+
     /// Perform the main rendering job. Returns \c true upon success
     virtual bool render(Scene *scene) = 0;
 
@@ -51,7 +53,7 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     /// Create an integrator
-    Integrator(const Properties &props);
+    Integrator(const Properties & /*props*/) {}
 
     /// Virtual destructor
     virtual ~Integrator() { }
@@ -61,11 +63,16 @@ protected:
  * capable of computing samples of the scene's radiance function.
  */
 template <typename Float, typename Spectrum>
-class SamplingIntegrator : public Integrator {
-    MTS_DECLARE_CLASS()
-    MTS_IMPORT_TYPES()
-
+class SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
+    MTS_IMPORT_TYPES()
+    using Base       = Integrator<Float, Spectrum>;
+    using Film       = typename Aliases::Film;
+    using ImageBlock = typename Aliases::ImageBlock;
+    using Sampler    = typename Aliases::Sampler;
+    using Scene      = typename Aliases::Scene;
+    using Sensor     = typename Aliases::Sensor;
+
     /**
      * \brief Sample the incident radiance along a ray.
      *
@@ -113,6 +120,8 @@ public:
     //! @}
     // =========================================================================
 
+    MTS_DECLARE_CLASS()
+
 protected:
     SamplingIntegrator(const Properties &props);
     virtual ~SamplingIntegrator();
@@ -151,14 +160,17 @@ protected:
  */
 template <typename Float, typename Spectrum>
 class MonteCarloIntegrator : public SamplingIntegrator<Float, Spectrum> {
-protected:
-    MTS_DECLARE_CLASS()
+public:
+    using Base = Integrator<Float, Spectrum>;
 
+protected:
     /// Create an integrator
     MonteCarloIntegrator(const Properties &props);
 
     /// Virtual destructor
     virtual ~MonteCarloIntegrator();
+
+    MTS_DECLARE_CLASS()
 protected:
     int m_max_depth;
     int m_rr_depth;
