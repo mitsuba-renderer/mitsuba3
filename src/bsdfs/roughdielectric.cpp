@@ -23,10 +23,10 @@ public:
         m_specular_transmittance = props.spectrum<Float, Spectrum>("specular_transmittance", 1.f);
 
         // Specifies the internal index of refraction at the interface
-        Float int_ior = lookup_ior(props, "int_ior", "bk7");
+        sFloat int_ior = lookup_ior(props, "int_ior", "bk7");
 
         // Specifies the external index of refraction at the interface
-        Float ext_ior = lookup_ior(props, "ext_ior", "air");
+        sFloat ext_ior = lookup_ior(props, "ext_ior", "air");
 
         if (int_ior < 0.f || ext_ior < 0.f || int_ior == ext_ior)
             Throw("The interior and exterior indices of "
@@ -297,8 +297,8 @@ private:
     ref<ContinuousSpectrum> m_specular_reflectance;
     ref<ContinuousSpectrum> m_specular_transmittance;
     MicrofacetType m_type;
-    Float m_alpha_u, m_alpha_v;
-    Float m_eta, m_inv_eta;
+    sFloat m_alpha_u, m_alpha_v;
+    sFloat m_eta, m_inv_eta;
     bool m_sample_visible;
 };
 

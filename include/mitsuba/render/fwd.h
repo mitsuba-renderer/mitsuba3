@@ -141,8 +141,14 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using EmitterPtr          = replace_scalar_t<Float, const Emitter *>;
 };
 
+/// Scalar-only namespace
+template <typename Float, typename Spectrum>
+using ScalarAliases = Aliases<scalar_t<Float>, scalar_spectrum_t<Spectrum>>;
+
 #define MTS_IMPORT_TYPES_ONLY()                                                                    \
     using Aliases              = mitsuba::Aliases<Float, Spectrum>;                                \
+    using sc                   = mitsuba::ScalarAliases<Float, Spectrum>;                          \
+    using sFloat               = typename sc::Float;                                               \
     using Mask                 = typename Aliases::Mask;                                           \
     using Int32                = typename Aliases::Int32;                                          \
     using UInt32               = typename Aliases::UInt32;                                         \

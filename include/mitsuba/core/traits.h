@@ -18,6 +18,7 @@ NAMESPACE_BEGIN(detail)
 template <typename Spectrum> struct spectral_traits {};
 template <typename Float>
 struct spectral_traits<Color<Float, 1>> {
+    using ScalarSpectrumType                 = Color<scalar_t<Float>, 1>;
     static constexpr bool is_monochrome      = true;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = false;
@@ -27,6 +28,7 @@ struct spectral_traits<Color<Float, 1>> {
 
 template <typename Float>
 struct spectral_traits<Color<Float, 3>> {
+    using ScalarSpectrumType                 = Color<scalar_t<Float>, 3>;
     static constexpr bool is_monochrome      = false;
     static constexpr bool is_rgb             = true;
     static constexpr bool is_spectral        = false;
@@ -36,6 +38,7 @@ struct spectral_traits<Color<Float, 3>> {
 
 template <typename Float, int SpectralSamples>
 struct spectral_traits<Spectrum<Float, SpectralSamples>> {
+    using ScalarSpectrumType                 = Spectrum<scalar_t<Float>, SpectralSamples>;
     static constexpr bool is_monochrome      = false;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = true;
@@ -46,11 +49,17 @@ struct spectral_traits<Spectrum<Float, SpectralSamples>> {
 
 template <typename T>
 struct spectral_traits<MuellerMatrix<T>> {
+    using ScalarSpectrumType                 = typename spectral_traits<T>::ScalarSpectrumType;
     static constexpr bool is_monochrome      = spectral_traits<T>::is_monochrome;
     static constexpr bool is_rgb             = spectral_traits<T>::is_rgb;
     static constexpr bool is_spectral        = spectral_traits<T>::is_spectral;
     static constexpr bool is_polarized       = true;
     static constexpr size_t texture_channels = spectral_traits<T>::texture_channels;
+};
+
+template <>
+struct spectral_traits<void> {
+    using ScalarSpectrumType = void;
 };
 
 NAMESPACE_END(detail)
@@ -65,6 +74,8 @@ template <typename T>
 constexpr bool is_polarized_v = detail::spectral_traits<T>::is_polarized;
 template <typename T>
 constexpr size_t texture_channels_v = detail::spectral_traits<T>::texture_channels;
+template <typename T>
+using scalar_spectrum_t = typename detail::spectral_traits<T>::ScalarSpectrumType;
 
 //! @}
 // =============================================================

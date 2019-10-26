@@ -14,7 +14,7 @@ public:
     MTS_DECLARE_PLUGIN();
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
-    using SpectrumU = depolarized_t<Spectrum>;
+    using SpectrumU          = depolarized_t<Spectrum>;
 
     RoughConductor(const Properties &props) : Base(props) {
         m_eta = props.spectrum<Float, Spectrum>("eta", 0.f);
@@ -172,7 +172,7 @@ private:
     /// Specifies the type of microfacet distribution
     MicrofacetType m_type;
     /// Anisotropic roughness values
-    Float m_alpha_u, m_alpha_v;
+    sFloat m_alpha_u, m_alpha_v;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
 
