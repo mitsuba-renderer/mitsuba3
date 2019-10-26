@@ -47,6 +47,7 @@ enum class FilterBoundaryCondition : uint32_t {
 template <typename Float>
 class MTS_EXPORT_CORE ReconstructionFilter : public Object {
 public:
+    MTS_REGISTER_INTERFACE(ReconstructionFilter, Object, "rfilter")
 
     /// Return the filter's width
     Float radius() const { return m_radius; }
@@ -64,8 +65,6 @@ public:
         Int index = min(Int(abs(x * m_scale_factor)), MTS_FILTER_RESOLUTION);
         return gather<T>(m_values, index, active);
     }
-
-    MTS_DECLARE_CLASS()
 
 protected:
     /// Create a new reconstruction filter

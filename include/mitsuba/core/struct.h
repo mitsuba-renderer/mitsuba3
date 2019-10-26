@@ -21,6 +21,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Struct : public Object {
 public:
+    MTS_REGISTER_CLASS(Struct, Object)
+
     /// Type of a field in the \c Struct
     enum EType {
         /* Invalid/unspecified */
@@ -271,7 +273,6 @@ public:
     /// Return the representable range of the given type
     static std::pair<double, double> range(EType type);
 
-    MTS_DECLARE_CLASS()
 protected:
     std::vector<Field> m_fields;
     bool m_pack;
@@ -390,7 +391,6 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
 protected:
 
 #if MTS_STRUCTCONVERTER_USE_JIT == 0

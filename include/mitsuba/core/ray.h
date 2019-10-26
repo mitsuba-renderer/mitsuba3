@@ -80,8 +80,10 @@ template <typename Point_, typename Spectrum_> struct Ray {
     ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelength)
 };
 
-/** \brief Ray differential -- enhances the basic ray class with
-    offset rays for two adjacent pixels on the view plane */
+/**
+ * \brief Ray differential -- enhances the basic ray class with
+ * offset rays for two adjacent pixels on the view plane
+ */
 template <typename Point_, typename Spectrum_>
 struct RayDifferential : Ray<Point_, Spectrum_> {
     using Base = Ray<Point_, Spectrum_>;

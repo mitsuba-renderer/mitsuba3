@@ -39,6 +39,8 @@ protected:
     template <typename T, typename SFINAE> friend struct detail::serialization_helper;
 
 public:
+    MTS_REGISTER_CLASS(Stream, Object)
+
     /// Defines the byte order (endianness) to use in this Stream
     enum EByteOrder {
         EBigEndian = 0,                ///< PowerPC, SPARC, Motorola 68K
@@ -220,8 +222,6 @@ public:
 
     /// @}
     // =========================================================================
-
-    MTS_DECLARE_CLASS();
 
 protected:
     /// Destructor

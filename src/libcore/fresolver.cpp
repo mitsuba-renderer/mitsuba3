@@ -43,5 +43,4 @@ std::string FileResolver::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(FileResolver, Object)
 NAMESPACE_END(mitsuba)

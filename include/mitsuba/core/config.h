@@ -7,13 +7,12 @@
     "scalar-spectral-polarized\n"                                           \
 
 
-#define MTS_DECLARE_PLUGIN()                                                \
-    MTS_DECLARE_CLASS()                                                     \
+#define MTS_DECLARE_PLUGIN(Name, Parent)                                    \
+    MTS_REGISTER_CLASS(Name, Parent)                                        \
     MTS_IMPORT_TYPES()                                                      \
 
 
 #define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)                           \
-    MTS_IMPLEMENT_CLASS_TEMPLATE(Name, Parent)                              \
     extern "C" {                                                            \
         MTS_EXPORT const char *plugin_descr = Descr;                        \
         MTS_EXPORT Object *plugin_create(const char *config,                \

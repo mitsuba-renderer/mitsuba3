@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(EnvironmentMapEmitter, Emitter)
     MTS_USING_BASE(Emitter, m_world_transform)
     using Scene              = typename Aliases::Scene;
     using Shape              = typename Aliases::Shape;

@@ -36,6 +36,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Endpoint : public Object {
 public:
+    MTS_REGISTER_CLASS(Endpoint, Object)
     MTS_IMPORT_TYPES();
     using Medium = typename Aliases::Medium;
     using Scene  = typename Aliases::Scene;
@@ -239,8 +240,6 @@ public:
     //! @}
     // =============================================================
 
-    MTS_DECLARE_CLASS()
-
 protected:
     Endpoint(const Properties &props);
 
@@ -255,5 +254,3 @@ protected:
 };
 
 NAMESPACE_END(mitsuba)
-
-#include "detail/endpoint.inl"

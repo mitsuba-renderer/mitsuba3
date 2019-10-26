@@ -15,6 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
+    MTS_REGISTER_INTERFACE(Sensor, Endpoint)
     MTS_IMPORT_TYPES();
     using Base = Endpoint<Float, Spectrum>;
     using Base::m_needs_sample_3;
@@ -115,8 +116,6 @@ public:
     //! @}
     // =============================================================
 
-    MTS_DECLARE_CLASS()
-
 protected:
     Sensor(const Properties &props);
 
@@ -151,6 +150,7 @@ protected:
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
+    MTS_REGISTER_CLASS(ProjectiveCamera, Sensor)
     MTS_IMPORT_TYPES();
     using Base = Sensor<Float, Spectrum>;
     using Base::world_transform;
@@ -163,8 +163,6 @@ public:
 
     /// Return the distance to the focal plane
     Float focus_distance() const { return m_focus_distance; }
-
-    MTS_DECLARE_CLASS()
 
 protected:
     ProjectiveCamera(const Properties &props);

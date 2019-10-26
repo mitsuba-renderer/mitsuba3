@@ -37,8 +37,8 @@ public:
      * \param parent
      *     Name of the parent class
      *
-     * \param abstract
-     *     \c true if the class contains pure virtual methods
+     * \param register
+     *     Whether this class should be registered with the XML parser.
      *
      * \param constr
      *     Pointer to a default construction function
@@ -52,7 +52,7 @@ public:
      */
     Class(const std::string &name,
           const std::string &parent,
-          bool abstract = false,
+          bool register_ = false,
           ConstructFunctor constr = nullptr,
           UnserializeFunctor unser = nullptr,
           const std::string &alias = "");
@@ -63,11 +63,11 @@ public:
     /// Return the scene description-specific alias
     const std::string &alias() const { return m_alias; }
 
-    /**
-     * \brief Return whether or not the class represented
-     * by this Class object contains pure virtual methods
-     */
-    bool is_abstract() const { return m_abstract; }
+    // /**
+    //  * \brief Return whether or not the class represented
+    //  * by this Class object contains pure virtual methods
+    //  */
+    // bool is_abstract() const { return m_abstract; }
 
     /// Does the class support instantiation over RTTI?
     bool is_constructible() const { return m_constr != nullptr; }
@@ -154,10 +154,23 @@ private:
  * };
  * \endcode
  */
-#define MTS_DECLARE_CLASS()                                                                        \
-    virtual const Class *class_() const override;                                                  \
-public:                                                                                            \
-    static Class *m_class;
+#define MTS_REGISTER_CLASS(Name, Parent, ...)                                                      \
+    inline static const Class *m_class = new Class(                                                \
+        #Name, #Parent, false,                                                                     \
+        ::mitsuba::detail::get_construct_functor<Name>(),                                          \
+        ::mitsuba::detail::get_unserialize_functor<Name>(),                                        \
+         ## __VA_ARGS__);                                                                          \
+    const Class *class_() const override { return m_class; }
+
+/// Same as MTS_REGISTER_CLASS, but additionally registers the class with the XML parser
+#define MTS_REGISTER_INTERFACE(Name, Parent, ...)                                                  \
+    inline static const Class *m_class = new Class(                                                \
+        #Name, #Parent, true,                                                                      \
+        ::mitsuba::detail::get_construct_functor<Name>(),                                          \
+        ::mitsuba::detail::get_unserialize_functor<Name>(),                                        \
+         ## __VA_ARGS__);                                                                          \
+    const Class *class_() const override { return m_class; }
+
 
 NAMESPACE_BEGIN(detail)
 /// Replacement for std::is_constructible which also works when the destructor is not accessible
@@ -183,6 +196,7 @@ template <typename T, typename std::enable_if_t<!is_constructible_v<T, Stream *>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
 NAMESPACE_END(detail)
 
+#if 0
 /**
  * \brief Creates basic RTTI support for a class
  *
@@ -234,7 +248,7 @@ NAMESPACE_END(detail)
     const Class *Name<Value, Spectrum>::class_() const {                                           \
         return m_class;                                                                            \
     }
-
+#endif
 
 
 #define MTS_MAP_USING_FWD_0(x, peek, ...) \

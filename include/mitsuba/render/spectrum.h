@@ -24,6 +24,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ContinuousSpectrum : public Object {
 public:
+    MTS_REGISTER_INTERFACE(ContinuousSpectrum, Object, "spectrum")
     MTS_IMPORT_TYPES();
 
     /**
@@ -123,8 +124,6 @@ public:
 
     //! @}
     // ======================================================================
-
-    MTS_DECLARE_CLASS()
 
 protected:
     virtual ~ContinuousSpectrum();

@@ -166,6 +166,7 @@ std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t) {
     return os;
 }
 
+#if 0
 template Point3f   MTS_EXPORT_CORE Transform4f::operator*(const Point3f&) const;
 template Point3fP  MTS_EXPORT_CORE Transform4f::operator*(const Point3fP&) const;
 template Vector3f  MTS_EXPORT_CORE Transform4f::operator*(const Vector3f&) const;
@@ -184,6 +185,6 @@ template Point3f   MTS_EXPORT_CORE Transform4f::transform_affine(const Point3f&)
 template Point3fP  MTS_EXPORT_CORE Transform4f::transform_affine(const Point3fP&) const;
 template Ray3f     MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3f&) const;
 template Ray3fP    MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3fP&) const;
+#endif
 
-MTS_IMPLEMENT_CLASS(AnimatedTransform, Object)
 NAMESPACE_END(mitsuba)

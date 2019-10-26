@@ -11,6 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sampler : public Object {
 public:
+    MTS_REGISTER_INTERFACE(Sampler, Object)
     MTS_IMPORT_TYPES()
 
     /**
@@ -42,8 +43,6 @@ public:
 
     /// Return the number of samples per pixel
     size_t sample_count() const { return m_sample_count; }
-
-    MTS_DECLARE_CLASS()
 
 protected:
     Sampler(const Properties &props);

@@ -20,6 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Film : public Object {
 public:
+    MTS_REGISTER_CLASS(Film, Object)
     MTS_IMPORT_TYPES();
     using ImageBlock           = typename Aliases::ImageBlock;
     using ReconstructionFilter = ReconstructionFilter<Float>;
@@ -111,8 +112,6 @@ public:
             << "]";
         return oss.str();
     }
-
-    MTS_DECLARE_CLASS()
 
 protected:
     /// Create a film

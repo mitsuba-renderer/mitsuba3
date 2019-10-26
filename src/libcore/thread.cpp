@@ -61,11 +61,12 @@ namespace {
 /// Dummy class to associate a thread identity with the main thread
 class MainThread : public Thread {
 public:
+    MTS_REGISTER_CLASS(MainThread, Thread)
+
     MainThread() : Thread("main") { }
 
     virtual void run() override { Log(EError, "The main thread is already running!"); }
 
-    MTS_DECLARE_CLASS()
 protected:
     virtual ~MainThread() { }
 };
@@ -73,11 +74,12 @@ protected:
 /// Dummy class to associate a thread identity with a worker thread
 class WorkerThread : public Thread {
 public:
+    MTS_REGISTER_CLASS(WorkerThread, Thread)
+
     WorkerThread(const std::string &prefix) : Thread(tfm::format("%s%02i", prefix, m_counter++)) { }
 
     virtual void run() override { Throw("The worker thread is already running!"); }
 
-    MTS_DECLARE_CLASS()
 protected:
     virtual ~WorkerThread() { }
     static std::atomic<uint32_t> m_counter;
@@ -186,7 +188,7 @@ bool Thread::set_priority(EPriority priority) {
         return true;
 
 #if defined(__LINUX__) || defined(__OSX__)
-    Float factor;
+    float factor;
     switch (priority) {
         case EIdlePriority: factor = 0.0f; break;
         case ELowestPriority: factor = 0.2f; break;
@@ -583,7 +585,4 @@ ScopedSetThreadEnvironment::~ScopedSetThreadEnvironment() {
 #endif
 }
 
-MTS_IMPLEMENT_CLASS(Thread, Object)
-MTS_IMPLEMENT_CLASS(MainThread, Thread)
-MTS_IMPLEMENT_CLASS(WorkerThread, Thread)
 NAMESPACE_END(mitsuba)

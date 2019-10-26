@@ -11,6 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
+    MTS_REGISTER_CLASS(Scene, Object)
     MTS_IMPORT_TYPES();
     using Sampler              = typename Aliases::Sampler;
     using Shape                = typename Aliases::Shape;
@@ -209,7 +210,6 @@ public:
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
 protected:
     /// Virtual destructor
     virtual ~Scene();

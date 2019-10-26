@@ -20,6 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Bitmap : public Object {
 public:
+    MTS_REGISTER_CLASS(Bitmap, Object)
     // TODO: templatize if appropriate
     using Float                = float;
     using Vector2s             = Vector<size_t, 2>;
@@ -567,8 +568,6 @@ public:
 
     /// Free the resources used by static_initialization()
     static void static_shutdown();
-
-    MTS_DECLARE_CLASS()
 
  protected:
      /// Protected destructor

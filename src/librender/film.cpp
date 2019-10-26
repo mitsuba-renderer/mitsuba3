@@ -71,5 +71,4 @@ void Film::check_valid_crop_window() const {
     }
 }
 
-MTS_IMPLEMENT_CLASS(Film, Object);
 NAMESPACE_END(mitsuba)

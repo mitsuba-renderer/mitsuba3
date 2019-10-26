@@ -15,6 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
  * the need to represent them using separate types)
  */
 template <typename Float, size_t Size> struct Transform {
+
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
@@ -359,6 +360,8 @@ template <typename Float, size_t Size> struct Transform {
  */
 class MTS_EXPORT_CORE AnimatedTransform : public Object {
 public:
+    MTS_REGISTER_CLASS(AnimatedTransform, Object)
+
     using Float        = float;
     using Vector3f     = Vector<Float, 3>;
     using Point3f      = Point<Float, 3>;
@@ -446,8 +449,6 @@ public:
 
     /// Return a human-readable summary of this bitmap
     virtual std::string to_string() const override;
-
-    MTS_DECLARE_CLASS()
 
 private:
     Transform4f m_transform;

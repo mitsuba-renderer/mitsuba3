@@ -18,10 +18,11 @@ bool Class::m_is_initialized = false;
 const Class *m_class = nullptr;
 
 Class::Class(const std::string &name, const std::string &parent,
-             bool abstract, ConstructFunctor constr,
+             bool register_,
+             ConstructFunctor constr,
              UnserializeFunctor unser, const std::string &alias)
     : m_name(name), m_alias(alias), m_parent_name(parent),
-      m_abstract(abstract), m_constr(constr), m_unser(unser) {
+      m_constr(constr), m_unser(unser) {
 
     if (m_alias.empty())
         m_alias = name;
@@ -32,9 +33,7 @@ Class::Class(const std::string &name, const std::string &parent,
     (*__classes)[name] = this;
 
     // Also register new abstract classes with the XML parser
-    if (abstract ||
-        // Special cases
-        name == "Scene" || name == "ContinuousSpectrum" || name == "Texture3D")
+    if (register_)
         xml::detail::register_class(this);
 }
 

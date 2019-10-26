@@ -190,8 +190,6 @@ void Sensor::set_crop_window(const Vector2i &crop_size, const Point2i &crop_offs
     m_resolution = Vector2f(m_film->crop_size());
 }
 
-MTS_IMPLEMENT_CLASS(Sensor, Endpoint)
-
 
 // =============================================================================
 // ProjectiveCamera interface
@@ -213,7 +211,5 @@ ProjectiveCamera::ProjectiveCamera(const Properties &props) : Sensor(props) {
 }
 
 ProjectiveCamera::~ProjectiveCamera() { }
-
-MTS_IMPLEMENT_CLASS(ProjectiveCamera, Sensor)
 
 NAMESPACE_END(mitsuba)

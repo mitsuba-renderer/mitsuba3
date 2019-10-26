@@ -2419,5 +2419,4 @@ void Bitmap::static_shutdown() {
     Imf::setGlobalThreadCount(0);
 }
 
-MTS_IMPLEMENT_CLASS(Bitmap, Object)
 NAMESPACE_END(mitsuba)

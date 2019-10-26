@@ -15,6 +15,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Thread : public Object {
 public:
+    MTS_REGISTER_CLASS(Thread, Object)
+
     class TaskObserver; /* Used internally to keep track of TBB threads */
     friend class ScopedThreadEnvironment;
 
@@ -144,8 +146,6 @@ public:
 
     /// Unregister a thread (e.g. TBB, Python) from Mitsuba's thread system.
     static bool unregister_external_thread();
-
-    MTS_DECLARE_CLASS()
 
 protected:
     /// Protected destructor

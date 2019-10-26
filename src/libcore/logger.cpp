@@ -169,6 +169,4 @@ void Throw(ELogLevel level, const Class *theClass, const char *file,
 }
 
 NAMESPACE_END(detail)
-
-MTS_IMPLEMENT_CLASS(Logger, Object)
 NAMESPACE_END(mitsuba)

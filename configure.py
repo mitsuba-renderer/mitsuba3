@@ -31,13 +31,12 @@ with open(fname, 'w') as f:
         w('    "%s\\n"' % name)
     f.write('\n\n')
 
-    w('#define MTS_DECLARE_PLUGIN()')
-    w('    MTS_DECLARE_CLASS()')
+    w('#define MTS_DECLARE_PLUGIN(Name, Parent)')
+    w('    MTS_REGISTER_CLASS(Name, Parent)')
     w('    MTS_IMPORT_TYPES()')
     f.write('\n\n')
 
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
-    w('    MTS_IMPLEMENT_CLASS_TEMPLATE(Name, Parent)')
     w('    extern "C" {')
     w('        MTS_EXPORT const char *plugin_descr = Descr;')
     w('        MTS_EXPORT Object *plugin_create(const char *config,')
@@ -63,7 +62,6 @@ with open(fname, 'w') as f:
     f.write('\n\n')
 
     w('#define MTS_IMPLEMENT_OBJECT(Name, Parent)')
-    w('    MTS_IMPLEMENT_CLASS_TEMPLATE(Name, Parent)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         # TODO: this would be better with a `using` declaration
         spectrum = spectrum.replace('Float', float_)

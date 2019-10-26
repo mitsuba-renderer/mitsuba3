@@ -450,5 +450,4 @@ std::string Scene::to_string() const {
 
 void librender_nop() { }
 
-MTS_IMPLEMENT_CLASS(Scene, Object)
 NAMESPACE_END(mitsuba)

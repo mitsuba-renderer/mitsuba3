@@ -177,6 +177,4 @@ MuellerMatrixSfD Endpoint::eval_pol(const SurfaceInteraction3fD &si,
 }
 #endif
 
-MTS_IMPLEMENT_CLASS(Endpoint, Object)
-
 NAMESPACE_END(mitsuba)

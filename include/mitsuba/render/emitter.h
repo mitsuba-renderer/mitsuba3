@@ -10,14 +10,14 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Emitter : public Endpoint<Float, Spectrum> {
 public:
+    MTS_REGISTER_INTERFACE(Emitter, Endpoint)
+
     using Base = Endpoint<Float, Spectrum>;
 
     /// Is this an environment map light emitter?
     virtual bool is_environment() const {
         return false;
     }
-
-    MTS_DECLARE_CLASS()
 
 protected:
     Emitter(const Properties &props)

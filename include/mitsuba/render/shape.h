@@ -16,6 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
+    MTS_REGISTER_INTERFACE(Shape, Object)
     MTS_IMPORT_TYPES();
     using BSDF    = typename Aliases::BSDF;
     using Medium  = typename Aliases::Medium;
@@ -318,7 +319,6 @@ public:
     //! @}
     // =============================================================
 
-    MTS_DECLARE_CLASS()
     ENOKI_CALL_SUPPORT_FRIEND()
 
 protected:

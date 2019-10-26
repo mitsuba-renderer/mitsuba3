@@ -48,6 +48,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE PluginManager : public Object {
 public:
+    MTS_REGISTER_CLASS(PluginManager, Object)
+
     /// Return the global plugin manager
     static PluginManager *instance() { return m_instance; }
 
@@ -86,7 +88,6 @@ public:
      */
     ref<Object> create_object(const Properties &props);
 
-    MTS_DECLARE_CLASS()
 protected:
     PluginManager();
 
