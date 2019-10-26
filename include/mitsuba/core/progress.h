@@ -24,7 +24,7 @@ public:
     ProgressReporter(const std::string &label, void *payload = nullptr);
 
     /// Update the progress to \c progress (which should be in the range [0, 1])
-    void update(Float progress);
+    void update(float progress);
 
     MTS_DECLARE_CLASS()
 protected:
@@ -37,7 +37,7 @@ protected:
     size_t m_bar_start;
     size_t m_bar_size;
     size_t m_last_update;
-    Float m_last_progress;
+    float m_last_progress;
     void *m_payload;
 };
 

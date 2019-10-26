@@ -27,8 +27,8 @@ ProgressReporter::ProgressReporter(const std::string &label, void *payload)
 
 ProgressReporter::~ProgressReporter() { }
 
-void ProgressReporter::update(Float progress) {
-    progress = std::min(std::max(progress, (Float) 0.f), (Float) 1.f);
+void ProgressReporter::update(float progress) {
+    progress = std::min(std::max(progress, 0.f), 1.f);
 
     if (progress == m_last_progress)
         return;
@@ -38,7 +38,7 @@ void ProgressReporter::update(Float progress) {
                             std::abs(progress - m_last_progress) < 0.01f))
         return; // Don't refresh too often
 
-    Float remaining = elapsed / progress * (1 - progress);
+    float remaining = elapsed / progress * (1 - progress);
     std::string eta = "(" + util::time_string(elapsed) + ", ETA: " + util::time_string(remaining) + ")";
     if (eta.length() > 22)
         eta.resize(22);
