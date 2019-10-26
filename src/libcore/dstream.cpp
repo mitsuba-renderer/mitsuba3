@@ -32,7 +32,7 @@ void DummyStream::seek(size_t pos) {
 
 void DummyStream::truncate(size_t size) {
     /*  Simply sets the current size of the stream.
-       The position is updated to <tt>min(old_position, size)</tt>. */
+   The position is updated to <tt>min(old_position, size)</tt>. */
     m_size = size;  // No underlying data, so there's nothing else to do.
     m_pos = std::min(m_pos, size);
 }
@@ -43,5 +43,4 @@ void DummyStream::flush() { /* Nothing to do */ }
 bool DummyStream::can_write() const { return !is_closed(); }
 bool DummyStream::can_read() const { return false; }
 
-MTS_IMPLEMENT_CLASS(DummyStream, Stream)
 NAMESPACE_END(mitsuba)

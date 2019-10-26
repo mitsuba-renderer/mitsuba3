@@ -223,5 +223,4 @@ std::ostream &operator<<(std::ostream &os, const TransportMode &mode) {
     return os;
 }
 
-MTS_IMPLEMENT_CLASS(BSDF, DifferentiableObject)
 NAMESPACE_END(mitsuba)

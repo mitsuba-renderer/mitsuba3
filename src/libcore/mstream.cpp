@@ -102,6 +102,4 @@ std::string MemoryStream::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(MemoryStream, Stream)
-
 NAMESPACE_END(mitsuba)

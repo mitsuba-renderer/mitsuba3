@@ -27,6 +27,8 @@ private:
  */
 class MTS_EXPORT_CORE FileStream : public Stream {
 public:
+    MTS_REGISTER_CLASS(FileStream, Stream)
+
     enum EMode {
         /// Opens a file in (binary) read-only mode
         ERead,
@@ -121,8 +123,6 @@ public:
 
     //! @}
     // =========================================================================
-
-    MTS_DECLARE_CLASS()
 
 protected:
 

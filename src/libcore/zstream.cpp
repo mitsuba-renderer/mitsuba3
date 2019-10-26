@@ -177,5 +177,4 @@ std::string ZStream::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(ZStream, Stream)
 NAMESPACE_END(mitsuba)

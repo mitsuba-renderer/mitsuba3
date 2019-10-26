@@ -216,8 +216,4 @@ MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &pr
 template <typename Float, typename Spectrum>
 MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
 
-MTS_IMPLEMENT_CLASS_TEMPLATE(Integrator, Object)
-MTS_IMPLEMENT_CLASS_TEMPLATE(SamplingIntegrator, Integrator)
-MTS_IMPLEMENT_CLASS_TEMPLATE(MonteCarloIntegrator, SamplingIntegrator)
-
 NAMESPACE_END(mitsuba)

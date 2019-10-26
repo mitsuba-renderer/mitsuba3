@@ -22,6 +22,8 @@ NAMESPACE_END(detail)
  */
 class MTS_EXPORT_CORE ZStream : public Stream {
 public:
+    MTS_REGISTER_CLASS(ZStream, Stream)
+
     enum EStreamType {
         EDeflateStream, ///< A raw deflate stream
         EGZipStream ///< A gzip-compatible stream
@@ -119,8 +121,6 @@ public:
 
     //! @}
     // =========================================================================
-
-    MTS_DECLARE_CLASS()
 
 protected:
     /// Protected destructor

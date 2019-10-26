@@ -159,5 +159,4 @@ std::string FileStream::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(FileStream, Stream)
 NAMESPACE_END(mitsuba)

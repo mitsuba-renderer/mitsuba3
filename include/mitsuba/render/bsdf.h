@@ -293,6 +293,7 @@ template <typename Float, typename Spectrum>
 // class MTS_EXPORT_RENDER BSDF : public DifferentiableObject {
 class MTS_EXPORT_RENDER BSDF : public Object {
 public:
+    MTS_REGISTER_CLASS(BSDF, Object)
     MTS_IMPORT_TYPES();
 
     /**
@@ -455,7 +456,6 @@ public:
     // -----------------------------------------------------------------------
 
     ENOKI_CALL_SUPPORT_FRIEND()
-    MTS_DECLARE_CLASS()
 
 protected:
     BSDF(const Properties &props);

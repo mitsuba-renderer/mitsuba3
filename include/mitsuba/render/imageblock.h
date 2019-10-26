@@ -23,6 +23,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ImageBlock : public Object {
 public:
+    MTS_REGISTER_CLASS(ImageBlock, Object)
     MTS_IMPORT_TYPES()
     using ReconstructionFilter = typename Aliases::ReconstructionFilter;
 
@@ -203,8 +204,6 @@ public:
     // =============================================================
 
     std::string to_string() const override;
-
-    MTS_DECLARE_CLASS()
 
 protected:
     /// Virtual destructor
