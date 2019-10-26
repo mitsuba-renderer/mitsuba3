@@ -15,8 +15,8 @@ template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
 template <typename Float> class ReconstructionFilter;
-class Integrator;
-class Medium;
+template <typename Float, typename Spectrum> class Integrator;
+template <typename Float, typename Spectrum> class Medium;
 template <typename Float, typename Spectrum> class Sampler;
 template <typename Float, typename Spectrum> class Scene;
 template <typename Float, typename Spectrum> class Sensor;
@@ -123,19 +123,16 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using Scene                = mitsuba::Scene<Float, Spectrum>;
     using Sampler              = mitsuba::Sampler<Float, Spectrum>;
     using Shape                = mitsuba::Shape<Float, Spectrum>;
-    // using Integrator           = mitsuba::Integrator<Float, Spectrum>;
+    using Integrator           = mitsuba::Integrator<Float, Spectrum>;
     using BSDF                 = mitsuba::BSDF<Float, Spectrum>;
     using Sensor               = mitsuba::Sensor<Float, Spectrum>;
     using Emitter              = mitsuba::Emitter<Float, Spectrum>;
-    // using Medium               = mitsuba::Medium<Float, Spectrum>;
+    using Medium               = mitsuba::Medium<Float, Spectrum>;
     using Film                 = mitsuba::Film<Float, Spectrum>;
     using ImageBlock           = mitsuba::ImageBlock<Float, Spectrum>;
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float>;
     using ContinuousSpectrum   = mitsuba::ContinuousSpectrum<Float, Spectrum>;
     using Texture3D            = mitsuba::Texture3D<Float, Spectrum>;
-
-    using Integrator           = mitsuba::Integrator;
-    using Medium               = mitsuba::Medium;
 
     using ObjectPtr           = replace_scalar_t<Float, const Object *>;
     using BSDFPtr             = replace_scalar_t<Float, const BSDF *>;

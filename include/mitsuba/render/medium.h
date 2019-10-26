@@ -2,10 +2,12 @@
 
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/traits.h>
 #include <mitsuba/render/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
+template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Medium : public Object {
 public:
 

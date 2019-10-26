@@ -2,7 +2,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Medium::~Medium() { }
+template <typename Float, typename Spectrum>
+Medium<Float, Spectrum>::~Medium() { }
 
-MTS_IMPLEMENT_CLASS(Medium, Object)
+MTS_IMPLEMENT_CLASS_TEMPLATE(Medium, Object)
 NAMESPACE_END(mitsuba)
