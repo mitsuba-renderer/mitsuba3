@@ -44,7 +44,6 @@
 
 
 #define MTS_IMPLEMENT_OBJECT(Name, Parent)                                  \
-    MTS_IMPLEMENT_CLASS_TEMPLATE(Name, Parent)                              \
     template class MTS_EXPORT_CORE Name<float, Color<float, 1>>;            \
     template class MTS_EXPORT_CORE Name<float, Color<float, 3>>;            \
     template class MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;         \

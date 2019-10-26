@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(ConstantBackgroundEmitter, Emitter)
     using Base               = Emitter<Float, Spectrum>;
     using Scene              = typename Aliases::Scene;
     using Shape              = typename Aliases::Shape;

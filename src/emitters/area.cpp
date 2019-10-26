@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(AreaLight, Emitter)
     MTS_USING_BASE(Emitter, m_shape, m_medium)
     using Scene              = typename Aliases::Scene;
     using Shape              = typename Aliases::Shape;
@@ -27,7 +27,7 @@ public:
 
     void set_shape(Shape *shape) override {
         Base::set_shape(shape);
-        m_area_times_pi = m_shape->surface_area() * math::Pi<Float>;
+        m_area_times_pi = m_shape->surface_area() * math::Pi<sFloat>;
     }
 
     MTS_INLINE Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -91,7 +91,7 @@ public:
 
 private:
     ref<ContinuousSpectrum> m_radiance;
-    Float m_area_times_pi = 0.f;
+    sFloat m_area_times_pi = 0.f;
 };
 
 
