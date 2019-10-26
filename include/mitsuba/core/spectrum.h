@@ -98,6 +98,9 @@ template <typename Value, size_t Size> struct wavelength<Spectrum<Value, Size>> 
 template <typename T> struct wavelength<Matrix<T, 4, true>> {
     using type = typename wavelength<T>::type;
 };
+template <> struct wavelength<void> {
+    using type = void;
+};
 
 // Forward declaration
 template <typename T> using MuellerMatrix = enoki::Matrix<T, 4, true>;

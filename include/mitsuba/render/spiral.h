@@ -1,10 +1,10 @@
 #pragma once
 
-#include <mutex>
 #include <mitsuba/core/object.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
-#include <tbb/tbb.h>
+#include <tbb/spin_mutex.h>
 
 #if !defined(MTS_BLOCK_SIZE)
 #  define MTS_BLOCK_SIZE 32
@@ -24,8 +24,16 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_RENDER Spiral : public Object {
 public:
-    /// Create a new spiral generator for the given film and block size
-    Spiral(const Film *film, size_t block_size, size_t passes = 1);
+    using Float = float;
+    using Spectrum = void;
+    MTS_IMPORT_TYPES()
+
+    /// Create a new spiral generator for the given size, offset into a larger frame, and block size
+    Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes = 1);
+
+    template <typename Film>
+    Spiral(const Film &film, size_t block_size, size_t passes = 1)
+        : Spiral(film->crop_size(), film->crop_offset(), block_size, passes) {}
 
     /// Return the maximum block size
     size_t max_block_size() const { return m_block_size; }
