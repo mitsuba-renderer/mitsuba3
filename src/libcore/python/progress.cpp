@@ -40,7 +40,7 @@ public:
     /// Append a line of text with the given log level
     virtual void append(LogLevel level, const std::string &text) override {
         std::string col = "#000";
-        if (level == EDebug)
+        if (level == Debug)
             col = "#bbb";
         else if (level == Warn || level == Error)
             col = "#f55";

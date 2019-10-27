@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from mitsuba.core import Bitmap, EDebug, Log
+from mitsuba.core import Bitmap
 from mitsuba.render import (DifferentiableParameters, RadianceSample3fD,
                             ImageBlock)
 

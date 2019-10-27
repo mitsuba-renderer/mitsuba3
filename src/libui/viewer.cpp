@@ -167,7 +167,7 @@ MitsubaViewer::MitsubaViewer()
     mitsuba::ref<Bitmap> bitmap;// = new Bitmap(new MemoryStream(mitsuba_logo_png, mitsuba_logo_png_size));
 
     m_view->set_pixel_callback(
-        [bitmap](const Vector2i &pos, char **out, size_t out_size) {
+        [bitmap](const ng::Vector2i &pos, char **out, size_t out_size) {
             const uint8_t *data = (const uint8_t *) bitmap->data();
             for (int i = 0; i < 4; ++i)
                 snprintf(out[i], out_size, "%.3g",
@@ -225,9 +225,9 @@ MitsubaViewer::MitsubaViewer()
     progress_layout->set_anchor(label2, Anchor(2, 0));
     progress_layout->set_anchor(m_progress_bar, Anchor(4, 0));
 
-    Screen::set_resize_callback([this](const Vector2i &size) {
-        m_progress_panel->set_size(Vector2i(0, 0));
-        m_view->set_size(Vector2i(0, 0));
+    Screen::set_resize_callback([this](const ng::Vector2i &size) {
+        m_progress_panel->set_size(ng::Vector2i(0, 0));
+        m_view->set_size(ng::Vector2i(0, 0));
         m_contents->set_size(size);
         perform_layout();
     });
@@ -266,10 +266,10 @@ public:
         });
     }
 
-    void log_progress(Float progress, const std::string &name,
-        const std::string &formatted, const std::string &eta,
-        const void *ptr) {
-    }
+    void log_progress(float /*progress*/, const std::string & /*name*/,
+                      const std::string & /*formatted*/, const std::string & /*eta*/,
+                      const void * /*ptr*/) {}
+
 private:
     MitsubaViewer *m_viewer;
     MitsubaViewer::Tab *m_tab;
@@ -296,7 +296,7 @@ void MitsubaViewer::load(Tab *tab, const fs::path &fname) {
     try {
         ref<Logger> logger = new Logger();
         logger->clear_appenders();
-        logger->set_log_level(EDebug);
+        logger->set_log_level(Debug);
         logger->add_appender(new TabAppender(this, tab));
         logger->set_formatter(new DefaultFormatter());
         Thread::thread()->set_logger(logger);
@@ -328,8 +328,9 @@ void MitsubaViewer::perform_layout(NVGcontext* ctx) {
     int tab_height = m_tab_widget->font_size() + 2 * m_theme->m_tab_button_vertical_padding,
         padding = m_tab_widget->padding();
 
-    Vector2i position = Vector2i(padding, padding + tab_height + 1),
-             size     = m_tab_widget->size() - Vector2i(2 * padding, 2 * padding + tab_height + 1);
+    ng::Vector2i position = ng::Vector2i(padding, padding + tab_height + 1),
+                 size =
+                     m_tab_widget->size() - ng::Vector2i(2 * padding, 2 * padding + tab_height + 1);
 
     for (Tab *tab : m_tabs) {
         ng::VScrollPanel *console_panel = tab->console_panel;

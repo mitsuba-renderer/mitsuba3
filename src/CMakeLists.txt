@@ -11,7 +11,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-undefined,dynamic_lookup")
 # # Mitsuba support libraries
 add_subdirectory(libcore)
 add_subdirectory(librender)
-# add_subdirectory(libui)
+add_subdirectory(libui)
 
 # # Mitsuba executables
 # add_subdirectory(mitsuba)
