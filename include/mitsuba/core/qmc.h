@@ -15,6 +15,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE RadicalInverse : public Object {
 public:
+    MTS_REGISTER_CLASS(RadicalInverse, Object)
+
     /**
      * \brief Precompute data structures that are used to evaluate the radical
      * inverse and scrambled radical inverse function
@@ -102,8 +104,6 @@ private:
 
     /// Invert one of the permutations
     void invert_permutation(uint32_t i);
-
-    MTS_DECLARE_CLASS()
 
 protected:
     virtual ~RadicalInverse() = default;

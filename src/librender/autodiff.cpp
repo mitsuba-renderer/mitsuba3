@@ -52,9 +52,6 @@ std::string DifferentiableParameters::to_string() const {
     oss << "]";
     return oss.str();
 }
+#endif  // MTS_ENABLE_AUTODIFF
 
-MTS_IMPLEMENT_CLASS(DifferentiableParameters, Object)
-#endif
-
-MTS_IMPLEMENT_CLASS(DifferentiableObject, Object)
 NAMESPACE_END(mitsuba)

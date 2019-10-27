@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum = void>
 class TentFilter final : public ReconstructionFilter<Float> {
 public:
-    MTS_DECLARE_CLASS();
+    MTS_REGISTER_CLASS(TentFilter, ReconstructionFilter)
     MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
 
     TentFilter(const Properties &props) : Base(props) {

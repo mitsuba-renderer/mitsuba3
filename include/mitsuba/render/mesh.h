@@ -12,6 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
+    MTS_REGISTER_CLASS(Mesh, Object)
     MTS_IMPORT_TYPES();
     using Base = Shape<Float, Spectrum>;
     using typename Base::Size;
@@ -264,8 +265,6 @@ public:
 
     /// Return a human-readable string representation of the shape contents.
     virtual std::string to_string() const override;
-
-    MTS_DECLARE_CLASS()
 
 protected:
     Mesh(const Properties &);

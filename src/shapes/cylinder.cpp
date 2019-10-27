@@ -18,6 +18,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class Cylinder final : public Shape {
 public:
+    MTS_REGISTER_CLASS(Cylinder, Shape)
+
     Cylinder(const Properties &props) : Shape(props) {
         m_radius = props.float_("radius", 1.f);
 
@@ -335,8 +337,6 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SHAPE_ALL()
-    MTS_DECLARE_CLASS()
 private:
     Transform4f m_object_to_world;
     Transform4f m_world_to_object;
@@ -345,7 +345,5 @@ private:
     bool    m_flip_normals;
 };
 
-MTS_IMPLEMENT_CLASS(Cylinder, Shape)
-MTS_EXPORT_PLUGIN(Cylinder, "Cylinder intersection primitive");
-
+MTS_IMPLEMENT_PLUGIN(Cylinder, Shape, "Cylinder intersection primitive");
 NAMESPACE_END(mitsuba)

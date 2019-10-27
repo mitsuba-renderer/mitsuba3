@@ -68,5 +68,4 @@ std::string ShapeKDTree::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(ShapeKDTree, TShapeKDTree)
 NAMESPACE_END(mitsuba)

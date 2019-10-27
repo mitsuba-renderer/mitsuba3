@@ -352,6 +352,8 @@ MTS_STRUCT_TRAITS(double, EFloat64);
 class MTS_EXPORT_CORE StructConverter : public Object {
     using FuncType = bool (*) (size_t, size_t, const void *, void *);
 public:
+    MTS_REGISTER_CLASS(StructConverter, Object)
+
     /// Construct an optimized conversion routine going from \c source to \c target
     StructConverter(const Struct *source, const Struct *target, bool dither = false);
 

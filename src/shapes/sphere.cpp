@@ -18,6 +18,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class Sphere final : public Shape {
 public:
+    MTS_REGISTER_CLASS(Sphere, Shape)
+
     Sphere(const Properties &props) : Shape(props) {
         m_object_to_world =
             Transform4f::translate(Vector3f(props.point3f("center", Point3f(0.f))));
@@ -357,9 +359,6 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SHAPE_ALL()
-    MTS_IMPLEMENT_SHAPE_SAMPLE_DIRECTION_ALL()
-    MTS_DECLARE_CLASS()
 private:
     Transform4f m_object_to_world;
     Transform4f m_world_to_object;
@@ -369,7 +368,5 @@ private:
     bool    m_flip_normals;
 };
 
-MTS_IMPLEMENT_CLASS(Sphere, Shape)
-MTS_EXPORT_PLUGIN(Sphere, "Sphere intersection primitive");
-
+MTS_IMPLEMENT_PLUGIN(Sphere, Shape, "Sphere intersection primitive");
 NAMESPACE_END(mitsuba)

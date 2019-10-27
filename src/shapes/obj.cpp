@@ -27,6 +27,8 @@ void advance(const char **start_, const char *end, const char (&delim)[N]) {
 
 class OBJMesh final : public Mesh {
 public:
+    MTS_REGISTER_CLASS(OBJMesh, Mesh)
+
     Float strtof(const char *nptr, char **endptr) {
         #if defined(SINGLE_PRECISION)
             return std::strtof(nptr, endptr);
@@ -287,12 +289,7 @@ public:
         if (is_emitter())
             emitter()->set_shape(this);
     }
-
-
-    MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS(OBJMesh, Mesh)
-MTS_EXPORT_PLUGIN(OBJMesh, "OBJ Mesh")
-
+MTS_IMPLEMENT_PLUGIN(OBJMesh, Mesh, "OBJ Mesh")
 NAMESPACE_END(mitsuba)

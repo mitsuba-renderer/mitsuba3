@@ -275,5 +275,4 @@ std::string RadicalInverse::to_string() const {
                        m_base_count, m_scramble);
 }
 
-MTS_IMPLEMENT_CLASS(RadicalInverse, Object)
 NAMESPACE_END(mitsuba)

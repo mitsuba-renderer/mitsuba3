@@ -31,7 +31,7 @@ add_library(mitsuba-core-obj OBJECT
   # ddistr.cpp           ${INC_DIR}/ddistr.h
   dstream.cpp          ${INC_DIR}/dstream.h
   # filesystem.cpp       ${INC_DIR}/filesystem.h
-  # formatter.cpp        ${INC_DIR}/formatter.h
+  formatter.cpp        ${INC_DIR}/formatter.h
   # fresolver.cpp        ${INC_DIR}/fresolver.h
   fstream.cpp          ${INC_DIR}/fstream.h
   # jit.cpp              ${INC_DIR}/jit.h

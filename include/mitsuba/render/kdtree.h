@@ -98,6 +98,8 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename BoundingBox_, typename Index_, typename CostModel_,
           typename Derived_> class TShapeKDTree : public Object {
 public:
+    MTS_REGISTER_CLASS(TShapeKDTree, Object)
+
     using BoundingBox = BoundingBox_;
     using CostModel   = CostModel_;
     using Index       = Index_;
@@ -200,8 +202,6 @@ public:
 
     const Derived& derived() const { return (Derived&) *this; }
     Derived& derived() { return (Derived&) *this; }
-
-    MTS_DECLARE_CLASS()
 
 protected:
     /* ==================================================================== */
@@ -2020,6 +2020,8 @@ private:
 class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<float, 3>>, uint32_t,
                                                           SurfaceAreaHeuristic3f, ShapeKDTree> {
 public:
+    MTS_REGISTER_CLASS(ShapeKDTree, TShapeKDTree)
+
     using BoundingBox3f = mitsuba::BoundingBox<mitsuba::Point<float, 3>>;
     using Base = TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
     using Base::Scalar;
@@ -2440,7 +2442,6 @@ public:
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
 protected:
     /**
      * \brief Map an abstract \ref TShapeKDTree primitive index to a specific

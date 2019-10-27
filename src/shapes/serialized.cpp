@@ -14,6 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 class SerializedMesh final : public Mesh {
 public:
+    MTS_REGISTER_CLASS(SerializedMesh, Mesh)
+
     enum ETriMeshFlags {
         EHasNormals      = 0x0001,
         EHasTexcoords    = 0x0002,
@@ -256,11 +258,7 @@ public:
             stream->read_array(values.get(), m_vertex_count * dim);
         }
     }
-
-    MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS(SerializedMesh, Mesh)
-MTS_EXPORT_PLUGIN(SerializedMesh, "Serialized mesh file")
-
+MTS_IMPLEMENT_PLUGIN(SerializedMesh, Mesh, "Serialized mesh file")
 NAMESPACE_END(mitsuba)

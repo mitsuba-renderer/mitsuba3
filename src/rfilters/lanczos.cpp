@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum = void>
 class LanczosSincFilter final : public ReconstructionFilter<Float> {
 public:
-    MTS_DECLARE_CLASS();
+    MTS_REGISTER_CLASS(LanczosSincFilter, ReconstructionFilter)
     MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
 
     LanczosSincFilter(const Properties &props) : Base(props) {

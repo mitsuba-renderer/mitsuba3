@@ -14,6 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 class PLYMesh final : public Mesh {
 public:
+    MTS_REGISTER_CLASS(PLYMesh, Mesh)
+
     struct PLYElement {
         std::string name;
         size_t count;
@@ -551,11 +553,7 @@ private:
         out->seek(0);
         return out;
     }
-
-    MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS(PLYMesh, Mesh)
-MTS_EXPORT_PLUGIN(PLYMesh, "PLY Mesh")
-
+MTS_IMPLEMENT_PLUGIN(PLYMesh, Mesh, "PLY Mesh")
 NAMESPACE_END(mitsuba)

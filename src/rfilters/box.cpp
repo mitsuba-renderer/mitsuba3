@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum = void>
 class BoxFilter final : public ReconstructionFilter<Float> {
 public:
-    MTS_DECLARE_CLASS()
+    MTS_REGISTER_CLASS(BoxFilter, ReconstructionFilter)
     MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
 
     BoxFilter(const Properties &props) : Base(props) {

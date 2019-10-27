@@ -21,6 +21,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class Rectangle final : public Shape {
 public:
+    MTS_REGISTER_CLASS(Rectangle, Shape)
+
     Rectangle(const Properties &props) : Shape(props) {
         m_object_to_world = props.transform("to_world", Transform4f());
         if (props.bool_("flip_normals", false))
@@ -204,8 +206,6 @@ public:
         return oss.str();
     }
 
-    MTS_IMPLEMENT_SHAPE_ALL()
-    MTS_DECLARE_CLASS()
 private:
     Transform4f m_object_to_world;
     Transform4f m_world_to_object;
@@ -214,7 +214,5 @@ private:
     Float m_inv_surface_area;
 };
 
-MTS_IMPLEMENT_CLASS(Rectangle, Shape)
-MTS_EXPORT_PLUGIN(Rectangle, "Rectangle intersection primitive");
-
+MTS_IMPLEMENT_PLUGIN(Rectangle, Shape, "Rectangle intersection primitive");
 NAMESPACE_END(mitsuba)
