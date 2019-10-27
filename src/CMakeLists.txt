@@ -4,6 +4,10 @@ if (PYTHONLIBS_FOUND)
   include("cmake/libpython.cmake")
 endif()
 
+# Temporarily ignore all linker errors during refactoring (CLang)
+# TODO: remove this!
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-undefined,dynamic_lookup")
+
 # # Mitsuba support libraries
 add_subdirectory(libcore)
 add_subdirectory(librender)
