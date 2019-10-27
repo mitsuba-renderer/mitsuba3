@@ -6,7 +6,7 @@ set(MTS_PLUGIN_PREFIX "shapes")
 
 add_plugin(cylinder    cylinder.cpp)
 add_plugin(disk        disk.cpp)
-# add_plugin(rectangle   rectangle.cpp)
+add_plugin(rectangle   rectangle.cpp)
 # add_plugin(sphere      sphere.cpp)
 
 # Register the test directory
