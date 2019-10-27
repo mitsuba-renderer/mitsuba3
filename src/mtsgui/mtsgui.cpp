@@ -1,19 +1,18 @@
+#include <enoki/transform.h>
+#include <tbb/tbb.h>
+
+#include <mitsuba/core/argparser.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/jit.h>
 #include <mitsuba/core/logger.h>
-#include <mitsuba/core/thread.h>
 #include <mitsuba/core/profiler.h>
-#include <mitsuba/core/argparser.h>
-#include <mitsuba/core/xml.h>
+#include <mitsuba/core/thread.h>
 #include <mitsuba/core/util.h>
-#include <mitsuba/render/common.h>
+#include <mitsuba/core/xml.h>
+#include <mitsuba/render/scene.h>
 #include <mitsuba/ui/viewer.h>
-
-#include <tbb/tbb.h>
-
-#include <enoki/transform.h>
 
 using namespace mitsuba;
 
@@ -67,17 +66,17 @@ int main(int argc, char *argv[]) {
     Logger::static_initialization();
     Bitmap::static_initialization();
 
-    /* Ensure that the mitsuba-render shared library is loaded */
+    // Ensure that the mitsuba-render shared library is loaded
     librender_nop();
 
     ArgParser parser;
-    using StringVec = std::vector<std::string>;
-    auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
-    auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
-    auto arg_define  = parser.add(StringVec { "-D", "--define" }, true);
-    auto arg_config = parser.add(StringVec{ "-c", "--configuration" }, false);
-    auto arg_help = parser.add(StringVec { "-h", "--help" });
-    auto arg_extra = parser.add("", true);
+    using StringVec  = std::vector<std::string>;
+    auto arg_threads = parser.add(StringVec{ "-t", "--threads" }, true);
+    auto arg_verbose = parser.add(StringVec{ "-v", "--verbose" }, false);
+    auto arg_define  = parser.add(StringVec{ "-D", "--define" }, true);
+    auto arg_config  = parser.add(StringVec{ "-c", "--configuration" }, false);
+    auto arg_help    = parser.add(StringVec{ "-h", "--help" });
+    auto arg_extra   = parser.add("", true);
     xml::ParameterList params;
 
     std::string error_msg;
