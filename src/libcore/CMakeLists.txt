@@ -30,12 +30,12 @@ add_library(mitsuba-core-obj OBJECT
   class.cpp            ${INC_DIR}/class.h
   # ddistr.cpp           ${INC_DIR}/ddistr.h
   dstream.cpp          ${INC_DIR}/dstream.h
-  # filesystem.cpp       ${INC_DIR}/filesystem.h
+  filesystem.cpp       ${INC_DIR}/filesystem.h
   formatter.cpp        ${INC_DIR}/formatter.h
-  # fresolver.cpp        ${INC_DIR}/fresolver.h
+  fresolver.cpp        ${INC_DIR}/fresolver.h
   fstream.cpp          ${INC_DIR}/fstream.h
-  # jit.cpp              ${INC_DIR}/jit.h
-  # logger.cpp           ${INC_DIR}/logger.h
+  jit.cpp              ${INC_DIR}/jit.h
+  logger.cpp           ${INC_DIR}/logger.h
   # math.cpp             ${INC_DIR}/math.h
   mmap.cpp             ${INC_DIR}/mmap.h
   # tensor.cpp           ${INC_DIR}/tensor.h
@@ -49,18 +49,18 @@ add_library(mitsuba-core-obj OBJECT
   # random.cpp           ${INC_DIR}/random.h
   # rfilter.cpp          ${INC_DIR}/rfilter.h
   # spectrum.cpp         ${INC_DIR}/spectrum.h
-  # spline.cpp           ${INC_DIR}/spline.h
+  spline.cpp           ${INC_DIR}/spline.h
   stream.cpp           ${INC_DIR}/stream.h
   # struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
   tls.cpp              ${INC_DIR}/tls.h
   # transform.cpp        ${INC_DIR}/transform.h
   util.cpp             ${INC_DIR}/util.h
-  # vector.cpp           ${INC_DIR}/vector.h
+  vector.cpp           ${INC_DIR}/vector.h
   # warp.cpp             ${INC_DIR}/warp.h
   # xml.cpp              ${INC_DIR}/xml.h
-  # zstream.cpp          ${INC_DIR}/zstream.h
-  # quad.cpp             ${INC_DIR}/quad.h
+  zstream.cpp          ${INC_DIR}/zstream.h
+  quad.cpp             ${INC_DIR}/quad.h
 
   dither-matrix256.cpp
 )

@@ -1,3 +1,5 @@
+message(STATUS ${ASMJIT_INCLUDE_DIRS})
+
 include_directories(
   ${TBB_INCLUDE_DIRS}
   ${ASMJIT_INCLUDE_DIRS}

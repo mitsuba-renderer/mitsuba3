@@ -5,17 +5,15 @@
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/jit.h>
 #include <mitsuba/core/logger.h>
+#include <mitsuba/core/profiler.h>
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/xml.h>
-#include <mitsuba/core/profiler.h>
-#include <mitsuba/render/common.h>
 #include <mitsuba/render/integrator.h>
+#include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 #include <tbb/task_scheduler_init.h>
-
-#include <mitsuba/render/records.h>
 
 using namespace mitsuba;
 
@@ -58,7 +56,7 @@ int main(int argc, char *argv[]) {
     Bitmap::static_initialization();
     Profiler::static_initialization();
 
-    /* Ensure that the mitsuba-render shared library is loaded */
+    // Ensure that the mitsuba-render shared library is loaded
     librender_nop();
 
     ArgParser parser;

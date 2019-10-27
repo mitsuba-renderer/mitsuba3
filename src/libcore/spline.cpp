@@ -5,6 +5,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(spline)
 
+#if 0  // TODO: remove this?
 template MTS_EXPORT_CORE Float  eval_spline(Float,  Float,  Float,  Float,  Float);
 template MTS_EXPORT_CORE FloatP eval_spline(FloatP, FloatP, FloatP, FloatP, FloatP);
 
@@ -49,6 +50,7 @@ template MTS_EXPORT_CORE Float  eval_2d<true>(const  Float*, uint32_t, const Flo
 template MTS_EXPORT_CORE Float  eval_2d<false>(const Float*, uint32_t, const Float*,  uint32_t, const Float*, Float,  Float);
 template MTS_EXPORT_CORE FloatP eval_2d<true>(const  Float*, uint32_t, const Float*,  uint32_t, const Float*, FloatP, FloatP);
 template MTS_EXPORT_CORE FloatP eval_2d<false>(const Float*, uint32_t, const Float*,  uint32_t, const Float*, FloatP, FloatP);
+#endif
 
 NAMESPACE_END(spline)
 NAMESPACE_END(mitsuba)

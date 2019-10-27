@@ -25,19 +25,19 @@ public:
 
     /// Type of a field in the \c Struct
     enum EType {
-        /* Invalid/unspecified */
+        // Invalid/unspecified
         EInvalid = 0,
 
-        /* Signed and unsigned integer values */
+        // Signed and unsigned integer values
         EUInt8,  EInt8,
         EUInt16, EInt16,
         EUInt32, EInt32,
         EUInt64, EInt64,
 
-        /* Floating point values */
+        // Floating point values
         EFloat16, EFloat32, EFloat64,
 
-        /* Compile-time float precision */
+        // Compile-time float precision
         #if defined(SINGLE_PRECISION)
             EFloat = EFloat32
         #else
@@ -396,8 +396,7 @@ public:
 protected:
 
 #if MTS_STRUCTCONVERTER_USE_JIT == 0
-    /* Support data structures/functions for non-accelerated
-       conversion backend */
+    // Support data structures/functions for non-accelerated conversion backend
 
     struct Value {
         Struct::EType type;

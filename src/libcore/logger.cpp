@@ -74,7 +74,7 @@ void Logger::log(LogLevel level, const Class *class_, const char *file,
         entry->append(level, text);
 }
 
-void Logger::log_progress(Float progress, const std::string &name,
+void Logger::log_progress(float progress, const std::string &name,
     const std::string &formatted, const std::string &eta, const void *ptr) {
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto entry : d->appenders)

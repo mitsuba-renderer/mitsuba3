@@ -3,7 +3,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(quad)
 
-template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
+template <typename Float, typename FloatX>
 std::pair<FloatX, FloatX> gauss_legendre(int n) {
     if (n < 1)
         throw std::runtime_error("gauss_legendre(): n must be >= 1");
@@ -25,8 +25,8 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
 
     int m = (n + 1) / 2;
     for (int i = 0; i < m; ++i) {
-        /* Initial guess for this root using that of a Chebyshev polynomial */
-        double x = -std::cos((double) (2*i + 1) / (double) (2*n + 2) * math::Pi_d);
+        // Initial guess for this root using that of a Chebyshev polynomial
+        double x = -std::cos((double) (2*i + 1) / (double) (2*n + 2) * math::Pi<double>);
         int it = 0;
 
         while (true) {
@@ -35,7 +35,7 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
                     "gauss_lobatto(" + std::to_string(n) +
                     "): did not converge after 20 iterations!");
 
-            /* Search for the interior roots of P_{n+1}(x) using Newton's method. */
+            // Search for the interior roots of P_{n+1}(x) using Newton's method.
             std::pair<double, double> L = math::legendre_pd(n+1, x);
             double step = L.first / L.second;
             x -= step;
@@ -62,7 +62,7 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
     return { nodes, weights };
 }
 
-template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
+template <typename Float, typename FloatX>
 std::pair<FloatX, FloatX> gauss_lobatto(int n) {
     if (n < 2)
         throw std::runtime_error("gauss_lobatto(): n must be >= 2");
@@ -82,14 +82,14 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
         /* Initial guess for this root -- see "On the Legendre-Gauss-Lobatto Points
            and Weights" by Seymor V. Parter, Journal of Sci. Comp., Vol. 14, 4, 1999 */
 
-        double x = -std::cos((i + 0.25) * math::Pi_d / n - 3/(8*n*math::Pi_d * (i + 0.25)));
+        double x = -std::cos((i + 0.25) * math::Pi<double> / n -
+                             3 / (8 * n * math::Pi<double> * (i + 0.25)));
         int it = 0;
 
         while (true) {
             if (++it > 20)
-                throw std::runtime_error(
-                    "gauss_lobatto(" + std::to_string(n) +
-                        "): did not converge after 20 iterations!");
+                throw std::runtime_error("gauss_lobatto(" + std::to_string(n) +
+                                         "): did not converge after 20 iterations!");
 
             /* Search for the interior roots of P_n'(x) using Newton's method. The same
                roots are also shared by P_{n+1}-P_{n-1}, which is nicer to evaluate. */
@@ -117,7 +117,7 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
     return { nodes, weights };
 }
 
-template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
+template <typename Float, typename FloatX>
 std::pair<FloatX, FloatX> composite_simpson(int n) {
     if (n % 2 != 1 || n < 3)
         throw std::runtime_error("composite_simpson(): n must be >= 3 and odd");
@@ -144,7 +144,7 @@ std::pair<FloatX, FloatX> composite_simpson(int n) {
     return { nodes, weights };
 }
 
-template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
+template <typename Float, typename FloatX>
 std::pair<FloatX, FloatX> composite_simpson_38(int n) {
     if ((n - 1) % 3 != 0 || n < 4)
         throw std::runtime_error("composite_simpson_38(): n-1 must be divisible by 3");
