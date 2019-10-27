@@ -3,102 +3,105 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-BSDF::BSDF(const Properties &props) : m_flags(0), m_id(props.id()) { }
-BSDF::~BSDF() { }
+template <typename Float, typename Spectrum>
+BSDF<Float, Spectrum>::BSDF(const Properties &props) : m_flags(BSDFFlags::None), m_id(props.id()) { }
+
+template <typename Float, typename Spectrum>
+BSDF<Float, Spectrum>::~BSDF() { }
 
 template <typename Index>
 std::string type_mask_to_string(Index type_mask) {
     std::ostringstream oss;
     oss << "{ ";
 
-#define is_set(mask) (type_mask & mask) == mask
+#define is_set(flag) has_flag(type_mask, flag)
     if (is_set(BSDFFlags::All)) {
         oss << "all ";
-        type_mask &= ~BSDFFlags::All;
+        type_mask = type_mask & ~BSDFFlags::All;
     }
     if (is_set(BSDFFlags::Reflection)) {
         oss << "reflection ";
-        type_mask &= ~BSDFFlags::Reflection;
+        type_mask = type_mask & ~BSDFFlags::Reflection;
     }
     if (is_set(BSDFFlags::Transmission)) {
         oss << "transmission ";
-        type_mask &= ~BSDFFlags::Transmission;
+        type_mask = type_mask & ~BSDFFlags::Transmission;
     }
     if (is_set(BSDFFlags::Smooth)) {
         oss << "smooth ";
-        type_mask &= ~BSDFFlags::Smooth;
+        type_mask = type_mask & ~BSDFFlags::Smooth;
     }
-    if (is_set(BSDF::Diffuse)) {
+    if (is_set(BSDFFlags::Diffuse)) {
         oss << "diffuse ";
-        type_mask &= ~BSDF::Diffuse;
+        type_mask = type_mask & ~BSDFFlags::Diffuse;
     }
-    if (is_set(BSDF::Glossy)) {
+    if (is_set(BSDFFlags::Glossy)) {
         oss << "glossy ";
-        type_mask &= ~BSDF::Glossy;
+        type_mask = type_mask & ~BSDFFlags::Glossy;
     }
-    if (is_set(BSDF::Delta)) {
+    if (is_set(BSDFFlags::Delta)) {
         oss << "delta";
-        type_mask &= ~BSDF::Delta;
+        type_mask = type_mask & ~BSDFFlags::Delta;
     }
-    if (is_set(BSDF::Delta1D)) {
+    if (is_set(BSDFFlags::Delta1D)) {
         oss << "delta_1d ";
-        type_mask &= ~BSDF::Delta1D;
+        type_mask = type_mask & ~BSDFFlags::Delta1D;
     }
-    if (is_set(BSDF::DiffuseReflection)) {
+    if (is_set(BSDFFlags::DiffuseReflection)) {
         oss << "diffuse_reflection ";
-        type_mask &= ~BSDF::DiffuseReflection;
+        type_mask = type_mask & ~BSDFFlags::DiffuseReflection;
     }
-    if (is_set(BSDF::DiffuseTransmission)) {
+    if (is_set(BSDFFlags::DiffuseTransmission)) {
         oss << "diffuse_transmission ";
-        type_mask &= ~BSDF::DiffuseTransmission;
+        type_mask = type_mask & ~BSDFFlags::DiffuseTransmission;
     }
-    if (is_set(BSDF::GlossyReflection)) {
+    if (is_set(BSDFFlags::GlossyReflection)) {
         oss << "glossy_reflection ";
-        type_mask &= ~BSDF::GlossyReflection;
+        type_mask = type_mask & ~BSDFFlags::GlossyReflection;
     }
-    if (is_set(BSDF::GlossyTransmission)) {
+    if (is_set(BSDFFlags::GlossyTransmission)) {
         oss << "glossy_transmission ";
-        type_mask &= ~BSDF::GlossyTransmission;
+        type_mask = type_mask & ~BSDFFlags::GlossyTransmission;
     }
-    if (is_set(BSDF::DeltaReflection)) {
+    if (is_set(BSDFFlags::DeltaReflection)) {
         oss << "delta_reflection ";
-        type_mask &= ~BSDF::DeltaReflection;
+        type_mask = type_mask & ~BSDFFlags::DeltaReflection;
     }
-    if (is_set(BSDF::DeltaTransmission)) {
+    if (is_set(BSDFFlags::DeltaTransmission)) {
         oss << "delta_transmission ";
-        type_mask &= ~BSDF::DeltaTransmission;
+        type_mask = type_mask & ~BSDFFlags::DeltaTransmission;
     }
-    if (is_set(BSDF::Delta1DReflection)) {
+    if (is_set(BSDFFlags::Delta1DReflection)) {
         oss << "delta_1d_reflection ";
-        type_mask &= ~BSDF::Delta1DReflection;
+        type_mask = type_mask & ~BSDFFlags::Delta1DReflection;
     }
-    if (is_set(BSDF::Delta1DTransmission)) {
+    if (is_set(BSDFFlags::Delta1DTransmission)) {
         oss << "delta_1d_transmission ";
-        type_mask &= ~BSDF::Delta1DTransmission;
+        type_mask = type_mask & ~BSDFFlags::Delta1DTransmission;
     }
-    if (is_set(BSDF::Null)) {
+    if (is_set(BSDFFlags::Null)) {
         oss << "null ";
-        type_mask &= ~BSDF::Null;
+        type_mask = type_mask & ~BSDFFlags::Null;
     }
-    if (is_set(BSDF::Anisotropic)) {
+    if (is_set(BSDFFlags::Anisotropic)) {
         oss << "anisotropic ";
-        type_mask &= ~BSDF::Anisotropic;
+        type_mask = type_mask & ~BSDFFlags::Anisotropic;
     }
-    if (is_set(BSDF::FrontSide)) {
+    if (is_set(BSDFFlags::FrontSide)) {
         oss << "front_side ";
-        type_mask &= ~BSDF::FrontSide;
+        type_mask = type_mask & ~BSDFFlags::FrontSide;
     }
-    if (is_set(BSDF::BackSide)) {
+    if (is_set(BSDFFlags::BackSide)) {
         oss << "back_side ";
-        type_mask &= ~BSDF::BackSide;
+        type_mask = type_mask & ~BSDFFlags::BackSide;
     }
-    if (is_set(BSDF::SpatiallyVarying)) {
+    if (is_set(BSDFFlags::SpatiallyVarying)) {
         oss << "spatially_varying ";
-        type_mask &= ~BSDF::SpatiallyVarying;
+        type_mask = type_mask & ~BSDFFlags::SpatiallyVarying;
     }
-    if (is_set(BSDF::NonSymmetric)) {
+    if (is_set(BSDFFlags::NonSymmetric)) {
         oss << "non_symmetric ";
-        type_mask &= ~BSDF::NonSymmetric;
+        type_mask = type_mask & ~BSDFFlags::NonSymmetric;
     }
 #undef is_set
 
@@ -107,105 +110,16 @@ std::string type_mask_to_string(Index type_mask) {
     return oss.str();
 }
 
-std::string BSDF::id() const { return m_id; }
-
-std::pair<BSDFSample3f, MuellerMatrixSf>
-BSDF::sample_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                 Float sample1, const Point2f &sample2) const {
-    BSDFSample3f s;
-    Spectrumf f;
-    std::tie(s, f) = sample(ctx, si, sample1, sample2);
-    return std::make_pair(s, mueller::depolarizer(f));
-}
-
-std::pair<BSDFSample3fP, MuellerMatrixSfP>
-BSDF::sample_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
-                 FloatP sample1, const Point2fP &sample2,
-    MaskP active) const {
-    BSDFSample3fP s;
-    SpectrumfP f;
-    std::tie(s, f) = sample(ctx, si, sample1, sample2, active);
-    return std::make_pair(s, mueller::depolarizer(f));
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-std::pair<BSDFSample3fD, MuellerMatrixSfD>
-BSDF::sample_pol(const BSDFContext &ctx, const SurfaceInteraction3fD &si,
-                 FloatD sample1, const Point2fD &sample2,
-    MaskD active) const {
-    BSDFSample3fD s;
-    SpectrumfD f;
-    std::tie(s, f) = sample(ctx, si, sample1, sample2, active);
-    return std::make_pair(s, mueller::depolarizer(f));
-}
-#endif
-
-MuellerMatrixSf
-BSDF::eval_pol(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                const Vector3f &wo) const {
-    return mueller::depolarizer(eval(ctx, si, wo));
-}
-
-MuellerMatrixSfP
-BSDF::eval_pol(const BSDFContext &ctx, const SurfaceInteraction3fP &si,
-               const Vector3fP &wo, MaskP active) const {
-    return mueller::depolarizer(eval(ctx, si, wo, active));
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-MuellerMatrixSfD
-BSDF::eval_pol(const BSDFContext &ctx, const SurfaceInteraction3fD &si,
-               const Vector3fD &wo, MaskD active) const {
-    return mueller::depolarizer(eval(ctx, si, wo, active));
-}
-#endif
-
-Spectrumf
-BSDF::eval_transmission(const SurfaceInteraction3f & /* unused */,
-                const Vector3f & /* unused */) const {
+template <typename Float, typename Spectrum>
+Spectrum BSDF<Float, Spectrum>::eval_tr(const SurfaceInteraction3f & /*si*/, Mask /*active*/) const {
     return 0.f;
 }
-
-SpectrumfP
-BSDF::eval_transmission(const SurfaceInteraction3fP & /* unused */,
-                const Vector3fP & /* unused */, MaskP /* unused */) const {
-    return 0.f;
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-SpectrumfD
-BSDF::eval_transmission(const SurfaceInteraction3fD & /* unused */,
-                const Vector3fD & /* unused */, MaskD /* unused */) const {
-    return 0.f;
-}
-#endif
-
-MuellerMatrixSf
-BSDF::eval_transmission_pol(const SurfaceInteraction3f &si,
-                            const Vector3f &wo) const {
-    return mueller::depolarizer(eval_transmission(si, wo));
-}
-
-MuellerMatrixSfP
-BSDF::eval_transmission_pol(const SurfaceInteraction3fP &si,
-                            const Vector3fP &wo, MaskP active) const {
-    return mueller::depolarizer(eval_transmission(si, wo, active));
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-MuellerMatrixSfD
-BSDF::eval_transmission_pol(const SurfaceInteraction3fD &si,
-                            const Vector3fD &wo, MaskD active) const {
-    return mueller::depolarizer(eval_transmission(si, wo, active));
-}
-#endif
 
 std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {
     os << "BSDFContext[" << std::endl
         << "  mode = " << ctx.mode << "," << std::endl
         << "  type_mask = " << type_mask_to_string(ctx.type_mask) << "," << std::endl
         << "  component = ";
-
     if (ctx.component == (uint32_t) -1)
         os << "all";
     else
@@ -216,9 +130,9 @@ std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {
 
 std::ostream &operator<<(std::ostream &os, const TransportMode &mode) {
     switch (mode) {
-        case Radiance:   os << "radiance"; break;
-        case Importance: os << "importance"; break;
-        default:         os << "invalid"; break;
+        case TransportMode::Radiance:   os << "radiance"; break;
+        case TransportMode::Importance: os << "importance"; break;
+        default:                       os << "invalid"; break;
     }
     return os;
 }

@@ -39,6 +39,9 @@ enum class BSDFFlags : uint32_t {
     //                      BSDF lobe types
     // =============================================================
 
+    /// No flags set (default value)
+    None                 = 0x00000,
+
     /// 'null' scattering event, i.e. particles do not undergo deflection
     Null                 = 0x00001,
 
@@ -126,6 +129,11 @@ constexpr BSDFFlags operator |(BSDFFlags f1, BSDFFlags f2) {
 /// Allows and-ing of BSDFFlags
 constexpr BSDFFlags operator &(BSDFFlags f1, BSDFFlags f2) {
     return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
+}
+/// Allows and-ing of BSDFFlags
+template <typename UInt32>
+constexpr UInt32 operator &(const UInt32 &f1, BSDFFlags f2) {
+    return (f1 & static_cast<uint32_t>(f2));
 }
 /// Allows not-ing of BSDFFlags
 constexpr BSDFFlags operator ~(BSDFFlags f1) {
@@ -447,7 +455,7 @@ public:
     }
 
     /// Return a string identifier
-    std::string id() const override;
+    std::string id() const override { return m_id; }
 
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
