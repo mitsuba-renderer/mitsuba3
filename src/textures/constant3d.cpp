@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Constant3D final : public Texture3D<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(Constant3D, Texture3D)
     MTS_USING_BASE(Texture3D, m_world_to_local)
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 

@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(MaskBSDF, BSDF)
     MTS_USING_BASE(BSDF, component_count, m_components, m_flags)
     using BSDF                = Base;
     using ContinuousSpectrum1 = mitsuba::ContinuousSpectrum<Float, Color1f>;

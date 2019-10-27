@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SRGBSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(SRGBSpectrum, ContinuousSpectrum)
     using Base = ContinuousSpectrum<Float, Spectrum>;
 
     SRGBSpectrum(const Properties &props) {

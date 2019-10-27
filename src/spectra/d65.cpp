@@ -27,7 +27,7 @@ const float data[95] = {
 template <typename Float, typename Spectrum>
 class D65Spectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(D65Spectrum, ContinuousSpectrum)
     using Base = ContinuousSpectrum<Float, Spectrum>;
 
     D65Spectrum(const Properties &props) {

@@ -104,8 +104,8 @@ endif()
 # Copy to 'dist' directory
 add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq)
 
-# Python bindings
-add_subdirectory(python)
+# # Python bindings
+# add_subdirectory(python)
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

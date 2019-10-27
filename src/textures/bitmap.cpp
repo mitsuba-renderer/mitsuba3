@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class BitmapTexture final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(BitmapTexture, ContinuousSpectrum)
     using Base = ContinuousSpectrum<Float, Spectrum>;
 
     BitmapTexture(const Properties &props) {

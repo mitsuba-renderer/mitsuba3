@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Checkerboard final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN()
+    MTS_DECLARE_PLUGIN(Checkerboard, ContinuousSpectrum)
     using ContinuousSpectrum = ContinuousSpectrum<Float, Spectrum>;
 
     Checkerboard(const Properties &props) {
