@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class PerspectiveCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN();
+    MTS_DECLARE_PLUGIN(PerspectiveCamera, ProjectiveCamera);
     MTS_USING_BASE(ProjectiveCamera, m_world_transform, m_needs_sample_3, m_film, m_sampler,
                    m_resolution, m_shutter_open, m_shutter_open_time, m_aspect, m_near_clip,
                    m_far_clip, m_focus_distance);

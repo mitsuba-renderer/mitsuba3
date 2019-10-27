@@ -14,6 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Texture3D : public Object {
 public:
+    MTS_REGISTER_CLASS(Texture3D, Object)
     MTS_IMPORT_TYPES()
 
     explicit Texture3D(const Properties &props) {
@@ -67,8 +68,6 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
-
 protected:
     virtual ~Texture3D() {}
 
@@ -117,6 +116,7 @@ struct VolumeMetadata {
 template <typename Float, typename Spectrum>
 class Grid3DBase : public Texture3D<Float, Spectrum> {
 public:
+    MTS_REGISTER_CLASS(Grid3DBase, Texture3D)
     MTS_IMPORT_TYPES()
     using Base = Texture3D<Float, Spectrum>;
     using Base::update_bbox;
@@ -173,8 +173,6 @@ public:
             << "]";
         return oss.str();
     }
-
-    MTS_DECLARE_CLASS()
 
 protected:
     VolumeMetadata m_metadata;

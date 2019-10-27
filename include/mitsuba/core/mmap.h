@@ -13,6 +13,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE MemoryMappedFile : public Object {
 public:
+    MTS_REGISTER_CLASS(MemoryMappedFile, Object)
+
     /// Create a new memory-mapped file of the specified size
     MemoryMappedFile(const fs::path &filename, size_t size);
 
@@ -55,7 +57,6 @@ public:
      */
     static ref<MemoryMappedFile> create_temporary(size_t size);
 
-    MTS_DECLARE_CLASS()
 protected:
     /// Internal constructor
     MemoryMappedFile();

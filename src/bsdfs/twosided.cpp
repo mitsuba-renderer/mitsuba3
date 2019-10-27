@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class TwoSidedBRDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN();
+    MTS_DECLARE_PLUGIN(TwoSidedBRDF, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     using BSDF = Base;
 

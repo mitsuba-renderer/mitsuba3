@@ -24,6 +24,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_RENDER Spiral : public Object {
 public:
+    MTS_REGISTER_CLASS(Spiral, Object)
     using Float = float;
     using Spectrum = void;
     MTS_IMPORT_TYPES()
@@ -58,8 +59,6 @@ public:
      * A size of zero indicates that the spiral traversal is done.
      */
     std::pair<Vector2i, Vector2i> next_block();
-
-    MTS_DECLARE_CLASS()
 
 protected:
     enum EDirection {

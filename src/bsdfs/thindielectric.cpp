@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ThinDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN();
+    MTS_DECLARE_PLUGIN(ThinDielectric, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 

@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN();
+    MTS_DECLARE_PLUGIN(RoughDielectric, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 

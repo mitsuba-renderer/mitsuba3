@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SmoothConductor final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN();
+    MTS_DECLARE_PLUGIN(SmoothConductor, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 

@@ -174,6 +174,5 @@ void Profiler::print_report() {
     }
 }
 
-MTS_IMPLEMENT_CLASS(Profiler, Object)
 NAMESPACE_END(mitsuba)
 #endif
