@@ -43,9 +43,16 @@
     template class MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
 
 
-#define MTS_IMPLEMENT_OBJECT(Name, Parent)                                  \
+#define MTS_INSTANTIATE_OBJECT(Name)                                        \
     template class MTS_EXPORT_CORE Name<float, Color<float, 1>>;            \
     template class MTS_EXPORT_CORE Name<float, Color<float, 3>>;            \
     template class MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;         \
     template class MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
+
+
+#define MTS_INSTANTIATE_STRUCT(Name)                                        \
+    template struct MTS_EXPORT_CORE Name<float, Color<float, 1>>;           \
+    template struct MTS_EXPORT_CORE Name<float, Color<float, 3>>;           \
+    template struct MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;        \
+    template struct MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
 

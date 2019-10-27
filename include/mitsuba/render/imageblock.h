@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mitsuba/mitsuba.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/object.h>
@@ -106,7 +105,7 @@ public:
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
     Mask put(const Point2f &pos,
-             const Spectrum &wavelengths,
+             const Wavelength &wavelengths,
              const Spectrum &value,
              const Float &alpha,
              Mask active = true) {
@@ -114,12 +113,10 @@ public:
                "This `put` variant requires XYZAW internal storage format.");
 
         if constexpr (is_monochrome_v<Spectrum>) {
-            // Factors computed so that we obtain a grayscale value after RGB conversion
-            Array<Float, 5> values(0.9504699764424493f * value.y(), value.y(),
-                                   1.0888299918185522f * value.y(), alpha, 1.0f);
+            Array<Float, 5> values(value.x(), value.x(), value.x(), alpha, 1.0f);
             return put(pos, values.data(), active);
         } else {
-            auto xyz = to_xyz(value, wavelengths, active);
+            auto xyz = to_xyz(depolarize(value), wavelengths, active);
             Array<Float, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.0f);
             return put(pos, values.data(), active);
         }
@@ -143,7 +140,7 @@ public:
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    bool put(const Point2f &pos, const Float *value);
+    bool put(const Point2f &pos, const Float *value, Mask active = true);
 
     /// Clear everything to zero.
     void clear() { m_bitmap->clear(); }

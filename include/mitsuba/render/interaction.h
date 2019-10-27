@@ -5,6 +5,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/mueller.h>
+#include <mitsuba/render/scene.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -22,7 +23,7 @@ struct Interaction {
     using Point3f    = Point<Float, 3>;
     using Vector3f   = Vector<Float, 3>;
     using Ray3f      = Ray<Point3f, Spectrum>;
-    using Wavelength = wavelength_t<Spectrum_>;
+    using Wavelength = wavelength_t<Spectrum>;
 
     //! @}
     // =============================================================
@@ -147,9 +148,9 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * the given \ref PositionSample::object points to a Shape instance.
      */
     explicit SurfaceInteraction(const PositionSample3f &ps,
-                                const Spectrum &wavelengths)
+                                const Wavelength &wavelengths)
         : Base(0.f, ps.time, wavelengths, ps.p), uv(ps.uv), n(ps.n),
-          sh_frame(Frame3(ps.n)) { }
+          sh_frame(Frame3f(ps.n)) { }
 
     using Base::is_valid;
 
@@ -252,11 +253,11 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         /* Set the UV partials to zero if dpdu and/or dpdv == 0 */
         inv_det = select(enoki::isfinite(inv_det), inv_det, 0.f);
 
-        duv_dx = Vector2(fmsub(a11, b0x, a01 * b1x) * inv_det,
-                         fmsub(a00, b1x, a01 * b0x) * inv_det);
+        duv_dx = Vector2f(fmsub(a11, b0x, a01 * b1x) * inv_det,
+                          fmsub(a00, b1x, a01 * b0x) * inv_det);
 
-        duv_dy = Vector2(fmsub(a11, b0y, a01 * b1y) * inv_det,
-                         fmsub(a00, b1y, a01 * b0y) * inv_det);
+        duv_dy = Vector2f(fmsub(a11, b0y, a01 * b1y) * inv_det,
+                          fmsub(a00, b1y, a01 * b0y) * inv_det);
     }
 
     /**

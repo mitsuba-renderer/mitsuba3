@@ -31,8 +31,9 @@ ImageBlock<Float, Spectrum>::~ImageBlock() {
         delete[] m_weights_x;
 }
 
+// TODO(!): `active` mask should be used!
 template <typename Float, typename Spectrum>
-bool ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value) {
+bool ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask /*active*/) {
     Assert(m_filter != nullptr);
     size_t channels = m_bitmap->channel_count();
 
@@ -287,4 +288,5 @@ std::string ImageBlock<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
+MTS_INSTANTIATE_OBJECT(ImageBlock)
 NAMESPACE_END(mitsuba)

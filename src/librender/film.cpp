@@ -4,7 +4,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Film::Film(const Properties &props) : Object() {
+template <typename Float, typename Spectrum>
+Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     bool is_m_film = string::to_lower(props.plugin_name()) == "mfilm";
 
     // Horizontal and vertical film resolution in pixels
@@ -12,8 +13,7 @@ Film::Film(const Properties &props) : Object() {
         props.int_("width", is_m_film ? 1 : 768),
         props.int_("height", is_m_film ? 1 : 576)
     );
-    // Crop window specified in pixels - by default, this matches the full
-    // sensor area.
+    // Crop window specified in pixels - by default, this matches the full sensor area.
     m_crop_offset = Point2i(
         props.int_("crop_offset_x", 0),
         props.int_("crop_offset_y", 0)
@@ -24,10 +24,8 @@ Film::Film(const Properties &props) : Object() {
     );
     check_valid_crop_window();
 
-    /* If set to true, regions slightly outside of the film
-       plane will also be sampled, which improves the image
-       quality at the edges especially with large reconstruction
-       filters. */
+    /* If set to true, regions slightly outside of the film plane will also be sampled, which
+       improves the image quality at the edges especially with large reconstruction filters. */
     m_high_quality_edges = props.bool_("high_quality_edges", false);
 
     // Use the provided reconstruction filter, if any.
@@ -45,23 +43,22 @@ Film::Film(const Properties &props) : Object() {
     if (!m_filter) {
         // No reconstruction filter has been selected. Load a Gaussian filter by default
         m_filter = static_cast<ReconstructionFilter *>(
-            PluginManager::instance()->create_object<ReconstructionFilter>(
-                Properties("gaussian"))
-        );
+            PluginManager::instance()->create_object<ReconstructionFilter>(Properties("gaussian")));
     }
-
-    m_monochrome = props.bool_("monochrome");
 }
 
-Film::~Film() { }
+template <typename Float, typename Spectrum>
+Film<Float, Spectrum>::~Film() {}
 
-void Film::set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) {
+template <typename Float, typename Spectrum>
+void Film<Float, Spectrum>::set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) {
     m_crop_size   = crop_size;
     m_crop_offset = crop_offset;
     check_valid_crop_window();
 }
 
-void Film::check_valid_crop_window() const {
+template <typename Float, typename Spectrum>
+void Film<Float, Spectrum>::check_valid_crop_window() const {
     if (m_crop_offset.x() < 0 || m_crop_offset.y() < 0 || m_crop_size.x() <= 0 ||
         m_crop_size.y() <= 0 || m_crop_offset.x() + m_crop_size.x() > m_size.x() ||
         m_crop_offset.y() + m_crop_size.y() > m_size.y()) {
@@ -71,4 +68,5 @@ void Film::check_valid_crop_window() const {
     }
 }
 
+MTS_INSTANTIATE_OBJECT(Film)
 NAMESPACE_END(mitsuba)

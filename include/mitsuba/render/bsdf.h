@@ -445,12 +445,12 @@ public:
     }
 
     /// Does the implementation require access to texture-space differentials?
-    bool needs_differentials(Mask /* active */ = true) const {
-        return m_flags & BSDFFlags::NeedsDifferentials;
+    bool needs_differentials(Mask /*active*/ = true) const {
+        return has_flag(m_flags, BSDFFlags::NeedsDifferentials);
     }
 
     /// Number of components this BSDF is comprised of.
-    size_t component_count(Mask /* active */ = true) const {
+    size_t component_count(Mask /*active*/ = true) const {
         return m_components.size();
     }
 

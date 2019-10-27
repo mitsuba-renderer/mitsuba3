@@ -3,5 +3,5 @@
 #include <mitsuba/render/texture3d.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
+MTS_INSTANTIATE_OBJECT(Texture3D)
 NAMESPACE_END(mitsuba)

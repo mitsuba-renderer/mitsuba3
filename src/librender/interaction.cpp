@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template struct MTS_EXPORT_RENDER SurfaceInteraction<Point3f>;
-template struct MTS_EXPORT_RENDER SurfaceInteraction<Point3fP>;
+MTS_INSTANTIATE_STRUCT(Interaction)
+MTS_INSTANTIATE_STRUCT(SurfaceInteraction)
 
 NAMESPACE_END(mitsuba)

@@ -61,12 +61,20 @@ with open(fname, 'w') as f:
         w('    template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
-    w('#define MTS_IMPLEMENT_OBJECT(Name, Parent)')
+    w('#define MTS_INSTANTIATE_OBJECT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         # TODO: this would be better with a `using` declaration
         spectrum = spectrum.replace('Float', float_)
-        # TODO: which export module to use? Is this instantiation useful?
+        # TODO: which export module to use?
         w('    template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n\n')
+
+    w('#define MTS_INSTANTIATE_STRUCT(Name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        # TODO: this would be better with a `using` declaration
+        spectrum = spectrum.replace('Float', float_)
+        # TODO: which export module to use?
+        w('    template struct MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
 
     f.write('\n')
 print('Generated configuration header: ' + fname)

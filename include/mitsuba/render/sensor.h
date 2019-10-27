@@ -16,8 +16,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
     MTS_REGISTER_INTERFACE(Sensor, Endpoint)
+    MTS_USING_BASE(Endpoint, sample_ray)
     MTS_IMPORT_TYPES();
-    using Base = Endpoint<Float, Spectrum>;
     using Base::m_needs_sample_3;
     using Film    = typename Aliases::Film;
     using Sampler = typename Aliases::Sampler;

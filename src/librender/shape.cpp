@@ -291,5 +291,5 @@ std::vector<ref<Object>> Shape::children() {
     return result;
 }
 
-MTS_IMPLEMENT_OBJECT(Shape, Object)
+MTS_INSTANTIATE_OBJECT(Shape)
 NAMESPACE_END(mitsuba)

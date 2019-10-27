@@ -24,4 +24,5 @@ typename Sampler<Float, Spectrum>::Point2f Sampler<Float, Spectrum>::next_2d(Mas
     NotImplementedError("next_2d");
 }
 
+MTS_INSTANTIATE_OBJECT(Sampler)
 NAMESPACE_END(mitsuba)

@@ -12,8 +12,8 @@ NAMESPACE_BEGIN(mitsuba)
 // Sensor interface
 // =============================================================================
 
-Sensor::Sensor(const Properties &props)
-    : Endpoint(props) {
+template <typename Float, typename Spectrum>
+Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
     m_shutter_open      = props.float_("shutter_open", 0.f);
     m_shutter_open_time = props.float_("shutter_close", 0.f) - m_shutter_open;
 
@@ -40,10 +40,7 @@ Sensor::Sensor(const Properties &props)
     if (!m_film) {
         // Instantiate an high dynamic range film if none was specified
         Properties props_film("hdrfilm");
-        props_film.set_bool("monochrome", m_monochrome);
-        props_film.mark_queried("monochrome");
-        m_film = static_cast<Film *>(
-            pmgr->create_object<Film>(props_film));
+        m_film = static_cast<Film *>(pmgr->create_object<Film>(props_film));
     }
 
     if (!m_sampler) {
@@ -57,16 +54,14 @@ Sensor::Sensor(const Properties &props)
     m_resolution = Vector2f(m_film->crop_size());
 }
 
-Sensor::~Sensor() { }
+template <typename Float, typename Spectrum> Sensor<Float, Spectrum>::~Sensor() {}
 
-template <typename Value, typename Point2, typename RayDifferential,
-          typename Spectrum, typename Mask>
-std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
-    Value time, Value sample1, const Point2 &sample2, const Point2 &sample3,
-    Mask active) const {
+template <typename Float, typename Spectrum>
+std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
+Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
+                                                 const Point2f &sample3, Mask active) const {
 
-    auto [temp_ray, result_spec] =
-        sample_ray(time, sample1, sample2, sample3, active);
+    auto [temp_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, active);
 
     RayDifferential result_ray(temp_ray);
 
@@ -75,15 +70,13 @@ std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
 
     // Sample a result_ray for X+1
     Spectrum unused;
-    std::tie(temp_ray, unused) =
-        sample_ray(time, sample1, sample2 + dx, sample3, active);
+    std::tie(temp_ray, unused) = sample_ray(time, sample1, sample2 + dx, sample3, active);
 
     result_ray.o_x = temp_ray.o;
     result_ray.d_x = temp_ray.d;
 
     // Sample a result_ray for Y+1
-    std::tie(temp_ray, unused) =
-        sample_ray(time, sample1, sample2 + dy, sample3, active);
+    std::tie(temp_ray, unused) = sample_ray(time, sample1, sample2 + dy, sample3, active);
 
     result_ray.o_y = temp_ray.o;
     result_ray.d_y = temp_ray.d;
@@ -92,40 +85,12 @@ std::pair<RayDifferential, Spectrum> Sensor::sample_ray_differential_impl(
     return { result_ray, result_spec };
 }
 
-std::pair<RayDifferential3f, Spectrumf>
-Sensor::sample_ray_differential(Float time, Float sample1,
-                                const Point2f &sample2,
-                                const Point2f &sample3) const {
-    return sample_ray_differential_impl(time, sample1, sample2,
-                                        sample3, true);
-}
-
-std::pair<RayDifferential3fP, SpectrumfP>
-Sensor::sample_ray_differential(FloatP time, FloatP sample1,
-                                const Point2fP &sample2,
-                                const Point2fP &sample3,
-                                MaskP active) const {
-    return sample_ray_differential_impl(time, sample1, sample2,
-                                        sample3, active);
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-std::pair<RayDifferential3fD, SpectrumfD>
-Sensor::sample_ray_differential(FloatD time, FloatD sample1,
-                                const Point2fD &sample2,
-                                const Point2fD &sample3,
-                                MaskD active) const {
-    return sample_ray_differential_impl(time, sample1, sample2,
-                                        sample3, active);
-}
-#endif
-
-template <typename Value, typename Point2, typename RayDifferential,
-          typename Spectrum, typename Mask>
-std::pair<RayDifferential, MuellerMatrix<Spectrum>> Sensor::sample_ray_differential_pol_impl(
-    Value time, Value sample1, const Point2 &sample2, const Point2 &sample3,
+#if 0  // TODO: merge with sample_ray_differential
+template <typename Float, typename Spectrum>
+std::pair<RayDifferential, MuellerMatrix<Spectrum>> Sensor<Float, Spectrum>::sample_ray_differential_pol(
+    Float time, Float sample1, const Point2f &sample2, const Point2f &sample3,
     Mask active) const {
-    using Ray3          = Ray<Point<Value, 3>>;
+    using Ray3          = Ray<Point<Float, 3>>;
     using MuellerMatrix = MuellerMatrix<Spectrum>;
 
     Ray3 temp_ray;
@@ -156,46 +121,21 @@ std::pair<RayDifferential, MuellerMatrix<Spectrum>> Sensor::sample_ray_different
 
     return { result_ray, result_spec };
 }
-
-std::pair<RayDifferential3f, MuellerMatrixSf>
-Sensor::sample_ray_differential_pol(Float time, Float sample1,
-                                    const Point2f &sample2,
-                                    const Point2f &sample3) const {
-    return sample_ray_differential_pol_impl(time, sample1, sample2,
-                                            sample3, true);
-}
-
-std::pair<RayDifferential3fP, MuellerMatrixSfP>
-Sensor::sample_ray_differential_pol(FloatP time, FloatP sample1,
-                                    const Point2fP &sample2,
-                                    const Point2fP &sample3,
-                                    MaskP active) const {
-    return sample_ray_differential_pol_impl(time, sample1, sample2,
-                                            sample3, active);
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-std::pair<RayDifferential3fD, MuellerMatrixSfD>
-Sensor::sample_ray_differential_pol(FloatD time, FloatD sample1,
-                                    const Point2fD &sample2,
-                                    const Point2fD &sample3,
-                                    MaskD active) const {
-    return sample_ray_differential_pol_impl(time, sample1, sample2,
-                                            sample3, active);
-}
 #endif
 
-void Sensor::set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) {
+template <typename Float, typename Spectrum>
+void Sensor<Float, Spectrum>::set_crop_window(const Vector2i &crop_size,
+                                              const Point2i &crop_offset) {
     m_film->set_crop_window(crop_size, crop_offset);
     m_resolution = Vector2f(m_film->crop_size());
 }
-
 
 // =============================================================================
 // ProjectiveCamera interface
 // =============================================================================
 
-ProjectiveCamera::ProjectiveCamera(const Properties &props) : Sensor(props) {
+template <typename Float, typename Spectrum>
+ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props) : Base(props) {
     /* Distance to the near clipping plane */
     m_near_clip = props.float_("near_clip", 1e-2f);
     /* Distance to the far clipping plane */
@@ -210,6 +150,9 @@ ProjectiveCamera::ProjectiveCamera(const Properties &props) : Sensor(props) {
 
 }
 
-ProjectiveCamera::~ProjectiveCamera() { }
+template <typename Float, typename Spectrum>
+ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
 
+MTS_INSTANTIATE_OBJECT(Sensor)
+MTS_INSTANTIATE_OBJECT(ProjectiveCamera)
 NAMESPACE_END(mitsuba)

@@ -53,7 +53,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
     size_t n_threads        = __global_thread_count;
     size_t total_spp        = scene->sampler()->sample_count();
     size_t samples_per_pass = (m_samples_per_pass == (size_t) -1)
-                               ? total_spp : std::min(m_samples_per_pass, total_spp);
+                               ? total_spp : std::min((size_t) m_samples_per_pass, total_spp);
     if ((total_spp % samples_per_pass) != 0)
         Throw("sample_count (%d) must be a multiple of samples_per_pass (%d).",
               total_spp, samples_per_pass);
@@ -120,7 +120,6 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
                     tbb::spin_mutex::scoped_lock lock(mutex);
                     blocks_done++;
                     progress->update(blocks_done / (Float) total_blocks);
-                    notify(film->bitmap());
                 }
             }
         }
@@ -187,8 +186,7 @@ void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene
             }
             /* ImageBlock::put */ {
                 ScopedPhase sp(EProfilerPhase::EImageBlockPut);
-                block->put(position_sample, ray.wavelengths,
-                           ray_weight * result, alpha);
+                block->put(position_sample, ray.wavelength, ray_weight * result, alpha);
             }
         }
     }
@@ -216,4 +214,8 @@ MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &pr
 template <typename Float, typename Spectrum>
 MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
 
+
+MTS_INSTANTIATE_OBJECT(Integrator)
+MTS_INSTANTIATE_OBJECT(SamplingIntegrator)
+MTS_INSTANTIATE_OBJECT(MonteCarloIntegrator)
 NAMESPACE_END(mitsuba)

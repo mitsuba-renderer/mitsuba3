@@ -161,7 +161,7 @@ template <typename Float, typename Spectrum>
 class MonteCarloIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(MonteCarloIntegrator, SamplingIntegrator)
-    using Base = Integrator<Float, Spectrum>;
+    using Base = SamplingIntegrator<Float, Spectrum>;
 
 protected:
     /// Create an integrator
