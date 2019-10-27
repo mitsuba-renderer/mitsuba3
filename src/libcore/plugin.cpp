@@ -122,7 +122,7 @@ struct PluginManager::PluginManagerPrivate {
         fs::path resolved = resolver->resolve(filename);
 
         if (fs::exists(resolved)) {
-            Log(EInfo, "Loading plugin \"%s\" ..", filename.string());
+            Log(Info, "Loading plugin \"%s\" ..", filename.string());
             Plugin *plugin = new Plugin(resolved);
             /* New classes must be registered within the class hierarchy */
             Class::static_initialization();

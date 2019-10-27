@@ -14,12 +14,12 @@ NAMESPACE_BEGIN(mitsuba)
 
 struct Logger::LoggerPrivate {
     std::mutex mutex;
-    ELogLevel error_level = EError;
+    LogLevel error_level = Error;
     std::vector<ref<Appender>> appenders;
     ref<Formatter> formatter;
 };
 
-Logger::Logger(ELogLevel log_level)
+Logger::Logger(LogLevel log_level)
     : m_log_level(log_level), d(new LoggerPrivate()) { }
 
 Logger::~Logger() { }
@@ -37,23 +37,23 @@ const Formatter *Logger::formatter() const {
     return d->formatter;
 }
 
-void Logger::set_log_level(ELogLevel level) {
+void Logger::set_log_level(LogLevel level) {
     Assert(level <= d->error_level);
     m_log_level = level;
 }
 
-void Logger::set_error_level(ELogLevel level) {
-    Assert(level <= EError && level >= m_log_level);
+void Logger::set_error_level(LogLevel level) {
+    Assert(level <= Error && level >= m_log_level);
     d->error_level = level;
 }
 
-ELogLevel Logger::error_level() const {
+LogLevel Logger::error_level() const {
     return d->error_level;
 }
 
 #undef Throw
 
-void Logger::log(ELogLevel level, const Class *class_, const char *file,
+void Logger::log(LogLevel level, const Class *class_, const char *file,
                  int line, const std::string &msg) {
 
     if (level < m_log_level)
@@ -101,7 +101,7 @@ std::string Logger::read_log() {
                 return sa->read_log();
         }
     }
-    Log(EError, "No stream appender with a file attachment could be found");
+    Log(Error, "No stream appender with a file attachment could be found");
     return std::string(); /* Don't warn */
 }
 
@@ -111,16 +111,16 @@ void Logger::clear_appenders() {
 }
 
 void Logger::static_initialization() {
-    Logger *logger = new Logger(EInfo);
+    Logger *logger = new Logger(Info);
     ref<Appender> appender = new StreamAppender(&std::cout);
     ref<Formatter> formatter = new DefaultFormatter();
     logger->add_appender(appender);
     logger->set_formatter(formatter);
     Thread::thread()->set_logger(logger);
 #if defined(NDEBUG)
-    logger->set_log_level(EInfo);
+    logger->set_log_level(Info);
 #else
-    logger->set_log_level(EDebug);
+    logger->set_log_level(Debug);
 #endif
 }
 
@@ -142,7 +142,7 @@ const Appender *Logger::appender(size_t index) const {
 
 NAMESPACE_BEGIN(detail)
 
-void Throw(ELogLevel level, const Class *theClass, const char *file,
+void Throw(LogLevel level, const Class *theClass, const char *file,
            int line, const std::string &msg_) {
     // Trap if we're running in a debugger to facilitate debugging.
     #if defined(MTS_THROW_TRAPS_DEBUGGER)

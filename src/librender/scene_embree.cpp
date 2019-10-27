@@ -46,7 +46,7 @@ void Scene::embree_register(Shape *shape) {
 void Scene::embree_build() {
     Timer timer;
     rtcCommitScene(m_embree_scene);
-    Log(EInfo, "Embree finished. (took %s)", util::time_string(timer.value()));
+    Log(Info, "Embree finished. (took %s)", util::time_string(timer.value()));
 }
 
 SurfaceInteraction3f Scene::ray_intersect(const Ray3f &ray) const {

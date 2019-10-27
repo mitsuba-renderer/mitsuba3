@@ -128,7 +128,7 @@ MaskP ImageBlock<Float, Spectrum>::put(const Point2fP &pos_, const FloatP *value
                 }
             }
             oss << "]";
-            Log(EWarn, "%s", oss.str());
+            Log(Warn, "%s", oss.str());
             active &= is_valid;
         }
     }
@@ -202,7 +202,7 @@ MaskD ImageBlock<Float, Spectrum>::put(const Point2fD &pos_, const FloatD *value
             is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
 
         if (any(active && !is_valid))
-            Log(EWarn, "ImageBlock::put(): invalid (negative/NaN) sample values detected!");
+            Log(Warn, "ImageBlock::put(): invalid (negative/NaN) sample values detected!");
 
         active &= is_valid;
     }

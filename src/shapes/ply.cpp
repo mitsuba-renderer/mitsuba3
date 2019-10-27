@@ -38,7 +38,7 @@ public:
             Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
         };
 
-        Log(EDebug, "Loading mesh from \"%s\" ..", m_name);
+        Log(Debug, "Loading mesh from \"%s\" ..", m_name);
         if (!fs::exists(file_path))
             fail("file not found");
 
@@ -50,9 +50,10 @@ public:
             header = parse_ply_header(stream);
             if (header.ascii) {
                 if (stream->size() > 100 * 1024)
-                    Log(EWarn, "\"%s\": performance warning -- this file uses the ASCII PLY "
-                               "format, which is slow to parse. Consider converting it to "
-                               "the binary PLY format.", m_name);
+                    Log(Warn,
+                        "\"%s\": performance warning -- this file uses the ASCII PLY format, which "
+                        "is slow to parse. Consider converting it to the binary PLY format.",
+                        m_name);
                 stream = parse_ascii((FileStream *) stream.get(), header.elements);
             }
         } catch (const std::exception &e) {
@@ -208,7 +209,7 @@ public:
                 m_face_count = (Size) el.count;
                 m_face_size = (Size) o_struct_size;
             } else {
-                Log(EWarn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
+                Log(Warn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + size * el.count);
             }
         }
@@ -216,10 +217,8 @@ public:
         if (stream->tell() != stream->size())
             fail("invalid file -- trailing content");
 
-        Log(EDebug, "\"%s\": read %i faces, %i vertices (%s in %s)",
-            m_name,
-            m_face_count,
-            m_vertex_count,
+        Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
+            m_name, m_face_count, m_vertex_count,
             util::mem_string(m_face_count * m_face_struct->size() +
                              m_vertex_count * m_vertex_struct->size()),
             util::time_string(timer.value())
@@ -255,7 +254,7 @@ public:
         if (fs)
             stream_name = fs->path().filename().string();
 
-        Log(EInfo, "Writing mesh to \"%s\" ..", stream_name);
+        Log(Info, "Writing mesh to \"%s\" ..", stream_name);
 
         Timer timer;
         stream->write_line("ply");
@@ -307,10 +306,8 @@ public:
             );
         }
 
-        Log(EInfo, "\"%s\": wrote %i faces, %i vertices (%s in %s)",
-            m_name,
-            m_face_count,
-            m_vertex_count,
+        Log(Info, "\"%s\": wrote %i faces, %i vertices (%s in %s)",
+            m_name, m_face_count, m_vertex_count,
             util::mem_string(m_face_count * m_face_struct->size() +
                              m_vertex_count * m_vertex_struct->size()),
             util::time_string(timer.value())

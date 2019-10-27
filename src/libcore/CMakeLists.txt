@@ -22,7 +22,7 @@ add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/variant.h
 
   string.cpp           ${INC_DIR}/string.h
-  # appender.cpp         ${INC_DIR}/appender.h
+  appender.cpp         ${INC_DIR}/appender.h
   argparser.cpp        ${INC_DIR}/argparser.h
   bbox.cpp             ${INC_DIR}/bbox.h
   # bitmap.cpp           ${INC_DIR}/bitmap.h

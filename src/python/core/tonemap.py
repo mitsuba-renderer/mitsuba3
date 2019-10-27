@@ -1,12 +1,12 @@
 from mitsuba.core import util, Bitmap, ThreadEnvironment, \
-    ScopedSetThreadEnvironment, Thread, EInfo
+    ScopedSetThreadEnvironment, Thread, Info
 from threading import Thread as PyThread, Semaphore
 import sys
 import os
 
 sema = Semaphore(util.core_count())
 te = ThreadEnvironment()
-Thread.thread().logger().set_log_level(EInfo)
+Thread.thread().logger().set_log_level(Info)
 
 
 def tonemap(fname):

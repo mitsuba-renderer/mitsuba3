@@ -42,7 +42,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
     m_base = std::unique_ptr<PrimeBase[]>(new PrimeBase[primes.size()]);
     m_base_count = primes.size();
 
-    Log(EDebug, "Precomputing inverses for %i bases (%s)", m_base_count,
+    Log(Debug, "Precomputing inverses for %i bases (%s)", m_base_count,
         util::mem_string(sizeof(PrimeBase) * primes.size()));
 
     for (size_t i = 0; i < primes.size(); ++i) {
@@ -74,7 +74,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
         uint16_t **initial_perm = new uint16_t *[initial_bases + 1],
                  *ptr = initial_permutation_storage;
 
-        Log(EDebug, "Constructing Faure permutations using %s of memory",
+        Log(Debug, "Constructing Faure permutations using %s of memory",
             util::mem_string(initial_size * sizeof(uint16_t)));
 
         initial_perm[0] = NULL;
@@ -84,7 +84,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
         }
         compute_faure_permutations(initial_bases, initial_perm);
 
-        Log(EDebug, "Compactifying permutations to %s of memory",
+        Log(Debug, "Compactifying permutations to %s of memory",
             util::mem_string(final_size * sizeof(uint16_t)));
 
         ptr = m_permutation_storage.get();
@@ -97,7 +97,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
         delete[] initial_permutation_storage;
         delete[] initial_perm;
     } else {
-        Log(EDebug, "Generating random permutations for the seed value = %i", scramble);
+        Log(Debug, "Generating random permutations for the seed value = %i", scramble);
 
         uint16_t *ptr = m_permutation_storage.get();
         PCG32 p((uint64_t) scramble);
@@ -109,7 +109,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
             m_permutations[i] = ptr;  ptr += prime;
         }
     }
-    Log(EDebug, "Done (took %s)", util::time_string(timer.value()));
+    Log(Debug, "Done (took %s)", util::time_string(timer.value()));
 
     /* Invert the first two permutations */
     m_inv_permutation_storage = std::unique_ptr<uint16_t[]>(new uint16_t[5]);

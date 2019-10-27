@@ -10,7 +10,7 @@ DefaultFormatter::DefaultFormatter()
     : m_has_date(true), m_has_log_level(true), m_has_thread(true),
       m_has_class(true) { }
 
-std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
+std::string DefaultFormatter::format(LogLevel level, const Class *class_,
                                      const Thread *thread, const char *file, int line,
                                      const std::string &msg) {
     std::ostringstream oss;
@@ -32,11 +32,11 @@ std::string DefaultFormatter::format(ELogLevel level, const Class *class_,
         /* Log level */
         if (m_has_log_level) {
             switch (level) {
-                case ETrace: oss << "TRACE "; break;
-                case EDebug: oss << "DEBUG "; break;
-                case EInfo:  oss << "INFO  "; break;
-                case EWarn:  oss << "WARN  "; break;
-                case EError: oss << "ERROR "; break;
+                case Trace: oss << "TRACE "; break;
+                case Debug: oss << "DEBUG "; break;
+                case Info:  oss << "INFO  "; break;
+                case Warn:  oss << "WARN  "; break;
+                case Error: oss << "ERROR "; break;
                 default:     oss << "CUSTM "; break;
             }
         }

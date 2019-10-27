@@ -89,23 +89,23 @@ public:
 
     /// Unsupported. Always throws.
     virtual void seek(size_t) override {
-        Log(EError, "seek(): unsupported in a ZLIB stream!");
+        Throw("seek(): unsupported in a ZLIB stream!");
     }
 
     //// Unsupported. Always throws.
     virtual void truncate(size_t) override {
-        Log(EError, "truncate(): unsupported in a ZLIB stream!");
+        Throw("truncate(): unsupported in a ZLIB stream!");
     }
 
     /// Unsupported. Always throws.
     virtual size_t tell() const override {
-        Log(EError, "tell(): unsupported in a ZLIB stream!");
+        Throw("tell(): unsupported in a ZLIB stream!");
         return 0;
     }
 
     /// Unsupported. Always throws.
     virtual size_t size() const override {
-        Log(EError, "size(): unsupported in a ZLIB stream!");
+        Throw("size(): unsupported in a ZLIB stream!");
         return 0;
     }
 

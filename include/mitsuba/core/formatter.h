@@ -19,7 +19,7 @@ public:
      * \param msg       Text content associated with the log message
      */
 
-    virtual std::string format(ELogLevel level, const Class *class_,
+    virtual std::string format(LogLevel level, const Class *class_,
                                const Thread *thread, const char *file, int line,
                                const std::string &msg) = 0;
 
@@ -38,7 +38,7 @@ public:
     /// Create a new default formatter
     DefaultFormatter();
 
-    std::string format(ELogLevel level, const Class *class_,
+    std::string format(LogLevel level, const Class *class_,
                        const Thread *thread, const char *file, int line,
                        const std::string &msg) override;
 

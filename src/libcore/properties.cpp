@@ -64,7 +64,7 @@ struct Properties::PropertiesPrivate {
 #define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
     void Properties::SetterName(const std::string &name, Type const &value, bool warn_duplicates) { \
         if (has_property(name) && warn_duplicates) \
-            Log(EWarn, "Property \"%s\" was specified multiple times!", name); \
+            Log(Warn, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
         d->entries[name].queried = false; \
     } \
@@ -368,7 +368,7 @@ void Properties::set_animated_transform(const std::string &name,
                                         ref<AnimatedTransform> value,
                                         bool warn_duplicates) {
     if (has_property(name) && warn_duplicates)
-        Log(EWarn, "Property \"%s\" was specified multiple times!", name);
+        Log(Warn, "Property \"%s\" was specified multiple times!", name);
     d->entries[name].data = ref<Object>(value.get());
     d->entries[name].queried = false;
 }

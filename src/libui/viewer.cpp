@@ -241,7 +241,7 @@ public:
     TabAppender(MitsubaViewer *viewer, MitsubaViewer::Tab *tab)
         : m_viewer(viewer), m_tab(tab) { }
 
-    void append(ELogLevel level, const std::string &text_) {
+    void append(LogLevel level, const std::string &text_) {
         std::string text = text_;
         /* Strip zero-width spaces from the message (Mitsuba uses these
            to properly format chains of multiple exceptions) */
@@ -255,9 +255,9 @@ public:
 
         ng::async([*this, text = std::move(text), level]() {
             ng::Color color = ng::Color(0.5f, 1.f);
-            if (level >= EInfo)
+            if (level >= Info)
                 color = ng::Color(0.8f, 1.f);
-            if (level >= EWarn)
+            if (level >= Warn)
                 color = ng::Color(0.8f, .5f, .5f, 1.f);
             m_tab->console->set_foreground_color(color);
             m_tab->console->append_line(text);
@@ -314,7 +314,7 @@ void MitsubaViewer::load(Tab *tab, const fs::path &fname) {
             });
         }
     } catch (const std::exception &e) {
-        Log(EWarn, "A critical exception occurred: %s", e.what());
+        Log(Warn, "A critical exception occurred: %s", e.what());
     }
 }
 

@@ -47,7 +47,7 @@ std::string StreamAppender::read_log() {
     return result;
 }
 
-void StreamAppender::append(ELogLevel level, const std::string &text) {
+void StreamAppender::append(LogLevel level, const std::string &text) {
 #if defined(__WINDOWS__)
     HANDLE console = nullptr;
     CONSOLE_SCREEN_BUFFER_INFO console_info;
@@ -57,16 +57,16 @@ void StreamAppender::append(ELogLevel level, const std::string &text) {
         /* Insert a newline if the last message was a progress message */
         if (m_last_message_was_progress)
             (*m_stream) << std::endl;
-        if (level == EDebug || level == EWarn || level == EError) {
+        if (level == Debug || level == Warn || level == Error) {
 #if defined(__WINDOWS__)
             console = GetStdHandle(STD_OUTPUT_HANDLE);
             GetConsoleScreenBufferInfo(console, &console_info);
-            if (level == EWarn || level == EError)
+            if (level == Warn || level == Error)
                 SetConsoleTextAttribute(console, FOREGROUND_RED | FOREGROUND_INTENSITY);
-            else if (level == EDebug)
+            else if (level == Debug)
                 SetConsoleTextAttribute(console, FOREGROUND_INTENSITY);
 #else
-            if (level == EWarn || level == EError)
+            if (level == Warn || level == Error)
                 (*m_stream) << "\x1b[31m";
             else
                 (*m_stream) << "\x1b[38;5;245m";
@@ -74,7 +74,7 @@ void StreamAppender::append(ELogLevel level, const std::string &text) {
         }
     }
     (*m_stream) << text << std::endl;
-    if (!m_is_file && (level == EDebug || level == EWarn || level == EError)) {
+    if (!m_is_file && (level == Debug || level == Warn || level == Error)) {
         // Reset text color
 #if defined(__WINDOWS__)
         SetConsoleTextAttribute(console, console_info.wAttributes);
@@ -85,7 +85,7 @@ void StreamAppender::append(ELogLevel level, const std::string &text) {
     m_last_message_was_progress = false;
 }
 
-void StreamAppender::log_progress(Float, const std::string &,
+void StreamAppender::log_progress(float, const std::string &,
     const std::string &formatted, const std::string &, const void *) {
     if (!m_is_file) {
         (*m_stream) << formatted;
@@ -98,12 +98,10 @@ std::string StreamAppender::to_string() const {
     std::ostringstream oss;
 
     oss << "StreamAppender[stream=";
-
     if (m_is_file)
         oss << "\"" << m_fileName << "\"";
     else
         oss << "<std::ostream>";
-
     oss << "]";
 
     return oss.str();
@@ -115,8 +113,5 @@ StreamAppender::~StreamAppender() {
         delete m_stream;
     }
 }
-
-MTS_IMPLEMENT_CLASS(Appender, Object)
-MTS_IMPLEMENT_CLASS(StreamAppender, Appender)
 
 NAMESPACE_END(mitsuba)

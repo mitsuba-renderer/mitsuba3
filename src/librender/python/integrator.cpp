@@ -19,7 +19,7 @@ ThreadLocal<Integrator *> current_integrator;
 static void (*sigint_handler_prev)(int) = nullptr;
 /// Custom signal handler definition
 static void sigint_handler(int sig) {
-    Log(EWarn, "Received interrupt signal, winding down..");
+    Log(Warn, "Received interrupt signal, winding down..");
     (*current_integrator).cancel();
     signal(sig, sigint_handler_prev);
     raise(sig);

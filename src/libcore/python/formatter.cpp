@@ -7,7 +7,7 @@ class PyFormatter : public Formatter {
 public:
     using Formatter::Formatter;
 
-    virtual std::string format(ELogLevel level, const Class *theClass,
+    virtual std::string format(LogLevel level, const Class *theClass,
             const Thread *thread, const char *file, int line,
             const std::string &msg) override {
         PYBIND11_OVERLOAD_PURE(

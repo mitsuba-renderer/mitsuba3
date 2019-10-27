@@ -88,9 +88,9 @@ int main(int argc, char *argv[]) {
         if (*arg_verbose) {
             auto logger = Thread::thread()->logger();
             if (arg_verbose->next())
-                logger->set_log_level(ETrace);
+                logger->set_log_level(Trace);
             else
-                logger->set_log_level(EDebug);
+                logger->set_log_level(Debug);
         }
 
         while (arg_define && *arg_define) {

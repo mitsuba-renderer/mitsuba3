@@ -82,9 +82,9 @@ int main(int argc, char *argv[]) {
         if (*arg_verbose) {
             auto logger = Thread::thread()->logger();
             if (arg_verbose->next())
-                logger->set_log_level(ETrace);
+                logger->set_log_level(Trace);
             else
-                logger->set_log_level(EDebug);
+                logger->set_log_level(Debug);
         }
 
         while (arg_define && *arg_define) {
@@ -117,19 +117,19 @@ int main(int argc, char *argv[]) {
         if (!*arg_extra || *arg_help) {
             help(__global_thread_count);
         } else {
-            Log(EInfo, "%s", util::info_build(__global_thread_count));
-            Log(EInfo, "%s", util::info_copyright());
-            Log(EInfo, "%s", util::info_features());
+            Log(Info, "%s", util::info_build(__global_thread_count));
+            Log(Info, "%s", util::info_copyright());
+            Log(Info, "%s", util::info_features());
 
             if (render_monochrome)
-                Log(EInfo, "\U0001F39E Monochrome mode enabled.");
+                Log(Info, "\U0001F39E Monochrome mode enabled.");
             #if defined(DOUBLE_PRECISION)
-                Log(EWarn, "Renderer is compiled in double precision.");
+                Log(Warn, "Renderer is compiled in double precision.");
             #endif
         }
 
         #if !defined(NDEBUG)
-            Log(EWarn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
+            Log(Warn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
         #endif
 
         while (arg_extra && *arg_extra) {
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
                 if (success)
                     scene->film()->develop();
                 else
-                    Log(EWarn, "\U0000274C Rendering failed, result not saved.");
+                    Log(Warn, "\U0000274C Rendering failed, result not saved.");
                 print_profile = true;
             }
 

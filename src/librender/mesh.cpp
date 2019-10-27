@@ -164,10 +164,10 @@ void Mesh::recompute_vertex_normals() {
     }
 
     if (invalid_counter == 0)
-        Log(EDebug, "\"%s\": computed vertex normals (took %s)", m_name,
+        Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
             util::time_string(timer.value()));
     else
-        Log(EWarn, "\"%s\": computed vertex normals (took %s, %i invalid vertices!)",
+        Log(Warn, "\"%s\": computed vertex normals (took %s, %i invalid vertices!)",
             m_name, util::time_string(timer.value()), invalid_counter);
 }
 

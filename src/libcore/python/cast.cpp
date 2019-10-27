@@ -46,8 +46,7 @@ py::object py_cast(Object *o) {
 
     PY_CAST(Sampler);
 
-    Log(EWarn, "Unable to cast object pointer. Is your type registered in"
-               " py_cast()?");
+    Log(Warn, "Unable to cast object pointer. Is your type registered in py_cast()?");
     return py::none();
 }
 

@@ -4,7 +4,7 @@
 #include <mitsuba/python/python.h>
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
-static void PyLog(ELogLevel level, const std::string &msg) {
+static void PyLog(LogLevel level, const std::string &msg) {
     PyFrameObject *frame = PyThreadState_Get()->frame;
 
     std::string name =
@@ -25,7 +25,7 @@ static void PyLog(ELogLevel level, const std::string &msg) {
 
 MTS_PY_EXPORT(Logger) {
     MTS_PY_CLASS(Logger, Object)
-        .def(py::init<ELogLevel>(), D(Logger, Logger))
+        .def(py::init<LogLevel>(), D(Logger, Logger))
         .mdef(Logger, log_progress, "progress"_a, "name"_a,
               "formatted"_a, "eta"_a, "ptr"_a = py::none())
         .mdef(Logger, set_log_level)
@@ -41,12 +41,12 @@ MTS_PY_EXPORT(Logger) {
         .mdef(Logger, set_formatter, py::keep_alive<1, 2>())
         .mdef(Logger, read_log);
 
-    py::enum_<ELogLevel>(m, "ELogLevel", D(ELogLevel))
-        .value("ETrace", ETrace, D(ELogLevel, ETrace))
-        .value("EDebug", EDebug, D(ELogLevel, EDebug))
-        .value("EInfo", EInfo, D(ELogLevel, EInfo))
-        .value("EWarn", EWarn, D(ELogLevel, EWarn))
-        .value("EError", EError, D(ELogLevel, EError))
+    py::enum_<LogLevel>(m, "LogLevel", D(LogLevel))
+        .value("Trace", Trace, D(LogLevel, Trace))
+        .value("Debug", Debug, D(LogLevel, Debug))
+        .value("Info", Info, D(LogLevel, Info))
+        .value("Warn", Warn, D(LogLevel, Warn))
+        .value("Error", Error, D(LogLevel, Error))
         .export_values();
 
     m.def("Log", &PyLog, "level"_a, "msg"_a);

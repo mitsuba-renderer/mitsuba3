@@ -155,7 +155,7 @@ void Scene::optix_register(Shape *shape) {
 
 void Scene::optix_build() {
     auto &s = *m_optix_state;
-    Log(EInfo, "Validating and building scene in OptiX.");
+    Log(Info, "Validating and building scene in OptiX.");
     Assert(s.shape_index == s.n_shapes);
     cuda_eval();
     rt_check(rtContextValidate(s.context));

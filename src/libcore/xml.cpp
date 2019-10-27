@@ -312,7 +312,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
     if (version == Version(MTS_VERSION_MAJOR, MTS_VERSION_MINOR, MTS_VERSION_PATCH))
         return;
 
-    Log(EInfo, "\"%s\": upgrading document from v%s to v%s ..", src.id, version,
+    Log(Info, "\"%s\": upgrading document from v%s to v%s ..", src.id, version,
         Version(MTS_VERSION));
 
     if (version < Version(2, 0, 0)) {
@@ -578,7 +578,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     if (!fs::exists(filename))
                         src.throw_error(node, "included file \"%s\" not found", filename);
 
-                    Log(EInfo, "Loading included XML file \"%s\" ..", filename);
+                    Log(Info, "Loading included XML file \"%s\" ..", filename);
 
                     pugi::xml_document doc;
                     pugi::xml_parse_result result = doc.load_file(filename.native().c_str());
@@ -1067,7 +1067,7 @@ ref<Object> load_file(const fs::path &filename_, ParameterList param,
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);
 
-    Log(EInfo, "Loading XML file \"%s\" ..", filename);
+    Log(Info, "Loading XML file \"%s\" ..", filename);
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(filename.native().c_str(),
@@ -1095,7 +1095,7 @@ ref<Object> load_file(const fs::path &filename_, ParameterList param,
     if (src.modified && write_update) {
         fs::path backup = filename;
         backup.replace_extension(".bak");
-        Log(EInfo, "Writing updated \"%s\" .. (backup at \"%s\")", filename, backup);
+        Log(Info, "Writing updated \"%s\" .. (backup at \"%s\")", filename, backup);
         if (!fs::rename(filename, backup))
             Throw("Unable to rename file \"%s\" to \"%s\"!", filename, backup);
 

@@ -42,7 +42,7 @@ class StructConverter;
 class Thread;
 class ThreadLocalBase;
 class ZStream;
-enum ELogLevel : int;
+enum LogLevel : int;
 
 template <typename, typename> class ThreadLocal;
 template <typename> class AtomicFloat;

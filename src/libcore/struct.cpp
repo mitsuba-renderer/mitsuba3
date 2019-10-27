@@ -1184,7 +1184,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     CodeHolder code;
     code.init(jit->runtime.getCodeInfo());
     #if MTS_JIT_LOG_ASSEMBLY == 1
-        Log(EInfo, "Converting from %s to %s", source->to_string(), target->to_string());
+        Log(Info, "Converting from %s to %s", source->to_string(), target->to_string());
         StringLogger logger;
         logger.addOptions(asmjit::Logger::kOptionBinaryForm);
         code.setLogger(&logger);
@@ -1336,7 +1336,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     jit->runtime.add((void **) &m_func, &code);
 
     #if MTS_JIT_LOG_ASSEMBLY == 1
-       Log(EInfo, "Assembly:\n%s", logger.getString());
+       Log(Info, "Assembly:\n%s", logger.getString());
     #endif
 
     __cache[key] = (void *) m_func;

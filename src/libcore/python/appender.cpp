@@ -6,7 +6,7 @@ class PyAppender : public Appender {
 public:
     using Appender::Appender;
 
-    virtual void append(ELogLevel level, const std::string &text) override {
+    virtual void append(LogLevel level, const std::string &text) override {
         PYBIND11_OVERLOAD_PURE(
             void,          /* Return value */
             Appender,      /* Parent class */

@@ -10,8 +10,10 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Appender : public Object {
 public:
+    MTS_REGISTER_CLASS(Appender, Object)
+
     /// Append a line of text with the given log level
-    virtual void append(ELogLevel level, const std::string &text) = 0;
+    virtual void append(LogLevel level, const std::string &text) = 0;
 
     /**
      * \brief Process a progress message
@@ -23,11 +25,10 @@ public:
      *    context of a progress message. When rendering a scene, it
      *    will usually contain a pointer to the associated \c RenderJob.
      */
-    virtual void log_progress(Float progress, const std::string &name,
+    virtual void log_progress(float progress, const std::string &name,
         const std::string &formatted, const std::string &eta,
         const void *ptr = nullptr) = 0;
 
-    MTS_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~Appender() = default;
@@ -38,6 +39,8 @@ protected:
  */
 class MTS_EXPORT_CORE StreamAppender : public Appender {
 public:
+    MTS_REGISTER_CLASS(StreamAppender, Appender)
+
     /**
      * Create a new stream appender
      * \remark This constructor is not exposed in the Python bindings
@@ -48,10 +51,10 @@ public:
     StreamAppender(const std::string &filename);
 
     /// Append a line of text
-    void append(ELogLevel level, const std::string &text) override;
+    void append(LogLevel level, const std::string &text) override;
 
     /// Process a progress message
-    void log_progress(Float progress, const std::string &name,
+    void log_progress(float progress, const std::string &name,
         const std::string &formatted, const std::string &eta,
         const void *ptr) override;
 
@@ -64,7 +67,6 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~StreamAppender();

@@ -68,7 +68,7 @@ Scene::Scene(const Properties &props) {
     }
 
     if (m_sensors.size() == 0) {
-        Log(EWarn, "No sensors found! Instantiating a perspective camera..");
+        Log(Warn, "No sensors found! Instantiating a perspective camera..");
         Properties sensor_props("perspective");
         sensor_props.set_float("fov", 45.0f);
         sensor_props.set_bool("monochrome", m_monochrome);
@@ -97,7 +97,7 @@ Scene::Scene(const Properties &props) {
     }
 
     if (!m_integrator) {
-        Log(EWarn, "No integrator found! Instantiating a path tracer..");
+        Log(Warn, "No integrator found! Instantiating a path tracer..");
         Properties props_integrator("path");
         props_integrator.set_bool("monochrome", m_monochrome);
         props_integrator.mark_queried("monochrome");

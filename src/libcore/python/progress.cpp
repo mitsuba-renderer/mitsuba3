@@ -38,11 +38,11 @@ public:
     }
 
     /// Append a line of text with the given log level
-    virtual void append(ELogLevel level, const std::string &text) override {
+    virtual void append(LogLevel level, const std::string &text) override {
         std::string col = "#000";
         if (level == EDebug)
             col = "#bbb";
-        else if (level == EWarn || level == EError)
+        else if (level == Warn || level == Error)
             col = "#f55";
         auto html_string =
              "<span style=\"font-family: monospace; color: " + col + "\">" + escape_html(text) + "</span>" ;

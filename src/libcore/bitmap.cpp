@@ -538,7 +538,7 @@ void Bitmap::accumulate(const Bitmap *bitmap,
             break;
 
         default:
-            Log(EError, "Unknown component format: %d", m_component_format);
+            Log(Error, "Unknown component format: %d", m_component_format);
         }
 
         source += source_stride;
@@ -748,7 +748,7 @@ void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
                   extension);
     }
 
-    Log(EDebug, "Writing %s file \"%s\" (%ix%i, %s, %s) ..",
+    Log(Debug, "Writing %s file \"%s\" (%ix%i, %s, %s) ..",
         format, fs ? fs->path().string() : "<stream>",
         m_size.x(), m_size.y(),
         m_pixel_format, m_component_format
@@ -1085,7 +1085,7 @@ void Bitmap::read_openexr(Stream *stream) {
     }
 
     auto fs = dynamic_cast<FileStream *>(stream);
-    Log(EDebug, "Loading OpenEXR file \"%s\" (%ix%i, %s, %s) ..",
+    Log(Debug, "Loading OpenEXR file \"%s\" (%ix%i, %s, %s) ..",
         fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
         m_pixel_format, m_component_format);
 
@@ -1093,7 +1093,7 @@ void Bitmap::read_openexr(Stream *stream) {
     file.readPixels(data_window.min.y, data_window.max.y);
 
     for (auto &buf: resample_buffers) {
-        Log(EDebug, "Upsampling layer \"%s\" from %ix%i to %ix%i pixels",
+        Log(Debug, "Upsampling layer \"%s\" from %ix%i to %ix%i pixels",
             buf.first, buf.second->width(), buf.second->height(),
             m_size.x(), m_size.y());
 
@@ -1114,7 +1114,7 @@ void Bitmap::read_openexr(Stream *stream) {
     }
 
     if (luminance_chroma_format) {
-        Log(EDebug, "Converting from Luminance-Chroma to RGB format ..");
+        Log(Debug, "Converting from Luminance-Chroma to RGB format ..");
         Imath::V3f yw = Imf::RgbaYca::computeYw(file_chroma);
 
         auto convert = [&](auto *data) {
@@ -1186,7 +1186,7 @@ void Bitmap::read_openexr(Stream *stream) {
         Imath::M44f M = Imf::RGBtoXYZ(file_chroma, 1) *
                         Imf::XYZtoRGB(Imf::Chromaticities(), 1);
 
-        Log(EDebug, "Converting to sRGB color space ..");
+        Log(Debug, "Converting to sRGB color space ..");
 
         auto convert = [&](auto *data) {
             using T = std::decay_t<decltype(*data)>;
@@ -1462,7 +1462,7 @@ void Bitmap::read_jpeg(Stream *stream) {
     rebuild_struct();
 
     auto fs = dynamic_cast<FileStream *>(stream);
-    Log(EDebug, "Loading JPEG file \"%s\" (%ix%i, %s, %s) ..",
+    Log(Debug, "Loading JPEG file \"%s\" (%ix%i, %s, %s) ..",
         fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
         m_pixel_format, m_component_format);
 
@@ -1571,7 +1571,7 @@ static void png_error_func(png_structp, png_const_charp msg) {
 static void png_warn_func(png_structp, png_const_charp msg) {
     if (strstr(msg, "iCCP: known incorrect sRGB profile") != nullptr)
         return;
-    Log(EWarn, "libpng warning: %s\n", msg);
+    Log(Warn, "libpng warning: %s\n", msg);
 }
 
 void Bitmap::read_png(Stream *stream) {
@@ -1653,7 +1653,7 @@ void Bitmap::read_png(Stream *stream) {
         m_metadata.set_string(text_ptr->key, text_ptr->text);
 
     auto fs = dynamic_cast<FileStream *>(stream);
-    Log(EDebug, "Loading PNG file \"%s\" (%ix%i, %s, %s) ..",
+    Log(Debug, "Loading PNG file \"%s\" (%ix%i, %s, %s) ..",
         fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
         m_pixel_format, m_component_format);
 
@@ -1811,7 +1811,7 @@ void Bitmap::read_ppm(Stream *stream) {
     rebuild_struct();
 
     auto fs = dynamic_cast<FileStream *>(stream);
-    Log(EDebug, "Loading PPM file \"%s\" (%ix%i, %s, %s) ..",
+    Log(Debug, "Loading PPM file \"%s\" (%ix%i, %s, %s) ..",
         fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
         m_pixel_format, m_component_format);
 
@@ -1958,7 +1958,7 @@ void Bitmap::read_rgbe(Stream *stream) {
     m_owns_data = true;
 
     auto fs = dynamic_cast<FileStream *>(stream);
-    Log(EDebug, "Loading RGBE file \"%s\" (%ix%i, %s, %s) ..",
+    Log(Debug, "Loading RGBE file \"%s\" (%ix%i, %s, %s) ..",
         fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
         m_pixel_format, m_component_format);
 
@@ -2123,7 +2123,7 @@ void Bitmap::read_pfm(Stream *stream) {
     m_owns_data = true;
 
     auto fs = dynamic_cast<FileStream *>(stream);
-    Log(EDebug, "Loading PFM file \"%s\" (%ix%i, %s, %s) ..",
+    Log(Debug, "Loading PFM file \"%s\" (%ix%i, %s, %s) ..",
         fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
         m_pixel_format, m_component_format);
 
@@ -2251,7 +2251,7 @@ void Bitmap::read_bmp(Stream *stream) {
         m_owns_data = true;
 
         auto fs = dynamic_cast<FileStream *>(stream);
-        Log(EDebug, "Loading BMP file \"%s\" (%ix%i, %s, %s) ..",
+        Log(Debug, "Loading BMP file \"%s\" (%ix%i, %s, %s) ..",
             fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
             m_pixel_format, m_component_format);
 
@@ -2324,7 +2324,7 @@ void Bitmap::read_tga(Stream *stream) {
         rebuild_struct();
 
         auto fs = dynamic_cast<FileStream *>(stream);
-        Log(EDebug, "Loading TGA file \"%s\" (%ix%i, %s, %s) ..",
+        Log(Debug, "Loading TGA file \"%s\" (%ix%i, %s, %s) ..",
             fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
             m_pixel_format, m_component_format);
 

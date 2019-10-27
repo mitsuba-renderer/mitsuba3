@@ -1,6 +1,6 @@
 from mitsuba.core.xml import load_string
 from mitsuba.render import Scene
-from mitsuba.core import Thread, EWarn
+from mitsuba.core import Thread, Warn
 import pytest
 
 
@@ -126,7 +126,7 @@ def test13_duplicate_parameter():
     logger = Thread.thread().logger()
     l = logger.error_level()
     try:
-        logger.set_error_level(EWarn)
+        logger.set_error_level(Warn)
         with pytest.raises(Exception) as e:
             load_string("""<scene version="2.0.0">
                        <integer name="a" value="1"/>

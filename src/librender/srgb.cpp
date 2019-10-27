@@ -23,7 +23,7 @@ Vector3f srgb_model_fetch(const Color3f &c) {
         if (model == nullptr) {
             FileResolver *fr = Thread::thread()->file_resolver();
             std::string fname = fr->resolve("data/srgb.coeff").string();
-            Log(EInfo, "Loading spectral upsampling model \"data/srgb.coeff\" .. ");
+            Log(Info, "Loading spectral upsampling model \"data/srgb.coeff\" .. ");
             model = rgb2spec_load(fname.c_str());
             if (model == nullptr)
                 Throw("Could not load sRGB-to-spectrum upsampling model ('data/srgb.coeff')");
@@ -172,7 +172,7 @@ Vector3fD srgb_model_fetch_d(const Color3fD &c) {
         if (model == nullptr) {
             FileResolver *fr  = Thread::thread()->file_resolver();
             std::string fname = fr->resolve("data/srgb.coeff").string();
-            Log(EInfo, "Loading spectral upsampling model \"data/srgb.coeff\" .. ");
+            Log(Info, "Loading spectral upsampling model \"data/srgb.coeff\" .. ");
             model = rgb2spec_load(fname.c_str());
             if (model == nullptr)
                 Throw("Could not load sRGB-to-spectrum upsampling model ('data/srgb.coeff')");
