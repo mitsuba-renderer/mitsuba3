@@ -16,11 +16,15 @@ NAMESPACE_BEGIN(mitsuba)
 /**
  * Cylinder shape.
  */
-class Cylinder final : public Shape {
+template <typename Float, typename Spectrum>
+class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(Cylinder, Shape)
+    MTS_DECLARE_PLUGIN(Cylinder, Shape)
+    MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
+    using Index = typename Base::Index;
+    using Size  = typename Base::Size;
 
-    Cylinder(const Properties &props) : Shape(props) {
+    Cylinder(const Properties &props) : Base(props) {
         m_radius = props.float_("radius", 1.f);
 
         Point3f p0 = props.point3f("p0", Point3f(0.f, 0.f, 0.f)),
@@ -70,7 +74,7 @@ public:
         return BoundingBox3f(min(p0 - x, p1 - x), max(p0 + x, p1 + x));
     }
 
-    BoundingBox3f bbox(Index, const BoundingBox3f &clip) const override {
+    BoundingBox3f bbox(Index /*index*/, const BoundingBox3f &clip) const override {
         using FloatP8         = Packet<Float, 8>;
         using MaskP8          = mask_t<FloatP8>;
         using Point3fP8       = Point<FloatP8, 3>;
@@ -97,27 +101,27 @@ public:
             face_n.coeff(i,  i * 2 + 1) = 1.f;
         }
 
-        /* Project the cylinder direction onto the plane */
-        FloatP8 dp = dot(cyl_d, face_n);
+        // Project the cylinder direction onto the plane
+        FloatP8 dp   = dot(cyl_d, face_n);
         MaskP8 valid = neq(dp, 0.f);
 
-        /* Compute semimajor/minor axes of ellipse */
+        // Compute semimajor/minor axes of ellipse
         Vector3fP8 v1 = fnmadd(face_n, dp, cyl_d);
         FloatP8 v1_n2 = squared_norm(v1);
         v1 = select(neq(v1_n2, 0.f), v1 * rsqrt(v1_n2),
                     coordinate_system(face_n).first);
         Vector3fP8 v2 = cross(face_n, v1);
 
-        /* Compute length of axes */
+        // Compute length of axes
         v1 *= m_radius / abs(dp);
         v2 *= m_radius;
 
-        /* Compute center of ellipse */
+        // Compute center of ellipse
         FloatP8 t = dot(face_n, face_p - cyl_p) / dp;
         Point3fP8 center = fmadd(Vector3fP8(cyl_d), t, Vector3fP8(cyl_p));
         center[neq(face_n, 0.f)] = face_p;
 
-        /* Compute ellipse minima and maxima */
+        // Compute ellipse minima and maxima
         Vector3fP8 x = sqrt(sqr(v1) + sqr(v2));
         BoundingBox3fP8 ellipse_bounds(center - x, center + x);
         MaskP8 ellipse_overlap = valid && bbox.overlaps(ellipse_bounds);
@@ -131,31 +135,27 @@ public:
     }
 
     Float surface_area() const override {
-        return 2.f * math::Pi * m_radius * m_length;
+        return 2.f * math::Pi<Float> * m_radius * m_length;
     }
 
     // =============================================================
     //! @{ \name Sampling routines
     // =============================================================
 
-    template <typename Point2, typename Value = value_t<Point2>>
-    MTS_INLINE auto sample_position_impl(Value time, const Point2 &sample,
-                                         mask_t<Value> /* active */) const {
-        using Point3  = point3_t<Point2>;
-        using Normal3 = normal3_t<Point2>;
+    MTS_INLINE PositionSample3f sample_position(Float time, const Point2f &sample,
+                                                Mask /*active*/) const override {
+        auto [sin_theta, cos_theta] = sincos(2.f * math::Pi<Float> * sample.y());
 
-        auto [sin_theta, cos_theta] = sincos(2.f * math::Pi * sample.y());
-
-        Point3 p(cos_theta * m_radius,
+        Point3f p(cos_theta * m_radius,
                  sin_theta * m_radius,
                  sample.x() * m_length);
 
-        Normal3 n(cos_theta, sin_theta, 0.f);
+        Normal3f n(cos_theta, sin_theta, 0.f);
 
         if (m_flip_normals)
             n *= -1;
 
-        PositionSample<Point3> ps;
+        PositionSample3f ps;
         ps.p     = m_object_to_world.transform_affine(p);
         ps.n     = normalize(n);
         ps.pdf   = m_inv_surface_area;
@@ -164,10 +164,7 @@ public:
         return ps;
     }
 
-    template <typename PositionSample3,
-              typename Value = typename PositionSample3::Value>
-    MTS_INLINE Value pdf_position_impl(PositionSample3 & /* ps */,
-                                       mask_t<Value> /* active */) const {
+    MTS_INLINE Float pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const override {
         return m_inv_surface_area;
     }
 
@@ -178,14 +175,11 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    template <typename Ray3, typename Value = typename Ray3::Value>
-    MTS_INLINE std::pair<mask_t<Value>, Value> ray_intersect_impl(
-            const Ray3 &ray_, Value* /* cache */, mask_t<Value> active) const {
-        using Float64 = float64_array_t<Value>;
-        using Mask    = mask_t<Value>;
+    MTS_INLINE std::pair<Mask, Float> ray_intersect(const Ray3f &ray_, Float * /*cache*/,
+                                                    Mask active) const override {
+        using Float64 = float64_array_t<Float>;
 
-        Ray3 ray = m_world_to_object * ray_;
-
+        Ray3f ray = m_world_to_object * ray_;
         Float64 mint = Float64(ray.mint),
                 maxt = Float64(ray.maxt);
 
@@ -224,13 +218,10 @@ public:
                  select(z_pos_near >= 0 && z_pos_near <= length && near_t >= mint, near_t, far_t) };
     }
 
-    template <typename Ray3, typename Value = typename Ray3::Value>
-    MTS_INLINE mask_t<Value> ray_test_impl(const Ray3 &ray_, mask_t<Value> active) const {
-        using Float64  = float64_array_t<Value>;
-        using Mask    = mask_t<Value>;
+    MTS_INLINE Mask ray_test(const Ray3f &ray_, Mask active) const override {
+        using Float64  = float64_array_t<Float>;
 
-        Ray3 ray = m_world_to_object * ray_;
-
+        Ray3f ray = m_world_to_object * ray_;
         Float64 mint = Float64(ray.mint);
         Float64 maxt = Float64(ray.maxt);
 
@@ -267,32 +258,25 @@ public:
         return valid_intersection;
     }
 
-    template <typename Ray3,
-              typename SurfaceInteraction3,
-              typename Value = typename SurfaceInteraction3::Value>
-    MTS_INLINE void fill_surface_interaction_impl(const Ray3 &ray, const Value* /* cache */,
-                                                  SurfaceInteraction3 &si_out,
-                                                  mask_t<Value> active) const {
-        using Vector3 = typename SurfaceInteraction3::Vector3;
-        using Normal3 = typename SurfaceInteraction3::Normal3;
-        using Point2  = typename SurfaceInteraction3::Point2;
-
-        SurfaceInteraction3 si(si_out);
+    MTS_INLINE void fill_surface_interaction(const Ray3f &ray, const Float * /*cache*/,
+                                             SurfaceInteraction3f &si_out,
+                                             Mask active) const override {
+        SurfaceInteraction3f si(si_out);
 
         si.p = ray(si.t);
-        Vector3 local = m_world_to_object * si.p;
+        Vector3f local = m_world_to_object * si.p;
 
-        Value phi = atan2(local.y(), local.x());
-        masked(phi, phi < 0.f) += 2.f * math::Pi;
+        Float phi = atan2(local.y(), local.x());
+        masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
 
-        si.uv = Point2(phi * math::InvTwoPi,
+        si.uv = Point2f(phi * math::InvTwoPi<Float>,
                        local.z() / m_length);
 
-        Vector3 dp_du = 2.f * math::Pi * Vector3(-local.y(), local.x(), 0.f);
-        Vector3 dp_dv = Vector3(0.f, 0.f, m_length);
+        Vector3f dp_du = 2.f * math::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
+        Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);
         si.dp_du = m_object_to_world * dp_du;
         si.dp_dv = m_object_to_world * dp_dv;
-        si.n = Normal3(cross(normalize(si.dp_du), normalize(si.dp_dv)));
+        si.n = Normal3f(cross(normalize(si.dp_du), normalize(si.dp_dv)));
 
         /* Migitate roundoff error issues by a normal shift of the computed
            intersection point */
@@ -307,13 +291,11 @@ public:
         si_out[active] = si;
     }
 
-    template <typename SurfaceInteraction3,
-              typename Value   = typename SurfaceInteraction3::Value,
-              typename Vector3 = typename SurfaceInteraction3::Vector3>
-    MTS_INLINE std::pair<Vector3, Vector3> normal_derivative_impl(
-            const SurfaceInteraction3 &si, bool, mask_t<Value>) const {
-        Vector3 dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f)),
-                dn_dv = Vector3(0.f);
+    MTS_INLINE std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
+                                                               bool /*shading_frame*/,
+                                                               Mask /*active*/) const override {
+        Vector3f dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f)),
+                dn_dv = Vector3f(0.f);
 
         return { dn_du, dn_dv };
     }
@@ -340,9 +322,9 @@ public:
 private:
     Transform4f m_object_to_world;
     Transform4f m_world_to_object;
-    Float   m_radius, m_length;
-    Float   m_inv_surface_area;
-    bool    m_flip_normals;
+    sFloat m_radius, m_length;
+    sFloat m_inv_surface_area;
+    bool m_flip_normals;
 };
 
 MTS_IMPLEMENT_PLUGIN(Cylinder, Shape, "Cylinder intersection primitive");

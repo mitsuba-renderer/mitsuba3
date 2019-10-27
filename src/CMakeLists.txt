@@ -25,7 +25,7 @@ add_subdirectory(integrators)
 add_subdirectory(rfilters)
 add_subdirectory(samplers)
 add_subdirectory(sensors)
-# add_subdirectory(shapes)
+add_subdirectory(shapes)
 add_subdirectory(spectra)
 add_subdirectory(textures)
 

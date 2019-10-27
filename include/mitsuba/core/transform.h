@@ -143,7 +143,7 @@ template <typename Float, size_t Size> struct Transform {
               typename Result = Ray<Point<Expr, Size - 1>, Spectrum>>
     MTS_INLINE Result operator*(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
         return Result(operator*(ray.o), operator*(ray.d), ray.mint,
-                      ray.maxt, ray.time, ray.wavelengths);
+                      ray.maxt, ray.time, ray.wavelength);
     }
 
     /// Transform a ray (for affine/non-perspective transformations)
@@ -151,7 +151,7 @@ template <typename Float, size_t Size> struct Transform {
               typename Result = Ray<Point<Expr, Size - 1>, Spectrum>>
     MTS_INLINE Result transform_affine(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
         return Result(transform_affine(ray.o), transform_affine(ray.d),
-                      ray.mint, ray.maxt, ray.time, ray.wavelengths);
+                      ray.mint, ray.maxt, ray.time, ray.wavelength);
     }
 
     /// Create a translation transformation
