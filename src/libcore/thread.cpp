@@ -65,7 +65,7 @@ public:
 
     MainThread() : Thread("main") { }
 
-    virtual void run() override { Log(EError, "The main thread is already running!"); }
+    virtual void run() override { Log(Error, "The main thread is already running!"); }
 
 protected:
     virtual ~MainThread() { }
@@ -108,7 +108,7 @@ Thread::Thread(const std::string &name)
 
 Thread::~Thread() {
     if (d->running)
-        Log(EWarn, "Destructor called while thread '%s' was still running", d->name);
+        Log(Warn, "Destructor called while thread '%s' was still running", d->name);
 }
 
 void Thread::set_critical(bool critical) {
@@ -204,7 +204,7 @@ bool Thread::set_priority(EPriority priority) {
     int policy;
     int retval = pthread_getschedparam(thread_id, &policy, &param);
     if (retval) {
-        Log(EWarn, "pthread_getschedparam(): %s!", strerror(retval));
+        Log(Warn, "pthread_getschedparam(): %s!", strerror(retval));
         return false;
     }
 
@@ -212,14 +212,14 @@ bool Thread::set_priority(EPriority priority) {
     int max = sched_get_priority_max(policy);
 
     if (min == max) {
-        Log(EWarn, "Could not adjust the thread priority -- valid range is zero!");
+        Log(Warn, "Could not adjust the thread priority -- valid range is zero!");
         return false;
     }
     param.sched_priority = (int) (min + (max-min)*factor);
 
     retval = pthread_setschedparam(thread_id, policy, &param);
     if (retval) {
-        Log(EWarn, "Could not adjust the thread priority to %i: %s!",
+        Log(Warn, "Could not adjust the thread priority to %i: %s!",
             param.sched_priority, strerror(retval));
         return false;
     }
@@ -238,7 +238,7 @@ bool Thread::set_priority(EPriority priority) {
     // If the function succeeds, the return value is nonzero
     const HANDLE handle = d->native_handle;
     if (SetThreadPriority(handle, win32_priority) == 0) {
-        Log(EWarn, "Could not adjust the thread priority to %i: %s!",
+        Log(Warn, "Could not adjust the thread priority to %i: %s!",
             win32_priority, util::last_error());
         return false;
     }
@@ -268,7 +268,7 @@ void Thread::set_core_affinity(int core_id) {
         size = CPU_ALLOC_SIZE(logical_core_count);
         cpuset = CPU_ALLOC(logical_core_count);
         if (!cpuset) {
-            Log(EWarn, "Thread::set_core_affinity(): could not allocate cpu_set_t");
+            Log(Warn, "Thread::set_core_affinity(): could not allocate cpu_set_t");
             return;
         }
 
@@ -290,7 +290,7 @@ void Thread::set_core_affinity(int core_id) {
     }
 
     if (retval) {
-        Log(EWarn, "Thread::set_core_affinity(): pthread_getaffinity_np(): could "
+        Log(Warn, "Thread::set_core_affinity(): pthread_getaffinity_np(): could "
             "not read thread affinity map: %s", strerror(retval));
         return;
     }
@@ -306,7 +306,7 @@ void Thread::set_core_affinity(int core_id) {
     }
 
     if (actual_core_id == -1) {
-        Log(EWarn, "Thread::set_core_affinity(): out of bounds: %i/%i cores "
+        Log(Warn, "Thread::set_core_affinity(): out of bounds: %i/%i cores "
                    "available, requested #%i!",
             available, core_count, core_id);
         CPU_FREE(cpuset);
@@ -318,7 +318,7 @@ void Thread::set_core_affinity(int core_id) {
 
     retval = pthread_setaffinity_np(d->native_handle, size, cpuset);
     if (retval) {
-        Log(EWarn,
+        Log(Warn,
             "Thread::set_core_affinity(): pthread_setaffinity_np: failed: %s",
             strerror(retval));
         CPU_FREE(cpuset);
@@ -338,17 +338,17 @@ void Thread::set_core_affinity(int core_id) {
         mask = (1 << core_count) - 1;
 
     if (!SetThreadAffinityMask(handle, mask))
-        Log(EWarn, "Thread::set_core_affinity(): SetThreadAffinityMask : failed");
+        Log(Warn, "Thread::set_core_affinity(): SetThreadAffinityMask : failed");
 #endif
 }
 
 void Thread::start() {
     if (d->running)
-        Log(EError, "Thread is already running!");
+        Log(Error, "Thread is already running!");
     if (!self)
-        Log(EError, "Threading has not been initialized!");
+        Log(Error, "Threading has not been initialized!");
 
-    Log(EDebug, "Spawning thread \"%s\"", d->name);
+    Log(Debug, "Spawning thread \"%s\"", d->name);
 
     d->parent = Thread::thread();
 
@@ -400,8 +400,8 @@ void Thread::dispatch() {
     try {
         run();
     } catch (std::exception &e) {
-        ELogLevel warnLogLevel = logger()->error_level() == EError ? EWarn : EInfo;
-        Log(warnLogLevel, "Fatal error: uncaught exception: \"%s\"", e.what());
+        LogLevel warn_log_level = logger()->error_level() == Error ? Warn : Info;
+        Log(warn_log_level, "Fatal error: uncaught exception: \"%s\"", e.what());
         if (d->critical)
             abort();
     }
@@ -411,7 +411,7 @@ void Thread::dispatch() {
 }
 
 void Thread::exit() {
-    Log(EDebug, "Thread \"%s\" has finished", d->name);
+    Log(Debug, "Thread \"%s\" has finished", d->name);
     d->running = false;
     Assert(*self == this);
     ThreadLocalBase::unregister_thread();

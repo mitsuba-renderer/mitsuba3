@@ -54,7 +54,7 @@ public:
         int as_int() const;
 
         /// Return the extra argument associated with this argument
-        Float as_float() const;
+        double as_float() const;
 
         /// Release all memory
         ~Arg() { delete m_next; }

@@ -164,13 +164,13 @@ void trap_debugger() {
 #endif
 }
 
-std::string time_string(Float value, bool precise) {
-    struct Order { Float factor; const char* suffix; };
+std::string time_string(float value, bool precise) {
+    struct Order { float factor; const char* suffix; };
     const Order orders[] = {
         { 0,    "ms"}, { 1000, "s"},
         { 60,   "m"},  { 60,   "h"},
         { 24,   "d"},  { 7,    "w"},
-        { (Float) 52.1429,     "y"}
+        { 52.1429f, "y"}
     };
 
     if (std::isnan(value))
@@ -192,7 +192,7 @@ std::string mem_string(size_t size, bool precise) {
         "B", "KiB", "MiB", "GiB",
         "TiB", "PiB", "EiB"
     };
-    Float value = (Float) size;
+    float value = (float) size;
 
     int i = 0;
     for (i = 0; i < 6 && value > 1024.0f; ++i)
@@ -274,6 +274,8 @@ int terminal_width() {
 }
 
 std::string info_build(int thread_count) {
+    constexpr size_t PacketSize = Packet<float>::Size;
+
     std::ostringstream oss;
     oss << "Mitsuba version " << MTS_VERSION << " (";
     oss << MTS_BRANCH << "[" << MTS_HASH << "], ";

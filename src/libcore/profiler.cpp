@@ -40,8 +40,8 @@ static void profiler_callback(int, siginfo_t *, void *) {
     }
 
     if (tries == profiler_samples.size()) {
-        Log(EWarn, "Profiler hash table filled up -- you may need to increase "
-                   "MTS_PROFILE_HASH_SIZE.");
+        Log(Warn, "Profiler hash table filled up -- you may need to increase "
+                  "MTS_PROFILE_HASH_SIZE.");
         return;
     }
 
@@ -129,12 +129,12 @@ void Profiler::print_report() {
         }
     }
 
-    Log(EInfo, "Recorded %i samples, used %i/%i hash table entries.",
+    Log(Info, "Recorded %i samples, used %i/%i hash table entries.",
         event_count_total, buckets_used, profiler_samples.size());
 
     if (event_count_total < 250)
-        Log(EWarn, "Collected very few samples -- perform a longer "
-                   "rendering to obtain more reliable profile data.");
+        Log(Warn, "Collected very few samples -- perform a longer "
+                  "rendering to obtain more reliable profile data.");
 
     std::vector<std::pair<std::string, uint64_t>> leaf_results_sorted;
     leaf_results_sorted.reserve(leaf_results.size());
@@ -147,7 +147,7 @@ void Profiler::print_report() {
 
     prefix_length += max_indent * 2 + 10;
 
-    Log(EInfo, "\U000023F1  Profile (hierarchical):");
+    Log(Info, "\U000023F1  Profile (hierarchical):");
     for (auto kv : hierarchical_results) {
         int indent = 4;
         auto slash_index = kv.first.find_last_of("/");
@@ -159,18 +159,18 @@ void Profiler::print_report() {
 
         std::string suffix = kv.first.substr(slash_index + 1);
 
-        Log(EInfo, "%s%s%s%.2f%%",
+        Log(Info, "%s%s%s%.2f%%",
             std::string(indent, ' '),
             suffix,
             std::string(prefix_length - suffix.length() - indent, ' '),
-            kv.second / Float(event_count_total) * 100.f);
+            kv.second / float(event_count_total) * 100.f);
     }
 
-    Log(EInfo, "\U000023F1  Profile (flat):");
+    Log(Info, "\U000023F1  Profile (flat):");
     for (auto kv : leaf_results_sorted) {
-        Log(EInfo, "    %s%s%.2f%%", kv.first,
+        Log(Info, "    %s%s%.2f%%", kv.first,
             std::string(prefix_length - kv.first.length() - 4, ' '),
-            kv.second / Float(event_count_total) * 100.f);
+            kv.second / float(event_count_total) * 100.f);
     }
 }
 

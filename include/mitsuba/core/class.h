@@ -63,11 +63,13 @@ public:
     /// Return the scene description-specific alias
     const std::string &alias() const { return m_alias; }
 
-    // /**
-    //  * \brief Return whether or not the class represented
-    //  * by this Class object contains pure virtual methods
-    //  */
-    // bool is_abstract() const { return m_abstract; }
+#if 0  // TODO: remove this?
+    /**
+     * \brief Return whether or not the class represented
+     * by this Class object contains pure virtual methods
+     */
+    bool is_abstract() const { return m_abstract; }
+#endif
 
     /// Does the class support instantiation over RTTI?
     bool is_constructible() const { return m_constr != nullptr; }
@@ -120,7 +122,7 @@ private:
 private:
     std::string m_name, m_alias, m_parent_name;
     Class *m_parent;
-    bool m_abstract;
+    // bool m_abstract;
     ConstructFunctor m_constr;
     UnserializeFunctor m_unser;
     static bool m_is_initialized;
@@ -196,7 +198,7 @@ template <typename T, typename std::enable_if_t<!is_constructible_v<T, Stream *>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
 NAMESPACE_END(detail)
 
-#if 0
+#if 0  // TODO: remove this?
 /**
  * \brief Creates basic RTTI support for a class
  *

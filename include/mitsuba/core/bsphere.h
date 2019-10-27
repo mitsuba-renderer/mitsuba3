@@ -7,20 +7,19 @@ NAMESPACE_BEGIN(mitsuba)
 /// Generic n-dimensional bounding sphere data structure
 template <typename Point_> struct BoundingSphere {
     static constexpr size_t Size = Point_::Size;
-
-    using Point  = Point_;
-    using Value  = value_t<Point>;
-    using Vector = mitsuba::Vector<Value, Size>;
-    using Mask   = mask_t<Value>;
+    using Point                  = Point_;
+    using Float                  = value_t<Point>;
+    using Vector                 = mitsuba::Vector<Float, Size>;
+    using Mask                   = mask_t<Float>;
 
     Point center;
-    Value radius;
+    Float radius;
 
     /// Construct bounding sphere(s) at the origin having radius zero
     BoundingSphere() : center(0.f), radius(0.f) { }
 
     /// Create bounding sphere(s) from given center point(s) with given size(s)
-    BoundingSphere(const Point &center, const Value &radius)
+    BoundingSphere(const Point &center, const Float &radius)
     : center(center), radius(radius) { }
 
     /// Equality test against another bounding sphere

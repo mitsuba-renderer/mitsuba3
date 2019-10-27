@@ -30,9 +30,9 @@ void MemoryStream::read(void *p, size_t size) {
             memcpy(p, m_data + m_pos, static_cast<size_t>(size_read));
             m_pos += static_cast<size_t>(size_read);
         }
-        Log(EError, "Reading over the end of a memory stream!"
-                    " (amount requested = %llu, amount actually read = %llu,"
-                    " total size of the stream = %llu, previous position = %llu)",
+        Log(Error, "Reading over the end of a memory stream!"
+                   " (amount requested = %llu, amount actually read = %llu,"
+                   " total size of the stream = %llu, previous position = %llu)",
             size, size_read, m_size, old_pos);
     }
     memcpy(p, m_data + m_pos, size);

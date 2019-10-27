@@ -131,8 +131,8 @@ size_t FileStream::size() const {
 std::string FileStream::read_line() {
     std::string result;
     if (!std::getline(*m_file, result))
-        Log(EError, "\"%s\": I/O error while attempting to read"
-            " a line of text: %s", m_path.string(), strerror(errno));
+        Log(Error, "\"%s\": I/O error while attempting to read a line of text: %s", m_path.string(),
+            strerror(errno));
     return result;
 }
 

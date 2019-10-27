@@ -20,9 +20,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#define N(x) Float(x/65535.0 - 0.5)
+#define N(x) float(x/65535.0 - 0.5)
 
-extern const Float dither_matrix256[65536] = {
+extern const float dither_matrix256[65536] = {
     N(23095), N(38725), N(19697), N(43107), N(30053), N(36034), N(21940),
     N(42128), N(29348), N(37954), N(19282), N(41252), N(58370), N(24633),
     N(53615), N(18619), N(38935), N(14950), N(44634), N(23276), N(37482),

@@ -12,7 +12,7 @@ set(INC_DIR "../../include/mitsuba/core")
 add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/../mitsuba.h
   ${INC_DIR}/atomic.h
-  ${INC_DIR}/essentials.h
+  ${INC_DIR}/config.h
   ${INC_DIR}/frame.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
@@ -22,45 +22,45 @@ add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/variant.h
 
   string.cpp           ${INC_DIR}/string.h
-  appender.cpp         ${INC_DIR}/appender.h
+  # appender.cpp         ${INC_DIR}/appender.h
   argparser.cpp        ${INC_DIR}/argparser.h
   bbox.cpp             ${INC_DIR}/bbox.h
-  bitmap.cpp           ${INC_DIR}/bitmap.h
+  # bitmap.cpp           ${INC_DIR}/bitmap.h
   bsphere.cpp          ${INC_DIR}/bsphere.h
   class.cpp            ${INC_DIR}/class.h
-  ddistr.cpp           ${INC_DIR}/ddistr.h
+  # ddistr.cpp           ${INC_DIR}/ddistr.h
   dstream.cpp          ${INC_DIR}/dstream.h
-  filesystem.cpp       ${INC_DIR}/filesystem.h
-  formatter.cpp        ${INC_DIR}/formatter.h
-  fresolver.cpp        ${INC_DIR}/fresolver.h
+  # filesystem.cpp       ${INC_DIR}/filesystem.h
+  # formatter.cpp        ${INC_DIR}/formatter.h
+  # fresolver.cpp        ${INC_DIR}/fresolver.h
   fstream.cpp          ${INC_DIR}/fstream.h
-  jit.cpp              ${INC_DIR}/jit.h
-  logger.cpp           ${INC_DIR}/logger.h
-  math.cpp             ${INC_DIR}/math.h
+  # jit.cpp              ${INC_DIR}/jit.h
+  # logger.cpp           ${INC_DIR}/logger.h
+  # math.cpp             ${INC_DIR}/math.h
   mmap.cpp             ${INC_DIR}/mmap.h
-  tensor.cpp           ${INC_DIR}/tensor.h
+  # tensor.cpp           ${INC_DIR}/tensor.h
   mstream.cpp          ${INC_DIR}/mstream.h
   object.cpp           ${INC_DIR}/object.h
-  plugin.cpp           ${INC_DIR}/plugin.h
+  # plugin.cpp           ${INC_DIR}/plugin.h
   profiler.cpp         ${INC_DIR}/profiler.h
   progress.cpp         ${INC_DIR}/progress.h
-  properties.cpp       ${INC_DIR}/properties.h
-  qmc.cpp              ${INC_DIR}/qmc.h
-  random.cpp           ${INC_DIR}/random.h
-  rfilter.cpp          ${INC_DIR}/rfilter.h
-  spectrum.cpp         ${INC_DIR}/spectrum.h
-  spline.cpp           ${INC_DIR}/spline.h
+  # properties.cpp       ${INC_DIR}/properties.h
+  # qmc.cpp              ${INC_DIR}/qmc.h
+  # random.cpp           ${INC_DIR}/random.h
+  # rfilter.cpp          ${INC_DIR}/rfilter.h
+  # spectrum.cpp         ${INC_DIR}/spectrum.h
+  # spline.cpp           ${INC_DIR}/spline.h
   stream.cpp           ${INC_DIR}/stream.h
-  struct.cpp           ${INC_DIR}/struct.h
+  # struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
   tls.cpp              ${INC_DIR}/tls.h
-  transform.cpp        ${INC_DIR}/transform.h
+  # transform.cpp        ${INC_DIR}/transform.h
   util.cpp             ${INC_DIR}/util.h
-  vector.cpp           ${INC_DIR}/vector.h
-  warp.cpp             ${INC_DIR}/warp.h
-  xml.cpp              ${INC_DIR}/xml.h
-  zstream.cpp          ${INC_DIR}/zstream.h
-  quad.cpp             ${INC_DIR}/quad.h
+  # vector.cpp           ${INC_DIR}/vector.h
+  # warp.cpp             ${INC_DIR}/warp.h
+  # xml.cpp              ${INC_DIR}/xml.h
+  # zstream.cpp          ${INC_DIR}/zstream.h
+  # quad.cpp             ${INC_DIR}/quad.h
 
   dither-matrix256.cpp
 )

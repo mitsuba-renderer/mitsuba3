@@ -22,12 +22,11 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename Point_> struct BoundingBox {
     static constexpr size_t Size = array_size_v<Point_>;
-
-    using Point  = Point_;
-    using Value  = value_t<Point>;
-    using Vector = typename Point::Vector;
-    using UInt32 = uint32_array_t<Value>;
-    using Mask   = mask_t<Value>;
+    using Point                  = Point_;
+    using Float                  = value_t<Point>;
+    using Vector                 = typename Point::Vector;
+    using UInt32                 = uint32_array_t<Float>;
+    using Mask                   = mask_t<Float>;
 
     /**
      * \brief Create a new invalid bounding box
@@ -83,7 +82,7 @@ template <typename Point_> struct BoundingBox {
     UInt32 major_axis() const {
         Vector d = max - min;
         UInt32 index(0);
-        expr_t<Value> value = d[0];
+        expr_t<Float> value = d[0];
 
         for (uint32_t i = 1; i < Size; ++i) {
             auto mask = d[i] > value;
@@ -98,7 +97,7 @@ template <typename Point_> struct BoundingBox {
     UInt32 minor_axis() const {
         Vector d = max - min;
         UInt32 index(0);
-        Value value = d[0];
+        Float value = d[0];
 
         for (uint32_t i = 1; i < Size; ++i) {
             Mask mask = d[i] < value;
@@ -111,7 +110,7 @@ template <typename Point_> struct BoundingBox {
 
     /// Return the center point
     Point center() const {
-        return (max + min) * Value(0.5);
+        return (max + min) * Float(0.5);
     }
 
     /**
@@ -129,24 +128,24 @@ template <typename Point_> struct BoundingBox {
     }
 
     /// Calculate the n-dimensional volume of the bounding box
-    Value volume() const { return hprod(max - min); }
+    Float volume() const { return hprod(max - min); }
 
     /// Calculate the 2-dimensional surface area of a 3D bounding box
     template <typename T = Point, typename std::enable_if<T::Size == 3, int>::type = 0>
-    Value surface_area() const {
+    Float surface_area() const {
         Vector d = max - min;
-        return hsum(enoki::shuffle<1, 2, 0>(d) * d) * Value(2);
+        return hsum(enoki::shuffle<1, 2, 0>(d) * d) * Float(2);
     }
 
     /// General case: calculate the n-1 dimensional volume of the boundary
     template <typename T = Point, typename std::enable_if<T::Size != 3, int>::type = 0>
-    Value surface_area() const {
+    Float surface_area() const {
         /* Generic implementation for Size != 3 */
         Vector d = max - min;
 
-        Value result = Value(0);
+        Float result = Float(0);
         for (size_t i = 0; i <  Size; ++i) {
-            Value term = Value(1);
+            Float term = Float(1);
             for (size_t j = 0; j < Size; ++j) {
                 if (i == j)
                     continue;
@@ -154,7 +153,7 @@ template <typename Point_> struct BoundingBox {
             }
             result += term;
         }
-        return Value(2) * result;
+        return Float(2) * result;
     }
 
     /**
@@ -168,7 +167,7 @@ template <typename Point_> struct BoundingBox {
      * \remark In the Python bindings, the 'Strict' argument is a normal
      *         function parameter with default value \c False.
      */
-    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Float>>>
     Result contains(const mitsuba::Point<T, Point::Size> &p) const {
         if constexpr (Strict)
             return all((p > min) && (p < max));
@@ -190,7 +189,7 @@ template <typename Point_> struct BoundingBox {
      * \remark In the Python bindings, the 'Strict' argument is a normal
      *         function parameter with default value \c False.
      */
-    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Float>>>
     Result contains(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
         if constexpr (Strict)
             return all((bbox.min > min) && (bbox.max < max));
@@ -209,7 +208,7 @@ template <typename Point_> struct BoundingBox {
      *
      * \return \c true If overlap was detected.
      */
-    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Float>>>
     Result overlaps(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
         if constexpr (Strict)
             return all((bbox.min < max) && (bbox.max > min));
@@ -221,7 +220,7 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    template <typename T, typename Result = expr_t<T, Value>>
+    template <typename T, typename Result = expr_t<T, Float>>
     Result squared_distance(const mitsuba::Point<T, Point::Size> &p) const {
         return squared_norm(((min - p) & (p < min)) + ((p - max) & (p > max)));
     }
@@ -230,7 +229,7 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    template <typename T, typename Result = expr_t<T, Value>>
+    template <typename T, typename Result = expr_t<T, Float>>
     Result squared_distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
         return squared_norm(((min - bbox.max) & (bbox.max < min)) +
                             ((bbox.min - max) & (bbox.min > max)));
@@ -240,7 +239,7 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    template <typename T, typename Result = expr_t<T, Value>>
+    template <typename T, typename Result = expr_t<T, Float>>
     Result distance(const mitsuba::Point<T, Point::Size> &p) const {
         return enoki::sqrt(squared_distance(p));
     }
@@ -249,7 +248,7 @@ template <typename Point_> struct BoundingBox {
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    template <typename T, typename Result = expr_t<T, Value>>
+    template <typename T, typename Result = expr_t<T, Float>>
     Result distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
         return enoki::sqrt(squared_distance(bbox));
     }
@@ -262,8 +261,8 @@ template <typename Point_> struct BoundingBox {
      * respectively.
      */
     void reset() {
-        min =  std::numeric_limits<Value>::infinity();
-        max = -std::numeric_limits<Value>::infinity();
+        min =  std::numeric_limits<Float>::infinity();
+        max = -std::numeric_limits<Float>::infinity();
     }
 
     /// Clip this bounding box to another bounding box
@@ -301,9 +300,9 @@ template <typename Point_> struct BoundingBox {
      * Note that this function ignores the <tt>(mint, maxt)</tt> interval
      * associated with the ray.
      */
-    template <typename Ray, typename Value = expr_t<typename Ray::Value>,
-              typename Mask = mask_t<Value>,
-              typename Result = std::tuple<Mask, Value, Value>>
+    template <typename Ray, typename Float = expr_t<typename Ray::Float>,
+              typename Mask = mask_t<Float>,
+              typename Result = std::tuple<Mask, Float, Float>>
     MTS_INLINE Result ray_intersect(const Ray &ray) const {
         using Vector = expr_t<typename Ray::Vector>;
 
@@ -320,7 +319,7 @@ template <typename Point_> struct BoundingBox {
                t2p = enoki::max(t1, t2);
 
         /* Intersect intervals */
-        Value mint = hmax(t1p),
+        Float mint = hmax(t1p),
               maxt = hmin(t2p);
 
         active = active && (maxt >= mint);
