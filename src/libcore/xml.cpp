@@ -150,6 +150,7 @@ void register_class(const Class *class_) {
     }
 
     if (tag_name == "spectrum") {
+        // A texture is a kind of ContinuousSpectrum
         (*tags)["texture"] = EObject;
         (*tag_class)["texture"] = class_;
     }

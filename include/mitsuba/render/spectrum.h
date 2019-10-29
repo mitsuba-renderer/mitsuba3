@@ -63,22 +63,6 @@ public:
      */
     virtual Spectrum pdf(const Wavelength &wavelengths, Mask active = true) const;
 
-    /**
-     * Return the mean value of the spectrum over the support
-     * (MTS_WAVELENGTH_MIN..MTS_WAVELENGTH_MAX)
-     *
-     * Not every implementation necessarily provides this function. The default
-     * implementation throws an exception.
-     *
-     * Even if the operation is provided, it may only return an approximation.
-     */
-    virtual Float mean() const;
-
-    /**
-     * Convenience method returning the standard D65 illuminant.
-     */
-    static ref<ContinuousSpectrum> D65(float scale = 1.f, bool monochrome = false);
-
     // ======================================================================
     //! @{ \name Texture interface implementation
     //!
@@ -89,8 +73,14 @@ public:
     //! and fall back to the above non-textured implementations.
     // ======================================================================
 
-    /// Evaluate the texture at the given surface interaction
+    /// Evaluate the texture at the given surface interaction, with color processing.
     virtual Spectrum eval(const SurfaceInteraction3f &si, Mask active = true) const;
+
+    /// Evaluate this texture as a three-channel quantity with no color processing (e.g. normal map).
+    virtual Vector3f eval3(const SurfaceInteraction3f &si, Mask active = true) const;
+
+    /// Evaluate this texture as a single-channel quantity.
+    virtual Float eval1(const SurfaceInteraction3f &si, Mask active = true) const;
 
     /**
      * \brief Importance sample the (textured) spectral power distribution
@@ -125,10 +115,36 @@ public:
     //! @}
     // ======================================================================
 
+    /**
+     * Return the mean value of the spectrum over the support
+     * (MTS_WAVELENGTH_MIN..MTS_WAVELENGTH_MAX)
+     *
+     * Not every implementation necessarily provides this function. The default
+     * implementation throws an exception.
+     *
+     * Even if the operation is provided, it may only return an approximation.
+     */
+    virtual Float mean() const;
+
+    /**
+     * Convenience method returning the standard D65 illuminant.
+     */
+    static ref<ContinuousSpectrum> D65(float scale = 1.f, bool monochrome = false);
+
 protected:
     virtual ~ContinuousSpectrum();
 };
 
-NAMESPACE_END(mitsuba)
 
-#include "detail/spectrum.inl"
+template <typename Float, typename Spectrum>
+class MTS_EXPORT_RENDER Texture : public ContinuousSpectrum<Float, Spectrum> {
+public:
+    // TODO: should this define an interface?
+    MTS_REGISTER_INTERFACE(Texture, ContinuousSpectrum, "texture")
+    MTS_IMPORT_TYPES();
+
+protected:
+    virtual ~Texture();
+};
+
+NAMESPACE_END(mitsuba)

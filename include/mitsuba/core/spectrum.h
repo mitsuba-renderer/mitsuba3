@@ -237,6 +237,9 @@ value_t<Spectrum> luminance(const Spectrum &value,
 template <typename Value> Value luminance(const Color<Value, 3> &c) {
     return c[0] * 0.212671f + c[1] * 0.715160f + c[2] * 0.072169f;
 }
+template <typename Value> Value luminance(const Vector<Value, 3> &c) {
+    return c[0] * 0.212671f + c[1] * 0.715160f + c[2] * 0.072169f;
+}
 
 /**
  * Importance sample a "importance spectrum" that concentrates the computation
