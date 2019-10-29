@@ -8,88 +8,35 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shape.h>
 
-MTS_PY_EXPORT(Endpoint) {
-    using enoki::vectorize_wrapper;
+MTS_PY_EXPORT_VARIANTS(Endpoint) {
+    MTS_PY_CLASS(Endpoint, Object)
+        .def("sample_ray", &Endpoint::sample_ray,
+             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+             D(Endpoint, sample_ray))
+        .def("sample_ray", enoki::vectorize_wrapper(&Endpoint::sample_ray),
+             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+             D(Endpoint, sample_ray))
 
-    auto endpoint = MTS_PY_CLASS(Endpoint, Object)
-        .def("sample_ray",
-             py::overload_cast<Float, Float, const Point2f &, const Point2f &, bool>(
-                &Endpoint::sample_ray, py::const_),
-             D(Endpoint, sample_ray),
-             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "unused"_a = true)
-        .def("sample_ray",
-             enoki::vectorize_wrapper(
-                py::overload_cast<FloatP, FloatP, const Point2fP &, const Point2fP &, MaskP>(
-                    &Endpoint::sample_ray, py::const_)),
-             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
-#if defined(MTS_ENABLE_AUTODIFF)
-        .def("sample_ray",
-            py::overload_cast<FloatD, FloatD, const Point2fD &, const Point2fD &, MaskD>(
-                &Endpoint::sample_ray, py::const_),
-             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
-#endif
-        .def("sample_direction",
-             py::overload_cast<const Interaction3f &, const Point2f &, bool>(
-                &Endpoint::sample_direction, py::const_),
-             D(Endpoint, sample_direction), "it"_a, "sample"_a, "unused"_a = true)
-        .def("sample_direction",
-             enoki::vectorize_wrapper(
-                py::overload_cast<const Interaction3fP &, const Point2fP &, MaskP>(
-                    &Endpoint::sample_direction, py::const_)),
-             "it"_a, "sample"_a, "active"_a = true)
-        .def("pdf_direction",
-             py::overload_cast<const Interaction3f &, const DirectionSample3f &, bool>(
-                &Endpoint::pdf_direction, py::const_),
-             D(Endpoint, pdf_direction), "it"_a, "ds"_a, "unused"_a = true)
-        .def("pdf_direction",
-             enoki::vectorize_wrapper(
-                py::overload_cast<const Interaction3fP &, const DirectionSample3fP &, MaskP>(
-                    &Endpoint::pdf_direction, py::const_)),
-             "it"_a, "ds"_a, "active"_a = true)
-        .def("eval",
-             py::overload_cast<const SurfaceInteraction3f &, bool>(
-                &Endpoint::eval, py::const_),
-             D(Endpoint, eval), "si"_a, "unused"_a = true)
-        .def("eval",
-             enoki::vectorize_wrapper(
-                py::overload_cast<const SurfaceInteraction3fP &, MaskP>(
-                    &Endpoint::eval, py::const_)),
-             "si"_a, "active"_a = true)
-        .def("sample_ray_pol",
-            py::overload_cast<Float, Float, const Point2f &, const Point2f &, bool>(
-                &Endpoint::sample_ray_pol, py::const_),
-            D(Endpoint, sample_ray_pol),
-            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "unused"_a = true)
-        .def("sample_ray_pol",
-            enoki::vectorize_wrapper(
-                py::overload_cast<FloatP, FloatP, const Point2fP &, const Point2fP &, MaskP>(
-                    &Endpoint::sample_ray_pol, py::const_)),
-            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
-        .def("sample_direction_pol",
-            py::overload_cast<const Interaction3f &, const Point2f &, bool>(
-                &Endpoint::sample_direction_pol, py::const_),
-            D(Endpoint, sample_direction_pol), "it"_a, "sample"_a, "unused"_a = true)
-        .def("sample_direction_pol",
-            enoki::vectorize_wrapper(
-                py::overload_cast<const Interaction3fP &, const Point2fP &, MaskP>(
-                    &Endpoint::sample_direction_pol, py::const_)),
-            "it"_a, "sample"_a, "active"_a = true)
-        .def("eval_pol",
-            py::overload_cast<const SurfaceInteraction3f &, bool>(
-                &Endpoint::eval_pol, py::const_),
-            D(Endpoint, eval_pol), "si"_a, "unused"_a = true)
-        .def("eval_pol",
-            enoki::vectorize_wrapper(
-                py::overload_cast<const SurfaceInteraction3fP &, MaskP>(
-                    &Endpoint::eval_pol, py::const_)),
-            "si"_a, "active"_a = true)
+        .def("sample_direction", &Endpoint::sample_direction,
+             "it"_a, "sample"_a, "active"_a = true, D(Endpoint, sample_direction))
+        .def("sample_direction", enoki::vectorize_wrapper(&Endpoint::sample_direction),
+             "it"_a, "sample"_a, "active"_a = true, D(Endpoint, sample_direction))
+
+        .def("pdf_direction", &Endpoint::pdf_direction,
+             "it"_a, "ds"_a, "active"_a = true, D(Endpoint, pdf_direction))
+        .def("pdf_direction", enoki::vectorize_wrapper(&Endpoint::pdf_direction),
+             "it"_a, "ds"_a, "active"_a = true, D(Endpoint, pdf_direction))
+
+        .def("eval", &Endpoint::eval,
+             "si"_a, "active"_a = true, D(Endpoint, eval))
+        .def("eval", enoki::vectorize_wrapper(&Endpoint::eval),
+             "si"_a, "active"_a = true, D(Endpoint, eval))
+
         .mdef(Endpoint, world_transform)
         .mdef(Endpoint, needs_sample_2)
         .mdef(Endpoint, needs_sample_3)
-        .def("shape", py::overload_cast<>(&Endpoint::shape, py::const_),
-             D(Endpoint, shape))
-        .def("medium", py::overload_cast<>(&Endpoint::medium, py::const_),
-             D(Endpoint, medium))
+        .def("shape", py::overload_cast<>(&Endpoint::shape, py::const_), D(Endpoint, shape))
+        .def("medium", py::overload_cast<>(&Endpoint::medium, py::const_), D(Endpoint, medium))
         .mdef(Endpoint, set_shape, "shape"_a)
         .mdef(Endpoint, set_medium, "medium"_a)
         .mdef(Endpoint, bbox);
