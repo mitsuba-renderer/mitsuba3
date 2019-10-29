@@ -12,16 +12,15 @@ add_definitions(
 add_definitions(-DMTS_BRANCH="${GIT_BRANCH}")
 add_definitions(-DMTS_HASH="${GIT_COMMIT_HASH}")
 
-add_executable(mtsgui mtsgui.cpp)
+# add_executable(mtsgui mtsgui.cpp)
+# target_link_libraries(mtsgui PRIVATE mitsuba-core mitsuba-render mitsuba-ui tbb)
 
-target_link_libraries(mtsgui PRIVATE mitsuba-core mitsuba-render mitsuba-ui tbb)
+# if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
+#   target_link_libraries(mtsgui PRIVATE asmjit)
+# endif()
 
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
-  target_link_libraries(mtsgui PRIVATE asmjit)
-endif()
+# add_dist(mtsgui)
 
-add_dist(mtsgui)
-
-if (APPLE)
-  set_target_properties(mtsgui PROPERTIES INSTALL_RPATH "@executable_path")
-endif()
+# if (APPLE)
+#   set_target_properties(mtsgui PROPERTIES INSTALL_RPATH "@executable_path")
+# endif()
