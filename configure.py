@@ -61,6 +61,17 @@ with open(fname, 'w') as f:
         w('    template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
+    w('#define MTS_PY_EXPORT_VARIANTS(name)')
+    w('    template <typename Float, typename Spectrum> void instantiate_##name(py::module m);')
+    w('    MTS_PY_EXPORT(name) {')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        spectrum = spectrum.replace('Float', float_)
+        w('        instantiate_##name<%s, %s>(' % (float_, spectrum))
+        w('            m.def_submodule("%s"));' % (name))
+    w('    }')
+    w('    template <typename Float, typename Spectrum> void instantiate_##name(py::module m)')
+    f.write('\n\n')
+
     w('#define MTS_INSTANTIATE_OBJECT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         # TODO: this would be better with a `using` declaration

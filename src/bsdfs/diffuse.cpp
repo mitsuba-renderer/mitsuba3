@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(SmoothDiffuse, BSDF);
+    MTS_DECLARE_PLUGIN(SmoothDiffuse, BSDF)
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 
@@ -19,7 +19,6 @@ public:
         m_components.push_back(m_flags);
     }
 
-    MTS_INLINE
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                              Float /* sample1 */, const Point2f &sample2,
                                              Mask active) const override {
@@ -42,7 +41,6 @@ public:
         return { bs, select(active && bs.pdf > 0, value, 0.f) };
     }
 
-    MTS_INLINE
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
                   Mask active) const override {
 
@@ -58,7 +56,6 @@ public:
         return select(cos_theta_i > 0.f && cos_theta_o > 0.f, value, 0.f);
     }
 
-    MTS_INLINE
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
               Mask /* active */) const override {
         if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))

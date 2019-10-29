@@ -1,10 +1,10 @@
 #pragma once
 
 #define MTS_CONFIGURATIONS                                                  \
-    "scalar-mono\n"                                                         \
-    "scalar-rgb\n"                                                          \
-    "scalar-spectral\n"                                                     \
-    "scalar-spectral-polarized\n"                                           \
+    "scalar_spectral_polarized\n"                                           \
+    "scalar_rgb\n"                                                          \
+    "scalar_mono\n"                                                         \
+    "scalar_spectral\n"                                                     \
 
 
 #define MTS_DECLARE_PLUGIN(Name, Parent)                                    \
@@ -19,40 +19,55 @@
                                          const Properties &props) {         \
             constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float); \
             ENOKI_MARK_USED(PacketSize);                                    \
-            if (strcmp(config, "scalar-mono") == 0) {                       \
-                using Float = float;                                        \
-                return new Name<float, Color<Float, 1>>(props);             \
-            } else if (strcmp(config, "scalar-rgb") == 0) {                 \
-                using Float = float;                                        \
-                return new Name<float, Color<Float, 3>>(props);             \
-            } else if (strcmp(config, "scalar-spectral") == 0) {            \
-                using Float = float;                                        \
-                return new Name<float, Spectrum<Float, 4>>(props);          \
-            } else if (strcmp(config, "scalar-spectral-polarized") == 0) {  \
+            if (strcmp(config, "scalar_spectral_polarized") == 0) {         \
                 using Float = float;                                        \
                 return new Name<float, MuellerMatrix<Spectrum<Float, 4>>>(props); \
+            } else if (strcmp(config, "scalar_rgb") == 0) {                 \
+                using Float = float;                                        \
+                return new Name<float, Color<Float, 3>>(props);             \
+            } else if (strcmp(config, "scalar_mono") == 0) {                \
+                using Float = float;                                        \
+                return new Name<float, Color<Float, 1>>(props);             \
+            } else if (strcmp(config, "scalar_spectral") == 0) {            \
+                using Float = float;                                        \
+                return new Name<float, Spectrum<Float, 4>>(props);          \
             } else {                                                        \
                 return nullptr;                                             \
             }                                                               \
         }                                                                   \
     }                                                                       \
                                                                             \
-    template class MTS_EXPORT_CORE Name<float, Color<float, 1>>;            \
-    template class MTS_EXPORT_CORE Name<float, Color<float, 3>>;            \
-    template class MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;         \
     template class MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
+    template class MTS_EXPORT_CORE Name<float, Color<float, 3>>;            \
+    template class MTS_EXPORT_CORE Name<float, Color<float, 1>>;            \
+    template class MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;         \
+
+
+#define MTS_PY_EXPORT_VARIANTS(name)                                        \
+    template <typename Float, typename Spectrum> void instantiate_##name(py::module m); \
+    MTS_PY_EXPORT(name) {                                                   \
+        instantiate_##name<float, MuellerMatrix<Spectrum<float, 4>>>(       \
+            m.def_submodule("scalar_spectral_polarized"));                  \
+        instantiate_##name<float, Color<float, 3>>(                         \
+            m.def_submodule("scalar_rgb"));                                 \
+        instantiate_##name<float, Color<float, 1>>(                         \
+            m.def_submodule("scalar_mono"));                                \
+        instantiate_##name<float, Spectrum<float, 4>>(                      \
+            m.def_submodule("scalar_spectral"));                            \
+    }                                                                       \
+    template <typename Float, typename Spectrum> void instantiate_##name(py::module m) \
 
 
 #define MTS_INSTANTIATE_OBJECT(Name)                                        \
-    template class MTS_EXPORT_CORE Name<float, Color<float, 1>>;            \
-    template class MTS_EXPORT_CORE Name<float, Color<float, 3>>;            \
-    template class MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;         \
     template class MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
+    template class MTS_EXPORT_CORE Name<float, Color<float, 3>>;            \
+    template class MTS_EXPORT_CORE Name<float, Color<float, 1>>;            \
+    template class MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;         \
 
 
 #define MTS_INSTANTIATE_STRUCT(Name)                                        \
-    template struct MTS_EXPORT_CORE Name<float, Color<float, 1>>;           \
-    template struct MTS_EXPORT_CORE Name<float, Color<float, 3>>;           \
-    template struct MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;        \
     template struct MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
+    template struct MTS_EXPORT_CORE Name<float, Color<float, 3>>;           \
+    template struct MTS_EXPORT_CORE Name<float, Color<float, 1>>;           \
+    template struct MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;        \
 
