@@ -322,8 +322,8 @@ public:
 private:
     Transform4f m_object_to_world;
     Transform4f m_world_to_object;
-    sFloat m_radius, m_length;
-    sFloat m_inv_surface_area;
+    ScalarFloat m_radius, m_length;
+    ScalarFloat m_inv_surface_area;
     bool m_flip_normals;
 };
 

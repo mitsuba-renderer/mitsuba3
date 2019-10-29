@@ -24,7 +24,7 @@ struct PositionSample {
 
     using Float = Float_;
     using Spectrum = Spectrum_;
-    MTS_IMPORT_TYPES_ONLY()
+    MTS_IMPORT_TYPES_BASIC()
     using ObjectPtr            = typename Aliases::ObjectPtr;
     using SurfaceInteraction3f = typename Aliases::SurfaceInteraction3f;
 
@@ -124,26 +124,19 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     // =============================================================
     using Float    = Float_;
     using Spectrum = Spectrum_;
-    using Base     = PositionSample<Float_, Spectrum_>;
-    MTS_IMPORT_TYPES_ONLY();
-    using typename Base::ObjectPtr;
-    using typename Base::SurfaceInteraction3f;
-    using Interaction3f = typename Aliases::Interaction3f;
+    MTS_IMPORT_TYPES_BASIC();
+    using Interaction3f        = typename Aliases::Interaction3f;
+    using SurfaceInteraction3f = typename Aliases::SurfaceInteraction3f;
+    using ObjectPtr            = typename Aliases::ObjectPtr;
+    // Make parent fields visible
+    MTS_USING_BASE(PositionSample, p, n, uv, time, pdf, delta, object)
+
     //! @}
     // =============================================================
 
     // =============================================================
     //! @{ \name Fields
     // =============================================================
-
-    // Make parent fields visible
-    using Base::p;
-    using Base::n;
-    using Base::uv;
-    using Base::time;
-    using Base::pdf;
-    using Base::delta;
-    using Base::object;
 
     /// Unit direction from the reference point to the target shape
     Vector3f d;

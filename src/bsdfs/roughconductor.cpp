@@ -172,7 +172,7 @@ private:
     /// Specifies the type of microfacet distribution
     MicrofacetType m_type;
     /// Anisotropic roughness values
-    sFloat m_alpha_u, m_alpha_v;
+    ScalarFloat m_alpha_u, m_alpha_v;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
 

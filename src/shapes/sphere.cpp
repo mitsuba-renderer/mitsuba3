@@ -333,8 +333,8 @@ private:
     Transform4f m_object_to_world;
     Transform4f m_world_to_object;
     Point3f m_center;
-    sFloat   m_radius;
-    sFloat   m_inv_surface_area;
+    ScalarFloat   m_radius;
+    ScalarFloat   m_inv_surface_area;
     bool    m_flip_normals;
 };
 

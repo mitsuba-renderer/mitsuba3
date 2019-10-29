@@ -147,63 +147,67 @@ template <typename Float_, typename Spectrum_> struct Aliases {
 template <typename Float, typename Spectrum>
 using ScalarAliases = Aliases<scalar_t<Float>, scalar_spectrum_t<Spectrum>>;
 
-#define MTS_IMPORT_TYPES_ONLY()                                                                    \
-    using Aliases              = mitsuba::Aliases<Float, Spectrum>;                                \
-    using sc                   = mitsuba::ScalarAliases<Float, Spectrum>;                          \
-    using sFloat               = typename sc::Float;                                               \
-    using Mask                 = typename Aliases::Mask;                                           \
-    using Int32                = typename Aliases::Int32;                                          \
-    using UInt32               = typename Aliases::UInt32;                                         \
-    using Int64                = typename Aliases::Int64;                                          \
-    using UInt64               = typename Aliases::UInt64;                                         \
-    using Float64              = typename Aliases::Float64;                                        \
-    using Vector1i             = typename Aliases::Vector1i;                                       \
-    using Vector2i             = typename Aliases::Vector2i;                                       \
-    using Vector3i             = typename Aliases::Vector3i;                                       \
-    using Vector4i             = typename Aliases::Vector4i;                                       \
-    using Vector1u             = typename Aliases::Vector1u;                                       \
-    using Vector2u             = typename Aliases::Vector2u;                                       \
-    using Vector3u             = typename Aliases::Vector3u;                                       \
-    using Vector4u             = typename Aliases::Vector4u;                                       \
-    using Vector1f             = typename Aliases::Vector1f;                                       \
-    using Vector2f             = typename Aliases::Vector2f;                                       \
-    using Vector3f             = typename Aliases::Vector3f;                                       \
-    using Vector4f             = typename Aliases::Vector4f;                                       \
-    using Vector1d             = typename Aliases::Vector1d;                                       \
-    using Vector2d             = typename Aliases::Vector2d;                                       \
-    using Vector3d             = typename Aliases::Vector3d;                                       \
-    using Vector4d             = typename Aliases::Vector4d;                                       \
-    using Point1i              = typename Aliases::Point1i;                                        \
-    using Point2i              = typename Aliases::Point2i;                                        \
-    using Point3i              = typename Aliases::Point3i;                                        \
-    using Point4i              = typename Aliases::Point4i;                                        \
-    using Point1u              = typename Aliases::Point1u;                                        \
-    using Point2u              = typename Aliases::Point2u;                                        \
-    using Point3u              = typename Aliases::Point3u;                                        \
-    using Point4u              = typename Aliases::Point4u;                                        \
-    using Point1f              = typename Aliases::Point1f;                                        \
-    using Point2f              = typename Aliases::Point2f;                                        \
-    using Point3f              = typename Aliases::Point3f;                                        \
-    using Point4f              = typename Aliases::Point4f;                                        \
-    using Point1d              = typename Aliases::Point1d;                                        \
-    using Point2d              = typename Aliases::Point2d;                                        \
-    using Point3d              = typename Aliases::Point3d;                                        \
-    using Point4d              = typename Aliases::Point4d;                                        \
-    using Normal3f             = typename Aliases::Normal3f;                                       \
-    using Normal3d             = typename Aliases::Normal3d;                                       \
-    using Wavelength           = typename Aliases::Wavelength;                                     \
-    using Color1f              = typename Aliases::Color1f;                                        \
-    using Color3f              = typename Aliases::Color3f;                                        \
-    using StokesVector4f       = typename Aliases::StokesVector4f;                                 \
-    using MuellerMatrix4f      = typename Aliases::MuellerMatrix4f;                                \
-    using Frame3f              = typename Aliases::Frame3f;                                        \
-    using Ray3f                = typename Aliases::Ray3f;                                          \
-    using RayDifferential3f    = typename Aliases::RayDifferential3f;                              \
-    using Transform3f          = typename Aliases::Transform3f;                                    \
-    using Transform4f          = typename Aliases::Transform4f;
+#define MTS_IMPORT_TYPES_BASIC_PREFIX(Float, Spectrum, prefix)                                     \
+    using prefix ## Aliases              = mitsuba::Aliases<Float, Spectrum>;                      \
+    using prefix ## Mask                 = typename Aliases::Mask;                                 \
+    using prefix ## Int32                = typename Aliases::Int32;                                \
+    using prefix ## UInt32               = typename Aliases::UInt32;                               \
+    using prefix ## Int64                = typename Aliases::Int64;                                \
+    using prefix ## UInt64               = typename Aliases::UInt64;                               \
+    using prefix ## Float64              = typename Aliases::Float64;                              \
+    using prefix ## Vector1i             = typename Aliases::Vector1i;                             \
+    using prefix ## Vector2i             = typename Aliases::Vector2i;                             \
+    using prefix ## Vector3i             = typename Aliases::Vector3i;                             \
+    using prefix ## Vector4i             = typename Aliases::Vector4i;                             \
+    using prefix ## Vector1u             = typename Aliases::Vector1u;                             \
+    using prefix ## Vector2u             = typename Aliases::Vector2u;                             \
+    using prefix ## Vector3u             = typename Aliases::Vector3u;                             \
+    using prefix ## Vector4u             = typename Aliases::Vector4u;                             \
+    using prefix ## Vector1f             = typename Aliases::Vector1f;                             \
+    using prefix ## Vector2f             = typename Aliases::Vector2f;                             \
+    using prefix ## Vector3f             = typename Aliases::Vector3f;                             \
+    using prefix ## Vector4f             = typename Aliases::Vector4f;                             \
+    using prefix ## Vector1d             = typename Aliases::Vector1d;                             \
+    using prefix ## Vector2d             = typename Aliases::Vector2d;                             \
+    using prefix ## Vector3d             = typename Aliases::Vector3d;                             \
+    using prefix ## Vector4d             = typename Aliases::Vector4d;                             \
+    using prefix ## Point1i              = typename Aliases::Point1i;                              \
+    using prefix ## Point2i              = typename Aliases::Point2i;                              \
+    using prefix ## Point3i              = typename Aliases::Point3i;                              \
+    using prefix ## Point4i              = typename Aliases::Point4i;                              \
+    using prefix ## Point1u              = typename Aliases::Point1u;                              \
+    using prefix ## Point2u              = typename Aliases::Point2u;                              \
+    using prefix ## Point3u              = typename Aliases::Point3u;                              \
+    using prefix ## Point4u              = typename Aliases::Point4u;                              \
+    using prefix ## Point1f              = typename Aliases::Point1f;                              \
+    using prefix ## Point2f              = typename Aliases::Point2f;                              \
+    using prefix ## Point3f              = typename Aliases::Point3f;                              \
+    using prefix ## Point4f              = typename Aliases::Point4f;                              \
+    using prefix ## Point1d              = typename Aliases::Point1d;                              \
+    using prefix ## Point2d              = typename Aliases::Point2d;                              \
+    using prefix ## Point3d              = typename Aliases::Point3d;                              \
+    using prefix ## Point4d              = typename Aliases::Point4d;                              \
+    using prefix ## Normal3f             = typename Aliases::Normal3f;                             \
+    using prefix ## Normal3d             = typename Aliases::Normal3d;                             \
+    using prefix ## Wavelength           = typename Aliases::Wavelength;                           \
+    using prefix ## Color1f              = typename Aliases::Color1f;                              \
+    using prefix ## Color3f              = typename Aliases::Color3f;                              \
+    using prefix ## StokesVector4f       = typename Aliases::StokesVector4f;                       \
+    using prefix ## MuellerMatrix4f      = typename Aliases::MuellerMatrix4f;                      \
+    using prefix ## Frame3f              = typename Aliases::Frame3f;                              \
+    using prefix ## Ray3f                = typename Aliases::Ray3f;                                \
+    using prefix ## RayDifferential3f    = typename Aliases::RayDifferential3f;                    \
+    using prefix ## Transform3f          = typename Aliases::Transform3f;                          \
+    using prefix ## Transform4f          = typename Aliases::Transform4f;
+
+#define MTS_IMPORT_TYPES_BASIC()                                                                   \
+    MTS_IMPORT_TYPES_BASIC_PREFIX(Float, Spectrum, )                                               \
+    using ScalarFloat      = scalar_t<Float>;                                                      \
+    using ScalarSpectrum   = scalar_spectrum_t<Spectrum>;                                          \
+    MTS_IMPORT_TYPES_BASIC_PREFIX(ScalarFloat, ScalarSpectrum, Scalar)
 
 #define MTS_IMPORT_TYPES()                                                                         \
-    MTS_IMPORT_TYPES_ONLY();                                                                       \
+    MTS_IMPORT_TYPES_BASIC();                                                                       \
     using BoundingBox1f        = typename Aliases::BoundingBox1f;                                  \
     using BoundingBox2f        = typename Aliases::BoundingBox2f;                                  \
     using BoundingBox3f        = typename Aliases::BoundingBox3f;                                  \

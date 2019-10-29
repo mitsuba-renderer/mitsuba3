@@ -27,7 +27,7 @@ public:
 
     void set_shape(Shape *shape) override {
         Base::set_shape(shape);
-        m_area_times_pi = m_shape->surface_area() * math::Pi<sFloat>;
+        m_area_times_pi = m_shape->surface_area() * math::Pi<ScalarFloat>;
     }
 
     MTS_INLINE Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -91,7 +91,7 @@ public:
 
 private:
     ref<ContinuousSpectrum> m_radiance;
-    sFloat m_area_times_pi = 0.f;
+    ScalarFloat m_area_times_pi = 0.f;
 };
 
 

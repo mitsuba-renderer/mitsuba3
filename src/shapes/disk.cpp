@@ -176,7 +176,7 @@ private:
     Transform4f m_world_to_object;
     Frame<Vector3f> m_frame;
     Vector3f m_dp_du, m_dp_dv;
-    sFloat m_inv_surface_area;
+    ScalarFloat m_inv_surface_area;
 };
 
 MTS_IMPLEMENT_PLUGIN(Disk, Shape, "Disk intersection primitive");

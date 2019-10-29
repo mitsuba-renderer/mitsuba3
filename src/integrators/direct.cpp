@@ -38,10 +38,10 @@ public:
             Throw("Must have at least 1 BSDF or emitter sample!");
 
         size_t sum    = m_emitter_samples + m_bsdf_samples;
-        m_weight_bsdf = 1.f / (sFloat) m_bsdf_samples;
-        m_weight_lum  = 1.f / (sFloat) m_emitter_samples;
-        m_frac_bsdf   = m_bsdf_samples / (sFloat) sum;
-        m_frac_lum    = m_emitter_samples / (sFloat) sum;
+        m_weight_bsdf = 1.f / (ScalarFloat) m_bsdf_samples;
+        m_weight_lum  = 1.f / (ScalarFloat) m_emitter_samples;
+        m_frac_bsdf   = m_bsdf_samples / (ScalarFloat) sum;
+        m_frac_lum    = m_emitter_samples / (ScalarFloat) sum;
     }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene, Sampler *sampler,
@@ -144,8 +144,8 @@ public:
 private:
     size_t m_emitter_samples;
     size_t m_bsdf_samples;
-    sFloat m_frac_bsdf, m_frac_lum;
-    sFloat m_weight_bsdf, m_weight_lum;
+    ScalarFloat m_frac_bsdf, m_frac_lum;
+    ScalarFloat m_weight_bsdf, m_weight_lum;
 };
 
 MTS_IMPLEMENT_PLUGIN(DirectIntegrator, SamplingIntegrator, "Direct integrator");

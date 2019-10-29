@@ -19,10 +19,10 @@ public:
 
     SmoothPlastic(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface
-        sFloat int_ior = lookup_ior(props, "int_ior", "polypropylene");
+        ScalarFloat int_ior = lookup_ior(props, "int_ior", "polypropylene");
 
         // Specifies the external index of refraction at the interface
-        sFloat ext_ior = lookup_ior(props, "ext_ior", "air");
+        ScalarFloat ext_ior = lookup_ior(props, "ext_ior", "air");
 
         if (int_ior < 0.f || ext_ior < 0.f)
             Throw("The interior and exterior indices of "
@@ -39,7 +39,7 @@ public:
         m_diffuse_reflectance  = props.spectrum<Float, Spectrum>("diffuse_reflectance", .5f);
 
         // Compute weights that further steer samples towards the specular or diffuse components
-        sFloat d_mean = m_diffuse_reflectance->mean(),
+        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
                s_mean = m_specular_reflectance->mean();
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
@@ -184,9 +184,9 @@ public:
 private:
     ref<ContinuousSpectrum> m_diffuse_reflectance;
     ref<ContinuousSpectrum> m_specular_reflectance;
-    sFloat m_eta, m_inv_eta_2;
-    sFloat m_fdr_int, m_fdr_ext;
-    sFloat m_specular_sampling_weight;
+    ScalarFloat m_eta, m_inv_eta_2;
+    ScalarFloat m_fdr_int, m_fdr_ext;
+    ScalarFloat m_specular_sampling_weight;
     bool m_nonlinear;
 };
 

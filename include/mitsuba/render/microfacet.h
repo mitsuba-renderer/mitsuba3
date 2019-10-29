@@ -75,7 +75,7 @@ public:
      * \param alpha
      *     The surface roughness
      */
-    MicrofacetDistribution(MicrofacetType type, sFloat alpha, bool sample_visible = true)
+    MicrofacetDistribution(MicrofacetType type, ScalarFloat alpha, bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha), m_alpha_v(alpha),
           m_sample_visible(sample_visible) {
         configure();
@@ -91,7 +91,7 @@ public:
      * \param alpha_v
      *     The surface roughness in the bitangent direction
      */
-    MicrofacetDistribution(MicrofacetType type, sFloat alpha_u, sFloat alpha_v,
+    MicrofacetDistribution(MicrofacetType type, ScalarFloat alpha_u, ScalarFloat alpha_v,
                            bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v), m_sample_visible(sample_visible) {
         configure();
@@ -476,7 +476,7 @@ protected:
 
 protected:
     MicrofacetType m_type;
-    sFloat m_alpha_u, m_alpha_v;
+    ScalarFloat m_alpha_u, m_alpha_v;
     bool  m_sample_visible;
 };
 

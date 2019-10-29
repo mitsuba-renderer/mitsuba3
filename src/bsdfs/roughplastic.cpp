@@ -22,10 +22,10 @@ public:
 
     RoughPlastic(const Properties &props) : Base(props) {
         /// Specifies the internal index of refraction at the interface
-        sFloat int_ior = lookup_ior(props, "int_ior", "polypropylene");
+        ScalarFloat int_ior = lookup_ior(props, "int_ior", "polypropylene");
 
         /// Specifies the external index of refraction at the interface
-        sFloat ext_ior = lookup_ior(props, "ext_ior", "air");
+        ScalarFloat ext_ior = lookup_ior(props, "ext_ior", "air");
 
         if (int_ior < 0.f || ext_ior < 0.f || int_ior == ext_ior)
             Throw("The interior and exterior indices of "
@@ -39,7 +39,7 @@ public:
 
         /* Compute weights that further steer samples towards
            the specular or diffuse components */
-        sFloat d_mean = m_diffuse_reflectance->mean(),
+        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
                s_mean = m_specular_reflectance->mean();
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
@@ -57,13 +57,13 @@ public:
         m_alpha = distr.alpha();
 
         /* Precompute rough reflectance (vectorized) */ {
-            using FloatP    = Packet<sFloat>;
+            using FloatP    = Packet<ScalarFloat>;
             using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
 
             MicrofacetDistribution<FloatP> distr_p(m_type, m_alpha);
             Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
             for (size_t i = 0; i < slices(wi); ++i) {
-                sFloat mu    = std::max((sFloat) 1e-6f, sFloat(i) / sFloat(slices(wi) - 1));
+                ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
                 slice(wi, i) = Vector3f(std::sqrt(1 - mu * mu), 0.f, mu);
             }
             m_external_transmittance = 1.f - distr_p.eval_reflectance(wi, m_eta);
@@ -266,13 +266,13 @@ private:
     ref<ContinuousSpectrum> m_diffuse_reflectance;
     ref<ContinuousSpectrum> m_specular_reflectance;
     MicrofacetType m_type;
-    sFloat m_eta, m_inv_eta_2;
-    sFloat m_alpha;
-    sFloat m_specular_sampling_weight;
+    ScalarFloat m_eta, m_inv_eta_2;
+    ScalarFloat m_alpha;
+    ScalarFloat m_specular_sampling_weight;
     bool m_nonlinear;
     bool m_sample_visible;
     DynamicBuffer<Float> m_external_transmittance;
-    sFloat m_internal_reflectance;
+    ScalarFloat m_internal_reflectance;
 };
 
 MTS_IMPLEMENT_PLUGIN(RoughPlastic, BSDF, "Rough plastic");

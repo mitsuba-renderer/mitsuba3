@@ -17,9 +17,9 @@ public:
 
     ThinDielectric(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface
-        sFloat int_ior = lookup_ior(props, "int_ior", "bk7");
+        ScalarFloat int_ior = lookup_ior(props, "int_ior", "bk7");
         // Specifies the external index of refraction at the interface
-        sFloat ext_ior = lookup_ior(props, "ext_ior", "air");
+        ScalarFloat ext_ior = lookup_ior(props, "ext_ior", "air");
 
         if (int_ior < 0.f || ext_ior < 0.f)
             Throw("The interior and exterior indices of "
@@ -106,7 +106,7 @@ public:
     }
 
 private:
-    sFloat m_eta;
+    ScalarFloat m_eta;
     ref<ContinuousSpectrum> m_specular_transmittance;
     ref<ContinuousSpectrum> m_specular_reflectance;
 };
