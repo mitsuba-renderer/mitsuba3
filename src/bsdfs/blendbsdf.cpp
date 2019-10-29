@@ -11,8 +11,8 @@ class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(BlendBSDF, BSDF);
     MTS_USING_BASE(BSDF, m_flags, m_components)
-    using BSDF                = Base;
-    using ContinuousSpectrum1 = mitsuba::ContinuousSpectrum<Float, Color1f>;
+    using BSDF               = Base;
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
@@ -25,7 +25,7 @@ public:
             }
         }
 
-        m_weight = props.spectrum<Float, Color1f>("weight");
+        m_weight = props.spectrum<Float, Spectrum>("weight");
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 
@@ -36,7 +36,6 @@ public:
         m_flags = m_nested_bsdf[0]->flags() | m_nested_bsdf[1]->flags();
     }
 
-    MTS_INLINE
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                              Float sample1, const Point2f &sample2,
                                              Mask active) const override {
@@ -74,7 +73,6 @@ public:
         return { bs, result };
     }
 
-    MTS_INLINE
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
                   Mask active) const override {
         if (unlikely(ctx.component != (uint32_t) -1)) {
@@ -90,7 +88,6 @@ public:
                m_nested_bsdf[1]->eval(ctx, si, wo, active) * weight;
     }
 
-    MTS_INLINE
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
               Mask active) const override {
         if (unlikely(ctx.component != (uint32_t) -1)) {
@@ -107,9 +104,7 @@ public:
     }
 
     MTS_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
-        // TODO: why is this an ambiguous call? :o
-        Color1f w = m_weight->eval(si, active);
-        return clamp(w.x(), 0.f, 1.f);
+        return clamp(m_weight->eval1(si, active), 0.f, 1.f);
     }
 
     std::string to_string() const override {
@@ -127,7 +122,7 @@ public:
     }
 
 protected:
-    ref<ContinuousSpectrum1> m_weight;
+    ref<ContinuousSpectrum> m_weight;
     ref<BSDF> m_nested_bsdf[2];
 };
 

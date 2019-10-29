@@ -11,8 +11,8 @@ class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(MaskBSDF, BSDF)
     MTS_USING_BASE(BSDF, component_count, m_components, m_flags)
-    using BSDF                = Base;
-    using ContinuousSpectrum1 = mitsuba::ContinuousSpectrum<Float, Color1f>;
+    using BSDF               = Base;
+    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
 
     MaskBSDF(const Properties &props) : Base(props) {
         for (auto &kv : props.objects()) {
@@ -27,7 +27,7 @@ public:
            Throw("Child BSDF not specified");
 
         // Scalar-typed opacity texture
-        m_opacity = props.spectrum<Float, Color1f>("opacity", 0.5f);
+        m_opacity = props.spectrum<Float, Spectrum>("opacity", 0.5f);
 
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
             m_components.push_back(m_nested_bsdf->flags(i));
@@ -37,7 +37,6 @@ public:
         m_flags = m_nested_bsdf->flags() | m_components.back();
     }
 
-    MTS_INLINE
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                              Float sample1, const Point2f &sample2,
                                              Mask active) const override {
@@ -73,14 +72,12 @@ public:
         return { bs, result };
     }
 
-    MTS_INLINE
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
                   Mask active) const override {
         Float opacity = eval_opacity(si, active);
         return m_nested_bsdf->eval(ctx, si, wo, active) * opacity;
     }
 
-    MTS_INLINE
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
               Mask active) const override {
         uint32_t null_index      = (uint32_t) component_count() - 1;
@@ -98,24 +95,7 @@ public:
     }
 
     MTS_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
-        // using Wavelength1 = wavelength_t<Color1f>;
-        // using SurfaceInteraction3f1 = mitsuba::SurfaceInteraction<Float, Color1f>;
-        // Wavelength1 wav = zero<SurfaceInteraction3f1>();
-        // SurfaceInteraction3f1 wav = zero<Wavelength1>();
-
-        // Color1f op;
-        // if constexpr (std::is_same_v<Spectrum, Color3f>) {
-        //     // Wavelength wav = zero<SurfaceInteraction3f>();
-        //     SurfaceInteraction3f wav = zero<Wavelength>();
-
-        //     op = m_opacity->eval(si, active);
-        // } else {
-        //     op = 0.f;
-        // }
-
-        // TODO: why is this an ambiguous call? :o
-        Color1f op = m_opacity->eval(si, active);
-        return clamp(op.x(), 0.f, 1.f);
+        return clamp(m_opacity->eval1(si, active), 0.f, 1.f);
     }
 
     std::vector<ref<Object>> children() override {
@@ -132,7 +112,7 @@ public:
     }
 
 protected:
-    ref<ContinuousSpectrum1> m_opacity;
+    ref<ContinuousSpectrum> m_opacity;
     ref<BSDF> m_nested_bsdf;
 };
 
