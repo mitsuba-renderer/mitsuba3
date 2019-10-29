@@ -44,7 +44,6 @@ public:
             Throw("Only materials without a transmission component can be nested!");
     }
 
-    MTS_INLINE
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx_,
                                              const SurfaceInteraction3f &si_, Float sample1,
                                              const Point2f &sample2, Mask active) const override {
@@ -74,7 +73,6 @@ public:
         return result;
     }
 
-    MTS_INLINE
     Spectrum eval(const BSDFContext &ctx_, const SurfaceInteraction3f &si_, const Vector3f &wo_,
                   Mask active) const override {
         SurfaceInteraction3f si(si_);
@@ -101,7 +99,6 @@ public:
         return result;
     }
 
-    MTS_INLINE
     Float pdf(const BSDFContext &ctx_, const SurfaceInteraction3f &si_, const Vector3f &wo_,
               Mask active) const override {
         SurfaceInteraction3f si(si_);

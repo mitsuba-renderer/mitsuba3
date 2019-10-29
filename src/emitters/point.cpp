@@ -44,9 +44,9 @@ public:
         return { ray, spec_weight * (4.f * math::Pi<Float>) };
     }
 
-    MTS_INLINE std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
-                                                                       const Point2f & /*sample*/,
-                                                                       Mask active) const override {
+    std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
+                                                            const Point2f & /*sample*/,
+                                                            Mask active) const override {
         auto trafo = m_world_transform->eval(it.time, active);
 
         DirectionSample3f ds;
@@ -67,14 +67,11 @@ public:
         return { ds, spec };
     }
 
-    MTS_INLINE Float pdf_direction(const Interaction3f &, const DirectionSample3f &,
-                                   Mask) const override {
+    Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override {
         return 0.f;
     }
 
-    MTS_INLINE Spectrum eval(const SurfaceInteraction3f &, Mask) const override {
-        return 0.f;
-    }
+    Spectrum eval(const SurfaceInteraction3f &, Mask) const override { return 0.f; }
 
     BoundingBox3f bbox() const override {
         return m_world_transform->translation_bounds();

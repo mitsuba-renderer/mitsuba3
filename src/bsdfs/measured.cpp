@@ -162,7 +162,6 @@ public:
         return 2.f * safe_asin(.5f * dist);
     }
 
-    MTS_INLINE
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                              Float /*sample1*/, const Point2f &sample2,
                                              Mask active) const override {
@@ -261,7 +260,6 @@ public:
         return { bs, select(active, spec / bs.pdf, Spectrum(0.f)) };
     }
 
-    MTS_INLINE
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo_,
                   Mask active) const override {
         Vector3f wi = si.wi, wo = wo_;
@@ -313,7 +311,6 @@ public:
         return spec & active;
     }
 
-    MTS_INLINE
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo_,
               Mask active) const override {
         Vector3f wi = si.wi, wo = wo_;

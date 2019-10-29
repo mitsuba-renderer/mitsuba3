@@ -18,12 +18,12 @@ public:
 
     std::vector<ref<Object>> children() override { return { m_color.get() }; }
 
-    MTS_INLINE Spectrum eval(const Interaction3f &it, Mask active) const override {
+    Spectrum eval(const Interaction3f &it, Mask active) const override {
         return eval_impl<false>(it, active);
     }
 
-    MTS_INLINE std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,
-                                                           Mask active) const override {
+    std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,
+                                                Mask active) const override {
         return eval_impl<true>(it, active);
     }
 

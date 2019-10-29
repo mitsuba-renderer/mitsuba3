@@ -30,14 +30,14 @@ public:
         m_area_times_pi = m_shape->surface_area() * math::Pi<ScalarFloat>;
     }
 
-    MTS_INLINE Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         return m_radiance->eval(si.wavelengths, active) &
                (Frame3f::cos_theta(si.wi) > 0.f);
     }
 
-    MTS_INLINE std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                                     const Point2f &sample2, const Point2f &sample3,
-                                                     Mask active) const override {
+    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                          const Point2f &sample2, const Point2f &sample3,
+                                          Mask active) const override {
         /* 1. Sample spectrum */
         auto [wavelengths, spec_weight] = m_radiance->sample(
             math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
@@ -54,7 +54,7 @@ public:
         );
     }
 
-    MTS_INLINE std::pair<DirectionSample3f, Spectrum>
+    std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
 
@@ -67,8 +67,8 @@ public:
         return { ds, spec & active };
     }
 
-    MTS_INLINE Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
-                                   Mask active) const override {
+    Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
+                        Mask active) const override {
         return select(dot(ds.d, ds.n) < 0.f,
                       m_shape->pdf_direction(it, ds, active), 0.f);
     }

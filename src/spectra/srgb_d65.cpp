@@ -34,7 +34,7 @@ public:
         #endif
     }
 
-    MTS_INLINE Spectrum eval(const Wavelength &wavelengths, Mask active) const override {
+    Spectrum eval(const Wavelength &wavelengths, Mask active) const override {
         return m_d65->eval(wavelengths, active) *
                srgb_model_eval(m_coeff, wavelengths);
     }

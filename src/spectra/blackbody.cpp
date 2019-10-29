@@ -34,7 +34,7 @@ public:
         m_integral = cdf_and_pdf(MTS_WAVELENGTH_MAX).first - m_integral_min;
     }
 
-    MTS_INLINE Spectrum eval(const Wavelength &lambda_, Mask) const override {
+    Spectrum eval(const Wavelength &lambda_, Mask) const override {
         auto mask_valid = (lambda_ >= MTS_WAVELENGTH_MIN)
                           && (lambda_ <= MTS_WAVELENGTH_MAX);
 
@@ -51,7 +51,7 @@ public:
         return P & mask_valid;
     }
 
-    MTS_INLINE Spectrum pdf(const Wavelength &lambda_, Mask) const override {
+    Spectrum pdf(const Wavelength &lambda_, Mask) const override {
         const Wavelength lambda  = lambda_ * 1e-9f;
         const Wavelength lambda2 = lambda * lambda;
         const Wavelength lambda5 = lambda2 * lambda2 * lambda;
@@ -86,7 +86,7 @@ public:
         return std::make_pair(cdf, pdf);
     }
 
-    MTS_INLINE std::pair<Wavelength, Spectrum> sample(const Wavelength &sample_, Mask active_) const override {
+    std::pair<Wavelength, Spectrum> sample(const Wavelength &sample_, Mask active_) const override {
         mask_t<Wavelength> active = active_;
 
         Wavelength sample = fmadd(sample_, Wavelength(m_integral), Wavelength(m_integral_min));

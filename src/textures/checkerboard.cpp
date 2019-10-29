@@ -17,8 +17,7 @@ public:
         m_transform = props.transform("to_uv", Transform4f()).extract();
     }
 
-    MTS_INLINE Spectrum eval(const SurfaceInteraction3f &it,
-                                  Mask active) const override {
+    Spectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
         auto uv = m_transform.transform_affine(it.uv);
         auto mask = (uv - floor(uv)) > .5f;
         Spectrum result = zero<Spectrum>();

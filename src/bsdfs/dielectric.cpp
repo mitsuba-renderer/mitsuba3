@@ -39,7 +39,6 @@ public:
         m_flags = m_components[0] | m_components[1];
     }
 
-    MTS_INLINE
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                            Float sample1, const Point2f & /*sample2*/,
                                            Mask active) const override {
@@ -97,13 +96,11 @@ public:
         return { bs, select(active, weight, 0.f) };
     }
 
-    MTS_INLINE
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
                   const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;
     }
 
-    MTS_INLINE
     Float pdf(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
               const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;

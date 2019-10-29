@@ -21,14 +21,14 @@ public:
         #endif
     }
 
-    MTS_INLINE Spectrum eval(const Wavelength &lambda, Mask /*active*/) const override {
+    Spectrum eval(const Wavelength &lambda, Mask /*active*/) const override {
         auto active = (lambda >= MTS_WAVELENGTH_MIN) &&
                       (lambda <= MTS_WAVELENGTH_MAX);
 
         return select(active, Spectrum(m_value), Spectrum(0.f));
     }
 
-    MTS_INLINE Spectrum pdf(const Wavelength &lambda, Mask /*active*/) const override {
+    Spectrum pdf(const Wavelength &lambda, Mask /*active*/) const override {
         auto active = (lambda >= MTS_WAVELENGTH_MIN) &&
                       (lambda <= MTS_WAVELENGTH_MAX);
 
@@ -36,7 +36,8 @@ public:
             Spectrum(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Spectrum(0.f));
     }
 
-    MTS_INLINE std::pair<Wavelength, Spectrum> sample(const Wavelength &sample, Mask /*active*/) const override {
+    std::pair<Wavelength, Spectrum> sample(const Wavelength &sample,
+                                           Mask /*active*/) const override {
         return { MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample,
                  Spectrum(m_value * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)) };
     }

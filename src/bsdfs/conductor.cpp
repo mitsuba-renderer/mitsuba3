@@ -23,7 +23,7 @@ public:
         m_k   = props.spectrum<Float, Spectrum>("k",   1.f);
     }
 
-    MTS_INLINE std::pair<BSDFSample3f, Spectrum>
+    std::pair<BSDFSample3f, Spectrum>
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si, Float /*sample1*/,
            const Point2f & /*sample2*/, Mask active) const override {
         using SpectrumU = depolarized_t<Spectrum>;
@@ -51,13 +51,11 @@ public:
         return { bs, value };
     }
 
-    MTS_INLINE
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
                   const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;
     }
 
-    MTS_INLINE
     Float pdf(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
               const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;

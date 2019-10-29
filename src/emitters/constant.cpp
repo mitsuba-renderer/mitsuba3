@@ -42,12 +42,13 @@ public:
         return PluginManager::instance()->create_object<Shape>(props);
     }
 
-    MTS_INLINE Spectrum eval_impl(const SurfaceInteraction3f &si, Mask active) const {
+    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         return m_radiance->eval(si.wavelengths, active);
     }
 
-    MTS_INLINE auto sample_ray_impl(Float time, Float wavelength_sample, const Point2f &sample2,
-                                    const Point2f &sample3, Mask active) const {
+    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                          const Point2f &sample2, const Point2f &sample3,
+                                          Mask active) const override {
         // 1. Sample spectrum
         auto [wavelengths, weight] = m_radiance->sample(
             math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
@@ -64,8 +65,8 @@ public:
                               (4 * math::Pi<Float> * math::Pi<Float> * r2) * weight);
     }
 
-    MTS_INLINE auto sample_direction_impl(const Interaction3f &it, const Point2f &sample,
-                                          Mask active) const {
+    std::pair<DirectionSample3f, Spectrum>
+    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
         Vector3f d = warp::square_to_uniform_sphere(sample);
         Float dist = 2.f * m_bsphere.radius;
 
@@ -86,8 +87,8 @@ public:
         );
     }
 
-    MTS_INLINE Float pdf_direction_impl(const Interaction3f &, const DirectionSample3f &ds,
-                                        Mask) const {
+    Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,
+                        Mask /*active*/) const override {
         return warp::square_to_uniform_sphere_pdf(ds.d);
     }
 

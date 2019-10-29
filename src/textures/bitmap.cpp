@@ -148,7 +148,7 @@ public:
     }
 
     // Evaluation of color data
-    MTS_INLINE Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         if constexpr (ChannelCount < 3) {
             // TODO: we might still want to upscale, maybe let the user pass a flag to allow it
             Throw("Cannot spectrally evaluate a %d-channel texture", ChannelCount);

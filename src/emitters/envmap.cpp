@@ -83,7 +83,7 @@ public:
         return PluginManager::instance()->create_object<Shape>(props);
     }
 
-    MTS_INLINE Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         Vector3f v = m_world_transform->eval(si.time, active)
                          .inverse()
                          .transform_affine(-si.wi);
@@ -96,13 +96,14 @@ public:
         return eval_spectral(uv, si.wavelengths, active);
     }
 
-    MTS_INLINE std::pair<Ray3f, Spectrum>
-    sample_ray(Float /* time */, Float /* wavelength_sample */, const Point2f & /* sample2 */,
-               const Point2f & /* sample3 */, Mask /* active */) const override {
+    std::pair<Ray3f, Spectrum> sample_ray(Float /* time */, Float /* wavelength_sample */,
+                                          const Point2f & /* sample2 */,
+                                          const Point2f & /* sample3 */,
+                                          Mask /* active */) const override {
         NotImplementedError("sample_ray");
     }
 
-    MTS_INLINE std::pair<DirectionSample3f, Spectrum>
+    std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
         auto [uv, pdf] = m_warp.sample(sample);
 
@@ -135,8 +136,8 @@ public:
         );
     }
 
-    MTS_INLINE Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
-                                   Mask active) const override {
+    Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
+                        Mask active) const override {
         Vector3f d = m_world_transform->eval(it.time, active)
                          .inverse()
                          .transform_affine(ds.d);

@@ -67,8 +67,8 @@ public:
     //! @{ \name Sampling routines
     // =============================================================
 
-    MTS_INLINE PositionSample3f sample_position(Float time, const Point2f &sample,
-                                               Mask /*active*/) const override {
+    PositionSample3f sample_position(Float time, const Point2f &sample,
+                                     Mask /*active*/) const override {
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
         PositionSample3f ps;
@@ -81,8 +81,7 @@ public:
         return ps;
     }
 
-    MTS_INLINE Float pdf_position(const PositionSample3f & /*ps*/,
-                                  Mask /*active*/) const override {
+    Float pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const override {
         return m_inv_surface_area;
     }
 
@@ -93,8 +92,8 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    MTS_INLINE std::pair<Mask, Float> ray_intersect(const Ray3f &ray_, Float *cache,
-                                                    Mask active) const override {
+    std::pair<Mask, Float> ray_intersect(const Ray3f &ray_, Float *cache,
+                                         Mask active) const override {
         Ray3f ray     = m_world_to_object.transform_affine(ray_);
         Float t      = -ray.o.z() / ray.d.z();
         Point3f local = ray(t);
@@ -112,7 +111,7 @@ public:
         return { active, t };
     }
 
-    MTS_INLINE Mask ray_test(const Ray3f &ray_, Mask active) const override {
+    Mask ray_test(const Ray3f &ray_, Mask active) const override {
         Ray3f ray     = m_world_to_object * ray_;
         Float t      = -ray.o.z() / ray.d.z();
         Point3f local = ray(t);
@@ -123,9 +122,8 @@ public:
                       && local.x()*local.x() + local.y()*local.y() <= 1;
     }
 
-    MTS_INLINE void fill_surface_interaction(const Ray3f &ray, const Float *cache,
-                                             SurfaceInteraction3f &si_out,
-                                             Mask active) const override {
+    void fill_surface_interaction(const Ray3f &ray, const Float *cache,
+                                  SurfaceInteraction3f &si_out, Mask active) const override {
         SurfaceInteraction3f si(si_out);
 
         Float r = norm(Point2f(cache[0], cache[1])),
@@ -149,9 +147,9 @@ public:
         si_out[active] = si;
     }
 
-    MTS_INLINE std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f & /*si*/,
-                                                               bool /*shading_frame*/,
-                                                               Mask /*active*/) const override {
+    std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f & /*si*/,
+                                                    bool /*shading_frame*/,
+                                                    Mask /*active*/) const override {
         return { Vector3f(0.f), Vector3f(0.f) };
     }
 

@@ -128,10 +128,10 @@ public:
     //! @{ \name Sampling methods (Sensor interface)
     // =============================================================
 
-    MTS_INLINE std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                                     const Point2f &position_sample,
-                                                     const Point2f & /*aperture_sample*/,
-                                                     Mask active) const override {
+    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                          const Point2f &position_sample,
+                                          const Point2f & /*aperture_sample*/,
+                                          Mask active) const override {
 
         auto wav_sample = math::sample_shifted<Wavelength>(wavelength_sample);
         Wavelength wavelengths;
@@ -167,7 +167,7 @@ public:
         return std::make_pair(ray, spec_weight);
     }
 
-    MTS_INLINE std::pair<RayDifferential3f, Spectrum>
+    std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float wavelength_sample, const Point2f &position_sample,
                             const Point2f & /*aperture_sample*/, Mask active) const override {
         // TODO: refactor this to avoid code duplication
