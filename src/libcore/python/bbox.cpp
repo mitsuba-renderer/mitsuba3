@@ -10,14 +10,14 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
         .def(py::init<Point>(), D(BoundingBox, BoundingBox, 2))
         .def(py::init<Point, Point>(), D(BoundingBox, BoundingBox, 3))
         .def(py::init<const BBox &>(), "Copy constructor")
-        .def("valid", &BBox::valid, D(BoundingBox, valid))
-        .def("collapsed", &BBox::collapsed, D(BoundingBox, collapsed))
-        .def("major_axis", &BBox::major_axis, D(BoundingBox, major_axis))
-        .def("minor_axis", &BBox::minor_axis, D(BoundingBox, minor_axis))
-        .def("center", &BBox::center, D(BoundingBox, center))
-        .def("extents", &BBox::extents, D(BoundingBox, extents))
-        .def("corner", &BBox::corner, D(BoundingBox, corner))
-        .def("volume", &BBox::volume, D(BoundingBox, volume))
+        .mdef(BoundingBox, valid)
+        .mdef(BoundingBox, collapsed)
+        .mdef(BoundingBox, major_axis)
+        .mdef(BoundingBox, minor_axis)
+        .mdef(BoundingBox, center)
+        .mdef(BoundingBox, extents)
+        .mdef(BoundingBox, corner)
+        .mdef(BoundingBox, volume)
         .def("surface_area", &BBox::template surface_area<>,
              D(BoundingBox, surface_area))
         .def("contains",
@@ -65,12 +65,7 @@ template <typename BBox> void bind_bbox(py::module &m, const char *name) {
              vectorize_wrapper(&BBox::template ray_intersect<Ray3fP>))
         .def(py::self == py::self)
         .def(py::self != py::self)
-        .def("__repr__",
-             [](const BBox &bbox) {
-                 std::ostringstream oss;
-                 oss << bbox;
-                 return oss.str();
-             })
+        .repr_def(BBox)
         .def_static("merge", &BBox::merge, D(BoundingBox, merge))
         .def_readwrite("min", &BBox::min)
         .def_readwrite("max", &BBox::max);

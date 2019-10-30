@@ -15,27 +15,27 @@ auto bind_ray(Args2&&... args2) {
              D(Ray, Ray, 6), "o"_a, "d"_a, "mint"_a, "maxt"_a, "time"_a, "wavelength"_a)
         .def(py::init<const Type &, Float, Float>(),
              D(Ray, Ray, 7), "other"_a, "mint"_a, "maxt"_a)
-        .def("update", &Type::update, D(Ray, update))
+        .mdef(Ray, update)
         .def("__call__", &Type::operator(), D(Ray, operator, call))
         .repr_def(Type)
-        .def_readwrite("o", &Type::o, D(Ray, o))
-        .def_readwrite("d", &Type::d, D(Ray, d))
-        .def_readwrite("d_rcp", &Type::d_rcp, D(Ray, d_rcp))
-        .def_readwrite("mint", &Type::mint, D(Ray, mint))
-        .def_readwrite("maxt", &Type::maxt, D(Ray, maxt))
-        .def_readwrite("time", &Type::time, D(Ray, time))
-        .def_readwrite("wavelength", &Type::wavelength, D(Ray, wavelength));
+        .rwdef(Ray, o)
+        .rwdef(Ray, d)
+        .rwdef(Ray, d_rcp)
+        .rwdef(Ray, mint)
+        .rwdef(Ray, maxt)
+        .rwdef(Ray, time)
+        .rwdef(Ray, wavelength)
+        ;
 }
 
 template <typename Type, typename... Args, typename... Args2>
 auto bind_ray_differential(Args2&&... args2) {
     return bind_ray<Type, Args...>(args2...)
-        .def_readwrite("o_x", &Type::o_x, D(RayDifferential, o_x))
-        .def_readwrite("o_y", &Type::o_y, D(RayDifferential, o_y))
-        .def_readwrite("d_x", &Type::d_x, D(RayDifferential, d_x))
-        .def_readwrite("d_y", &Type::d_y, D(RayDifferential, d_y))
-        .def_readwrite("has_differentials", &Type::has_differentials,
-                       D(RayDifferential, has_differentials));
+        .rwdef(RayDifferential, o_x)
+        .rwdef(RayDifferential, o_y)
+        .rwdef(RayDifferential, d_x)
+        .rwdef(RayDifferential, d_y)
+        .rwdef(RayDifferential, has_differentials);
 }
 
 MTS_PY_EXPORT(Ray) {
