@@ -41,22 +41,23 @@ MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
         )
         ;
 
-    if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
-        md.def("eval", enoki::vectorize_wrapper(&MicrofacetDistribution::eval),
-               "m"_a, D(MicrofacetDistribution, eval))
-        .def("pdf", enoki::vectorize_wrapper(&MicrofacetDistribution::pdf),
-             "wi"_a, "m"_a, D(MicrofacetDistribution, pdf))
-        .def("smith_g1", enoki::vectorize_wrapper(&MicrofacetDistribution::smith_g1),
-             "v"_a, "m"_a, D(MicrofacetDistribution, smith_g1))
-        .def("sample", enoki::vectorize_wrapper(&MicrofacetDistribution::sample),
-             "wi"_a, "sample"_a, D(MicrofacetDistribution, sample))
-        .def("G", enoki::vectorize_wrapper(&MicrofacetDistribution::G),
-             "wi"_a, "wo"_a, "m"_a, D(MicrofacetDistribution, G))
-        .def("sample_visible_11",
-             enoki::vectorize_wrapper(&MicrofacetDistribution::sample_visible_11),
-             "cos_theta_i"_a, "sample"_a, D(MicrofacetDistribution, sample_visible_11))
-        ;
-    }
+    // TODO
+    // if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
+    //     md.def("eval", enoki::vectorize_wrapper(&MicrofacetDistribution::eval),
+    //            "m"_a, D(MicrofacetDistribution, eval))
+    //     .def("pdf", enoki::vectorize_wrapper(&MicrofacetDistribution::pdf),
+    //          "wi"_a, "m"_a, D(MicrofacetDistribution, pdf))
+    //     .def("smith_g1", enoki::vectorize_wrapper(&MicrofacetDistribution::smith_g1),
+    //          "v"_a, "m"_a, D(MicrofacetDistribution, smith_g1))
+    //     .def("sample", enoki::vectorize_wrapper(&MicrofacetDistribution::sample),
+    //          "wi"_a, "sample"_a, D(MicrofacetDistribution, sample))
+    //     .def("G", enoki::vectorize_wrapper(&MicrofacetDistribution::G),
+    //          "wi"_a, "wo"_a, "m"_a, D(MicrofacetDistribution, G))
+    //     .def("sample_visible_11",
+    //          enoki::vectorize_wrapper(&MicrofacetDistribution::sample_visible_11),
+    //          "cos_theta_i"_a, "sample"_a, D(MicrofacetDistribution, sample_visible_11))
+    //     ;
+    // }
 }
 
 MTS_PY_EXPORT(MicrofacetType) {

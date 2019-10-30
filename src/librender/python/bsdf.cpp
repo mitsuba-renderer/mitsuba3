@@ -51,17 +51,18 @@ MTS_PY_EXPORT_VARIANTS(BSDF) {
           .def("__repr__", &BSDF::to_string)
           ;
 
-     if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
-          bsdf.def("sample", enoki::vectorize_wrapper(&BSDF::sample),
-                   "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
-               .def("eval", enoki::vectorize_wrapper(&BSDF::eval),
-                    "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
-               .def("pdf", enoki::vectorize_wrapper(&BSDF::pdf),
-                    "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
-               .def("eval_tr", enoki::vectorize_wrapper(&BSDF::eval_tr),
-                    "si"_a, "active"_a = true, D(BSDF, eval))
-               ;
-     }
+     // TODO
+     // if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
+     //      bsdf.def("sample", enoki::vectorize_wrapper(&BSDF::sample),
+     //               "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
+     //           .def("eval", enoki::vectorize_wrapper(&BSDF::eval),
+     //                "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
+     //           .def("pdf", enoki::vectorize_wrapper(&BSDF::pdf),
+     //                "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
+     //           .def("eval_tr", enoki::vectorize_wrapper(&BSDF::eval_tr),
+     //                "si"_a, "active"_a = true, D(BSDF, eval))
+     //           ;
+     // }
 
      // TODO is this necessary?
      m.attr("BSDFFlags") = py::module::import("mitsuba.render.BSDFFlags");

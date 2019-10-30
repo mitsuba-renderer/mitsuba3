@@ -24,16 +24,17 @@ MTS_PY_EXPORT_VARIANTS(Endpoint) {
         .mdef(Endpoint, set_medium, "medium"_a)
         .mdef(Endpoint, bbox);
 
-    if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
-        endpoint.def("sample_ray", enoki::vectorize_wrapper(&Endpoint::sample_ray),
-                     "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
-                     D(Endpoint, sample_ray))
-                .def("sample_direction", enoki::vectorize_wrapper(&Endpoint::sample_direction),
-                     "it"_a, "sample"_a, "active"_a = true, D(Endpoint, sample_direction))
-                .def("pdf_direction", enoki::vectorize_wrapper(&Endpoint::pdf_direction),
-                     "it"_a, "ds"_a, "active"_a = true, D(Endpoint, pdf_direction))
-                .def("eval", enoki::vectorize_wrapper(&Endpoint::eval),
-                     "si"_a, "active"_a = true, D(Endpoint, eval))
-                ;
-    }
+// TODO
+//     if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
+//         endpoint.def("sample_ray", enoki::vectorize_wrapper(&Endpoint::sample_ray),
+//                      "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+//                      D(Endpoint, sample_ray))
+//                 .def("sample_direction", enoki::vectorize_wrapper(&Endpoint::sample_direction),
+//                      "it"_a, "sample"_a, "active"_a = true, D(Endpoint, sample_direction))
+//                 .def("pdf_direction", enoki::vectorize_wrapper(&Endpoint::pdf_direction),
+//                      "it"_a, "ds"_a, "active"_a = true, D(Endpoint, pdf_direction))
+//                 .def("eval", enoki::vectorize_wrapper(&Endpoint::eval),
+//                      "si"_a, "active"_a = true, D(Endpoint, eval))
+//                 ;
+//     }
 }
