@@ -5,7 +5,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   endpoint.cpp
   film.cpp
   # fresnel.cpp
-  # imageblock.cpp
+  imageblock.cpp
   # integrator.cpp
   interaction.cpp
   # main.cpp
@@ -13,7 +13,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   # mueller.cpp
   records.cpp
   # rtbench.cpp
-  # sampler.cpp
+  sampler.cpp
   # scene.cpp
   sensor.cpp
   shape.cpp
