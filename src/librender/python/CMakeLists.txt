@@ -16,7 +16,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   # sampler.cpp
   # scene.cpp
   sensor.cpp
-  # shape.cpp
+  shape.cpp
   # spectrum.cpp
   # spiral.cpp
   # srgb.cpp
