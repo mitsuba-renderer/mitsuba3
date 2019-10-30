@@ -29,8 +29,8 @@ add_subdirectory(shapes)
 add_subdirectory(spectra)
 add_subdirectory(textures)
 
-# if (PYTHONLIBS_FOUND)
-#   add_subdirectory(python)
-#   # Test support
-#   include("cmake/tests.cmake")
-# endif()
+if (PYTHONLIBS_FOUND)
+  add_subdirectory(python)
+  # Test support
+  include("cmake/tests.cmake")
+endif()

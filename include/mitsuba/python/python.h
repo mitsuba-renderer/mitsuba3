@@ -18,7 +18,7 @@
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 
-#define D(...) DOC(mitsuba, __VA_ARGS__)
+#define D(...) "doc disabled" // TODO re-enable this DOC(mitsuba, __VA_ARGS__)
 
 #define MTS_PY_DECLARE(name) \
     extern void python_export_##name(py::module &)
@@ -37,6 +37,10 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 
 #define MTS_PY_STRUCT(Name, ...) \
     py::class_<Name>(m, #Name, D(Name), ##__VA_ARGS__)
+
+/// Shorthand notation for defining read_write members
+#define rwdef(Class, Member) \
+    def_readwrite(#Member, &Class::Member, D(Class, Member))
 
 /// Shorthand notation for defining most kinds of methods
 #define mdef(Class, Function, ...) \

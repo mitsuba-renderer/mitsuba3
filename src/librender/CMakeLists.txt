@@ -102,8 +102,8 @@ endif()
 # Copy to 'dist' directory
 add_dist(mitsuba-render)
 
-# # Python bindings
-# add_subdirectory(python)
+# Python bindings
+add_subdirectory(python)
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

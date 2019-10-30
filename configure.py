@@ -85,7 +85,7 @@ with open(fname, 'w') as f:
         w('            m.def_submodule("%s"));' % (name))
     w('    }')
     w('')
-    w('    template <typename Float, typename Spectrum, typename name = mitsuba::name<Float, Spectrum>>')
+    w('    template <typename Float, typename Spectrum, typename name>')
     w('    void instantiate_##name(py::module m)')
     f.write('\n\n')
 

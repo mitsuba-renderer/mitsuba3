@@ -69,7 +69,7 @@
             m.def_submodule("scalar_spectral_polarized"));                  \
     }                                                                       \
                                                                             \
-    template <typename Float, typename Spectrum, typename name = mitsuba::name<Float, Spectrum>> \
+    template <typename Float, typename Spectrum, typename name>             \
     void instantiate_##name(py::module m)                                   \
 
 
