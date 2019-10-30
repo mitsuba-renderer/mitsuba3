@@ -1,12 +1,16 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/render/scene.h>
+#include <mitsuba/render/spiral.h>
+#include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Film) {
+MTS_PY_EXPORT_VARIANTS(Film) {
+    using Point2i = typename Film::Point2i;
+    using Vector2i = typename Film::Vector2i;
+
     MTS_PY_CLASS(Film, Object)
         .mdef(Film, clear)
         .mdef(Film, put, "block"_a)
@@ -25,5 +29,7 @@ MTS_PY_EXPORT(Film) {
         .mdef(Film, crop_size)
         .mdef(Film, crop_offset)
         .mdef(Film, set_crop_window)
-        .def("reconstruction_filter", py::overload_cast<>(&Film::reconstruction_filter, py::const_));
+        .def("reconstruction_filter",
+             py::overload_cast<>(&Film::reconstruction_filter, py::const_))
+        ;
 }

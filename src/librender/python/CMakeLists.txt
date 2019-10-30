@@ -3,7 +3,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   bsdf.cpp
   emitter.cpp
   endpoint.cpp
-  # film.cpp
+  film.cpp
   # fresnel.cpp
   # imageblock.cpp
   # integrator.cpp
@@ -18,7 +18,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   sensor.cpp
   shape.cpp
   spectrum.cpp
-  # spiral.cpp
+  spiral.cpp
   # srgb.cpp
   # texture3d.cpp
 )
