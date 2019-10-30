@@ -9,7 +9,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   # integrator.cpp
   interaction.cpp
   # main.cpp
-  # microfacet.cpp
+  microfacet.cpp
   # mueller.cpp
   # records.cpp
   # rtbench.cpp

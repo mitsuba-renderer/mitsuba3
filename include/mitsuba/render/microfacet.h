@@ -60,9 +60,9 @@ MTS_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
  *    "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals"
  *     by Eric Heitz
  */
-template <typename Float> class MicrofacetDistribution {
+template <typename Float, typename Spectrum = void>
+class MicrofacetDistribution {
 public:
-    using Spectrum = void;
     MTS_IMPORT_TYPES()
     static constexpr auto Pi = math::Pi<scalar_t<Float>>;
     static constexpr auto InvSqrtPi = math::InvSqrtPi<scalar_t<Float>>;
@@ -480,8 +480,8 @@ protected:
     bool  m_sample_visible;
 };
 
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<T> &md) {
+template <typename Float, typename Spectrum = void>
+std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, Spectrum> &md) {
     os << "MicrofacetDistribution[" << std::endl
        << "  type = ";
     if (md.type() == MicrofacetType::Beckmann)
