@@ -82,9 +82,5 @@ MTS_PY_EXPORT(Properties) {
         // Operators
         .def(py::self == py::self, D(Properties, operator_eq))
         .def(py::self != py::self, D(Properties, operator_ne))
-        .def("__repr__", [](const Properties &p) {
-            std::ostringstream oss;
-            oss << p;
-            return oss.str();
-        });
+        .repr_def(Properties);
 }

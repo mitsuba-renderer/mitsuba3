@@ -19,12 +19,7 @@ MTS_PY_EXPORT_VARIANTS(Interaction) {
         .mdef(Interaction, spawn_ray)
         .mdef(Interaction, spawn_ray_to)
         .mdef(Interaction, is_valid)
-        .def("__repr__",
-            [](const Interaction &it) {
-                std::ostringstream oss;
-                oss << it;
-                return oss.str();
-            })
+        .repr_def(Interaction)
         ;
 }
 
@@ -72,11 +67,6 @@ MTS_PY_EXPORT_VARIANTS(SurfaceInteraction) {
         .mdef(SurfaceInteraction, normal_derivative)
         .mdef(SurfaceInteraction, compute_partials)
         .mdef(SurfaceInteraction, has_uv_partials)
-        .def("__repr__",
-            [](const SurfaceInteraction &it) {
-                std::ostringstream oss;
-                oss << it;
-                return oss.str();
-            })
+        .repr_def(SurfaceInteraction)
         ;
 }

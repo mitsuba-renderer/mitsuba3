@@ -9,15 +9,10 @@ MTS_PY_EXPORT(BSDFContext) {
              "mode"_a, "type_mak"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
         .mdef(BSDFContext, reverse)
         .mdef(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
-        .def("__repr__",
-            [](const BSDFContext &ctx) {
-                std::ostringstream oss;
-                oss << ctx;
-                return oss.str();
-            })
         .rwdef(BSDFContext, mode)
         .rwdef(BSDFContext, type_mask)
         .rwdef(BSDFContext, component)
+        .repr_def(BSDFContext)
         ;
 }
 
@@ -28,17 +23,12 @@ MTS_PY_EXPORT_VARIANTS(BSDFSample3) {
         .def(py::init<>(), D(BSDFSample3, BSDFSample3))
         .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3, BSDFSample3, 2))
         .def(py::init<const BSDFSample3 &>(), "bs"_a, "Copy constructor")
-        .def("__repr__",
-             [](const BSDFSample3 &bs) {
-                 std::ostringstream oss;
-                 oss << bs;
-                 return oss.str();
-             })
         .rwdef(BSDFSample3, wo)
         .rwdef(BSDFSample3, pdf)
         .rwdef(BSDFSample3, eta)
         .rwdef(BSDFSample3, sampled_type)
         .rwdef(BSDFSample3, sampled_component)
+        .repr_def(BSDFSample3)
         ;
 }
 

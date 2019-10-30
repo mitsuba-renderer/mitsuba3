@@ -50,6 +50,11 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 #define sdef(Class, Function, ...) \
     def_static(#Function, &Class::Function, D(Class, Function), ##__VA_ARGS__)
 
+/// Shorthand notation for defining __repr__ using operator<<
+#define repr_def(Class) \
+    def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
+
+
 #define MTS_PY_IMPORT_MODULE(Name, ModuleName) \
     auto Name = py::module::import(ModuleName); (void) m;
 
@@ -94,11 +99,7 @@ template <typename Source, typename Target> void pybind11_type_alias() {
 template <typename Class, typename... Args, typename... Extra> auto bind_array(py::module &m, const char *name, const Extra&... extra) {
     return py::class_<Class, Args...>(m, name, extra...)
         .def("__len__", &Class::size)
-        .def("__repr__", [](const Class &a) {
-            std::ostringstream oss;
-            oss << a;
-            return oss.str();
-        })
+        .repr_def(Class)
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__getitem__", [](const Class &a, size_t index) {

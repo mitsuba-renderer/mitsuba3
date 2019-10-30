@@ -17,11 +17,7 @@ auto bind_ray(Args2&&... args2) {
              D(Ray, Ray, 7), "other"_a, "mint"_a, "maxt"_a)
         .def("update", &Type::update, D(Ray, update))
         .def("__call__", &Type::operator(), D(Ray, operator, call))
-        .def("__repr__", [](const Type &f) {
-            std::ostringstream oss;
-            oss << f;
-            return oss.str();
-        })
+        .repr_def(Type)
         .def_readwrite("o", &Type::o, D(Ray, o))
         .def_readwrite("d", &Type::d, D(Ray, d))
         .def_readwrite("d_rcp", &Type::d_rcp, D(Ray, d_rcp))

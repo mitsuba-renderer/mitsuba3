@@ -13,11 +13,8 @@ auto bind_transform(py::module &m, const char *name) {
         .def("has_scale", &Type::has_scale, D(Transform, has_scale))
         .def_readwrite("matrix", &Type::matrix)
         .def_readwrite("inverse_transpose", &Type::inverse_transpose)
-        .def("__repr__", [](const Type &t) {
-            std::ostringstream oss;
-            oss << t;
-            return oss.str();
-        });
+        .repr_def(Type)
+        ;
 }
 
 MTS_PY_EXPORT(Transform) {

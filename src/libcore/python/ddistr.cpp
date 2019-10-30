@@ -64,9 +64,5 @@ MTS_PY_EXPORT(DiscreteDistribution) {
 
         // ---------------------------------------------------------------------
 
-        .def("__repr__", [](const DiscreteDistribution &d) {
-            std::ostringstream oss;
-            oss << d;
-            return oss.str();
-        });
+        .repr_def(DiscreteDistribution);
 }

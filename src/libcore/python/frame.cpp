@@ -12,11 +12,7 @@ auto bind_frame(py::module &m, const char *name) {
         .def(py::init<Vector3>(), D(Frame, Frame, 4))
         .def(py::self == py::self, D(Frame, operator_eq))
         .def(py::self != py::self, D(Frame, operator_ne))
-        .def("__repr__", [](const Type &f) {
-                std::ostringstream oss;
-                oss << f;
-                return oss.str();
-        })
+        .repr_def(Type)
         .def_readwrite("s", &Type::s)
         .def_readwrite("t", &Type::t)
         .def_readwrite("n", &Type::n);

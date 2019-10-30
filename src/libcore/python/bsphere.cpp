@@ -6,12 +6,7 @@ template <typename BSphere> auto bind_bsphere(py::module &m, const char *name) {
         .def(py::init<>(), D(BoundingSphere, BoundingSphere))
         .def_readwrite("center", &BSphere::center)
         .def_readwrite("radius", &BSphere::radius)
-        .def("__repr__", [](const BSphere &bbox) {
-                std::ostringstream oss;
-                oss << bbox;
-                return oss.str();
-            }
-        );
+        .repr_def(BSphere);
 
     return bsphere;
 }
