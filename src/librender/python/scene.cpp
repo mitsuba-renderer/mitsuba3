@@ -15,9 +15,9 @@ MTS_PY_EXPORT(ShapeKDTree) {
 #if !defined(MTS_USE_EMBREE)
     MTS_PY_CLASS(ShapeKDTree, Object)
         .def(py::init<const Properties &>(), D(ShapeKDTree, ShapeKDTree))
-        .mdef(ShapeKDTree, add_shape)
-        .mdef(ShapeKDTree, primitive_count)
-        .mdef(ShapeKDTree, shape_count)
+        .def_method(ShapeKDTree, add_shape)
+        .def_method(ShapeKDTree, primitive_count)
+        .def_method(ShapeKDTree, shape_count)
         .def("shape", (Shape *(ShapeKDTree::*)(size_t)) &ShapeKDTree::shape, D(ShapeKDTree, shape))
         .def("__getitem__", [](ShapeKDTree &s, size_t i) -> py::object {
             if (i >= s.primitive_count())
@@ -30,7 +30,7 @@ MTS_PY_EXPORT(ShapeKDTree) {
         })
         .def("__len__", &ShapeKDTree::primitive_count)
         .def("bbox", [] (ShapeKDTree &s) { return s.bbox(); })
-        .mdef(ShapeKDTree, build);
+        .def_method(ShapeKDTree, build);
 #else
     ENOKI_MARK_USED(m);
 #endif
@@ -118,9 +118,9 @@ MTS_PY_EXPORT(Scene) {
         .def("bbox", &Scene::bbox, D(Scene, bbox))
         .def("sensor",     py::overload_cast<>(&Scene::sensor),     D(Scene, sensor))
         .def("sensors",     py::overload_cast<>(&Scene::sensors),     D(Scene, sensors))
-        .mdef(Scene, set_current_sensor, "index"_a)
+        .def_method(Scene, set_current_sensor, "index"_a)
         .def("emitters",     py::overload_cast<>(&Scene::emitters),     D(Scene, emitters))
-        .mdef(Scene, environment)
+        .def_method(Scene, environment)
         .def("film",       py::overload_cast<>(&Scene::film),       D(Scene, film))
         .def("sampler",    py::overload_cast<>(&Scene::sampler),    D(Scene, sampler))
         .def("shapes",     py::overload_cast<>(&Scene::shapes),     D(Scene, shapes))

@@ -12,23 +12,23 @@ MTS_PY_EXPORT_CLASS_VARIANTS(Film) {
     using Vector2i = typename Film::Vector2i;
 
     MTS_PY_CLASS(Film, Object)
-        .mdef(Film, clear)
-        .mdef(Film, put, "block"_a)
-        .mdef(Film, set_bitmap, "bitmap"_a)
-        .mdef(Film, add_bitmap, "bitmap"_a, "multiplier"_a = 1.0f)
-        .mdef(Film, set_destination_file, "filename"_a, "block_size"_a)
+        .def_method(Film, clear)
+        .def_method(Film, put, "block"_a)
+        .def_method(Film, set_bitmap, "bitmap"_a)
+        .def_method(Film, add_bitmap, "bitmap"_a, "multiplier"_a = 1.0f)
+        .def_method(Film, set_destination_file, "filename"_a, "block_size"_a)
         .def("develop", py::overload_cast<>(&Film::develop))
         .def("develop", py::overload_cast<const Point2i &, const Vector2i &,
                                           const Point2i &, Bitmap *>(
                 &Film::develop, py::const_),
              "offset"_a, "size"_a, "target_offset"_a, "target"_a)
-        .mdef(Film, destination_exists, "basename"_a)
-        .mdef(Film, has_high_quality_edges)
-        .mdef(Film, bitmap)
-        .mdef(Film, size)
-        .mdef(Film, crop_size)
-        .mdef(Film, crop_offset)
-        .mdef(Film, set_crop_window)
+        .def_method(Film, destination_exists, "basename"_a)
+        .def_method(Film, has_high_quality_edges)
+        .def_method(Film, bitmap)
+        .def_method(Film, size)
+        .def_method(Film, crop_size)
+        .def_method(Film, crop_offset)
+        .def_method(Film, set_crop_window)
         .def("reconstruction_filter",
              py::overload_cast<>(&Film::reconstruction_filter, py::const_))
         ;

@@ -161,7 +161,7 @@ MTS_INLINE Point<Value, 2> square_to_uniform_triangle(const Point<Value, 2> &sam
 template <typename Value>
 MTS_INLINE Point<Value, 2> uniform_triangle_to_square(const Point<Value, 2> &p) {
     Value t = 1.f - p.x();
-    return Point2(1.f - t * t, p.y() / t);
+    return Point<Value, 2>(1.f - t * t, p.y() / t);
 }
 
 /// Density of \ref square_to_uniform_triangle per unit area.
@@ -393,7 +393,7 @@ MTS_INLINE Vector<Value, 3> square_to_uniform_cone(const Point<Value, 2> &sample
 template <typename Value>
 MTS_INLINE Point<Value, 2> uniform_cone_to_square(const Vector<Value, 3> &v,
                                                   const Value &cos_cutoff) {
-    Point<Value, 2> p = Point2(v.x(), v.y());
+    Point<Value, 2> p = Point<Value, 2>(v.x(), v.y());
     p *= sqrt((1.f - v.z()) / (squared_norm(p) * (1.f - cos_cutoff)));
     return uniform_disk_to_square_concentric(p);
 }
@@ -497,7 +497,7 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
     Vector<Value, 3> result = { c * sin_theta, s * sin_theta, cos_theta };
 #else
     // Approach 2: low-distortion warping technique based on concentric disk mapping
-    Point<Value, 3> p = square_to_uniform_disk_concentric(sample);
+    Point<Value, 2> p = square_to_uniform_disk_concentric(sample);
 
     Value r2 = squared_norm(p),
           sy = max(1.f - r2, 1e-6f),
@@ -600,8 +600,8 @@ namespace detail {
 }
 
 /// Probability density of \ref square_to_rough_fiber()
-template <typename Vector3, typename Float = value_t<Vector3>>
-Float square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent, Float kappa) {
+template <typename Value, typename Vector3 = Vector<Value, 3>>
+Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent, Value kappa) {
     /**
      * Analytic density function described in "An Energy-Conserving Hair Reflectance Model"
      * by Eugene d’Eon, Guillaume Francois, Martin Hill, Joe Letteri, and Jean-Marie Aubry
@@ -610,18 +610,18 @@ Float square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
      * https://publons.com/publon/2803
      */
 
-    Float cos_theta_i = dot(wi, tangent),
+    Value cos_theta_i = dot(wi, tangent),
           cos_theta_o = dot(v, tangent),
           sin_theta_i = circ(cos_theta_i),
           sin_theta_o = circ(cos_theta_o);
 
-    Float c = cos_theta_i * cos_theta_o * kappa,
+    Value c = cos_theta_i * cos_theta_o * kappa,
           s = sin_theta_i * sin_theta_o * kappa;
 
     if (kappa > 10.f)
-        return exp(-c + detail::log_i0(s) - kappa + .6931f + log(.5f * kappa)) * math::InvTwoPi<Float>;
+        return exp(-c + detail::log_i0(s) - kappa + .6931f + log(.5f * kappa)) * math::InvTwoPi<Value>;
     else
-        return exp(-c) * detail::i0(s) * kappa / (2.f * sinh(kappa)) * math::InvTwoPi<Float>;
+        return exp(-c) * detail::i0(s) * kappa / (2.f * sinh(kappa)) * math::InvTwoPi<Value>;
 }
 
 //! @}

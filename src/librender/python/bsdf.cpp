@@ -7,12 +7,12 @@ MTS_PY_EXPORT(BSDFContext) {
              "mode"_a = TransportMode::Radiance, D(BSDFContext, BSDFContext))
         .def(py::init<TransportMode, uint32_t, uint32_t>(),
              "mode"_a, "type_mak"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
-        .mdef(BSDFContext, reverse)
-        .mdef(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
-        .rwdef(BSDFContext, mode)
-        .rwdef(BSDFContext, type_mask)
-        .rwdef(BSDFContext, component)
-        .repr_def(BSDFContext)
+        .def_method(BSDFContext, reverse)
+        .def_method(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
+        .def_field(BSDFContext, mode)
+        .def_field(BSDFContext, type_mask)
+        .def_field(BSDFContext, component)
+        .def_repr(BSDFContext)
         ;
 }
 
@@ -23,12 +23,12 @@ MTS_PY_EXPORT_CLASS_VARIANTS(BSDFSample3) {
         .def(py::init<>(), D(BSDFSample3, BSDFSample3))
         .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3, BSDFSample3, 2))
         .def(py::init<const BSDFSample3 &>(), "bs"_a, "Copy constructor")
-        .rwdef(BSDFSample3, wo)
-        .rwdef(BSDFSample3, pdf)
-        .rwdef(BSDFSample3, eta)
-        .rwdef(BSDFSample3, sampled_type)
-        .rwdef(BSDFSample3, sampled_component)
-        .repr_def(BSDFSample3)
+        .def_field(BSDFSample3, wo)
+        .def_field(BSDFSample3, pdf)
+        .def_field(BSDFSample3, eta)
+        .def_field(BSDFSample3, sampled_type)
+        .def_field(BSDFSample3, sampled_component)
+        .def_repr(BSDFSample3)
         ;
 }
 
@@ -36,18 +36,18 @@ MTS_PY_EXPORT_CLASS_VARIANTS(BSDF) {
      using Mask = typename BSDF::Mask;
 
      auto bsdf = MTS_PY_CLASS(BSDF, Object)
-          .mdef(BSDF, sample, "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true)
-          .mdef(BSDF, eval, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
-          .mdef(BSDF, pdf, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
-          .mdef(BSDF, eval, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
+          .def_method(BSDF, sample, "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true)
+          .def_method(BSDF, eval, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
+          .def_method(BSDF, pdf, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
+          .def_method(BSDF, eval, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
           .def("flags", py::overload_cast<Mask>(&BSDF::flags, py::const_),
                D(BSDF, flags))
           .def("flags", py::overload_cast<size_t, Mask>(&BSDF::flags, py::const_),
                D(BSDF, flags, 2))
 
-          .mdef(BSDF, needs_differentials)
-          .mdef(BSDF, component_count)
-          .mdef(BSDF, id)
+          .def_method(BSDF, needs_differentials)
+          .def_method(BSDF, component_count)
+          .def_method(BSDF, id)
           .def("__repr__", &BSDF::to_string)
           ;
 

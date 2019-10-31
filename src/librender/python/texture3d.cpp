@@ -60,9 +60,9 @@ MTS_PY_EXPORT(Texture3D) {
                  &Texture3D::eval_gradient, py::const_),
              D(Texture3D, eval_gradient), "it"_a, "active"_a = true)
 #endif
-        .mdef(Texture3D, mean)
-        .mdef(Texture3D, max)
-        .mdef(Texture3D, bbox)
-        .mdef(Texture3D, resolution)
+        .def_method(Texture3D, mean)
+        .def_method(Texture3D, max)
+        .def_method(Texture3D, bbox)
+        .def_method(Texture3D, resolution)
         .def("__repr__", &Texture3D::to_string);
 }

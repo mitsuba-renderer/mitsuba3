@@ -13,7 +13,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(Mesh, Object)
-    MTS_IMPORT_RENDER_TYPES();
+    MTS_IMPORT_TYPES();
     using Base = Shape<Float, Spectrum>;
     using typename Base::Size;
     using typename Base::Index;

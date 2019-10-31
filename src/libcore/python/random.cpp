@@ -76,7 +76,7 @@ MTS_PY_EXPORT(random) {
         .def(py::self == py::self, DE(PCG32, operator, eq))
         .def(py::self != py::self, DE(PCG32, operator, ne))
         .def(py::self - py::self, DE(PCG32, operator, sub))
-        .repr_def(PCG32);
+        .def_repr(PCG32);
 
     m.def("sample_tea_float32", sample_tea_float32<uint32_t>,
           "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float32));

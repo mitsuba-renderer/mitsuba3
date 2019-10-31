@@ -12,7 +12,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
     MTS_REGISTER_CLASS(Scene, Object)
-    MTS_IMPORT_RENDER_TYPES();
+    MTS_IMPORT_TYPES();
     using Sampler              = typename RenderAliases::Sampler;
     using Shape                = typename RenderAliases::Shape;
     using Integrator           = typename RenderAliases::Integrator;

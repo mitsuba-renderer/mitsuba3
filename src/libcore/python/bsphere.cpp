@@ -6,7 +6,7 @@ template <typename BSphere> auto bind_bsphere(py::module &m, const char *name) {
         .def(py::init<>(), D(BoundingSphere, BoundingSphere))
         .def_readwrite("center", &BSphere::center)
         .def_readwrite("radius", &BSphere::radius)
-        .repr_def(BSphere);
+        .def_repr(BSphere);
 
     return bsphere;
 }

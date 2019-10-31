@@ -13,7 +13,7 @@ auto bind_transform(py::module &m, const char *name) {
         .def("has_scale", &Type::has_scale, D(Transform, has_scale))
         .def_readwrite("matrix", &Type::matrix)
         .def_readwrite("inverse_transpose", &Type::inverse_transpose)
-        .repr_def(Type)
+        .def_repr(Type)
         ;
 }
 
@@ -97,8 +97,8 @@ MTS_PY_EXPORT(AnimatedTransform) {
     atrafo
         .def(py::init<>())
         .def(py::init<const Transform4f &>())
-        .mdef(AnimatedTransform, size)
-        .mdef(AnimatedTransform, has_scale)
+        .def_method(AnimatedTransform, size)
+        .def_method(AnimatedTransform, has_scale)
         .def("__len__", &AnimatedTransform::size)
         .def("__getitem__", [](const AnimatedTransform &trafo, size_t index) {
             if (index >= trafo.size())
@@ -121,5 +121,5 @@ MTS_PY_EXPORT(AnimatedTransform) {
                  py::overload_cast<FloatP, MaskP>(
                      &AnimatedTransform::eval, py::const_)),
              "time"_a, "active"_a = true)
-        .mdef(AnimatedTransform, translation_bounds);
+        .def_method(AnimatedTransform, translation_bounds);
 }

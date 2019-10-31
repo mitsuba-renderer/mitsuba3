@@ -4,6 +4,6 @@
 MTS_PY_EXPORT_CLASS_VARIANTS(Emitter) {
     using Base = typename Emitter::Base;
     MTS_PY_CLASS(Emitter, Base)
-        .mdef(Emitter, is_environment)
+        .def_method(Emitter, is_environment)
         ;
 }

@@ -30,12 +30,12 @@ public:
 MTS_PY_EXPORT(Appender) {
     MTS_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
         .def(py::init<>())
-        .mdef(Appender, append, "level"_a, "text"_a)
-        .mdef(Appender, log_progress, "progress"_a, "name"_a,
+        .def_method(Appender, append, "level"_a, "text"_a)
+        .def_method(Appender, log_progress, "progress"_a, "name"_a,
               "formatted"_a, "eta"_a, "ptr"_a = py::none());
 
     MTS_PY_CLASS(StreamAppender, Appender)
         .def(py::init<const std::string &>(), D(StreamAppender, StreamAppender))
-        .mdef(StreamAppender, logs_to_file)
-        .mdef(StreamAppender, read_log);
+        .def_method(StreamAppender, logs_to_file)
+        .def_method(StreamAppender, read_log);
 }

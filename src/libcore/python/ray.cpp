@@ -15,27 +15,27 @@ auto bind_ray(Args2&&... args2) {
              D(Ray, Ray, 6), "o"_a, "d"_a, "mint"_a, "maxt"_a, "time"_a, "wavelength"_a)
         .def(py::init<const Type &, Float, Float>(),
              D(Ray, Ray, 7), "other"_a, "mint"_a, "maxt"_a)
-        .mdef(Ray, update)
+        .def_method(Ray, update)
         .def("__call__", &Type::operator(), D(Ray, operator, call))
-        .repr_def(Type)
-        .rwdef(Ray, o)
-        .rwdef(Ray, d)
-        .rwdef(Ray, d_rcp)
-        .rwdef(Ray, mint)
-        .rwdef(Ray, maxt)
-        .rwdef(Ray, time)
-        .rwdef(Ray, wavelength)
+        .def_repr(Type)
+        .def_field(Ray, o)
+        .def_field(Ray, d)
+        .def_field(Ray, d_rcp)
+        .def_field(Ray, mint)
+        .def_field(Ray, maxt)
+        .def_field(Ray, time)
+        .def_field(Ray, wavelength)
         ;
 }
 
 template <typename Type, typename... Args, typename... Args2>
 auto bind_ray_differential(Args2&&... args2) {
     return bind_ray<Type, Args...>(args2...)
-        .rwdef(RayDifferential, o_x)
-        .rwdef(RayDifferential, o_y)
-        .rwdef(RayDifferential, d_x)
-        .rwdef(RayDifferential, d_y)
-        .rwdef(RayDifferential, has_differentials);
+        .def_field(RayDifferential, o_x)
+        .def_field(RayDifferential, o_y)
+        .def_field(RayDifferential, d_x)
+        .def_field(RayDifferential, d_y)
+        .def_field(RayDifferential, has_differentials);
 }
 
 MTS_PY_EXPORT(Ray) {

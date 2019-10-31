@@ -7,14 +7,14 @@ MTS_PY_EXPORT_CLASS_VARIANTS(PositionSample) {
         .def(py::init<>(), "Construct an unitialized position sample")
         .def(py::init<const PositionSample &>(), "Copy constructor", "other"_a)
         .def(py::init<const SurfaceInteraction3f &>(), "si"_a, D(PositionSample, PositionSample))
-        .rwdef(PositionSample, p)
-        .rwdef(PositionSample, n)
-        .rwdef(PositionSample, uv)
-        .rwdef(PositionSample, time)
-        .rwdef(PositionSample, pdf)
-        .rwdef(PositionSample, delta)
-        .rwdef(PositionSample, object)
-        .repr_def(PositionSample)
+        .def_field(PositionSample, p)
+        .def_field(PositionSample, n)
+        .def_field(PositionSample, uv)
+        .def_field(PositionSample, time)
+        .def_field(PositionSample, pdf)
+        .def_field(PositionSample, delta)
+        .def_field(PositionSample, object)
+        .def_repr(PositionSample)
         ;
 }
 
@@ -40,10 +40,10 @@ MTS_PY_EXPORT_CLASS_VARIANTS(DirectionSample) {
              "Element-by-element constructor")
         .def(py::init<const SurfaceInteraction3f &, const Interaction3f &>(),
              "si"_a, "ref"_a, D(PositionSample, PositionSample))
-        .mdef(DirectionSample, set_query)
-        .rwdef(DirectionSample, d)
-        .rwdef(DirectionSample, dist)
-        .repr_def(DirectionSample)
+        .def_method(DirectionSample, set_query)
+        .def_field(DirectionSample, d)
+        .def_field(DirectionSample, dist)
+        .def_repr(DirectionSample)
         ;
 }
 
@@ -55,15 +55,15 @@ MTS_PY_EXPORT_CLASS_VARIANTS(DirectionSample) {
 //              D(RadianceSample, RadianceSample, 2), "scene"_a, "sampler"_a)
 //         // .def(py::init<const RadianceSample &>(), D(RadianceSample, RadianceSample, 3),
 //         //   "other"_a)
-//         .mdef(RadianceSample, ray_intersect, "ray"_a, "active"_a)
-//         .mdef(RadianceSample, next_1d)
-//         .mdef(RadianceSample, next_2d)
+//         .def_method(RadianceSample, ray_intersect, "ray"_a, "active"_a)
+//         .def_method(RadianceSample, next_1d)
+//         .def_method(RadianceSample, next_2d)
 
-//         .rwdef(RadianceSample, scene)
-//         .rwdef(RadianceSample, sampler)
-//         .rwdef(RadianceSample, si)
-//         .rwdef(RadianceSample, alpha)
-//         .repr_def(RadianceSample)
+//         .def_field(RadianceSample, scene)
+//         .def_field(RadianceSample, sampler)
+//         .def_field(RadianceSample, si)
+//         .def_field(RadianceSample, alpha)
+//         .def_repr(RadianceSample)
 //         ;
 
 //     if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {

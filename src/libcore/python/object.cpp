@@ -7,10 +7,10 @@ MTS_PY_EXPORT(Object) {
     py::class_<Object, ref<Object>>(m, "Object", D(Object))
         .def(py::init<>(), D(Object, Object))
         .def(py::init<const Object &>(), D(Object, Object, 2))
-        .mdef(Object, id)
-        .mdef(Object, ref_count)
-        .mdef(Object, inc_ref)
-        .mdef(Object, dec_ref, "dealloc"_a = true)
+        .def_method(Object, id)
+        .def_method(Object, ref_count)
+        .def_method(Object, inc_ref)
+        .def_method(Object, dec_ref, "dealloc"_a = true)
         .def("expand", [](const Object &o) -> py::list {
             auto result = o.expand();
             py::list l;

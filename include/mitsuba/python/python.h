@@ -39,26 +39,20 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
     py::class_<Name>(m, #Name, D(Name), ##__VA_ARGS__)
 
 /// Shorthand notation for defining read_write members
-#define rwdef(Class, Member) \
+#define def_field(Class, Member) \
     def_readwrite(#Member, &Class::Member, D(Class, Member))
 
 /// Shorthand notation for defining most kinds of methods
-#define mdef(Class, Function, ...) \
+#define def_method(Class, Function, ...) \
     def(#Function, &Class::Function, D(Class, Function), ##__VA_ARGS__)
 
 /// Shorthand notation for defining most kinds of static methods
-#define sdef(Class, Function, ...) \
+#define def_static_method(Class, Function, ...) \
     def_static(#Function, &Class::Function, D(Class, Function), ##__VA_ARGS__)
 
 /// Shorthand notation for defining __repr__ using operator<<
-#define repr_def(Class) \
+#define def_repr(Class) \
     def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
-
-// #define MTS_VECTORIZE_WRAPPER(Function) \
-    // enoki::vectorize_wrapper(Function)
-
-
-
 
 #define MTS_PY_IMPORT_MODULE(Name, ModuleName) \
     auto Name = py::module::import(ModuleName); (void) m;
@@ -104,7 +98,7 @@ template <typename Source, typename Target> void pybind11_type_alias() {
 template <typename Class, typename... Args, typename... Extra> auto bind_array(py::module &m, const char *name, const Extra&... extra) {
     return py::class_<Class, Args...>(m, name, extra...)
         .def("__len__", &Class::size)
-        .repr_def(Class)
+        .def_repr(Class)
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__getitem__", [](const Class &a, size_t index) {
@@ -114,11 +108,9 @@ template <typename Class, typename... Args, typename... Extra> auto bind_array(p
         });
 }
 
-template<typename Float, typename Func> auto mts_vectorize_wrapper(Func func) {
+template<typename Float, typename Func> auto vectorize(Func func) {
     if constexpr (is_array_v<Float> && !is_dynamic_v<Float>)
         return func;
     else
         return enoki::vectorize_wrapper(func);
 }
-
-#define MTS_VECTORIZE_WRAPPER mts_vectorize_wrapper<Float>

@@ -38,19 +38,19 @@ MTS_PY_EXPORT(Bitmap) {
             return bitmap;
         }), "array"_a, "pixel_format"_a = py::none(), "Initialize a Bitmap from a NumPy array")
         .def(py::init<const Bitmap &>())
-        .mdef(Bitmap, pixel_format)
-        .mdef(Bitmap, component_format)
-        .mdef(Bitmap, size)
-        .mdef(Bitmap, width)
-        .mdef(Bitmap, height)
-        .mdef(Bitmap, pixel_count)
-        .mdef(Bitmap, channel_count)
-        .mdef(Bitmap, has_alpha)
-        .mdef(Bitmap, bytes_per_pixel)
-        .mdef(Bitmap, buffer_size)
-        .mdef(Bitmap, srgb_gamma)
-        .mdef(Bitmap, set_srgb_gamma)
-        .mdef(Bitmap, clear)
+        .def_method(Bitmap, pixel_format)
+        .def_method(Bitmap, component_format)
+        .def_method(Bitmap, size)
+        .def_method(Bitmap, width)
+        .def_method(Bitmap, height)
+        .def_method(Bitmap, pixel_count)
+        .def_method(Bitmap, channel_count)
+        .def_method(Bitmap, has_alpha)
+        .def_method(Bitmap, bytes_per_pixel)
+        .def_method(Bitmap, buffer_size)
+        .def_method(Bitmap, srgb_gamma)
+        .def_method(Bitmap, set_srgb_gamma)
+        .def_method(Bitmap, clear)
         .def("metadata", py::overload_cast<>(&Bitmap::metadata), D(Bitmap, metadata),
              py::return_value_policy::reference_internal)
         .def("resample", py::overload_cast<Bitmap *, const ReconstructionFilter *,
@@ -89,7 +89,7 @@ MTS_PY_EXPORT(Bitmap) {
         .def("accumulate", py::overload_cast<const Bitmap *>(
                 &Bitmap::accumulate), D(Bitmap, accumulate, 3),
              "bitmap"_a)
-        .mdef(Bitmap, vflip)
+        .def_method(Bitmap, vflip)
         .def("struct_", &Bitmap::struct_, D(Bitmap, struct))
         .def(py::self == py::self)
         .def(py::self != py::self);

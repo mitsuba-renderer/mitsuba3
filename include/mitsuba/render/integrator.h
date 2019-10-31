@@ -36,7 +36,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Integrator : public Object {
 public:
     MTS_REGISTER_CLASS(Integrator, Object)
-    MTS_IMPORT_RENDER_TYPES()
+    MTS_IMPORT_TYPES()
     using Scene = typename RenderAliases::Scene;
 
     /// Perform the main rendering job. Returns \c true upon success
@@ -66,7 +66,7 @@ template <typename Float, typename Spectrum>
 class SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(SamplingIntegrator, Integrator)
-    MTS_IMPORT_RENDER_TYPES()
+    MTS_IMPORT_TYPES()
     using Base       = Integrator<Float, Spectrum>;
     using Film       = typename RenderAliases::Film;
     using ImageBlock = typename RenderAliases::ImageBlock;

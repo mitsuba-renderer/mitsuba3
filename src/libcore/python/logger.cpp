@@ -26,20 +26,20 @@ static void PyLog(LogLevel level, const std::string &msg) {
 MTS_PY_EXPORT(Logger) {
     MTS_PY_CLASS(Logger, Object)
         .def(py::init<LogLevel>(), D(Logger, Logger))
-        .mdef(Logger, log_progress, "progress"_a, "name"_a,
+        .def_method(Logger, log_progress, "progress"_a, "name"_a,
               "formatted"_a, "eta"_a, "ptr"_a = py::none())
-        .mdef(Logger, set_log_level)
-        .mdef(Logger, log_level)
-        .mdef(Logger, set_error_level)
-        .mdef(Logger, error_level)
-        .mdef(Logger, add_appender, py::keep_alive<1, 2>())
-        .mdef(Logger, remove_appender)
-        .mdef(Logger, clear_appenders)
-        .mdef(Logger, appender_count)
+        .def_method(Logger, set_log_level)
+        .def_method(Logger, log_level)
+        .def_method(Logger, set_error_level)
+        .def_method(Logger, error_level)
+        .def_method(Logger, add_appender, py::keep_alive<1, 2>())
+        .def_method(Logger, remove_appender)
+        .def_method(Logger, clear_appenders)
+        .def_method(Logger, appender_count)
         .def("appender", (Appender * (Logger::*)(size_t)) &Logger::appender, D(Logger, appender))
         .def("formatter", (Formatter * (Logger::*)()) &Logger::formatter, D(Logger, formatter))
-        .mdef(Logger, set_formatter, py::keep_alive<1, 2>())
-        .mdef(Logger, read_log);
+        .def_method(Logger, set_formatter, py::keep_alive<1, 2>())
+        .def_method(Logger, read_log);
 
     py::enum_<LogLevel>(m, "LogLevel", D(LogLevel))
         .value("Trace", Trace, D(LogLevel, Trace))

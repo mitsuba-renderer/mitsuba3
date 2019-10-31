@@ -49,7 +49,7 @@ with open(fname, 'w') as f:
 
     w('#define MTS_DECLARE_PLUGIN(Name, Parent)')
     w('    MTS_REGISTER_CLASS(Name, Parent)')
-    w('    MTS_IMPORT_RENDER_TYPES()')
+    w('    MTS_IMPORT_TYPES()')
     f.write('\n\n')
 
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')

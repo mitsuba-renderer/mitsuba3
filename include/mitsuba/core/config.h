@@ -23,7 +23,7 @@
 
 #define MTS_DECLARE_PLUGIN(Name, Parent)                                    \
     MTS_REGISTER_CLASS(Name, Parent)                                        \
-    MTS_IMPORT_RENDER_TYPES()                                                      \
+    MTS_IMPORT_TYPES()                                                      \
 
 
 #define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)                           \

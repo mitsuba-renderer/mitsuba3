@@ -5,8 +5,8 @@ MTS_PY_EXPORT(rfilter) {
     using Resampler = mitsuba::Resampler<Float>;
 
     auto rfilter = MTS_PY_CLASS(ReconstructionFilter, Object)
-        .mdef(ReconstructionFilter, border_size)
-        .mdef(ReconstructionFilter, radius)
+        .def_method(ReconstructionFilter, border_size)
+        .def_method(ReconstructionFilter, radius)
         .def("eval",
              py::overload_cast<Float>(&ReconstructionFilter::eval, py::const_),
              D(ReconstructionFilter, eval), "x"_a)
@@ -38,13 +38,13 @@ MTS_PY_EXPORT(rfilter) {
         .def(py::init<const ReconstructionFilter *, uint32_t, uint32_t>(),
              "rfilter"_a, "source_res"_a, "target_res"_a,
              D(Resampler, Resampler))
-        .mdef(Resampler, source_resolution)
-        .mdef(Resampler, target_resolution)
-        .mdef(Resampler, boundary_condition)
-        .mdef(Resampler, set_boundary_condition)
-        .mdef(Resampler, set_clamp)
-        .mdef(Resampler, taps)
-        .mdef(Resampler, clamp)
+        .def_method(Resampler, source_resolution)
+        .def_method(Resampler, target_resolution)
+        .def_method(Resampler, boundary_condition)
+        .def_method(Resampler, set_boundary_condition)
+        .def_method(Resampler, set_clamp)
+        .def_method(Resampler, taps)
+        .def_method(Resampler, clamp)
         .def("__repr__", &Resampler::to_string)
         .def("resample",
              [](Resampler &resampler, const py::array &source,

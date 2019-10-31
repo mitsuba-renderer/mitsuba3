@@ -13,26 +13,26 @@ MTS_PY_EXPORT_CLASS_VARIANTS(MicrofacetDistribution) {
         .def(py::init<MicrofacetType, const ScalarFloat &, const ScalarFloat &, bool>(),
              "type"_a, "alpha_u"_a, "alpha_v"_a, "sample_visible"_a = true)
         .def(py::init<const Properties &>())
-        .mdef(MicrofacetDistribution, type)
-        .mdef(MicrofacetDistribution, alpha)
-        .mdef(MicrofacetDistribution, alpha_u)
-        .mdef(MicrofacetDistribution, alpha_v)
-        .mdef(MicrofacetDistribution, sample_visible)
-        .mdef(MicrofacetDistribution, is_anisotropic)
-        .mdef(MicrofacetDistribution, is_isotropic)
-        .mdef(MicrofacetDistribution, scale_alpha, "value"_a)
-        .mdef(MicrofacetDistribution, eval, "m"_a)
-        .mdef(MicrofacetDistribution, pdf, "wi"_a, "m"_a)
-        .mdef(MicrofacetDistribution, sample, "wi"_a, "sample"_a)
-        .mdef(MicrofacetDistribution, G, "wi"_a, "wo"_a, "m"_a)
-        .mdef(MicrofacetDistribution, smith_g1, "v"_a, "m"_a)
-        .mdef(MicrofacetDistribution, sample_visible_11, "cos_theta_i"_a, "sample"_a)
+        .def_method(MicrofacetDistribution, type)
+        .def_method(MicrofacetDistribution, alpha)
+        .def_method(MicrofacetDistribution, alpha_u)
+        .def_method(MicrofacetDistribution, alpha_v)
+        .def_method(MicrofacetDistribution, sample_visible)
+        .def_method(MicrofacetDistribution, is_anisotropic)
+        .def_method(MicrofacetDistribution, is_isotropic)
+        .def_method(MicrofacetDistribution, scale_alpha, "value"_a)
+        .def_method(MicrofacetDistribution, eval, "m"_a)
+        .def_method(MicrofacetDistribution, pdf, "wi"_a, "m"_a)
+        .def_method(MicrofacetDistribution, sample, "wi"_a, "sample"_a)
+        .def_method(MicrofacetDistribution, G, "wi"_a, "wo"_a, "m"_a)
+        .def_method(MicrofacetDistribution, smith_g1, "v"_a, "m"_a)
+        .def_method(MicrofacetDistribution, sample_visible_11, "cos_theta_i"_a, "sample"_a)
         .def("eval_reflectance",
             [](const MicrofacetDistribution &d, const Vector3fX &wi_, float eta) {
                 mitsuba::MicrofacetDistribution<FloatP> d2(d.type(), d.alpha_u(), d.alpha_v());
                 return d2.eval_reflectance(wi_, eta);
             }, "wi"_a, "eta"_a)
-        .repr_def(MicrofacetDistribution)
+        .def_repr(MicrofacetDistribution)
         ;
 
     // TODO vectorize wrapper bindings

@@ -112,11 +112,11 @@ MTS_PY_EXPORT(Struct) {
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__hash__", [](const Struct &s) { return hash(s); })
-        .mdef(Struct, size)
-        .mdef(Struct, alignment)
-        .mdef(Struct, byte_order)
-        .mdef(Struct, field_count)
-        .mdef(Struct, has_field)
+        .def_method(Struct, size)
+        .def_method(Struct, alignment)
+        .def_method(Struct, byte_order)
+        .def_method(Struct, field_count)
+        .def_method(Struct, has_field)
         .def_static("is_float", &Struct::is_float, D(Struct, is_float))
         .def_static("is_integer", &Struct::is_integer, D(Struct, is_integer))
         .def_static("is_signed", &Struct::is_signed, D(Struct, is_signed))
@@ -142,8 +142,8 @@ MTS_PY_EXPORT(Struct) {
 
     MTS_PY_CLASS(StructConverter, Object)
         .def(py::init<const Struct *, const Struct *, bool>(), "source"_a, "target"_a, "dither"_a = false)
-        .mdef(StructConverter, source)
-        .mdef(StructConverter, target)
+        .def_method(StructConverter, source)
+        .def_method(StructConverter, target)
         .def("convert", [](const StructConverter &c, py::bytes input_) -> py::bytes {
             std::string input(input_);
             size_t count = input.length() / c.source()->size();

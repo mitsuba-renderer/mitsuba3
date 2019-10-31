@@ -20,18 +20,18 @@ MTS_PY_EXPORT(Properties) {
         .def(py::init<const Properties &>(), D(Properties, Properties, 3))
 
         // Methods
-        .mdef(Properties, has_property)
-        .mdef(Properties, remove_property)
-        .mdef(Properties, mark_queried)
-        .mdef(Properties, was_queried)
-        .mdef(Properties, plugin_name)
-        .mdef(Properties, set_plugin_name)
-        .mdef(Properties, id)
-        .mdef(Properties, set_id)
-        .mdef(Properties, copy_attribute)
-        .mdef(Properties, property_names)
-        .mdef(Properties, unqueried)
-        .mdef(Properties, merge)
+        .def_method(Properties, has_property)
+        .def_method(Properties, remove_property)
+        .def_method(Properties, mark_queried)
+        .def_method(Properties, was_queried)
+        .def_method(Properties, plugin_name)
+        .def_method(Properties, set_plugin_name)
+        .def_method(Properties, id)
+        .def_method(Properties, set_id)
+        .def_method(Properties, copy_attribute)
+        .def_method(Properties, property_names)
+        .def_method(Properties, unqueried)
+        .def_method(Properties, merge)
 
         // Getters & setters: used as if it were a simple map
        .SET_ITEM_BINDING(float, py::float_)
@@ -82,5 +82,5 @@ MTS_PY_EXPORT(Properties) {
         // Operators
         .def(py::self == py::self, D(Properties, operator_eq))
         .def(py::self != py::self, D(Properties, operator_ne))
-        .repr_def(Properties);
+        .def_repr(Properties);
 }

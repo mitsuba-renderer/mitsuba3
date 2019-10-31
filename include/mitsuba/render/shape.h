@@ -17,7 +17,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
     MTS_REGISTER_INTERFACE(Shape, Object)
-    MTS_IMPORT_RENDER_TYPES();
+    MTS_IMPORT_TYPES();
     using BSDF    = typename RenderAliases::BSDF;
     using Medium  = typename RenderAliases::Medium;
     using Emitter = typename RenderAliases::Emitter;

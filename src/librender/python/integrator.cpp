@@ -49,11 +49,11 @@ MTS_PY_EXPORT(Integrator) {
                  return res;
              },
              D(Integrator, render), "scene"_a)
-        .mdef(Integrator, cancel)
-        .mdef(Integrator, register_callback, "cb"_a, "period"_a)
-        .mdef(Integrator, remove_callback, "index"_a)
-        .mdef(Integrator, callback_count)
-        .mdef(Integrator, notify, "bitmap"_a, "extra"_a);
+        .def_method(Integrator, cancel)
+        .def_method(Integrator, register_callback, "cb"_a, "period"_a)
+        .def_method(Integrator, remove_callback, "index"_a)
+        .def_method(Integrator, callback_count)
+        .def_method(Integrator, notify, "bitmap"_a, "extra"_a);
 
     /// SamplingIntegrator.
     MTS_PY_CLASS(SamplingIntegrator, Integrator)
@@ -75,7 +75,7 @@ MTS_PY_EXPORT(Integrator) {
                  &SamplingIntegrator::eval, py::const_),
              "ray"_a, "rs"_a, "active"_a = true)
 #endif
-        .mdef(SamplingIntegrator, should_stop);
+        .def_method(SamplingIntegrator, should_stop);
 
     /// MonteCarloIntegrator.
     MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);

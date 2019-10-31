@@ -23,16 +23,16 @@
 
 MTS_PY_EXPORT(Stream) {
     auto c = MTS_PY_CLASS(Stream, Object)
-        .mdef(Stream, close)
-        .mdef(Stream, set_byte_order)
-        .mdef(Stream, byte_order)
-        .mdef(Stream, seek)
-        .mdef(Stream, truncate)
-        .mdef(Stream, tell)
-        .mdef(Stream, size)
-        .mdef(Stream, flush)
-        .mdef(Stream, can_read)
-        .mdef(Stream, can_write)
+        .def_method(Stream, close)
+        .def_method(Stream, set_byte_order)
+        .def_method(Stream, byte_order)
+        .def_method(Stream, seek)
+        .def_method(Stream, truncate)
+        .def_method(Stream, tell)
+        .def_method(Stream, size)
+        .def_method(Stream, flush)
+        .def_method(Stream, can_read)
+        .def_method(Stream, can_write)
         .def_static("host_byte_order", Stream::host_byte_order, D(Stream, host_byte_order))
         .def("write", [](Stream &s, py::bytes b) {
             std::string data(b);
@@ -43,9 +43,9 @@ MTS_PY_EXPORT(Stream) {
             s.read((void *) tmp.get(), size);
             return py::bytes(tmp.get(), size);
         }, D(Stream, write))
-        .mdef(Stream, skip)
-        .mdef(Stream, read_line)
-        .mdef(Stream, write_line)
+        .def_method(Stream, skip)
+        .def_method(Stream, read_line)
+        .def_method(Stream, write_line)
         .DECLARE_RW(int8_t, "int8")
         .DECLARE_RW(uint8_t, "uint8")
         .DECLARE_RW(int16_t, "int16")
@@ -76,7 +76,7 @@ MTS_PY_EXPORT(DummyStream) {
 
 MTS_PY_EXPORT(FileStream) {
     auto fs = MTS_PY_CLASS(FileStream, Stream)
-        .mdef(FileStream, path);
+        .def_method(FileStream, path);
 
     py::enum_<FileStream::EMode>(fs, "EMode", D(FileStream, EMode))
         .value("ERead", FileStream::ERead, D(FileStream, EMode, ERead))
@@ -92,8 +92,8 @@ MTS_PY_EXPORT(MemoryStream) {
     MTS_PY_CLASS(MemoryStream, Stream)
         .def(py::init<size_t>(), D(MemoryStream, MemoryStream),
              "capacity"_a = 512)
-        .mdef(MemoryStream, capacity)
-        .mdef(MemoryStream, owns_buffer);
+        .def_method(MemoryStream, capacity)
+        .def_method(MemoryStream, owns_buffer);
 }
 
 MTS_PY_EXPORT(ZStream) {

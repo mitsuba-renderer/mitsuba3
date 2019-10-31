@@ -57,7 +57,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
     using MediumInteraction3f  = MediumInteraction<Float, Spectrum>;
     using BSDFSample3f         = BSDFSample3<Float, Spectrum>;
-    // TODO
+
     using Scene                = mitsuba::Scene<Float, Spectrum>;
     using Sampler              = mitsuba::Sampler<Float, Spectrum>;
     using Shape                = mitsuba::Shape<Float, Spectrum>;
@@ -90,7 +90,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 
-#define MTS_IMPORT_RENDER_TYPES()                                                                  \
+#define MTS_IMPORT_TYPES()                                                                  \
     MTS_IMPORT_RENDER_BASIC_TYPES();                                                               \
     using PositionSample3f     = typename RenderAliases::PositionSample3f;                         \
     using DirectionSample3f    = typename RenderAliases::DirectionSample3f;                        \

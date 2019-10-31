@@ -22,18 +22,18 @@ public:
 MTS_PY_EXPORT(Formatter) {
     MTS_PY_TRAMPOLINE_CLASS(PyFormatter, Formatter, Object)
         .def(py::init<>())
-        .mdef(Formatter, format, "level"_a, "theClass"_a,
+        .def_method(Formatter, format, "level"_a, "theClass"_a,
               "thread"_a, "file"_a, "line"_a,
               "msg"_a);
 
     MTS_PY_CLASS(DefaultFormatter, Formatter)
         .def(py::init<>())
-        .mdef(DefaultFormatter, has_date)
-        .mdef(DefaultFormatter, set_has_date)
-        .mdef(DefaultFormatter, has_thread)
-        .mdef(DefaultFormatter, set_has_thread)
-        .mdef(DefaultFormatter, has_log_level)
-        .mdef(DefaultFormatter, set_has_log_level)
-        .mdef(DefaultFormatter, has_class)
-        .mdef(DefaultFormatter, set_has_class);
+        .def_method(DefaultFormatter, has_date)
+        .def_method(DefaultFormatter, set_has_date)
+        .def_method(DefaultFormatter, has_thread)
+        .def_method(DefaultFormatter, set_has_thread)
+        .def_method(DefaultFormatter, has_log_level)
+        .def_method(DefaultFormatter, set_has_log_level)
+        .def_method(DefaultFormatter, has_class)
+        .def_method(DefaultFormatter, set_has_class);
 }

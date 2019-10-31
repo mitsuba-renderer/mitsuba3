@@ -12,7 +12,7 @@ auto bind_frame(py::module &m, const char *name) {
         .def(py::init<Vector3>(), D(Frame, Frame, 4))
         .def(py::self == py::self, D(Frame, operator_eq))
         .def(py::self != py::self, D(Frame, operator_ne))
-        .repr_def(Type)
+        .def_repr(Type)
         .def_readwrite("s", &Type::s)
         .def_readwrite("t", &Type::t)
         .def_readwrite("n", &Type::n);
@@ -20,20 +20,20 @@ auto bind_frame(py::module &m, const char *name) {
 
 MTS_PY_EXPORT(Frame) {
     bind_frame<Frame3f>(m, "Frame3f")
-        .mdef(Frame, to_local, "v"_a)
-        .mdef(Frame, to_world, "v"_a)
-        .sdef(Frame, cos_theta, "v"_a)
-        .sdef(Frame, cos_theta_2, "v"_a)
-        .sdef(Frame, sin_theta, "v"_a)
-        .sdef(Frame, sin_theta_2, "v"_a)
-        .sdef(Frame, tan_theta, "v"_a)
-        .sdef(Frame, tan_theta_2, "v"_a)
-        .sdef(Frame, sin_phi, "v"_a)
-        .sdef(Frame, sin_phi_2, "v"_a)
-        .sdef(Frame, cos_phi, "v"_a)
-        .sdef(Frame, cos_phi_2, "v"_a)
-        .sdef(Frame, sincos_phi, "v"_a)
-        .sdef(Frame, sincos_phi_2, "v"_a);
+        .def_method(Frame, to_local, "v"_a)
+        .def_method(Frame, to_world, "v"_a)
+        .def_static_method(Frame, cos_theta, "v"_a)
+        .def_static_method(Frame, cos_theta_2, "v"_a)
+        .def_static_method(Frame, sin_theta, "v"_a)
+        .def_static_method(Frame, sin_theta_2, "v"_a)
+        .def_static_method(Frame, tan_theta, "v"_a)
+        .def_static_method(Frame, tan_theta_2, "v"_a)
+        .def_static_method(Frame, sin_phi, "v"_a)
+        .def_static_method(Frame, sin_phi_2, "v"_a)
+        .def_static_method(Frame, cos_phi, "v"_a)
+        .def_static_method(Frame, cos_phi_2, "v"_a)
+        .def_static_method(Frame, sincos_phi, "v"_a)
+        .def_static_method(Frame, sincos_phi_2, "v"_a);
 
 
     auto f3fx = bind_frame<Frame3fX>(m, "Frame3fX")
@@ -46,20 +46,20 @@ MTS_PY_EXPORT(Frame) {
 
 #if defined(MTS_ENABLE_AUTODIFF)
     auto f3fd = bind_frame<Frame3fD>(m, "Frame3fD")
-        .mdef(Frame, to_local, "v"_a)
-        .mdef(Frame, to_world, "v"_a)
-        .sdef(Frame, cos_theta, "v"_a)
-        .sdef(Frame, cos_theta_2, "v"_a)
-        .sdef(Frame, sin_theta, "v"_a)
-        .sdef(Frame, sin_theta_2, "v"_a)
-        .sdef(Frame, tan_theta, "v"_a)
-        .sdef(Frame, tan_theta_2, "v"_a)
-        .sdef(Frame, sin_phi, "v"_a)
-        .sdef(Frame, sin_phi_2, "v"_a)
-        .sdef(Frame, cos_phi, "v"_a)
-        .sdef(Frame, cos_phi_2, "v"_a)
-        .sdef(Frame, sincos_phi, "v"_a)
-        .sdef(Frame, sincos_phi_2, "v"_a);
+        .def_method(Frame, to_local, "v"_a)
+        .def_method(Frame, to_world, "v"_a)
+        .def_static_method(Frame, cos_theta, "v"_a)
+        .def_static_method(Frame, cos_theta_2, "v"_a)
+        .def_static_method(Frame, sin_theta, "v"_a)
+        .def_static_method(Frame, sin_theta_2, "v"_a)
+        .def_static_method(Frame, tan_theta, "v"_a)
+        .def_static_method(Frame, tan_theta_2, "v"_a)
+        .def_static_method(Frame, sin_phi, "v"_a)
+        .def_static_method(Frame, sin_phi_2, "v"_a)
+        .def_static_method(Frame, cos_phi, "v"_a)
+        .def_static_method(Frame, cos_phi_2, "v"_a)
+        .def_static_method(Frame, sincos_phi, "v"_a)
+        .def_static_method(Frame, sincos_phi_2, "v"_a);
 
     bind_slicing_operators<Frame3fD, Frame3f>(f3fd);
 #endif

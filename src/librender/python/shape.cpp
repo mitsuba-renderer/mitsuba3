@@ -13,34 +13,34 @@ MTS_PY_EXPORT_CLASS_VARIANTS(Shape) {
     using BoundingBox3f = typename Shape::BoundingBox3f;
 
     auto shape = MTS_PY_CLASS(Shape, Object)
-        .mdef(Shape, sample_position, "time"_a, "sample"_a, "active"_a = true)
-        .mdef(Shape, pdf_position, "ps"_a, "active"_a = true)
-        .mdef(Shape, sample_direction, "it"_a, "sample"_a, "active"_a = true)
-        .mdef(Shape, pdf_direction, "it"_a, "ps"_a, "active"_a = true)
+        .def_method(Shape, sample_position, "time"_a, "sample"_a, "active"_a = true)
+        .def_method(Shape, pdf_position, "ps"_a, "active"_a = true)
+        .def_method(Shape, sample_direction, "it"_a, "sample"_a, "active"_a = true)
+        .def_method(Shape, pdf_direction, "it"_a, "ps"_a, "active"_a = true)
         .def("ray_intersect",
              py::overload_cast<const Ray3f &, Mask>(&Shape::ray_intersect, py::const_),
              "ray"_a, "active"_a = true, D(Shape, ray_intersect))
-        .mdef(Shape, ray_test, "ray"_a, "active"_a = true)
-        .mdef(Shape, fill_surface_interaction, "ray"_a, "cache"_a, "si"_a, "active"_a = true)
+        .def_method(Shape, ray_test, "ray"_a, "active"_a = true)
+        .def_method(Shape, fill_surface_interaction, "ray"_a, "cache"_a, "si"_a, "active"_a = true)
         .def("bbox", py::overload_cast<>(
             &Shape::bbox, py::const_), D(Shape, bbox))
         .def("bbox", py::overload_cast<Index>(
             &Shape::bbox, py::const_), D(Shape, bbox, 2), "index"_a)
         .def("bbox", py::overload_cast<Index, const BoundingBox3f &>(
             &Shape::bbox, py::const_), D(Shape, bbox, 3), "index"_a, "clip"_a)
-        .mdef(Shape, surface_area)
-        .mdef(Shape, normal_derivative, "si"_a, "shading_frame"_a = true, "active"_a = true)
-        .mdef(Shape, id)
-        .mdef(Shape, is_mesh)
-        .mdef(Shape, is_medium_transition)
-        .mdef(Shape, interior_medium)
-        .mdef(Shape, exterior_medium)
-        .mdef(Shape, is_emitter)
-        .mdef(Shape, is_sensor)
+        .def_method(Shape, surface_area)
+        .def_method(Shape, normal_derivative, "si"_a, "shading_frame"_a = true, "active"_a = true)
+        .def_method(Shape, id)
+        .def_method(Shape, is_mesh)
+        .def_method(Shape, is_medium_transition)
+        .def_method(Shape, interior_medium)
+        .def_method(Shape, exterior_medium)
+        .def_method(Shape, is_emitter)
+        .def_method(Shape, is_sensor)
         .def("emitter", py::overload_cast<bool>(&Shape::emitter, py::const_), "active"_a = true)
         .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
-        .mdef(Shape, primitive_count)
-        .mdef(Shape, effective_primitive_count)
+        .def_method(Shape, primitive_count)
+        .def_method(Shape, effective_primitive_count)
         ;
 
     // TODO figure out that logic
@@ -70,14 +70,14 @@ MTS_PY_EXPORT_CLASS_VARIANTS(Shape) {
     MTS_PY_CLASS(Mesh, Shape)
         .def(py::init<const std::string &, Struct *, Size, Struct *, Size>(),
              D(Mesh, Mesh))
-        .mdef(Mesh, vertex_struct)
-        .mdef(Mesh, face_struct)
-        .mdef(Mesh, has_vertex_normals)
-        .mdef(Mesh, has_vertex_texcoords)
-        .mdef(Mesh, has_vertex_colors)
-        .mdef(Mesh, write)
-        .mdef(Mesh, recompute_vertex_normals)
-        .mdef(Mesh, recompute_bbox)
+        .def_method(Mesh, vertex_struct)
+        .def_method(Mesh, face_struct)
+        .def_method(Mesh, has_vertex_normals)
+        .def_method(Mesh, has_vertex_texcoords)
+        .def_method(Mesh, has_vertex_colors)
+        .def_method(Mesh, write)
+        .def_method(Mesh, recompute_vertex_normals)
+        .def_method(Mesh, recompute_bbox)
         .def("vertices", [](py::object &o) {
             Mesh &m = py::cast<Mesh&>(o);
             py::dtype dtype = o.attr("vertex_struct")().attr("dtype")();

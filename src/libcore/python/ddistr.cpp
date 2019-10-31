@@ -13,10 +13,10 @@ MTS_PY_EXPORT(DiscreteDistribution) {
                 data.data()
             );
         }))
-        .mdef(DiscreteDistribution, clear)
-        .mdef(DiscreteDistribution, reserve)
-        .mdef(DiscreteDistribution, append)
-        .mdef(DiscreteDistribution, size)
+        .def_method(DiscreteDistribution, clear)
+        .def_method(DiscreteDistribution, reserve)
+        .def_method(DiscreteDistribution, append)
+        .def_method(DiscreteDistribution, size)
 
         .def("eval", [](const DiscreteDistribution &d, size_t i) {
             return d.eval(i);
@@ -28,11 +28,11 @@ MTS_PY_EXPORT(DiscreteDistribution) {
             }
         ), D(DiscreteDistribution, eval), "i"_a, "active"_a = true)
 
-        .mdef(DiscreteDistribution, normalized)
-        .mdef(DiscreteDistribution, sum)
-        .mdef(DiscreteDistribution, normalization)
-        .mdef(DiscreteDistribution, cdf)
-        .mdef(DiscreteDistribution, normalize)
+        .def_method(DiscreteDistribution, normalized)
+        .def_method(DiscreteDistribution, sum)
+        .def_method(DiscreteDistribution, normalization)
+        .def_method(DiscreteDistribution, cdf)
+        .def_method(DiscreteDistribution, normalize)
 
         // ---------------------------------------------------------------------
 
@@ -64,5 +64,5 @@ MTS_PY_EXPORT(DiscreteDistribution) {
 
         // ---------------------------------------------------------------------
 
-        .repr_def(DiscreteDistribution);
+        .def_repr(DiscreteDistribution);
 }

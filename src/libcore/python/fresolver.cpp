@@ -23,8 +23,8 @@ MTS_PY_EXPORT(FileResolver) {
                 throw pybind11::index_error();
             fr[i] = value;
         })
-        .mdef(FileResolver, resolve)
-        .mdef(FileResolver, clear)
-        .mdef(FileResolver, prepend)
-        .mdef(FileResolver, append);
+        .def_method(FileResolver, resolve)
+        .def_method(FileResolver, clear)
+        .def_method(FileResolver, prepend)
+        .def_method(FileResolver, append);
 }

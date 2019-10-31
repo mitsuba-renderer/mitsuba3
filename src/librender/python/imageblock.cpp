@@ -28,17 +28,17 @@ MTS_PY_EXPORT_CLASS_VARIANTS(ImageBlock) {
                  ib.put(pos, data.data(), mask);
              }, "pos"_a, "data"_a, "active"_a = true)
         // TODO vectorize_wrapper on put with FloatP
-        .mdef(ImageBlock, clear)
-        .mdef(ImageBlock, set_offset, "offset"_a)
-        .mdef(ImageBlock, offset)
-        .mdef(ImageBlock, size)
-        .mdef(ImageBlock, width)
-        .mdef(ImageBlock, height)
-        .mdef(ImageBlock, warns)
-        .mdef(ImageBlock, set_warn, "warn"_a)
-        .mdef(ImageBlock, border_size)
-        .mdef(ImageBlock, channel_count)
-        .mdef(ImageBlock, pixel_format)
+        .def_method(ImageBlock, clear)
+        .def_method(ImageBlock, set_offset, "offset"_a)
+        .def_method(ImageBlock, offset)
+        .def_method(ImageBlock, size)
+        .def_method(ImageBlock, width)
+        .def_method(ImageBlock, height)
+        .def_method(ImageBlock, warns)
+        .def_method(ImageBlock, set_warn, "warn"_a)
+        .def_method(ImageBlock, border_size)
+        .def_method(ImageBlock, channel_count)
+        .def_method(ImageBlock, pixel_format)
         .def("bitmap", py::overload_cast<>(&ImageBlock::bitmap))
         ;
 }

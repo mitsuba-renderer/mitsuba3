@@ -10,19 +10,19 @@
 
 MTS_PY_EXPORT_CLASS_VARIANTS(Endpoint) {
     auto endpoint = MTS_PY_CLASS(Endpoint, Object)
-        .mdef(Endpoint, sample_ray,
+        .def_method(Endpoint, sample_ray,
               "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
-        .mdef(Endpoint, sample_direction, "it"_a, "sample"_a, "active"_a = true)
-        .mdef(Endpoint, pdf_direction, "it"_a, "ds"_a, "active"_a = true)
-        .mdef(Endpoint, eval, "si"_a, "active"_a = true)
-        .mdef(Endpoint, world_transform)
-        .mdef(Endpoint, needs_sample_2)
-        .mdef(Endpoint, needs_sample_3)
+        .def_method(Endpoint, sample_direction, "it"_a, "sample"_a, "active"_a = true)
+        .def_method(Endpoint, pdf_direction, "it"_a, "ds"_a, "active"_a = true)
+        .def_method(Endpoint, eval, "si"_a, "active"_a = true)
+        .def_method(Endpoint, world_transform)
+        .def_method(Endpoint, needs_sample_2)
+        .def_method(Endpoint, needs_sample_3)
         .def("shape", py::overload_cast<>(&Endpoint::shape, py::const_), D(Endpoint, shape))
         .def("medium", py::overload_cast<>(&Endpoint::medium, py::const_), D(Endpoint, medium))
-        .mdef(Endpoint, set_shape, "shape"_a)
-        .mdef(Endpoint, set_medium, "medium"_a)
-        .mdef(Endpoint, bbox);
+        .def_method(Endpoint, set_shape, "shape"_a)
+        .def_method(Endpoint, set_medium, "medium"_a)
+        .def_method(Endpoint, bbox);
 
 // TODO vectorize wrapper bindings
 //     if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
