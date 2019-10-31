@@ -25,7 +25,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ContinuousSpectrum : public Object {
 public:
     MTS_REGISTER_INTERFACE(ContinuousSpectrum, Object, "spectrum")
-    MTS_IMPORT_TYPES();
+    MTS_IMPORT_RENDER_TYPES();
 
     /**
      * Evaluate the value of the spectral power distribution
@@ -141,7 +141,7 @@ class MTS_EXPORT_RENDER Texture : public ContinuousSpectrum<Float, Spectrum> {
 public:
     // TODO: should this define an interface?
     MTS_REGISTER_INTERFACE(Texture, ContinuousSpectrum, "texture")
-    MTS_IMPORT_TYPES();
+    MTS_IMPORT_RENDER_TYPES();
 
 protected:
     virtual ~Texture();

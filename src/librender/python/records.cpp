@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/records.h>
 
-MTS_PY_EXPORT_VARIANTS(PositionSample) {
+MTS_PY_EXPORT_CLASS_VARIANTS(PositionSample) {
     using SurfaceInteraction3f = typename PositionSample::SurfaceInteraction3f;
     py::class_<PositionSample>(m, "PositionSample", D(PositionSample))
         .def(py::init<>(), "Construct an unitialized position sample")
@@ -18,7 +18,7 @@ MTS_PY_EXPORT_VARIANTS(PositionSample) {
         ;
 }
 
-MTS_PY_EXPORT_VARIANTS(DirectionSample) {
+MTS_PY_EXPORT_CLASS_VARIANTS(DirectionSample) {
     using Base = typename DirectionSample::Base;
     using SurfaceInteraction3f = typename DirectionSample::SurfaceInteraction3f;
     using Interaction3f = typename DirectionSample::Interaction3f;
@@ -47,8 +47,8 @@ MTS_PY_EXPORT_VARIANTS(DirectionSample) {
         ;
 }
 
-// TODO
-// MTS_PY_EXPORT_VARIANTS(RadianceSample) {
+// TODO vectorize wrapper bindings
+// MTS_PY_EXPORT_CLASS_VARIANTS(RadianceSample) {
 //     auto rs = py::class_<RadianceSample>(m, name, D(RadianceSample))
 //         .def(py::init<>(), D(RadianceSample, RadianceSample))
 //         .def(py::init<const Scene *, Sampler *>(),

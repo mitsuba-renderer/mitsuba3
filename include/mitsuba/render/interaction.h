@@ -90,10 +90,10 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     using Float    = Float_;
     using Spectrum = Spectrum_;
     using Base     = Interaction<Float, Spectrum>;
-    MTS_IMPORT_TYPES_BASIC()
+    MTS_IMPORT_RENDER_BASIC_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    using PositionSample3f = typename Aliases::PositionSample3f;
-    using Index            = typename Aliases::UInt32;
+    using Index            = typename CoreAliases::UInt32;
+    using PositionSample3f = typename RenderAliases::PositionSample3f;
     //! @}
     // =============================================================
 

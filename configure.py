@@ -49,7 +49,7 @@ with open(fname, 'w') as f:
 
     w('#define MTS_DECLARE_PLUGIN(Name, Parent)')
     w('    MTS_REGISTER_CLASS(Name, Parent)')
-    w('    MTS_IMPORT_TYPES()')
+    w('    MTS_IMPORT_RENDER_TYPES()')
     f.write('\n\n')
 
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
@@ -75,6 +75,19 @@ with open(fname, 'w') as f:
     f.write('\n\n')
 
     w('#define MTS_PY_EXPORT_VARIANTS(name)')
+    w('    template <typename Float>')
+    w('    void instantiate_##name(py::module m);')
+    w('')
+    w('    MTS_PY_EXPORT(name) {')
+    for float_ in set(map(lambda x:x[1], enabled)):
+        w('        instantiate_##name<%s>(m);' % (float_))
+    w('    }')
+    w('')
+    w('    template <typename Float>')
+    w('    void instantiate_##name(py::module m)')
+    f.write('\n\n')
+
+    w('#define MTS_PY_EXPORT_CLASS_VARIANTS(name)')
     w('    template <typename Float, typename Spectrum, typename name = mitsuba::name<Float, Spectrum>>')
     w('    void instantiate_##name(py::module m);')
     w('')

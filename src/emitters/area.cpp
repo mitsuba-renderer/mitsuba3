@@ -12,9 +12,9 @@ class AreaLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(AreaLight, Emitter)
     MTS_USING_BASE(Emitter, m_shape, m_medium)
-    using Scene              = typename Aliases::Scene;
-    using Shape              = typename Aliases::Shape;
-    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using Scene              = typename RenderAliases::Scene;
+    using Shape              = typename RenderAliases::Shape;
+    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
 
     AreaLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))

@@ -7,7 +7,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/spiral.h>
 
-MTS_PY_EXPORT_VARIANTS(Film) {
+MTS_PY_EXPORT_CLASS_VARIANTS(Film) {
     using Point2i = typename Film::Point2i;
     using Vector2i = typename Film::Vector2i;
 

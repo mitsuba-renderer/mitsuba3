@@ -16,7 +16,7 @@ MTS_PY_EXPORT(BSDFContext) {
         ;
 }
 
-MTS_PY_EXPORT_VARIANTS(BSDFSample3) {
+MTS_PY_EXPORT_CLASS_VARIANTS(BSDFSample3) {
     using Vector3f = typename BSDFSample3::Vector3f;
 
     py::class_<BSDFSample3>(m, "BSDFSample3f", D(BSDFSample3))
@@ -32,7 +32,7 @@ MTS_PY_EXPORT_VARIANTS(BSDFSample3) {
         ;
 }
 
-MTS_PY_EXPORT_VARIANTS(BSDF) {
+MTS_PY_EXPORT_CLASS_VARIANTS(BSDF) {
      using Mask = typename BSDF::Mask;
 
      auto bsdf = MTS_PY_CLASS(BSDF, Object)
@@ -51,7 +51,7 @@ MTS_PY_EXPORT_VARIANTS(BSDF) {
           .def("__repr__", &BSDF::to_string)
           ;
 
-     // TODO
+     // TODO vectorize wrapper bindings
      // if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
      //      bsdf.def("sample", enoki::vectorize_wrapper(&BSDF::sample),
      //               "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))

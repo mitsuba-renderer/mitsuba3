@@ -17,10 +17,10 @@ class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
     MTS_REGISTER_INTERFACE(Sensor, Endpoint)
     MTS_USING_BASE(Endpoint, sample_ray)
-    MTS_IMPORT_TYPES();
+    MTS_IMPORT_RENDER_TYPES();
     using Base::m_needs_sample_3;
-    using Film    = typename Aliases::Film;
-    using Sampler = typename Aliases::Sampler;
+    using Film    = typename RenderAliases::Film;
+    using Sampler = typename RenderAliases::Sampler;
 
     // =============================================================
     //! @{ \name Sensor-specific sampling functions
@@ -151,7 +151,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(ProjectiveCamera, Sensor)
-    MTS_IMPORT_TYPES();
+    MTS_IMPORT_RENDER_TYPES();
     using Base = Sensor<Float, Spectrum>;
     using Base::world_transform;
 

@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/sampler.h>
 
-MTS_PY_EXPORT_VARIANTS(Sampler) {
+MTS_PY_EXPORT_CLASS_VARIANTS(Sampler) {
     MTS_PY_CLASS(Sampler, Object)
         .mdef(Sampler, clone)
         .mdef(Sampler, seed, "seed"_a, "size"_a)

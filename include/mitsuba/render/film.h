@@ -21,8 +21,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Film : public Object {
 public:
     MTS_REGISTER_CLASS(Film, Object)
-    MTS_IMPORT_TYPES();
-    using ImageBlock           = typename Aliases::ImageBlock;
+    MTS_IMPORT_RENDER_TYPES();
+    using ImageBlock           = typename RenderAliases::ImageBlock;
     using ReconstructionFilter = ReconstructionFilter<Float>;
 
     /// Clear the film

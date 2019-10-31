@@ -12,19 +12,19 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
     MTS_REGISTER_CLASS(Scene, Object)
-    MTS_IMPORT_TYPES();
-    using Sampler              = typename Aliases::Sampler;
-    using Shape                = typename Aliases::Shape;
-    using Integrator           = typename Aliases::Integrator;
-    using BSDF                 = typename Aliases::BSDF;
-    using Sensor               = typename Aliases::Sensor;
-    using Emitter              = typename Aliases::Emitter;
-    // using Medium               = typename Aliases::Medium;
-    using Film                 = typename Aliases::Film;
-    // using BSDFPtr              = typename Aliases::BSDFPtr;
-    // using MediumPtr            = typename Aliases::MediumPtr;
-    // using ShapePtr             = typename Aliases::ShapePtr;
-    // using EmitterPtr           = typename Aliases::EmitterPtr;
+    MTS_IMPORT_RENDER_TYPES();
+    using Sampler              = typename RenderAliases::Sampler;
+    using Shape                = typename RenderAliases::Shape;
+    using Integrator           = typename RenderAliases::Integrator;
+    using BSDF                 = typename RenderAliases::BSDF;
+    using Sensor               = typename RenderAliases::Sensor;
+    using Emitter              = typename RenderAliases::Emitter;
+    // using Medium               = typename RenderAliases::Medium;
+    using Film                 = typename RenderAliases::Film;
+    // using BSDFPtr              = typename RenderAliases::BSDFPtr;
+    // using MediumPtr            = typename RenderAliases::MediumPtr;
+    // using ShapePtr             = typename RenderAliases::ShapePtr;
+    // using EmitterPtr           = typename RenderAliases::EmitterPtr;
 
     Scene(const Properties &props);
 

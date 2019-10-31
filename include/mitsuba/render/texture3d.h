@@ -15,7 +15,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Texture3D : public Object {
 public:
     MTS_REGISTER_CLASS(Texture3D, Object)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_RENDER_TYPES()
 
     explicit Texture3D(const Properties &props) {
         m_world_to_local = props.transform("to_world", Transform4f()).inverse();
@@ -117,7 +117,7 @@ template <typename Float, typename Spectrum>
 class Grid3DBase : public Texture3D<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(Grid3DBase, Texture3D)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_RENDER_TYPES()
     using Base = Texture3D<Float, Spectrum>;
     using Base::update_bbox;
     using Base::m_world_to_local;

@@ -2,7 +2,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/microfacet.h>
 
-MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
+MTS_PY_EXPORT_CLASS_VARIANTS(MicrofacetDistribution) {
     using ScalarFloat = typename MicrofacetDistribution::ScalarFloat;
     using FloatP    = Packet<ScalarFloat>;
     using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
@@ -35,7 +35,7 @@ MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
         .repr_def(MicrofacetDistribution)
         ;
 
-    // TODO
+    // TODO vectorize wrapper bindings
     // if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
     //     md.def("eval", enoki::vectorize_wrapper(&MicrofacetDistribution::eval),
     //            "m"_a, D(MicrofacetDistribution, eval))

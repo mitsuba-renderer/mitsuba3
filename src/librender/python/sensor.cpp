@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/sensor.h>
 
-MTS_PY_EXPORT_VARIANTS(Sensor) {
+MTS_PY_EXPORT_CLASS_VARIANTS(Sensor) {
     using Base = typename Sensor::Base;
     MTS_PY_CLASS(Sensor, Base)
         .mdef(Sensor, sample_ray_differential,

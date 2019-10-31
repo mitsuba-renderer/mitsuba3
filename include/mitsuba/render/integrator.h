@@ -36,8 +36,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Integrator : public Object {
 public:
     MTS_REGISTER_CLASS(Integrator, Object)
-    MTS_IMPORT_TYPES()
-    using Scene = typename Aliases::Scene;
+    MTS_IMPORT_RENDER_TYPES()
+    using Scene = typename RenderAliases::Scene;
 
     /// Perform the main rendering job. Returns \c true upon success
     virtual bool render(Scene *scene) = 0;
@@ -66,13 +66,13 @@ template <typename Float, typename Spectrum>
 class SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(SamplingIntegrator, Integrator)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_RENDER_TYPES()
     using Base       = Integrator<Float, Spectrum>;
-    using Film       = typename Aliases::Film;
-    using ImageBlock = typename Aliases::ImageBlock;
-    using Sampler    = typename Aliases::Sampler;
-    using Scene      = typename Aliases::Scene;
-    using Sensor     = typename Aliases::Sensor;
+    using Film       = typename RenderAliases::Film;
+    using ImageBlock = typename RenderAliases::ImageBlock;
+    using Sampler    = typename RenderAliases::Sampler;
+    using Scene      = typename RenderAliases::Scene;
+    using Sensor     = typename RenderAliases::Sensor;
 
     /**
      * \brief Sample the incident radiance along a ray.

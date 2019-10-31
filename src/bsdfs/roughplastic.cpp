@@ -18,7 +18,7 @@ class RoughPlastic final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(RoughPlastic, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
 
     RoughPlastic(const Properties &props) : Base(props) {
         /// Specifies the internal index of refraction at the interface

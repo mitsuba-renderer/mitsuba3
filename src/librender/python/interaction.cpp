@@ -3,7 +3,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/medium.h>
 
-MTS_PY_EXPORT_VARIANTS(Interaction) {
+MTS_PY_EXPORT_CLASS_VARIANTS(Interaction) {
     py::class_<Interaction>(m, "Interaction3f", D(Interaction))
         // Members
         .rwdef(Interaction, t)
@@ -20,7 +20,7 @@ MTS_PY_EXPORT_VARIANTS(Interaction) {
         ;
 }
 
-MTS_PY_EXPORT_VARIANTS(SurfaceInteraction) {
+MTS_PY_EXPORT_CLASS_VARIANTS(SurfaceInteraction) {
     using Base = typename SurfaceInteraction::Base;
     using Vector3f = typename SurfaceInteraction::Vector3f;
     using RayDifferential3f = typename SurfaceInteraction::RayDifferential3f;

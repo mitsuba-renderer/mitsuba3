@@ -11,7 +11,7 @@ class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(SmoothDiffuse, BSDF)
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
 
     explicit SmoothDiffuse(const Properties &props) : Base(props) {
         m_reflectance = props.spectrum<Float, Spectrum>("reflectance", .5f);

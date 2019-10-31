@@ -27,7 +27,7 @@ public:
     MTS_REGISTER_CLASS(Spiral, Object)
     using Float = float;
     using Spectrum = void;
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_RENDER_TYPES()
 
     /// Create a new spiral generator for the given size, offset into a larger frame, and block size
     Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes = 1);

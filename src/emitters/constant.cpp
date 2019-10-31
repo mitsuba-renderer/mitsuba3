@@ -14,9 +14,9 @@ class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(ConstantBackgroundEmitter, Emitter)
     using Base               = Emitter<Float, Spectrum>;
-    using Scene              = typename Aliases::Scene;
-    using Shape              = typename Aliases::Shape;
-    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using Scene              = typename RenderAliases::Scene;
+    using Shape              = typename RenderAliases::Shape;
+    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
 
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {

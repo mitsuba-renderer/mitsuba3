@@ -12,7 +12,7 @@ public:
     MTS_DECLARE_PLUGIN(BlendBSDF, BSDF);
     MTS_USING_BASE(BSDF, m_flags, m_components)
     using BSDF               = Base;
-    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;

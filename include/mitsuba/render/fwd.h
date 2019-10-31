@@ -37,60 +37,9 @@ template <typename Float, typename Spectrum> struct RadianceSample;
 template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
 template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
 
-template <typename Float_, typename Spectrum_> struct Aliases {
+template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Float    = Float_;
     using Spectrum = Spectrum_;
-
-    using Mask    = mask_t<Float>;
-
-    using Int32   =   int32_array_t<Float>;
-    using UInt32  =  uint32_array_t<Float>;
-    using Int64   =   int64_array_t<Float>;
-    using UInt64  =  uint64_array_t<Float>;
-    using Float64 = float64_array_t<Float>;
-
-    using Vector1i = Vector<Int32, 1>;
-    using Vector2i = Vector<Int32, 2>;
-    using Vector3i = Vector<Int32, 3>;
-    using Vector4i = Vector<Int32, 4>;
-
-    using Vector1u = Vector<UInt32, 1>;
-    using Vector2u = Vector<UInt32, 2>;
-    using Vector3u = Vector<UInt32, 3>;
-    using Vector4u = Vector<UInt32, 4>;
-
-    using Vector1f = Vector<Float, 1>;
-    using Vector2f = Vector<Float, 2>;
-    using Vector3f = Vector<Float, 3>;
-    using Vector4f = Vector<Float, 4>;
-
-    using Vector1d = Vector<Float64, 1>;
-    using Vector2d = Vector<Float64, 2>;
-    using Vector3d = Vector<Float64, 3>;
-    using Vector4d = Vector<Float64, 4>;
-
-    using Point1i = Point<Int32, 1>;
-    using Point2i = Point<Int32, 2>;
-    using Point3i = Point<Int32, 3>;
-    using Point4i = Point<Int32, 4>;
-
-    using Point1u = Point<UInt32, 1>;
-    using Point2u = Point<UInt32, 2>;
-    using Point3u = Point<UInt32, 3>;
-    using Point4u = Point<UInt32, 4>;
-
-    using Point1f = Point<Float, 1>;
-    using Point2f = Point<Float, 2>;
-    using Point3f = Point<Float, 3>;
-    using Point4f = Point<Float, 4>;
-
-    using Point1d = Point<Float64, 1>;
-    using Point2d = Point<Float64, 2>;
-    using Point3d = Point<Float64, 3>;
-    using Point4d = Point<Float64, 4>;
-
-    using Normal3f = Normal<Float, 3>;
-    using Normal3d = Normal<Float64, 3>;
 
     using Wavelength = wavelength_t<Spectrum>;
     using Color1f    = Color<Float, 1>;
@@ -99,20 +48,8 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using StokesVector4f  = StokesVector<Float>;
     using MuellerMatrix4f = MuellerMatrix<Float>;
 
-    using BoundingBox1f    = BoundingBox<Point1f>;
-    using BoundingBox2f    = BoundingBox<Point2f>;
-    using BoundingBox3f    = BoundingBox<Point3f>;
-    using BoundingBox4f    = BoundingBox<Point4f>;
-    using BoundingSphere1f = BoundingSphere<Point1f>;
-    using BoundingSphere2f = BoundingSphere<Point2f>;
-    using BoundingSphere3f = BoundingSphere<Point3f>;
-    using BoundingSphere4f = BoundingSphere<Point4f>;
-
-    using Frame3f              = Frame<Vector3f>;
-    using Ray3f                = Ray<Point3f, Spectrum>;
-    using RayDifferential3f    = RayDifferential<Point3f, Spectrum>;
-    using Transform3f          = Transform<Float, 3>;
-    using Transform4f          = Transform<Float, 4>;
+    using Ray3f                = Ray<Point<Float, 3>, Spectrum>;
+    using RayDifferential3f    = RayDifferential<Point<Float, 3>, Spectrum>;
 
     using PositionSample3f     = PositionSample<Float, Spectrum>;
     using DirectionSample3f    = DirectionSample<Float, Spectrum>;
@@ -120,7 +57,6 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
     using MediumInteraction3f  = MediumInteraction<Float, Spectrum>;
     using BSDFSample3f         = BSDFSample3<Float, Spectrum>;
-
     // TODO
     using Scene                = mitsuba::Scene<Float, Spectrum>;
     using Sampler              = mitsuba::Sampler<Float, Spectrum>;
@@ -143,105 +79,45 @@ template <typename Float_, typename Spectrum_> struct Aliases {
     using EmitterPtr          = replace_scalar_t<Float, const Emitter *>;
 };
 
-/// Scalar-only namespace
-template <typename Float, typename Spectrum>
-using ScalarAliases = Aliases<scalar_t<Float>, scalar_spectrum_t<Spectrum>>;
+#define MTS_IMPORT_RENDER_BASIC_TYPES()                                                            \
+    MTS_IMPORT_CORE_TYPES()                                                                        \
+    using RenderAliases        = mitsuba::RenderAliases<Float, Spectrum>;                          \
+    using Wavelength           = typename RenderAliases::Wavelength;                               \
+    using Color1f              = typename RenderAliases::Color1f;                                  \
+    using Color3f              = typename RenderAliases::Color3f;                                  \
+    using StokesVector4f       = typename RenderAliases::StokesVector4f;                           \
+    using MuellerMatrix4f      = typename RenderAliases::MuellerMatrix4f;                          \
+    using Ray3f                = typename RenderAliases::Ray3f;                                    \
+    using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 
-#define MTS_IMPORT_TYPES_BASIC_PREFIX(Float, Spectrum, prefix)                                     \
-    using prefix ## Aliases              = mitsuba::Aliases<Float, Spectrum>;                      \
-    using prefix ## Mask                 = typename Aliases::Mask;                                 \
-    using prefix ## Int32                = typename Aliases::Int32;                                \
-    using prefix ## UInt32               = typename Aliases::UInt32;                               \
-    using prefix ## Int64                = typename Aliases::Int64;                                \
-    using prefix ## UInt64               = typename Aliases::UInt64;                               \
-    using prefix ## Float64              = typename Aliases::Float64;                              \
-    using prefix ## Vector1i             = typename Aliases::Vector1i;                             \
-    using prefix ## Vector2i             = typename Aliases::Vector2i;                             \
-    using prefix ## Vector3i             = typename Aliases::Vector3i;                             \
-    using prefix ## Vector4i             = typename Aliases::Vector4i;                             \
-    using prefix ## Vector1u             = typename Aliases::Vector1u;                             \
-    using prefix ## Vector2u             = typename Aliases::Vector2u;                             \
-    using prefix ## Vector3u             = typename Aliases::Vector3u;                             \
-    using prefix ## Vector4u             = typename Aliases::Vector4u;                             \
-    using prefix ## Vector1f             = typename Aliases::Vector1f;                             \
-    using prefix ## Vector2f             = typename Aliases::Vector2f;                             \
-    using prefix ## Vector3f             = typename Aliases::Vector3f;                             \
-    using prefix ## Vector4f             = typename Aliases::Vector4f;                             \
-    using prefix ## Vector1d             = typename Aliases::Vector1d;                             \
-    using prefix ## Vector2d             = typename Aliases::Vector2d;                             \
-    using prefix ## Vector3d             = typename Aliases::Vector3d;                             \
-    using prefix ## Vector4d             = typename Aliases::Vector4d;                             \
-    using prefix ## Point1i              = typename Aliases::Point1i;                              \
-    using prefix ## Point2i              = typename Aliases::Point2i;                              \
-    using prefix ## Point3i              = typename Aliases::Point3i;                              \
-    using prefix ## Point4i              = typename Aliases::Point4i;                              \
-    using prefix ## Point1u              = typename Aliases::Point1u;                              \
-    using prefix ## Point2u              = typename Aliases::Point2u;                              \
-    using prefix ## Point3u              = typename Aliases::Point3u;                              \
-    using prefix ## Point4u              = typename Aliases::Point4u;                              \
-    using prefix ## Point1f              = typename Aliases::Point1f;                              \
-    using prefix ## Point2f              = typename Aliases::Point2f;                              \
-    using prefix ## Point3f              = typename Aliases::Point3f;                              \
-    using prefix ## Point4f              = typename Aliases::Point4f;                              \
-    using prefix ## Point1d              = typename Aliases::Point1d;                              \
-    using prefix ## Point2d              = typename Aliases::Point2d;                              \
-    using prefix ## Point3d              = typename Aliases::Point3d;                              \
-    using prefix ## Point4d              = typename Aliases::Point4d;                              \
-    using prefix ## Normal3f             = typename Aliases::Normal3f;                             \
-    using prefix ## Normal3d             = typename Aliases::Normal3d;                             \
-    using prefix ## Wavelength           = typename Aliases::Wavelength;                           \
-    using prefix ## Color1f              = typename Aliases::Color1f;                              \
-    using prefix ## Color3f              = typename Aliases::Color3f;                              \
-    using prefix ## StokesVector4f       = typename Aliases::StokesVector4f;                       \
-    using prefix ## MuellerMatrix4f      = typename Aliases::MuellerMatrix4f;                      \
-    using prefix ## Frame3f              = typename Aliases::Frame3f;                              \
-    using prefix ## Ray3f                = typename Aliases::Ray3f;                                \
-    using prefix ## RayDifferential3f    = typename Aliases::RayDifferential3f;                    \
-    using prefix ## Transform3f          = typename Aliases::Transform3f;                          \
-    using prefix ## Transform4f          = typename Aliases::Transform4f;
+#define MTS_IMPORT_RENDER_TYPES()                                                                  \
+    MTS_IMPORT_RENDER_BASIC_TYPES();                                                               \
+    using PositionSample3f     = typename RenderAliases::PositionSample3f;                         \
+    using DirectionSample3f    = typename RenderAliases::DirectionSample3f;                        \
+    using Interaction3f        = typename RenderAliases::Interaction3f;                            \
+    using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;                     \
+    using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;                      \
+    using BSDFSample3f         = typename RenderAliases::BSDFSample3f;
 
-#define MTS_IMPORT_TYPES_BASIC()                                                                   \
-    MTS_IMPORT_TYPES_BASIC_PREFIX(Float, Spectrum, )                                               \
-    using ScalarFloat      = scalar_t<Float>;                                                      \
-    using ScalarSpectrum   = scalar_spectrum_t<Spectrum>;                                          \
-    MTS_IMPORT_TYPES_BASIC_PREFIX(ScalarFloat, ScalarSpectrum, Scalar)
-
-#define MTS_IMPORT_TYPES()                                                                         \
-    MTS_IMPORT_TYPES_BASIC();                                                                       \
-    using BoundingBox1f        = typename Aliases::BoundingBox1f;                                  \
-    using BoundingBox2f        = typename Aliases::BoundingBox2f;                                  \
-    using BoundingBox3f        = typename Aliases::BoundingBox3f;                                  \
-    using BoundingBox4f        = typename Aliases::BoundingBox4f;                                  \
-    using BoundingSphere1f     = typename Aliases::BoundingSphere1f;                               \
-    using BoundingSphere2f     = typename Aliases::BoundingSphere2f;                               \
-    using BoundingSphere3f     = typename Aliases::BoundingSphere3f;                               \
-    using BoundingSphere4f     = typename Aliases::BoundingSphere4f;                               \
-    using PositionSample3f     = typename Aliases::PositionSample3f;                               \
-    using DirectionSample3f    = typename Aliases::DirectionSample3f;                              \
-    using Interaction3f        = typename Aliases::Interaction3f;                                  \
-    using SurfaceInteraction3f = typename Aliases::SurfaceInteraction3f;                           \
-    using MediumInteraction3f  = typename Aliases::MediumInteraction3f;                            \
-    using BSDFSample3f         = typename Aliases::BSDFSample3f;
-
-#define MTS_IMPORT_OBJECT_TYPES() \
-    using Scene                 = typename Aliases::Scene;                                         \
-    using Sampler              = typename Aliases::Sampler;                                        \
-    using Shape                = typename Aliases::Shape;                                          \
-    using Integrator           = typename Aliases::Integrator;                                     \
-    using BSDF                 = typename Aliases::BSDF;                                           \
-    using Sensor               = typename Aliases::Sensor;                                         \
-    using Emitter              = typename Aliases::Emitter;                                        \
-    using Medium               = typename Aliases::Medium;                                         \
-    using Film                 = typename Aliases::Film;                                           \
-    using ImageBlock           = typename Aliases::ImageBlock;                                     \
-    using ReconstructionFilter = typename Aliases::ReconstructionFilter;                           \
-    using ContinuousSpectrum   = typename Aliases::ContinuousSpectrum;                             \
-    using Texture3D            = typename Aliases::Texture3D;                                      \
-    using ObjectPtr            = typename Aliases::ObjectPtr;                                        \
-    using BSDFPtr              = typename Aliases::BSDFPtr;                                        \
-    using MediumPtr            = typename Aliases::MediumPtr;                                      \
-    using ShapePtr             = typename Aliases::ShapePtr;                                       \
-    using EmitterPtr           = typename Aliases::EmitterPtr;
+#define MTS_IMPORT_OBJECT_TYPES()                                                                  \
+    using Scene                = typename RenderAliases::Scene;                                    \
+    using Sampler              = typename RenderAliases::Sampler;                                  \
+    using Shape                = typename RenderAliases::Shape;                                    \
+    using Integrator           = typename RenderAliases::Integrator;                               \
+    using BSDF                 = typename RenderAliases::BSDF;                                     \
+    using Sensor               = typename RenderAliases::Sensor;                                   \
+    using Emitter              = typename RenderAliases::Emitter;                                  \
+    using Medium               = typename RenderAliases::Medium;                                   \
+    using Film                 = typename RenderAliases::Film;                                     \
+    using ImageBlock           = typename RenderAliases::ImageBlock;                               \
+    using ReconstructionFilter = typename RenderAliases::ReconstructionFilter;                     \
+    using ContinuousSpectrum   = typename RenderAliases::ContinuousSpectrum;                       \
+    using Texture3D            = typename RenderAliases::Texture3D;                                \
+    using ObjectPtr            = typename RenderAliases::ObjectPtr;                                \
+    using BSDFPtr              = typename RenderAliases::BSDFPtr;                                  \
+    using MediumPtr            = typename RenderAliases::MediumPtr;                                \
+    using ShapePtr             = typename RenderAliases::ShapePtr;                                 \
+    using EmitterPtr           = typename RenderAliases::EmitterPtr;
 
 // -----------------------------------------------------------------------------
 

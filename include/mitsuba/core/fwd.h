@@ -69,6 +69,133 @@ template <typename Vector>                   struct Frame;
 //! @}
 // =============================================================
 
+template <typename Float_> struct CoreAliases {
+    using Float    = Float_;
+
+    using Mask    = mask_t<Float>;
+
+    using Int32   =   int32_array_t<Float>;
+    using UInt32  =  uint32_array_t<Float>;
+    using Int64   =   int64_array_t<Float>;
+    using UInt64  =  uint64_array_t<Float>;
+    using Float64 = float64_array_t<Float>;
+
+    using Vector1i = Vector<Int32, 1>;
+    using Vector2i = Vector<Int32, 2>;
+    using Vector3i = Vector<Int32, 3>;
+    using Vector4i = Vector<Int32, 4>;
+
+    using Vector1u = Vector<UInt32, 1>;
+    using Vector2u = Vector<UInt32, 2>;
+    using Vector3u = Vector<UInt32, 3>;
+    using Vector4u = Vector<UInt32, 4>;
+
+    using Vector1f = Vector<Float, 1>;
+    using Vector2f = Vector<Float, 2>;
+    using Vector3f = Vector<Float, 3>;
+    using Vector4f = Vector<Float, 4>;
+
+    using Vector1d = Vector<Float64, 1>;
+    using Vector2d = Vector<Float64, 2>;
+    using Vector3d = Vector<Float64, 3>;
+    using Vector4d = Vector<Float64, 4>;
+
+    using Point1i = Point<Int32, 1>;
+    using Point2i = Point<Int32, 2>;
+    using Point3i = Point<Int32, 3>;
+    using Point4i = Point<Int32, 4>;
+
+    using Point1u = Point<UInt32, 1>;
+    using Point2u = Point<UInt32, 2>;
+    using Point3u = Point<UInt32, 3>;
+    using Point4u = Point<UInt32, 4>;
+
+    using Point1f = Point<Float, 1>;
+    using Point2f = Point<Float, 2>;
+    using Point3f = Point<Float, 3>;
+    using Point4f = Point<Float, 4>;
+
+    using Point1d = Point<Float64, 1>;
+    using Point2d = Point<Float64, 2>;
+    using Point3d = Point<Float64, 3>;
+    using Point4d = Point<Float64, 4>;
+
+    using Normal3f = Normal<Float, 3>;
+    using Normal3d = Normal<Float64, 3>;
+
+    using BoundingBox1f    = BoundingBox<Point1f>;
+    using BoundingBox2f    = BoundingBox<Point2f>;
+    using BoundingBox3f    = BoundingBox<Point3f>;
+    using BoundingBox4f    = BoundingBox<Point4f>;
+    using BoundingSphere1f = BoundingSphere<Point1f>;
+    using BoundingSphere2f = BoundingSphere<Point2f>;
+    using BoundingSphere3f = BoundingSphere<Point3f>;
+    using BoundingSphere4f = BoundingSphere<Point4f>;
+
+    using Frame3f              = Frame<Vector3f>;
+    using Transform3f          = Transform<Float, 3>;
+    using Transform4f          = Transform<Float, 4>;
+};
+
+#define MTS_IMPORT_CORE_TYPES_PREFIX(Float, prefix)                                                \
+    using prefix ## CoreAliases          = mitsuba::CoreAliases<Float>;                            \
+    using prefix ## Mask                 = typename CoreAliases::Mask;                             \
+    using prefix ## Int32                = typename CoreAliases::Int32;                            \
+    using prefix ## UInt32               = typename CoreAliases::UInt32;                           \
+    using prefix ## Int64                = typename CoreAliases::Int64;                            \
+    using prefix ## UInt64               = typename CoreAliases::UInt64;                           \
+    using prefix ## Float64              = typename CoreAliases::Float64;                          \
+    using prefix ## Vector1i             = typename CoreAliases::Vector1i;                         \
+    using prefix ## Vector2i             = typename CoreAliases::Vector2i;                         \
+    using prefix ## Vector3i             = typename CoreAliases::Vector3i;                         \
+    using prefix ## Vector4i             = typename CoreAliases::Vector4i;                         \
+    using prefix ## Vector1u             = typename CoreAliases::Vector1u;                         \
+    using prefix ## Vector2u             = typename CoreAliases::Vector2u;                         \
+    using prefix ## Vector3u             = typename CoreAliases::Vector3u;                         \
+    using prefix ## Vector4u             = typename CoreAliases::Vector4u;                         \
+    using prefix ## Vector1f             = typename CoreAliases::Vector1f;                         \
+    using prefix ## Vector2f             = typename CoreAliases::Vector2f;                         \
+    using prefix ## Vector3f             = typename CoreAliases::Vector3f;                         \
+    using prefix ## Vector4f             = typename CoreAliases::Vector4f;                         \
+    using prefix ## Vector1d             = typename CoreAliases::Vector1d;                         \
+    using prefix ## Vector2d             = typename CoreAliases::Vector2d;                         \
+    using prefix ## Vector3d             = typename CoreAliases::Vector3d;                         \
+    using prefix ## Vector4d             = typename CoreAliases::Vector4d;                         \
+    using prefix ## Point1i              = typename CoreAliases::Point1i;                          \
+    using prefix ## Point2i              = typename CoreAliases::Point2i;                          \
+    using prefix ## Point3i              = typename CoreAliases::Point3i;                          \
+    using prefix ## Point4i              = typename CoreAliases::Point4i;                          \
+    using prefix ## Point1u              = typename CoreAliases::Point1u;                          \
+    using prefix ## Point2u              = typename CoreAliases::Point2u;                          \
+    using prefix ## Point3u              = typename CoreAliases::Point3u;                          \
+    using prefix ## Point4u              = typename CoreAliases::Point4u;                          \
+    using prefix ## Point1f              = typename CoreAliases::Point1f;                          \
+    using prefix ## Point2f              = typename CoreAliases::Point2f;                          \
+    using prefix ## Point3f              = typename CoreAliases::Point3f;                          \
+    using prefix ## Point4f              = typename CoreAliases::Point4f;                          \
+    using prefix ## Point1d              = typename CoreAliases::Point1d;                          \
+    using prefix ## Point2d              = typename CoreAliases::Point2d;                          \
+    using prefix ## Point3d              = typename CoreAliases::Point3d;                          \
+    using prefix ## Point4d              = typename CoreAliases::Point4d;                          \
+    using prefix ## Normal3f             = typename CoreAliases::Normal3f;                         \
+    using prefix ## Normal3d             = typename CoreAliases::Normal3d;                         \
+    using prefix ## Frame3f              = typename CoreAliases::Frame3f;                          \
+    using prefix ## Transform3f          = typename CoreAliases::Transform3f;                      \
+    using prefix ## Transform4f          = typename CoreAliases::Transform4f;                      \
+    using prefix ## BoundingBox1f        = typename CoreAliases::BoundingBox1f;                    \
+    using prefix ## BoundingBox2f        = typename CoreAliases::BoundingBox2f;                    \
+    using prefix ## BoundingBox3f        = typename CoreAliases::BoundingBox3f;                    \
+    using prefix ## BoundingBox4f        = typename CoreAliases::BoundingBox4f;                    \
+    using prefix ## BoundingSphere1f     = typename CoreAliases::BoundingSphere1f;                 \
+    using prefix ## BoundingSphere2f     = typename CoreAliases::BoundingSphere2f;                 \
+    using prefix ## BoundingSphere3f     = typename CoreAliases::BoundingSphere3f;                 \
+    using prefix ## BoundingSphere4f     = typename CoreAliases::BoundingSphere4f;
+
+#define MTS_IMPORT_CORE_TYPES()                                                                    \
+    MTS_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \
+    using ScalarFloat      = scalar_t<Float>;                                                      \
+    MTS_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
+
 NAMESPACE_BEGIN(filesystem)
 class path;
 NAMESPACE_END(filesystem)

@@ -99,7 +99,7 @@ template <typename Float, typename Spectrum, size_t ChannelCount, bool IsRawData
 class BitmapTextureImpl final : public BitmapTexture<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(BitmapTextureImpl, BitmapTexture)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_RENDER_TYPES()
     MTS_USING_BASE(BitmapTexture, m_bitmap, m_name, m_transform)
     using StorageType = Vector<ScalarFloat, ChannelCount>;
 

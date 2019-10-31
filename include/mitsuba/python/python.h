@@ -54,6 +54,11 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 #define repr_def(Class) \
     def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
 
+// #define MTS_VECTORIZE_WRAPPER(Function) \
+    // enoki::vectorize_wrapper(Function)
+
+
+
 
 #define MTS_PY_IMPORT_MODULE(Name, ModuleName) \
     auto Name = py::module::import(ModuleName); (void) m;
@@ -108,3 +113,12 @@ template <typename Class, typename... Args, typename... Extra> auto bind_array(p
             return a.coeff(index);
         });
 }
+
+template<typename Float, typename Func> auto mts_vectorize_wrapper(Func func) {
+    if constexpr (is_array_v<Float> && !is_dynamic_v<Float>)
+        return func;
+    else
+        return enoki::vectorize_wrapper(func);
+}
+
+#define MTS_VECTORIZE_WRAPPER mts_vectorize_wrapper<Float>

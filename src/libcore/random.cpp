@@ -1,5 +1,7 @@
 #include <mitsuba/core/random.h>
 
+#if 0
+
 template struct MTS_EXPORT_CORE enoki::PCG32<uint32_t>;
 template struct MTS_EXPORT_CORE enoki::PCG32<mitsuba::UInt32P>;
 
@@ -15,3 +17,5 @@ template MTS_EXPORT_CORE float64_array_t<uint32_t> sample_tea_float64(uint32_t, 
 template MTS_EXPORT_CORE float64_array_t<UInt32P>  sample_tea_float64(UInt32P,  UInt32P,  int);
 
 NAMESPACE_END(mitsuba)
+
+#endif

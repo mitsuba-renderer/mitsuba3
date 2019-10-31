@@ -1,13 +1,22 @@
-#include <mitsuba/core/warp.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/core/warp.h>
 #include <enoki/stl.h>
 #include <pybind11/iostream.h>
 
-MTS_PY_EXPORT(warp) {
+MTS_PY_EXPORT_VARIANTS(warp) {
+
     MTS_PY_IMPORT_MODULE(warp, "mitsuba.core.warp");
+    MTS_IMPORT_CORE_TYPES()
 
-    using FloatArray = py::array_t<Float, py::array::c_style | py::array::forcecast>;
+    warp.def(
+        "square_to_uniform_disk",
+        MTS_VECTORIZE_WRAPPER(warp::square_to_uniform_disk<Point2f>),
+        "sample"_a, D(warp, square_to_uniform_disk));
 
+    //
+
+
+#if 0
     warp.def(
         "square_to_uniform_disk",
         warp::square_to_uniform_disk<Point2f>,
@@ -464,6 +473,8 @@ MTS_PY_EXPORT(warp) {
 
     // =======================================================================
 
+    using FloatArray = py::array_t<Float, py::array::c_style | py::array::forcecast>;
+
     using Marginal2D0 = warp::Marginal2D<0>;
     using Marginal2D1 = warp::Marginal2D<1>;
     using Marginal2D2 = warp::Marginal2D<2>;
@@ -853,4 +864,5 @@ MTS_PY_EXPORT(warp) {
             }), "pos"_a, "param1"_a, "param2"_a,
                 "param3"_a, "active"_a = true)
         .def("__repr__", &Hierarchical2D3::to_string);
+#endif
 }

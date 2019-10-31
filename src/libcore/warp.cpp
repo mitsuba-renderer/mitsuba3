@@ -5,6 +5,8 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
 
+#if 0
+
 template MTS_EXPORT_CORE Point2f  square_to_uniform_disk(const Point2f &);
 template MTS_EXPORT_CORE Point2fP square_to_uniform_disk(const Point2fP &);
 
@@ -144,6 +146,8 @@ template MTS_EXPORT_CORE Point2fP square_to_std_normal(const Point2fP &);
 
 template MTS_EXPORT_CORE Float  square_to_std_normal_pdf(const Point2f &);
 template MTS_EXPORT_CORE FloatP square_to_std_normal_pdf(const Point2fP &);
+
+#endif
 
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)

@@ -16,7 +16,7 @@ class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(RoughDielectric, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
 
     RoughDielectric(const Properties &props) : Base(props) {
         m_specular_reflectance   = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);

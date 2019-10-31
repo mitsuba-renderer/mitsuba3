@@ -3,6 +3,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+#if 0
+
 template MTS_EXPORT_CORE uint32_t DiscreteDistribution::sample(Float,  mask_t<Float>) const;
 template MTS_EXPORT_CORE UInt32P  DiscreteDistribution::sample(FloatP, mask_t<FloatP>) const;
 
@@ -14,6 +16,8 @@ template MTS_EXPORT_CORE std::pair<UInt32P, FloatP> DiscreteDistribution::sample
 
 template MTS_EXPORT_CORE std::tuple<uint32_t, Float, Float>   DiscreteDistribution::sample_reuse_pdf(Float,  mask_t<Float>) const;
 template MTS_EXPORT_CORE std::tuple<UInt32P,  FloatP, FloatP> DiscreteDistribution::sample_reuse_pdf(FloatP, mask_t<FloatP>) const;
+
+#endif
 
 std::ostream &operator<<(std::ostream &os, const DiscreteDistribution &distribution) {
     os << "DiscreteDistribution[sum=" << distribution.sum() << ", normalized="

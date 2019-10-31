@@ -2,7 +2,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/render/imageblock.h>
 
-MTS_PY_EXPORT_VARIANTS(ImageBlock) {
+MTS_PY_EXPORT_CLASS_VARIANTS(ImageBlock) {
 
     using Vector2i = typename ImageBlock::Vector2i;
     using Point2f = typename ImageBlock::Point2f;

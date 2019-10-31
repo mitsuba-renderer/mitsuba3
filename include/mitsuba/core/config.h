@@ -23,7 +23,7 @@
 
 #define MTS_DECLARE_PLUGIN(Name, Parent)                                    \
     MTS_REGISTER_CLASS(Name, Parent)                                        \
-    MTS_IMPORT_TYPES()                                                      \
+    MTS_IMPORT_RENDER_TYPES()                                                      \
 
 
 #define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)                           \
@@ -55,6 +55,18 @@
 
 
 #define MTS_PY_EXPORT_VARIANTS(name)                                        \
+    template <typename Float>                                               \
+    void instantiate_##name(py::module m);                                  \
+                                                                            \
+    MTS_PY_EXPORT(name) {                                                   \
+        instantiate_##name<float>(m);                                       \
+    }                                                                       \
+                                                                            \
+    template <typename Float>                                               \
+    void instantiate_##name(py::module m)                                   \
+
+
+#define MTS_PY_EXPORT_CLASS_VARIANTS(name)                                  \
     template <typename Float, typename Spectrum, typename name = mitsuba::name<Float, Spectrum>> \
     void instantiate_##name(py::module m);                                  \
                                                                             \

@@ -11,7 +11,7 @@ class SmoothConductor final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(SmoothConductor, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
 
     SmoothConductor(const Properties &props) : Base(props) {
         m_flags = BSDFFlags::DeltaReflection | BSDFFlags::FrontSide;

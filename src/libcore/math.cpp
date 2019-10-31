@@ -7,6 +7,7 @@
 #  pragma warning(disable: 4305 4838 4244) // 8: conversion from 'double' to 'const float' requires a narrowing conversion, etc.
 #endif
 
+#if 0
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(math)
 
@@ -51,3 +52,5 @@ template MTS_EXPORT_CORE Array<uint64_t, 3> morton_decode(uint64_t);
 template MTS_EXPORT_CORE Array<UInt64P,  3> morton_decode(UInt64P);
 
 NAMESPACE_END(enoki)
+
+#endif

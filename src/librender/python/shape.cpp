@@ -6,7 +6,7 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/shape.h>
 
-MTS_PY_EXPORT_VARIANTS(Shape) {
+MTS_PY_EXPORT_CLASS_VARIANTS(Shape) {
     using Ray3f = typename Shape::Ray3f;
     using Mask = typename Shape::Mask;
     using Index = typename Shape::Index;
@@ -43,7 +43,7 @@ MTS_PY_EXPORT_VARIANTS(Shape) {
         .mdef(Shape, effective_primitive_count)
         ;
 
-    // TODO
+    // TODO figure out that logic
     // if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
     //     shape.def("sample_position", enoki::vectorize_wrapper(&Shape::sample_position),
     //         "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))

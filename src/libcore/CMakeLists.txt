@@ -57,7 +57,7 @@ add_library(mitsuba-core-obj OBJECT
   # transform.cpp        ${INC_DIR}/transform.h
   util.cpp             ${INC_DIR}/util.h
   vector.cpp           ${INC_DIR}/vector.h
-  # warp.cpp             ${INC_DIR}/warp.h
+  warp.cpp             ${INC_DIR}/warp.h
   # xml.cpp              ${INC_DIR}/xml.h
   zstream.cpp          ${INC_DIR}/zstream.h
   quad.cpp             ${INC_DIR}/quad.h
@@ -105,7 +105,7 @@ endif()
 add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq)
 
 # # Python bindings
-# add_subdirectory(python)
+add_subdirectory(python)
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

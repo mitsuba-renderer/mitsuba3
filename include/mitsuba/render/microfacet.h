@@ -63,7 +63,7 @@ MTS_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
 template <typename Float, typename Spectrum = void>
 class MicrofacetDistribution {
 public:
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_RENDER_TYPES()
     static constexpr auto Pi = math::Pi<scalar_t<Float>>;
     static constexpr auto InvSqrtPi = math::InvSqrtPi<scalar_t<Float>>;
 

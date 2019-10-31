@@ -15,9 +15,9 @@ class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(EnvironmentMapEmitter, Emitter)
     MTS_USING_BASE(Emitter, m_world_transform)
-    using Scene              = typename Aliases::Scene;
-    using Shape              = typename Aliases::Shape;
-    using ContinuousSpectrum = typename Aliases::ContinuousSpectrum;
+    using Scene              = typename RenderAliases::Scene;
+    using Shape              = typename RenderAliases::Shape;
+    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
     using Warp               = warp::Marginal2D<Float, 0>;
 
     EnvironmentMapEmitter(const Properties &props) : Base(props) {

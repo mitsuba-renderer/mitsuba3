@@ -8,7 +8,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shape.h>
 
-MTS_PY_EXPORT_VARIANTS(Endpoint) {
+MTS_PY_EXPORT_CLASS_VARIANTS(Endpoint) {
     auto endpoint = MTS_PY_CLASS(Endpoint, Object)
         .mdef(Endpoint, sample_ray,
               "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
@@ -24,7 +24,7 @@ MTS_PY_EXPORT_VARIANTS(Endpoint) {
         .mdef(Endpoint, set_medium, "medium"_a)
         .mdef(Endpoint, bbox);
 
-// TODO
+// TODO vectorize wrapper bindings
 //     if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
 //         endpoint.def("sample_ray", enoki::vectorize_wrapper(&Endpoint::sample_ray),
 //                      "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
