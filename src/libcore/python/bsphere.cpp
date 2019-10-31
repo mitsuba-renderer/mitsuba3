@@ -1,31 +1,27 @@
 #include <mitsuba/core/bsphere.h>
 #include <mitsuba/python/python.h>
 
-template <typename BSphere> auto bind_bsphere(py::module &m, const char *name) {
-    auto bsphere = py::class_<BSphere>(m, name, D(BoundingSphere))
-        .def(py::init<>(), D(BoundingSphere, BoundingSphere))
-        .def_readwrite("center", &BSphere::center)
-        .def_readwrite("radius", &BSphere::radius)
-        .def_repr(BSphere);
+MTS_PY_EXPORT_MODE_VARIANTS(BoundingSphere) {
+     MTS_IMPORT_CORE_TYPES()
 
-    return bsphere;
-}
-
-MTS_PY_EXPORT(BoundingSphere) {
-    bind_bsphere<BoundingSphere3f>(m, "BoundingSphere3f")
-        .def(py::init<Point3f, Float>(), D(BoundingSphere, BoundingSphere, 2))
+    py::class_<BoundingSphere3f>(m, "BoundingSphere3f", D(BoundingSphere3f))
+        .def(py::init<>(), D(BoundingSphere3f, BoundingSphere3f))
+        .def(py::init<Point3f, Float>(), D(BoundingSphere3f, BoundingSphere3f, 2))
         .def(py::init<const BoundingSphere3f &>())
-        .def("empty", &BoundingSphere3f::empty, D(BoundingSphere, empty))
+        .def("empty", &BoundingSphere3f::empty, D(BoundingSphere3f, empty))
         .def("contains",
             [](const BoundingSphere3f &self, const Point3f &p, bool strict) {
                 return strict ? self.template contains<true>(p)
                               : self.template contains<false>(p);
-            }, D(BoundingSphere, contains), "p"_a, "strict"_a = false)
-        .def("expand", &BoundingSphere3f::expand, D(BoundingSphere, expand))
-        .def("ray_intersect", &BoundingSphere3f::template ray_intersect<Point3f>,
-            D(BoundingSphere, ray_intersect))
-        .def("ray_intersect", vectorize_wrapper(
-            &BoundingSphere3f::template ray_intersect<Point3fP>))
+            }, D(BoundingSphere3f, contains), "p"_a, "strict"_a = false)
+        .def("expand", &BoundingSphere3f::expand, D(BoundingSphere3f, expand))
+        // TODO
+        // .def("ray_intersect", &BoundingSphere3f::template ray_intersect<Point3f>,
+            // D(BoundingSphere3f, ray_intersect))
         .def(py::self == py::self)
-        .def(py::self != py::self);
+        .def(py::self != py::self)
+        .def_readwrite("center", &BoundingSphere3f::center)
+        .def_readwrite("radius", &BoundingSphere3f::radius)
+        .def_repr(BoundingSphere3f)
+        ;
 }

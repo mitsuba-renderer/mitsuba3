@@ -7,7 +7,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   # atomic.cpp
   bbox.cpp
   # bitmap.cpp
-  # bsphere.cpp
+  bsphere.cpp
   # cast.cpp
   # ddistr.cpp
   # autodiff.cpp
