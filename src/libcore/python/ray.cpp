@@ -2,7 +2,9 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT_MODE_VARIANTS(Ray) {
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_CORE_TYPES()
+    using Ray3f = Ray<Point3f, Spectrum>;
+    using Wavelength = wavelength_t<Spectrum>;
     py::class_<Ray3f>(m, "Ray3f", D(Ray3f))
         .def(py::init<>(), "Create an unitialized ray")
         .def(py::init<const Ray3f &>(), "Copy constructor", "other"_a)
@@ -24,6 +26,7 @@ MTS_PY_EXPORT_MODE_VARIANTS(Ray) {
         .def_repr(Ray3f)
         ;
 
+    using RayDifferential3f = RayDifferential<Point3f, Spectrum>;
     py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential3f))
         .def_method(RayDifferential3f, scale_differential)
         .def_field(RayDifferential3f, o_x)

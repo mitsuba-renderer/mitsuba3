@@ -5,7 +5,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   # appender.cpp
   # argparser.cpp
   # atomic.cpp
-  # bbox.cpp
+  bbox.cpp
   # bitmap.cpp
   # bsphere.cpp
   # cast.cpp
@@ -24,7 +24,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   # qmc.cpp
   # quad.cpp
   # random.cpp
-  # ray.cpp
+  ray.cpp
   # rfilter.cpp
   # spectrum.cpp
   # spline.cpp
