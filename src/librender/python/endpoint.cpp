@@ -1,7 +1,7 @@
+#include <mitsuba/python/python.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/endpoint.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/records.h>

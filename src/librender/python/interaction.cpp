@@ -1,10 +1,7 @@
 #include <mitsuba/python/python.h>
-#include <mitsuba/render/interaction.h>
-#include <mitsuba/render/shape.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/interaction.h>
 #include <mitsuba/render/medium.h>
-#include <mitsuba/render/scene.h>
-#include <enoki/stl.h>
 
 MTS_PY_EXPORT_VARIANTS(Interaction) {
     py::class_<Interaction>(m, "Interaction3f", D(Interaction))

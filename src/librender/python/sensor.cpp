@@ -1,5 +1,5 @@
-#include <mitsuba/render/sensor.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/sensor.h>
 
 MTS_PY_EXPORT_VARIANTS(Sensor) {
     using Base = typename Sensor::Base;

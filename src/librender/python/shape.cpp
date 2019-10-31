@@ -1,13 +1,12 @@
+#include <mitsuba/python/python.h>
 #include <mitsuba/core/struct.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/shape.h>
-#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT_VARIANTS(Shape) {
-
     using Ray3f = typename Shape::Ray3f;
     using Mask = typename Shape::Mask;
     using Index = typename Shape::Index;

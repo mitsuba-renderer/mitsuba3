@@ -1,9 +1,8 @@
-#include <mitsuba/render/spectrum.h>
-#include <mitsuba/render/interaction.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/interaction.h>
+#include <mitsuba/render/spectrum.h>
 
 MTS_PY_EXPORT_VARIANTS(ContinuousSpectrum) {
-
     using Wavelength = typename ContinuousSpectrum::Wavelength;
     using Mask = typename ContinuousSpectrum::Mask;
     using SurfaceInteraction3f = typename ContinuousSpectrum::SurfaceInteraction3f;

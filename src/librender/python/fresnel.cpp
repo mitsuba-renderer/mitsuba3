@@ -1,5 +1,5 @@
-#include <mitsuba/render/fresnel.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/fresnel.h>
 
 MTS_PY_EXPORT(fresnel) {
     // --------------------------------------------------------------------

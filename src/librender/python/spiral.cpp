@@ -1,5 +1,5 @@
-#include <mitsuba/render/spiral.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/spiral.h>
 
 MTS_PY_EXPORT(Spiral) {
     using Vector2i = typename Spiral::Vector2i;

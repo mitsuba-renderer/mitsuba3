@@ -1,11 +1,11 @@
+#include <mitsuba/python/python.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
-#include <mitsuba/core/rfilter.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/core/rfilter.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/spiral.h>
-#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT_VARIANTS(Film) {
     using Point2i = typename Film::Point2i;

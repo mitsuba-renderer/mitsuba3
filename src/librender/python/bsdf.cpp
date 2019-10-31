@@ -1,5 +1,5 @@
-#include <mitsuba/render/bsdf.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/bsdf.h>
 
 MTS_PY_EXPORT(BSDFContext) {
     py::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))

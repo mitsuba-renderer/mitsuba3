@@ -1,5 +1,5 @@
-#include <mitsuba/render/emitter.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/emitter.h>
 
 MTS_PY_EXPORT_VARIANTS(Emitter) {
     using Base = typename Emitter::Base;

@@ -32,13 +32,7 @@ MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
                 mitsuba::MicrofacetDistribution<FloatP> d2(d.type(), d.alpha_u(), d.alpha_v());
                 return d2.eval_reflectance(wi_, eta);
             }, "wi"_a, "eta"_a)
-        .def("__repr__",
-            [](const MicrofacetDistribution &md) {
-                std::ostringstream oss;
-                oss << md;
-                return oss.str();
-            }
-        )
+        .repr_def(MicrofacetDistribution)
         ;
 
     // TODO

@@ -1,5 +1,5 @@
-#include <mitsuba/render/records.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/records.h>
 
 MTS_PY_EXPORT_VARIANTS(PositionSample) {
     using SurfaceInteraction3f = typename PositionSample::SurfaceInteraction3f;
@@ -17,8 +17,6 @@ MTS_PY_EXPORT_VARIANTS(PositionSample) {
         .repr_def(PositionSample)
         ;
 }
-
-// -----------------------------------------------------------------------------
 
 MTS_PY_EXPORT_VARIANTS(DirectionSample) {
     using Base = typename DirectionSample::Base;
@@ -48,8 +46,6 @@ MTS_PY_EXPORT_VARIANTS(DirectionSample) {
         .repr_def(DirectionSample)
         ;
 }
-
-// -----------------------------------------------------------------------------
 
 // TODO
 // MTS_PY_EXPORT_VARIANTS(RadianceSample) {
