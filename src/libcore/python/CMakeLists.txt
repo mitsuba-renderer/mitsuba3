@@ -13,7 +13,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   # autodiff.cpp
   # filesystem.cpp
   # formatter.cpp
-  # frame.cpp
+  frame.cpp
   # fresolver.cpp
   # logger.cpp
   # math.cpp
