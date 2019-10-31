@@ -2,17 +2,17 @@ add_mitsuba_python_library(mitsuba_core_ext core
   # main.cpp
 
   # libcore
-  # appender.cpp
-  # argparser.cpp
-  # atomic.cpp
+  appender.cpp
+  argparser.cpp
+  atomic.cpp
   bbox.cpp
   # bitmap.cpp
   bsphere.cpp
   # cast.cpp
   # ddistr.cpp
   # autodiff.cpp
-  # filesystem.cpp
-  # formatter.cpp
+  filesystem.cpp
+  formatter.cpp
   frame.cpp
   # fresolver.cpp
   # logger.cpp
@@ -22,7 +22,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   # progress.cpp
   # properties.cpp
   # qmc.cpp
-  # quad.cpp
+  quad.cpp
   # random.cpp
   ray.cpp
   # rfilter.cpp

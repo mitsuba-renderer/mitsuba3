@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
  * internally casts floating point values to an integer storage format and uses
  * atomic integer compare and exchange operations to perform changes.
  */
-template <typename Type = Float> class AtomicFloat {
+template <typename Type = float> class AtomicFloat {
 private:
     using Storage = std::conditional_t<sizeof(Type) == 4, uint32_t, uint64_t>;
 

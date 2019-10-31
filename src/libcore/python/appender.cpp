@@ -15,7 +15,7 @@ public:
         );
     }
 
-    virtual void log_progress(Float progress, const std::string &name,
+    virtual void log_progress(float progress, const std::string &name,
                               const std::string &formatted,
                               const std::string &eta, const void *ptr) override {
         PYBIND11_OVERLOAD_PURE(
