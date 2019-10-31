@@ -37,7 +37,7 @@ public:
         m_dp_du = m_object_to_world * Vector3f(2.f, 0.f, 0.f);
         m_dp_dv = m_object_to_world * Vector3f(0.f, 2.f, 0.f);
         Normal3f normal = normalize(m_object_to_world * Normal3f(0.f, 0.f, 1.f));
-        m_frame = Frame<Vector3f>(normalize(m_dp_du), normalize(m_dp_dv), normal);
+        m_frame = Frame3f(normalize(m_dp_du), normalize(m_dp_dv), normal);
 
         m_inv_surface_area = rcp(surface_area());
         if (abs(dot(normalize(m_dp_du), normalize(m_dp_dv))) > math::Epsilon<Float>)
@@ -186,7 +186,7 @@ public:
 private:
     Transform4f m_object_to_world;
     Transform4f m_world_to_object;
-    Frame<Vector3f> m_frame;
+    Frame3f m_frame;
     Vector3f m_dp_du, m_dp_dv;
     ScalarFloat m_inv_surface_area;
 };

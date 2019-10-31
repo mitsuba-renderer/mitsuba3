@@ -460,7 +460,7 @@ MTS_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const V
 template <typename Value>
 MTS_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
                                         const Value &alpha) {
-    using Frame = Frame<Vector<Value, 3>>;
+    using Frame = Frame<Value>;
 
     Value temp = Frame::tan_theta(m) / alpha,
           ct   = Frame::cos_theta(m);
@@ -549,7 +549,7 @@ Vector<Value, 3> square_to_rough_fiber(const Point<Value, 3> &sample,
                                        Value kappa) {
     using Point2  = Point<Value, 2>;
     using Vector3 = Vector<Value, 3>;
-    using Frame3  = Frame<Vector3>;
+    using Frame3  = Frame<Value>;
 
     Frame3 tframe(tangent);
 

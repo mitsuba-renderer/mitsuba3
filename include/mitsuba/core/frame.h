@@ -14,10 +14,10 @@ NAMESPACE_BEGIN(mitsuba)
  * coordinate system whose pole is aligned with the \c n axis (e.g. \ref
  * cos_theta(), \ref sin_phi(), etc.).
  */
-template <typename Vector3f_> struct Frame {
-    using Vector3f = Vector3f_;
-    using Float    = value_t<Vector3f>;
+template <typename Float_> struct Frame {
+    using Float    = Float_;
     using Vector2f = Vector<Float, 2>;
+    using Vector3f = Vector<Float, 3>;
     using Normal3f = Normal<Float, 3>;
 
     Vector3f s, t;
@@ -169,8 +169,8 @@ template <typename Vector3f_> struct Frame {
 };
 
 /// Return a string representation of a frame
-template <typename Vector3f>
-std::ostream &operator<<(std::ostream &os, const Frame<Vector3f> &f) {
+template <typename Float>
+std::ostream &operator<<(std::ostream &os, const Frame<Float> &f) {
     os << "Frame[" << std::endl
        << "  s = " << string::indent(f.s, 6) << "," << std::endl
        << "  t = " << string::indent(f.t, 6) << "," << std::endl
@@ -194,7 +194,8 @@ std::ostream &operator<<(std::ostream &os, const Frame<Vector3f> &f) {
  *    Used to return the computed frame
  */
 template <typename Normal3f, typename Vector3f,
-          typename Frame = mitsuba::Frame<Vector3f>>
+          typename Float = value_t<Normal3f>,
+          typename Frame = mitsuba::Frame<Float>>
 Frame compute_shading_frame(const Normal3f &n, const Vector3f &dp_du) {
     Vector3f s = normalize(fnmadd(n, dot(n, dp_du), dp_du));
     return Frame(s, cross(n, s), n);

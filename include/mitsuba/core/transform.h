@@ -266,8 +266,8 @@ template <typename Float, size_t Size> struct Transform {
     }
 
     /// Creates a transformation that converts from the standard basis to 'frame'
-    template <typename Vector3, size_t N = Size, enable_if_t<N == 4> = 0>
-    static Transform to_frame(const Frame<Vector3> &frame) {
+    template <typename Value, size_t N = Size, enable_if_t<N == 4> = 0>
+    static Transform to_frame(const Frame<Value> &frame) {
         Matrix result = Matrix::from_cols(
             concat(frame.s, Scalar(0)),
             concat(frame.t, Scalar(0)),
@@ -279,8 +279,8 @@ template <typename Float, size_t Size> struct Transform {
     }
 
     /// Creates a transformation that converts from 'frame' to the standard basis
-    template <typename Vector3, size_t N = Size, enable_if_t<N == 4> = 0>
-    static Transform from_frame(const Frame<Vector3> &frame) {
+    template <typename Value, size_t N = Size, enable_if_t<N == 4> = 0>
+    static Transform from_frame(const Frame<Value> &frame) {
         Matrix result = Matrix::from_rows(
             concat(frame.s, Scalar(0)),
             concat(frame.t, Scalar(0)),

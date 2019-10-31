@@ -132,7 +132,7 @@ template <typename Float_> struct CoreAliases {
     using BoundingSphere3f = BoundingSphere<Point3f>;
     using BoundingSphere4f = BoundingSphere<Point4f>;
 
-    using Frame3f              = Frame<Vector3f>;
+    using Frame3f              = Frame<Float>;
     using Transform3f          = Transform<Float, 3>;
     using Transform4f          = Transform<Float, 4>;
 };

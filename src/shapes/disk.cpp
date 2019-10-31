@@ -172,7 +172,7 @@ public:
 private:
     Transform4f m_object_to_world;
     Transform4f m_world_to_object;
-    Frame<Vector3f> m_frame;
+    Frame3f m_frame;
     Vector3f m_dp_du, m_dp_dv;
     ScalarFloat m_inv_surface_area;
 };
