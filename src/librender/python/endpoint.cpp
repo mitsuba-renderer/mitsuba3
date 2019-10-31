@@ -8,7 +8,9 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shape.h>
 
-MTS_PY_EXPORT_CLASS_VARIANTS(Endpoint) {
+MTS_PY_EXPORT_MODE_VARIANTS(Endpoint) {
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
     auto endpoint = MTS_PY_CLASS(Endpoint, Object)
         .def_method(Endpoint, sample_ray,
               "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)

@@ -6,12 +6,9 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/shape.h>
 
-MTS_PY_EXPORT_CLASS_VARIANTS(Shape) {
-    using Ray3f = typename Shape::Ray3f;
-    using Mask = typename Shape::Mask;
-    using Index = typename Shape::Index;
-    using BoundingBox3f = typename Shape::BoundingBox3f;
-
+MTS_PY_EXPORT_MODE_VARIANTS(Shape) {
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
     auto shape = MTS_PY_CLASS(Shape, Object)
         .def_method(Shape, sample_position, "time"_a, "sample"_a, "active"_a = true)
         .def_method(Shape, pdf_position, "ps"_a, "active"_a = true)
@@ -24,9 +21,9 @@ MTS_PY_EXPORT_CLASS_VARIANTS(Shape) {
         .def_method(Shape, fill_surface_interaction, "ray"_a, "cache"_a, "si"_a, "active"_a = true)
         .def("bbox", py::overload_cast<>(
             &Shape::bbox, py::const_), D(Shape, bbox))
-        .def("bbox", py::overload_cast<Index>(
+        .def("bbox", py::overload_cast<UInt32>(
             &Shape::bbox, py::const_), D(Shape, bbox, 2), "index"_a)
-        .def("bbox", py::overload_cast<Index, const BoundingBox3f &>(
+        .def("bbox", py::overload_cast<UInt32, const BoundingBox3f &>(
             &Shape::bbox, py::const_), D(Shape, bbox, 3), "index"_a, "clip"_a)
         .def_method(Shape, surface_area)
         .def_method(Shape, normal_derivative, "si"_a, "shading_frame"_a = true, "active"_a = true)

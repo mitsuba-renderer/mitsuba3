@@ -54,7 +54,7 @@
     MTS_INSTANTIATE_OBJECT(Name)                                            \
 
 
-#define MTS_PY_EXPORT_VARIANTS(name)                                        \
+#define MTS_PY_EXPORT_FLOAT_VARIANTS(name)                                  \
     template <typename Float>                                               \
     void instantiate_##name(py::module m);                                  \
                                                                             \
@@ -66,8 +66,8 @@
     void instantiate_##name(py::module m)                                   \
 
 
-#define MTS_PY_EXPORT_CLASS_VARIANTS(name)                                  \
-    template <typename Float, typename Spectrum, typename name = mitsuba::name<Float, Spectrum>> \
+#define MTS_PY_EXPORT_MODE_VARIANTS(name)                                   \
+    template <typename Float, typename Spectrum>                            \
     void instantiate_##name(py::module m);                                  \
                                                                             \
     MTS_PY_EXPORT(name) {                                                   \
@@ -81,7 +81,7 @@
             m.def_submodule("scalar_spectral_polarized"));                  \
     }                                                                       \
                                                                             \
-    template <typename Float, typename Spectrum, typename name>             \
+    template <typename Float, typename Spectrum>                            \
     void instantiate_##name(py::module m)                                   \
 
 

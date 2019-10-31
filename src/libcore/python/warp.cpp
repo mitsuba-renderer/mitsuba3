@@ -3,7 +3,7 @@
 #include <enoki/stl.h>
 #include <pybind11/iostream.h>
 
-MTS_PY_EXPORT_VARIANTS(warp) {
+MTS_PY_EXPORT_FLOAT_VARIANTS(warp) {
 
     MTS_PY_IMPORT_MODULE(warp, "mitsuba.core.warp");
     MTS_IMPORT_CORE_TYPES()

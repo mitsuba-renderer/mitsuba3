@@ -7,29 +7,28 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/spiral.h>
 
-MTS_PY_EXPORT_CLASS_VARIANTS(Film) {
-    using Point2i = typename Film::Point2i;
-    using Vector2i = typename Film::Vector2i;
-
-    MTS_PY_CLASS(Film, Object)
-        .def_method(Film, clear)
-        .def_method(Film, put, "block"_a)
-        .def_method(Film, set_bitmap, "bitmap"_a)
-        .def_method(Film, add_bitmap, "bitmap"_a, "multiplier"_a = 1.0f)
-        .def_method(Film, set_destination_file, "filename"_a, "block_size"_a)
-        .def("develop", py::overload_cast<>(&Film::develop))
-        .def("develop", py::overload_cast<const Point2i &, const Vector2i &,
-                                          const Point2i &, Bitmap *>(
-                &Film::develop, py::const_),
-             "offset"_a, "size"_a, "target_offset"_a, "target"_a)
-        .def_method(Film, destination_exists, "basename"_a)
-        .def_method(Film, has_high_quality_edges)
-        .def_method(Film, bitmap)
-        .def_method(Film, size)
-        .def_method(Film, crop_size)
-        .def_method(Film, crop_offset)
-        .def_method(Film, set_crop_window)
-        .def("reconstruction_filter",
-             py::overload_cast<>(&Film::reconstruction_filter, py::const_))
-        ;
+MTS_PY_EXPORT_MODE_VARIANTS(Film) {
+     MTS_IMPORT_TYPES()
+     MTS_IMPORT_OBJECT_TYPES()
+     MTS_PY_CLASS(Film, Object)
+          .def_method(Film, clear)
+          .def_method(Film, put, "block"_a)
+          .def_method(Film, set_bitmap, "bitmap"_a)
+          .def_method(Film, add_bitmap, "bitmap"_a, "multiplier"_a = 1.0f)
+          .def_method(Film, set_destination_file, "filename"_a, "block_size"_a)
+          .def("develop", py::overload_cast<>(&Film::develop))
+          .def("develop", py::overload_cast<const Point2i &, const Vector2i &,
+                                             const Point2i &, Bitmap *>(
+                    &Film::develop, py::const_),
+               "offset"_a, "size"_a, "target_offset"_a, "target"_a)
+          .def_method(Film, destination_exists, "basename"_a)
+          .def_method(Film, has_high_quality_edges)
+          .def_method(Film, bitmap)
+          .def_method(Film, size)
+          .def_method(Film, crop_size)
+          .def_method(Film, crop_offset)
+          .def_method(Film, set_crop_window)
+          .def("reconstruction_filter",
+               py::overload_cast<>(&Film::reconstruction_filter, py::const_))
+          ;
 }

@@ -1,7 +1,7 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(Frame) {
+MTS_PY_EXPORT_FLOAT_VARIANTS(Frame) {
     MTS_IMPORT_CORE_TYPES()
     py::class_<Frame3f>(m, "Frame3f", D(Frame3f))
         .def(py::init<>(), D(Frame3f, Frame3f))

@@ -2,11 +2,9 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/spectrum.h>
 
-MTS_PY_EXPORT_CLASS_VARIANTS(ContinuousSpectrum) {
-    using Wavelength = typename ContinuousSpectrum::Wavelength;
-    using Mask = typename ContinuousSpectrum::Mask;
-    using SurfaceInteraction3f = typename ContinuousSpectrum::SurfaceInteraction3f;
-
+MTS_PY_EXPORT_MODE_VARIANTS(ContinuousSpectrum) {
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
     auto cs = MTS_PY_CLASS(ContinuousSpectrum, Object)
         .def_static("D65", &ContinuousSpectrum::D65, "scale"_a = 1.f, "monochrome"_a = false)
         .def("mean", &ContinuousSpectrum::mean, D(ContinuousSpectrum, mean))

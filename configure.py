@@ -74,7 +74,7 @@ with open(fname, 'w') as f:
     w('    MTS_INSTANTIATE_OBJECT(Name)')
     f.write('\n\n')
 
-    w('#define MTS_PY_EXPORT_VARIANTS(name)')
+    w('#define MTS_PY_EXPORT_FLOAT_VARIANTS(name)')
     w('    template <typename Float>')
     w('    void instantiate_##name(py::module m);')
     w('')
@@ -87,8 +87,8 @@ with open(fname, 'w') as f:
     w('    void instantiate_##name(py::module m)')
     f.write('\n\n')
 
-    w('#define MTS_PY_EXPORT_CLASS_VARIANTS(name)')
-    w('    template <typename Float, typename Spectrum, typename name = mitsuba::name<Float, Spectrum>>')
+    w('#define MTS_PY_EXPORT_MODE_VARIANTS(name)')
+    w('    template <typename Float, typename Spectrum>')
     w('    void instantiate_##name(py::module m);')
     w('')
     w('    MTS_PY_EXPORT(name) {')
@@ -98,7 +98,7 @@ with open(fname, 'w') as f:
         w('            m.def_submodule("%s"));' % (name))
     w('    }')
     w('')
-    w('    template <typename Float, typename Spectrum, typename name>')
+    w('    template <typename Float, typename Spectrum>')
     w('    void instantiate_##name(py::module m)')
     f.write('\n\n')
 
