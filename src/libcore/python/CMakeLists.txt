@@ -10,20 +10,20 @@ add_mitsuba_python_library(mitsuba_core_ext core
   bsphere.cpp
   # cast.cpp
   # ddistr.cpp
-  # autodiff.cpp
+  autodiff.cpp
   filesystem.cpp
   formatter.cpp
   frame.cpp
   fresolver.cpp
   logger.cpp
   math.cpp
-  # mmap.cpp
+  mmap.cpp
   object.cpp
   progress.cpp
   # properties.cpp
   # qmc.cpp
   quad.cpp
-  # random.cpp
+  random.cpp
   ray.cpp
   rfilter.cpp
   # spectrum.cpp
