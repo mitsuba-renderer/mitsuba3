@@ -198,65 +198,14 @@ template <typename T, typename std::enable_if_t<!is_constructible_v<T, Stream *>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
 NAMESPACE_END(detail)
 
-#if 0  // TODO: remove this?
-/**
- * \brief Creates basic RTTI support for a class
- *
- * This macro or one of its variants should be invoked in the main
- * implementation \c .cpp file of any class that derives from \ref Object.
- * This is needed for the basic RTTI support provided by Mitsuba objects.
- * For instance, the corresponding piece for the example shown in the
- * documentation of \ref MTS_DECLARE_CLASS might look like this:
- *
- * \code
- * MTS_IMPLEMENT_CLASS(MyObject, Object)
- * \endcode
- *
- * \param Name
- *     Name of the class
- *
- * \param Parent
- *     Name of the parent class
- */
-#define MTS_IMPLEMENT_CLASS(Name, Parent, ...)                                                     \
-    Class *Name::m_class = new Class(#Name, #Parent, std::is_abstract_v<Name>,                     \
-                                     ::mitsuba::detail::get_construct_functor<Name>(),             \
-                                     ::mitsuba::detail::get_unserialize_functor<Name>(),           \
-                                      ## __VA_ARGS__);                                             \
-    const Class *Name::class_() const { return m_class; }
 
-/**
- * \brief Creates basic RTTI support for a template class parameterized
- * by a floating point and spectrum
- *
- * Many Mitsuba classes are actually templates that are parameterized by a
- * floating point type and a spectral type that is used to represent color
- * information. This macro should be used instead of \ref MTS_IMPLEMENT_CLASS
- * when \c Name refers to such a template class.
- *
- * \param Name
- *     Name of the class
- *
- * \param Parent
- *     Name of the parent class
- */
-#define MTS_IMPLEMENT_CLASS_TEMPLATE(Name, Parent, ...)                                            \
-    template <typename Value, typename Spectrum>                                                   \
-    Class *Name<Value, Spectrum>::m_class =                                                        \
-        new Class(#Name, #Parent, std::is_abstract_v<Name>,                                        \
-                  ::mitsuba::detail::get_construct_functor<Name>(),                                \
-                  ::mitsuba::detail::get_unserialize_functor<Name>(), ##__VA_ARGS__);              \
-    template <typename Value, typename Spectrum>                                                   \
-    const Class *Name<Value, Spectrum>::class_() const {                                           \
-        return m_class;                                                                            \
-    }
-#endif
+#define _MTS_MAP_IMPORT_FLOAT(class_, peek, ...) \
+    using Base = class_<Float>; \
+    ENOKI_EVAL(ENOKI_MAP_STMT_NEXT(peek, ENOKI_MAP_IMPORT_0)(Base, peek, __VA_ARGS__))
 
-
-#define MTS_MAP_USING_FWD_0(x, peek, ...) \
-    using Base::x; ENOKI_MAP_STMT_NEXT(peek, MTS_MAP_USING_FWD_1)(peek, __VA_ARGS__)
-#define MTS_MAP_USING_FWD_1(x, peek, ...) \
-    using Base::x; ENOKI_MAP_STMT_NEXT(peek, MTS_MAP_USING_FWD_0)(peek, __VA_ARGS__)
+#define _MTS_MAP_IMPORT_FLOAT_SPECTRUM(class_, peek, ...) \
+    using Base = class_<Float, Spectrum>; \
+    ENOKI_EVAL(ENOKI_MAP_STMT_NEXT(peek, ENOKI_MAP_IMPORT_0)(Base, peek, __VA_ARGS__))
 
 /**
  * \brief Declares an alias Base for the parent template class and
@@ -272,16 +221,14 @@ NAMESPACE_END(detail)
  *     using Base::m_flags;
  *     using Base::m_components;
  */
-#define MTS_USING_BASE(class_, ...) \
-    using Base = class_<Float, Spectrum>; \
-    ENOKI_EVAL(MTS_MAP_USING_FWD_0(__VA_ARGS__, (), 0))
+#define MTS_USING_BASE(...) \
+    _MTS_MAP_IMPORT_FLOAT_SPECTRUM(__VA_ARGS__, (), 0)
 
 /**
  * Variant of MTS_USING_BASE for parents that are only templated over Float.
  */
-#define MTS_USING_BASE_FLOAT(class_, ...) \
-    using Base = class_<Float>; \
-    ENOKI_EVAL(MTS_MAP_USING_FWD_0(__VA_ARGS__, (), 0))
+#define MTS_USING_BASE_FLOAT(...) \
+    _MTS_MAP_IMPORT_FLOAT(__VA_ARGS__, (), 0)
 
 extern MTS_EXPORT_CORE const Class *m_class;
 

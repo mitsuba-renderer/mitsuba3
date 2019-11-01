@@ -118,9 +118,7 @@ class Grid3DBase : public Texture3D<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(Grid3DBase, Texture3D)
     MTS_IMPORT_TYPES()
-    using Base = Texture3D<Float, Spectrum>;
-    using Base::update_bbox;
-    using Base::m_world_to_local;
+    MTS_USING_BASE(Texture3D, update_bbox, m_world_to_local)
 
     explicit Grid3DBase(const Properties &props) : Base(props) {}
 

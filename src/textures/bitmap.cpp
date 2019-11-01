@@ -21,7 +21,7 @@ template <typename Float, typename Spectrum>
 class BitmapTexture : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(BitmapTexture, ContinuousSpectrum)
-    using Base = ContinuousSpectrum<Float, Spectrum>;
+    MTS_USING_BASE(ContinuousSpectrum)
 
     BitmapTexture(const Properties &props) {
         m_transform = props.transform("to_uv", Transform4f()).extract();

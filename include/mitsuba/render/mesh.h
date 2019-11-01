@@ -14,10 +14,9 @@ class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(Mesh, Object)
     MTS_IMPORT_TYPES();
-    using Base = Shape<Float, Spectrum>;
+    MTS_USING_BASE(Shape, m_mesh)
     using typename Base::Size;
     using typename Base::Index;
-    using Base::m_mesh;
 
     using FaceHolder   = std::unique_ptr<uint8_t[]>;
     using VertexHolder = std::unique_ptr<uint8_t[]>;

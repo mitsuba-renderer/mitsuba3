@@ -9,7 +9,7 @@ template <typename Float, typename Spectrum>
 class SRGBSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(SRGBSpectrum, ContinuousSpectrum)
-    using Base = ContinuousSpectrum<Float, Spectrum>;
+    MTS_USING_BASE(ContinuousSpectrum)
 
     SRGBSpectrum(const Properties &props) {
         Color3f color = props.color("color");

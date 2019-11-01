@@ -111,7 +111,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using BSDF                   = typename RenderAliases::BSDF;                                   \
     using Sensor                 = typename RenderAliases::Sensor;                                 \
     using Emitter                = typename RenderAliases::Emitter;                                \
-    using Endpoint               = typename RenderAliases::Endpoint;                                \
+    using Endpoint               = typename RenderAliases::Endpoint;                               \
     using Medium                 = typename RenderAliases::Medium;                                 \
     using Film                   = typename RenderAliases::Film;                                   \
     using ImageBlock             = typename RenderAliases::ImageBlock;                             \

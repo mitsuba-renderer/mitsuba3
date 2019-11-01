@@ -9,7 +9,7 @@ template <typename Float, typename Spectrum>
 class SRGBEmitterSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(SRGBEmitterSpectrum, ContinuousSpectrum)
-    using Base = ContinuousSpectrum<Float, Spectrum>;
+    MTS_USING_BASE(ContinuousSpectrum)
 
     SRGBEmitterSpectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))

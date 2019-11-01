@@ -11,7 +11,7 @@ template <typename Float, typename Spectrum>
 class UniformSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(UniformSpectrum, ContinuousSpectrum)
-    using Base = ContinuousSpectrum<Float, Spectrum>;
+    MTS_USING_BASE(ContinuousSpectrum)
 
     UniformSpectrum(const Properties &props) {
         m_value = props.float_("value");

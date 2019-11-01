@@ -28,7 +28,7 @@ template <typename Float, typename Spectrum>
 class D65Spectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(D65Spectrum, ContinuousSpectrum)
-    using Base = ContinuousSpectrum<Float, Spectrum>;
+    MTS_USING_BASE(ContinuousSpectrum)
 
     D65Spectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))

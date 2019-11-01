@@ -151,9 +151,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
     MTS_REGISTER_CLASS(ProjectiveCamera, Sensor)
-    MTS_IMPORT_TYPES();
-    using Base = Sensor<Float, Spectrum>;
-    using Base::world_transform;
+    MTS_IMPORT_TYPES()
+    MTS_USING_BASE(Sensor, world_transform)
 
     /// Return the near clip plane distance
     Float near_clip() const { return m_near_clip; }

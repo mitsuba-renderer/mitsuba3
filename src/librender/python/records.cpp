@@ -3,6 +3,7 @@
 
 MTS_PY_EXPORT_MODE_VARIANTS(PositionSample) {
     MTS_IMPORT_TYPES()
+
     py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample3f))
         .def(py::init<>(), "Construct an unitialized position sample")
         .def(py::init<const PositionSample3f &>(), "Copy constructor", "other"_a)

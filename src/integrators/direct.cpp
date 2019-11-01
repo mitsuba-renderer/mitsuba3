@@ -11,7 +11,7 @@ class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(DirectIntegrator, SamplingIntegrator)
     MTS_IMPORT_OBJECT_TYPES()
-    using Base = SamplingIntegrator<Float, Spectrum>;
+    MTS_USING_BASE(SamplingIntegrator)
 
     // =============================================================
     //! @{ \name Constructors

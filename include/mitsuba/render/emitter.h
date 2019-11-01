@@ -11,8 +11,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Emitter : public Endpoint<Float, Spectrum> {
 public:
     MTS_REGISTER_INTERFACE(Emitter, Endpoint)
-
-    using Base = Endpoint<Float, Spectrum>;
+    MTS_USING_BASE(Endpoint)
 
     /// Is this an environment map light emitter?
     virtual bool is_environment() const {

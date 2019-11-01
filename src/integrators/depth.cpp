@@ -12,7 +12,7 @@ class DepthIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_DECLARE_PLUGIN(DepthIntegrator, SamplingIntegrator)
     MTS_IMPORT_OBJECT_TYPES()
-    using Base = SamplingIntegrator<Float, Spectrum>;
+    MTS_USING_BASE(SamplingIntegrator)
 
 
     DepthIntegrator(const Properties &props) : Base(props) {}
