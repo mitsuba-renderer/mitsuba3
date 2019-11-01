@@ -18,14 +18,14 @@ add_mitsuba_python_library(mitsuba_core_ext core
   logger.cpp
   math.cpp
   # mmap.cpp
-  # object.cpp
+  object.cpp
   progress.cpp
   # properties.cpp
   # qmc.cpp
   quad.cpp
   # random.cpp
   ray.cpp
-  # rfilter.cpp
+  rfilter.cpp
   # spectrum.cpp
   # spline.cpp
   # stream.cpp

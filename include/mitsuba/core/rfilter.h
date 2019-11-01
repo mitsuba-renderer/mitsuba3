@@ -88,8 +88,8 @@ protected:
  *      Denotes the underlying floating point data type (i.e. <tt>half</tt>, <tt>float</tt>,
  *      or <tt>double</tt>)
  */
-template <typename Scalar> struct Resampler {
-    using Float = Scalar;
+template <typename Scalar_> struct Resampler {
+    using Scalar = Scalar_;
 
     /**
      * \brief Create a new Resampler object that transforms between the specified resolutions
@@ -109,13 +109,13 @@ template <typename Scalar> struct Resampler {
         if (source_res == 0 || target_res == 0)
             Throw("Resampler::Resampler(): source or target resolution == 0!");
 
-        Float filter_radius_orig = rfilter->radius(),
+        Scalar filter_radius_orig = rfilter->radius(),
               filter_radius = filter_radius_orig,
               scale = 1, inv_scale = 1;
 
         /* Low-pass filter: scale reconstruction filters when downsampling */
         if (target_res < source_res) {
-            scale = (Float) source_res / (Float) target_res;
+            scale = (Scalar) source_res / (Scalar) target_res;
             inv_scale = 1 / scale;
             filter_radius *= scale;
         }
@@ -136,11 +136,11 @@ template <typename Scalar> struct Resampler {
             for (uint32_t i = 0; i < target_res; i++) {
                 /* Compute the fractional coordinates of the new sample i
                    in the original coordinates */
-                Float center = (i + Float(0.5)) / target_res * source_res;
+                Scalar center = (i + Scalar(0.5)) / target_res * source_res;
 
                 /* Determine the index of the first original sample
                    that might contribute */
-                m_start[i] = (int32_t) std::floor(center - filter_radius + Float(0.5));
+                m_start[i] = (int32_t) std::floor(center - filter_radius + Scalar(0.5));
 
                 /* Determine the size of center region, on which to run
                    the fast non condition-aware code */
@@ -152,7 +152,7 @@ template <typename Scalar> struct Resampler {
                 double sum = 0.0;
                 for (uint32_t j = 0; j < m_taps; j++) {
                     /* Compute the position where the filter should be evaluated */
-                    Float pos = m_start[i] + (int32_t) j + Float(0.5) - center;
+                    Scalar pos = m_start[i] + (int32_t) j + Scalar(0.5) - center;
 
                     /* Perform the evaluation and record the weight */
                     auto weight = rfilter->eval(pos * inv_scale);
@@ -177,7 +177,7 @@ template <typename Scalar> struct Resampler {
 
             double sum = 0.0;
             for (uint32_t i = 0; i < m_taps; i++) {
-                auto weight = rfilter->eval(Float((int32_t) i - (int32_t) half_taps));
+                auto weight = rfilter->eval(Scalar((int32_t) i - (int32_t) half_taps));
                 m_weights[i] = Scalar(weight);
                 sum += double(weight);
             }

@@ -79,7 +79,7 @@ MTS_PY_EXPORT(TransportMode) {
 
 MTS_PY_EXPORT(BSDFFlags) {
     py::enum_<BSDFFlags>(m, "BSDFFlags", D(BSDFFlags), py::arithmetic())
-        .value("None", BSDFFlags::Null, D(BSDFFlags, None))
+        .value("None", BSDFFlags::None, D(BSDFFlags, None))
         .value("Null", BSDFFlags::Null, D(BSDFFlags, Null))
         .value("DiffuseReflection", BSDFFlags::DiffuseReflection, D(BSDFFlags, DiffuseReflection))
         .value("DiffuseTransmission", BSDFFlags::DiffuseTransmission, D(BSDFFlags, DiffuseTransmission))
