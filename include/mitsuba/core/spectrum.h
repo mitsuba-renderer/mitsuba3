@@ -103,8 +103,6 @@ template <> struct wavelength<void> {
     using type = void;
 };
 
-// Forward declaration
-template <typename T> using MuellerMatrix = enoki::Matrix<T, 4, true>;
 // Most spectrum types are unpolarized
 template <typename T> struct depolarized_trait {
     using type = T;

@@ -66,6 +66,9 @@ template <typename Point>                    struct BoundingBox;
 template <typename Point>                    struct BoundingSphere;
 template <typename Vector>                   struct Frame;
 
+template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
+template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
+
 //! @}
 // =============================================================
 
@@ -135,6 +138,12 @@ template <typename Float_> struct CoreAliases {
     using Frame3f              = Frame<Float>;
     using Transform3f          = Transform<Float, 3>;
     using Transform4f          = Transform<Float, 4>;
+
+    using Color1f    = Color<Float, 1>;
+    using Color3f    = Color<Float, 3>;
+    using StokesVector4f  = StokesVector<Float>;
+    using MuellerMatrix4f = MuellerMatrix<Float>;
+
 };
 
 #define MTS_IMPORT_CORE_TYPES_PREFIX(Float, prefix)                                                \
@@ -179,9 +188,6 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Point4d              = typename CoreAliases::Point4d;                          \
     using prefix ## Normal3f             = typename CoreAliases::Normal3f;                         \
     using prefix ## Normal3d             = typename CoreAliases::Normal3d;                         \
-    using prefix ## Frame3f              = typename CoreAliases::Frame3f;                          \
-    using prefix ## Transform3f          = typename CoreAliases::Transform3f;                      \
-    using prefix ## Transform4f          = typename CoreAliases::Transform4f;                      \
     using prefix ## BoundingBox1f        = typename CoreAliases::BoundingBox1f;                    \
     using prefix ## BoundingBox2f        = typename CoreAliases::BoundingBox2f;                    \
     using prefix ## BoundingBox3f        = typename CoreAliases::BoundingBox3f;                    \
@@ -189,7 +195,14 @@ template <typename Float_> struct CoreAliases {
     using prefix ## BoundingSphere1f     = typename CoreAliases::BoundingSphere1f;                 \
     using prefix ## BoundingSphere2f     = typename CoreAliases::BoundingSphere2f;                 \
     using prefix ## BoundingSphere3f     = typename CoreAliases::BoundingSphere3f;                 \
-    using prefix ## BoundingSphere4f     = typename CoreAliases::BoundingSphere4f;
+    using prefix ## BoundingSphere4f     = typename CoreAliases::BoundingSphere4f;                 \
+    using prefix ## Frame3f              = typename CoreAliases::Frame3f;                          \
+    using prefix ## Transform3f          = typename CoreAliases::Transform3f;                      \
+    using prefix ## Transform4f          = typename CoreAliases::Transform4f;                      \
+    using prefix ## Color1f              = typename CoreAliases::Color1f;                          \
+    using prefix ## Color3f              = typename CoreAliases::Color3f;                          \
+    using prefix ## StokesVector4f       = typename CoreAliases::StokesVector4f;                   \
+    using prefix ## MuellerMatrix4f      = typename CoreAliases::MuellerMatrix4f;
 
 #define MTS_IMPORT_CORE_TYPES()                                                                    \
     MTS_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \

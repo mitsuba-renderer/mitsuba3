@@ -35,19 +35,11 @@ template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct BSDFSample3;
 template <typename Float, typename Spectrum> struct RadianceSample;
 
-template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
-template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
-
 template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Float    = Float_;
     using Spectrum = Spectrum_;
 
     using Wavelength = wavelength_t<Spectrum>;
-    using Color1f    = Color<Float, 1>;
-    using Color3f    = Color<Float, 3>;
-
-    using StokesVector4f  = StokesVector<Float>;
-    using MuellerMatrix4f = MuellerMatrix<Float>;
 
     using Ray3f                  = Ray<Point<Float, 3>, Spectrum>;
     using RayDifferential3f      = RayDifferential<Point<Float, 3>, Spectrum>;
@@ -86,10 +78,6 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     MTS_IMPORT_CORE_TYPES()                                                                        \
     using RenderAliases        = mitsuba::RenderAliases<Float, Spectrum>;                          \
     using Wavelength           = typename RenderAliases::Wavelength;                               \
-    using Color1f              = typename RenderAliases::Color1f;                                  \
-    using Color3f              = typename RenderAliases::Color3f;                                  \
-    using StokesVector4f       = typename RenderAliases::StokesVector4f;                           \
-    using MuellerMatrix4f      = typename RenderAliases::MuellerMatrix4f;                          \
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 

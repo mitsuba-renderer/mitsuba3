@@ -26,7 +26,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   random.cpp
   ray.cpp
   rfilter.cpp
-  # spectrum.cpp
+  spectrum.cpp
   spline.cpp
   stream.cpp
   struct.cpp
