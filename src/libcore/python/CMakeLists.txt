@@ -14,12 +14,12 @@ add_mitsuba_python_library(mitsuba_core_ext core
   filesystem.cpp
   formatter.cpp
   frame.cpp
-  # fresolver.cpp
-  # logger.cpp
-  # math.cpp
+  fresolver.cpp
+  logger.cpp
+  math.cpp
   # mmap.cpp
   # object.cpp
-  # progress.cpp
+  progress.cpp
   # properties.cpp
   # qmc.cpp
   quad.cpp
@@ -29,13 +29,13 @@ add_mitsuba_python_library(mitsuba_core_ext core
   # spectrum.cpp
   # spline.cpp
   # stream.cpp
-  # struct.cpp
-  # thread.cpp
+  struct.cpp
+  thread.cpp
   # transform.cpp
   # util.cpp
   # vector.cpp
   warp.cpp
-  # xml.cpp
+  xml.cpp
 )
 
 target_link_libraries(mitsuba_core_ext PRIVATE mitsuba-core mitsuba-render tbb)

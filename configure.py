@@ -80,7 +80,8 @@ with open(fname, 'w') as f:
     w('')
     w('    MTS_PY_EXPORT(name) {')
     for float_ in set(map(lambda x:x[1], enabled)):
-        w('        instantiate_##name<%s>(m);' % (float_))
+        w('        instantiate_##name<%s>(' % (float_))
+        w('            m.def_submodule("%s"));' % (float_))
     w('    }')
     w('')
     w('    template <typename Float>')

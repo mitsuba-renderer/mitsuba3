@@ -59,7 +59,8 @@
     void instantiate_##name(py::module m);                                  \
                                                                             \
     MTS_PY_EXPORT(name) {                                                   \
-        instantiate_##name<float>(m);                                       \
+        instantiate_##name<float>(                                          \
+            m.def_submodule("float"));                                      \
     }                                                                       \
                                                                             \
     template <typename Float>                                               \

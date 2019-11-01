@@ -5,7 +5,7 @@
 
 MTS_PY_EXPORT_FLOAT_VARIANTS(warp) {
 
-    MTS_PY_IMPORT_MODULE(warp, "mitsuba.core.warp");
+    py::module warp = m.def_submodule("warp");
     MTS_IMPORT_CORE_TYPES()
 
     warp.def(
