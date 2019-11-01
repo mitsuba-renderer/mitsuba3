@@ -21,7 +21,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   object.cpp
   progress.cpp
   properties.cpp
-  # qmc.cpp
+  qmc.cpp
   quad.cpp
   random.cpp
   ray.cpp

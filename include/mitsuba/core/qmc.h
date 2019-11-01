@@ -2,6 +2,8 @@
 
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/simd.h>
+#include <mitsuba/core/logger.h>
+#include <mitsuba/core/math.h>
 #include <memory>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -63,10 +65,31 @@ public:
      *     Denotes the index that should be mapped through the radical inverse
      *     function
      */
-    Float eval(size_t base_index, uint64_t index) const;
+    template <typename Float, typename UInt64 = uint64_array_t<Float>>
+    Float eval(size_t base_index, UInt64 index) const {
+        if (unlikely(base_index >= m_base_count))
+            Throw("eval(): out of bounds (prime base too large)");
 
-    /// Vectorized implementation of \ref eval()
-    FloatP eval(size_t base_index, UInt64P index) const;
+        const PrimeBase base = m_base[base_index];
+
+        UInt64 value(zero<UInt64>()),
+                divisor((uint64_t) base.value);
+        Float factor = Float(1.f),
+            recip(base.recip);
+
+        auto active = neq(index, enoki::zero<UInt64>());
+
+        while (any(active)) {
+            auto active_f = reinterpret_array<mask_t<Float>>(active);
+            UInt64 next = base.divisor(index);
+            masked(factor, active_f) = factor * recip;
+            masked(value, active) = (value - next) * divisor + index;
+            index = next;
+            active = neq(index, enoki::zero<UInt64>());
+        }
+
+        return min(math::OneMinusEpsilon<Float>, Float(value) * factor);
+    }
 
     /**
      * \brief Calculate a scrambled radical inverse function
@@ -76,10 +99,36 @@ public:
      * radical inverse function \ref eval(), except that every digit
      * is run through an extra scrambling permutation.
      */
-    Float eval_scrambled(size_t base_index, uint64_t index) const;
+    template <typename Float, typename UInt64 = uint64_array_t<Float>>
+    Float eval_scrambled(size_t base_index, UInt64 index) const {
+        if (unlikely(base_index >= m_base_count))
+            Throw("eval(): out of bounds (prime base too large)");
 
-    /// Vectorized implementation of \ref eval_scrambled()
-    FloatP eval_scrambled(size_t base_index, UInt64P index) const;
+        const PrimeBase base = m_base[base_index];
+        const uint16_t *perm = m_permutations[base_index];
+
+        UInt64 value(zero<UInt64>()),
+                divisor((uint64_t) base.value),
+                mask(0xffffu);
+        Float factor(1.f),
+            recip(base.recip);
+
+        auto active = neq(index, enoki::zero<UInt64>());
+
+        while (any(active)) {
+            auto active_f = reinterpret_array<mask_t<Float>>(active);
+            UInt64 next = base.divisor(index);
+            masked(factor, active_f) = factor * recip;
+            UInt64 digit = index - next * divisor;
+            masked(value, active) =
+                value * divisor + (enoki::gather<UInt64, 2>(perm, digit, active) & mask);
+            index = next;
+            active = neq(index, enoki::zero<UInt64>());
+        }
+
+        Float correction(base.recip * (Float) perm[0] / ((Float) 1 - base.recip));
+        return min(math::OneMinusEpsilon<Float>, (Float(value) + correction) * factor);
+    }
 
     /// Return the permutation corresponding to the given prime number basis
     uint16_t *permutation(size_t basis) const {

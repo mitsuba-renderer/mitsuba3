@@ -1,6 +1,4 @@
 #include <mitsuba/core/qmc.h>
-#include <mitsuba/core/logger.h>
-#include <mitsuba/core/math.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/random.h>
 #include <mitsuba/core/util.h>
@@ -170,104 +168,6 @@ void RadicalInverse::invert_permutation(uint32_t i) {
              *inv_perm = m_inv_permutations[i];
     for (size_t j = 0; j < m_base[i].value; ++j)
         inv_perm[perm[j]] = (uint16_t) j;
-}
-
-Float RadicalInverse::eval(size_t base_index, uint64_t index) const {
-    if (unlikely(base_index >= m_base_count))
-        Throw("eval(): out of bounds (prime base too large)");
-
-    const PrimeBase base = m_base[base_index];
-
-    uint64_t value = 0;
-    Float factor = 1;
-
-    while (index) {
-        uint64_t next = base.divisor(index);
-        value = value * base.value;
-        factor *= base.recip;
-        value += index - next * base.value;
-        index = next;
-    }
-
-    return std::min(math::OneMinusEpsilon, (Float) value * factor);
-}
-
-Float RadicalInverse::eval_scrambled(size_t base_index, uint64_t index) const {
-    if (unlikely(base_index >= m_base_count))
-        Throw("eval(): out of bounds (prime base too large)");
-
-    const PrimeBase base = m_base[base_index];
-    const uint16_t *perm = m_permutations[base_index];
-
-    uint64_t value = 0;
-    Float factor = 1;
-
-    while (index) {
-        uint64_t next  = base.divisor(index);
-        value = value * base.value;
-        factor *= base.recip;
-        value += perm[index - next * base.value];
-        index = next;
-    }
-
-    Float correction = base.recip * perm[0] / (1.0f - base.recip);
-
-    return std::min(math::OneMinusEpsilon,
-                    factor * ((Float) value + correction));
-}
-
-FloatP RadicalInverse::eval(size_t base_index, UInt64P index) const {
-    if (unlikely(base_index >= m_base_count))
-        Throw("eval(): out of bounds (prime base too large)");
-
-    const PrimeBase base = m_base[base_index];
-
-    UInt64P value(zero<UInt64P>()),
-            divisor((uint64_t) base.value);
-    FloatP factor = FloatP(1.f),
-           recip(base.recip);
-
-    auto active = neq(index, enoki::zero<UInt64P>());
-
-    while (any(active)) {
-        auto active_f = reinterpret_array<mask_t<FloatP>>(active);
-        UInt64P next = base.divisor(index);
-        factor[active_f] = factor * recip;
-        value[active] = (value - next) * divisor + index;
-        index = next;
-        active = neq(index, enoki::zero<UInt64P>());
-    }
-
-    return min(FloatP(math::OneMinusEpsilon), FloatP(value) * factor);
-}
-
-FloatP RadicalInverse::eval_scrambled(size_t base_index, UInt64P index) const {
-    if (unlikely(base_index >= m_base_count))
-        Throw("eval(): out of bounds (prime base too large)");
-
-    const PrimeBase base = m_base[base_index];
-    const uint16_t *perm = m_permutations[base_index];
-
-    UInt64P value(zero<UInt64P>()),
-            divisor((uint64_t) base.value),
-            mask(0xffffu);
-    FloatP factor(1.f),
-           recip(base.recip);
-
-    auto active = neq(index, enoki::zero<UInt64P>());
-
-    while (any(active)) {
-        auto active_f = reinterpret_array<mask_t<FloatP>>(active);
-        UInt64P next = base.divisor(index);
-        factor[active_f] = factor * recip;
-        UInt64P digit = index - next * divisor;
-        value[active] = value * divisor + (enoki::gather<UInt64P, 2>(perm, digit, active) & mask);
-        index = next;
-        active = neq(index, enoki::zero<UInt64P>());
-    }
-
-    FloatP correction(base.recip * (Float) perm[0] / ((Float) 1 - base.recip));
-    return min(FloatP(math::OneMinusEpsilon), (FloatP(value) + correction) * factor);
 }
 
 std::string RadicalInverse::to_string() const {
