@@ -202,6 +202,8 @@ if (MSVC)
   endif()
 else()
   add_compile_options("-Wall" "-Wextra")
+  # TODO remove this!
+  add_compile_options("-Wno-unused-local-typedefs")
   if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     # Quench inlining-related remarks
     add_compile_options("-wd11074" "-wd11076")
