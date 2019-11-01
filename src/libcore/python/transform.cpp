@@ -3,100 +3,109 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
 
-template <typename T>
-auto bind_transform(py::module &m, const char *name) {
-    using Type = Transform<T>;
+MTS_PY_EXPORT_FLOAT_VARIANTS(Transform) {
+    MTS_IMPORT_CORE_TYPES()
 
-    return py::class_<Type>(m, name, D(Transform))
-        /// Fields
-        .def("inverse", &Type::inverse, D(Transform, inverse))
-        .def("has_scale", &Type::has_scale, D(Transform, has_scale))
-        .def_readwrite("matrix", &Type::matrix)
-        .def_readwrite("inverse_transpose", &Type::inverse_transpose)
-        .def_repr(Type)
-        ;
-}
-
-MTS_PY_EXPORT(Transform) {
-    bind_transform<Vector3f>(m, "Transform3f")
+    using Transform3f = Transform<Float, 3>;
+    using Matrix3f = enoki::Matrix<Float, 3>;
+    py::class_<Transform3f>(m, "Transform3f", D(Transform3f))
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform3f &>(), "Copy constructor")
         .def(py::init([](py::array a) {
             return new Transform3f(py::cast<Matrix3f>(a));
         }))
-        .def(py::init<Matrix3f>(), D(Transform, Transform))
+        .def(py::init<Matrix3f>(), D(Transform3f, Transform3f))
         .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
-        .def("transform_point", [](const Transform3f &t, const Point2f &v) { return t*v; })
-        .def("transform_point", [](const Transform3f &t, const Point2fX &v) {
-            return vectorize_safe([](auto &&t, auto &&v) { return t * v; }, t, v);
-        })
-        .def("transform_vector", [](const Transform3f &t, const Vector2f &v) { return t*v; })
-        .def("transform_vector", [](const Transform3f &t, const Vector2fX &v) {
-            return vectorize_safe([](auto &&t, auto &&v) { return t * v; }, t, v);
-        })
-        .def_static("translate", &Transform3f::translate, "v"_a, D(Transform, translate))
-        .def_static("scale", &Transform3f::scale, "v"_a, D(Transform, scale))
-        .def_static("rotate", &Transform3f::rotate<3, 0>, "angle"_a, D(Transform, rotate, 2))
-        .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
+        .def("transform_point",
+            vectorize<Float>([](const Transform<ScalarFloat, 3> &t, const Point2f &v) {
+                 return t*v;
+            }))
+        .def("transform_vector",
+            vectorize<Float>([](const Transform<ScalarFloat, 3> &t, const Vector2f &v) {
+                 return t*v;
+            }))
+        .def_static("translate", &Transform3f::translate, "v"_a, D(Transform3f, translate))
+        .def_static("scale", &Transform3f::scale, "v"_a, D(Transform3f, scale))
+        .def_static("rotate", &Transform3f::template rotate<3>,
+                    "angle"_a, D(Transform3f, rotate, 2))
+        .def("has_scale", &Transform3f::has_scale, D(Transform3f, has_scale))
         /// Operators
         .def(py::self == py::self)
         .def(py::self != py::self)
-        .def(py::self * py::self);
+        .def(py::self * py::self)
+        /// Fields
+        .def("inverse",   &Transform3f::inverse, D(Transform3f, inverse))
+        .def("has_scale", &Transform3f::has_scale, D(Transform3f, has_scale))
+        .def_readwrite("matrix", &Transform3f::matrix)
+        .def_readwrite("inverse_transpose", &Transform3f::inverse_transpose)
+        .def_repr(Transform3f)
+        ;
 
-    bind_transform<Vector4f>(m, "Transform4f")
+    using Transform4f = Transform<Float, 4>;
+    using Matrix4f = enoki::Matrix<Float, 4>;
+    py::class_<Transform4f>(m, "Transform4f", D(Transform4f))
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform4f &>(), "Copy constructor")
         .def(py::init([](py::array a) {
             return new Transform4f(py::cast<Matrix4f>(a));
         }))
-        .def(py::init<Matrix4f>(), D(Transform, Transform))
+        .def(py::init<Matrix4f>(), D(Transform4f, Transform4f))
         .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
-        .def("transform_point", [](const Transform4f &t, const Point3f &v) { return t*v; })
-        .def("transform_point", [](const Transform4f &t, const Point3fX &v) {
-            return vectorize_safe([](auto&& t, auto &&v) { return t * v; }, t, v);
-        })
-        .def("transform_vector", [](const Transform4f &t, const Vector3f &v) { return t*v; })
-        .def("transform_vector", [](const Transform4f &t, const Vector3fX &v) {
-            return vectorize_safe([](auto &&t, auto &&v) { return t * v; }, t, v);
-        })
-        .def("transform_normal", [](const Transform4f &t, const Normal3f &v) { return t*v; })
-        .def("transform_normal", [](const Transform4f &t, const Normal3fX &v) {
-            return vectorize_safe([](auto &&t, auto &&v) { return t * v; }, t, v);
-        })
-        .def_static("translate", &Transform4f::translate, "v"_a, D(Transform, translate))
-        .def_static("scale", &Transform4f::scale, "v"_a, D(Transform, scale))
-        .def_static("rotate", &Transform4f::rotate<4, 0>, "axis"_a, "angle"_a, D(Transform, rotate))
-        .def_static("perspective", &Transform4f::perspective<4, 0>, "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
-        .def_static("orthographic", &Transform4f::orthographic<4, 0>, "near"_a, "far"_a, D(Transform, orthographic))
-        .def_static("look_at", &Transform4f::look_at<4, 0>, "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
-        .def_static("from_frame", &Transform4f::from_frame<Vector3f>, "frame"_a, D(Transform, from_frame))
-        .def_static("to_frame", &Transform4f::to_frame<Vector3f>, "frame"_a, D(Transform, to_frame))
-        .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
-        .def("extract", &Transform4f::extract<3>, D(Transform, extract))
+        .def("transform_point",
+            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Point3f &v) {
+                return t*v;
+            }))
+        .def("transform_vector",
+            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Vector3f &v) {
+                return t*v;
+            }))
+        .def("transform_normal",
+            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Normal3f &v) {
+                return t*v;
+            }))
+        .def_static("translate", &Transform4f::translate, "v"_a, D(Transform4f, translate))
+        .def_static("scale", &Transform4f::scale, "v"_a, D(Transform4f, scale))
+        .def_static("rotate", &Transform4f::template rotate<4>,
+            "axis"_a, "angle"_a, D(Transform4f, rotate))
+        .def_static("perspective", &Transform4f::template perspective<4>,
+            "fov"_a, "near"_a, "far"_a, D(Transform4f, perspective))
+        .def_static("orthographic", &Transform4f::template orthographic<4>,
+            "near"_a, "far"_a, D(Transform4f, orthographic))
+        .def_static("look_at", &Transform4f::template look_at<4>,
+            "origin"_a, "target"_a, "up"_a, D(Transform4f, look_at))
+        .def_static("from_frame", &Transform4f::template from_frame<Float>,
+            "frame"_a, D(Transform4f, from_frame))
+        .def_static("to_frame", &Transform4f::template to_frame<Float>,
+            "frame"_a, D(Transform4f, to_frame))
+        .def("has_scale", &Transform4f::has_scale, D(Transform4f, has_scale))
+        .def("extract", &Transform4f::template extract<3>, D(Transform4f, extract))
         /// Operators
         .def(py::self == py::self)
         .def(py::self != py::self)
-        .def(py::self * py::self);
-
-    auto t4fx = bind_transform<Vector4fX>(m, "Transform4fX");
-    bind_slicing_operators<Transform4fX, Transform4f>(t4fx);
+        .def(py::self * py::self)
+        /// Fields
+        .def("inverse",   &Transform4f::inverse, D(Transform4f, inverse))
+        .def("has_scale", &Transform4f::has_scale, D(Transform4f, has_scale))
+        .def_readwrite("matrix", &Transform4f::matrix)
+        .def_readwrite("inverse_transpose", &Transform4f::inverse_transpose)
+        .def_repr(Transform4f)
+        ;
 
     py::implicitly_convertible<py::array, Transform4f>();
 }
 
-MTS_PY_EXPORT(AnimatedTransform) {
+MTS_PY_EXPORT_FLOAT_VARIANTS(AnimatedTransform) {
     auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
 
     py::class_<AnimatedTransform::Keyframe>(atrafo, "Keyframe")
-        .def(py::init<Float, Matrix3f, Quaternion4f, Vector3f>())
+        .def(py::init<float, Matrix<Float, 3>, Quaternion<Float>, Vector<Float, 3>>())
         .def_readwrite("time", &AnimatedTransform::Keyframe::time, D(AnimatedTransform, Keyframe, time))
         .def_readwrite("scale", &AnimatedTransform::Keyframe::scale, D(AnimatedTransform, Keyframe, scale))
         .def_readwrite("quat", &AnimatedTransform::Keyframe::quat, D(AnimatedTransform, Keyframe, quat))
         .def_readwrite("trans", &AnimatedTransform::Keyframe::trans, D(AnimatedTransform, Keyframe, trans));
 
-    atrafo
-        .def(py::init<>())
-        .def(py::init<const Transform4f &>())
+    atrafo.def(py::init<>())
+        .def(py::init<const Transform<float, 4> &>())
         .def_method(AnimatedTransform, size)
         .def_method(AnimatedTransform, has_scale)
         .def("__len__", &AnimatedTransform::size)
@@ -106,20 +115,17 @@ MTS_PY_EXPORT(AnimatedTransform) {
             return trafo[index];
         })
         .def("append",
-             py::overload_cast<Float, const Transform4f &>(
-                 &AnimatedTransform::append),
+             py::overload_cast<float, const Transform<float, 4> &>(
+                 &AnimatedTransform::template append<float>),
              D(AnimatedTransform, append))
-        .def("append",
-             py::overload_cast<const AnimatedTransform::Keyframe &>(
-                 &AnimatedTransform::append))
+        // TODO
+        // .def("append",
+            //  py::overload_cast<const AnimatedTransform::Keyframe &>(
+                //  &AnimatedTransform::append))
         .def("eval",
-             py::overload_cast<Float, bool>(
-                 &AnimatedTransform::eval, py::const_),
+             vectorize<Float>(py::overload_cast<Float, mask_t<Float>>(
+                 &AnimatedTransform::template eval<Float>, py::const_)),
              "time"_a, "unused"_a = true, D(AnimatedTransform, eval))
-        .def("eval",
-             vectorize_wrapper(
-                 py::overload_cast<FloatP, MaskP>(
-                     &AnimatedTransform::eval, py::const_)),
-             "time"_a, "active"_a = true)
-        .def_method(AnimatedTransform, translation_bounds);
+        .def_method(AnimatedTransform, translation_bounds)
+        ;
 }
