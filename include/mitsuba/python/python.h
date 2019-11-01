@@ -108,9 +108,11 @@ template <typename Class, typename... Args, typename... Extra> auto bind_array(p
         });
 }
 
-template<typename Float, typename Func> auto vectorize(Func func) {
-    if constexpr (is_array_v<Float> && !is_dynamic_v<Float>)
-        return func;
-    else
+template<typename Float, typename Func>
+auto vectorize(Func func) {
+    if constexpr (is_array_v<Float> && !is_dynamic_v<Float>){
         return enoki::vectorize_wrapper(func);
+    } else {
+        return func;
+    }
 }

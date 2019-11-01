@@ -249,7 +249,7 @@ protected:
     ref<Emitter> m_environment;
 
     /// Sampling distribution for emitters
-    DiscreteDistribution m_emitter_distr;
+    DiscreteDistribution<Float> m_emitter_distr;
 
 #if defined(MTS_USE_EMBREE)
     RTCScene m_embree_scene;

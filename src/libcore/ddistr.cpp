@@ -19,11 +19,4 @@ template MTS_EXPORT_CORE std::tuple<UInt32P,  FloatP, FloatP> DiscreteDistributi
 
 #endif
 
-std::ostream &operator<<(std::ostream &os, const DiscreteDistribution &distribution) {
-    os << "DiscreteDistribution[sum=" << distribution.sum() << ", normalized="
-        << static_cast<int>(distribution.normalized())
-        << ", cdf=" << distribution.cdf() << "]";
-    return os;
-}
-
 NAMESPACE_END(mitsuba)

@@ -17,15 +17,17 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \ingroup libcore
  */
+template <typename Float_>
 class MTS_EXPORT_CORE DiscreteDistribution {
-    // TODO: decide how to templatize this class.
-    using Float = float;
+    using Float = Float_;
+    using ScalarFloat = scalar_t<Float>;
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    using FloatVector = std::vector<Float, enoki::cuda_host_allocator<Float>>;
-#else
-    using FloatVector = std::vector<Float>;
-#endif
+    #if defined(MTS_ENABLE_AUTODIFF)
+        using FloatStorage = std::vector<ScalarFloat, enoki::cuda_host_allocator<ScalarFloat>>;
+    #else
+        using FloatStorage = std::vector<ScalarFloat>;
+    #endif
+
 public:
     /// Reserve memory for a distribution with the given number of entries
     explicit DiscreteDistribution(size_t n_entries = 0) {
@@ -34,7 +36,7 @@ public:
     }
 
     /// Initialize the distribution with the given data
-    DiscreteDistribution(size_t size, const Float *values)
+    DiscreteDistribution(size_t size, const ScalarFloat *values)
         : DiscreteDistribution(size) {
         for (size_t i = 0; i < size; ++i)
             append(values[i]);
@@ -47,7 +49,7 @@ public:
         m_cdf.push_back(0.f);
         m_normalized = false;
         m_sum = 0.0;
-        m_normalization = std::numeric_limits<Float>::quiet_NaN();
+        m_normalization = std::numeric_limits<ScalarFloat>::quiet_NaN();
         m_range_start = 0;
         m_range_end = 0;
     }
@@ -62,7 +64,7 @@ public:
      *
      * \remark \c pdf_value must be non-negative.
      */
-    void append(Float pdf_value) {
+    void append(ScalarFloat pdf_value) {
         Assert(pdf_value >= 0, "PDF values added to the distribution must be non-negative.");
         m_sum += double(pdf_value);
 
@@ -97,7 +99,7 @@ public:
      *
      * This assumes that \ref normalize() has previously been called.
      */
-    Float sum() const {
+    ScalarFloat sum() const {
         return m_sum;
     }
 
@@ -106,7 +108,7 @@ public:
      *
      * This assumes that \ref normalize() has previously been called
      */
-    Float normalization() const {
+    ScalarFloat normalization() const {
         return m_normalization;
     }
 
@@ -116,7 +118,7 @@ public:
      * Note that if n values have been appended, there will be (n+1) entries
      * in this CDF (the first one being 0).
      */
-    const FloatVector& cdf() const { return m_cdf; }
+    const FloatStorage& cdf() const { return m_cdf; }
 
     /**
      * \brief Normalize the distribution
@@ -127,23 +129,23 @@ public:
      *
      * \return Sum of the (previously unnormalized) entries
      */
-    Float normalize() {
+    ScalarFloat normalize() {
         Assert(size() >= 1, "Attempted to normalize an empty distribution!");
 
         if (likely(m_sum > 0)) {
-            m_normalization = Float(1.0 / m_sum);
+            m_normalization = ScalarFloat(1.0 / m_sum);
             for (size_t i = 1; i < m_cdf.size(); ++i)
                 m_cdf[i] *= m_normalization;
             m_cdf[m_cdf.size() - 1] = 1.f;
             m_normalized = true;
         } else {
-            m_normalization = std::numeric_limits<Float>::infinity();
+            m_normalization = std::numeric_limits<ScalarFloat>::infinity();
             m_range_start = 0;
             m_range_end = 0;
             m_normalized = false;
         }
 
-        return Float(m_sum);
+        return ScalarFloat(m_sum);
     }
 
     /**
@@ -242,15 +244,20 @@ public:
     }
 
 private:
-    FloatVector m_cdf;
-    uint32_t m_range_start; //< Index in m_cdf corresponding to the first entry with positive probability.
-    uint32_t m_range_end;   //< 1 + the last index of m_cdf with positive probability, or 0 when there is none.
-    Float m_normalization;  //< Normalization constant (or infinity)
-    bool m_normalized;      //< Is the distribution normalized?
-    double m_sum;           //< Running sum (in higher precision)
+    FloatStorage m_cdf;
+    uint32_t m_range_start;       //< Index in m_cdf corresponding to the first entry with positive probability.
+    uint32_t m_range_end;         //< 1 + the last index of m_cdf with positive probability, or 0 when there is none.
+    ScalarFloat m_normalization;  //< Normalization constant (or infinity)
+    bool m_normalized;            //< Is the distribution normalized?
+    double m_sum;                 //< Running sum (in higher precision)
 };
 
-// Print the string representation of the discrete distribution.
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, const DiscreteDistribution &distribution);
+template <typename Float>
+std::ostream &operator<<(std::ostream &os, const DiscreteDistribution<Float> &distribution) {
+    os << "DiscreteDistribution[sum=" << distribution.sum() << ", normalized="
+        << static_cast<int>(distribution.normalized())
+        << ", cdf=" << distribution.cdf() << "]";
+    return os;
+}
 
 NAMESPACE_END(mitsuba)
