@@ -34,40 +34,30 @@ MTS_PY_EXPORT_MODE_VARIANTS(BSDFSample3) {
 }
 
 MTS_PY_EXPORT_MODE_VARIANTS(BSDF) {
-     using BSDF = BSDF<Float, Spectrum>;
-     using Mask = typename BSDF::Mask;
+    using BSDF = BSDF<Float, Spectrum>;
+    using Mask = typename BSDF::Mask;
 
-     auto bsdf = MTS_PY_CLASS(BSDF, Object)
-          .def_method(BSDF, sample, "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true)
-          .def_method(BSDF, eval, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
-          .def_method(BSDF, pdf, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
-          .def_method(BSDF, eval, "ctx"_a, "si"_a, "wo"_a, "active"_a = true)
-          .def("flags", py::overload_cast<Mask>(&BSDF::flags, py::const_),
-               D(BSDF, flags))
-          .def("flags", py::overload_cast<size_t, Mask>(&BSDF::flags, py::const_),
-               D(BSDF, flags, 2))
+    auto bsdf = MTS_PY_CLASS(BSDF, Object)
+        .def("sample", vectorize<Float>(&BSDF::sample),
+            "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
+            .def("eval", vectorize<Float>(&BSDF::eval),
+                "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
+            .def("pdf", vectorize<Float>(&BSDF::pdf),
+                "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
+            .def("eval_tr", vectorize<Float>(&BSDF::eval_tr),
+                "si"_a, "active"_a = true, D(BSDF, eval_tr))
+        .def("flags", py::overload_cast<Mask>(&BSDF::flags, py::const_),
+            D(BSDF, flags))
+        .def("flags", py::overload_cast<size_t, Mask>(&BSDF::flags, py::const_),
+            D(BSDF, flags, 2))
 
-          .def_method(BSDF, needs_differentials)
-          .def_method(BSDF, component_count)
-          .def_method(BSDF, id)
-          .def("__repr__", &BSDF::to_string)
-          ;
+        .def_method(BSDF, needs_differentials)
+        .def_method(BSDF, component_count)
+        .def_method(BSDF, id)
+        .def("__repr__", &BSDF::to_string)
+        ;
 
-     // TODO vectorize wrapper bindings
-     // if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
-     //      bsdf.def("sample", enoki::vectorize_wrapper(&BSDF::sample),
-     //               "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
-     //           .def("eval", enoki::vectorize_wrapper(&BSDF::eval),
-     //                "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
-     //           .def("pdf", enoki::vectorize_wrapper(&BSDF::pdf),
-     //                "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
-     //           .def("eval_tr", enoki::vectorize_wrapper(&BSDF::eval_tr),
-     //                "si"_a, "active"_a = true, D(BSDF, eval))
-     //           ;
-     // }
-
-     // TODO is this necessary?
-     m.attr("BSDFFlags") = py::module::import("mitsuba.render.BSDFFlags");
+    m.attr("BSDFFlags") = py::module::import("mitsuba.render.BSDFFlags");
 }
 
 MTS_PY_EXPORT(TransportMode) {
