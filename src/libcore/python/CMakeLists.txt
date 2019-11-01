@@ -28,7 +28,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   rfilter.cpp
   # spectrum.cpp
   spline.cpp
-  # stream.cpp
+  stream.cpp
   struct.cpp
   thread.cpp
   # transform.cpp

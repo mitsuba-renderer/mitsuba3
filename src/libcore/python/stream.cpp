@@ -56,7 +56,7 @@ MTS_PY_EXPORT(Stream) {
         .DECLARE_RW(uint64_t, "uint64")
         .DECLARE_RW(float, "single")
         .DECLARE_RW(double, "double")
-        .DECLARE_RW(Float, "float")
+        .DECLARE_RW(float, "float")
         .DECLARE_RW(bool, "bool")
         .DECLARE_RW(std::string, "string");
 
