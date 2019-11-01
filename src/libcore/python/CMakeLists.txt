@@ -32,8 +32,8 @@ add_mitsuba_python_library(mitsuba_core_ext core
   struct.cpp
   thread.cpp
   # transform.cpp
-  # util.cpp
-  # vector.cpp
+  util.cpp
+  vector.cpp
   warp.cpp
   xml.cpp
 )
