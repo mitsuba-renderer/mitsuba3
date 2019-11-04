@@ -16,7 +16,7 @@ MTS_PY_EXPORT(Resampler)
 {
     using Resampler = mitsuba::Resampler<float>;
     auto resampler = py::class_<Resampler>(m, "Resampler", D(Resampler))
-        .def(py::init<const ReconstructionFilter<float> *, uint32_t, uint32_t>(),
+        .def(py::init<const ReconstructionFilter<float, void> *, uint32_t, uint32_t>(),
              "rfilter"_a, "source_res"_a, "target_res"_a,
              D(Resampler, Resampler))
         .def_method(Resampler, source_resolution)
@@ -52,10 +52,10 @@ MTS_PY_EXPORT(Resampler)
              "target_stride"_a, "channels"_a);
 }
 
-MTS_PY_EXPORT_FLOAT_VARIANTS(rfilter) {
+MTS_PY_EXPORT_MODE_VARIANTS(rfilter) {
     m.attr("FilterBoundaryCondition") = py::module::import("mitsuba.core.FilterBoundaryCondition");
 
-    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float>;
+    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Spectrum>;
 
     auto rfilter = MTS_PY_CLASS(ReconstructionFilter, Object)
         .def_method(ReconstructionFilter, border_size)

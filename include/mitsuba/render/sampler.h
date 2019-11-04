@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sampler : public Object {
 public:
-    MTS_REGISTER_INTERFACE(Sampler, Object)
+    MTS_DECLARE_CLASS_VARIANT(Sampler, Object, "sampler")
     MTS_IMPORT_TYPES()
 
     /**

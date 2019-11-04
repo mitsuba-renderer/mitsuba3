@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE FileResolver : public Object {
 public:
-    MTS_REGISTER_CLASS(FileResolver, Object)
+    MTS_DECLARE_CLASS(FileResolver, Object)
     using iterator       = std::vector<fs::path>::iterator;
     using const_iterator = std::vector<fs::path>::const_iterator;
 

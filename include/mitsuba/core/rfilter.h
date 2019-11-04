@@ -44,10 +44,10 @@ enum class FilterBoundaryCondition : uint32_t {
  * sample, the implementation of this class internally precomputes an discrete
  * representation, whose resolution given by \ref MTS_FILTER_RESOLUTION.
  */
-template <typename Float>
+template <typename Float, typename Spectrum>
 class MTS_EXPORT_CORE ReconstructionFilter : public Object {
 public:
-    MTS_REGISTER_INTERFACE(ReconstructionFilter, Object, "rfilter")
+    MTS_DECLARE_CLASS_VARIANT(ReconstructionFilter, Object, "rfilter")
 
     /// Return the filter's width
     Float radius() const { return m_radius; }
@@ -103,7 +103,7 @@ template <typename Scalar_> struct Resampler {
      * \param target_res
      *      Desired target resolution
      */
-    Resampler(const ReconstructionFilter<Scalar> *rfilter,
+    Resampler(const ReconstructionFilter<Scalar, void> *rfilter,
               uint32_t source_res, uint32_t target_res)
         : m_source_res(source_res), m_target_res(target_res) {
         if (source_res == 0 || target_res == 0)

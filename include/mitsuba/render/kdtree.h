@@ -98,7 +98,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename BoundingBox_, typename Index_, typename CostModel_,
           typename Derived_> class TShapeKDTree : public Object {
 public:
-    MTS_REGISTER_CLASS(TShapeKDTree, Object)
+    MTS_DECLARE_CLASS_VARIANT(TShapeKDTree, Object)
 
     using BoundingBox = BoundingBox_;
     using CostModel   = CostModel_;
@@ -2020,7 +2020,7 @@ private:
 class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<float, 3>>, uint32_t,
                                                           SurfaceAreaHeuristic3f, ShapeKDTree> {
 public:
-    MTS_REGISTER_CLASS(ShapeKDTree, TShapeKDTree)
+    MTS_DECLARE_CLASS_VARIANT(ShapeKDTree, TShapeKDTree)
 
     using BoundingBox3f = mitsuba::BoundingBox<mitsuba::Point<float, 3>>;
     using Base = TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;

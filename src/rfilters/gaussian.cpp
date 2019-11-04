@@ -11,10 +11,10 @@ NAMESPACE_BEGIN(mitsuba)
  * choice in Mitsuba.
  */
 template <typename Float, typename Spectrum = void>
-class GaussianFilter final : public ReconstructionFilter<Float> {
+class GaussianFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(GaussianFilter, ReconstructionFilter)
-    MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
+    MTS_DECLARE_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)
+    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     GaussianFilter(const Properties &props) : Base(props) {
         // Standard deviation

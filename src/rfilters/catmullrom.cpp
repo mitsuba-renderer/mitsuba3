@@ -8,10 +8,10 @@ NAMESPACE_BEGIN(mitsuba)
  * features at the cost of more ringing.
  */
 template <typename Float, typename Spectrum = void>
-class CatmullRomFilter final : public ReconstructionFilter<Float> {
+class CatmullRomFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(CatmullRomFilter, ReconstructionFilter)
-    MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
+    MTS_DECLARE_CLASS_VARIANT(CatmullRomFilter, ReconstructionFilter)
+    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     CatmullRomFilter(const Properties &props) : Base(props) {
         m_radius = 2.f;

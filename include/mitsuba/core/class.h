@@ -29,16 +29,13 @@ public:
      * \brief Construct a new class descriptor
      *
      * This method should never be called manually. Instead, use
-     * the \ref MTS_IMPLEMENT_CLASS macro to automatically do this for you.
+     * the \ref MTS_DECLARE_CLASS macro to automatically do this for you.
      *
      * \param name
      *     Name of the class
      *
      * \param parent
      *     Name of the parent class
-     *
-     * \param register
-     *     Whether this class should be registered with the XML parser.
      *
      * \param constr
      *     Pointer to a default construction function
@@ -52,7 +49,7 @@ public:
      */
     Class(const std::string &name,
           const std::string &parent,
-          bool register_ = false,
+          const std::string &variant = "",
           ConstructFunctor constr = nullptr,
           UnserializeFunctor unser = nullptr,
           const std::string &alias = "");
@@ -60,16 +57,11 @@ public:
     /// Return the name of the represented class
     const std::string &name() const { return m_name; }
 
+    /// Return the variant of the represented class
+    const std::string &variant() const { return m_variant; }
+
     /// Return the scene description-specific alias
     const std::string &alias() const { return m_alias; }
-
-#if 0  // TODO: remove this?
-    /**
-     * \brief Return whether or not the class represented
-     * by this Class object contains pure virtual methods
-     */
-    bool is_abstract() const { return m_abstract; }
-#endif
 
     /// Does the class support instantiation over RTTI?
     bool is_constructible() const { return m_constr != nullptr; }
@@ -86,7 +78,7 @@ public:
     bool derives_from(const Class *class_) const;
 
     /// Look up a class by its name
-    static const Class *for_name(const std::string &name);
+    static const Class *for_name(const std::string &name, const std::string &variant = "");
 
     /**
      * \brief Generate an instance of this class
@@ -114,15 +106,18 @@ public:
 
     /// Free the memory taken by static_initialization()
     static void static_shutdown();
+
+
+    static std::string construct_key(const std::string &name, const std::string &variant);
+
 private:
     /** \brief Initialize a class - called by
      * static_initialization()
      */
     static void initialize_once(Class *class_);
 private:
-    std::string m_name, m_alias, m_parent_name;
+    std::string m_name, m_parent_name, m_variant, m_alias;
     Class *m_parent;
-    // bool m_abstract;
     ConstructFunctor m_constr;
     UnserializeFunctor m_unser;
     static bool m_is_initialized;
@@ -156,18 +151,18 @@ private:
  * };
  * \endcode
  */
-#define MTS_REGISTER_CLASS(Name, Parent, ...)                                                      \
+#define MTS_DECLARE_CLASS(Name, Parent, ...)                                                       \
     inline static const Class *m_class = new Class(                                                \
-        #Name, #Parent, false,                                                                     \
+        #Name, #Parent, "",                                                                        \
         ::mitsuba::detail::get_construct_functor<Name>(),                                          \
         ::mitsuba::detail::get_unserialize_functor<Name>(),                                        \
          ## __VA_ARGS__);                                                                          \
     const Class *class_() const override { return m_class; }
 
-/// Same as MTS_REGISTER_CLASS, but additionally registers the class with the XML parser
-#define MTS_REGISTER_INTERFACE(Name, Parent, ...)                                                  \
+#define MTS_DECLARE_CLASS_VARIANT(Name, Parent, ...)                                               \
     inline static const Class *m_class = new Class(                                                \
-        #Name, #Parent, true,                                                                      \
+        #Name, #Parent,                                                                            \
+        ::mitsuba::detail::get_variant<Float, Spectrum>(),                                         \
         ::mitsuba::detail::get_construct_functor<Name>(),                                          \
         ::mitsuba::detail::get_unserialize_functor<Name>(),                                        \
          ## __VA_ARGS__);                                                                          \

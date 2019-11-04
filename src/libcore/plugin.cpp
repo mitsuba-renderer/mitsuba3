@@ -15,10 +15,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-extern "C" {
-    typedef Object *(*CreateObjectFunctor)(const Properties &props);
-};
-
 class Plugin {
 public:
     Plugin(const fs::path &path) : m_path(path) {
@@ -35,26 +31,8 @@ public:
         #endif
 
         try {
-            create_object = (CreateObjectFunctor) symbol("CreateObject");
-#if defined(__AVX512ER__) && defined(__LINUX__)
-            static bool knl_warning_once = true;
-            auto p0 = (uintptr_t) create_object     & 0xffffffff00000000ull;
-            auto p1 = (uintptr_t) &util::core_count & 0xffffffff00000000ull;
-            if (p0 != p1 && knl_warning_once) {
-                if (getenv("LD_PREFER_MAP_32BIT_EXEC") == nullptr) {
-                    std::cerr << "Warning: It is strongly recommended that you set the LD_PREFER_MAP_32BIT_EXEC" << std::endl
-                              << "environment variable on Xeon Phi machines to avoid misprediction penalties" << std::endl
-                              << "involving function calls across 64 bit boundaries, e.g. to Mitsuba plugins." << std::endl
-                              << "To do so, enter" << std::endl << std::endl
-                              << "   $ export LD_PREFER_MAP_32BIT_EXEC = 1" << std::endl << std::endl
-                              << "before launching Mitsuba (you'll want to put this into your .bashrc as well)." << std::endl << std::endl;
-                } else {
-                    std::cerr << "Warning: Your version of ld.so doesn't respect the LD_PREFER_MAP_32BIT_EXEC" << std::endl
-                              << "flag -- potentially it is too old? (version >= 2.23 is needed)" << std::endl;
-                }
-                knl_warning_once = false;
-            }
-#endif
+            plugin_name  = (const char *) symbol("plugin_name");
+            plugin_descr = (const char *) symbol("plugin_descr");
         } catch (...) {
             this->~Plugin();
             throw;
@@ -84,7 +62,8 @@ public:
         return ptr;
     }
 
-    CreateObjectFunctor create_object = nullptr;
+    const char *plugin_name  = nullptr;
+    const char *plugin_descr = nullptr;
 
 private:
     #if defined(__WINDOWS__)
@@ -151,7 +130,9 @@ ref<Object> PluginManager::create_object(const Properties &props, const Class *c
        return class_->construct(props);
 
    const Plugin *plugin = d->plugin(props.plugin_name());
-   ref<Object> object = plugin->create_object(props);
+   const Class *class_ = Class::for_name(plugin->class_name, class_->variant());
+   ref<Object> object = class->instantiate(props);
+
    if (!object->class_()->derives_from(class_)) {
         const Class *oc = object->class_();
         if (oc->parent())
@@ -165,10 +146,12 @@ ref<Object> PluginManager::create_object(const Properties &props, const Class *c
    return object;
 }
 
-ref<Object> PluginManager::create_object(const Properties &props) {
-    const Plugin *plugin = d->plugin(props.plugin_name());
-    return plugin->create_object(props);
-}
+// TODO do we still need this?
+// ref<Object> PluginManager::create_object(const Properties &props) {
+//     const Plugin *plugin = d->plugin(props.plugin_name());
+//     const Class *class_ = Class::for_name(plugin->class_name);
+//     return class->instantiate(props);
+// }
 
 std::vector<std::string> PluginManager::loaded_plugins() const {
     std::vector<std::string> list;

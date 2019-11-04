@@ -11,10 +11,10 @@ NAMESPACE_BEGIN(mitsuba)
  * Proceedings of SIGGRAPH 88, Computer Graphics 22(4), pp. 221-228, 1988.
  */
 template <typename Float, typename Spectrum = void>
-class MitchellNetravaliFilter final : public ReconstructionFilter<Float> {
+class MitchellNetravaliFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(MitchellNetravaliFilter, ReconstructionFilter)
-    MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
+    MTS_DECLARE_CLASS_VARIANT(MitchellNetravaliFilter, ReconstructionFilter)
+    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     MitchellNetravaliFilter(const Properties &props) : Base(props) {
         // Filter radius

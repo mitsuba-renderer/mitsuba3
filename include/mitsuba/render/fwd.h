@@ -16,7 +16,7 @@ template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
-template <typename Float> class ReconstructionFilter;
+template <typename Float, typename Spectrum> class ReconstructionFilter;
 template <typename Float, typename Spectrum> class Integrator;
 template <typename Float, typename Spectrum> class Medium;
 template <typename Float, typename Spectrum> class MicrofacetDistribution;
@@ -63,7 +63,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Medium                 = mitsuba::Medium<Float, Spectrum>;
     using Film                   = mitsuba::Film<Float, Spectrum>;
     using ImageBlock             = mitsuba::ImageBlock<Float, Spectrum>;
-    using ReconstructionFilter   = mitsuba::ReconstructionFilter<Float>;
+    using ReconstructionFilter   = mitsuba::ReconstructionFilter<Float, Spectrum>;
     using ContinuousSpectrum     = mitsuba::ContinuousSpectrum<Float, Spectrum>;
     using Texture3D              = mitsuba::Texture3D<Float, Spectrum>;
 

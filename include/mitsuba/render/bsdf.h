@@ -301,7 +301,7 @@ template <typename Float, typename Spectrum>
 // class MTS_EXPORT_RENDER BSDF : public DifferentiableObject {
 class MTS_EXPORT_RENDER BSDF : public Object {
 public:
-    MTS_REGISTER_CLASS(BSDF, Object)
+    MTS_DECLARE_CLASS_VARIANT(BSDF, Object, "bsdf")
     MTS_IMPORT_TYPES();
 
     /**

@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Medium : public Object {
 public:
-    MTS_REGISTER_INTERFACE(Medium, Object)
+    MTS_DECLARE_CLASS_VARIANT(Medium, Object, "medium")
 
 protected:
     virtual ~Medium();

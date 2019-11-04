@@ -23,22 +23,22 @@ using ParameterList = std::vector<std::pair<std::string, std::string>>;
  *     Optional list of parameters that can be referenced as <tt>$varname</tt>
  *     in the scene.
  *
- * \param monochrome
- *     Instantiate a monochrome version of the scene?
+ * \param variant
+ *     Specifies the variant of plugins to instantiate (e.g. "scalar_rgb")
  *
  * \param update_scene
  *     When Mitsuba updates scene to a newer version, should the
  *     updated XML file be written back to disk?
  */
 extern MTS_EXPORT_CORE ref<Object> load_file(const fs::path &path,
+                                             const std::string &variant,
                                              ParameterList parameters = ParameterList(),
-                                             bool monochrome = false,
                                              bool update_scene = false);
 
 /// Load a Mitsuba scene from an XML string
 extern MTS_EXPORT_CORE ref<Object> load_string(const std::string &string,
-                                               ParameterList parameters = ParameterList(),
-                                               bool monochrome = false);
+                                               const std::string &variant,
+                                               ParameterList parameters = ParameterList());
 
 NAMESPACE_END(xml)
 NAMESPACE_END(mitsuba)

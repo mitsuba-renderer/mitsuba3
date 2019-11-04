@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Appender : public Object {
 public:
-    MTS_REGISTER_CLASS(Appender, Object)
+    MTS_DECLARE_CLASS(Appender, Object)
 
     /// Append a line of text with the given log level
     virtual void append(LogLevel level, const std::string &text) = 0;
@@ -39,7 +39,7 @@ protected:
  */
 class MTS_EXPORT_CORE StreamAppender : public Appender {
 public:
-    MTS_REGISTER_CLASS(StreamAppender, Appender)
+    MTS_DECLARE_CLASS(StreamAppender, Appender)
 
     /**
      * Create a new stream appender

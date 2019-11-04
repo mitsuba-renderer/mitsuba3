@@ -20,13 +20,14 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Bitmap : public Object {
 public:
-    MTS_REGISTER_CLASS(Bitmap, Object)
+    MTS_DECLARE_CLASS(Bitmap, Object)
     // TODO: templatize if appropriate
     using Float                = float;
     using Vector2s             = Vector<size_t, 2>;
     using Vector2i             = Vector<int32_t, 2>;
     using Point2i              = Point<int32_t, 2>;
-    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float>;
+    // TODO: give it the right spectrum
+    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, void>;
 
     // ======================================================================
     //! @{ \name Constructors and Enumerations

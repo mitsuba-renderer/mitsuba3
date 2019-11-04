@@ -10,10 +10,10 @@ NAMESPACE_BEGIN(mitsuba)
  * or Lanczos Sinc)
  */
 template <typename Float, typename Spectrum = void>
-class TentFilter final : public ReconstructionFilter<Float> {
+class TentFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(TentFilter, ReconstructionFilter)
-    MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
+    MTS_DECLARE_CLASS_VARIANT(TentFilter, ReconstructionFilter)
+    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     TentFilter(const Properties &props) : Base(props) {
         m_radius = 1.0f;

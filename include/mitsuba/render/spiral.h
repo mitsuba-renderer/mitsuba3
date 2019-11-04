@@ -24,7 +24,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_RENDER Spiral : public Object {
 public:
-    MTS_REGISTER_CLASS(Spiral, Object)
+    MTS_DECLARE_CLASS(Spiral, Object)
     using Float = float;
     using Spectrum = void;
     MTS_IMPORT_TYPES()

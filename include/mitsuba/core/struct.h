@@ -21,7 +21,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Struct : public Object {
 public:
-    MTS_REGISTER_CLASS(Struct, Object)
+    MTS_DECLARE_CLASS(Struct, Object)
 
     /// Type of a field in the \c Struct
     enum EType {
@@ -352,7 +352,7 @@ MTS_STRUCT_TRAITS(double, EFloat64);
 class MTS_EXPORT_CORE StructConverter : public Object {
     using FuncType = bool (*) (size_t, size_t, const void *, void *);
 public:
-    MTS_REGISTER_CLASS(StructConverter, Object)
+    MTS_DECLARE_CLASS(StructConverter, Object)
 
     /// Construct an optimized conversion routine going from \c source to \c target
     StructConverter(const Struct *source, const Struct *target, bool dither = false);

@@ -13,10 +13,10 @@ NAMESPACE_BEGIN(mitsuba)
  * instance have black fringing artifacts around it).
  */
 template <typename Float, typename Spectrum = void>
-class LanczosSincFilter final : public ReconstructionFilter<Float> {
+class LanczosSincFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(LanczosSincFilter, ReconstructionFilter)
-    MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
+    MTS_DECLARE_CLASS(LanczosSincFilter, ReconstructionFilter)
+    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     LanczosSincFilter(const Properties &props) : Base(props) {
         m_radius = (Float) props.int_("lobes", 3);

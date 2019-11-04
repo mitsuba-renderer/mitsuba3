@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Thread : public Object {
 public:
-    MTS_REGISTER_CLASS(Thread, Object)
+    MTS_DECLARE_CLASS(Thread, Object)
 
     class TaskObserver; /* Used internally to keep track of TBB threads */
     friend class ScopedThreadEnvironment;

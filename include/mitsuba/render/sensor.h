@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
-    MTS_REGISTER_INTERFACE(Sensor, Endpoint)
+    MTS_DECLARE_CLASS_VARIANT(Sensor, Endpoint)
     MTS_USING_BASE(Endpoint, sample_ray)
     MTS_IMPORT_TYPES();
     using Base::m_needs_sample_3;
@@ -150,7 +150,7 @@ protected:
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(ProjectiveCamera, Sensor)
+    MTS_DECLARE_CLASS_VARIANT(ProjectiveCamera, Sensor)
     MTS_IMPORT_TYPES()
     MTS_USING_BASE(Sensor, world_transform)
 

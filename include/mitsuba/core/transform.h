@@ -360,7 +360,7 @@ template <typename Float, size_t Size> struct Transform {
  */
 class MTS_EXPORT_CORE AnimatedTransform : public Object {
 public:
-    MTS_REGISTER_CLASS(AnimatedTransform, Object)
+    MTS_DECLARE_CLASS(AnimatedTransform, Object)
 
     using Float        = float;
     using Vector3f     = Vector<Float, 3>;

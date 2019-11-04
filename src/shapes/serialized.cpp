@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class SerializedMesh final : public Mesh {
 public:
-    MTS_REGISTER_CLASS(SerializedMesh, Mesh)
+    MTS_DECLARE_CLASS(SerializedMesh, Mesh)
 
     enum ETriMeshFlags {
         EHasNormals      = 0x0001,

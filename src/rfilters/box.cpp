@@ -11,10 +11,10 @@ NAMESPACE_BEGIN(mitsuba)
  * may warrant its use.
  */
 template <typename Float, typename Spectrum = void>
-class BoxFilter final : public ReconstructionFilter<Float> {
+class BoxFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(BoxFilter, ReconstructionFilter)
-    MTS_USING_BASE_FLOAT(ReconstructionFilter, init_discretization, m_radius)
+    MTS_DECLARE_CLASS_VARIANT(BoxFilter, ReconstructionFilter)
+    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     BoxFilter(const Properties &props) : Base(props) {
         /* Filter radius in pixels. A tiny epsilon is added, since some

@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE TensorFile : public MemoryMappedFile {
 public:
-    MTS_REGISTER_CLASS(TensorFile, MemoryMappedFile)
+    MTS_DECLARE_CLASS(TensorFile, MemoryMappedFile)
 
     /// Information about the specified field
     struct Field {

@@ -17,11 +17,10 @@ static std::map<std::string, Class *> *__classes;
 bool Class::m_is_initialized = false;
 const Class *m_class = nullptr;
 
-Class::Class(const std::string &name, const std::string &parent,
-             bool register_,
+Class::Class(const std::string &name, const std::string &parent, const std::string &variant,
              ConstructFunctor constr,
              UnserializeFunctor unser, const std::string &alias)
-    : m_name(name), m_alias(alias), m_parent_name(parent),
+    : m_name(name), m_parent_name(parent), m_variant(variant), m_alias(alias),
       m_constr(constr), m_unser(unser) {
 
     if (m_alias.empty())
@@ -30,15 +29,16 @@ Class::Class(const std::string &name, const std::string &parent,
     if (!__classes)
         __classes = new std::map<std::string, Class *>();
 
-    (*__classes)[name] = this;
+    (*__classes)[construct_key(name, variant)] = this;
 
     // Also register new abstract classes with the XML parser
-    if (register_)
+    if (!alias.empty())
         xml::detail::register_class(this);
 }
 
-const Class *Class::for_name(const std::string &name) {
-    auto it = __classes->find(name);
+const Class *Class::for_name(const std::string &name, const std::string &variant) {
+    const std::string &key = construct_key(name, variant);
+    auto it = __classes->find(key);
     if (it != __classes->end())
         return it->second;
 
@@ -58,14 +58,14 @@ bool Class::derives_from(const Class *arg) const {
 }
 
 void Class::initialize_once(Class *class_) {
-    const std::string &base = class_->m_parent_name;
+    const std::string &key_base = construct_key(class_->m_parent_name, class_->variant());
 
-    if (!base.empty()) {
-        if (__classes->find(base) != __classes->end()) {
-            class_->m_parent = (*__classes)[base];
+    if (!key_base.empty()) {
+        if (__classes->find(key_base) != __classes->end()) {
+            class_->m_parent = (*__classes)[key_base];
         } else {
             std::cerr << "Critical error during the static RTTI initialization: " << std::endl
-                << "Could not locate the base class '" << base << "' while initializing '"
+                << "Could not locate the base class '" << key_base << "' while initializing '"
                 << class_->name() << "'!" << std::endl;
             abort();
         }
@@ -99,6 +99,14 @@ void Class::static_shutdown() {
     __classes = nullptr;
     m_is_initialized = false;
     xml::detail::cleanup();
+}
+
+std::string Class::construct_key(const std::string &name, const std::string &variant)
+{
+    if (variant.empty())
+        return name;
+    else
+        return name + "." + variant;
 }
 
 NAMESPACE_END(mitsuba)

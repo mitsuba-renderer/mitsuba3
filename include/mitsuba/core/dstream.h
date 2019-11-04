@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE DummyStream : public Stream {
 public:
-    MTS_REGISTER_CLASS(DummyStream, Stream)
+    MTS_DECLARE_CLASS(DummyStream, Stream)
     DummyStream();
 
     /** \brief Closes the stream.

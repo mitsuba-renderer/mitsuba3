@@ -109,7 +109,8 @@ inline int64_t stoll(const std::string &s) {
 
 
 static std::unordered_map<std::string, ETag> *tags = nullptr;
-static std::unordered_map<std::string, const Class *> *tag_class = nullptr;
+static std::unordered_map<std::string /* e.g. bsdf.scalar-rgb */,
+                          const Class *> *tag_class = nullptr;
 
 // Called by Class::Class()
 void register_class(const Class *class_) {
@@ -140,19 +141,19 @@ void register_class(const Class *class_) {
     }
 
     /* Register the new class as an object tag */
-    auto tag_name = string::to_lower(class_->alias());
+    auto tag_name = class_->alias();
     auto it = tags->find(tag_name);
     if (it == tags->end()) {
         (*tags)[tag_name] = EObject;
-        (*tag_class)[tag_name] = class_;
+        (*tag_class)[Class::construct_key(tag_name, class_->variant())] = class_;
     } else if (it->second != EObject) {
-        (*tag_class)[tag_name] = class_;
+        (*tag_class)[Class::construct_key(tag_name, class_->variant())] = class_;
     }
 
     if (tag_name == "spectrum") {
         // A texture is a kind of ContinuousSpectrum
         (*tags)["texture"] = EObject;
-        (*tag_class)["texture"] = class_;
+        (*tag_class)[Class::construct_key("texture", class_->variant())] = class_;
     }
 }
 
@@ -232,14 +233,7 @@ struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
-    bool monochrome = false;
-
-    Properties properties(const std::string &type) const {
-        Properties props(type);
-        props.set_bool("monochrome", monochrome, false);
-        props.mark_queried("monochrome");
-        return props;
-    }
+    std::string variant;
 };
 
 /// Helper function to check if attributes are fully specified
@@ -415,7 +409,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         ETag tag = it->second;
 
         if (node.attribute("type") && tag != EObject
-            && tag_class->find(node.name()) != tag_class->end())
+            && tag_class->find(Class::construct_key(node.name(), ctx.variant)) != tag_class->end())
             tag = EObject;
 
         /* Perform some safety checks to make sure that the XML tree really makes sense */
@@ -492,7 +486,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                 type      = node.attribute("type").value(),
                                 node_name = node.name();
 
-                    Properties props_nested = ctx.properties(type);
+                    Properties props_nested;
                     props_nested.set_id(id);
 
                     auto it_inst = ctx.instances.find(id);
@@ -500,7 +494,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
                             node_name, id, src.offset(it_inst->second.location));
 
-                    auto it2 = tag_class->find(node_name);
+                    auto it2 = tag_class->find(Class::construct_key(node_name, ctx.variant));
                     if (it2 == tag_class->end())
                         src.throw_error(node, "could not retrieve class object for "
                                        "tag \"%s\"", node_name);
@@ -715,7 +709,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     if (tokens.size() != 3)
                         src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")", node.attribute("value").value());
 
-                    Properties props2 = ctx.properties(within_emitter ? "srgb_d65" : "srgb");
+                    Properties props2(within_emitter ? "srgb_d65" : "srgb");
                     Color3f col;
                     try {
                         col = Color3f(detail::stof(tokens[0]),
@@ -737,7 +731,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         Float lum = luminance(props2.color("color"));
                         // if (within_emitter)
                         //     lum /= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
-                        props2 = ctx.properties("uniform");
+                        props2 = Properties("uniform");
                         props2.set_float("value", lum);
                         auto obj = PluginManager::instance()->create_object(props2);
                         props.set_object(node.attribute("name").value(), obj);
@@ -750,7 +744,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
                     if (tokens.size() == 1) {
-                        Properties props2 = ctx.properties(within_emitter ? "d65" : "uniform");
+                        Properties props2(within_emitter ? "d65" : "uniform");
                         try {
                             props2.set_float("value", detail::stof(tokens[0]));
                         } catch (...) {
@@ -820,7 +814,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         if (!is_regular)
                             Throw("Not implemented yet: irregularly sampled spectra.");
 
-                        Properties props2 = ctx.properties("interpolated");
+                        Properties props2("interpolated");
                         props2.set_float("lambda_min", wavelengths.front());
                         props2.set_float("lambda_max", wavelengths.back());
                         props2.set_long("size", wavelengths.size());
@@ -848,7 +842,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                  * curve */
                                 average *= 0.0093583f;
 
-                            props2 = ctx.properties("uniform");
+                            props2 = Properties("uniform");
                             props2.set_float("value", average);
                             obj = PluginManager::instance()->create_object(props2);
                             props.set_object(node.attribute("name").value(), obj);
@@ -1036,7 +1030,8 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
 NAMESPACE_END(detail)
 
-ref<Object> load_string(const std::string &string, ParameterList param, bool monochrome) {
+ref<Object> load_string(const std::string &string, const std::string &variant,
+                        ParameterList param) {
     ScopedPhase sp(EProfilerPhase::EInitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
@@ -1053,16 +1048,16 @@ ref<Object> load_string(const std::string &string, ParameterList param, bool mon
 
     pugi::xml_node root = doc.document_element();
     detail::XMLParseContext ctx;
-    ctx.monochrome = monochrome;
-    Properties prop = ctx.properties("");
+    ctx.variant = variant;
+    Properties prop("");
     size_t arg_counter; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
                                       param, arg_counter, 0).second;
     return detail::instantiate_node(ctx, scene_id);
 }
 
-ref<Object> load_file(const fs::path &filename_, ParameterList param,
-                      bool monochrome, bool write_update) {
+ref<Object> load_file(const fs::path &filename_, const std::string &variant,
+                      ParameterList param, bool write_update) {
     ScopedPhase sp(EProfilerPhase::EInitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
@@ -1087,8 +1082,8 @@ ref<Object> load_file(const fs::path &filename_, ParameterList param,
     pugi::xml_node root = doc.document_element();
 
     detail::XMLParseContext ctx;
-    ctx.monochrome = monochrome;
-    Properties prop = ctx.properties("");
+    ctx.variant = variant;
+    Properties prop("");
     size_t arg_counter = 0; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
                                       param, arg_counter, 0).second;

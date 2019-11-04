@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mitsuba/core/fwd.h>
+
 #define MTS_CONFIGURATIONS                                                  \
     "scalar_spectral_polarized\n"                                           \
     "scalar_rgb\n"                                                          \
@@ -8,44 +10,22 @@
 
 
 #define MTS_INSTANTIATE_OBJECT(Name)                                        \
-    template class MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
-    template class MTS_EXPORT_CORE Name<float, Color<float, 3>>;            \
-    template class MTS_EXPORT_CORE Name<float, Color<float, 1>>;            \
-    template class MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;         \
+    template class MTS_EXPORT_RENDER Name<float, Color<float, 1>>;          \
+    template class MTS_EXPORT_RENDER Name<float, Color<float, 3>>;          \
+    template class MTS_EXPORT_RENDER Name<float, Spectrum<float, 4>>;       \
+    template class MTS_EXPORT_RENDER Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
 
 
 #define MTS_INSTANTIATE_STRUCT(Name)                                        \
-    template struct MTS_EXPORT_CORE Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
-    template struct MTS_EXPORT_CORE Name<float, Color<float, 3>>;           \
-    template struct MTS_EXPORT_CORE Name<float, Color<float, 1>>;           \
-    template struct MTS_EXPORT_CORE Name<float, Spectrum<float, 4>>;        \
+    template struct MTS_EXPORT_RENDER Name<float, Color<float, 1>>;         \
+    template struct MTS_EXPORT_RENDER Name<float, Color<float, 3>>;         \
+    template struct MTS_EXPORT_RENDER Name<float, Spectrum<float, 4>>;      \
+    template struct MTS_EXPORT_RENDER Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
 
 
 #define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)                           \
-    extern "C" {                                                            \
-        MTS_EXPORT const char *plugin_descr = Descr;                        \
-        MTS_EXPORT Object *plugin_create(const char *config,                \
-                                         const Properties &props) {         \
-            constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float); \
-            ENOKI_MARK_USED(PacketSize);                                    \
-            if (strcmp(config, "scalar_spectral_polarized") == 0) {         \
-                using Float = float;                                        \
-                return new Name<float, MuellerMatrix<Spectrum<Float, 4>>>(props); \
-            } else if (strcmp(config, "scalar_rgb") == 0) {                 \
-                using Float = float;                                        \
-                return new Name<float, Color<Float, 3>>(props);             \
-            } else if (strcmp(config, "scalar_mono") == 0) {                \
-                using Float = float;                                        \
-                return new Name<float, Color<Float, 1>>(props);             \
-            } else if (strcmp(config, "scalar_spectral") == 0) {            \
-                using Float = float;                                        \
-                return new Name<float, Spectrum<Float, 4>>(props);          \
-            } else {                                                        \
-                return nullptr;                                             \
-            }                                                               \
-        }                                                                   \
-    }                                                                       \
-                                                                            \
+    MTS_EXPORT const char *plugin_descr = Descr;                            \
+    MTS_EXPORT const char *plugin_name = #Name;                             \
     MTS_INSTANTIATE_OBJECT(Name)                                            \
 
 
@@ -81,3 +61,18 @@
     void instantiate_##name(py::module m)                                   \
 
 
+NAMESPACE_BEGIN(mitsuba)
+NAMESPACE_BEGIN(detail)
+template <typename Float, typename Spectrum_> constexpr const char *get_variant() {
+    if constexpr (std::is_same_v<Float, float> && std::is_same_v<Spectrum_, Color<float, 1>>)
+        return "scalar_mono";
+    else if constexpr (std::is_same_v<Float, float> && std::is_same_v<Spectrum_, Color<float, 3>>)
+        return "scalar_rgb";
+    else if constexpr (std::is_same_v<Float, float> && std::is_same_v<Spectrum_, Spectrum<float, 4>>)
+        return "scalar_spectral";
+    else if constexpr (std::is_same_v<Float, float> && std::is_same_v<Spectrum_, MuellerMatrix<Spectrum<float, 4>>>)
+        return "scalar_spectral_polarized";
+    else
+        return "";
+}
+NAMESPACE_END(detail)NAMESPACE_END(mitsuba)

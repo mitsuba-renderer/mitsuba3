@@ -25,6 +25,8 @@ with open(fname, 'w') as f:
     def w(s):
         f.write(s.ljust(75) + ' \\\n')
     f.write('#pragma once\n\n')
+    f.write('#include <mitsuba/core/fwd.h>\n\n')
+
 
     w('#define MTS_CONFIGURATIONS')
     for index, (name, float_, spectrum) in enumerate(enabled):
@@ -33,39 +35,28 @@ with open(fname, 'w') as f:
 
     w('#define MTS_INSTANTIATE_OBJECT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        # TODO: this would be better with a `using` declaration
         spectrum = spectrum.replace('Float', float_)
-        # TODO: which export module to use?
-        w('    template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+        w('    template class MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
     w('#define MTS_INSTANTIATE_STRUCT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        # TODO: this would be better with a `using` declaration
         spectrum = spectrum.replace('Float', float_)
-        # TODO: which export module to use?
-        w('    template struct MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+        w('    template struct MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
+<<<<<<< HEAD
+=======
+    w('#define MTS_DECLARE_PLUGIN(Name, Parent)')
+    w('    MTS_DECLARE_CLASS(Name, Parent)')
+    w('    MTS_IMPORT_TYPES()')
+    f.write('\n\n')
+
+    # TODO remove Parent ??
+>>>>>>> Add variant to XML, Class and Plugin
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
-    w('    extern "C" {')
-    w('        MTS_EXPORT const char *plugin_descr = Descr;')
-    w('        MTS_EXPORT Object *plugin_create(const char *config,')
-    w('                                         const Properties &props) {')
-    w('            constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float);')
-    w('            ENOKI_MARK_USED(PacketSize);')
-    for index, (name, float_, spectrum) in enumerate(enabled):
-        w('            %sif (strcmp(config, "%s") == 0) {' %
-          ("" if index == 0 else "} else ", name))
-        w('                using Float = %s;' % float_)
-        w('                return new Name<%s, %s>(props);'
-          % (float_, spectrum))
-    w('            } else {')
-    w('                return nullptr;')
-    w('            }')
-    w('        }')
-    w('    }')
-    w('')
+    w('    MTS_EXPORT const char *plugin_descr = Descr;')
+    w('    MTS_EXPORT const char *plugin_name = #Name;')
     w('    MTS_INSTANTIATE_OBJECT(Name)')
     f.write('\n\n')
 
@@ -97,5 +88,17 @@ with open(fname, 'w') as f:
     w('    template <typename Float, typename Spectrum>')
     w('    void instantiate_##name(py::module m)')
     f.write('\n\n')
+    f.write('NAMESPACE_BEGIN(mitsuba)\n')
+    f.write('NAMESPACE_BEGIN(detail)\n')
+    f.write('template <typename Float, typename Spectrum_> constexpr const char *get_variant() {\n')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        spectrum = spectrum.replace('Float', float_)
+        f.write('    %sif constexpr (std::is_same_v<Float, %s> && std::is_same_v<Spectrum_, %s>)\n' % ('else ' if index > 0 else '', float_, spectrum))
+        f.write('        return "%s";\n' % name)
+    f.write('    else\n')
+    f.write('        return "";\n')
+    f.write('}\n')
+    f.write('NAMESPACE_END(detail)')
+    f.write('NAMESPACE_END(mitsuba)')
 
 print('Generated configuration header: ' + fname)

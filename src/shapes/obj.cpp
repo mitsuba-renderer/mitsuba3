@@ -27,7 +27,7 @@ void advance(const char **start_, const char *end, const char (&delim)[N]) {
 
 class OBJMesh final : public Mesh {
 public:
-    MTS_REGISTER_CLASS(OBJMesh, Mesh)
+    MTS_DECLARE_CLASS(OBJMesh, Mesh)
 
     Float strtof(const char *nptr, char **endptr) {
         #if defined(SINGLE_PRECISION)

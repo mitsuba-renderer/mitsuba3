@@ -61,7 +61,7 @@ namespace {
 /// Dummy class to associate a thread identity with the main thread
 class MainThread : public Thread {
 public:
-    MTS_REGISTER_CLASS(MainThread, Thread)
+    MTS_DECLARE_CLASS(MainThread, Thread)
 
     MainThread() : Thread("main") { }
 
@@ -74,7 +74,7 @@ protected:
 /// Dummy class to associate a thread identity with a worker thread
 class WorkerThread : public Thread {
 public:
-    MTS_REGISTER_CLASS(WorkerThread, Thread)
+    MTS_DECLARE_CLASS(WorkerThread, Thread)
 
     WorkerThread(const std::string &prefix) : Thread(tfm::format("%s%02i", prefix, m_counter++)) { }
 

@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE ProgressReporter : public Object {
 public:
-    MTS_REGISTER_CLASS(ProgressReporter, Object)
+    MTS_DECLARE_CLASS(ProgressReporter, Object)
 
     /**
      * \brief Construct a new progress reporter.

@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
-    MTS_REGISTER_INTERFACE(Shape, Object)
+    MTS_DECLARE_CLASS_VARIANT(Shape, Object, "shape")
     MTS_IMPORT_TYPES();
     using BSDF    = typename RenderAliases::BSDF;
     using Medium  = typename RenderAliases::Medium;

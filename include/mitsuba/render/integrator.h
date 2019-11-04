@@ -35,7 +35,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Integrator : public Object {
 public:
-    MTS_REGISTER_CLASS(Integrator, Object)
+    MTS_DECLARE_CLASS_VARIANT(Integrator, Object, "integrator")
     MTS_IMPORT_TYPES()
     using Scene = typename RenderAliases::Scene;
 
@@ -65,7 +65,7 @@ protected:
 template <typename Float, typename Spectrum>
 class SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(SamplingIntegrator, Integrator)
+    MTS_DECLARE_CLASS_VARIANT(SamplingIntegrator, Integrator)
     MTS_IMPORT_TYPES()
     using Base       = Integrator<Float, Spectrum>;
     using Film       = typename RenderAliases::Film;
@@ -160,7 +160,7 @@ protected:
 template <typename Float, typename Spectrum>
 class MonteCarloIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(MonteCarloIntegrator, SamplingIntegrator)
+    MTS_DECLARE_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
     MTS_USING_BASE(SamplingIntegrator)
 
 protected:

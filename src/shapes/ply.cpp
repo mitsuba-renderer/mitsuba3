@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 class PLYMesh final : public Mesh {
 public:
-    MTS_REGISTER_CLASS(PLYMesh, Mesh)
+    MTS_DECLARE_CLASS(PLYMesh, Mesh)
 
     struct PLYElement {
         std::string name;

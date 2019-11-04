@@ -38,7 +38,8 @@ public:
         ScalarFloat upscale = props.float_("upscale", 1.f);
         if (upscale != 1.f) {
             using SVector2s = Vector<size_t, 2>;
-            using ReconstructionFilter = mitsuba::ReconstructionFilter<Float>;
+            // TODO shouldn't we pass Spectrum as template params?
+            using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, void>;
 
             SVector2s old_size = m_bitmap->size(),
                       new_size = upscale * old_size;
@@ -99,7 +100,7 @@ protected:
 template <typename Float, typename Spectrum, size_t ChannelCount, bool IsRawData>
 class BitmapTextureImpl final : public BitmapTexture<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(BitmapTextureImpl, BitmapTexture)
+    MTS_DECLARE_CLASS_VARIANT(BitmapTextureImpl, BitmapTexture)
     MTS_IMPORT_TYPES()
     MTS_USING_BASE(BitmapTexture, m_bitmap, m_name, m_transform)
     using StorageType = Vector<ScalarFloat, ChannelCount>;

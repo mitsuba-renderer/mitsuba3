@@ -27,7 +27,7 @@ enum LogLevel : int {
  */
 class MTS_EXPORT_CORE Logger : public Object {
 public:
-    MTS_REGISTER_CLASS(Logger, Object)
+    MTS_DECLARE_CLASS(Logger, Object)
 
     /// Construct a new logger with the given minimum log level
     Logger(LogLevel log_level = Debug);

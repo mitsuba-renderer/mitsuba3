@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Formatter : public Object {
 public:
-    MTS_REGISTER_CLASS(Formatter, Object)
+    MTS_DECLARE_CLASS(Formatter, Object)
 
     /**
      * \brief Turn a log message into a human-readable format
@@ -36,7 +36,7 @@ protected:
 class MTS_EXPORT_CORE DefaultFormatter : public Formatter {
     friend class Logger;
 public:
-    MTS_REGISTER_CLASS(DefaultFormatter, Formatter)
+    MTS_DECLARE_CLASS(DefaultFormatter, Formatter)
 
     /// Create a new default formatter
     DefaultFormatter();
