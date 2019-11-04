@@ -45,7 +45,7 @@ enum class FieldFlags {
 
     /**
      * Specifies whether the field encodes a sRGB gamma-corrected value.
-     * Assumes \c ENormalized is also specified.
+     * Assumes \c Normalized is also specified.
      */
     Gamma      = 0x02,
 
@@ -109,7 +109,7 @@ public:
          * Specifies a pair of weights and source field names that will be
          * linearly blended to obtain the output field value. Note that this
          * only works for floating point fields or integer fields with the \ref
-         * ENormalized flag. Gamma-corrected fields will be blended in linear
+         * FieldFlag::Normalized flag. Gamma-corrected fields will be blended in linear
          * space.
          */
         std::vector<std::pair<double, std::string>> blend;

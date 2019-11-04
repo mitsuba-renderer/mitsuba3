@@ -1008,17 +1008,17 @@ Struct &Struct::append(const std::string &name, FieldType type, uint32_t flags, 
         f.offset = last.offset + last.size;
     }
     switch (type) {
-        case EInt8:
-        case EUInt8:   f.size = 1; break;
-        case EInt16:
-        case EUInt16:
-        case EFloat16: f.size = 2; break;
-        case EInt32:
-        case EUInt32:
-        case EFloat32: f.size = 4; break;
-        case EInt64:
-        case EUInt64:
-        case EFloat64: f.size = 8; break;
+        case FieldType::Int8:
+        case FieldType::UInt8:   f.size = 1; break;
+        case FieldType::Int16:
+        case FieldType::UInt16:
+        case FieldType::Float16: f.size = 2; break;
+        case FieldType::Int32:
+        case FieldType::UInt32:
+        case FieldType::Float32: f.size = 4; break;
+        case FieldType::Int64:
+        case FieldType::UInt64:
+        case FieldType::Float64: f.size = 8; break;
         default: Throw("Struct::append(): invalid field type!");
     }
     if (!m_pack)
@@ -1058,15 +1058,15 @@ std::string Struct::to_string() const {
         }
         os << "  " << f.type;
         os << " " << f.name << "; // @" << f.offset;
-        if (f.flags & ENormalized)
+        if (f.flags & FieldFlag::Normalized)
             os << ", normalized";
-        if (f.flags & EGamma)
+        if (f.flags & FieldFlag::Gamma)
             os << ", gamma";
-        if (f.flags & EWeight)
+        if (f.flags & FieldFlag::Weight)
             os << ", weight";
-        if (f.flags & EDefault)
+        if (f.flags & FieldFlag::Default)
             os << ", default=" << f.default_;
-        if (f.flags & EAssert)
+        if (f.flags & FieldFlag::Assert)
             os << ", assert=" << f.default_;
         if (!f.blend.empty()) {
             os << ", blend = <";
@@ -1113,16 +1113,16 @@ std::pair<double, double> Struct::range(FieldType type) {
             break;
 
     switch (type) {
-        COMPUTE_RANGE(EUInt8, uint8_t);
-        COMPUTE_RANGE(EInt8, int8_t);
-        COMPUTE_RANGE(EUInt16, uint16_t);
-        COMPUTE_RANGE(EInt16, int16_t);
-        COMPUTE_RANGE(EUInt32, uint32_t);
-        COMPUTE_RANGE(EInt32, int32_t);
-        COMPUTE_RANGE(EUInt64, uint64_t);
-        COMPUTE_RANGE(EInt64, int64_t);
-        COMPUTE_RANGE(EFloat32, float);
-        COMPUTE_RANGE(EFloat64, double);
+        COMPUTE_RANGE(FieldType::UInt8, uint8_t);
+        COMPUTE_RANGE(FieldType::Int8, int8_t);
+        COMPUTE_RANGE(FieldType::UInt16, uint16_t);
+        COMPUTE_RANGE(FieldType::Int16, int16_t);
+        COMPUTE_RANGE(FieldType::UInt32, uint32_t);
+        COMPUTE_RANGE(FieldType::Int32, int32_t);
+        COMPUTE_RANGE(FieldType::UInt64, uint64_t);
+        COMPUTE_RANGE(FieldType::Int64, int64_t);
+        COMPUTE_RANGE(FieldType::Float32, float);
+        COMPUTE_RANGE(FieldType::Float64, double);
 
         case FieldType::Float16:
             result = std::make_pair(-65504, 65504);
