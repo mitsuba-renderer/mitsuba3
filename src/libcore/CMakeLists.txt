@@ -28,7 +28,7 @@ add_library(mitsuba-core-obj OBJECT
   # bitmap.cpp           ${INC_DIR}/bitmap.h
                        ${INC_DIR}/bsphere.h
   class.cpp            ${INC_DIR}/class.h
-                   #    ${INC_DIR}/ddistr.h
+                       ${INC_DIR}/ddistr.h
   dstream.cpp          ${INC_DIR}/dstream.h
   filesystem.cpp       ${INC_DIR}/filesystem.h
   formatter.cpp        ${INC_DIR}/formatter.h
@@ -36,22 +36,22 @@ add_library(mitsuba-core-obj OBJECT
   fstream.cpp          ${INC_DIR}/fstream.h
   jit.cpp              ${INC_DIR}/jit.h
   logger.cpp           ${INC_DIR}/logger.h
-  # math.cpp             ${INC_DIR}/math.h
+  math.cpp             ${INC_DIR}/math.h
   mmap.cpp             ${INC_DIR}/mmap.h
-  # tensor.cpp           ${INC_DIR}/tensor.h
+  tensor.cpp           ${INC_DIR}/tensor.h
   mstream.cpp          ${INC_DIR}/mstream.h
   object.cpp           ${INC_DIR}/object.h
-  # plugin.cpp           ${INC_DIR}/plugin.h
+  plugin.cpp           ${INC_DIR}/plugin.h
   profiler.cpp         ${INC_DIR}/profiler.h
   progress.cpp         ${INC_DIR}/progress.h
   # properties.cpp       ${INC_DIR}/properties.h
-  # qmc.cpp              ${INC_DIR}/qmc.h
-  #                      ${INC_DIR}/random.h
+  qmc.cpp              ${INC_DIR}/qmc.h
+                       ${INC_DIR}/random.h
   # rfilter.cpp          ${INC_DIR}/rfilter.h
   # spectrum.cpp         ${INC_DIR}/spectrum.h
                        ${INC_DIR}/spline.h
   stream.cpp           ${INC_DIR}/stream.h
-  # struct.cpp           ${INC_DIR}/struct.h
+#   struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
   tls.cpp              ${INC_DIR}/tls.h
   # transform.cpp        ${INC_DIR}/transform.h

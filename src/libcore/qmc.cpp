@@ -98,7 +98,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
         Log(Debug, "Generating random permutations for the seed value = %i", scramble);
 
         uint16_t *ptr = m_permutation_storage.get();
-        PCG32 p((uint64_t) scramble);
+        PCG32<uint32_t> p((uint64_t) scramble);
         for (size_t i = 0; i < m_base_count; ++i) {
             int prime = m_base[i].value;
             for (int j=0; j<prime; ++j)

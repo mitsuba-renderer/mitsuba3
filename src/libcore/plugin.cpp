@@ -130,8 +130,8 @@ ref<Object> PluginManager::create_object(const Properties &props, const Class *c
        return class_->construct(props);
 
    const Plugin *plugin = d->plugin(props.plugin_name());
-   const Class *class_ = Class::for_name(plugin->class_name, class_->variant());
-   ref<Object> object = class->instantiate(props);
+   const Class *plugin_class = Class::for_name(plugin->plugin_name, class_->variant());
+   ref<Object> object = plugin_class->construct(props);
 
    if (!object->class_()->derives_from(class_)) {
         const Class *oc = object->class_();
@@ -149,8 +149,8 @@ ref<Object> PluginManager::create_object(const Properties &props, const Class *c
 // TODO do we still need this?
 // ref<Object> PluginManager::create_object(const Properties &props) {
 //     const Plugin *plugin = d->plugin(props.plugin_name());
-//     const Class *class_ = Class::for_name(plugin->class_name);
-//     return class->instantiate(props);
+//     const Class *class = Class::for_name(plugin->class_name);
+//     return class->construct(props);
 // }
 
 std::vector<std::string> PluginManager::loaded_plugins() const {
