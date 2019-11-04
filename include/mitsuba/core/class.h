@@ -198,20 +198,11 @@ template <typename T, typename std::enable_if_t<!is_constructible_v<T, Stream *>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
 NAMESPACE_END(detail)
 
-
-#define _MTS_MAP_IMPORT_FLOAT(class_, peek, ...) \
-    using Base = class_<Float>; \
-    ENOKI_EVAL(ENOKI_MAP_STMT_NEXT(peek, ENOKI_MAP_IMPORT_0)(Base, peek, __VA_ARGS__))
-
-#define _MTS_MAP_IMPORT_FLOAT_SPECTRUM(class_, peek, ...) \
-    using Base = class_<Float, Spectrum>; \
-    ENOKI_EVAL(ENOKI_MAP_STMT_NEXT(peek, ENOKI_MAP_IMPORT_0)(Base, peek, __VA_ARGS__))
-
 /**
  * \brief Declares an alias Base for the parent template class and
  * imports the desired methods and fields with `using` declarations.
  * This is useful when inheriting from template parents, since methods
- * and fields must be explicitly be made visible.
+ * and fields must be explicitly made visible.
  * Note that the parent class must be templated over <Float, Spectrum>.
  *
  * For example,
@@ -221,14 +212,16 @@ NAMESPACE_END(detail)
  *     using Base::m_flags;
  *     using Base::m_components;
  */
-#define MTS_USING_BASE(...) \
-    _MTS_MAP_IMPORT_FLOAT_SPECTRUM(__VA_ARGS__, (), 0)
+#define MTS_USING_BASE(class_, ...) \
+    using Base = class_<Float, Spectrum>; \
+    ENOKI_MAP_IMPORT(Base, ##__VA_ARGS__)
 
 /**
- * Variant of MTS_USING_BASE for parents that are only templated over Float.
+ * Variant of MTS_USING_BASE for parent classes that are only templated over Float.
  */
-#define MTS_USING_BASE_FLOAT(...) \
-    _MTS_MAP_IMPORT_FLOAT(__VA_ARGS__, (), 0)
+#define MTS_USING_BASE_FLOAT(class_, ...) \
+    using Base = class_<Float>; \
+    ENOKI_MAP_IMPORT(Base, ##__VA_ARGS__)
 
 extern MTS_EXPORT_CORE const Class *m_class;
 
