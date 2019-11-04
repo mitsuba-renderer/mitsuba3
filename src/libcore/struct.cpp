@@ -19,7 +19,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /* Defined in dither-matrix256.cpp */
-extern const Float dither_matrix256[65536];
+extern const float dither_matrix256[65536];
 
 NAMESPACE_BEGIN(detail)
 
@@ -33,7 +33,7 @@ public:
     // A variable can exist in various forms (integer/float/gamma corrected..)
     struct Key {
         std::string name;
-        Struct::EType type;
+        FieldType type;
         uint32_t flags;
 
         bool operator<(const Key &o) const {
@@ -478,20 +478,20 @@ public:
         // Will we need to swap the byte order of the source records?
         bool bswap = struct_->byte_order() == Struct::EBigEndian;
 
-        if (Struct::is_integer(field.type) || field.type == Struct::EFloat16)
+        if (Struct::is_integer(field.type) || field.type == FieldType::Float16)
             value.gp = cc.newInt64(field.name.c_str());
         else
             value.xmm = cc.newXmm(field.name.c_str());
 
         const int32_t offset = (int32_t) field.offset;
         switch (field.type) {
-            case Struct::EUInt8:
-            case Struct::EInt8:
+            case FieldType::UInt8:
+            case FieldType::Int8:
                 cc.emit(op, value.gp, x86::byte_ptr(input, offset));
                 break;
 
-            case Struct::EUInt16:
-            case Struct::EInt16:
+            case FieldType::UInt16:
+            case FieldType::Int16:
                 if (bswap) {
                     cc.movzx(value.gp, x86::word_ptr(input, offset));
                     cc.xchg(value.gp.r8Lo(), value.gp.r8Hi());
@@ -502,8 +502,8 @@ public:
                 }
                 break;
 
-            case Struct::EUInt32:
-            case Struct::EInt32:
+            case FieldType::UInt32:
+            case FieldType::Int32:
                 if (bswap) {
                     cc.mov(value.gp.r32(), x86::dword_ptr(input, offset));
                     cc.bswap(value.gp.r32());
@@ -514,14 +514,14 @@ public:
                 }
                 break;
 
-            case Struct::EUInt64:
-            case Struct::EInt64:
+            case FieldType::UInt64:
+            case FieldType::Int64:
                 cc.mov(value.gp, x86::qword_ptr(input, offset));
                 if (bswap)
                     cc.bswap(value.gp.r64());
                 break;
 
-            case Struct::EFloat16:
+            case FieldType::Float16:
                 if (bswap) {
                     cc.movzx(value.gp, x86::word_ptr(input, offset));
                     cc.xchg(value.gp.r8Lo(), value.gp.r8Hi());
@@ -530,7 +530,7 @@ public:
                 }
                 break;
 
-            case Struct::EFloat32:
+            case FieldType::Float32:
                 if (bswap) {
                     X86Gp temp = cc.newUInt32();
                     cc.mov(temp.r32(), x86::dword_ptr(input, offset));
@@ -549,7 +549,7 @@ public:
                 }
                 break;
 
-            case Struct::EFloat64:
+            case FieldType::Float64:
                 if (bswap) {
                     X86Gp temp = cc.newUInt64();
                     cc.mov(temp.r64(), x86::qword_ptr(input, offset));
@@ -571,36 +571,36 @@ public:
             default: Throw("StructConverter: unknown field type!");
         }
 
-        if (field.flags & Struct::EAssert) {
-            if (field.type == Struct::EFloat16) {
+        if (field.flags & FieldFlags::Assert) {
+            if (field.type == FieldType::Float16) {
                 auto ref = cc.newUInt16Const(
                     asmjit::kConstScopeGlobal,
                     enoki::half::float32_to_float16((float) field.default_));
                 cc.cmp(value.gp.r16(), ref);
-            } else if (field.type == Struct::EFloat32) {
+            } else if (field.type == FieldType::Float32) {
                 auto ref = cc.newFloatConst(asmjit::kConstScopeGlobal, (float) field.default_);
                 #if defined(ENOKI_X86_AVX)
                     cc.vucomiss(value.xmm, ref);
                 #else
                     cc.ucomiss(value.xmm, ref);
                 #endif
-            } else if (field.type == Struct::EFloat64) {
+            } else if (field.type == FieldType::Float64) {
                 auto ref = cc.newDoubleConst(asmjit::kConstScopeGlobal, (double) field.default_);
                 #if defined(ENOKI_X86_AVX)
                     cc.vucomisd(value.xmm, ref);
                 #else
                     cc.ucomisd(value.xmm, ref);
                 #endif
-            } else if (field.type == Struct::EInt8 || field.type == Struct::EUInt8) {
+            } else if (field.type == FieldType::Int8 || field.type == FieldType::UInt8) {
                 auto ref = cc.newByteConst(asmjit::kConstScopeGlobal, (int8_t) field.default_);
                 cc.cmp(value.gp.r8(), ref);
-            } else if (field.type == Struct::EInt16 || field.type == Struct::EUInt16) {
+            } else if (field.type == FieldType::Int16 || field.type == FieldType::UInt16) {
                 auto ref = cc.newInt16Const(asmjit::kConstScopeGlobal, (int16_t) field.default_);
                 cc.cmp(value.gp.r16(), ref);
-            } else if (field.type == Struct::EInt32 || field.type == Struct::EUInt32) {
+            } else if (field.type == FieldType::Int32 || field.type == FieldType::UInt32) {
                 auto ref = cc.newInt32Const(asmjit::kConstScopeGlobal, (int32_t) field.default_);
                 cc.cmp(value.gp.r32(), ref);
-            } else if (field.type == Struct::EInt64 || field.type == Struct::EUInt64) {
+            } else if (field.type == FieldType::Int64 || field.type == FieldType::UInt64) {
                 auto ref = cc.newInt64Const(asmjit::kConstScopeGlobal, (int64_t) field.default_);
                 cc.cmp(value.gp.r64(), ref);
             } else {
@@ -615,7 +615,7 @@ public:
     }
 
     std::pair<Key, Value> load_default(const Struct::Field &field) {
-        Key key { field.name, Struct::EFloat, 0 };
+        Key key { field.name, Struct::struct_type_v<Float>, 0 };
         Value value;
         value.xmm = cc.newXmm();
         movs(value.xmm, const_(field.default_));
@@ -632,18 +632,18 @@ public:
         bool inv_gamma = false;
 
         if (Struct::is_integer(kr.type)) {
-            kr.type = Struct::EFloat;
-            kr.flags &= ~Struct::ENormalized;
+            kr.type = Struct::struct_type_v<Float>;
+            kr.flags &= ~FieldFlags::Normalized;
             int_to_float = true;
         }
 
-        if (Struct::is_float(kr.type) && kr.type != Struct::EFloat) {
-            kr.type = Struct::EFloat;
+        if (Struct::is_float(kr.type) && kr.type != Struct::struct_type_v<Float>) {
+            kr.type = Struct::struct_type_v<Float>;
             float_to_float = true;
         }
 
-        if (kr.flags & Struct::EGamma) {
-            kr.flags &= ~Struct::EGamma;
+        if (kr.flags & FieldFlags::Gamma) {
+            kr.flags &= ~FieldFlags::Gamma;
             inv_gamma = true;
         }
 
@@ -656,9 +656,9 @@ public:
 
             vr.xmm = cc.newXmm();
 
-            if (input.first.type == Struct::EUInt32 || input.first.type == Struct::EInt64) {
+            if (input.first.type == FieldType::UInt32 || input.first.type == FieldType::Int64) {
                 cvtsi2s(vr.xmm, vr.gp.r64());
-            } else if (input.first.type == Struct::EUInt64) {
+            } else if (input.first.type == FieldType::UInt64) {
                 auto tmp = cc.newUInt64();
                 cc.mov(tmp, vr.gp.r64());
                 auto tmp2 = cc.newUInt64Const(asmjit::kConstScopeGlobal, 0x7fffffffffffffffull);
@@ -673,14 +673,14 @@ public:
                 cvtsi2s(vr.xmm, vr.gp.r32());
             }
 
-            if (input.first.flags & Struct::ENormalized)
+            if (input.first.flags & FieldFlags::Normalized)
                 muls(vr.xmm, const_(1.0 / range.second));
         }
 
         if (float_to_float) {
             kr.type = input.first.type;
 
-            if (kr.type == Struct::EFloat16) {
+            if (kr.type == FieldType::Float16) {
                 vr.xmm = cc.newXmm();
                 #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_F16C)
                     cc.vmovd(vr.xmm, vr.gp.r32());
@@ -691,10 +691,10 @@ public:
                     call->setArg(0, vr.gp);
                     call->setRet(0, vr.xmm);
                 #endif
-                kr.type = Struct::EFloat32;
+                kr.type = FieldType::Float32;
             }
 
-            if (kr.type == Struct::EFloat32 && kr.type != Struct::EFloat) {
+            if (kr.type == FieldType::Float32 && kr.type != Struct::struct_type_v<Float>) {
                 X86Xmm source = vr.xmm;
                 vr.xmm = cc.newXmm();
                 #if defined(ENOKI_X86_AVX)
@@ -702,10 +702,10 @@ public:
                 #else
                     cc.cvtss2sd(vr.xmm, source);
                 #endif
-                kr.type = Struct::EFloat64;
+                kr.type = FieldType::Float64;
             }
 
-            if (kr.type == Struct::EFloat64 && kr.type != Struct::EFloat) {
+            if (kr.type == FieldType::Float64 && kr.type != Struct::struct_type_v<Float>) {
                 X86Xmm source = vr.xmm;
                 vr.xmm = cc.newXmm();
                 #if defined(ENOKI_X86_AVX)
@@ -713,7 +713,7 @@ public:
                 #else
                     cc.cvtsd2ss(vr.xmm, source);
                 #endif
-                kr.type = Struct::EFloat32;
+                kr.type = FieldType::Float32;
             }
         }
 
@@ -734,15 +734,15 @@ public:
             cc.comment(("# Save field \""+ field.name + "\"").c_str());
         #endif
 
-        if ((field.flags & Struct::EGamma) != 0 &&
-            (key.flags & Struct::EGamma) == 0) {
+        if ((field.flags & FieldFlags::Gamma) != 0 &&
+            (key.flags & FieldFlags::Gamma) == 0) {
             value.xmm = gamma(value.xmm, true);
         }
 
         if (field.is_integer() && !Struct::is_integer(key.type)) {
             auto range_dbl = field.range();
             std::pair<Float, Float> range = range_dbl;
-            if (key.type != Struct::EFloat)
+            if (key.type != Struct::struct_type_v<Float>)
                 Throw("Internal error!");
 
             auto temp = cc.newXmm();
@@ -754,7 +754,7 @@ public:
             while ((double) range.second > range_dbl.second)
                 range.second = enoki::prev_float(range.second);
 
-            if (field.flags & Struct::ENormalized) {
+            if (field.flags & FieldFlags::Normalized) {
                 muls(value.xmm, const_(range.second));
 
                 if (dither) {
@@ -765,7 +765,7 @@ public:
                         X86Gp base = cc.newUInt64();
                         cc.mov(base.r64(), Imm((uintptr_t) dither_matrix256));
                         dither_value = cc.newXmm();
-                        movs(dither_value, X86Mem(base, index, sizeof(Float) == 4 ? 2 : 3, 0, (uint32_t) sizeof(Float)));
+                        movs(dither_value, X86Mem(base, index, 2, 0, (uint32_t) sizeof(float)));
                         dither_ready = true;
                     }
                     adds(value.xmm, dither_value);
@@ -777,9 +777,9 @@ public:
             mins(value.xmm, const_(range.second));
             value.gp = cc.newUInt64();
 
-            if (field.type == Struct::EUInt32 || field.type == Struct::EInt64) {
+            if (field.type == FieldType::UInt32 || field.type == FieldType::Int64) {
                 cvts2si(value.gp.r64(), value.xmm);
-            } else if (field.type == Struct::EUInt64) {
+            } else if (field.type == FieldType::UInt64) {
                 cvts2si(value.gp.r64(), value.xmm);
 
                 X86Xmm large_thresh = cc.newXmm();
@@ -806,13 +806,13 @@ public:
         const int32_t offset = (int32_t) field.offset;
 
         switch (field.type) {
-            case Struct::EUInt8:
-            case Struct::EInt8:
+            case FieldType::UInt8:
+            case FieldType::Int8:
                 cc.mov(x86::byte_ptr(output, offset), value.gp.r8());
                 break;
 
-            case Struct::EInt16:
-            case Struct::EUInt16:
+            case FieldType::Int16:
+            case FieldType::UInt16:
                 if (bswap) {
                    X86Gp temp = cc.newUInt16();
                    cc.mov(temp, value.gp.r16());
@@ -822,8 +822,8 @@ public:
                 cc.mov(x86::word_ptr(output, offset), value.gp.r16());
                 break;
 
-            case Struct::EInt32:
-            case Struct::EUInt32:
+            case FieldType::Int32:
+            case FieldType::UInt32:
                 if (bswap) {
                    X86Gp temp = cc.newUInt32();
                    cc.mov(temp, value.gp.r32());
@@ -833,8 +833,8 @@ public:
                 cc.mov(x86::dword_ptr(output, offset), value.gp.r32());
                 break;
 
-            case Struct::EInt64:
-            case Struct::EUInt64:
+            case FieldType::Int64:
+            case FieldType::UInt64:
                 if (bswap) {
                    X86Gp temp = cc.newUInt64();
                    cc.mov(temp, value.gp.r64());
@@ -844,8 +844,8 @@ public:
                 cc.mov(x86::qword_ptr(output, offset), value.gp.r64());
                 break;
 
-            case Struct::EFloat16:
-                if (key.type == Struct::EFloat64) {
+            case FieldType::Float16:
+                if (key.type == FieldType::Float64) {
                     X86Xmm temp = cc.newXmm();
                     #if defined(ENOKI_X86_AVX)
                         cc.vcvtsd2ss(temp, temp, value.xmm);
@@ -853,9 +853,9 @@ public:
                         cc.cvtsd2ss(temp, value.xmm);
                     #endif
                     value.xmm = temp;
-                    key.type = Struct::EFloat32;
+                    key.type = FieldType::Float32;
                 }
-                if (key.type == Struct::EFloat32) {
+                if (key.type == FieldType::Float32) {
                     value.gp = cc.newUInt32();
 
                     #if defined(__F16C__)
@@ -869,7 +869,7 @@ public:
                         call->setRet(0, value.gp);
                     #endif
 
-                    key.type = Struct::EFloat16;
+                    key.type = FieldType::Float16;
                 }
 
                 if (bswap) {
@@ -883,8 +883,8 @@ public:
 
                 break;
 
-            case Struct::EFloat32:
-                if (key.type == Struct::EFloat64) {
+            case FieldType::Float32:
+                if (key.type == FieldType::Float64) {
                     X86Xmm temp = cc.newXmm();
                     #if defined(ENOKI_X86_AVX)
                         cc.vcvtsd2ss(temp, temp, value.xmm);
@@ -911,8 +911,8 @@ public:
                 }
                 break;
 
-            case Struct::EFloat64:
-                if (key.type == Struct::EFloat32) {
+            case FieldType::Float64:
+                if (key.type == FieldType::Float32) {
                     X86Xmm temp = cc.newXmm();
                     #if defined(ENOKI_X86_AVX)
                         cc.vcvtss2sd(temp, temp, value.xmm);
@@ -957,9 +957,9 @@ private:
 
 NAMESPACE_END(detail)
 
-Struct::Struct(bool pack, EByteOrder byte_order)
+Struct::Struct(bool pack, FieldByteOrder byte_order)
     : m_pack(pack), m_byte_order(byte_order) {
-    if (m_byte_order == EHostByteOrder)
+    if (m_byte_order == FieldByteOrder::HostByteOrder)
         m_byte_order = host_byte_order();
 }
 
@@ -995,7 +995,7 @@ bool Struct::has_field(const std::string &name) const {
     return false;
 }
 
-Struct &Struct::append(const std::string &name, EType type, uint32_t flags, double default_) {
+Struct &Struct::append(const std::string &name, FieldType type, uint32_t flags, double default_) {
     Field f;
     f.name = name;
     f.type = type;
@@ -1027,20 +1027,20 @@ Struct &Struct::append(const std::string &name, EType type, uint32_t flags, doub
     return *this;
 }
 
-std::ostream &operator<<(std::ostream &os, Struct::EType value) {
+std::ostream &operator<<(std::ostream &os, FieldType value) {
     switch (value) {
-        case Struct::EInt8:    os << "int8";    break;
-        case Struct::EUInt8:   os << "uint8";   break;
-        case Struct::EInt16:   os << "int16";   break;
-        case Struct::EUInt16:  os << "uint16";  break;
-        case Struct::EInt32:   os << "int32";   break;
-        case Struct::EUInt32:  os << "uint32";  break;
-        case Struct::EInt64:   os << "int64";   break;
-        case Struct::EUInt64:  os << "uint64";  break;
-        case Struct::EFloat16: os << "float16"; break;
-        case Struct::EFloat32: os << "float32"; break;
-        case Struct::EFloat64: os << "float64"; break;
-        case Struct::EInvalid: os << "invalid"; break;
+        case FieldType::Int8:    os << "int8";    break;
+        case FieldType::UInt8:   os << "uint8";   break;
+        case FieldType::Int16:   os << "int16";   break;
+        case FieldType::UInt16:  os << "uint16";  break;
+        case FieldType::Int32:   os << "int32";   break;
+        case FieldType::UInt32:  os << "uint32";  break;
+        case FieldType::Int64:   os << "int64";   break;
+        case FieldType::UInt64:  os << "uint64";  break;
+        case FieldType::Float16: os << "float16"; break;
+        case FieldType::Float32: os << "float32"; break;
+        case FieldType::Float64: os << "float64"; break;
+        case FieldType::Invalid: os << "invalid"; break;
         default: Throw("Struct: operator<<: invalid field type!");
     }
     return os;
@@ -1103,7 +1103,7 @@ Struct::Field &Struct::field(const std::string &name) {
     Throw("Unable to find field \"%s\"", name);
 }
 
-std::pair<double, double> Struct::range(EType type) {
+std::pair<double, double> Struct::range(FieldType type) {
     std::pair<double, double> result;
 
     #define COMPUTE_RANGE(key, type)                                        \
@@ -1124,7 +1124,7 @@ std::pair<double, double> Struct::range(EType type) {
         COMPUTE_RANGE(EFloat32, float);
         COMPUTE_RANGE(EFloat64, double);
 
-        case Struct::EFloat16:
+        case FieldType::Float16:
             result = std::make_pair(-65504, 65504);
             break;
 
@@ -1226,7 +1226,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     bool has_assert = false;
     // Ensure that fields with an EAssert flag are loaded
     for (const Struct::Field &f : *source) {
-        if (f.flags & Struct::EAssert) {
+        if (f.flags & FieldFlags::Assert) {
             sc.load(source, input, f.name);
             has_assert = true;
         }
@@ -1236,7 +1236,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     const Struct::Field *target_weight = nullptr;
 
     for (const Struct::Field &f : *source) {
-        if ((f.flags & Struct::EWeight) == 0)
+        if ((f.flags & FieldFlags::Weight) == 0)
             continue;
         if (source_weight != nullptr)
             Throw("Internal error: source structure has more than one weight field!");
@@ -1244,7 +1244,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     }
 
     for (const Struct::Field &f : *target) {
-        if ((f.flags & Struct::EWeight) == 0)
+        if ((f.flags & FieldFlags::Weight) == 0)
             continue;
         if (target_weight != nullptr)
             Throw("Internal error: target structure has more than one weight field!");
@@ -1270,7 +1270,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
         if (f.blend.empty()) {
             if (source->has_field(f.name)) {
                 kv = sc.load(source, input, f.name);
-            } else if (f.flags & Struct::EDefault) {
+            } else if (f.flags & FieldFlags::Default) {
                 kv = sc.load_default(f);
             } else {
                 Throw("Unable to find field \"%s\"!", f.name);
@@ -1288,16 +1288,16 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
             kv.second.xmm = accum;
         }
 
-        uint32_t flag_mask = Struct::ENormalized | Struct::EGamma;
+        uint32_t flag_mask = FieldFlags::Normalized | FieldFlags::Gamma;
         if (!((kv.first.type == f.type || (Struct::is_integer(kv.first.type) &&
                                            Struct::is_integer(f.type) &&
-                                           (f.flags & Struct::ENormalized) == 0)) &&
+                                           (f.flags & FieldFlags::Normalized) == 0)) &&
             ((kv.first.flags & flag_mask) == (f.flags & flag_mask))))
             kv = sc.linearize(kv);
 
         if (source_weight != nullptr && target_weight == nullptr) {
             X86Xmm result = cc.newXmm();
-            if (kv.first.type != Struct::EFloat)
+            if (kv.first.type != Struct::struct_type_v<Float>)
                 kv = sc.linearize(kv);
             sc.muls(result, kv.second.xmm, scale_factor);
             kv.second.xmm = result;
@@ -1355,15 +1355,15 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
     value.flags = f.flags;
 
     switch (f.type) {
-        case Struct::EUInt8:
+        case FieldType::UInt8:
             value.u = *((const uint8_t *) src);
             break;
 
-        case Struct::EInt8:
+        case FieldType::Int8:
             value.i = *((const int8_t *) src);
             break;
 
-        case Struct::EUInt16: {
+        case FieldType::UInt16: {
                 uint16_t val = *((const uint16_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
@@ -1371,7 +1371,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
             }
             break;
 
-        case Struct::EInt16: {
+        case FieldType::Int16: {
                 int16_t val = *((const int16_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
@@ -1379,7 +1379,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
             }
             break;
 
-        case Struct::EUInt32: {
+        case FieldType::UInt32: {
                 uint32_t val = *((const uint32_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
@@ -1387,7 +1387,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
             }
             break;
 
-        case Struct::EInt32: {
+        case FieldType::Int32: {
                 int32_t val = *((const int32_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
@@ -1395,7 +1395,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
             }
             break;
 
-        case Struct::EUInt64: {
+        case FieldType::UInt64: {
                 uint64_t val = *((const uint64_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
@@ -1403,7 +1403,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
             }
             break;
 
-        case Struct::EInt64: {
+        case FieldType::Int64: {
                 int64_t val = *((const int64_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
@@ -1411,16 +1411,16 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
             }
             break;
 
-        case Struct::EFloat16: {
+        case FieldType::Float16: {
                 uint16_t val = *((const uint16_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
                 value.s = enoki::half::float16_to_float32(val);
-                value.type = Struct::EFloat32;
+                value.type = FieldType::Float32;
             }
             break;
 
-        case Struct::EFloat32: {
+        case FieldType::Float32: {
                 uint32_t val = *((const uint32_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
@@ -1428,7 +1428,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
             }
             break;
 
-        case Struct::EFloat64: {
+        case FieldType::Float64: {
                 uint64_t val = *((const uint64_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
@@ -1439,7 +1439,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         default: Throw("StructConverter: unknown field type!");
     }
 
-    if (f.flags & Struct::EAssert) {
+    if (f.flags & FieldFlags::Assert) {
         if (f.is_integer()) {
             if (f.is_signed() && (int64_t) f.default_ != value.i)
                 return false;
@@ -1447,9 +1447,9 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 return false;
 
         }
-        if (value.type == Struct::EFloat32 && (Float) f.default_ != value.s)
+        if (value.type == FieldType::Float32 && (Float) f.default_ != value.s)
             return false;
-        if (value.type == Struct::EFloat64 && f.default_ != value.d)
+        if (value.type == FieldType::Float64 && f.default_ != value.d)
             return false;
     }
     return true;
@@ -1462,20 +1462,20 @@ void StructConverter::linearize(Value &value) const {
         else
             value.f = (Float) value.i;
 
-        if (value.flags & Struct::ENormalized)
+        if (value.flags & FieldFlags::Normalized)
             value.f *= Float(1 / Struct::range(value.type).second);
-    } else if (Struct::is_float(value.type) && value.type != Struct::EFloat) {
-        if (value.type == Struct::EFloat32)
+    } else if (Struct::is_float(value.type) && value.type != Struct::struct_type_v<Float>) {
+        if (value.type == FieldType::Float32)
             value.f = (Float) value.s;
         else
             value.f = (Float) value.d;
     }
-    if (value.flags & Struct::EGamma) {
+    if (value.flags & FieldFlags::Gamma) {
         value.f = srgb_to_linear(value.f);
-        value.flags &= ~Struct::EGamma;
+        value.flags &= ~FieldFlags::Gamma;
     }
 
-    value.type = Struct::EFloat;
+    value.type = Struct::struct_type_v<Float>;
 }
 
 void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, size_t x, size_t y) const {
@@ -1484,13 +1484,13 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
 
     dst += f.offset;
 
-    if ((f.flags & Struct::EGamma) != 0 && (value.flags & Struct::EGamma) == 0)
+    if ((f.flags & FieldFlags::Gamma) != 0 && (value.flags & FieldFlags::Gamma) == 0)
         value.f = enoki::linear_to_srgb(value.f);
 
-    if (f.is_integer() && value.type == Struct::EFloat) {
+    if (f.is_integer() && value.type == Struct::struct_type_v<Float>) {
         auto range = f.range();
 
-        if (f.flags & Struct::ENormalized)
+        if (f.flags & FieldFlags::Normalized)
             value.f *= (Float) range.second;
 
         double d = (double) value.f;
@@ -1508,21 +1508,21 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             value.u = (uint64_t) d;
     }
 
-    if ((f.type == Struct::EFloat16 || f.type == Struct::EFloat32) && value.type == Struct::EFloat)
+    if ((f.type == FieldType::Float16 || f.type == FieldType::Float32) && value.type == Struct::struct_type_v<Float>)
         value.s = (float) value.f;
-    else if (f.type == Struct::EFloat64 && value.type == Struct::EFloat)
+    else if (f.type == FieldType::Float64 && value.type == Struct::struct_type_v<Float>)
         value.d = (double) value.f;
 
     switch (f.type) {
-        case Struct::EUInt8:
+        case FieldType::UInt8:
             *((uint8_t *) dst) = (uint8_t) value.i;
             break;
 
-        case Struct::EInt8:
+        case FieldType::Int8:
             *((int8_t *) dst) = (int8_t) value.u;
             break;
 
-        case Struct::EUInt16: {
+        case FieldType::UInt16: {
                 uint16_t val = (uint16_t) value.u;
                 if (target_swap)
                     val = detail::swap(val);
@@ -1530,7 +1530,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             }
             break;
 
-        case Struct::EInt16: {
+        case FieldType::Int16: {
                 int16_t val = (int16_t) value.i;
                 if (target_swap)
                     val = detail::swap(val);
@@ -1538,7 +1538,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             }
             break;
 
-        case Struct::EUInt32: {
+        case FieldType::UInt32: {
                 uint32_t val = (uint32_t) value.u;
                 if (target_swap)
                     val = detail::swap(val);
@@ -1546,7 +1546,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             }
             break;
 
-        case Struct::EInt32: {
+        case FieldType::Int32: {
                 int32_t val = (int32_t) value.i;
                 if (target_swap)
                     val = detail::swap(val);
@@ -1554,7 +1554,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             }
             break;
 
-        case Struct::EUInt64: {
+        case FieldType::UInt64: {
                 uint64_t val = (uint64_t) value.u;
                 if (target_swap)
                     val = detail::swap(val);
@@ -1562,7 +1562,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             }
             break;
 
-        case Struct::EInt64: {
+        case FieldType::Int64: {
                 int64_t val = (int64_t) value.i;
                 if (target_swap)
                     val = detail::swap(val);
@@ -1570,7 +1570,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             }
             break;
 
-        case Struct::EFloat16: {
+        case FieldType::Float16: {
                 uint16_t val = enoki::half::float32_to_float16(value.s);
                 if (target_swap)
                     val = detail::swap(val);
@@ -1578,7 +1578,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             }
             break;
 
-        case Struct::EFloat32: {
+        case FieldType::Float32: {
                 uint32_t val = (uint32_t) memcpy_cast<uint32_t>(value.s);
                 if (target_swap)
                     val = detail::swap(val);
@@ -1586,7 +1586,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             }
             break;
 
-        case Struct::EFloat64: {
+        case FieldType::Float64: {
                 uint64_t val = (uint64_t) memcpy_cast<uint64_t>(value.d);
                 if (target_swap)
                     val = detail::swap(val);
@@ -1608,15 +1608,15 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
     bool has_weight = false;
     std::vector<Struct::Field> assert_fields;
     for (Struct::Field f : *m_source) {
-        if ((f.flags & Struct::EAssert) && !m_target->has_field(f.name))
+        if ((f.flags & FieldFlags::Assert) && !m_target->has_field(f.name))
             assert_fields.push_back(f);
-        if (f.flags & Struct::EWeight) {
+        if (f.flags & FieldFlags::Weight) {
             weight_field = f;
             has_weight = true;
         }
     }
     for (const Struct::Field &f : *m_target) {
-        if (f.flags & Struct::EWeight && has_weight)
+        if (f.flags & FieldFlags::Weight && has_weight)
             has_weight = false;
     }
 
@@ -1644,16 +1644,16 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 Value value;
 
                 if (f.blend.empty()) {
-                    if (!m_source->has_field(f.name) && (f.flags & Struct::EDefault)) {
+                    if (!m_source->has_field(f.name) && (f.flags & FieldFlags::Default)) {
                         value.d = f.default_;
-                        value.type = Struct::EFloat64;
+                        value.type = FieldType::Float64;
                         value.flags = 0;
                     } else {
                         if (!load(src, m_source->field(f.name), value))
                             return false;
                     }
                 } else {
-                    value.type = Struct::EFloat;
+                    value.type = Struct::struct_type_v<Float>;
                     value.f = 0;
                     value.flags = 0;
                     for (auto kv : f.blend) {
@@ -1665,10 +1665,10 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                     }
                 }
 
-                uint32_t flag_mask = Struct::ENormalized | Struct::EGamma;
+                uint32_t flag_mask = FieldFlags::Normalized | FieldFlags::Gamma;
                 if ((!((value.type == f.type || (Struct::is_integer(value.type) &&
                                                  Struct::is_integer(f.type) &&
-                                                (f.flags & Struct::ENormalized) == 0)) &&
+                                                (f.flags & FieldFlags::Normalized) == 0)) &&
                     ((value.flags & flag_mask) == (f.flags & flag_mask)))) || has_weight)
                     linearize(value);
 

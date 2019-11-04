@@ -674,7 +674,7 @@ Parameter ``pixel_format``:
 Parameter ``component_format``:
     Specifies how the per-pixel components are encoded (e.g. unsigned
     8 bit integers or 32-bit floating point values). The component
-    format Struct::EFloat will be translated to the corresponding
+    format Struct::struct_type_v<Float> will be translated to the corresponding
     compile-time precision type (EFloat32 or EFloat64).
 
 Parameter ``size``:

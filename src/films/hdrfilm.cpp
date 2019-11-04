@@ -64,11 +64,11 @@ public:
         }
 
         if (component_format == "float16")
-            m_component_format = Struct::EFloat16;
+            m_component_format = FieldType::Float16;
         else if (component_format == "float32")
-            m_component_format = Struct::EFloat32;
+            m_component_format = FieldType::Float32;
         else if (component_format == "uint32")
-            m_component_format = Struct::EUInt32;
+            m_component_format = FieldType::UInt32;
         else {
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
@@ -81,10 +81,10 @@ public:
                            " Overriding..");
                 m_pixel_format = Bitmap::ERGB;
             }
-            if (m_component_format != Struct::EFloat32) {
+            if (m_component_format != FieldType::Float32) {
                 Log(Warn, "The RGBE format only supports "
                            "component_format=\"float32\". Overriding..");
-                m_component_format = Struct::EFloat32;
+                m_component_format = FieldType::Float32;
             }
         }
         else if (m_file_format == Bitmap::EPFM) {
@@ -94,10 +94,10 @@ public:
                            " or \"luminance\". Overriding (setting to \"rgb\")..");
                 m_pixel_format = Bitmap::ERGB;
             }
-            if (m_component_format != Struct::EFloat32) {
+            if (m_component_format != FieldType::Float32) {
                 Log(Warn, "The PFM format only supports"
                            " component_format=\"float32\". Overriding..");
-                m_component_format = Struct::EFloat32;
+                m_component_format = FieldType::Float32;
             }
         }
 
@@ -258,7 +258,7 @@ public:
 protected:
     Bitmap::EFileFormat m_file_format;
     Bitmap::EPixelFormat m_pixel_format;
-    Struct::EType m_component_format;
+    FieldType m_component_format;
     fs::path m_dest_file;
     ref<ImageBlock> m_storage;
 };

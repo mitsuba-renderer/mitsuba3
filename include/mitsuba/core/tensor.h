@@ -19,7 +19,7 @@ public:
     /// Information about the specified field
     struct Field {
         /// Data type (uint32, float, ...) of the tensor
-        Struct::EType dtype;
+        FieldType dtype;
 
         /// Offset within the file
         size_t offset;

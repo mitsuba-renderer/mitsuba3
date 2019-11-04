@@ -11,7 +11,7 @@ ImageBlock<Float, Spectrum>::ImageBlock(Bitmap::EPixelFormat fmt, const Vector2i
     m_border_size = (filter != nullptr && border) ? filter->border_size() : 0;
 
     // Allocate a small bitmap data structure for the block
-    m_bitmap = new Bitmap(fmt, Struct::EType::EFloat,
+    m_bitmap = new Bitmap(fmt, struct_type_v<Float>,
                           size + Vector2i(2 * m_border_size), channels);
     m_bitmap->clear();
 

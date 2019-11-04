@@ -22,30 +22,30 @@ static Bitmap::EPixelFormat convert_pixel_format(nanogui::Texture::PixelFormat p
     }
 }
 
-static nanogui::Texture::ComponentFormat convert_component_format(Struct::EType cf) {
+static nanogui::Texture::ComponentFormat convert_component_format(FieldType cf) {
     switch (cf) {
-        case Struct::EUInt8:   return Texture::ComponentFormat::UInt8;
-        case Struct::EInt8:    return Texture::ComponentFormat::Int8;
-        case Struct::EUInt16:  return Texture::ComponentFormat::UInt16;
-        case Struct::EInt16:   return Texture::ComponentFormat::Int16;
-        case Struct::EUInt32:  return Texture::ComponentFormat::UInt32;
-        case Struct::EInt32:   return Texture::ComponentFormat::Int32;
-        case Struct::EFloat16: return Texture::ComponentFormat::Float16;
-        case Struct::EFloat32: return Texture::ComponentFormat::Float32;
+        case FieldType::UInt8:   return Texture::ComponentFormat::UInt8;
+        case FieldType::Int8:    return Texture::ComponentFormat::Int8;
+        case FieldType::UInt16:  return Texture::ComponentFormat::UInt16;
+        case FieldType::Int16:   return Texture::ComponentFormat::Int16;
+        case FieldType::UInt32:  return Texture::ComponentFormat::UInt32;
+        case FieldType::Int32:   return Texture::ComponentFormat::Int32;
+        case FieldType::Float16: return Texture::ComponentFormat::Float16;
+        case FieldType::Float32: return Texture::ComponentFormat::Float32;
         default: Throw("Texture::Texture(): unsupported component format '%s'!", cf);
     }
 }
 
-static Struct::EType convert_component_format(nanogui::Texture::ComponentFormat cf) {
+static FieldType convert_component_format(nanogui::Texture::ComponentFormat cf) {
     switch (cf) {
-        case Texture::ComponentFormat::UInt8:   return Struct::EUInt8;
-        case Texture::ComponentFormat::Int8:    return Struct::EInt8;
-        case Texture::ComponentFormat::UInt16:  return Struct::EUInt16;
-        case Texture::ComponentFormat::Int16:   return Struct::EInt16;
-        case Texture::ComponentFormat::UInt32:  return Struct::EUInt32;
-        case Texture::ComponentFormat::Int32:   return Struct::EInt32;
-        case Texture::ComponentFormat::Float16: return Struct::EFloat16;
-        case Texture::ComponentFormat::Float32: return Struct::EFloat32;
+        case Texture::ComponentFormat::UInt8:   return FieldType::UInt8;
+        case Texture::ComponentFormat::Int8:    return FieldType::Int8;
+        case Texture::ComponentFormat::UInt16:  return FieldType::UInt16;
+        case Texture::ComponentFormat::Int16:   return FieldType::Int16;
+        case Texture::ComponentFormat::UInt32:  return FieldType::UInt32;
+        case Texture::ComponentFormat::Int32:   return FieldType::Int32;
+        case Texture::ComponentFormat::Float16: return FieldType::Float16;
+        case Texture::ComponentFormat::Float32: return FieldType::Float32;
         default: Throw("Texture::Texture(): unsupported component format '%i'!", (int) cf);
     }
 }

@@ -5,12 +5,12 @@
 
 MTS_PY_EXPORT(Bitmap) {
     auto bitmap = MTS_PY_CLASS(Bitmap, Object)
-        .def(py::init<Bitmap::EPixelFormat, Struct::EType, const Vector2s &, size_t>(),
+        .def(py::init<Bitmap::EPixelFormat, FieldType, const Vector2s &, size_t>(),
              "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, D(Bitmap, Bitmap))
 
         .def(py::init([](py::array obj, py::object pixel_format_) {
             auto struct_ = py::module::import("mitsuba.core").attr("Struct");
-            Struct::EType component_format = struct_.attr("EType")(obj.dtype()).cast<Struct::EType>();
+            FieldType component_format = struct_.attr("EType")(obj.dtype()).cast<FieldType>();
             if (obj.ndim() != 2 && obj.ndim() != 3)
                 throw py::type_error("Expected an array of size 2 or 3");
 
@@ -72,7 +72,7 @@ MTS_PY_EXPORT(Bitmap) {
             "clamp"_a = std::make_pair(-math::Infinity, math::Infinity),
             D(Bitmap, resample, 2)
         )
-        .def("convert", py::overload_cast<Bitmap::EPixelFormat, Struct::EType, bool>(
+        .def("convert", py::overload_cast<Bitmap::EPixelFormat, FieldType, bool>(
              &Bitmap::convert, py::const_), D(Bitmap, convert),
              "pixel_format"_a, "component_format"_a, "srgb_gamma"_a,
              py::call_guard<py::gil_scoped_release>())

@@ -20,7 +20,7 @@ def write_tensor(filename, align=8, **kwargs):
         # Number of fields
         f.write(pack('<I', len(kwargs)))
 
-        # Maps to Struct.EType field in Mitsuba
+        # Maps to FieldType field in Mitsuba
         dtype_map = {
             np.uint8 : 1,
             np.int8 : 2,
@@ -108,7 +108,7 @@ def load_tensor(filename):
         print('Loading tensor data from \"%s\" .. (%s, %i field%s)' \
             % (filename, size_fmt(size), field_count, 's' if field_count > 1 else ''))
 
-        # Maps from Struct.EType field in Mitsuba
+        # Maps from FieldType field in Mitsuba
         dtype_map = {
             1: np.uint8,
             2: np.int8,

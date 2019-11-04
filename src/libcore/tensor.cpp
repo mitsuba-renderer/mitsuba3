@@ -36,7 +36,7 @@ TensorFile::TensorFile(const fs::path &filename)
         stream->read(ndim);
         stream->read(dtype);
         stream->read(offset);
-        if (dtype == Struct::EInvalid || dtype > Struct::EFloat64)
+        if (dtype == (uint8_t) FieldType::Invalid || dtype > (uint8_t) FieldType::Float64)
             Throw("Invalid tensor file: unknown type.");
 
         std::vector<size_t> shape(ndim);
@@ -47,7 +47,7 @@ TensorFile::TensorFile(const fs::path &filename)
         }
 
         m_fields[name] =
-            Field{ (Struct::EType) dtype, static_cast<size_t>(offset), shape,
+            Field{ (FieldType) dtype, static_cast<size_t>(offset), shape,
                    (const uint8_t *) data() + offset };
     }
 }

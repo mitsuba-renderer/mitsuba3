@@ -67,20 +67,20 @@ public:
         EMultiChannel
     };
 
-    /* Replicate Struct::EType here for convenience */
-    static constexpr Struct::EType EInt8 = Struct::EInt8;
-    static constexpr Struct::EType EUInt8 = Struct::EUInt8;
-    static constexpr Struct::EType EInt16 = Struct::EInt16;
-    static constexpr Struct::EType EUInt16 = Struct::EUInt16;
-    static constexpr Struct::EType EInt32 = Struct::EInt32;
-    static constexpr Struct::EType EUInt32 = Struct::EUInt32;
-    static constexpr Struct::EType EInt64 = Struct::EInt64;
-    static constexpr Struct::EType EUInt64 = Struct::EUInt64;
-    static constexpr Struct::EType EFloat16 = Struct::EFloat16;
-    static constexpr Struct::EType EFloat32 = Struct::EFloat32;
-    static constexpr Struct::EType EFloat64 = Struct::EFloat64;
-    static constexpr Struct::EType EFloat = Struct::EFloat;
-    static constexpr Struct::EType EInvalid = Struct::EInvalid;
+    /* Replicate FieldType here for convenience */
+    static constexpr FieldType EInt8 = FieldType::Int8;
+    static constexpr FieldType EUInt8 = FieldType::UInt8;
+    static constexpr FieldType EInt16 = FieldType::Int16;
+    static constexpr FieldType EUInt16 = FieldType::UInt16;
+    static constexpr FieldType EInt32 = FieldType::Int32;
+    static constexpr FieldType EUInt32 = FieldType::UInt32;
+    static constexpr FieldType EInt64 = FieldType::Int64;
+    static constexpr FieldType EUInt64 = FieldType::UInt64;
+    static constexpr FieldType EFloat16 = FieldType::Float16;
+    static constexpr FieldType EFloat32 = FieldType::Float32;
+    static constexpr FieldType EFloat64 = FieldType::Float64;
+    static constexpr FieldType EFloat = struct_type_v<float>;
+    static constexpr FieldType EInvalid = FieldType::Invalid;
 
     /// Supported file formats
     enum EFileFormat {
@@ -198,8 +198,8 @@ public:
      * \param component_format
      *    Specifies how the per-pixel components are encoded
      *    (e.g. unsigned 8 bit integers or 32-bit floating point values).
-     *    The component format Struct::EFloat will be translated to the
-     *    corresponding compile-time precision type (EFloat32 or EFloat64).
+     *    The component format Struct::struct_type_v<Float> will be translated to the
+     *    corresponding compile-time precision type (Float32 or Float64).
      *
      * \param size
      *    Specifies the horizontal and vertical bitmap size in pixels
@@ -212,7 +212,7 @@ public:
      *    External pointer to the image data. If set to \c nullptr, the
      *    implementation will allocate memory itself.
      */
-    Bitmap(EPixelFormat pixel_format, Struct::EType component_format,
+    Bitmap(EPixelFormat pixel_format, FieldType component_format,
            const Vector2s &size, size_t channel_count = 0,
            uint8_t *data = nullptr);
 
@@ -248,7 +248,7 @@ public:
     EPixelFormat pixel_format() const { return m_pixel_format; }
 
     /// Return the component format of this bitmap
-    Struct::EType component_format() const { return m_component_format; }
+    FieldType component_format() const { return m_component_format; }
 
     /// Return a pointer to the underlying bitmap storage
     void *data() { return m_data.get(); }
@@ -482,7 +482,7 @@ public:
      *      the ouutput values.
      */
     ref<Bitmap> convert(EPixelFormat pixel_format,
-                        Struct::EType component_format,
+                        FieldType component_format,
                         bool srgb_gamma = true) const;
 
     void convert(Bitmap *target) const;
@@ -624,7 +624,7 @@ public:
  protected:
      std::unique_ptr<uint8_t[]> m_data;
      EPixelFormat m_pixel_format;
-     Struct::EType m_component_format;
+     FieldType m_component_format;
      Vector2s m_size;
      ref<Struct> m_struct;
      bool m_srgb_gamma;

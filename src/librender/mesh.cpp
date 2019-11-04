@@ -39,7 +39,7 @@ Mesh::Mesh(const std::string &name,
     /* Helper lambda function to determine compatibility (offset/type) of a 'Struct' field */
     auto check_field = [](const Struct *s, size_t idx,
                           const std::string &suffix_exp,
-                          Struct::EType type_exp) {
+                          FieldType type_exp) {
         if (idx >= s->field_count())
             Throw("Mesh::Mesh(): Incompatible data structure %s", s->to_string());
         auto field = s->operator[](idx);
@@ -51,30 +51,30 @@ Mesh::Mesh(const std::string &name,
             Throw("Mesh::Mesh(): Incompatible data structure %s", s->to_string());
     };
 
-    check_field(vertex_struct, 0, "x",  Struct::EFloat);
-    check_field(vertex_struct, 1, "y",  Struct::EFloat);
-    check_field(vertex_struct, 2, "z",  Struct::EFloat);
+    check_field(vertex_struct, 0, "x",  struct_type_v<Float>);
+    check_field(vertex_struct, 1, "y",  struct_type_v<Float>);
+    check_field(vertex_struct, 2, "z",  struct_type_v<Float>);
 
-    check_field(face_struct,   0, "i0", struct_traits<Index>::value);
-    check_field(face_struct,   1, "i1", struct_traits<Index>::value);
-    check_field(face_struct,   2, "i2", struct_traits<Index>::value);
+    check_field(face_struct,   0, "i0", struct_type_v<Index>);
+    check_field(face_struct,   1, "i1", struct_type_v<Index>);
+    check_field(face_struct,   2, "i2", struct_type_v<Index>);
 
     if (vertex_struct->has_field("nx") &&
         vertex_struct->has_field("ny") &&
         vertex_struct->has_field("nz")) {
-        check_field(vertex_struct, 3, "nx", Struct::EFloat);
-        check_field(vertex_struct, 4, "ny", Struct::EFloat);
-        check_field(vertex_struct, 5, "nz", Struct::EFloat);
+        check_field(vertex_struct, 3, "nx", struct_type_v<Float>);
+        check_field(vertex_struct, 4, "ny", struct_type_v<Float>);
+        check_field(vertex_struct, 5, "nz", struct_type_v<Float>);
         m_normal_offset = (Index) vertex_struct->field("nx").offset;
     }
 
     if (vertex_struct->has_field("u") && vertex_struct->has_field("v")) {
         if (m_normal_offset == 0) {
-            check_field(vertex_struct, 3, "u", Struct::EFloat);
-            check_field(vertex_struct, 4, "v", Struct::EFloat);
+            check_field(vertex_struct, 3, "u", struct_type_v<Float>);
+            check_field(vertex_struct, 4, "v", struct_type_v<Float>);
         } else {
-            check_field(vertex_struct, 6, "u", Struct::EFloat);
-            check_field(vertex_struct, 7, "v", Struct::EFloat);
+            check_field(vertex_struct, 6, "u", struct_type_v<Float>);
+            check_field(vertex_struct, 7, "v", struct_type_v<Float>);
         }
         m_texcoord_offset = (Index) vertex_struct->field("u").offset;
     }

@@ -12,6 +12,64 @@ NAMESPACE_BEGIN(mitsuba)
 #  define MTS_STRUCTCONVERTER_USE_JIT 0
 #endif
 
+/// Type of a field in the \c Struct
+enum class FieldType : uint8_t {
+    // Invalid/unspecified
+    Invalid = 0,
+
+    // Signed and unsigned integer values
+    UInt8,  Int8,
+    UInt16, Int16,
+    UInt32, Int32,
+    UInt64, Int64,
+
+    // Floating point values
+    Float16, Float32, Float64,
+};
+
+/// Byte order of the fields in the \c Struct
+enum class FieldByteOrder {
+    LittleEndian,
+    BigEndian,
+    HostByteOrder
+};
+
+/// Field-specific flags
+enum class FieldFlags {
+    /**
+     * Specifies whether an integer field encodes a normalized value in the
+     * range [0, 1]. The flag is ignored if specified for floating point
+     * valued fields.
+     */
+    Normalized = 0x01,
+
+    /**
+     * Specifies whether the field encodes a sRGB gamma-corrected value.
+     * Assumes \c ENormalized is also specified.
+     */
+    Gamma      = 0x02,
+
+    /**
+     * In \ref FieldConverter::convert, check that the field value matches
+     * the specified default value. Otherwise, return a failure
+     */
+    Assert     = 0x04,
+
+    /**
+     * In \ref FieldConverter::convert, when the field is missing in the
+     * source record, replace it by the specified default value
+     */
+    Default    = 0x08,
+
+    /**
+     * In \ref FieldConverter::convert, when an input structure contains a
+     * weight field, the value of all entries are considered to be
+     * expressed relative to its value. Converting to an un-weighted
+     * structure entails a division by the weight.
+     */
+    Weight     = 0x10
+};
+
 /**
  * \brief Descriptor for specifying the contents and in-memory layout
  * of a POD-style data record
@@ -23,70 +81,7 @@ class MTS_EXPORT_CORE Struct : public Object {
 public:
     MTS_DECLARE_CLASS(Struct, Object)
 
-    /// Type of a field in the \c Struct
-    enum EType {
-        // Invalid/unspecified
-        EInvalid = 0,
-
-        // Signed and unsigned integer values
-        EUInt8,  EInt8,
-        EUInt16, EInt16,
-        EUInt32, EInt32,
-        EUInt64, EInt64,
-
-        // Floating point values
-        EFloat16, EFloat32, EFloat64,
-
-        // Compile-time float precision
-        #if defined(SINGLE_PRECISION)
-            EFloat = EFloat32
-        #else
-            EFloat = EFloat64
-        #endif
-    };
-
-    /// Byte order of the fields in the \c Struct
-    enum EByteOrder {
-        ELittleEndian,
-        EBigEndian,
-        EHostByteOrder
-    };
-
-    /// Field-specific flags
-    enum EFlags {
-        /**
-         * Specifies whether an integer field encodes a normalized value in the
-         * range [0, 1]. The flag is ignored if specified for floating point
-         * valued fields.
-         */
-        ENormalized = 0x01,
-
-        /**
-         * Specifies whether the field encodes a sRGB gamma-corrected value.
-         * Assumes \c ENormalized is also specified.
-         */
-        EGamma      = 0x02,
-
-        /**
-         * In \ref FieldConverter::convert, check that the field value matches
-         * the specified default value. Otherwise, return a failure
-         */
-        EAssert     = 0x04,
-
-        /**
-         * In \ref FieldConverter::convert, when the field is missing in the
-         * source record, replace it by the specified default value
-         */
-        EDefault    = 0x08,
-
-        /**
-         * In \ref FieldConverter::convert, when an input structure contains a
-         * weight field, the value of all entries are considered to be
-         * expressed relative to its value. Converting to an un-weighted
-         * structure entails a division by the weight.
-         */
-        EWeight     = 0x10
-    };
+    using Float = float;
 
     /// Field specifier with size and offset
     struct MTS_EXPORT Field {
@@ -94,7 +89,7 @@ public:
         std::string name;
 
         /// Type identifier
-        EType type;
+        FieldType type;
 
         /// Size in bytes
         size_t size;
@@ -159,13 +154,13 @@ public:
     using FieldConstIterator = std::vector<Field>::const_iterator;
 
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
-    Struct(bool pack = false, EByteOrder byte_order = EHostByteOrder);
+    Struct(bool pack = false, FieldByteOrder byte_order = FieldByteOrder::HostByteOrder);
 
     /// Copy constructor
     Struct(const Struct &s);
 
     /// Append a new field to the \c Struct; determines size and offset automatically
-    Struct &append(const std::string &name, EType type,
+    Struct &append(const std::string &name, FieldType type,
                    uint32_t flags = 0, double default_ = 0.0);
 
     /// Append a new field to the \c Struct (manual version)
@@ -190,14 +185,14 @@ public:
     size_t field_count() const { return m_fields.size(); }
 
     /// Return the byte order of the \c Struct
-    EByteOrder byte_order() const { return m_byte_order; }
+    FieldByteOrder byte_order() const { return m_byte_order; }
 
     /// Return the byte order of the host machine
-    static EByteOrder host_byte_order() {
+    static FieldByteOrder host_byte_order() {
         #if defined(LITTLE_ENDIAN)
-            return ELittleEndian;
+            return FieldByteOrder::LittleEndian;
         #elif defined(BIG_ENDIAN)
-            return ELittleEndian;
+            return FieldByteOrder::LittleEndian;
         #else
             #error Either LITTLE_ENDIAN or BIG_ENDIAN must be defined!
         #endif
@@ -246,59 +241,64 @@ public:
     std::string to_string() const override;
 
     /// Check whether the given type is an unsigned type
-    static bool is_unsigned(EType type) {
-        return type == Struct::EUInt8 ||
-               type == Struct::EUInt16 ||
-               type == Struct::EUInt32 ||
-               type == Struct::EUInt64;
+    static bool is_unsigned(FieldType type) {
+        return type == FieldType::UInt8 ||
+               type == FieldType::UInt16 ||
+               type == FieldType::UInt32 ||
+               type == FieldType::UInt64;
     }
 
     /// Check whether the given type is a signed type
-    static bool is_signed(EType type) {
+    static bool is_signed(FieldType type) {
         return !is_unsigned(type);
     }
 
     /// Check whether the given type is an integer type
-    static bool is_integer(EType type) {
+    static bool is_integer(FieldType type) {
         return !is_float(type);
     }
 
     /// Check whether the given type is a floating point type
-    static bool is_float(EType type) {
-        return type == Struct::EFloat16 ||
-               type == Struct::EFloat32 ||
-               type == Struct::EFloat64;
+    static bool is_float(FieldType type) {
+        return type == FieldType::Float16 ||
+               type == FieldType::Float32 ||
+               type == FieldType::Float64;
     }
 
     /// Return the representable range of the given type
-    static std::pair<double, double> range(EType type);
+    static std::pair<double, double> range(FieldType type);
 
 protected:
     std::vector<Field> m_fields;
     bool m_pack;
-    EByteOrder m_byte_order;
+    FieldByteOrder m_byte_order;
 };
 
-template <typename T> struct struct_traits { };
+NAMESPACE_BEGIN(detail)
+template <typename T> struct struct_type { };
 
-#define MTS_STRUCT_TRAITS(type, entry) \
-    template <> struct struct_traits<type> { \
-        static constexpr Struct::EType value = Struct::entry; \
+#define MTS_STRUCT_TYPE(type, entry) \
+    template <> struct struct_type<type> { \
+        static constexpr FieldType value = FieldType::entry; \
     };
 
-MTS_STRUCT_TRAITS(int8_t, EInt8);
-MTS_STRUCT_TRAITS(uint8_t, EUInt8);
-MTS_STRUCT_TRAITS(int16_t, EInt16);
-MTS_STRUCT_TRAITS(uint16_t, EUInt16);
-MTS_STRUCT_TRAITS(int32_t, EInt32);
-MTS_STRUCT_TRAITS(uint32_t, EUInt32);
-MTS_STRUCT_TRAITS(int64_t, EInt64);
-MTS_STRUCT_TRAITS(uint64_t, EUInt64);
-MTS_STRUCT_TRAITS(enoki::half, EFloat16);
-MTS_STRUCT_TRAITS(float, EFloat32);
-MTS_STRUCT_TRAITS(double, EFloat64);
+MTS_STRUCT_TYPE(int8_t, Int8);
+MTS_STRUCT_TYPE(uint8_t, UInt8);
+MTS_STRUCT_TYPE(int16_t, Int16);
+MTS_STRUCT_TYPE(uint16_t, UInt16);
+MTS_STRUCT_TYPE(int32_t, Int32);
+MTS_STRUCT_TYPE(uint32_t, UInt32);
+MTS_STRUCT_TYPE(int64_t, Int64);
+MTS_STRUCT_TYPE(uint64_t, UInt64);
+MTS_STRUCT_TYPE(enoki::half, Float16);
+MTS_STRUCT_TYPE(float, Float32);
+MTS_STRUCT_TYPE(double, Float64);
+#undef MTS_STRUCT_TYPE
+NAMESPACE_END(detail)
 
-#undef MTS_STRUCT_TRAITS
+template <typename T> constexpr FieldType struct_type_v = detail::struct_type<T>::value;
+
+
 
 /**
  * \brief This class solves the any-to-any problem: effiently converting from
@@ -399,7 +399,7 @@ protected:
     // Support data structures/functions for non-accelerated conversion backend
 
     struct Value {
-        Struct::EType type;
+        FieldType type;
         uint32_t flags;
         union {
             Float f;
@@ -425,6 +425,6 @@ protected:
 #endif
 };
 
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Struct::EType value);
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, FieldType value);
 
 NAMESPACE_END(mitsuba)
