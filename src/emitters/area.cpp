@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(AreaLight, Emitter)
+    MTS_DECLARE_CLASS_VARIANT(AreaLight, Emitter)
     MTS_USING_BASE(Emitter, m_shape, m_medium)
     MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
 

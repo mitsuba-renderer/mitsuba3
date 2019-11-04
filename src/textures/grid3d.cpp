@@ -29,7 +29,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Grid3D final : public Grid3DBase<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(Grid3D, Grid3DBase)
+    MTS_DECLARE_CLASS_VARIANT(Grid3D, Grid3DBase)
     MTS_USING_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
     MTS_IMPORT_TYPES()
 

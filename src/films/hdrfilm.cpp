@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(HDRFilm, Film)
+    MTS_DECLARE_CLASS_VARIANT(HDRFilm, Film)
     MTS_USING_BASE(Film, m_size, m_crop_size, m_crop_offset, m_high_quality_edges, m_filter,
                    check_valid_crop_window);
     MTS_IMPORT_TYPES(ImageBlock)

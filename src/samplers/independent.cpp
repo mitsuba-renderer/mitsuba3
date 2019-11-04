@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class IndependentSampler final : public Sampler<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(IndependentSampler, Sampler)
+    MTS_DECLARE_CLASS_VARIANT(IndependentSampler, Sampler)
     MTS_USING_BASE(Sampler, m_sample_count)
     MTS_IMPORT_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;

@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class DepthIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(DepthIntegrator, SamplingIntegrator)
+    MTS_DECLARE_CLASS_VARIANT(DepthIntegrator, SamplingIntegrator)
     MTS_USING_BASE(SamplingIntegrator)
     MTS_IMPORT_TYPES(Scene, Sampler)
 

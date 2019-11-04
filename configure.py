@@ -45,15 +45,6 @@ with open(fname, 'w') as f:
         w('    template struct MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
-<<<<<<< HEAD
-=======
-    w('#define MTS_DECLARE_PLUGIN(Name, Parent)')
-    w('    MTS_DECLARE_CLASS(Name, Parent)')
-    w('    MTS_IMPORT_TYPES()')
-    f.write('\n\n')
-
-    # TODO remove Parent ??
->>>>>>> Add variant to XML, Class and Plugin
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
     w('    MTS_EXPORT const char *plugin_descr = Descr;')
     w('    MTS_EXPORT const char *plugin_name = #Name;')

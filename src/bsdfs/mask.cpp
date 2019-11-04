@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(MaskBSDF, BSDF)
+    MTS_DECLARE_CLASS_VARIANT(MaskBSDF, BSDF)
     MTS_USING_BASE(BSDF, component_count, m_components, m_flags)
     MTS_IMPORT_TYPES(BSDF, ContinuousSpectrum)
 

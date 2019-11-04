@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Measured final : public BSDF<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(Measured, BSDF);
+    MTS_DECLARE_CLASS_VARIANT(Measured, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     MTS_IMPORT_TYPES()
     using Warp2D0 = warp::Marginal2D<Float, 0>;

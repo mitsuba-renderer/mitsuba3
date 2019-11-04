@@ -3,10 +3,10 @@
 #include <mitsuba/core/fwd.h>
 
 #define MTS_CONFIGURATIONS                                                  \
-    "scalar_spectral_polarized\n"                                           \
-    "scalar_rgb\n"                                                          \
     "scalar_mono\n"                                                         \
+    "scalar_rgb\n"                                                          \
     "scalar_spectral\n"                                                     \
+    "scalar_spectral_polarized\n"                                           \
 
 
 #define MTS_INSTANTIATE_OBJECT(Name)                                        \
@@ -47,14 +47,14 @@
     void instantiate_##name(py::module m);                                  \
                                                                             \
     MTS_PY_EXPORT(name) {                                                   \
-        instantiate_##name<float, MuellerMatrix<Spectrum<float, 4>>>(       \
-            m.def_submodule("scalar_spectral_polarized"));                  \
-        instantiate_##name<float, Color<float, 3>>(                         \
-            m.def_submodule("scalar_rgb"));                                 \
         instantiate_##name<float, Color<float, 1>>(                         \
             m.def_submodule("scalar_mono"));                                \
+        instantiate_##name<float, Color<float, 3>>(                         \
+            m.def_submodule("scalar_rgb"));                                 \
         instantiate_##name<float, Spectrum<float, 4>>(                      \
             m.def_submodule("scalar_spectral"));                            \
+        instantiate_##name<float, MuellerMatrix<Spectrum<float, 4>>>(       \
+            m.def_submodule("scalar_spectral_polarized"));                  \
     }                                                                       \
                                                                             \
     template <typename Float, typename Spectrum>                            \

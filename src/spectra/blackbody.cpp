@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class BlackBodySpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(BlackBodySpectrum, ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(BlackBodySpectrum, ContinuousSpectrum)
     MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
 

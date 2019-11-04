@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(BlendBSDF, BSDF)
+    MTS_DECLARE_CLASS_VARIANT(BlendBSDF, BSDF)
     MTS_USING_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
     using BSDF = Base;

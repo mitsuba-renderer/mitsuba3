@@ -20,7 +20,7 @@ class BitmapTextureImpl;
 template <typename Float, typename Spectrum>
 class BitmapTexture : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(BitmapTexture, ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(BitmapTexture, ContinuousSpectrum)
     MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
 

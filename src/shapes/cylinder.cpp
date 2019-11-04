@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(Cylinder, Shape)
+    MTS_DECLARE_CLASS_VARIANT(Cylinder, Shape)
     MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
     MTS_IMPORT_TYPES()
     using Index = typename Base::Index;

@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class InterpolatedSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(InterpolatedSpectrum, ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(InterpolatedSpectrum, ContinuousSpectrum)
     MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
     using Index = replace_scalar_t<Wavelength, uint32_t>;

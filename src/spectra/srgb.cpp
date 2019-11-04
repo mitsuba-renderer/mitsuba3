@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SRGBSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(SRGBSpectrum, ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(SRGBSpectrum, ContinuousSpectrum)
     MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
 

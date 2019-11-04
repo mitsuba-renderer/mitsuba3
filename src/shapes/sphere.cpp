@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MTS_REGISTER_CLASS(Sphere, Shape)
+    MTS_DECLARE_CLASS_VARIANT(Sphere, Shape)
     MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
     MTS_IMPORT_TYPES()
     using Index = typename Base::Index;
