@@ -120,23 +120,23 @@ public:
 
         m_vertex_struct = new Struct();
         for (auto name : { "x", "y", "z" })
-            m_vertex_struct->append(name, Struct::struct_type_v<Float>);
+            m_vertex_struct->append(name, struct_type_v<Float>);
 
         if (!m_disable_vertex_normals) {
             for (auto name : { "nx", "ny", "nz" })
-                m_vertex_struct->append(name, Struct::struct_type_v<Float>);
+                m_vertex_struct->append(name, struct_type_v<Float>);
             m_normal_offset = (Index) m_vertex_struct->offset("nx");
         }
 
         if (flags & EHasTexcoords) {
             for (auto name : { "u", "v" })
-                m_vertex_struct->append(name, Struct::struct_type_v<Float>);
+                m_vertex_struct->append(name, struct_type_v<Float>);
             m_texcoord_offset = (Index) m_vertex_struct->offset("u");
         }
 
         if (flags & EHasColors) {
             for (auto name : { "r", "g", "b" })
-                m_vertex_struct->append(name, Struct::struct_type_v<Float>);
+                m_vertex_struct->append(name, struct_type_v<Float>);
             m_color_offset = (Index) m_vertex_struct->offset("r");
         }
 

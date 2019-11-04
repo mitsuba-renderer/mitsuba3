@@ -476,7 +476,7 @@ public:
             op = X86Inst::kIdMov;
 
         // Will we need to swap the byte order of the source records?
-        bool bswap = struct_->byte_order() == Struct::EBigEndian;
+        bool bswap = struct_->byte_order() == FieldByteOrder::BigEndian;
 
         if (Struct::is_integer(field.type) || field.type == FieldType::Float16)
             value.gp = cc.newInt64(field.name.c_str());
@@ -615,7 +615,7 @@ public:
     }
 
     std::pair<Key, Value> load_default(const Struct::Field &field) {
-        Key key { field.name, Struct::struct_type_v<Float>, 0 };
+        Key key { field.name, struct_type_v<float>, 0 };
         Value value;
         value.xmm = cc.newXmm();
         movs(value.xmm, const_(field.default_));
@@ -632,18 +632,18 @@ public:
         bool inv_gamma = false;
 
         if (Struct::is_integer(kr.type)) {
-            kr.type = Struct::struct_type_v<Float>;
-            kr.flags &= ~FieldFlags::Normalized;
+            kr.type = struct_type_v<float>;
+            kr.flags = kr.flags & ~FieldFlags::Normalized;
             int_to_float = true;
         }
 
-        if (Struct::is_float(kr.type) && kr.type != Struct::struct_type_v<Float>) {
-            kr.type = Struct::struct_type_v<Float>;
+        if (Struct::is_float(kr.type) && kr.type != struct_type_v<float>) {
+            kr.type = struct_type_v<float>;
             float_to_float = true;
         }
 
         if (kr.flags & FieldFlags::Gamma) {
-            kr.flags &= ~FieldFlags::Gamma;
+            kr.flags = kr.flags & ~FieldFlags::Gamma;
             inv_gamma = true;
         }
 
@@ -694,7 +694,7 @@ public:
                 kr.type = FieldType::Float32;
             }
 
-            if (kr.type == FieldType::Float32 && kr.type != Struct::struct_type_v<Float>) {
+            if (kr.type == FieldType::Float32 && kr.type != struct_type_v<float>) {
                 X86Xmm source = vr.xmm;
                 vr.xmm = cc.newXmm();
                 #if defined(ENOKI_X86_AVX)
@@ -705,7 +705,7 @@ public:
                 kr.type = FieldType::Float64;
             }
 
-            if (kr.type == FieldType::Float64 && kr.type != Struct::struct_type_v<Float>) {
+            if (kr.type == FieldType::Float64 && kr.type != struct_type_v<float>) {
                 X86Xmm source = vr.xmm;
                 vr.xmm = cc.newXmm();
                 #if defined(ENOKI_X86_AVX)
@@ -741,8 +741,8 @@ public:
 
         if (field.is_integer() && !Struct::is_integer(key.type)) {
             auto range_dbl = field.range();
-            std::pair<Float, Float> range = range_dbl;
-            if (key.type != Struct::struct_type_v<Float>)
+            std::pair<float, float> range = range_dbl;
+            if (key.type != struct_type_v<float>)
                 Throw("Internal error!");
 
             auto temp = cc.newXmm();
@@ -802,7 +802,7 @@ public:
             }
         }
 
-        bool bswap = struct_->byte_order() == Struct::EBigEndian;
+        bool bswap = struct_->byte_order() == FieldByteOrder::BigEndian;
         const int32_t offset = (int32_t) field.offset;
 
         switch (field.type) {
@@ -1058,15 +1058,15 @@ std::string Struct::to_string() const {
         }
         os << "  " << f.type;
         os << " " << f.name << "; // @" << f.offset;
-        if (f.flags & FieldFlag::Normalized)
+        if (f.flags & FieldFlags::Normalized)
             os << ", normalized";
-        if (f.flags & FieldFlag::Gamma)
+        if (f.flags & FieldFlags::Gamma)
             os << ", gamma";
-        if (f.flags & FieldFlag::Weight)
+        if (f.flags & FieldFlags::Weight)
             os << ", weight";
-        if (f.flags & FieldFlag::Default)
+        if (f.flags & FieldFlags::Default)
             os << ", default=" << f.default_;
-        if (f.flags & FieldFlag::Assert)
+        if (f.flags & FieldFlags::Assert)
             os << ", assert=" << f.default_;
         if (!f.blend.empty()) {
             os << ", blend = <";
@@ -1288,7 +1288,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
             kv.second.xmm = accum;
         }
 
-        uint32_t flag_mask = FieldFlags::Normalized | FieldFlags::Gamma;
+        FieldFlags flag_mask = FieldFlags::Normalized | FieldFlags::Gamma;
         if (!((kv.first.type == f.type || (Struct::is_integer(kv.first.type) &&
                                            Struct::is_integer(f.type) &&
                                            (f.flags & FieldFlags::Normalized) == 0)) &&
@@ -1297,7 +1297,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
 
         if (source_weight != nullptr && target_weight == nullptr) {
             X86Xmm result = cc.newXmm();
-            if (kv.first.type != Struct::struct_type_v<Float>)
+            if (kv.first.type != struct_type_v<float>)
                 kv = sc.linearize(kv);
             sc.muls(result, kv.second.xmm, scale_factor);
             kv.second.xmm = result;
@@ -1464,7 +1464,7 @@ void StructConverter::linearize(Value &value) const {
 
         if (value.flags & FieldFlags::Normalized)
             value.f *= Float(1 / Struct::range(value.type).second);
-    } else if (Struct::is_float(value.type) && value.type != Struct::struct_type_v<Float>) {
+    } else if (Struct::is_float(value.type) && value.type != struct_type_v<float>) {
         if (value.type == FieldType::Float32)
             value.f = (Float) value.s;
         else
@@ -1475,7 +1475,7 @@ void StructConverter::linearize(Value &value) const {
         value.flags &= ~FieldFlags::Gamma;
     }
 
-    value.type = Struct::struct_type_v<Float>;
+    value.type = struct_type_v<float>;
 }
 
 void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, size_t x, size_t y) const {
@@ -1487,7 +1487,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
     if ((f.flags & FieldFlags::Gamma) != 0 && (value.flags & FieldFlags::Gamma) == 0)
         value.f = enoki::linear_to_srgb(value.f);
 
-    if (f.is_integer() && value.type == Struct::struct_type_v<Float>) {
+    if (f.is_integer() && value.type == struct_type_v<float>) {
         auto range = f.range();
 
         if (f.flags & FieldFlags::Normalized)
@@ -1508,9 +1508,9 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             value.u = (uint64_t) d;
     }
 
-    if ((f.type == FieldType::Float16 || f.type == FieldType::Float32) && value.type == Struct::struct_type_v<Float>)
+    if ((f.type == FieldType::Float16 || f.type == FieldType::Float32) && value.type == struct_type_v<float>)
         value.s = (float) value.f;
-    else if (f.type == FieldType::Float64 && value.type == Struct::struct_type_v<Float>)
+    else if (f.type == FieldType::Float64 && value.type == struct_type_v<float>)
         value.d = (double) value.f;
 
     switch (f.type) {
@@ -1653,7 +1653,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                             return false;
                     }
                 } else {
-                    value.type = Struct::struct_type_v<Float>;
+                    value.type = struct_type_v<float>;
                     value.f = 0;
                     value.flags = 0;
                     for (auto kv : f.blend) {

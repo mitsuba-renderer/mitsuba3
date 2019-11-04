@@ -36,7 +36,7 @@ TensorFile::TensorFile(const fs::path &filename)
         stream->read(ndim);
         stream->read(dtype);
         stream->read(offset);
-        if (dtype == (uint8_t) FieldType::Invalid || dtype > (uint8_t) FieldType::Float64)
+        if (dtype == (uint32_t) FieldType::Invalid || dtype > (uint32_t) FieldType::Float64)
             Throw("Invalid tensor file: unknown type.");
 
         std::vector<size_t> shape(ndim);

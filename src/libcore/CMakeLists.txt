@@ -51,7 +51,7 @@ add_library(mitsuba-core-obj OBJECT
   # spectrum.cpp         ${INC_DIR}/spectrum.h
                        ${INC_DIR}/spline.h
   stream.cpp           ${INC_DIR}/stream.h
-#   struct.cpp           ${INC_DIR}/struct.h
+  struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
   tls.cpp              ${INC_DIR}/tls.h
   # transform.cpp        ${INC_DIR}/transform.h

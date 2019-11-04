@@ -69,11 +69,11 @@ public:
                 m_vertex_struct = new Struct();
 
                 for (auto name : { "x", "y", "z" })
-                    m_vertex_struct->append(name, Struct::struct_type_v<Float>);
+                    m_vertex_struct->append(name, struct_type_v<Float>);
 
                 if (!m_disable_vertex_normals) {
                     for (auto name : { "nx", "ny", "nz" })
-                        m_vertex_struct->append(name, Struct::struct_type_v<Float>, FieldFlags::Default, 0.0);
+                        m_vertex_struct->append(name, struct_type_v<Float>, FieldFlags::Default, 0.0);
 
                     if (el.struct_->has_field("nx") &&
                         el.struct_->has_field("ny") &&
@@ -96,7 +96,7 @@ public:
                 }
                 if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
                     for (auto name : { "u", "v" })
-                        m_vertex_struct->append(name, Struct::struct_type_v<Float>);
+                        m_vertex_struct->append(name, struct_type_v<Float>);
 
                     m_texcoord_offset = (Index) m_vertex_struct->field("u").offset;
                 }

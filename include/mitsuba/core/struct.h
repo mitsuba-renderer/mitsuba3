@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 #endif
 
 /// Type of a field in the \c Struct
-enum class FieldType : uint8_t {
+enum class FieldType : uint32_t {
     // Invalid/unspecified
     Invalid = 0,
 
@@ -35,7 +35,7 @@ enum class FieldByteOrder {
 };
 
 /// Field-specific flags
-enum class FieldFlags {
+enum class FieldFlags : uint32_t {
     /**
      * Specifies whether an integer field encodes a normalized value in the
      * range [0, 1]. The flag is ignored if specified for floating point
@@ -69,6 +69,28 @@ enum class FieldFlags {
      */
     Weight     = 0x10
 };
+
+/// Allows or-ing of FieldFlags
+constexpr FieldFlags operator |(FieldFlags f1, FieldFlags f2) {
+    return static_cast<FieldFlags>(static_cast<uint32_t>(f1) | static_cast<uint32_t>(f2));
+}
+/// Allows and-ing of FieldFlags
+constexpr FieldFlags operator &(FieldFlags f1, FieldFlags f2) {
+    return static_cast<FieldFlags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
+}
+/// Allows and-ing of FieldFlags
+template <typename UInt32>
+constexpr UInt32 operator &(const UInt32 &f1, FieldFlags f2) {
+    return (f1 & static_cast<uint32_t>(f2));
+}
+/// Allows not-ing of FieldFlags
+constexpr FieldFlags operator ~(FieldFlags f1) {
+    return static_cast<FieldFlags>(~static_cast<uint32_t>(f1));
+}
+/// Allows using unary `+` for conversion from FieldFlags to the underlying type
+constexpr auto operator+(FieldFlags e) noexcept {
+    return static_cast<std::underlying_type_t<FieldFlags>>(e);
+}
 
 /**
  * \brief Descriptor for specifying the contents and in-memory layout
@@ -109,7 +131,7 @@ public:
          * Specifies a pair of weights and source field names that will be
          * linearly blended to obtain the output field value. Note that this
          * only works for floating point fields or integer fields with the \ref
-         * FieldFlag::Normalized flag. Gamma-corrected fields will be blended in linear
+         * FieldFlags::Normalized flag. Gamma-corrected fields will be blended in linear
          * space.
          */
         std::vector<std::pair<double, std::string>> blend;
