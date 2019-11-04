@@ -166,25 +166,4 @@ std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t) {
     return os;
 }
 
-#if 0
-template Point3f   MTS_EXPORT_CORE Transform4f::operator*(const Point3f&) const;
-template Point3fP  MTS_EXPORT_CORE Transform4f::operator*(const Point3fP&) const;
-template Vector3f  MTS_EXPORT_CORE Transform4f::operator*(const Vector3f&) const;
-template Vector3fP MTS_EXPORT_CORE Transform4f::operator*(const Vector3fP&) const;
-template Normal3f  MTS_EXPORT_CORE Transform4f::operator*(const Normal3f&) const;
-template Normal3fP MTS_EXPORT_CORE Transform4f::operator*(const Normal3fP&) const;
-template Ray3f     MTS_EXPORT_CORE Transform4f::operator*(const Ray3f&) const;
-template Ray3fP    MTS_EXPORT_CORE Transform4f::operator*(const Ray3fP&) const;
-
-template auto MTS_EXPORT_CORE Transform4f::transform_affine(const Vector3f&) const;
-template auto MTS_EXPORT_CORE Transform4f::transform_affine(const Vector3fP&) const;
-template auto MTS_EXPORT_CORE Transform4f::transform_affine(const Normal3f&) const;
-template auto MTS_EXPORT_CORE Transform4f::transform_affine(const Normal3fP&) const;
-
-template Point3f   MTS_EXPORT_CORE Transform4f::transform_affine(const Point3f&) const;
-template Point3fP  MTS_EXPORT_CORE Transform4f::transform_affine(const Point3fP&) const;
-template Ray3f     MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3f&) const;
-template Ray3fP    MTS_EXPORT_CORE Transform4f::transform_affine(const Ray3fP&) const;
-#endif
-
 NAMESPACE_END(mitsuba)

@@ -105,15 +105,6 @@ static Float *cie_alloc() {
 
 static const Float *cie1931_dummy = cie_alloc();
 
-#if 0
-template MTS_EXPORT_CORE
-Array<Spectrumf, 3> cie1931_xyz(const Spectrumf &lambda, mask_t<Spectrumf>);
-template MTS_EXPORT_CORE
-Array<SpectrumfP, 3> cie1931_xyz(const SpectrumfP &lambda, mask_t<SpectrumfP>);
-
-template MTS_EXPORT_CORE Spectrumf  cie1931_y(const Spectrumf  &lambda, mask_t<Spectrumf>);
-template MTS_EXPORT_CORE SpectrumfP cie1931_y(const SpectrumfP &lambda, mask_t<SpectrumfP>);
-#endif
 //! @}
 // =======================================================================
 

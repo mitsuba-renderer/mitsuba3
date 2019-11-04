@@ -24,11 +24,11 @@ add_library(mitsuba-core-obj OBJECT
   string.cpp           ${INC_DIR}/string.h
   appender.cpp         ${INC_DIR}/appender.h
   argparser.cpp        ${INC_DIR}/argparser.h
-  bbox.cpp             ${INC_DIR}/bbox.h
+                       ${INC_DIR}/bbox.h
   # bitmap.cpp           ${INC_DIR}/bitmap.h
-  bsphere.cpp          ${INC_DIR}/bsphere.h
+                       ${INC_DIR}/bsphere.h
   class.cpp            ${INC_DIR}/class.h
-  # ddistr.cpp           ${INC_DIR}/ddistr.h
+                   #    ${INC_DIR}/ddistr.h
   dstream.cpp          ${INC_DIR}/dstream.h
   filesystem.cpp       ${INC_DIR}/filesystem.h
   formatter.cpp        ${INC_DIR}/formatter.h
@@ -46,18 +46,18 @@ add_library(mitsuba-core-obj OBJECT
   progress.cpp         ${INC_DIR}/progress.h
   # properties.cpp       ${INC_DIR}/properties.h
   # qmc.cpp              ${INC_DIR}/qmc.h
-  # random.cpp           ${INC_DIR}/random.h
+  #                      ${INC_DIR}/random.h
   # rfilter.cpp          ${INC_DIR}/rfilter.h
   # spectrum.cpp         ${INC_DIR}/spectrum.h
-  spline.cpp           ${INC_DIR}/spline.h
+                       ${INC_DIR}/spline.h
   stream.cpp           ${INC_DIR}/stream.h
   # struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
   tls.cpp              ${INC_DIR}/tls.h
   # transform.cpp        ${INC_DIR}/transform.h
   util.cpp             ${INC_DIR}/util.h
-  vector.cpp           ${INC_DIR}/vector.h
-  warp.cpp             ${INC_DIR}/warp.h
+                       ${INC_DIR}/vector.h
+                       ${INC_DIR}/warp.h
   # xml.cpp              ${INC_DIR}/xml.h
   zstream.cpp          ${INC_DIR}/zstream.h
   quad.cpp             ${INC_DIR}/quad.h
