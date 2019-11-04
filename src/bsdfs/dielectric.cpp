@@ -11,9 +11,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SmoothDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(SmoothDielectric, BSDF);
+    MTS_REGISTER_CLASS(SmoothDielectric, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
+    MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     SmoothDielectric(const Properties &props) : Base(props) {
 

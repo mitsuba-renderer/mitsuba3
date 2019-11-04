@@ -22,8 +22,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Rectangle final : public Shape<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(Rectangle, Shape)
+    MTS_REGISTER_CLASS(Rectangle, Shape)
     MTS_USING_BASE(Shape, bsdf, emitter, is_emitter)
+    MTS_IMPORT_TYPES()
     using Index = typename Base::Index;
     using Size  = typename Base::Size;
 

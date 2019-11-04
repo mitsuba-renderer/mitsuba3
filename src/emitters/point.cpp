@@ -10,11 +10,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(PointLight, Emitter)
+    MTS_REGISTER_CLASS(PointLight, Emitter)
     MTS_USING_BASE(Emitter, m_medium, m_needs_sample_3, m_world_transform)
-    using Scene              = typename RenderAliases::Scene;
-    using Shape              = typename RenderAliases::Shape;
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
+    MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {

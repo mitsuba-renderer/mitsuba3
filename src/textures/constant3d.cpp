@@ -8,9 +8,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Constant3D final : public Texture3D<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(Constant3D, Texture3D)
+    MTS_REGISTER_CLASS(Constant3D, Texture3D)
     MTS_USING_BASE(Texture3D, m_world_to_local)
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
+    MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     explicit Constant3D(const Properties &props) : Base(props) {
         m_color = props.spectrum<Float, Spectrum>("color", 1.f);

@@ -16,8 +16,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class BlackBodySpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(BlackBodySpectrum, ContinuousSpectrum)
+    MTS_REGISTER_CLASS(BlackBodySpectrum, ContinuousSpectrum)
     MTS_USING_BASE(ContinuousSpectrum)
+    MTS_IMPORT_TYPES()
 
     // A few natural constants
     const Float c = Float(2.99792458e+8);   /// Speed of light

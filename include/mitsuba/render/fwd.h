@@ -81,14 +81,15 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 
-#define MTS_IMPORT_TYPES()                                                                         \
+#define MTS_IMPORT_TYPES(...)                                                                      \
     MTS_IMPORT_RENDER_BASIC_TYPES();                                                               \
     using PositionSample3f     = typename RenderAliases::PositionSample3f;                         \
     using DirectionSample3f    = typename RenderAliases::DirectionSample3f;                        \
     using Interaction3f        = typename RenderAliases::Interaction3f;                            \
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;                     \
     using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;                      \
-    using BSDFSample3f         = typename RenderAliases::BSDFSample3f;
+    using BSDFSample3f         = typename RenderAliases::BSDFSample3f;                             \
+    ENOKI_MAP_USING(RenderAliases, ##__VA_ARGS__)
 
 #define MTS_IMPORT_OBJECT_TYPES()                                                                  \
     using Scene                  = typename RenderAliases::Scene;                                  \

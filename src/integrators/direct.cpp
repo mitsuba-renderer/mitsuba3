@@ -9,9 +9,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(DirectIntegrator, SamplingIntegrator)
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_REGISTER_CLASS(DirectIntegrator, SamplingIntegrator)
     MTS_USING_BASE(SamplingIntegrator)
+    MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     // =============================================================
     //! @{ \name Constructors

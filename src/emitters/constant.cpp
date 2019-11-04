@@ -12,12 +12,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(ConstantBackgroundEmitter, Emitter)
-    using Base               = Emitter<Float, Spectrum>;
-    using Scene              = typename RenderAliases::Scene;
-    using Shape              = typename RenderAliases::Shape;
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
-
+    MTS_REGISTER_CLASS(ConstantBackgroundEmitter, Emitter)
+    MTS_USING_BASE(Emitter)
+    MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
         /* Until `create_shape` is called, we have no information

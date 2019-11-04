@@ -8,8 +8,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SRGBEmitterSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(SRGBEmitterSpectrum, ContinuousSpectrum)
+    MTS_REGISTER_CLASS(SRGBEmitterSpectrum, ContinuousSpectrum)
     MTS_USING_BASE(ContinuousSpectrum)
+    MTS_IMPORT_TYPES()
 
     SRGBEmitterSpectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))

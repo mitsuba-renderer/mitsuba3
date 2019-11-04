@@ -9,10 +9,10 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(BlendBSDF, BSDF);
+    MTS_REGISTER_CLASS(BlendBSDF, BSDF)
     MTS_USING_BASE(BSDF, m_flags, m_components)
-    using BSDF               = Base;
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
+    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    using BSDF = Base;
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;

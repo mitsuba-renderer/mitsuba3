@@ -13,12 +13,10 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(EnvironmentMapEmitter, Emitter)
+    MTS_REGISTER_CLASS(EnvironmentMapEmitter, Emitter)
     MTS_USING_BASE(Emitter, m_world_transform)
-    using Scene              = typename RenderAliases::Scene;
-    using Shape              = typename RenderAliases::Shape;
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
-    using Warp               = warp::Marginal2D<Float, 0>;
+    MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
+    using Warp = warp::Marginal2D<Float, 0>;
 
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
         /* Until `create_shape` is called, we have no information

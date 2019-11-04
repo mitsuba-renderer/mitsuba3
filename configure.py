@@ -47,11 +47,6 @@ with open(fname, 'w') as f:
         w('    template struct MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
-    w('#define MTS_DECLARE_PLUGIN(Name, Parent)')
-    w('    MTS_REGISTER_CLASS(Name, Parent)')
-    w('    MTS_IMPORT_TYPES()')
-    f.write('\n\n')
-
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
     w('    extern "C" {')
     w('        MTS_EXPORT const char *plugin_descr = Descr;')

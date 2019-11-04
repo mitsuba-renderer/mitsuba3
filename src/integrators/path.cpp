@@ -12,9 +12,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(PathIntegrator, MonteCarloIntegrator)
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_REGISTER_CLASS(PathIntegrator, MonteCarloIntegrator)
     MTS_USING_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
+    MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PathIntegrator(const Properties &props) : Base(props) { }
 

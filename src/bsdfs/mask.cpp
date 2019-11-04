@@ -9,10 +9,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(MaskBSDF, BSDF)
+    MTS_REGISTER_CLASS(MaskBSDF, BSDF)
     MTS_USING_BASE(BSDF, component_count, m_components, m_flags)
-    using BSDF               = Base;
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
+    MTS_IMPORT_TYPES(BSDF, ContinuousSpectrum)
 
     MaskBSDF(const Properties &props) : Base(props) {
         for (auto &kv : props.objects()) {

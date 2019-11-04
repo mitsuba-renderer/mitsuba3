@@ -8,11 +8,11 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class PerspectiveCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(PerspectiveCamera, ProjectiveCamera);
+    MTS_REGISTER_CLASS(PerspectiveCamera, ProjectiveCamera)
     MTS_USING_BASE(ProjectiveCamera, m_world_transform, m_needs_sample_3, m_film, m_sampler,
                    m_resolution, m_shutter_open, m_shutter_open_time, m_aspect, m_near_clip,
-                   m_far_clip, m_focus_distance);
-    using Scalar = scalar_t<Float>;
+                   m_far_clip, m_focus_distance)
+    MTS_IMPORT_TYPES()
 
     // =============================================================
     //! @{ \name Constructors
@@ -23,7 +23,7 @@ public:
             Throw("Please specify either a focal length ('focal_length') or a "
                   "field of view ('fov')!");
 
-        Scalar fov;
+        ScalarFloat fov;
         std::string fov_axis;
 
         if (props.has_property("fov")) {
@@ -41,12 +41,13 @@ public:
                 f = f.substr(0, f.length()-2);
 
             char *end_ptr = nullptr;
-            Scalar value = static_cast<Scalar>(strtod(f.c_str(), &end_ptr));
+            ScalarFloat value = static_cast<ScalarFloat>(strtod(f.c_str(), &end_ptr));
             if (*end_ptr != '\0')
                 Throw("Could not parse the focal length (must be of the form "
                     "<x>mm, where <x> is a positive integer)!");
 
-            fov = 2.f * rad_to_deg(std::atan(std::sqrt(Scalar(36 * 36 + 24 * 24)) / (2.f * value)));
+            fov = 2.f *
+                  rad_to_deg(std::atan(std::sqrt(ScalarFloat(36 * 36 + 24 * 24)) / (2.f * value)));
             fov_axis = "diagonal";
         }
 
@@ -56,8 +57,8 @@ public:
             m_x_fov = rad_to_deg(
                 2.f * std::atan(std::tan(.5f * deg_to_rad(fov)) * m_aspect));
         } else if (fov_axis == "diagonal") {
-            Scalar diagonal = 2.f * std::tan(.5f * deg_to_rad(fov));
-            Scalar width = diagonal / std::sqrt(1.f + 1.f / (m_aspect*m_aspect));
+            ScalarFloat diagonal = 2.f * std::tan(.5f * deg_to_rad(fov));
+            ScalarFloat width    = diagonal / std::sqrt(1.f + 1.f / (m_aspect * m_aspect));
             m_x_fov = rad_to_deg(2.f * std::atan(width*.5f));
         } else {
             Throw("The 'fov_axis' parameter must be set to one of 'smaller', "

@@ -9,9 +9,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class TwoSidedBRDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(TwoSidedBRDF, BSDF);
+    MTS_REGISTER_CLASS(TwoSidedBRDF, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using BSDF = Base;
+    MTS_IMPORT_TYPES(BSDF)
 
     TwoSidedBRDF(const Properties &props) : Base(props) {
         auto bsdfs = props.objects();

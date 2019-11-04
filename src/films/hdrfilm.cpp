@@ -12,10 +12,10 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(HDRFilm, Film)
+    MTS_REGISTER_CLASS(HDRFilm, Film)
     MTS_USING_BASE(Film, m_size, m_crop_size, m_crop_offset, m_high_quality_edges, m_filter,
                    check_valid_crop_window);
-    using ImageBlock = typename RenderAliases::ImageBlock;
+    MTS_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
         std::string file_format = string::to_lower(

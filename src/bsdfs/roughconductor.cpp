@@ -11,10 +11,10 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class RoughConductor final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(RoughConductor, BSDF);
+    MTS_REGISTER_CLASS(RoughConductor, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
-    using SpectrumU          = depolarized_t<Spectrum>;
+    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    using SpectrumU = depolarized_t<Spectrum>;
 
     RoughConductor(const Properties &props) : Base(props) {
         m_eta = props.spectrum<Float, Spectrum>("eta", 0.f);

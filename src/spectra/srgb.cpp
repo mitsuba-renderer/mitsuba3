@@ -8,8 +8,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SRGBSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(SRGBSpectrum, ContinuousSpectrum)
+    MTS_REGISTER_CLASS(SRGBSpectrum, ContinuousSpectrum)
     MTS_USING_BASE(ContinuousSpectrum)
+    MTS_IMPORT_TYPES()
 
     SRGBSpectrum(const Properties &props) {
         Color3f color = props.color("color");

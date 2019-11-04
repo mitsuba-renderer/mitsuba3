@@ -10,11 +10,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(AreaLight, Emitter)
+    MTS_REGISTER_CLASS(AreaLight, Emitter)
     MTS_USING_BASE(Emitter, m_shape, m_medium)
-    using Scene              = typename RenderAliases::Scene;
-    using Shape              = typename RenderAliases::Shape;
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
+    MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
 
     AreaLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))

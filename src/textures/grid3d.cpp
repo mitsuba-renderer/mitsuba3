@@ -29,8 +29,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Grid3D final : public Grid3DBase<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(Grid3D, Grid3DBase)
+    MTS_REGISTER_CLASS(Grid3D, Grid3DBase)
     MTS_USING_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
+    MTS_IMPORT_TYPES()
 
     static constexpr int m_channel_count = texture_channels_v<Spectrum>;
     using DynamicBuffer = DynamicBuffer<Float>;

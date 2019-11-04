@@ -11,9 +11,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ThinDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(ThinDielectric, BSDF);
+    MTS_REGISTER_CLASS(ThinDielectric, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
+    MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     ThinDielectric(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface

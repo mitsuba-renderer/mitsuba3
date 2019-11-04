@@ -10,8 +10,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class UniformSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(UniformSpectrum, ContinuousSpectrum)
+    MTS_REGISTER_CLASS(UniformSpectrum, ContinuousSpectrum)
     MTS_USING_BASE(ContinuousSpectrum)
+    MTS_IMPORT_TYPES()
 
     UniformSpectrum(const Properties &props) {
         m_value = props.float_("value");

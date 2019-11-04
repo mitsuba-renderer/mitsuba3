@@ -12,10 +12,10 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SmoothPlastic final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(SmoothPlastic, BSDF);
+    MTS_REGISTER_CLASS(SmoothPlastic, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    using ContinuousSpectrum = typename RenderAliases::ContinuousSpectrum;
-    using SpectrumU          = depolarized_t<Spectrum>;
+    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    using SpectrumU = depolarized_t<Spectrum>;
 
     SmoothPlastic(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface

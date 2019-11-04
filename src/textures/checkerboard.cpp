@@ -8,8 +8,8 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Checkerboard final : public ContinuousSpectrum<Float, Spectrum> {
 public:
-    MTS_DECLARE_PLUGIN(Checkerboard, ContinuousSpectrum)
-    using ContinuousSpectrum = ContinuousSpectrum<Float, Spectrum>;
+    MTS_REGISTER_CLASS(Checkerboard, ContinuousSpectrum)
+    MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     Checkerboard(const Properties &props) {
         m_color0 = props.spectrum<Float, Spectrum>("color0", .4f);
