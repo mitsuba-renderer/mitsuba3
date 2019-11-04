@@ -3,7 +3,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/medium.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(Interaction) {
+MTS_PY_EXPORT_VARIANTS(Interaction) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     py::class_<Interaction3f>(m, "Interaction3f", D(Interaction3f))
@@ -22,7 +22,7 @@ MTS_PY_EXPORT_MODE_VARIANTS(Interaction) {
         ;
 }
 
-MTS_PY_EXPORT_MODE_VARIANTS(SurfaceInteraction) {
+MTS_PY_EXPORT_VARIANTS(SurfaceInteraction) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename SurfaceInteraction3f::Base;

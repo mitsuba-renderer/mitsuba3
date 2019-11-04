@@ -7,7 +7,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/spiral.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(Film) {
+MTS_PY_EXPORT_VARIANTS(Film) {
      MTS_IMPORT_TYPES()
      MTS_IMPORT_OBJECT_TYPES()
      MTS_PY_CLASS(Film, Object)

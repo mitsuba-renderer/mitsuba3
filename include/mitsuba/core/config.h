@@ -29,20 +29,7 @@
     MTS_INSTANTIATE_OBJECT(Name)                                            \
 
 
-#define MTS_PY_EXPORT_FLOAT_VARIANTS(name)                                  \
-    template <typename Float>                                               \
-    void instantiate_##name(py::module m);                                  \
-                                                                            \
-    MTS_PY_EXPORT(name) {                                                   \
-        instantiate_##name<float>(                                          \
-            m.def_submodule("float"));                                      \
-    }                                                                       \
-                                                                            \
-    template <typename Float>                                               \
-    void instantiate_##name(py::module m)                                   \
-
-
-#define MTS_PY_EXPORT_MODE_VARIANTS(name)                                   \
+#define MTS_PY_EXPORT_VARIANTS(name)                                        \
     template <typename Float, typename Spectrum>                            \
     void instantiate_##name(py::module m);                                  \
                                                                             \

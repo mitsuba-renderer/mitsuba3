@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/emitter.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(Emitter) {
+MTS_PY_EXPORT_VARIANTS(Emitter) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename Emitter::Base;

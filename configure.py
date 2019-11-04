@@ -51,21 +51,7 @@ with open(fname, 'w') as f:
     w('    MTS_INSTANTIATE_OBJECT(Name)')
     f.write('\n\n')
 
-    w('#define MTS_PY_EXPORT_FLOAT_VARIANTS(name)')
-    w('    template <typename Float>')
-    w('    void instantiate_##name(py::module m);')
-    w('')
-    w('    MTS_PY_EXPORT(name) {')
-    for float_ in set(map(lambda x:x[1], enabled)):
-        w('        instantiate_##name<%s>(' % (float_))
-        w('            m.def_submodule("%s"));' % (float_))
-    w('    }')
-    w('')
-    w('    template <typename Float>')
-    w('    void instantiate_##name(py::module m)')
-    f.write('\n\n')
-
-    w('#define MTS_PY_EXPORT_MODE_VARIANTS(name)')
+    w('#define MTS_PY_EXPORT_VARIANTS(name)')
     w('    template <typename Float, typename Spectrum>')
     w('    void instantiate_##name(py::module m);')
     w('')

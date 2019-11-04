@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/fresnel.h>
 
-MTS_PY_EXPORT_FLOAT_VARIANTS(fresnel) {
+MTS_PY_EXPORT_VARIANTS(fresnel) {
     MTS_IMPORT_CORE_TYPES()
     m.def("fresnel",
         vectorize<Float>(&fresnel<Float>),

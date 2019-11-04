@@ -1,7 +1,7 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(Ray) {
+MTS_PY_EXPORT_VARIANTS(Ray) {
     MTS_IMPORT_CORE_TYPES()
     using Ray3f = Ray<Point3f, Spectrum>;
     using Wavelength = wavelength_t<Spectrum>;

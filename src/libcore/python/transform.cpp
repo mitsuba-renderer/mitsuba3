@@ -3,7 +3,7 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_FLOAT_VARIANTS(Transform) {
+MTS_PY_EXPORT_VARIANTS(Transform) {
     MTS_IMPORT_CORE_TYPES()
 
     using Transform3f = Transform<Float, 3>;
@@ -94,7 +94,7 @@ MTS_PY_EXPORT_FLOAT_VARIANTS(Transform) {
     py::implicitly_convertible<py::array, Transform4f>();
 }
 
-MTS_PY_EXPORT_FLOAT_VARIANTS(AnimatedTransform) {
+MTS_PY_EXPORT_VARIANTS(AnimatedTransform) {
     auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
 
     py::class_<AnimatedTransform::Keyframe>(atrafo, "Keyframe")

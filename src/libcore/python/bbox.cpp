@@ -1,7 +1,7 @@
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(BoundingBox) {
+MTS_PY_EXPORT_VARIANTS(BoundingBox) {
      MTS_IMPORT_CORE_TYPES()
      using Ray3f = Ray<Point3f, Spectrum>;
 

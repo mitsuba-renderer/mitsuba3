@@ -3,7 +3,7 @@
 
 #define DE(...) DOC(enoki, ##__VA_ARGS__)
 
-MTS_PY_EXPORT_FLOAT_VARIANTS(random) {
+MTS_PY_EXPORT_VARIANTS(random) {
     MTS_IMPORT_CORE_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
 

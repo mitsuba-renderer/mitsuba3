@@ -2,7 +2,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/microfacet.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(MicrofacetDistribution) {
+MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using ScalarFloat = typename MicrofacetDistribution::ScalarFloat;

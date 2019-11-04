@@ -52,7 +52,7 @@ MTS_PY_EXPORT(Resampler)
              "target_stride"_a, "channels"_a);
 }
 
-MTS_PY_EXPORT_MODE_VARIANTS(rfilter) {
+MTS_PY_EXPORT_VARIANTS(rfilter) {
     m.attr("FilterBoundaryCondition") = py::module::import("mitsuba.core.FilterBoundaryCondition");
 
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Spectrum>;

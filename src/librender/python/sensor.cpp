@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/sensor.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(Sensor) {
+MTS_PY_EXPORT_VARIANTS(Sensor) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename Sensor::Base;

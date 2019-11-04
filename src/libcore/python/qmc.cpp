@@ -2,7 +2,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_FLOAT_VARIANTS(qmc) {
+MTS_PY_EXPORT_VARIANTS(qmc) {
     MTS_IMPORT_CORE_TYPES()
     py::class_<RadicalInverse, Object, ref<RadicalInverse>>(m, "RadicalInverse", D(RadicalInverse))
         .def(py::init<size_t, int>(), "max_base"_a = 8161, "scramble"_a = -1)

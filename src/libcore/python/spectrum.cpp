@@ -1,7 +1,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(Spectrum) {
+MTS_PY_EXPORT_VARIANTS(Spectrum) {
     m.def("to_xyz", vectorize<Float>(&to_xyz<Spectrum>),
         "value"_a, "wavelengths"_a, "active"_a = true, D(to_xyz))
     .def("cie1931_xyz", vectorize<Float>(&cie1931_xyz<Spectrum>), "wavelengths"_a,

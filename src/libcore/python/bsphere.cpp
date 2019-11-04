@@ -1,8 +1,9 @@
 #include <mitsuba/core/bsphere.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(BoundingSphere) {
+MTS_PY_EXPORT_VARIANTS(BoundingSphere) {
      MTS_IMPORT_CORE_TYPES()
+     using Ray3f = Ray<Point3f, Spectrum>;
 
     py::class_<BoundingSphere3f>(m, "BoundingSphere3f", D(BoundingSphere3f))
         .def(py::init<>(), D(BoundingSphere3f, BoundingSphere3f))

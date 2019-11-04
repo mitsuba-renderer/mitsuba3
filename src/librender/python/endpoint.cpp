@@ -8,7 +8,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shape.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(Endpoint) {
+MTS_PY_EXPORT_VARIANTS(Endpoint) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     MTS_PY_CLASS(Endpoint, Object)

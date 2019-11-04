@@ -1,16 +1,15 @@
 #include <mitsuba/core/spline.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_FLOAT_VARIANTS(spline) {
+MTS_PY_EXPORT_VARIANTS(spline) {
     MTS_IMPORT_CORE_TYPES()
-    py::module spline = m.def_submodule("spline");
 
-    spline.def("eval_spline", spline::eval_spline<Float>,
-               "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline))
+    m.def("eval_spline", spline::eval_spline<Float>,
+        "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline))
     .def("eval_spline_d", spline::eval_spline_d<Float>,
-         "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline_d))
+        "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline_d))
     .def("eval_spline_i", spline::eval_spline_i<Float>,
-         "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline_i))
+        "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline_i))
     .def("eval_1d",
         vectorize<Float>([](ScalarFloat min, ScalarFloat max,
                             const py::array_t<ScalarFloat> &values, Float x) {

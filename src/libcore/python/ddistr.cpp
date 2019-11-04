@@ -1,7 +1,7 @@
 #include <mitsuba/core/ddistr.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_FLOAT_VARIANTS(DiscreteDistribution) {
+MTS_PY_EXPORT_VARIANTS(DiscreteDistribution) {
     using DiscreteDistribution = DiscreteDistribution<Float>;
     MTS_IMPORT_CORE_TYPES()
     MTS_PY_STRUCT(DiscreteDistribution)

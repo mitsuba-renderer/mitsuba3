@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/records.h>
 
-MTS_PY_EXPORT_MODE_VARIANTS(PositionSample) {
+MTS_PY_EXPORT_VARIANTS(PositionSample) {
     MTS_IMPORT_TYPES()
 
     py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample3f))
@@ -19,7 +19,7 @@ MTS_PY_EXPORT_MODE_VARIANTS(PositionSample) {
         ;
 }
 
-MTS_PY_EXPORT_MODE_VARIANTS(DirectionSample) {
+MTS_PY_EXPORT_VARIANTS(DirectionSample) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename DirectionSample3f::Base;
@@ -43,7 +43,7 @@ MTS_PY_EXPORT_MODE_VARIANTS(DirectionSample) {
 }
 
 // TODO vectorize wrapper bindings
-// MTS_PY_EXPORT_MODE_VARIANTS(RadianceSample) {
+// MTS_PY_EXPORT_VARIANTS(RadianceSample) {
 //     auto rs = py::class_<RadianceSample>(m, name, D(RadianceSample))
 //         .def(py::init<>(), D(RadianceSample, RadianceSample))
 //         .def(py::init<const Scene *, Sampler *>(),
