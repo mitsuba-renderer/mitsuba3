@@ -246,17 +246,24 @@ public:  // Type-specific getters and setters ----------------------------------
     const Transform4f& transform(const std::string &name, const Transform4f &def_val) const;
 
     /// Store an animated transformation in the Properties instance
-    void set_animated_transform(const std::string &name, ref<AnimatedTransform> value, bool warn_duplicates = true);
+    template <typename Float>
+    void set_animated_transform(const std::string &name, ref<AnimatedTransform<Float>> value,
+                                bool warn_duplicates = true);
     /// Store a (constant) animated transformation in the Properties instance
-    void set_animated_transform(const std::string &name, const Transform4f &value, bool warn_duplicates = true);
+    template <typename Float>
+    void set_animated_transform(const std::string &name, const Transform<Float, 4> &value,
+                                bool warn_duplicates = true);
     /// Retrieve an animated transformation
-    ref<AnimatedTransform> animated_transform(const std::string &name) const;
+    template <typename Float>
+    ref<AnimatedTransform<Float>> animated_transform(const std::string &name) const;
     /// Retrieve an animated transformation (use default value if no entry exists)
-    ref<AnimatedTransform> animated_transform(
-            const std::string &name, ref<AnimatedTransform> def_val) const;
+    template <typename Float>
+    ref<AnimatedTransform<Float>> animated_transform(
+            const std::string &name, ref<AnimatedTransform<Float>> def_val) const;
     /// Retrieve an animated transformation (default value is a constant transform)
-    ref<AnimatedTransform> animated_transform(
-            const std::string &name, const Transform4f &def_val) const;
+    template <typename Float>
+    ref<AnimatedTransform<Float>> animated_transform(
+            const std::string &name, const Transform<Float, 4> &def_val) const;
 
     /// Store an arbitrary object in the Properties instance
     void set_object(const std::string &name, const ref<Object> &value, bool warn_duplicates = true);
@@ -286,8 +293,8 @@ public:  // Type-specific getters and setters ----------------------------------
     template <typename Float, typename Spectrum>
     ref<ContinuousSpectrum<Float, Spectrum>>
     spectrum(const std::string &name, ref<ContinuousSpectrum<Float, Spectrum>> def_val) const;
-    template <typename Float, typename Spectrum>
     /// Retrieve a continuous spectrum (use default flat spectrum if no entry exists)
+    template <typename Float, typename Spectrum>
     ref<ContinuousSpectrum<Float, Spectrum>> spectrum(const std::string &name, Float def_val) const;
 
     /// Retrieve a 3D texture

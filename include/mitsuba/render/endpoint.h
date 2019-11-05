@@ -38,6 +38,7 @@ class MTS_EXPORT_RENDER Endpoint : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(Endpoint, Object)
     MTS_IMPORT_TYPES();
+    using AnimatedTransform = AnimatedTransform<Float>;
     using Medium = typename RenderAliases::Medium;
     using Scene  = typename RenderAliases::Scene;
     using Shape  = typename RenderAliases::Shape;

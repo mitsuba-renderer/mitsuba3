@@ -44,7 +44,7 @@ add_library(mitsuba-core-obj OBJECT
   plugin.cpp           ${INC_DIR}/plugin.h
   profiler.cpp         ${INC_DIR}/profiler.h
   progress.cpp         ${INC_DIR}/progress.h
-  # properties.cpp       ${INC_DIR}/properties.h
+#   properties.cpp       ${INC_DIR}/properties.h
   qmc.cpp              ${INC_DIR}/qmc.h
                        ${INC_DIR}/random.h
   rfilter.cpp          ${INC_DIR}/rfilter.h
@@ -54,7 +54,7 @@ add_library(mitsuba-core-obj OBJECT
   struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
   tls.cpp              ${INC_DIR}/tls.h
-  # transform.cpp        ${INC_DIR}/transform.h
+                       ${INC_DIR}/transform.h
   util.cpp             ${INC_DIR}/util.h
                        ${INC_DIR}/vector.h
                        ${INC_DIR}/warp.h

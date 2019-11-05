@@ -168,7 +168,6 @@ public:
     MTS_IMPORT_CORE_TYPES()
 
     using Vector2s = Vector<size_t, 2>;
-    using Matrix4f = Matrix<Float, 4, true>;
 
     // TODO: give it the right spectrum
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, void>;

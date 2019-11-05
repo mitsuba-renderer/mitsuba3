@@ -13,6 +13,7 @@ public:
     MTS_DECLARE_CLASS_VARIANT(PointLight, Emitter)
     MTS_USING_BASE(Emitter, m_medium, m_needs_sample_3, m_world_transform)
     MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
+    using AnimatedTransform = AnimatedTransform<Float>;
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {

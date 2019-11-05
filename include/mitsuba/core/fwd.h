@@ -20,7 +20,6 @@ class Class;
 template <typename> class ref;
 
 class AnnotatedStream;
-class AnimatedTransform;
 class Appender;
 class ArgParser;
 class Bitmap;
@@ -60,6 +59,7 @@ template <typename Value, size_t Size>       struct Normal;
 template <typename Value, size_t Size>       struct Color;
 template <typename Value, size_t Size>       struct Spectrum;
 template <typename Value, size_t Size>       struct Transform;
+template <typename Float>                    class AnimatedTransform;
 template <typename Point, typename Spectrum> struct Ray;
 template <typename Point, typename Spectrum> struct RayDifferential;
 template <typename Point>                    struct BoundingBox;
@@ -68,6 +68,7 @@ template <typename Vector>                   struct Frame;
 
 template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
 template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
+
 
 //! @}
 // =============================================================
@@ -125,6 +126,16 @@ template <typename Float_> struct CoreAliases {
 
     using Normal3f = Normal<Float, 3>;
     using Normal3d = Normal<Float64, 3>;
+
+    using Matrix2f = Matrix<Float, 2, true>;
+    using Matrix2d = Matrix<Float64, 2, true>;
+    using Matrix3f = Matrix<Float, 3, true>;
+    using Matrix3d = Matrix<Float64, 3, true>;
+    using Matrix4f = Matrix<Float, 4, true>;
+    using Matrix4d = Matrix<Float64, 4, true>;
+
+    using Quaternion4f = Quaternion<Float>;
+    using Quaternion4d = Quaternion<Float64>;
 
     using BoundingBox1f    = BoundingBox<Point1f>;
     using BoundingBox2f    = BoundingBox<Point2f>;
@@ -188,6 +199,14 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Point4d              = typename CoreAliases::Point4d;                          \
     using prefix ## Normal3f             = typename CoreAliases::Normal3f;                         \
     using prefix ## Normal3d             = typename CoreAliases::Normal3d;                         \
+    using prefix ## Matrix2f             = typename CoreAliases::Matrix2f;                         \
+    using prefix ## Matrix2d             = typename CoreAliases::Matrix2d;                         \
+    using prefix ## Matrix3f             = typename CoreAliases::Matrix3f;                         \
+    using prefix ## Matrix3d             = typename CoreAliases::Matrix3d;                         \
+    using prefix ## Matrix4f             = typename CoreAliases::Matrix4f;                         \
+    using prefix ## Matrix4d             = typename CoreAliases::Matrix4d;                         \
+    using prefix ## Quaternion4f         = typename CoreAliases::Quaternion4f;                     \
+    using prefix ## Quaternion4d         = typename CoreAliases::Quaternion4d;                     \
     using prefix ## BoundingBox1f        = typename CoreAliases::BoundingBox1f;                    \
     using prefix ## BoundingBox2f        = typename CoreAliases::BoundingBox2f;                    \
     using prefix ## BoundingBox3f        = typename CoreAliases::BoundingBox3f;                    \

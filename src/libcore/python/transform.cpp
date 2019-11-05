@@ -95,17 +95,21 @@ MTS_PY_EXPORT_VARIANTS(Transform) {
 }
 
 MTS_PY_EXPORT_VARIANTS(AnimatedTransform) {
+    MTS_IMPORT_CORE_TYPES()
+    using AnimatedTransform = AnimatedTransform<Float>;
+    using Keyframe = typename AnimatedTransform::Keyframe;
+
     auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
 
-    py::class_<AnimatedTransform::Keyframe>(atrafo, "Keyframe")
-        .def(py::init<float, Matrix<Float, 3>, Quaternion<Float>, Vector<Float, 3>>())
-        .def_readwrite("time", &AnimatedTransform::Keyframe::time, D(AnimatedTransform, Keyframe, time))
-        .def_readwrite("scale", &AnimatedTransform::Keyframe::scale, D(AnimatedTransform, Keyframe, scale))
-        .def_readwrite("quat", &AnimatedTransform::Keyframe::quat, D(AnimatedTransform, Keyframe, quat))
-        .def_readwrite("trans", &AnimatedTransform::Keyframe::trans, D(AnimatedTransform, Keyframe, trans));
+    py::class_<Keyframe>(atrafo, "Keyframe")
+        .def(py::init<float, ScalarMatrix3f, ScalarQuaternion4f, ScalarVector3f>())
+        .def_readwrite("time", &Keyframe::time, D(AnimatedTransform, Keyframe, time))
+        .def_readwrite("scale", &Keyframe::scale, D(AnimatedTransform, Keyframe, scale))
+        .def_readwrite("quat", &Keyframe::quat, D(AnimatedTransform, Keyframe, quat))
+        .def_readwrite("trans", &Keyframe::trans, D(AnimatedTransform, Keyframe, trans));
 
     atrafo.def(py::init<>())
-        .def(py::init<const Transform<float, 4> &>())
+        .def(py::init<const ScalarTransform4f &>())
         .def_method(AnimatedTransform, size)
         .def_method(AnimatedTransform, has_scale)
         .def("__len__", &AnimatedTransform::size)
@@ -115,16 +119,10 @@ MTS_PY_EXPORT_VARIANTS(AnimatedTransform) {
             return trafo[index];
         })
         .def("append",
-             py::overload_cast<float, const Transform<float, 4> &>(
-                 &AnimatedTransform::template append<float>),
+             py::overload_cast<ScalarFloat, const ScalarTransform4f &>(&AnimatedTransform::append),
              D(AnimatedTransform, append))
-        // TODO
-        // .def("append",
-            //  py::overload_cast<const AnimatedTransform::Keyframe &>(
-                //  &AnimatedTransform::append))
-        .def("eval",
-             vectorize<Float>(py::overload_cast<Float, mask_t<Float>>(
-                 &AnimatedTransform::template eval<Float>, py::const_)),
+        .def("append", py::overload_cast<const Keyframe &>( &AnimatedTransform::append))
+        .def("eval", vectorize<Float>(&AnimatedTransform::eval),
              "time"_a, "unused"_a = true, D(AnimatedTransform, eval))
         .def_method(AnimatedTransform, translation_bounds)
         ;
