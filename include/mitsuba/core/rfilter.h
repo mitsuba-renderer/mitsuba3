@@ -48,9 +48,10 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_CORE ReconstructionFilter : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(ReconstructionFilter, Object, "rfilter")
+    MTS_IMPORT_CORE_TYPES()
 
     /// Return the filter's width
-    Float radius() const { return m_radius; }
+    ScalarFloat radius() const { return m_radius; }
 
     /// Return the block border size required when rendering with this filter
     uint32_t border_size() const { return m_border_size; }
@@ -68,17 +69,28 @@ public:
 
 protected:
     /// Create a new reconstruction filter
-    ReconstructionFilter(const Properties &props);
+    ReconstructionFilter(const Properties & /*props*/) { };
 
     /// Virtual destructor
-    virtual ~ReconstructionFilter();
+    virtual ~ReconstructionFilter() { };
 
     /// Mandatory initialization prior to calls to \ref eval_discretized()
-    void init_discretization();
+    void init_discretization() {
+        Assert(m_radius > 0);
+
+        /* Evaluate and store the filter values */
+        for (size_t i = 0; i < MTS_FILTER_RESOLUTION; ++i)
+            m_values[i] = hmax(eval((m_radius * i) / MTS_FILTER_RESOLUTION));
+
+        m_values[MTS_FILTER_RESOLUTION] = 0;
+        m_scale_factor = MTS_FILTER_RESOLUTION / m_radius;
+        m_border_size = (uint32_t) std::ceil(m_radius - ScalarFloat(0.5)
+                                             - ScalarFloat(2) * math::Epsilon<ScalarFloat>);
+    }
 
 protected:
-    Float m_radius, m_scale_factor;
-    Float m_values[MTS_FILTER_RESOLUTION + 1];
+    ScalarFloat m_radius, m_scale_factor;
+    ScalarFloat m_values[MTS_FILTER_RESOLUTION + 1];
     uint32_t m_border_size;
 };
 
@@ -264,18 +276,14 @@ template <typename Scalar_> struct Resampler {
         if (m_clamp != std::make_pair(-std::numeric_limits<Scalar>::infinity(),
                                        std::numeric_limits<Scalar>::infinity())) {
             if (m_start)
-                f = &Resampler::resample_internal<true /* Clamp */,
-                                                  true /* Resample */>;
+                f = &Resampler::resample_internal<true /* Clamp */, true /* Resample */>;
             else
-                f = &Resampler::resample_internal<true /* Clamp */,
-                                                  false /* Resample */>;
+                f = &Resampler::resample_internal<true /* Clamp */, false /* Resample */>;
         } else {
             if (m_start)
-                f = &Resampler::resample_internal<false /* Clamp */,
-                                                  true /* Resample */>;
+                f = &Resampler::resample_internal<false /* Clamp */, true /* Resample */>;
             else
-                f = &Resampler::resample_internal<false /* Clamp */,
-                                                  false /* Resample */>;
+                f = &Resampler::resample_internal<false /* Clamp */, false /* Resample */>;
         }
 
         (this->*f)(source, source_stride, target, target_stride, channels);
@@ -411,21 +419,3 @@ extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os,
                                                 const FilterBoundaryCondition &value);
 
 NAMESPACE_END(mitsuba)
-
-#define MTS_IMPLEMENT_RFILTER_SCALAR()                                         \
-    Float eval(Float x) const override { return eval_impl(x); }
-
-#define MTS_IMPLEMENT_RFILTER_PACKET()                                         \
-    FloatP eval(FloatP x) const override { return eval_impl(x); }
-
-#if !defined(MTS_ENABLE_AUTODIFF)
-#  define MTS_IMPLEMENT_RFILTER_AUTODIFF()
-#else
-#  define MTS_IMPLEMENT_RFILTER_AUTODIFF()                                     \
-    FloatD eval(FloatD x) const override { return eval_impl(x); }
-#endif
-
-#define MTS_IMPLEMENT_RFILTER_ALL()                                            \
-    MTS_IMPLEMENT_RFILTER_SCALAR()                                             \
-    MTS_IMPLEMENT_RFILTER_PACKET()                                             \
-    MTS_IMPLEMENT_RFILTER_AUTODIFF()
