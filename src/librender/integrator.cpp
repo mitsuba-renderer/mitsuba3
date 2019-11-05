@@ -89,7 +89,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
             ScopedSetThreadEnvironment set_env(env);
             ref<Sampler> sampler = scene->sampler()->clone();
             ref<ImageBlock> block =
-                new ImageBlock(Bitmap::EXYZAW, Vector2i(m_block_size),
+                new ImageBlock(PixelFormat::XYZAW, Vector2i(m_block_size),
                                film->reconstruction_filter(), 0, true);
             scoped_flush_denormals flush_denormals(true);
 
@@ -100,7 +100,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
                 if (hprod(size) == 0)
                     Throw("Internal error -- generated empty image block!");
                 if (size != block->size())
-                    block = new ImageBlock(Bitmap::EXYZAW, size, film->reconstruction_filter(), 0,
+                    block = new ImageBlock(PixelFormat::XYZAW, size, film->reconstruction_filter(), 0,
                                            true);
                 block->set_offset(offset);
 

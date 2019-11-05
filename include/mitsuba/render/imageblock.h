@@ -30,7 +30,7 @@ public:
      * Construct a new image block of the requested properties
      *
      * \param fmt
-     *    Specifies the pixel format -- see \ref Bitmap::EPixelFormat
+     *    Specifies the pixel format -- see \ref PixelFormat
      *    for a list of possibilities
      *
      * \param size
@@ -45,7 +45,7 @@ public:
      *
      * \param channels
      *    Specifies the number of output channels. This is only valid
-     *    when \ref Bitmap::EMultiChannel is chosen as the pixel format,
+     *    when \ref MultiChannel is chosen as the pixel format,
      *    otherwise pass 0 so that channels are set automatically from the
      *    pixel format.
      *
@@ -61,7 +61,7 @@ public:
      *    Ensure that splats created via ``ImageBlock::put()`` add a
      *    unit amount of energy?
      */
-    ImageBlock(Bitmap::EPixelFormat fmt,
+    ImageBlock(PixelFormat fmt,
                const Vector2i &size,
                const ReconstructionFilter *filter = nullptr,
                size_t channels = 0,
@@ -109,7 +109,7 @@ public:
              const Spectrum &value,
              const Float &alpha,
              Mask active = true) {
-        Assert(m_bitmap->pixel_format() == Bitmap::EXYZAW,
+        Assert(m_bitmap->pixel_format() == PixelFormat::XYZAW,
                "This `put` variant requires XYZAW internal storage format.");
 
         if constexpr (is_monochrome_v<Spectrum>) {
@@ -181,7 +181,7 @@ public:
     size_t channel_count() const { return m_bitmap->channel_count(); }
 
     /// Return the underlying pixel format
-    Bitmap::EPixelFormat pixel_format() const { return m_bitmap->pixel_format(); }
+    PixelFormat pixel_format() const { return m_bitmap->pixel_format(); }
 
     /// Return a pointer to the underlying bitmap representation
     Bitmap *bitmap() { return m_bitmap; }

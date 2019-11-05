@@ -6,7 +6,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   argparser.cpp
   atomic.cpp
   bbox.cpp
-  # bitmap.cpp
+  bitmap.cpp
   bsphere.cpp
   # cast.cpp
   ddistr.cpp

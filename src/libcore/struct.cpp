@@ -34,7 +34,7 @@ public:
     struct Key {
         std::string name;
         FieldType type;
-        uint32_t flags;
+        FieldFlags flags;
 
         bool operator<(const Key &o) const {
             return std::make_tuple(name, type, flags) < std::make_tuple(o.name, o.type, o.flags);
@@ -571,7 +571,7 @@ public:
             default: Throw("StructConverter: unknown field type!");
         }
 
-        if (field.flags & FieldFlags::Assert) {
+        if (has_flag(field.flags, FieldFlags::Assert)) {
             if (field.type == FieldType::Float16) {
                 auto ref = cc.newUInt16Const(
                     asmjit::kConstScopeGlobal,
@@ -615,7 +615,7 @@ public:
     }
 
     std::pair<Key, Value> load_default(const Struct::Field &field) {
-        Key key { field.name, struct_type_v<float>, 0 };
+        Key key { field.name, struct_type_v<float>, FieldFlags::None };
         Value value;
         value.xmm = cc.newXmm();
         movs(value.xmm, const_(field.default_));
@@ -642,7 +642,7 @@ public:
             float_to_float = true;
         }
 
-        if (kr.flags & FieldFlags::Gamma) {
+        if (has_flag(kr.flags, FieldFlags::Gamma)) {
             kr.flags = kr.flags & ~FieldFlags::Gamma;
             inv_gamma = true;
         }
@@ -673,7 +673,7 @@ public:
                 cvtsi2s(vr.xmm, vr.gp.r32());
             }
 
-            if (input.first.flags & FieldFlags::Normalized)
+            if (has_flag(input.first.flags, FieldFlags::Normalized))
                 muls(vr.xmm, const_(1.0 / range.second));
         }
 
@@ -734,8 +734,7 @@ public:
             cc.comment(("# Save field \""+ field.name + "\"").c_str());
         #endif
 
-        if ((field.flags & FieldFlags::Gamma) != 0 &&
-            (key.flags & FieldFlags::Gamma) == 0) {
+        if (has_flag(field.flags, FieldFlags::Gamma) && !has_flag(key.flags, FieldFlags::Gamma)) {
             value.xmm = gamma(value.xmm, true);
         }
 
@@ -754,7 +753,7 @@ public:
             while ((double) range.second > range_dbl.second)
                 range.second = enoki::prev_float(range.second);
 
-            if (field.flags & FieldFlags::Normalized) {
+            if (has_flag(field.flags, FieldFlags::Normalized)) {
                 muls(value.xmm, const_(range.second));
 
                 if (dither) {
@@ -995,7 +994,7 @@ bool Struct::has_field(const std::string &name) const {
     return false;
 }
 
-Struct &Struct::append(const std::string &name, FieldType type, uint32_t flags, double default_) {
+Struct &Struct::append(const std::string &name, FieldType type, FieldFlags flags, double default_) {
     Field f;
     f.name = name;
     f.type = type;
@@ -1058,15 +1057,15 @@ std::string Struct::to_string() const {
         }
         os << "  " << f.type;
         os << " " << f.name << "; // @" << f.offset;
-        if (f.flags & FieldFlags::Normalized)
+        if (has_flag(f.flags, FieldFlags::Normalized))
             os << ", normalized";
-        if (f.flags & FieldFlags::Gamma)
+        if (has_flag(f.flags, FieldFlags::Gamma))
             os << ", gamma";
-        if (f.flags & FieldFlags::Weight)
+        if (has_flag(f.flags, FieldFlags::Weight))
             os << ", weight";
-        if (f.flags & FieldFlags::Default)
+        if (has_flag(f.flags, FieldFlags::Default))
             os << ", default=" << f.default_;
-        if (f.flags & FieldFlags::Assert)
+        if (has_flag(f.flags, FieldFlags::Assert))
             os << ", assert=" << f.default_;
         if (!f.blend.empty()) {
             os << ", blend = <";
@@ -1226,7 +1225,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     bool has_assert = false;
     // Ensure that fields with an EAssert flag are loaded
     for (const Struct::Field &f : *source) {
-        if (f.flags & FieldFlags::Assert) {
+        if (has_flag(f.flags, FieldFlags::Assert)) {
             sc.load(source, input, f.name);
             has_assert = true;
         }
@@ -1236,7 +1235,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     const Struct::Field *target_weight = nullptr;
 
     for (const Struct::Field &f : *source) {
-        if ((f.flags & FieldFlags::Weight) == 0)
+        if (!has_flag(f.flags, FieldFlags::Weight))
             continue;
         if (source_weight != nullptr)
             Throw("Internal error: source structure has more than one weight field!");
@@ -1244,7 +1243,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     }
 
     for (const Struct::Field &f : *target) {
-        if ((f.flags & FieldFlags::Weight) == 0)
+        if (!has_flag(f.flags, FieldFlags::Weight))
             continue;
         if (target_weight != nullptr)
             Throw("Internal error: target structure has more than one weight field!");
@@ -1270,7 +1269,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
         if (f.blend.empty()) {
             if (source->has_field(f.name)) {
                 kv = sc.load(source, input, f.name);
-            } else if (f.flags & FieldFlags::Default) {
+            } else if (has_flag(f.flags, FieldFlags::Default)) {
                 kv = sc.load_default(f);
             } else {
                 Throw("Unable to find field \"%s\"!", f.name);
@@ -1291,7 +1290,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
         FieldFlags flag_mask = FieldFlags::Normalized | FieldFlags::Gamma;
         if (!((kv.first.type == f.type || (Struct::is_integer(kv.first.type) &&
                                            Struct::is_integer(f.type) &&
-                                           (f.flags & FieldFlags::Normalized) == 0)) &&
+                                           !has_flag(f.flags, FieldFlags::Normalized))) &&
             ((kv.first.flags & flag_mask) == (f.flags & flag_mask))))
             kv = sc.linearize(kv);
 
@@ -1439,7 +1438,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
         default: Throw("StructConverter: unknown field type!");
     }
 
-    if (f.flags & FieldFlags::Assert) {
+    if (has_flag(f.flags, FieldFlags::Assert)) {
         if (f.is_integer()) {
             if (f.is_signed() && (int64_t) f.default_ != value.i)
                 return false;
@@ -1484,13 +1483,13 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
 
     dst += f.offset;
 
-    if ((f.flags & FieldFlags::Gamma) != 0 && (value.flags & FieldFlags::Gamma) == 0)
+    if (has_flag(f.flags, FieldFlags::Gamma) && !has_flag(value.flags, FieldFlags::Gamma))
         value.f = enoki::linear_to_srgb(value.f);
 
     if (f.is_integer() && value.type == struct_type_v<float>) {
         auto range = f.range();
 
-        if (f.flags & FieldFlags::Normalized)
+        if (has_flag(f.flags, FieldFlags::Normalized))
             value.f *= (Float) range.second;
 
         double d = (double) value.f;
@@ -1608,15 +1607,15 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
     bool has_weight = false;
     std::vector<Struct::Field> assert_fields;
     for (Struct::Field f : *m_source) {
-        if ((f.flags & FieldFlags::Assert) && !m_target->has_field(f.name))
+        if (has_flag(f.flags, FieldFlags::Assert) && !m_target->has_field(f.name))
             assert_fields.push_back(f);
-        if (f.flags & FieldFlags::Weight) {
+        if has_flag(f.flags, FieldFlags::Weight) {
             weight_field = f;
             has_weight = true;
         }
     }
     for (const Struct::Field &f : *m_target) {
-        if (f.flags & FieldFlags::Weight && has_weight)
+        if (has_flag(f.flags, FieldFlags::Weight) && has_weight)
             has_weight = false;
     }
 
@@ -1644,7 +1643,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 Value value;
 
                 if (f.blend.empty()) {
-                    if (!m_source->has_field(f.name) && (f.flags & FieldFlags::Default)) {
+                    if (!m_source->has_field(f.name) && has_flag(f.flags, FieldFlags::Default)) {
                         value.d = f.default_;
                         value.type = FieldType::Float64;
                         value.flags = 0;
@@ -1668,7 +1667,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 uint32_t flag_mask = FieldFlags::Normalized | FieldFlags::Gamma;
                 if ((!((value.type == f.type || (Struct::is_integer(value.type) &&
                                                  Struct::is_integer(f.type) &&
-                                                (f.flags & FieldFlags::Normalized) == 0)) &&
+                                                 !has_flag(f.flags, FieldFlags::Normalized))) &&
                     ((value.flags & flag_mask) == (f.flags & flag_mask)))) || has_weight)
                     linearize(value);
 

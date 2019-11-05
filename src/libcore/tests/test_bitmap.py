@@ -18,7 +18,7 @@ def test_read_convert_yc(tmpdir):
     # Tests reading & upsampling a luminance/chroma image
     b = Bitmap(find_resource('resources/data/tests/bitmap/XYZ_YC.exr'))
     # Tests float16 XYZ -> float32 RGBA conversion
-    b = b.convert(Bitmap.ERGBA, Struct.EFloat32, False)
+    b = b.convert(Bitmap.PixelFormat::RGBA, Struct.EFloat32, False)
     ref = [ 0.36595437, 0.27774358, 0.11499051, 1.]
     # Tests automatic Bitmap->NumPy conversion
     assert np.allclose(np.mean(b, axis=(0, 1)), ref)
@@ -71,7 +71,7 @@ def test_read_write_complex_exr(tmpdir):
 
 def test_convert_rgb_y(tmpdir):
     # Tests RGBA(float64) -> Y (float32) conversion
-    b1 = Bitmap(Bitmap.ERGBA, Struct.EFloat64, [3, 1])
+    b1 = Bitmap(Bitmap.PixelFormat::RGBA, Struct.EFloat64, [3, 1])
     b2 = np.array(b1, copy=False)
     b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
     b3 = np.array(b1.convert(Bitmap.EY, Struct.EFloat32, False)).ravel()
@@ -85,14 +85,14 @@ def test_convert_rgb_y_gamma(tmpdir):
         return 1.055 * (value ** (1.0/2.4)) - 0.055
 
     # Tests RGBA(float64) -> Y (uint8_t, linear) conversion
-    b1 = Bitmap(Bitmap.ERGBA, Struct.EFloat64, [3, 1])
+    b1 = Bitmap(Bitmap.PixelFormat::RGBA, Struct.EFloat64, [3, 1])
     b2 = np.array(b1, copy=False)
     b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
     b3 = np.array(b1.convert(Bitmap.EY, Struct.EUInt8, False)).ravel()
     assert np.allclose(b3, [0.212671*255, 0.715160*255, 0.072169*255], atol=1)
 
     # Tests RGBA(float64) -> Y (uint8_t, gamma) conversion
-    b1 = Bitmap(Bitmap.ERGBA, Struct.EFloat64, [3, 1])
+    b1 = Bitmap(Bitmap.PixelFormat::RGBA, Struct.EFloat64, [3, 1])
     b2 = np.array(b1, copy=False)
     b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
     b3 = np.array(b1.convert(Bitmap.EY, Struct.EUInt8, True)).ravel()
@@ -127,7 +127,7 @@ def test_read_write_png(tmpdir):
     b2 = Bitmap(tmp_file)
     assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) == 0
 
-    b = Bitmap(Bitmap.ERGBA, Struct.EUInt8, [10, 10])
+    b = Bitmap(Bitmap.PixelFormat::RGBA, Struct.EUInt8, [10, 10])
     ref = np.uint8(PCG32().next_float((10, 10, 4))*255)
     np.array(b, copy=False)[:] = ref
     b.write(tmp_file)

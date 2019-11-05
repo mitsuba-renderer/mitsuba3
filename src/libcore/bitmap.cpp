@@ -56,7 +56,7 @@ extern "C" {
 
 NAMESPACE_BEGIN(mitsuba)
 
-Bitmap::Bitmap(EPixelFormat pixel_format, FieldType component_format,
+Bitmap::Bitmap(PixelFormat pixel_format, FieldType component_format,
                const Vector2s &size, size_t channel_count, uint8_t *data)
     : m_data(data), m_pixel_format(pixel_format),
       m_component_format(component_format), m_size(size), m_owns_data(false) {
@@ -98,11 +98,11 @@ Bitmap::Bitmap(Bitmap &&bitmap)
       m_owns_data(bitmap.m_owns_data) {
 }
 
-Bitmap::Bitmap(Stream *stream, EFileFormat format) {
+Bitmap::Bitmap(Stream *stream, ImageFileFormat format) {
     read(stream, format);
 }
 
-Bitmap::Bitmap(const fs::path &filename, EFileFormat format) {
+Bitmap::Bitmap(const fs::path &filename, ImageFileFormat format) {
     ref<FileStream> fs = new FileStream(filename);
     read(fs, format);
 }
@@ -121,9 +121,9 @@ void Bitmap::set_srgb_gamma(bool value) {
             suffix = suffix.substr(it + 1);
         if (suffix != "A" && suffix != "W") {
             if (value)
-                field.flags |= FieldFlags::Gamma;
+                field.flags = field.flags | FieldFlags::Gamma;
             else
-                field.flags &= ~FieldFlags::Gamma;
+                field.flags = field.flags & ~FieldFlags::Gamma;
         }
     }
 }
@@ -136,15 +136,15 @@ void Bitmap::rebuild_struct(size_t channel_count) {
     std::vector<std::string> channels;
 
     switch (m_pixel_format) {
-        case EY:     channels = { "Y" };                    break;
-        case EYA:    channels = { "Y", "A" };               break;
-        case ERGB:   channels = { "R", "G", "B"};           break;
-        case ERGBA:  channels = { "R", "G", "B", "A"};      break;
-        case ERGBAW: channels = { "R", "G", "B", "A", "W"}; break;
-        case EXYZ:   channels = { "X", "Y", "Z"};           break;
-        case EXYZA:  channels = { "X", "Y", "Z", "A"};      break;
-        case EXYZAW: channels = { "X", "Y", "Z", "A", "W"}; break;
-        case EMultiChannel: {
+        case PixelFormat::Y:     channels = { "Y" };                    break;
+        case PixelFormat::YA:    channels = { "Y", "A" };               break;
+        case PixelFormat::RGB:   channels = { "R", "G", "B"};           break;
+        case PixelFormat::RGBA:  channels = { "R", "G", "B", "A"};      break;
+        case PixelFormat::RGBAW: channels = { "R", "G", "B", "A", "W"}; break;
+        case PixelFormat::XYZ:   channels = { "X", "Y", "Z"};           break;
+        case PixelFormat::XYZA:  channels = { "X", "Y", "Z", "A"};      break;
+        case PixelFormat::XYZAW: channels = { "X", "Y", "Z", "A", "W"}; break;
+        case PixelFormat::MultiChannel: {
                 for (size_t i = 0; i < channel_count; ++i)
                     channels.push_back(tfm::format("ch%i", i));
             }
@@ -158,13 +158,13 @@ void Bitmap::rebuild_struct(size_t channel_count) {
 
     m_struct = new Struct();
     for (auto ch: channels) {
-        uint32_t flags = 0;
+        FieldFlags flags = FieldFlags::None;
         if (ch != "A" && ch != "W" && m_srgb_gamma)
-            flags |= FieldFlags::Gamma;
+            flags = flags | FieldFlags::Gamma;
         if (ch == "W")
-            flags |= FieldFlags::Weight;
+            flags = flags | FieldFlags::Weight;
         if (Struct::is_integer(m_component_format))
-            flags |= FieldFlags::Normalized;
+            flags = flags | FieldFlags::Normalized;
         m_struct->append(ch, m_component_format, flags);
     }
 }
@@ -205,12 +205,15 @@ void Bitmap::vflip() {
     }
 }
 
-template <typename Scalar, bool Filter>
+template <typename Scalar, bool Filter,
+          typename ReconstructionFilter = typename Bitmap::ReconstructionFilter>
 static void
 resample(Bitmap *target, const Bitmap *source,
          const ReconstructionFilter *rfilter_,
          const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> bc,
          const std::pair<Scalar, Scalar> &clamp, ref<Bitmap> temp) {
+    using Vector2s = typename Bitmap::Vector2s;
+
     ref<const ReconstructionFilter> rfilter(rfilter_);
 
     if (!rfilter) {
@@ -289,9 +292,8 @@ resample(Bitmap *target, const Bitmap *source,
 }
 
 void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
-                      const std::pair<EBoundaryCondition, EBoundaryCondition> &bc,
+                      const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc,
                       const std::pair<Float, Float> &clamp, Bitmap *temp) const {
-
     if (pixel_format() != target->pixel_format() ||
         component_format() != target->component_format() ||
         channel_count() != target->channel_count())
@@ -325,7 +327,7 @@ void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
 }
 
 ref<Bitmap> Bitmap::resample(const Vector2s &res, const ReconstructionFilter *rfilter,
-                             const std::pair<EBoundaryCondition, EBoundaryCondition> &bc,
+                             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc,
                              const std::pair<Float, Float> &bound) const {
     ref<Bitmap> result =
         new Bitmap(m_pixel_format, m_component_format, res, channel_count());
@@ -335,12 +337,12 @@ ref<Bitmap> Bitmap::resample(const Vector2s &res, const ReconstructionFilter *rf
     return result;
 }
 
-ref<Bitmap> Bitmap::convert(EPixelFormat pixel_format,
+ref<Bitmap> Bitmap::convert(PixelFormat pixel_format,
                             FieldType component_format,
                             bool srgb_gamma) const {
     ref<Bitmap> result = new Bitmap(
         pixel_format, component_format, m_size,
-        m_pixel_format == EMultiChannel ? m_struct->field_count() : 0);
+        m_pixel_format == PixelFormat::MultiChannel ? m_struct->field_count() : 0);
 
     result->m_metadata = m_metadata;
     result->set_srgb_gamma(srgb_gamma);
@@ -355,9 +357,13 @@ void Bitmap::convert(Bitmap *target) const {
 
     ref<Struct> target_struct = new Struct(*(target->struct_()));
 
-    bool source_is_rgb     = m_pixel_format == ERGB || m_pixel_format == ERGBA || m_pixel_format == ERGBAW;
-    bool source_is_xyz     = m_pixel_format == EXYZ || m_pixel_format == EXYZA || m_pixel_format == EXYZAW;
-    bool source_is_y       = m_pixel_format == EY || m_pixel_format == EYA;
+    bool source_is_rgb = m_pixel_format == PixelFormat::RGB ||
+                         m_pixel_format == PixelFormat::RGBA ||
+                         m_pixel_format == PixelFormat::RGBAW;
+    bool source_is_xyz = m_pixel_format == PixelFormat::XYZ ||
+                         m_pixel_format == PixelFormat::XYZA ||
+                         m_pixel_format == PixelFormat::XYZAW;
+    bool source_is_y = m_pixel_format == PixelFormat::Y || m_pixel_format == PixelFormat::YA;
 
     for (auto &field: *target_struct) {
         if (m_struct->has_field(field.name))
@@ -374,7 +380,7 @@ void Bitmap::convert(Bitmap *target) const {
         /* Set alpha/weight to 1.0 by default */
         if (suffix == "A" || suffix == "W") {
             field.default_ = 1.0;
-            field.flags |= FieldType::Default;
+            field.flags = field.flags | FieldFlags::Default;
             continue;
         }
 
@@ -549,7 +555,7 @@ void Bitmap::accumulate(const Bitmap *bitmap,
 std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
     std::vector<std::pair<std::string, ref<Bitmap>>> result;
 
-    if (m_pixel_format != EMultiChannel) {
+    if (m_pixel_format != PixelFormat::MultiChannel) {
         result.emplace_back("<root>", const_cast<Bitmap *>(this));
         return result;
     }
@@ -604,10 +610,10 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
         if (has_rgb || has_y) {
             ref<Bitmap> target = new Bitmap(
                 has_rgb
-                ? (has_a ? Bitmap::EPixelFormat::ERGBA
-                         : Bitmap::EPixelFormat::ERGB)
-                : (has_a ? Bitmap::EPixelFormat::EYA
-                         : Bitmap::EPixelFormat::EY),
+                ? (has_a ? PixelFormat::RGBA
+                         : PixelFormat::RGB)
+                : (has_a ? PixelFormat::YA
+                         : PixelFormat::Y),
                 m_component_format,
                 m_size
             );
@@ -642,7 +648,7 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
 
     for (auto it = fields.begin(); it != fields.end(); ++it) {
         ref<Bitmap> target = new Bitmap(
-            Bitmap::EPixelFormat::EY,
+            PixelFormat::Y,
             m_component_format,
             m_size
         );
@@ -666,26 +672,26 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
     return result;
 }
 
-void Bitmap::read(Stream *stream, EFileFormat format) {
-    if (format == EAuto)
+void Bitmap::read(Stream *stream, ImageFileFormat format) {
+    if (format == ImageFileFormat::Auto)
         format = detect_file_format(stream);
 
     switch (format) {
-        case EBMP:     read_bmp(stream);     break;
-        case EJPEG:    read_jpeg(stream);    break;
-        case EOpenEXR: read_openexr(stream); break;
-        case ERGBE:    read_rgbe(stream);    break;
-        case EPFM:     read_pfm(stream);     break;
-        case EPPM:     read_ppm(stream);     break;
-        case ETGA:     read_tga(stream);     break;
-        case EPNG:     read_png(stream);     break;
+        case ImageFileFormat::BMP:     read_bmp(stream);     break;
+        case ImageFileFormat::JPEG:    read_jpeg(stream);    break;
+        case ImageFileFormat::OpenEXR: read_openexr(stream); break;
+        case ImageFileFormat::RGBE:    read_rgbe(stream);    break;
+        case ImageFileFormat::PFM:     read_pfm(stream);     break;
+        case ImageFileFormat::PPM:     read_ppm(stream);     break;
+        case ImageFileFormat::TGA:     read_tga(stream);     break;
+        case ImageFileFormat::PNG:     read_png(stream);     break;
         default:
             Throw("Bitmap: Unknown file format!");
     }
 }
 
-Bitmap::EFileFormat Bitmap::detect_file_format(Stream *stream) {
-    EFileFormat format = EFileFormat::EUnknown;
+ImageFileFormat Bitmap::detect_file_format(Stream *stream) {
+    ImageFileFormat format = ImageFileFormat::Unknown;
 
     /* Try to automatically detect the file format */
     size_t pos = stream->tell();
@@ -693,56 +699,56 @@ Bitmap::EFileFormat Bitmap::detect_file_format(Stream *stream) {
     stream->read(start, 8);
 
     if (start[0] == 'B' && start[1] == 'M') {
-        format = EBMP;
+        format = ImageFileFormat::BMP;
     } else if (start[0] == '#' && start[1] == '?') {
-        format = ERGBE;
+        format = ImageFileFormat::RGBE;
     } else if (start[0] == 'P' && (start[1] == 'F' || start[1] == 'f')) {
-        format = EPFM;
+        format = ImageFileFormat::PFM;
     } else if (start[0] == 'P' && start[1] == '6') {
-        format = EPPM;
+        format = ImageFileFormat::PPM;
     } else if (start[0] == 0xFF && start[1] == 0xD8) {
-        format = EJPEG;
+        format = ImageFileFormat::JPEG;
     } else if (png_sig_cmp(start, 0, 8) == 0) {
-        format = EPNG;
+        format = ImageFileFormat::PNG;
     } else if (Imf::isImfMagic((const char *) start)) {
-        format = EOpenEXR;
+        format = ImageFileFormat::OpenEXR;
     } else {
         /* Check for a TGAv2 file */
         char footer[18];
         stream->seek(stream->size() - 18);
         stream->read(footer, 18);
         if (footer[17] == 0 && strncmp(footer, "TRUEVISION-XFILE.", 17) == 0)
-            format = ETGA;
+            format = ImageFileFormat::TGA;
     }
     stream->seek(pos);
     return format;
 }
 
-void Bitmap::write(const fs::path &path, EFileFormat format, int quality) const {
+void Bitmap::write(const fs::path &path, ImageFileFormat format, int quality) const {
     ref<FileStream> fs = new FileStream(path, FileStream::ETruncReadWrite);
     write(fs, format, quality);
 }
 
-void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
+void Bitmap::write(Stream *stream, ImageFileFormat format, int quality) const {
     auto fs = dynamic_cast<FileStream *>(stream);
 
-    if (format == EAuto) {
+    if (format == ImageFileFormat::Auto) {
         if (!fs)
             Throw("Bitmap::write(): can't decide file format based on filename "
                   "since the target stream is not a file stream");
         std::string extension = string::to_lower(fs->path().extension().string());
         if (extension == ".exr")
-            format = EOpenEXR;
+            format = ImageFileFormat::OpenEXR;
         else if (extension == ".png")
-            format = EPNG;
+            format = ImageFileFormat::PNG;
         else if (extension == ".jpg" || extension == ".jpeg")
-            format = EJPEG;
+            format = ImageFileFormat::JPEG;
         else if (extension == ".hdr" || extension == ".rgbe")
-            format = ERGBE;
+            format = ImageFileFormat::RGBE;
         else if (extension == ".pfm")
-            format = EPFM;
+            format = ImageFileFormat::PFM;
         else if (extension == ".ppm")
-            format = EPPM;
+            format = ImageFileFormat::PPM;
         else
             Throw("Bitmap::write(): unsupported bitmap file extension \"%s\"",
                   extension);
@@ -755,31 +761,31 @@ void Bitmap::write(Stream *stream, EFileFormat format, int quality) const {
     );
 
     switch (format) {
-        case EOpenEXR:
+        case ImageFileFormat::OpenEXR:
             write_openexr(stream, quality);
             break;
 
-        case EPNG:
+        case ImageFileFormat::PNG:
             if (quality == -1)
                 quality = 5;
             write_png(stream, quality);
             break;
 
-        case EJPEG:
+        case ImageFileFormat::JPEG:
             if (quality == -1)
                 quality = 100;
             write_jpeg(stream, quality);
             break;
 
-        case EPPM:
+        case ImageFileFormat::PPM:
             write_ppm(stream);
             break;
 
-        case ERGBE:
+        case ImageFileFormat::RGBE:
             write_rgbe(stream);
             break;
 
-        case EPFM:
+        case ImageFileFormat::PFM:
             write_pfm(stream);
             break;
 
@@ -922,7 +928,7 @@ void Bitmap::read_openexr(Stream *stream) {
 
     bool process_colors = false;
     m_srgb_gamma = false;
-    m_pixel_format = EMultiChannel;
+    m_pixel_format = PixelFormat::MultiChannel;
     m_struct = new Struct();
     Imf::PixelType pixel_type = channels.begin().channel().type;
 
@@ -988,29 +994,29 @@ void Bitmap::read_openexr(Stream *stream) {
         m_struct->append(name, m_component_format);
 
     /* Attempt to detect a standard combination of color channels */
-    m_pixel_format = EMultiChannel;
+    m_pixel_format = PixelFormat::MultiChannel;
     bool luminance_chroma_format = false;
     if (found[R] && found[G] && found[B]) {
         if (m_struct->field_count() == 3)
-            m_pixel_format = ERGB;
+            m_pixel_format = PixelFormat::RGB;
         else if (found[A] && m_struct->field_count() == 4)
-            m_pixel_format = ERGBA;
+            m_pixel_format = PixelFormat::RGBA;
     } else if (found[X] && found[Y] && found[Z]) {
         if (m_struct->field_count() == 3)
-            m_pixel_format = EXYZ;
+            m_pixel_format = PixelFormat::XYZ;
         else if (found[A] && m_struct->field_count() == 4)
-            m_pixel_format = EXYZA;
+            m_pixel_format = PixelFormat::XYZA;
     } else if (found[Y] && found[RY] && found[BY]) {
         if (m_struct->field_count() == 3)
-            m_pixel_format = ERGB;
+            m_pixel_format = PixelFormat::RGB;
         else if (found[A] && m_struct->field_count() == 4)
-            m_pixel_format = ERGBA;
+            m_pixel_format = PixelFormat::RGBA;
         luminance_chroma_format = true;
     } else if (found[Y]) {
         if (m_struct->field_count() == 1)
-            m_pixel_format = EY;
+            m_pixel_format = PixelFormat::Y;
         else if (found[A] && m_struct->field_count() == 2)
-            m_pixel_format = EYA;
+            m_pixel_format = PixelFormat::YA;
     }
 
     /* Check if there is a chromaticity header entry */
@@ -1067,7 +1073,7 @@ void Bitmap::read_openexr(Stream *stream) {
             /* Uh oh, this is a sub-sampled channel. We will need to scale it */
             Vector2s channel_size = m_size / sampling;
 
-            ref<Bitmap> bitmap = new Bitmap(Bitmap::EY,
+            ref<Bitmap> bitmap = new Bitmap(PixelFormat::Y,
                                             m_component_format, channel_size);
 
             uint8_t *ptr_nested = bitmap->uint8_data() -
@@ -1160,7 +1166,7 @@ void Bitmap::read_openexr(Stream *stream) {
     }
 
     if (Imf::hasChromaticities(file.header()) &&
-        (m_pixel_format == ERGB || m_pixel_format == ERGBA)) {
+        (m_pixel_format == PixelFormat::RGB || m_pixel_format == PixelFormat::RGBA)) {
 
         Imf::Chromaticities itu_rec_b_709;
         Imf::Chromaticities xyz(Imath::V2f(1.0f, 0.0f), Imath::V2f(0.0f, 1.0f),
@@ -1170,7 +1176,8 @@ void Bitmap::read_openexr(Stream *stream) {
             /* Already in the right space -- do nothing. */
         } else if (chroma_eq(file_chroma, xyz)) {
             /* This is an XYZ image */
-            m_pixel_format = m_pixel_format == ERGB ? EXYZ : EXYZA;
+            m_pixel_format =
+                m_pixel_format == PixelFormat::RGB ? PixelFormat::XYZ : PixelFormat::XYZA;
             for (int i = 0; i < 3; ++i) {
                 std::string &name = m_struct->operator[](i).name;
                 name = set_suffix(name, std::string(1, "XYZ"[i]));
@@ -1229,7 +1236,7 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
     if (Imf::globalThreadCount() == 0)
         Imf::setGlobalThreadCount(std::min(8, util::core_count()));
 
-    EPixelFormat pixel_format = m_pixel_format;
+    PixelFormat pixel_format = m_pixel_format;
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generatedBy"))
@@ -1264,11 +1271,10 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
                 header.insert(it->c_str(), Imf::IntAttribute(metadata.int_(*it)));
                 break;
             case PropertyType::Float:
-                #if defined(SINGLE_PRECISION)
+                if constexpr (is_double_v<Float>)
+                    header.insert(it->c_str(), Imf::DoubleAttribute((double)metadata.float_(*it)));
+                else
                     header.insert(it->c_str(), Imf::FloatAttribute(metadata.float_(*it)));
-                #else
-                    header.insert(it->c_str(), Imf::DoubleAttribute(metadata.float_(*it)));
-                #endif
                 break;
             case PropertyType::Vector3f: {
                     Vector3f val = metadata.vector3f(*it);
@@ -1301,7 +1307,7 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
         }
     }
 
-    if (pixel_format == EXYZ || pixel_format == EXYZA) {
+    if (pixel_format == PixelFormat::XYZ || pixel_format == PixelFormat::XYZA) {
         Imf::addChromaticities(header, Imf::Chromaticities(
             Imath::V2f(1.0f, 0.0f),
             Imath::V2f(0.0f, 1.0f),
@@ -1454,8 +1460,8 @@ void Bitmap::read_jpeg(Stream *stream) {
     m_srgb_gamma = true;
 
     switch (cinfo.output_components) {
-        case 1: m_pixel_format = EY; break;
-        case 3: m_pixel_format = ERGB; break;
+        case 1: m_pixel_format = PixelFormat::Y; break;
+        case 3: m_pixel_format = PixelFormat::RGB; break;
         default: Throw("read_jpeg(): Unsupported number of components!");
     }
 
@@ -1494,9 +1500,9 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     jbuf_out_t jbuf;
 
     int components = 0;
-    if (m_pixel_format == EY)
+    if (m_pixel_format == PixelFormat::Y)
         components = 1;
-    else if (m_pixel_format == ERGB)
+    else if (m_pixel_format == PixelFormat::RGB)
         components = 3;
     else
         Throw("write_jpeg(): Unsupported pixel format!");
@@ -1627,10 +1633,10 @@ void Bitmap::read_png(Stream *stream) {
     m_size = Vector2i(width, height);
 
     switch (color_type) {
-        case PNG_COLOR_TYPE_GRAY: m_pixel_format = EY; break;
-        case PNG_COLOR_TYPE_GRAY_ALPHA: m_pixel_format = EYA; break;
-        case PNG_COLOR_TYPE_RGB: m_pixel_format = ERGB; break;
-        case PNG_COLOR_TYPE_RGB_ALPHA: m_pixel_format = ERGBA; break;
+        case PNG_COLOR_TYPE_GRAY: m_pixel_format = PixelFormat::Y; break;
+        case PNG_COLOR_TYPE_GRAY_ALPHA: m_pixel_format = PixelFormat::YA; break;
+        case PNG_COLOR_TYPE_RGB: m_pixel_format = PixelFormat::RGB; break;
+        case PNG_COLOR_TYPE_RGB_ALPHA: m_pixel_format = PixelFormat::RGBA; break;
         default: Throw("read_png(): Unknown color type %i", color_type); break;
     }
 
@@ -1681,10 +1687,10 @@ void Bitmap::write_png(Stream *stream, int compression) const {
 
     int color_type, bit_depth;
     switch (m_pixel_format) {
-        case EY: color_type = PNG_COLOR_TYPE_GRAY; break;
-        case EYA: color_type = PNG_COLOR_TYPE_GRAY_ALPHA; break;
-        case ERGB: color_type = PNG_COLOR_TYPE_RGB; break;
-        case ERGBA: color_type = PNG_COLOR_TYPE_RGBA; break;
+        case PixelFormat::Y: color_type = PNG_COLOR_TYPE_GRAY; break;
+        case PixelFormat::YA: color_type = PNG_COLOR_TYPE_GRAY_ALPHA; break;
+        case PixelFormat::RGB: color_type = PNG_COLOR_TYPE_RGB; break;
+        case PixelFormat::RGBA: color_type = PNG_COLOR_TYPE_RGBA; break;
         default:
             Throw("write_png(): Unsupported pixel format!");
             return;
@@ -1805,7 +1811,7 @@ void Bitmap::read_ppm(Stream *stream) {
     }
 
     m_size = Vector2s(int_values[0], int_values[1]);
-    m_pixel_format = ERGB;
+    m_pixel_format = PixelFormat::RGB;
     m_srgb_gamma = true;
     m_component_format = int_values[2] <= 0xFF ? FieldType::UInt8 : FieldType::UInt16;
     rebuild_struct();
@@ -1822,8 +1828,8 @@ void Bitmap::read_ppm(Stream *stream) {
 }
 
 void Bitmap::write_ppm(Stream *stream) const {
-    if (m_pixel_format != ERGB || (m_component_format != FieldType::UInt8 &&
-                                   m_component_format != FieldType::UInt16))
+    if (m_pixel_format != PixelFormat::RGB ||
+        (m_component_format != FieldType::UInt8 && m_component_format != FieldType::UInt16))
         Throw("write_ppm(): Only 8 or 16-bit RGB images are supported");
     stream->write_line(
         tfm::format("P6\n%i\n%i\n%i", m_size.x(), m_size.y(),
@@ -1934,10 +1940,10 @@ void Bitmap::read_rgbe(Stream *stream) {
         line = stream->read_line();
         if (string::starts_with(line, "FORMAT=32-bit_rle_rgbe")) {
             format_recognized = true;
-            m_pixel_format = ERGB;
+            m_pixel_format = PixelFormat::RGB;
         } else if (string::starts_with(line, "FORMAT=32-bit_rle_xyze")) {
             format_recognized = true;
-            m_pixel_format = EXYZ;
+            m_pixel_format = PixelFormat::XYZ;
         } else {
             auto tokens = string::tokenize(line);
             if (tokens.size() == 4 && tokens[0] == "-Y" && tokens[2] == "+X") {
@@ -2031,15 +2037,15 @@ void Bitmap::read_rgbe(Stream *stream) {
 
 void Bitmap::write_rgbe(Stream *stream) const {
     if (m_component_format != FieldType::Float32)
-        Throw("write_rgbe(): component format must be EFloat32!");
+        Throw("write_rgbe(): component format must be Float32!");
 
     std::string format_name;
-    if (m_pixel_format == ERGB || m_pixel_format == ERGBA)
+    if (m_pixel_format == PixelFormat::RGB || m_pixel_format == PixelFormat::RGBA)
         format_name = "32-bit_rle_rgbe";
-    else if (m_pixel_format == EXYZ ||  m_pixel_format == EXYZA)
+    else if (m_pixel_format == PixelFormat::XYZ ||  m_pixel_format == PixelFormat::XYZA)
         format_name = "32-bit_rle_xyze";
     else
-        Throw("write_rgbe(): pixel format must be ERGB[A] or EXYZ[A]!");
+        Throw("write_rgbe(): pixel format must be PixelFormat::RGB[A] or PixelFormat::XYZ[A]!");
 
     stream->write_line("#?RGBE");
 
@@ -2061,7 +2067,7 @@ void Bitmap::write_rgbe(Stream *stream) const {
         uint8_t rgbe[4];
         for (size_t i = 0, size = hprod(m_size); i < size; ++i) {
             rgbe_from_float(data, rgbe);
-            data += (m_pixel_format == ERGB) ? 3 : 4;
+            data += (m_pixel_format == PixelFormat::RGB) ? 3 : 4;
             stream->write(rgbe, 4);
         }
         return;
@@ -2081,7 +2087,7 @@ void Bitmap::write_rgbe(Stream *stream) const {
             buffer[2*m_size.x()+x] = rgbe[2];
             buffer[3*m_size.x()+x] = rgbe[3];
 
-            data += m_pixel_format == ERGB ? 3 : 4;
+            data += m_pixel_format == PixelFormat::RGB ? 3 : 4;
         }
 
         /* Write out each of the four channels separately run length encoded.
@@ -2102,7 +2108,7 @@ void Bitmap::read_pfm(Stream *stream) {
         Throw("read_pfm(): Invalid header!");
 
     bool color = header[1] == 'F';
-    m_pixel_format = color ? ERGB : EY;
+    m_pixel_format = color ? PixelFormat::RGB : PixelFormat::Y;
     m_component_format = FieldType::Float32;
     m_srgb_gamma = false;
 
@@ -2151,13 +2157,16 @@ void Bitmap::read_pfm(Stream *stream) {
 
 void Bitmap::write_pfm(Stream *stream) const {
     if (m_component_format != FieldType::Float32)
-        Throw("write_pfm(): component format must be EFloat32!");
-    if (m_pixel_format != ERGB && m_pixel_format != ERGBA && m_pixel_format != EY)
-        Throw("write_pfm(): pixel format must be ERGB, ERGBA, EY, or EYA!");
+        Throw("write_pfm(): component format must be Float32!");
+    if (m_pixel_format != PixelFormat::RGB && m_pixel_format != PixelFormat::RGBA &&
+        m_pixel_format != PixelFormat::Y)
+        Throw("write_pfm(): pixel format must be RGB, RGBA, Y, or YA!");
 
     /* Write the header */
     std::ostringstream oss;
-    stream->write_line(tfm::format("P%c", (m_pixel_format == ERGB || m_pixel_format == ERGBA) ? 'F' : 'f'));
+    stream->write_line(tfm::format(
+        "P%c",
+        (m_pixel_format == PixelFormat::RGB || m_pixel_format == PixelFormat::RGBA) ? 'F' : 'f'));
     stream->write_line(tfm::format("%u %u", m_size.x(), m_size.y()));
 
 #if defined(LITTLE_ENDIAN)
@@ -2169,7 +2178,7 @@ void Bitmap::write_pfm(Stream *stream) const {
     float *data = (float *) m_data.get();
     size_t ch = channel_count();
 
-    if (m_pixel_format == ERGB || m_pixel_format == EY) {
+    if (m_pixel_format == PixelFormat::RGB || m_pixel_format == PixelFormat::Y) {
         size_t scanline = (size_t) m_size.x() * ch;
 
         for (size_t y = 0; y < m_size.y(); ++y)
@@ -2236,10 +2245,10 @@ void Bitmap::read_bmp(Stream *stream) {
         m_srgb_gamma = true;
 
         switch (bpp) {
-            case 8: m_pixel_format = EY; break;
-            case 16: m_pixel_format = EYA; break;
-            case 24: m_pixel_format = ERGB; break;
-            case 32: m_pixel_format = ERGBA; break;
+            case 8:  m_pixel_format = PixelFormat::Y; break;
+            case 16: m_pixel_format = PixelFormat::YA; break;
+            case 24: m_pixel_format = PixelFormat::RGB; break;
+            case 32: m_pixel_format = PixelFormat::RGBA; break;
             default:
                 Throw("read_bmp(): Invalid bit depth (%i)!", bpp);
         }
@@ -2266,7 +2275,7 @@ void Bitmap::read_bmp(Stream *stream) {
             stream->skip(padding);
         }
 
-        if (m_pixel_format == ERGB || m_pixel_format == ERGBA) {
+        if (m_pixel_format == PixelFormat::RGB || m_pixel_format == PixelFormat::RGBA) {
             size_t channels = channel_count();
             for (size_t i = 0; i < size; i += channels)
                 std::swap(ptr[i], ptr[i+2]);
@@ -2314,9 +2323,9 @@ void Bitmap::read_tga(Stream *stream) {
             Throw("read_tga(): Invalid bit depth!");
 
         switch (bpp) {
-            case 8: m_pixel_format = EY; break;
-            case 24: m_pixel_format = ERGB; break;
-            case 32: m_pixel_format = ERGBA; break;
+            case 8:  m_pixel_format = PixelFormat::Y; break;
+            case 24: m_pixel_format = PixelFormat::RGB; break;
+            case 32: m_pixel_format = PixelFormat::RGBA; break;
             default:
                 Throw("read_tga(): Invalid bit depth!");
         }
@@ -2380,32 +2389,32 @@ void Bitmap::read_tga(Stream *stream) {
     }
 }
 
-std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value) {
+std::ostream &operator<<(std::ostream &os, PixelFormat value) {
     switch (value) {
-        case Bitmap::EY:            os << "y"; break;
-        case Bitmap::EYA:           os << "ya"; break;
-        case Bitmap::ERGB:          os << "rgb"; break;
-        case Bitmap::ERGBA:         os << "rgba"; break;
-        case Bitmap::ERGBAW:        os << "rgbaw"; break;
-        case Bitmap::EXYZ:          os << "xyz"; break;
-        case Bitmap::EXYZA:         os << "xyza"; break;
-        case Bitmap::EXYZAW:        os << "xyzaw"; break;
-        case Bitmap::EMultiChannel: os << "multichannel"; break;
+        case PixelFormat::Y:            os << "y"; break;
+        case PixelFormat::YA:           os << "ya"; break;
+        case PixelFormat::RGB:          os << "rgb"; break;
+        case PixelFormat::RGBA:         os << "rgba"; break;
+        case PixelFormat::RGBAW:        os << "rgbaw"; break;
+        case PixelFormat::XYZ:          os << "xyz"; break;
+        case PixelFormat::XYZA:         os << "xyza"; break;
+        case PixelFormat::XYZAW:        os << "xyzaw"; break;
+        case PixelFormat::MultiChannel: os << "multichannel"; break;
         default: Throw("Unknown pixel format!");
     }
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, Bitmap::EFileFormat value) {
+std::ostream &operator<<(std::ostream &os, ImageFileFormat value) {
     switch (value) {
-        case Bitmap::EPNG:     os << "PNG"; break;
-        case Bitmap::EOpenEXR: os << "OpenEXR"; break;
-        case Bitmap::EJPEG:    os << "JPEG"; break;
-        case Bitmap::EBMP:     os << "BMP"; break;
-        case Bitmap::EPFM:     os << "PFM"; break;
-        case Bitmap::EPPM:     os << "PPM"; break;
-        case Bitmap::ERGBE:    os << "RGBE"; break;
-        case Bitmap::EAuto:    os << "Auto"; break;
+        case ImageFileFormat::PNG:     os << "PNG"; break;
+        case ImageFileFormat::OpenEXR: os << "OpenEXR"; break;
+        case ImageFileFormat::JPEG:    os << "JPEG"; break;
+        case ImageFileFormat::BMP:     os << "BMP"; break;
+        case ImageFileFormat::PFM:     os << "PFM"; break;
+        case ImageFileFormat::PPM:     os << "PPM"; break;
+        case ImageFileFormat::RGBE:    os << "RGBE"; break;
+        case ImageFileFormat::Auto:    os << "Auto"; break;
         default: Throw("Unknown file format!");
     }
     return os;

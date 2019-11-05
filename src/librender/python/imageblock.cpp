@@ -6,7 +6,7 @@ MTS_PY_EXPORT_VARIANTS(ImageBlock) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     MTS_PY_CLASS(ImageBlock, Object)
-        .def(py::init<Bitmap::EPixelFormat, const Vector2i &,
+        .def(py::init<PixelFormat, const Vector2i &,
                         const ReconstructionFilter *, size_t, bool, bool, bool>(),
             "fmt"_a, "size"_a, "filter"_a = nullptr, "channels"_a = 0,
             "warn"_a = true, "border"_a = true, "normalize"_a = false)

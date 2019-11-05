@@ -25,7 +25,7 @@ add_library(mitsuba-core-obj OBJECT
   appender.cpp         ${INC_DIR}/appender.h
   argparser.cpp        ${INC_DIR}/argparser.h
                        ${INC_DIR}/bbox.h
-  # bitmap.cpp           ${INC_DIR}/bitmap.h
+  bitmap.cpp           ${INC_DIR}/bitmap.h
                        ${INC_DIR}/bsphere.h
   class.cpp            ${INC_DIR}/class.h
                        ${INC_DIR}/ddistr.h

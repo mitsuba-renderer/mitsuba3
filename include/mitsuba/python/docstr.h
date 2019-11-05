@@ -768,7 +768,7 @@ R"doc(Portable network graphics
 The following is supported:
 
 * Loading and saving of 8/16-bit per component bitmaps for all pixel
-formats (EY, EYA, ERGB, ERGBA)
+formats (EY, EYA, ERGB, PixelFormat::RGBA)
 
 * Loading and saving of 1-bit per component mask bitmaps
 
@@ -806,9 +806,9 @@ static const char *__doc_mitsuba_Bitmap_EPixelFormat_EMultiChannel = R"doc(Arbit
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGB = R"doc(RGB bitmap)doc";
 
-static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGBA = R"doc(RGB bitmap + alpha channel)doc";
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_RGBA = R"doc(RGB bitmap + alpha channel)doc";
 
-static const char *__doc_mitsuba_Bitmap_EPixelFormat_ERGBAW = R"doc(RGB bitmap + alpha channel + weight)doc";
+static const char *__doc_mitsuba_Bitmap_EPixelFormat_RGBAW = R"doc(RGB bitmap + alpha channel + weight)doc";
 
 static const char *__doc_mitsuba_Bitmap_EPixelFormat_EXYZ = R"doc(XYZ tristimulus bitmap)doc";
 
@@ -2618,7 +2618,7 @@ Parameter ``filter``:
 
 Parameter ``channels``:
     Specifies the number of output channels. This is only valid when
-    Bitmap::EMultiChannel is chosen as the pixel format, otherwise
+    PixelFormat::MultiChannel is chosen as the pixel format, otherwise
     pass 0 so that channels are set automatically from the pixel
     format.
 

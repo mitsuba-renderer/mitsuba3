@@ -4,9 +4,15 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Bitmap) {
+    using Float = typename Bitmap::Float;
+    using Vector2s = typename Bitmap::Vector2s;
+    using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
+    MTS_IMPORT_CORE_TYPES()
+
     auto bitmap = MTS_PY_CLASS(Bitmap, Object)
-        .def(py::init<Bitmap::EPixelFormat, FieldType, const Vector2s &, size_t>(),
-             "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, D(Bitmap, Bitmap))
+        .def(py::init<PixelFormat, FieldType, const Vector2s &, size_t>(),
+             "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0,
+             D(Bitmap, Bitmap))
 
         .def(py::init([](py::array obj, py::object pixel_format_) {
             auto struct_ = py::module::import("mitsuba.core").attr("Struct");
@@ -14,22 +20,22 @@ MTS_PY_EXPORT(Bitmap) {
             if (obj.ndim() != 2 && obj.ndim() != 3)
                 throw py::type_error("Expected an array of size 2 or 3");
 
-            Bitmap::EPixelFormat pixel_format = Bitmap::EY;
+            PixelFormat pixel_format = PixelFormat::Y;
             size_t channel_count = 1;
             if (obj.ndim() == 3) {
                 channel_count = obj.shape()[2];
                 switch (channel_count) {
-                    case 1: pixel_format = Bitmap::EY; break;
-                    case 2: pixel_format = Bitmap::EYA; break;
-                    case 3: pixel_format = Bitmap::ERGB; break;
-                    case 4: pixel_format = Bitmap::ERGBA; break;
-                    case 5: pixel_format = Bitmap::ERGBAW; break;
-                    default: pixel_format = Bitmap::EMultiChannel; break;
+                    case 1: pixel_format = PixelFormat::Y; break;
+                    case 2: pixel_format = PixelFormat::YA; break;
+                    case 3: pixel_format = PixelFormat::RGB; break;
+                    case 4: pixel_format = PixelFormat::RGBA; break;
+                    case 5: pixel_format = PixelFormat::RGBAW; break;
+                    default: pixel_format = PixelFormat::MultiChannel; break;
                 }
             }
 
             if (!pixel_format_.is_none())
-                pixel_format = pixel_format_.cast<Bitmap::EPixelFormat>();
+                pixel_format = pixel_format_.cast<PixelFormat>();
 
             obj = py::array::ensure(obj, py::array::c_style);
             Vector2s size(obj.shape()[1], obj.shape()[0]);
@@ -57,9 +63,9 @@ MTS_PY_EXPORT(Bitmap) {
             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<Float, Float> &, Bitmap *>(&Bitmap::resample, py::const_),
             "target"_a, "rfilter"_a = py::none(),
-            "bc"_a = std::make_pair(FilterBoundaryCondition::EClamp,
-                                    FilterBoundaryCondition::EClamp),
-            "clamp"_a = std::make_pair(-math::Infinity, math::Infinity),
+            "bc"_a = std::make_pair(FilterBoundaryCondition::Clamp,
+                                    FilterBoundaryCondition::Clamp),
+            "clamp"_a = std::make_pair(-math::Infinity<Float>, math::Infinity<Float>),
             "temp"_a = py::none(),
             D(Bitmap, resample)
         )
@@ -67,12 +73,12 @@ MTS_PY_EXPORT(Bitmap) {
             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<Float, Float> &>(&Bitmap::resample, py::const_),
             "res"_a, "rfilter"_a = py::none(),
-            "bc"_a = std::make_pair(FilterBoundaryCondition::EClamp,
-                                    FilterBoundaryCondition::EClamp),
-            "clamp"_a = std::make_pair(-math::Infinity, math::Infinity),
+            "bc"_a = std::make_pair(FilterBoundaryCondition::Clamp,
+                                    FilterBoundaryCondition::Clamp),
+            "clamp"_a = std::make_pair(-math::Infinity<Float>, math::Infinity<Float>),
             D(Bitmap, resample, 2)
         )
-        .def("convert", py::overload_cast<Bitmap::EPixelFormat, FieldType, bool>(
+        .def("convert", py::overload_cast<PixelFormat, FieldType, bool>(
              &Bitmap::convert, py::const_), D(Bitmap, convert),
              "pixel_format"_a, "component_format"_a, "srgb_gamma"_a,
              py::call_guard<py::gil_scoped_release>())
@@ -94,62 +100,61 @@ MTS_PY_EXPORT(Bitmap) {
         .def(py::self == py::self)
         .def(py::self != py::self);
 
-    py::enum_<Bitmap::EPixelFormat>(bitmap, "EPixelFormat", D(Bitmap, EPixelFormat))
-        .value("EY", Bitmap::EY, D(Bitmap, EPixelFormat, EY))
-        .value("EYA", Bitmap::EYA, D(Bitmap, EPixelFormat, EYA))
-        .value("ERGB", Bitmap::ERGB, D(Bitmap, EPixelFormat, ERGB))
-        .value("ERGBA", Bitmap::ERGBA, D(Bitmap, EPixelFormat, ERGBA))
-        .value("ERGBAW", Bitmap::ERGBAW, D(Bitmap, EPixelFormat, ERGBAW))
-        .value("EXYZ", Bitmap::EXYZ, D(Bitmap, EPixelFormat, EXYZ))
-        .value("EXYZA", Bitmap::EXYZA, D(Bitmap, EPixelFormat, EXYZA))
-        .value("EXYZAW", Bitmap::EXYZAW, D(Bitmap, EPixelFormat, EXYZAW))
-        .value("EMultiChannel", Bitmap::EMultiChannel, D(Bitmap, EPixelFormat, EMultiChannel))
+    py::enum_<PixelFormat>(bitmap, "PixelFormat", D(Bitmap, PixelFormat))
+        .value("Y", PixelFormat::Y, D(Bitmap, PixelFormat, Y))
+        .value("YA", PixelFormat::YA, D(Bitmap, PixelFormat, YA))
+        .value("RGB", PixelFormat::RGB, D(Bitmap, PixelFormat, RGB))
+        .value("RGBA", PixelFormat::RGBA, D(Bitmap, PixelFormat, RGBA))
+        .value("RGBAW", PixelFormat::RGBAW, D(Bitmap, PixelFormat, RGBAW))
+        .value("XYZ", PixelFormat::XYZ, D(Bitmap, PixelFormat, XYZ))
+        .value("XYZA", PixelFormat::XYZA, D(Bitmap, PixelFormat, XYZA))
+        .value("XYZAW", PixelFormat::XYZAW, D(Bitmap, PixelFormat, XYZAW))
+        .value("MultiChannel", PixelFormat::MultiChannel, D(Bitmap, PixelFormat, MultiChannel))
         .export_values();
 
-    py::enum_<Bitmap::EFileFormat>(bitmap, "EFileFormat", D(Bitmap, EFileFormat))
-        .value("EPNG", Bitmap::EPNG, D(Bitmap, EFileFormat, EPNG))
-        .value("EOpenEXR", Bitmap::EOpenEXR, D(Bitmap, EFileFormat, EOpenEXR))
-        .value("ERGBE", Bitmap::ERGBE, D(Bitmap, EFileFormat, ERGBE))
-        .value("EPFM", Bitmap::EPFM, D(Bitmap, EFileFormat, EPFM))
-        .value("EPPM", Bitmap::EPPM, D(Bitmap, EFileFormat, EPPM))
-        .value("EJPEG", Bitmap::EJPEG, D(Bitmap, EFileFormat, EJPEG))
-        .value("ETGA", Bitmap::ETGA, D(Bitmap, EFileFormat, ETGA))
-        .value("EBMP", Bitmap::EBMP, D(Bitmap, EFileFormat, EBMP))
-        .value("EUnknown", Bitmap::EUnknown, D(Bitmap, EFileFormat, EUnknown))
-        .value("EAuto", Bitmap::EAuto, D(Bitmap, EFileFormat, EAuto))
+    py::enum_<ImageFileFormat>(bitmap, "ImageFileFormat", D(Bitmap, ImageFileFormat))
+        .value("PNG", ImageFileFormat::PNG, D(Bitmap, ImageFileFormat, PNG))
+        .value("OpenEXR", ImageFileFormat::OpenEXR, D(Bitmap, ImageFileFormat, OpenEXR))
+        .value("RGBE", ImageFileFormat::RGBE, D(Bitmap, ImageFileFormat, RGBE))
+        .value("PFM", ImageFileFormat::PFM, D(Bitmap, ImageFileFormat, PFM))
+        .value("PPM", ImageFileFormat::PPM, D(Bitmap, ImageFileFormat, PPM))
+        .value("JPEG", ImageFileFormat::JPEG, D(Bitmap, ImageFileFormat, JPEG))
+        .value("TGA", ImageFileFormat::TGA, D(Bitmap, ImageFileFormat, TGA))
+        .value("BMP", ImageFileFormat::BMP, D(Bitmap, ImageFileFormat, BMP))
+        .value("Unknown", ImageFileFormat::Unknown, D(Bitmap, ImageFileFormat, Unknown))
+        .value("Auto", ImageFileFormat::Auto, D(Bitmap, ImageFileFormat, Auto))
         .export_values();
 
 
-    auto struct_ = py::module::import("mitsuba.core").attr("Struct");
-    bitmap.attr("EUInt8") = struct_.attr("EUInt8");
-    bitmap.attr("EInt8") = struct_.attr("EInt8");
-    bitmap.attr("EUInt16") = struct_.attr("EUInt16");
-    bitmap.attr("EInt16") = struct_.attr("EInt16");
-    bitmap.attr("EUInt32") = struct_.attr("EUInt32");
-    bitmap.attr("EInt32") = struct_.attr("EInt32");
-    bitmap.attr("EUInt64") = struct_.attr("EUInt64");
-    bitmap.attr("EInt64") = struct_.attr("EInt64");
-    bitmap.attr("EFloat16") = struct_.attr("EFloat16");
-    bitmap.attr("EFloat32") = struct_.attr("EFloat32");
-    bitmap.attr("EFloat64") = struct_.attr("EFloat64");
-    bitmap.attr("EInvalid") = struct_.attr("EInvalid");
+    auto fieldtype_ = py::module::import("mitsuba.core.Struct").attr("FieldType");
+    bitmap.attr("UInt8")   = fieldtype_.attr("UInt8");
+    bitmap.attr("Int8")    = fieldtype_.attr("Int8");
+    bitmap.attr("UInt16")  = fieldtype_.attr("UInt16");
+    bitmap.attr("Int16")   = fieldtype_.attr("Int16");
+    bitmap.attr("UInt32")  = fieldtype_.attr("UInt32");
+    bitmap.attr("Int32")   = fieldtype_.attr("Int32");
+    bitmap.attr("UInt64")  = fieldtype_.attr("UInt64");
+    bitmap.attr("Int64")   = fieldtype_.attr("Int64");
+    bitmap.attr("Float16") = fieldtype_.attr("Float16");
+    bitmap.attr("Float32") = fieldtype_.attr("Float32");
+    bitmap.attr("Float64") = fieldtype_.attr("Float64");
+    bitmap.attr("Invalid") = fieldtype_.attr("Invalid");
 
-    bitmap
-        .def(py::init<const fs::path &, Bitmap::EFileFormat>(), "path"_a,
-             "format"_a = Bitmap::EAuto,
+    bitmap.def(py::init<const fs::path &, ImageFileFormat>(), "path"_a,
+             "format"_a = ImageFileFormat::Auto,
              py::call_guard<py::gil_scoped_release>())
-        .def(py::init<Stream *, Bitmap::EFileFormat>(), "stream"_a,
-             "format"_a = Bitmap::EAuto,
+        .def(py::init<Stream *, ImageFileFormat>(), "stream"_a,
+             "format"_a = ImageFileFormat::Auto,
              py::call_guard<py::gil_scoped_release>())
         .def("write",
-             py::overload_cast<Stream *, Bitmap::EFileFormat, int>(
+             py::overload_cast<Stream *, ImageFileFormat, int>(
                  &Bitmap::write, py::const_),
-             "stream"_a, "format"_a = Bitmap::EAuto, "quality"_a = -1,
+             "stream"_a, "format"_a = ImageFileFormat::Auto, "quality"_a = -1,
              D(Bitmap, write), py::call_guard<py::gil_scoped_release>())
         .def("write",
-             py::overload_cast<const fs::path &, Bitmap::EFileFormat, int>(
+             py::overload_cast<const fs::path &, ImageFileFormat, int>(
                  &Bitmap::write, py::const_),
-             "path"_a, "format"_a = Bitmap::EAuto, "quality"_a = -1,
+             "path"_a, "format"_a = ImageFileFormat::Auto, "quality"_a = -1,
              D(Bitmap, write, 2), py::call_guard<py::gil_scoped_release>())
         .def("split", &Bitmap::split, D(Bitmap, split))
         .def_static("detect_file_format", &Bitmap::detect_file_format, D(Bitmap, detect_file_format))

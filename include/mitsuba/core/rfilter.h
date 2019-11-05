@@ -90,6 +90,8 @@ protected:
  */
 template <typename Scalar_> struct Resampler {
     using Scalar = Scalar_;
+    // TODO should we template this as well?
+    using Float = float;
 
     /**
      * \brief Create a new Resampler object that transforms between the specified resolutions
@@ -103,24 +105,24 @@ template <typename Scalar_> struct Resampler {
      * \param target_res
      *      Desired target resolution
      */
-    Resampler(const ReconstructionFilter<Scalar, void> *rfilter,
+    Resampler(const ReconstructionFilter<Float, void> *rfilter,
               uint32_t source_res, uint32_t target_res)
         : m_source_res(source_res), m_target_res(target_res) {
         if (source_res == 0 || target_res == 0)
             Throw("Resampler::Resampler(): source or target resolution == 0!");
 
-        Scalar filter_radius_orig = rfilter->radius(),
+        Float filter_radius_orig = rfilter->radius(),
               filter_radius = filter_radius_orig,
               scale = 1, inv_scale = 1;
 
         /* Low-pass filter: scale reconstruction filters when downsampling */
         if (target_res < source_res) {
-            scale = (Scalar) source_res / (Scalar) target_res;
-            inv_scale = 1 / scale;
+            scale = (Float) source_res / (Float) target_res;
+            inv_scale = rcp(scale);
             filter_radius *= scale;
         }
 
-        m_taps = (uint32_t) std::ceil(filter_radius * 2);
+        m_taps = enoki::ceil2int<uint32_t>(filter_radius * 2);
         if (source_res == target_res && (m_taps % 2) != 1)
             --m_taps;
 
@@ -136,11 +138,11 @@ template <typename Scalar_> struct Resampler {
             for (uint32_t i = 0; i < target_res; i++) {
                 /* Compute the fractional coordinates of the new sample i
                    in the original coordinates */
-                Scalar center = (i + Scalar(0.5)) / target_res * source_res;
+                Float center = (i + Float(0.5)) / target_res * source_res;
 
                 /* Determine the index of the first original sample
                    that might contribute */
-                m_start[i] = (int32_t) std::floor(center - filter_radius + Scalar(0.5));
+                m_start[i] = enoki::floor2int<uint32_t>(center - filter_radius + Float(0.5));
 
                 /* Determine the size of center region, on which to run
                    the fast non condition-aware code */
@@ -152,11 +154,11 @@ template <typename Scalar_> struct Resampler {
                 double sum = 0.0;
                 for (uint32_t j = 0; j < m_taps; j++) {
                     /* Compute the position where the filter should be evaluated */
-                    Scalar pos = m_start[i] + (int32_t) j + Scalar(0.5) - center;
+                    Float pos = m_start[i] + (int32_t) j + Float(0.5) - center;
 
                     /* Perform the evaluation and record the weight */
                     auto weight = rfilter->eval(pos * inv_scale);
-                    m_weights[i * m_taps + j] = Scalar(weight);
+                    m_weights[i * m_taps + j] = static_cast<Scalar>(weight);
                     sum += double(weight);
                 }
 
@@ -177,7 +179,7 @@ template <typename Scalar_> struct Resampler {
 
             double sum = 0.0;
             for (uint32_t i = 0; i < m_taps; i++) {
-                auto weight = rfilter->eval(Scalar((int32_t) i - (int32_t) half_taps));
+                auto weight = rfilter->eval(Float((int32_t) i - (int32_t) half_taps));
                 m_weights[i] = Scalar(weight);
                 sum += double(weight);
             }

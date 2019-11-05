@@ -79,9 +79,12 @@ MTS_PY_EXPORT(Struct) {
     py::implicitly_convertible<py::dtype, FieldType>();
 
     py::enum_<FieldByteOrder>(m, "FieldByteOrder")
-        .value("LittleEndian",  FieldByteOrder::LittleEndian, D(Struct, FieldByteOrder, LittleEndian))
-        .value("BigEndian",  FieldByteOrder::BigEndian, D(Struct, FieldByteOrder, BigEndian))
-        .value("HostByteOrder",  FieldByteOrder::HostByteOrder, D(Struct, FieldByteOrder, HostByteOrder))
+        .value("LittleEndian", FieldByteOrder::LittleEndian,
+            D(Struct, FieldByteOrder, LittleEndian))
+        .value("BigEndian", FieldByteOrder::BigEndian,
+            D(Struct, FieldByteOrder, BigEndian))
+        .value("HostByteOrder", FieldByteOrder::HostByteOrder,
+            D(Struct, FieldByteOrder, HostByteOrder))
         .export_values();
 
     py::enum_<FieldFlags>(m, "FieldFlags", py::arithmetic())
@@ -97,7 +100,8 @@ MTS_PY_EXPORT(Struct) {
     c.def(py::init<bool, FieldByteOrder>(), "pack"_a = false,
              "byte_order"_a = FieldByteOrder::HostByteOrder,
              D(Struct, Struct))
-        .def("append", (Struct &(Struct::*)(const std::string&, FieldType, uint32_t, double)) &Struct::append,
+        .def("append",
+            (Struct &(Struct::*)(const std::string&, FieldType, FieldFlags, double)) &Struct::append,
              "name"_a, "type"_a, "flags"_a = 0, "default"_a = 0.0,
              D(Struct, append), py::return_value_policy::reference)
         .def("field", py::overload_cast<const std::string &>(&Struct::field), D(Struct, field),

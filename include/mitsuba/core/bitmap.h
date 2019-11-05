@@ -7,6 +7,148 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+
+/**
+     * This enumeration lists all pixel format types supported
+     * by the \ref Bitmap class. This both determines the
+     * number of channels, and how they should be interpreted
+     */
+enum PixelFormat {
+    /// Single-channel luminance bitmap
+    Y,
+
+    /// Two-channel luminance + alpha bitmap
+    YA,
+
+    /// RGB bitmap
+    RGB,
+
+    /// RGB bitmap + alpha channel
+    RGBA,
+
+    /// RGB bitmap + alpha channel + weight
+    RGBAW,
+
+    /// XYZ tristimulus bitmap
+    XYZ,
+
+    /// XYZ tristimulus + alpha channel
+    XYZA,
+
+    /// XYZ tristimulus + alpha channel + weight
+    XYZAW,
+
+    /// Arbitrary multi-channel bitmap without a fixed interpretation
+    MultiChannel
+};
+
+
+    /// Supported image file formats
+    enum ImageFileFormat {
+        /**
+         * \brief Portable network graphics
+         *
+         * The following is supported:
+         * <ul>
+         * <li> Loading and saving of 8/16-bit per component bitmaps for
+         *   all pixel formats (Y, YA, RGB, RGBA)</li>
+         * <li> Loading and saving of 1-bit per component mask bitmaps</li>
+         * <li> Loading and saving of string-valued metadata fields</li>
+         * </ul>
+         */
+        PNG,
+
+        /**
+         * \brief OpenEXR high dynamic range file format developed by
+         * Industrial Light & Magic (ILM)
+         *
+         * The following is supported:
+         * <ul>
+         *   <li>Loading and saving of \ref Float16 / \ref Float32/ \ref
+         *   EUInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
+         *   <li>Loading and saving of spectral bitmaps</tt>
+         *   <li>Loading and saving of XYZ tristimulus bitmaps</tt>
+         *   <li>Loading and saving of string-valued metadata fields</li>
+         * </ul>
+         *
+         * The following is <em>not</em> supported:
+         * <ul>
+         *   <li>Saving of tiled images, tile-based read access</li>
+         *   <li>Display windows that are different than the data window</li>
+         *   <li>Loading of spectrum-valued bitmaps</li>
+         * </ul>
+         */
+        OpenEXR,
+
+        /**
+         * \brief RGBE image format by Greg Ward
+         *
+         * The following is supported
+         * <ul>
+         *   <li>Loading and saving of \ref Float32 - based RGB bitmaps</li>
+         * </ul>
+         */
+        RGBE,
+
+        /**
+         * \brief PFM (Portable Float Map) image format
+         *
+         * The following is supported
+         * <ul>
+         *   <li>Loading and saving of \ref Float32 - based Luminance or RGB bitmaps</li>
+         * </ul>
+         */
+        PFM,
+
+        /**
+         * \brief PPM (Portable Pixel Map) image format
+         *
+         * The following is supported
+         * <ul>
+         *   <li>Loading and saving of \ref UInt8 and \ref UInt16 - based RGB bitmaps</li>
+         * </ul>
+         */
+        PPM,
+
+        /**
+         * \brief Joint Photographic Experts Group file format
+         *
+         * The following is supported:
+         * <ul><li>
+         * Loading and saving of 8 bit per component RGB and
+         * luminance bitmaps
+         * </li></ul>
+         */
+        JPEG,
+
+        /**
+         * \brief Truevision Advanced Raster Graphics Array file format
+         *
+         * The following is supported:
+         * <ul><li>Loading of uncompressed 8-bit RGB/RGBA files</ul></li>
+         */
+        TGA,
+
+        /**
+         * \brief Windows Bitmap file format
+         *
+         * The following is supported:
+         * <ul><li>Loading of uncompressed 8-bit luminance and RGBA bitmaps</ul></li>
+         */
+        BMP,
+
+        /// Unknown file format
+        Unknown,
+
+        /**
+         * \brief Automatically detect the file format
+         *
+         * Note: this flag only applies when loading a file. In this case,
+         * the source stream must support the \c seek() operation.
+         */
+        Auto
+    };
+
 /**
  * \brief General-purpose bitmap class with read and write support
  * for several common file formats.
@@ -23,170 +165,21 @@ public:
     MTS_DECLARE_CLASS(Bitmap, Object)
     // TODO: templatize if appropriate
     using Float                = float;
-    using Vector2s             = Vector<size_t, 2>;
-    using Vector2i             = Vector<int32_t, 2>;
-    using Point2i              = Point<int32_t, 2>;
+    MTS_IMPORT_CORE_TYPES()
+
+    using Vector2s = Vector<size_t, 2>;
+    using Matrix4f = Matrix<Float, 4, true>;
+
     // TODO: give it the right spectrum
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, void>;
 
+    /// FieldType of the floating-point per-pixel components
+    static constexpr FieldType FloatFieldType = struct_type_v<Float>;
+
     // ======================================================================
-    //! @{ \name Constructors and Enumerations
+    //! @{ \name Constructors
     // ======================================================================
 
-    /**
-     * This enumeration lists all pixel format types supported
-     * by the \ref Bitmap class. This both determines the
-     * number of channels, and how they should be interpreted
-     */
-    enum EPixelFormat {
-        /// Single-channel luminance bitmap
-        EY,
-
-        /// Two-channel luminance + alpha bitmap
-        EYA,
-
-        /// RGB bitmap
-        ERGB,
-
-        /// RGB bitmap + alpha channel
-        ERGBA,
-
-        /// RGB bitmap + alpha channel + weight
-        ERGBAW,
-
-        /// XYZ tristimulus bitmap
-        EXYZ,
-
-        /// XYZ tristimulus + alpha channel
-        EXYZA,
-
-        /// XYZ tristimulus + alpha channel + weight
-        EXYZAW,
-
-        /// Arbitrary multi-channel bitmap without a fixed interpretation
-        EMultiChannel
-    };
-
-    /* Replicate FieldType here for convenience */
-    static constexpr FieldType EInt8 = FieldType::Int8;
-    static constexpr FieldType EUInt8 = FieldType::UInt8;
-    static constexpr FieldType EInt16 = FieldType::Int16;
-    static constexpr FieldType EUInt16 = FieldType::UInt16;
-    static constexpr FieldType EInt32 = FieldType::Int32;
-    static constexpr FieldType EUInt32 = FieldType::UInt32;
-    static constexpr FieldType EInt64 = FieldType::Int64;
-    static constexpr FieldType EUInt64 = FieldType::UInt64;
-    static constexpr FieldType EFloat16 = FieldType::Float16;
-    static constexpr FieldType EFloat32 = FieldType::Float32;
-    static constexpr FieldType EFloat64 = FieldType::Float64;
-    static constexpr FieldType EFloat = struct_type_v<float>;
-    static constexpr FieldType EInvalid = FieldType::Invalid;
-
-    /// Supported file formats
-    enum EFileFormat {
-        /**
-         * \brief Portable network graphics
-         *
-         * The following is supported:
-         * <ul>
-         * <li> Loading and saving of 8/16-bit per component bitmaps for
-         *   all pixel formats (EY, EYA, ERGB, ERGBA)</li>
-         * <li> Loading and saving of 1-bit per component mask bitmaps</li>
-         * <li> Loading and saving of string-valued metadata fields</li>
-         * </ul>
-         */
-        EPNG,
-
-        /**
-         * \brief OpenEXR high dynamic range file format developed by
-         * Industrial Light & Magic (ILM)
-         *
-         * The following is supported:
-         * <ul>
-         *   <li>Loading and saving of \ref Eloat16 / \ref EFloat32/ \ref
-         *   EUInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
-         *   <li>Loading and saving of spectral bitmaps</tt>
-         *   <li>Loading and saving of XYZ tristimulus bitmaps</tt>
-         *   <li>Loading and saving of string-valued metadata fields</li>
-         * </ul>
-         *
-         * The following is <em>not</em> supported:
-         * <ul>
-         *   <li>Saving of tiled images, tile-based read access</li>
-         *   <li>Display windows that are different than the data window</li>
-         *   <li>Loading of spectrum-valued bitmaps</li>
-         * </ul>
-         */
-        EOpenEXR,
-
-        /**
-         * \brief RGBE image format by Greg Ward
-         *
-         * The following is supported
-         * <ul>
-         *   <li>Loading and saving of \ref EFloat32 - based RGB bitmaps</li>
-         * </ul>
-         */
-        ERGBE,
-
-        /**
-         * \brief PFM (Portable Float Map) image format
-         *
-         * The following is supported
-         * <ul>
-         *   <li>Loading and saving of \ref EFloat32 - based Luminance or RGB bitmaps</li>
-         * </ul>
-         */
-        EPFM,
-
-        /**
-         * \brief PPM (Portable Pixel Map) image format
-         *
-         * The following is supported
-         * <ul>
-         *   <li>Loading and saving of \ref EUInt8 and \ref EUInt16 - based RGB bitmaps</li>
-         * </ul>
-         */
-        EPPM,
-
-        /**
-         * \brief Joint Photographic Experts Group file format
-         *
-         * The following is supported:
-         * <ul><li>
-         * Loading and saving of 8 bit per component RGB and
-         * luminance bitmaps
-         * </li></ul>
-         */
-        EJPEG,
-
-        /**
-         * \brief Truevision Advanced Raster Graphics Array file format
-         *
-         * The following is supported:
-         * <ul><li>Loading of uncompressed 8-bit RGB/RGBA files</ul></li>
-         */
-        ETGA,
-
-        /**
-         * \brief Windows Bitmap file format
-         *
-         * The following is supported:
-         * <ul><li>Loading of uncompressed 8-bit luminance and RGBA bitmaps</ul></li>
-         */
-        EBMP,
-
-        /// Unknown file format
-        EUnknown,
-
-        /**
-         * \brief Automatically detect the file format
-         *
-         * Note: this flag only applies when loading a file. In this case,
-         * the source stream must support the \c seek() operation.
-         */
-        EAuto
-    };
 
     /**
      * \brief Create a bitmap of the specified type and allocate
@@ -206,13 +199,13 @@ public:
      *
      * \param channel_count
      *    Channel count of the image. This parameter is only required when
-     *    \c pfmt = \ref EMultiChannel
+     *    \c pfmt = \ref MultiChannel
      *
      * \param data
      *    External pointer to the image data. If set to \c nullptr, the
      *    implementation will allocate memory itself.
      */
-    Bitmap(EPixelFormat pixel_format, FieldType component_format,
+    Bitmap(PixelFormat pixel_format, FieldType component_format,
            const Vector2s &size, size_t channel_count = 0,
            uint8_t *data = nullptr);
 
@@ -225,7 +218,7 @@ public:
      * \param format
      *    File format to be read (PNG/EXR/Auto-detect ...)
      */
-    Bitmap(Stream *stream, EFileFormat format = EAuto);
+    Bitmap(Stream *stream, ImageFileFormat format = ImageFileFormat::Auto);
 
     /**
      * \brief Load a bitmap from a given filename
@@ -236,7 +229,7 @@ public:
      * \param format
      *    File format to be read (PNG/EXR/Auto-detect ...)
      */
-    Bitmap(const fs::path &path, EFileFormat = EAuto);
+    Bitmap(const fs::path &path, ImageFileFormat = ImageFileFormat::Auto);
 
     /// Copy constructor (copies the image contents)
     Bitmap(const Bitmap &bitmap);
@@ -245,7 +238,7 @@ public:
     Bitmap(Bitmap &&bitmap);
 
     /// Return the pixel format of this bitmap
-    EPixelFormat pixel_format() const { return m_pixel_format; }
+    PixelFormat pixel_format() const { return m_pixel_format; }
 
     /// Return the component format of this bitmap
     FieldType component_format() const { return m_component_format; }
@@ -273,9 +266,9 @@ public:
 
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
-        return m_pixel_format == EYA
-               || m_pixel_format == ERGBA || m_pixel_format == ERGBAW
-               || m_pixel_format == EXYZA || m_pixel_format == EXYZAW;
+        return m_pixel_format == YA
+               || m_pixel_format == PixelFormat::RGBA || m_pixel_format == PixelFormat::RGBAW
+               || m_pixel_format == PixelFormat::XYZA || m_pixel_format == PixelFormat::XYZAW;
     }
 
     /// Return the number bytes of storage used per pixel
@@ -312,7 +305,7 @@ public:
      *    Target stream that will receive the encoded output
      *
      * \param format
-     *    Target file format (\ref EOpenEXR, \ref EPNG, \ref EOpenEXR, etc.)
+     *    Target file format (\ref OpenEXR, \ref PNG, etc.)
      *    Detected from the filename by default.
      *
      * \param quality
@@ -332,7 +325,7 @@ public:
      *            to the lossless PIZ compressor.</li>
      *    </ul>
      */
-    void write(Stream *stream, EFileFormat format = EAuto,
+    void write(Stream *stream, ImageFileFormat format = ImageFileFormat::Auto,
                int quality = -1) const;
 
     /**
@@ -342,7 +335,7 @@ public:
      *    Target stream that will receive the encoded output
      *
      * \param format
-     *    Target file format (\ref EOpenEXR, \ref EPNG, \ref EOpenEXR, etc.)
+     *    Target file format (\ref ImageFileFormat::OpenEXR, \ref ImageFileFormat::PNG, etc.)
      *    Detected from the filename by default.
      *
      * \param quality
@@ -362,7 +355,7 @@ public:
      *            to the lossless PIZ compressor.</li>
      *    </ul>
      */
-    void write(const fs::path &path, EFileFormat format = EAuto,
+    void write(const fs::path &path, ImageFileFormat format = ImageFileFormat::Auto,
                int quality = -1) const;
 
     /**
@@ -402,7 +395,7 @@ public:
                   const std::pair<Float, Float> &bound = kDefaultBounds,
                   Bitmap *temp = nullptr) const;
     static constexpr std::pair<Float, Float> kDefaultBounds = { -math::Infinity<Float>,
-                                                                math::Infinity<Float> };
+                                                                 math::Infinity<Float> };
 
     /**
      * \brief Up- or down-sample this image to a different resolution
@@ -481,7 +474,7 @@ public:
      *      Specifies whether a sRGB gamma ramp should be applied to
      *      the ouutput values.
      */
-    ref<Bitmap> convert(EPixelFormat pixel_format,
+    ref<Bitmap> convert(PixelFormat pixel_format,
                         FieldType component_format,
                         bool srgb_gamma = true) const;
 
@@ -544,7 +537,7 @@ public:
     std::vector<std::pair<std::string, ref<Bitmap>>> split() const;
 
     /// Attempt to detect the bitmap file format in a given stream
-    static Bitmap::EFileFormat detect_file_format(Stream *stream);
+    static ImageFileFormat detect_file_format(Stream *stream);
 
     /// Vertically flip the bitmap
     void vflip();
@@ -578,7 +571,7 @@ public:
      void rebuild_struct(size_t channel_count = 0);
 
      /// Read a file from a stream
-     void read(Stream *stream, EFileFormat format);
+     void read(Stream *stream, ImageFileFormat format);
 
      /// Read a file encoded using the OpenEXR file format
      void read_openexr(Stream *stream);
@@ -623,7 +616,7 @@ public:
      void write_pfm(Stream *stream) const;
  protected:
      std::unique_ptr<uint8_t[]> m_data;
-     EPixelFormat m_pixel_format;
+     PixelFormat m_pixel_format;
      FieldType m_component_format;
      Vector2s m_size;
      ref<Struct> m_struct;
@@ -632,7 +625,7 @@ public:
      Properties m_metadata;
 };
 
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::EPixelFormat value);
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::EFileFormat value);
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, PixelFormat value);
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, ImageFileFormat value);
 
 NAMESPACE_END(mitsuba)

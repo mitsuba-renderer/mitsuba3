@@ -110,8 +110,8 @@ public:
 
         /* Convert to linear RGB float bitmap, will be converted
            into spectral profile coefficients below (in place) */
-        auto color_mode = IsRawData ? m_bitmap->pixel_format() : Bitmap::ERGB;
-        m_bitmap = m_bitmap->convert(color_mode, Bitmap::EFloat, false);
+        auto color_mode = IsRawData ? m_bitmap->pixel_format() : PixelFormat::RGB;
+        m_bitmap = m_bitmap->convert(color_mode, Bitmap::FloatFieldType, false);
 
         // Convert to spectral coefficients, monochrome or leave in RGB.
         auto *ptr = (ScalarFloat *) m_bitmap->data();

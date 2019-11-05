@@ -36,6 +36,9 @@ enum class FieldByteOrder {
 
 /// Field-specific flags
 enum class FieldFlags : uint32_t {
+    /// No flags set (default value)
+    None = 0x00,
+
     /**
      * Specifies whether an integer field encodes a normalized value in the
      * range [0, 1]. The flag is ignored if specified for floating point
@@ -78,11 +81,6 @@ constexpr FieldFlags operator |(FieldFlags f1, FieldFlags f2) {
 constexpr FieldFlags operator &(FieldFlags f1, FieldFlags f2) {
     return static_cast<FieldFlags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
 }
-/// Allows and-ing of FieldFlags
-template <typename UInt32>
-constexpr UInt32 operator &(const UInt32 &f1, FieldFlags f2) {
-    return (f1 & static_cast<uint32_t>(f2));
-}
 /// Allows not-ing of FieldFlags
 constexpr FieldFlags operator ~(FieldFlags f1) {
     return static_cast<FieldFlags>(~static_cast<uint32_t>(f1));
@@ -90,6 +88,14 @@ constexpr FieldFlags operator ~(FieldFlags f1) {
 /// Allows using unary `+` for conversion from FieldFlags to the underlying type
 constexpr auto operator+(FieldFlags e) noexcept {
     return static_cast<std::underlying_type_t<FieldFlags>>(e);
+}
+/// Check presence of a flag in a combined FieldFlags
+constexpr bool has_flag(FieldFlags flags, FieldFlags f) {
+    return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
+}
+template <typename UInt32>
+constexpr bool has_flag(const UInt32 &flags, FieldFlags f) {
+    return neq(flags & UInt32(static_cast<uint32_t>(f)), 0u);
 }
 
 /**
@@ -120,7 +126,7 @@ public:
         size_t offset;
 
         /// Additional flags
-        uint32_t flags;
+        FieldFlags flags;
 
         /// Default value
         double default_;
@@ -183,7 +189,7 @@ public:
 
     /// Append a new field to the \c Struct; determines size and offset automatically
     Struct &append(const std::string &name, FieldType type,
-                   uint32_t flags = 0, double default_ = 0.0);
+                   FieldFlags flags = FieldFlags::None, double default_ = 0.0);
 
     /// Append a new field to the \c Struct (manual version)
     Struct &append(Field field) { m_fields.push_back(field); return *this; }
@@ -422,7 +428,7 @@ protected:
 
     struct Value {
         FieldType type;
-        uint32_t flags;
+        FieldFlags flags;
         union {
             Float f;
             float s;

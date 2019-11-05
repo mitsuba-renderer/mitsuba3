@@ -30,7 +30,7 @@ public:
 
         /* Convert to linear RGB float bitmap, will be converted
            into spectral profile coefficients below */
-        m_bitmap = m_bitmap->convert(Bitmap::ERGBA, Bitmap::EFloat, false);
+        m_bitmap = m_bitmap->convert(PixelFormat::RGBA, Bitmap::FloatFieldType, false);
         m_name = file_path.filename().string();
 
         std::unique_ptr<Float[]> luminance(new Float[hprod(m_bitmap->size())]);

@@ -32,7 +32,7 @@ def check_value(im, arr, atol=1e-9):
                               + '\n\n' + str(ref[:, :, k])
 
 def test01_construct():
-    im = ImageBlock(Bitmap.ERGBA, [33, 12])
+    im = ImageBlock(Bitmap.PixelFormat::RGBA, [33, 12])
     assert im is not None
     assert np.all(im.offset() == 0)
     im.set_offset([10, 20])
@@ -42,7 +42,7 @@ def test01_construct():
     assert im.warns()
     assert im.border_size() == 0  # Since there's no reconstruction filter
     assert im.channel_count() == 4
-    assert im.pixel_format() == Bitmap.ERGBA
+    assert im.pixel_format() == Bitmap.PixelFormat::RGBA
     assert im.bitmap() is not None
 
     rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
@@ -63,11 +63,11 @@ def test01_construct():
 
 def test02_put_image_block():
     # TODO: test with varying `offset` values
-    im = ImageBlock(Bitmap.ERGBA, [10, 5])
+    im = ImageBlock(Bitmap.PixelFormat::RGBA, [10, 5])
     # Should be cleared right away.
     check_value(im, 0)
 
-    im2 = ImageBlock(Bitmap.ERGBA, im.size())
+    im2 = ImageBlock(Bitmap.PixelFormat::RGBA, im.size())
     ref = 3.14 * np.arange(
             im.height() * im.width()).reshape(im.height(), im.width(), 1)
     np.array(im2.bitmap(), copy=False)[:] = ref

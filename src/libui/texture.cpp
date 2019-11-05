@@ -2,22 +2,22 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-static nanogui::Texture::PixelFormat convert_pixel_format(Bitmap::EPixelFormat pf) {
+static nanogui::Texture::PixelFormat convert_pixel_format(PixelFormat pf) {
     switch (pf) {
-        case Bitmap::EY:    return Texture::PixelFormat::R;
-        case Bitmap::EYA:   return Texture::PixelFormat::RA;
-        case Bitmap::ERGB:  return Texture::PixelFormat::RGB;
-        case Bitmap::ERGBA: return Texture::PixelFormat::RGBA;
+        case PixelFormat::Y:    return Texture::PixelFormat::R;
+        case PixelFormat::YA:   return Texture::PixelFormat::RA;
+        case PixelFormat::RGB:  return Texture::PixelFormat::RGB;
+        case PixelFormat::RGBA: return Texture::PixelFormat::RGBA;
         default: Throw("Texture::Texture(): unsupported pixel format '%s'!", pf);
     }
 }
 
-static Bitmap::EPixelFormat convert_pixel_format(nanogui::Texture::PixelFormat pf) {
+static PixelFormat convert_pixel_format(nanogui::Texture::PixelFormat pf) {
     switch (pf) {
-        case Texture::PixelFormat::R:    return Bitmap::EY;
-        case Texture::PixelFormat::RA:   return Bitmap::EYA;
-        case Texture::PixelFormat::RGB:  return Bitmap::ERGB;
-        case Texture::PixelFormat::RGBA: return Bitmap::ERGBA;
+        case Texture::PixelFormat::R:    return PixelFormat::Y;
+        case Texture::PixelFormat::RA:   return PixelFormat::YA;
+        case Texture::PixelFormat::RGB:  return PixelFormat::RGB;
+        case Texture::PixelFormat::RGBA: return PixelFormat::RGBA;
         default: Throw("Texture::Texture(): unsupported pixel format '%i'!", (int) pf);
     }
 }
