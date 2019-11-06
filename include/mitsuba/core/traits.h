@@ -102,6 +102,15 @@ NAMESPACE_END(detail)
 template <typename Value>
 using DynamicBuffer = typename detail::dynamic_buffer_t<Value>::type;
 
+// =============================================================
+//! @{ \name Host vector
+// =============================================================
+
+template <typename T> using host_allocator =
+    std::conditional_t<is_cuda_array_v<T>, cuda_host_allocator<T>, std::allocator<T>>;
+
+template <typename T> using host_vector = std::vector<scalar_t<T>, host_allocator<T>>;
+
 //! @}
 // =============================================================
 

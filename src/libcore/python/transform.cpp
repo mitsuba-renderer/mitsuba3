@@ -94,22 +94,22 @@ MTS_PY_EXPORT_VARIANTS(Transform) {
     py::implicitly_convertible<py::array, Transform4f>();
 }
 
-MTS_PY_EXPORT_VARIANTS(AnimatedTransform) {
+MTS_PY_EXPORT(AnimatedTransform) {
+    using Float = float;
     MTS_IMPORT_CORE_TYPES()
-    using AnimatedTransform = AnimatedTransform<Float>;
     using Keyframe = typename AnimatedTransform::Keyframe;
 
     auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
 
     py::class_<Keyframe>(atrafo, "Keyframe")
-        .def(py::init<float, ScalarMatrix3f, ScalarQuaternion4f, ScalarVector3f>())
+        .def(py::init<float, Matrix3f, Quaternion4f, Vector3f>())
         .def_readwrite("time", &Keyframe::time, D(AnimatedTransform, Keyframe, time))
         .def_readwrite("scale", &Keyframe::scale, D(AnimatedTransform, Keyframe, scale))
         .def_readwrite("quat", &Keyframe::quat, D(AnimatedTransform, Keyframe, quat))
         .def_readwrite("trans", &Keyframe::trans, D(AnimatedTransform, Keyframe, trans));
 
     atrafo.def(py::init<>())
-        .def(py::init<const ScalarTransform4f &>())
+        .def(py::init<const Transform4f &>())
         .def_method(AnimatedTransform, size)
         .def_method(AnimatedTransform, has_scale)
         .def("__len__", &AnimatedTransform::size)
@@ -119,7 +119,7 @@ MTS_PY_EXPORT_VARIANTS(AnimatedTransform) {
             return trafo[index];
         })
         .def("append",
-             py::overload_cast<ScalarFloat, const ScalarTransform4f &>(&AnimatedTransform::append),
+             py::overload_cast<Float, const Transform4f &>(&AnimatedTransform::append),
              D(AnimatedTransform, append))
         .def("append", py::overload_cast<const Keyframe &>( &AnimatedTransform::append))
         .def("eval", vectorize<Float>(&AnimatedTransform::eval),

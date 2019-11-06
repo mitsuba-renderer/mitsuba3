@@ -17,10 +17,10 @@ public:
         m_flags = BSDFFlags::DeltaReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
 
-        m_specular_reflectance = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);
+        m_specular_reflectance = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
 
-        m_eta = props.spectrum<Float, Spectrum>("eta", 0.f);
-        m_k   = props.spectrum<Float, Spectrum>("k",   1.f);
+        m_eta = props.spectrum<ContinuousSpectrum>("eta", 0.f);
+        m_k   = props.spectrum<ContinuousSpectrum>("k",   1.f);
     }
 
     std::pair<BSDFSample3f, Spectrum>

@@ -51,7 +51,7 @@ Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
     }
 
     m_aspect = m_film->size().x() / (Float) m_film->size().y();
-    m_resolution = Vector2f(m_film->crop_size());
+    m_resolution = ScalarVector2f(m_film->crop_size());
 }
 
 template <typename Float, typename Spectrum> Sensor<Float, Spectrum>::~Sensor() {}
@@ -85,49 +85,11 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
     return { result_ray, result_spec };
 }
 
-#if 0  // TODO: merge with sample_ray_differential
 template <typename Float, typename Spectrum>
-std::pair<RayDifferential, MuellerMatrix<Spectrum>> Sensor<Float, Spectrum>::sample_ray_differential_pol(
-    Float time, Float sample1, const Point2f &sample2, const Point2f &sample3,
-    Mask active) const {
-    using Ray3          = Ray<Point<Float, 3>>;
-    using MuellerMatrix = MuellerMatrix<Spectrum>;
-
-    Ray3 temp_ray;
-    MuellerMatrix result_spec, unused;
-
-    std::tie(temp_ray, result_spec) =
-        sample_ray_pol(time, sample1, sample2, sample3, active);
-
-    RayDifferential result_ray(temp_ray);
-
-    Vector2f dx(1.f / m_resolution.x(), 0.f);
-    Vector2f dy(0.f, 1.f / m_resolution.y());
-
-    // Sample a result_ray for X+1
-    std::tie(temp_ray, unused) =
-        sample_ray_pol(time, sample1, sample2 + dx, sample3, active);
-
-    result_ray.o_x = temp_ray.o;
-    result_ray.d_x = temp_ray.d;
-
-    // Sample a result_ray for Y+1
-    std::tie(temp_ray, unused) =
-        sample_ray_pol(time, sample1, sample2 + dy, sample3, active);
-
-    result_ray.o_y = temp_ray.o;
-    result_ray.d_y = temp_ray.d;
-    result_ray.has_differentials = true;
-
-    return { result_ray, result_spec };
-}
-#endif
-
-template <typename Float, typename Spectrum>
-void Sensor<Float, Spectrum>::set_crop_window(const Vector2i &crop_size,
-                                              const Point2i &crop_offset) {
+void Sensor<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
+                                              const ScalarPoint2i &crop_offset) {
     m_film->set_crop_window(crop_size, crop_offset);
-    m_resolution = Vector2f(m_film->crop_size());
+    m_resolution = ScalarVector2f(m_film->crop_size());
 }
 
 // =============================================================================

@@ -437,6 +437,7 @@ ref<AnimatedTransform> Properties::animated_transform(
 }
 
 /// Retrieve a continuous spectrum
+template <typename ContinuousSpectrum>
 ref<ContinuousSpectrum> Properties::spectrum(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
@@ -454,6 +455,7 @@ ref<ContinuousSpectrum> Properties::spectrum(const std::string &name) const {
 }
 
 /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
+template <typename ContinuousSpectrum>
 ref<ContinuousSpectrum> Properties::spectrum(
         const std::string &name, ref<ContinuousSpectrum> def_val) const {
     const auto it = d->entries.find(name);
@@ -472,6 +474,7 @@ ref<ContinuousSpectrum> Properties::spectrum(
 }
 
 /// Retrieve a continuous spectrum (or create flat spectrum with default value)
+template <typename ContinuousSpectrum>
 ref<ContinuousSpectrum> Properties::spectrum(
         const std::string &name, Float def_val) const {
     const auto it = d->entries.find(name);
@@ -479,7 +482,7 @@ ref<ContinuousSpectrum> Properties::spectrum(
         Properties props("uniform");
         props.set_float("value", def_val);
         return (ContinuousSpectrum *) PluginManager::instance()
-            ->create_object(props).get();
+            ->create_object<ContinuousSpectrum>(props).get();
     }
     if (!it->second.data.is<ref<Object>>())
         Throw("The property \"%s\" has the wrong type (expected "
@@ -494,6 +497,7 @@ ref<ContinuousSpectrum> Properties::spectrum(
 }
 
 /// Retrieve a 3D texture
+template <typename Texture3D>
 ref<Texture3D> Properties::texture3d(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
@@ -501,7 +505,7 @@ ref<Texture3D> Properties::texture3d(const std::string &name) const {
     if (!it->second.data.is<ref<Object>>())
         Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
               name);
-    ref<Object> o         = it->second.data;
+    ref<Object> o = it->second.data;
     const Class *expected = Class::for_name("Texture3D");
     if (!o->class_()->derives_from(expected))
         Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
@@ -511,15 +515,16 @@ ref<Texture3D> Properties::texture3d(const std::string &name) const {
 }
 
 /// Retrieve a 3D texture (use the provided texture if no entry exists)
-ref<Texture3D> Properties::texture3d(const std::string &name,
-                                     ref<Texture3D> def_val) const {
+template <typename Texture3D>
+ref<Texture3D>
+Properties::texture3d(const std::string &name, ref<Texture3D> def_val) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         return def_val;
     if (!it->second.data.is<ref<Object>>())
         Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
               name);
-    ref<Object> o         = it->second.data;
+    ref<Object> o = it->second.data;
     const Class *expected = Class::for_name("Texture3D");
     if (!o->class_()->derives_from(expected))
         Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
@@ -529,6 +534,7 @@ ref<Texture3D> Properties::texture3d(const std::string &name,
 }
 
 /// Retrieve a 3D texture (use default constant texture if no entry exists)
+template <typename Texture3D>
 ref<Texture3D> Properties::texture3d(const std::string &name,
                                      Float def_val) const {
     const auto it = d->entries.find(name);
@@ -539,7 +545,7 @@ ref<Texture3D> Properties::texture3d(const std::string &name,
         props.set_object("color", obj);
 
         return (Texture3D *) PluginManager::instance()
-            ->create_object(props).get();
+            ->create_object<Texture3D>(props).get();
     }
     if (!it->second.data.is<ref<Object>>())
         Throw("The property \"%s\" has the wrong type (expected <texture3d>).",

@@ -129,7 +129,7 @@ public:
         active &= all(pi >= 0 && (pi + 1) < Index3(nx, ny, nz));
 
         auto wgather = [&](const Index &index) {
-            using VectorNf = Vector<Float, m_channel_count>;
+            using VectorNf = Array<Float, m_channel_count>;
             // TODO: unify this
             if constexpr (!is_diff_array_v<Index>) {
                 return gather<VectorNf>(m_data.data(), index, active);
@@ -156,15 +156,15 @@ public:
 
         Spectrum  v000, v001, v010, v011, v100, v101, v110, v111;
         if constexpr (is_spectral_v<Spectrum>) {
-            v000 = srgb_model_eval(d000, wavelengths);
-            v001 = srgb_model_eval(d001, wavelengths);
-            v010 = srgb_model_eval(d010, wavelengths);
-            v011 = srgb_model_eval(d011, wavelengths);
+            v000 = srgb_model_eval<Spectrum>(d000, wavelengths);
+            v001 = srgb_model_eval<Spectrum>(d001, wavelengths);
+            v010 = srgb_model_eval<Spectrum>(d010, wavelengths);
+            v011 = srgb_model_eval<Spectrum>(d011, wavelengths);
 
-            v100 = srgb_model_eval(d100, wavelengths);
-            v101 = srgb_model_eval(d101, wavelengths);
-            v110 = srgb_model_eval(d110, wavelengths);
-            v111 = srgb_model_eval(d111, wavelengths);
+            v100 = srgb_model_eval<Spectrum>(d100, wavelengths);
+            v101 = srgb_model_eval<Spectrum>(d101, wavelengths);
+            v110 = srgb_model_eval<Spectrum>(d110, wavelengths);
+            v111 = srgb_model_eval<Spectrum>(d111, wavelengths);
         } else if constexpr (is_monochrome_v<Spectrum>) {
             v000 = d000.x(); v001 = d001.x(); v010 = d010.x(); v011 = d011.x();
             v100 = d100.x(); v101 = d101.x(); v110 = d110.x(); v111 = d111.x();

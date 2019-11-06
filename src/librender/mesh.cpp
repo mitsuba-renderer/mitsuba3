@@ -94,11 +94,11 @@ void Mesh::write(Stream *) const {
     NotImplementedError("write");
 }
 
-BoundingBox3f Mesh::bbox() const {
+ScalarBoundingBox3f Mesh::bbox() const {
     return m_bbox;
 }
 
-BoundingBox3f Mesh::bbox(Index index) const {
+ScalarBoundingBox3f Mesh::bbox(Index index) const {
     Assert(index <= m_face_count);
 
     auto idx = (const Index *) face(index);
@@ -110,7 +110,7 @@ BoundingBox3f Mesh::bbox(Index index) const {
             v1 = vertex_position(idx[1]),
             v2 = vertex_position(idx[2]);
 
-    return BoundingBox3f(
+    return ScalarBoundingBox3f(
         min(min(v0, v1), v2),
         max(max(v0, v1), v2)
     );
@@ -128,7 +128,7 @@ void Mesh::recompute_vertex_normals() {
     /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
        by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
     for (Size i = 0; i < m_face_count; ++i) {
-        const Index *idx = (const Index *) face(i);
+        const ScalarIndex *idx = (const ScalarIndex *) face(i);
         Assert(idx[0] < m_vertex_count && idx[1] < m_vertex_count && idx[2] < m_vertex_count);
         Point3f v[3]{ vertex_position(idx[0]),
                       vertex_position(idx[1]),
@@ -199,7 +199,7 @@ Mesh::Size Mesh::primitive_count() const {
     return face_count();
 }
 
-Float Mesh::surface_area() const {
+ScalarFloat Mesh::surface_area() const {
     ensure_table_ready();
     return m_surface_area;
 }
@@ -501,7 +501,7 @@ size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output,
 }
 }  // end namespace
 
-BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
+ScalarBoundingBox3f Mesh::bbox(Index index, const ScalarBoundingBox3f &clip) const {
     // Reserve room for some additional vertices
     Point3d vertices1[max_vertices], vertices2[max_vertices];
     size_t nVertices = 3;
@@ -534,7 +534,7 @@ BoundingBox3f Mesh::bbox(Index index, const BoundingBox3f &clip) const {
                                       (double) clip.max[axis], false);
     }
 
-    BoundingBox3f result;
+    ScalarBoundingBox3f result;
     for (size_t i = 0; i < nVertices; ++i) {
         if (std::is_same<Float, float>::value) {
             /* Convert back into floats (with conservative custom rounding modes) */

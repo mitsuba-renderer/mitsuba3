@@ -19,8 +19,8 @@ public:
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     RoughDielectric(const Properties &props) : Base(props) {
-        m_specular_reflectance   = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);
-        m_specular_transmittance = props.spectrum<Float, Spectrum>("specular_transmittance", 1.f);
+        m_specular_reflectance   = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
+        m_specular_transmittance = props.spectrum<ContinuousSpectrum>("specular_transmittance", 1.f);
 
         // Specifies the internal index of refraction at the interface
         ScalarFloat int_ior = lookup_ior(props, "int_ior", "bk7");

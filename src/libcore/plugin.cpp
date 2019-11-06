@@ -146,13 +146,6 @@ ref<Object> PluginManager::create_object(const Properties &props, const Class *c
    return object;
 }
 
-// TODO do we still need this?
-// ref<Object> PluginManager::create_object(const Properties &props) {
-//     const Plugin *plugin = d->plugin(props.plugin_name());
-//     const Class *class = Class::for_name(plugin->class_name);
-//     return class->construct(props);
-// }
-
 std::vector<std::string> PluginManager::loaded_plugins() const {
     std::vector<std::string> list;
     std::lock_guard<std::mutex> guard(d->m_mutex);

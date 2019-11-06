@@ -12,8 +12,8 @@ public:
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     Checkerboard(const Properties &props) {
-        m_color0 = props.spectrum<Float, Spectrum>("color0", .4f);
-        m_color1 = props.spectrum<Float, Spectrum>("color1", .2f);
+        m_color0 = props.spectrum<ContinuousSpectrum>("color0", .4f);
+        m_color1 = props.spectrum<ContinuousSpectrum>("color1", .2f);
         m_transform = props.transform("to_uv", Transform4f()).extract();
     }
 

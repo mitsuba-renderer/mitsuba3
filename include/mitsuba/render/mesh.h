@@ -173,15 +173,15 @@ public:
     //! @{ \name Shape interface implementation
     // =============================================================
 
-    virtual BoundingBox3f bbox() const override;
+    virtual ScalarBoundingBox3f bbox() const override;
 
-    virtual BoundingBox3f bbox(Index index) const override;
+    virtual ScalarBoundingBox3f bbox(Index index) const override;
 
-    virtual BoundingBox3f bbox(Index index, const BoundingBox3f &clip) const override;
+    virtual ScalarBoundingBox3f bbox(Index index, const ScalarBoundingBox3f &clip) const override;
 
     virtual Size primitive_count() const override;
 
-    virtual Float surface_area() const override;
+    virtual ScalarFloat surface_area() const override;
 
     virtual PositionSample3f sample_position(Float time, const Point2f &sample,
                                              Mask active = true) const override;

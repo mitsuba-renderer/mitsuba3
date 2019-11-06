@@ -76,7 +76,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
     tbb::spin_mutex mutex;
     size_t blocks_done = 0;
     // Total number of blocks to be handled, including multiple passes.
-    Float total_blocks = spiral.block_count() * n_passes;
+    ScalarFloat total_blocks = spiral.block_count() * n_passes;
 
     m_render_timer.reset();
     tbb::parallel_for(
@@ -146,10 +146,10 @@ void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene
     bool needs_aperture_sample = sensor->needs_aperture_sample();
     bool needs_time_sample = sensor->shutter_open_time() > 0;
 
-    Float diff_scale_factor = rsqrt((Float) sampler->sample_count());
+    ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
 
-    Point2f aperture_sample(.5f);
-    Vector2f inv_resolution = 1.f / sensor->film()->crop_size();
+    ScalarPoint2f aperture_sample(.5f);
+    ScalarVector2f inv_resolution = 1.f / sensor->film()->crop_size();
 
     for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
         Point2u p = enoki::morton_decode<Point2u>(i);

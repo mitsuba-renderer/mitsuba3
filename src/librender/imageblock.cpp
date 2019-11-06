@@ -12,13 +12,13 @@ ImageBlock<Float, Spectrum>::ImageBlock(PixelFormat fmt, const Vector2i &size,
 
     // Allocate a small bitmap data structure for the block
     m_bitmap = new Bitmap(fmt, struct_type_v<Float>,
-                          size + Vector2i(2 * m_border_size), channels);
+                          size + ScalarVector2i(2 * m_border_size), channels);
     m_bitmap->clear();
 
     if (filter) {
         // Temporary buffers used in put()
         int temp_buffer_size = (int) std::ceil(2 * filter->radius()) + 1;
-        m_weights_x = new Float[2 * temp_buffer_size];
+        m_weights_x = new ScalarFloat[2 * temp_buffer_size];
         m_weights_y = m_weights_x + temp_buffer_size;
     }
 }

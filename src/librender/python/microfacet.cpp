@@ -10,9 +10,9 @@ MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
     using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
 
     py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
-        .def(py::init<MicrofacetType, const ScalarFloat &, bool>(),
+        .def(py::init<MicrofacetType, const Float &, bool>(),
             "type"_a, "alpha"_a, "sample_visible"_a = true)
-        .def(py::init<MicrofacetType, const ScalarFloat &, const ScalarFloat &, bool>(),
+        .def(py::init<MicrofacetType, const Float &, const Float &, bool>(),
             "type"_a, "alpha_u"_a, "alpha_v"_a, "sample_visible"_a = true)
         .def(py::init<const Properties &>())
         .def_method(MicrofacetDistribution, type)

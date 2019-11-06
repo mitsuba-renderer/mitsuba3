@@ -17,8 +17,8 @@ public:
     using SpectrumU = depolarized_t<Spectrum>;
 
     RoughConductor(const Properties &props) : Base(props) {
-        m_eta = props.spectrum<Float, Spectrum>("eta", 0.f);
-        m_k   = props.spectrum<Float, Spectrum>("k", 1.f);
+        m_eta = props.spectrum<ContinuousSpectrum>("eta", 0.f);
+        m_k   = props.spectrum<ContinuousSpectrum>("k", 1.f);
 
         MicrofacetDistribution<Float> distr(props);
         m_type = distr.type();

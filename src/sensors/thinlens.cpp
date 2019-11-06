@@ -80,12 +80,12 @@ public:
         if (m_world_transform->has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
-        Vector2f film_size   = Vector2f(m_film->size()),
-                 crop_size   = Vector2f(m_film->crop_size()),
-                 rel_size    = crop_size / film_size;
+        ScalarVector2f film_size   = ScalarVector2f(m_film->size()),
+                       crop_size   = ScalarVector2f(m_film->crop_size()),
+                       rel_size    = crop_size / film_size;
 
-        Point2f  crop_offset = Point2f(m_film->crop_offset()),
-                 rel_offset  = crop_offset / film_size;
+        ScalarPoint2f  crop_offset = ScalarPoint2f(m_film->crop_offset()),
+                       rel_offset  = crop_offset / film_size;
 
         /**
          * These do the following (in reverse order):
@@ -100,28 +100,28 @@ public:
          *     for a cropping window (if there is any)
          */
         m_camera_to_sample =
-              Transform4f::scale(Vector3f(1.f / rel_size.x(), 1.f / rel_size.y(), 1.f))
-            * Transform4f::translate(Vector3f(-rel_offset.x(), -rel_offset.y(), 0.f))
-            * Transform4f::scale(Vector3f(-0.5f, -0.5f * m_aspect, 1.f))
-            * Transform4f::translate(Vector3f(-1.f, -1.f / m_aspect, 0.f))
-            * Transform4f::perspective(m_x_fov, m_near_clip, m_far_clip);
+              ScalarTransform4f::scale(Vector3f(1.f / rel_size.x(), 1.f / rel_size.y(), 1.f))
+            * ScalarTransform4f::translate(Vector3f(-rel_offset.x(), -rel_offset.y(), 0.f))
+            * ScalarTransform4f::scale(Vector3f(-0.5f, -0.5f * m_aspect, 1.f))
+            * ScalarTransform4f::translate(Vector3f(-1.f, -1.f / m_aspect, 0.f))
+            * ScalarTransform4f::perspective(m_x_fov, m_near_clip, m_far_clip);
 
         m_sample_to_camera = m_camera_to_sample.inverse();
 
         // Position differentials on the near plane
-        m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f)
-             - m_sample_to_camera * Point3f(0.f);
-        m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
-             - m_sample_to_camera * Point3f(0.f);
+        m_dx = m_sample_to_camera * ScalarPoint3f(1.f / m_resolution.x(), 0.f, 0.f)
+             - m_sample_to_camera * ScalarPoint3f(0.f);
+        m_dy = m_sample_to_camera * ScalarPoint3f(0.f, 1.f / m_resolution.y(), 0.f)
+             - m_sample_to_camera * ScalarPoint3f(0.f);
 
         /* Precompute some data for importance(). Please
            look at that function for further details. */
-        Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
-                pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
+        ScalarPoint3f pmin(m_sample_to_camera * ScalarPoint3f(0.f, 0.f, 0.f)),
+                      pmax(m_sample_to_camera * ScalarPoint3f(1.f, 1.f, 0.f));
 
         m_image_rect.reset();
-        m_image_rect.expand(Point2f(pmin.x(), pmin.y()) / pmin.z());
-        m_image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
+        m_image_rect.expand(ScalarPoint2f(pmin.x(), pmin.y()) / pmin.z());
+        m_image_rect.expand(ScalarPoint2f(pmax.x(), pmax.y()) / pmax.z());
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = true;
     }
@@ -226,7 +226,7 @@ public:
         return std::make_pair(ray, wav_weight);
     }
 
-    BoundingBox3f bbox() const override {
+    ScalarBoundingBox3f bbox() const override {
         return m_world_transform->translation_bounds();
     }
 
@@ -254,13 +254,13 @@ public:
     }
 
 private:
-    Transform4f m_camera_to_sample;
-    Transform4f m_sample_to_camera;
-    BoundingBox2f m_image_rect;
-    Float m_aperture_radius;
-    Float m_normalization;
-    Float m_x_fov;
-    Vector3f m_dx, m_dy;
+    ScalarTransform4f m_camera_to_sample;
+    ScalarTransform4f m_sample_to_camera;
+    ScalarBoundingBox2f m_image_rect;
+    ScalarFloat m_aperture_radius;
+    ScalarFloat m_normalization;
+    ScalarFloat m_x_fov;
+    ScalarVector3f m_dx, m_dy;
 };
 
 MTS_IMPLEMENT_PLUGIN(ThinLensCamera, ProjectiveCamera, "Thin Lens Camera");

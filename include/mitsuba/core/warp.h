@@ -667,11 +667,7 @@ private:
     using Vector2u = Vector<replace_scalar_t<Float, uint32_t>, 2>;
     using Vector2i = Vector<replace_scalar_t<Float, int32_t>, 2>;
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    using FloatStorage = std::vector<Float, enoki::cuda_host_allocator<Float>>;
-#else
-    using FloatStorage = std::vector<Float>;
-#endif
+    using FloatStorage = host_vector<Float>;
 
 #if !defined(_MSC_VER)
     static constexpr size_t ArraySize = Dimension;

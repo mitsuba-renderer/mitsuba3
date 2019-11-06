@@ -35,8 +35,8 @@ public:
         m_fdr_int = fresnel_diffuse_reflectance(1.f / m_eta);
         m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
 
-        m_specular_reflectance = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);
-        m_diffuse_reflectance  = props.spectrum<Float, Spectrum>("diffuse_reflectance", .5f);
+        m_specular_reflectance = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
+        m_diffuse_reflectance  = props.spectrum<ContinuousSpectrum>("diffuse_reflectance", .5f);
 
         // Compute weights that further steer samples towards the specular or diffuse components
         ScalarFloat d_mean = m_diffuse_reflectance->mean(),

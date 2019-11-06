@@ -38,7 +38,6 @@ class MTS_EXPORT_RENDER Endpoint : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(Endpoint, Object)
     MTS_IMPORT_TYPES();
-    using AnimatedTransform = AnimatedTransform<Float>;
     using Medium = typename RenderAliases::Medium;
     using Scene  = typename RenderAliases::Scene;
     using Shape  = typename RenderAliases::Shape;
@@ -206,7 +205,7 @@ public:
      * \brief Return an axis-aligned box bounding the spatial
      * extents of the emitter
      */
-    virtual BoundingBox3f bbox() const = 0;
+    virtual ScalarBoundingBox3f bbox() const = 0;
 
     /// Set the shape associated with this endpoint.
     virtual void set_shape(Shape *shape);

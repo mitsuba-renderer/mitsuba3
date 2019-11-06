@@ -25,7 +25,7 @@ public:
     }
 
     Spectrum eval(const Wavelength &wavelengths, Mask /*active*/) const override {
-        return srgb_model_eval(m_coeff, wavelengths);
+        return srgb_model_eval<Spectrum>(m_coeff, wavelengths);
     }
 
     Float mean() const override { return srgb_model_mean(m_coeff); }
@@ -37,7 +37,7 @@ public:
 #endif
 
 private:
-    Vector3f m_coeff;
+    Array<Float, 3> m_coeff;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     Vector3fD m_coeff_d;

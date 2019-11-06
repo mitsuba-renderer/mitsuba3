@@ -26,7 +26,7 @@ public:
            Throw("Child BSDF not specified");
 
         // Scalar-typed opacity texture
-        m_opacity = props.spectrum<Float, Spectrum>("opacity", 0.5f);
+        m_opacity = props.spectrum<ContinuousSpectrum>("opacity", 0.5f);
 
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
             m_components.push_back(m_nested_bsdf->flags(i));

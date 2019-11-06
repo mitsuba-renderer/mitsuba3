@@ -78,16 +78,6 @@ public:
         return static_cast<T *>(create_object(props, MTS_CLASS(T)).get());
     }
 
-    /**
-     * \brief Instantiate a plugin and return the new instance (without
-     * verifying its type).
-     *
-     * \param props
-     *    A \ref Properties instance containing all information required to
-     *    find and construct the plugin.
-     */
-    ref<Object> create_object(const Properties &props);
-
 protected:
     PluginManager();
 

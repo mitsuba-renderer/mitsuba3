@@ -134,7 +134,15 @@ public:
                 store_unaligned(ptr, lum);
             } else if constexpr (is_spectral_v<Spectrum>) {
                 // Fetch spectral fit for given sRGB color value (3 coefficients)
-                ScalarVector3f coeff = srgb_model_fetch(raw);
+                ScalarVector3f coeff;
+
+                if constexpr (ChannelCount == 1)
+                    coeff = srgb_model_fetch(Color<Float, 3>(raw.x()));
+                if constexpr (ChannelCount == 3)
+                    coeff = srgb_model_fetch(raw);
+                if constexpr (ChannelCount == 4)
+                    coeff = srgb_model_fetch(Color<Float, 3>(raw.x(), raw.y(), raw.z()));
+
                 mean += (double) srgb_model_mean(coeff);
                 store_unaligned(ptr, coeff);
             }
@@ -225,10 +233,10 @@ public:
             }
         } else {
             // Evaluate spectral upsampling model from stored coefficients
-            r00 = srgb_model_eval(v00, si.wavelengths);
-            r10 = srgb_model_eval(v10, si.wavelengths);
-            r01 = srgb_model_eval(v01, si.wavelengths);
-            r11 = srgb_model_eval(v11, si.wavelengths);
+            r00 = srgb_model_eval<Spectrum>(v00, si.wavelengths);
+            r10 = srgb_model_eval<Spectrum>(v10, si.wavelengths);
+            r01 = srgb_model_eval<Spectrum>(v01, si.wavelengths);
+            r11 = srgb_model_eval<Spectrum>(v11, si.wavelengths);
         }
 
         // Bilinear interpolation

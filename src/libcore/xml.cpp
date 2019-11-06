@@ -142,12 +142,13 @@ void register_class(const Class *class_) {
 
     /* Register the new class as an object tag */
     auto tag_name = class_->alias();
+    auto tag_key = Class::construct_key(tag_name, class_->variant());
     auto it = tags->find(tag_name);
     if (it == tags->end()) {
         (*tags)[tag_name] = EObject;
-        (*tag_class)[Class::construct_key(tag_name, class_->variant())] = class_;
+        (*tag_class)[tag_key] = class_;
     } else if (it->second != EObject) {
-        (*tag_class)[Class::construct_key(tag_name, class_->variant())] = class_;
+        (*tag_class)[tag_key] = class_;
     }
 
     if (tag_name == "spectrum") {
@@ -724,7 +725,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         src.throw_error(node, "invalid RGB reflectance value, must be in the range [0, 1]!");
 
                     if (!ctx.monochrome) {
-                        ref<Object> obj = PluginManager::instance()->create_object(props2);
+                        ref<Object> obj = PluginManager::instance()->create_object(
+                            props2, Class::for_name("spectrum", ctx.variant));
                         props.set_object(node.attribute("name").value(), obj);
                     } else {
                         // Monochrome mode: replace by a uniform spectrum
@@ -733,7 +735,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         //     lum /= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
                         props2 = Properties("uniform");
                         props2.set_float("value", lum);
-                        auto obj = PluginManager::instance()->create_object(props2);
+                        auto obj = PluginManager::instance()->create_object(
+                            props2, Class::for_name("spectrum", ctx.variant));
                         props.set_object(node.attribute("name").value(), obj);
                     }
                 }
@@ -760,7 +763,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                              false);
                         }
 
-                        ref<Object> obj = PluginManager::instance()->create_object(props2);
+                        ref<Object> obj = PluginManager::instance()->create_object(
+                            props2, Class::for_name("spectrum", ctx.variant));
                         auto expanded   = obj->expand();
                         if (expanded.size() == 1)
                             obj = expanded[0];
@@ -819,7 +823,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_float("lambda_max", wavelengths.back());
                         props2.set_long("size", wavelengths.size());
                         props2.set_pointer("values", values.data());
-                        ref<Object> obj = PluginManager::instance()->create_object(props2);
+                        ref<Object> obj = PluginManager::instance()->create_object(
+                            props2, Class::for_name("spectrum", ctx.variant));
 
                         if (!ctx.monochrome) {
                             props.set_object(node.attribute("name").value(), obj);
@@ -844,7 +849,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
                             props2 = Properties("uniform");
                             props2.set_float("value", average);
-                            obj = PluginManager::instance()->create_object(props2);
+                            obj = PluginManager::instance()->create_object(
+                                props2, Class::for_name("spectrum", ctx.variant));
                             props.set_object(node.attribute("name").value(), obj);
                         }
                     }

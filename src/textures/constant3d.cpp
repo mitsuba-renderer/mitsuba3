@@ -12,7 +12,7 @@ public:
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     explicit Constant3D(const Properties &props) : Base(props) {
-        m_color = props.spectrum<Float, Spectrum>("color", 1.f);
+        m_color = props.spectrum<ContinuousSpectrum>("color", 1.f);
     }
 
     std::vector<ref<Object>> children() override { return { m_color.get() }; }

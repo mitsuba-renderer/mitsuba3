@@ -27,25 +27,25 @@ public:
 
     Sphere(const Properties &props) : Base(props) {
         m_object_to_world =
-            Transform4f::translate(Vector3f(props.point3f("center", Point3f(0.f))));
+            ScalarTransform4f::translate(ScalarVector3f(props.point3f("center", ScalarPoint3f(0.f))));
         m_radius = props.float_("radius", 1.f);
 
         if (props.has_property("to_world")) {
-            Transform4f object_to_world = props.transform("to_world");
-            Float radius = norm(object_to_world * Vector3f(1, 0, 0));
+            ScalarTransform4f object_to_world = props.transform("to_world");
+            Float radius = norm(object_to_world * ScalarVector3f(1, 0, 0));
             // Remove the scale from the object-to-world transform
             m_object_to_world =
                 object_to_world
-                * Transform4f::scale(Vector3f(1.f / radius))
+                * ScalarTransform4f::scale(ScalarVector3f(1.f / radius))
                 * m_object_to_world;
             m_radius *= radius;
         }
 
         /// Are the sphere normals pointing inwards? default: no
         m_flip_normals = props.bool_("flip_normals", false);
-        m_center = m_object_to_world * Point3f(0, 0, 0);
+        m_center = m_object_to_world * ScalarPoint3f(0, 0, 0);
         m_world_to_object = m_object_to_world.inverse();
-        m_inv_surface_area = 1.f / (4.f * math::Pi<Float> * m_radius * m_radius);
+        m_inv_surface_area = 1.f / (4.f * math::Pi<ScalarFloat> * m_radius * m_radius);
 
         if (m_radius <= 0.f) {
             m_radius = std::abs(m_radius);
@@ -56,15 +56,15 @@ public:
             emitter()->set_shape(this);
     }
 
-    BoundingBox3f bbox() const override {
-        BoundingBox3f bbox;
+    ScalarBoundingBox3f bbox() const override {
+        ScalarBoundingBox3f bbox;
         bbox.min = m_center - m_radius;
         bbox.max = m_center + m_radius;
         return bbox;
     }
 
-    Float surface_area() const override {
-        return 4.f * math::Pi<Float> * m_radius * m_radius;
+    ScalarFloat surface_area() const override {
+        return 4.f * math::Pi<ScalarFloat> * m_radius * m_radius;
     }
 
     // =============================================================
@@ -309,7 +309,7 @@ public:
     std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
                                                     bool /*shading_frame*/,
                                                     Mask /*active*/) const override {
-        Float inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
+        ScalarFloat inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
         return { si.dp_du * inv_radius, si.dp_dv * inv_radius };
     }
 
@@ -330,9 +330,9 @@ public:
     }
 
 private:
-    Transform4f m_object_to_world;
-    Transform4f m_world_to_object;
-    Point3f m_center;
+    ScalarTransform4f m_object_to_world;
+    ScalarTransform4f m_world_to_object;
+    ScalarPoint3f m_center;
     ScalarFloat   m_radius;
     ScalarFloat   m_inv_surface_area;
     bool    m_flip_normals;

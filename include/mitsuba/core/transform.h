@@ -358,28 +358,28 @@ template <typename Float, size_t Size> struct Transform {
  * scale/shear matrix, a rotation quaternion, and a translation vector. These
  * will all be interpolated independently at eval time.
  */
-template <typename Float>
 class MTS_EXPORT_CORE AnimatedTransform : public Object {
 public:
     MTS_DECLARE_CLASS(AnimatedTransform, Object)
+    using Float = float;
     MTS_IMPORT_CORE_TYPES()
 
     /// Represents a single keyframe in an animated transform
     struct Keyframe {
         /// Time value associated with this keyframe
-        ScalarFloat time;
+        Float time;
 
         /// 3x3 scale/shear matrix
-        ScalarMatrix3f scale;
+        Matrix3f scale;
 
         /// Rotation quaternion
-        ScalarQuaternion4f quat;
+        Quaternion4f quat;
 
         /// 3D translation
-        ScalarVector3f trans;
+        Vector3f trans;
 
-        Keyframe(const ScalarFloat time, const ScalarMatrix3f &scale,
-                 const ScalarQuaternion4f &quat, const ScalarVector3f &trans)
+        Keyframe(const Float time, const Matrix3f &scale,
+                 const Quaternion4f &quat, const Vector3f &trans)
             : time(time), scale(scale), quat(quat), trans(trans) { }
 
         bool operator==(const Keyframe &f) const {
@@ -395,130 +395,34 @@ public:
     /// Create an empty animated transform
     AnimatedTransform() = default;
 
-    /**
-     * \brief Create an AnimatedTransform instance that is initialized with a
-     * constant transform
-     *
-     * The provided transformation will be used as long as no keyframes are
-     * specified. However, it will be overwritten as soon as the first keyframe
-     * is appended.
+    /** Create a constant "animated" transform.
+     * The provided transformation will be used as long as no keyframes
+     * are specified. However, it will be overwritten as soon as the
+     * first keyframe is appended.
      */
-    AnimatedTransform(const ScalarTransform4f &trafo)
+    AnimatedTransform(const Transform4f &trafo)
       : m_transform(trafo) { }
 
-    virtual ~AnimatedTransform() { }
+    virtual ~AnimatedTransform();
 
     /// Append a keyframe to the current animated transform
-    void append(ScalarFloat time, const ScalarTransform4f &trafo) {
-        if (!m_keyframes.empty() && time <= m_keyframes.back().time)
-            Throw("AnimatedTransform::append(): time values must be "
-                "strictly monotonically increasing!");
-
-        /* Perform a polar decomposition into a 3x3 scale/shear matrix,
-        a rotation quaternion, and a translation vector. These will
-        all be interpolated independently. */
-        auto [M, Q, T] = enoki::transform_decompose(trafo.matrix);
-
-        if (m_keyframes.empty())
-            m_transform = trafo;
-
-        m_keyframes.push_back(Keyframe { time, M, Q, T });
-    }
+    void append(Float time, const Transform4f &trafo);
 
     /// Append a keyframe to the current animated transform
-    void append(const Keyframe &keyframe) {
-        if (!m_keyframes.empty() && keyframe.time <= m_keyframes.back().time)
-            Throw("AnimatedTransform::append(): time values must be "
-                "strictly monotonically increasing!");
+    void append(const Keyframe &keyframe);
 
-        if (m_keyframes.empty())
-            m_transform = ScalarTransform4f(
-                enoki::transform_compose(keyframe.scale, keyframe.quat, keyframe.trans),
-                enoki::transform_compose_inverse(keyframe.scale, keyframe.quat, keyframe.trans));
-
-        m_keyframes.push_back(keyframe);
-    }
-
-    /// Look up an interpolated transform at the given time
-    Transform4f eval(Float time, Mask active = true) const  {
-        /* Compute constants describing the layout of the 'Keyframe' data structure */
-        constexpr size_t Stride      = sizeof(Keyframe);
-        constexpr size_t ScaleOffset = offsetof(Keyframe, scale) / sizeof(ScalarFloat);
-        constexpr size_t QuatOffset  = offsetof(Keyframe, quat)  / sizeof(ScalarFloat);
-        constexpr size_t TransOffset = offsetof(Keyframe, trans) / sizeof(ScalarFloat);
-
-        /* Perhaps the transformation isn't animated */
-        if (likely(size() <= 1))
-            return m_transform;
-
-        /* Look up the interval containing 'time' */
-        UInt32 idx0 = math::find_interval(
-            (uint32_t) size(),
-            [&](UInt32 idx, Mask active) {
-                constexpr size_t Stride_ = sizeof(Keyframe); // MSVC: have to redeclare constexpr
-                                                             // variable in lambda scope :(
-                return gather<Float, Stride_>(m_keyframes.data(), idx, active) <= time;
-            },
-            active);
-
-        UInt32 idx1 = idx0 + 1;
-
-        /* Compute the relative time value in [0, 1] */
-        Float t0 = gather<Float, Stride, false>(m_keyframes.data(), idx0, active),
-              t1 = gather<Float, Stride, false>(m_keyframes.data(), idx1, active),
-              t  = min(max((time - t0) / (t1 - t0), 0.f), 1.f);
-
-        /* Interpolate the scale matrix */
-        Matrix3f scale0 = gather<Matrix3f, Stride, false>(
-                     (ScalarFloat *) m_keyframes.data() + ScaleOffset, idx0, active),
-                 scale1 = gather<Matrix3f, Stride, false>(
-                     (ScalarFloat *) m_keyframes.data() + ScaleOffset, idx1, active),
-                 scale = scale0 * (1 - t) + scale1 * t;
-
-        /* Interpolate the rotation quaternion */
-        Quaternion4f quat0 = gather<Quaternion4f, Stride, false>(
-                         (ScalarFloat *) m_keyframes.data() + QuatOffset, idx0, active),
-                     quat1 = gather<Quaternion4f, Stride, false>(
-                         (ScalarFloat *) m_keyframes.data() + QuatOffset, idx1, active),
-                     quat = enoki::slerp(quat0, quat1, t);
-
-        /* Interpolate the translation component */
-        Vector3f trans0 = gather<Vector3f, Stride, false>(
-                     (ScalarFloat *) m_keyframes.data() + TransOffset, idx0, active),
-                 trans1 = gather<Vector3f, Stride, false>(
-                     (ScalarFloat *) m_keyframes.data() + TransOffset, idx1, active),
-                 trans = trans0 * (1 - t) + trans1 * t;
-
-        return Transform4f(
-            enoki::transform_compose(scale, quat, trans),
-            enoki::transform_compose_inverse(scale, quat, trans)
-        );
-    }
+    // TODO this method should be templated
+    /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
+    Transform4f eval(Float time, Mask active = true) const;
 
     /**
      * \brief Return an axis-aligned box bounding the amount of translation
      * throughout the animation sequence
      */
-    ScalarBoundingBox3f translation_bounds() const {
-        if (m_keyframes.empty()) {
-            auto p = m_transform * ScalarPoint3f(0.0f);
-            return ScalarBoundingBox3f(p, p);
-        }
-        Throw("AnimatedTransform::translation_bounds() not implemented for"
-            " non-constant animation.");
-        return ScalarBoundingBox3f();
-    }
+    BoundingBox3f translation_bounds() const;
 
     /// Determine whether the transformation involves any kind of scaling
-    bool has_scale() const  {
-        if (m_keyframes.empty())
-            return false;
-
-        ScalarMatrix3f delta = zero<ScalarMatrix3f>();
-        for (auto const &k: m_keyframes)
-            delta += abs(k.scale - enoki::identity<ScalarMatrix3f>());
-        return hsum_nested(delta) / m_keyframes.size() > 1e-3f;
-    }
+    bool has_scale() const;
 
     /// Return the number of keyframes
     size_t size() const { return m_keyframes.size(); }
@@ -527,10 +431,11 @@ public:
     const Keyframe &operator[](size_t i) const { return m_keyframes[i]; }
 
     /// Equality comparison operator
-    bool operator==(const AnimatedTransform<Float> &t) const  {
+    bool operator==(const AnimatedTransform &t) const {
         if (m_transform != t.m_transform ||
-            m_keyframes.size() != t.m_keyframes.size())
+            m_keyframes.size() != t.m_keyframes.size()) {
             return false;
+        }
         for (size_t i = 0; i < m_keyframes.size(); ++i) {
             if (m_keyframes[i] != t.m_keyframes[i])
                 return false;
@@ -538,24 +443,15 @@ public:
         return true;
     }
 
-    bool operator!=(const AnimatedTransform<Float> &t) const {
+    bool operator!=(const AnimatedTransform &t) const {
         return !operator==(t);
     }
 
     /// Return a human-readable summary of this bitmap
-    virtual std::string to_string() const override {
-        std::ostringstream oss;
-        oss << "AnimatedTransform[" << std::endl
-            << "  m_transform = " << string::indent(m_transform, 16) << "," << std::endl;
-            // TODO
-            // << "  m_keyframes = " << string::indent(m_keyframes, 16) << std::endl
-        oss << "]";
-
-        return oss.str();
-    }
+    virtual std::string to_string() const override;
 
 private:
-    ScalarTransform4f m_transform;
+    Transform4f m_transform;
     std::vector<Keyframe> m_keyframes;
 };
 
@@ -569,22 +465,9 @@ std::ostream &operator<<(std::ostream &os, const Transform<Float, Size> &t) {
     return os;
 }
 
-template <typename Float>
-std::ostream &operator<<(std::ostream &os, const typename AnimatedTransform<Float>::Keyframe &frame) {
-    os << "Keyframe[" << std::endl
-       << "  time = " << frame.time << "," << std::endl
-       << "  scale = " << frame.scale << "," << std::endl
-       << "  quat = " << frame.quat << "," << std::endl
-       << "  trans = " << frame.trans
-       << "]";
-    return os;
-}
+std::ostream &operator<<(std::ostream &os, const AnimatedTransform::Keyframe &frame);
 
-template <typename Float>
-std::ostream &operator<<(std::ostream &os, const AnimatedTransform<Float> &t) {
-    os << t.to_string();
-    return os;
-}
+std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t);
 
 //! @}
 // -----------------------------------------------------------------------

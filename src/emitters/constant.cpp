@@ -19,15 +19,15 @@ public:
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
         /* Until `create_shape` is called, we have no information
            about the scene and default to the unit bounding sphere. */
-        m_bsphere = BoundingSphere3f(Point3f(0.f), 1.f);
+        m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
-        m_radiance = props.spectrum<Float, Spectrum>("radiance", ContinuousSpectrum::D65(1.f));
+        m_radiance = props.spectrum<ContinuousSpectrum>("radiance", ContinuousSpectrum::D65(1.f));
     }
 
     ref<Shape> create_shape(const Scene *scene) override {
         // Create a bounding sphere that surrounds the scene
         m_bsphere = scene->bbox().bounding_sphere();
-        m_bsphere.radius = max(math::Epsilon<Float>, m_bsphere.radius * 1.5f);
+        m_bsphere.radius = max(math::Epsilon<ScalarFloat>, 1.5f * m_bsphere.radius);
 
         Properties props("sphere");
         props.set_point3f("center", m_bsphere.center);
@@ -90,8 +90,8 @@ public:
     }
 
     /// This emitter does not occupy any particular region of space, return an invalid bounding box
-    BoundingBox3f bbox() const override {
-        return BoundingBox3f();
+    ScalarBoundingBox3f bbox() const override {
+        return ScalarBoundingBox3f();
     }
 
     bool is_environment() const override {
@@ -109,7 +109,7 @@ public:
 
 protected:
     ref<ContinuousSpectrum> m_radiance;
-    BoundingSphere3f m_bsphere;
+    ScalarBoundingSphere3f m_bsphere;
 };
 
 MTS_IMPLEMENT_PLUGIN(ConstantBackgroundEmitter, Emitter, "Constant background emitter");

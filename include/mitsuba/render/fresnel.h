@@ -30,41 +30,41 @@ NAMESPACE_BEGIN(mitsuba)
  *                 the scale factor that must be applied to the X and Y
  *                 component of the refracted direction.
  */
-template <typename Value>
-std::tuple<Value, Value, Value, Value> fresnel(Value cos_theta_i, Value eta) {
+template <typename Float>
+std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
     auto outside_mask = cos_theta_i >= 0.f;
 
-    Value rcp_eta = rcp(eta),
+    Float rcp_eta = rcp(eta),
           eta_it = select(outside_mask, eta, rcp_eta),
           eta_ti = select(outside_mask, rcp_eta, eta);
 
     /* Using Snell's law, calculate the squared sine of the
        angle between the surface normal and the transmitted ray */
-    Value cos_theta_t_sqr =
+    Float cos_theta_t_sqr =
         fnmadd(fnmadd(cos_theta_i, cos_theta_i, 1.f), eta_ti * eta_ti, 1.f);
 
     /* Find the absolute cosines of the incident/transmitted rays */
-    Value cos_theta_i_abs = abs(cos_theta_i);
-    Value cos_theta_t_abs = safe_sqrt(cos_theta_t_sqr);
+    Float cos_theta_i_abs = abs(cos_theta_i);
+    Float cos_theta_t_abs = safe_sqrt(cos_theta_t_sqr);
 
     auto index_matched = eq(eta, 1.f),
          special_case  = index_matched || eq(cos_theta_i_abs, 0.f);
 
-    Value r_sc = select(index_matched, Value(0.f), Value(1.f));
+    Float r_sc = select(index_matched, Float(0.f), Float(1.f));
 
     /* Amplitudes of reflected waves */
-    Value a_s = fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) /
+    Float a_s = fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) /
                  fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs);
 
-    Value a_p = fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) /
+    Float a_p = fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) /
                  fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs);
 
-    Value r = .5f * (sqr(a_s) + sqr(a_p));
+    Float r = .5f * (sqr(a_s) + sqr(a_p));
 
     masked(r, special_case) = r_sc;
 
     /* Adjust the sign of the transmitted direction */
-    Value cos_theta_t = mulsign_neg(cos_theta_t_abs, cos_theta_i);
+    Float cos_theta_t = mulsign_neg(cos_theta_t_abs, cos_theta_i);
 
     return { r, cos_theta_t, eta_it, eta_ti };
 }
@@ -88,29 +88,29 @@ std::tuple<Value, Value, Value, Value> fresnel(Value cos_theta_i, Value eta) {
  * \return The unpolarized Fresnel reflection coefficient.
  */
 
-template <typename Value>
-Value fresnel_conductor(Value cos_theta_i, Complex<Value> eta) {
+template <typename Float>
+Float fresnel_conductor(Float cos_theta_i, Complex<Float> eta) {
     // Modified from "Optics" by K.D. Moeller, University Science Books, 1988
-    Value cos_theta_i_2 = cos_theta_i * cos_theta_i,
+    Float cos_theta_i_2 = cos_theta_i * cos_theta_i,
           sin_theta_i_2 = 1.f - cos_theta_i_2,
           sin_theta_i_4 = sin_theta_i_2 * sin_theta_i_2;
 
     auto eta_r = real(eta),
          eta_i = imag(eta);
 
-    Value temp_1   = eta_r * eta_r - eta_i * eta_i - sin_theta_i_2,
+    Float temp_1   = eta_r * eta_r - eta_i * eta_i - sin_theta_i_2,
           a_2_pb_2 = safe_sqrt(temp_1*temp_1 + 4.f * eta_i * eta_i * eta_r * eta_r),
           a        = safe_sqrt(.5f * (a_2_pb_2 + temp_1));
 
-    Value term_1 = a_2_pb_2 + cos_theta_i_2,
+    Float term_1 = a_2_pb_2 + cos_theta_i_2,
           term_2 = 2.f * cos_theta_i * a;
 
-    Value r_s = (term_1 - term_2) / (term_1 + term_2);
+    Float r_s = (term_1 - term_2) / (term_1 + term_2);
 
-    Value term_3 = a_2_pb_2 * cos_theta_i_2 + sin_theta_i_4,
+    Float term_3 = a_2_pb_2 * cos_theta_i_2 + sin_theta_i_4,
           term_4 = term_2 * sin_theta_i_2;
 
-    Value r_p = r_s * (term_3 - term_4) / (term_3 + term_4);
+    Float r_p = r_s * (term_3 - term_4) / (term_3 + term_4);
 
     return .5f * (r_s + r_p);
 }
@@ -144,36 +144,36 @@ Value fresnel_conductor(Value cos_theta_i, Complex<Value> eta) {
  *                 scale factor that must be applied to the X and Y component
  *                 of the refracted direction.
  */
-template <typename Value>
-std::tuple<Complex<Value>, Complex<Value>, Value, Value, Value>
-fresnel_polarized(Value cos_theta_i, Value eta) {
+template <typename Float>
+std::tuple<Complex<Float>, Complex<Float>, Float, Float, Float>
+fresnel_polarized(Float cos_theta_i, Float eta) {
     auto outside_mask = cos_theta_i >= 0.f;
 
-    Value rcp_eta = rcp(eta),
+    Float rcp_eta = rcp(eta),
           eta_it  = select(outside_mask, eta, rcp_eta),
           eta_ti  = select(outside_mask, rcp_eta, eta);
 
     /* Using Snell's law, calculate the squared sine of the
        angle between the surface normal and the transmitted ray */
-    Value cos_theta_t_sqr =
+    Float cos_theta_t_sqr =
         fnmadd(fnmadd(cos_theta_i, cos_theta_i, 1.f), eta_ti * eta_ti, 1.f);
 
     /* Find the cosines of the incident/transmitted rays */
-    Value cos_theta_i_abs = abs(cos_theta_i);
-    Complex<Value> cos_theta_t = sqrtz(cos_theta_t_sqr);
+    Float cos_theta_i_abs = abs(cos_theta_i);
+    Complex<Float> cos_theta_t = sqrtz(cos_theta_t_sqr);
 
     /* Choose the appropriate sign of the root (important when computing the
        phase difference under total internal reflection, see appendix A.2 of
        "Stellar Polarimetry" by David Clarke) */
-    cos_theta_t = mulsign(Array<Value, 2>(cos_theta_t), cos_theta_t_sqr);
+    cos_theta_t = mulsign(Array<Float, 2>(cos_theta_t), cos_theta_t_sqr);
 
     /* Amplitudes of reflected waves. The sign convension of 'a_p' used here
        matches Fresnel's original paper from 1823 and is different from some
        contemporary references. See appendix A.1 of "Stellar Polarimetry" by
        David Clarke for a historical perspective. */
-    Complex<Value> a_s = (-eta_it * cos_theta_t + cos_theta_i_abs) /
+    Complex<Float> a_s = (-eta_it * cos_theta_t + cos_theta_i_abs) /
                          ( eta_it * cos_theta_t + cos_theta_i_abs);
-    Complex<Value> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
+    Complex<Float> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
                          ( eta_it * cos_theta_i_abs + cos_theta_t);
 
     auto index_matched = eq(eta, 1.f);
@@ -181,7 +181,7 @@ fresnel_polarized(Value cos_theta_i, Value eta) {
     masked(a_p, index_matched) = 0.f;
 
     /* Adjust the sign of the transmitted direction */
-    Value cos_theta_t_signed =
+    Float cos_theta_t_signed =
         select(cos_theta_t_sqr >= 0.f,
                mulsign_neg(real(cos_theta_t), cos_theta_i), 0.f);
 
@@ -221,36 +221,36 @@ fresnel_polarized(Value cos_theta_i, Value eta) {
  *                 be applied to the X and Y component of the refracted
  *                 direction.
  */
-template <typename Value>
-std::tuple<Complex<Value>, Complex<Value>, Value, Complex<Value>, Complex<Value>>
-fresnel_polarized(Value cos_theta_i, Complex<Value> eta) {
+template <typename Float>
+std::tuple<Complex<Float>, Complex<Float>, Float, Complex<Float>, Complex<Float>>
+fresnel_polarized(Float cos_theta_i, Complex<Float> eta) {
     auto outside_mask = cos_theta_i >= 0.f;
 
-    Complex<Value> rcp_eta = rcp(eta),
+    Complex<Float> rcp_eta = rcp(eta),
                    eta_it  = select(outside_mask, eta, rcp_eta),
                    eta_ti  = select(outside_mask, rcp_eta, eta);
 
     /* Using Snell's law, calculate the squared sine of the
        angle between the surface normal and the transmitted ray */
-    Complex<Value> cos_theta_t_sqr =
+    Complex<Float> cos_theta_t_sqr =
         1.f - sqr(eta_ti) * fnmadd(cos_theta_i, cos_theta_i, 1.f);
 
     /* Find the cosines of the incident/transmitted rays */
-    Value cos_theta_i_abs = abs(cos_theta_i);
-    Complex<Value> cos_theta_t = sqrt(cos_theta_t_sqr);
+    Float cos_theta_i_abs = abs(cos_theta_i);
+    Complex<Float> cos_theta_t = sqrt(cos_theta_t_sqr);
 
     /* Choose the appropriate sign of the root (important when computing the
        phase difference under total internal reflection, see appendix A.2 of
        "Stellar Polarimetry" by David Clarke) */
-    cos_theta_t = mulsign(Array<Value, 2>(cos_theta_t), real(cos_theta_t_sqr));
+    cos_theta_t = mulsign(Array<Float, 2>(cos_theta_t), real(cos_theta_t_sqr));
 
     /* Amplitudes of reflected waves. The sign convension of 'a_p' used here
        matches Fresnel's original paper from 1823 and is different from some
        contemporary references. See appendix A.1 of "Stellar Polarimetry" by
        David Clarke for a historical perspective. */
-    Complex<Value> a_s = (-eta_it * cos_theta_t + cos_theta_i_abs) /
+    Complex<Float> a_s = (-eta_it * cos_theta_t + cos_theta_i_abs) /
                          ( eta_it * cos_theta_t + cos_theta_i_abs);
-    Complex<Value> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
+    Complex<Float> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
                          ( eta_it * cos_theta_i_abs + cos_theta_t);
 
     auto index_matched = eq(squared_norm(eta), 1.f);
@@ -258,7 +258,7 @@ fresnel_polarized(Value cos_theta_i, Complex<Value> eta) {
     masked(a_p, index_matched) = 0.f;
 
     /* Adjust the sign of the transmitted direction */
-    Value cos_theta_t_signed =
+    Float cos_theta_t_signed =
         select(real(cos_theta_t_sqr) >= 0.f,
                mulsign_neg(real(cos_theta_t), cos_theta_i), 0.f);
 
@@ -266,15 +266,15 @@ fresnel_polarized(Value cos_theta_i, Complex<Value> eta) {
 }
 
 /// Reflection in local coordinates
-template <typename Vector3>
-Vector3 reflect(const Vector3 &wi) {
-    return Vector3(-wi.x(), -wi.y(), wi.z());
+template <typename Float>
+Vector<Float, 3> reflect(const Vector<Float, 3> &wi) {
+    return Vector<Float, 3>(-wi.x(), -wi.y(), wi.z());
 }
 
 /// Reflect \c wi with respect to a given surface normal
-template <typename Vector3, typename Normal3>
-Vector3 reflect(const Vector3 &wi, const Normal3 &m) {
-    return fmsub(Vector3(m), 2.f * dot(wi, m), wi);
+template <typename Float>
+Vector<Float, 3> reflect(const Vector<Float, 3> &wi, const Normal<Float, 3> &m) {
+    return fmsub(Vector<Float, 3>(m), 2.f * dot(wi, m), wi);
 }
 
 /**
@@ -283,9 +283,9 @@ Vector3 reflect(const Vector3 &wi, const Normal3 &m) {
  * The 'cos_theta_t' and 'eta_ti' parameters are given by the last two tuple
  * entries returned by the \ref fresnel and \ref fresnel_polarized functions.
  */
-template <typename Vector3, typename Value>
-Vector3 refract(const Vector3 &wi, Value cos_theta_t, Value eta_ti) {
-    return Vector3(-eta_ti * wi.x(), -eta_ti * wi.y(), cos_theta_t);
+template <typename Float>
+Vector<Float, 3> refract(const Vector<Float, 3> &wi, Float cos_theta_t, Float eta_ti) {
+    return Vector<Float, 3>(-eta_ti * wi.x(), -eta_ti * wi.y(), cos_theta_t);
 }
 
 /**
@@ -301,8 +301,9 @@ Vector3 refract(const Vector3 &wi, Value cos_theta_t, Value eta_ti) {
  * \param eta_ti
  *     Relative index of refraction (transmitted / incident)
  */
-template <typename Vector3, typename Normal3, typename Value = value_t<Vector3>>
-Vector3 refract(const Vector3 &wi, const Normal3 &m, Value cos_theta_t, Value eta_ti) {
+template <typename Float>
+Vector<Float, 3> refract(const Vector<Float, 3> &wi, const Normal<Float, 3> &m, Float cos_theta_t,
+                         Float eta_ti) {
     return fmsub(m, fmadd(dot(wi, m), eta_ti, cos_theta_t), wi * eta_ti);
 }
 
@@ -317,14 +318,14 @@ Vector3 refract(const Vector3 &wi, const Normal3 &m, Value cos_theta_t, Value et
  *      Relative refraction coefficient
  * \return F, the unpolarized Fresnel coefficient.
  */
-template <typename Value>
-Value fresnel_diffuse_reflectance(Value eta) {
+template <typename Float>
+Float fresnel_diffuse_reflectance(Float eta) {
     /* Fast mode: the following code approximates the diffuse Frensel reflectance
        for the eta<1 and eta>1 cases. An evalution of the accuracy led to the
        following scheme, which cherry-picks fits from two papers where they are
        best. */
-    Value result(0.f);
-    mask_t<Value> eta_l_1 = (eta < 1.f);
+    Float result(0.f);
+    mask_t<Float> eta_l_1 = (eta < 1.f);
     /* Fit by Egan and Hilgeman (1973). Works reasonably well for
        "normal" IOR values (<2).
        Max rel. error in 1.0 - 1.5 : 0.1%
@@ -341,7 +342,7 @@ Value fresnel_diffuse_reflectance(Value eta) {
 
        Max rel. error in 1.0 - 2.0   : 0.1%
        Max rel. error in 2.0 - 10.0  : 0.2%  */
-    Value inv_eta   = rcp(eta),
+    Float inv_eta   = rcp(eta),
           inv_eta_2 = inv_eta   * inv_eta,
           inv_eta_3 = inv_eta_2 * inv_eta,
           inv_eta_4 = inv_eta_3 * inv_eta,

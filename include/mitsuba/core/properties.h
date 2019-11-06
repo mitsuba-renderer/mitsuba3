@@ -247,23 +247,20 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Store an animated transformation in the Properties instance
     template <typename Float>
-    void set_animated_transform(const std::string &name, ref<AnimatedTransform<Float>> value,
+    void set_animated_transform(const std::string &name, ref<AnimatedTransform> value,
                                 bool warn_duplicates = true);
     /// Store a (constant) animated transformation in the Properties instance
     template <typename Float>
     void set_animated_transform(const std::string &name, const Transform<Float, 4> &value,
                                 bool warn_duplicates = true);
     /// Retrieve an animated transformation
-    template <typename Float>
-    ref<AnimatedTransform<Float>> animated_transform(const std::string &name) const;
+    ref<AnimatedTransform> animated_transform(const std::string &name) const;
     /// Retrieve an animated transformation (use default value if no entry exists)
-    template <typename Float>
-    ref<AnimatedTransform<Float>> animated_transform(
-            const std::string &name, ref<AnimatedTransform<Float>> def_val) const;
+    ref<AnimatedTransform> animated_transform(
+            const std::string &name, ref<AnimatedTransform> def_val) const;
     /// Retrieve an animated transformation (default value is a constant transform)
-    template <typename Float>
-    ref<AnimatedTransform<Float>> animated_transform(
-            const std::string &name, const Transform<Float, 4> &def_val) const;
+    ref<AnimatedTransform> animated_transform(const std::string &name,
+                                              const Transform<Float, 4> &def_val) const;
 
     /// Store an arbitrary object in the Properties instance
     void set_object(const std::string &name, const ref<Object> &value, bool warn_duplicates = true);
@@ -287,26 +284,26 @@ public:  // Type-specific getters and setters ----------------------------------
     const Color3f& color(const std::string &name, const Color3f &def_val) const;
 
     /// Retrieve a continuous spectrum
-    template <typename Float, typename Spectrum>
-    ref<ContinuousSpectrum<Float, Spectrum>> spectrum(const std::string &name) const;
+    template <typename ContinuousSpectrum>
+    ref<ContinuousSpectrum> spectrum(const std::string &name) const;
     /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
-    template <typename Float, typename Spectrum>
-    ref<ContinuousSpectrum<Float, Spectrum>>
-    spectrum(const std::string &name, ref<ContinuousSpectrum<Float, Spectrum>> def_val) const;
+    template <typename ContinuousSpectrum>
+    ref<ContinuousSpectrum>
+    spectrum(const std::string &name, ref<ContinuousSpectrum> def_val) const;
     /// Retrieve a continuous spectrum (use default flat spectrum if no entry exists)
-    template <typename Float, typename Spectrum>
-    ref<ContinuousSpectrum<Float, Spectrum>> spectrum(const std::string &name, Float def_val) const;
+    template <typename ContinuousSpectrum>
+    ref<ContinuousSpectrum> spectrum(const std::string &name, Float def_val) const;
 
     /// Retrieve a 3D texture
-    template <typename Float, typename Spectrum>
-    ref<Texture3D<Float, Spectrum>> texture3d(const std::string &name) const;
+    template <typename Texture3D>
+    ref<Texture3D> texture3d(const std::string &name) const;
     /// Retrieve a 3D texture (use the provided texture if no entry exists)
-    template <typename Float, typename Spectrum>
-    ref<Texture3D<Float, Spectrum>> texture3d(const std::string &name,
-                            ref<Texture3D<Float, Spectrum>> def_val) const;
+    template <typename Texture3D>
+    ref<Texture3D> texture3d(const std::string &name,
+                            ref<Texture3D> def_val) const;
     /// Retrieve a 3D texture (use default constant texture if no entry exists)
-    template <typename Float, typename Spectrum>
-    ref<Texture3D<Float, Spectrum>> texture3d(const std::string &name, Float def_val) const;
+    template <typename Texture3D>
+    ref<Texture3D> texture3d(const std::string &name, Float def_val) const;
 
 private:
     struct PropertiesPrivate;

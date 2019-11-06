@@ -193,7 +193,7 @@ public:
      * \brief Return an axis aligned box that bounds all shape primitives
      * (including any transformations that may have been applied to them)
      */
-    virtual BoundingBox3f bbox() const = 0;
+    virtual ScalarBoundingBox3f bbox() const = 0;
 
     /**
      * \brief Return an axis aligned box that bounds a single shape primitive
@@ -201,7 +201,7 @@ public:
      *
      * \remark The default implementation simply calls \ref bbox()
      */
-    virtual BoundingBox3f bbox(Index index) const;
+    virtual ScalarBoundingBox3f bbox(Index index) const;
 
     /**
      * \brief Return an axis aligned box that bounds a single shape primitive
@@ -211,7 +211,7 @@ public:
      * default implementation just takes the bounding box returned by
      * \ref bbox(Index index) and clips it to \a clip.
      */
-    virtual BoundingBox3f bbox(Index index, const BoundingBox3f &clip) const;
+    virtual ScalarBoundingBox3f bbox(Index index, const ScalarBoundingBox3f &clip) const;
 
     /**
      * \brief Return the shape's surface area.
@@ -221,7 +221,7 @@ public:
      *
      * The default implementation throws an exception.
      */
-    virtual Float surface_area() const;
+    virtual ScalarFloat surface_area() const;
 
     /**
      * \brief Return the derivative of the normal vector with respect to the UV

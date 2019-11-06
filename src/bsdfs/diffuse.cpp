@@ -14,7 +14,7 @@ public:
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     explicit SmoothDiffuse(const Properties &props) : Base(props) {
-        m_reflectance = props.spectrum<Float, Spectrum>("reflectance", .5f);
+        m_reflectance = props.spectrum<ContinuousSpectrum>("reflectance", .5f);
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
     }

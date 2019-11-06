@@ -75,7 +75,7 @@ public:
      * \param alpha
      *     The surface roughness
      */
-    MicrofacetDistribution(MicrofacetType type, ScalarFloat alpha, bool sample_visible = true)
+    MicrofacetDistribution(MicrofacetType type, Float alpha, bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha), m_alpha_v(alpha),
           m_sample_visible(sample_visible) {
         configure();
@@ -91,7 +91,7 @@ public:
      * \param alpha_v
      *     The surface roughness in the bitangent direction
      */
-    MicrofacetDistribution(MicrofacetType type, ScalarFloat alpha_u, ScalarFloat alpha_v,
+    MicrofacetDistribution(MicrofacetType type, Float alpha_u, Float alpha_v,
                            bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v), m_sample_visible(sample_visible) {
         configure();
@@ -102,7 +102,8 @@ public:
      * structure
      */
     MicrofacetDistribution(const Properties &props, MicrofacetType type = MicrofacetType::Beckmann,
-                           Float alpha_u = .1f, Float alpha_v = .1f, bool sample_visible = true)
+                           Float alpha_u = Float(0.1), Float alpha_v = Float(0.1),
+                           bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v) {
 
         if (props.has_property("distribution")) {
@@ -131,7 +132,7 @@ public:
             m_alpha_v = props.float_("alpha_v");
         }
 
-        if (alpha_u == 0.f || alpha_v == 0.f) {
+        if (alpha_u == Float(0) || alpha_v == Float(0)) {
             Log(Warn,
                 "Cannot create a microfacet distribution withalpha_u/alpha_v=0 (clamped to 10^-4). "
                 "Please use thecorresponding smooth reflectance model to get zero roughness.");
@@ -466,7 +467,7 @@ protected:
     Float eval_reflectance_kernel(const Vector3f &wi, Float eta,
                                   const Point2f &p) const {
         Vector3f m = std::get<0>(sample(wi, p));
-        Vector3f wo = reflect(wi, m);
+        Vector3f wo = reflect(wi, Normal3f(m));
         Float f = std::get<0>(fresnel(dot(wi, m), eta));
         Float weight = smith_g1(wo, m) * f;
         Mask valid = Frame3f::cos_theta(wo) > 0.f &&
@@ -476,7 +477,7 @@ protected:
 
 protected:
     MicrofacetType m_type;
-    ScalarFloat m_alpha_u, m_alpha_v;
+    Float m_alpha_u, m_alpha_v;
     bool  m_sample_visible;
 };
 

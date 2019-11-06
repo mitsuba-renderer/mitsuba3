@@ -29,8 +29,8 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_specular_reflectance   = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);
-        m_specular_transmittance = props.spectrum<Float, Spectrum>("specular_transmittance", 1.f);
+        m_specular_reflectance   = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
+        m_specular_transmittance = props.spectrum<ContinuousSpectrum>("specular_transmittance", 1.f);
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide);

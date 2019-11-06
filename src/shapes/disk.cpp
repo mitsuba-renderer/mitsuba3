@@ -30,16 +30,17 @@ public:
     using Size  = typename Base::Size;
 
     Disk(const Properties &props) : Base(props) {
-        m_object_to_world = props.transform("to_world", Transform4f());
+        m_object_to_world = props.transform("to_world", ScalarTransform4f());
         if (props.bool_("flip_normals", false))
-            m_object_to_world = m_object_to_world * Transform4f::scale(Vector3f(1.f, 1.f, -1.f));
+            m_object_to_world =
+                m_object_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
         m_world_to_object = m_object_to_world.inverse();
 
-        m_dp_du = m_object_to_world * Vector3f(1.f, 0.f, 0.f);
-        m_dp_dv = m_object_to_world * Vector3f(0.f, 1.f, 0.f);
-        Normal3f normal = normalize(m_object_to_world * Normal3f(0.f, 0.f, 1.f));
-        m_frame = Frame3f(normalize(m_dp_du), normalize(m_dp_dv), normal);
+        m_dp_du = m_object_to_world * ScalarVector3f(1.f, 0.f, 0.f);
+        m_dp_dv = m_object_to_world * ScalarVector3f(0.f, 1.f, 0.f);
+        Normal3f normal = normalize(m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        m_frame = ScalarFrame3f(normalize(m_dp_du), normalize(m_dp_dv), normal);
 
         m_inv_surface_area = 1.f / surface_area();
         if (abs_dot(m_frame.s, m_frame.t) > math::Epsilon<Float> ||
@@ -51,17 +52,17 @@ public:
             emitter()->set_shape(this);
     }
 
-    BoundingBox3f bbox() const override {
-        BoundingBox3f bbox;
-        bbox.expand(m_object_to_world.transform_affine(Point3f( 1.f,  0.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(Point3f(-1.f,  0.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(Point3f( 0.f,  1.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(Point3f( 0.f, -1.f, 0.f)));
+    ScalarBoundingBox3f bbox() const override {
+        ScalarBoundingBox3f bbox;
+        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f( 1.f,  0.f, 0.f)));
+        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f(-1.f,  0.f, 0.f)));
+        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f( 0.f,  1.f, 0.f)));
+        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f( 0.f, -1.f, 0.f)));
         return bbox;
     }
 
-    Float surface_area() const override {
-        return math::Pi<Float> * norm(m_dp_du) * norm(m_dp_dv);
+    ScalarFloat surface_area() const override {
+        return math::Pi<ScalarFloat> * norm(m_dp_du) * norm(m_dp_dv);
     }
 
     // =============================================================
@@ -161,20 +162,20 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Disk[" << std::endl
-            << "  center = "  << m_object_to_world * Point3f(0.f, 0.f, 0.f) << "," << std::endl
-            << "  n = "  << m_object_to_world * Normal3f(0.f, 0.f, 1.f) << "," << std::endl
-            << "  du = "  << norm(m_object_to_world * Normal3f(1.f, 0.f, 0.f)) << "," << std::endl
-            << "  dv = "  << norm(m_object_to_world * Normal3f(0.f, 1.f, 0.f)) << "," << std::endl
+            << "  center = "  << m_object_to_world * ScalarPoint3f(0.f, 0.f, 0.f) << "," << std::endl
+            << "  n = "  << m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f) << "," << std::endl
+            << "  du = "  << norm(m_object_to_world * ScalarNormal3f(1.f, 0.f, 0.f)) << "," << std::endl
+            << "  dv = "  << norm(m_object_to_world * ScalarNormal3f(0.f, 1.f, 0.f)) << "," << std::endl
             << "  bsdf = " << string::indent(bsdf()->to_string()) << std::endl
             << "]";
         return oss.str();
     }
 
 private:
-    Transform4f m_object_to_world;
-    Transform4f m_world_to_object;
-    Frame3f m_frame;
-    Vector3f m_dp_du, m_dp_dv;
+    ScalarTransform4f m_object_to_world;
+    ScalarTransform4f m_world_to_object;
+    ScalarFrame3f m_frame;
+    ScalarVector3f m_dp_du, m_dp_dv;
     ScalarFloat m_inv_surface_area;
 };
 

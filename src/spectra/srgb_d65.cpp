@@ -37,7 +37,7 @@ public:
 
     Spectrum eval(const Wavelength &wavelengths, Mask active) const override {
         return m_d65->eval(wavelengths, active) *
-               srgb_model_eval(m_coeff, wavelengths);
+               srgb_model_eval<Spectrum>(m_coeff, wavelengths);
     }
 
 #if defined(MTS_ENABLE_AUTODIFF)
@@ -47,7 +47,7 @@ public:
 #endif
 
 private:
-    Vector3f m_coeff;
+    Array<Float, 3> m_coeff;
     ref<Base> m_d65;
 
 #if defined(MTS_ENABLE_AUTODIFF)

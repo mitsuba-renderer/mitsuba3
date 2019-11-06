@@ -21,12 +21,7 @@ template <typename Float_>
 class MTS_EXPORT_CORE DiscreteDistribution {
     using Float = Float_;
     using ScalarFloat = scalar_t<Float>;
-
-    #if defined(MTS_ENABLE_AUTODIFF)
-        using FloatStorage = std::vector<ScalarFloat, enoki::cuda_host_allocator<ScalarFloat>>;
-    #else
-        using FloatStorage = std::vector<ScalarFloat>;
-    #endif
+    using FloatStorage = host_vector<Float>;
 
 public:
     /// Reserve memory for a distribution with the given number of entries

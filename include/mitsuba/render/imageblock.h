@@ -62,7 +62,7 @@ public:
      *    unit amount of energy?
      */
     ImageBlock(PixelFormat fmt,
-               const Vector2i &size,
+               const ScalarVector2i &size,
                const ReconstructionFilter *filter = nullptr,
                size_t channels = 0,
                bool warn = true,
@@ -72,7 +72,7 @@ public:
     /// Accumulate another image block into this one
     void put(const ImageBlock *block) {
         Point2i offset = block->offset() - m_offset -
-                         Vector2i(block->border_size() - m_border_size);
+                         ScalarVector2i(block->border_size() - m_border_size);
         m_bitmap->accumulate(block->bitmap(), offset);
     }
 
@@ -157,10 +157,10 @@ public:
     void set_offset(const Point2i &offset) { m_offset = offset; }
 
     /// Return the current block offset
-    const Point2i &offset() const { return m_offset; }
+    const ScalarPoint2i &offset() const { return m_offset; }
 
     /// Return the current block size
-    const Vector2i &size() const { return m_size; }
+    const ScalarVector2i &size() const { return m_size; }
 
     /// Return the bitmap's width in pixels
     size_t width() const { return m_size.x(); }
@@ -207,11 +207,11 @@ protected:
     virtual ~ImageBlock();
 protected:
     ref<Bitmap> m_bitmap;
-    Point2i m_offset;
-    Vector2i m_size;
+    ScalarPoint2i m_offset;
+    ScalarVector2i m_size;
     int m_border_size;
     const ReconstructionFilter *m_filter;
-    Float  *m_weights_x  , *m_weights_y;
+    ScalarFloat  *m_weights_x  , *m_weights_y;
     bool m_warn, m_normalize;
 
 #if defined(MTS_ENABLE_AUTODIFF)

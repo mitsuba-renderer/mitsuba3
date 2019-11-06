@@ -13,7 +13,6 @@ public:
     MTS_DECLARE_CLASS_VARIANT(PointLight, Emitter)
     MTS_USING_BASE(Emitter, m_medium, m_needs_sample_3, m_world_transform)
     MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
-    using AnimatedTransform = AnimatedTransform<Float>;
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {
@@ -25,7 +24,7 @@ public:
                 Transform4f::translate(Vector3f(props.point3f("position"))));
         }
 
-        m_intensity = props.spectrum<Float, Spectrum>("intensity", ContinuousSpectrum::D65(1.f));
+        m_intensity = props.spectrum<ContinuousSpectrum>("intensity", ContinuousSpectrum::D65(1.f));
         m_needs_sample_3 = false;
     }
 
@@ -72,7 +71,7 @@ public:
 
     Spectrum eval(const SurfaceInteraction3f &, Mask) const override { return 0.f; }
 
-    BoundingBox3f bbox() const override {
+    ScalarBoundingBox3f bbox() const override {
         return m_world_transform->translation_bounds();
     }
 

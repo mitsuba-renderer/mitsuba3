@@ -21,7 +21,7 @@ public:
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
         /* Until `create_shape` is called, we have no information
            about the scene and default to the unit bounding sphere. */
-        m_bsphere = BoundingSphere3f(Point3f(0.f), 1.f);
+        m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
@@ -69,7 +69,7 @@ public:
     ref<Shape> create_shape(const Scene *scene) override {
         // Create a bounding sphere that surrounds the scene
         m_bsphere = scene->bbox().bounding_sphere();
-        m_bsphere.radius = max(math::Epsilon<Float>, m_bsphere.radius * 1.5f);
+        m_bsphere.radius = max(math::Epsilon<ScalarFloat>, 1.5f * m_bsphere.radius);
 
         Properties props("sphere");
         props.set_point3f("center", m_bsphere.center);
@@ -152,10 +152,10 @@ public:
         return result;
     }
 
-    BoundingBox3f bbox() const override {
+    ScalarBoundingBox3f bbox() const override {
         /* This emitter does not occupy any particular region
            of space, return an invalid bounding box */
-        return BoundingBox3f();
+        return ScalarBoundingBox3f();
     }
 
     std::string to_string() const override {
@@ -202,10 +202,10 @@ protected:
             v11 = gather<Vector4f>(ptr + width + 4, index, active);
         }
 
-        Spectrum s00 = srgb_model_eval(head<3>(v00), wavelengths),
-                 s10 = srgb_model_eval(head<3>(v10), wavelengths),
-                 s01 = srgb_model_eval(head<3>(v01), wavelengths),
-                 s11 = srgb_model_eval(head<3>(v11), wavelengths),
+        Spectrum s00 = srgb_model_eval<Spectrum>(head<3>(v00), wavelengths),
+                 s10 = srgb_model_eval<Spectrum>(head<3>(v10), wavelengths),
+                 s01 = srgb_model_eval<Spectrum>(head<3>(v01), wavelengths),
+                 s11 = srgb_model_eval<Spectrum>(head<3>(v11), wavelengths),
                  s0  = fmadd(w0.x(), s00, w1.x() * s10),
                  s1  = fmadd(w0.x(), s01, w1.x() * s11),
                  f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w()),
@@ -218,7 +218,7 @@ protected:
 
 protected:
     std::string m_name;
-    BoundingSphere3f m_bsphere;
+    ScalarBoundingSphere3f m_bsphere;
     ref<Bitmap> m_bitmap;
     Warp m_warp;
     ref<ContinuousSpectrum> m_d65;

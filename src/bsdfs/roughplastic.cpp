@@ -34,8 +34,8 @@ public:
         m_eta = int_ior / ext_ior;
         m_inv_eta_2 = 1.f / (m_eta * m_eta);
 
-        m_specular_reflectance = props.spectrum<Float, Spectrum>("specular_reflectance", 1.f);
-        m_diffuse_reflectance  = props.spectrum<Float, Spectrum>("diffuse_reflectance",  .5f);
+        m_specular_reflectance = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
+        m_diffuse_reflectance  = props.spectrum<ContinuousSpectrum>("diffuse_reflectance",  .5f);
 
         /* Compute weights that further steer samples towards
            the specular or diffuse components */

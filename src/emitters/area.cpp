@@ -20,7 +20,7 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.spectrum<Float, Spectrum>("radiance", ContinuousSpectrum::D65(1.f));
+        m_radiance = props.spectrum<ContinuousSpectrum>("radiance", ContinuousSpectrum::D65(1.f));
     }
 
     void set_shape(Shape *shape) override {
@@ -71,7 +71,7 @@ public:
                       m_shape->pdf_direction(it, ds, active), 0.f);
     }
 
-    BoundingBox3f bbox() const override { return m_shape->bbox(); }
+    ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }
 
     std::string to_string() const override {
         std::ostringstream oss;

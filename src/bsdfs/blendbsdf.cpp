@@ -25,7 +25,7 @@ public:
             }
         }
 
-        m_weight = props.spectrum<Float, Spectrum>("weight");
+        m_weight = props.spectrum<ContinuousSpectrum>("weight");
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 

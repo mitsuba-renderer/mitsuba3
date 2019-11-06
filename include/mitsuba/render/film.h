@@ -79,19 +79,19 @@ public:
     virtual Bitmap *bitmap() { return nullptr; }
 
     /// Ignoring the crop window, return the resolution of the underlying sensor
-    const Vector2i &size() const { return m_size; }
+    const ScalarVector2i &size() const { return m_size; }
 
     /// Return the size of the crop window
-    const Vector2i &crop_size() const { return m_crop_size; }
+    const ScalarVector2i &crop_size() const { return m_crop_size; }
 
     /// Return the offset of the crop window
-    const Point2i &crop_offset() const { return m_crop_offset; }
+    const ScalarPoint2i &crop_offset() const { return m_crop_offset; }
 
     /**
      * Set the size and offset of the crop window.
      * Values stored in the film may be reset when crop size changes.
      */
-    virtual void set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset);
+    virtual void set_crop_window(const ScalarVector2i &crop_size, const ScalarPoint2i &crop_offset);
 
     /// Return the image reconstruction filter (const version)
     const ReconstructionFilter *reconstruction_filter() const {
@@ -124,8 +124,8 @@ protected:
     void check_valid_crop_window() const;
 
 protected:
-    Vector2i m_size, m_crop_size;
-    Point2i  m_crop_offset;
+    ScalarVector2i m_size, m_crop_size;
+    ScalarPoint2i  m_crop_offset;
     bool m_high_quality_edges;
     ref<ReconstructionFilter> m_filter;
 };

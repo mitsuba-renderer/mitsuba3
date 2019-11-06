@@ -9,16 +9,16 @@ Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     bool is_m_film = string::to_lower(props.plugin_name()) == "mfilm";
 
     // Horizontal and vertical film resolution in pixels
-    m_size = Vector2i(
+    m_size = ScalarVector2i(
         props.int_("width", is_m_film ? 1 : 768),
         props.int_("height", is_m_film ? 1 : 576)
     );
     // Crop window specified in pixels - by default, this matches the full sensor area.
-    m_crop_offset = Point2i(
+    m_crop_offset = ScalarPoint2i(
         props.int_("crop_offset_x", 0),
         props.int_("crop_offset_y", 0)
     );
-    m_crop_size = Vector2i(
+    m_crop_size = ScalarVector2i(
         props.int_("crop_width", m_size.x()),
         props.int_("crop_height", m_size.y())
     );
@@ -51,7 +51,8 @@ template <typename Float, typename Spectrum>
 Film<Float, Spectrum>::~Film() {}
 
 template <typename Float, typename Spectrum>
-void Film<Float, Spectrum>::set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) {
+void Film<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
+                                            const ScalarPoint2i &crop_offset) {
     m_crop_size   = crop_size;
     m_crop_offset = crop_offset;
     check_valid_crop_window();

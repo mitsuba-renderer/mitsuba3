@@ -13,19 +13,19 @@ MTS_PY_EXPORT_VARIANTS(fresnel) {
         vectorize<Float>(py::overload_cast<Float, Complex<Float>>(&fresnel_polarized<Float>)),
         "cos_theta_i"_a, "eta"_a, D(fresnel_polarized, 2))
     .def("reflect",
-        vectorize<Float>(py::overload_cast<const Vector3f &>(&reflect<Vector3f>)),
+        vectorize<Float>(py::overload_cast<const Vector3f &>(&reflect<Float>)),
         "wi"_a, D(reflect))
     .def("reflect",
         vectorize<Float>(
-            py::overload_cast<const Vector3f &, const Normal3f &>(&reflect<Vector3f, Normal3f>)),
+            py::overload_cast<const Vector3f &, const Normal3f &>(&reflect<Float>)),
         "wi"_a, "m"_a, D(reflect, 2))
     .def("refract",
         vectorize<Float>(
-            py::overload_cast<const Vector3f &, Float, Float>(&refract<Vector3f, Float>)),
+            py::overload_cast<const Vector3f &, Float, Float>(&refract<Float>)),
         "wi"_a, "cos_theta_t"_a, "eta_ti"_a, D(refract))
     .def("refract",
         vectorize<Float>(py::overload_cast<const Vector3f &, const Normal3f &, Float, Float>(
-              &refract<Vector3f, Normal3f, Float>)),
+              &refract<Float>)),
         "wi"_a, "m"_a, "cos_theta_t"_a, "eta_ti"_a, D(refract, 2))
     ;
 }

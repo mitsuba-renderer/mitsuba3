@@ -254,14 +254,14 @@ Shape::normal_derivative(const SurfaceInteraction3fD & /* si */,
 }
 #endif
 
-Float Shape::surface_area() const { NotImplementedError("surface_area"); }
+ScalarFloat Shape::surface_area() const { NotImplementedError("surface_area"); }
 
-BoundingBox3f Shape::bbox(Index) const {
+ScalarBoundingBox3f Shape::bbox(Index) const {
     return bbox();
 }
 
-BoundingBox3f Shape::bbox(Index index, const BoundingBox3f &clip) const {
-    BoundingBox3f result = bbox(index);
+ScalarBoundingBox3f Shape::bbox(Index index, const ScalarBoundingBox3f &clip) const {
+    ScalarBoundingBox3f result = bbox(index);
     result.clip(clip);
     return result;
 }

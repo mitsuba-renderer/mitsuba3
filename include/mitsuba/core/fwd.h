@@ -19,6 +19,7 @@ class Object;
 class Class;
 template <typename> class ref;
 
+class AnimatedTransform;
 class AnnotatedStream;
 class Appender;
 class ArgParser;
@@ -59,7 +60,6 @@ template <typename Value, size_t Size>       struct Normal;
 template <typename Value, size_t Size>       struct Color;
 template <typename Value, size_t Size>       struct Spectrum;
 template <typename Value, size_t Size>       struct Transform;
-template <typename Float>                    class AnimatedTransform;
 template <typename Point, typename Spectrum> struct Ray;
 template <typename Point, typename Spectrum> struct RayDifferential;
 template <typename Point>                    struct BoundingBox;

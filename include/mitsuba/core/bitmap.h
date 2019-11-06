@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
      * by the \ref Bitmap class. This both determines the
      * number of channels, and how they should be interpreted
      */
-enum PixelFormat {
+enum class PixelFormat {
     /// Single-channel luminance bitmap
     Y,
 
@@ -43,111 +43,111 @@ enum PixelFormat {
 };
 
 
-    /// Supported image file formats
-    enum ImageFileFormat {
-        /**
-         * \brief Portable network graphics
-         *
-         * The following is supported:
-         * <ul>
-         * <li> Loading and saving of 8/16-bit per component bitmaps for
-         *   all pixel formats (Y, YA, RGB, RGBA)</li>
-         * <li> Loading and saving of 1-bit per component mask bitmaps</li>
-         * <li> Loading and saving of string-valued metadata fields</li>
-         * </ul>
-         */
-        PNG,
+/// Supported image file formats
+enum class ImageFileFormat {
+    /**
+     * \brief Portable network graphics
+     *
+     * The following is supported:
+     * <ul>
+     * <li> Loading and saving of 8/16-bit per component bitmaps for
+     *   all pixel formats (Y, YA, RGB, RGBA)</li>
+     * <li> Loading and saving of 1-bit per component mask bitmaps</li>
+     * <li> Loading and saving of string-valued metadata fields</li>
+     * </ul>
+     */
+    PNG,
 
-        /**
-         * \brief OpenEXR high dynamic range file format developed by
-         * Industrial Light & Magic (ILM)
-         *
-         * The following is supported:
-         * <ul>
-         *   <li>Loading and saving of \ref Float16 / \ref Float32/ \ref
-         *   EUInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
-         *   <li>Loading and saving of spectral bitmaps</tt>
-         *   <li>Loading and saving of XYZ tristimulus bitmaps</tt>
-         *   <li>Loading and saving of string-valued metadata fields</li>
-         * </ul>
-         *
-         * The following is <em>not</em> supported:
-         * <ul>
-         *   <li>Saving of tiled images, tile-based read access</li>
-         *   <li>Display windows that are different than the data window</li>
-         *   <li>Loading of spectrum-valued bitmaps</li>
-         * </ul>
-         */
-        OpenEXR,
+    /**
+     * \brief OpenEXR high dynamic range file format developed by
+     * Industrial Light & Magic (ILM)
+     *
+     * The following is supported:
+     * <ul>
+     *   <li>Loading and saving of \ref Float16 / \ref Float32/ \ref
+     *   EUInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
+     *   <li>Loading and saving of spectral bitmaps</tt>
+     *   <li>Loading and saving of XYZ tristimulus bitmaps</tt>
+     *   <li>Loading and saving of string-valued metadata fields</li>
+     * </ul>
+     *
+     * The following is <em>not</em> supported:
+     * <ul>
+     *   <li>Saving of tiled images, tile-based read access</li>
+     *   <li>Display windows that are different than the data window</li>
+     *   <li>Loading of spectrum-valued bitmaps</li>
+     * </ul>
+     */
+    OpenEXR,
 
-        /**
-         * \brief RGBE image format by Greg Ward
-         *
-         * The following is supported
-         * <ul>
-         *   <li>Loading and saving of \ref Float32 - based RGB bitmaps</li>
-         * </ul>
-         */
-        RGBE,
+    /**
+     * \brief RGBE image format by Greg Ward
+     *
+     * The following is supported
+     * <ul>
+     *   <li>Loading and saving of \ref Float32 - based RGB bitmaps</li>
+     * </ul>
+     */
+    RGBE,
 
-        /**
-         * \brief PFM (Portable Float Map) image format
-         *
-         * The following is supported
-         * <ul>
-         *   <li>Loading and saving of \ref Float32 - based Luminance or RGB bitmaps</li>
-         * </ul>
-         */
-        PFM,
+    /**
+     * \brief PFM (Portable Float Map) image format
+     *
+     * The following is supported
+     * <ul>
+     *   <li>Loading and saving of \ref Float32 - based Luminance or RGB bitmaps</li>
+     * </ul>
+     */
+    PFM,
 
-        /**
-         * \brief PPM (Portable Pixel Map) image format
-         *
-         * The following is supported
-         * <ul>
-         *   <li>Loading and saving of \ref UInt8 and \ref UInt16 - based RGB bitmaps</li>
-         * </ul>
-         */
-        PPM,
+    /**
+     * \brief PPM (Portable Pixel Map) image format
+     *
+     * The following is supported
+     * <ul>
+     *   <li>Loading and saving of \ref UInt8 and \ref UInt16 - based RGB bitmaps</li>
+     * </ul>
+     */
+    PPM,
 
-        /**
-         * \brief Joint Photographic Experts Group file format
-         *
-         * The following is supported:
-         * <ul><li>
-         * Loading and saving of 8 bit per component RGB and
-         * luminance bitmaps
-         * </li></ul>
-         */
-        JPEG,
+    /**
+     * \brief Joint Photographic Experts Group file format
+     *
+     * The following is supported:
+     * <ul><li>
+     * Loading and saving of 8 bit per component RGB and
+     * luminance bitmaps
+     * </li></ul>
+     */
+    JPEG,
 
-        /**
-         * \brief Truevision Advanced Raster Graphics Array file format
-         *
-         * The following is supported:
-         * <ul><li>Loading of uncompressed 8-bit RGB/RGBA files</ul></li>
-         */
-        TGA,
+    /**
+     * \brief Truevision Advanced Raster Graphics Array file format
+     *
+     * The following is supported:
+     * <ul><li>Loading of uncompressed 8-bit RGB/RGBA files</ul></li>
+     */
+    TGA,
 
-        /**
-         * \brief Windows Bitmap file format
-         *
-         * The following is supported:
-         * <ul><li>Loading of uncompressed 8-bit luminance and RGBA bitmaps</ul></li>
-         */
-        BMP,
+    /**
+     * \brief Windows Bitmap file format
+     *
+     * The following is supported:
+     * <ul><li>Loading of uncompressed 8-bit luminance and RGBA bitmaps</ul></li>
+     */
+    BMP,
 
-        /// Unknown file format
-        Unknown,
+    /// Unknown file format
+    Unknown,
 
-        /**
-         * \brief Automatically detect the file format
-         *
-         * Note: this flag only applies when loading a file. In this case,
-         * the source stream must support the \c seek() operation.
-         */
-        Auto
-    };
+    /**
+     * \brief Automatically detect the file format
+     *
+     * Note: this flag only applies when loading a file. In this case,
+     * the source stream must support the \c seek() operation.
+     */
+    Auto
+};
 
 /**
  * \brief General-purpose bitmap class with read and write support
@@ -265,7 +265,7 @@ public:
 
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
-        return m_pixel_format == YA
+        return m_pixel_format == PixelFormat::YA
                || m_pixel_format == PixelFormat::RGBA || m_pixel_format == PixelFormat::RGBAW
                || m_pixel_format == PixelFormat::XYZA || m_pixel_format == PixelFormat::XYZAW;
     }

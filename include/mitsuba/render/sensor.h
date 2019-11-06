@@ -74,10 +74,10 @@ public:
     // =============================================================
 
     /// Return the time value of the shutter opening event
-    Float shutter_open() const { return m_shutter_open; }
+    ScalarFloat shutter_open() const { return m_shutter_open; }
 
     /// Return the length, for which the shutter remains open
-    Float shutter_open_time() const { return m_shutter_open_time; }
+    ScalarFloat shutter_open_time() const { return m_shutter_open_time; }
 
     /// Does the sampling technique require a sample for the aperture position?
     bool needs_aperture_sample() const { return m_needs_sample_3; }
@@ -125,9 +125,9 @@ protected:
     ref<Film> m_film;
     ref<Sampler> m_sampler;
     Vector2f m_resolution;
-    Float m_shutter_open;
-    Float m_shutter_open_time;
-    Float m_aspect;
+    ScalarFloat m_shutter_open;
+    ScalarFloat m_shutter_open_time;
+    ScalarFloat m_aspect;
 };
 
 
@@ -155,13 +155,13 @@ public:
     MTS_USING_BASE(Sensor, world_transform)
 
     /// Return the near clip plane distance
-    Float near_clip() const { return m_near_clip; }
+    ScalarFloat near_clip() const { return m_near_clip; }
 
     /// Return the far clip plane distance
-    Float far_clip() const { return m_far_clip; }
+    ScalarFloat far_clip() const { return m_far_clip; }
 
     /// Return the distance to the focal plane
-    Float focus_distance() const { return m_focus_distance; }
+    ScalarFloat focus_distance() const { return m_focus_distance; }
 
 protected:
     ProjectiveCamera(const Properties &props);
@@ -169,9 +169,9 @@ protected:
     virtual ~ProjectiveCamera();
 
 protected:
-    Float m_near_clip;
-    Float m_far_clip;
-    Float m_focus_distance;
+    ScalarFloat m_near_clip;
+    ScalarFloat m_far_clip;
+    ScalarFloat m_focus_distance;
 };
 
 NAMESPACE_END(mitsuba)

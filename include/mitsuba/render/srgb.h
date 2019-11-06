@@ -5,9 +5,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-
-template <typename Vector3, typename Value>
-MTS_INLINE Value srgb_model_eval(const Vector3 &coeff_, const Value &wavelengths) {
+template <typename Spectrum, typename Array3f>
+MTS_INLINE Spectrum srgb_model_eval(const Array3f &coeff_,
+                                    const wavelength_t<Spectrum> &wavelengths) {
 #if RGB2SPEC_MAPPING == 2
     /// See rgb2spec.h for details on this mapping variant
     using Matrix3f = enoki::Matrix<float, 3>;
@@ -15,12 +15,12 @@ MTS_INLINE Value srgb_model_eval(const Vector3 &coeff_, const Value &wavelengths
                     -9.87989e-2,  1.76582e-1, -7.77831e-2,
                      2.41114e+1, -4.52511e+1,  2.21398e+1);
 
-    Vector3 coeff = M * coeff_;
+    Array3f coeff = M * coeff_;
 #else
-    Vector3 coeff = coeff_;
+    Array3f coeff = coeff_;
 #endif
 
-    Value v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+    Spectrum v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
 
     return select(
         enoki::isinf(coeff_.z()), fmadd(sign(coeff_.z()), .5f, .5f),
@@ -28,9 +28,10 @@ MTS_INLINE Value srgb_model_eval(const Vector3 &coeff_, const Value &wavelengths
     );
 }
 
-template <typename Vector3, typename Value = value_t<Vector3>>
-MTS_INLINE Value srgb_model_mean(const Vector3 &coeff_) {
-    using Vec = Array<Value, 16>;
+template <typename Array3f>
+MTS_INLINE value_t<Array3f> srgb_model_mean(const Array3f &coeff_) {
+    using Float = value_t<Array3f>;
+    using Vec = Array<Float, 16>;
 
 #if RGB2SPEC_MAPPING == 2
     /// See rgb2spec.h for details on this mapping variant
@@ -39,9 +40,9 @@ MTS_INLINE Value srgb_model_mean(const Vector3 &coeff_) {
                     -9.87989e-2,  1.76582e-1, -7.77831e-2,
                      2.41114e+1, -4.52511e+1,  2.21398e+1);
 
-    Vector3 coeff = M * coeff_;
+    Array3f coeff = M * coeff_;
 #else
-    Vector3 coeff = coeff_;
+    Array3f coeff = coeff_;
 #endif
 
     Vec lambda = linspace<Vec>(MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
@@ -51,24 +52,14 @@ MTS_INLINE Value srgb_model_mean(const Vector3 &coeff_) {
     return mean(result);
 }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-MTS_INLINE FloatD srgb_model_mean_d(const Vector3fD &coeff_) {
-    Throw("Not implemented: srgb_model_mean_d");
-    return zero<FloatD>(coeff_.size());
-}
-#endif
-
 /**
  * Look up the model coefficients for a sRGB color value
  * @param  c An sRGB color value where all components are in [0, 1].
  * @return   Coefficients for use with \ref srgb_model_eval
  */
-template <typename Color3f>
-extern MTS_EXPORT_RENDER Vector<value_t<Color3f>, 3> srgb_model_fetch(const Color3f &c);
-
+Vector<float, 3> srgb_model_fetch(const Color<float, 3> &);
 
 /// Sanity check: convert the coefficients back to sRGB
-template <typename Float>
-extern MTS_EXPORT_RENDER Color<Float, 3> srgb_model_eval_rgb(const Vector<Float, 3> &coeff);
+Color<float, 3> srgb_model_eval_rgb(const Vector<float, 3> &);
 
 NAMESPACE_END(mitsuba)
