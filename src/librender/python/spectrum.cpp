@@ -6,7 +6,7 @@ MTS_PY_EXPORT_VARIANTS(ContinuousSpectrum) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     MTS_PY_CLASS(ContinuousSpectrum, Object)
-        .def_static("D65", &ContinuousSpectrum::D65, "scale"_a = 1.f, "monochrome"_a = false)
+        .def_static("D65", &ContinuousSpectrum::D65, "scale"_a = 1.f)
         .def("mean", &ContinuousSpectrum::mean, D(ContinuousSpectrum, mean))
 
         .def("eval",

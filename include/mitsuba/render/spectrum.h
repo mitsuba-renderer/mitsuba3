@@ -129,7 +129,7 @@ public:
     /**
      * Convenience method returning the standard D65 illuminant.
      */
-    static ref<ContinuousSpectrum> D65(float scale = 1.f, bool monochrome = false);
+    static ref<ContinuousSpectrum> D65(ScalarFloat scale = 1.f);
 
 protected:
     virtual ~ContinuousSpectrum();
