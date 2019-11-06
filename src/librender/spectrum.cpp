@@ -29,7 +29,7 @@ Spectrum ContinuousSpectrum<Float, Spectrum>::pdf(const Wavelength &, Mask) cons
 }
 
 template <typename Float, typename Spectrum>
-Float ContinuousSpectrum<Float, Spectrum>::mean() const {
+scalar_t<Float> ContinuousSpectrum<Float, Spectrum>::mean() const {
     NotImplementedError("mean");
 }
 
