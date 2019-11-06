@@ -48,7 +48,7 @@ add_library(mitsuba-core-obj OBJECT
   qmc.cpp              ${INC_DIR}/qmc.h
                        ${INC_DIR}/random.h
   rfilter.cpp          ${INC_DIR}/rfilter.h
-  # spectrum.cpp         ${INC_DIR}/spectrum.h
+  spectrum.cpp         ${INC_DIR}/spectrum.h
                        ${INC_DIR}/spline.h
   stream.cpp           ${INC_DIR}/stream.h
   struct.cpp           ${INC_DIR}/struct.h

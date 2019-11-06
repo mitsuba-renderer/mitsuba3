@@ -5,6 +5,7 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 //! @{ \name CIE 1931 2 degree observer implementation
 // =======================================================================
+using Float = float;
 
 static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
     Float(0.000129900000), Float(0.000232100000), Float(0.000414900000), Float(0.000741600000),
