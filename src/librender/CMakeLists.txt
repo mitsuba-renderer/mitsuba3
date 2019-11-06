@@ -69,7 +69,7 @@ add_library(mitsuba-render-obj OBJECT
   # spectrum.cpp     ${INC_DIR}/spectrum.h
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
-  texture3d.cpp    ${INC_DIR}/texture3d.h
+#   texture3d.cpp    ${INC_DIR}/texture3d.h
   # ${LIBRENDER_EXTRA_SRC}
 )
 
