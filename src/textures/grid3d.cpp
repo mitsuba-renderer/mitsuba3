@@ -7,9 +7,9 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/volume_texture.h>
 #include <mitsuba/render/srgb.h>
-#include <mitsuba/render/texture3d.h>
-#include <mitsuba/render/volume_data.h>
+#include "volume_data.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -62,6 +62,14 @@ public:
 
     Spectrum eval(const Interaction3f &it, Mask active) const override {
         return eval_impl<false>(it, active);
+    }
+
+    Vector3f eval3(const Interaction3f & /*it*/, Mask  /*active*/) const override {
+        NotImplementedError("eval3");
+    }
+
+    Float eval1(const Interaction3f & /*it*/, Mask  /*active*/) const override {
+        NotImplementedError("eval1");
     }
 
     std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,

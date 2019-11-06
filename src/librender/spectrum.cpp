@@ -122,6 +122,11 @@ ref<ContinuousSpectrum> ContinuousSpectrum::D65(Float scale, bool monochrome) {
     return (ContinuousSpectrum *) (obj->expand()[0].get());
 }
 
+Texture3D::Texture3D(const Properties &props) {
+    m_world_to_local = props.transform("to_world", Transform4f()).inverse();
+    update_bbox();
+}
+
 //! @}
 // =======================================================================
 

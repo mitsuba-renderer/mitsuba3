@@ -46,6 +46,7 @@ add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/ior.h
   ${INC_DIR}/microfacet.h
   ${INC_DIR}/records.h
+  ${INC_DIR}/volume_texture.h
 
   # autodiff.cpp     ${INC_DIR}/autodiff.h
   bsdf.cpp         ${INC_DIR}/bsdf.h
@@ -69,7 +70,6 @@ add_library(mitsuba-render-obj OBJECT
   # spectrum.cpp     ${INC_DIR}/spectrum.h
   spiral.cpp       ${INC_DIR}/spiral.h
   # srgb.cpp         ${INC_DIR}/srgb.h
-  texture3d.cpp    ${INC_DIR}/texture3d.h
   # ${LIBRENDER_EXTRA_SRC}
 )
 
