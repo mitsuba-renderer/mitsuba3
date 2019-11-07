@@ -202,7 +202,6 @@ if (MSVC)
   endif()
 else()
   add_compile_options("-Wall" "-Wextra")
-  # TODO remove this!
   add_compile_options("-Wno-unused-local-typedefs")
   if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     # Quench inlining-related remarks
@@ -452,8 +451,7 @@ function(add_plugin)
   set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET ${TARGET}-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_target_properties(${TARGET} PROPERTIES PREFIX "")
-  # TODO(!): re-enable linking to core libraries
-  # target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render tbb)
+  target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render tbb)
   add_dist(plugins/${TARGET})
   set_target_properties(${TARGET} ${TARGET}-obj PROPERTIES FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET})
 endfunction(add_plugin)
