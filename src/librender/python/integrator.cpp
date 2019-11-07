@@ -5,7 +5,8 @@
 
 // TODO: move all signal-related mechanisms to libcore?
 #if defined(__APPLE__) || defined(__linux__)
-#  define MTS_HANDLE_SIGINT 1
+// TODO switch this back ON
+#  define MTS_HANDLE_SIGINT 0 // 1
 #else
 #  define MTS_HANDLE_SIGINT 0
 #endif
@@ -26,7 +27,10 @@ static void sigint_handler(int sig) {
 }
 #endif
 
-MTS_PY_EXPORT(Integrator) {
+MTS_PY_EXPORT_VARIANTS(Integrator) {
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
+
     /// Integrator (base class).
     MTS_PY_CLASS(Integrator, Object)
         .def("render",
@@ -50,34 +54,16 @@ MTS_PY_EXPORT(Integrator) {
              },
              D(Integrator, render), "scene"_a)
         .def_method(Integrator, cancel)
-        .def_method(Integrator, register_callback, "cb"_a, "period"_a)
-        .def_method(Integrator, remove_callback, "index"_a)
-        .def_method(Integrator, callback_count)
-        .def_method(Integrator, notify, "bitmap"_a, "extra"_a);
+        ;
 
-    /// SamplingIntegrator.
+    using SamplingIntegrator = SamplingIntegrator<Float, Spectrum>;
     MTS_PY_CLASS(SamplingIntegrator, Integrator)
-        .def("eval",
-             py::overload_cast<const RayDifferential3f &, RadianceSample3f &, bool>(
-                 &SamplingIntegrator::eval, py::const_),
-             D(SamplingIntegrator, eval), "ray"_a, "rs"_a, "unused"_a = true)
-#if 0
-         .def("eval",
-              enoki::vectorize_wrapper(
-                  py::overload_cast<const RayDifferential3fP &,
-                                    RadianceSample3fP &, MaskP>(
-                      &SamplingIntegrator::eval, py::const_)),
-              "ray"_a, "rs"_a, "active"_a = true)
-#endif
-        .def_method(SamplingIntegrator, should_stop);
+        .def("sample",
+             vectorize<Float>(&SamplingIntegrator::sample),
+             "scene"_a, "sampler"_a, "ray"_a, "active"_a = true, D(SamplingIntegrator, sample))
+        .def_method(SamplingIntegrator, should_stop)
+        ;
 
-    /// MonteCarloIntegrator.
+    using MonteCarloIntegrator = MonteCarloIntegrator<Float, Spectrum>;
     MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
-
-    /// PolarizedMonteCarloIntegrator.
-    MTS_PY_CLASS(PolarizedMonteCarloIntegrator, SamplingIntegrator)
-        .def("eval_pol",
-             py::overload_cast<const RayDifferential3f &, RadianceSample3f &>(
-                 &PolarizedMonteCarloIntegrator::eval_pol, py::const_),
-             D(PolarizedMonteCarloIntegrator, eval_pol), "ray"_a, "rs"_a);
 }

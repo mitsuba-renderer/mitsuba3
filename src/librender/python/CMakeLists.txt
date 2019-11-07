@@ -6,7 +6,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   film.cpp
   fresnel.cpp
   imageblock.cpp
-  # integrator.cpp
+  integrator.cpp
   interaction.cpp
   # main.cpp
   microfacet.cpp
