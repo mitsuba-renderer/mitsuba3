@@ -22,8 +22,12 @@ static void help(int thread_count) {
     std::cout << util::info_copyright() << std::endl;
     std::cout << util::info_features() << std::endl;
     std::cout << R"(
-Usage: mitsuba [options] <One or more scene XML files>
+Usage: mitsuba [options] <mode> <One or more scene XML files>
 
+<mode> must be one of:
+)"
+MTS_CONFIGURATIONS
+R"(
 Options:
 
    -h, --help
@@ -48,6 +52,44 @@ Options:
 )";
 }
 
+template <typename Float, typename Spectrum>
+bool render(Object *scene_, filesystem::path filename) {
+    auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(scene_);
+    if (!scene)
+        Throw("Could not cast to Scene<Float, Spectrum>: %s", scene_->to_string());
+
+    filename.replace_extension("exr");
+    scene->film()->set_destination_file(filename, 32 /*unused*/);
+
+    auto integrator = scene->integrator();
+    if (!integrator)
+        Throw("No integrator specified for scene: %s", scene->to_string());
+
+    bool success = integrator->render(scene);
+    if (success)
+        scene->film()->develop();
+    else
+        Log(Warn, "\U0000274C Rendering failed, result not saved.");
+    return success;
+}
+
+template <typename Float, typename Spectrum>
+void log_special_modes() {
+    Log(Info, "%s", util::info_build(__global_thread_count));
+    Log(Info, "%s", util::info_copyright());
+    Log(Info, "%s", util::info_features());
+
+    if constexpr (is_monochrome_v<Spectrum>)
+        Log(Info, "\U0001F39E Monochrome mode enabled.");
+
+    if constexpr (is_double_v<scalar_t<Float>>)
+        Log(Warn, "Double precision mode enabled.");
+
+#if !defined(NDEBUG)
+    Log(Warn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
+#endif
+}
+
 int main(int argc, char *argv[]) {
     Jit::static_initialization();
     Class::static_initialization();
@@ -64,10 +106,10 @@ int main(int argc, char *argv[]) {
     auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
     auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
     auto arg_define  = parser.add(StringVec { "-D", "--define" }, true);
-    auto arg_monochrome = parser.add(StringVec{ "-m", "--monochrome" }, false);
     auto arg_output = parser.add(StringVec{ "-o", "--output" }, true);
     auto arg_update = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_help = parser.add(StringVec { "-h", "--help" });
+    auto arg_mode = parser.add("", false);
     auto arg_extra = parser.add("", true);
     bool print_profile = false;
     xml::ParameterList params;
@@ -94,6 +136,7 @@ int main(int argc, char *argv[]) {
                                             value.substr(sep+1)));
             arg_define = arg_define->next();
         }
+        std::string mode = arg_mode->as_string();
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
         if (*arg_threads)
@@ -101,9 +144,6 @@ int main(int argc, char *argv[]) {
         if (__global_thread_count < 1)
             Throw("Thread count must be >= 1!");
         tbb::task_scheduler_init init((int) __global_thread_count);
-
-        // Monochrome mode
-        bool render_monochrome = (bool) *arg_monochrome;
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
@@ -115,20 +155,8 @@ int main(int argc, char *argv[]) {
         if (!*arg_extra || *arg_help) {
             help(__global_thread_count);
         } else {
-            Log(Info, "%s", util::info_build(__global_thread_count));
-            Log(Info, "%s", util::info_copyright());
-            Log(Info, "%s", util::info_features());
-
-            if (render_monochrome)
-                Log(Info, "\U0001F39E Monochrome mode enabled.");
-            #if defined(DOUBLE_PRECISION)
-                Log(Warn, "Renderer is compiled in double precision.");
-            #endif
+            MTS_ROUTE_MODE(mode, log_special_modes);
         }
-
-        #if !defined(NDEBUG)
-            Log(Warn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
-        #endif
 
         while (arg_extra && *arg_extra) {
             filesystem::path filename(arg_extra->as_string());
@@ -146,26 +174,11 @@ int main(int argc, char *argv[]) {
             }
 
             // Try and parse a scene from the passed file.
-            ref<Object> parsed = xml::load_file(arg_extra->as_string(), params,
-                    render_monochrome, *arg_update);
+            ref<Object> parsed =
+                xml::load_file(arg_extra->as_string(), mode, params, *arg_update);
 
-            auto *scene = dynamic_cast<Scene *>(parsed.get());
-            if (scene) {
-                filename.replace_extension("exr");
-                scene->film()->set_destination_file(filename, 32 /*unused*/);
-
-                auto integrator = scene->integrator();
-                if (!integrator)
-                    Throw("No integrator specified for scene: %s", scene->to_string());
-
-                bool success = integrator->render(scene);
-                if (success)
-                    scene->film()->develop();
-                else
-                    Log(Warn, "\U0000274C Rendering failed, result not saved.");
-                print_profile = true;
-            }
-
+            bool success = MTS_ROUTE_MODE(mode, render, parsed.get(), filename);
+            print_profile = print_profile || success;
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
