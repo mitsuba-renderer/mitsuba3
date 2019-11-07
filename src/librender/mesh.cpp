@@ -765,4 +765,5 @@ RTgeometrytriangles Mesh::optix_geometry(RTcontext context) {
 }
 #endif
 
+MTS_INSTANTIATE_OBJECT(Mesh)
 NAMESPACE_END(mitsuba)

@@ -59,9 +59,9 @@ MTS_INLINE value_t<Array3f> srgb_model_mean(const Array3f &coeff_) {
  * @param  c An sRGB color value where all components are in [0, 1].
  * @return   Coefficients for use with \ref srgb_model_eval
  */
-Vector<float, 3> srgb_model_fetch(const Color<float, 3> &);
+Array<float, 3> srgb_model_fetch(const Color<float, 3> &);
 
 /// Sanity check: convert the coefficients back to sRGB
-Color<float, 3> srgb_model_eval_rgb(const Vector<float, 3> &);
+Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &);
 
 NAMESPACE_END(mitsuba)

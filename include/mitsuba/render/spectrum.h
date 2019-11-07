@@ -77,7 +77,7 @@ public:
     virtual Spectrum eval(const SurfaceInteraction3f &si, Mask active = true) const;
 
     /// Evaluate this texture as a three-channel quantity with no color processing (e.g. normal map).
-    virtual Vector3f eval3(const SurfaceInteraction3f &si, Mask active = true) const;
+    virtual Vector<Float, 3> eval3(const SurfaceInteraction3f &si, Mask active = true) const;
 
     /// Evaluate this texture as a single-channel quantity.
     virtual Float eval1(const SurfaceInteraction3f &si, Mask active = true) const;

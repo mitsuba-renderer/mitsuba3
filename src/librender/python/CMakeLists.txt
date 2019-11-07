@@ -8,14 +8,14 @@ add_mitsuba_python_library(mitsuba_render_ext render
   imageblock.cpp
   integrator.cpp
   interaction.cpp
-  # main.cpp
+  main.cpp
   microfacet.cpp
   mueller.cpp
   records.cpp
   sampler.cpp
   # scene.cpp
   sensor.cpp
-  shape.cpp
+#   shape.cpp
   spectrum.cpp
   spiral.cpp
   srgb.cpp

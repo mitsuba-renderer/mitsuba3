@@ -40,10 +40,20 @@ Spectrum ContinuousSpectrum<Float, Spectrum>::eval(const SurfaceInteraction3f &s
 }
 
 template <typename Float, typename Spectrum>
-std::pair<typename ContinuousSpectrum<Float, Spectrum>::Wavelength, Spectrum>
-ContinuousSpectrum<Float, Spectrum>::sample(const SurfaceInteraction3f &, const Spectrum &sample_,
-                                            Mask active) const {
-    return sample(sample_, active);
+Vector<Float, 3> ContinuousSpectrum<Float, Spectrum>::eval3(const SurfaceInteraction3f &, Mask) const {
+    NotImplementedError("eval3");
+}
+
+template <typename Float, typename Spectrum>
+Float ContinuousSpectrum<Float, Spectrum>::eval1(const SurfaceInteraction3f &, Mask) const {
+    NotImplementedError("eval1");
+}
+
+template <typename Float, typename Spectrum>
+std::pair<typename ContinuousSpectrum<Float, Spectrum>::Wavelength,
+            Spectrum> ContinuousSpectrum<Float, Spectrum>::sample(const SurfaceInteraction3f &,
+                                                                  const Spectrum &, Mask) const {
+    NotImplementedError("sample");
 }
 
 template <typename Float, typename Spectrum>
@@ -78,4 +88,5 @@ Texture3D<Float, Spectrum>::Texture3D(const Properties &props) {
 //! @}
 // =======================================================================
 
+MTS_INSTANTIATE_OBJECT(ContinuousSpectrum)
 NAMESPACE_END(mitsuba)

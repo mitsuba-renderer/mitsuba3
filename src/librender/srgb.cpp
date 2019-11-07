@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
 static RGB2Spec *model = nullptr;
 static tbb::spin_mutex model_mutex;
 
-Vector<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
-    using Vector3f = Vector<float, 3>;
+Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
+    using Array3f = Array<float, 3>;
 
     if (unlikely(model == nullptr)) {
         tbb::spin_mutex::scoped_lock sl(model_mutex);
@@ -27,20 +27,20 @@ Vector<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
         }
     }
 
-    if (c == Vector3f(0.f))
-        return Vector3f(0.f, 0.f, -math::Infinity<float>);
-    else if (c == Vector3f(1.f))
-        return Vector3f(0.f, 0.f,  math::Infinity<float>);
+    if (c == Array3f(0.f))
+        return Array3f(0.f, 0.f, -math::Infinity<float>);
+    else if (c == Array3f(1.f))
+        return Array3f(0.f, 0.f,  math::Infinity<float>);
 
     float rgb[3] = { (float) c.r(), (float) c.g(), (float) c.b() };
     float out[3];
     rgb2spec_fetch(model, rgb, out);
 
-    return Vector3f(out[0], out[1], out[2]);
+    return Array3f(out[0], out[1], out[2]);
 }
 
 Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
-    using Vector3f = Vector<float, 3>;
+    using Array3f = Array<float, 3>;
     using Color3f = Color<float, 3>;
     using Matrix3f = Matrix<float, 3>;
     using ContinuousSpectrum = ContinuousSpectrum<float, Color3f>;
@@ -56,7 +56,7 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
     const size_t n_samples = ((MTS_CIE_SAMPLES - 1) * 3 + 1);
     set_label(coeff, "coeff");
 
-    Vector3f accum = 0.f;
+    Array3f accum = 0.f;
     float h = (MTS_CIE_MAX - MTS_CIE_MIN) / (n_samples - 1);
     for (size_t i = 0; i < n_samples; ++i) {
         float lambda = MTS_CIE_MIN + i * h;
@@ -69,7 +69,7 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
         else
             weight *= 3.f;
 
-        Vector3f weight_v = weight * d65->eval(Color3f(lambda))[0] * cie1931_xyz(lambda);
+        Array3f weight_v = weight * d65->eval(Color3f(lambda))[0] * cie1931_xyz(lambda);
         float lambda_v(lambda);
 
         float model_eval =
