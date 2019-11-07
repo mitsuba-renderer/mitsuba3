@@ -21,8 +21,8 @@ NAMESPACE_BEGIN(mueller)
 * \param value
 *   The value of the (0, 0) element
 */
-template <typename Value> MuellerMatrix<Value> depolarizer(Value value = 1.f) {
-    MuellerMatrix<Value> result = zero<MuellerMatrix<Value>>();
+template <typename Float> MuellerMatrix<Float> depolarizer(Float value = 1.f) {
+    MuellerMatrix<Float> result = zero<MuellerMatrix<Float>>();
     result(0, 0) = value;
     return result;
 }
@@ -33,7 +33,7 @@ template <typename Value> MuellerMatrix<Value> depolarizer(Value value = 1.f) {
 * \param value
 *     The amount of absorption.
 */
-template <typename Value> MuellerMatrix<Value> absorber(Value value) {
+template <typename Float> MuellerMatrix<Float> absorber(Float value) {
     return value;
 }
 
@@ -45,9 +45,9 @@ template <typename Value> MuellerMatrix<Value> absorber(Value value) {
 *     The amount of attenuation of the transmitted component (1 corresponds
 *     to an ideal polarizer).
 */
-template <typename Value> MuellerMatrix<Value> linear_polarizer(Value value = 1.f) {
-    Value a = value * .5f;
-    return MuellerMatrix<Value>(
+template <typename Float> MuellerMatrix<Float> linear_polarizer(Float value = 1.f) {
+    Float a = value * .5f;
+    return MuellerMatrix<Float>(
         a, a, 0, 0,
         a, a, 0, 0,
         0, 0, 0, 0,
@@ -66,10 +66,10 @@ template <typename Value> MuellerMatrix<Value> linear_polarizer(Value value = 1.
  *     The phase difference between the fast and slow axis
  *
  */
-template <typename Value> MuellerMatrix<Value> linear_retarder(Value phase) {
-    Value s, c;
+template <typename Float> MuellerMatrix<Float> linear_retarder(Float phase) {
+    Float s, c;
     std::tie(s, c) = sincos(phase);
-    return MuellerMatrix<Value>(
+    return MuellerMatrix<Float>(
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, c, -s,
@@ -82,12 +82,12 @@ template <typename Value> MuellerMatrix<Value> linear_retarder(Value phase) {
 * attenuates the electric field components at 0 and 90 degrees by
 * 'x' and 'y', * respectively.
 */
-template <typename Value> MuellerMatrix<Value> diattenuator(Value x, Value y) {
-    Value a = .5f * (x + y),
+template <typename Float> MuellerMatrix<Float> diattenuator(Float x, Float y) {
+    Float a = .5f * (x + y),
           b = .5f * (x - y),
           c = sqrt(x * y);
 
-    return MuellerMatrix<Value>(
+    return MuellerMatrix<Float>(
         a, b, 0, 0,
         b, a, 0, 0,
         0, 0, c, 0,
@@ -99,9 +99,9 @@ template <typename Value> MuellerMatrix<Value> diattenuator(Value x, Value y) {
   * \brief Constructs the Mueller matrix of an ideal rotator, which performs a
   * counter-clockwise rotation of the electric field by 'theta' radians.
   */
-template <typename Value> MuellerMatrix<Value> rotator(Value theta) {
+template <typename Float> MuellerMatrix<Float> rotator(Float theta) {
     auto [s, c] = sincos(2.f * theta);
-    return MuellerMatrix<Value>(
+    return MuellerMatrix<Float>(
         1, 0, 0, 0,
         0, c, -s, 0,
         0, s, c, 0,
@@ -113,10 +113,10 @@ template <typename Value> MuellerMatrix<Value> rotator(Value theta) {
   * \brief Applies a counter-clockwise rotation to the mueller matrix
   * of a given element.
   */
-template <typename Value>
-MuellerMatrix<Value> rotated_element(Value theta,
-                                     const MuellerMatrix<Value> &M) {
-    MuellerMatrix<Value> R = rotator(theta), Ri = transpose(R);
+template <typename Float>
+MuellerMatrix<Float> rotated_element(Float theta,
+                                     const MuellerMatrix<Float> &M) {
+    MuellerMatrix<Float> R = rotator(theta), Ri = transpose(R);
     return R * M * Ri;
 }
 
@@ -124,9 +124,9 @@ MuellerMatrix<Value> rotated_element(Value theta,
  * \brief Reverse direction of propagation of the electric field. Also used for
  * reflecting reference frames.
  */
-template <typename Value>
-MuellerMatrix<Value> reverse(const MuellerMatrix<Value> &M) {
-    return MuellerMatrix<Value>(
+template <typename Float>
+MuellerMatrix<Float> reverse(const MuellerMatrix<Float> &M) {
+    return MuellerMatrix<Float>(
         1, 0,  0,  0,
         0, 1,  0,  0,
         0, 0, -1,  0,
@@ -146,17 +146,17 @@ MuellerMatrix<Value> reverse(const MuellerMatrix<Value> &M) {
  *      case, a value greater than 1.0 case means that the surface normal
  *      points into the region of lower density.
  */
-template <typename Value, typename Eta>
-MuellerMatrix<Value> specular_reflection(Value cos_theta_i, Eta eta) {
-    Complex<Value> a_s, a_p;
+template <typename Float, typename Eta>
+MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
+    Complex<Float> a_s, a_p;
 
     std::tie(a_s, a_p, std::ignore, std::ignore, std::ignore) =
         fresnel_polarized(cos_theta_i, eta);
 
-    Value sin_delta, cos_delta;
+    Float sin_delta, cos_delta;
     std::tie(sin_delta, cos_delta) = sincos_arg_diff(a_s, a_p);
 
-    Value r_s = abs(sqr(a_s)),
+    Float r_s = abs(sqr(a_s)),
           r_p = abs(sqr(a_p)),
           a = .5f * (r_s + r_p),
           b = .5f * (r_s - r_p),
@@ -165,7 +165,7 @@ MuellerMatrix<Value> specular_reflection(Value cos_theta_i, Eta eta) {
     masked(sin_delta, eq(c, 0.f)) = 0.f; // avoid issues with NaNs
     masked(cos_delta, eq(c, 0.f)) = 0.f;
 
-    return MuellerMatrix<Value>(
+    return MuellerMatrix<Float>(
         a, b, 0, 0,
         b, a, 0, 0,
         0, 0,  c * cos_delta, c * sin_delta,
@@ -185,29 +185,29 @@ MuellerMatrix<Value> specular_reflection(Value cos_theta_i, Eta eta) {
  *      greater than 1.0 in the real case means that the surface normal is
  *      pointing into the region of lower density.
  */
-template <typename Value>
-MuellerMatrix<Value> specular_transmission(Value cos_theta_i, Value eta) {
-    Complex<Value> a_s, a_p;
-    Value cos_theta_t, eta_it, eta_ti;
+template <typename Float>
+MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
+    Complex<Float> a_s, a_p;
+    Float cos_theta_t, eta_it, eta_ti;
 
     std::tie(a_s, a_p, cos_theta_t, eta_it, eta_ti) =
         fresnel_polarized(cos_theta_i, eta);
 
     // Unit conversion factor
-    Value factor = -eta_it * select(abs(cos_theta_i) > 1e-8f,
+    Float factor = -eta_it * select(abs(cos_theta_i) > 1e-8f,
                                     cos_theta_t / cos_theta_i, 0.f);
 
     // Compute transmission amplitudes
-    Value a_s_r = real(a_s) + 1.f,
+    Float a_s_r = real(a_s) + 1.f,
           a_p_r = (1.f - real(a_p)) * eta_ti;
 
-    Value t_s = sqr(a_s_r),
+    Float t_s = sqr(a_s_r),
           t_p = sqr(a_p_r),
           a = .5f * factor * (t_s + t_p),
           b = .5f * factor * (t_s - t_p),
           c = factor * sqrt(t_s * t_p);
 
-    return MuellerMatrix<Value>(
+    return MuellerMatrix<Float>(
         a, b, 0, 0,
         b, a, 0, 0,
         0, 0, c, 0,
@@ -249,12 +249,12 @@ Vector3 stokes_basis(const Vector3 &w) {
  *      Mueller matrix that performs the desired change of reference frames.
  */
 template <typename Vector3,
-          typename Value = value_t<Vector3>,
-          typename MuellerMatrix = MuellerMatrix<Value>>
+          typename Float = value_t<Vector3>,
+          typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
                                   const Vector3 &basis_current,
                                   const Vector3 &basis_target) {
-    Value theta = unit_angle(normalize(basis_current),
+    Float theta = unit_angle(normalize(basis_current),
                              normalize(basis_target));
 
     masked(theta, dot(forward, cross(basis_current, basis_target)) < 0) *= -1.f;
@@ -290,8 +290,8 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
  *      New Mueller matrix that operates from \c in_basis_target to \c out_basis_target.
  */
 template <typename Vector3,
-          typename Value = value_t<Vector3>,
-          typename MuellerMatrix = MuellerMatrix<Value>>
+          typename Float = value_t<Vector3>,
+          typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
                                    const Vector3 &in_forward,
                                    const Vector3 &in_basis_current,
@@ -324,8 +324,8 @@ MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
  *      New Mueller matrix that operates from \c basis_target to \c basis_target.
  */
 template <typename Vector3,
-          typename Value = value_t<Vector3>,
-          typename MuellerMatrix = MuellerMatrix<Value>>
+          typename Float = value_t<Vector3>,
+          typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_mueller_basis_collinear(const MuellerMatrix &M,
                                              const Vector3 &forward,
                                              const Vector3 &basis_current,

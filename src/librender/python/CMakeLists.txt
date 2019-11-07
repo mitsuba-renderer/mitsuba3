@@ -10,7 +10,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   interaction.cpp
   # main.cpp
   microfacet.cpp
-  # mueller.cpp
+  mueller.cpp
   records.cpp
   sampler.cpp
   # scene.cpp
