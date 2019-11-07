@@ -451,12 +451,4 @@ ref<Object> Properties::find_object(const std::string &name) const
     return it->second.data;
 }
 
-void Properties::flag_as_queried(const std::string &name) const
-{
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        Throw("Property \"%s\" has not been specified!", name);
-    it->second.queried = true;
-}
-
 NAMESPACE_END(mitsuba)

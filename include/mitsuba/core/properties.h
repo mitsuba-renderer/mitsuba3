@@ -287,7 +287,7 @@ public:  // Type-specific getters and setters ----------------------------------
         if (!object->class_()->derives_from(expected))
             Throw("The property \"%s\" has the wrong type (expected "
                 " <spectrum>).", name);
-        flag_as_queried(name);
+        mark_queried(name);
         return (ContinuousSpectrum *) object.get();
     }
 
@@ -304,7 +304,7 @@ public:  // Type-specific getters and setters ----------------------------------
         if (!object->class_()->derives_from(expected))
             Throw("The property \"%s\" has the wrong type (expected "
                 " <spectrum>).", name);
-        flag_as_queried(name);
+        mark_queried(name);
         return (ContinuousSpectrum *) object.get();
     }
 
@@ -323,7 +323,7 @@ public:  // Type-specific getters and setters ----------------------------------
         if (!object->class_()->derives_from(expected))
             Throw("The property \"%s\" has the wrong type (expected "
                 " <spectrum>).", name);
-        flag_as_queried(name);
+        mark_queried(name);
         return (ContinuousSpectrum *) object.get();
     }
 
@@ -337,7 +337,7 @@ public:  // Type-specific getters and setters ----------------------------------
         if (!object->class_()->derives_from(expected))
             Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
                 name);
-        flag_as_queried(name);
+        mark_queried(name);
         return (Texture3D *) object.get();
     }
 
@@ -351,7 +351,7 @@ public:  // Type-specific getters and setters ----------------------------------
         if (!object->class_()->derives_from(expected))
             Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
                 name);
-        flag_as_queried(name);
+        mark_queried(name);
         return (Texture3D *) object.get();
     }
 
@@ -371,14 +371,12 @@ public:  // Type-specific getters and setters ----------------------------------
         if (!object->class_()->derives_from(expected))
             Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
                 name);
-        flag_as_queried(name);
+        mark_queried(name);
         return (Texture3D *) object.get();
     }
 private:
     // Return a reference to an object for a specific name (return null ref if doesn't exist)
     ref<Object> find_object(const std::string &name) const;
-    // Set the entry for a specific name as queried
-    void flag_as_queried(const std::string &name) const;
     struct PropertiesPrivate;
     std::unique_ptr<PropertiesPrivate> d;
 };

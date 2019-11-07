@@ -33,6 +33,9 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
+using Float = float;
+MTS_IMPORT_CORE_TYPES()
+
 /* Set of supported XML tags */
 enum ETag {
     EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ERGB,
@@ -684,10 +687,6 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                     detail::stof(tokens[1]),
                                     detail::stof(tokens[2]));
 
-                        // Monochrome mode: replace by luminance
-                        if (ctx.monochrome)
-                            col = luminance(col);
-
                         props.set_color(node.attribute("name").value(), col);
                     } catch (...) {
                         src.throw_error(node, "could not parse color \"%s\"", node.attribute("value").value());
@@ -720,21 +719,9 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     if (!within_emitter && any(col < 0 || col > 1))
                         src.throw_error(node, "invalid RGB reflectance value, must be in the range [0, 1]!");
 
-                    if (!ctx.monochrome) {
-                        ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("spectrum", ctx.variant));
-                        props.set_object(node.attribute("name").value(), obj);
-                    } else {
-                        // Monochrome mode: replace by a uniform spectrum
-                        Float lum = luminance(props2.color("color"));
-                        // if (within_emitter)
-                        //     lum /= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
-                        props2 = Properties("uniform");
-                        props2.set_float("value", lum);
-                        auto obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("spectrum", ctx.variant));
-                        props.set_object(node.attribute("name").value(), obj);
-                    }
+                    ref<Object> obj = PluginManager::instance()->create_object(
+                        props2, Class::for_name("spectrum", ctx.variant));
+                    props.set_object(node.attribute("name").value(), obj);
                 }
                 break;
 
@@ -748,15 +735,6 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             props2.set_float("value", detail::stof(tokens[0]));
                         } catch (...) {
                             src.throw_error(node, "could not parse constant spectrum \"%s\"", tokens[0]);
-                        }
-
-                        // Monochrome mode: replace by a uniform spectrum.
-                        if (ctx.monochrome) {
-                            props2.set_plugin_name("uniform");
-                            props2.set_float("value",
-                                             props2.float_("value") /
-                                                 (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN),
-                                             false);
                         }
 
                         ref<Object> obj = PluginManager::instance()->create_object(
@@ -807,7 +785,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                 src.throw_error(node, "wavelengths must be specified in increasing order");
                             if (n == 2)
                                 interval = distance;
-                            else if ((distance - interval) > math::Epsilon)
+                            else if ((distance - interval) > math::Epsilon<Float>)
                                 is_regular = false;
                         }
 
@@ -822,33 +800,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         ref<Object> obj = PluginManager::instance()->create_object(
                             props2, Class::for_name("spectrum", ctx.variant));
 
-                        if (!ctx.monochrome) {
-                            props.set_object(node.attribute("name").value(), obj);
-                        } else {
-                            /* Monochrome mode: replace by the equivalent
-                               uniform spectrum by pre-integrating against the
-                               CIE Y matching curve. */
-                            auto *spectrum = (ContinuousSpectrum *) obj.get();
-                            Float average  = 0.f;
-
-                            for (Spectrumf wav = MTS_WAVELENGTH_MIN; all(wav <= MTS_WAVELENGTH_MAX);
-                                 wav += 1.f) {
-                                Spectrumf Yw = cie1931_y(wav);
-                                average += (Yw * spectrum->eval(wav)).x();
-                            }
-                            if (within_emitter)
-                                average /= MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN;
-                            else
-                                /* Divide by integral of the CIE y matching
-                                 * curve */
-                                average *= 0.0093583f;
-
-                            props2 = Properties("uniform");
-                            props2.set_float("value", average);
-                            obj = PluginManager::instance()->create_object(
-                                props2, Class::for_name("spectrum", ctx.variant));
-                            props.set_object(node.attribute("name").value(), obj);
-                        }
+                        props.set_object(node.attribute("name").value(), obj);
                     }
                 }
                 break;
