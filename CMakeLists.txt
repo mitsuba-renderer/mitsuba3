@@ -517,6 +517,7 @@ add_file(data/srgb.coeff ${CMAKE_BINARY_DIR}/ext_build/rgb2spec/srgb.coeff rgb2s
 add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})
 set_property(TARGET dist-copy PROPERTY FOLDER misc)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 find_package(Sphinx)
 if (Sphinx_FOUND)
   set(SPHINX_INPUT_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/docs")
