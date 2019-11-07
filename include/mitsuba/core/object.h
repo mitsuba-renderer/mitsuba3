@@ -100,7 +100,9 @@ protected:
 
 private:
     mutable std::atomic<int> m_ref_count { 0 };
-    static Class *m_class;
+    inline static const Class *m_class =
+        new Class("Object", "", "", ::mitsuba::detail::get_construct_functor<Object>(),
+                  ::mitsuba::detail::get_unserialize_functor<Object>());
 };
 
 /**

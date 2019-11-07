@@ -16,6 +16,18 @@ void Object::dec_ref(bool dealloc) const noexcept {
     }
 }
 
+std::vector<ref<Object>> Object::expand() const {
+    return { };
+}
+
+std::vector<ref<Object>> Object::children() {
+    return { };
+}
+
+const Class *Object::class_() const {
+    return m_class;
+}
+
 std::string Object::id() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << (void *) this << "]";
@@ -24,14 +36,6 @@ std::string Object::id() const {
 
 std::string Object::to_string() const {
     return id();
-}
-
-std::vector<ref<Object>> Object::expand() const {
-    return { };
-}
-
-std::vector<ref<Object>> Object::children() {
-    return { };
 }
 
 Object::~Object() { }
