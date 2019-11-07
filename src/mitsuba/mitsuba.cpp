@@ -103,15 +103,15 @@ int main(int argc, char *argv[]) {
     // librender_nop();
 
     ArgParser parser;
-    using StringVec = std::vector<std::string>;
-    auto arg_threads = parser.add(StringVec { "-t", "--threads" }, true);
-    auto arg_verbose = parser.add(StringVec { "-v", "--verbose" }, false);
-    auto arg_define  = parser.add(StringVec { "-D", "--define" }, true);
-    auto arg_output = parser.add(StringVec{ "-o", "--output" }, true);
-    auto arg_update = parser.add(StringVec{ "-u", "--update" }, false);
-    auto arg_help = parser.add(StringVec { "-h", "--help" });
-    auto arg_mode = parser.add("", false);
-    auto arg_extra = parser.add("", true);
+    using StringVec    = std::vector<std::string>;
+    auto arg_threads   = parser.add(StringVec{ "-t", "--threads" }, true);
+    auto arg_verbose   = parser.add(StringVec{ "-v", "--verbose" }, false);
+    auto arg_define    = parser.add(StringVec{ "-D", "--define" }, true);
+    auto arg_output    = parser.add(StringVec{ "-o", "--output" }, true);
+    auto arg_update    = parser.add(StringVec{ "-u", "--update" }, false);
+    auto arg_help      = parser.add(StringVec{ "-h", "--help" });
+    auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
+    auto arg_extra     = parser.add("", true);
     bool print_profile = false;
     xml::ParameterList params;
     std::string error_msg;
