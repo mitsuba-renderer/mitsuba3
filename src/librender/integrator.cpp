@@ -192,6 +192,14 @@ void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene
     }
 }
 
+template <typename Float, typename Spectrum>
+std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>
+SamplingIntegrator<Float, Spectrum>::sample(const Scene * /*scene*/, Sampler * /*sampler*/,
+                                            const RayDifferential3f & /*ray*/,
+                                            Mask /*active*/) const {
+    NotImplementedError("sample");
+}
+
 // -----------------------------------------------------------------------------
 
 template <typename Float, typename Spectrum>

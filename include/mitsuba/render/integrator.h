@@ -63,7 +63,7 @@ protected:
  * capable of computing samples of the scene's radiance function.
  */
 template <typename Float, typename Spectrum>
-class SamplingIntegrator : public Integrator<Float, Spectrum> {
+class MTS_EXPORT_RENDER SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SamplingIntegrator, Integrator)
     MTS_IMPORT_TYPES()
@@ -158,7 +158,7 @@ protected:
  * transfer equation).
  */
 template <typename Float, typename Spectrum>
-class MonteCarloIntegrator : public SamplingIntegrator<Float, Spectrum> {
+class MTS_EXPORT_RENDER MonteCarloIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
     MTS_USING_BASE(SamplingIntegrator)
