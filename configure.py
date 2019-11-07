@@ -15,7 +15,8 @@ for name, config in configurations.items():
                         '"enabled", "float", and "spectrum" fields!' % name)
     if not config['enabled']:
         continue
-    enabled.append((name, config['float'], config['spectrum']))
+    spectrum = config['spectrum'].replace('Float', config['float'])
+    enabled.append((name, config['float'], spectrum))
 
 if len(enabled) == 0:
     raise Exception("There must be at least one enabled build configuration!")
@@ -35,13 +36,11 @@ with open(fname, 'w') as f:
 
     w('#define MTS_INSTANTIATE_OBJECT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        spectrum = spectrum.replace('Float', float_)
         w('    template class MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
     w('#define MTS_INSTANTIATE_STRUCT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        spectrum = spectrum.replace('Float', float_)
         w('    template struct MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
@@ -57,7 +56,6 @@ with open(fname, 'w') as f:
     w('')
     w('    MTS_PY_EXPORT(name) {')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        spectrum = spectrum.replace('Float', float_)
         w('        instantiate_##name<%s, %s>(' % (float_, spectrum))
         w('            m.def_submodule("%s"));' % (name))
     w('    }')
@@ -65,11 +63,22 @@ with open(fname, 'w') as f:
     w('    template <typename Float, typename Spectrum>')
     w('    void instantiate_##name(py::module m)')
     f.write('\n\n')
+
+    w('#define MTS_ROUTE_MODE(mode, function, ...)')
+    w('    [&]() {')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        iff = 'if' if index == 0 else 'else if'
+        w('        %s (mode == "%s")' % (iff, name))
+        w('            return function<%s, %s>(__VA_ARGS__);' % (float_, spectrum))
+    w('        else')
+    w('            Throw("Unsupported mode: %s", mode);')
+    w('    }()')
+    f.write('\n\n')
+
     f.write('NAMESPACE_BEGIN(mitsuba)\n')
     f.write('NAMESPACE_BEGIN(detail)\n')
     f.write('template <typename Float, typename Spectrum_> constexpr const char *get_variant() {\n')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        spectrum = spectrum.replace('Float', float_)
         f.write('    %sif constexpr (std::is_same_v<Float, %s> && std::is_same_v<Spectrum_, %s>)\n' % ('else ' if index > 0 else '', float_, spectrum))
         f.write('        return "%s";\n' % name)
     f.write('    else\n')
