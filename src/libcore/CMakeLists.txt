@@ -54,7 +54,7 @@ add_library(mitsuba-core-obj OBJECT
   struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
   tls.cpp              ${INC_DIR}/tls.h
-                       ${INC_DIR}/transform.h
+  transform.cpp        ${INC_DIR}/transform.h
   util.cpp             ${INC_DIR}/util.h
                        ${INC_DIR}/vector.h
                        ${INC_DIR}/warp.h

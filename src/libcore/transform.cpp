@@ -44,7 +44,8 @@ bool AnimatedTransform::has_scale() const {
     return hsum_nested(delta) / m_keyframes.size() > 1e-3f;
 }
 
-Transform4f MTS_INLINE AnimatedTransform::eval(Float time, mask_t<Float> active) const {
+typename AnimatedTransform::Transform4f
+AnimatedTransform::eval(Float time, Mask active) const {
 
     /* Compute constants describing the layout of the 'Keyframe' data structure */
     constexpr size_t Stride      = sizeof(Keyframe);
@@ -61,7 +62,7 @@ Transform4f MTS_INLINE AnimatedTransform::eval(Float time, mask_t<Float> active)
     /* Look up the interval containing 'time' */
     Index idx0 = math::find_interval(
         (uint32_t) size(),
-        [&](Index idx, mask_t<Float> active) {
+        [&](Index idx, Mask active) {
             constexpr size_t Stride_ = sizeof(Keyframe); // MSVC: have to redeclare constexpr variable in lambda scope :(
             return gather<Float, Stride_>(m_keyframes.data(), idx, active) <= time;
         },
@@ -89,13 +90,13 @@ Transform4f MTS_INLINE AnimatedTransform::eval(Float time, mask_t<Float> active)
              trans1 = gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx1, active),
              trans = trans0 * (1 - t) + trans1 * t;
 
-    return Transform<Vector<Float, 4>>(
+    return Transform4f(
         enoki::transform_compose(scale, quat, trans),
         enoki::transform_compose_inverse(scale, quat, trans)
     );
 }
 
-BoundingBox3f AnimatedTransform::translation_bounds() const {
+typename AnimatedTransform::BoundingBox3f AnimatedTransform::translation_bounds() const {
     if (m_keyframes.empty()) {
         auto p = m_transform * Point3f(0.0f);
         return BoundingBox3f(p, p);
@@ -130,5 +131,4 @@ std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t) {
     return os;
 }
 
-MTS_IMPLEMENT_CLASS(AnimatedTransform, Object)
 NAMESPACE_END(mitsuba)
