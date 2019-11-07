@@ -13,37 +13,32 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spectrum.h>
 
-#define PY_CAST(Name) {                                                        \
-        Name *temp = dynamic_cast<Name *>(o);                                  \
-        if (temp)                                                              \
-            return py::cast(temp);                                             \
-    }
 
 py::object py_cast(Object *o) {
     // Try casting, starting from the most precise types
-    PY_CAST(Scene);
-    PY_CAST(Mesh);
-    PY_CAST(Shape);
-    PY_CAST(ContinuousSpectrum);
-    PY_CAST(Texture3D);
-    PY_CAST(ReconstructionFilter);
+    PY_CAST_VARIANTS(Scene);
+    PY_CAST_VARIANTS(Mesh);
+    PY_CAST_VARIANTS(Shape);
+    PY_CAST_VARIANTS(ContinuousSpectrum);
+    PY_CAST_VARIANTS(Texture3D);
+    PY_CAST_VARIANTS(ReconstructionFilter);
 
-    PY_CAST(ProjectiveCamera);
-    PY_CAST(Sensor);
+    PY_CAST_VARIANTS(ProjectiveCamera);
+    PY_CAST_VARIANTS(Sensor);
 
-    PY_CAST(Emitter);
-    PY_CAST(Endpoint);
+    PY_CAST_VARIANTS(Emitter);
+    PY_CAST_VARIANTS(Endpoint);
 
-    PY_CAST(BSDF);
+    PY_CAST_VARIANTS(BSDF);
 
-    PY_CAST(ImageBlock);
-    PY_CAST(Film);
+    PY_CAST_VARIANTS(ImageBlock);
+    PY_CAST_VARIANTS(Film);
 
-    PY_CAST(MonteCarloIntegrator);
-    PY_CAST(SamplingIntegrator);
-    PY_CAST(Integrator);
+    PY_CAST_VARIANTS(MonteCarloIntegrator);
+    PY_CAST_VARIANTS(SamplingIntegrator);
+    PY_CAST_VARIANTS(Integrator);
 
-    PY_CAST(Sampler);
+    PY_CAST_VARIANTS(Sampler);
 
     Log(Warn, "Unable to cast object pointer. Is your type registered in py_cast()?");
     return py::none();

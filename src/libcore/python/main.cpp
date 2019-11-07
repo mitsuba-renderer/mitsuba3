@@ -88,12 +88,13 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     // Import submodules of `mitsuba.core`
     py::module m = py::module::import("mitsuba.core");
 
-#if defined(SINGLE_PRECISION)
-    m.attr("float_dtype") = py::dtype("f");
-#else
-    m.attr("float_dtype")   = py::dtype("d");
-#endif
-    m.attr("PacketSize") = py::cast(PacketSize);
+// TODO should add this for all the different variants
+// #if defined(SINGLE_PRECISION)
+//     m.attr("float_dtype") = py::dtype("f");
+// #else
+//     m.attr("float_dtype")   = py::dtype("d");
+// #endif
+//     m.attr("PacketSize") = py::cast(PacketSize);
 
     Jit::static_initialization();
     Class::static_initialization();

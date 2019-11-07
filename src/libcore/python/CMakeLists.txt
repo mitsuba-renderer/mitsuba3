@@ -1,5 +1,5 @@
 add_mitsuba_python_library(mitsuba_core_ext core
-  # main.cpp
+  main.cpp
 
   # libcore
   appender.cpp
@@ -8,7 +8,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   bbox.cpp
   bitmap.cpp
   bsphere.cpp
-  # cast.cpp
+  cast.cpp
   ddistr.cpp
   autodiff.cpp
   filesystem.cpp

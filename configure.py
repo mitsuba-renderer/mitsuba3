@@ -75,6 +75,13 @@ with open(fname, 'w') as f:
     w('    }()')
     f.write('\n\n')
 
+    w('#define PY_CAST_VARIANTS(Name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        spectrum = spectrum.replace('Float', float_)
+        w('    if (auto tmp = dynamic_cast<Name<%s, %s> *>(o))' % (float_, spectrum))
+        w('        return py::cast(tmp);')
+    f.write('\n\n')
+
     f.write('NAMESPACE_BEGIN(mitsuba)\n')
     f.write('NAMESPACE_BEGIN(detail)\n')
     f.write('template <typename Float, typename Spectrum_> constexpr const char *get_variant() {\n')

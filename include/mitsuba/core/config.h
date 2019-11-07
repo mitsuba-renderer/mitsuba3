@@ -63,6 +63,17 @@
     }()                                                                     \
 
 
+#define PY_CAST_VARIANTS(Name)                                              \
+    if (auto tmp = dynamic_cast<Name<float, Color<float, 1>> *>(o))         \
+        return py::cast(tmp);                                               \
+    if (auto tmp = dynamic_cast<Name<float, Color<float, 3>> *>(o))         \
+        return py::cast(tmp);                                               \
+    if (auto tmp = dynamic_cast<Name<float, Spectrum<float, 4>> *>(o))      \
+        return py::cast(tmp);                                               \
+    if (auto tmp = dynamic_cast<Name<float, MuellerMatrix<Spectrum<float, 4>>> *>(o)) \
+        return py::cast(tmp);                                               \
+
+
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(detail)
 template <typename Float, typename Spectrum_> constexpr const char *get_variant() {
