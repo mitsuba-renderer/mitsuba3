@@ -20,7 +20,7 @@ add_mitsuba_python_library(mitsuba_core_ext core
   mmap.cpp
   object.cpp
   progress.cpp
-#   properties.cpp
+  properties.cpp
   qmc.cpp
   quad.cpp
   random.cpp

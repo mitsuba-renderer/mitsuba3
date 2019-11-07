@@ -13,8 +13,9 @@
     }, D(Properties, set_##Name))
 
 MTS_PY_EXPORT(Properties) {
-    using Vector3f = Vector<float, 3>;
-    using Transform4f = Transform<float, 4>;
+    using Float       = typename Properties::Float;
+    using Vector3f    = typename Properties::Vector3f;
+    using Transform4f = typename Properties::Transform4f;
     py::class_<Properties>(m, "Properties", D(Properties))
         // Constructors
         .def(py::init<>(), D(Properties, Properties))

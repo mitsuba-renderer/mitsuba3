@@ -15,12 +15,11 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-
-using Float = float;
-using Vector3f = Vector<Float, 3>;
-using Point3f = Point<Float, 3>;
-using Color3f = Color<Float, 3>;
-using Transform4f = Transform<Float, 4>;
+using Float       = typename Properties::Float;
+using Vector3f    = typename Properties::Vector3f;
+using Point3f     = typename Properties::Point3f;
+using Color3f     = typename Properties::Color3f;
+using Transform4f = typename Properties::Transform4f;
 
 using VariantType = variant<
     bool,
