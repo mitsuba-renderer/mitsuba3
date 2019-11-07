@@ -1,15 +1,14 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
+#include <mitsuba/core/plugin.h>
+#include <mitsuba/core/spectrum.h>
+#include <mitsuba/render/spectrum.h>
 #include <memory>
 #include <string>
 #include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
-
-// Forward declarations
-template <typename Float, typename Spectrum> class ContinuousSpectrum;
-template <typename Float, typename Spectrum> class Texture3D;
 
 /// Wrapper object used to represent named references to Object instances
 class NamedReference {
@@ -67,12 +66,8 @@ enum class PropertyType : uint32_t {
  */
 class MTS_EXPORT_CORE Properties {
 public:
-    // TODO: remove this / replace by templating.
-    using Float       = float;
-    using Vector3f    = Vector<Float, 3>;
-    using Point3f     = Point<Float, 3>;
-    using Color3f     = Color<Float, 3>;
-    using Transform4f = Transform<Float, 4>;
+    using Float = float;
+    MTS_IMPORT_CORE_TYPES()
 
     /// Construct an empty property container
     Properties();
@@ -246,12 +241,10 @@ public:  // Type-specific getters and setters ----------------------------------
     const Transform4f& transform(const std::string &name, const Transform4f &def_val) const;
 
     /// Store an animated transformation in the Properties instance
-    template <typename Float>
     void set_animated_transform(const std::string &name, ref<AnimatedTransform> value,
                                 bool warn_duplicates = true);
     /// Store a (constant) animated transformation in the Properties instance
-    template <typename Float>
-    void set_animated_transform(const std::string &name, const Transform<Float, 4> &value,
+    void set_animated_transform(const std::string &name, const Transform4f &value,
                                 bool warn_duplicates = true);
     /// Retrieve an animated transformation
     ref<AnimatedTransform> animated_transform(const std::string &name) const;
@@ -285,27 +278,107 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a continuous spectrum
     template <typename ContinuousSpectrum>
-    ref<ContinuousSpectrum> spectrum(const std::string &name) const;
+    ref<ContinuousSpectrum> spectrum(const std::string &name) const {
+        ref<Object> object = find_object(name);
+        if (!object)
+            Throw("Property \"%s\" has not been specified!", name);
+        const Class *expected
+            = Class::for_name("ContinuousSpectrum", MTS_CLASS(ContinuousSpectrum)->variant());
+        if (!object->class_()->derives_from(expected))
+            Throw("The property \"%s\" has the wrong type (expected "
+                " <spectrum>).", name);
+        flag_as_queried(name);
+        return (ContinuousSpectrum *) object.get();
+    }
+
+
     /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
     template <typename ContinuousSpectrum>
-    ref<ContinuousSpectrum>
-    spectrum(const std::string &name, ref<ContinuousSpectrum> def_val) const;
-    /// Retrieve a continuous spectrum (use default flat spectrum if no entry exists)
+    ref<ContinuousSpectrum> spectrum(const std::string &name,
+                                     ref<ContinuousSpectrum> def_val) const {
+        ref<Object> object = find_object(name);
+        if (!object)
+            return def_val;
+        const Class *expected
+            = Class::for_name("ContinuousSpectrum", MTS_CLASS(ContinuousSpectrum)->variant());
+        if (!object->class_()->derives_from(expected))
+            Throw("The property \"%s\" has the wrong type (expected "
+                " <spectrum>).", name);
+        flag_as_queried(name);
+        return (ContinuousSpectrum *) object.get();
+    }
+
+    /// Retrieve a continuous spectrum (or create flat spectrum with default value)
     template <typename ContinuousSpectrum>
-    ref<ContinuousSpectrum> spectrum(const std::string &name, Float def_val) const;
+    ref<ContinuousSpectrum> spectrum(const std::string &name, Float def_val) const {
+        ref<Object> object = find_object(name);
+        if (!object) {
+            Properties props("uniform");
+            props.set_float("value", def_val);
+            return (ContinuousSpectrum *) PluginManager::instance()
+                ->create_object<ContinuousSpectrum>(props).get();
+        }
+        const Class *expected
+            = Class::for_name("ContinuousSpectrum", MTS_CLASS(ContinuousSpectrum)->variant());
+        if (!object->class_()->derives_from(expected))
+            Throw("The property \"%s\" has the wrong type (expected "
+                " <spectrum>).", name);
+        flag_as_queried(name);
+        return (ContinuousSpectrum *) object.get();
+    }
 
     /// Retrieve a 3D texture
     template <typename Texture3D>
-    ref<Texture3D> texture3d(const std::string &name) const;
+    ref<Texture3D> texture3d(const std::string &name) const {
+        ref<Object> object = find_object(name);
+        if (!object)
+            Throw("Property \"%s\" has not been specified!", name);
+        const Class *expected = Class::for_name("Texture3D", MTS_CLASS(Texture3D)->variant());
+        if (!object->class_()->derives_from(expected))
+            Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+                name);
+        flag_as_queried(name);
+        return (Texture3D *) object.get();
+    }
+
     /// Retrieve a 3D texture (use the provided texture if no entry exists)
     template <typename Texture3D>
-    ref<Texture3D> texture3d(const std::string &name,
-                            ref<Texture3D> def_val) const;
+    ref<Texture3D> texture3d(const std::string &name, ref<Texture3D> def_val) const {
+        ref<Object> object = find_object(name);
+        if (!object)
+            return def_val;
+        const Class *expected = Class::for_name("Texture3D", MTS_CLASS(Texture3D)->variant());
+        if (!object->class_()->derives_from(expected))
+            Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+                name);
+        flag_as_queried(name);
+        return (Texture3D *) object.get();
+    }
+
     /// Retrieve a 3D texture (use default constant texture if no entry exists)
     template <typename Texture3D>
-    ref<Texture3D> texture3d(const std::string &name, Float def_val) const;
-
+    ref<Texture3D> texture3d(const std::string &name, Float def_val) const {
+        ref<Object> object = find_object(name);
+        if (!object) {
+            Properties props("constant3d");
+            ref<Object> obj
+                = this->spectrum<typename Texture3D::Base>("__default_spectrum", def_val).get();
+            props.set_object("color", obj);
+            return (Texture3D *) PluginManager::instance()
+                ->create_object<Texture3D>(props).get();
+        }
+        const Class *expected = Class::for_name("Texture3D", MTS_CLASS(Texture3D)->variant());
+        if (!object->class_()->derives_from(expected))
+            Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+                name);
+        flag_as_queried(name);
+        return (Texture3D *) object.get();
+    }
 private:
+    // Return a reference to an object for a specific name (return null ref if doesn't exist)
+    ref<Object> find_object(const std::string &name) const;
+    // Set the entry for a specific name as queried
+    void flag_as_queried(const std::string &name) const;
     struct PropertiesPrivate;
     std::unique_ptr<PropertiesPrivate> d;
 };

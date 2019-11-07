@@ -12,7 +12,6 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spectrum.h>
-#include <mitsuba/render/texture3d.h>
 
 #define PY_CAST(Name) {                                                        \
         Name *temp = dynamic_cast<Name *>(o);                                  \

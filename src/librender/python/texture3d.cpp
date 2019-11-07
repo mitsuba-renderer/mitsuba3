@@ -1,7 +1,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/texture3d.h>
+#include <mitsuba/render/spectrum.h>
 
 /// Trampoline for derived types implemented in Python
 class PyTexture3D : public Texture3D {

@@ -32,8 +32,8 @@ add_custom_command(
 set(INC_DIR "../../include/mitsuba/ui")
 
 add_library(mitsuba-ui-obj OBJECT
-  texture.cpp ${INC_DIR}/texture.h
-  viewer.cpp  ${INC_DIR}/viewer.h
+  # texture.cpp ${INC_DIR}/texture.h
+  # viewer.cpp  ${INC_DIR}/viewer.h
   libui_resources.cpp libui_resources.h
 )
 
