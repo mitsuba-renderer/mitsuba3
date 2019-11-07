@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Scene, Object)
+    MTS_DECLARE_CLASS_VARIANT(Scene, Object, "scene")
     MTS_IMPORT_TYPES();
     using Sampler              = typename RenderAliases::Sampler;
     using Shape                = typename RenderAliases::Shape;
