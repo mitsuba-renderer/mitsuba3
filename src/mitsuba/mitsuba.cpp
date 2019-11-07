@@ -99,7 +99,8 @@ int main(int argc, char *argv[]) {
     Profiler::static_initialization();
 
     // Ensure that the mitsuba-render shared library is loaded
-    librender_nop();
+    // TODO
+    // librender_nop();
 
     ArgParser parser;
     using StringVec = std::vector<std::string>;
