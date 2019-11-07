@@ -58,11 +58,10 @@ public:
 
     template <typename T>
     X86Mem const_(T value) {
-        #if defined(SINGLE_PRECISION)
+        if constexpr (is_float_v<T>)
             return cc.newFloatConst(asmjit::kConstScopeGlobal, (float) value);
-        #else
+        else
             return cc.newDoubleConst(asmjit::kConstScopeGlobal, (double) value);
-        #endif
     }
 
     /// Floating point comparison

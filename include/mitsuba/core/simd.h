@@ -24,11 +24,10 @@ template <typename T> std::string type_suffix() {
         if (std::is_same_v<B, enoki::half>) {
             id += 'h';
         } else {
-            #if defined(SINGLE_PRECISION)
+            if constexpr (is_float_v<B>)
                 id += std::is_same_v<B, float> ? 'f' : 'd';
-            #else
+            else
                 id += std::is_same_v<B, double> ? 'f' : 's';
-            #endif
         }
     } else {
         if (std::is_signed_v<B>)

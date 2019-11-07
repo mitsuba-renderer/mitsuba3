@@ -13,12 +13,7 @@ public:
     MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
     using Index = replace_scalar_t<Wavelength, uint32_t>;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    using FloatVector = std::vector<Float, enoki::cuda_host_allocator<Float>>;
-#else
-    using FloatVector = std::vector<Float>;
-#endif
+    using FloatVector = host_vector<Float>;
 
 public:
     /**

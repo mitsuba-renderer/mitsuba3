@@ -76,11 +76,10 @@ MTS_PY_EXPORT_VARIANTS(random) {
 
         pcg32.def("next_float",
             [p = py::handle(pcg32)](py::args args, py::kwargs kwargs) -> py::object {
-                #if defined(SINGLE_PRECISION)
+                if constexpr (is_float_v<Float>)
                     return p.attr("next_float32")(*args, **kwargs);
-                #else
+                else
                     return p.attr("next_float64")(*args, **kwargs);
-                #endif
             });
 
     m.def("sample_tea_float32",

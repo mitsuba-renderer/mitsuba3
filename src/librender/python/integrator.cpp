@@ -69,12 +69,6 @@ MTS_PY_EXPORT(Integrator) {
                       &SamplingIntegrator::eval, py::const_)),
               "ray"_a, "rs"_a, "active"_a = true)
 #endif
-#if defined(MTS_ENABLE_AUTODIFF)
-        .def("eval",
-             py::overload_cast<const RayDifferential3fD &, RadianceSample3fD &, MaskD>(
-                 &SamplingIntegrator::eval, py::const_),
-             "ray"_a, "rs"_a, "active"_a = true)
-#endif
         .def_method(SamplingIntegrator, should_stop);
 
     /// MonteCarloIntegrator.

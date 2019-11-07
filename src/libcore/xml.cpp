@@ -91,11 +91,7 @@ void check_whitespace_only(const std::string &s, size_t offset) {
 
 inline Float stof(const std::string &s) {
     size_t offset = 0;
-#if defined(SINGLE_PRECISION)
     Float result = std::stof(s, &offset);
-#else
-    Float result = std::stod(s, &offset);
-#endif
     check_whitespace_only(s, offset);
     return result;
 }

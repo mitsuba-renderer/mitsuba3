@@ -30,11 +30,7 @@ public:
     MTS_DECLARE_CLASS(OBJMesh, Mesh)
 
     Float strtof(const char *nptr, char **endptr) {
-        #if defined(SINGLE_PRECISION)
             return std::strtof(nptr, endptr);
-        #else
-            return std::strtod(nptr, endptr);
-        #endif
     }
 
     OBJMesh(const Properties &props) : Mesh(props) {
