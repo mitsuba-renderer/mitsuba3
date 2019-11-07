@@ -173,5 +173,11 @@ std::pair<FloatX, FloatX> composite_simpson_38(int n) {
     return { nodes, weights };
 }
 
+using FloatX = DynamicArray<Packet<float>>;
+template MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_legendre<float>(int n);
+template MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_lobatto<float>(int n);
+template MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson<float>(int n);
+template MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson_38<float>(int n);
+
 NAMESPACE_END(quad)
 NAMESPACE_END(mitsuba)

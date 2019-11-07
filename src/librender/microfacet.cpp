@@ -2,6 +2,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-// TODO: do we need explicit template instantiations?
+MTS_INSTANTIATE_OBJECT(MicrofacetDistribution)
 
 NAMESPACE_END(mitsuba)
