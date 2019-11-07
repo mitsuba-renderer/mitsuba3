@@ -1,17 +1,18 @@
-Mitsuba Renderer 2
-==================
+Mitsuba 2: A Retargetable Forward and Inverse Renderer
+======================================================
 
 .. only:: not latex
 
-    .. image:: mitsuba-logo.png
-        :width: 400px
+    .. image:: images/mitsuba-logo-white-bg.png
+        :width: 75%
         :align: center
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Core features
+    :maxdepth: 1
+    :caption: Core features
 
-   intro
+    intro
+    gettingstarted
 
 .. toctree::
    :maxdepth: 1
