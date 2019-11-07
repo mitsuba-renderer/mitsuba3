@@ -29,7 +29,7 @@ Class::Class(const std::string &name, const std::string &parent, const std::stri
     if (!__classes)
         __classes = new std::map<std::string, Class *>();
 
-    (*__classes)[construct_key(name, variant)] = this;
+    (*__classes)[construct_key(parent, variant)] = this;
 
     // Also register new abstract classes with the XML parser
     if (!alias.empty())
