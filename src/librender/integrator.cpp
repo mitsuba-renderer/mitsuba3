@@ -50,7 +50,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
     ref<Film> film = sensor->film();
 
     size_t n_threads        = __global_thread_count;
-    size_t total_spp        = scene->sampler()->sample_count();
+    size_t total_spp        = sensor->sampler()->sample_count();
     size_t samples_per_pass = (m_samples_per_pass == (size_t) -1)
                                ? total_spp : std::min((size_t) m_samples_per_pass, total_spp);
     if ((total_spp % samples_per_pass) != 0)
@@ -86,7 +86,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
             using Point2fX = Point<FloatX, 2>;
 
             ScopedSetThreadEnvironment set_env(env);
-            ref<Sampler> sampler = scene->sampler()->clone();
+            ref<Sampler> sampler = sensor->sampler()->clone();
             ref<ImageBlock> block =
                 new ImageBlock(PixelFormat::XYZAW, ScalarVector2i(m_block_size),
                                film->reconstruction_filter(), 0, true);

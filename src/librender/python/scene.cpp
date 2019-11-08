@@ -2,7 +2,6 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/mesh.h>
-#include <mitsuba/render/sampler.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 
@@ -118,7 +117,6 @@ MTS_PY_EXPORT(Scene) {
         .def("emitters",     py::overload_cast<>(&Scene::emitters),     D(Scene, emitters))
         .def_method(Scene, environment)
         .def("film",       py::overload_cast<>(&Scene::film),       D(Scene, film))
-        .def("sampler",    py::overload_cast<>(&Scene::sampler),    D(Scene, sampler))
         .def("shapes",     py::overload_cast<>(&Scene::shapes),     D(Scene, shapes))
         .def("integrator", [](Scene &scene) {
 #define PY_CAST(Name) {                                                        \

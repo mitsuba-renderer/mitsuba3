@@ -148,11 +148,6 @@ public:
     /// Return the list of shapes
     const std::vector<ref<Shape>> &shapes() const { return m_shapes; }
 
-    /// Return the scene's sampler
-    Sampler* sampler() { return m_sampler; }
-    /// Return the scene's sampler
-    const Sampler* sampler() const { return m_sampler; }
-
     /// Return the scene's integrator
     Integrator* integrator() { return m_integrator; }
     /// Return the scene's integrator
@@ -200,7 +195,6 @@ protected:
     std::vector<ref<Shape>> m_shapes;
     std::vector<ref<Sensor>> m_sensors;
     std::vector<ref<Object>> m_children;
-    ref<Sampler> m_sampler;
     ref<Integrator> m_integrator;
     ref<Emitter> m_environment;
 };
