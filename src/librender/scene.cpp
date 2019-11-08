@@ -89,14 +89,14 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         accel_init_cpu(props);
 
     // Precompute a discrete distribution over emitters
-    m_emitter_distr = DiscreteDistribution(m_emitters.size());
+    m_emitter_distr = DiscreteDistribution<Float>(m_emitters.size());
     for (size_t i = 0; i < m_emitters.size(); ++i)
         m_emitter_distr.append(1.f);  // Simple uniform distribution for now.
     if (m_emitters.size() > 0)
         m_emitter_distr.normalize();
 
     // Create emitters' shapes (environment luminaires)
-    for (const Emitter *emitter: m_emitters)
+    for (Emitter *emitter: m_emitters)
         emitter->set_scene(this);
 }
 
@@ -161,9 +161,8 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
         // Perform a visibility test if requested
         if (test_visibility && any_or<true>(active)) {
-            Ray ray(ref.p, ds.d, math::Epsilon<Float> * (1.f + hmax(abs(ref.p))),
-                    ds.dist * (1.f - math::ShadowEpsilon<Float>),
-                    ref.time, ref.wavelengths);
+            Ray3f ray(ref.p, ds.d, math::Epsilon<Float> * (1.f + hmax(abs(ref.p))),
+                      ds.dist * (1.f - math::ShadowEpsilon<Float>), ref.time, ref.wavelengths);
             spec[ray_test(ray, active)] = 0.f;
         }
 
@@ -189,4 +188,5 @@ MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
 
 void librender_nop() { }
 
+MTS_INSTANTIATE_OBJECT(Scene)
 NAMESPACE_END(mitsuba)

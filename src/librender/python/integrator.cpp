@@ -34,7 +34,7 @@ MTS_PY_EXPORT_VARIANTS(Integrator) {
     /// Integrator (base class).
     MTS_PY_CLASS(Integrator, Object)
         .def("render",
-             [&](Integrator &integrator, Scene *scene) {
+             [&](Integrator &integrator, Scene *scene, Sensor *sensor) {
                  py::gil_scoped_release release;
 
 #if MTS_HANDLE_SIGINT
@@ -43,7 +43,7 @@ MTS_PY_EXPORT_VARIANTS(Integrator) {
                  sigint_handler_prev = signal(SIGINT, sigint_handler);
 #endif
 
-                 bool res = integrator.render(scene);
+                 bool res = integrator.render(scene, sensor);
 
 #if MTS_HANDLE_SIGINT
                  // Restore previous signal handler
@@ -52,7 +52,7 @@ MTS_PY_EXPORT_VARIANTS(Integrator) {
 
                  return res;
              },
-             D(Integrator, render), "scene"_a)
+             D(Integrator, render), "scene"_a, "sensor"_a)
         .def_method(Integrator, cancel)
         ;
 

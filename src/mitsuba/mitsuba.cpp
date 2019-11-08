@@ -48,6 +48,10 @@ R"(
         Define a constant that can referenced as "$key"
         within the scene description.
 
+    -s <sensor_i>, --sensor <sensor_i>
+        Index of the sensor to render with (following the declaration
+        order in the scene file). Default value: 0.
+
     -u, --update
         When specified, Mitsuba will update the scene's
         XML description to the latest version.
@@ -58,21 +62,22 @@ R"(
 }
 
 template <typename Float, typename Spectrum>
-bool render(Object *scene_, filesystem::path filename) {
+bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(scene_);
     if (!scene)
         Throw("Could not cast to Scene<Float, Spectrum>: %s", scene_->to_string());
+    auto sensor = scene->sensors()[sensor_i];
 
     filename.replace_extension("exr");
-    scene->film()->set_destination_file(filename);
+    sensor->film()->set_destination_file(filename);
 
     auto integrator = scene->integrator();
     if (!integrator)
         Throw("No integrator specified for scene: %s", scene->to_string());
 
-    bool success = integrator->render(scene);
+    bool success = integrator->render(scene, sensor.get());
     if (success)
-        scene->film()->develop();
+        sensor->film()->develop();
     else
         Log(Warn, "\U0000274C Rendering failed, result not saved.");
     return success;
@@ -104,14 +109,14 @@ int main(int argc, char *argv[]) {
     Profiler::static_initialization();
 
     // Ensure that the mitsuba-render shared library is loaded
-    // TODO
-    // librender_nop();
+    librender_nop();
 
     ArgParser parser;
     using StringVec    = std::vector<std::string>;
     auto arg_threads   = parser.add(StringVec{ "-t", "--threads" }, true);
     auto arg_verbose   = parser.add(StringVec{ "-v", "--verbose" }, false);
     auto arg_define    = parser.add(StringVec{ "-D", "--define" }, true);
+    auto arg_sensor_i  = parser.add(StringVec{ "-s", "--sensor" }, true);
     auto arg_output    = parser.add(StringVec{ "-o", "--output" }, true);
     auto arg_update    = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_help      = parser.add(StringVec{ "-h", "--help" });
@@ -142,11 +147,8 @@ int main(int argc, char *argv[]) {
                                             value.substr(sep+1)));
             arg_define = arg_define->next();
         }
-        std::string mode;
-        if (*arg_mode)
-            mode = arg_mode->as_string();
-        else
-            mode = MTS_DEFAULT_MODE;
+        std::string mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_MODE);
+        size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
         if (*arg_threads)
@@ -187,7 +189,7 @@ int main(int argc, char *argv[]) {
             ref<Object> parsed =
                 xml::load_file(arg_extra->as_string(), mode, params, *arg_update);
 
-            bool success = MTS_ROUTE_MODE(mode, render, parsed.get(), filename);
+            bool success  = MTS_ROUTE_MODE(mode, render, parsed.get(), sensor_i, filename);
             print_profile = print_profile || success;
             arg_extra = arg_extra->next();
         }
