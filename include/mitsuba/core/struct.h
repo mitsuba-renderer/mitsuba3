@@ -324,7 +324,7 @@ MTS_STRUCT_TYPE(double, Float64);
 #undef MTS_STRUCT_TYPE
 NAMESPACE_END(detail)
 
-template <typename T> constexpr FieldType struct_type_v = detail::struct_type<T>::value;
+template <typename T> constexpr FieldType struct_type_v = detail::struct_type<scalar_t<T>>::value;
 
 
 

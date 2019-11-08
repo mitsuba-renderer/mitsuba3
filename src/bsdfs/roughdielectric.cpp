@@ -102,8 +102,9 @@ public:
 
         bs.eta               = select(selected_r, Float(1.f), eta_it);
         bs.sampled_component = select(selected_r, UInt32(0), UInt32(1));
-        bs.sampled_type =
-            select(selected_r, +BSDFFlags::GlossyReflection, +BSDFFlags::GlossyTransmission);
+        bs.sampled_type      = select(selected_r,
+                                      UInt32(+BSDFFlags::GlossyReflection),
+                                      UInt32(+BSDFFlags::GlossyTransmission));
 
         Float dwh_dwo = 0.f;
 
