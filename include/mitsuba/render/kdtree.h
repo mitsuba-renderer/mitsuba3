@@ -226,38 +226,18 @@ protected:
 
             /// Leaf node
             struct ENOKI_PACK {
-                // using CountType = std::conditional_t <
-                //                   is_double_v<scalar_t<Scalar>, unsigned int, unsigned long long>;
+                #if defined(LITTLE_ENDIAN)
+                    /// How many primitives does this leaf reference?
+                    unsigned int prim_count : (sizeof(Scalar) == 4 ? 23: 52);
 
-                // TODO: single / double precision detection is broken
-                #if !defined(DOUBLE_PRECISION)
-                    #if defined(LITTLE_ENDIAN)
-                        /// How many primitives does this leaf reference?
-                        unsigned int prim_count : 23;
+                    /// Mask bits (all 1s for leaf nodes)
+                    unsigned int mask : (sizeof(Scalar) == 4 ? 9 : 12);
+                #else /* Swap for big endian machines */
+                    /// Mask bits (all 1s for leaf nodes)
+                    unsigned int mask : (sizeof(Scalar) == 4 ? 9 : 12);
 
-                        /// Mask bits (all 1s for leaf nodes)
-                        unsigned int mask : 9;
-                    #else /* Swap for big endian machines */
-                        /// Mask bits (all 1s for leaf nodes)
-                        unsigned int mask : 9;
-
-                        /// How many primitives does this leaf reference?
-                        unsigned int prim_count : 23;
-                    #endif
-                #else
-                    #if defined(LITTLE_ENDIAN)
-                        /// How many primitives does this leaf reference?
-                        unsigned long long prim_count : 52;
-
-                        /// Mask bits (all 1s for leaf nodes)
-                        unsigned int mask : 12;
-                    #else /* Swap for big endian machines */
-                        /// Mask bits (all 1s for leaf nodes)
-                        unsigned int mask : 12;
-
-                        /// How many primitives does this leaf reference?
-                        unsigned long long prim_count : 52;
-                    #endif
+                    /// How many primitives does this leaf reference?
+                    unsigned int prim_count : (sizeof(Scalar) == 4 ? 23: 52);
                 #endif
 
                 /// Start offset of the primitive list
@@ -273,11 +253,10 @@ protected:
          */
         bool set_leaf_node(size_t prim_offset, size_t prim_count) {
             data.leaf.prim_count = (unsigned int) prim_count;
-            #if defined(DOUBLE_PRECISION)
-                data.leaf.mask = 0b111111111111u;
-            #else
+            if constexpr (sizeof(Scalar) == 4)
                 data.leaf.mask = 0b111111111u;
-            #endif
+            else
+                data.leaf.mask = 0b111111111111u;
             data.leaf.prim_offset = (Index) prim_offset;
             return (size_t) data.leaf.prim_offset == prim_offset &&
                    (size_t) data.leaf.prim_count == prim_count;
@@ -299,11 +278,10 @@ protected:
 
         /// Is this a leaf node?
         bool leaf() const {
-            #if defined(DOUBLE_PRECISION)
-                return data.leaf.mask == 0b111111111111u;
-            #else
+            if constexpr (sizeof(Scalar) == 4)
                 return data.leaf.mask == 0b111111111u;
-            #endif
+            else
+                return data.leaf.mask == 0b111111111111u;
         }
 
         /// Assuming this is a leaf node, return the first primitive index
