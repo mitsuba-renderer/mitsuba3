@@ -17,11 +17,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(Shape, Object, "shape")
-    MTS_IMPORT_TYPES();
-    using BSDF    = typename RenderAliases::BSDF;
-    using Medium  = typename RenderAliases::Medium;
-    using Emitter = typename RenderAliases::Emitter;
-    using Sensor  = typename RenderAliases::Sensor;
+    MTS_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor);
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using Index = uint32_t;
@@ -105,8 +101,8 @@ public:
      * \return
      *     The probability density per unit solid angle
      */
-    virtual Float pdf_direction(const Interaction3f &it,
-                                const DirectionSample3f &ds, Mask active = true) const;
+    virtual Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
+                                Mask active = true) const;
 
     //! @}
     // =============================================================

@@ -65,7 +65,7 @@ add_library(mitsuba-render-obj OBJECT
   sampler.cpp      ${INC_DIR}/sampler.h
   # scene.cpp        ${INC_DIR}/scene.h
   sensor.cpp       ${INC_DIR}/sensor.h
-  # shape.cpp        ${INC_DIR}/shape.h
+  shape.cpp        ${INC_DIR}/shape.h
   spectrum.cpp     ${INC_DIR}/spectrum.h
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
