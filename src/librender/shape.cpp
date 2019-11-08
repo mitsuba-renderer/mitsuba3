@@ -10,8 +10,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
     for (auto &kv : props.objects()) {
-        auto emitter = dynamic_cast<Emitter *>(kv.second.get());
-        auto bsdf = dynamic_cast<BSDF *>(kv.second.get());
+        Emitter *emitter = dynamic_cast<Emitter *>(kv.second.get());
+        BSDF *bsdf = dynamic_cast<BSDF *>(kv.second.get());
 
         if (emitter) {
             if (m_emitter)
@@ -26,13 +26,9 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
         }
     }
 
-    if (!m_bsdf) {
-        // Create a default diffuse BSDF
-        Properties props2("diffuse");
-        props2.set_bool("monochrome", props.bool_("monochrome"));
-        props2.mark_queried("monochrome");
-        m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
-    }
+    // Create a default diffuse BSDF if needed.
+    if (!m_bsdf)
+        m_bsdf = PluginManager::instance()->create_object<BSDF>(Properties("diffuse"));
 }
 
 MTS_VARIANT Shape<Float, Spectrum>::~Shape() {}
