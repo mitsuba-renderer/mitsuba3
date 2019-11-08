@@ -17,7 +17,7 @@ Spiral::Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes)
 
 void Spiral::reset() {
     m_block_counter = 0;
-    m_current_direction = ERight;
+    m_current_direction = Direction::Right;
     m_position = m_blocks / 2;
     m_steps_left = 1;
     m_steps = 1;
@@ -48,15 +48,16 @@ std::pair<Spiral::Vector2i, Spiral::Vector2i> Spiral::next_block() {
         // Prepare the next block's position along the spiral.
         do {
             switch (m_current_direction) {
-                case ERight: ++m_position.x(); break;
-                case EDown:  ++m_position.y(); break;
-                case ELeft:  --m_position.x(); break;
-                case EUp:    --m_position.y(); break;
+                case Direction::Right: ++m_position.x(); break;
+                case Direction::Down:  ++m_position.y(); break;
+                case Direction::Left:  --m_position.x(); break;
+                case Direction::Up:    --m_position.y(); break;
             }
 
             if (--m_steps_left == 0) {
-                m_current_direction = (m_current_direction + 1) % 4;
-                if (m_current_direction == ELeft || m_current_direction == ERight)
+                m_current_direction = Direction(((int) m_current_direction + 1) % 4);
+                if (m_current_direction == Direction::Left ||
+                    m_current_direction == Direction::Right)
                     ++m_steps;
                 m_steps_left = m_steps;
             }

@@ -4,8 +4,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename Float, typename Spectrum>
-Film<Float, Spectrum>::Film(const Properties &props) : Object() {
+MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     bool is_m_film = string::to_lower(props.plugin_name()) == "mfilm";
 
     // Horizontal and vertical film resolution in pixels
@@ -47,19 +46,16 @@ Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     }
 }
 
-template <typename Float, typename Spectrum>
-Film<Float, Spectrum>::~Film() {}
+MTS_VARIANT Film<Float, Spectrum>::~Film() {}
 
-template <typename Float, typename Spectrum>
-void Film<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
-                                            const ScalarPoint2i &crop_offset) {
+MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
+                                                        const ScalarPoint2i &crop_offset) {
     m_crop_size   = crop_size;
     m_crop_offset = crop_offset;
     check_valid_crop_window();
 }
 
-template <typename Float, typename Spectrum>
-void Film<Float, Spectrum>::check_valid_crop_window() const {
+MTS_VARIANT void Film<Float, Spectrum>::check_valid_crop_window() const {
     if (m_crop_offset.x() < 0 || m_crop_offset.y() < 0 || m_crop_size.x() <= 0 ||
         m_crop_size.y() <= 0 || m_crop_offset.x() + m_crop_size.x() > m_size.x() ||
         m_crop_offset.y() + m_crop_size.y() > m_size.y()) {

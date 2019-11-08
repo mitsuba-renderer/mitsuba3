@@ -61,11 +61,11 @@ public:
     std::pair<Vector2i, Vector2i> next_block();
 
 protected:
-    enum EDirection {
-        ERight = 0,
-        EDown,
-        ELeft,
-        EUp
+    enum class Direction {
+        Right = 0,
+        Down,
+        Left,
+        Up
     };
 
     size_t m_block_counter, //< Number of blocks generated so far
@@ -78,7 +78,7 @@ protected:
 
     Point2i  m_position;    //< Relative position of the current block.
     /// Direction where the spiral is currently headed.
-    int m_current_direction;
+    Direction m_current_direction;
     /// Step counters.
     int m_steps_left, m_steps;
 

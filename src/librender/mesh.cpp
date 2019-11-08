@@ -20,8 +20,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename Float, typename Spectrum>
-Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
+MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
@@ -31,9 +30,8 @@ Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     m_mesh = true;
 }
 
-template <typename Float, typename Spectrum>
-Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
-                            Struct *face_struct, Size face_count)
+MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
+                                        Struct *face_struct, Size face_count)
     : m_name(name), m_vertex_count(vertex_count), m_face_count(face_count),
       m_vertex_struct(vertex_struct), m_face_struct(face_struct) {
     /* Helper lambda function to determine compatibility (offset/type) of a 'Struct' field */
@@ -88,21 +86,17 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_struct, Size
     m_mesh = true;
 }
 
-template <typename Float, typename Spectrum>
-Mesh<Float, Spectrum>::~Mesh() { }
+MTS_VARIANT Mesh<Float, Spectrum>::~Mesh() { }
 
-template <typename Float, typename Spectrum>
-void Mesh<Float, Spectrum>::write(Stream *) const {
+MTS_VARIANT void Mesh<Float, Spectrum>::write(Stream *) const {
     NotImplementedError("write");
 }
 
-template <typename Float, typename Spectrum>
-typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox() const {
+MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox() const {
     return m_bbox;
 }
 
-template <typename Float, typename Spectrum>
-typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox(Index index) const {
+MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox(Index index) const {
     Assert(index <= m_face_count);
 
     auto idx = (const Index *) face(index);
@@ -118,8 +112,7 @@ typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox(
                                                                max(max(v0, v1), v2));
 }
 
-template <typename Float, typename Spectrum>
-void Mesh<Float, Spectrum>::recompute_vertex_normals() {
+MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
     if (!has_vertex_normals())
         Throw("Storing new normals in a Mesh that didn't have normals at "
               "construction time is not implemented yet.");
@@ -175,15 +168,13 @@ void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             m_name, util::time_string(timer.value()), invalid_counter);
 }
 
-template <typename Float, typename Spectrum>
-void Mesh<Float, Spectrum>::recompute_bbox() {
+MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
     m_bbox.reset();
     for (Size i = 0; i < m_vertex_count; ++i)
         m_bbox.expand(vertex_position(i));
 }
 
-template <typename Float, typename Spectrum>
-void Mesh<Float, Spectrum>::prepare_sampling_table() {
+MTS_VARIANT void Mesh<Float, Spectrum>::prepare_sampling_table() {
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
@@ -201,19 +192,18 @@ void Mesh<Float, Spectrum>::prepare_sampling_table() {
     }
 }
 
-template <typename Float, typename Spectrum>
-typename Mesh<Float, Spectrum>::Size Mesh<Float, Spectrum>::primitive_count() const {
+MTS_VARIANT typename Mesh<Float, Spectrum>::Size
+Mesh<Float, Spectrum>::primitive_count() const {
     return face_count();
 }
 
-template <typename Float, typename Spectrum>
-typename Mesh<Float, Spectrum>::ScalarFloat Mesh<Float, Spectrum>::surface_area() const {
+MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarFloat
+Mesh<Float, Spectrum>::surface_area() const {
     ensure_table_ready();
     return m_surface_area;
 }
 
-template <typename Float, typename Spectrum>
-typename Mesh<Float, Spectrum>::PositionSample3f
+MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
     using Index3  = Array<Index, 3>;
 
@@ -260,15 +250,13 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     return ps;
 }
 
-template <typename Float, typename Spectrum>
-Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
+MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
     ensure_table_ready();
     return m_inv_surface_area;
 }
 
-template <typename Float, typename Spectrum>
-void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/, const Float *cache,
-                                                     SurfaceInteraction3f &si, Mask active) const {
+MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/, const Float *cache,
+                                                                 SurfaceInteraction3f &si, Mask active) const {
     // Barycentric coordinates within triangle
     Float b1 = cache[0],
           b2 = cache[1];
@@ -330,8 +318,7 @@ void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/, cons
     si.dp_dv[active] = dp_dv;
 }
 
-template <typename Float, typename Spectrum>
-std::pair<typename Mesh<Float, Spectrum>::Vector3f, typename Mesh<Float, Spectrum>::Vector3f>
+MTS_VARIANT std::pair<typename Mesh<Float, Spectrum>::Vector3f, typename Mesh<Float, Spectrum>::Vector3f>
 Mesh<Float, Spectrum>::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame,
                                          Mask active) const {
     Assert(has_vertex_normals());
@@ -437,8 +424,7 @@ size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output, int 
 }
 }  // end namespace
 
-template <typename Float, typename Spectrum>
-typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
+MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(Index index, const ScalarBoundingBox3f &clip) const {
     using ScalarPoint3d = mitsuba::Point<double, 3>;
 
@@ -492,8 +478,7 @@ Mesh<Float, Spectrum>::bbox(Index index, const ScalarBoundingBox3f &clip) const 
     return result;
 }
 
-template <typename Float, typename Spectrum>
-std::string Mesh<Float, Spectrum>::to_string() const {
+MTS_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << std::endl
         << "  name = \"" << m_name << "\"," << std::endl
@@ -511,8 +496,7 @@ std::string Mesh<Float, Spectrum>::to_string() const {
 }
 
 #if defined(MTS_USE_EMBREE)
-template <typename Float, typename Spectrum>
-RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) const {
+MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) const {
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, m_vertices.get(),
@@ -540,15 +524,13 @@ static void __rt_check(RTcontext context, RTresult errval, const char *file,
     }
 }
 
-template <typename Float, typename Spectrum>
-void Mesh<Float, Spectrum>::put_parameters(DifferentiableParameters &dp) {
+MTS_VARIANT void Mesh<Float, Spectrum>::put_parameters(DifferentiableParameters &dp) {
     dp.put(this, "vertex_positions", m_vertex_positions_d);
     if (has_vertex_texcoords())
         dp.put(this, "vertex_texcoords", m_vertex_texcoords_d);
 }
 
-template <typename Float, typename Spectrum>
-void Mesh<Float, Spectrum>::parameters_changed() {
+MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
     UInt32D vertex_range   = arange<UInt32D>(m_vertex_count),
             vertex_range_2 = vertex_range * 2,
             vertex_range_3 = vertex_range * 3,
@@ -639,8 +621,7 @@ Result cuda_upload(size_t size, Func func) {
     return result;
 }
 
-template <typename Float, typename Spectrum>
-RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext context) {
+MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext context) {
     if (m_optix_geometry != nullptr)
         throw std::runtime_error("OptiX geometry was already created!");
     m_optix_context = context;

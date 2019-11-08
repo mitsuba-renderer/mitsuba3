@@ -8,8 +8,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename Float, typename Spectrum>
-Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
+MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
     for (auto &kv : props.objects()) {
         auto emitter = dynamic_cast<Emitter *>(kv.second.get());
         auto bsdf = dynamic_cast<BSDF *>(kv.second.get());
@@ -36,42 +35,38 @@ Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
     }
 }
 
-template <typename Float, typename Spectrum> Shape<Float, Spectrum>::~Shape() {}
+MTS_VARIANT Shape<Float, Spectrum>::~Shape() {}
 
-template <typename Float, typename Spectrum> std::string Shape<Float, Spectrum>::id() const {
+MTS_VARIANT std::string Shape<Float, Spectrum>::id() const {
     return m_id;
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::PositionSample3f
+MTS_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
 Shape<Float, Spectrum>::sample_position(Float /*time*/, const Point2f & /*sample*/,
                                         Mask /*active*/) const {
     NotImplementedError("sample_position");
 }
 
-template <typename Float, typename Spectrum>
-Float Shape<Float, Spectrum>::pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const {
+MTS_VARIANT Float Shape<Float, Spectrum>::pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const {
     NotImplementedError("pdf_position");
 }
 
 #if defined(MTS_USE_EMBREE)
-template <typename Float, typename Spectrum>
-RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice) const {
+MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice) const {
     NotImplementedError("embree_geometry");
 }
 #endif
 
 #if defined(MTS_USE_OPTIX)
-template <typename Float, typename Spectrum>
-RTgeometrytriangles Shape<Float, Spectrum>::optix_geometry(RTcontext) {
+MTS_VARIANT RTgeometrytriangles Shape<Float, Spectrum>::optix_geometry(RTcontext) {
     NotImplementedError("optix_geometry");
 }
 #endif
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::DirectionSample3f
-Shape<Float, Spectrum>::sample_direction_fallback(const Interaction3f &it, const Point2f &sample,
-                                                  Mask active) const {
+MTS_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
+Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
+                                         const Point2f &sample,
+                                         Mask active) const {
     DirectionSample3f ds(sample_position(it.time, sample, active));
     ds.d = ds.p - it.p;
 
@@ -86,10 +81,9 @@ Shape<Float, Spectrum>::sample_direction_fallback(const Interaction3f &it, const
     return ds;
 }
 
-template <typename Float, typename Spectrum>
-Float Shape<Float, Spectrum>::pdf_direction_fallback(const Interaction3f &,
-                                                     const DirectionSample3f &ds,
-                                                     Mask active) const {
+MTS_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*it*/,
+                                                        const DirectionSample3f &ds,
+                                                        Mask active) const {
     Float pdf = pdf_position(ds, active),
            dp = abs_dot(ds.d, ds.n);
 
@@ -98,43 +92,26 @@ Float Shape<Float, Spectrum>::pdf_direction_fallback(const Interaction3f &,
     return pdf;
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::DirectionSample3f
-Shape<Float, Spectrum>::sample_direction(const Interaction3f &it, const Point2f &sample,
-                                         Mask active) const {
-    return sample_direction_fallback(it, sample, active);
-}
-
-template <typename Float, typename Spectrum>
-Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
-                                            Mask active) const {
-    return pdf_direction_fallback(it, ds, active);
-}
-
-template <typename Float, typename Spectrum>
-std::pair<typename Shape<Float, Spectrum>::Mask, Float>
+MTS_VARIANT std::pair<typename Shape<Float, Spectrum>::Mask, Float>
 Shape<Float, Spectrum>::ray_intersect(const Ray3f & /*ray*/, Float * /*cache*/,
                                       Mask /*active*/) const {
     NotImplementedError("ray_intersect");
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::Mask Shape<Float, Spectrum>::ray_test(const Ray3f &ray,
-                                                                       Mask /*active*/) const {
+MTS_VARIANT typename Shape<Float, Spectrum>::Mask Shape<Float, Spectrum>::ray_test(const Ray3f &ray,
+                                                                                   Mask /*active*/) const {
     Float unused[MTS_KD_INTERSECTION_CACHE_SIZE];
     return ray_intersect(ray, unused).first;
 }
 
-template <typename Float, typename Spectrum>
-void Shape<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/,
-                                                      const Float * /*cache*/,
-                                                      SurfaceInteraction3f & /*si*/,
-                                                      Mask /*active*/) const {
+MTS_VARIANT void Shape<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/,
+                                                                  const Float * /*cache*/,
+                                                                  SurfaceInteraction3f & /*si*/,
+                                                                  Mask /*active*/) const {
     NotImplementedError("fill_surface_interaction");
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::SurfaceInteraction3f
+MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
     SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
     Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
@@ -146,43 +123,41 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
     return si;
 }
 
-template <typename Float, typename Spectrum>
-std::pair<typename Shape<Float, Spectrum>::Vector3f, typename Shape<Float, Spectrum>::Vector3f>
+MTS_VARIANT std::pair<typename Shape<Float, Spectrum>::Vector3f, typename Shape<Float, Spectrum>::Vector3f>
 Shape<Float, Spectrum>::normal_derivative(const SurfaceInteraction3f & /*si*/,
                                           bool /*shading_frame*/, Mask /*active*/) const {
     NotImplementedError("normal_derivative");
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::ScalarFloat Shape<Float, Spectrum>::surface_area() const {
+MTS_VARIANT typename Shape<Float, Spectrum>::ScalarFloat
+Shape<Float, Spectrum>::surface_area() const {
     NotImplementedError("surface_area");
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::ScalarBoundingBox3f Shape<Float, Spectrum>::bbox(Index) const {
+MTS_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
+Shape<Float, Spectrum>::bbox(Index) const {
     return bbox();
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::ScalarBoundingBox3f
+MTS_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
 Shape<Float, Spectrum>::bbox(Index index, const ScalarBoundingBox3f &clip) const {
     ScalarBoundingBox3f result = bbox(index);
     result.clip(clip);
     return result;
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::Size Shape<Float, Spectrum>::primitive_count() const {
+MTS_VARIANT typename Shape<Float, Spectrum>::Size
+Shape<Float, Spectrum>::primitive_count() const {
     return 1;
 }
 
-template <typename Float, typename Spectrum>
-typename Shape<Float, Spectrum>::Size Shape<Float, Spectrum>::effective_primitive_count() const {
+MTS_VARIANT typename Shape<Float, Spectrum>::Size
+Shape<Float, Spectrum>::effective_primitive_count() const {
     return primitive_count();
 }
 
-template <typename Float, typename Spectrum>
-std::vector<ref<Object>> Shape<Float, Spectrum>::children() {
+MTS_VARIANT std::vector<ref<Object>>
+Shape<Float, Spectrum>::children() {
     std::vector<ref<Object>> result;
 
     if (m_bsdf)

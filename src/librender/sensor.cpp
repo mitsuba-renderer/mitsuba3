@@ -12,8 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 // Sensor interface
 // =============================================================================
 
-template <typename Float, typename Spectrum>
-Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
+MTS_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
     m_shutter_open      = props.float_("shutter_open", 0.f);
     m_shutter_open_time = props.float_("shutter_close", 0.f) - m_shutter_open;
 
@@ -54,10 +53,9 @@ Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
     m_resolution = ScalarVector2f(m_film->crop_size());
 }
 
-template <typename Float, typename Spectrum> Sensor<Float, Spectrum>::~Sensor() {}
+MTS_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
 
-template <typename Float, typename Spectrum>
-std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
+MTS_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
 Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
                                                  const Point2f &sample3, Mask active) const {
 
@@ -85,9 +83,8 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
     return { result_ray, result_spec };
 }
 
-template <typename Float, typename Spectrum>
-void Sensor<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
-                                              const ScalarPoint2i &crop_offset) {
+MTS_VARIANT void Sensor<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
+                                                          const ScalarPoint2i &crop_offset) {
     m_film->set_crop_window(crop_size, crop_offset);
     m_resolution = ScalarVector2f(m_film->crop_size());
 }
@@ -96,8 +93,7 @@ void Sensor<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
 // ProjectiveCamera interface
 // =============================================================================
 
-template <typename Float, typename Spectrum>
-ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props) : Base(props) {
+MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props) : Base(props) {
     /* Distance to the near clipping plane */
     m_near_clip = props.float_("near_clip", 1e-2f);
     /* Distance to the far clipping plane */
@@ -112,8 +108,7 @@ ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props) : B
 
 }
 
-template <typename Float, typename Spectrum>
-ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
+MTS_VARIANT ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
 
 MTS_INSTANTIATE_OBJECT(Sensor)
 MTS_INSTANTIATE_OBJECT(ProjectiveCamera)

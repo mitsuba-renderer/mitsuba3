@@ -330,13 +330,6 @@ protected:
     ref<Medium> m_interior_medium;
     ref<Medium> m_exterior_medium;
     std::string m_id;
-
-private:
-    DirectionSample3f sample_direction_fallback(const Interaction3f &it, const Point2f &sample,
-                                                Mask mask) const;
-
-    Float pdf_direction_fallback(const Interaction3f &it, const DirectionSample3f &ds,
-                                 Mask mask) const;
 };
 
 NAMESPACE_END(mitsuba)
