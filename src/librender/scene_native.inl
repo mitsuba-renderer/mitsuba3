@@ -3,6 +3,9 @@ NAMESPACE_BEGIN(mitsuba)
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
     ShapeKDTree *kdtree = new ShapeKDTree(props);
     kdtree->inc_ref();
+    for (Shape *shape : m_shapes)
+        kdtree->add_shape(shape);
+    kdtree->build();
     m_accel = kdtree;
 }
 
