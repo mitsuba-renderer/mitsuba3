@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Sensor, Endpoint)
+    MTS_DECLARE_CLASS_VARIANT(Sensor, Endpoint, "sensor")
     MTS_USING_BASE(Endpoint, sample_ray, m_needs_sample_3)
     MTS_IMPORT_TYPES(Film, Sampler)
 

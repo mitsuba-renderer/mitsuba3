@@ -117,7 +117,7 @@ void register_class(const Class *class_) {
         tags = new std::unordered_map<std::string, ETag>();
         tag_class = new std::unordered_map<std::string, const Class *>();
 
-        /* Create an initial mapping of tag names to IDs */
+        // Create an initial mapping of tag names to IDs
         (*tags)["boolean"]    = EBoolean;
         (*tags)["integer"]    = EInteger;
         (*tags)["float"]      = EFloat;
@@ -139,16 +139,13 @@ void register_class(const Class *class_) {
         (*tags)["default"]    = EDefault;
     }
 
-    /* Register the new class as an object tag */
+    // Register the new class as an object tag
     auto tag_name = class_->alias();
     auto tag_key = Class::construct_key(tag_name, class_->variant());
     auto it = tags->find(tag_name);
-    if (it == tags->end()) {
+    if (it == tags->end())
         (*tags)[tag_name] = EObject;
-        (*tag_class)[tag_key] = class_;
-    } else if (it->second != EObject) {
-        (*tag_class)[tag_key] = class_;
-    }
+    (*tag_class)[tag_key] = class_;
 
     if (tag_name == "spectrum") {
         // A texture is a kind of ContinuousSpectrum
@@ -497,7 +494,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     auto it2 = tag_class->find(Class::construct_key(node_name, ctx.variant));
                     if (it2 == tag_class->end())
                         src.throw_error(node, "could not retrieve class object for "
-                                       "tag \"%s\"", node_name);
+                                       "tag \"%s\" and variant \"%s\"", node_name, ctx.variant);
 
                     size_t arg_counter_nested = 0;
                     for (pugi::xml_node &ch: node.children()) {
