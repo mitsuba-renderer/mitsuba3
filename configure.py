@@ -39,6 +39,11 @@ with open(fname, 'w') as f:
         w('    "%s\\n"' % name)
     f.write('\n\n')
 
+    w('#define MTS_CONFIGURATIONS_INDENTED')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        w('    "            %s\\n"' % name)
+    f.write('\n\n')
+
     w('#define MTS_DEFAULT_MODE "%s"' % default_mode)
     f.write('\n\n')
 

@@ -22,33 +22,38 @@ static void help(int thread_count) {
     std::cout << util::info_copyright() << std::endl;
     std::cout << util::info_features() << std::endl;
     std::cout << R"(
-Usage: mitsuba [options] <mode> <One or more scene XML files>
+Usage: mitsuba [options] <One or more scene XML files>
 
-<mode> must be one of:
-)"
-MTS_CONFIGURATIONS
-R"(
 Options:
 
-   -h, --help
-               Display this help text.
+    -h, --help
+        Display this help text.
 
-   -v, --verbose
-               Be more verbose. (can be specified multiple times)
+    -m, --mode
+        Rendering mode. Defines a combination of floating point
+        and color types.
+        Default mode:
+            )" MTS_DEFAULT_MODE R"(
+        Available modes:
+)"
+MTS_CONFIGURATIONS_INDENTED
+R"(
+    -v, --verbose
+        Be more verbose. (can be specified multiple times)
 
-   -t <count>, --threads <count>
-               Render with the specified number of threads.
+    -t <count>, --threads <count>
+        Render with the specified number of threads.
 
-   -D <key>=<value>, --define <key>=<value>
-               Define a constant that can referenced as "$key"
-               within the scene description.
+    -D <key>=<value>, --define <key>=<value>
+        Define a constant that can referenced as "$key"
+        within the scene description.
 
-   -u, --update
-               When specified, Mitsuba will update the scene's
-               XML description to the latest version.
+    -u, --update
+        When specified, Mitsuba will update the scene's
+        XML description to the latest version.
 
-   -o <filename>, --output <filename>
-               Write the output image to the file "filename".
+    -o <filename>, --output <filename>
+        Write the output image to the file "filename".
 )";
 }
 
@@ -137,7 +142,11 @@ int main(int argc, char *argv[]) {
                                             value.substr(sep+1)));
             arg_define = arg_define->next();
         }
-        std::string mode = arg_mode->as_string();
+        std::string mode;
+        if (*arg_mode)
+            mode = arg_mode->as_string();
+        else
+            mode = MTS_DEFAULT_MODE;
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
         if (*arg_threads)

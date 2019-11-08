@@ -9,6 +9,16 @@
     "scalar_spectral_polarized\n"                                           \
 
 
+#define MTS_CONFIGURATIONS_INDENTED                                         \
+    "            scalar_mono\n"                                             \
+    "            scalar_rgb\n"                                              \
+    "            scalar_spectral\n"                                         \
+    "            scalar_spectral_polarized\n"                               \
+
+
+#define MTS_DEFAULT_MODE "scalar_rgb"                                       \
+
+
 #define MTS_INSTANTIATE_OBJECT(Name)                                        \
     template class MTS_EXPORT_RENDER Name<float, Color<float, 1>>;          \
     template class MTS_EXPORT_RENDER Name<float, Color<float, 3>>;          \
