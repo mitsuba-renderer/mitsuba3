@@ -70,6 +70,11 @@ with open(fname, 'w') as f:
     w('')
     w('    MTS_PY_EXPORT(name) {')
     for index, (name, float_, spectrum) in enumerate(enabled):
+        # for packets of float, the bindings should use the vectorize wrapper on dynamic arrays
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            spectrum = spectrum.replace(float_, float_x)
+            float_ = float_x
         w('        instantiate_##name<%s, %s>(' % (float_, spectrum))
         w('            m.def_submodule("%s"));' % (name))
     w('    }')
