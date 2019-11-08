@@ -34,6 +34,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
                 m_sensors.push_back(shape->sensor());
 
             m_bbox.expand(shape->bbox());
+            m_shapes.push_back(shape);
         } else if (emitter) {
             m_emitters.push_back(emitter);
             if (emitter->is_environment()) {
