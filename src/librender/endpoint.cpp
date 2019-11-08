@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
 Endpoint<Float, Spectrum>::Endpoint(const Properties &props) {
-    m_world_transform = props.animated_transform("to_world", Transform4f()).get();
+    m_world_transform = props.animated_transform("to_world", ScalarTransform4f()).get();
 }
 
 template <typename Float, typename Spectrum>

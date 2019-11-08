@@ -71,7 +71,7 @@ public:
 
     /// Accumulate another image block into this one
     void put(const ImageBlock *block) {
-        Point2i offset = block->offset() - m_offset -
+        ScalarPoint2i offset = block->offset() - m_offset -
                          ScalarVector2i(block->border_size() - m_border_size);
         m_bitmap->accumulate(block->bitmap(), offset);
     }
@@ -140,7 +140,7 @@ public:
      * \return \c false if one of the sample values was \a invalid, e.g.
      *    NaN or negative. A warning is also printed if \c m_warn is enabled.
      */
-    bool put(const Point2f &pos, const Float *value, Mask active = true);
+    Mask put(const Point2f &pos, const Float *value, Mask active = true);
 
     /// Clear everything to zero.
     void clear() { m_bitmap->clear(); }
@@ -154,7 +154,7 @@ public:
 
     /// Set the current block offset. This corresponds to the offset
     /// from a larger image's (e.g. a Film) corner to this block's corner.
-    void set_offset(const Point2i &offset) { m_offset = offset; }
+    void set_offset(const ScalarPoint2i &offset) { m_offset = offset; }
 
     /// Return the current block offset
     const ScalarPoint2i &offset() const { return m_offset; }
@@ -211,7 +211,7 @@ protected:
     ScalarVector2i m_size;
     int m_border_size;
     const ReconstructionFilter *m_filter;
-    ScalarFloat  *m_weights_x  , *m_weights_y;
+    Float  *m_weights_x  , *m_weights_y;
     bool m_warn, m_normalize;
 
 #if defined(MTS_ENABLE_AUTODIFF)

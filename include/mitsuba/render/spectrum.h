@@ -124,7 +124,7 @@ public:
      *
      * Even if the operation is provided, it may only return an approximation.
      */
-    virtual ScalarFloat mean() const;
+    virtual Float mean() const;
 
     /**
      * Convenience method returning the standard D65 illuminant.

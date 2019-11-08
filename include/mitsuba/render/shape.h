@@ -349,7 +349,6 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-// TODO: re-enable this
 // ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Shape)
 //     ENOKI_CALL_SUPPORT_METHOD(normal_derivative)
 //     ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)

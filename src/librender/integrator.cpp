@@ -58,7 +58,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
         Throw("sample_count (%d) must be a multiple of samples_per_pass (%d).",
               total_spp, samples_per_pass);
 
-    size_t n_passes = ceil(total_spp / (Float) samples_per_pass);
+    size_t n_passes = ceil(total_spp / (ScalarFloat) samples_per_pass);
     film->clear();
 
     Log(Info, "Starting render job (%ix%i, %i sample%s,%s %i thread%s)",
