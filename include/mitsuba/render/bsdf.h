@@ -502,19 +502,20 @@ std::ostream &operator<<(std::ostream &os, const BSDFSample3<Float, Spectrum>& b
     return os;
 }
 
-//template <typename Point3>
-//typename SurfaceInteraction<Point3>::BSDFPtr
-//SurfaceInteraction<Point3>::bsdf(const RayDifferential3 &ray) {
-//    const BSDFPtr bsdf = shape->bsdf();
-//
-//    /// TODO: revisit the 'false' default for autodiff mode once there are actually BRDFs using differentials
-//    if constexpr (!is_diff_array_v<Point3>) {
-//        if (!has_uv_partials() && any(bsdf->needs_differentials()))
-//            compute_partials(ray);
-//    }
-//
-//    return bsdf;
-//}
+template <typename Float, typename Spectrum>
+typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, Spectrum>::bsdf(
+    const typename SurfaceInteraction<Float, Spectrum>::RayDifferential3f &ray) {
+    const BSDFPtr bsdf = shape->bsdf();
+
+    /// TODO: revisit the 'false' default for autodiff mode once there are actually BRDFs using
+    /// differentials
+    if constexpr (!is_diff_array_v<Float>) {
+        if (!has_uv_partials() && any(bsdf->needs_differentials()))
+            compute_partials(ray);
+    }
+
+    return bsdf;
+}
 
 //! @}
 // -----------------------------------------------------------------------

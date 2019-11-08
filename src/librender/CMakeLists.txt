@@ -50,7 +50,7 @@ add_library(mitsuba-render-obj OBJECT
                    ${INC_DIR}/fresnel.h
   imageblock.cpp   ${INC_DIR}/imageblock.h
   integrator.cpp   ${INC_DIR}/integrator.h
-  interaction.cpp  ${INC_DIR}/interaction.h
+                   ${INC_DIR}/interaction.h
   kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h
   mesh.cpp         ${INC_DIR}/mesh.h
