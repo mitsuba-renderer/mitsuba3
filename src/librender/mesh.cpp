@@ -20,7 +20,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Mesh::Mesh(const Properties &props) : Shape(props) {
+template <typename Float, typename Spectrum>
+Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
@@ -30,12 +31,11 @@ Mesh::Mesh(const Properties &props) : Shape(props) {
     m_mesh = true;
 }
 
-Mesh::Mesh(const std::string &name,
-           Struct *vertex_struct, Size vertex_count,
-           Struct *face_struct, Size face_count)
-    : m_name(name), m_vertex_count(vertex_count),
-      m_face_count(face_count), m_vertex_struct(vertex_struct),
-      m_face_struct(face_struct) {
+template <typename Float, typename Spectrum>
+Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
+                            Struct *face_struct, Size face_count)
+    : m_name(name), m_vertex_count(vertex_count), m_face_count(face_count),
+      m_vertex_struct(vertex_struct), m_face_struct(face_struct) {
     /* Helper lambda function to determine compatibility (offset/type) of a 'Struct' field */
     auto check_field = [](const Struct *s, size_t idx,
                           const std::string &suffix_exp,
@@ -88,17 +88,21 @@ Mesh::Mesh(const std::string &name,
     m_mesh = true;
 }
 
-Mesh::~Mesh() { }
+template <typename Float, typename Spectrum>
+Mesh<Float, Spectrum>::~Mesh() { }
 
-void Mesh::write(Stream *) const {
+template <typename Float, typename Spectrum>
+void Mesh<Float, Spectrum>::write(Stream *) const {
     NotImplementedError("write");
 }
 
-ScalarBoundingBox3f Mesh::bbox() const {
+template <typename Float, typename Spectrum>
+typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox() const {
     return m_bbox;
 }
 
-ScalarBoundingBox3f Mesh::bbox(Index index) const {
+template <typename Float, typename Spectrum>
+typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox(Index index) const {
     Assert(index <= m_face_count);
 
     auto idx = (const Index *) face(index);
@@ -110,13 +114,12 @@ ScalarBoundingBox3f Mesh::bbox(Index index) const {
             v1 = vertex_position(idx[1]),
             v2 = vertex_position(idx[2]);
 
-    return ScalarBoundingBox3f(
-        min(min(v0, v1), v2),
-        max(max(v0, v1), v2)
-    );
+    return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(min(min(v0, v1), v2),
+                                                               max(max(v0, v1), v2));
 }
 
-void Mesh::recompute_vertex_normals() {
+template <typename Float, typename Spectrum>
+void Mesh<Float, Spectrum>::recompute_vertex_normals() {
     if (!has_vertex_normals())
         Throw("Storing new normals in a Mesh that didn't have normals at "
               "construction time is not implemented yet.");
@@ -128,6 +131,7 @@ void Mesh::recompute_vertex_normals() {
     /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
        by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
     for (Size i = 0; i < m_face_count; ++i) {
+        using ScalarIndex = scalar_t<Index>;
         const ScalarIndex *idx = (const ScalarIndex *) face(i);
         Assert(idx[0] < m_vertex_count && idx[1] < m_vertex_count && idx[2] < m_vertex_count);
         Point3f v[3]{ vertex_position(idx[0]),
@@ -171,13 +175,15 @@ void Mesh::recompute_vertex_normals() {
             m_name, util::time_string(timer.value()), invalid_counter);
 }
 
-void Mesh::recompute_bbox() {
+template <typename Float, typename Spectrum>
+void Mesh<Float, Spectrum>::recompute_bbox() {
     m_bbox.reset();
     for (Size i = 0; i < m_vertex_count; ++i)
         m_bbox.expand(vertex_position(i));
 }
 
-void Mesh::prepare_sampling_table() {
+template <typename Float, typename Spectrum>
+void Mesh<Float, Spectrum>::prepare_sampling_table() {
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
@@ -195,47 +201,46 @@ void Mesh::prepare_sampling_table() {
     }
 }
 
-Mesh::Size Mesh::primitive_count() const {
+template <typename Float, typename Spectrum>
+typename Mesh<Float, Spectrum>::Size Mesh<Float, Spectrum>::primitive_count() const {
     return face_count();
 }
 
-ScalarFloat Mesh::surface_area() const {
+template <typename Float, typename Spectrum>
+typename Mesh<Float, Spectrum>::ScalarFloat Mesh<Float, Spectrum>::surface_area() const {
     ensure_table_ready();
     return m_surface_area;
 }
 
-template <typename Value, typename Point2, typename Point3,
-          typename PositionSample, typename Mask>
-PositionSample Mesh::sample_position_impl(Value time, Point2 sample,
-                                          Mask active) const {
-    using Index   = replace_scalar_t<Value, Shape::Index>;
+template <typename Float, typename Spectrum>
+typename Mesh<Float, Spectrum>::PositionSample3f
+Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
     using Index3  = Array<Index, 3>;
-    using Normal3 = Normal<Value, 3>;
-    Index face_idx;
 
+    Index face_idx;
+    Point2f sample = sample_;
     ensure_table_ready();
-    std::tie(face_idx, sample.y()) =
-        m_area_distribution.sample_reuse(sample.y(), active);
+    std::tie(face_idx, sample.y()) = m_area_distribution.sample_reuse(sample.y(), active);
 
     Index3 fi = face_indices(face_idx, active);
 
-    Point3 p0 = vertex_position(fi[0], active),
-           p1 = vertex_position(fi[1], active),
-           p2 = vertex_position(fi[2], active);
+    Point3f p0 = vertex_position(fi[0], active),
+            p1 = vertex_position(fi[1], active),
+            p2 = vertex_position(fi[2], active);
 
-    vector3_t<Point3> e0 = p1 - p0, e1 = p2 - p0;
-    Point2 b = warp::square_to_uniform_triangle(sample);
+    Vector3f e0 = p1 - p0, e1 = p2 - p0;
+    Point2f b = warp::square_to_uniform_triangle(sample);
 
-    PositionSample ps;
+    PositionSample3f ps;
     ps.p     = p0 + e0 * b.x() + e1 * b.y();
     ps.time  = time;
     ps.pdf   = m_inv_surface_area;
     ps.delta = false;
 
     if (has_vertex_texcoords()) {
-        Point2 uv0 = vertex_texcoord(fi[0], active),
-               uv1 = vertex_texcoord(fi[1], active),
-               uv2 = vertex_texcoord(fi[2], active);
+        Point2f uv0 = vertex_texcoord(fi[0], active),
+                uv1 = vertex_texcoord(fi[1], active),
+                uv2 = vertex_texcoord(fi[2], active);
         ps.uv = uv0 * (1.f - b.x() - b.y())
               + uv1 * b.x() + uv2 * b.y();
     } else {
@@ -243,9 +248,9 @@ PositionSample Mesh::sample_position_impl(Value time, Point2 sample,
     }
 
     if (has_vertex_normals()) {
-        Normal3 n0 = vertex_normal(fi[0], active),
-                n1 = vertex_normal(fi[1], active),
-                n2 = vertex_normal(fi[2], active);
+        Normal3f n0 = vertex_normal(fi[0], active),
+                 n1 = vertex_normal(fi[1], active),
+                 n2 = vertex_normal(fi[2], active);
         ps.n = normalize(n0 * (1.f - b.x() - b.y())
                        + n1 * b.x() + n2 * b.y());
     } else {
@@ -255,92 +260,51 @@ PositionSample Mesh::sample_position_impl(Value time, Point2 sample,
     return ps;
 }
 
-PositionSample3f Mesh::sample_position(Float time, const Point2f &sample) const {
-    return sample_position_impl(time, sample, true);
-}
-
-PositionSample3fP Mesh::sample_position(FloatP time,
-                                        const Point2fP &sample,
-                                        MaskP active) const {
-    return sample_position_impl(time, sample, active);
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-PositionSample3fD Mesh::sample_position(FloatD time,
-                                        const Point2fD &sample,
-                                        MaskD active) const {
-    return sample_position_impl(time, sample, active);
-}
-#endif
-
-template <typename PositionSample, typename Value, typename Mask>
-Value Mesh::pdf_position_impl(const PositionSample &, Mask) const {
+template <typename Float, typename Spectrum>
+Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
     ensure_table_ready();
     return m_inv_surface_area;
 }
 
-Float Mesh::pdf_position(const PositionSample3f &ps) const {
-    return pdf_position_impl(ps, true);
-}
-
-FloatP Mesh::pdf_position(const PositionSample3fP &ps, MaskP active) const {
-    return pdf_position_impl(ps, active);
-}
-
-#if defined(MTS_ENABLE_AUTODIFF)
-FloatD Mesh::pdf_position(const PositionSample3fD &ps, MaskD active) const {
-    return pdf_position_impl(ps, active);
-}
-#endif
-
-template <typename Ray, typename Value, typename Point3,
-          typename SurfaceInteraction, typename Mask>
-void Mesh::fill_surface_interaction_impl(const Ray &ray, const Value *cache,
-                                         SurfaceInteraction &si,
-                                         Mask active) const {
-    using Point2 = point2_t<Point3>;
-    using Normal3 = normal3_t<Point3>;
-    using Vector3 = vector3_t<Point3>;
-    using Vector2 = vector2_t<Point3>;
-
-    ENOKI_MARK_USED(ray);
-
+template <typename Float, typename Spectrum>
+void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/, const Float *cache,
+                                                     SurfaceInteraction3f &si, Mask active) const {
     // Barycentric coordinates within triangle
-    Value b1 = cache[0],
+    Float b1 = cache[0],
           b2 = cache[1];
 
-    Value b0 = 1.f - b1 - b2;
+    Float b0 = 1.f - b1 - b2;
 
     auto fi = face_indices(si.prim_index, active);
 
-    Point3 p0 = vertex_position(fi[0], active),
-           p1 = vertex_position(fi[1], active),
-           p2 = vertex_position(fi[2], active);
+    Point3f p0 = vertex_position(fi[0], active),
+            p1 = vertex_position(fi[1], active),
+            p2 = vertex_position(fi[2], active);
 
-    Vector3 dp0 = p1 - p0,
-            dp1 = p2 - p0;
+    Vector3f dp0 = p1 - p0,
+             dp1 = p2 - p0;
 
     // Re-interpolate intersection using barycentric coordinates
     si.p[active] = p0 * b0 + p1 * b1 + p2 * b2;
 
     // Face normal
-    Normal3 n = normalize(cross(dp0, dp1));
+    Normal3f n = normalize(cross(dp0, dp1));
     si.n[active] = n;
 
     // Texture coordinates (if available)
     auto [dp_du, dp_dv] = coordinate_system(n);
-    Point2 uv(b1, b2);
+    Point2f uv(b1, b2);
     if (has_vertex_texcoords()) {
-        Point2 uv0 = vertex_texcoord(fi[0], active),
-               uv1 = vertex_texcoord(fi[1], active),
-               uv2 = vertex_texcoord(fi[2], active);
+        Point2f uv0 = vertex_texcoord(fi[0], active),
+                uv1 = vertex_texcoord(fi[1], active),
+                uv2 = vertex_texcoord(fi[2], active);
 
         uv = uv0 * b0 + uv1 * b1 + uv2 * b2;
 
-        Vector2 duv0 = uv1 - uv0,
-                duv1 = uv2 - uv0;
+        Vector2f duv0 = uv1 - uv0,
+                 duv1 = uv2 - uv0;
 
-        Value det     = fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
+        Float det     = fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
               inv_det = rcp(det);
 
         Mask valid = neq(det, 0.f);
@@ -352,9 +316,9 @@ void Mesh::fill_surface_interaction_impl(const Ray &ray, const Value *cache,
 
     // Shading normal (if available)
     if (has_vertex_normals()) {
-        Normal3 n0 = vertex_normal(fi[0], active),
-                n1 = vertex_normal(fi[1], active),
-                n2 = vertex_normal(fi[2], active);
+        Normal3f n0 = vertex_normal(fi[0], active),
+                 n1 = vertex_normal(fi[1], active),
+                 n2 = vertex_normal(fi[2], active);
 
         n = normalize(n0 * b0 + n1 * b1 + n2 * b2);
     }
@@ -366,55 +330,37 @@ void Mesh::fill_surface_interaction_impl(const Ray &ray, const Value *cache,
     si.dp_dv[active] = dp_dv;
 }
 
-void Mesh::fill_surface_interaction(const Ray3f &ray,
-                                    const Float *cache,
-                                    SurfaceInteraction3f &si) const {
-    fill_surface_interaction_impl(ray, cache, si, true);
-}
-
-void Mesh::fill_surface_interaction(const Ray3fP &ray,
-                                    const FloatP *cache,
-                                    SurfaceInteraction3fP &si,
-                                    MaskP active) const {
-    fill_surface_interaction_impl(ray, cache, si, active);
-}
-
-
-template <typename SurfaceInteraction, typename Value, typename Vector3,
-          typename Mask>
-std::pair<Vector3, Vector3>
-Mesh::normal_derivative_impl(const SurfaceInteraction &si,
-                             bool shading_frame, Mask active) const {
-    using Point3  = typename SurfaceInteraction::Point3;
-    using Normal3 = typename SurfaceInteraction::Normal3;
-
+template <typename Float, typename Spectrum>
+std::pair<typename Mesh<Float, Spectrum>::Vector3f, typename Mesh<Float, Spectrum>::Vector3f>
+Mesh<Float, Spectrum>::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame,
+                                         Mask active) const {
     Assert(has_vertex_normals());
 
     if (!shading_frame)
-        return { zero<Vector3>(), zero<Vector3>() };
+        return { zero<Vector3f>(), zero<Vector3f>() };
 
     auto fi = face_indices(si.prim_index, active);
 
-    Point3 p0 = vertex_position(fi[0], active),
-           p1 = vertex_position(fi[1], active),
-           p2 = vertex_position(fi[2], active);
+    Point3f p0 = vertex_position(fi[0], active),
+            p1 = vertex_position(fi[1], active),
+            p2 = vertex_position(fi[2], active);
 
-    Normal3 n0 = vertex_normal(fi[0], active),
-            n1 = vertex_normal(fi[1], active),
-            n2 = vertex_normal(fi[2], active);
+    Normal3f n0 = vertex_normal(fi[0], active),
+             n1 = vertex_normal(fi[1], active),
+             n2 = vertex_normal(fi[2], active);
 
-    Vector3 rel = si.p - p0,
+    Vector3f rel = si.p - p0,
             du  = p1 - p0,
             dv  = p2 - p0;
 
     /* Solve a least squares problem to determine
        the UV coordinates within the current triangle */
-    Value b1  = dot(du, rel), b2 = dot(dv, rel),
+    Float b1  = dot(du, rel), b2 = dot(dv, rel),
           a11 = dot(du, du), a12 = dot(du, dv),
           a22 = dot(dv, dv),
           inv_det = rcp(a11 * a22 - a12 * a12);
 
-    Value u = fmsub (a22, b1, a12 * b2) * inv_det,
+    Float u = fmsub (a22, b1, a12 * b2) * inv_det,
           v = fnmadd(a12, b1, a11 * b2) * inv_det,
           w = 1.f - u - v;
 
@@ -425,12 +371,12 @@ Mesh::normal_derivative_impl(const SurfaceInteraction &si,
          - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in
     */
 
-    Normal3 N(u * n1 + v * n2 + w * n0);
-    Value il = rsqrt(squared_norm(N));
+    Normal3f N(u * n1 + v * n2 + w * n0);
+    Float il = rsqrt(squared_norm(N));
     N *= il;
 
-    Vector3 dndu = (n1 - n0) * il;
-    Vector3 dndv = (n2 - n0) * il;
+    Vector3f dndu = (n1 - n0) * il;
+    Vector3f dndv = (n2 - n0) * il;
 
     dndu = fnmadd(N, dot(N, dndu), dndu);
     dndv = fnmadd(N, dot(N, dndv), dndv);
@@ -438,22 +384,12 @@ Mesh::normal_derivative_impl(const SurfaceInteraction &si,
     return { dndu, dndv };
 }
 
-std::pair<Vector3f, Vector3f>
-Mesh::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame) const {
-    return normal_derivative_impl(si, shading_frame, true);
-}
-
-std::pair<Vector3fP, Vector3fP>
-Mesh::normal_derivative(const SurfaceInteraction3fP &si, bool shading_frame,
-                        MaskP active) const {
-    return normal_derivative_impl(si, shading_frame, active);
-}
-
 namespace {
 constexpr size_t max_vertices = 10;
 
-size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output,
-                          int axis, double split_pos, bool is_minimum) {
+template <typename Point3d>
+size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output, int axis,
+                          double split_pos, bool is_minimum) {
     if (in_count < 3)
         return 0;
 
@@ -501,9 +437,13 @@ size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output,
 }
 }  // end namespace
 
-ScalarBoundingBox3f Mesh::bbox(Index index, const ScalarBoundingBox3f &clip) const {
+template <typename Float, typename Spectrum>
+typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
+Mesh<Float, Spectrum>::bbox(Index index, const ScalarBoundingBox3f &clip) const {
+    using ScalarPoint3d = mitsuba::Point<double, 3>;
+
     // Reserve room for some additional vertices
-    Point3d vertices1[max_vertices], vertices2[max_vertices];
+    ScalarPoint3d vertices1[max_vertices], vertices2[max_vertices];
     size_t nVertices = 3;
 
     Assert(index <= m_face_count);
@@ -523,9 +463,9 @@ ScalarBoundingBox3f Mesh::bbox(Index index, const ScalarBoundingBox3f &clip) con
        incorrectly remove triangles from the associated nodes. Hence, do
        the following computation in double precision! */
 
-    vertices1[0] = Point3d(v0);
-    vertices1[1] = Point3d(v1);
-    vertices1[2] = Point3d(v2);
+    vertices1[0] = ScalarPoint3d(v0);
+    vertices1[1] = ScalarPoint3d(v1);
+    vertices1[2] = ScalarPoint3d(v2);
 
     for (int axis = 0; axis < 3; ++axis) {
         nVertices = sutherland_hodgman(vertices1, nVertices, vertices2, axis,
@@ -552,7 +492,8 @@ ScalarBoundingBox3f Mesh::bbox(Index index, const ScalarBoundingBox3f &clip) con
     return result;
 }
 
-std::string Mesh::to_string() const {
+template <typename Float, typename Spectrum>
+std::string Mesh<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << std::endl
         << "  name = \"" << m_name << "\"," << std::endl
@@ -570,7 +511,8 @@ std::string Mesh::to_string() const {
 }
 
 #if defined(MTS_USE_EMBREE)
-RTCGeometry Mesh::embree_geometry(RTCDevice device) const {
+template <typename Float, typename Spectrum>
+RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) const {
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, m_vertices.get(),
@@ -598,13 +540,15 @@ static void __rt_check(RTcontext context, RTresult errval, const char *file,
     }
 }
 
-void Mesh::put_parameters(DifferentiableParameters &dp) {
+template <typename Float, typename Spectrum>
+void Mesh<Float, Spectrum>::put_parameters(DifferentiableParameters &dp) {
     dp.put(this, "vertex_positions", m_vertex_positions_d);
     if (has_vertex_texcoords())
         dp.put(this, "vertex_texcoords", m_vertex_texcoords_d);
 }
 
-void Mesh::parameters_changed() {
+template <typename Float, typename Spectrum>
+void Mesh<Float, Spectrum>::parameters_changed() {
     UInt32D vertex_range   = arange<UInt32D>(m_vertex_count),
             vertex_range_2 = vertex_range * 2,
             vertex_range_3 = vertex_range * 3,
@@ -695,7 +639,8 @@ Result cuda_upload(size_t size, Func func) {
     return result;
 }
 
-RTgeometrytriangles Mesh::optix_geometry(RTcontext context) {
+template <typename Float, typename Spectrum>
+RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext context) {
     if (m_optix_geometry != nullptr)
         throw std::runtime_error("OptiX geometry was already created!");
     m_optix_context = context;

@@ -59,7 +59,7 @@ add_library(mitsuba-render-obj OBJECT
   interaction.cpp  ${INC_DIR}/interaction.h
   # kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h
-  # mesh.cpp         ${INC_DIR}/mesh.h
+  mesh.cpp         ${INC_DIR}/mesh.h
   microfacet.cpp   ${INC_DIR}/microfacet.h
                    ${INC_DIR}/mueller.h
   sampler.cpp      ${INC_DIR}/sampler.h
