@@ -226,7 +226,11 @@ protected:
 
             /// Leaf node
             struct ENOKI_PACK {
-                #if defined(SINGLE_PRECISION)
+                // using CountType = std::conditional_t <
+                //                   is_double_v<scalar_t<Scalar>, unsigned int, unsigned long long>;
+
+                // TODO: single / double precision detection is broken
+                #if !defined(DOUBLE_PRECISION)
                     #if defined(LITTLE_ENDIAN)
                         /// How many primitives does this leaf reference?
                         unsigned int prim_count : 23;
@@ -269,10 +273,10 @@ protected:
          */
         bool set_leaf_node(size_t prim_offset, size_t prim_count) {
             data.leaf.prim_count = (unsigned int) prim_count;
-            #if defined(SINGLE_PRECISION)
-                data.leaf.mask = 0b111111111u;
-            #else
+            #if defined(DOUBLE_PRECISION)
                 data.leaf.mask = 0b111111111111u;
+            #else
+                data.leaf.mask = 0b111111111u;
             #endif
             data.leaf.prim_offset = (Index) prim_offset;
             return (size_t) data.leaf.prim_offset == prim_offset &&
@@ -295,10 +299,10 @@ protected:
 
         /// Is this a leaf node?
         bool leaf() const {
-            #if defined(SINGLE_PRECISION)
-                return data.leaf.mask == 0b111111111u;
-            #else
+            #if defined(DOUBLE_PRECISION)
                 return data.leaf.mask == 0b111111111111u;
+            #else
+                return data.leaf.mask == 0b111111111u;
             #endif
         }
 
@@ -621,7 +625,7 @@ protected:
      */
     struct EdgeEvent {
         /// Possible event types
-        enum class Type {
+        enum class Type : uint16_t {
             EdgeEnd = 0,
             EdgePlanar = 1,
             EdgeStart = 2
@@ -657,7 +661,12 @@ protected:
                    std::tie(other.axis, other.pos, other.type, other.index);
         }
 
-        void set_invalid() { pos = 0; index = 0; type = 0; axis = 7; }
+        void set_invalid() {
+            pos   = 0;
+            index = 0;
+            type  = Type::EdgeEnd;
+            axis  = 7;
+        }
         bool valid() const { return axis != 7; }
 
         /// Plane position
@@ -665,7 +674,7 @@ protected:
         /// Primitive index
         Index index;
         /// Event type: end/planar/start
-        uint16_t type;
+        Type type;
         /// Event axis
         uint16_t axis;
     };
@@ -2009,24 +2018,32 @@ class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<scal
 public:
     MTS_DECLARE_CLASS(ShapeKDTree, TShapeKDTree)
 
-    using ScalarFloat          = scalar_t<Float>;
-    using Point2f              = Point<Float, 2>;
-    using Point3f              = Point<Float, 3>;
-    using ScalarPoint3f        = Point<ScalarFloat, 3>;
-    using ScalarBoundingBox3f  = BoundingBox<ScalarPoint3f>;
-    using Ray3f                = Ray<Point3f, Spectrum>;
-    using Mask                 = mask_t<Float>;
-    using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
-    using Shape                = mitsuba::Shape<Float, Spectrum>;
-    using Mesh                 = mitsuba::Mesh<Float, Spectrum>;
-    using Size                 = uint32_t;
-    using Index                = uint32_t;
-    using Base                 = TShapeKDTree<ScalarBoundingBox3f, uint32_t,
-                                              SurfaceAreaHeuristic3<ScalarFloat>, ShapeKDTree>;
+    using ScalarFloat            = scalar_t<Float>;
+    using Point2f                = Point<Float, 2>;
+    using Point3f                = Point<Float, 3>;
+    using ScalarPoint3f          = Point<ScalarFloat, 3>;
+    using ScalarBoundingBox3f    = BoundingBox<ScalarPoint3f>;
+    using Ray3f                  = Ray<Point3f, Spectrum>;
+    using Mask                   = mask_t<Float>;
+    using SurfaceInteraction3f   = SurfaceInteraction<Float, Spectrum>;
+    using SurfaceAreaHeuristic3f = SurfaceAreaHeuristic3<ScalarFloat>;
+    using Shape                  = mitsuba::Shape<Float, Spectrum>;
+    using Mesh                   = mitsuba::Mesh<Float, Spectrum>;
+    using Size                   = uint32_t;
+    using Index                  = uint32_t;
+    using Base = TShapeKDTree<ScalarBoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
     using typename Base::KDNode;
+    using Base::set_stop_primitives;
+    using Base::set_max_depth;
+    using Base::set_min_max_bins;
+    using Base::set_clip_primitives;
+    using Base::set_retract_bad_splits;
+    using Base::set_exact_primitive_threshold;
     using Base::m_bbox;
     using Base::m_nodes;
     using Base::m_indices;
+    using Base::m_index_count;
+    using Base::m_node_count;
 
     /// Create an empty kd-tree and take build-related parameters from \c props.
     ShapeKDTree(const Properties &props);
@@ -2066,13 +2083,13 @@ public:
                                                     Float *cache,
                                                     Mask active) const {
         if constexpr (!is_array_v<Float>)
-            return ray_intersect_scalar(ray, cache);
+            return ray_intersect_scalar<ShadowRay>(ray, cache);
         else
-            return ray_intersect_packet(ray, cache, active);
+            return ray_intersect_packet<ShadowRay>(ray, cache, active);
     }
 
     template <bool ShadowRay>
-    MTS_INLINE std::pair<bool, Float> ray_intersect_scalar(const Ray3f &ray,
+    MTS_INLINE std::pair<bool, Float> ray_intersect_scalar(Ray3f ray,
                                                            Float *cache) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
@@ -2089,7 +2106,7 @@ public:
         // True if an intersection has been found
         bool hit = false;
 
-        /* Intersect against the scene bounding box */
+        // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
 
         Float mint = std::max(ray.mint, std::get<1>(bbox_result));
@@ -2169,9 +2186,9 @@ public:
     }
 
     template <bool ShadowRay>
-    MTS_INLINE std::pair<Mask, Float> ray_intersect(Ray3f ray,
-                                                    Float *cache,
-                                                    Mask active) const {
+    MTS_INLINE std::pair<Mask, Float> ray_intersect_packet(Ray3f ray,
+                                                           Float *cache,
+                                                           Mask active) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
@@ -2296,7 +2313,7 @@ public:
 
     /// Brute force intersection routine for debugging purposes
     template <bool ShadowRay>
-    MTS_INLINE std::pair<Mask, Float> ray_intersect_naive(const Ray3f &ray,
+    MTS_INLINE std::pair<Mask, Float> ray_intersect_naive(Ray3f ray,
                                                           Float *cache,
                                                           Mask active) const {
         Float hit_t = math::Infinity<Float>;
@@ -2336,12 +2353,12 @@ public:
         UInt shape_index = reinterpret_array<UInt>(cache[0]);
         UInt prim_index = reinterpret_array<UInt>(cache[1]);
 
-        SurfaceInteraction si = zero<SurfaceInteraction>(slices(active));
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>(slices(active));
 
         // Fill in basic information common to all shapes
         si.t = t;
         si.time = ray.time;
-        si.wavelengths = ray.wavelengths;
+        si.wavelengths = ray.wavelength;
         si.shape = gather<ShapePtr>(m_shapes.data(), shape_index, active);
         si.prim_index = prim_index;
         si.instance = nullptr;

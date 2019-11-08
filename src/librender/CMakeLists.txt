@@ -51,7 +51,7 @@ add_library(mitsuba-render-obj OBJECT
   imageblock.cpp   ${INC_DIR}/imageblock.h
   integrator.cpp   ${INC_DIR}/integrator.h
   interaction.cpp  ${INC_DIR}/interaction.h
-  # kdtree.cpp       ${INC_DIR}/kdtree.h
+  kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h
   mesh.cpp         ${INC_DIR}/mesh.h
   microfacet.cpp   ${INC_DIR}/microfacet.h

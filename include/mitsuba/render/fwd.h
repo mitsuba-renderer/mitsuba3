@@ -9,7 +9,6 @@ NAMESPACE_BEGIN(mitsuba)
 
 class DifferentiableObject;
 class DifferentiableParameters;
-class ShapeKDTree;
 struct BSDFContext;
 template <typename Float, typename Spectrum> class BSDF;
 template <typename Float, typename Spectrum> class ContinuousSpectrum;
@@ -25,6 +24,7 @@ template <typename Float, typename Spectrum> class Sampler;
 template <typename Float, typename Spectrum> class Scene;
 template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class Shape;
+template <typename Float, typename Spectrum> class ShapeKDTree;
 template <typename Float, typename Spectrum> class Texture3D;
 
 template <typename Float, typename Spectrum> struct DirectionSample;
