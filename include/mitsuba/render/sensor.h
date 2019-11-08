@@ -16,11 +16,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Sensor, Endpoint)
-    MTS_USING_BASE(Endpoint, sample_ray)
-    MTS_IMPORT_TYPES();
-    using Base::m_needs_sample_3;
-    using Film    = typename RenderAliases::Film;
-    using Sampler = typename RenderAliases::Sampler;
+    MTS_USING_BASE(Endpoint, sample_ray, m_needs_sample_3)
+    MTS_IMPORT_TYPES(Film, Sampler)
 
     // =============================================================
     //! @{ \name Sensor-specific sampling functions
@@ -151,8 +148,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(ProjectiveCamera, Sensor)
+    MTS_USING_BASE(Sensor)
     MTS_IMPORT_TYPES()
-    MTS_USING_BASE(Sensor, world_transform)
 
     /// Return the near clip plane distance
     ScalarFloat near_clip() const { return m_near_clip; }
