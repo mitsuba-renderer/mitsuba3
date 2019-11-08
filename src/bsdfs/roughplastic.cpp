@@ -46,7 +46,7 @@ public:
 
         m_nonlinear = props.bool_("nonlinear", false);
 
-        MicrofacetDistribution<Float> distr(props);
+        MicrofacetDistribution<ScalarFloat> distr(props);
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
 
@@ -64,7 +64,7 @@ public:
             Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
             for (size_t i = 0; i < slices(wi); ++i) {
                 ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
-                slice(wi, i) = Vector3f(std::sqrt(1 - mu * mu), 0.f, mu);
+                slice(wi, i) = ScalarVector3f(std::sqrt(1 - mu * mu), 0.f, mu);
             }
             m_external_transmittance = 1.f - distr_p.eval_reflectance(wi, m_eta);
             m_internal_reflectance =

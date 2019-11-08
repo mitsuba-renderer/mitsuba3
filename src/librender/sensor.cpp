@@ -50,7 +50,7 @@ Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
         m_sampler = static_cast<Sampler *>(pmgr->create_object<Sampler>(props_sampler));
     }
 
-    m_aspect = m_film->size().x() / (Float) m_film->size().y();
+    m_aspect = m_film->size().x() / (ScalarFloat) m_film->size().y();
     m_resolution = ScalarVector2f(m_film->crop_size());
 }
 

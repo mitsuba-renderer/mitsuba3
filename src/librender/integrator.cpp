@@ -88,7 +88,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
             ScopedSetThreadEnvironment set_env(env);
             ref<Sampler> sampler = scene->sampler()->clone();
             ref<ImageBlock> block =
-                new ImageBlock(PixelFormat::XYZAW, Vector2i(m_block_size),
+                new ImageBlock(PixelFormat::XYZAW, ScalarVector2i(m_block_size),
                                film->reconstruction_filter(), 0, true);
             scoped_flush_denormals flush_denormals(true);
 
@@ -118,7 +118,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
                 /* locked */ {
                     tbb::spin_mutex::scoped_lock lock(mutex);
                     blocks_done++;
-                    progress->update(blocks_done / (Float) total_blocks);
+                    progress->update(blocks_done / (ScalarFloat) total_blocks);
                 }
             }
         }
@@ -148,11 +148,11 @@ void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene
 
     ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
 
-    ScalarPoint2f aperture_sample(.5f);
+    Point2f aperture_sample(.5f);
     ScalarVector2f inv_resolution = 1.f / sensor->film()->crop_size();
 
     for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
-        Point2u p = enoki::morton_decode<Point2u>(i);
+        ScalarPoint2u p = enoki::morton_decode<ScalarPoint2u>(i);
         if (any(p >= block->size()))
             continue;
 

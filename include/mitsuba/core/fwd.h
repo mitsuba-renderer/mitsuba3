@@ -73,12 +73,6 @@ template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
 //! @}
 // =============================================================
 
-#if defined(MTS_PACKET_SIZE)
-constexpr size_t PacketSize = MTS_PACKET_SIZE;
-#else
-constexpr size_t PacketSize = enoki::max_packet_size / sizeof(float);
-#endif
-
 template <typename Float_> struct CoreAliases {
     using Float   = Float_;
 
