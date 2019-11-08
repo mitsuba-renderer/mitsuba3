@@ -13,7 +13,7 @@ public:
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
-    explicit SmoothDiffuse(const Properties &props) : Base(props) {
+    SmoothDiffuse(const Properties &props) : Base(props) {
         m_reflectance = props.spectrum<ContinuousSpectrum>("reflectance", .5f);
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
@@ -38,11 +38,11 @@ public:
 
         Spectrum value = m_reflectance->eval(si, active);
 
-        return { bs, select(active && bs.pdf > 0, value, 0.f) };
+        return { bs, select(active && bs.pdf > 0.f, value, 0.f) };
     }
 
-    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-                  Mask active) const override {
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                  const Vector3f &wo, Mask active) const override {
 
         if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return 0.f;
@@ -56,8 +56,8 @@ public:
         return select(cos_theta_i > 0.f && cos_theta_o > 0.f, value, 0.f);
     }
 
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-              Mask /* active */) const override {
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+              const Vector3f &wo, Mask /* active */) const override {
         if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return 0.f;
 
