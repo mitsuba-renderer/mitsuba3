@@ -6,6 +6,89 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/*!
+
+.. _bsdf-diffuse:
+
+Smooth diffuse material (`diffuse`)
+-------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - reflectance
+   - Spectrum or Texture
+   - Specifies the diffuse albedo of the material (Default: 0.5)
+
+The smooth diffuse material (also referred to as *Lambertian*)
+represents an ideally diffuse material with a user-specified amount of
+reflectance. Any received illumination is scattered so that the surface
+looks the same independently of the direction of observation.
+
+
+.. subfigstart::
+
+.. _fig-diffuse-plain:
+
+.. figure:: ../resources/data/docs/images/bsdfs/diffuse/plain.jpg
+    :alt: Homogeneous reflectance
+    :width: 40%
+    :align: center
+
+    Homogeneous reflectance
+
+.. _fig-diffuse-textured:
+
+.. figure:: ../resources/data/docs/images/bsdfs/diffuse/textured.jpg
+    :alt: Textured reflectance
+    :width: 40%
+    :align: center
+
+    Textured reflectance
+
+.. subfigend::
+    :width: 1.0
+    :alt: Example Model Resolutions
+    :label: fig-diffuse-bsdf
+
+
+Apart from a homogeneous reflectance value, the plugin can also accept
+a nested or referenced texture map to be used as the source of reflectance
+information, which is then mapped onto the shape based on its UV
+parameterization. When no parameters are specified, the model uses the default
+of 50% reflectance.
+
+Note that this material is one-sided---that is, observed from the
+back side, it will be completely black. If this is undesirable,
+consider using the :ref:`twosided <bsdf_twosided>` BRDF adapter plugin.
+The following XML snippet describes a diffuse material,
+whose reflectance is specified as an sRGB color:
+
+.. code-block:: xml
+    :name: diffuse-srgb
+
+    <bsdf type="diffuse">
+        <srgb name="reflectance" value="0.4, 0.45, 0.52"/>
+    </bsdf>
+
+
+Alternatively, the reflectance can be textured:
+
+.. code-block:: xml
+    :name: diffuse-texture
+
+    <bsdf type="diffuse">
+        <texture type="bitmap" name="reflectance">
+            <string name="filename" value="wood.jpg"/>
+        </texture>
+    </bsdf>
+
+*/
 template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:

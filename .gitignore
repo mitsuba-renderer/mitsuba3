@@ -60,3 +60,6 @@ __pycache__
 /src/mtsgui/mtsgui
 /src/libui/libui_resources.*
 /html
+
+#docs
+docs/plugins_generated.rst

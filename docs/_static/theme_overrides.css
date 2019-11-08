@@ -38,3 +38,11 @@ div.sphinxsidebar {
 div.sidebar-wrapper {
     padding:0px;
 }
+
+.paramstable {
+    background-color: #f0f0f0;
+}
+
+.paramstable .row-even {
+    background-color: #f9f9f9;
+}

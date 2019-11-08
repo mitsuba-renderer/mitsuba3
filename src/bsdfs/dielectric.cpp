@@ -5,8 +5,85 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * Smooth dielectric material.
+/*!
+
+Smooth dielectric material (`dielectric`)
+-----------------------------------------
+
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - int_ior
+   - Float or String
+   - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)
+ * - ext_ior
+   - Float or String
+   - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
+ * - specular_reflectance
+   - Spectrum or Texture
+   - Optional factor that can be used to modulate the specular reflection component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+ * - specular_transmittance
+   - Spectrum or Texture
+   - Optional factor that can be used to modulate the specular transmission component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+
+
+This plugin models an interface between two dielectric materials having mismatched
+indices of refraction (for instance, water and air). Exterior and interior IOR values
+can be specified independently, where "exterior" refers to the side that contains
+the surface normal. When no parameters are given, the plugin activates the defaults, which
+describe a borosilicate glass BK7/air interface.
+
+In this model, the microscopic structure of the surface is assumed to be perfectly
+smooth, resulting in a degenerate BSDF described by a Dirac delta distribution.
+This means that for any given incoming ray of light, the model always scatters into a discrete set of directions, as opposed to a continuum.
+For a similar model that instead describes a rough surface microstructure, take a look at the :ref:`roughdielectric <bsdf-roughdielectric>` plugin.
+
+This snippet describes a simple air-to-water interface
+
+.. code-block:: xml
+    :name: dielectric-water
+
+    <shape type="...">
+        <bsdf type="dielectric">
+            <string name="int_ior" value="water"/>
+            <string name="ext_ior" value="air"/>
+        </bsdf>
+    <shape>
+
+When using this model, it is crucial that the scene contains
+meaningful and mutually compatible indices of refraction changes---see
+figref glass-explanation for a description of what this entails.
+
+In many cases, we will want to additionally describe the *medium* within a
+dielectric material. This requires the use of a rendering technique that is
+aware of media (e.g. the volumetric path tracer). An example of how one might
+describe a slightly absorbing piece of glass is shown below:
+
+.. code-block:: xml
+    :name: dielectric-glass
+
+    <shape type="...">
+        <bsdf type="dielectric">
+            <float name="int_ior" value="1.504"/>
+            <float name="ext_ior" value="1.0"/>
+        </bsdf>
+
+        <medium type="homogeneous" name="interior">
+            <rgb name="sigma_s" value="0, 0, 0"/>
+            <rgb name="sigma_a" value="4, 4, 2"/>
+        </medium>
+    <shape>
+
+.. note::
+
+    Dispersion is currently unsupported but will be enabled in a future release.
+
  */
 template <typename Float, typename Spectrum>
 class SmoothDielectric final : public BSDF<Float, Spectrum> {
