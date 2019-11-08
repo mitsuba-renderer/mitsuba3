@@ -1,7 +1,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/integrator.h>
-#include <mitsuba/render/kdtree.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/scene.h>
@@ -112,9 +111,6 @@ MTS_PY_EXPORT(Scene) {
 #endif
 
         // Accessors
-#if !defined(MTS_USE_EMBREE)
-        .def("kdtree",     py::overload_cast<>(&Scene::kdtree))  //,     D(Scene, kdtree))
-#endif
         .def("bbox", &Scene::bbox, D(Scene, bbox))
         .def("sensor",     py::overload_cast<>(&Scene::sensor),     D(Scene, sensor))
         .def("sensors",     py::overload_cast<>(&Scene::sensors),     D(Scene, sensors))

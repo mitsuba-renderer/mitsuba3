@@ -235,7 +235,7 @@ public:
      *     A pointer to the associated scene (the created shape is
      *     allowed to depend on it)
      */
-    virtual ref<Shape> create_shape(const Scene *scene);
+    virtual void set_scene(const Scene *scene);
 
     //! @}
     // =============================================================

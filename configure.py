@@ -6,19 +6,20 @@ with open("mitsuba.conf", "r") as f:
     # Load while preserving order of keys
     configurations = json.load(f, object_pairs_hook=OrderedDict)
 
+# Let's start with some validation
+assert('enabled' in configurations and
+       'default' in configurations)
+assert(type(configurations['default']) is str)
+assert(type(configurations['enabled']) is list)
+
+# Extract enabled configurations
 enabled = []
-for name, config in configurations.items():
-    if not isinstance(config, (dict, OrderedDict)):
-        continue
-    if 'enabled' not in config or \
-       'float' not in config or \
-       'spectrum' not in config:
-        raise Exception('Invalid configuration entry "%s": must have '
-                        '"enabled", "float", and "spectrum" fields!' % name)
-    if not config['enabled']:
-        continue
-    spectrum = config['spectrum'].replace('Float', config['float'])
-    enabled.append((name, config['float'], spectrum))
+for name in configurations['enabled']:
+    if name not in configurations:
+        raise Exception('"enabled" refers to an unknown configuration "%s"' % name)
+    item = configurations[name]
+    spectrum = item['spectrum'].replace('Float', item['float'])
+    enabled.append((name, item['float'], spectrum))
 
 if len(enabled) == 0:
     raise Exception("There must be at least one enabled build configuration!")
@@ -49,12 +50,12 @@ with open(fname, 'w') as f:
 
     w('#define MTS_INSTANTIATE_OBJECT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    template class MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
+        w('    template class MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
     w('#define MTS_INSTANTIATE_STRUCT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    template struct MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
+        w('    template struct MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
     f.write('\n\n')
 
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
@@ -104,7 +105,7 @@ with open(fname, 'w') as f:
     f.write('    else\n')
     f.write('        return "";\n')
     f.write('}\n')
-    f.write('NAMESPACE_END(detail)')
-    f.write('NAMESPACE_END(mitsuba)')
+    f.write('NAMESPACE_END(detail)\n')
+    f.write('NAMESPACE_END(mitsuba)\n')
 
 print('Generated configuration header: ' + fname)

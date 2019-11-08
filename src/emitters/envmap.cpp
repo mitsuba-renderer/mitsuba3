@@ -19,7 +19,7 @@ public:
     using Warp = warp::Marginal2D<Float, 0>;
 
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
-        /* Until `create_shape` is called, we have no information
+        /* Until `set_scene` is called, we have no information
            about the scene and default to the unit bounding sphere. */
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
@@ -66,19 +66,10 @@ public:
 #endif
     }
 
-    ref<Shape> create_shape(const Scene *scene) override {
-        // Create a bounding sphere that surrounds the scene
+    void set_scene(const Scene *scene) override {
         m_bsphere = scene->bbox().bounding_sphere();
-        m_bsphere.radius = max(math::Epsilon<ScalarFloat>, 1.5f * m_bsphere.radius);
-
-        Properties props("sphere");
-        props.set_point3f("center", m_bsphere.center);
-        props.set_float("radius", m_bsphere.radius);
-
-        // Sphere is "looking in" towards the scene
-        props.set_bool("flip_normals", true);
-
-        return PluginManager::instance()->create_object<Shape>(props);
+        m_bsphere.radius = max(math::Epsilon<Float>,
+                               m_bsphere.radius * (1.f + math::Epsilon<Float>));
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {

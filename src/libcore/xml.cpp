@@ -986,7 +986,7 @@ NAMESPACE_END(detail)
 
 ref<Object> load_string(const std::string &string, const std::string &variant,
                         ParameterList param) {
-    ScopedPhase sp(EProfilerPhase::EInitScene);
+    ScopedPhase sp(ProfilerPhase::InitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
                                                     pugi::parse_default |
@@ -1012,7 +1012,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
 
 ref<Object> load_file(const fs::path &filename_, const std::string &variant,
                       ParameterList param, bool write_update) {
-    ScopedPhase sp(EProfilerPhase::EInitScene);
+    ScopedPhase sp(ProfilerPhase::InitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);

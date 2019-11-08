@@ -19,31 +19,31 @@ NAMESPACE_BEGIN(mitsuba)
  * is assumed -- if a method "B" can occur in a call graph of another method
  * "A", then "B" must occur after "A" in the list below.
  */
-enum class EProfilerPhase : int {
-    EInitScene = 0,              /* Scene initialization */
-    ELoadGeometry,               /* Geometry loading */
-    ELoadTexture,                /* Texture loading */
-    EInitKDTree,                 /* kd-tree construction */
-    ERender,                     /* Integrator::render() */
-    ESamplingIntegratorEval,     /* SamplingIntegrator::eval() */
-    ESampleEmitterRay,           /* Scene::sample_emitter_ray() */
-    ESampleEmitterDirection,     /* Scene::sample_emitter_direction() */
-    ERayTest,                    /* Scene::ray_test() */
-    ERayIntersect,               /* Scene::ray_intersect() */
-    ECreateSurfaceInteraction,   /* KDTree::create_surface_interaction() */
-    EImageBlockPut,              /* ImageBlock::put() */
-    EBSDFEvaluate,               /* BSDF::eval() and BSDF::pdf() */
-    EBSDFSample,                 /* BSDF::sample() */
-    EEndpointEvaluate,           /* Endpoint::eval() and Endpoint::pdf() */
-    EEndpointSampleRay,          /* Endpoint::sample_ray() */
-    EEndpointSampleDirection,    /* Endpoint::sample_direction() */
-    ESpectrumEval,               /* ContinuousSpectrum::eval() */
+enum class ProfilerPhase : int {
+    InitScene = 0,              /* Scene initialization */
+    LoadGeometry,               /* Geometry loading */
+    LoadTexture,                /* Texture loading */
+    InitKDTree,                 /* kd-tree construction */
+    Render,                     /* Integrator::render() */
+    SamplingIntegratorEval,     /* SamplingIntegrator::eval() */
+    SampleEmitterRay,           /* Scene::sample_emitter_ray() */
+    SampleEmitterDirection,     /* Scene::sample_emitter_direction() */
+    RayTest,                    /* Scene::ray_test() */
+    RayIntersect,               /* Scene::ray_intersect() */
+    CreateSurfaceInteraction,   /* KDTree::create_surface_interaction() */
+    ImageBlockPut,              /* ImageBlock::put() */
+    BSDFEvaluate,               /* BSDF::eval() and BSDF::pdf() */
+    BSDFSample,                 /* BSDF::sample() */
+    EndpointEvaluate,           /* Endpoint::eval() and Endpoint::pdf() */
+    EndpointSampleRay,          /* Endpoint::sample_ray() */
+    EndpointSampleDirection,    /* Endpoint::sample_direction() */
+    SpectrumEval,               /* ContinuousSpectrum::eval() */
 
-    EProfilerPhaseCount
+    ProfilerPhaseCount
 };
 
 constexpr const char
-    *profiler_phase_id[int(EProfilerPhase::EProfilerPhaseCount)] = {
+    *profiler_phase_id[int(ProfilerPhase::ProfilerPhaseCount)] = {
         "Scene initialization",
         "Geometry loading",
         "Texture loading",
@@ -65,11 +65,11 @@ constexpr const char
     };
 
 
-static_assert(int(EProfilerPhase::EProfilerPhaseCount) <= 64,
+static_assert(int(ProfilerPhase::ProfilerPhaseCount) <= 64,
               "List of profiler phases is limited to 64 entries");
 
 static_assert(std::extent_v<decltype(profiler_phase_id)> ==
-                  int(EProfilerPhase::EProfilerPhaseCount),
+                  int(ProfilerPhase::ProfilerPhaseCount),
               "Profiler phases and descriptions don't have matching length!");
 
 #if defined(MTS_ENABLE_PROFILER)
@@ -82,7 +82,7 @@ extern MTS_EXPORT_CORE uint64_t *profiler_flags()
     __attribute__((noinline, weak, const));
 
 struct ScopedPhase {
-    ScopedPhase(EProfilerPhase phase)
+    ScopedPhase(ProfilerPhase phase)
         : m_target(profiler_flags()), m_flag(1ull << int(phase)) {
         if ((*m_target & m_flag) == 0)
             *m_target |= m_flag;
@@ -116,7 +116,7 @@ private:
 #else
 
 /* Profiler not supported on this platform */
-struct ScopedPhase { ScopedPhase(EProfilerPhase) { } };
+struct ScopedPhase { ScopedPhase(ProfilerPhase) { } };
 class Profiler {
 public:
     static void static_initialization() { }

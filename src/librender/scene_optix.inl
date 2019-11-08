@@ -1,10 +1,5 @@
-#include <mitsuba/render/scene.h>
-#include <mitsuba/render/kdtree.h>
-#include <mitsuba/render/autodiff.h>
-
 #include <optix.h>
 #include <optix_cuda_interop.h>
-
 #include "librender_ptx.h"
 
 NAMESPACE_BEGIN(mitsuba)
@@ -26,19 +21,18 @@ static void __rt_check(RTcontext context, RTresult errval, const char *file,
 constexpr size_t kOptixVariableCount = 30;
 constexpr int kDeviceID = 0;
 
-struct Scene::OptixState {
+struct OptixState {
     RTcontext context;
     RTbuffer var_buf[kOptixVariableCount];
     RTmaterial material;
     RTprogram attr_prog;
     RTacceleration accel;
     RTgeometrygroup group;
-    uint32_t shape_index = 0, n_shapes = 0;
 };
 
-void Scene::optix_init(uint32_t n_shapes) {
-    m_optix_state = new Scene::OptixState();
-    auto &s = *m_optix_state;
+MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu() {
+    m_accel = new OptixState();
+    OptixState &s = *(OptixState *) m_accel;
 
     rt_check(rtContextCreate(&s.context));
 
@@ -114,7 +108,7 @@ void Scene::optix_init(uint32_t n_shapes) {
 
     rt_check(rtGeometryGroupCreate(s.context, &s.group));
     rt_check(rtGeometryGroupSetAcceleration(s.group, s.accel));
-    rt_check(rtGeometryGroupSetChildCount(s.group, n_shapes));
+    rt_check(rtGeometryGroupSetChildCount(s.group, m_shapes.size()));
 
     RTvariable top_object;
     rt_check(rtContextDeclareVariable(s.context, "top_object", &top_object));
@@ -124,40 +118,24 @@ void Scene::optix_init(uint32_t n_shapes) {
     rt_check(rtContextDeclareVariable(s.context, "accel", &accel));
     rt_check(rtVariableSetUserData(accel, sizeof(void *), &s.accel));
 
-    s.n_shapes = n_shapes;
-}
+    for (const Shape *shape : m_shapes) {
+        RTgeometrytriangles tri = shape->optix_geometry(s.context);
+        rt_check(rtGeometryTrianglesSetAttributeProgram(tri, s.attr_prog));
 
-void Scene::optix_release() {
-    auto &s = *m_optix_state;
-    rt_check(rtContextDestroy(s.context));
-    delete m_optix_state;
-    m_optix_state = nullptr;
-}
+        RTgeometryinstance tri_inst;
+        rt_check(rtGeometryInstanceCreate(s.context, &tri_inst));
+        rt_check(rtGeometryInstanceSetGeometryTriangles(tri_inst, tri));
 
-void Scene::optix_register(Shape *shape) {
-    auto &s = *m_optix_state;
-    RTgeometrytriangles tri = shape->optix_geometry(s.context);
-    rt_check(rtGeometryTrianglesSetAttributeProgram(tri, s.attr_prog));
+        RTvariable shape_ptr_var;
+        rt_check(rtGeometryInstanceSetMaterialCount(tri_inst, 1));
+        rt_check(rtGeometryInstanceSetMaterial(tri_inst, 0, s.material));
+        rt_check(rtGeometryGroupSetChild(s.group, s.shape_index, tri_inst));
 
-    RTgeometryinstance tri_inst;
-    rt_check(rtGeometryInstanceCreate(s.context, &tri_inst));
-    rt_check(rtGeometryInstanceSetGeometryTriangles(tri_inst, tri));
+        rt_check(rtGeometryInstanceDeclareVariable(tri_inst, "shape_ptr", &shape_ptr_var));
+        rt_check(rtVariableSet1ull(shape_ptr_var, (uintptr_t) shape));
+    }
 
-    RTvariable shape_ptr_var;
-    rt_check(rtGeometryInstanceSetMaterialCount(tri_inst, 1));
-    rt_check(rtGeometryInstanceSetMaterial(tri_inst, 0, s.material));
-    rt_check(rtGeometryGroupSetChild(s.group, s.shape_index, tri_inst));
-
-    rt_check(rtGeometryInstanceDeclareVariable(tri_inst, "shape_ptr", &shape_ptr_var));
-    rt_check(rtVariableSet1ull(shape_ptr_var, (uintptr_t) shape));
-    s.shape_index++;
-}
-
-void Scene::optix_build() {
-    auto &s = *m_optix_state;
     Log(Info, "Validating and building scene in OptiX.");
-    Assert(s.shape_index == s.n_shapes);
-    cuda_eval();
     rt_check(rtContextValidate(s.context));
     RTresult rt = rtContextLaunch1D(s.context, 0, 0);
     if (rt == RT_ERROR_MEMORY_ALLOCATION_FAILED) {
@@ -167,12 +145,20 @@ void Scene::optix_build() {
     rt_check(rt);
 }
 
-SurfaceInteraction3fD Scene::ray_intersect(const Ray3fD &ray_, MaskD active) const {
-    Ray3fD ray(ray_);
+MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
+    OptixState &s = *(OptixState *) m_accel;
+    rt_check(rtContextDestroy(s.context));
+    dleete (OptixState *) m_accel;
+    m_accel = nullptr;
+}
+
+MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const {
+    Ray3f ray(ray_);
     size_t ray_count = std::max(slices(ray.o), slices(ray.d));
     set_slices(ray, ray_count);
     set_slices(active, ray_count);
-    SurfaceInteraction3fD si = empty<SurfaceInteraction3fD>(ray_count);
+    SurfaceInteraction3f si = empty<SurfaceInteraction3f>(ray_count);
 
     cuda_eval();
 
@@ -243,10 +229,11 @@ SurfaceInteraction3fD Scene::ray_intersect(const Ray3fD &ray_, MaskD active) con
     return si;
 }
 
-MaskD Scene::ray_test(const Ray3fD &ray_, MaskD active) const {
-    Ray3fD ray(ray_);
+MTS_VARIANT typename Scene<Float, Spectrum>::Mask
+Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
+    Ray3f ray(ray_);
     size_t ray_count = std::max(slices(ray.o), slices(ray.d));
-    MaskD hit = empty<MaskD>(ray_count);
+    Mask hit = empty<Mask>(ray_count);
 
     set_slices(ray, ray_count);
     set_slices(active, ray_count);

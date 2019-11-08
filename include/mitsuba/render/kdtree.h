@@ -69,7 +69,7 @@ NAMESPACE_BEGIN(mitsuba)
  * well. The tree cost model must be passed as a template argument, which can
  * use a supplied bounding box and split candidate to compute approximate
  * probabilities of recursing into the left and right subrees during a typical
- * kd-tree query operation. See \ref SurfaceAreaHeuristic3f for an example of
+ * kd-tree query operation. See \ref SurfaceAreaHeuristic3 for an example of
  * the interface that must be implemented.
  *
  * The kd-tree construction algorithm creates 'perfect split' trees as outlined
@@ -98,7 +98,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename BoundingBox_, typename Index_, typename CostModel_,
           typename Derived_> class TShapeKDTree : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(TShapeKDTree, Object)
+    MTS_DECLARE_CLASS(TShapeKDTree, Object)
 
     using BoundingBox = BoundingBox_;
     using CostModel   = CostModel_;
@@ -107,12 +107,8 @@ public:
     using Derived     = Derived_;
     using Point       = typename BoundingBox::Point;
     using Vector      = typename BoundingBox::Vector;
-    using Scalar      = typename Vector::Scalar;
+    using Scalar      = value_t<Vector>;
     using IndexVector = std::vector<Index>;
-
-    using BoundingBox3f = mitsuba::BoundingBox<mitsuba::Point<float, 3>>;
-    using Vector3f      = mitsuba::Vector<float, 3>;
-    using Float         = Scalar;
 
     static constexpr size_t Dimension = Vector::Size;
 
@@ -350,11 +346,11 @@ protected:
 
 protected:
     /// Enumeration representing the state of a classified primitive in the O(N log N) builder
-    enum EPrimClassification : uint8_t {
-        EIgnore = 0, ///< Primitive was handled already, ignore from now on
-        ELeft   = 1, ///< Primitive is left of the split plane
-        ERight  = 2, ///< Primitive is right of the split plane
-        EBoth   = 3  ///< Primitive straddles the split plane
+    enum class PrimClassification : uint8_t {
+        Ignore = 0, ///< Primitive was handled already, ignore from now on
+        Left   = 1, ///< Primitive is left of the split plane
+        Right  = 2, ///< Primitive is right of the split plane
+        Both   = 3  ///< Primitive straddles the split plane
     };
 
     /* ==================================================================== */
@@ -378,18 +374,18 @@ protected:
             }
         }
 
-        void set(Index index, EPrimClassification value) {
+        void set(Index index, PrimClassification value) {
             Assert(index < m_count);
             uint8_t *ptr = m_buffer.get() + (index >> 2);
             uint8_t shift = (index & 3) << 1;
-            *ptr = (*ptr & ~(3 << shift)) | (value << shift);
+            *ptr = (*ptr & ~(3 << shift)) | ((uint8_t) value << shift);
         }
 
-        EPrimClassification get(Index index) const {
+        PrimClassification get(Index index) const {
             Assert(index < m_count);
             uint8_t *ptr = m_buffer.get() + (index >> 2);
             uint8_t shift = (index & 3) << 1;
-            return EPrimClassification((*ptr >> shift) & 3);
+            return PrimClassification((*ptr >> shift) & 3);
         }
 
         /// Return the size (in bytes)
@@ -598,7 +594,7 @@ protected:
 
     /// Data type for split candidates suggested by the tree cost model
     struct SplitCandidate {
-        Scalar cost = std::numeric_limits<Scalar>::infinity();
+        Scalar cost = math::Infinity<Scalar>;
         Scalar split = 0;
         int axis = 0;
         Size left_count = 0, right_count = 0;
@@ -625,17 +621,17 @@ protected:
      */
     struct EdgeEvent {
         /// Possible event types
-        enum EEventType {
-            EEdgeEnd = 0,
-            EEdgePlanar = 1,
-            EEdgeStart = 2
+        enum class Type {
+            EdgeEnd = 0,
+            EdgePlanar = 1,
+            EdgeStart = 2
         };
 
         /// Dummy constructor
         EdgeEvent() { }
 
         /// Create a new edge event
-        EdgeEvent(EEventType type, int axis, Scalar pos, Index index)
+        EdgeEvent(Type type, int axis, Scalar pos, Index index)
          : pos(pos), index(index), type(type), axis(axis) { }
 
         /// Return a string representation
@@ -645,9 +641,9 @@ protected:
                 << "  index = " << e.index << "," << std::endl
                 << "  type = ";
             switch (e.type) {
-                case EEdgeEnd: os << "end"; break;
-                case EEdgeStart: os << "start"; break;
-                case EEdgePlanar: os << "planar"; break;
+                case Type::EdgeEnd: os << "end"; break;
+                case Type::EdgeStart: os << "start"; break;
+                case Type::EdgePlanar: os << "planar"; break;
                 default: os << "unknown!"; break;
             }
             os << "," << std::endl
@@ -845,7 +841,7 @@ protected:
                 /* Double-check that it worked */
                 Assert(predicate(best.split));
                 Assert(!predicate(std::nextafter(
-                    best.split, std::numeric_limits<float>::infinity())));
+                    best.split, math::Infinity<Scalar>)));
             }
 
             return best;
@@ -1144,7 +1140,7 @@ protected:
         /// Recursively run the O(N log N builder)
         Scalar build_nlogn(NodeIterator node, Size prim_count,
                            EdgeEvent *events_start, EdgeEvent *events_end,
-                           const BoundingBox3f &bbox, Size depth,
+                           const BoundingBox &bbox, Size depth,
                            Size bad_refines, bool left_child = true) {
             const Derived &derived = m_ctx.derived;
 
@@ -1194,9 +1190,9 @@ protected:
 
                 while (event < events_end && event->pos == pos && event->axis == axis) {
                     switch (event->type) {
-                        case EdgeEvent::EEdgeStart:  ++num_start;  break;
-                        case EdgeEvent::EEdgePlanar: ++num_planar; break;
-                        case EdgeEvent::EEdgeEnd:    ++num_end;    break;
+                        case EdgeEvent::Type::EdgeStart:  ++num_start;  break;
+                        case EdgeEvent::Type::EdgePlanar: ++num_planar; break;
+                        case EdgeEvent::Type::EdgeEnd:    ++num_end;    break;
                     }
                     ++event;
                 }
@@ -1288,38 +1284,38 @@ protected:
             /* Initially mark all prims as being located on both sides */
             for (auto event = events_by_dimension[best.axis];
                  event != events_by_dimension[best.axis + 1]; ++event)
-                classification.set(event->index, EPrimClassification::EBoth);
+                classification.set(event->index, PrimClassification::Both);
 
             Size prims_left = 0, prims_right = 0;
             for (auto event = events_by_dimension[best.axis];
                  event != events_by_dimension[best.axis + 1]; ++event) {
 
-                if (event->type == EdgeEvent::EEdgeEnd &&
+                if (event->type == EdgeEvent::Type::EdgeEnd &&
                     event->pos <= best.split) {
                     /* Fully on the left side (the primitive's interval ends
                        before (or on) the split plane) */
-                    Assert(classification.get(event->index) == EPrimClassification::EBoth);
-                    classification.set(event->index, EPrimClassification::ELeft);
+                    Assert(classification.get(event->index) == PrimClassification::Both);
+                    classification.set(event->index, PrimClassification::Left);
                     prims_left++;
-                } else if (event->type == EdgeEvent::EEdgeStart &&
+                } else if (event->type == EdgeEvent::Type::EdgeStart &&
                            event->pos >= best.split) {
                     /* Fully on the right side (the primitive's interval
                        starts after (or on) the split plane) */
-                    Assert(classification.get(event->index) == EPrimClassification::EBoth);
-                    classification.set(event->index, EPrimClassification::ERight);
+                    Assert(classification.get(event->index) == PrimClassification::Both);
+                    classification.set(event->index, PrimClassification::Right);
                     prims_right++;
-                } else if (event->type == EdgeEvent::EEdgePlanar) {
+                } else if (event->type == EdgeEvent::Type::EdgePlanar) {
                     /* If the planar primitive is not on the split plane,
                        the classification is easy. Otherwise, place it on
                        the side with the lower cost */
-                    Assert(classification.get(event->index) == EPrimClassification::EBoth);
+                    Assert(classification.get(event->index) == PrimClassification::Both);
                     if (event->pos < best.split ||
                         (event->pos == best.split && best.planar_left)) {
-                        classification.set(event->index, EPrimClassification::ELeft);
+                        classification.set(event->index, PrimClassification::Left);
                         prims_left++;
                     } else if (event->pos > best.split ||
                                (event->pos == best.split && !best.planar_left)) {
-                        classification.set(event->index, EPrimClassification::ERight);
+                        classification.set(event->index, PrimClassification::Right);
                         prims_right++;
                     }
                 }
@@ -1369,15 +1365,15 @@ protected:
 
                     /* Fetch the classification of the current event */
                     switch (classification.get(event.index)) {
-                        case EPrimClassification::ELeft:
+                        case PrimClassification::Left:
                             *left_events_end++ = event;
                             break;
 
-                        case EPrimClassification::ERight:
+                        case PrimClassification::Right:
                             *right_events_end++ = event;
                             break;
 
-                        case EPrimClassification::EBoth:
+                        case PrimClassification::Both:
                             *left_events_end++ = event;
                             *right_events_end++ = event;
                             break;
@@ -1414,18 +1410,18 @@ protected:
 
                     /* Fetch the classification of the current event */
                     switch (classification.get(event.index)) {
-                        case EPrimClassification::ELeft:
+                        case PrimClassification::Left:
                             *temp_left_events_end++ = event;
                             break;
 
-                        case EPrimClassification::ERight:
+                        case PrimClassification::Right:
                             *temp_right_events_end++ = event;
                             break;
 
-                        case EPrimClassification::EIgnore:
+                        case PrimClassification::Ignore:
                             break;
 
-                        case EPrimClassification::EBoth: {
+                        case PrimClassification::Both: {
                                 BoundingBox clippedLeft  = derived.bbox(event.index, left_bbox);
                                 BoundingBox clippedRight = derived.bbox(event.index, right_bbox);
 
@@ -1440,12 +1436,12 @@ protected:
 
                                         if (min != max) {
                                             *new_left_events_end++ = EdgeEvent(
-                                                EdgeEvent::EEdgeStart, axis, min, event.index);
+                                                EdgeEvent::Type::EdgeStart, axis, min, event.index);
                                             *new_left_events_end++ = EdgeEvent(
-                                                EdgeEvent::EEdgeEnd, axis, max, event.index);
+                                                EdgeEvent::Type::EdgeEnd, axis, max, event.index);
                                         } else {
                                             *new_left_events_end++ = EdgeEvent(
-                                                EdgeEvent::EEdgePlanar, axis, min, event.index);
+                                                EdgeEvent::Type::EdgePlanar, axis, min, event.index);
                                         }
                                     }
                                 } else {
@@ -1460,12 +1456,12 @@ protected:
 
                                         if (min != max) {
                                             *new_right_events_end++ = EdgeEvent(
-                                                EdgeEvent::EEdgeStart, axis, min, event.index);
+                                                EdgeEvent::Type::EdgeStart, axis, min, event.index);
                                             *new_right_events_end++ = EdgeEvent(
-                                                EdgeEvent::EEdgeEnd, axis, max, event.index);
+                                                EdgeEvent::Type::EdgeEnd, axis, max, event.index);
                                         } else {
                                             *new_right_events_end++ = EdgeEvent(
-                                                EdgeEvent::EEdgePlanar, axis, min, event.index);
+                                                EdgeEvent::Type::EdgePlanar, axis, min, event.index);
                                         }
                                     }
                                 } else {
@@ -1475,7 +1471,7 @@ protected:
                                 /* Set classification to 'EIgnore' to ensure that
                                    clipping occurs only once */
                                 classification.set(
-                                    event.index, EPrimClassification::EIgnore);
+                                    event.index, PrimClassification::Ignore);
                             }
                             break;
 
@@ -1607,11 +1603,11 @@ protected:
                         events_start[offset  ].set_invalid();
                         events_start[offset+1].set_invalid();
                     } else if (min == max) {
-                        events_start[offset  ] = EdgeEvent(EdgeEvent::EEdgePlanar, axis, min, prim_index);
+                        events_start[offset  ] = EdgeEvent(EdgeEvent::Type::EdgePlanar, axis, min, prim_index);
                         events_start[offset+1].set_invalid();
                     } else {
-                        events_start[offset  ] = EdgeEvent(EdgeEvent::EEdgeStart, axis, min, prim_index);
-                        events_start[offset+1] = EdgeEvent(EdgeEvent::EEdgeEnd,   axis, max, prim_index);
+                        events_start[offset  ] = EdgeEvent(EdgeEvent::Type::EdgeStart, axis, min, prim_index);
+                        events_start[offset+1] = EdgeEvent(EdgeEvent::Type::EdgeEnd,   axis, max, prim_index);
                     }
                 }
             }
@@ -1629,7 +1625,7 @@ protected:
             m_local->classification_storage.resize(derived.primitive_count());
             m_local->ctx = &m_ctx;
 
-            Float cost = build_nlogn(m_node, final_prim_count, events_start,
+            Scalar cost = build_nlogn(m_node, final_prim_count, events_start,
                                      events_end, m_bbox, m_depth, 0);
 
             m_local->left_alloc.release(events_start);
@@ -1662,8 +1658,8 @@ protected:
             for (auto event = events_start; event != events_end; ++event) {
                 if (event->axis != 0)
                     break;
-                if (event->type == EdgeEvent::EEdgeStart ||
-                    event->type == EdgeEvent::EEdgePlanar) {
+                if (event->type == EdgeEvent::Type::EdgeStart ||
+                    event->type == EdgeEvent::Type::EdgePlanar) {
                     Assert(--prim_count >= 0);
                     *it++ = event->index;
                 }
@@ -1817,7 +1813,7 @@ protected:
 
         /* Slightly avoid the bounding box to avoid numerical issues
            involving geometry that exactly lies on the boundary */
-        Vector3f extra = (m_bbox.extents() + 1.f) * math::Epsilon<Scalar>;
+        Vector extra = (m_bbox.extents() + 1.f) * math::Epsilon<Scalar>;
         m_bbox.min -= extra;
         m_bbox.max += extra;
 
@@ -1907,26 +1903,15 @@ protected:
     BoundingBox m_bbox;
 };
 
-template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
-Class * TShapeKDTree<BoundingBox, Index, CostModel, Derived>::m_class =
-    new Class("TShapeKDTree", "Object", true, nullptr, nullptr);
-
-template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
-const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() const {
-    return m_class;
-}
-
-class SurfaceAreaHeuristic3f {
+template <typename Float> class SurfaceAreaHeuristic3 {
 public:
-    // TODO: how to support double precision?
-    using Float         = float;
     using Size          = uint32_t;
     using Index         = uint32_t;
-    using BoundingBox3f = mitsuba::BoundingBox<mitsuba::Point<Float, 3>>;
+    using BoundingBox3f = BoundingBox<Point<Float, 3>>;
     using Vector3f      = Vector<Float, 3>;
 
-    SurfaceAreaHeuristic3f(Float query_cost, Float traversal_cost,
-                           Float empty_space_bonus)
+    SurfaceAreaHeuristic3(Float query_cost, Float traversal_cost,
+                          Float empty_space_bonus)
         : m_query_cost(query_cost), m_traversal_cost(traversal_cost),
           m_empty_space_bonus(empty_space_bonus) {
         if (m_query_cost <= 0)
@@ -2002,8 +1987,8 @@ public:
         return bbox.surface_area();
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const SurfaceAreaHeuristic3f &sa) {
-        os << "SurfaceAreaHeuristic3f[" << std::endl
+    friend std::ostream &operator<<(std::ostream &os, const SurfaceAreaHeuristic3 &sa) {
+        os << "SurfaceAreaHeuristic3[" << std::endl
            << "  query_cost = " << sa.query_cost() << "," << std::endl
            << "  traversal_cost = " << sa.traversal_cost() << "," << std::endl
            << "  empty_space_bonus = " << sa.empty_space_bonus() << std::endl
@@ -2017,132 +2002,78 @@ private:
     Float m_empty_space_bonus;
 };
 
-class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<float, 3>>, uint32_t,
-                                                          SurfaceAreaHeuristic3f, ShapeKDTree> {
+template <typename Float, typename Spectrum>
+class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<scalar_t<Float>, 3>>, uint32_t,
+                                                          SurfaceAreaHeuristic3<scalar_t<Float>>,
+                                                          ShapeKDTree<Float, Spectrum>> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(ShapeKDTree, TShapeKDTree)
+    MTS_DECLARE_CLASS(ShapeKDTree, TShapeKDTree)
 
-    using BoundingBox3f = mitsuba::BoundingBox<mitsuba::Point<float, 3>>;
-    using Base = TShapeKDTree<BoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
-    using Base::Scalar;
-    // TODO(!): figure out how to templatize this class
-    using Float      = Scalar;
-    using Spectrum   = mitsuba::Spectrum<Float>;
-    using Point3f    = mitsuba::Point<Float, 3>;
-    using Shape      = Shape<Float, Spectrum>;
-    using Mesh       = Mesh<Float, Spectrum>;
-    using FloatP     = Array<float, 8>;
-    using SpectrumfP = mitsuba::Spectrum<FloatP>;
-    using Point3fP   = mitsuba::Point<FloatP, 3>;
-    using MaskP      = mask_t<FloatP>;
-    using Ray3f      = Ray<Point3f, Spectrum>;
-    using Ray3fP     = Ray<Point3fP, SpectrumfP>;
+    using ScalarFloat          = scalar_t<Float>;
+    using Point2f              = Point<Float, 2>;
+    using Point3f              = Point<Float, 3>;
+    using ScalarPoint3f        = Point<ScalarFloat, 3>;
+    using ScalarBoundingBox3f  = BoundingBox<ScalarPoint3f>;
+    using Ray3f                = Ray<Point3f, Spectrum>;
+    using Mask                 = mask_t<Float>;
+    using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
+    using Shape                = mitsuba::Shape<Float, Spectrum>;
+    using Mesh                 = mitsuba::Mesh<Float, Spectrum>;
+    using Size                 = uint32_t;
+    using Index                = uint32_t;
+    using Base                 = TShapeKDTree<ScalarBoundingBox3f, uint32_t,
+                                              SurfaceAreaHeuristic3<ScalarFloat>, ShapeKDTree>;
+    using typename Base::KDNode;
+    using Base::m_bbox;
+    using Base::m_nodes;
+    using Base::m_indices;
 
+    /// Create an empty kd-tree and take build-related parameters from \c props.
     ShapeKDTree(const Properties &props);
+
+    /// Register a new shape with the kd-tree (to be called before \ref build())
     void add_shape(Shape *shape);
 
-    Size primitive_count() const { return m_primitive_map.back(); }
+    /// Build the kd-tree
+    void build();
+
+    /// Return the number of registered shapes
     Size shape_count() const { return Size(m_shapes.size()); }
 
-    void build() {
-        Timer timer;
-        Log(Info, "Building a SAH kd-tree (%i primitives) ..",
-            primitive_count());
+    /// Return the number of registered primitives
+    Size primitive_count() const { return m_primitive_map.back(); }
 
-        Base::build();
-
-        Log(Info, "Finished. (%s of storage, took %s)",
-            util::mem_string(m_index_count * sizeof(Index) +
-                            m_node_count * sizeof(KDNode)),
-            util::time_string(timer.value())
-        );
-    }
-
-    /// Return the i-th shape
+    /// Return the i-th shape (const version)
     const Shape *shape(size_t i) const { Assert(i < m_shapes.size()); return m_shapes[i]; }
 
     /// Return the i-th shape
     Shape *shape(size_t i) { Assert(i < m_shapes.size()); return m_shapes[i]; }
 
-    using Base::bbox;
-
     /// Return the bounding box of the i-th primitive
-    BoundingBox3f bbox(Index i) const {
+    MTS_INLINE ScalarBoundingBox3f bbox(Index i) const {
         Index shape_index = find_shape(i);
         return m_shapes[shape_index]->bbox(i);
     }
 
     /// Return the (clipped) bounding box of the i-th primitive
-    BoundingBox3f bbox(Index i, const BoundingBox3f &clip) const {
+    MTS_INLINE ScalarBoundingBox3f bbox(Index i, const ScalarBoundingBox3f &clip) const {
         Index shape_index = find_shape(i);
         return m_shapes[shape_index]->bbox(i, clip);
     }
 
-    /**
-     * \brief Check whether a primitive is intersected by the given ray.
-     *
-     * Some temporary space is supplied to store data that can later be used to
-     * create a detailed intersection record.
-     */
-    template <bool ShadowRay = false, typename Ray,
-              typename Value = typename Ray::Value,
-              typename Mask  = mask_t<Value>>
-    MTS_INLINE std::pair<Mask, Value>
-    intersect_prim(Index prim_index,
-                   const Ray &ray,
-                   Value *cache,
-                   Mask active) const {
-        using UInt = uint_array_t<Value>;
-
-        Assert(ShadowRay || cache != nullptr,
-               "Standard rays (i.e. non-shadow rays) must provide a `cache`"
-               " pointer to store intersection data.");
-
-        Index shape_index  = find_shape(prim_index);
-        const Shape *shape = this->shape(shape_index);
-        bool is_mesh = shape->is_mesh();
-
-        Mask hit;
-        Value u = 0.f, v = 0.f, t = 0.f;
-
-        if (is_mesh)
-            std::tie(hit, u, v, t) = ((const Mesh *) shape)
-                    ->ray_intersect_triangle(prim_index, ray, active);
-        else if (ShadowRay)
-            hit = shape->ray_test(ray, active);
+    template <bool ShadowRay>
+    MTS_INLINE std::pair<Mask, Float> ray_intersect(const Ray3f &ray,
+                                                    Float *cache,
+                                                    Mask active) const {
+        if constexpr (!is_array_v<Float>)
+            return ray_intersect_scalar(ray, cache);
         else
-            std::tie(hit, t) = shape->ray_intersect(ray, cache + 2, active);
-
-        if (!ShadowRay && any(hit)) {
-            Value shape_index_v = reinterpret_array<Value>(UInt(shape_index));
-            Value prim_index_v = reinterpret_array<Value>(UInt(prim_index));
-
-            if constexpr (!is_array_v<Value>) {
-                cache[0] = shape_index_v;
-                cache[1] = prim_index_v;
-            } else {
-                masked(cache[0], hit) = shape_index_v;
-                masked(cache[1], hit) = prim_index_v;
-            }
-
-            if (is_mesh) {
-                if constexpr (!is_array_v<Value>) {
-                    cache[2] = u;
-                    cache[3] = v;
-                } else {
-                    masked(cache[2], hit) = u;
-                    masked(cache[3], hit) = v;
-                }
-            }
-        }
-
-        return { hit, t };
+            return ray_intersect_packet(ray, cache, active);
     }
 
-    /// Scalar ray tracing kernel
     template <bool ShadowRay>
-    MTS_INLINE std::pair<bool, Float> ray_intersect(Ray3f ray,
-                                                    Float *cache = nullptr) const {
+    MTS_INLINE std::pair<bool, Float> ray_intersect_scalar(const Ray3f &ray,
+                                                           Float *cache) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
@@ -2237,17 +2168,16 @@ public:
         return { hit, hit ? ray.maxt : math::Infinity<Float> };
     }
 
-    /// Vectorized ray tracing kernel
     template <bool ShadowRay>
-    MTS_INLINE std::pair<MaskP, FloatP> ray_intersect(Ray3fP ray,
-                                                      FloatP *cache = nullptr,
-                                                      MaskP active = true) const {
+    MTS_INLINE std::pair<Mask, Float> ray_intersect(Ray3f ray,
+                                                    Float *cache,
+                                                    Mask active) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
-            FloatP mint, maxt;
+            Float mint, maxt;
             // Is the corresponding SIMD lane enabled?
-            MaskP active;
+            Mask active;
             // Pointer to the far child
             const KDNode *node;
         };
@@ -2257,14 +2187,14 @@ public:
         int32_t stack_index = 0;
 
         // True if an intersection has been found
-        MaskP hit = false;
+        Mask hit = false;
 
         const KDNode *node = m_nodes.get();
 
         /* Intersect against the scene bounding box */
         auto bbox_result = m_bbox.ray_intersect(ray);
-        FloatP mint = enoki::max(ray.mint, std::get<1>(bbox_result));
-        FloatP maxt = enoki::min(ray.maxt, std::get<2>(bbox_result));
+        Float mint = enoki::max(ray.mint, std::get<1>(bbox_result));
+        Float maxt = enoki::min(ray.maxt, std::get<2>(bbox_result));
 
         while (true) {
             active = active && (maxt >= mint);
@@ -2273,19 +2203,19 @@ public:
 
             if (likely(any(active))) {
                 if (likely(!node->leaf())) { // Inner node
-                    const Float split   = node->split();
+                    const scalar_t<Float> split = node->split();
                     const uint32_t axis = node->axis();
 
                     // Compute parametric distance along the rays to the split plane
-                    FloatP t_plane          = (split - ray.o[axis]) * ray.d_rcp[axis];
-                    MaskP left_first        = (ray.o[axis] < split) ||
+                    Float t_plane          = (split - ray.o[axis]) * ray.d_rcp[axis];
+                    Mask left_first        = (ray.o[axis] < split) ||
                                               (eq(ray.o[axis], split) && ray.d[axis] >= 0.f),
-                          start_after       = t_plane < mint,
-                          end_before        = t_plane > maxt || t_plane < 0.f || !enoki::isfinite(t_plane),
-                          single_node       = start_after || end_before,
-                          visit_left        = eq(end_before, left_first),
-                          visit_only_left   = single_node &&  visit_left,
-                          visit_only_right  = single_node && !visit_left;
+                         start_after       = t_plane < mint,
+                         end_before        = t_plane > maxt || t_plane < 0.f || !enoki::isfinite(t_plane),
+                         single_node       = start_after || end_before,
+                         visit_left        = eq(end_before, left_first),
+                         visit_only_left   = single_node &&  visit_left,
+                         visit_only_right  = single_node && !visit_left;
 
                     bool all_visit_only_left  = all(visit_only_left || !active),
                          all_visit_only_right = all(visit_only_right || !active),
@@ -2302,11 +2232,11 @@ public:
 
                     bool go_left = left_votes >= right_votes;
 
-                    MaskP go_left_bcast = MaskP(go_left),
-                          correct_order = eq(left_first, go_left_bcast),
-                          visit_both    = !single_node,
-                          visit_cur     = visit_both || eq (visit_left, go_left_bcast),
-                          visit_next    = visit_both || neq(visit_left, go_left_bcast);
+                    Mask go_left_bcast = Mask(go_left),
+                         correct_order = eq(left_first, go_left_bcast),
+                         visit_both    = !single_node,
+                         visit_cur     = visit_both || eq (visit_left, go_left_bcast),
+                         visit_next    = visit_both || neq(visit_left, go_left_bcast);
 
                     /* Visit both child nodes in the right order */
                     Index node_offset = go_left ? 0 : 1;
@@ -2315,8 +2245,8 @@ public:
                                  *n_next = left + (1 - node_offset);
 
                     /* Postpone visit to 'n_next' */
-                    MaskP sel0 =  correct_order && visit_both,
-                          sel1 = !correct_order && visit_both;
+                    Mask sel0 =  correct_order && visit_both,
+                         sel1 = !correct_order && visit_both;
                     KDStackEntry& entry = stack[stack_index++];
                     entry.mint = select(sel0, t_plane, mint);
                     entry.maxt = select(sel1, t_plane, maxt);
@@ -2335,8 +2265,8 @@ public:
                     for (Index i = prim_start; i < prim_end; i++) {
                         Index prim_index = m_indices[i];
 
-                        MaskP prim_hit;
-                        FloatP prim_t;
+                        Mask prim_hit;
+                        Float prim_t;
                         std::tie(prim_hit, prim_t) =
                             intersect_prim<ShadowRay>(prim_index, ray, cache, active);
 
@@ -2365,22 +2295,20 @@ public:
     }
 
     /// Brute force intersection routine for debugging purposes
-    template <bool ShadowRay = false, typename Ray,
-              typename Value = typename Ray::Value,
-              typename Mask  = mask_t<Value>>
-    std::pair<Mask, Value> ray_intersect_naive(Ray ray,
-                                               Value *cache = nullptr,
-                                               Mask active = true) const {
-        Value hit_t = math::Infinity<Float>;
+    template <bool ShadowRay>
+    MTS_INLINE std::pair<Mask, Float> ray_intersect_naive(const Ray3f &ray,
+                                                          Float *cache,
+                                                          Mask active) const {
+        Float hit_t = math::Infinity<Float>;
         Mask hit(false);
 
         for (Size i = 0; i < primitive_count(); ++i) {
             Mask prim_hit;
-            Value prim_t;
+            Float prim_t;
             std::tie(prim_hit, prim_t) =
                 intersect_prim<ShadowRay>(i, ray, cache, active);
 
-            if constexpr (is_array_v<Value>) {
+            if constexpr (is_array_v<Float>) {
                 masked(ray.maxt, prim_hit) = min(ray.maxt, prim_t);
                 masked(hit_t, prim_hit) = prim_t;
             } else if (all(prim_hit)) {
@@ -2398,18 +2326,12 @@ public:
      * \brief Create a \ref SurfaceInteraction data structure by expanding the
      * temporary information collected during \ref intersect_ray().
      */
-    template <typename Ray,
-              typename Point3 = typename Ray::Point,
-              typename Value  = typename Ray::Value,
-              typename SurfaceInteraction = mitsuba::SurfaceInteraction<Value, mitsuba::Spectrum<Value>>,
-              typename Mask = mask_t<Value>>
-    MTS_INLINE SurfaceInteraction create_surface_interaction(const Ray &ray,
-                                                             Value t,
-                                                             const Value *cache,
-                                                             Mask active = true) const {
-        using ShapePtr = typename SurfaceInteraction::ShapePtr;
-        using Point2 = typename SurfaceInteraction::Point2;
-        using UInt = uint_array_t<Value>;
+    MTS_INLINE SurfaceInteraction3f create_surface_interaction(const Ray3f &ray,
+                                                               Float t,
+                                                               const Float *cache,
+                                                               Mask active = true) const {
+        using UInt     = uint_array_t<Float>;
+        using ShapePtr = replace_scalar_t<Float, const Shape *>;
 
         UInt shape_index = reinterpret_array<UInt>(cache[0]);
         UInt prim_index = reinterpret_array<UInt>(cache[1]);
@@ -2423,7 +2345,7 @@ public:
         si.shape = gather<ShapePtr>(m_shapes.data(), shape_index, active);
         si.prim_index = prim_index;
         si.instance = nullptr;
-        si.duv_dx = si.duv_dy = zero<Point2>();
+        si.duv_dx = si.duv_dy = zero<Point2f>();
 
         // Ask shape(s) to fill in the rest using the cache
         si.shape->fill_surface_interaction(ray, cache + 2, si, active);
@@ -2450,7 +2372,7 @@ protected:
      * The function returns the shape index and updates the \a idx parameter to
      * point to the primitive index (e.g. triangle ID) within the shape.
      */
-    Index find_shape(Index &i) const {
+    MTS_INLINE Index find_shape(Index &i) const {
         Assert(i < primitive_count());
 
         Index shape_index = (Index) math::find_interval(
@@ -2469,6 +2391,63 @@ protected:
         i -= m_primitive_map[shape_index];
 
         return shape_index;
+    }
+
+    /**
+     * \brief Check whether a primitive is intersected by the given ray.
+     *
+     * Some temporary space is supplied to store data that can later be used to
+     * create a detailed intersection record.
+     */
+    template <bool ShadowRay = false>
+    MTS_INLINE std::pair<Mask, Float>
+    intersect_prim(Index prim_index, const Ray3f &ray,
+                   Float *cache, Mask active) const {
+        using UInt = uint_array_t<Float>;
+
+        Assert(ShadowRay || cache != nullptr,
+               "Standard rays (i.e. non-shadow rays) must provide a `cache`"
+               " pointer to store intersection data.");
+
+        Index shape_index  = find_shape(prim_index);
+        const Shape *shape = this->shape(shape_index);
+        bool is_mesh = shape->is_mesh();
+
+        Mask hit;
+        Float u = 0.f, v = 0.f, t = 0.f;
+
+        if (is_mesh)
+            std::tie(hit, u, v, t) = ((const Mesh *) shape)
+                    ->ray_intersect_triangle(prim_index, ray, active);
+        else if (ShadowRay)
+            hit = shape->ray_test(ray, active);
+        else
+            std::tie(hit, t) = shape->ray_intersect(ray, cache + 2, active);
+
+        if (!ShadowRay && any(hit)) {
+            Float shape_index_v = reinterpret_array<Float>(UInt(shape_index));
+            Float prim_index_v = reinterpret_array<Float>(UInt(prim_index));
+
+            if constexpr (!is_array_v<Float>) {
+                cache[0] = shape_index_v;
+                cache[1] = prim_index_v;
+            } else {
+                masked(cache[0], hit) = shape_index_v;
+                masked(cache[1], hit) = prim_index_v;
+            }
+
+            if (is_mesh) {
+                if constexpr (!is_array_v<Float>) {
+                    cache[2] = u;
+                    cache[3] = v;
+                } else {
+                    masked(cache[2], hit) = u;
+                    masked(cache[3], hit) = v;
+                }
+            }
+        }
+
+        return { hit, t };
     }
 
 protected:

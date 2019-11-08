@@ -27,13 +27,13 @@ template <typename Point_, typename Spectrum_> struct Ray {
     using Spectrum               = Spectrum_;
     using Wavelength             = wavelength_t<Spectrum_>;
 
-    Point o;                     ///< Ray origin
-    Vector d;                    ///< Ray direction
-    Vector d_rcp;                ///< Componentwise reciprocals of the ray direction
+    Point o;                            ///< Ray origin
+    Vector d;                           ///< Ray direction
+    Vector d_rcp;                       ///< Componentwise reciprocals of the ray direction
     Value mint = math::Epsilon<Value>;  ///< Minimum position on the ray segment
     Value maxt = math::Infinity<Value>; ///< Maximum position on the ray segment
-    Value time = 0.f;            ///< Time value associated with this ray
-    Wavelength wavelength;       ///< Wavelength packet associated with the ray
+    Value time = 0.f;                   ///< Time value associated with this ray
+    Wavelength wavelength;              ///< Wavelength packet associated with the ray
 
     /// Construct a new ray (o, d) at time 'time'
     Ray(const Point &o, const Vector &d, Value time,

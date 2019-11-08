@@ -43,11 +43,10 @@ void SamplingIntegrator<Float, Spectrum>::cancel() {
 }
 
 template <typename Float, typename Spectrum>
-bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
-    ScopedPhase sp(EProfilerPhase::ERender);
+bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
+    ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
-    ref<Sensor> sensor = scene->sensor();
     ref<Film> film = sensor->film();
 
     size_t n_threads        = __global_thread_count;
@@ -111,7 +110,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
                     seed += i * hprod(film->crop_size());
                 sampler->seed(seed);
 
-                render_block_scalar(scene, sampler, block,
+                render_block_scalar(scene, sensor, sampler, block,
                                     samples_per_pass);
 
                 film->put(block);
@@ -133,10 +132,11 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene) {
 }
 
 template <typename Float, typename Spectrum>
-void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene, Sampler *sampler,
+void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene,
+                                                              const Sensor *sensor,
+                                                              Sampler *sampler,
                                                               ImageBlock *block,
                                                               size_t sample_count_) const {
-    const Sensor *sensor = scene->sensor();
     block->clear();
     uint32_t pixel_count  = (uint32_t)(m_block_size * m_block_size),
              sample_count = (uint32_t)(sample_count_ == (size_t) -1
@@ -181,11 +181,11 @@ void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene
             Mask active = true;
             Float alpha = 1.f;  // TODO: restore support for alpha (probably AOV?)
             /* Integrator::eval */ {
-                ScopedPhase sp(EProfilerPhase::ESamplingIntegratorEval);
+                ScopedPhase sp(ProfilerPhase::SamplingIntegratorEval);
                 std::tie(result, active) = sample(scene, sampler, ray, active);
             }
             /* ImageBlock::put */ {
-                ScopedPhase sp(EProfilerPhase::EImageBlockPut);
+                ScopedPhase sp(ProfilerPhase::ImageBlockPut);
                 block->put(position_sample, ray.wavelength, ray_weight * result, alpha);
             }
         }

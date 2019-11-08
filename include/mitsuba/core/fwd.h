@@ -152,15 +152,23 @@ template <typename Float_> struct CoreAliases {
     using BoundingSphere3f = BoundingSphere<Point3f>;
     using BoundingSphere4f = BoundingSphere<Point4f>;
 
-    using Frame3f              = Frame<Float>;
-    using Transform3f          = Transform<Float, 3>;
-    using Transform4f          = Transform<Float, 4>;
+    using Frame3f          = Frame<Float>;
+    using Transform3f      = Transform<Float, 3>;
+    using Transform4f      = Transform<Float, 4>;
 
-    using Color1f    = Color<Float, 1>;
-    using Color3f    = Color<Float, 3>;
-    using StokesVector4f  = StokesVector<Float>;
-    using MuellerMatrix4f = MuellerMatrix<Float>;
+    using Color1f          = Color<Float, 1>;
+    using Color3f          = Color<Float, 3>;
+    using StokesVector4f   = StokesVector<Float>;
+    using MuellerMatrix4f  = MuellerMatrix<Float>;
 
+    template <typename T> using managed_allocator = std::conditional_t<
+        is_cuda_array_v<Float>, cuda_managed_allocator<T>, std::allocator<T>>;
+
+    template <typename T> using host_allocator = std::conditional_t<
+        is_cuda_array_v<Float>, cuda_host_allocator<T>, std::allocator<T>>;
+
+    template <typename T> using host_vector    = std::vector<T, host_allocator<T>>;
+    template <typename T> using managed_vector = std::vector<T, managed_allocator<T>>;
 };
 
 #define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \

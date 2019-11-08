@@ -106,7 +106,7 @@ void Profiler::print_report() {
 
         size_t indent = 0;
         std::string name_hierarchical;
-        for (int i = 0; i < int(EProfilerPhase::EProfilerPhaseCount); ++i) {
+        for (int i = 0; i < int(ProfilerPhase::ProfilerPhaseCount); ++i) {
             uint64_t flag = 1ull << i;
             if (sample_flags & flag) {
                 const char *name = profiler_phase_id[i];

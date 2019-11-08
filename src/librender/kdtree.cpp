@@ -4,7 +4,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-ShapeKDTree::ShapeKDTree(const Properties &props)
+MTS_VARIANT ShapeKDTree<Float, Spectrum>::ShapeKDTree(const Properties &props)
     : Base(SurfaceAreaHeuristic3f(
           /* kd-tree construction: Relative cost of a shape intersection
              operation in the surface area heuristic. */
@@ -47,7 +47,21 @@ ShapeKDTree::ShapeKDTree(const Properties &props)
     m_primitive_map.push_back(0);
 }
 
-void ShapeKDTree::add_shape(Shape *shape) {
+MTS_VARIANT void ShapeKDTree<Float, Spectrum>::build() {
+    Timer timer;
+    Log(Info, "Building a SAH kd-tree (%i primitives) ..",
+        primitive_count());
+
+    Base::build();
+
+    Log(Info, "Finished. (%s of storage, took %s)",
+        util::mem_string(m_index_count * sizeof(Index) +
+                        m_node_count * sizeof(KDNode)),
+        util::time_string(timer.value())
+    );
+}
+
+MTS_VARIANT void ShapeKDTree<Float, Spectrum>::add_shape(Shape *shape) {
     Assert(!ready());
     m_primitive_map.push_back(m_primitive_map.back() +
                               shape->primitive_count());
@@ -55,9 +69,7 @@ void ShapeKDTree::add_shape(Shape *shape) {
     m_bbox.expand(shape->bbox());
 }
 
-using Mask = mask_t<FloatP>;
-
-std::string ShapeKDTree::to_string() const {
+MTS_VARIANT std::string ShapeKDTree<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "ShapeKDTreeKDTree[" << std::endl
         << "  shapes = [" << std::endl;
@@ -68,4 +80,5 @@ std::string ShapeKDTree::to_string() const {
     return oss.str();
 }
 
+MTS_INSTANTIATE_OBJECT(ShapeKDTree)
 NAMESPACE_END(mitsuba)

@@ -11,21 +11,11 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
+    /// Register this class with Mitsuba's RTTI system
     MTS_DECLARE_CLASS_VARIANT(Scene, Object, "scene")
-    MTS_IMPORT_TYPES();
-    using Sampler              = typename RenderAliases::Sampler;
-    using Shape                = typename RenderAliases::Shape;
-    using Integrator           = typename RenderAliases::Integrator;
-    using BSDF                 = typename RenderAliases::BSDF;
-    using Sensor               = typename RenderAliases::Sensor;
-    using Emitter              = typename RenderAliases::Emitter;
-    // using Medium               = typename RenderAliases::Medium;
-    using Film                 = typename RenderAliases::Film;
-    // using BSDFPtr              = typename RenderAliases::BSDFPtr;
-    // using MediumPtr            = typename RenderAliases::MediumPtr;
-    // using ShapePtr             = typename RenderAliases::ShapePtr;
-    // using EmitterPtr           = typename RenderAliases::EmitterPtr;
+    MTS_IMPORT_TYPES(BSDF, Emitter, Film, Sampler, Shape, Sensor, Integrator)
 
+    /// Instantiate a scene from a \ref Properties object
     Scene(const Properties &props);
 
     // =============================================================
@@ -46,7 +36,17 @@ public:
      *    <tt>is_valid()</tt> method to determine whether an
      *    intersection was actually found.
      */
-    SurfaceInteraction3f ray_intersect(const Ray3f &ray, Mask active = true) const;
+    SurfaceInteraction3f ray_intersect(const Ray3f &ray,
+                                       Mask active = true) const;
+
+    /**
+     * \brief Ray intersection using brute force search. Used in
+     * unit tests to validate the kdtree-based ray tracer.
+     *
+     * \remark Not implemented by the Embree/OptiX backends
+     */
+    SurfaceInteraction3f ray_intersect_naive(const Ray3f &ray,
+                                             Mask active = true) const;
 
     /**
      * \brief Intersect a ray against all primitives stored in the scene
@@ -64,15 +64,7 @@ public:
      *
      * \return \c true if an intersection was found
      */
-    bool ray_test(const Ray3f &ray, Mask active = true) const;
-
-#if !defined(MTS_USE_EMBREE)
-    /**
-     * \brief Ray intersection using brute force search. Used in
-     * unit tests to validate the kdtree-based ray tracer.
-     */
-    SurfaceInteraction3f ray_intersect_naive(const Ray3f &ray, Mask active = true) const;
-#endif
+    Mask ray_test(const Ray3f &ray, Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -87,9 +79,9 @@ public:
      * Given an arbitrary reference point in the scene, this method samples a
      * direction from the reference point to towards an emitter.
      *
-     * Ideally, the implementation should importance sample the product of
-     * the emission profile and the geometry term between the reference point
-     * and the position on the emitter.
+     * Ideally, the implementation should importance sample the product of the
+     * emission profile and the geometry term between the reference point and
+     * the position on the emitter.
      *
      * \param ref
      *    A reference point somewhere within the scene
@@ -112,16 +104,6 @@ public:
                              Mask active = true) const;
 
     /**
-     * \brief Modified version of \ref sample_emitter_direction_pol() that also
-     * samples accross index-matched interfaces.
-     */
-    std::pair<DirectionSample3f, Spectrum>
-    sample_emitter_direction_attenuated(const Interaction3f &ref,
-                                        Sampler *sampler,
-                                        bool test_visibility = true,
-                                        Mask active = true) const;
-
-    /**
      * \brief Evaluate the probability density of the  \ref
      * sample_emitter_direct() technique given an filled-in \ref
      * DirectionSample record.
@@ -142,54 +124,30 @@ public:
     //! @}
     // =============================================================
 
-
     // =============================================================
     //! @{ \name Accessors
     // =============================================================
 
+    /// Return a bounding box surrounding the scene
     const BoundingBox3f &bbox() const { return m_bbox; }
 
-#if !defined(MTS_USE_EMBREE)
-    /// Return the scene's KD-tree
-    const ShapeKDTree *kdtree() const { return m_kdtree; }
-    /// Return the scene's KD-tree
-    ShapeKDTree *kdtree() { return m_kdtree; }
-#endif
-
-    /// Return the current sensor
-    Sensor* sensor() { return m_sensors[m_current_sensor]; }
-    /// Return the current sensor
-    const Sensor* sensor() const { return m_sensors[m_current_sensor]; }
     /// Return the list of sensors
     std::vector<ref<Sensor>> &sensors() { return m_sensors; }
-    /// Return the list of sensors
+    /// Return the list of sensors (const version)
     const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
-    /// Sets the current sensor from the given index.
-    void set_current_sensor(size_t index) {
-        if (index >= m_sensors.size())
-            Throw("Invalid sensor index %d, expected index in [0, %d).",
-                  index, m_sensors.size());
-        m_current_sensor = index;
-        m_sampler = m_sensors[m_current_sensor]->sampler();
-    }
 
     /// Return the list of emitters
-    auto &emitters() { return m_emitters; }
-    /// Return the list of emitters
-    const auto &emitters() const { return m_emitters; }
+    host_vector<ref<Emitter>> &emitters() { return m_emitters; }
+    /// Return the list of emitters (const version)
+    const host_vector<ref<Emitter>> &emitters() const { return m_emitters; }
 
     /// Return the environment emitter (if any)
     const Emitter *environment() const { return m_environment.get(); }
 
     /// Return the list of shapes
-    auto &shapes() { return m_shapes; }
+    std::vector<ref<Shape>> &shapes() { return m_shapes; }
     /// Return the list of shapes
-    const auto &shapes() const { return m_shapes; }
-
-    /// Return the current sensor's film
-    Film *film() { return m_sensors.front()->film(); }
-    /// Return the current sensor's film
-    const Film *film() const { return m_sensors.front()->film(); }
+    const std::vector<ref<Shape>> &shapes() const { return m_shapes; }
 
     /// Return the scene's sampler
     Sampler* sampler() { return m_sampler; }
@@ -214,34 +172,32 @@ protected:
     /// Virtual destructor
     virtual ~Scene();
 
-#if defined(MTS_USE_EMBREE)
-    void embree_init();
-    void embree_release();
-    void embree_register(Shape *shape);
-    void embree_build();
-#endif
+    /// Create the ray-intersection acceleration data structure
+    void accel_init_cpu(const Properties &props);
+    void accel_init_gpu(const Properties &props);
 
-#if defined(MTS_USE_OPTIX)
-    void optix_init(uint32_t n_shapes);
-    void optix_release();
-    void optix_register(Shape *shape);
-    void optix_build();
-#endif
+    /// Release the ray-intersection acceleration data structure
+    void accel_release_cpu();
+    void accel_release_gpu();
 
+    /// Trace a ray
+    MTS_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, Mask active) const;
+    MTS_INLINE SurfaceInteraction3f ray_intersect_gpu(const Ray3f &ray, Mask active) const;
+    MTS_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
+
+    /// Trace a shadow ray
+    MTS_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask active) const;
+    MTS_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
+
+    using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 protected:
-    BoundingBox3f m_bbox;
-#if !defined(MTS_USE_EMBREE)
-    ref<ShapeKDTree> m_kdtree;
-#endif
+    /// Acceleration data structure (type depends on implementation)
+    void *m_accel = nullptr;
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    std::vector<ref<Emitter>, enoki::cuda_host_allocator<ref<Emitter>>> m_emitters;
-#else
-    std::vector<ref<Emitter>> m_emitters;
-#endif
+    ScalarBoundingBox3f m_bbox;
 
+    host_vector<ref<Emitter>> m_emitters;
     std::vector<ref<Shape>> m_shapes;
-    size_t m_current_sensor;
     std::vector<ref<Sensor>> m_sensors;
     std::vector<ref<Object>> m_children;
     ref<Sampler> m_sampler;
@@ -249,16 +205,7 @@ protected:
     ref<Emitter> m_environment;
 
     /// Sampling distribution for emitters
-    DiscreteDistribution<Float> m_emitter_distr;
-
-#if defined(MTS_USE_EMBREE)
-    RTCScene m_embree_scene;
-#endif
-
-#if defined(MTS_USE_OPTIX)
-    struct OptixState;
-    OptixState *m_optix_state = nullptr;
-#endif
+    DiscreteDistribution<ScalarFloat> m_emitter_distr;
 };
 
 /// Dummy function which can be called to ensure that the librender shared library is loaded

@@ -31,12 +31,6 @@ if (MTS_ENABLE_AUTODIFF)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-if (MTS_USE_EMBREE)
-  set(LIBRENDER_EXTRA_SRC ${LIBRENDER_EXTRA_SRC} scene_embree.cpp)
-else()
-  set(LIBRENDER_EXTRA_SRC ${LIBRENDER_EXTRA_SRC} scene_native.cpp)
-endif()
-
 include_directories(
   ${RGB2SPEC_INCLUDE_DIRS}
 )
@@ -63,7 +57,7 @@ add_library(mitsuba-render-obj OBJECT
   microfacet.cpp   ${INC_DIR}/microfacet.h
                    ${INC_DIR}/mueller.h
   sampler.cpp      ${INC_DIR}/sampler.h
-  # scene.cpp        ${INC_DIR}/scene.h
+  scene.cpp        ${INC_DIR}/scene.h
   sensor.cpp       ${INC_DIR}/sensor.h
   shape.cpp        ${INC_DIR}/shape.h
   spectrum.cpp     ${INC_DIR}/spectrum.h

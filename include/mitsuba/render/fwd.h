@@ -24,7 +24,7 @@ template <typename Float, typename Spectrum> class Sampler;
 template <typename Float, typename Spectrum> class Scene;
 template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class Shape;
-class ShapeKDTree;
+template <typename Float, typename Spectrum> class ShapeKDTree;
 template <typename Float, typename Spectrum> class Texture3D;
 
 template <typename Float, typename Spectrum> struct DirectionSample;
@@ -73,6 +73,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ShapePtr               = replace_scalar_t<Float, const Shape *>;
     using EmitterPtr             = replace_scalar_t<Float, const Emitter *>;
 };
+
+#define MTS_VARIANT template <typename Float, typename Spectrum>
 
 #define MTS_IMPORT_RENDER_BASIC_TYPES()                                                            \
     MTS_IMPORT_CORE_TYPES()                                                                        \

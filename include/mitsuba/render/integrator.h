@@ -36,11 +36,10 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Integrator : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(Integrator, Object, "integrator")
-    MTS_IMPORT_TYPES()
-    using Scene = typename RenderAliases::Scene;
+    MTS_IMPORT_TYPES(Scene, Sensor)
 
     /// Perform the main rendering job. Returns \c true upon success
-    virtual bool render(Scene *scene) = 0;
+    virtual bool render(Scene *scene, Sensor *sensor) = 0;
 
     /**
      * \brief Cancel a running render job
@@ -102,7 +101,7 @@ public:
     //! @{ \name Integrator interface implementation
     // =========================================================================
 
-    bool render(Scene *scene) override;
+    bool render(Scene *scene, Sensor *sensor) override;
     void cancel() override;
 
     /**
@@ -125,7 +124,9 @@ protected:
     SamplingIntegrator(const Properties &props);
     virtual ~SamplingIntegrator();
 
-    virtual void render_block_scalar(const Scene *scene, Sampler *sampler,
+    virtual void render_block_scalar(const Scene *scene,
+                                     const Sensor *sensor,
+                                     Sampler *sampler,
                                      ImageBlock *block,
                                      size_t sample_count = size_t(-1)) const;
 
