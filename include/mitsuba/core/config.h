@@ -6,12 +6,14 @@
     "scalar_mono\n"                                                         \
     "scalar_rgb\n"                                                          \
     "scalar_spectral\n"                                                     \
+    "scalar_spectral_polarized\n"                                           \
 
 
 #define MTS_CONFIGURATIONS_INDENTED                                         \
     "            scalar_mono\n"                                             \
     "            scalar_rgb\n"                                              \
     "            scalar_spectral\n"                                         \
+    "            scalar_spectral_polarized\n"                               \
 
 
 #define MTS_DEFAULT_MODE "scalar_rgb"                                       \
@@ -21,12 +23,14 @@
     template class MTS_EXPORT Name<float, Color<float, 1>>;                 \
     template class MTS_EXPORT Name<float, Color<float, 3>>;                 \
     template class MTS_EXPORT Name<float, Spectrum<float, 4>>;              \
+    template class MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
 
 
 #define MTS_INSTANTIATE_STRUCT(Name)                                        \
     template struct MTS_EXPORT Name<float, Color<float, 1>>;                \
     template struct MTS_EXPORT Name<float, Color<float, 3>>;                \
     template struct MTS_EXPORT Name<float, Spectrum<float, 4>>;             \
+    template struct MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
 
 
 #define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)                           \
@@ -46,6 +50,8 @@
             m.def_submodule("scalar_rgb"));                                 \
         instantiate_##name<float, Spectrum<float, 4>>(                      \
             m.def_submodule("scalar_spectral"));                            \
+        instantiate_##name<float, MuellerMatrix<Spectrum<float, 4>>>(       \
+            m.def_submodule("scalar_spectral_polarized"));                  \
     }                                                                       \
                                                                             \
     template <typename Float, typename Spectrum>                            \
@@ -60,6 +66,8 @@
             return function<float, Color<float, 3>>(__VA_ARGS__);           \
         else if (mode == "scalar_spectral")                                 \
             return function<float, Spectrum<float, 4>>(__VA_ARGS__);        \
+        else if (mode == "scalar_spectral_polarized")                       \
+            return function<float, MuellerMatrix<Spectrum<float, 4>>>(__VA_ARGS__); \
         else                                                                \
             Throw("Unsupported mode: %s", mode);                            \
     }()                                                                     \
@@ -72,6 +80,8 @@
         return py::cast(tmp);                                               \
     if (auto tmp = dynamic_cast<Name<float, Spectrum<float, 4>> *>(o))      \
         return py::cast(tmp);                                               \
+    if (auto tmp = dynamic_cast<Name<float, MuellerMatrix<Spectrum<float, 4>>> *>(o)) \
+        return py::cast(tmp);                                               \
 
 
 NAMESPACE_BEGIN(mitsuba)
@@ -83,6 +93,8 @@ template <typename Float, typename Spectrum_> constexpr const char *get_variant(
         return "scalar_rgb";
     else if constexpr (std::is_same_v<Float, float> && std::is_same_v<Spectrum_, Spectrum<float, 4>>)
         return "scalar_spectral";
+    else if constexpr (std::is_same_v<Float, float> && std::is_same_v<Spectrum_, MuellerMatrix<Spectrum<float, 4>>>)
+        return "scalar_spectral_polarized";
     else
         return "";
 }
