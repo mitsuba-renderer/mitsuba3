@@ -7,24 +7,24 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename Float, typename Spectrum> class BSDF;
-struct BSDFContext;
-template <typename Float, typename Spectrum> class ContinuousSpectrum;
-class DifferentiableParameters;
 class DifferentiableObject;
+class DifferentiableParameters;
+class ShapeKDTree;
+struct BSDFContext;
+template <typename Float, typename Spectrum> class BSDF;
+template <typename Float, typename Spectrum> class ContinuousSpectrum;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
-template <typename Float, typename Spectrum> class ReconstructionFilter;
 template <typename Float, typename Spectrum> class Integrator;
 template <typename Float, typename Spectrum> class Medium;
 template <typename Float, typename Spectrum> class MicrofacetDistribution;
+template <typename Float, typename Spectrum> class ReconstructionFilter;
 template <typename Float, typename Spectrum> class Sampler;
 template <typename Float, typename Spectrum> class Scene;
 template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class Shape;
-template <typename Float, typename Spectrum> class ShapeKDTree;
 template <typename Float, typename Spectrum> class Texture3D;
 
 template <typename Float, typename Spectrum> struct DirectionSample;

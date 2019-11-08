@@ -189,7 +189,6 @@ protected:
     MTS_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask active) const;
     MTS_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
 
-    using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 protected:
     /// Acceleration data structure (type depends on implementation)
     void *m_accel = nullptr;

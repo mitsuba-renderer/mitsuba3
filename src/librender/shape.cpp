@@ -1,13 +1,10 @@
-// #include <mitsuba/render/kdtree.h>
+#include <mitsuba/render/kdtree.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/core/plugin.h>
-
-// TODO: remove these
-#define MTS_KD_INTERSECTION_CACHE_SIZE 6
 
 NAMESPACE_BEGIN(mitsuba)
 

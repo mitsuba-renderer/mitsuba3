@@ -32,8 +32,10 @@ Class::Class(const std::string &name, const std::string &parent, const std::stri
     (*__classes)[construct_key(parent, variant)] = this;
 
     // Also register new abstract classes with the XML parser
-    if (!alias.empty())
+    if (!alias.empty()) {
+        std::cout << "name = " << name << ", variant = " << variant << std::endl;
         xml::detail::register_class(this);
+    }
 }
 
 const Class *Class::for_name(const std::string &name, const std::string &variant) {
