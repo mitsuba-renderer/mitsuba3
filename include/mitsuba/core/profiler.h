@@ -4,10 +4,6 @@
 
 #include <mitsuba/core/object.h>
 
-#if !defined(NDEBUG)
-#  include <mitsuba/render/autodiff.h>
-#endif
-
 #if !defined(MTS_PROFILE_HASH_SIZE)
 #  define MTS_PROFILE_HASH_SIZE 256
 #endif
