@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(quad)
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
-template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
+template <typename FloatX>
 extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_legendre(int n);
 
 /**
@@ -47,7 +47,7 @@ extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_legendre(int n);
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
-template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
+template <typename FloatX>
 extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_lobatto(int n);
 
 /**
@@ -65,7 +65,7 @@ extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_lobatto(int n);
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
-template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
+template <typename FloatX>
 extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson(int n);
 
 /**
@@ -83,7 +83,7 @@ extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson(int n);
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
-template <typename Float, typename FloatX = DynamicArray<Packet<scalar_t<Float>>>>
+template <typename FloatX>
 extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson_38(int n);
 
 NAMESPACE_END(quad)

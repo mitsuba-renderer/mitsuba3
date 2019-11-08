@@ -3,8 +3,9 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(quad)
 
-template <typename Float, typename FloatX>
+template <typename FloatX>
 std::pair<FloatX, FloatX> gauss_legendre(int n) {
+    using Float = scalar_t<FloatX>;
     if (n < 1)
         throw std::runtime_error("gauss_legendre(): n must be >= 1");
 
@@ -62,8 +63,9 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
     return { nodes, weights };
 }
 
-template <typename Float, typename FloatX>
+template <typename FloatX>
 std::pair<FloatX, FloatX> gauss_lobatto(int n) {
+    using Float = scalar_t<FloatX>;
     if (n < 2)
         throw std::runtime_error("gauss_lobatto(): n must be >= 2");
 
@@ -117,8 +119,9 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
     return { nodes, weights };
 }
 
-template <typename Float, typename FloatX>
+template <typename FloatX>
 std::pair<FloatX, FloatX> composite_simpson(int n) {
+    using Float = scalar_t<FloatX>;
     if (n % 2 != 1 || n < 3)
         throw std::runtime_error("composite_simpson(): n must be >= 3 and odd");
 
@@ -144,8 +147,9 @@ std::pair<FloatX, FloatX> composite_simpson(int n) {
     return { nodes, weights };
 }
 
-template <typename Float, typename FloatX>
+template <typename FloatX>
 std::pair<FloatX, FloatX> composite_simpson_38(int n) {
+    using Float = scalar_t<FloatX>;
     if ((n - 1) % 3 != 0 || n < 4)
         throw std::runtime_error("composite_simpson_38(): n-1 must be divisible by 3");
 
@@ -174,10 +178,10 @@ std::pair<FloatX, FloatX> composite_simpson_38(int n) {
 }
 
 using FloatX = DynamicArray<Packet<float>>;
-template MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_legendre<float>(int n);
-template MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_lobatto<float>(int n);
-template MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson<float>(int n);
-template MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson_38<float>(int n);
+template MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_legendre<FloatX>(int n);
+template MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_lobatto<FloatX>(int n);
+template MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson<FloatX>(int n);
+template MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson_38<FloatX>(int n);
 
 NAMESPACE_END(quad)
 NAMESPACE_END(mitsuba)

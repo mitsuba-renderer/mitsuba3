@@ -39,7 +39,7 @@ MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
         .def("eval_reflectance",
             [](const MicrofacetDistribution &d, const Vector3fX &wi_, float eta) {
                 mitsuba::MicrofacetDistribution<FloatP> d2(d.type(), d.alpha_u(), d.alpha_v());
-                return d2.eval_reflectance(wi_, eta);
+                return eval_reflectance(d2, wi_, eta);
             }, "wi"_a, "eta"_a)
         .def_repr(MicrofacetDistribution)
         ;

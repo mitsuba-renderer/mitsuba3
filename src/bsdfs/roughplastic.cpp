@@ -66,9 +66,9 @@ public:
                 ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
                 slice(wi, i) = ScalarVector3f(std::sqrt(1 - mu * mu), 0.f, mu);
             }
-            m_external_transmittance = 1.f - distr_p.eval_reflectance(wi, m_eta);
+            m_external_transmittance = 1.f - eval_reflectance(distr_p, wi, m_eta);
             m_internal_reflectance =
-                mean(distr_p.eval_reflectance(wi, 1.f / m_eta) * wi.z()) * 2.f;
+                mean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
         }
 
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);

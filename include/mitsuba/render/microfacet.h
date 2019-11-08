@@ -228,7 +228,7 @@ public:
      *    The probability density wrt. solid angles
      */
     std::pair<Normal3f, Float> sample(const Vector3f &wi,
-                                     const Point2f &sample) const {
+                                      const Point2f &sample) const {
         if (!m_sample_visible) {
             Float sin_phi, cos_phi, cos_theta, cos_theta_2, alpha_2, pdf;
 
@@ -406,46 +406,6 @@ public:
         }
     }
 
-    // Only implemented for Float = Packet<Scalar>
-    template <typename T         = Float,
-              typename FloatX    = DynamicBuffer<T>,
-              typename Vector3fX = Vector<DynamicBuffer<T>, 3>,
-              typename = std::enable_if_t<is_array_v<T> && !is_dynamic_array_v<T>>>
-    FloatX eval_reflectance(const Vector3fX &wi_, float eta) {
-        using Vector2fX = Vector<FloatX, 2>;
-
-        if (!m_sample_visible)
-            Throw("eval_reflectance(): requires visible normal sampling!");
-
-        int res = 128;
-        if (eta > 1)
-            res = 32;
-        while (res % Float::Size != 0)
-            ++res;
-
-        FloatX nodes, weights, result;
-        std::tie(nodes, weights) = quad::gauss_legendre<Float>(res);
-        set_slices(result, slices(wi_));
-
-        Vector2fX nodes_2   = meshgrid(nodes, nodes),
-                  weights_2 = meshgrid(weights, weights);
-
-        for (size_t i = 0; i < slices(wi_); ++i) {
-            auto wi     = slice(wi_, i);
-            Float accum = zero<Float>();  // packet
-
-            for (size_t j = 0; j < packets(nodes_2); ++j) {
-                // Packet
-                Vector2f node(packet(nodes_2, j)),
-                         weight(packet(weights_2, j));
-
-                node = fmadd(node, .5f, .5f);
-                accum += eval_reflectance_kernel(wi, eta, node) * hprod(weight);
-            }
-            slice(result, i) = hsum(accum) * .25f;
-        }
-        return result;
-    }
 
 protected:
     void configure() {
@@ -462,17 +422,6 @@ protected:
         std::tie(sin_phi_2, cos_phi_2) = Frame3f::sincos_phi_2(v);
 
         return sin_phi_2 * sqr(m_alpha_v) + cos_phi_2 * sqr(m_alpha_u);
-    }
-
-    Float eval_reflectance_kernel(const Vector3f &wi, Float eta,
-                                  const Point2f &p) const {
-        Vector3f m = std::get<0>(sample(wi, p));
-        Vector3f wo = reflect(wi, Normal3f(m));
-        Float f = std::get<0>(fresnel(dot(wi, m), eta));
-        Float weight = smith_g1(wo, m) * f;
-        Mask valid = Frame3f::cos_theta(wo) > 0.f &&
-                     Frame3f::cos_theta(wi) > 0.f;
-        return select(valid, weight, 0.f);
     }
 
 protected:
@@ -495,6 +444,56 @@ std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, S
        << "  sample_visible = " << md.sample_visible() << std::endl
        << "]";
     return os;
+}
+
+template <typename FloatP>
+DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP> &distr,
+                        const Vector<DynamicArray<FloatP>, 3> &wi_,
+                        scalar_t<FloatP> eta) {
+    using Float     = scalar_t<FloatP>;
+    using FloatX    = DynamicArray<FloatP>;
+    using Vector2fP = Vector<FloatP, 2>;
+    using Vector3fP = Vector<FloatP, 3>;
+    using Normal3fP = Normal<FloatP, 3>;
+    using Vector2fX = Vector<FloatX, 2>;
+    using Vector3fX = Vector<FloatX, 3>;
+
+    if (distr.sample_visible())
+        Throw("eval_reflectance(): requires visible normal sampling!");
+
+    int res = 128;
+    if (eta > 1)
+        res = 32;
+    while (res % FloatP::Size != 0)
+        ++res;
+
+    FloatX nodes, weights, result;
+    std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
+    set_slices(result, slices(wi_));
+
+    Vector2fX nodes_2     = meshgrid(nodes, nodes),
+                weights_2 = meshgrid(weights, weights);
+
+    for (size_t i = 0; i < slices(wi_); ++i) {
+        auto wi      = slice(wi_, i);
+        FloatP accum = zero<FloatP>();
+
+        for (size_t j = 0; j < packets(nodes_2); ++j) {
+            Vector2fP node(packet(nodes_2, j)),
+                        weight(packet(weights_2, j));
+            node = fmadd(node, .5f, .5f);
+
+            Normal3fP m = std::get<0>(distr.sample(wi, node));
+            Vector3fP wo = reflect(Vector3fP(wi), m);
+            FloatP f = std::get<0>(fresnel(dot(wi, m), FloatP(eta)));
+            FloatP result = distr.smith_g1(wo, m) * f;
+            result[wo.z() <= 0.f || wi.z() <= 0.f] = 0.f;
+
+            accum += result * hprod(weight);
+        }
+        slice(result, i) = hsum(accum) * .25f;
+    }
+    return result;
 }
 
 
