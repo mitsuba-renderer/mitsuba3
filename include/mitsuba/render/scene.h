@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mitsuba/core/ddistr.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/fwd.h>
@@ -204,9 +203,6 @@ protected:
     ref<Sampler> m_sampler;
     ref<Integrator> m_integrator;
     ref<Emitter> m_environment;
-
-    /// Sampling distribution for emitters
-    DiscreteDistribution<ScalarFloat> m_emitter_distr;
 };
 
 /// Dummy function which can be called to ensure that the librender shared library is loaded

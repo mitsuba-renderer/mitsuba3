@@ -88,13 +88,6 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     else
         accel_init_cpu(props);
 
-    // Precompute a discrete distribution over emitters
-    m_emitter_distr = DiscreteDistribution<Float>(m_emitters.size());
-    for (size_t i = 0; i < m_emitters.size(); ++i)
-        m_emitter_distr.append(1.f);  // Simple uniform distribution for now.
-    if (m_emitters.size() > 0)
-        m_emitter_distr.normalize();
-
     // Create emitters' shapes (environment luminaires)
     for (Emitter *emitter: m_emitters)
         emitter->set_scene(this);
@@ -148,11 +141,9 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     Spectrum spec = 0.f;
 
     if (likely(!m_emitters.empty())) {
-        // Randomly pick an emitter according to the precomputed emitter distribution
-        UInt32 index;
-        Float emitter_pdf;
-        std::tie(index, emitter_pdf, sample.x()) =
-            m_emitter_distr.sample_reuse_pdf(sample.x(), active);
+        // Randomly pick an emitter
+        UInt32 index = min(UInt32(sample.x() * (ScalarFloat) m_emitters.size()), (uint32_t) m_emitters.size()-1);
+        ScalarFloat emitter_pdf = 1.f / m_emitters.size();
         EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
 
         // Sample a direction towards the emitter
@@ -172,6 +163,16 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     }
 
     return { ds, spec };
+}
+
+MTS_VARIANT Float
+Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
+                                              const DirectionSample3f &ds,
+                                              Mask active) const {
+    using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
+
+    return reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
+        (1.f / m_emitters.size());
 }
 
 MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
