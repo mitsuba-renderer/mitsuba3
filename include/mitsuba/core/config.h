@@ -35,8 +35,8 @@
 
 #define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)                           \
     extern "C" {                                                            \
-        MTS_EXPORT const char *plugin_descr = Descr;                        \
         MTS_EXPORT const char *plugin_name = #Name;                         \
+        MTS_EXPORT const char *plugin_descr = Descr;                        \
     }                                                                       \
     MTS_INSTANTIATE_OBJECT(Name)                                            \
 

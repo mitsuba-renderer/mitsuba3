@@ -113,6 +113,9 @@ static std::unordered_map<std::string /* e.g. bsdf.scalar-rgb */,
 
 // Called by Class::Class()
 void register_class(const Class *class_) {
+    if (!class_)
+        throw std::runtime_error("XML::register_class called with nullptr");
+
     if (!tags) {
         tags = new std::unordered_map<std::string, ETag>();
         tag_class = new std::unordered_map<std::string, const Class *>();

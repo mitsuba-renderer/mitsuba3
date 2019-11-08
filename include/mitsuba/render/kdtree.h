@@ -2011,12 +2011,13 @@ public:
     using Index                  = uint32_t;
     using Base = TShapeKDTree<ScalarBoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
     using typename Base::KDNode;
-    using Base::set_stop_primitives;
+    using Base::ready;
+    using Base::set_clip_primitives;
+    using Base::set_exact_primitive_threshold;
     using Base::set_max_depth;
     using Base::set_min_max_bins;
-    using Base::set_clip_primitives;
     using Base::set_retract_bad_splits;
-    using Base::set_exact_primitive_threshold;
+    using Base::set_stop_primitives;
     using Base::m_bbox;
     using Base::m_nodes;
     using Base::m_indices;

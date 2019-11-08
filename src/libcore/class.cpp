@@ -18,10 +18,9 @@ bool Class::m_is_initialized = false;
 const Class *m_class = nullptr;
 
 Class::Class(const std::string &name, const std::string &parent, const std::string &variant,
-             ConstructFunctor constr,
-             UnserializeFunctor unser, const std::string &alias)
-    : m_name(name), m_parent_name(parent), m_variant(variant), m_alias(alias),
-      m_constr(constr), m_unser(unser) {
+             ConstructFunctor constr, UnserializeFunctor unser, const std::string &alias)
+    : m_name(name), m_parent_name(parent), m_variant(variant), m_alias(alias), m_constr(constr),
+      m_unser(unser) {
 
     if (m_alias.empty())
         m_alias = name;
@@ -29,7 +28,9 @@ Class::Class(const std::string &name, const std::string &parent, const std::stri
     if (!__classes)
         __classes = new std::map<std::string, Class *>();
 
-    (*__classes)[construct_key(parent, variant)] = this;
+    (*__classes)[construct_key(name, variant)] = this;
+    if (!m_alias.empty())
+        (*__classes)[construct_key(m_alias, variant)] = this;
 
     // Also register new abstract classes with the XML parser
     if (!alias.empty())
@@ -103,7 +104,7 @@ void Class::static_shutdown() {
 
 std::string Class::construct_key(const std::string &name, const std::string &variant)
 {
-    if (variant.empty())
+    if (variant.empty() || name == "Object")
         return name;
     else
         return name + "." + variant;
