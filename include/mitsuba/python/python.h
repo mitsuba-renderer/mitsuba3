@@ -94,18 +94,8 @@ template <typename Source, typename Target> void pybind11_type_alias() {
     types[std::type_index(typeid(Target))] = it->second;
 }
 
-
-template <typename Class, typename... Args, typename... Extra> auto bind_array(py::module &m, const char *name, const Extra&... extra) {
-    return py::class_<Class, Args...>(m, name, extra...)
-        .def("__len__", &Class::size)
-        .def_repr(Class)
-        .def(py::self == py::self)
-        .def(py::self != py::self)
-        .def("__getitem__", [](const Class &a, size_t index) {
-            if (index >= a.size())
-                throw py::index_error();
-            return a.coeff(index);
-        });
+template <typename Type> pybind11::handle get_type_handle() {
+    return pybind11::detail::get_type_handle(typeid(Type), false);
 }
 
 template<typename Float, typename Func>
