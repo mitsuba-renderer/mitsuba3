@@ -68,13 +68,13 @@ public:
     template <typename X, typename Y>
     void ucomis(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vucomiss(x, y);
             #else
                 cc.vucomisd(x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.ucomiss(x, y);
             #else
                 cc.ucomisd(x, y);
@@ -86,13 +86,13 @@ public:
     template <typename X, typename Y>
     void movs(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vmovss(x, y);
             #else
                 cc.vmovsd(x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.movss(x, y);
             #else
                 cc.movsd(x, y);
@@ -102,13 +102,13 @@ public:
 
     void movs(const X86Xmm &x, const X86Xmm &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vmovss(x, x, y);
             #else
                 cc.vmovsd(x, x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.movss(x, y);
             #else
                 cc.movsd(x, y);
@@ -120,13 +120,13 @@ public:
     template <typename X, typename Y>
     void adds(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vaddss(x, x, y);
             #else
                 cc.vaddsd(x, x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.addss(x, y);
             #else
                 cc.addsd(x, y);
@@ -138,13 +138,13 @@ public:
     template <typename X, typename Y, typename Z>
     void subs(const X &x, const Y &y, const Z &z) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vsubss(x, y, z);
             #else
                 cc.vsubsd(x, y, z);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.movss(x, y);
                 cc.subss(x, z);
             #else
@@ -158,13 +158,13 @@ public:
     template <typename X, typename Y>
     void muls(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vmulss(x, x, y);
             #else
                 cc.vmulsd(x, x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.mulss(x, y);
             #else
                 cc.mulsd(x, y);
@@ -176,13 +176,13 @@ public:
     template <typename X, typename Y, typename Z>
     void muls(const X &x, const Y &y, const Z &z) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vmulss(x, y, z);
             #else
                 cc.vmulsd(x, y, z);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.movss(x, y);
                 cc.mulss(x, z);
             #else
@@ -196,13 +196,13 @@ public:
     template <typename X, typename Y>
     void divs(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vdivss(x, x, y);
             #else
                 cc.vdivsd(x, x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.divss(x, y);
             #else
                 cc.divsd(x, y);
@@ -214,13 +214,13 @@ public:
     template <typename X, typename Y>
     void sqrts(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vsqrtss(x, x, y);
             #else
                 cc.vsqrtsd(x, x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.sqrtss(x, y);
             #else
                 cc.sqrtsd(x, y);
@@ -232,13 +232,13 @@ public:
     template <typename X, typename Y>
     void maxs(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vmaxss(x, x, y);
             #else
                 cc.vmaxsd(x, x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.maxss(x, y);
             #else
                 cc.maxsd(x, y);
@@ -250,13 +250,13 @@ public:
     template <typename X, typename Y>
     void mins(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vminss(x, x, y);
             #else
                 cc.vminsd(x, x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.minss(x, y);
             #else
                 cc.minsd(x, y);
@@ -268,13 +268,13 @@ public:
     template <typename X, typename Y, typename Z>
     void fmadd213(const X &x, const Y &y, const Z &z) {
         #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_FMA)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vfmadd213ss(x, y, z);
             #else
                 cc.vfmadd213sd(x, y, z);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.mulss(x, y);
                 cc.addss(x, z);
             #else
@@ -288,14 +288,14 @@ public:
     template <typename X, typename Y, typename Z>
     void fmadd231(const X &x, const Y &y, const Z &z) {
         #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_FMA)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vfmadd231ss(x, y, z);
             #else
                 cc.vfmadd231sd(x, y, z);
             #endif
         #else
             auto tmp = cc.newXmm();
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.movss(tmp, y);
                 cc.mulss(tmp, z);
                 cc.addss(x, tmp);
@@ -311,13 +311,13 @@ public:
     template <typename X, typename Y>
     void cvtsi2s(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vcvtsi2ss(x, x, y);
             #else
                 cc.vcvtsi2sd(x, x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.cvtsi2ss(x, y);
             #else
                 cc.cvtsi2sd(x, y);
@@ -329,13 +329,13 @@ public:
     template <typename X, typename Y>
     void cvts2si(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vcvtss2si(x, y);
             #else
                 cc.vcvtsd2si(x, y);
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.cvtss2si(x, y);
             #else
                 cc.cvtsd2si(x, y);
@@ -347,13 +347,13 @@ public:
     template <typename X, typename Y>
     void rounds(const X &x, const Y &y, int mode) {
         #if defined(ENOKI_X86_AVX)
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.vroundss(x, x, y, Imm(mode));
             #else
                 cc.vroundsd(x, x, y, Imm(mode));
             #endif
         #else
-            #if defined(SINGLE_PRECISION)
+            #if !defined(DOUBLE_PRECISION)
                 cc.roundss(x, y, Imm(mode));
             #else
                 cc.roundsd(x, y, Imm(mode));
@@ -385,7 +385,7 @@ public:
             y = x;
         }
 
-        #if defined(SINGLE_PRECISION)
+        #if !defined(DOUBLE_PRECISION)
             // Rational polynomial fit, rel.err = 2*10^-7
             float to_srgb_coeffs[2][6] =
               { { -0.016202083165206348f, 0.7551545191665577f, 2.0041169284241644f,
@@ -407,7 +407,7 @@ public:
                   -8.387527630781522e-9, 2.2380622409188757e-11 } };
         #endif
 
-        #if defined(SINGLE_PRECISION)
+        #if !defined(DOUBLE_PRECISION)
             // Rational polynomial fit, rel.err = 2*10^-7
             float from_srgb_coeffs[2][5] =
                 { { -36.04572663838034f, -47.46726633009393f, -11.199318357635072f,
@@ -1460,7 +1460,7 @@ void StructConverter::linearize(Value &value) const {
         else
             value.f = (Float) value.i;
 
-        if (value.flags & FieldFlags::Normalized)
+        if (has_flag(value.flags, FieldFlags::Normalized))
             value.f *= Float(1 / Struct::range(value.type).second);
     } else if (Struct::is_float(value.type) && value.type != struct_type_v<float>) {
         if (value.type == FieldType::Float32)
@@ -1468,9 +1468,9 @@ void StructConverter::linearize(Value &value) const {
         else
             value.f = (Float) value.d;
     }
-    if (value.flags & FieldFlags::Gamma) {
+    if (has_flag(value.flags, FieldFlags::Gamma)) {
         value.f = srgb_to_linear(value.f);
-        value.flags &= ~FieldFlags::Gamma;
+        value.flags = value.flags & ~FieldFlags::Gamma;
     }
 
     value.type = struct_type_v<float>;
@@ -1608,7 +1608,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
     for (Struct::Field f : *m_source) {
         if (has_flag(f.flags, FieldFlags::Assert) && !m_target->has_field(f.name))
             assert_fields.push_back(f);
-        if has_flag(f.flags, FieldFlags::Weight) {
+        if (has_flag(f.flags, FieldFlags::Weight)) {
             weight_field = f;
             has_weight = true;
         }
@@ -1645,7 +1645,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                     if (!m_source->has_field(f.name) && has_flag(f.flags, FieldFlags::Default)) {
                         value.d = f.default_;
                         value.type = FieldType::Float64;
-                        value.flags = 0;
+                        value.flags = FieldFlags::None;
                     } else {
                         if (!load(src, m_source->field(f.name), value))
                             return false;
@@ -1653,7 +1653,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 } else {
                     value.type = struct_type_v<float>;
                     value.f = 0;
-                    value.flags = 0;
+                    value.flags = FieldFlags::None;
                     for (auto kv : f.blend) {
                         Value value2;
                         if (!load(src, m_source->field(kv.second), value2))
@@ -1663,7 +1663,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                     }
                 }
 
-                uint32_t flag_mask = FieldFlags::Normalized | FieldFlags::Gamma;
+                FieldFlags flag_mask = FieldFlags::Normalized | FieldFlags::Gamma;
                 if ((!((value.type == f.type || (Struct::is_integer(value.type) &&
                                                  Struct::is_integer(f.type) &&
                                                  !has_flag(f.flags, FieldFlags::Normalized))) &&

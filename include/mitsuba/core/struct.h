@@ -6,11 +6,14 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if defined(ENOKI_X86_64)
-#  define MTS_STRUCTCONVERTER_USE_JIT 1
-#else
-#  define MTS_STRUCTCONVERTER_USE_JIT 0
-#endif
+// #if defined(ENOKI_X86_64)
+// #  define MTS_STRUCTCONVERTER_USE_JIT 1
+// #else
+// #  define MTS_STRUCTCONVERTER_USE_JIT 0
+// #endif
+
+// TODO: remove this
+#define MTS_STRUCTCONVERTER_USE_JIT 0
 
 /// Type of a field in the \c Struct
 enum class FieldType : uint32_t {
@@ -381,6 +384,8 @@ class MTS_EXPORT_CORE StructConverter : public Object {
     using FuncType = bool (*) (size_t, size_t, const void *, void *);
 public:
     MTS_DECLARE_CLASS(StructConverter, Object)
+    // TODO: is this right?
+    using Float = float;
 
     /// Construct an optimized conversion routine going from \c source to \c target
     StructConverter(const Struct *source, const Struct *target, bool dither = false);
