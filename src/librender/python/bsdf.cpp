@@ -16,7 +16,7 @@ MTS_PY_EXPORT(BSDFContext) {
         ;
 }
 
-MTS_PY_EXPORT_VARIANTS(BSDFSample3) {
+MTS_PY_EXPORT_VARIANTS(BSDFSample3f) {
     using BSDFSample3 = BSDFSample3<Float, Spectrum>;
     using Vector3f = typename BSDFSample3::Vector3f;
 
