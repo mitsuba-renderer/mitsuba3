@@ -214,7 +214,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const 
     rt_check(rt);
 
     si.time = ray.time;
-    si.wavelengths = ray.wavelengths;
+    si.wavelengths = ray.wavelength;
     si.instance = nullptr;
     si.duv_dx = si.duv_dy = 0.f;
 

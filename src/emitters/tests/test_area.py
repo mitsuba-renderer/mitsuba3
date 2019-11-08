@@ -76,7 +76,7 @@ def test03_area_sample_ray():
     (ray, weight) = e.sample_ray(time=0.98, sample1=wav_sample[0],
                                  sample2=[0.4, 0.6], sample3=[0.1, 0.2])
     assert np.allclose(ray.time, 0.98)
-    assert np.allclose(ray.wavelengths, wavs)
+    assert np.allclose(ray.wavelength, wavs)
     # Position on the light source
     assert np.allclose(ray.o, [10, -0.53524196, 2.22540331])
     # Direction pointing out from the light source, in world coordinates.

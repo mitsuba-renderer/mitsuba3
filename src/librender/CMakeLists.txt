@@ -63,7 +63,6 @@ add_library(mitsuba-render-obj OBJECT
   spectrum.cpp     ${INC_DIR}/spectrum.h
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
-  # ${LIBRENDER_EXTRA_SRC}
 )
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)

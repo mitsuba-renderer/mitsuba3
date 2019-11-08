@@ -24,7 +24,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
         ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
         si = kdtree->create_surface_interaction(ray, hit_t, cache, hit);
     } else {
-        si.wavelengths = ray.wavelengths;
+        si.wavelengths = ray.wavelength;
         si.wi = -ray.d;
     }
 
