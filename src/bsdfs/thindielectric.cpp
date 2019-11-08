@@ -72,7 +72,7 @@ public:
         bs.eta = 1.f;
         bs.sampled_component = select(selected_r, UInt32(0), UInt32(1));
         bs.sampled_type =
-            select(selected_r, UInt32(BSDFFlags::DeltaReflection), UInt32(BSDFFlags::Null));
+            select(selected_r, +BSDFFlags::DeltaReflection, +BSDFFlags::Null);
 
         if (any_or<true>(selected_r))
             weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);

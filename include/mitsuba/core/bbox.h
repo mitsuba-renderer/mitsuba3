@@ -342,7 +342,7 @@ template <typename Point_> struct BoundingBox {
 template <typename Point>
 std::ostream &operator<<(std::ostream &os, const BoundingBox<Point> &bbox) {
     os << "BoundingBox" << type_suffix<Point>();
-    if (!bbox.valid())
+    if (all(!bbox.valid()))
         os << "[invalid]";
     else
         os << "[" << std::endl

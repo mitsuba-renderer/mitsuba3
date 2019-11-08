@@ -20,7 +20,7 @@ public:
         m_eta = props.spectrum<ContinuousSpectrum>("eta", 0.f);
         m_k   = props.spectrum<ContinuousSpectrum>("k", 1.f);
 
-        MicrofacetDistribution<Float> distr(props);
+        MicrofacetDistribution<ScalarFloat> distr(props);
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
 

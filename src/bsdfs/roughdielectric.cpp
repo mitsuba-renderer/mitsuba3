@@ -35,7 +35,7 @@ public:
         m_eta = int_ior / ext_ior;
         m_inv_eta = ext_ior / int_ior;
 
-        MicrofacetDistribution<Float> distr(props);
+        MicrofacetDistribution<ScalarFloat> distr(props);
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
         m_alpha_u = distr.alpha_u();

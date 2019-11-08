@@ -33,7 +33,7 @@ public:
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
         bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
         bs.eta = 1.f;
-        bs.sampled_type = (uint32_t) BSDFFlags::DiffuseReflection;
+        bs.sampled_type = +BSDFFlags::DiffuseReflection;
         bs.sampled_component = 0;
 
         Spectrum value = m_reflectance->eval(si, active);

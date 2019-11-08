@@ -69,7 +69,7 @@ public:
         if (m_sum == 0.0)
             m_range_start = uint32_t(m_cdf.size());
 
-        m_cdf.push_back(Float(m_sum));
+        m_cdf.push_back(ScalarFloat(m_sum));
     }
 
     /// Return the number of entries so far
