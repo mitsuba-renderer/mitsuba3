@@ -486,7 +486,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                 type      = node.attribute("type").value(),
                                 node_name = node.name();
 
-                    Properties props_nested;
+                    Properties props_nested(type);
                     props_nested.set_id(id);
 
                     auto it_inst = ctx.instances.find(id);
@@ -1003,7 +1003,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
     pugi::xml_node root = doc.document_element();
     detail::XMLParseContext ctx;
     ctx.variant = variant;
-    Properties prop("");
+    Properties prop;
     size_t arg_counter; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
                                       param, arg_counter, 0).second;
@@ -1037,7 +1037,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
     detail::XMLParseContext ctx;
     ctx.variant = variant;
-    Properties prop("");
+    Properties prop;
     size_t arg_counter = 0; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
                                       param, arg_counter, 0).second;
