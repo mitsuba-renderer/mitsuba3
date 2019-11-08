@@ -128,7 +128,7 @@ def test04_develop(file_format, tmpdir):
         film.develop()
 
     filename = str(tmpdir.join('test_image.' + file_format))
-    film.set_destination_file(filename, 32)
+    film.set_destination_file(filename)
     film.develop()
 
     # Read back and check contents

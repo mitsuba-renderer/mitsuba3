@@ -141,8 +141,7 @@ public:
         bitmap->convert(m_storage->bitmap());
     }
 
-    void set_destination_file(const fs::path &dest_file,
-                              uint32_t /*block_size*/) override {
+    void set_destination_file(const fs::path &dest_file) override {
         m_dest_file = dest_file;
     }
 

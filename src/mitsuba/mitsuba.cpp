@@ -64,7 +64,7 @@ bool render(Object *scene_, filesystem::path filename) {
         Throw("Could not cast to Scene<Float, Spectrum>: %s", scene_->to_string());
 
     filename.replace_extension("exr");
-    scene->film()->set_destination_file(filename, 32 /*unused*/);
+    scene->film()->set_destination_file(filename);
 
     auto integrator = scene->integrator();
     if (!integrator)

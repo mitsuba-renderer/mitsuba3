@@ -24,7 +24,7 @@ def _save(film, int_name, suffix=''):
     global scene_i
     fname = os.path.join("/tmp",
                          "scene_{}_{}{}.exr".format(scene_i, int_name, suffix))
-    film.set_destination_file(fname, 32)
+    film.set_destination_file(fname)
     film.develop()
     print('Saved debug image to: ' + fname)
     scene_i += 1
@@ -164,7 +164,7 @@ def make_reference_renders():
 
             # Save files
             fname = "scene_{}_{}_reference.exr".format(scene_name, int_name)
-            film.set_destination_file(os.path.join("/tmp", fname), 32)
+            film.set_destination_file(os.path.join("/tmp", fname))
             film.develop()
 
     print('========== Test scenes: per channel averages ==========')

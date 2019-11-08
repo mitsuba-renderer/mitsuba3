@@ -40,7 +40,7 @@ public:
     virtual void add_bitmap(const Bitmap *bitmap, Float multiplier = 1.0f) = 0;
 
     /// Set the target filename (with or without extension)
-    virtual void set_destination_file(const fs::path &filename, uint32_t block_size) = 0;
+    virtual void set_destination_file(const fs::path &filename) = 0;
 
     /// Develop the film and write the result to the previously specified filename
     virtual void develop() = 0;
