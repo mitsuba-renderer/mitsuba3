@@ -60,8 +60,8 @@ with open(fname, 'w') as f:
 
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
     w('    extern "C" {')
-    w('        MTS_EXPORT const char *plugin_name  = #Name;')
-    w('        MTS_EXPORT const char *plugin_descr = Descr;')
+    w('        MTS_EXPORT const char *plugin_name() { return #Name; }')
+    w('        MTS_EXPORT const char *plugin_descr() { return Descr; }')
     w('    }')
     w('    MTS_INSTANTIATE_OBJECT(Name)')
     f.write('\n\n')

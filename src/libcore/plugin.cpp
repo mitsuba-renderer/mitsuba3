@@ -31,8 +31,9 @@ public:
         #endif
 
         try {
-            plugin_name  = (const char *) symbol("plugin_name");
-            plugin_descr = (const char *) symbol("plugin_descr");
+            using StringFunc = const char *(*)();
+            plugin_name  = ((StringFunc) symbol("plugin_name"))();
+            plugin_descr = ((StringFunc) symbol("plugin_descr"))();
         } catch (...) {
             this->~Plugin();
             throw;
