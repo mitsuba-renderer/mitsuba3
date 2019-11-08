@@ -345,19 +345,21 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-// ENOKI_CALL_SUPPORT_BEGIN(mitsuba::Shape)
-//     ENOKI_CALL_SUPPORT_METHOD(normal_derivative)
-//     ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
-//     ENOKI_CALL_SUPPORT_GETTER_TYPE(emitter, m_emitter, const mitsuba::Emitter *)
-//     ENOKI_CALL_SUPPORT_GETTER_TYPE(sensor, m_sensor, const mitsuba::Sensor *)
-//     ENOKI_CALL_SUPPORT_GETTER_TYPE(bsdf, m_bsdf, const mitsuba::BSDF *)
-//     ENOKI_CALL_SUPPORT_GETTER_TYPE(interior_medium, m_interior_medium, const mitsuba::Medium *)
-//     ENOKI_CALL_SUPPORT_GETTER_TYPE(exterior_medium, m_exterior_medium, const mitsuba::Medium *)
-//     auto is_emitter() const { return neq(emitter(), nullptr); }
-//     auto is_sensor() const { return neq(sensor(), nullptr); }
-//     auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||
-//                                                neq(exterior_medium(), nullptr); }
-// ENOKI_CALL_SUPPORT_END(mitsuba::Shape)
+ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Shape)
+    ENOKI_CALL_SUPPORT_METHOD(normal_derivative)
+    ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(emitter, m_emitter, const typename Class::Emitter *)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(sensor, m_sensor, const typename Class::Sensor *)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(bsdf, m_bsdf, const typename Class::BSDF *)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(interior_medium, m_interior_medium,
+                                   const typename Class::Medium *)
+    ENOKI_CALL_SUPPORT_GETTER_TYPE(exterior_medium, m_exterior_medium,
+                                   const typename Class::Medium *)
+    auto is_emitter() const { return neq(emitter(), nullptr); }
+    auto is_sensor() const { return neq(sensor(), nullptr); }
+    auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||
+                                               neq(exterior_medium(), nullptr); }
+ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Shape)
 
 //! @}
 // -----------------------------------------------------------------------

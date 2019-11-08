@@ -534,21 +534,20 @@ ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-// TODO: re-enable this
-// ENOKI_CALL_SUPPORT_BEGIN(mitsuba::BSDF)
-//     ENOKI_CALL_SUPPORT_METHOD(sample)
-//     ENOKI_CALL_SUPPORT_METHOD(eval)
-//     ENOKI_CALL_SUPPORT_METHOD(pdf)
-//     ENOKI_CALL_SUPPORT_METHOD(eval_transmission)
-//     ENOKI_CALL_SUPPORT_METHOD(sample_pol)
-//     ENOKI_CALL_SUPPORT_METHOD(eval_pol)
-//     ENOKI_CALL_SUPPORT_METHOD(eval_transmission_pol)
-//     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
+ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::BSDF)
+    ENOKI_CALL_SUPPORT_METHOD(sample)
+    ENOKI_CALL_SUPPORT_METHOD(eval)
+    ENOKI_CALL_SUPPORT_METHOD(pdf)
+    ENOKI_CALL_SUPPORT_METHOD(eval_transmission)
+    ENOKI_CALL_SUPPORT_METHOD(sample_pol)
+    ENOKI_CALL_SUPPORT_METHOD(eval_pol)
+    ENOKI_CALL_SUPPORT_METHOD(eval_transmission_pol)
+    ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
 
-//     auto needs_differentials() const {
-//         return neq(flags() & mitsuba::BSDF::ENeedsDifferentials, 0);
-//     }
-// ENOKI_CALL_SUPPORT_END(mitsuba::BSDF)
+    auto needs_differentials() const {
+        return neq(flags() & Class::NeedsDifferentials, 0);
+    }
+ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::BSDF)
 
 //! @}
 // -----------------------------------------------------------------------
