@@ -1,12 +1,14 @@
 import json
+from collections import OrderedDict
 
 print('Reading mitsuba.conf...')
 with open("mitsuba.conf", "r") as f:
-    configurations = json.load(f)
+    # Load while preserving order of keys
+    configurations = json.load(f, object_pairs_hook=OrderedDict)
 
 enabled = []
 for name, config in configurations.items():
-    if type(config) is not dict:
+    if not isinstance(config, (dict, OrderedDict)):
         continue
     if 'enabled' not in config or \
        'float' not in config or \
@@ -21,6 +23,10 @@ for name, config in configurations.items():
 if len(enabled) == 0:
     raise Exception("There must be at least one enabled build configuration!")
 
+# Use first configuration if default mode is not specified
+default_mode = configurations.get('default', enabled[0][0])
+
+# Write header file
 fname = "include/mitsuba/core/config.h"
 with open(fname, 'w') as f:
     def w(s):
@@ -28,10 +34,12 @@ with open(fname, 'w') as f:
     f.write('#pragma once\n\n')
     f.write('#include <mitsuba/core/fwd.h>\n\n')
 
-
     w('#define MTS_CONFIGURATIONS')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    "%s\\n"' % name)
+    f.write('\n\n')
+
+    w('#define MTS_DEFAULT_MODE "%s"' % default_mode)
     f.write('\n\n')
 
     w('#define MTS_INSTANTIATE_OBJECT(Name)')
