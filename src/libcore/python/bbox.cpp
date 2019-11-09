@@ -60,9 +60,8 @@ MTS_PY_EXPORT_VARIANTS(BoundingBox) {
             D(BoundingBox3f, expand))
         .def("expand", (void (BoundingBox3f::*)(const BoundingBox3f &)) &BoundingBox3f::expand,
             D(BoundingBox3f, expand, 2))
-        // TODO
-        // .def("ray_intersect", vectorize<Float>(&BoundingBox3f::template ray_intersect<Ray3f>),
-            // D(BoundingBox3f, ray_intersect))
+        .def("ray_intersect", vectorize<Float>(&BoundingBox3f::template ray_intersect<Ray3f>),
+            D(BoundingBox3f, ray_intersect))
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def_static("merge", &BoundingBox3f::merge, D(BoundingBox3f, merge))

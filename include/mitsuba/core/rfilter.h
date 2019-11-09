@@ -102,7 +102,6 @@ protected:
  */
 template <typename Scalar_> struct Resampler {
     using Scalar = Scalar_;
-    // TODO should we template this as well?
     using Float = float;
 
     /**

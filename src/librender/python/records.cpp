@@ -43,32 +43,3 @@ MTS_PY_EXPORT_VARIANTS(DirectionSample) {
         .def_repr(DirectionSample3f)
         ;
 }
-
-// TODO vectorize wrapper bindings
-// MTS_PY_EXPORT_VARIANTS(RadianceSample) {
-//     auto rs = py::class_<RadianceSample>(m, name, D(RadianceSample))
-//         .def(py::init<>(), D(RadianceSample, RadianceSample))
-//         .def(py::init<const Scene *, Sampler *>(),
-//              D(RadianceSample, RadianceSample, 2), "scene"_a, "sampler"_a)
-//         // .def(py::init<const RadianceSample &>(), D(RadianceSample, RadianceSample, 3),
-//         //   "other"_a)
-//         .def_method(RadianceSample, ray_intersect, "ray"_a, "active"_a)
-//         .def_method(RadianceSample, next_1d)
-//         .def_method(RadianceSample, next_2d)
-
-//         .def_field(RadianceSample, scene)
-//         .def_field(RadianceSample, sampler)
-//         .def_field(RadianceSample, si)
-//         .def_field(RadianceSample, alpha)
-//         .def_repr(RadianceSample)
-//         ;
-
-//     if constexpr (is_array_v<Float> && !is_dynamic_v<Float>) {
-//           rs.def("ray_intersect", enoki::vectorize_wrapper(&RadianceSample::ray_intersect),
-//                  "ray"_a, "active"_a, D(RadianceSample, ray_intersect))
-//             .def("next_1d", enoki::vectorize_wrapper(&RadianceSample::next_1d),
-//                  D(RadianceSample, next_1d))
-//             .def("next_2d", enoki::vectorize_wrapper(&RadianceSample::next_2d),
-//                  D(RadianceSample, next_2d))
-//     }
-// }

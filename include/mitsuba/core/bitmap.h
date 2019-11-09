@@ -163,13 +163,10 @@ enum class ImageFileFormat {
 class MTS_EXPORT_CORE Bitmap : public Object {
 public:
     MTS_DECLARE_CLASS(Bitmap, Object)
-    // TODO: templatize if appropriate
+
     using Float                = float;
     MTS_IMPORT_CORE_TYPES()
-
     using Vector2s = Vector<size_t, 2>;
-
-    // TODO: give it the right spectrum
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, void>;
 
     /// FieldType of the floating-point per-pixel components

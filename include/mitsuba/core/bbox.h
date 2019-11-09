@@ -300,15 +300,14 @@ template <typename Point_> struct BoundingBox {
      * Note that this function ignores the <tt>(mint, maxt)</tt> interval
      * associated with the ray.
      */
-    template <typename Ray, typename Value = expr_t<typename Ray::Value>,
-              typename Mask = mask_t<Value>,
-              typename Result = std::tuple<Mask, Value, Value>>
-    MTS_INLINE Result ray_intersect(const Ray &ray) const {
+    template <typename Ray>
+    MTS_INLINE auto ray_intersect(const Ray &ray) const {
+        using Value  = expr_t<typename Ray::Value>;
         using Vector = expr_t<typename Ray::Vector>;
 
         /* First, ensure that the ray either has a nonzero slope on each axis,
            or that its origin on a zero-valued axis is within the box bounds */
-        Mask active = all(neq(ray.d, zero<Vector>()) || ((ray.o > min) || (ray.o < max)));
+        auto active = all(neq(ray.d, zero<Vector>()) || ((ray.o > min) || (ray.o < max)));
 
         /* Compute intersection intervals for each axis */
         Vector t1 = (min - ray.o) * ray.d_rcp,

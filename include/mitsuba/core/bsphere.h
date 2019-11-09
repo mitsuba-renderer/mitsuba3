@@ -62,8 +62,8 @@ template <typename Point_> struct BoundingSphere {
     }
 
     /// Check if a ray intersects a bounding box
-    template <typename Float, typename Spectrum>
-    MTS_INLINE auto ray_intersect(const Ray<Point, Spectrum> &ray) const {
+    template <typename Ray>
+    MTS_INLINE auto ray_intersect(const Ray &ray) const {
         auto o = ray.o - center;
 
         return math::solve_quadratic(

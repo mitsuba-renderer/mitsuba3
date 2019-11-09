@@ -17,7 +17,7 @@ MTS_PY_EXPORT_VARIANTS(BoundingSphere) {
                               : self.template contains<false>(p);
             }, D(BoundingSphere3f, contains), "p"_a, "strict"_a = false)
         .def("expand", &BoundingSphere3f::expand, D(BoundingSphere3f, expand))
-        .def("ray_intersect", &BoundingSphere3f::template ray_intersect<Float, Spectrum>,
+        .def("ray_intersect", &BoundingSphere3f::template ray_intersect<Ray3f>,
             D(BoundingSphere3f, ray_intersect))
         .def(py::self == py::self)
         .def(py::self != py::self)
