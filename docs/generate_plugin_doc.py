@@ -72,9 +72,10 @@ def process_src(target, src_subdir, section=None):
     process('../src/{0}'.format(src_subdir), target)
 
 
-if __name__ == "__main__":
+def generate(build_dir):
+    original_wd = os.getcwd()
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    with open('plugins_generated.rst', 'w') as f:
+    with open(os.path.join(build_dir, 'plugins.rst'), 'w') as f:
         # process_src(f, 'shapes')
         process_src(f, 'bsdfs', 'section_bsdf')
         # process_src(f, 'textures')
@@ -88,3 +89,8 @@ if __name__ == "__main__":
         # process_src(f, 'samplers')
         # process_src(f, 'films')
         # process_src(f, 'rfilters')
+
+    os.chdir(original_wd)
+    
+if __name__ == "__main__":
+    generate()

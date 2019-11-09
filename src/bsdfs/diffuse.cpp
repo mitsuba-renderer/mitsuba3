@@ -32,30 +32,28 @@ looks the same independently of the direction of observation.
 
 
 .. subfigstart::
-
 .. _fig-diffuse-plain:
 
-.. figure:: ../resources/data/docs/images/bsdfs/diffuse/plain.jpg
+.. figure:: ../../resources/data/docs/images/bsdfs/diffuse/plain.jpg
     :alt: Homogeneous reflectance
-    :width: 40%
+    :width: 95%
     :align: center
 
     Homogeneous reflectance
 
 .. _fig-diffuse-textured:
 
-.. figure:: ../resources/data/docs/images/bsdfs/diffuse/textured.jpg
+.. figure:: ../../resources/data/docs/images/bsdfs/diffuse/textured.jpg
     :alt: Textured reflectance
-    :width: 40%
+    :width: 95%
     :align: center
 
     Textured reflectance
 
 .. subfigend::
-    :width: 1.0
+    :width: 0.49
     :alt: Example Model Resolutions
     :label: fig-diffuse-bsdf
-
 
 Apart from a homogeneous reflectance value, the plugin can also accept
 a nested or referenced texture map to be used as the source of reflectance

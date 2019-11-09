@@ -18,5 +18,6 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
 .. toctree::
     :maxdepth: 2
     :caption: Plugins
+    :numbered:
 
-    plugins_generated
+    generated/plugins

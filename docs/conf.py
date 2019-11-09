@@ -72,7 +72,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['.build', 'release.rst']
+exclude_patterns = ['.build', 'release.rst', 'section_bsdf.rst']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -118,8 +118,9 @@ extensions = []
 extensions.append("guzzle_sphinx_theme")
 extensions.append("sphinx.ext.mathjax")
 
-sys.path.append(os.path.abspath('exts'))
+sys.path.append(os.path.abspath('exts/sphinxtr'))
 extensions.append('subfig')
+extensions.append('numfig')
 
 
 # Guzzle theme options (see theme.conf for more information)
@@ -140,8 +141,6 @@ html_sidebars = {
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 
-def setup(app):
-    app.add_stylesheet('theme_overrides.css')
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -306,3 +305,18 @@ texinfo_documents = [
 
 primary_domain = 'cpp'
 highlight_language = 'cpp'
+
+build_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'generated')
+
+def custom_step(app):
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    import generate_plugin_doc
+
+    if not os.path.exists(build_dir):
+        os.mkdir(build_dir)
+    generate_plugin_doc.generate(build_dir)
+
+
+def setup(app):
+    app.connect("builder-inited", custom_step)
+    app.add_stylesheet('theme_overrides.css')

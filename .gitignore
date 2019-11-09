@@ -62,4 +62,4 @@ __pycache__
 /html
 
 #docs
-docs/plugins_generated.rst
+docs/generated/

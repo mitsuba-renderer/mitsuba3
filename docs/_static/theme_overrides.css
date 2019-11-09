@@ -46,3 +46,154 @@ div.sidebar-wrapper {
 .paramstable .row-even {
     background-color: #f9f9f9;
 }
+
+/* The following CSS is adapted from sphinxtr, Copyright (c) 2012, Jeff Terrace  */
+
+/* change default tables to booktabs style */
+div.body td.align-left {
+	text-align: left;
+}
+div.body td.align-right {
+	text-align: right;
+}
+div.body td.align-center {
+	text-align: center;
+}
+div.body td.align-top {
+    vertical-align: top;
+}
+div.body td.align-bottom {
+    vertical-align: bottom;
+}
+div.body td.align-middle {
+    vertical-align: middle;
+}
+table.docutils th {
+	border-bottom: 2px solid #AAA;
+	border-top: 2px solid #AAA;
+}
+table.docutils td {
+    border: 0;
+    padding: 4px 8px 4px 5px;
+    line-height: 130%;
+}
+table.docutils {
+    border-bottom: 2px solid #AAA;
+    margin: 0;
+    padding: 0 -0.5em 0 -0.5em;
+}
+
+/* make the title of references bold */
+div#bibliography + table span.title {
+	font-weight: bold;
+}
+
+/* fix word-wrapping in long http links in references */
+div#bibliography + table a.external {
+	word-wrap: break-word;
+	word-break: break-all;
+}
+
+
+/* link color change */
+a, div.related ul li a, div.body a {
+	color: #08c;
+	text-decoration: none;
+}
+a:hover, div.related ul li a:hover, div.body a:hover {
+    color: #0071aa;
+}
+h1, h2 {
+	color: #333;
+}
+
+/* no background for top bar since it's orange */
+div.related ul {
+	background-image: none;
+	background-color: #fff;
+}
+
+/* give figures a nice rounded box style */
+div.figure {
+	margin: 20px 0px;
+	padding: 3px 7px;
+	padding-top: 10px;
+	border: 1px solid #DDD;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+}
+
+/* change figure captions to be aligned nicely */
+div.body p.caption {
+	text-align: justify;
+}
+div.subfigure > p.caption {
+	text-align: center;
+}
+
+/* change figure captions to get highlighted when targeted with a link */
+div.figure:target > p.caption,
+div.subfigure:target > p.caption,
+div.figure:target > center > p.caption,
+div.math:target span.eqno {
+    background-color: #FFA;
+}
+div.figure:target,
+div.subfigure:target {
+	border: 1px dashed #333;
+}
+div.figure.compound {
+	padding: 0;
+	padding-top: 10px;
+}
+div.figure.compound > p.caption {
+	margin-left: 7px;
+	margin-right: 7px;
+}
+div.subfigure {
+	display: inline-block;
+	vertical-align: top;
+	padding-left: 7px;
+	padding-right: 7px;
+}
+
+
+/* change section titles to get highlighted when targeted with a link */
+div.section:target > h6,
+div.section:target > h5,
+div.section:target > h4,
+div.section:target > h3,
+div.section:target > h2,
+div.section:target > h1,
+span:target + h6,
+span:target + h5,
+span:target + h4,
+span:target + h3
+span:target + h2,
+span:target + h1
+{
+	background-color: #FFA;
+}
+h1 {
+	/* padding has to be swapped for margin to highlight isn't ugly */
+	margin: 0.7em 0 0.3em 0;
+    padding: 0;
+}
+
+/* description lists */
+dl {
+	margin-left: 20px;
+}
+dt {
+    font-weight: bold;
+}
+dt, dd {
+    line-height: 20px;
+}
+dd {
+	margin-left: 10px;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
