@@ -79,7 +79,7 @@ table.docutils td {
 }
 table.docutils {
     border-bottom: 2px solid #AAA;
-    margin: 0;
+    margin: 0 0 1em 0;
     padding: 0 -0.5em 0 -0.5em;
 }
 
@@ -174,11 +174,6 @@ span:target + h2,
 span:target + h1
 {
 	background-color: #FFA;
-}
-h1 {
-	/* padding has to be swapped for margin to highlight isn't ugly */
-	margin: 0.7em 0 0.3em 0;
-    padding: 0;
 }
 
 /* description lists */
