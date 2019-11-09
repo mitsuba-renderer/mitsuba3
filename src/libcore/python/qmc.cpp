@@ -4,6 +4,8 @@
 
 MTS_PY_EXPORT_VARIANTS(qmc) {
     MTS_IMPORT_CORE_TYPES()
+    MTS_PY_CHECK_ALIAS(RadicalInverse)
+
     py::class_<RadicalInverse, Object, ref<RadicalInverse>>(m, "RadicalInverse", D(RadicalInverse))
         .def(py::init<size_t, int>(), "max_base"_a = 8161, "scramble"_a = -1)
         .def("base", &RadicalInverse::base, D(RadicalInverse, base))

@@ -205,6 +205,10 @@ MTS_PY_EXPORT_VARIANTS(warp) {
     using Marginal2D1 = warp::Marginal2D<Float, 1>;
     using Marginal2D2 = warp::Marginal2D<Float, 2>;
     using Marginal2D3 = warp::Marginal2D<Float, 3>;
+    MTS_PY_CHECK_ALIAS(Marginal2D0)
+    MTS_PY_CHECK_ALIAS(Marginal2D1)
+    MTS_PY_CHECK_ALIAS(Marginal2D2)
+    MTS_PY_CHECK_ALIAS(Marginal2D3)
 
     py::class_<Marginal2D0>(m, "Marginal2D0", D(warp, Marginal2D))
         .def(py::init([](FloatArray data, bool normalize, bool build_cdf) {

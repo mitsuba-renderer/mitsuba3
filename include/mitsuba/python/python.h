@@ -98,6 +98,12 @@ template <typename Type> pybind11::handle get_type_handle() {
     return pybind11::detail::get_type_handle(typeid(Type), false);
 }
 
+#define MTS_PY_CHECK_ALIAS(Name)                      \
+    if (auto h = get_type_handle<Name>()) {           \
+        m.attr(#Name) = h;                            \
+        return;                                       \
+    }
+
 template<typename Float, typename Func>
 auto vectorize(Func func) {
     if constexpr (is_array_v<Float> && !is_dynamic_v<Float>){

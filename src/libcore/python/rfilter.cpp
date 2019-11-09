@@ -53,11 +53,10 @@ MTS_PY_EXPORT(Resampler)
 }
 
 MTS_PY_EXPORT_VARIANTS(rfilter) {
-    m.attr("FilterBoundaryCondition") = py::module::import("mitsuba.core.FilterBoundaryCondition");
-
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Spectrum>;
+    MTS_PY_CHECK_ALIAS(ReconstructionFilter)
 
-    auto rfilter = MTS_PY_CLASS(ReconstructionFilter, Object)
+    MTS_PY_CLASS(ReconstructionFilter, Object)
         .def_method(ReconstructionFilter, border_size)
         .def_method(ReconstructionFilter, radius)
         .def("eval",
@@ -68,4 +67,5 @@ MTS_PY_EXPORT_VARIANTS(rfilter) {
              D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)
         ;
     m.attr("MTS_FILTER_RESOLUTION") = MTS_FILTER_RESOLUTION;
+    m.attr("FilterBoundaryCondition") = py::module::import("mitsuba.core.FilterBoundaryCondition");
 }

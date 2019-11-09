@@ -30,6 +30,7 @@ static void sigint_handler(int sig) {
 MTS_PY_EXPORT_VARIANTS(Integrator) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
+    MTS_PY_CHECK_ALIAS(Integrator)
 
     /// Integrator (base class).
     MTS_PY_CLASS(Integrator, Object)
@@ -57,6 +58,8 @@ MTS_PY_EXPORT_VARIANTS(Integrator) {
         ;
 
     using SamplingIntegrator = SamplingIntegrator<Float, Spectrum>;
+    MTS_PY_CHECK_ALIAS(SamplingIntegrator)
+
     MTS_PY_CLASS(SamplingIntegrator, Integrator)
         .def("sample",
              vectorize<Float>(&SamplingIntegrator::sample),
@@ -65,5 +68,7 @@ MTS_PY_EXPORT_VARIANTS(Integrator) {
         ;
 
     using MonteCarloIntegrator = MonteCarloIntegrator<Float, Spectrum>;
+    MTS_PY_CHECK_ALIAS(MonteCarloIntegrator)
+
     MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 }

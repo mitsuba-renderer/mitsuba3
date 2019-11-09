@@ -5,9 +5,11 @@
 
 MTS_PY_EXPORT_VARIANTS(Transform) {
     MTS_IMPORT_CORE_TYPES()
-
     using Transform3f = Transform<Float, 3>;
     using Matrix3f = enoki::Matrix<Float, 3>;
+    MTS_PY_CHECK_ALIAS(Transform3f)
+    MTS_PY_CHECK_ALIAS(Transform4f)
+
     py::class_<Transform3f>(m, "Transform3f", D(Transform3f))
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform3f &>(), "Copy constructor")

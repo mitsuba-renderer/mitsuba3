@@ -19,6 +19,7 @@ MTS_PY_EXPORT(BSDFContext) {
 MTS_PY_EXPORT_VARIANTS(BSDFSample3f) {
     using BSDFSample3 = BSDFSample3<Float, Spectrum>;
     using Vector3f = typename BSDFSample3::Vector3f;
+    MTS_PY_CHECK_ALIAS(BSDFSample3)
 
     py::class_<BSDFSample3>(m, "BSDFSample3f", D(BSDFSample3))
         .def(py::init<>(), D(BSDFSample3, BSDFSample3))
@@ -36,8 +37,9 @@ MTS_PY_EXPORT_VARIANTS(BSDFSample3f) {
 MTS_PY_EXPORT_VARIANTS(BSDF) {
     using BSDF = BSDF<Float, Spectrum>;
     using Mask = typename BSDF::Mask;
+    MTS_PY_CHECK_ALIAS(BSDF)
 
-    auto bsdf = MTS_PY_CLASS(BSDF, Object)
+    MTS_PY_CLASS(BSDF, Object)
         .def("sample", vectorize<Float>(&BSDF::sample),
             "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
             .def("eval", vectorize<Float>(&BSDF::eval),

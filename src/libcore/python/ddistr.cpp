@@ -2,8 +2,10 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT_VARIANTS(DiscreteDistribution) {
-    using DiscreteDistribution = DiscreteDistribution<Float>;
     MTS_IMPORT_CORE_TYPES()
+    using DiscreteDistribution = DiscreteDistribution<Float>;
+    MTS_PY_CHECK_ALIAS(DiscreteDistribution)
+
     MTS_PY_STRUCT(DiscreteDistribution)
         .def(py::init<size_t>(), py::arg("n_entries") = 0,
              D(DiscreteDistribution, DiscreteDistribution))

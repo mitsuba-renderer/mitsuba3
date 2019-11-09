@@ -9,6 +9,8 @@
 MTS_PY_EXPORT_VARIANTS(Shape) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
+    MTS_PY_CHECK_ALIAS(Shape)
+
     auto shape = MTS_PY_CLASS(Shape, Object)
         .def("sample_position", vectorize<Float>(&Shape::sample_position),
             "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))

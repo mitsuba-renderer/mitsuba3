@@ -6,6 +6,7 @@
 MTS_PY_EXPORT_VARIANTS(random) {
     MTS_IMPORT_CORE_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
+    MTS_PY_CHECK_ALIAS(PCG32)
 
     auto pcg32 = py::class_<PCG32>(m, "PCG32", D(PCG32))
         .def(py::init<UInt64, UInt64>(),

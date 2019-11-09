@@ -3,6 +3,7 @@
 
 MTS_PY_EXPORT_VARIANTS(PositionSample) {
     MTS_IMPORT_TYPES()
+    MTS_PY_CHECK_ALIAS(PositionSample3f)
 
     py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample3f))
         .def(py::init<>(), "Construct an unitialized position sample")
@@ -23,6 +24,7 @@ MTS_PY_EXPORT_VARIANTS(DirectionSample) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename DirectionSample3f::Base;
+    MTS_PY_CHECK_ALIAS(DirectionSample3f)
 
     py::class_<DirectionSample3f, Base>(m, "DirectionSample3f", D(DirectionSample3f))
         .def(py::init<>(), "Construct an unitialized direct sample")

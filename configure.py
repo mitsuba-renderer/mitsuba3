@@ -99,7 +99,7 @@ with open(fname, 'w') as f:
     w('#define PY_CAST_VARIANTS(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         spectrum = spectrum.replace('Float', float_)
-        w('    if (auto tmp = dynamic_cast<Name<%s, %s> *>(o))' % (float_, spectrum))
+        w('    if (auto tmp = dynamic_cast<Name<%s, %s> *>(o); tmp)' % (float_, spectrum))
         w('        return py::cast(tmp);')
     f.write('\n\n')
 

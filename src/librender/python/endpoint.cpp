@@ -11,6 +11,8 @@
 MTS_PY_EXPORT_VARIANTS(Endpoint) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
+    MTS_PY_CHECK_ALIAS(Endpoint)
+
     MTS_PY_CLASS(Endpoint, Object)
         .def("sample_ray", vectorize<Float>(&Endpoint::sample_ray),
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,

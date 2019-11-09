@@ -5,6 +5,8 @@
 MTS_PY_EXPORT_VARIANTS(ImageBlock) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
+    MTS_PY_CHECK_ALIAS(ImageBlock)
+
     MTS_PY_CLASS(ImageBlock, Object)
         .def(py::init<PixelFormat, const Vector2i &,
                         const ReconstructionFilter *, size_t, bool, bool, bool>(),

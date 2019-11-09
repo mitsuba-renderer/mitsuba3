@@ -76,13 +76,13 @@
 
 
 #define PY_CAST_VARIANTS(Name)                                              \
-    if (auto tmp = dynamic_cast<Name<float, Color<float, 1>> *>(o))         \
+    if (auto tmp = dynamic_cast<Name<float, Color<float, 1>> *>(o); tmp)    \
         return py::cast(tmp);                                               \
-    if (auto tmp = dynamic_cast<Name<float, Color<float, 3>> *>(o))         \
+    if (auto tmp = dynamic_cast<Name<float, Color<float, 3>> *>(o); tmp)    \
         return py::cast(tmp);                                               \
-    if (auto tmp = dynamic_cast<Name<float, Spectrum<float, 4>> *>(o))      \
+    if (auto tmp = dynamic_cast<Name<float, Spectrum<float, 4>> *>(o); tmp) \
         return py::cast(tmp);                                               \
-    if (auto tmp = dynamic_cast<Name<float, MuellerMatrix<Spectrum<float, 4>>> *>(o)) \
+    if (auto tmp = dynamic_cast<Name<float, MuellerMatrix<Spectrum<float, 4>>> *>(o); tmp) \
         return py::cast(tmp);                                               \
 
 

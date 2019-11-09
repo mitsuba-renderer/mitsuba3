@@ -5,6 +5,8 @@ MTS_PY_EXPORT_VARIANTS(Ray) {
     MTS_IMPORT_CORE_TYPES()
     using Ray3f = Ray<Point3f, Spectrum>;
     using Wavelength = wavelength_t<Spectrum>;
+    MTS_PY_CHECK_ALIAS(Ray3f)
+
     py::class_<Ray3f>(m, "Ray3f", D(Ray3f))
         .def(py::init<>(), "Create an unitialized ray")
         .def(py::init<const Ray3f &>(), "Copy constructor", "other"_a)

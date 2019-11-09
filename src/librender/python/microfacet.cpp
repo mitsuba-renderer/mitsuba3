@@ -8,6 +8,7 @@ MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
     using ScalarFloat = typename MicrofacetDistribution::ScalarFloat;
     using FloatP    = Packet<ScalarFloat>;
     using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
+    MTS_PY_CHECK_ALIAS(MicrofacetDistribution)
 
     py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
         .def(py::init<MicrofacetType, const Float &, bool>(),

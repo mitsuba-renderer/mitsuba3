@@ -5,6 +5,8 @@ MTS_PY_EXPORT_VARIANTS(Sensor) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename Sensor::Base;
+    MTS_PY_CHECK_ALIAS(Sensor)
+
     MTS_PY_CLASS(Sensor, Base)
         .def_method(Sensor, sample_ray_differential,
               "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)

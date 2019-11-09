@@ -6,6 +6,8 @@
 MTS_PY_EXPORT_VARIANTS(Interaction) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
+    MTS_PY_CHECK_ALIAS(Interaction3f)
+
     py::class_<Interaction3f>(m, "Interaction3f", D(Interaction3f))
         // Members
         .def_field(Interaction3f, t)
@@ -26,6 +28,8 @@ MTS_PY_EXPORT_VARIANTS(SurfaceInteraction) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename SurfaceInteraction3f::Base;
+    MTS_PY_CHECK_ALIAS(SurfaceInteraction3f)
+
     py::class_<SurfaceInteraction3f, Base>(m, "SurfaceInteraction3f", D(SurfaceInteraction3f))
         // Members
         .def_field(SurfaceInteraction3f, shape)

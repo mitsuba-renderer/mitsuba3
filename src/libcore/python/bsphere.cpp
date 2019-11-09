@@ -2,8 +2,9 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT_VARIANTS(BoundingSphere) {
-     MTS_IMPORT_CORE_TYPES()
-     using Ray3f = Ray<Point3f, Spectrum>;
+    MTS_IMPORT_CORE_TYPES()
+    using Ray3f = Ray<Point3f, Spectrum>;
+    MTS_PY_CHECK_ALIAS(BoundingSphere3f)
 
     py::class_<BoundingSphere3f>(m, "BoundingSphere3f", D(BoundingSphere3f))
         .def(py::init<>(), D(BoundingSphere3f, BoundingSphere3f))
@@ -16,9 +17,8 @@ MTS_PY_EXPORT_VARIANTS(BoundingSphere) {
                               : self.template contains<false>(p);
             }, D(BoundingSphere3f, contains), "p"_a, "strict"_a = false)
         .def("expand", &BoundingSphere3f::expand, D(BoundingSphere3f, expand))
-        // TODO
-        // .def("ray_intersect", &BoundingSphere3f::template ray_intersect<Point3f>,
-            // D(BoundingSphere3f, ray_intersect))
+        .def("ray_intersect", &BoundingSphere3f::template ray_intersect<Float, Spectrum>,
+            D(BoundingSphere3f, ray_intersect))
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def_readwrite("center", &BoundingSphere3f::center)

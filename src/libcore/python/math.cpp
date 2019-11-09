@@ -9,11 +9,11 @@ MTS_PY_EXPORT_VARIANTS(math) {
     MTS_IMPORT_CORE_TYPES()
 
     m.def("comp_ellint_1", &enoki::comp_ellint_1<Float>, "k"_a)
-    .def("comp_ellint_2", &enoki::comp_ellint_2<Float>, "k"_a)
-    .def("comp_ellint_3", &enoki::comp_ellint_3<Float, Float>, "k"_a, "nu"_a)
-    .def("ellint_1",      &enoki::ellint_1<Float, Float>, "phi"_a, "k"_a)
-    .def("ellint_2",      &enoki::ellint_2<Float, Float>, "phi"_a, "k"_a)
-    .def("ellint_3",      &enoki::ellint_3<Float, Float, Float>, "phi"_a, "k"_a, "nu"_a);
+    .def("comp_ellint_2",  &enoki::comp_ellint_2<Float>, "k"_a)
+    .def("comp_ellint_3",  &enoki::comp_ellint_3<Float, Float>, "k"_a, "nu"_a)
+    .def("ellint_1",       &enoki::ellint_1<Float, Float>, "phi"_a, "k"_a)
+    .def("ellint_2",       &enoki::ellint_2<Float, Float>, "phi"_a, "k"_a)
+    .def("ellint_3",       &enoki::ellint_3<Float, Float, Float>, "phi"_a, "k"_a, "nu"_a);
 
     m.attr("E")               = py::cast(math::E<Float>);
     m.attr("Pi")              = py::cast(math::Pi<Float>);

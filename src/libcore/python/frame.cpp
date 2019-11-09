@@ -3,6 +3,8 @@
 
 MTS_PY_EXPORT_VARIANTS(Frame) {
     MTS_IMPORT_CORE_TYPES()
+    MTS_PY_CHECK_ALIAS(Frame3f)
+
     py::class_<Frame3f>(m, "Frame3f", D(Frame3f))
         .def(py::init<>(), D(Frame3f, Frame3f))
         .def(py::init<const Frame3f &>(), "Copy constructor")
