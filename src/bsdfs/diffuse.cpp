@@ -52,7 +52,7 @@ looks the same independently of the direction of observation.
 
 .. subfigend::
     :width: 0.49
-    :alt: Example Model Resolutions
+    :alt: Example diffuse appearances
     :label: fig-diffuse-bsdf
 
 Apart from a homogeneous reflectance value, the plugin can also accept

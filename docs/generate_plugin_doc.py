@@ -7,15 +7,26 @@
 import os
 import re
 
+BSDF_ORDERING = ['diffuse',
+                'dielectric',
+                'thindielectric',
+                'roughdielectric',
+                'conductor',
+                'roughconductor',
+                'plastic',
+                'roughplastic',
+                'measured',
+                'blendbsdf',
+                'mask',
+                'twosided']
 
-def findOrderID(filename):
-    f = open(filename)
-    for line in f.readlines():
-        match = re.match(r'.*\\order{([^}]*)}.*', line)
-        if match is not None:
-            return int(match.group(1))
-    return 1000
 
+def find_order_id(filename, ordering):
+    f = os.path.split(filename)[-1].split('.')[0]
+    if f in ordering:
+        return ordering.index(f)
+    else:
+        return 1000
 
 def extract(target, filename):
     f = open(filename)
@@ -39,7 +50,7 @@ def extract(target, filename):
 # Traverse source directories and process any found plugin code
 
 
-def process(path, target):
+def process(path, target, ordering):
     def capture(fileList, dirname, files):
         suffix = os.path.split(dirname)[1]
         if 'lib' in suffix or suffix == 'tests' \
@@ -55,21 +66,21 @@ def process(path, target):
     for (dirname, _, files) in os.walk(path):
         capture(fileList, dirname, files)
 
-    ordering = [(findOrderID(fname), fname) for fname in fileList]
+    ordering = [(find_order_id(fname, ordering), fname) for fname in fileList]
     ordering = sorted(ordering, key=lambda entry: entry[0])
 
     for entry in ordering:
         extract(target, entry[1])
 
 
-def process_src(target, src_subdir, section=None):
+def process_src(target, src_subdir, section=None, ordering=None):
     if section is None:
         section = "section_" + src_subdir
 
     # Copy paste the contents of the appropriate section file
     with open(section + '.rst', 'r') as f:
         target.write(f.read())
-    process('../src/{0}'.format(src_subdir), target)
+    process('../src/{0}'.format(src_subdir), target, ordering)
 
 
 def generate(build_dir):
@@ -77,7 +88,7 @@ def generate(build_dir):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open(os.path.join(build_dir, 'plugins.rst'), 'w') as f:
         # process_src(f, 'shapes')
-        process_src(f, 'bsdfs', 'section_bsdf')
+        process_src(f, 'bsdfs', 'section_bsdf', BSDF_ORDERING)
         # process_src(f, 'textures')
         # process_src(f, 'subsurface')
         # process_src(f, 'medium', 'section_media')
@@ -91,6 +102,6 @@ def generate(build_dir):
         # process_src(f, 'rfilters')
 
     os.chdir(original_wd)
-    
+
 if __name__ == "__main__":
     generate()
