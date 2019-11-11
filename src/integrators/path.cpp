@@ -33,7 +33,7 @@ public:
         /* ---------------------- First intersection ---------------------- */
 
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
-        Mask valid_ray = select(si.is_valid(), Float(1.f), Float(0.f));
+        Mask valid_ray = si.is_valid();
         EmitterPtr emitter = si.emitter(scene);
 
         for (int depth = 1;; ++depth) {
