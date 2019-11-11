@@ -121,7 +121,7 @@ protected:
 protected:
     ref<Film> m_film;
     ref<Sampler> m_sampler;
-    Vector2f m_resolution;
+    ScalarVector2f m_resolution;
     ScalarFloat m_shutter_open;
     ScalarFloat m_shutter_open_time;
     ScalarFloat m_aspect;

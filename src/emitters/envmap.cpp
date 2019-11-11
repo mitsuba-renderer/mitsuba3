@@ -33,22 +33,22 @@ public:
         m_bitmap = m_bitmap->convert(PixelFormat::RGBA, Bitmap::FloatFieldType, false);
         m_name = file_path.filename().string();
 
-        std::unique_ptr<Float[]> luminance(new Float[hprod(m_bitmap->size())]);
+        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[hprod(m_bitmap->size())]);
 
-        Float *ptr = (Float *) m_bitmap->data(),
-              *lum_ptr = (Float *) luminance.get();
+        ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data(),
+              *lum_ptr = (ScalarFloat *) luminance.get();
 
         for (size_t y = 0; y < m_bitmap->size().y(); ++y) {
-            Float sin_theta =
-                std::sin(y / Float(m_bitmap->size().y() - 1) * math::Pi<Float>);
+            ScalarFloat sin_theta =
+                std::sin(y / ScalarFloat(m_bitmap->size().y() - 1) * math::Pi<ScalarFloat>);
 
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
-                Color3f rgb = load_unaligned<Vector3f>(ptr);
-                Float scale = hmax(rgb) * 2.f;
-                Color3f rgb_norm = rgb / std::max((Float) 1e-8, scale);
+                ScalarColor3f rgb = load_unaligned<ScalarVector3f>(ptr);
+                ScalarFloat scale = hmax(rgb) * 2.f;
+                ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
 
                 // Fetch spectral fit for given sRGB color value
-                Vector4f coeff = concat(srgb_model_fetch(rgb_norm), scale);
+                ScalarVector4f coeff = concat(srgb_model_fetch(rgb_norm), scale);
 
                 // Overwrite the pixel value with the coefficients
                 *lum_ptr++ = mitsuba::luminance(rgb) * sin_theta;

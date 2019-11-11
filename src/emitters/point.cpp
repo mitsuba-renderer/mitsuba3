@@ -21,7 +21,7 @@ public:
                       "can be specified at the same time!'");
 
             m_world_transform = new AnimatedTransform(
-                Transform4f::translate(Vector3f(props.point3f("position"))));
+                ScalarTransform4f::translate(ScalarVector3f(props.point3f("position"))));
         }
 
         m_intensity = props.spectrum<ContinuousSpectrum>("intensity", ContinuousSpectrum::D65(1.f));

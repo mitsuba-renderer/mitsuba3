@@ -52,7 +52,7 @@ public:
             fail("file not found");
 
         // Object-space to world-space transformation
-        Transform4f to_world = props.transform("to_world", Transform4f());
+        ScalarTransform4f to_world = props.transform("to_world", ScalarTransform4f());
 
         /// When the file contains multiple meshes, this index specifies which one to load
         int shape_index = props.int_("shape_index", 0);

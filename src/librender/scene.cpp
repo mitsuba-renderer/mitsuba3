@@ -70,7 +70,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
             sensor_props.set_float("focus_distance", distance + extents.z() / 2);
             sensor_props.set_transform(
-                "to_world", Transform4f::translate(Vector3f(
+                "to_world", ScalarTransform4f::translate(ScalarVector3f(
                                 center.x(), center.y(), m_bbox.min.z() - distance)));
         }
 

@@ -26,8 +26,13 @@ public:
 
     ref<Base> clone() override {
         IndependentSampler *sampler = new IndependentSampler();
-        // TODO: needs a scalar size_t, not a Size
-        sampler->seed(m_rng->next_uint64());
+
+        // TODO is this the right thing to do?
+        if constexpr (is_array_v<Float>)
+            sampler->seed(m_rng->next_uint64()[0]);
+        else
+            sampler->seed(m_rng->next_uint64());
+
         sampler->m_sample_count = m_sample_count;
         return sampler;
     }

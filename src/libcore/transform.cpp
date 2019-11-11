@@ -44,6 +44,7 @@ bool AnimatedTransform::has_scale() const {
     return hsum_nested(delta) / m_keyframes.size() > 1e-3f;
 }
 
+#if 0
 typename AnimatedTransform::Transform4f
 AnimatedTransform::eval(Float time, Mask active) const {
 
@@ -95,6 +96,7 @@ AnimatedTransform::eval(Float time, Mask active) const {
         enoki::transform_compose_inverse(scale, quat, trans)
     );
 }
+#endif
 
 typename AnimatedTransform::BoundingBox3f AnimatedTransform::translation_bounds() const {
     if (m_keyframes.empty()) {

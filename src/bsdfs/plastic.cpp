@@ -39,8 +39,8 @@ public:
         m_diffuse_reflectance  = props.spectrum<ContinuousSpectrum>("diffuse_reflectance", .5f);
 
         // Compute weights that further steer samples towards the specular or diffuse components
-        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
-               s_mean = m_specular_reflectance->mean();
+        ScalarFloat d_mean = hmax(m_diffuse_reflectance->mean()),
+                    s_mean = hmax(m_specular_reflectance->mean());
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
 

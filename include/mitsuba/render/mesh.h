@@ -76,7 +76,9 @@ public:
     }
 
     /// Returns the face indices associated with triangle \c index
-    MTS_INLINE Vector3u face_indices(Index index, const Mask &active = true) const {
+    template <typename Index>
+    MTS_INLINE auto face_indices(Index index, const mask_t<Index> &active = true) const {
+        using Vector3u = Vector<Index, 3>;
         if constexpr (!is_array_v<Index>) {
             return load<Vector3u>(face(index));
         } else if constexpr (!is_diff_array_v<Index>) {
@@ -92,7 +94,9 @@ public:
     }
 
     /// Returns the world-space position of the vertex with index \c index
-    MTS_INLINE Point3f vertex_position(Index index, const Mask &active = true) const {
+    template <typename Index>
+    MTS_INLINE auto vertex_position(Index index, const mask_t<Index> &active = true) const {
+        using Point3f = Point<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load<Point3f>(vertex(index));
         } else if constexpr (!is_diff_array_v<Index>) {
@@ -108,7 +112,9 @@ public:
     }
 
     /// Returns the normal direction of the vertex with index \c index
-    MTS_INLINE Normal3f vertex_normal(Index index, const Mask &active = true) const {
+    template <typename Index>
+    MTS_INLINE auto vertex_normal(Index index, const mask_t<Index> &active = true) const {
+        using Normal3f = Normal<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Normal3f>(vertex(index) + m_normal_offset);
         } else if constexpr (!is_diff_array_v<Index>) {
@@ -124,13 +130,15 @@ public:
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
-    MTS_INLINE Point2f vertex_texcoord(Index index, const Mask &active = true) const {
+    template <typename Index>
+    MTS_INLINE auto vertex_texcoord(Index index, const mask_t<Index> &active = true) const {
+        using Point2f = Point<replace_scalar_t<Index, ScalarFloat>, 2>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Point2f>(vertex(index) + m_texcoord_offset);
         } else if constexpr (!is_diff_array_v<Index>) {
             index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
             return gather<Point2f, sizeof(Float)>(
-                m_vertices.get() + m_texcoord_offset, Index2(index, index + 1u), active);
+                m_vertices.get() + m_texcoord_offset, Array<Index, 2>(index, index + 1u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
@@ -140,7 +148,8 @@ public:
     }
 
     /// Returns the surface area of the face with index \c index
-    Float face_area(Index index, Mask active = true) const {
+    template <typename Index>
+    auto face_area(Index index, mask_t<Index> active = true) const {
         auto fi = face_indices(index, active);
 
         auto p0 = vertex_position(fi[0], active),
@@ -218,7 +227,7 @@ public:
     MTS_INLINE std::tuple<Mask, Float, Float, Float>
     ray_intersect_triangle(const Index &index, const Ray3f &ray,
                            identity_t<Mask> active = true) const {
-        auto fi = face_indices(Size(index), active);
+        auto fi = face_indices(index, active);
 
         Point3f p0 = vertex_position(fi[0], active),
                 p1 = vertex_position(fi[1], active),
@@ -339,8 +348,8 @@ protected:
      * m_surface_area is negative until this has taken place.
      */
     DiscreteDistribution<Float> m_area_distribution;
-    Float m_surface_area = -1.f;
-    Float m_inv_surface_area = -1.f;
+    ScalarFloat m_surface_area = -1.f;
+    ScalarFloat m_inv_surface_area = -1.f;
     tbb::spin_mutex m_mutex;
 };
 

@@ -35,7 +35,7 @@ public:
         m_length = norm(d);
 
         m_object_to_world = ScalarTransform4f::translate(p0) *
-                            ScalarTransform4f::to_frame(Frame(d / m_length)) *
+                            ScalarTransform4f::to_frame(ScalarFrame3f(d / m_length)) *
                             ScalarTransform4f::scale(ScalarVector3f(m_radius, m_radius, m_length));
 
         // Are the cylinder normals pointing inwards? default: no
@@ -270,8 +270,7 @@ public:
         Float phi = atan2(local.y(), local.x());
         masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
 
-        si.uv = Point2f(phi * math::InvTwoPi<Float>,
-                       local.z() / m_length);
+        si.uv = Point2f(phi * math::InvTwoPi<Float>, local.z() / m_length);
 
         Vector3f dp_du = 2.f * math::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
         Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);

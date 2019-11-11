@@ -16,9 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename Float_> struct Frame {
     using Float    = Float_;
-    using Vector2f = Vector<Float, 2>;
-    using Vector3f = Vector<Float, 3>;
-    using Normal3f = Normal<Float, 3>;
+    MTS_IMPORT_CORE_TYPES()
 
     Vector3f s, t;
     Normal3f n;
@@ -156,12 +154,12 @@ template <typename Float_> struct Frame {
     }
 
     /// Equality test
-    bool operator==(const Frame &frame) const {
+    Mask operator==(const Frame &frame) const {
         return all(eq(frame.s, s) && eq(frame.t, t) && eq(frame.n, n));
     }
 
     /// Inequality test
-    bool operator!=(const Frame &frame) const {
+    Mask operator!=(const Frame &frame) const {
         return any(neq(frame.s, s) || neq(frame.t, t) || neq(frame.n, n));
     }
 

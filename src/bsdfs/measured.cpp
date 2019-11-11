@@ -90,55 +90,55 @@ public:
         m_jacobian  = ((uint8_t *) jacobian.data)[0];
 
         if (!m_isotropic) {
-            Float *phi_i_data = (Float *) phi_i.data;
-            m_reduction = (int) std::rint((2 * math::Pi<Float>) /
+            ScalarFloat *phi_i_data = (ScalarFloat *) phi_i.data;
+            m_reduction = (int) std::rint((2 * math::Pi<ScalarFloat>) /
                 (phi_i_data[phi_i.shape[0] - 1] - phi_i_data[0]));
         }
 
         // Construct NDF interpolant data structure
         m_ndf = Warp2D0(
-            Vector2u(ndf.shape[1], ndf.shape[0]),
-            (Float *) ndf.data,
+            ScalarVector2u(ndf.shape[1], ndf.shape[0]),
+            (ScalarFloat *) ndf.data,
             { }, { }, false, false
         );
 
         // Construct projected surface area interpolant data structure
         m_sigma = Warp2D0(
-            Vector2u(sigma.shape[1], sigma.shape[0]),
-            (Float *) sigma.data,
+            ScalarVector2u(sigma.shape[1], sigma.shape[0]),
+            (ScalarFloat *) sigma.data,
             { }, { }, false, false
         );
 
         // Construct VNDF warp data structure
         m_vndf = Warp2D2(
-            Vector2u(vndf.shape[3], vndf.shape[2]),
-            (Float *) vndf.data,
+            ScalarVector2u(vndf.shape[3], vndf.shape[2]),
+            (ScalarFloat *) vndf.data,
             {{ (uint32_t) phi_i.shape[0],
                (uint32_t) theta_i.shape[0] }},
-            {{ (const Float *) phi_i.data,
-               (const Float *) theta_i.data }}
+            {{ (const ScalarFloat *) phi_i.data,
+               (const ScalarFloat *) theta_i.data }}
         );
 
         // Construct Luminance warp data structure
         m_luminance = Warp2D2(
-            Vector2u(luminance.shape[3], luminance.shape[2]),
-            (Float *) luminance.data,
+            ScalarVector2u(luminance.shape[3], luminance.shape[2]),
+            (ScalarFloat *) luminance.data,
             {{ (uint32_t) phi_i.shape[0],
                (uint32_t) theta_i.shape[0] }},
-            {{ (const Float *) phi_i.data,
-               (const Float *) theta_i.data }}
+            {{ (const ScalarFloat *) phi_i.data,
+               (const ScalarFloat *) theta_i.data }}
         );
 
         // Construct spectral interpolant
         m_spectra = Warp2D3(
-            Vector2u(spectra.shape[4], spectra.shape[3]),
-            (Float *) spectra.data,
+            ScalarVector2u(spectra.shape[4], spectra.shape[3]),
+            (ScalarFloat *) spectra.data,
             {{ (uint32_t) phi_i.shape[0],
                (uint32_t) theta_i.shape[0],
                (uint32_t) wavelengths.shape[0] }},
-            {{ (const Float *) phi_i.data,
-               (const Float *) theta_i.data,
-               (const Float *) wavelengths.data }},
+            {{ (const ScalarFloat *) phi_i.data,
+               (const ScalarFloat *) theta_i.data,
+               (const ScalarFloat *) wavelengths.data }},
             false, false
         );
 

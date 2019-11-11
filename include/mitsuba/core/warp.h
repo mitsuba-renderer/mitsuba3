@@ -1272,9 +1272,7 @@ private:
  */
 template <typename Float, size_t Dimension = 0> class Marginal2D {
 private:
-    using Vector2f = Vector<Float, 2>;
-    using Vector2u = Vector<replace_scalar_t<Float, uint32_t>, 2>;
-
+    MTS_IMPORT_CORE_TYPES()
     using FloatStorage = host_vector<Float>;
 
 #if !defined(_MSC_VER)
@@ -1303,9 +1301,9 @@ public:
      * this functionality is not needed (e.g. if only the interpolation in \c
      * eval() is used).
      */
-    Marginal2D(const Vector2u &size, const Float *data,
+    Marginal2D(const ScalarVector2u &size, const ScalarFloat *data,
                std::array<uint32_t, Dimension> param_res = { },
-               std::array<const Float *, Dimension> param_values = { },
+               std::array<const ScalarFloat *, Dimension> param_values = { },
                bool normalize = true, bool build_cdf = true)
         : m_size(size), m_patch_size(1.f / (m_size - 1u)),
           m_inv_patch_size(size - 1u) {
@@ -1325,7 +1323,7 @@ public:
             m_param_size[i] = param_res[i];
             m_param_values[i].resize(param_res[i]);
             memcpy(m_param_values[i].data(), param_values[i],
-                   sizeof(Float) * param_res[i]);
+                   sizeof(ScalarFloat) * param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? slices : 0;
             slices *= m_param_size[i];
         }
@@ -1338,7 +1336,7 @@ public:
             m_marginal_cdf.resize(slices * m_size.y());
             m_conditional_cdf.resize(slices * n_values);
 
-            Float *marginal_cdf = m_marginal_cdf.data(),
+            ScalarFloat *marginal_cdf = m_marginal_cdf.data(),
                   *conditional_cdf = m_conditional_cdf.data(),
                   *data_out = m_data.data();
 
@@ -1350,7 +1348,7 @@ public:
                     conditional_cdf[i] = 0.f;
                     for (uint32_t x = 0; x < m_size.x() - 1; ++x, ++i) {
                         sum += .5 * ((double) data[i] + (double) data[i + 1]);
-                        conditional_cdf[i + 1] = (Float) sum;
+                        conditional_cdf[i + 1] = (ScalarFloat) sum;
                     }
                 }
 
@@ -1360,11 +1358,11 @@ public:
                 for (uint32_t y = 0; y < m_size.y() - 1; ++y) {
                     sum += .5 * ((double) conditional_cdf[(y + 1) * size.x() - 1] +
                                  (double) conditional_cdf[(y + 2) * size.x() - 1]);
-                    marginal_cdf[y + 1] = (Float) sum;
+                    marginal_cdf[y + 1] = (ScalarFloat) sum;
                 }
 
                 // Normalize CDFs and PDF (if requested)
-                Float normalization = 1.f / marginal_cdf[m_size.y() - 1];
+                ScalarFloat normalization = 1.f / marginal_cdf[m_size.y() - 1];
                 for (size_t i = 0; i < n_values; ++i)
                     conditional_cdf[i] *= normalization;
                 for (size_t i = 0; i < m_size.y(); ++i)
@@ -1378,16 +1376,16 @@ public:
                 data += n_values;
             }
         } else {
-            Float *data_out = m_data.data();
+            ScalarFloat *data_out = m_data.data();
 
             for (uint32_t slice = 0; slice < slices; ++slice) {
-                Float normalization = 1.f / hprod(m_inv_patch_size);
+                ScalarFloat normalization = 1.f / hprod(m_inv_patch_size);
                 if (normalize) {
                     double sum = 0.0;
                     for (uint32_t y = 0; y < m_size.y() - 1; ++y) {
                         size_t i = y * size.x();
                         for (uint32_t x = 0; x < m_size.x() - 1; ++x, ++i) {
-                            Float v00 = data[i],
+                            ScalarFloat v00 = data[i],
                                   v10 = data[i + 1],
                                   v01 = data[i + size.x()],
                                   v11 = data[i + 1 + size.x()],
@@ -1395,7 +1393,7 @@ public:
                             sum += (double) avg;
                         }
                     }
-                    normalization = Float(1.0 / sum);
+                    normalization = ScalarFloat(1.0 / sum);
                 }
 
                 for (uint32_t k = 0; k < n_values; ++k)
@@ -1719,7 +1717,7 @@ public:
         oss << "  storage = { " << n_slices << " slice" << (n_slices > 1 ? "s" : "")
             << ", ";
         size_t size = n_slices * (hprod(m_size) * 2 + m_size.y());
-        oss << util::mem_string(size * sizeof(Float)) << " }" << std::endl
+        oss << util::mem_string(size * sizeof(ScalarFloat)) << " }" << std::endl
             << "]";
         return oss.str();
     }
@@ -1727,7 +1725,7 @@ public:
 private:
         template <size_t Dim, typename Index, typename Value,
                   std::enable_if_t<Dim != 0, int> = 0>
-        MTS_INLINE Value lookup(const Float *data, Index i0,
+        MTS_INLINE Value lookup(const ScalarFloat *data, Index i0,
                                 uint32_t size,
                                 const Value *param_weight,
                                 mask_t<Value> active) const {
@@ -1743,17 +1741,17 @@ private:
 
         template <size_t Dim, typename Index, typename Value,
                   std::enable_if_t<Dim == 0, int> = 0>
-        MTS_INLINE Value lookup(const Float *data, Index index, uint32_t,
+        MTS_INLINE Value lookup(const ScalarFloat *data, Index index, uint32_t,
                                 const Value *, mask_t<Value> active) const {
             return gather<Value>(data, index, active);
         }
 
 private:
     /// Resolution of the discretized density function
-    Vector2u m_size;
+    ScalarVector2u m_size;
 
     /// Size of a bilinear patch in the unit square
-    Vector2f m_patch_size, m_inv_patch_size;
+    ScalarVector2f m_patch_size, m_inv_patch_size;
 
     /// Resolution of each parameter (optional)
     uint32_t m_param_size[ArraySize];

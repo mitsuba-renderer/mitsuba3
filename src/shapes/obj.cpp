@@ -113,7 +113,7 @@ public:
             bool parse_error = false;
             if (cur[0] == 'v' && (cur[1] == ' ' || cur[1] == '\t')) {
                 // Vertex position
-                Point3f p;
+                ScalarPoint3f p;
                 cur += 2;
                 for (size_t i = 0; i < 3; ++i) {
                     const char *orig = cur;

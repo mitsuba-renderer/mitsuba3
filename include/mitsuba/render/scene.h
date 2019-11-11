@@ -128,7 +128,7 @@ public:
     // =============================================================
 
     /// Return a bounding box surrounding the scene
-    const BoundingBox3f &bbox() const { return m_bbox; }
+    const ScalarBoundingBox3f &bbox() const { return m_bbox; }
 
     /// Return the list of sensors
     std::vector<ref<Sensor>> &sensors() { return m_sensors; }

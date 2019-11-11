@@ -100,11 +100,11 @@ public:
          *     for a cropping window (if there is any)
          */
         m_camera_to_sample =
-              ScalarTransform4f::scale(Vector3f(1.f / rel_size.x(), 1.f / rel_size.y(), 1.f))
-            * ScalarTransform4f::translate(Vector3f(-rel_offset.x(), -rel_offset.y(), 0.f))
-            * ScalarTransform4f::scale(Vector3f(-0.5f, -0.5f * m_aspect, 1.f))
-            * ScalarTransform4f::translate(Vector3f(-1.f, -1.f / m_aspect, 0.f))
-            * ScalarTransform4f::perspective(m_x_fov, m_near_clip, m_far_clip);
+            ScalarTransform4f::scale(ScalarVector3f(1.f / rel_size.x(), 1.f / rel_size.y(), 1.f)) *
+            ScalarTransform4f::translate(ScalarVector3f(-rel_offset.x(), -rel_offset.y(), 0.f)) *
+            ScalarTransform4f::scale(ScalarVector3f(-0.5f, -0.5f * m_aspect, 1.f)) *
+            ScalarTransform4f::translate(ScalarVector3f(-1.f, -1.f / m_aspect, 0.f)) *
+            ScalarTransform4f::perspective(m_x_fov, m_near_clip, m_far_clip);
 
         m_sample_to_camera = m_camera_to_sample.inverse();
 

@@ -15,6 +15,7 @@ class GaussianFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)
     MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_TYPES()
 
     GaussianFilter(const Properties &props) : Base(props) {
         // Standard deviation
@@ -38,7 +39,7 @@ public:
     }
 
 protected:
-    Float m_stddev, m_alpha, m_bias;
+    ScalarFloat m_stddev, m_alpha, m_bias;
 };
 
 MTS_IMPLEMENT_PLUGIN(GaussianFilter, ReconstructionFilter, "Gaussian reconstruction filter");

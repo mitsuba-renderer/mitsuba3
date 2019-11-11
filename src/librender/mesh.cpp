@@ -26,7 +26,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
        appearance. Default: ``false`` */
     if (props.bool_("face_normals", false))
         m_disable_vertex_normals = true;
-    m_to_world = props.transform("to_world", Transform4f());
+    m_to_world = props.transform("to_world", ScalarTransform4f());
     m_mesh = true;
 }
 
@@ -49,13 +49,13 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_
             Throw("Mesh::Mesh(): Incompatible data structure %s", s->to_string());
     };
 
-    check_field(vertex_struct, 0, "x",  struct_type_v<Float>);
-    check_field(vertex_struct, 1, "y",  struct_type_v<Float>);
-    check_field(vertex_struct, 2, "z",  struct_type_v<Float>);
+    check_field(vertex_struct, 0, "x",  struct_type_v<ScalarFloat>);
+    check_field(vertex_struct, 1, "y",  struct_type_v<ScalarFloat>);
+    check_field(vertex_struct, 2, "z",  struct_type_v<ScalarFloat>);
 
-    check_field(face_struct,   0, "i0", struct_type_v<Index>);
-    check_field(face_struct,   1, "i1", struct_type_v<Index>);
-    check_field(face_struct,   2, "i2", struct_type_v<Index>);
+    check_field(face_struct,   0, "i0", struct_type_v<ScalarIndex>);
+    check_field(face_struct,   1, "i1", struct_type_v<ScalarIndex>);
+    check_field(face_struct,   2, "i2", struct_type_v<ScalarIndex>);
 
     if (vertex_struct->has_field("nx") &&
         vertex_struct->has_field("ny") &&
@@ -63,7 +63,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_
         check_field(vertex_struct, 3, "nx", struct_type_v<Float>);
         check_field(vertex_struct, 4, "ny", struct_type_v<Float>);
         check_field(vertex_struct, 5, "nz", struct_type_v<Float>);
-        m_normal_offset = (Index) vertex_struct->field("nx").offset;
+        m_normal_offset = (ScalarIndex) vertex_struct->field("nx").offset;
     }
 
     if (vertex_struct->has_field("u") && vertex_struct->has_field("v")) {
@@ -74,7 +74,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_
             check_field(vertex_struct, 6, "u", struct_type_v<Float>);
             check_field(vertex_struct, 7, "v", struct_type_v<Float>);
         }
-        m_texcoord_offset = (Index) vertex_struct->field("u").offset;
+        m_texcoord_offset = (ScalarIndex) vertex_struct->field("u").offset;
     }
 
     m_vertex_size = (Size) m_vertex_struct->size();
@@ -118,7 +118,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
         Throw("Storing new normals in a Mesh that didn't have normals at "
               "construction time is not implemented yet.");
 
-    std::vector<Normal3f> normals(m_vertex_count, zero<Normal3f>());
+    std::vector<ScalarNormal3f> normals(m_vertex_count, zero<ScalarNormal3f>());
     size_t invalid_counter = 0;
     Timer timer;
 
@@ -128,20 +128,20 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
         using ScalarIndex = scalar_t<Index>;
         const ScalarIndex *idx = (const ScalarIndex *) face(i);
         Assert(idx[0] < m_vertex_count && idx[1] < m_vertex_count && idx[2] < m_vertex_count);
-        Point3f v[3]{ vertex_position(idx[0]),
-                      vertex_position(idx[1]),
-                      vertex_position(idx[2]) };
+        ScalarPoint3f v[3]{ vertex_position(idx[0]),
+                            vertex_position(idx[1]),
+                            vertex_position(idx[2]) };
 
-        Vector3f side_0 = v[1] - v[0], side_1 = v[2] - v[0];
-        Normal3f n = cross(side_0, side_1);
-        Float length_sqr = squared_norm(n);
+        ScalarVector3f side_0 = v[1] - v[0], side_1 = v[2] - v[0];
+        ScalarNormal3f n = cross(side_0, side_1);
+        ScalarFloat length_sqr = squared_norm(n);
         if (likely(length_sqr > 0)) {
-            n *= rsqrt<Vector3f::Approx>(length_sqr);
+            n *= rsqrt<ScalarVector3f::Approx>(length_sqr);
 
             // Use Enoki to compute the face angles at the same time
             auto side1 = transpose(Array<Packet<float, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
             auto side2 = transpose(Array<Packet<float, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
-            Vector3f face_angles = unit_angle(normalize(side1), normalize(side2));
+            ScalarVector3f face_angles = unit_angle(normalize(side1), normalize(side2));
 
             for (size_t j = 0; j < 3; ++j)
                 normals[idx[j]] += n * face_angles[j];
@@ -149,12 +149,12 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
     }
 
     for (Size i = 0; i < m_vertex_count; i++) {
-        Normal3f n = normals[i];
-        Float length = norm(n);
+        ScalarNormal3f n = normals[i];
+        ScalarFloat length = norm(n);
         if (likely(length != 0.f)) {
             n /= length;
         } else {
-            n = Normal3f(1, 0, 0); // Choose some bogus value
+            n = ScalarNormal3f(1, 0, 0); // Choose some bogus value
             invalid_counter++;
         }
 
@@ -183,13 +183,13 @@ MTS_VARIANT void Mesh<Float, Spectrum>::prepare_sampling_table() {
     if (m_surface_area < 0) {
         // Generate a PDF for sampling wrt. the area of each face.
         m_area_distribution.reserve(m_face_count);
-        for (Index i = 0; i < m_face_count; i++) {
-            Float area = face_area(i);
+        for (ScalarIndex i = 0; i < m_face_count; i++) {
+            ScalarFloat area = face_area(i);
             Assert(area >= 0);
             m_area_distribution.append(area);
         }
         m_surface_area = m_area_distribution.normalize();
-        m_inv_surface_area = 1.f / m_surface_area;
+        m_inv_surface_area = ScalarFloat(1) / m_surface_area;
     }
 }
 

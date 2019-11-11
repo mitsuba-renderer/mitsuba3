@@ -119,7 +119,7 @@ public:
         m_storage->set_offset(m_crop_offset);
     }
 
-    void set_crop_window(const Vector2i &crop_size, const Point2i &crop_offset) override {
+    void set_crop_window(const ScalarVector2i &crop_size, const ScalarPoint2i &crop_offset) override {
         if (m_crop_size != crop_size)
             m_storage = new ImageBlock(PixelFormat::XYZAW, crop_size);
         m_crop_size = crop_size;
@@ -145,7 +145,7 @@ public:
         m_dest_file = dest_file;
     }
 
-    void add_bitmap(const Bitmap *bitmap, Float multiplier) override {
+    void add_bitmap(const Bitmap *bitmap, ScalarFloat multiplier) override {
         /* This function basically just exists to support the somewhat peculiar
            film updates done by BDPT. */
         auto storage = m_storage->bitmap();
@@ -153,19 +153,19 @@ public:
                 storage->pixel_format(), storage->component_format(),
                 storage->srgb_gamma());
 
-        Vector2i size = storage->size();
+        ScalarVector2i size = storage->size();
         size_t n_pixels = (size_t) size.x() * (size_t) size.y();
-        const Float *source = static_cast<const Float *>(converted->data());
-        Float *target = static_cast<Float *>(storage->data());
+        const ScalarFloat *source = static_cast<const ScalarFloat *>(converted->data());
+        ScalarFloat *target = static_cast<ScalarFloat *>(storage->data());
         for (size_t i = 0; i < n_pixels; ++i) {
             for (size_t k = 0; k < storage->channel_count(); ++k)
                 (*target++) += (*source++ * multiplier);
         }
     }
 
-    bool develop(const Point2i  &source_offset,
-                 const Vector2i &size,
-                 const Point2i  &target_offset,
+    bool develop(const ScalarPoint2i  &source_offset,
+                 const ScalarVector2i &size,
+                 const ScalarPoint2i  &target_offset,
                  Bitmap *target) const override {
         const Bitmap *source = m_storage->bitmap();
 

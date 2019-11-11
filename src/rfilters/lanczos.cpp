@@ -17,9 +17,10 @@ class LanczosSincFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS(LanczosSincFilter, ReconstructionFilter)
     MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_TYPES()
 
     LanczosSincFilter(const Properties &props) : Base(props) {
-        m_radius = (Float) props.int_("lobes", 3);
+        m_radius = (ScalarFloat) props.int_("lobes", 3);
         init_discretization();
     }
 

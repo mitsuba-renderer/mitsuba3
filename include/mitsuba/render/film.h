@@ -37,7 +37,7 @@ public:
 
     /// Accumulate a bitmap on top of the radiance values stored in the film.
     /// The size of the given bitmap has to match to current size.
-    virtual void add_bitmap(const Bitmap *bitmap, Float multiplier = 1.0f) = 0;
+    virtual void add_bitmap(const Bitmap *bitmap, ScalarFloat multiplier = 1.0f) = 0;
 
     /// Set the target filename (with or without extension)
     virtual void set_destination_file(const fs::path &filename) = 0;
@@ -55,9 +55,9 @@ public:
      * \return \c true upon success
      */
     virtual bool develop(
-        const Point2i  &offset,
-        const Vector2i &size,
-        const Point2i  &target_offset,
+        const ScalarPoint2i  &offset,
+        const ScalarVector2i &size,
+        const ScalarPoint2i  &target_offset,
         Bitmap *target) const = 0;
 
     /// Does the destination file already exist?

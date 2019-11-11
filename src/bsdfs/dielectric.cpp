@@ -70,8 +70,8 @@ public:
         }
 
         bs.sampled_component = select(selected_r, UInt32(0), UInt32(1));
-        bs.sampled_type =
-            select(selected_r, +BSDFFlags::DeltaReflection, +BSDFFlags::DeltaTransmission);
+        bs.sampled_type      = select(selected_r, UInt32(+BSDFFlags::DeltaReflection),
+                                                  UInt32(+BSDFFlags::DeltaTransmission));
 
         bs.wo = select(selected_r,
                        reflect(si.wi),
