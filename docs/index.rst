@@ -13,6 +13,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
 
     intro
     gettingstarted
+    bibliography
 
 
 .. toctree::
