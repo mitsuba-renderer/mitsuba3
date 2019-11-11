@@ -13,7 +13,7 @@ public:
     MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
     using Index = replace_scalar_t<Wavelength, uint32_t>;
-    using FloatVector = host_vector<Float>;
+    using FloatStorage = host_vector<Float>;
 
 public:
     /**
@@ -44,22 +44,22 @@ public:
             int ctr = 0;
             for (const auto &s : values_str) {
                 try {
-                    m_data[ctr++] = (Float) std::stod(s);
+                    m_data[ctr++] = (ScalarFloat) std::stod(s);
                 } catch (...) {
                     Throw("Could not parse floating point value '%s'", s);
                 }
             }
         } else {
             size_t size = props.size_("size");
-            const Float *values = (Float *) props.pointer("values");
-            m_data = FloatVector(values, values + size);
+            const ScalarFloat *values = (ScalarFloat *) props.pointer("values");
+            m_data = FloatStorage(values, values + size);
         }
 
         if (m_data.size() < 2)
             Throw("InterpolatedSpectrum must have at least 2 entries!");
 
         size_t size = m_data.size();
-        m_interval_size = Float((double(m_lambda_max) - double(m_lambda_min)) / (size - 1));
+        m_interval_size = ScalarFloat((double(m_lambda_max) - double(m_lambda_min)) / (size - 1));
 
         if (m_interval_size <= 0)
             Throw("InterpolatedSpectrum: interval size must be positive!");
@@ -83,7 +83,7 @@ public:
             Log(Warn, "InterpolatedSpectrum was expanded to cover wavelength range [%.1f, %.1f]",
                 MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
 
-        m_inv_interval_size = Float((size - 1) / (double(m_lambda_max) - double(m_lambda_min)));
+        m_inv_interval_size = ScalarFloat((size - 1) / (double(m_lambda_max) - double(m_lambda_min)));
         m_size_minus_2 = uint32_t(size - 2);
 
         m_cdf.resize(size);
@@ -109,12 +109,12 @@ public:
                accum = 0.0;
         for (size_t i = 1; i < size; ++i) {
             accum += scale * (double(m_data[i - 1]) + double(m_data[i]));
-            m_cdf[i] = Float(accum);
+            m_cdf[i] = ScalarFloat(accum);
         }
 
         // Store the normalization factor
-        m_integral = Float(accum);
-        m_normalization = Float(1.0 / accum);
+        m_integral = ScalarFloat(accum);
+        m_normalization = ScalarFloat(1.0 / accum);
 
 #if defined(MTS_ENABLE_AUTODIFF)
         m_integral_d = m_integral;
@@ -222,14 +222,14 @@ public:
     }
 
 private:
-    FloatVector m_data, m_cdf;
+    FloatStorage m_data, m_cdf;
     uint32_t m_size_minus_2;
-    Float m_lambda_min;
-    Float m_lambda_max;
-    Float m_interval_size;
-    Float m_inv_interval_size;
-    Float m_integral;
-    Float m_normalization;
+    ScalarFloat m_lambda_min;
+    ScalarFloat m_lambda_max;
+    ScalarFloat m_interval_size;
+    ScalarFloat m_inv_interval_size;
+    ScalarFloat m_integral;
+    ScalarFloat m_normalization;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     FloatD m_data_d, m_cdf_d, m_integral_d, m_normalization_d;

@@ -13,7 +13,7 @@ public:
     MTS_IMPORT_TYPES()
 
     SRGBSpectrum(const Properties &props) {
-        Color3f color = props.color("color");
+        ScalarColor3f color = props.color("color");
         if (any(color < 0 || color > 1))
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
 

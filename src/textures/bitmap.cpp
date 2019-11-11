@@ -25,7 +25,7 @@ public:
     MTS_IMPORT_TYPES()
 
     BitmapTexture(const Properties &props) {
-        m_transform = props.transform("to_uv", Transform4f()).extract();
+        m_transform = props.transform("to_uv", ScalarTransform4f()).extract();
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
@@ -37,12 +37,12 @@ public:
         // Optional texture upsampling
         ScalarFloat upscale = props.float_("upscale", 1.f);
         if (upscale != 1.f) {
-            using SVector2s = Vector<size_t, 2>;
+            using ScalarVector2s = Vector<size_t, 2>;
             // TODO shouldn't we pass Spectrum as template params?
-            using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, void>;
+            using ReconstructionFilter = mitsuba::ReconstructionFilter<ScalarFloat, void>;
 
-            SVector2s old_size = m_bitmap->size(),
-                      new_size = upscale * old_size;
+            ScalarVector2s old_size = m_bitmap->size(),
+                           new_size = upscale * old_size;
 
             auto rfilter =
                 PluginManager::instance()->create_object<ReconstructionFilter>(Properties("tent"));
@@ -55,7 +55,7 @@ public:
         m_is_raw_data = props.bool_("raw_data", false) || !props.bool_("color_processing", true);
     }
 
-    BitmapTexture(Bitmap *bitmap, const std::string &name, const Transform3f &transform)
+    BitmapTexture(Bitmap *bitmap, const std::string &name, const ScalarTransform3f &transform)
         : m_bitmap(bitmap), m_name(name), m_transform(transform) {}
 
     /**
@@ -92,7 +92,7 @@ public:
 protected:
     ref<Bitmap> m_bitmap;
     std::string m_name;
-    Transform3f m_transform;
+    ScalarTransform3f m_transform;
     /// Whether this texture holds raw data, which should not be interpreted as colors.
     bool m_is_raw_data;
 };
@@ -105,7 +105,7 @@ public:
     MTS_USING_BASE(BitmapTexture, m_bitmap, m_name, m_transform)
     using StorageType = Vector<ScalarFloat, ChannelCount>;
 
-    BitmapTextureImpl(Bitmap *bitmap, const std::string &name, const Transform3f &transform)
+    BitmapTextureImpl(Bitmap *bitmap, const std::string &name, const ScalarTransform3f &transform)
         : Base(bitmap, name, transform) {
 
         /* Convert to linear RGB float bitmap, will be converted

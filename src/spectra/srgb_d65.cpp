@@ -16,14 +16,14 @@ public:
         if (props.has_property("scale") && props.has_property("value"))
             Throw("Cannot specify both 'scale' and 'value'.");
 
-        Color3f color = props.color("color");
-        Float intensity = hmax(color) * 2.f;
+        ScalarColor3f color = props.color("color");
+        ScalarFloat intensity = hmax(color) * 2.f;
         color /= intensity;
 
         m_coeff = srgb_model_fetch(color);
 
         Properties props2("d65");
-        Float value =
+        ScalarFloat value =
             props.float_(props.has_property("scale") ? "scale" : "value", 1.0f);
         props2.set_float("value", value * intensity);
         m_d65 = (Base *) PluginManager::instance()
@@ -47,7 +47,7 @@ public:
 #endif
 
 private:
-    Array<Float, 3> m_coeff;
+    Array<ScalarFloat, 3> m_coeff;
     ref<Base> m_d65;
 
 #if defined(MTS_ENABLE_AUTODIFF)

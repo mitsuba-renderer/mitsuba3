@@ -38,12 +38,12 @@ public:
 
         m_dp_du = m_object_to_world * ScalarVector3f(1.f, 0.f, 0.f);
         m_dp_dv = m_object_to_world * ScalarVector3f(0.f, 1.f, 0.f);
-        Normal3f normal = normalize(m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        ScalarNormal3f normal = normalize(m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
         m_frame = ScalarFrame3f(normalize(m_dp_du), normalize(m_dp_dv), normal);
 
         m_inv_surface_area = 1.f / surface_area();
-        if (abs_dot(m_frame.s, m_frame.t) > math::Epsilon<Float> ||
-            abs_dot(m_frame.s, m_frame.n) > math::Epsilon<Float>)
+        if (abs_dot(m_frame.s, m_frame.t) > math::Epsilon<ScalarFloat> ||
+            abs_dot(m_frame.s, m_frame.n) > math::Epsilon<ScalarFloat>)
             Throw("The `to_world` transformation contains shear, which is not"
                   " supported by the Disk shape.");
 

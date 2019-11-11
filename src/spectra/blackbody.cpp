@@ -21,18 +21,18 @@ public:
     MTS_IMPORT_TYPES()
 
     // A few natural constants
-    const Float c = Float(2.99792458e+8);   /// Speed of light
-    const Float h = Float(6.62607004e-34);  /// Planck constant
-    const Float k = Float(1.38064852e-23);  /// Boltzmann constant
+    const ScalarFloat c = ScalarFloat(2.99792458e+8);   /// Speed of light
+    const ScalarFloat h = ScalarFloat(6.62607004e-34);  /// Planck constant
+    const ScalarFloat k = ScalarFloat(1.38064852e-23);  /// Boltzmann constant
 
     /// First and second radiation static constants
-    const Float c0 = 2 * h * c * c;
-    const Float c1 = h * c / k;
+    const ScalarFloat c0 = 2 * h * c * c;
+    const ScalarFloat c1 = h * c / k;
 
     BlackBodySpectrum(const Properties &props) {
         m_temperature = props.float_("temperature");
-        m_integral_min = cdf_and_pdf(MTS_WAVELENGTH_MIN).first;
-        m_integral = cdf_and_pdf(MTS_WAVELENGTH_MAX).first - m_integral_min;
+        m_integral_min = cdf_and_pdf(Float(MTS_WAVELENGTH_MIN)).first;
+        m_integral = cdf_and_pdf(Float(MTS_WAVELENGTH_MAX)).first - m_integral_min;
     }
 
     Spectrum eval(const Wavelength &lambda_, Mask) const override {

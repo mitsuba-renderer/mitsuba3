@@ -14,7 +14,7 @@ public:
     Checkerboard(const Properties &props) {
         m_color0 = props.spectrum<ContinuousSpectrum>("color0", .4f);
         m_color1 = props.spectrum<ContinuousSpectrum>("color1", .2f);
-        m_transform = props.transform("to_uv", Transform4f()).extract();
+        m_transform = props.transform("to_uv", ScalarTransform4f()).extract();
     }
 
     Spectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
@@ -43,7 +43,7 @@ public:
 protected:
     ref<ContinuousSpectrum> m_color0;
     ref<ContinuousSpectrum> m_color1;
-    Transform3f m_transform;
+    ScalarTransform3f m_transform;
 };
 
 MTS_IMPLEMENT_PLUGIN(Checkerboard, ContinuousSpectrum, "Checkerboard texture")

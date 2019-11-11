@@ -215,10 +215,10 @@ public:
     virtual Float max() const { NotImplementedError("max"); }
 
     /// Returns the bounding box of the 3d texture
-    BoundingBox3f bbox() const { return m_bbox; }
+    ScalarBoundingBox3f bbox() const { return m_bbox; }
 
     /// Returns the resolution of the texture, defaults to "1"
-    virtual Vector3i resolution() const { return Vector3i(1, 1, 1); }
+    virtual ScalarVector3i resolution() const { return ScalarVector3i(1, 1, 1); }
 
     //! @}
     // ======================================================================
@@ -238,19 +238,19 @@ protected:
     Mask is_inside(const Interaction3f &it, Mask active) const;
 
     void update_bbox() {
-        Point3f a(0.0f, 0.0f, 0.0f);
-        Point3f b(1.0f, 1.0f, 1.0f);
+        ScalarPoint3f a(0.0f, 0.0f, 0.0f);
+        ScalarPoint3f b(1.0f, 1.0f, 1.0f);
         a      = m_world_to_local.inverse() * a;
         b      = m_world_to_local.inverse() * b;
-        m_bbox = BoundingBox3f(a);
+        m_bbox = ScalarBoundingBox3f(a);
         m_bbox.expand(b);
     }
 
 protected:
     /// Used to bring points in world coordinates to local coordinates.
-    Transform4f m_world_to_local;
+    ScalarTransform4f m_world_to_local;
     /// Bounding box
-    BoundingBox3f m_bbox;
+    ScalarBoundingBox3f m_bbox;
 
 };
 

@@ -31,7 +31,7 @@ public:
 
         if (props.has_property("to_world")) {
             ScalarTransform4f object_to_world = props.transform("to_world");
-            Float radius = norm(object_to_world * ScalarVector3f(1, 0, 0));
+            ScalarFloat radius = norm(object_to_world * ScalarVector3f(1, 0, 0));
             // Remove the scale from the object-to-world transform
             m_object_to_world =
                 object_to_world

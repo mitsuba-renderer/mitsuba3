@@ -77,7 +77,7 @@ public:
 
     Float mean() const override { return Float(m_metadata.mean); }
     Float max() const override { return m_metadata.max; }
-    Vector3i resolution() const override { return m_metadata.shape; };
+    ScalarVector3i resolution() const override { return m_metadata.shape; };
 
     std::string to_string() const override {
         std::ostringstream oss;
