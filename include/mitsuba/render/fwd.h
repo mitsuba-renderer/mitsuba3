@@ -34,7 +34,6 @@ template <typename Float, typename Spectrum> struct Interaction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct BSDFSample3;
-template <typename Float, typename Spectrum> struct RadianceSample;
 
 template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Float    = Float_;

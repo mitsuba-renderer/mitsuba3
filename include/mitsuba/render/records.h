@@ -249,32 +249,6 @@ std::ostream &operator<<(std::ostream &os,
     return os;
 }
 
-template <typename Float, typename Spectrum>
-std::ostream &operator<<(std::ostream &os,
-                         const RadianceSample<Float, Spectrum> &record) {
-    os << "RadianceSample[" << std::endl
-       << "  scene = ";
-
-    if (record.scene == nullptr)
-        os << "[ not set ]";
-    else
-        os << string::indent(record.scene);
-
-    os << "," << std::endl
-       << "  sampler = ";
-
-    if (record.sampler == nullptr)
-        os << "[ not set ]";
-    else
-        os << string::indent(record.sampler);
-
-    os << "," << std::endl
-       << "  si = " << string::indent(record.si) << std::endl
-       << "  alpha = " << record.alpha << std::endl
-       << "]" << std::endl;
-    return os;
-}
-
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
@@ -286,8 +260,6 @@ ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time,
 
 ENOKI_STRUCT_SUPPORT(mitsuba::DirectionSample, p, n, uv, time, pdf,
                      delta, object, d, dist)
-
-ENOKI_STRUCT_SUPPORT(mitsuba::RadianceSample, scene, sampler, si, alpha)
 
 //! @}
 // -----------------------------------------------------------------------
