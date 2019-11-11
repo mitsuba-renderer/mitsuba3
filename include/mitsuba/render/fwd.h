@@ -18,6 +18,7 @@ template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
 template <typename Float, typename Spectrum> class Integrator;
 template <typename Float, typename Spectrum> class Medium;
+template <typename Float, typename Spectrum> class Mesh;
 template <typename Float, typename Spectrum> class MicrofacetDistribution;
 template <typename Float, typename Spectrum> class ReconstructionFilter;
 template <typename Float, typename Spectrum> class Sampler;
@@ -55,6 +56,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Sampler                = mitsuba::Sampler<Float, Spectrum>;
     using MicrofacetDistribution = mitsuba::MicrofacetDistribution<Float, Spectrum>;
     using Shape                  = mitsuba::Shape<Float, Spectrum>;
+    using Mesh                   = mitsuba::Mesh<Float, Spectrum>;
     using Integrator             = mitsuba::Integrator<Float, Spectrum>;
     using BSDF                   = mitsuba::BSDF<Float, Spectrum>;
     using Sensor                 = mitsuba::Sensor<Float, Spectrum>;
@@ -98,6 +100,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Sampler                = typename RenderAliases::Sampler;                                \
     using MicrofacetDistribution = typename RenderAliases::MicrofacetDistribution;                 \
     using Shape                  = typename RenderAliases::Shape;                                  \
+    using Mesh                   = typename RenderAliases::Mesh;                                   \
     using Integrator             = typename RenderAliases::Integrator;                             \
     using BSDF                   = typename RenderAliases::BSDF;                                   \
     using Sensor                 = typename RenderAliases::Sensor;                                 \

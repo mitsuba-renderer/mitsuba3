@@ -302,8 +302,8 @@ protected:
     Index m_color_offset = 0;
 
     std::string m_name;
-    BoundingBox3f m_bbox;
-    Transform4f m_to_world;
+    ScalarBoundingBox3f m_bbox;
+    ScalarTransform4f m_to_world;
 
     Size m_vertex_count = 0;
     Size m_face_count = 0;

@@ -12,9 +12,20 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class PLYMesh final : public Mesh {
+template <typename Float, typename Spectrum>
+class PLYMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS(PLYMesh, Mesh)
+    MTS_DECLARE_CLASS_VARIANT(PLYMesh, Shape)
+    MTS_USING_BASE(Mesh, Base, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
+                   m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
+                   m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
+                   recompute_vertex_normals, is_emitter, emitter);
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
+    using typename Base::Size;
+    using typename Base::Index;
+    using typename Base::VertexHolder;
+    using typename Base::FaceHolder;
 
     struct PLYElement {
         std::string name;
@@ -28,7 +39,7 @@ public:
         std::vector<PLYElement> elements;
     };
 
-    PLYMesh(const Properties &props) : Mesh(props) {
+    PLYMesh(const Properties &props) : Base(props) {
         /// Process vertex/index records in large batches
         constexpr size_t elements_per_packet = 1024;
 
@@ -69,11 +80,12 @@ public:
                 m_vertex_struct = new Struct();
 
                 for (auto name : { "x", "y", "z" })
-                    m_vertex_struct->append(name, struct_type_v<Float>);
+                    m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
 
                 if (!m_disable_vertex_normals) {
                     for (auto name : { "nx", "ny", "nz" })
-                        m_vertex_struct->append(name, struct_type_v<Float>, FieldFlags::Default, 0.0);
+                        m_vertex_struct->append(name, struct_type_v<ScalarFloat>,
+                                                FieldFlags::Default, 0.0);
 
                     if (el.struct_->has_field("nx") &&
                         el.struct_->has_field("ny") &&
@@ -96,7 +108,7 @@ public:
                 }
                 if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
                     for (auto name : { "u", "v" })
-                        m_vertex_struct->append(name, struct_type_v<Float>);
+                        m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
 
                     m_texcoord_offset = (Index) m_vertex_struct->field("u").offset;
                 }
@@ -135,7 +147,7 @@ public:
 
                     if (!has_vertex_normals) {
                         for (size_t j = 0; j < count; ++j) {
-                            Point3f p = enoki::load<Point3f>(target);
+                            ScalarPoint3f p = enoki::load<ScalarPoint3f>(target);
                             p = m_to_world.transform_affine(p);
                             if (unlikely(!all(enoki::isfinite(p))))
                                 fail("mesh contains invalid vertex positions/normal data");
@@ -145,15 +157,16 @@ public:
                         }
                     } else {
                         for (size_t j = 0; j < count; ++j) {
-                            Point3f p = enoki::load<Point3f>(target);
-                            Normal3f n = enoki::load<Normal3f>(target + sizeof(Float) * 3);
+                            ScalarPoint3f p = enoki::load<ScalarPoint3f>(target);
+                            ScalarNormal3f n =
+                                enoki::load<ScalarNormal3f>(target + sizeof(ScalarFloat) * 3);
                             n = normalize(m_to_world.transform_affine(n));
                             p = m_to_world.transform_affine(p);
                             if (unlikely(!all(enoki::isfinite(p) && enoki::isfinite(n))))
                                 fail("mesh contains invalid vertex positions/normal data");
                             m_bbox.expand(p);
                             enoki::store_unaligned(target, p);
-                            enoki::store_unaligned(target + sizeof(Float) * 3, n);
+                            enoki::store_unaligned(target + sizeof(ScalarFloat) * 3, n);
                             target += o_struct_size;
                         }
                     }
@@ -430,9 +443,9 @@ private:
                         Throw("invalid PLY header: unknown format type \"%s\"", token);
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property\"");
-                    int flags = 0;
+                    FieldFlags flags = FieldFlags::None;
                     if (it->second >= FieldType::Int8 && it->second <= FieldType::UInt64)
-                        flags |= FieldFlags::Normalized | FieldFlags::Gamma;
+                        flags = FieldFlags::Normalized | FieldFlags::Gamma;
                     struct_->append(token, it->second, flags);
                 }
 

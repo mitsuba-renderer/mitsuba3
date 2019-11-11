@@ -25,15 +25,26 @@ void advance(const char **start_, const char *end, const char (&delim)[N]) {
     *start_ = start;
 }
 
-class OBJMesh final : public Mesh {
+template <typename Float, typename Spectrum>
+class OBJMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS(OBJMesh, Mesh)
+    MTS_DECLARE_CLASS_VARIANT(OBJMesh, Shape)
+    MTS_USING_BASE(Mesh, Base, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
+                m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
+                m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
+                recompute_vertex_normals, is_emitter, emitter, has_vertex_normals, vertex);
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
+    using typename Base::Size;
+    using typename Base::Index;
+    using typename Base::VertexHolder;
+    using typename Base::FaceHolder;
 
-    Float strtof(const char *nptr, char **endptr) {
+    ScalarFloat strtof(const char *nptr, char **endptr) {
             return std::strtof(nptr, endptr);
     }
 
-    OBJMesh(const Properties &props) : Mesh(props) {
+    OBJMesh(const Properties &props) : Base(props) {
         /* Causes all texture coordinates to be vertically flipped.
            Enabled by default, for consistence with the Mitsuba 1 behavior. */
         bool flip_tex_coords = props.bool_("flip_tex_coords", true);
@@ -63,9 +74,9 @@ public:
         };
 
         /// Temporary buffers for vertices, normals, and texture coordinates
-        std::vector<Vector3f> vertices;
-        std::vector<Normal3f> normals;
-        std::vector<Vector2f> texcoords;
+        std::vector<ScalarVector3f> vertices;
+        std::vector<ScalarNormal3f> normals;
+        std::vector<ScalarVector2f> texcoords;
         std::vector<Index3> triangles;
         std::vector<VertexBinding> vertex_map;
 
@@ -116,7 +127,7 @@ public:
                 vertices.push_back(p);
             } else if (cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Vertex normal
-                Normal3f n;
+                ScalarNormal3f n;
                 cur += 3;
                 for (size_t i = 0; i < 3; ++i) {
                     const char *orig = cur;
@@ -129,7 +140,7 @@ public:
                 normals.push_back(n);
             } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Texture coordinate
-                Vector2f uv;
+                ScalarVector2f uv;
                 cur += 3;
                 for (size_t i = 0; i < 2; ++i) {
                     const char *orig = cur;
@@ -219,17 +230,17 @@ public:
         m_face_count = (Size) triangles.size();
         m_vertex_struct = new Struct();
         for (auto name : { "x", "y", "z" })
-            m_vertex_struct->append(name, struct_type_v<Float>);
+            m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
 
         if (!m_disable_vertex_normals) {
             for (auto name : { "nx", "ny", "nz" })
-                m_vertex_struct->append(name, struct_type_v<Float>);
+                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_normal_offset = (Index) m_vertex_struct->offset("nx");
         }
 
         if (!texcoords.empty()) {
             for (auto name : { "u", "v" })
-                m_vertex_struct->append(name, struct_type_v<Float>);
+                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_texcoord_offset = (Index) m_vertex_struct->offset("u");
         }
 

@@ -12,9 +12,21 @@ NAMESPACE_BEGIN(mitsuba)
 #define MTS_FILEFORMAT_VERSION_V3 0x0003
 #define MTS_FILEFORMAT_VERSION_V4 0x0004
 
-class SerializedMesh final : public Mesh {
+template <typename Float, typename Spectrum>
+class SerializedMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS(SerializedMesh, Mesh)
+    MTS_DECLARE_CLASS_VARIANT(SerializedMesh, _GLIBCXX_SYNCHRONIZATION_HAPPENS_AFTER)
+    MTS_USING_BASE(Mesh, Base, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
+                m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
+                m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
+                recompute_vertex_normals, is_emitter, emitter, vertex, has_vertex_normals,
+                has_vertex_texcoords, vertex_texcoord, vertex_normal, vertex_position);
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
+    using typename Base::Size;
+    using typename Base::Index;
+    using typename Base::VertexHolder;
+    using typename Base::FaceHolder;
 
     enum ETriMeshFlags {
         EHasNormals      = 0x0001,
@@ -26,7 +38,7 @@ public:
         EDoublePrecision = 0x2000
     };
 
-    SerializedMesh(const Properties &props) : Mesh(props) {
+    SerializedMesh(const Properties &props) : Base(props) {
         auto fail = [&](const std::string &descr) {
             Throw("Error while loading serialized file \"%s\": %s!", m_name, descr);
         };
@@ -120,23 +132,23 @@ public:
 
         m_vertex_struct = new Struct();
         for (auto name : { "x", "y", "z" })
-            m_vertex_struct->append(name, struct_type_v<Float>);
+            m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
 
         if (!m_disable_vertex_normals) {
             for (auto name : { "nx", "ny", "nz" })
-                m_vertex_struct->append(name, struct_type_v<Float>);
+                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_normal_offset = (Index) m_vertex_struct->offset("nx");
         }
 
         if (flags & EHasTexcoords) {
             for (auto name : { "u", "v" })
-                m_vertex_struct->append(name, struct_type_v<Float>);
+                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_texcoord_offset = (Index) m_vertex_struct->offset("u");
         }
 
         if (flags & EHasColors) {
             for (auto name : { "r", "g", "b" })
-                m_vertex_struct->append(name, struct_type_v<Float>);
+                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_color_offset = (Index) m_vertex_struct->offset("r");
         }
 
@@ -181,17 +193,17 @@ public:
 
         // Post-processing
         for (Size i = 0; i < m_vertex_count; ++i) {
-            Point3f p = to_world * vertex_position(i);
+            ScalarPoint3f p = to_world * vertex_position(i);
             store_unaligned(vertex(i), p);
             m_bbox.expand(p);
 
             if (has_vertex_normals()) {
-                Normal3f n = normalize(to_world * vertex_normal(i));
+                ScalarNormal3f n = normalize(to_world * vertex_normal(i));
                 store_unaligned(vertex(i) + m_normal_offset, n);
             }
 
             if (has_vertex_texcoords()) {
-                Point2f uv = vertex_texcoord(i);
+                ScalarPoint2f uv = vertex_texcoord(i);
                 store_unaligned(vertex(i) + m_texcoord_offset, uv);
             }
         }
@@ -208,7 +220,7 @@ public:
             std::unique_ptr<double[]> values(new double[m_vertex_count * dim]);
             stream->read_array(values.get(), m_vertex_count * dim);
 
-            if constexpr (std::is_same_v<Float, double>) {
+            if constexpr (std::is_same_v<ScalarFloat, double>) {
                 for (size_t i = 0; i < m_vertex_count; ++i) {
                     const double *src = values.get() + dim * i;
                     double *dst = (double *) (vertex(i) + offset);
@@ -226,7 +238,7 @@ public:
             std::unique_ptr<float[]> values(new float[m_vertex_count * dim]);
             stream->read_array(values.get(), m_vertex_count * dim);
 
-            if constexpr (std::is_same_v<Float, float>) {
+            if constexpr (std::is_same_v<ScalarFloat, float>) {
                 for (size_t i = 0; i < m_vertex_count; ++i) {
                     const float *src = values.get() + dim * i;
                     void *dst = vertex(i) + offset;
