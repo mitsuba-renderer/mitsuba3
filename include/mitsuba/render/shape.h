@@ -20,7 +20,7 @@ public:
     MTS_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor);
 
     // Use 32 bit indices to keep track of indices to conserve memory
-    using Index = uint32_t;
+    using ScalarIndex = uint32_t;
     using Size  = uint32_t;
 
     // =============================================================
@@ -197,7 +197,7 @@ public:
      *
      * \remark The default implementation simply calls \ref bbox()
      */
-    virtual ScalarBoundingBox3f bbox(Index index) const;
+    virtual ScalarBoundingBox3f bbox(ScalarIndex index) const;
 
     /**
      * \brief Return an axis aligned box that bounds a single shape primitive
@@ -205,9 +205,9 @@ public:
      *
      * This is extremely important to construct high-quality kd-trees. The
      * default implementation just takes the bounding box returned by
-     * \ref bbox(Index index) and clips it to \a clip.
+     * \ref bbox(ScalarIndex index) and clips it to \a clip.
      */
-    virtual ScalarBoundingBox3f bbox(Index index, const ScalarBoundingBox3f &clip) const;
+    virtual ScalarBoundingBox3f bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const;
 
     /**
      * \brief Return the shape's surface area.

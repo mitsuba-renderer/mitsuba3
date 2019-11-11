@@ -22,8 +22,8 @@ public:
     MTS_DECLARE_CLASS_VARIANT(Cylinder, Shape)
     MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
     MTS_IMPORT_TYPES()
-    using Index = typename Base::Index;
-    using Size  = typename Base::Size;
+    using typename Base::ScalarIndex;
+    using typename Base::Size;
 
     Cylinder(const Properties &props) : Base(props) {
         m_radius = props.float_("radius", 1.f);
@@ -31,7 +31,7 @@ public:
         ScalarPoint3f p0 = props.point3f("p0", ScalarPoint3f(0.f, 0.f, 0.f)),
                       p1 = props.point3f("p1", ScalarPoint3f(0.f, 0.f, 1.f));
 
-        Vector3f d = p1 - p0;
+        ScalarVector3f d = p1 - p0;
         m_length = norm(d);
 
         m_object_to_world = ScalarTransform4f::translate(p0) *
@@ -75,15 +75,16 @@ public:
         return ScalarBoundingBox3f(min(p0 - x, p1 - x), max(p0 + x, p1 + x));
     }
 
-    ScalarBoundingBox3f bbox(Index /*index*/, const ScalarBoundingBox3f &clip) const override {
+    ScalarBoundingBox3f bbox(ScalarIndex /*index*/, const ScalarBoundingBox3f &clip) const override {
         using FloatP8         = Packet<ScalarFloat, 8>;
         using MaskP8          = mask_t<FloatP8>;
         using Point3fP8       = Point<FloatP8, 3>;
         using Vector3fP8      = Vector<FloatP8, 3>;
         using BoundingBox3fP8 = BoundingBox<Point3fP8>;
 
-        Point3f cyl_p  = m_object_to_world.transform_affine(ScalarPoint3f(0.f, 0.f, 0.f));
-        Vector3f cyl_d = m_object_to_world.transform_affine(ScalarVector3f(0.f, 0.f, m_length));
+        ScalarPoint3f cyl_p = m_object_to_world.transform_affine(ScalarPoint3f(0.f, 0.f, 0.f));
+        ScalarVector3f cyl_d =
+            m_object_to_world.transform_affine(ScalarVector3f(0.f, 0.f, m_length));
 
         // Compute a base bounding box
         ScalarBoundingBox3f bbox(this->bbox());
@@ -130,9 +131,9 @@ public:
 
         return ScalarBoundingBox3f(
             hmin_inner(select(ellipse_overlap, ellipse_bounds.min,
-                              Point3fP8(std::numeric_limits<Float>::infinity()))),
+                              Point3fP8(std::numeric_limits<ScalarFloat>::infinity()))),
             hmax_inner(select(ellipse_overlap, ellipse_bounds.max,
-                              Point3fP8(-std::numeric_limits<Float>::infinity()))));
+                              Point3fP8(-std::numeric_limits<ScalarFloat>::infinity()))));
     }
 
     ScalarFloat surface_area() const override {

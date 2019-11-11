@@ -24,7 +24,7 @@ public:
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using typename Base::Size;
-    using typename Base::Index;
+    using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
 
@@ -137,24 +137,24 @@ public:
         if (!m_disable_vertex_normals) {
             for (auto name : { "nx", "ny", "nz" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-            m_normal_offset = (Index) m_vertex_struct->offset("nx");
+            m_normal_offset = (ScalarIndex) m_vertex_struct->offset("nx");
         }
 
         if (flags & EHasTexcoords) {
             for (auto name : { "u", "v" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-            m_texcoord_offset = (Index) m_vertex_struct->offset("u");
+            m_texcoord_offset = (ScalarIndex) m_vertex_struct->offset("u");
         }
 
         if (flags & EHasColors) {
             for (auto name : { "r", "g", "b" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-            m_color_offset = (Index) m_vertex_struct->offset("r");
+            m_color_offset = (ScalarIndex) m_vertex_struct->offset("r");
         }
 
         m_face_struct = new Struct();
         for (size_t i = 0; i < 3; ++i)
-            m_face_struct->append(tfm::format("i%i", i), struct_type_v<Index>);
+            m_face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
 
         m_vertex_size = (Size) m_vertex_struct->size();
         m_vertex_count = (Size) vertex_count;
@@ -182,7 +182,7 @@ public:
         if (flags & EHasColors)
             read_helper(stream, double_precision, m_vertex_struct->offset("r"), 3);
 
-        stream->read(m_faces.get(), m_face_count * sizeof(Index) * 3);
+        stream->read(m_faces.get(), m_face_count * sizeof(ScalarIndex) * 3);
 
         Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
             m_name, m_face_count, m_vertex_count,

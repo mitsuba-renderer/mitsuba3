@@ -16,7 +16,9 @@ public:
     MTS_IMPORT_TYPES();
     MTS_USING_BASE(Shape, m_mesh)
     using typename Base::Size;
-    using typename Base::Index;
+    using typename Base::ScalarIndex;
+    using Index = replace_scalar_t<Float, ScalarIndex>;
+    using Index3 = Array<Index, 3>;
 
     using FaceHolder   = std::unique_ptr<uint8_t[]>;
     using VertexHolder = std::unique_ptr<uint8_t[]>;
@@ -175,9 +177,9 @@ public:
 
     virtual ScalarBoundingBox3f bbox() const override;
 
-    virtual ScalarBoundingBox3f bbox(Index index) const override;
+    virtual ScalarBoundingBox3f bbox(ScalarIndex index) const override;
 
-    virtual ScalarBoundingBox3f bbox(Index index, const ScalarBoundingBox3f &clip) const override;
+    virtual ScalarBoundingBox3f bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const override;
 
     virtual Size primitive_count() const override;
 
@@ -295,11 +297,11 @@ protected:
     Size m_face_size = 0;
 
     /// Byte offset of the normal data within the vertex buffer
-    Index m_normal_offset = 0;
+    ScalarIndex m_normal_offset = 0;
     /// Byte offset of the texture coordinate data within the vertex buffer
-    Index m_texcoord_offset = 0;
+    ScalarIndex m_texcoord_offset = 0;
     /// Byte offset of the color data within the vertex buffer
-    Index m_color_offset = 0;
+    ScalarIndex m_color_offset = 0;
 
     std::string m_name;
     ScalarBoundingBox3f m_bbox;

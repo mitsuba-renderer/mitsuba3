@@ -23,7 +23,7 @@ public:
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using typename Base::Size;
-    using typename Base::Index;
+    using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
 
@@ -92,7 +92,7 @@ public:
                         el.struct_->has_field("nz"))
                         has_vertex_normals = true;
 
-                    m_normal_offset = (Index) m_vertex_struct->field("nx").offset;
+                    m_normal_offset = (ScalarIndex) m_vertex_struct->field("nx").offset;
                 }
 
                 if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
@@ -110,7 +110,7 @@ public:
                     for (auto name : { "u", "v" })
                         m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
 
-                    m_texcoord_offset = (Index) m_vertex_struct->field("u").offset;
+                    m_texcoord_offset = (ScalarIndex) m_vertex_struct->field("u").offset;
                 }
 
                 size_t i_struct_size = el.struct_->size();
@@ -186,7 +186,7 @@ public:
                     fail("vertex_index/vertex_indices property not found");
 
                 for (size_t i = 0; i < 3; ++i)
-                    m_face_struct->append(tfm::format("i%i", i), struct_type_v<Index>);
+                    m_face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
 
                 size_t i_struct_size = el.struct_->size();
                 size_t o_struct_size = m_face_struct->size();

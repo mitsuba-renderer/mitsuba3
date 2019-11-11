@@ -131,12 +131,12 @@ Shape<Float, Spectrum>::surface_area() const {
 }
 
 MTS_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
-Shape<Float, Spectrum>::bbox(Index) const {
+Shape<Float, Spectrum>::bbox(ScalarIndex) const {
     return bbox();
 }
 
 MTS_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
-Shape<Float, Spectrum>::bbox(Index index, const ScalarBoundingBox3f &clip) const {
+Shape<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const {
     ScalarBoundingBox3f result = bbox(index);
     result.clip(clip);
     return result;

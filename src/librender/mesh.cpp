@@ -96,17 +96,18 @@ MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spec
     return m_bbox;
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox(Index index) const {
+MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
+Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
     Assert(index <= m_face_count);
 
-    auto idx = (const Index *) face(index);
+    auto idx = (const ScalarIndex *) face(index);
     Assert(idx[0] < m_vertex_count &&
            idx[1] < m_vertex_count &&
            idx[2] < m_vertex_count);
 
-    Point3f v0 = vertex_position(idx[0]),
-            v1 = vertex_position(idx[1]),
-            v2 = vertex_position(idx[2]);
+    ScalarPoint3f v0 = vertex_position(idx[0]),
+                  v1 = vertex_position(idx[1]),
+                  v2 = vertex_position(idx[2]);
 
     return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(min(min(v0, v1), v2),
                                                                max(max(v0, v1), v2));
@@ -205,8 +206,6 @@ Mesh<Float, Spectrum>::surface_area() const {
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
-    using Index3  = Array<Index, 3>;
-
     Index face_idx;
     Point2f sample = sample_;
     ensure_table_ready();
@@ -255,8 +254,10 @@ MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, 
     return m_inv_surface_area;
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/, const Float *cache,
-                                                                 SurfaceInteraction3f &si, Mask active) const {
+MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/,
+                                                                 const Float *cache,
+                                                                 SurfaceInteraction3f &si,
+                                                                 Mask active) const {
     // Barycentric coordinates within triangle
     Float b1 = cache[0],
           b2 = cache[1];
@@ -425,7 +426,7 @@ size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output, int 
 }  // end namespace
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
-Mesh<Float, Spectrum>::bbox(Index index, const ScalarBoundingBox3f &clip) const {
+Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const {
     using ScalarPoint3d = mitsuba::Point<double, 3>;
 
     // Reserve room for some additional vertices
@@ -434,14 +435,14 @@ Mesh<Float, Spectrum>::bbox(Index index, const ScalarBoundingBox3f &clip) const 
 
     Assert(index <= m_face_count);
 
-    auto idx = (const Index *) face(index);
+    auto idx = (const ScalarIndex *) face(index);
     Assert(idx[0] < m_vertex_count);
     Assert(idx[1] < m_vertex_count);
     Assert(idx[2] < m_vertex_count);
 
-    Point3f v0 = vertex_position(idx[0]),
-            v1 = vertex_position(idx[1]),
-            v2 = vertex_position(idx[2]);
+    ScalarPoint3f v0 = vertex_position(idx[0]),
+                  v1 = vertex_position(idx[1]),
+                  v2 = vertex_position(idx[2]);
 
     /* The kd-tree code will frequently call this function with
        almost-collapsed bounding boxes. It's extremely important not to
@@ -466,11 +467,11 @@ Mesh<Float, Spectrum>::bbox(Index index, const ScalarBoundingBox3f &clip) const 
             /* Convert back into floats (with conservative custom rounding modes) */
             Array<double, 3, false, RoundingMode::Up>   p1_up  (vertices1[i]);
             Array<double, 3, false, RoundingMode::Down> p1_down(vertices1[i]);
-            result.min = min(result.min, Point3f(p1_down));
-            result.max = max(result.max, Point3f(p1_up));
+            result.min = min(result.min, ScalarPoint3f(p1_down));
+            result.max = max(result.max, ScalarPoint3f(p1_up));
         } else {
-            result.min = min(result.min, Point3f(prev_float(vertices1[i])));
-            result.max = max(result.max, Point3f(next_float(vertices1[i])));
+            result.min = min(result.min, ScalarPoint3f(prev_float(vertices1[i])));
+            result.max = max(result.max, ScalarPoint3f(next_float(vertices1[i])));
         }
     }
     result.clip(clip);

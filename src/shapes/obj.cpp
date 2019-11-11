@@ -36,7 +36,7 @@ public:
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using typename Base::Size;
-    using typename Base::Index;
+    using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
 
@@ -65,11 +65,11 @@ public:
 
         ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
 
-        using Index3 = std::array<Index, 3>;
+        using ScalarIndex3 = std::array<ScalarIndex, 3>;
 
         struct VertexBinding {
-            Index3 key {{ 0, 0, 0 }};
-            Index value { 0 };
+            ScalarIndex3 key {{ 0, 0, 0 }};
+            ScalarIndex value { 0 };
             VertexBinding *next { nullptr };
         };
 
@@ -77,7 +77,7 @@ public:
         std::vector<ScalarVector3f> vertices;
         std::vector<ScalarNormal3f> normals;
         std::vector<ScalarVector2f> texcoords;
-        std::vector<Index3> triangles;
+        std::vector<ScalarIndex3> triangles;
         std::vector<VertexBinding> vertex_map;
 
         size_t vertex_guess = mmap->size() / 100;
@@ -87,7 +87,7 @@ public:
         triangles.reserve(vertex_guess * 2);
         vertex_map.resize(vertex_guess);
 
-        Index vertex_ctr = 0;
+        ScalarIndex vertex_ctr = 0;
 
         const char *ptr = (const char *) mmap->data();
         const char *eof = ptr + mmap->size();
@@ -156,12 +156,12 @@ public:
                 cur += 2;
                 size_t vertex_index = 0;
                 size_t type_index = 0;
-                Index3 key {{ (Index) 0, (Index) 0, (Index) 0 }};
-                Index3 tri;
+                ScalarIndex3 key {{ (ScalarIndex) 0, (ScalarIndex) 0, (ScalarIndex) 0 }};
+                ScalarIndex3 tri;
 
                 while (true) {
                     const char *next2;
-                    Index value = (Index) strtoul(cur, (char **) &next2, 10);
+                    ScalarIndex value = (ScalarIndex) strtoul(cur, (char **) &next2, 10);
                     if (cur == next2)
                         break;
 
@@ -191,13 +191,13 @@ public:
                         while (entry->key != key && entry->next != nullptr)
                             entry = entry->next;
 
-                        Index id;
+                        ScalarIndex id;
                         if (entry->key == key) {
                             // Hit
                             id = entry->value;
                         } else {
                             // Miss
-                            if (entry->key != Index3{{0, 0, 0}}) {
+                            if (entry->key != ScalarIndex3{{0, 0, 0}}) {
                                 entry->next = new VertexBinding();
                                 entry = entry->next;
                             }
@@ -235,18 +235,18 @@ public:
         if (!m_disable_vertex_normals) {
             for (auto name : { "nx", "ny", "nz" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-            m_normal_offset = (Index) m_vertex_struct->offset("nx");
+            m_normal_offset = (ScalarIndex) m_vertex_struct->offset("nx");
         }
 
         if (!texcoords.empty()) {
             for (auto name : { "u", "v" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-            m_texcoord_offset = (Index) m_vertex_struct->offset("u");
+            m_texcoord_offset = (ScalarIndex) m_vertex_struct->offset("u");
         }
 
         m_face_struct = new Struct();
         for (size_t i = 0; i < 3; ++i)
-            m_face_struct->append(tfm::format("i%i", i), struct_type_v<Index>);
+            m_face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
 
         m_vertex_size = (Size) m_vertex_struct->size();
         m_face_size   = (Size) m_face_struct->size();
@@ -257,7 +257,7 @@ public:
         for (const auto& v_ : vertex_map) {
             const VertexBinding *v = &v_;
 
-            while (v && v->key != Index3{{0, 0, 0}}) {
+            while (v && v->key != ScalarIndex3{{0, 0, 0}}) {
                 uint8_t *vertex_ptr = vertex(v->value);
                 auto key = v->key;
 

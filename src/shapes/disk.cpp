@@ -26,7 +26,6 @@ public:
     MTS_DECLARE_CLASS_VARIANT(Disk, Shape)
     MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
     MTS_IMPORT_TYPES()
-    using Index = typename Base::Index;
     using Size  = typename Base::Size;
 
     Disk(const Properties &props) : Base(props) {

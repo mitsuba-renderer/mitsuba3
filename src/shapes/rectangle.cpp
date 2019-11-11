@@ -25,7 +25,6 @@ public:
     MTS_DECLARE_CLASS_VARIANT(Rectangle, Shape)
     MTS_USING_BASE(Shape, bsdf, emitter, is_emitter)
     MTS_IMPORT_TYPES()
-    using Index = typename Base::Index;
     using Size  = typename Base::Size;
 
     Rectangle(const Properties &props) : Base(props) {
