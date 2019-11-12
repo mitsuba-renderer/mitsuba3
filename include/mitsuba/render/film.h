@@ -130,4 +130,5 @@ protected:
     ref<ReconstructionFilter> m_filter;
 };
 
+MTS_EXTERN_CLASS(Film)
 NAMESPACE_END(mitsuba)

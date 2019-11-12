@@ -171,4 +171,6 @@ protected:
     ScalarFloat m_focus_distance;
 };
 
+MTS_EXTERN_CLASS(Sensor)
+MTS_EXTERN_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)

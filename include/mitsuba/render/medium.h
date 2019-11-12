@@ -17,6 +17,7 @@ protected:
 
 };
 
+MTS_EXTERN_CLASS(Medium)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

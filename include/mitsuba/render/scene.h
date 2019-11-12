@@ -216,4 +216,5 @@ SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) co
     }
 }
 
+MTS_EXTERN_CLASS(Scene)
 NAMESPACE_END(mitsuba)

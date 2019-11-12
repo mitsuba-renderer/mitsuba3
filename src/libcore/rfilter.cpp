@@ -14,4 +14,5 @@ std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value)
     return os;
 }
 
+MTS_INSTANTIATE_OBJECT(ReconstructionFilter)
 NAMESPACE_END(mitsuba)

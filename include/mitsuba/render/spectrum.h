@@ -254,5 +254,5 @@ protected:
 
 };
 
-
+MTS_EXTERN_CLASS(ContinuousSpectrum)
 NAMESPACE_END(mitsuba)

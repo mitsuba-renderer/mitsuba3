@@ -219,4 +219,5 @@ protected:
 #endif
 };
 
+MTS_EXTERN_CLASS(ImageBlock)
 NAMESPACE_END(mitsuba)

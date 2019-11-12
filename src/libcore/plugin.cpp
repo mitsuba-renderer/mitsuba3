@@ -142,8 +142,9 @@ ref<Object> PluginManager::create_object(const Properties &props, const Class *c
             oc = oc->parent();
 
         Throw("Type mismatch when loading plugin \"%s\": Expected "
-              "an instance of type \"%s\", got an instance of type \"%s\"",
-              props.plugin_name(), class_->name(), oc->name());
+              "an instance of type \"%s\" (variant \"%s\"), got an instance of type \"%s\" (variant \"%s\")",
+              props.plugin_name(), class_->name(), class_->variant(),
+              oc->name(), oc->variant());
     }
 
    return object;

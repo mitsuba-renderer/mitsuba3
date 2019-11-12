@@ -25,6 +25,7 @@ protected:
     virtual ~Emitter();
 };
 
+MTS_EXTERN_CLASS(Emitter)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

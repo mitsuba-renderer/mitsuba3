@@ -253,4 +253,5 @@ protected:
     bool m_needs_sample_3 = true;
 };
 
+MTS_EXTERN_CLASS(Endpoint)
 NAMESPACE_END(mitsuba)
