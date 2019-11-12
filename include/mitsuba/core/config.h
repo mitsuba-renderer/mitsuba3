@@ -33,6 +33,28 @@
     template struct MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
 
 
+#define MTS_EXTERN_STRUCT(Name)                                             \
+    extern template struct MTS_EXPORT Name<float, Color<float, 1>>;         \
+    extern template struct MTS_EXPORT Name<float, Color<float, 3>>;         \
+    extern template struct MTS_EXPORT Name<float, Spectrum<float, 4>>;      \
+    extern template struct MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
+
+
+#define MTS_EXTERN_CLASS(Name)                                              \
+    extern template class MTS_EXPORT Name<float, Color<float, 1>>;          \
+    extern template class MTS_EXPORT Name<float, Color<float, 3>>;          \
+    extern template class MTS_EXPORT Name<float, Spectrum<float, 4>>;       \
+    extern template class MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
+
+
+#define MTS_EXTERN_STRUCT_FLOAT(Name)                                       \
+    extern template struct MTS_EXPORT Name<float>;                          \
+
+
+#define MTS_EXTERN_CLASS_FLOAT(Name)                                        \
+    extern template class MTS_EXPORT Name<float>;                           \
+
+
 #define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)                           \
     extern "C" {                                                            \
         MTS_EXPORT const char *plugin_name() { return #Name; }              \

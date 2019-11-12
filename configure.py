@@ -14,11 +14,13 @@ assert(type(configurations['enabled']) is list)
 
 # Extract enabled configurations
 enabled = []
+float_types = set()
 for name in configurations['enabled']:
     if name not in configurations:
         raise Exception('"enabled" refers to an unknown configuration "%s"' % name)
     item = configurations[name]
     spectrum = item['spectrum'].replace('Float', item['float'])
+    float_types.add(item['float'])
     enabled.append((name, item['float'], spectrum))
 
 if len(enabled) == 0:
@@ -56,6 +58,23 @@ with open(fname, 'w') as f:
     w('#define MTS_INSTANTIATE_STRUCT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    template struct MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n\n')
+
+    w('#define MTS_EXTERN_STRUCT(Name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        w('    extern template struct MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n\n')
+    w('#define MTS_EXTERN_CLASS(Name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        w('    extern template class MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n\n')
+    w('#define MTS_EXTERN_STRUCT_FLOAT(Name)')
+    for float_ in float_types:
+        w('    extern template struct MTS_EXPORT Name<%s>;' % float_)
+    f.write('\n\n')
+    w('#define MTS_EXTERN_CLASS_FLOAT(Name)')
+    for float_ in float_types:
+        w('    extern template class MTS_EXPORT Name<%s>;' % float_)
     f.write('\n\n')
 
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
