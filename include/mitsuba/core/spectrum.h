@@ -96,6 +96,9 @@ template <typename Value, size_t Size> struct wavelength<Color<Value, Size>> {
 template <typename Value, size_t Size> struct wavelength<Spectrum<Value, Size>> {
     using type = Spectrum<Value, Size>;
 };
+template <typename T> struct wavelength<enoki::detail::MaskedArray<T>> {
+    using type = enoki::detail::MaskedArray<typename wavelength<T>::type>;
+};
 template <typename T> struct wavelength<Matrix<T, 4, true>> {
     using type = typename wavelength<T>::type;
 };

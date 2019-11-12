@@ -51,22 +51,26 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MediumInteraction3f    = MediumInteraction<Float, Spectrum>;
     using BSDFSample3f           = BSDFSample3<Float, Spectrum>;
 
-    using Scene                  = mitsuba::Scene<Float, Spectrum>;
-    using Sampler                = mitsuba::Sampler<Float, Spectrum>;
-    using MicrofacetDistribution = mitsuba::MicrofacetDistribution<Float, Spectrum>;
-    using Shape                  = mitsuba::Shape<Float, Spectrum>;
-    using Mesh                   = mitsuba::Mesh<Float, Spectrum>;
-    using Integrator             = mitsuba::Integrator<Float, Spectrum>;
-    using BSDF                   = mitsuba::BSDF<Float, Spectrum>;
-    using Sensor                 = mitsuba::Sensor<Float, Spectrum>;
-    using Emitter                = mitsuba::Emitter<Float, Spectrum>;
-    using Endpoint               = mitsuba::Endpoint<Float, Spectrum>;
-    using Medium                 = mitsuba::Medium<Float, Spectrum>;
-    using Film                   = mitsuba::Film<Float, Spectrum>;
-    using ImageBlock             = mitsuba::ImageBlock<Float, Spectrum>;
-    using ReconstructionFilter   = mitsuba::ReconstructionFilter<Float, Spectrum>;
-    using ContinuousSpectrum     = mitsuba::ContinuousSpectrum<Float, Spectrum>;
-    using Texture3D              = mitsuba::Texture3D<Float, Spectrum>;
+    /// Strip away any masking-related wrappers from 'Float' and 'Spectrum'
+    using FloatU                 = unmask_t<Float>;
+    using SpectrumU              = unmask_t<Spectrum>;
+
+    using Scene                  = mitsuba::Scene<FloatU, SpectrumU>;
+    using Sampler                = mitsuba::Sampler<FloatU, SpectrumU>;
+    using MicrofacetDistribution = mitsuba::MicrofacetDistribution<FloatU, SpectrumU>;
+    using Shape                  = mitsuba::Shape<FloatU, SpectrumU>;
+    using Mesh                   = mitsuba::Mesh<FloatU, SpectrumU>;
+    using Integrator             = mitsuba::Integrator<FloatU, SpectrumU>;
+    using BSDF                   = mitsuba::BSDF<FloatU, SpectrumU>;
+    using Sensor                 = mitsuba::Sensor<FloatU, SpectrumU>;
+    using Emitter                = mitsuba::Emitter<FloatU, SpectrumU>;
+    using Endpoint               = mitsuba::Endpoint<FloatU, SpectrumU>;
+    using Medium                 = mitsuba::Medium<FloatU, SpectrumU>;
+    using Film                   = mitsuba::Film<FloatU, SpectrumU>;
+    using ImageBlock             = mitsuba::ImageBlock<FloatU, SpectrumU>;
+    using ReconstructionFilter   = mitsuba::ReconstructionFilter<FloatU, SpectrumU>;
+    using ContinuousSpectrum     = mitsuba::ContinuousSpectrum<FloatU, SpectrumU>;
+    using Texture3D              = mitsuba::Texture3D<FloatU, SpectrumU>;
 
     using ObjectPtr              = replace_scalar_t<Float, const Object *>;
     using BSDFPtr                = replace_scalar_t<Float, const BSDF *>;
