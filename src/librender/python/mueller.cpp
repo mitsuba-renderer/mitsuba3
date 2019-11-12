@@ -4,7 +4,7 @@
 MTS_PY_EXPORT_VARIANTS(mueller) {
     MTS_IMPORT_TYPES()
 
-    MTS_PY_IMPORT_MODULE(mueller, "mitsuba.render.mueller");
+    auto mueller = m.def_submodule("mueller");
 
     mueller.def("depolarizer", &mueller::depolarizer<Float>,
             "value"_a = 1.f, D(mueller, depolarizer))

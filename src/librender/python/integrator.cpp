@@ -30,45 +30,43 @@ static void sigint_handler(int sig) {
 MTS_PY_EXPORT_VARIANTS(Integrator) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    MTS_PY_CHECK_ALIAS(Integrator)
-
-    /// Integrator (base class).
-    MTS_PY_CLASS(Integrator, Object)
-        .def("render",
-             [&](Integrator &integrator, Scene *scene, Sensor *sensor) {
-                 py::gil_scoped_release release;
+    MTS_PY_CHECK_ALIAS(Integrator, m) {
+        MTS_PY_CLASS(Integrator, Object)
+            .def("render",
+                [&](Integrator &integrator, Scene *scene, Sensor *sensor) {
+                    py::gil_scoped_release release;
 
 #if MTS_HANDLE_SIGINT
-                 // Install new signal handler
-                 current_integrator  = &integrator;
-                 sigint_handler_prev = signal(SIGINT, sigint_handler);
+                    // Install new signal handler
+                    current_integrator  = &integrator;
+                    sigint_handler_prev = signal(SIGINT, sigint_handler);
 #endif
 
-                 bool res = integrator.render(scene, sensor);
+                    bool res = integrator.render(scene, sensor);
 
 #if MTS_HANDLE_SIGINT
-                 // Restore previous signal handler
-                 signal(SIGINT, sigint_handler_prev);
+                    // Restore previous signal handler
+                    signal(SIGINT, sigint_handler_prev);
 #endif
 
-                 return res;
-             },
-             D(Integrator, render), "scene"_a, "sensor"_a)
-        .def_method(Integrator, cancel)
-        ;
+                    return res;
+                },
+                D(Integrator, render), "scene"_a, "sensor"_a)
+            .def_method(Integrator, cancel);
+    }
 
     using SamplingIntegrator = SamplingIntegrator<Float, Spectrum>;
-    MTS_PY_CHECK_ALIAS(SamplingIntegrator)
-
-    MTS_PY_CLASS(SamplingIntegrator, Integrator)
-        .def("sample",
-             vectorize<Float>(&SamplingIntegrator::sample),
-             "scene"_a, "sampler"_a, "ray"_a, "active"_a = true, D(SamplingIntegrator, sample))
-        .def_method(SamplingIntegrator, should_stop)
-        ;
+    using SamplingIntegratorP = mitsuba::SamplingIntegrator<FloatP, SpectrumP>;
+    MTS_PY_CHECK_ALIAS(SamplingIntegrator, m) {
+        MTS_PY_CLASS(SamplingIntegrator, Integrator)
+            .def("sample",
+                vectorize<Float>(&SamplingIntegratorP::sample),
+                "scene"_a, "sampler"_a, "ray"_a, "active"_a = true, D(SamplingIntegrator, sample))
+            .def_method(SamplingIntegrator, should_stop);
+    }
 
     using MonteCarloIntegrator = MonteCarloIntegrator<Float, Spectrum>;
-    MTS_PY_CHECK_ALIAS(MonteCarloIntegrator)
-
-    MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
+    MTS_PY_CHECK_ALIAS(MonteCarloIntegrator, m){
+        MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
+    }
 }
