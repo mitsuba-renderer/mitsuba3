@@ -142,12 +142,12 @@ Shape<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip)
     return result;
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::Size
+MTS_VARIANT typename Shape<Float, Spectrum>::ScalarSize
 Shape<Float, Spectrum>::primitive_count() const {
     return 1;
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::Size
+MTS_VARIANT typename Shape<Float, Spectrum>::ScalarSize
 Shape<Float, Spectrum>::effective_primitive_count() const {
     return primitive_count();
 }

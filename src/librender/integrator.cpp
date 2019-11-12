@@ -82,7 +82,7 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
         tbb::blocked_range<size_t>(0, total_blocks, 1),
         [&](const tbb::blocked_range<size_t> &range) {
             // TODO: we probably don't really want to use that
-            using FloatX = DynamicArray<Packet<scalar_t<Float>>>;
+            using FloatX = DynamicArray<Packet<ScalarFloat>>;
             using Point2fX = Point<FloatX, 2>;
 
             ScopedSetThreadEnvironment set_env(env);

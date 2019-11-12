@@ -35,7 +35,7 @@ public:
                 recompute_vertex_normals, is_emitter, emitter, has_vertex_normals, vertex);
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    using typename Base::Size;
+    using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
@@ -227,7 +227,7 @@ public:
         }
 
         m_vertex_count = vertex_ctr;
-        m_face_count = (Size) triangles.size();
+        m_face_count = (ScalarSize) triangles.size();
         m_vertex_struct = new Struct();
         for (auto name : { "x", "y", "z" })
             m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
@@ -248,8 +248,8 @@ public:
         for (size_t i = 0; i < 3; ++i)
             m_face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
 
-        m_vertex_size = (Size) m_vertex_struct->size();
-        m_face_size   = (Size) m_face_struct->size();
+        m_vertex_size = (ScalarSize) m_vertex_struct->size();
+        m_face_size   = (ScalarSize) m_face_struct->size();
         m_vertices    = VertexHolder(new uint8_t[(m_vertex_count + 1) * m_vertex_size]);
         m_faces       = FaceHolder(new uint8_t[(m_face_count + 1) * m_face_size]);
         memcpy(m_faces.get(), triangles.data(), m_face_count * m_face_size);

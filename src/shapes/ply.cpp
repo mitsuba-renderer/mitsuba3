@@ -22,7 +22,7 @@ public:
                    recompute_vertex_normals, is_emitter, emitter);
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    using typename Base::Size;
+    using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
@@ -172,8 +172,8 @@ public:
                     }
                 }
 
-                m_vertex_count = (Size) el.count;
-                m_vertex_size = (Size) o_struct_size;
+                m_vertex_count = (ScalarSize) el.count;
+                m_vertex_size = (ScalarSize) o_struct_size;
             } else if (el.name == "face") {
                 m_face_struct = new Struct();
 
@@ -220,8 +220,8 @@ public:
                     target += o_packet_size;
                 }
 
-                m_face_count = (Size) el.count;
-                m_face_size = (Size) o_struct_size;
+                m_face_count = (ScalarSize) el.count;
+                m_face_size = (ScalarSize) o_struct_size;
             } else {
                 Log(Warn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + size * el.count);

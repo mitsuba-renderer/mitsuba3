@@ -30,8 +30,8 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     m_mesh = true;
 }
 
-MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_struct, Size vertex_count,
-                                        Struct *face_struct, Size face_count)
+MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_struct, ScalarSize vertex_count,
+                                        Struct *face_struct, ScalarSize face_count)
     : m_name(name), m_vertex_count(vertex_count), m_face_count(face_count),
       m_vertex_struct(vertex_struct), m_face_struct(face_struct) {
     /* Helper lambda function to determine compatibility (offset/type) of a 'Struct' field */
@@ -77,11 +77,11 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_
         m_texcoord_offset = (ScalarIndex) vertex_struct->field("u").offset;
     }
 
-    m_vertex_size = (Size) m_vertex_struct->size();
-    m_face_size = (Size) m_face_struct->size();
+    m_vertex_size = (ScalarSize) m_vertex_struct->size();
+    m_face_size   = (ScalarSize) m_face_struct->size();
 
     m_vertices = VertexHolder(new uint8_t[(vertex_count + 1) * m_vertex_size]);
-    m_faces = VertexHolder(new uint8_t[(face_count + 1) * m_face_size]);
+    m_faces    = VertexHolder(new uint8_t[(face_count + 1) * m_face_size]);
 
     m_mesh = true;
 }
@@ -124,7 +124,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
     /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
        by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
-    for (Size i = 0; i < m_face_count; ++i) {
+    for (ScalarSize i = 0; i < m_face_count; ++i) {
         using ScalarIndex = scalar_t<Index>;
         const ScalarIndex *idx = (const ScalarIndex *) face(i);
         Assert(idx[0] < m_vertex_count && idx[1] < m_vertex_count && idx[2] < m_vertex_count);
@@ -148,7 +148,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
         }
     }
 
-    for (Size i = 0; i < m_vertex_count; i++) {
+    for (ScalarSize i = 0; i < m_vertex_count; i++) {
         ScalarNormal3f n = normals[i];
         ScalarFloat length = norm(n);
         if (likely(length != 0.f)) {
@@ -171,7 +171,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
     m_bbox.reset();
-    for (Size i = 0; i < m_vertex_count; ++i)
+    for (ScalarSize i = 0; i < m_vertex_count; ++i)
         m_bbox.expand(vertex_position(i));
 }
 
@@ -193,7 +193,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::prepare_sampling_table() {
     }
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::Size
+MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarSize
 Mesh<Float, Spectrum>::primitive_count() const {
     return face_count();
 }

@@ -38,7 +38,7 @@ public:
     }
 
     /// Seeds the RNG with the specified size, if applicable
-    void seed(size_t seed_value, size_t size = 1) override {
+    void seed(size_t seed_value, size_t size = array_size_v<Float>) override {
         m_seed_value = seed_value;
         m_rng        = std::make_unique<PCG32>();
 

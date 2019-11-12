@@ -23,7 +23,7 @@ public:
     MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
     MTS_IMPORT_TYPES()
     using typename Base::ScalarIndex;
-    using typename Base::Size;
+    using typename Base::ScalarSize;
 
     Cylinder(const Properties &props) : Base(props) {
         m_radius = props.float_("radius", 1.f);
@@ -303,9 +303,9 @@ public:
     //! @}
     // =============================================================
 
-    Size primitive_count() const override { return 1; }
+    ScalarSize primitive_count() const override { return 1; }
 
-    Size effective_primitive_count() const override { return 1; }
+    ScalarSize effective_primitive_count() const override { return 1; }
 
     std::string to_string() const override {
         std::ostringstream oss;

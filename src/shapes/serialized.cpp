@@ -23,7 +23,7 @@ public:
                 has_vertex_texcoords, vertex_texcoord, vertex_normal, vertex_position);
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    using typename Base::Size;
+    using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
@@ -156,12 +156,12 @@ public:
         for (size_t i = 0; i < 3; ++i)
             m_face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
 
-        m_vertex_size = (Size) m_vertex_struct->size();
-        m_vertex_count = (Size) vertex_count;
+        m_vertex_size = (ScalarSize) m_vertex_struct->size();
+        m_vertex_count = (ScalarSize) vertex_count;
         m_vertices = VertexHolder(new uint8_t[(m_vertex_count + 1) * m_vertex_size]);
 
-        m_face_size = (Size) m_face_struct->size();
-        m_face_count = (Size) face_count;
+        m_face_size = (ScalarSize) m_face_struct->size();
+        m_face_count = (ScalarSize) face_count;
         m_faces = FaceHolder(new uint8_t[(m_face_count + 1) * m_face_size]);
 
         bool double_precision = flags & EDoublePrecision;
@@ -192,7 +192,7 @@ public:
         );
 
         // Post-processing
-        for (Size i = 0; i < m_vertex_count; ++i) {
+        for (ScalarSize i = 0; i < m_vertex_count; ++i) {
             ScalarPoint3f p = to_world * vertex_position(i);
             store_unaligned(vertex(i), p);
             m_bbox.expand(p);

@@ -137,11 +137,11 @@ public:
                 ScalarVector3f coeff;
 
                 if constexpr (ChannelCount == 1)
-                    coeff = srgb_model_fetch(Color<Float, 3>(raw.x()));
+                    coeff = srgb_model_fetch(Color<ScalarFloat, 3>(raw.x()));
                 if constexpr (ChannelCount == 3)
                     coeff = srgb_model_fetch(raw);
                 if constexpr (ChannelCount == 4)
-                    coeff = srgb_model_fetch(Color<Float, 3>(raw.x(), raw.y(), raw.z()));
+                    coeff = srgb_model_fetch(Color<ScalarFloat, 3>(raw.x(), raw.y(), raw.z()));
 
                 mean += (double) srgb_model_mean(coeff);
                 store_unaligned(ptr, coeff);

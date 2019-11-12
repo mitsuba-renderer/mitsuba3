@@ -21,7 +21,7 @@ public:
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
-    using Size  = uint32_t;
+    using ScalarSize  = uint32_t;
 
     // =============================================================
     //! @{ \name Sampling routines
@@ -288,7 +288,7 @@ public:
      * \brief Returns the number of sub-primitives that make up this shape
      * \remark The default implementation simply returns \c 1
      */
-    virtual Size primitive_count() const;
+    virtual ScalarSize primitive_count() const;
 
     /**
      * \brief Return the number of primitives (triangles, hairs, ..)
@@ -297,7 +297,7 @@ public:
      * Includes instanced geometry. The default implementation simply returns
      * the same value as \ref primitive_count().
      */
-    virtual Size effective_primitive_count() const;
+    virtual ScalarSize effective_primitive_count() const;
 
 #if defined(MTS_USE_EMBREE)
     /// Return the Embree version of this shape

@@ -22,7 +22,7 @@ public:
     MTS_DECLARE_CLASS_VARIANT(Sphere, Shape)
     MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
     MTS_IMPORT_TYPES()
-    using Size  = typename Base::Size;
+    using typename Base::ScalarSize;
 
     Sphere(const Properties &props) : Base(props) {
         m_object_to_world =
@@ -315,9 +315,9 @@ public:
     //! @}
     // =============================================================
 
-    Size primitive_count() const override { return 1; }
+    ScalarSize primitive_count() const override { return 1; }
 
-    Size effective_primitive_count() const override { return 1; }
+    ScalarSize effective_primitive_count() const override { return 1; }
 
     std::string to_string() const override {
         std::ostringstream oss;

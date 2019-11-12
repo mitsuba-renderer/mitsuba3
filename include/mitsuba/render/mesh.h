@@ -15,8 +15,9 @@ public:
     MTS_DECLARE_CLASS_VARIANT(Mesh, Object)
     MTS_IMPORT_TYPES();
     MTS_USING_BASE(Shape, m_mesh)
-    using typename Base::Size;
+    using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
+    using Size  = replace_scalar_t<Float, ScalarSize>;
     using Index = replace_scalar_t<Float, ScalarIndex>;
     using Index3 = Array<Index, 3>;
 
@@ -25,17 +26,17 @@ public:
 
     /// Create a new mesh with the given vertex and face data structures
     Mesh(const std::string &name,
-         Struct *vertex_struct, Size vertex_count,
-         Struct *face_struct, Size face_count);
+         Struct *vertex_struct, ScalarSize vertex_count,
+         Struct *face_struct,   ScalarSize face_count);
 
     // =========================================================================
     //! @{ \name Accessors (vertices, faces, normals, etc)
     // =========================================================================
 
     /// Return the total number of vertices
-    Size vertex_count() const { return m_vertex_count; }
+    ScalarSize vertex_count() const { return m_vertex_count; }
     /// Return the total number of faces
-    Size face_count() const { return m_face_count; }
+    ScalarSize face_count() const { return m_face_count; }
 
     /// Return a \c Struct instance describing the contents of the vertex buffer
     const Struct *vertex_struct() const { return m_vertex_struct.get(); }
@@ -82,8 +83,8 @@ public:
         if constexpr (!is_array_v<Index>) {
             return load<Vector3u>(face(index));
         } else if constexpr (!is_diff_array_v<Index>) {
-            index *= scalar_t<Index>(m_face_size / sizeof(uint32_t));
-            return gather<Vector3u, sizeof(Index)>(
+            index *= scalar_t<Index>(m_face_size / sizeof(ScalarIndex));
+            return gather<Vector3u, sizeof(ScalarIndex)>(
                 m_faces.get(), Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
@@ -100,13 +101,13 @@ public:
         if constexpr (!is_array_v<Index>) {
             return load<Point3f>(vertex(index));
         } else if constexpr (!is_diff_array_v<Index>) {
-            index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
-            return gather<Point3f, sizeof(Float)>(
+            index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
+            return gather<Point3f, sizeof(ScalarFloat)>(
                 m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Point3f, sizeof(Float)>(m_vertex_positions_d, index, active);
+            return gather<Point3f, sizeof(ScalarFloat)>(m_vertex_positions_d, index, active);
         }
 #endif
     }
@@ -118,13 +119,13 @@ public:
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Normal3f>(vertex(index) + m_normal_offset);
         } else if constexpr (!is_diff_array_v<Index>) {
-            index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
-            return gather<Normal3f, sizeof(Float)>(
+            index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
+            return gather<Normal3f, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Normal3f, sizeof(Float)>(m_vertex_normals_d, index, active);
+            return gather<Normal3f, sizeof(ScalarFloat)>(m_vertex_normals_d, index, active);
         }
 #endif
     }
@@ -136,13 +137,13 @@ public:
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Point2f>(vertex(index) + m_texcoord_offset);
         } else if constexpr (!is_diff_array_v<Index>) {
-            index *= scalar_t<Index>(m_vertex_size / sizeof(Float));
-            return gather<Point2f, sizeof(Float)>(
+            index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
+            return gather<Point2f, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_texcoord_offset, Array<Index, 2>(index, index + 1u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Point2f, sizeof(Float)>(m_vertex_texcoords_d, index, active);
+            return gather<Point2f, sizeof(ScalarFloat)>(m_vertex_texcoords_d, index, active);
         }
 #endif
     }
@@ -190,7 +191,7 @@ public:
 
     virtual ScalarBoundingBox3f bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const override;
 
-    virtual Size primitive_count() const override;
+    virtual ScalarSize primitive_count() const override;
 
     virtual ScalarFloat surface_area() const override;
 
@@ -227,7 +228,7 @@ public:
     MTS_INLINE std::tuple<Mask, Float, Float, Float>
     ray_intersect_triangle(const Index &index, const Ray3f &ray,
                            identity_t<Mask> active = true) const {
-        auto fi = face_indices(index, active);
+        auto fi = face_indices(Size(index), active);
 
         Point3f p0 = vertex_position(fi[0], active),
                 p1 = vertex_position(fi[1], active),
@@ -302,8 +303,8 @@ protected:
 protected:
     VertexHolder m_vertices;
     FaceHolder m_faces;
-    Size m_vertex_size = 0;
-    Size m_face_size = 0;
+    ScalarSize m_vertex_size = 0;
+    ScalarSize m_face_size = 0;
 
     /// Byte offset of the normal data within the vertex buffer
     ScalarIndex m_normal_offset = 0;
@@ -316,8 +317,8 @@ protected:
     ScalarBoundingBox3f m_bbox;
     ScalarTransform4f m_to_world;
 
-    Size m_vertex_count = 0;
-    Size m_face_count = 0;
+    ScalarSize m_vertex_count = 0;
+    ScalarSize m_face_count = 0;
 
     ref<Struct> m_vertex_struct;
     ref<Struct> m_face_struct;
