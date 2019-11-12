@@ -3,7 +3,9 @@
 
 MTS_PY_EXPORT_VARIANTS(BoundingBox) {
     MTS_IMPORT_CORE_TYPES()
-    using Ray3f = Ray<Point3f, Spectrum>;
+    using Point3fP = Point<FloatP, 3>;
+    using BoundingBox3fP = BoundingBox<Point3fP>;
+    using Ray3fP = Ray<Point3fP, SpectrumP>;
     MTS_PY_CHECK_ALIAS(BoundingBox3f)
 
     py::class_<BoundingBox3f>(m, "BoundingBox3f", D(BoundingBox3f))
@@ -60,7 +62,7 @@ MTS_PY_EXPORT_VARIANTS(BoundingBox) {
             D(BoundingBox3f, expand))
         .def("expand", (void (BoundingBox3f::*)(const BoundingBox3f &)) &BoundingBox3f::expand,
             D(BoundingBox3f, expand, 2))
-        .def("ray_intersect", vectorize<Float>(&BoundingBox3f::template ray_intersect<Ray3f>),
+        .def("ray_intersect", vectorize<Float>(&BoundingBox3fP::template ray_intersect<Ray3fP>),
             D(BoundingBox3f, ray_intersect))
         .def(py::self == py::self)
         .def(py::self != py::self)

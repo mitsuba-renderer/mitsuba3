@@ -54,16 +54,17 @@ MTS_PY_EXPORT(Resampler)
 
 MTS_PY_EXPORT_VARIANTS(rfilter) {
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Spectrum>;
+    using ReconstructionFilterP = mitsuba::ReconstructionFilter<FloatP, SpectrumP>;
     MTS_PY_CHECK_ALIAS(ReconstructionFilter)
 
     MTS_PY_CLASS(ReconstructionFilter, Object)
         .def_method(ReconstructionFilter, border_size)
         .def_method(ReconstructionFilter, radius)
         .def("eval",
-             vectorize<Float>(py::overload_cast<Float>(&ReconstructionFilter::eval, py::const_)),
+             vectorize<Float>(&ReconstructionFilterP::eval),
              D(ReconstructionFilter, eval), "x"_a)
         .def("eval_discretized",
-             vectorize<Float>(&ReconstructionFilter::template eval_discretized<Float>),
+             vectorize<Float>(&ReconstructionFilterP::template eval_discretized<FloatP>),
              D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)
         ;
     m.attr("MTS_FILTER_RESOLUTION") = MTS_FILTER_RESOLUTION;

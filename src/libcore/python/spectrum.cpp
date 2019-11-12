@@ -2,22 +2,22 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT_VARIANTS(Spectrum) {
-    m.def("to_xyz", vectorize<Float>(&to_xyz<Spectrum>),
+    m.def("to_xyz", vectorize<Float>(&to_xyz<SpectrumP>),
         "value"_a, "wavelengths"_a, "active"_a = true, D(to_xyz))
-    .def("cie1931_xyz", vectorize<Float>(&cie1931_xyz<Spectrum>), "wavelengths"_a,
+    .def("cie1931_xyz", vectorize<Float>(&cie1931_xyz<SpectrumP>), "wavelengths"_a,
             "active"_a = true, D(cie1931_xyz))
 
-    .def("cie1931_y", vectorize<Float>(&cie1931_y<Spectrum>), "wavelengths"_a,
+    .def("cie1931_y", vectorize<Float>(&cie1931_y<SpectrumP>), "wavelengths"_a,
             "active"_a = true, D(cie1931_y))
 
-    .def("sample_rgb_spectrum", vectorize<Float>(&sample_rgb_spectrum<Float>), "sample"_a,
+    .def("sample_rgb_spectrum", vectorize<Float>(&sample_rgb_spectrum<FloatP>), "sample"_a,
             D(sample_rgb_spectrum))
-    .def("pdf_rgb_spectrum", vectorize<Float>(&pdf_rgb_spectrum<Float>), "wavelengths"_a,
+    .def("pdf_rgb_spectrum", vectorize<Float>(&pdf_rgb_spectrum<FloatP>), "wavelengths"_a,
             D(pdf_rgb_spectrum))
 
-    .def("sample_uniform_spectrum", vectorize<Float>(&sample_uniform_spectrum<Float>),
+    .def("sample_uniform_spectrum", vectorize<Float>(&sample_uniform_spectrum<FloatP>),
             "sample"_a, D(sample_uniform_spectrum))
-    .def("pdf_uniform_spectrum", vectorize<Float>(&pdf_uniform_spectrum<Float>),
+    .def("pdf_uniform_spectrum", vectorize<Float>(&pdf_uniform_spectrum<FloatP>),
             "wavelengths"_a, D(pdf_uniform_spectrum))
     ;
 

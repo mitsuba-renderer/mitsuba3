@@ -475,7 +475,7 @@ MTS_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
 /// Warp a uniformly distributed square sample to a von Mises Fisher distribution
 template <typename Value>
 MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sample,
-                                                       const Value &kappa) {
+                                                       const scalar_t<Value> &kappa) {
 #if 0
     // Approach 1: warping method based on standard disk mapping
 
@@ -515,7 +515,7 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
 
 /// Inverse of the mapping \ref von_mises_fisher_to_square
 template <typename Value>
-MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v, Value kappa) {
+MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v, scalar_t<Value> kappa) {
     Value expm2k = exp(-2.f * kappa),
           t      = exp((v.z() - 1.f) * kappa),
           sy     = (expm2k - t) / (expm2k - 1.f),
@@ -527,7 +527,7 @@ MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
 
 /// Probability density of \ref square_to_von_mises_fisher()
 template <typename Value>
-MTS_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, Value kappa) {
+MTS_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, scalar_t<Value> kappa) {
     /* Stable algorithm for evaluating the von Mises Fisher distribution
        https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
 
@@ -546,7 +546,7 @@ template <typename Value>
 Vector<Value, 3> square_to_rough_fiber(const Point<Value, 3> &sample,
                                        const Vector<Value, 3> &wi_,
                                        const Vector<Value, 3> &tangent,
-                                       Value kappa) {
+                                       scalar_t<Value> kappa) {
     using Point2  = Point<Value, 2>;
     using Vector3 = Vector<Value, 3>;
     using Frame3  = Frame<Value>;
@@ -601,7 +601,8 @@ namespace detail {
 
 /// Probability density of \ref square_to_rough_fiber()
 template <typename Value, typename Vector3 = Vector<Value, 3>>
-Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent, Value kappa) {
+Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent,
+                                scalar_t<Value> kappa) {
     /**
      * Analytic density function described in "An Energy-Conserving Hair Reflectance Model"
      * by Eugene d’Eon, Guillaume Francois, Martin Hill, Joe Letteri, and Jean-Marie Aubry
@@ -663,9 +664,10 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
  */
 template <typename Float, size_t Dimension = 0> class Hierarchical2D {
 private:
-    using Vector2f = Vector<Float, 2>;
-    using Vector2u = Vector<replace_scalar_t<Float, uint32_t>, 2>;
-    using Vector2i = Vector<replace_scalar_t<Float, int32_t>, 2>;
+    MTS_IMPORT_CORE_TYPES()
+    // using Vector2f = Vector<Float, 2>;
+    // using Vector2u = Vector<replace_scalar_t<Float, uint32_t>, 2>;
+    // using Vector2i = Vector<replace_scalar_t<Float, int32_t>, 2>;
 
     using FloatStorage = host_vector<Float>;
 
@@ -697,16 +699,16 @@ public:
      * can still be called without triggering undefined behavior, but they
      * will not return meaningful results.
      */
-    Hierarchical2D(const Vector2u &size, const Float *data,
+    Hierarchical2D(const ScalarVector2u &size, const ScalarFloat *data,
              std::array<uint32_t, Dimension> param_res = { },
-             std::array<const Float *, Dimension> param_values = { },
+             std::array<const ScalarFloat *, Dimension> param_values = { },
              bool normalize = true,
              bool build_hierarchy = true) {
         if (any(size < 2))
             Throw("warp::Hierarchical2D(): input array resolution must be >= 2!");
 
         // The linear interpolant has 'size-1' patches
-        Vector2u n_patches = size - 1u;
+        ScalarVector2u n_patches = size - 1u;
 
         // Keep track of the dependence on additional parameters (optional)
         uint32_t max_level   = math::log2i_ceil(hmax(n_patches)),
@@ -718,7 +720,7 @@ public:
             m_param_size[i] = param_res[i];
             m_param_values[i].resize(param_res[i]);
             memcpy(m_param_values[i].data(), param_values[i],
-                   sizeof(Float) * param_res[i]);
+                   sizeof(ScalarFloat) * param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? slices : 0;
             slices *= m_param_size[i];
         }
@@ -734,12 +736,12 @@ public:
             for (uint32_t slice = 0; slice < slices; ++slice) {
                 uint32_t offset = m_levels[0].size * slice;
 
-                Float scale = 1.f;
+                ScalarFloat scale = 1.f;
                 if (normalize) {
                     double sum = 0.0;
                     for (uint32_t i = 0; i < m_levels[0].size; ++i)
                         sum += (double) data[offset + i];
-                    scale = hprod(n_patches) / (Float) sum;
+                    scale = hprod(n_patches) / (ScalarFloat) sum;
                 }
                 for (uint32_t i = 0; i < m_levels[0].size; ++i)
                     m_levels[0].data[offset + i] = data[offset + i] * scale;
@@ -752,7 +754,7 @@ public:
         m_levels.reserve(max_level + 2);
         m_levels.emplace_back(size, slices);
 
-        Vector2u level_size = n_patches;
+        ScalarVector2u level_size = n_patches;
         for (int level = max_level; level >= 0; --level) {
             level_size += level_size & 1u; // zero-pad
             m_levels.emplace_back(level_size, slices);
@@ -764,22 +766,22 @@ public:
                      offset1 = m_levels[1].size * slice;
 
             // Integrate linear interpolant
-            const Float *in = data + offset0;
+            const ScalarFloat *in = data + offset0;
 
             double sum = 0.0;
             for (uint32_t y = 0; y < n_patches.y(); ++y) {
                 for (uint32_t x = 0; x < n_patches.x(); ++x) {
-                    Float avg = (in[0] + in[1] + in[size.x()] +
+                    ScalarFloat avg = (in[0] + in[1] + in[size.x()] +
                                  in[size.x() + 1]) * .25f;
                     sum += (double) avg;
-                    *(m_levels[1].ptr(Vector2u(x, y)) + offset1) = avg;
+                    *(m_levels[1].ptr(ScalarVector2u(x, y)) + offset1) = avg;
                     ++in;
                 }
                 ++in;
             }
 
             // Copy and normalize fine resolution interpolant
-            Float scale = normalize ? (hprod(n_patches) / (Float) sum) : 1.f;
+            ScalarFloat scale = normalize ? (hprod(n_patches) / (ScalarFloat) sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
                 m_levels[0].data[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
@@ -797,8 +799,8 @@ public:
                 // Downsample
                 for (uint32_t y = 0; y < level_size.y(); ++y) {
                     for (uint32_t x = 0; x < level_size.x(); ++x) {
-                        Float *d1 = l1.ptr(Vector2u(x, y)) + offset1;
-                        const Float *d0 = l0.ptr(Vector2u(x*2, y*2)) + offset0;
+                        ScalarFloat *d1 = l1.ptr(ScalarVector2u(x, y)) + offset1;
+                        const ScalarFloat *d0 = l0.ptr(ScalarVector2u(x*2, y*2)) + offset0;
                         *d1 = d0[0] + d0[1] + d0[2] + d0[3];
                     }
                 }
@@ -1167,7 +1169,7 @@ private:
         FloatStorage data;
 
         Level() { }
-        Level(Vector2u res, uint32_t slices) : size(hprod(res)), width(res.x()) {
+        Level(ScalarVector2u res, uint32_t slices) : size(hprod(res)), width(res.x()) {
             uint32_t alloc_size = size  * slices;
             data.resize(alloc_size);
             memset(data.data(), 0, alloc_size * sizeof(Float));
@@ -1186,10 +1188,10 @@ private:
                    ((p.y() & ~1u) * width);
         }
 
-        MTS_INLINE Float *ptr(const Vector2i &p) {
+        MTS_INLINE ScalarFloat *ptr(const ScalarVector2i &p) {
             return data.data() + index(p);
         }
-        MTS_INLINE const Float *ptr(const Vector2i &p) const {
+        MTS_INLINE const ScalarFloat *ptr(const ScalarVector2i &p) const {
             return data.data() + index(p);
         }
 
@@ -1221,16 +1223,16 @@ private:
     std::vector<Level> m_levels;
 
     /// Size of a bilinear patch in the unit square
-    Vector2f m_patch_size;
+    ScalarVector2f m_patch_size;
 
     /// Inverse of the above
-    Vector2f m_inv_patch_size;
+    ScalarVector2f m_inv_patch_size;
 
     /// Resolution of the fine-resolution PDF data
-    Vector2f m_vertex_count;
+    ScalarVector2f m_vertex_count;
 
     /// Number of bilinear patches in the X/Y dimension - 1
-    Vector2u m_max_patch_index;
+    ScalarVector2u m_max_patch_index;
 
     /// Resolution of each parameter (optional)
     uint32_t m_param_size[ArraySize];

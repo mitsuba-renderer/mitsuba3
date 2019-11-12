@@ -99,14 +99,14 @@ template <typename Type> pybind11::handle get_type_handle() {
 }
 
 #define MTS_PY_CHECK_ALIAS(Name)                      \
-    if (auto h = get_type_handle<Name>()) {           \
+    if (auto h = get_type_handle<Name>(); h) {        \
         m.attr(#Name) = h;                            \
         return;                                       \
     }
 
 template<typename Float, typename Func>
 auto vectorize(Func func) {
-    if constexpr (is_array_v<Float> && !is_dynamic_v<Float>){
+    if constexpr (is_dynamic_v<Float> && !is_cuda_array_v<Float>){
         return enoki::vectorize_wrapper(func);
     } else {
         return func;

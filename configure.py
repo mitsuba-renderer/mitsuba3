@@ -67,21 +67,25 @@ with open(fname, 'w') as f:
     f.write('\n\n')
 
     w('#define MTS_PY_EXPORT_VARIANTS(name)')
-    w('    template <typename Float, typename Spectrum>')
+    w('    template <typename Float, typename Spectrum,')
+    w('              typename FloatP, typename SpectrumP>')
     w('    void instantiate_##name(py::module m);')
     w('')
     w('    MTS_PY_EXPORT(name) {')
     for index, (name, float_, spectrum) in enumerate(enabled):
         # for packets of float, the bindings should use the vectorize wrapper on dynamic arrays
+        float_p = float_
+        spectrum_p = spectrum
         if float_.startswith("Packet"):
             float_x = "DynamicArray<%s>" % float_
             spectrum = spectrum.replace(float_, float_x)
             float_ = float_x
-        w('        instantiate_##name<%s, %s>(' % (float_, spectrum))
+        w('        instantiate_##name<%s, %s, %s, %s>(' % (float_, spectrum, float_p, spectrum_p))
         w('            m.def_submodule("%s"));' % (name))
     w('    }')
     w('')
-    w('    template <typename Float, typename Spectrum>')
+    w('    template <typename Float, typename Spectrum,')
+    w('              typename FloatP, typename SpectrumP>')
     w('    void instantiate_##name(py::module m)')
     f.write('\n\n')
 

@@ -42,21 +42,23 @@
 
 
 #define MTS_PY_EXPORT_VARIANTS(name)                                        \
-    template <typename Float, typename Spectrum>                            \
+    template <typename Float, typename Spectrum,                            \
+              typename FloatP, typename SpectrumP>                          \
     void instantiate_##name(py::module m);                                  \
                                                                             \
     MTS_PY_EXPORT(name) {                                                   \
-        instantiate_##name<float, Color<float, 1>>(                         \
+        instantiate_##name<float, Color<float, 1>, float, Color<float, 1>>( \
             m.def_submodule("scalar_mono"));                                \
-        instantiate_##name<float, Color<float, 3>>(                         \
+        instantiate_##name<float, Color<float, 3>, float, Color<float, 3>>( \
             m.def_submodule("scalar_rgb"));                                 \
-        instantiate_##name<float, Spectrum<float, 4>>(                      \
+        instantiate_##name<float, Spectrum<float, 4>, float, Spectrum<float, 4>>( \
             m.def_submodule("scalar_spectral"));                            \
-        instantiate_##name<float, MuellerMatrix<Spectrum<float, 4>>>(       \
+        instantiate_##name<float, MuellerMatrix<Spectrum<float, 4>>, float, MuellerMatrix<Spectrum<float, 4>>>( \
             m.def_submodule("scalar_spectral_polarized"));                  \
     }                                                                       \
                                                                             \
-    template <typename Float, typename Spectrum>                            \
+    template <typename Float, typename Spectrum,                            \
+              typename FloatP, typename SpectrumP>                          \
     void instantiate_##name(py::module m)                                   \
 
 

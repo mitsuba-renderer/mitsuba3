@@ -6,6 +6,7 @@
 MTS_PY_EXPORT_VARIANTS(random) {
     MTS_IMPORT_CORE_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
+    using UInt32P = replace_scalar_t<FloatP, ScalarUInt32>;
     MTS_PY_CHECK_ALIAS(PCG32)
 
     auto pcg32 = py::class_<PCG32>(m, "PCG32", D(PCG32))
@@ -15,60 +16,62 @@ MTS_PY_EXPORT_VARIANTS(random) {
         .def(py::init<const PCG32 &>(), "Copy constructor")
         .def("seed", &PCG32::seed, "initstate"_a, "initseq"_a = 1u, D(PCG32, seed))
         .def("next_uint32", (UInt32 (PCG32::*)()) &PCG32::next_uint32, D(PCG32, next_uint32))
-        .def("next_uint32", [](PCG32 &rng, const std::vector<size_t> &shape) {
-            py::array_t<UInt32> result(shape);
-            for (py::ssize_t i = 0; i < result.size(); ++i)
-                result.mutable_data()[i] = rng.next_uint32();
-            return result;
-        }, "shape"_a)
-        .def("next_uint32_bounded", [](PCG32 &rng, UInt32 bound) {
-                return rng.next_uint32_bounded(bound);
-            }, "bound"_a, D(PCG32, next_uint32_bounded))
-        .def("next_uint32_bounded", [](PCG32 &rng, UInt32 bound, const std::vector<size_t> &shape) {
-            py::array_t<UInt32> result(shape);
-            for (py::ssize_t i = 0; i < result.size(); ++i)
-                result.mutable_data()[i] = rng.next_uint32_bounded(bound);
-            return result;
-        }, "bound"_a, "shape"_a)
-        .def("next_uint64", (uint64_t (PCG32::*)()) &PCG32::next_uint64, D(PCG32, next_uint64))
-        .def("next_uint64", [](PCG32 &rng, const std::vector<size_t> &shape) {
-            py::array_t<uint64_t> result(shape);
-            for (py::ssize_t i = 0; i < result.size(); ++i)
-                result.mutable_data()[i] = rng.next_uint64();
-            return result;
-        }, "shape"_a)
-        .def("next_uint64_bounded", [](PCG32 &rng, uint64_t bound) {
-                return rng.next_uint64_bounded(bound);
-            }, "bound"_a, D(PCG32, next_uint64_bounded))
-        .def("next_uint64_bounded",
-            [](PCG32 &rng, uint64_t bound, const std::vector<size_t> &shape) {
-                py::array_t<uint64_t> result(shape);
-                for (py::ssize_t i = 0; i < result.size(); ++i)
-                    result.mutable_data()[i] = rng.next_uint64_bounded(bound);
-                return result;
-            }, "bound"_a, "shape"_a)
+        // TODO
+        // .def("next_uint32", [](PCG32 &rng, const std::vector<size_t> &shape) {
+        //     py::array_t<UInt32> result(shape);
+        //     for (py::ssize_t i = 0; i < result.size(); ++i)
+        //         result.mutable_data()[i] = rng.next_uint32();
+        //     return result;
+        // }, "shape"_a)
+        // .def("next_uint32_bounded", [](PCG32 &rng, ScalarUInt32 bound) {
+        //         return rng.next_uint32_bounded(bound);
+        //     }, "bound"_a, D(PCG32, next_uint32_bounded))
+        // TODO
+        // .def("next_uint32_bounded", [](PCG32 &rng, ScalarUInt32 bound, const std::vector<size_t> &shape) {
+        //     py::array_t<UInt32> result(shape);
+        //     for (py::ssize_t i = 0; i < result.size(); ++i)
+        //         result.mutable_data()[i] = rng.next_uint32_bounded(bound);
+        //     return result;
+        // }, "bound"_a, "shape"_a)
+        .def("next_uint64", (UInt64 (PCG32::*)()) &PCG32::next_uint64, D(PCG32, next_uint64))
+        // .def("next_uint64", [](PCG32 &rng, const std::vector<size_t> &shape) {
+        //     py::array_t<UInt64> result(shape);
+        //     for (py::ssize_t i = 0; i < result.size(); ++i)
+        //         result.mutable_data()[i] = rng.next_uint64();
+        //     return result;
+        // }, "shape"_a)
+        // .def("next_uint64_bounded", [](PCG32 &rng, uint64_t bound) {
+        //         return rng.next_uint64_bounded(bound);
+        //     }, "bound"_a, D(PCG32, next_uint64_bounded))
+        // .def("next_uint64_bounded",
+        //     [](PCG32 &rng, uint64_t bound, const std::vector<size_t> &shape) {
+        //         py::array_t<UInt64> result(shape);
+        //         for (py::ssize_t i = 0; i < result.size(); ++i)
+        //             result.mutable_data()[i] = rng.next_uint64_bounded(bound);
+        //         return result;
+        //     }, "bound"_a, "shape"_a)
         .def("next_float32", (Float (PCG32::*)()) &PCG32::next_float32, D(PCG32, next_float32))
-        .def("next_float32", [](PCG32 &rng, const std::vector<size_t> &shape) {
-            py::array_t<Float> result(shape);
-            for (py::ssize_t i = 0; i < result.size(); ++i)
-                result.mutable_data()[i] = rng.next_float32();
-            return result;
-        }, "shape"_a)
+        // .def("next_float32", [](PCG32 &rng, const std::vector<size_t> &shape) {
+        //     py::array_t<Float> result(shape);
+        //     for (py::ssize_t i = 0; i < result.size(); ++i)
+        //         result.mutable_data()[i] = rng.next_float32();
+        //     return result;
+        // }, "shape"_a)
         .def("next_float64", (Float64 (PCG32::*)()) &PCG32::next_float64, D(PCG32, next_float64))
-        .def("next_float64", [](PCG32 &rng, const std::vector<size_t> &shape) {
-            py::array_t<Float64> result(shape);
-            for (py::ssize_t i = 0; i < result.size(); ++i)
-                result.mutable_data()[i] = rng.next_float64();
-            return result;
-        }, "shape"_a)
-
-        .def("advance", &PCG32::advance, "delta"_a, D(PCG32, advance))
-        .def("shuffle", [](PCG32 &p, py::list l) {
-            auto vec = l.cast<std::vector<py::object>>();
-            p.shuffle(vec.begin(), vec.end());
-            for (size_t i = 0; i < vec.size(); ++i)
-                l[i] = vec[i];
-        }, D(PCG32, shuffle))
+        // .def("next_float64", [](PCG32 &rng, const std::vector<size_t> &shape) {
+        //     py::array_t<Float64> result(shape);
+        //     for (py::ssize_t i = 0; i < result.size(); ++i)
+        //         result.mutable_data()[i] = rng.next_float64();
+        //     return result;
+        // }, "shape"_a)
+        // .def("advance", &PCG32::advance, "delta"_a, D(PCG32, advance))
+        // TODO
+        // .def("shuffle", [](PCG32 &p, py::list l) {
+        //     auto vec = l.cast<std::vector<py::object>>();
+        //     p.shuffle(vec.begin(), vec.end());
+        //     for (size_t i = 0; i < vec.size(); ++i)
+        //         l[i] = vec[i];
+        // }, D(PCG32, shuffle))
         .def(py::self == py::self, D(PCG32, operator, eq))
         .def(py::self != py::self, D(PCG32, operator, ne))
         .def(py::self - py::self, D(PCG32, operator, sub))
@@ -84,11 +87,11 @@ MTS_PY_EXPORT_VARIANTS(random) {
             });
 
     m.def("sample_tea_float32",
-          vectorize<Float>(sample_tea_float32<UInt32>),
+          vectorize<Float>(sample_tea_float32<UInt32P>),
           "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float32));
 
     m.def("sample_tea_float64",
-          vectorize<Float>(sample_tea_float64<UInt32>),
+          vectorize<Float>(sample_tea_float64<UInt32P>),
           "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float64));
 
     m.attr("sample_tea_float") = m.attr(

@@ -6,7 +6,7 @@
 MTS_PY_EXPORT_VARIANTS(Transform) {
     MTS_IMPORT_CORE_TYPES()
     using Transform3f = Transform<Float, 3>;
-    using Matrix3f = enoki::Matrix<Float, 3>;
+    using Matrix3f  = enoki::Matrix<Float, 3>;
     MTS_PY_CHECK_ALIAS(Transform3f)
     MTS_PY_CHECK_ALIAS(Transform4f)
 
@@ -19,11 +19,11 @@ MTS_PY_EXPORT_VARIANTS(Transform) {
         .def(py::init<Matrix3f>(), D(Transform3f, Transform3f))
         .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
         .def("transform_point",
-            vectorize<Float>([](const Transform<ScalarFloat, 3> &t, const Point2f &v) {
+            vectorize<Float>([](const Transform<ScalarFloat, 3> &t, const Point<FloatP, 2> &v) {
                  return t*v;
             }))
         .def("transform_vector",
-            vectorize<Float>([](const Transform<ScalarFloat, 3> &t, const Vector2f &v) {
+            vectorize<Float>([](const Transform<ScalarFloat, 3> &t, const Vector<FloatP, 2> &v) {
                  return t*v;
             }))
         .def_static("translate", &Transform3f::translate, "v"_a, D(Transform3f, translate))
@@ -54,15 +54,15 @@ MTS_PY_EXPORT_VARIANTS(Transform) {
         .def(py::init<Matrix4f>(), D(Transform4f, Transform4f))
         .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
         .def("transform_point",
-            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Point3f &v) {
+            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Point<FloatP, 3> &v) {
                 return t*v;
             }))
         .def("transform_vector",
-            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Vector3f &v) {
+            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Vector<FloatP, 3> &v) {
                 return t*v;
             }))
         .def("transform_normal",
-            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Normal3f &v) {
+            vectorize<Float>([](const Transform<ScalarFloat, 4> &t, const Normal<FloatP, 3> &v) {
                 return t*v;
             }))
         .def_static("translate", &Transform4f::translate, "v"_a, D(Transform4f, translate))
@@ -96,22 +96,21 @@ MTS_PY_EXPORT_VARIANTS(Transform) {
     py::implicitly_convertible<py::array, Transform4f>();
 }
 
-MTS_PY_EXPORT(AnimatedTransform) {
-    using Float = float;
+MTS_PY_EXPORT_VARIANTS(AnimatedTransform) {
     MTS_IMPORT_CORE_TYPES()
     using Keyframe = typename AnimatedTransform::Keyframe;
 
     auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
 
     py::class_<Keyframe>(atrafo, "Keyframe")
-        .def(py::init<float, Matrix3f, Quaternion4f, Vector3f>())
+        .def(py::init<float, ScalarMatrix3f, ScalarQuaternion4f, ScalarVector3f>())
         .def_readwrite("time", &Keyframe::time, D(AnimatedTransform, Keyframe, time))
         .def_readwrite("scale", &Keyframe::scale, D(AnimatedTransform, Keyframe, scale))
         .def_readwrite("quat", &Keyframe::quat, D(AnimatedTransform, Keyframe, quat))
         .def_readwrite("trans", &Keyframe::trans, D(AnimatedTransform, Keyframe, trans));
 
     atrafo.def(py::init<>())
-        .def(py::init<const Transform4f &>())
+        .def(py::init<const ScalarTransform4f &>())
         .def_method(AnimatedTransform, size)
         .def_method(AnimatedTransform, has_scale)
         .def("__len__", &AnimatedTransform::size)
@@ -121,10 +120,10 @@ MTS_PY_EXPORT(AnimatedTransform) {
             return trafo[index];
         })
         .def("append",
-             py::overload_cast<Float, const Transform4f &>(&AnimatedTransform::append),
+             py::overload_cast<ScalarFloat, const ScalarTransform4f &>(&AnimatedTransform::append),
              D(AnimatedTransform, append))
         .def("append", py::overload_cast<const Keyframe &>( &AnimatedTransform::append))
-        .def("eval", vectorize<Float>(&AnimatedTransform::eval),
+        .def("eval", vectorize<Float>(&AnimatedTransform::template eval<FloatP>),
              "time"_a, "unused"_a = true, D(AnimatedTransform, eval))
         .def_method(AnimatedTransform, translation_bounds)
         ;
