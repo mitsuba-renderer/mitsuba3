@@ -415,20 +415,23 @@ public:
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
     template <typename Float>
     Transform<Float, 4> eval(Float time, mask_t<Float> active = true) const {
-        /* Compute constants describing the layout of the 'Keyframe' data structure */
+        using Vector3f     = typename CoreAliases::Vector3f;
+        using Matrix3f     = typename CoreAliases::Matrix3f;
+        using Quaternion4f = typename CoreAliases::Quaternion4f;
+        using Transform4f  = typename CoreAliases::Transform4f;
+        using Index        = uint32_array_t<Float>;
+
+        // Compute constants describing the layout of the 'Keyframe' data structure
         constexpr size_t Stride      = sizeof(Keyframe);
         constexpr size_t ScaleOffset = offsetof(Keyframe, scale) / sizeof(Float);
         constexpr size_t QuatOffset  = offsetof(Keyframe, quat)  / sizeof(Float);
         constexpr size_t TransOffset = offsetof(Keyframe, trans) / sizeof(Float);
 
-        MTS_IMPORT_CORE_TYPES()
-        using Index = uint32_array_t<Float>;
-
-        /* Perhaps the transformation isn't animated */
+        // Perhaps the transformation isn't animated
         if (likely(size() <= 1))
             return Transform<Float, 4>(m_transform.matrix);
 
-        /* Look up the interval containing 'time' */
+        // Look up the interval containing 'time'
         Index idx0 = math::find_interval(
             (uint32_t) size(),
             [&](Index idx, Mask active) {
@@ -439,22 +442,22 @@ public:
 
         Index idx1 = idx0 + 1;
 
-        /* Compute the relative time value in [0, 1] */
+        // Compute the relative time value in [0, 1]
         Float t0 = gather<Float, Stride, false>(m_keyframes.data(), idx0, active),
               t1 = gather<Float, Stride, false>(m_keyframes.data(), idx1, active),
               t  = min(max((time - t0) / (t1 - t0), 0.f), 1.f);
 
-        /* Interpolate the scale matrix */
+        // Interpolate the scale matrix
         Matrix3f scale0 = gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx0, active),
                  scale1 = gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx1, active),
                  scale = scale0 * (1 - t) + scale1 * t;
 
-        /* Interpolate the rotation quaternion */
+        // Interpolate the rotation quaternion
         Quaternion4f quat0 = gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx0, active),
                      quat1 = gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx1, active),
                      quat = enoki::slerp(quat0, quat1, t);
 
-        /* Interpolate the translation component */
+        // Interpolate the translation component
         Vector3f trans0 = gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx0, active),
                  trans1 = gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx1, active),
                  trans = trans0 * (1 - t) + trans1 * t;
