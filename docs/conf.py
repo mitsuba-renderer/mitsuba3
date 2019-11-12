@@ -17,6 +17,7 @@ import sys
 import os
 import shlex
 import subprocess
+import guzzle_sphinx_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -36,6 +37,22 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
+
+rst_prolog = r"""
+.. role:: paramtype
+
+.. |spectrum| replace:: :paramtype:`spectrum`
+.. |texture| replace:: :paramtype:`texture`
+.. |float| replace:: :paramtype:`float`
+.. |string| replace:: :paramtype:`string`
+.. |bsdf| replace:: :paramtype:`bsdf`
+
+.. |nbsp| unicode:: 0xA0
+   :trim:
+
+"""
+
+
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
@@ -107,7 +124,6 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-import guzzle_sphinx_theme
 
 html_theme_path = guzzle_sphinx_theme.html_theme_path()
 html_theme = 'guzzle_sphinx_theme'
@@ -120,10 +136,10 @@ extensions.append("sphinx.ext.mathjax")
 
 sys.path.append(os.path.abspath('exts/sphinxtr'))
 extensions.append('subfig')
+extensions.append('figtable')
 extensions.append('numfig')
 
 extensions.append('sphinxcontrib.bibtex')
-
 # Guzzle theme options (see theme.conf for more information)
 html_theme_options = {
     "project_nav_name": "Mitsuba 2"

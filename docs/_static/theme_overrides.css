@@ -31,6 +31,10 @@ div.sphinxsidebar h4 {
     color: #606060;
 }
 
+.paramtype {
+	font-family: 'Courier New', Courier, monospace;
+}
+
 div.sphinxsidebar {
     margin: 1em;
 }

@@ -135,7 +135,10 @@ def doctree_resolved(app, doctree, docname):
 
 
             try:
-                id = figure_info['ids'][0]
+                for i in range(len(figure_info['ids'])):
+                    id = figure_info['ids'][i]
+                    if id in figids:
+                        break
                 fignum = figids[id]
             except (IndexError, KeyError):
                 continue

@@ -7,6 +7,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 /*!
 
+.. _bsdf-dielectric:
+
 Smooth dielectric material (`dielectric`)
 -----------------------------------------
 
@@ -20,18 +22,42 @@ Smooth dielectric material (`dielectric`)
    - Type
    - Description
  * - int_ior
-   - Float or String
+   - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)
  * - ext_ior
-   - Float or String
+   - |float| or |string|
    - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
  * - specular_reflectance
-   - Spectrum or Texture
+   - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
  * - specular_transmittance
-   - Spectrum or Texture
+   - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
 
+
+.. subfigstart::
+.. _fig-dielectric-plain:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
+    :alt: Homogeneous reflectance
+    :width: 95%
+    :align: center
+
+    Air ↔ Water (IOR: 1.33) interface.
+
+.. _fig-dielectric-textured:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_dielectric_diamond.jpg
+    :alt: Textured reflectance
+    :width: 95%
+    :align: center
+
+    Air ↔ Diamond (IOR: 2.419)
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example dielectric appearances
+    :label: fig-dielectric-bsdf
 
 This plugin models an interface between two dielectric materials having mismatched
 indices of refraction (for instance, water and air). Exterior and interior IOR values
@@ -58,7 +84,7 @@ This snippet describes a simple air-to-water interface
 
 When using this model, it is crucial that the scene contains
 meaningful and mutually compatible indices of refraction changes---see
-figref glass-explanation for a description of what this entails.
+Figure |nbsp| :num:`fig-glass-explanation` for a description of what this entails.
 
 In many cases, we will want to additionally describe the *medium* within a
 dielectric material. This requires the use of a rendering technique that is
@@ -83,6 +109,75 @@ describe a slightly absorbing piece of glass is shown below:
 .. note::
 
     Dispersion is currently unsupported but will be enabled in a future release.
+
+
+.. figtable::
+    :label: table-list
+    :caption: This table lists all supported material names
+       along with along with their associated index of re-fraction at standard conditions.
+       These material names can be used with the plugins :ref:`dielectric <bsdf-dielectric>`,
+       :ref:`roughdielectric <bsdf-roughdielectric>`, :ref:`plastic <bsdf-plastic>`,
+       :ref:`roughplastic <bsdf-roughplastic>`, as well as :ref:`coating <bsdf-coating>`.
+    :alt: List table
+
+
+    .. list-table::
+        :widths: 30 25 30 15
+        :header-rows: 1
+
+        * - Name
+          - Value
+          - Name
+          - Value
+        * - vacuum
+          - 1.0
+          - acetone
+          - 1.36
+        * - bromine
+          - 1.661
+          - bk7
+          - 1.5046
+        * - helium
+          - 1.00004
+          - ethanol
+          - 1.361
+        * - water ice
+          - 1.31
+          - sodium chloride
+          - 1.544
+        * - hydrogen
+          - 1.00013
+          - carbon tetrachloride
+          - 1.461
+        * - fused quartz
+          - 1.458
+          - amber
+          - 1.55
+        * - air
+          - 1.00028
+          - glycerol
+          - 1.4729
+        * - pyrex
+          - 1.470
+          - pet
+          - 1.575
+        * - carbon dioxide
+          - 1.00045
+          - benzene
+          - 1.501
+        * - acrylic glass
+          - 1.49
+          - diamond
+          - 2.419
+        * - water
+          - 1.3330
+          - silicone oil
+          - 1.52045
+        * - polypropylene
+          - 1.49
+          -
+          -
+
 
  */
 template <typename Float, typename Spectrum>

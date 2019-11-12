@@ -22,19 +22,19 @@ Smooth diffuse material (`diffuse`)
    - Type
    - Description
  * - reflectance
-   - Spectrum or Texture
+   - |spectrum| or |texture|
    - Specifies the diffuse albedo of the material (Default: 0.5)
 
 The smooth diffuse material (also referred to as *Lambertian*)
 represents an ideally diffuse material with a user-specified amount of
 reflectance. Any received illumination is scattered so that the surface
-looks the same independently of the direction of observation.
+looks the same independently of the direction of observation. |spectrum|
 
 
 .. subfigstart::
 .. _fig-diffuse-plain:
 
-.. figure:: ../../resources/data/docs/images/bsdfs/diffuse/plain.jpg
+.. figure:: ../../resources/data/docs/images/render/bsdf_diffuse_plain.jpg
     :alt: Homogeneous reflectance
     :width: 95%
     :align: center
@@ -43,7 +43,7 @@ looks the same independently of the direction of observation.
 
 .. _fig-diffuse-textured:
 
-.. figure:: ../../resources/data/docs/images/bsdfs/diffuse/textured.jpg
+.. figure:: ../../resources/data/docs/images/render/bsdf_diffuse_textured.jpg
     :alt: Textured reflectance
     :width: 95%
     :align: center
@@ -71,7 +71,7 @@ whose reflectance is specified as an sRGB color:
     :name: diffuse-srgb
 
     <bsdf type="diffuse">
-        <srgb name="reflectance" value="0.4, 0.45, 0.52"/>
+        <srgb name="reflectance" value="0.2, 0.25, 0.7"/>
     </bsdf>
 
 

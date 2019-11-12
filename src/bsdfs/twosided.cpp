@@ -20,9 +20,34 @@ Two-sided BRDF adapter (`twosided`)
  * - Parameter
    - Type
    - Description
- * - Unnamed
-   - BSDF
+ * - *(Nested plugin)*
+   - |bsdf|
    - A nested BRDF that should be turned into a two-sided scattering model. If two BRDFs are specified, they will be placed on the front and back side, respectively
+
+
+.. subfigstart::
+.. _fig-twosided-onesided:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_twosided_cbox_onesided.jpg
+    :alt: No twosided BSDFx
+    :width: 95%
+    :align: center
+
+    From this angle, the Cornell box scene shows visible back-facing geometry
+
+.. _fig-twosided:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_twosided_cbox.jpg
+    :alt: With twosided BSDF
+    :width: 95%
+    :align: center
+
+    Applying the `twosided` plugin fixes the rendering
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example diffuse appearances
+    :label: fig-twosided-bsdf
 
 
 By default, all non-transmissive scattering models in Mitsuba
@@ -41,7 +66,7 @@ nested BSDF specification. It is also possible to supply two
 different BRDFs that should be placed on the front and back
 side, respectively.
 
-The following snippet describes a two-sided diffuse material
+The following snippet describes a two-sided diffuse material:
 
 .. code-block:: xml
     :name: twosided
@@ -51,7 +76,6 @@ The following snippet describes a two-sided diffuse material
              <spectrum name="reflectance" value="0.4"/>
         </bsdf>
     </bsdf>
-
 
  */
 template <typename Float, typename Spectrum>

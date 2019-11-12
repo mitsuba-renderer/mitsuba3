@@ -3,6 +3,7 @@ Adds a new directive called 'figtable' that creates a figure
 around a table.
 """
 
+import docutils
 from docutils import nodes
 import docutils.parsers.rst.directives as directives
 from docutils.parsers.rst import Directive
@@ -71,8 +72,16 @@ class FigTableDirective(Directive):
         figtable_node.append(tablenode)
 
         if caption is not None:
-            caption_node = nodes.caption('', '', nodes.Text(caption))
-            figtable_node.append(caption_node)
+            # Original SphinxTr source:
+            # caption_node = nodes.caption('', '', nodes.Text(caption))
+            # figtable_node.append(caption_node)
+
+            # Modified: Support for parsing content of captions
+            caption_node = nodes.Element()
+            self.state.nested_parse(docutils.statemachine.StringList([caption]), self.content_offset, caption_node)
+            if isinstance(caption_node[0], nodes.paragraph):
+                caption = nodes.caption(caption_node[0].rawsource, '', *caption_node[0].children)
+                figtable_node += caption
 
         if label is not None:
             targetnode = nodes.target('', '', ids=[label])
