@@ -202,6 +202,18 @@ protected:
 /// Dummy function which can be called to ensure that the librender shared library is loaded
 extern MTS_EXPORT_RENDER void librender_nop();
 
+// See records.h
+template <typename Float, typename Spectrum>
+void DirectionSample<Float, Spectrum>::set_query(const Ray3f &ray, const SurfaceInteraction3f &si) {
+    p      = si.p;
+    n      = si.sh_frame.n;
+    uv     = si.uv;
+    time   = si.time;
+    object = static_cast<ObjectPtr>(si.shape->emitter());
+    d      = ray.d;
+    dist   = si.t;
+}
+
 // See interaction.h
 template <typename Float, typename Spectrum>
 typename SurfaceInteraction<Float, Spectrum>::EmitterPtr

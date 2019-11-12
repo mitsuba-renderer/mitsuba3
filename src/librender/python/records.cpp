@@ -1,4 +1,5 @@
 #include <mitsuba/python/python.h>
+#include <mitsuba/render/shape.h>
 #include <mitsuba/render/records.h>
 
 MTS_PY_EXPORT_VARIANTS(PositionSample) {

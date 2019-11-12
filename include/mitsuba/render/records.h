@@ -195,16 +195,10 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      *
      * \param si
      *     A surface intersection record (usually on an emitter).
+     *
+     * \note Defined in scene.h
      */
-    void set_query(const Ray3f &ray, const SurfaceInteraction3f &si) {
-        p = si.p;
-        n = si.sh_frame.n;
-        uv = si.uv;
-        time = si.time;
-        object = si.shape->emitter();
-        d = ray.d;
-        dist = si.t;
-    }
+    void set_query(const Ray3f &ray, const SurfaceInteraction3f &si);
 
     //! @}
     // =============================================================
