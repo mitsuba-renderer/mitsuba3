@@ -202,4 +202,18 @@ protected:
 /// Dummy function which can be called to ensure that the librender shared library is loaded
 extern MTS_EXPORT_RENDER void librender_nop();
 
+// See interaction.h
+template <typename Float, typename Spectrum>
+typename SurfaceInteraction<Float, Spectrum>::EmitterPtr
+SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) const {
+    if constexpr (!is_array_v<ShapePtr>) {
+        if (is_valid())
+            return shape->emitter(active);
+        else
+            return scene->environment();
+    } else {
+        return select(is_valid(), shape->emitter(active), scene->environment());
+    }
+}
+
 NAMESPACE_END(mitsuba)

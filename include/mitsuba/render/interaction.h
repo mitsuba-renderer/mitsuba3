@@ -5,7 +5,6 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/mueller.h>
-#include <mitsuba/render/scene.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -160,17 +159,11 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         return sh_frame.to_local(v);
     }
 
-    /// Return the emitter associated with the intersection (if any)
-    EmitterPtr emitter(const Scene *scene, Mask active = true) const {
-        if constexpr (!is_array_v<ShapePtr>) {
-            if (is_valid())
-                return shape->emitter(active);
-            else
-                return scene->environment();
-        } else {
-            return select(is_valid(), shape->emitter(active), scene->environment());
-        }
-    }
+    /**
+     * Return the emitter associated with the intersection (if any)
+     * \note Defined in scene.h
+     */
+    EmitterPtr emitter(const Scene *scene, Mask active = true) const;
 
     /// Is the intersected shape also a sensor?
     Mask is_sensor() const { return shape->is_sensor(); }
