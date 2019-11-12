@@ -16,9 +16,14 @@ MTS_PY_EXPORT(BSDFContext) {
         ;
 }
 
-MTS_PY_EXPORT_VARIANTS(BSDFSample3f) {
+MTS_PY_EXPORT_VARIANTS(BSDF) {
     using BSDFSample3 = BSDFSample3<Float, Spectrum>;
     using Vector3f = typename BSDFSample3::Vector3f;
+    using BSDF  = mitsuba::BSDF<Float, Spectrum>;
+    using BSDFP = mitsuba::BSDF<FloatP, SpectrumP>;
+    using Mask = typename BSDF::Mask;
+
+    MTS_PY_CHECK_ALIAS(BSDF)
     MTS_PY_CHECK_ALIAS(BSDFSample3)
 
     py::class_<BSDFSample3>(m, "BSDFSample3f", D(BSDFSample3))
@@ -32,21 +37,27 @@ MTS_PY_EXPORT_VARIANTS(BSDFSample3f) {
         .def_field(BSDFSample3, sampled_component)
         .def_repr(BSDFSample3)
         ;
-}
 
-MTS_PY_EXPORT_VARIANTS(BSDF) {
-    using BSDF = BSDF<Float, Spectrum>;
-    using Mask = typename BSDF::Mask;
-    MTS_PY_CHECK_ALIAS(BSDF)
+    py::class_<BSDFSample3>(m, "BSDFSample3f", D(BSDFSample3))
+        .def(py::init<>(), D(BSDFSample3, BSDFSample3))
+        .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3, BSDFSample3, 2))
+        .def(py::init<const BSDFSample3 &>(), "bs"_a, "Copy constructor")
+        .def_field(BSDFSample3, wo)
+        .def_field(BSDFSample3, pdf)
+        .def_field(BSDFSample3, eta)
+        .def_field(BSDFSample3, sampled_type)
+        .def_field(BSDFSample3, sampled_component)
+        .def_repr(BSDFSample3)
+        ;
 
     MTS_PY_CLASS(BSDF, Object)
-        .def("sample", vectorize<Float>(&BSDF::sample),
+        .def("sample", vectorize<Float>(&BSDFP::sample),
             "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
-            .def("eval", vectorize<Float>(&BSDF::eval),
+            .def("eval", vectorize<Float>(&BSDFP::eval),
                 "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
-            .def("pdf", vectorize<Float>(&BSDF::pdf),
+            .def("pdf", vectorize<Float>(&BSDFP::pdf),
                 "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
-            .def("eval_tr", vectorize<Float>(&BSDF::eval_tr),
+            .def("eval_tr", vectorize<Float>(&BSDFP::eval_tr),
                 "si"_a, "active"_a = true, D(BSDF, eval_tr))
         .def("flags", py::overload_cast<Mask>(&BSDF::flags, py::const_),
             D(BSDF, flags))
@@ -58,8 +69,6 @@ MTS_PY_EXPORT_VARIANTS(BSDF) {
         .def_method(BSDF, id)
         .def("__repr__", &BSDF::to_string)
         ;
-
-    m.attr("BSDFFlags") = py::module::import("mitsuba.render.BSDFFlags");
 }
 
 MTS_PY_EXPORT(TransportMode) {

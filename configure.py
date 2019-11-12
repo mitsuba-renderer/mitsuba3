@@ -66,12 +66,7 @@ with open(fname, 'w') as f:
     w('    MTS_INSTANTIATE_OBJECT(Name)')
     f.write('\n\n')
 
-    w('#define MTS_PY_EXPORT_VARIANTS(name)')
-    w('    template <typename Float, typename Spectrum,')
-    w('              typename FloatP, typename SpectrumP>')
-    w('    void instantiate_##name(py::module m);')
-    w('')
-    w('    MTS_PY_EXPORT(name) {')
+    w('#define MTS_PY_DECLARE_VARIANTS(name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         # for packets of float, the bindings should use the vectorize wrapper on dynamic arrays
         float_p = float_
@@ -80,14 +75,48 @@ with open(fname, 'w') as f:
             float_x = "DynamicArray<%s>" % float_
             spectrum = spectrum.replace(float_, float_x)
             float_ = float_x
-        w('        instantiate_##name<%s, %s, %s, %s>(' % (float_, spectrum, float_p, spectrum_p))
-        w('            m.def_submodule("%s"));' % (name))
-    w('    }')
+        w('    extern void python_export_variants_%s_##name(py::module &);' % (name))
+    f.write('\n\n')
+
+    w('#define MTS_PY_DEF_SUBMODULE_VARIANTS(lib)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        w('    auto __submodule__%s =  m.def_submodule("%s").def_submodule(#lib);' % (name, name))
+    f.write('\n\n')
+
+    w('#define MTS_PY_IMPORT_VARIANTS(name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        # for packets of float, the bindings should use the vectorize wrapper on dynamic arrays
+        float_p = float_
+        spectrum_p = spectrum
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            spectrum = spectrum.replace(float_, float_x)
+            float_ = float_x
+        w('    python_export_variants_%s_##name(__submodule__%s);' % (name, name))
+    f.write('\n\n')
+
+    w('#define MTS_PY_EXPORT_VARIANTS(name)')
+    w('    template <typename Float, typename Spectrum,')
+    w('              typename FloatP, typename SpectrumP>')
+    w('    void instantiate_##name(py::module m);')
+    w('')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        # for packets of float, the bindings should use the vectorize wrapper on dynamic arrays
+        float_p = float_
+        spectrum_p = spectrum
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            spectrum = spectrum.replace(float_, float_x)
+            float_ = float_x
+        w('    void python_export_variants_%s_##name(py::module &m) {' % (name))
+        w('        instantiate_##name<%s, %s, %s, %s>(m);' % (float_, spectrum, float_p, spectrum_p))
+        w('    }')
     w('')
     w('    template <typename Float, typename Spectrum,')
     w('              typename FloatP, typename SpectrumP>')
     w('    void instantiate_##name(py::module m)')
     f.write('\n\n')
+
 
     w('#define MTS_ROUTE_MODE(mode, function, ...)')
     w('    [&]() {')

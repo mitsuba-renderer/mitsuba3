@@ -27,15 +27,19 @@ public:
     }
 };
 
-MTS_PY_EXPORT(Appender) {
-    MTS_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
-        .def(py::init<>())
-        .def_method(Appender, append, "level"_a, "text"_a)
-        .def_method(Appender, log_progress, "progress"_a, "name"_a,
-              "formatted"_a, "eta"_a, "ptr"_a = py::none());
+MTS_PY_EXPORT_VARIANTS(Appender) {
+    MTS_PY_CHECK_ALIAS(PyAppender, m) {
+        MTS_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
+            .def(py::init<>())
+            .def_method(Appender, append, "level"_a, "text"_a)
+            .def_method(Appender, log_progress, "progress"_a, "name"_a,
+                "formatted"_a, "eta"_a, "ptr"_a = py::none());
+    }
 
-    MTS_PY_CLASS(StreamAppender, Appender)
-        .def(py::init<const std::string &>(), D(StreamAppender, StreamAppender))
-        .def_method(StreamAppender, logs_to_file)
-        .def_method(StreamAppender, read_log);
+    MTS_PY_CHECK_ALIAS(StreamAppender, m) {
+        MTS_PY_CLASS(StreamAppender, Appender)
+            .def(py::init<const std::string &>(), D(StreamAppender, StreamAppender))
+            .def_method(StreamAppender, logs_to_file)
+            .def_method(StreamAppender, read_log);
+    }
 }

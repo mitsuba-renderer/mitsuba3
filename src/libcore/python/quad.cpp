@@ -1,7 +1,7 @@
 #include <mitsuba/core/quad.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(quad) {
+MTS_PY_EXPORT_VARIANTS(quad) {
     using FloatX = DynamicArray<Packet<float>>;
     m.def_method(quad, gauss_legendre<FloatX>, "n"_a)
      .def_method(quad, gauss_lobatto<FloatX>, "n"_a)

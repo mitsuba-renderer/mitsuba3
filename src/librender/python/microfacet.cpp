@@ -2,11 +2,21 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/microfacet.h>
 
+MTS_PY_EXPORT(MicrofacetType) {
+
+}
+
 MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    MTS_PY_CHECK_ALIAS(MicrofacetDistribution)
 
+    MTS_PY_CHECK_ALIAS(MicrofacetType)
+    py::enum_<MicrofacetType>(m, "MicrofacetType", D(MicrofacetType), py::arithmetic())
+        .value("Beckmann", MicrofacetType::Beckmann, D(MicrofacetType, Beckmann))
+        .value("GGX",      MicrofacetType::GGX, D(MicrofacetType, GGX))
+        .export_values();
+
+    MTS_PY_CHECK_ALIAS(MicrofacetDistribution)
     py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
         .def(py::init<MicrofacetType, const Float &, bool>(), "type"_a, "alpha"_a,
              "sample_visible"_a = true)
@@ -42,13 +52,4 @@ MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
              },
              "wi"_a, "eta"_a)
         .def_repr(MicrofacetDistribution);
-
-    m.attr("MicrofacetType") = py::module::import("mitsuba.render.MicrofacetType");
-}
-
-MTS_PY_EXPORT(MicrofacetType) {
-    py::enum_<MicrofacetType>(m, "MicrofacetType", D(MicrofacetType), py::arithmetic())
-        .value("Beckmann", MicrofacetType::Beckmann, D(MicrofacetType, Beckmann))
-        .value("GGX",      MicrofacetType::GGX, D(MicrofacetType, GGX))
-        .export_values();
 }

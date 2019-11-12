@@ -4,8 +4,10 @@
 
 extern py::object py_cast(Object *o);
 
-MTS_PY_EXPORT(xml) {
-    MTS_PY_IMPORT_MODULE(xml, "mitsuba.core.xml");
+MTS_PY_EXPORT_VARIANTS(xml) {
+
+    // Create dedicated submodule
+    auto xml = m.def_submodule("xml", "Mitsuba scene XML parser");
 
     xml.def(
         "load_file",

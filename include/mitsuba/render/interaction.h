@@ -89,22 +89,18 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
     using Float    = Float_;
     using Spectrum = Spectrum_;
-    using Base     = Interaction<Float, Spectrum>;
     MTS_IMPORT_RENDER_BASIC_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Index            = typename CoreAliases::UInt32;
     using PositionSample3f = typename RenderAliases::PositionSample3f;
+    // Make parent fields visible
+    MTS_USING_BASE(Interaction, t, time, wavelengths, p)
     //! @}
     // =============================================================
 
     // =============================================================
     //! @{ \name Fields
     // =============================================================
-
-    using Base::t;
-    using Base::time;
-    using Base::wavelengths;
-    using Base::p;
 
     /// Pointer to the associated shape
     ShapePtr shape = nullptr;
@@ -400,7 +396,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p);
+ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p)
 
 ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
                      shape, uv, n, sh_frame, dp_du, dp_dv, duv_dx, duv_dy, wi,

@@ -12,78 +12,80 @@
         p.set_##Name(key, value, false);                               \
     }, D(Properties, set_##Name))
 
-MTS_PY_EXPORT(Properties) {
-    using Float       = typename Properties::Float;
+MTS_PY_EXPORT_VARIANTS(Properties) {
     using Vector3f    = typename Properties::Vector3f;
     using Transform4f = typename Properties::Transform4f;
-    py::class_<Properties>(m, "Properties", D(Properties))
-        // Constructors
-        .def(py::init<>(), D(Properties, Properties))
-        .def(py::init<const std::string &>(), D(Properties, Properties, 2))
-        .def(py::init<const Properties &>(), D(Properties, Properties, 3))
 
-        // Methods
-        .def_method(Properties, has_property)
-        .def_method(Properties, remove_property)
-        .def_method(Properties, mark_queried)
-        .def_method(Properties, was_queried)
-        .def_method(Properties, plugin_name)
-        .def_method(Properties, set_plugin_name)
-        .def_method(Properties, id)
-        .def_method(Properties, set_id)
-        .def_method(Properties, copy_attribute)
-        .def_method(Properties, property_names)
-        .def_method(Properties, unqueried)
-        .def_method(Properties, merge)
+    MTS_PY_CHECK_ALIAS(Properties, m) {
+        py::class_<Properties>(m, "Properties", D(Properties))
+            // Constructors
+            .def(py::init<>(), D(Properties, Properties))
+            .def(py::init<const std::string &>(), D(Properties, Properties, 2))
+            .def(py::init<const Properties &>(), D(Properties, Properties, 3))
 
-        // Getters & setters: used as if it were a simple map
-       .SET_ITEM_BINDING(float, py::float_)
-       .SET_ITEM_BINDING(bool, bool)
-       .SET_ITEM_BINDING(long, int64_t)
-       .SET_ITEM_BINDING(string, std::string)
-       .SET_ITEM_BINDING(vector3f, Vector3f)
-       .SET_ITEM_BINDING(transform, Transform4f)
-       .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
-       .SET_ITEM_BINDING(object, ref<Object>)
+            // Methods
+            .def_method(Properties, has_property)
+            .def_method(Properties, remove_property)
+            .def_method(Properties, mark_queried)
+            .def_method(Properties, was_queried)
+            .def_method(Properties, plugin_name)
+            .def_method(Properties, set_plugin_name)
+            .def_method(Properties, id)
+            .def_method(Properties, set_id)
+            .def_method(Properties, copy_attribute)
+            .def_method(Properties, property_names)
+            .def_method(Properties, unqueried)
+            .def_method(Properties, merge)
 
-       .def("__getitem__", [](const Properties& p, const std::string &key) {
-            // We need to ask for type information to return the right cast
-            auto type = p.type(key);
+            // Getters & setters: used as if it were a simple map
+        .SET_ITEM_BINDING(float, py::float_)
+        .SET_ITEM_BINDING(bool, bool)
+        .SET_ITEM_BINDING(long, int64_t)
+        .SET_ITEM_BINDING(string, std::string)
+        .SET_ITEM_BINDING(vector3f, Vector3f)
+        .SET_ITEM_BINDING(transform, Transform4f)
+        .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
+        .SET_ITEM_BINDING(object, ref<Object>)
 
-            if (type == PropertyType::Bool)
-                return py::cast(p.bool_(key));
-            else if (type == PropertyType::Long)
-                return py::cast(p.long_(key));
-            else if (type == PropertyType::Float)
-                return py::cast(p.float_(key));
-            else if (type == PropertyType::String)
-                return py::cast(p.string(key));
-            else if (type == PropertyType::Vector3f)
-                return py::cast(p.vector3f(key));
-            else if (type == PropertyType::Point3f)
-                return py::cast(p.point3f(key));
-            else if (type == PropertyType::Transform)
-                return py::cast(p.transform(key));
-            else if (type == PropertyType::AnimatedTransform)
-                return py::cast(p.animated_transform(key));
-            else if (type == PropertyType::Object)
-                return py::cast(p.object(key));
-            else if (type == PropertyType::Pointer)
-                return py::cast(p.pointer(key));
-            else {
-                throw std::runtime_error("Unsupported property type");
-            }
-       }, "Retrieve an existing property given its name")
-       .def("__contains__", [](const Properties& p, const std::string &key) {
-               std::cout << "Checking " << key << std::endl;
-           return p.has_property(key);
-       })
-       .def("__delitem__", [](Properties& p, const std::string &key) {
-           return p.remove_property(key);
-       })
+        .def("__getitem__", [](const Properties& p, const std::string &key) {
+                // We need to ask for type information to return the right cast
+                auto type = p.type(key);
 
-        // Operators
-        .def(py::self == py::self, D(Properties, operator_eq))
-        .def(py::self != py::self, D(Properties, operator_ne))
-        .def_repr(Properties);
+                if (type == PropertyType::Bool)
+                    return py::cast(p.bool_(key));
+                else if (type == PropertyType::Long)
+                    return py::cast(p.long_(key));
+                else if (type == PropertyType::Float)
+                    return py::cast(p.float_(key));
+                else if (type == PropertyType::String)
+                    return py::cast(p.string(key));
+                else if (type == PropertyType::Vector3f)
+                    return py::cast(p.vector3f(key));
+                else if (type == PropertyType::Point3f)
+                    return py::cast(p.point3f(key));
+                else if (type == PropertyType::Transform)
+                    return py::cast(p.transform(key));
+                else if (type == PropertyType::AnimatedTransform)
+                    return py::cast(p.animated_transform(key));
+                else if (type == PropertyType::Object)
+                    return py::cast(p.object(key));
+                else if (type == PropertyType::Pointer)
+                    return py::cast(p.pointer(key));
+                else {
+                    throw std::runtime_error("Unsupported property type");
+                }
+        }, "Retrieve an existing property given its name")
+        .def("__contains__", [](const Properties& p, const std::string &key) {
+                std::cout << "Checking " << key << std::endl;
+            return p.has_property(key);
+        })
+        .def("__delitem__", [](Properties& p, const std::string &key) {
+            return p.remove_property(key);
+        })
+
+            // Operators
+            .def(py::self == py::self, D(Properties, operator_eq))
+            .def(py::self != py::self, D(Properties, operator_ne))
+            .def_repr(Properties);
+    }
 }

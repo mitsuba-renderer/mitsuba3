@@ -88,7 +88,7 @@ private:
     py::object m_label;
 };
 
-MTS_PY_EXPORT(ProgressReporter) {
+MTS_PY_EXPORT_VARIANTS(ProgressReporter) {
     /* Install a custom appender for log + progress messages if Mitsuba is
      * running within Jupyter notebook */
     py::object modules = py::module::import("sys").attr("modules");

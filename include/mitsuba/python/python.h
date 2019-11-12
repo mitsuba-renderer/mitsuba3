@@ -98,11 +98,11 @@ template <typename Type> pybind11::handle get_type_handle() {
     return pybind11::detail::get_type_handle(typeid(Type), false);
 }
 
-#define MTS_PY_CHECK_ALIAS(Name)                      \
+#define MTS_PY_CHECK_ALIAS(Name, Module)              \
     if (auto h = get_type_handle<Name>(); h) {        \
-        m.attr(#Name) = h;                            \
-        return;                                       \
-    }
+        Module.attr(#Name) = h;                       \
+    }                                                 \
+    else
 
 template<typename Float, typename Func>
 auto vectorize(Func func) {

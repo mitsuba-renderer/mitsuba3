@@ -16,7 +16,7 @@
     "            scalar_spectral_polarized\n"                               \
 
 
-#define MTS_DEFAULT_MODE "scalar_rgb"                                       \
+#define MTS_DEFAULT_MODE "scalar_spectral"                                  \
 
 
 #define MTS_INSTANTIATE_OBJECT(Name)                                        \
@@ -41,20 +41,43 @@
     MTS_INSTANTIATE_OBJECT(Name)                                            \
 
 
+#define MTS_PY_DECLARE_VARIANTS(name)                                       \
+    extern void python_export_variants_scalar_mono_##name(py::module &);    \
+    extern void python_export_variants_scalar_rgb_##name(py::module &);     \
+    extern void python_export_variants_scalar_spectral_##name(py::module &); \
+    extern void python_export_variants_scalar_spectral_polarized_##name(py::module &); \
+
+
+#define MTS_PY_DEF_SUBMODULE_VARIANTS(lib)                                  \
+    auto __submodule__scalar_mono =  m.def_submodule("scalar_mono").def_submodule(#lib); \
+    auto __submodule__scalar_rgb =  m.def_submodule("scalar_rgb").def_submodule(#lib); \
+    auto __submodule__scalar_spectral =  m.def_submodule("scalar_spectral").def_submodule(#lib); \
+    auto __submodule__scalar_spectral_polarized =  m.def_submodule("scalar_spectral_polarized").def_submodule(#lib); \
+
+
+#define MTS_PY_IMPORT_VARIANTS(name)                                        \
+    python_export_variants_scalar_mono_##name(__submodule__scalar_mono);    \
+    python_export_variants_scalar_rgb_##name(__submodule__scalar_rgb);      \
+    python_export_variants_scalar_spectral_##name(__submodule__scalar_spectral); \
+    python_export_variants_scalar_spectral_polarized_##name(__submodule__scalar_spectral_polarized); \
+
+
 #define MTS_PY_EXPORT_VARIANTS(name)                                        \
     template <typename Float, typename Spectrum,                            \
               typename FloatP, typename SpectrumP>                          \
     void instantiate_##name(py::module m);                                  \
                                                                             \
-    MTS_PY_EXPORT(name) {                                                   \
-        instantiate_##name<float, Color<float, 1>, float, Color<float, 1>>( \
-            m.def_submodule("scalar_mono"));                                \
-        instantiate_##name<float, Color<float, 3>, float, Color<float, 3>>( \
-            m.def_submodule("scalar_rgb"));                                 \
-        instantiate_##name<float, Spectrum<float, 4>, float, Spectrum<float, 4>>( \
-            m.def_submodule("scalar_spectral"));                            \
-        instantiate_##name<float, MuellerMatrix<Spectrum<float, 4>>, float, MuellerMatrix<Spectrum<float, 4>>>( \
-            m.def_submodule("scalar_spectral_polarized"));                  \
+    void python_export_variants_scalar_mono_##name(py::module &m) {         \
+        instantiate_##name<float, Color<float, 1>, float, Color<float, 1>>(m); \
+    }                                                                       \
+    void python_export_variants_scalar_rgb_##name(py::module &m) {          \
+        instantiate_##name<float, Color<float, 3>, float, Color<float, 3>>(m); \
+    }                                                                       \
+    void python_export_variants_scalar_spectral_##name(py::module &m) {     \
+        instantiate_##name<float, Spectrum<float, 4>, float, Spectrum<float, 4>>(m); \
+    }                                                                       \
+    void python_export_variants_scalar_spectral_polarized_##name(py::module &m) { \
+        instantiate_##name<float, MuellerMatrix<Spectrum<float, 4>>, float, MuellerMatrix<Spectrum<float, 4>>>(m); \
     }                                                                       \
                                                                             \
     template <typename Float, typename Spectrum,                            \

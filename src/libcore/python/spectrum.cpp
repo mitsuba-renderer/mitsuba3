@@ -4,12 +4,12 @@
 MTS_PY_EXPORT_VARIANTS(Spectrum) {
     m.def("to_xyz", vectorize<Float>(&to_xyz<SpectrumP>),
         "value"_a, "wavelengths"_a, "active"_a = true, D(to_xyz))
-    .def("cie1931_xyz", vectorize<Float>(&cie1931_xyz<SpectrumP>), "wavelengths"_a,
-            "active"_a = true, D(cie1931_xyz))
-
-    .def("cie1931_y", vectorize<Float>(&cie1931_y<SpectrumP>), "wavelengths"_a,
-            "active"_a = true, D(cie1931_y))
-
+    .def("cie1931_xyz", vectorize<Float>([](const SpectrumP &wavelengths) {
+            return cie1931_xyz<SpectrumP>(wavelengths);
+        }), "wavelengths"_a, D(cie1931_xyz))
+    .def("cie1931_y", vectorize<Float>([](const SpectrumP &wavelengths) {
+            return cie1931_y<SpectrumP>(wavelengths);
+        }), "wavelengths"_a, D(cie1931_y))
     .def("sample_rgb_spectrum", vectorize<Float>(&sample_rgb_spectrum<FloatP>), "sample"_a,
             D(sample_rgb_spectrum))
     .def("pdf_rgb_spectrum", vectorize<Float>(&pdf_rgb_spectrum<FloatP>), "wavelengths"_a,

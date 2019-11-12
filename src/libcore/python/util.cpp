@@ -1,8 +1,8 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(util) {
-    MTS_PY_IMPORT_MODULE(util, "mitsuba.core.util");
+MTS_PY_EXPORT_VARIANTS(util) {
+    auto util = m.def_submodule("util", "Miscellaneous utility routines");
 
     util.def_method(util, core_count)
         .def_method(util, time_string, "time"_a, "precise"_a = false)

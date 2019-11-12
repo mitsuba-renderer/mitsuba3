@@ -4,7 +4,11 @@
 MTS_PY_EXPORT_VARIANTS(spline) {
     MTS_IMPORT_CORE_TYPES()
 
-    m.def("eval_spline", spline::eval_spline<Float>,
+    // Create dedicated submodule
+    auto spline =
+        m.def_submodule("spline", "Functions for evaluating and sampling Catmull-Rom splines");
+
+    spline.def("eval_spline", spline::eval_spline<Float>,
         "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline))
     .def("eval_spline_d", spline::eval_spline_d<Float>,
         "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline_d))

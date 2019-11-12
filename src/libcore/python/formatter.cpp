@@ -19,21 +19,25 @@ public:
     }
 };
 
-MTS_PY_EXPORT(Formatter) {
-    MTS_PY_TRAMPOLINE_CLASS(PyFormatter, Formatter, Object)
-        .def(py::init<>())
-        .def_method(Formatter, format, "level"_a, "theClass"_a,
-              "thread"_a, "file"_a, "line"_a,
-              "msg"_a);
+MTS_PY_EXPORT_VARIANTS(Formatter) {
+    MTS_PY_CHECK_ALIAS(PyFormatter, m) {
+        MTS_PY_TRAMPOLINE_CLASS(PyFormatter, Formatter, Object)
+            .def(py::init<>())
+            .def_method(Formatter, format, "level"_a, "theClass"_a,
+                "thread"_a, "file"_a, "line"_a,
+                "msg"_a);
+    }
 
-    MTS_PY_CLASS(DefaultFormatter, Formatter)
-        .def(py::init<>())
-        .def_method(DefaultFormatter, has_date)
-        .def_method(DefaultFormatter, set_has_date)
-        .def_method(DefaultFormatter, has_thread)
-        .def_method(DefaultFormatter, set_has_thread)
-        .def_method(DefaultFormatter, has_log_level)
-        .def_method(DefaultFormatter, set_has_log_level)
-        .def_method(DefaultFormatter, has_class)
-        .def_method(DefaultFormatter, set_has_class);
+    MTS_PY_CHECK_ALIAS(DefaultFormatter, m) {
+        MTS_PY_CLASS(DefaultFormatter, Formatter)
+            .def(py::init<>())
+            .def_method(DefaultFormatter, has_date)
+            .def_method(DefaultFormatter, set_has_date)
+            .def_method(DefaultFormatter, has_thread)
+            .def_method(DefaultFormatter, set_has_thread)
+            .def_method(DefaultFormatter, has_log_level)
+            .def_method(DefaultFormatter, set_has_log_level)
+            .def_method(DefaultFormatter, has_class)
+            .def_method(DefaultFormatter, set_has_class);
+    }
 }
