@@ -12,7 +12,6 @@ set(INC_DIR "../../include/mitsuba/core")
 add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/../mitsuba.h
   ${INC_DIR}/atomic.h
-  ${INC_DIR}/config.h
   ${INC_DIR}/frame.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
@@ -64,6 +63,7 @@ add_library(mitsuba-core-obj OBJECT
 
   dither-matrix256.cpp
 )
+add_dependencies(mitsuba-core-obj mitsuba-conf-header)
 
 set_property(
   SOURCE util.cpp

@@ -1,37 +1,41 @@
-import json
 from collections import OrderedDict
+import json
+import os
+try:
+    from io import StringIO
+except ImportError:
+    from StringIO import StringIO
 
-print('Reading mitsuba.conf...')
-with open("mitsuba.conf", "r") as f:
-    # Load while preserving order of keys
-    configurations = json.load(f, object_pairs_hook=OrderedDict)
 
-# Let's start with some validation
-assert('enabled' in configurations and
-       'default' in configurations)
-assert(type(configurations['default']) is str)
-assert(type(configurations['enabled']) is list)
+def write_config(f):
+    print('Reading mitsuba.conf...')
+    with open("mitsuba.conf", "r") as conf:
+        # Load while preserving order of keys
+        configurations = json.load(conf, object_pairs_hook=OrderedDict)
 
-# Extract enabled configurations
-enabled = []
-float_types = set()
-for name in configurations['enabled']:
-    if name not in configurations:
-        raise Exception('"enabled" refers to an unknown configuration "%s"' % name)
-    item = configurations[name]
-    spectrum = item['spectrum'].replace('Float', item['float'])
-    float_types.add(item['float'])
-    enabled.append((name, item['float'], spectrum))
+    # Let's start with some validation
+    assert 'enabled' in configurations and 'default' in configurations
+    assert isinstance(configurations['default'], str)
+    assert isinstance(configurations['enabled'], list)
 
-if len(enabled) == 0:
-    raise Exception("There must be at least one enabled build configuration!")
+    # Extract enabled configurations
+    enabled = []
+    float_types = set()
+    for name in configurations['enabled']:
+        if name not in configurations:
+            raise ValueError('"enabled" refers to an unknown configuration "%s"' % name)
+        item = configurations[name]
+        spectrum = item['spectrum'].replace('Float', item['float'])
+        float_types.add(item['float'])
+        enabled.append((name, item['float'], spectrum))
 
-# Use first configuration if default mode is not specified
-default_mode = configurations.get('default', enabled[0][0])
+    if not enabled:
+        raise ValueError("There must be at least one enabled build configuration!")
 
-# Write header file
-fname = "include/mitsuba/core/config.h"
-with open(fname, 'w') as f:
+    # Use first configuration if default mode is not specified
+    default_mode = configurations.get('default', enabled[0][0])
+
+    # Write header file
     def w(s):
         f.write(s.ljust(75) + ' \\\n')
     f.write('#pragma once\n\n')
@@ -167,4 +171,25 @@ with open(fname, 'w') as f:
     f.write('NAMESPACE_END(detail)\n')
     f.write('NAMESPACE_END(mitsuba)\n')
 
-print('Generated configuration header: ' + fname)
+
+def write_to_file_if_changed(filename, contents):
+    """Writes the given contents to file, only if they do not already match."""
+    if os.path.isfile(filename):
+        with open(filename, 'r') as f:
+            existing = f.read()
+            if existing == contents:
+                return False
+
+    with open(filename, 'w') as f:
+        f.write(contents)
+    print('Generated configuration header: ' + filename)
+
+
+def main():
+    fname = "include/mitsuba/core/config.h"
+    output = StringIO()
+    write_config(output)
+    write_to_file_if_changed(fname, output.getvalue())
+
+if __name__ == '__main__':
+    main()

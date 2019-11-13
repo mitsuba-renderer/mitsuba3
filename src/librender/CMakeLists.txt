@@ -64,6 +64,7 @@ add_library(mitsuba-render-obj OBJECT
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
 )
+add_dependencies(mitsuba-render-obj mitsuba-conf-header)
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
 set_property(TARGET mitsuba-render-obj PROPERTY POSITION_INDEPENDENT_CODE ON)

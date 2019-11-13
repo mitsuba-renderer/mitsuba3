@@ -469,6 +469,22 @@ elseif (UNIX)
   SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
+# Generate the config.h header from the configuration
+add_custom_target(
+  mitsuba-conf-header ALL
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
+)
+add_custom_command(
+  OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf
+  COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/configure.py
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_source_files_properties(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
+  PROPERTIES GENERATED TRUE
+)
+
 # Register the Mitsuba codebase
 add_subdirectory(src)
 
