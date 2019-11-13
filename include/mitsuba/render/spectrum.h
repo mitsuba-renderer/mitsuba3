@@ -177,11 +177,8 @@ public:
      * Evaluate the texture at the given surface interaction,
      * and compute the gradients of the linear interpolant as well.
      */
-    virtual std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f & /*it*/,
-                                                        Mask /*active*/ = true) const {
-        NotImplementedError("eval_gradient");
-    }
-
+    virtual std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,
+                                                        Mask active = true) const;
 
     // ======================================================================
     //! @{ \name Compatibility with 2D texture interface
@@ -212,7 +209,7 @@ public:
     Float mean() const override { NotImplementedError("mean"); }
 
     /// Returns the maximum value of the texture over all dimensions.
-    virtual Float max() const { NotImplementedError("max"); }
+    virtual Float max() const;
 
     /// Returns the bounding box of the 3d texture
     ScalarBoundingBox3f bbox() const { return m_bbox; }

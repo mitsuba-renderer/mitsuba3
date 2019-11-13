@@ -1,12 +1,13 @@
-#include <mitsuba/render/spectrum.h>
-#include <mitsuba/render/interaction.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/transform.h>
+#include <mitsuba/render/interaction.h>
+#include <mitsuba/render/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Spectrum implementation (just throws exceptions)
+//! @{ \name ContinuousSpectrum implementations
 // =======================================================================
 
 template <typename Float, typename Spectrum>
@@ -79,14 +80,44 @@ ref<ContinuousSpectrum<Float, Spectrum>> ContinuousSpectrum<Float, Spectrum>::D6
     }
 }
 
+//! @}
+// =======================================================================
+
+
+// =======================================================================
+//! @{ \name Texture implementations
+// =======================================================================
+
+template <typename Float, typename Spectrum>
+Texture<Float, Spectrum>::~Texture() {}
+
+//! @}
+// =======================================================================
+
+// =======================================================================
+//! @{ \name Texture3D implementations
+// =======================================================================
+
 template <typename Float, typename Spectrum>
 Texture3D<Float, Spectrum>::Texture3D(const Properties &props) {
-    m_world_to_local = props.transform("to_world", Transform4f()).inverse();
+    m_world_to_local = props.transform("to_world", ScalarTransform4f()).inverse();
     update_bbox();
 }
+
+template <typename Float, typename Spectrum>
+std::pair<Spectrum, typename Texture3D<Float, Spectrum>::Vector3f>
+Texture3D<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/,
+                                          Mask /*active*/) const {
+    NotImplementedError("eval_gradient");
+}
+
+template <typename Float, typename Spectrum>
+Float Texture3D<Float, Spectrum>::max() const { NotImplementedError("max"); }
 
 //! @}
 // =======================================================================
 
 MTS_INSTANTIATE_OBJECT(ContinuousSpectrum)
+MTS_INSTANTIATE_OBJECT(Texture)
+MTS_INSTANTIATE_OBJECT(Texture3D)
 NAMESPACE_END(mitsuba)
