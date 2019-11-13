@@ -1,6 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/records.h>
+#include <mitsuba/render/scene.h>
 
 MTS_PY_EXPORT_VARIANTS(PositionSample) {
     MTS_IMPORT_TYPES()

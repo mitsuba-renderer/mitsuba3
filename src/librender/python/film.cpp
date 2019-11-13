@@ -19,8 +19,8 @@ MTS_PY_EXPORT_VARIANTS(Film) {
             .def_method(Film, add_bitmap, "bitmap"_a, "multiplier"_a = 1.0f)
             .def_method(Film, set_destination_file, "filename"_a)
             .def("develop", py::overload_cast<>(&Film::develop))
-            .def("develop", py::overload_cast<const Point2i &, const Vector2i &,
-                                                const Point2i &, Bitmap *>(
+            .def("develop", py::overload_cast<const ScalarPoint2i &, const ScalarVector2i &,
+                                              const ScalarPoint2i &, Bitmap *>(
                     &Film::develop, py::const_),
                 "offset"_a, "size"_a, "target_offset"_a, "target"_a)
             .def_method(Film, destination_exists, "basename"_a)

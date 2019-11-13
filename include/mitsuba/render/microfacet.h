@@ -448,8 +448,8 @@ std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, S
 
 template <typename FloatP>
 DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP> &distr,
-                        const Vector<DynamicArray<FloatP>, 3> &wi_,
-                        scalar_t<FloatP> eta) {
+                                      const Vector<DynamicArray<FloatP>, 3> &wi_,
+                                      scalar_t<FloatP> eta) {
     using Float     = scalar_t<FloatP>;
     using FloatX    = DynamicArray<FloatP>;
     using Vector2fP = Vector<FloatP, 2>;

@@ -30,22 +30,22 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     py::module m = py::module::import("mitsuba");
     MTS_PY_DEF_SUBMODULE_VARIANTS(render)
 
-    // MTS_PY_IMPORT_VARIANTS(autodiff);
-    // MTS_PY_IMPORT_VARIANTS(Scene);
-    // MTS_PY_IMPORT_VARIANTS(Shape);
-    // MTS_PY_IMPORT_VARIANTS(ShapeKDTree);
-    MTS_PY_IMPORT_VARIANTS(Interaction);
-    MTS_PY_IMPORT_VARIANTS(SurfaceInteraction);
-    MTS_PY_IMPORT_VARIANTS(Endpoint);
-    MTS_PY_IMPORT_VARIANTS(Emitter);
-    MTS_PY_IMPORT_VARIANTS(Sensor);
-    MTS_PY_IMPORT_VARIANTS(BSDF);
+    // // MTS_PY_IMPORT_VARIANTS(autodiff);
+    // // MTS_PY_IMPORT_VARIANTS(Scene);
+    // // MTS_PY_IMPORT_VARIANTS(Shape);
+    // // MTS_PY_IMPORT_VARIANTS(ShapeKDTree);
+    // MTS_PY_IMPORT_VARIANTS(Interaction);
+    // MTS_PY_IMPORT_VARIANTS(SurfaceInteraction);
+    // MTS_PY_IMPORT_VARIANTS(Endpoint);
+    // MTS_PY_IMPORT_VARIANTS(Emitter);
+    // MTS_PY_IMPORT_VARIANTS(Sensor);
+    // MTS_PY_IMPORT_VARIANTS(BSDF);
     MTS_PY_IMPORT_VARIANTS(ImageBlock);
     MTS_PY_IMPORT_VARIANTS(Film);
     MTS_PY_IMPORT_VARIANTS(Spiral);
-    MTS_PY_IMPORT_VARIANTS(Integrator);
+    // MTS_PY_IMPORT_VARIANTS(Integrator);
     MTS_PY_IMPORT_VARIANTS(Sampler);
-    MTS_PY_IMPORT_VARIANTS(ContinuousSpectrum);
+    // MTS_PY_IMPORT_VARIANTS(ContinuousSpectrum);
     MTS_PY_IMPORT_VARIANTS(MicrofacetDistribution);
     MTS_PY_IMPORT_VARIANTS(PositionSample);
     MTS_PY_IMPORT_VARIANTS(DirectionSample);

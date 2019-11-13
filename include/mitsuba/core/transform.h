@@ -415,10 +415,7 @@ public:
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
     template <typename Float>
     Transform<Float, 4> eval(Float time, mask_t<Float> active = true) const {
-        using Vector3f     = typename CoreAliases::Vector3f;
-        using Matrix3f     = typename CoreAliases::Matrix3f;
-        using Quaternion4f = typename CoreAliases::Quaternion4f;
-        using Transform4f  = typename CoreAliases::Transform4f;
+        MTS_IMPORT_CORE_TYPES()
         using Index        = uint32_array_t<Float>;
 
         // Compute constants describing the layout of the 'Keyframe' data structure

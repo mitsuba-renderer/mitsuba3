@@ -57,28 +57,53 @@ def write_config(f):
     w('#define MTS_INSTANTIATE_OBJECT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    template class MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            spectrum_x = spectrum.replace(float_, float_x)
+            w('    template class MTS_EXPORT Name<%s, %s>;' % (float_x, spectrum_x))
     f.write('\n\n')
 
     w('#define MTS_INSTANTIATE_STRUCT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    template struct MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            spectrum_x = spectrum.replace(float_, float_x)
+            w('    template struct MTS_EXPORT Name<%s, %s>;' % (float_x, spectrum_x))
     f.write('\n\n')
 
     w('#define MTS_EXTERN_STRUCT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    extern template struct MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            spectrum_x = spectrum.replace(float_, float_x)
+            w('    extern template struct MTS_EXPORT Name<%s, %s>;' % (float_x, spectrum_x))
     f.write('\n\n')
+
     w('#define MTS_EXTERN_CLASS(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    extern template class MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            spectrum_x = spectrum.replace(float_, float_x)
+            w('    extern template class MTS_EXPORT Name<%s, %s>;' % (float_x, spectrum_x))
     f.write('\n\n')
+
     w('#define MTS_EXTERN_STRUCT_FLOAT(Name)')
     for float_ in float_types:
         w('    extern template struct MTS_EXPORT Name<%s>;' % float_)
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            w('    extern template struct MTS_EXPORT Name<%s>;' % float_x)
     f.write('\n\n')
+
     w('#define MTS_EXTERN_CLASS_FLOAT(Name)')
     for float_ in float_types:
         w('    extern template class MTS_EXPORT Name<%s>;' % float_)
+        if float_.startswith("Packet"):
+            float_x = "DynamicArray<%s>" % float_
+            w('    extern template class MTS_EXPORT Name<%s>;' % float_x)
     f.write('\n\n')
 
     w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
@@ -91,13 +116,6 @@ def write_config(f):
 
     w('#define MTS_PY_DECLARE_VARIANTS(name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        # for packets of float, the bindings should use the vectorize wrapper on dynamic arrays
-        float_p = float_
-        spectrum_p = spectrum
-        if float_.startswith("Packet"):
-            float_x = "DynamicArray<%s>" % float_
-            spectrum = spectrum.replace(float_, float_x)
-            float_ = float_x
         w('    extern void python_export_variants_%s_##name(py::module &);' % (name))
     f.write('\n\n')
 
@@ -108,13 +126,6 @@ def write_config(f):
 
     w('#define MTS_PY_IMPORT_VARIANTS(name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        # for packets of float, the bindings should use the vectorize wrapper on dynamic arrays
-        float_p = float_
-        spectrum_p = spectrum
-        if float_.startswith("Packet"):
-            float_x = "DynamicArray<%s>" % float_
-            spectrum = spectrum.replace(float_, float_x)
-            float_ = float_x
         w('    python_export_variants_%s_##name(__submodule__%s);' % (name, name))
     f.write('\n\n')
 

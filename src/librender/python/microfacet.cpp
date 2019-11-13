@@ -41,14 +41,14 @@ MTS_PY_EXPORT_VARIANTS(MicrofacetDistribution) {
                 D(MicrofacetDistribution, G))
             .def("sample_visible_11", vectorize<Float>(&MicrofacetDistributionP::sample_visible_11),
                 "cos_theta_i"_a, "sample"_a, D(MicrofacetDistribution, sample_visible_11))
-            .def("eval_reflectance",
-                [](const MicrofacetDistribution &d,
-                    const Vector<DynamicArray<Packet<float>>, 3> & wi_, float eta) {
-                        mitsuba::MicrofacetDistribution<Packet<float>> d2(d.type(), d.alpha_u(),
-                                                                        d.alpha_v());
-                        return eval_reflectance(d2, wi_, eta);
-                },
-                "wi"_a, "eta"_a)
             .def_repr(MicrofacetDistribution);
     }
+
+    m.def("eval_reflectance",
+        [](MicrofacetType type, float alpha_u, float alpha_v,
+           const Vector<DynamicArray<Packet<float>>, 3> & wi_,
+           float eta) {
+            mitsuba::MicrofacetDistribution<Packet<float>> d(type, alpha_u, alpha_v);
+            return eval_reflectance(d, wi_, eta);
+        }, "type"_a, "alpha_u"_a, "alpha_v"_a, "wi"_a, "eta"_a);
 }
