@@ -6,12 +6,12 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/*!
+/**!
 
 .. _bsdf-diffuse:
 
-Smooth diffuse material (`diffuse`)
--------------------------------------
+Smooth diffuse material (:monosp:`diffuse`)
+-------------------------------------------
 
 .. list-table::
  :widths: 20 15 65

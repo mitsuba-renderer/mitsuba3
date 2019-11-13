@@ -41,6 +41,8 @@ source_suffix = '.rst'
 rst_prolog = r"""
 .. role:: paramtype
 
+.. role:: monosp
+
 .. |spectrum| replace:: :paramtype:`spectrum`
 .. |texture| replace:: :paramtype:`texture`
 .. |float| replace:: :paramtype:`float`

@@ -35,6 +35,11 @@ div.sphinxsidebar h4 {
 	font-family: 'Courier New', Courier, monospace;
 }
 
+.monosp {
+	font-family: 'Courier New', Courier, monospace;
+    font-size: 90%;
+}
+
 div.sphinxsidebar {
     margin: 1em;
 }

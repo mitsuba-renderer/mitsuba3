@@ -5,12 +5,12 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/*!
+/**!
 
 .. _bsdf_twosided:
 
-Two-sided BRDF adapter (`twosided`)
------------------------------------------
+Two-sided BRDF adapter (:monosp:`twosided`)
+--------------------------------------------
 
 .. list-table::
  :widths: 20 15 65

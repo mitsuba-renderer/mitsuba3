@@ -5,12 +5,12 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/*!
+/**!
 
 .. _bsdf-dielectric:
 
-Smooth dielectric material (`dielectric`)
------------------------------------------
+Smooth dielectric material (:monosp:`dielectric`)
+-------------------------------------------------
 
 
 .. list-table::
@@ -180,6 +180,7 @@ describe a slightly absorbing piece of glass is shown below:
 
 
  */
+
 template <typename Float, typename Spectrum>
 class SmoothDielectric final : public BSDF<Float, Spectrum> {
 public:

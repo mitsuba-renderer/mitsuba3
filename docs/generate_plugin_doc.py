@@ -32,7 +32,7 @@ def extract(target, filename):
     f = open(filename)
     inheader = False
     for line in f.readlines():
-        match = re.match(r'^/\*! ?(.*)$', line)
+        match = re.match(r'^/\*\*! ?(.*)$', line)
         if match is not None:
             print("Processing %s" % filename)
             line = match.group(1).replace('%', '\%')
