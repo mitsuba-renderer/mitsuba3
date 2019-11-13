@@ -80,7 +80,7 @@ public:
         }
 
         if (expanded)
-            Log(Warn, "InterpolatedSpectrum was expanded to cover wavelength range [%.1f, %.1f]",
+            Log(Debug, "InterpolatedSpectrum was expanded to cover wavelength range [%.1f, %.1f]",
                 MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
 
         m_inv_interval_size = ScalarFloat((size - 1) / (double(m_lambda_max) - double(m_lambda_min)));
