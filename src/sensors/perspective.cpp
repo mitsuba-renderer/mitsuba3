@@ -253,5 +253,5 @@ private:
     ScalarVector3f m_dx, m_dy;
 };
 
-MTS_IMPLEMENT_PLUGIN(PerspectiveCamera, ProjectiveCamera, "Perspective Camera");
+MTS_IMPLEMENT_PLUGIN(PerspectiveCamera, "Perspective Camera");
 NAMESPACE_END(mitsuba)

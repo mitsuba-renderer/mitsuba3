@@ -192,5 +192,5 @@ private:
     ScalarFloat m_inv_surface_area;
 };
 
-MTS_IMPLEMENT_PLUGIN(Rectangle, Shape, "Rectangle intersection primitive");
+MTS_IMPLEMENT_PLUGIN(Rectangle, "Rectangle intersection primitive");
 NAMESPACE_END(mitsuba)

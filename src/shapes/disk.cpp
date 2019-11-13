@@ -178,5 +178,5 @@ private:
     ScalarFloat m_inv_surface_area;
 };
 
-MTS_IMPLEMENT_PLUGIN(Disk, Shape, "Disk intersection primitive");
+MTS_IMPLEMENT_PLUGIN(Disk, "Disk intersection primitive");
 NAMESPACE_END(mitsuba)

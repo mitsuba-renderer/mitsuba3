@@ -97,5 +97,5 @@ protected:
     size_t m_seed_value;
 };
 
-MTS_IMPLEMENT_PLUGIN(IndependentSampler, Sampler, "Independent Sampler");
+MTS_IMPLEMENT_PLUGIN(IndependentSampler, "Independent Sampler");
 NAMESPACE_END(mitsuba)

@@ -44,6 +44,6 @@ private:
 #endif
 };
 
-MTS_IMPLEMENT_PLUGIN(SRGBSpectrum, ContinuousSpectrum, "sRGB spectrum")
+MTS_IMPLEMENT_PLUGIN(SRGBSpectrum, "sRGB spectrum")
 
 NAMESPACE_END(mitsuba)

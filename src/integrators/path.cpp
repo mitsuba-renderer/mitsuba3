@@ -132,5 +132,5 @@ public:
     };
 };
 
-MTS_IMPLEMENT_PLUGIN(PathIntegrator, MonteCarloIntegrator, "Path Tracer integrator");
+MTS_IMPLEMENT_PLUGIN(PathIntegrator, "Path Tracer integrator");
 NAMESPACE_END(mitsuba)

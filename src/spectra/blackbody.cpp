@@ -141,6 +141,6 @@ private:
     Float m_integral;
 };
 
-MTS_IMPLEMENT_PLUGIN(BlackBodySpectrum, ContinuousSpectrum, "Black body spectrum")
+MTS_IMPLEMENT_PLUGIN(BlackBodySpectrum, "Black body spectrum")
 
 NAMESPACE_END(mitsuba)

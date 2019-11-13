@@ -567,5 +567,5 @@ private:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(PLYMesh, Mesh, "PLY Mesh")
+MTS_IMPLEMENT_PLUGIN(PLYMesh, "PLY Mesh")
 NAMESPACE_END(mitsuba)

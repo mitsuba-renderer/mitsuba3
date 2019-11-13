@@ -42,5 +42,5 @@ protected:
     ScalarFloat m_stddev, m_alpha, m_bias;
 };
 
-MTS_IMPLEMENT_PLUGIN(GaussianFilter, ReconstructionFilter, "Gaussian reconstruction filter");
+MTS_IMPLEMENT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
 NAMESPACE_END(mitsuba)

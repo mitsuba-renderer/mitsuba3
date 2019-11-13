@@ -262,5 +262,5 @@ protected:
     ref<ImageBlock> m_storage;
 };
 
-MTS_IMPLEMENT_PLUGIN(HDRFilm, Film, "HDR Film");
+MTS_IMPLEMENT_PLUGIN(HDRFilm, "HDR Film");
 NAMESPACE_END(mitsuba)

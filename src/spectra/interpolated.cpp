@@ -236,5 +236,5 @@ private:
 #endif
 };
 
-MTS_IMPLEMENT_PLUGIN(InterpolatedSpectrum, ContinuousSpectrum, "Interpolated spectrum")
+MTS_IMPLEMENT_PLUGIN(InterpolatedSpectrum, "Interpolated spectrum")
 NAMESPACE_END(mitsuba)

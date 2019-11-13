@@ -46,5 +46,5 @@ protected:
     ScalarTransform3f m_transform;
 };
 
-MTS_IMPLEMENT_PLUGIN(Checkerboard, ContinuousSpectrum, "Checkerboard texture")
+MTS_IMPLEMENT_PLUGIN(Checkerboard, "Checkerboard texture")
 NAMESPACE_END(mitsuba)

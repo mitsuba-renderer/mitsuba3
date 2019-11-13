@@ -337,5 +337,5 @@ private:
     bool    m_flip_normals;
 };
 
-MTS_IMPLEMENT_PLUGIN(Sphere, Shape, "Sphere intersection primitive");
+MTS_IMPLEMENT_PLUGIN(Sphere, "Sphere intersection primitive");
 NAMESPACE_END(mitsuba)

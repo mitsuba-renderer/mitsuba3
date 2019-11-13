@@ -34,5 +34,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(BoxFilter, ReconstructionFilter, "Box filter");
+MTS_IMPLEMENT_PLUGIN(BoxFilter, "Box filter");
 NAMESPACE_END(mitsuba)

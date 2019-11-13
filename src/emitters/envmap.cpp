@@ -220,6 +220,6 @@ protected:
 #endif
 };
 
-MTS_IMPLEMENT_PLUGIN(EnvironmentMapEmitter, Emitter, "Environment map emitter");
+MTS_IMPLEMENT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter");
 NAMESPACE_END(mitsuba)
 

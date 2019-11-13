@@ -115,5 +115,5 @@ protected:
     ref<BSDF> m_nested_bsdf;
 };
 
-MTS_IMPLEMENT_PLUGIN(MaskBSDF, BSDF, "Mask material")
+MTS_IMPLEMENT_PLUGIN(MaskBSDF, "Mask material")
 NAMESPACE_END(mitsuba)

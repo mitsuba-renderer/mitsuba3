@@ -23,5 +23,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(DepthIntegrator, SamplingIntegrator, "Depth integrator");
+MTS_IMPLEMENT_PLUGIN(DepthIntegrator, "Depth integrator");
 NAMESPACE_END(mitsuba)

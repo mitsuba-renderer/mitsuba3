@@ -107,7 +107,7 @@ def write_config(f):
             w('    extern template class MTS_EXPORT Name<%s>;' % float_x)
     f.write('\n\n')
 
-    w('#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)')
+    w('#define MTS_IMPLEMENT_PLUGIN(Name, Descr)')
     w('    extern "C" {')
     w('        MTS_EXPORT const char *plugin_name() { return #Name; }')
     w('        MTS_EXPORT const char *plugin_descr() { return Descr; }')

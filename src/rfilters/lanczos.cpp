@@ -41,5 +41,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(LanczosSincFilter, ReconstructionFilter, "Lanczos Sinc filter");
+MTS_IMPLEMENT_PLUGIN(LanczosSincFilter, "Lanczos Sinc filter");
 NAMESPACE_END(mitsuba)

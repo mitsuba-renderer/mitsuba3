@@ -49,5 +49,5 @@ protected:
     Float m_b, m_c;
 };
 
-MTS_IMPLEMENT_PLUGIN(MitchellNetravaliFilter, ReconstructionFilter, "Mitchell-Netravali filter");
+MTS_IMPLEMENT_PLUGIN(MitchellNetravaliFilter, "Mitchell-Netravali filter");
 NAMESPACE_END(mitsuba)

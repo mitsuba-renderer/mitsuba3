@@ -69,7 +69,7 @@
     extern template class MTS_EXPORT Name<DynamicArray<Packet<float>>>;     \
 
 
-#define MTS_IMPLEMENT_PLUGIN(Name, Parent, Descr)                           \
+#define MTS_IMPLEMENT_PLUGIN(Name, Descr)                                   \
     extern "C" {                                                            \
         MTS_EXPORT const char *plugin_name() { return #Name; }              \
         MTS_EXPORT const char *plugin_descr() { return Descr; }             \

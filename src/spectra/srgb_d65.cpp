@@ -55,5 +55,5 @@ private:
 #endif
 };
 
-MTS_IMPLEMENT_PLUGIN(SRGBEmitterSpectrum, ContinuousSpectrum, "sRGB x D65 spectrum")
+MTS_IMPLEMENT_PLUGIN(SRGBEmitterSpectrum, "sRGB x D65 spectrum")
 NAMESPACE_END(mitsuba)

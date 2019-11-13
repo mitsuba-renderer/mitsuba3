@@ -410,5 +410,5 @@ private:
     int m_reduction;
 };
 
-MTS_IMPLEMENT_PLUGIN(Measured, BSDF, "Measured material")
+MTS_IMPLEMENT_PLUGIN(Measured, "Measured material")
 NAMESPACE_END(mitsuba)

@@ -148,5 +148,5 @@ private:
     ScalarFloat m_weight_bsdf, m_weight_lum;
 };
 
-MTS_IMPLEMENT_PLUGIN(DirectIntegrator, SamplingIntegrator, "Direct integrator");
+MTS_IMPLEMENT_PLUGIN(DirectIntegrator, "Direct integrator");
 NAMESPACE_END(mitsuba)

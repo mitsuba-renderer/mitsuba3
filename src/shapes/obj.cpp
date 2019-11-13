@@ -297,5 +297,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(OBJMesh, Mesh, "OBJ Mesh")
+MTS_IMPLEMENT_PLUGIN(OBJMesh, "OBJ Mesh")
 NAMESPACE_END(mitsuba)

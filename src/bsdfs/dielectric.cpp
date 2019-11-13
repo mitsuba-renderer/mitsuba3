@@ -126,5 +126,5 @@ private:
     ref<ContinuousSpectrum> m_specular_transmittance;
 };
 
-MTS_IMPLEMENT_PLUGIN(SmoothDielectric, BSDF, "Smooth dielectric")
+MTS_IMPLEMENT_PLUGIN(SmoothDielectric, "Smooth dielectric")
 NAMESPACE_END(mitsuba)

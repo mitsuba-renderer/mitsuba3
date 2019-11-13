@@ -179,6 +179,6 @@ private:
     ref<ContinuousSpectrum> m_k;
 };
 
-MTS_IMPLEMENT_PLUGIN(RoughConductor, BSDF, "Rough conductor");
+MTS_IMPLEMENT_PLUGIN(RoughConductor, "Rough conductor");
 
 NAMESPACE_END(mitsuba)

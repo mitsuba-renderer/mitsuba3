@@ -110,5 +110,5 @@ private:
     ref<ContinuousSpectrum> m_specular_reflectance;
 };
 
-MTS_IMPLEMENT_PLUGIN(ThinDielectric, BSDF, "Thin dielectric")
+MTS_IMPLEMENT_PLUGIN(ThinDielectric, "Thin dielectric")
 NAMESPACE_END(mitsuba)

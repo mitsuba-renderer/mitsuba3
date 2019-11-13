@@ -187,5 +187,5 @@ private:
     bool m_nonlinear;
 };
 
-MTS_IMPLEMENT_PLUGIN(SmoothPlastic, BSDF, "Smooth plastic");
+MTS_IMPLEMENT_PLUGIN(SmoothPlastic, "Smooth plastic");
 NAMESPACE_END(mitsuba)

@@ -82,5 +82,5 @@ private:
     ref<ContinuousSpectrum> m_reflectance;
 };
 
-MTS_IMPLEMENT_PLUGIN(SmoothDiffuse, BSDF, "Smooth diffuse material");
+MTS_IMPLEMENT_PLUGIN(SmoothDiffuse, "Smooth diffuse material");
 NAMESPACE_END(mitsuba)

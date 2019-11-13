@@ -138,5 +138,5 @@ protected:
     ref<BSDF> m_nested_brdf[2];
 };
 
-MTS_IMPLEMENT_PLUGIN(TwoSidedBRDF, BSDF, "Two-sided material adapter");
+MTS_IMPLEMENT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter");
 NAMESPACE_END(mitsuba)

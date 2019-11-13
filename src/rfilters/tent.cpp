@@ -33,5 +33,5 @@ private:
     Float m_inv_radius;
 };
 
-MTS_IMPLEMENT_PLUGIN(TentFilter, ReconstructionFilter, "Tent filter");
+MTS_IMPLEMENT_PLUGIN(TentFilter, "Tent filter");
 NAMESPACE_END(mitsuba)

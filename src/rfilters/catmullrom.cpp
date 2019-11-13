@@ -41,5 +41,5 @@ public:
 
 };
 
-MTS_IMPLEMENT_PLUGIN(CatmullRomFilter, ReconstructionFilter, "Catmull-Rom filter");
+MTS_IMPLEMENT_PLUGIN(CatmullRomFilter, "Catmull-Rom filter");
 NAMESPACE_END(mitsuba)

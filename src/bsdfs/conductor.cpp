@@ -80,6 +80,6 @@ private:
     ref<ContinuousSpectrum> m_eta, m_k;
 };
 
-MTS_IMPLEMENT_PLUGIN(SmoothConductor, BSDF, "Smooth conductor")
+MTS_IMPLEMENT_PLUGIN(SmoothConductor, "Smooth conductor")
 
 NAMESPACE_END(mitsuba)

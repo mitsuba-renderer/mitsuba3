@@ -266,5 +266,5 @@ protected:
     Float m_mean;
 };
 
-MTS_IMPLEMENT_PLUGIN(BitmapTexture, ContinuousSpectrum, "Bitmap texture")
+MTS_IMPLEMENT_PLUGIN(BitmapTexture, "Bitmap texture")
 NAMESPACE_END(mitsuba)

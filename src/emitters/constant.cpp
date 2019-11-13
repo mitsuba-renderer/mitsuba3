@@ -103,5 +103,5 @@ protected:
     ScalarBoundingSphere3f m_bsphere;
 };
 
-MTS_IMPLEMENT_PLUGIN(ConstantBackgroundEmitter, Emitter, "Constant background emitter");
+MTS_IMPLEMENT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter");
 NAMESPACE_END(mitsuba)

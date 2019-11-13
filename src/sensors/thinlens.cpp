@@ -263,5 +263,5 @@ private:
     ScalarVector3f m_dx, m_dy;
 };
 
-MTS_IMPLEMENT_PLUGIN(ThinLensCamera, ProjectiveCamera, "Thin Lens Camera");
+MTS_IMPLEMENT_PLUGIN(ThinLensCamera, "Thin Lens Camera");
 NAMESPACE_END(mitsuba)

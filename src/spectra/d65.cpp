@@ -71,5 +71,5 @@ private:
     Float m_scale;
 };
 
-MTS_IMPLEMENT_PLUGIN(D65Spectrum, ContinuousSpectrum, "CIE D65 Spectrum")
+MTS_IMPLEMENT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
 NAMESPACE_END(mitsuba)

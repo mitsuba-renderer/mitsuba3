@@ -63,6 +63,6 @@ private:
 #endif
 };
 
-MTS_IMPLEMENT_PLUGIN(UniformSpectrum, ContinuousSpectrum, "Uniform spectrum")
+MTS_IMPLEMENT_PLUGIN(UniformSpectrum, "Uniform spectrum")
 
 NAMESPACE_END(mitsuba)

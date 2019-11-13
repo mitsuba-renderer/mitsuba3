@@ -227,5 +227,5 @@ protected:
     bool m_fixed_max = false;
 };
 
-MTS_IMPLEMENT_PLUGIN(Grid3D, Grid3DBase, "Grid 3D texture with interpolation")
+MTS_IMPLEMENT_PLUGIN(Grid3D, "Grid 3D texture with interpolation")
 NAMESPACE_END(mitsuba)

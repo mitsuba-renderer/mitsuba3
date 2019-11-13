@@ -126,5 +126,5 @@ protected:
     ref<BSDF> m_nested_bsdf[2];
 };
 
-MTS_IMPLEMENT_PLUGIN(BlendBSDF, BSDF, "BlendBSDF material")
+MTS_IMPLEMENT_PLUGIN(BlendBSDF, "BlendBSDF material")
 NAMESPACE_END(mitsuba)

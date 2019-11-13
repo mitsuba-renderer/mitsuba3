@@ -65,5 +65,5 @@ protected:
     ref<ContinuousSpectrum> m_color;
 };
 
-MTS_IMPLEMENT_PLUGIN(Constant3D, Texture3D, "Constant 3D texture")
+MTS_IMPLEMENT_PLUGIN(Constant3D, "Constant 3D texture")
 NAMESPACE_END(mitsuba)

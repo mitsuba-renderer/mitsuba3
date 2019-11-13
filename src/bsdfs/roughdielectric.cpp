@@ -300,5 +300,5 @@ private:
     bool m_sample_visible;
 };
 
-MTS_IMPLEMENT_PLUGIN(RoughDielectric, BSDF, "Rough dielectric");
+MTS_IMPLEMENT_PLUGIN(RoughDielectric, "Rough dielectric");
 NAMESPACE_END(mitsuba)

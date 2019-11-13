@@ -327,5 +327,5 @@ private:
     bool m_flip_normals;
 };
 
-MTS_IMPLEMENT_PLUGIN(Cylinder, Shape, "Cylinder intersection primitive");
+MTS_IMPLEMENT_PLUGIN(Cylinder, "Cylinder intersection primitive");
 NAMESPACE_END(mitsuba)

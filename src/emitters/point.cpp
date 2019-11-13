@@ -90,5 +90,5 @@ private:
 };
 
 
-MTS_IMPLEMENT_PLUGIN(PointLight, Emitter, "Point emitter");
+MTS_IMPLEMENT_PLUGIN(PointLight, "Point emitter");
 NAMESPACE_END(mitsuba)

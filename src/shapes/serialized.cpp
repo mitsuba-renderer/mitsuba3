@@ -271,5 +271,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(SerializedMesh, Mesh, "Serialized mesh file")
+MTS_IMPLEMENT_PLUGIN(SerializedMesh, "Serialized mesh file")
 NAMESPACE_END(mitsuba)

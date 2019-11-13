@@ -272,6 +272,6 @@ private:
     ScalarFloat m_internal_reflectance;
 };
 
-MTS_IMPLEMENT_PLUGIN(RoughPlastic, BSDF, "Rough plastic");
+MTS_IMPLEMENT_PLUGIN(RoughPlastic, "Rough plastic");
 
 NAMESPACE_END(mitsuba)
