@@ -166,16 +166,16 @@ public:
         }
 
         if (has_diffuse) {
-            using SpectrumU = depolarized_t<Spectrum>;
+            using UnpolarizedSpectrum = depolarized_t<Spectrum>;
 
             Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active),
                   t_o = lerp_gather(m_external_transmittance.data(), cos_theta_o,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active);
 
-            SpectrumU diff = depolarize(m_diffuse_reflectance->eval(si, active));
+            UnpolarizedSpectrum diff = depolarize(m_diffuse_reflectance->eval(si, active));
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
-                                       : SpectrumU(m_internal_reflectance));
+                                       : UnpolarizedSpectrum(m_internal_reflectance));
 
             result += diff * (math::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }

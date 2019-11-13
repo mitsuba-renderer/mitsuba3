@@ -14,7 +14,7 @@ public:
     MTS_DECLARE_CLASS_VARIANT(RoughConductor, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
-    using SpectrumU = depolarized_t<Spectrum>;
+    using UnpolarizedSpectrum = depolarized_t<Spectrum>;
 
     RoughConductor(const Properties &props) : Base(props) {
         m_eta = props.spectrum<ContinuousSpectrum>("eta", 0.f);
@@ -72,10 +72,10 @@ public:
 
         // Evaluate the Fresnel factor
         // TODO: handle polarization rather than discarding it here.
-        Complex<SpectrumU> eta_c(depolarize(m_eta->eval(si, active)),
-                                 depolarize(m_k->eval(si, active)));
+        Complex<UnpolarizedSpectrum> eta_c(depolarize(m_eta->eval(si, active)),
+                                           depolarize(m_k->eval(si, active)));
 
-        Spectrum F = fresnel_conductor(SpectrumU(dot(si.wi, m)), eta_c);
+        Spectrum F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, m)), eta_c);
 
         // Jacobian of the half-direction mapping
         bs.pdf /= 4.f * dot(bs.wo, m);
@@ -109,9 +109,9 @@ public:
 
         // Evaluate the Fresnel factor
         // TODO: handle polarization rather than discarding it here.
-        Complex<SpectrumU> eta_c(depolarize(m_eta->eval(si, active)),
-                                 depolarize(m_k->eval(si, active)));
-        Spectrum F = fresnel_conductor(SpectrumU(dot(si.wi, H)), eta_c);
+        Complex<UnpolarizedSpectrum> eta_c(depolarize(m_eta->eval(si, active)),
+                                           depolarize(m_k->eval(si, active)));
+        Spectrum F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, H)), eta_c);
 
         // Evaluate Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, H);

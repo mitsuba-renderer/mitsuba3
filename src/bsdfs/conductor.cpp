@@ -26,7 +26,7 @@ public:
     std::pair<BSDFSample3f, Spectrum>
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si, Float /*sample1*/,
            const Point2f & /*sample2*/, Mask active) const override {
-        using SpectrumU = depolarized_t<Spectrum>;
+        using UnpolarizedSpectrum = depolarized_t<Spectrum>;
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
@@ -43,10 +43,10 @@ public:
         bs.pdf = 1.f;
 
         // TODO: handle polarization instead of discarding it
-        Complex<SpectrumU> eta(depolarize(m_eta->eval(si, active)),
-                               depolarize(m_k->eval(si, active)));
+        Complex<UnpolarizedSpectrum> eta(depolarize(m_eta->eval(si, active)),
+                                         depolarize(m_k->eval(si, active)));
         value = m_specular_reflectance->eval(si, active) *
-                fresnel_conductor(SpectrumU(cos_theta_i), eta);
+                fresnel_conductor(UnpolarizedSpectrum(cos_theta_i), eta);
 
         return { bs, value };
     }

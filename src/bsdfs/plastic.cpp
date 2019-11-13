@@ -15,7 +15,7 @@ public:
     MTS_DECLARE_CLASS_VARIANT(SmoothPlastic, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
-    using SpectrumU = depolarized_t<Spectrum>;
+    using UnpolarizedSpectrum = depolarized_t<Spectrum>;
 
     SmoothPlastic(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface
@@ -101,7 +101,7 @@ public:
 
             Float f_o = std::get<0>(fresnel(Frame3f::cos_theta(bs.wo), Float(m_eta)));
             // TODO: handle polarization instead of discarding it here
-            SpectrumU diff = depolarize(m_diffuse_reflectance->eval(si, sample_diffuse));
+            UnpolarizedSpectrum diff = depolarize(m_diffuse_reflectance->eval(si, sample_diffuse));
             diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : m_fdr_int);
             diff *= m_inv_eta_2 * (1.f - f_i) * (1.f - f_o) / prob_diffuse;
             masked(result, sample_diffuse) = diff;
@@ -126,7 +126,7 @@ public:
               f_o = std::get<0>(fresnel(cos_theta_o, Float(m_eta)));
 
         // TODO: handle polarization instead of discarding it here
-        SpectrumU diff = depolarize(m_diffuse_reflectance->eval(si, active));
+        UnpolarizedSpectrum diff = depolarize(m_diffuse_reflectance->eval(si, active));
         diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : m_fdr_int);
 
         diff *= warp::square_to_cosine_hemisphere_pdf(wo) *

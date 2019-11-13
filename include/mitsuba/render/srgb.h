@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Spectrum, typename Array3f>
 MTS_INLINE depolarized_t<Spectrum> srgb_model_eval(const Array3f &coeff_,
                                                    const wavelength_t<Spectrum> &wavelengths) {
-    using SpectrumU = depolarized_t<Spectrum>;
+    using UnpolarizedSpectrum = depolarized_t<Spectrum>;
 
 #if RGB2SPEC_MAPPING == 2
     /// See rgb2spec.h for details on this mapping variant
@@ -22,7 +22,7 @@ MTS_INLINE depolarized_t<Spectrum> srgb_model_eval(const Array3f &coeff_,
     Array3f coeff = coeff_;
 #endif
 
-    SpectrumU v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+    UnpolarizedSpectrum v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
 
     return select(
         enoki::isinf(coeff_.z()), fmadd(sign(coeff_.z()), .5f, .5f),
