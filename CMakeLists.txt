@@ -477,7 +477,7 @@ add_custom_target(
 add_custom_command(
   OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf
-  COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/configure.py
+  COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 set_source_files_properties(

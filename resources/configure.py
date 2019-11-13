@@ -1,15 +1,16 @@
 from collections import OrderedDict
 import json
 import os
+from os.path import join, dirname, realpath
 try:
     from io import StringIO
 except ImportError:
     from StringIO import StringIO
 
+ROOT = realpath(dirname(dirname(__file__)))
 
 def write_config(f):
-    print('Reading mitsuba.conf...')
-    with open("mitsuba.conf", "r") as conf:
+    with open(join(ROOT, "mitsuba.conf"), "r") as conf:
         # Load while preserving order of keys
         configurations = json.load(conf, object_pairs_hook=OrderedDict)
 
@@ -197,7 +198,7 @@ def write_to_file_if_changed(filename, contents):
 
 
 def main():
-    fname = "include/mitsuba/core/config.h"
+    fname = realpath(join(ROOT, "include/mitsuba/core/config.h"))
     output = StringIO()
     write_config(output)
     write_to_file_if_changed(fname, output.getvalue())
