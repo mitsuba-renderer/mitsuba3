@@ -10,7 +10,6 @@
 MTS_PY_EXPORT(Film) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-
     MTS_PY_CHECK_ALIAS(Film, m) {
         MTS_PY_CLASS(Film, Object)
             .def_method(Film, clear)

@@ -55,17 +55,14 @@ MTS_PY_EXPORT(Integrator) {
             .def_method(Integrator, cancel);
     }
 
-    using SamplingIntegrator = SamplingIntegrator<Float, Spectrum>;
-    using SamplingIntegratorP = mitsuba::SamplingIntegrator<FloatP, SpectrumP>;
     MTS_PY_CHECK_ALIAS(SamplingIntegrator, m) {
         MTS_PY_CLASS(SamplingIntegrator, Integrator)
             .def("sample",
-                vectorize<Float>(&SamplingIntegratorP::sample),
+                vectorize<Float>(&SamplingIntegrator::sample),
                 "scene"_a, "sampler"_a, "ray"_a, "active"_a = true, D(SamplingIntegrator, sample))
             .def_method(SamplingIntegrator, should_stop);
     }
 
-    using MonteCarloIntegrator = MonteCarloIntegrator<Float, Spectrum>;
     MTS_PY_CHECK_ALIAS(MonteCarloIntegrator, m){
         MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
     }

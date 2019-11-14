@@ -13,7 +13,6 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
             .export_values();
     }
 
-    using MicrofacetDistributionP = mitsuba::MicrofacetDistribution<FloatP, SpectrumP>;
     MTS_PY_CHECK_ALIAS(MicrofacetDistribution, m) {
         py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
             .def(py::init<MicrofacetType, const Float &, bool>(), "type"_a, "alpha"_a,
@@ -29,17 +28,17 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
             .def_method(MicrofacetDistribution, is_anisotropic)
             .def_method(MicrofacetDistribution, is_isotropic)
             .def_method(MicrofacetDistribution, scale_alpha, "value"_a)
-            .def("eval", vectorize<Float>(&MicrofacetDistributionP::eval), "m"_a,
+            .def("eval", vectorize<Float>(&MicrofacetDistribution::eval), "m"_a,
                 D(MicrofacetDistribution, eval))
-            .def("pdf", vectorize<Float>(&MicrofacetDistributionP::pdf), "wi"_a, "m"_a,
+            .def("pdf", vectorize<Float>(&MicrofacetDistribution::pdf), "wi"_a, "m"_a,
                 D(MicrofacetDistribution, pdf))
-            .def("smith_g1", vectorize<Float>(&MicrofacetDistributionP::smith_g1), "v"_a, "m"_a,
+            .def("smith_g1", vectorize<Float>(&MicrofacetDistribution::smith_g1), "v"_a, "m"_a,
                 D(MicrofacetDistribution, smith_g1))
-            .def("sample", vectorize<Float>(&MicrofacetDistributionP::sample), "wi"_a, "sample"_a,
+            .def("sample", vectorize<Float>(&MicrofacetDistribution::sample), "wi"_a, "sample"_a,
                 D(MicrofacetDistribution, sample))
-            .def("G", vectorize<Float>(&MicrofacetDistributionP::G), "wi"_a, "wo"_a, "m"_a,
+            .def("G", vectorize<Float>(&MicrofacetDistribution::G), "wi"_a, "wo"_a, "m"_a,
                 D(MicrofacetDistribution, G))
-            .def("sample_visible_11", vectorize<Float>(&MicrofacetDistributionP::sample_visible_11),
+            .def("sample_visible_11", vectorize<Float>(&MicrofacetDistribution::sample_visible_11),
                 "cos_theta_i"_a, "sample"_a, D(MicrofacetDistribution, sample_visible_11))
             .def_repr(MicrofacetDistribution);
     }

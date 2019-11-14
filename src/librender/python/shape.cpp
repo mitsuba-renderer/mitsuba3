@@ -9,26 +9,22 @@
 MTS_PY_EXPORT(Shape) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    using ShapeP = mitsuba::Shape<FloatP, SpectrumP>;
-    using Ray3fP = typename ShapeP::Ray3f;
-    using MaskP = typename ShapeP::Mask;
-
     MTS_PY_CHECK_ALIAS(Shape, m) {
         MTS_PY_CLASS(Shape, Object)
-            .def("sample_position", vectorize<Float>(&ShapeP::sample_position),
+            .def("sample_position", vectorize<Float>(&Shape::sample_position),
                 "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))
-            .def("pdf_position", vectorize<Float>(&ShapeP::pdf_position),
+            .def("pdf_position", vectorize<Float>(&Shape::pdf_position),
                 "ps"_a, "active"_a = true, D(Shape, pdf_position))
-            .def("sample_direction", vectorize<Float>(&ShapeP::sample_direction),
+            .def("sample_direction", vectorize<Float>(&Shape::sample_direction),
                 "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction))
-            .def("pdf_direction", vectorize<Float>(&ShapeP::pdf_direction),
+            .def("pdf_direction", vectorize<Float>(&Shape::pdf_direction),
                 "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
-            .def("normal_derivative", vectorize<Float>(&ShapeP::normal_derivative),
+            .def("normal_derivative", vectorize<Float>(&Shape::normal_derivative),
                 "si"_a, "shading_frame"_a = true, "active"_a = true,
                 D(Shape, normal_derivative))
             .def("ray_intersect",
                 vectorize<Float>(
-                    py::overload_cast<const Ray3fP &, MaskP>(&ShapeP::ray_intersect, py::const_)),
+                    py::overload_cast<const Ray3f &, Mask>(&Shape::ray_intersect, py::const_)),
                 "ray"_a, "active"_a = true, D(Shape, ray_intersect))
             .def_method(Shape, ray_test, "ray"_a, "active"_a = true)
             .def_method(Shape, fill_surface_interaction, "ray"_a, "cache"_a, "si"_a, "active"_a = true)
@@ -51,10 +47,7 @@ MTS_PY_EXPORT(Shape) {
             .def_method(Shape, primitive_count)
             .def_method(Shape, effective_primitive_count);
     }
-
-    using Mesh = Mesh<Float, Spectrum>;
     using Size = typename Mesh::Size;
-
     MTS_PY_CHECK_ALIAS(Mesh, m) {
         MTS_PY_CLASS(Mesh, Shape)
             .def(py::init<const std::string &, Struct *, Size, Struct *, Size>(),

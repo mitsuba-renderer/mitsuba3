@@ -5,8 +5,6 @@
 MTS_PY_EXPORT(ImageBlock) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    using ImageBlockP = mitsuba::ImageBlock<FloatP, SpectrumP>;
-
     MTS_PY_CHECK_ALIAS(ImageBlock, m) {
         MTS_PY_CLASS(ImageBlock, Object)
             .def(py::init<PixelFormat, const ScalarVector2i &, const ReconstructionFilter *,
@@ -15,9 +13,9 @@ MTS_PY_EXPORT(ImageBlock) {
                 "warn"_a = true, "border"_a = true, "normalize"_a = false)
             .def("put", py::overload_cast<const ImageBlock *>(&ImageBlock::put),
                 D(ImageBlock, put), "block"_a)
-            .def("put", vectorize<Float>(py::overload_cast<const Point<FloatP, 2> &,
-                const wavelength_t<SpectrumP> &, const SpectrumP &, const FloatP &,
-                mask_t<FloatP>>(&ImageBlockP::put)),
+            .def("put", vectorize<Float>(py::overload_cast<const Point2f &,
+                const wavelength_t<Spectrum> &, const Spectrum &, const Float &,
+                mask_t<Float>>(&ImageBlock::put)),
                 "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a, "active"_a = true,
                 D(ImageBlock, put, 2))
             .def("put",

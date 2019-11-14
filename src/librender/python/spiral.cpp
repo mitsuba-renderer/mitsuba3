@@ -3,7 +3,6 @@
 
 MTS_PY_EXPORT(Spiral) {
     using Vector2i = typename Spiral::Vector2i;
-
     MTS_PY_CHECK_ALIAS(Spiral, m) {
         MTS_PY_CLASS(Spiral, Object)
             .def(py::init<Vector2i, Vector2i, size_t, size_t>(),

@@ -17,6 +17,8 @@ template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
 template <typename Float, typename Spectrum> class Integrator;
+template <typename Float, typename Spectrum> class SamplingIntegrator;
+template <typename Float, typename Spectrum> class MonteCarloIntegrator;
 template <typename Float, typename Spectrum> class Medium;
 template <typename Float, typename Spectrum> class Mesh;
 template <typename Float, typename Spectrum> class MicrofacetDistribution;
@@ -24,6 +26,7 @@ template <typename Float, typename Spectrum> class ReconstructionFilter;
 template <typename Float, typename Spectrum> class Sampler;
 template <typename Float, typename Spectrum> class Scene;
 template <typename Float, typename Spectrum> class Sensor;
+template <typename Float, typename Spectrum> class ProjectiveCamera;
 template <typename Float, typename Spectrum> class Shape;
 template <typename Float, typename Spectrum> class ShapeKDTree;
 template <typename Float, typename Spectrum> class Texture3D;
@@ -61,8 +64,11 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Shape                  = mitsuba::Shape<FloatU, SpectrumU>;
     using Mesh                   = mitsuba::Mesh<FloatU, SpectrumU>;
     using Integrator             = mitsuba::Integrator<FloatU, SpectrumU>;
+    using SamplingIntegrator     = mitsuba::SamplingIntegrator<FloatU, SpectrumU>;
+    using MonteCarloIntegrator   = mitsuba::MonteCarloIntegrator<FloatU, SpectrumU>;
     using BSDF                   = mitsuba::BSDF<FloatU, SpectrumU>;
     using Sensor                 = mitsuba::Sensor<FloatU, SpectrumU>;
+    using ProjectiveCamera       = mitsuba::ProjectiveCamera<FloatU, SpectrumU>;
     using Emitter                = mitsuba::Emitter<FloatU, SpectrumU>;
     using Endpoint               = mitsuba::Endpoint<FloatU, SpectrumU>;
     using Medium                 = mitsuba::Medium<FloatU, SpectrumU>;
@@ -105,8 +111,11 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Shape                  = typename RenderAliases::Shape;                                  \
     using Mesh                   = typename RenderAliases::Mesh;                                   \
     using Integrator             = typename RenderAliases::Integrator;                             \
+    using SamplingIntegrator     = typename RenderAliases::SamplingIntegrator;                     \
+    using MonteCarloIntegrator   = typename RenderAliases::MonteCarloIntegrator;                   \
     using BSDF                   = typename RenderAliases::BSDF;                                   \
     using Sensor                 = typename RenderAliases::Sensor;                                 \
+    using ProjectiveCamera       = typename RenderAliases::ProjectiveCamera;                       \
     using Emitter                = typename RenderAliases::Emitter;                                \
     using Endpoint               = typename RenderAliases::Endpoint;                               \
     using Medium                 = typename RenderAliases::Medium;                                 \

@@ -11,18 +11,16 @@
 MTS_PY_EXPORT(Endpoint) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    using EndpointP = mitsuba::Endpoint<FloatP, SpectrumP>;
-
     MTS_PY_CHECK_ALIAS(Endpoint, m) {
         MTS_PY_CLASS(Endpoint, Object)
-            .def("sample_ray", vectorize<Float>(&EndpointP::sample_ray),
+            .def("sample_ray", vectorize<Float>(&Endpoint::sample_ray),
                 "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
                 D(Endpoint, sample_ray))
-            .def("sample_direction", vectorize<Float>(&EndpointP::sample_direction),
+            .def("sample_direction", vectorize<Float>(&Endpoint::sample_direction),
                 "it"_a, "sample"_a, "active"_a = true, D(Endpoint, sample_direction))
-            .def("pdf_direction", vectorize<Float>(&EndpointP::pdf_direction),
+            .def("pdf_direction", vectorize<Float>(&Endpoint::pdf_direction),
                 "it"_a, "ds"_a, "active"_a = true, D(Endpoint, pdf_direction))
-            .def("eval", vectorize<Float>(&EndpointP::eval),
+            .def("eval", vectorize<Float>(&Endpoint::eval),
                 "si"_a, "active"_a = true, D(Endpoint, eval))
             .def_method(Endpoint, world_transform)
             .def_method(Endpoint, needs_sample_2)
