@@ -374,20 +374,12 @@ elseif(MSVC)
   message(STATUS "Mitsuba: LTO support enabled.")
 endif()
 
-# Disable generation of VZEROUPPER instruction on Clang
-# if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND U_CMAKE_BUILD_TYPE MATCHES REL
-#     AND NOT (${CMAKE_SYSTEM_PROCESSOR} MATCHES "(armv7|aarch64)"))
-#   add_compile_options("-mllvm" "-x86-use-vzeroupper=0")
-# endif()
-
 # Set platform-specific flags
 if (WIN32)
   add_definitions(-D__WINDOWS__)
 elseif(UNIX)
   if(APPLE)
     add_definitions(-D__OSX__)
-    # Disable OpenGL deprecation warnings
-    add_definitions(-DGL_SILENCE_DEPRECATION)
   else()
     add_definitions(-D__LINUX__)
   endif()
