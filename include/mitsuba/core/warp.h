@@ -154,14 +154,14 @@ square_to_uniform_square_concentric(const Point<Value, 2> &sample) {
 template <typename Value>
 MTS_INLINE Point<Value, 2> square_to_uniform_triangle(const Point<Value, 2> &sample) {
     Value t = circ(sample.x());
-    return { 1.f - t, t * sample.y() };
+    return { Value(1.f) - t, t * sample.y() };
 }
 
 /// Inverse of the mapping \ref square_to_uniform_triangle
 template <typename Value>
 MTS_INLINE Point<Value, 2> uniform_triangle_to_square(const Point<Value, 2> &p) {
-    Value t = 1.f - p.x();
-    return Point<Value, 2>(1.f - t * t, p.y() / t);
+    Value t = Value(1.f) - p.x();
+    return Point<Value, 2>(Value(1.f) - t * t, p.y() / t);
 }
 
 /// Density of \ref square_to_uniform_triangle per unit area.
@@ -170,12 +170,12 @@ MTS_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
     if constexpr (TestDomain) {
         return select(
             p.x() < zero<Value>() || p.y() < zero<Value>()
-                                  || (p.x() + p.y() > 1.f),
+                                  || (p.x() + p.y() > Value(1)),
             zero<Value>(),
-            2.f
+            Value(2)
         );
     } else {
-        return 2.f;
+        return Value(2);
     }
 }
 

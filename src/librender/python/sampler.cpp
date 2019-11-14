@@ -2,8 +2,7 @@
 #include <mitsuba/render/sampler.h>
 
 MTS_PY_EXPORT(Sampler) {
-    MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_IMPORT_TYPES(Sampler)
     MTS_PY_CHECK_ALIAS(Sampler, m) {
         MTS_PY_CLASS(Sampler, Object)
             .def_method(Sampler, clone)

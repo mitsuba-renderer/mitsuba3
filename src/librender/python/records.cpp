@@ -23,8 +23,7 @@ MTS_PY_EXPORT_STRUCT(PositionSample) {
 }
 
 MTS_PY_EXPORT_STRUCT(DirectionSample) {
-    MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_IMPORT_TYPES(ObjectPtr)
     MTS_PY_CHECK_ALIAS(DirectionSample3f, m) {
         py::class_<DirectionSample3f, PositionSample3f>(m, "DirectionSample3f", D(DirectionSample3f))
             .def(py::init<>(), "Construct an unitialized direct sample")

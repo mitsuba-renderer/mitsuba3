@@ -48,7 +48,8 @@ public:
                 ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
 
                 // Fetch spectral fit for given sRGB color value
-                ScalarVector4f coeff = concat(srgb_model_fetch(rgb_norm), scale);
+                ScalarVector4f coeff =
+                    concat(static_cast<Array<ScalarFloat, 3>>(srgb_model_fetch(rgb_norm)), scale);
 
                 // Overwrite the pixel value with the coefficients
                 *lum_ptr++ = mitsuba::luminance(rgb) * sin_theta;

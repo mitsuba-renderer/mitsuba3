@@ -398,7 +398,7 @@ template <typename Scalar, typename Predicate>
 Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
     int it = 0;
     while (true) {
-        Scalar middle = (left + right) * 0.5f;
+        Scalar middle = (left + right) * Scalar(0.5);
 
         /* Paranoid stopping criterion */
         if (middle <= left || middle >= right) {

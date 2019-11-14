@@ -7,7 +7,7 @@ MTS_PY_EXPORT(DiscreteDistribution) {
         MTS_PY_STRUCT(DiscreteDistribution)
             .def(py::init<size_t>(), py::arg("n_entries") = 0,
                 D(DiscreteDistribution, DiscreteDistribution))
-            .def(py::init([](py::array_t<float> data) {
+            .def(py::init([](py::array_t<ScalarFloat> data) {
                 if (data.ndim() != 1)
                     throw std::domain_error("array has incorrect dimension");
                 return DiscreteDistribution(

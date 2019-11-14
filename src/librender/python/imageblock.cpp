@@ -3,8 +3,7 @@
 #include <mitsuba/render/imageblock.h>
 
 MTS_PY_EXPORT(ImageBlock) {
-    MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
     MTS_PY_CHECK_ALIAS(ImageBlock, m) {
         MTS_PY_CLASS(ImageBlock, Object)
             .def(py::init<PixelFormat, const ScalarVector2i &, const ReconstructionFilter *,

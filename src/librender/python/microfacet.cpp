@@ -3,8 +3,7 @@
 #include <mitsuba/render/microfacet.h>
 
 MTS_PY_EXPORT(MicrofacetDistribution) {
-    MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_IMPORT_TYPES(MicrofacetDistribution)
 
     MTS_PY_CHECK_ALIAS(MicrofacetType, m) {
         py::enum_<MicrofacetType>(m, "MicrofacetType", D(MicrofacetType), py::arithmetic())

@@ -8,7 +8,6 @@
 
 MTS_PY_EXPORT_STRUCT(Interaction) {
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
     MTS_PY_CHECK_ALIAS(Interaction3f, m) {
         py::class_<Interaction3f>(m, "Interaction3f", D(Interaction3f))
             // Members
@@ -16,7 +15,6 @@ MTS_PY_EXPORT_STRUCT(Interaction) {
             .def_field(Interaction3f, time)
             .def_field(Interaction3f, wavelengths)
             .def_field(Interaction3f, p)
-
             // Methods
             .def(py::init<>(), D(Interaction3f, Interaction3f))
             .def_method(Interaction3f, spawn_ray)
@@ -28,7 +26,6 @@ MTS_PY_EXPORT_STRUCT(Interaction) {
 
 MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
     MTS_PY_CHECK_ALIAS(SurfaceInteraction3f, m) {
         py::class_<SurfaceInteraction3f, Interaction>(m, "SurfaceInteraction3f", D(SurfaceInteraction3f))
             // Members

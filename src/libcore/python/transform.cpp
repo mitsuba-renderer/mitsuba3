@@ -15,11 +15,11 @@ MTS_PY_EXPORT_STRUCT(Transform) {
             .def(py::init<Matrix3f>(), D(Transform3f, Transform3f))
             .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
             .def("transform_point",
-                [](const Transform<ScalarFloat, 3> &t, const Point2f &v) {
+                [](const Transform3f &t, const Point2f &v) {
                     return t*v;
                 })
             .def("transform_vector",
-                [](const Transform<ScalarFloat, 3> &t, const Vector2f &v) {
+                [](const Transform3f &t, const Vector2f &v) {
                     return t*v;
                 })
             .def_static("translate", &Transform3f::translate, "v"_a, D(Transform3f, translate))
@@ -49,15 +49,15 @@ MTS_PY_EXPORT_STRUCT(Transform) {
             .def(py::init<Matrix4f>(), D(Transform4f, Transform4f))
             .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
             .def("transform_point",
-                [](const Transform<ScalarFloat, 4> &t, const Point3f &v) {
+                [](const Transform4f &t, const Point3f &v) {
                     return t*v;
                 })
             .def("transform_vector",
-                [](const Transform<ScalarFloat, 4> &t, const Vector3f &v) {
+                [](const Transform4f &t, const Vector3f &v) {
                     return t*v;
                 })
             .def("transform_normal",
-                [](const Transform<ScalarFloat, 4> &t, const Normal3f &v) {
+                [](const Transform4f &t, const Normal3f &v) {
                     return t*v;
                 })
             .def_static("translate", &Transform4f::translate, "v"_a, D(Transform4f, translate))
@@ -92,8 +92,12 @@ MTS_PY_EXPORT_STRUCT(Transform) {
 }
 
 MTS_PY_EXPORT(AnimatedTransform) {
-    MTS_IMPORT_CORE_TYPES()
     using Keyframe = typename AnimatedTransform::Keyframe;
+    using ScalarFloat        = typename AnimatedTransform::Float;
+    using ScalarMatrix3f     = typename AnimatedTransform::Matrix3f;
+    using ScalarQuaternion4f = typename AnimatedTransform::Quaternion4f;
+    using ScalarVector3f     = typename AnimatedTransform::Vector3f;
+    using ScalarTransform4f  = typename AnimatedTransform::Transform4f;
 
     MTS_PY_CHECK_ALIAS(AnimatedTransform, m) {
         auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);

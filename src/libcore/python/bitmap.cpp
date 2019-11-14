@@ -4,10 +4,10 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Bitmap) {
-    using ScalarFloat = typename Bitmap::Float;
+    MTS_IMPORT_CORE_TYPES()
+    using BitmapFloat = typename Bitmap::Float;
     using Vector2s    = typename Bitmap::Vector2s;
     using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
-    MTS_IMPORT_CORE_TYPES()
 
     MTS_PY_CHECK_ALIAS(Bitmap, m) {
         auto bitmap = MTS_PY_CLASS(Bitmap, Object)
@@ -61,21 +61,21 @@ MTS_PY_EXPORT(Bitmap) {
                 py::return_value_policy::reference_internal)
             .def("resample", py::overload_cast<Bitmap *, const ReconstructionFilter *,
                 const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
-                const std::pair<ScalarFloat, ScalarFloat> &, Bitmap *>(&Bitmap::resample, py::const_),
+                const std::pair<BitmapFloat, BitmapFloat> &, Bitmap *>(&Bitmap::resample, py::const_),
                 "target"_a, "rfilter"_a = py::none(),
                 "bc"_a = std::make_pair(FilterBoundaryCondition::Clamp,
                                         FilterBoundaryCondition::Clamp),
-                "clamp"_a = std::make_pair(-math::Infinity<ScalarFloat>, math::Infinity<ScalarFloat>),
+                "clamp"_a = std::make_pair(-math::Infinity<BitmapFloat>, math::Infinity<BitmapFloat>),
                 "temp"_a = py::none(),
                 D(Bitmap, resample)
             )
             .def("resample", py::overload_cast<const Vector2s &, const ReconstructionFilter *,
                 const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
-                const std::pair<ScalarFloat, ScalarFloat> &>(&Bitmap::resample, py::const_),
+                const std::pair<BitmapFloat, BitmapFloat> &>(&Bitmap::resample, py::const_),
                 "res"_a, "rfilter"_a = py::none(),
                 "bc"_a = std::make_pair(FilterBoundaryCondition::Clamp,
                                         FilterBoundaryCondition::Clamp),
-                "clamp"_a = std::make_pair(-math::Infinity<ScalarFloat>, math::Infinity<ScalarFloat>),
+                "clamp"_a = std::make_pair(-math::Infinity<BitmapFloat>, math::Infinity<BitmapFloat>),
                 D(Bitmap, resample, 2)
             )
             .def("convert", py::overload_cast<PixelFormat, FieldType, bool>(

@@ -3,8 +3,7 @@
 #include <mitsuba/render/spectrum.h>
 
 MTS_PY_EXPORT(ContinuousSpectrum) {
-    MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_IMPORT_TYPES(ContinuousSpectrum)
     MTS_PY_CHECK_ALIAS(ContinuousSpectrum, m) {
         MTS_PY_CLASS(ContinuousSpectrum, Object)
             .def_static("D65", &ContinuousSpectrum::D65, "scale"_a = 1.f)

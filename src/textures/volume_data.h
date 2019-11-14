@@ -99,7 +99,7 @@ VolumeMetadata read_binary_volume_data(const std::string &filename,
             auto val = detail::read<float>(f);
             slice((*data)[j], i) = val;
             meta.mean += (double) val;
-            meta.max = std::max(meta.max, (Scalar) val);
+            meta.max = std::max((Scalar) meta.max, (Scalar) val);
         }
     }
     meta.mean /= double(size * meta.channel_count);

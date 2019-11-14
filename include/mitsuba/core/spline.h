@@ -1005,7 +1005,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
         return zero<Value>();
 
     Index index = offset[1] * size1 + offset[0];
-    Value result = 0.f;
+    Value result(0);
 
     for (int yi = 0; yi < 4; ++yi) {
         Value weight_y = weights[1][yi];

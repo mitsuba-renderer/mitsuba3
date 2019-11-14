@@ -147,7 +147,7 @@ protected:
 
     /** Maximum amount of time to spend rendering (excluding scene parsing).
      * Specified in seconds. A negative values indicates no timeout. */
-    ScalarFloat m_timeout;
+    float m_timeout;
 
     /// Timer used to enforce the timeout.
     Timer m_render_timer;

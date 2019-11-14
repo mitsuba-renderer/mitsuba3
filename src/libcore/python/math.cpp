@@ -18,23 +18,23 @@ MTS_PY_EXPORT(math) {
         .def("ellint_2",      &enoki::ellint_2<ScalarFloat, ScalarFloat>, "phi"_a, "k"_a)
         .def("ellint_3",      &enoki::ellint_3<ScalarFloat, ScalarFloat, ScalarFloat>, "phi"_a, "k"_a, "nu"_a);
 
-    math.attr("E")               = py::cast(math::E<ScalarFloat>);
-    math.attr("Pi")              = py::cast(math::Pi<ScalarFloat>);
-    math.attr("InvPi")           = py::cast(math::InvPi<ScalarFloat>);
-    math.attr("InvTwoPi")        = py::cast(math::InvTwoPi<ScalarFloat>);
-    math.attr("InvFourPi")       = py::cast(math::InvFourPi<ScalarFloat>);
-    math.attr("SqrtPi")          = py::cast(math::SqrtPi<ScalarFloat>);
-    math.attr("InvSqrtPi")       = py::cast(math::InvSqrtPi<ScalarFloat>);
-    math.attr("SqrtTwo")         = py::cast(math::SqrtTwo<ScalarFloat>);
-    math.attr("InvSqrtTwo")      = py::cast(math::InvSqrtTwo<ScalarFloat>);
-    math.attr("SqrtTwoPi")       = py::cast(math::SqrtTwoPi<ScalarFloat>);
-    math.attr("InvSqrtTwoPi")    = py::cast(math::InvSqrtTwoPi<ScalarFloat>);
-    math.attr("OneMinusEpsilon") = py::cast(math::OneMinusEpsilon<ScalarFloat>);
-    math.attr("RecipOverflow")   = py::cast(math::RecipOverflow<ScalarFloat>);
-    math.attr("Epsilon")         = py::cast(math::Epsilon<ScalarFloat>);
-    math.attr("Infinity")        = py::cast(math::Infinity<ScalarFloat>);
-    math.attr("Min")             = py::cast(math::Min<ScalarFloat>);
-    math.attr("Max")             = py::cast(math::Max<ScalarFloat>);
+    math.attr("E")               = py::cast(math::E<Float>);
+    math.attr("Pi")              = py::cast(math::Pi<Float>);
+    math.attr("InvPi")           = py::cast(math::InvPi<Float>);
+    math.attr("InvTwoPi")        = py::cast(math::InvTwoPi<Float>);
+    math.attr("InvFourPi")       = py::cast(math::InvFourPi<Float>);
+    math.attr("SqrtPi")          = py::cast(math::SqrtPi<Float>);
+    math.attr("InvSqrtPi")       = py::cast(math::InvSqrtPi<Float>);
+    math.attr("SqrtTwo")         = py::cast(math::SqrtTwo<Float>);
+    math.attr("InvSqrtTwo")      = py::cast(math::InvSqrtTwo<Float>);
+    math.attr("SqrtTwoPi")       = py::cast(math::SqrtTwoPi<Float>);
+    math.attr("InvSqrtTwoPi")    = py::cast(math::InvSqrtTwoPi<Float>);
+    math.attr("OneMinusEpsilon") = py::cast(math::OneMinusEpsilon<Float>);
+    math.attr("RecipOverflow")   = py::cast(math::RecipOverflow<Float>);
+    math.attr("Epsilon")         = py::cast(math::Epsilon<Float>);
+    math.attr("Infinity")        = py::cast(math::Infinity<Float>);
+    math.attr("Min")             = py::cast(math::Min<Float>);
+    math.attr("Max")             = py::cast(math::Max<Float>);
 
     math.def("i0e", enoki::i0e<ScalarFloat>, "x"_a)
         .def("legendre_p",

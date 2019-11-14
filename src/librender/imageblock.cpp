@@ -153,7 +153,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
         m_weights_y[i] = m_filter->eval_discretized(base.y() + (ScalarFloat) i, active);
 
     if (ENOKI_UNLIKELY(m_normalize)) {
-        Float wx = 0.f, wy = 0.f;
+        Float wx(0), wy(0);
         for (int x = 0; x <= max_size.x(); ++x)
             wx += m_weights_x[x];
         for (int y = 0; y <= max_size.y(); ++y)

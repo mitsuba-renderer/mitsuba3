@@ -149,7 +149,7 @@ void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene
     ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
 
     Point2f aperture_sample(.5f);
-    ScalarVector2f inv_resolution = 1.f / sensor->film()->crop_size();
+    ScalarVector2f inv_resolution = 1.f / sensor->film()->crop_size());
 
     for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
         ScalarPoint2u p = enoki::morton_decode<ScalarPoint2u>(i);
@@ -179,7 +179,7 @@ void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene
 
             Spectrum result;
             Mask active = true;
-            Float alpha = 1.f;  // TODO: restore support for alpha (probably AOV?)
+            Float alpha(1);  // TODO: restore support for alpha (probably AOV?)
             /* Integrator::eval */ {
                 ScopedPhase sp(ProfilerPhase::SamplingIntegratorEval);
                 std::tie(result, active) = sample(scene, sampler, ray, active);
