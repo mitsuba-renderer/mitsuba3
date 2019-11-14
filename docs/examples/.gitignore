@@ -1,0 +1,4 @@
+01_render_scene/*.jpg
+01_render_scene/*.exr
+02_depth_integrator/*.jpg
+02_depth_integrator/*.exr
