@@ -12,18 +12,18 @@ NAMESPACE_BEGIN(mitsuba)
  * Wraps nanogui::Texture and adds a new constructor for creating
  * textures from \ref mitsuba::Bitmap instances.
  */
-class MTS_EXPORT_UI Texture : public nanogui::Texture {
+class MTS_EXPORT_UI GPUTexture : public nanogui::Texture {
 public:
     using Base = nanogui::Texture;
     using Base::Base;
 
-    Texture(const Bitmap *bitmap,
+    GPUTexture(const Bitmap *bitmap,
             InterpolationMode min_interpolation_mode = InterpolationMode::Bilinear,
             InterpolationMode mag_interpolation_mode = InterpolationMode::Bilinear,
             WrapMode wrap_mode                       = WrapMode::ClampToEdge);
 
 protected:
-    virtual ~Texture();
+    virtual ~GPUTexture();
 };
 
 NAMESPACE_END(mitsuba)

@@ -28,18 +28,9 @@ endif()
 # For developers: ability to disable Link Time Optimization to speed up builds
 option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 
-# Catch unsupported combinations
-if (MTS_DOUBLE_PRECISION AND MTS_USE_EMBREE)
-  message(FATAL_ERROR "Embree/OptiX are not supported when compiling in double precision!")
-endif()
-
 if (MTS_ENABLE_AUTODIFF)
   set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
-  if (MTS_DOUBLE_PRECISION)
-    message(FATAL_ERROR "Automatic differentation is not supported when compiling in double precision!")
-  endif()
 endif()
-
 
 # ----------------------------------
 
@@ -207,7 +198,8 @@ else()
     # Quench inlining-related remarks
     add_compile_options("-wd11074" "-wd11076")
   endif()
-  if (NOT MTS_DOUBLE_PRECISION)
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf" MTS_CONFIG_FILE)
+  if (NOT "${MTS_CONFIG_FILE}" MATCHES "double")
     # Be extra noisy about unintended float->double conversions
     add_compile_options("-Wdouble-promotion")
   endif()

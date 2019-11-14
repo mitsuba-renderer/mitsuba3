@@ -28,10 +28,10 @@ struct MitsubaViewer::Tab {
     struct Layer {
         std::string name;
         ref<Bitmap> bitmap;
-        ng::ref<Texture> texture;
+        ng::ref<GPUTexture> texture;
 
         Layer(const std::string &name, Bitmap *bitmap)
-            : name(name), bitmap(bitmap), texture(new Texture(bitmap)) { }
+            : name(name), bitmap(bitmap), texture(new GPUTexture(bitmap)) { }
     };
 
     int id = 0;
@@ -175,9 +175,9 @@ MitsubaViewer::MitsubaViewer()
         }
     );
 
-    //m_view->set_image(new mitsuba::Texture(bitmap,
-                                           //mitsuba::Texture::InterpolationMode::Trilinear,
-                                           //mitsuba::Texture::InterpolationMode::Nearest));
+    //m_view->set_image(new mitsuba::GPUTexture(bitmap,
+                                           //mitsuba::GPUTexture::InterpolationMode::Trilinear,
+                                           //mitsuba::GPUTexture::InterpolationMode::Nearest));
 
     m_tab_widget->set_tabs_closeable(true);
     m_tab_widget->set_tabs_draggable(true);
