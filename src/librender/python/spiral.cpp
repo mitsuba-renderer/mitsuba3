@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/spiral.h>
 
-MTS_PY_EXPORT_VARIANTS(Spiral) {
+MTS_PY_EXPORT(Spiral) {
     using Vector2i = typename Spiral::Vector2i;
 
     MTS_PY_CHECK_ALIAS(Spiral, m) {

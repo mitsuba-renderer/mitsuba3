@@ -3,7 +3,7 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 
-MTS_PY_EXPORT_VARIANTS(PositionSample) {
+MTS_PY_EXPORT(PositionSample) {
     MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(PositionSample3f, m) {
         py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample3f))
@@ -21,7 +21,7 @@ MTS_PY_EXPORT_VARIANTS(PositionSample) {
     }
 }
 
-MTS_PY_EXPORT_VARIANTS(DirectionSample) {
+MTS_PY_EXPORT(DirectionSample) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename DirectionSample3f::Base;

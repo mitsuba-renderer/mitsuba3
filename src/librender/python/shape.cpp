@@ -6,7 +6,7 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/shape.h>
 
-MTS_PY_EXPORT_VARIANTS(Shape) {
+MTS_PY_EXPORT(Shape) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using ShapeP = mitsuba::Shape<FloatP, SpectrumP>;

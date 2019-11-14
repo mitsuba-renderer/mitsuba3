@@ -23,7 +23,7 @@ static void PyLog(LogLevel level, const std::string &msg) {
         tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
 }
 
-MTS_PY_EXPORT_VARIANTS(Logger) {
+MTS_PY_EXPORT(Logger) {
     MTS_PY_CHECK_ALIAS(Logger, m) {
         MTS_PY_CLASS(Logger, Object)
             .def(py::init<LogLevel>(), D(Logger, Logger))

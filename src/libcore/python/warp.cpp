@@ -3,7 +3,7 @@
 #include <enoki/stl.h>
 #include <pybind11/iostream.h>
 
-MTS_PY_EXPORT_VARIANTS(warp) {
+MTS_PY_EXPORT(warp) {
     MTS_IMPORT_CORE_TYPES()
 
     // Create dedicated submodule
@@ -15,46 +15,46 @@ MTS_PY_EXPORT_VARIANTS(warp) {
 
     warp.def(
         "square_to_uniform_disk",
-        vectorize<Float>(warp::square_to_uniform_disk<FloatP>),
+        vectorize<Float>(warp::square_to_uniform_disk<Float>),
         "sample"_a, D(warp, square_to_uniform_disk));
 
     warp.def(
         "uniform_disk_to_square",
-        vectorize<Float>(warp::uniform_disk_to_square<FloatP>),
+        vectorize<Float>(warp::uniform_disk_to_square<Float>),
         "p"_a, D(warp, uniform_disk_to_square));
 
     warp.def(
         "square_to_uniform_disk_pdf",
-        vectorize<Float>(warp::square_to_uniform_disk_pdf<true, FloatP>),
+        vectorize<Float>(warp::square_to_uniform_disk_pdf<true, Float>),
         "p"_a, D(warp, square_to_uniform_disk_pdf));
 
     warp.def(
         "uniform_disk_to_square_concentric",
-        vectorize<Float>(warp::uniform_disk_to_square_concentric<FloatP>),
+        vectorize<Float>(warp::uniform_disk_to_square_concentric<Float>),
         "p"_a, D(warp, uniform_disk_to_square_concentric));
     warp.def(
         "square_to_uniform_disk_concentric",
-        vectorize<Float>(warp::square_to_uniform_disk_concentric<FloatP>),
+        vectorize<Float>(warp::square_to_uniform_disk_concentric<Float>),
         "sample"_a, D(warp, square_to_uniform_disk_concentric));
 
     warp.def(
         "square_to_uniform_square_concentric",
-        vectorize<Float>(warp::square_to_uniform_square_concentric<FloatP>),
+        vectorize<Float>(warp::square_to_uniform_square_concentric<Float>),
         "sample"_a, D(warp, square_to_uniform_square_concentric));
 
     warp.def(
         "square_to_uniform_disk_concentric_pdf",
-        vectorize<Float>(warp::square_to_uniform_disk_concentric_pdf<true, FloatP>),
+        vectorize<Float>(warp::square_to_uniform_disk_concentric_pdf<true, Float>),
         "p"_a, D(warp, square_to_uniform_disk_concentric_pdf));
 
     warp.def(
         "square_to_uniform_triangle",
-        vectorize<Float>(warp::square_to_uniform_triangle<FloatP>),
+        vectorize<Float>(warp::square_to_uniform_triangle<Float>),
         "sample"_a, D(warp, square_to_uniform_triangle));
 
     warp.def(
         "uniform_triangle_to_square",
-        vectorize<Float>(warp::uniform_triangle_to_square<FloatP>),
+        vectorize<Float>(warp::uniform_triangle_to_square<Float>),
         "p"_a, D(warp, uniform_triangle_to_square));
 
     warp.def(
@@ -74,134 +74,134 @@ MTS_PY_EXPORT_VARIANTS(warp) {
 
     warp.def(
         "square_to_tent",
-        vectorize<Float>(warp::square_to_tent<FloatP>),
+        vectorize<Float>(warp::square_to_tent<Float>),
         "sample"_a, D(warp, square_to_tent));
 
     warp.def(
         "tent_to_square",
-        vectorize<Float>(warp::tent_to_square<FloatP>),
+        vectorize<Float>(warp::tent_to_square<Float>),
         "value"_a, D(warp, tent_to_square));
 
     warp.def(
         "square_to_tent_pdf",
-        vectorize<Float>(warp::square_to_tent_pdf<FloatP>),
+        vectorize<Float>(warp::square_to_tent_pdf<Float>),
         "v"_a, D(warp, square_to_tent_pdf));
 
     warp.def(
         "square_to_uniform_triangle_pdf",
-        vectorize<Float>(warp::square_to_uniform_triangle_pdf<true, FloatP>),
+        vectorize<Float>(warp::square_to_uniform_triangle_pdf<true, Float>),
         "p"_a, D(warp, square_to_uniform_triangle_pdf));
 
     warp.def(
         "square_to_uniform_sphere",
-        vectorize<Float>(warp::square_to_uniform_sphere<FloatP>),
+        vectorize<Float>(warp::square_to_uniform_sphere<Float>),
         "sample"_a, D(warp, square_to_uniform_sphere));
 
     warp.def(
         "uniform_sphere_to_square",
-        vectorize<Float>(warp::uniform_sphere_to_square<FloatP>),
+        vectorize<Float>(warp::uniform_sphere_to_square<Float>),
         "sample"_a, D(warp, uniform_sphere_to_square));
 
     warp.def(
         "square_to_uniform_sphere_pdf",
-        vectorize<Float>(warp::square_to_uniform_sphere_pdf<true, FloatP>),
+        vectorize<Float>(warp::square_to_uniform_sphere_pdf<true, Float>),
         "v"_a, D(warp, square_to_uniform_sphere_pdf));
 
     warp.def(
         "square_to_uniform_hemisphere",
-        vectorize<Float>(warp::square_to_uniform_hemisphere<FloatP>),
+        vectorize<Float>(warp::square_to_uniform_hemisphere<Float>),
         "sample"_a, D(warp, square_to_uniform_hemisphere));
 
     warp.def(
         "uniform_hemisphere_to_square",
-        vectorize<Float>(warp::uniform_hemisphere_to_square<FloatP>),
+        vectorize<Float>(warp::uniform_hemisphere_to_square<Float>),
         "v"_a, D(warp, uniform_hemisphere_to_square));
 
     warp.def(
         "square_to_uniform_hemisphere_pdf",
-        vectorize<Float>(warp::square_to_uniform_hemisphere_pdf<true, FloatP>),
+        vectorize<Float>(warp::square_to_uniform_hemisphere_pdf<true, Float>),
         "v"_a, D(warp, square_to_uniform_hemisphere_pdf));
 
     warp.def(
         "square_to_cosine_hemisphere",
-        vectorize<Float>(warp::square_to_cosine_hemisphere<FloatP>),
+        vectorize<Float>(warp::square_to_cosine_hemisphere<Float>),
         "sample"_a, D(warp, square_to_cosine_hemisphere));
 
     warp.def(
         "cosine_hemisphere_to_square",
-        vectorize<Float>(warp::cosine_hemisphere_to_square<FloatP>),
+        vectorize<Float>(warp::cosine_hemisphere_to_square<Float>),
         "v"_a, D(warp, cosine_hemisphere_to_square));
 
     warp.def(
         "square_to_cosine_hemisphere_pdf",
-        vectorize<Float>(warp::square_to_cosine_hemisphere_pdf<true, FloatP>),
+        vectorize<Float>(warp::square_to_cosine_hemisphere_pdf<true, Float>),
         "v"_a, D(warp, square_to_cosine_hemisphere_pdf));
 
     warp.def(
         "square_to_uniform_cone",
-        vectorize<Float>(warp::square_to_uniform_cone<FloatP>),
+        vectorize<Float>(warp::square_to_uniform_cone<Float>),
         "v"_a, "cos_cutoff"_a, D(warp, square_to_uniform_cone));
 
     warp.def(
         "uniform_cone_to_square",
-        vectorize<Float>(warp::uniform_cone_to_square<FloatP>),
+        vectorize<Float>(warp::uniform_cone_to_square<Float>),
         "v"_a, "cos_cutoff"_a, D(warp, uniform_cone_to_square));
 
     warp.def(
         "square_to_uniform_cone_pdf",
-        vectorize<Float>(warp::square_to_uniform_cone_pdf<true, FloatP>),
+        vectorize<Float>(warp::square_to_uniform_cone_pdf<true, Float>),
         "v"_a, "cos_cutoff"_a, D(warp, square_to_uniform_cone_pdf));
 
     warp.def(
         "square_to_beckmann",
-        vectorize<Float>(warp::square_to_beckmann<FloatP>),
+        vectorize<Float>(warp::square_to_beckmann<Float>),
         "sample"_a, "alpha"_a, D(warp, square_to_beckmann));
 
     warp.def(
         "beckmann_to_square",
-        vectorize<Float>(warp::beckmann_to_square<FloatP>),
+        vectorize<Float>(warp::beckmann_to_square<Float>),
         "v"_a, "alpha"_a, D(warp, beckmann_to_square));
 
     warp.def(
         "square_to_beckmann_pdf",
-        vectorize<Float>(warp::square_to_beckmann_pdf<FloatP>),
+        vectorize<Float>(warp::square_to_beckmann_pdf<Float>),
         "v"_a, "alpha"_a, D(warp, square_to_beckmann_pdf));
 
     warp.def(
         "square_to_von_mises_fisher",
-        vectorize<Float>(warp::square_to_von_mises_fisher<FloatP>),
+        vectorize<Float>(warp::square_to_von_mises_fisher<Float>),
         "sample"_a, "kappa"_a, D(warp, square_to_von_mises_fisher));
 
     warp.def(
         "von_mises_fisher_to_square",
-        vectorize<Float>(warp::von_mises_fisher_to_square<FloatP>),
+        vectorize<Float>(warp::von_mises_fisher_to_square<Float>),
         "v"_a, "kappa"_a, D(warp, von_mises_fisher_to_square));
 
     warp.def(
         "square_to_von_mises_fisher_pdf",
-        vectorize<Float>(warp::square_to_von_mises_fisher_pdf<FloatP>),
+        vectorize<Float>(warp::square_to_von_mises_fisher_pdf<Float>),
         "v"_a, "kappa"_a, D(warp, square_to_von_mises_fisher_pdf));
 
     warp.def(
         "square_to_rough_fiber",
-        vectorize<Float>(warp::square_to_rough_fiber<FloatP>),
+        vectorize<Float>(warp::square_to_rough_fiber<Float>),
         "sample"_a, "wi"_a, "tangent"_a, "kappa"_a,
         D(warp, square_to_rough_fiber));
 
     warp.def(
         "square_to_rough_fiber_pdf",
-        vectorize<Float>(warp::square_to_rough_fiber_pdf<FloatP>),
+        vectorize<Float>(warp::square_to_rough_fiber_pdf<Float>),
         "v"_a, "wi"_a, "tangent"_a, "kappa"_a,
         D(warp, square_to_rough_fiber_pdf));
 
     warp.def(
         "square_to_std_normal",
-        vectorize<Float>(warp::square_to_std_normal<FloatP>),
+        vectorize<Float>(warp::square_to_std_normal<Float>),
         "v"_a, D(warp, square_to_std_normal));
 
     warp.def(
         "square_to_std_normal_pdf",
-        vectorize<Float>(warp::square_to_std_normal_pdf<FloatP>),
+        vectorize<Float>(warp::square_to_std_normal_pdf<Float>),
         "v"_a, D(warp, square_to_std_normal_pdf));
 
     // --------------------------------------------------------------------
@@ -212,12 +212,6 @@ MTS_PY_EXPORT_VARIANTS(warp) {
     using Marginal2D1 = warp::Marginal2D<Float, 1>;
     using Marginal2D2 = warp::Marginal2D<Float, 2>;
     using Marginal2D3 = warp::Marginal2D<Float, 3>;
-
-    using Marginal2D0P = warp::Marginal2D<FloatP, 0>;
-    using Marginal2D1P = warp::Marginal2D<FloatP, 1>;
-    using Marginal2D2P = warp::Marginal2D<FloatP, 2>;
-    using Marginal2D3P = warp::Marginal2D<FloatP, 3>;
-    using Vector2fP = Vector<FloatP, 2>;
 
     MTS_PY_CHECK_ALIAS(Marginal2D0, m) {
         py::class_<Marginal2D0>(m, "Marginal2D0", D(warp, Marginal2D))
@@ -231,23 +225,21 @@ MTS_PY_EXPORT_VARIANTS(warp) {
                 "data"_a, "normalize"_a = true, "build_cdf"_a = true)
 
             .def("sample",
-                vectorize<Float>([](const Marginal2D0P *lw, const Vector2fP &sample, bool active) {
-                    return lw->sample(sample, (const FloatP *) nullptr, active);
+                vectorize<Float>([](const Marginal2D0 *lw, const Vector2f &sample, Mask active) {
+                    return lw->sample(sample, (const Float *) nullptr, active);
                 }),
                 "sample"_a, "active"_a = true, D(warp, Marginal2D, sample))
             .def("invert",
-                vectorize<Float>([](const Marginal2D0P *lw, const Vector2fP &invert, bool active) {
-                    return lw->invert(invert, (const FloatP *) nullptr, active);
+                vectorize<Float>([](const Marginal2D0 *lw, const Vector2f &invert, Mask active) {
+                    return lw->invert(invert, (const Float *) nullptr, active);
                 }),
                 "sample"_a, "active"_a = true, D(warp, Marginal2D, invert))
             .def("eval",
-                vectorize<Float>([](const Marginal2D0P *lw, const Vector2fP &pos, bool active) {
-                    return lw->eval(pos, (const FloatP *) nullptr, active);
+                vectorize<Float>([](const Marginal2D0 *lw, const Vector2f &pos, Mask active) {
+                    return lw->eval(pos, (const Float *) nullptr, active);
                 }),
                 "pos"_a, "active"_a = true, D(warp, Marginal2D, eval))
-            .def("__repr__", &Marginal2D0::to_string)
-            ;
-        ;
+            .def("__repr__", &Marginal2D0::to_string);
     }
 
     MTS_PY_CHECK_ALIAS(Marginal2D1, m) {
@@ -268,22 +260,22 @@ MTS_PY_EXPORT_VARIANTS(warp) {
                 D(warp, Marginal2D))
             .def("sample",
                 vectorize<Float>(
-                    [](const Marginal2D1P *lw, const Vector2fP &sample, FloatP param1, bool active) {
-                        FloatP params[1] = { param1 };
+                    [](const Marginal2D1 *lw, const Vector2f &sample, Float param1, Mask active) {
+                        Float params[1] = { param1 };
                         return lw->sample(sample, params, active);
                     }),
                 "sample"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, sample))
             .def("invert",
                 vectorize<Float>(
-                    [](const Marginal2D1P *lw, const Vector2fP &invert, FloatP param1, bool active) {
-                        FloatP params[1] = { param1 };
+                    [](const Marginal2D1 *lw, const Vector2f &invert, Float param1, Mask active) {
+                        Float params[1] = { param1 };
                         return lw->invert(invert, params, active);
                     }),
                 "sample"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, invert))
             .def("eval",
                 vectorize<Float>(
-                    [](const Marginal2D1P *lw, const Vector2fP &pos, FloatP param1, bool active) {
-                        FloatP params[1] = { param1 };
+                    [](const Marginal2D1 *lw, const Vector2f &pos, Float param1, Mask active) {
+                        Float params[1] = { param1 };
                         return lw->eval(pos, params, active);
                     }),
                 "pos"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, eval))
@@ -309,24 +301,24 @@ MTS_PY_EXPORT_VARIANTS(warp) {
                 "data"_a, "param_values"_a, "normalize"_a = true, "build_cdf"_a = true,
                 D(warp, Marginal2D))
             .def("sample",
-                vectorize<Float>([](const Marginal2D2P *lw, const Vector2fP &sample, FloatP param1,
-                                    FloatP param2, bool active) {
-                    FloatP params[2] = { param1, param2 };
+                vectorize<Float>([](const Marginal2D2 *lw, const Vector2f &sample, Float param1,
+                                    Float param2, Mask active) {
+                    Float params[2] = { param1, param2 };
                     return lw->sample(sample, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, sample))
 
             .def("invert",
-                vectorize<Float>([](const Marginal2D2P *lw, const Vector2fP &invert, FloatP param1,
-                                    FloatP param2, bool active) {
-                    FloatP params[2] = { param1, param2 };
+                vectorize<Float>([](const Marginal2D2 *lw, const Vector2f &invert, Float param1,
+                                    Float param2, Mask active) {
+                    Float params[2] = { param1, param2 };
                     return lw->invert(invert, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, invert))
             .def("eval",
-                vectorize<Float>([](const Marginal2D2P *lw, const Vector2fP &pos, FloatP param1,
-                                    FloatP param2, bool active) {
-                    FloatP params[2] = { param1, param2 };
+                vectorize<Float>([](const Marginal2D2 *lw, const Vector2f &pos, Float param1,
+                                    Float param2, Mask active) {
+                    Float params[2] = { param1, param2 };
                     return lw->eval(pos, params, active);
                 }),
                 "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, eval))
@@ -355,25 +347,25 @@ MTS_PY_EXPORT_VARIANTS(warp) {
                 "data"_a, "param_values"_a, "normalize"_a = true, "build_cdf"_a = true,
                 D(warp, Marginal2D))
             .def("invert",
-                vectorize<Float>([](const Marginal2D3P *lw, const Vector2fP &invert, FloatP param1,
-                                    FloatP param2, FloatP param3, bool active) {
-                    FloatP params[3] = { param1, param2, param3 };
+                vectorize<Float>([](const Marginal2D3 *lw, const Vector2f &invert, Float param1,
+                                    Float param2, Float param3, Mask active) {
+                    Float params[3] = { param1, param2, param3 };
                     return lw->invert(invert, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
                 D(warp, Marginal2D, invert))
             .def("sample",
-                vectorize<Float>([](const Marginal2D3P *lw, const Vector2fP &sample, FloatP param1,
-                                    FloatP param2, FloatP param3, bool active) {
-                    FloatP params[3] = { param1, param2, param3 };
+                vectorize<Float>([](const Marginal2D3 *lw, const Vector2f &sample, Float param1,
+                                    Float param2, Float param3, Mask active) {
+                    Float params[3] = { param1, param2, param3 };
                     return lw->sample(sample, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
                 D(warp, Marginal2D, sample))
             .def("eval",
-                vectorize<Float>([](const Marginal2D3P *lw, const Vector2fP &pos, FloatP param1,
-                                    FloatP param2, FloatP param3, bool active) {
-                    FloatP params[3] = { param1, param2, param3 };
+                vectorize<Float>([](const Marginal2D3 *lw, const Vector2f &pos, Float param1,
+                                    Float param2, Float param3, Mask active) {
+                    Float params[3] = { param1, param2, param3 };
                     return lw->eval(pos, params, active);
                 }),
                 "pos"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
@@ -388,10 +380,6 @@ MTS_PY_EXPORT_VARIANTS(warp) {
     using Hierarchical2D1 = warp::Hierarchical2D<Float, 1>;
     using Hierarchical2D2 = warp::Hierarchical2D<Float, 2>;
     using Hierarchical2D3 = warp::Hierarchical2D<Float, 3>;
-    using Hierarchical2D0P = warp::Hierarchical2D<FloatP, 0>;
-    using Hierarchical2D1P = warp::Hierarchical2D<FloatP, 1>;
-    using Hierarchical2D2P = warp::Hierarchical2D<FloatP, 2>;
-    using Hierarchical2D3P = warp::Hierarchical2D<FloatP, 3>;
 
     MTS_PY_CHECK_ALIAS(Hierarchical2D0, m) {
         py::class_<Hierarchical2D0>(m, "Hierarchical2D0", D(warp, Hierarchical2D))
@@ -404,18 +392,18 @@ MTS_PY_EXPORT_VARIANTS(warp) {
                 }),
                 "data"_a, "normalize"_a = true, "build_hierarchy"_a = true)
             .def("sample",
-                vectorize<Float>([](const Hierarchical2D0P *lw, const Vector2fP &sample, bool active) {
-                    return lw->sample(sample, (const FloatP *) nullptr, active);
+                vectorize<Float>([](const Hierarchical2D0 *lw, const Vector2f &sample, Mask active) {
+                    return lw->sample(sample, (const Float *) nullptr, active);
                 }),
                 "sample"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
             .def("invert",
-                vectorize<Float>([](const Hierarchical2D0P *lw, const Vector2fP &invert, bool active) {
-                    return lw->invert(invert, (const FloatP *) nullptr, active);
+                vectorize<Float>([](const Hierarchical2D0 *lw, const Vector2f &invert, Mask active) {
+                    return lw->invert(invert, (const Float *) nullptr, active);
                 }),
                 "sample"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
             .def("eval",
-                vectorize<Float>([](const Hierarchical2D0P *lw, const Vector2fP &pos, bool active) {
-                    return lw->eval(pos, (const FloatP *) nullptr, active);
+                vectorize<Float>([](const Hierarchical2D0 *lw, const Vector2f &pos, Mask active) {
+                    return lw->eval(pos, (const Float *) nullptr, active);
                 }),
                 "pos"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
             .def("__repr__", &Hierarchical2D0::to_string)
@@ -440,22 +428,22 @@ MTS_PY_EXPORT_VARIANTS(warp) {
                 D(warp, Hierarchical2D))
             .def("sample",
                 vectorize<Float>(
-                    [](const Hierarchical2D1P *lw, const Vector2fP &sample, FloatP param1, bool active) {
-                        FloatP params[1] = { param1 };
+                    [](const Hierarchical2D1 *lw, const Vector2f &sample, Float param1, Mask active) {
+                        Float params[1] = { param1 };
                         return lw->sample(sample, params, active);
                     }),
                 "sample"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
             .def("invert",
                 vectorize<Float>(
-                    [](const Hierarchical2D1P *lw, const Vector2fP &invert, FloatP param1, bool active) {
-                        FloatP params[1] = { param1 };
+                    [](const Hierarchical2D1 *lw, const Vector2f &invert, Float param1, Mask active) {
+                        Float params[1] = { param1 };
                         return lw->invert(invert, params, active);
                     }),
                 "sample"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
             .def("eval",
                 vectorize<Float>(
-                    [](const Hierarchical2D1P *lw, const Vector2fP &pos, FloatP param1, bool active) {
-                        FloatP params[1] = { param1 };
+                    [](const Hierarchical2D1 *lw, const Vector2f &pos, Float param1, Mask active) {
+                        Float params[1] = { param1 };
                         return lw->eval(pos, params, active);
                     }),
                 "pos"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
@@ -482,23 +470,23 @@ MTS_PY_EXPORT_VARIANTS(warp) {
                 "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true,
                 D(warp, Hierarchical2D))
             .def("sample",
-                vectorize<Float>([](const Hierarchical2D2P *lw, const Vector2fP &sample, FloatP param1,
-                                    FloatP param2, bool active) {
-                    FloatP params[2] = { param1, param2 };
+                vectorize<Float>([](const Hierarchical2D2 *lw, const Vector2f &sample, Float param1,
+                                    Float param2, Mask active) {
+                    Float params[2] = { param1, param2 };
                     return lw->sample(sample, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
             .def("invert",
-                vectorize<Float>([](const Hierarchical2D2P *lw, const Vector2fP &invert, FloatP param1,
-                                    FloatP param2, bool active) {
-                    FloatP params[2] = { param1, param2 };
+                vectorize<Float>([](const Hierarchical2D2 *lw, const Vector2f &invert, Float param1,
+                                    Float param2, Mask active) {
+                    Float params[2] = { param1, param2 };
                     return lw->invert(invert, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
             .def("eval",
-                vectorize<Float>([](const Hierarchical2D2P *lw, const Vector2fP &pos, FloatP param1,
-                                    FloatP param2, bool active) {
-                    FloatP params[2] = { param1, param2 };
+                vectorize<Float>([](const Hierarchical2D2 *lw, const Vector2f &pos, Float param1,
+                                    Float param2, Mask active) {
+                    Float params[2] = { param1, param2 };
                     return lw->eval(pos, params, active);
                 }),
                 "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
@@ -527,25 +515,25 @@ MTS_PY_EXPORT_VARIANTS(warp) {
                 "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true,
                 D(warp, Hierarchical2D))
             .def("invert",
-                vectorize<Float>([](const Hierarchical2D3P *lw, const Vector2fP &invert, FloatP param1,
-                                    FloatP param2, FloatP param3, bool active) {
-                    FloatP params[3] = { param1, param2, param3 };
+                vectorize<Float>([](const Hierarchical2D3 *lw, const Vector2f &invert, Float param1,
+                                    Float param2, Float param3, Mask active) {
+                    Float params[3] = { param1, param2, param3 };
                     return lw->invert(invert, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
                 D(warp, Hierarchical2D, invert))
             .def("sample",
-                vectorize<Float>([](const Hierarchical2D3P *lw, const Vector2fP &sample, FloatP param1,
-                                    FloatP param2, FloatP param3, bool active) {
-                    FloatP params[3] = { param1, param2, param3 };
+                vectorize<Float>([](const Hierarchical2D3 *lw, const Vector2f &sample, Float param1,
+                                    Float param2, Float param3, Mask active) {
+                    Float params[3] = { param1, param2, param3 };
                     return lw->sample(sample, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
                 D(warp, Hierarchical2D, sample))
             .def("eval",
-                vectorize<Float>([](const Hierarchical2D3P *lw, const Vector2fP &pos, FloatP param1,
-                                    FloatP param2, FloatP param3, bool active) {
-                    FloatP params[3] = { param1, param2, param3 };
+                vectorize<Float>([](const Hierarchical2D3 *lw, const Vector2f &pos, Float param1,
+                                    Float param2, Float param3, Mask active) {
+                    Float params[3] = { param1, param2, param3 };
                     return lw->eval(pos, params, active);
                 }),
                 "pos"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,

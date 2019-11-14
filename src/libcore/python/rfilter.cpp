@@ -1,8 +1,7 @@
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/python/python.h>
 
-
-MTS_PY_EXPORT_VARIANTS(rfilter) {
+MTS_PY_EXPORT(rfilter) {
     MTS_PY_CHECK_ALIAS(FilterBoundaryCondition, m) {
         py::enum_<FilterBoundaryCondition>(m, "FilterBoundaryCondition", D(FilterBoundaryCondition))
             .value("Clamp", FilterBoundaryCondition::Clamp, D(FilterBoundaryCondition, Clamp))
@@ -53,17 +52,15 @@ MTS_PY_EXPORT_VARIANTS(rfilter) {
     }
 
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Spectrum>;
-    using ReconstructionFilterP = mitsuba::ReconstructionFilter<FloatP, SpectrumP>;
-
     MTS_PY_CHECK_ALIAS(ReconstructionFilter, m) {
         MTS_PY_CLASS(ReconstructionFilter, Object)
             .def_method(ReconstructionFilter, border_size)
             .def_method(ReconstructionFilter, radius)
             .def("eval",
-                vectorize<Float>(&ReconstructionFilterP::eval),
+                vectorize<Float>(&ReconstructionFilter::eval),
                 D(ReconstructionFilter, eval), "x"_a)
             .def("eval_discretized",
-                vectorize<Float>(&ReconstructionFilterP::template eval_discretized<FloatP>),
+                vectorize<Float>(&ReconstructionFilter::template eval_discretized<Float>),
                 D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)
             ;
     }

@@ -3,8 +3,11 @@
 
 #define DE(...) DOC(enoki, ##__VA_ARGS__)
 
-MTS_PY_EXPORT_VARIANTS(random) {
+MTS_PY_EXPORT(random) {
     MTS_IMPORT_CORE_TYPES()
+
+// TODO
+#if 0
     using PCG32 = mitsuba::PCG32<UInt32>;
     using UInt32P = replace_scalar_t<FloatP, ScalarUInt32>;
 
@@ -85,13 +88,14 @@ MTS_PY_EXPORT_VARIANTS(random) {
                     return p.attr("next_float64")(*args, **kwargs);
             });
     }
+#endif
 
     m.def("sample_tea_float32",
-          vectorize<Float>(sample_tea_float32<UInt32P>),
+          vectorize<Float>(sample_tea_float32<UInt32>),
           "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float32));
 
     m.def("sample_tea_float64",
-          vectorize<Float>(sample_tea_float64<UInt32P>),
+          vectorize<Float>(sample_tea_float64<UInt32>),
           "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float64));
 
     m.attr("sample_tea_float") = m.attr(

@@ -1,7 +1,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(FileResolver) {
+MTS_PY_EXPORT(FileResolver) {
     MTS_PY_CHECK_ALIAS(FileResolver, m) {
         MTS_PY_CLASS(FileResolver, Object)
             .def(py::init<>(), D(FileResolver, FileResolver))

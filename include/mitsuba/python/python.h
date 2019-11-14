@@ -20,15 +20,6 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 
 #define D(...) "doc disabled" // TODO re-enable this DOC(mitsuba, __VA_ARGS__)
 
-#define MTS_PY_DECLARE(name) \
-    extern void python_export_##name(py::module &)
-
-#define MTS_PY_IMPORT(name) \
-    python_export_##name(m)
-
-#define MTS_PY_EXPORT(name) \
-    void python_export_##name(py::module &m)
-
 #define MTS_PY_CLASS(Name, Base, ...) \
     py::class_<Name, Base, ref<Name>>(m, #Name, D(Name), ##__VA_ARGS__)
 
@@ -106,9 +97,8 @@ template <typename Type> pybind11::handle get_type_handle() {
 
 template<typename Float, typename Func>
 auto vectorize(Func func) {
-    if constexpr (is_dynamic_v<Float> && !is_cuda_array_v<Float>){
+    if constexpr (is_array_v<Float> && !is_dynamic_v<Float>)
         return enoki::vectorize_wrapper(func);
-    } else {
+    else
         return func;
-    }
 }

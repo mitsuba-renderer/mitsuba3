@@ -27,7 +27,7 @@ static void sigint_handler(int sig) {
 }
 #endif
 
-MTS_PY_EXPORT_VARIANTS(Integrator) {
+MTS_PY_EXPORT(Integrator) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     MTS_PY_CHECK_ALIAS(Integrator, m) {

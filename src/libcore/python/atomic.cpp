@@ -1,7 +1,7 @@
 #include <mitsuba/core/atomic.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(atomic) {
+MTS_PY_EXPORT(atomic) {
     MTS_PY_CHECK_ALIAS(AtomicFloat<>, m) {
         py::class_<AtomicFloat<>>(m, "AtomicFloat", D(AtomicFloat))
             .def(py::init<float>(), D(AtomicFloat, AtomicFloat))

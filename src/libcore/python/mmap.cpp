@@ -2,7 +2,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(MemoryMappedFile) {
+MTS_PY_EXPORT(MemoryMappedFile) {
     MTS_PY_CHECK_ALIAS(MemoryMappedFile, m) {
         MTS_PY_CLASS(MemoryMappedFile, Object, py::buffer_protocol())
             .def(py::init<const mitsuba::filesystem::path &, size_t>(),

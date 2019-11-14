@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/fresnel.h>
 
-MTS_PY_EXPORT_VARIANTS(fresnel) {
+MTS_PY_EXPORT(fresnel) {
     MTS_IMPORT_CORE_TYPES()
     using Vector3fP = Vector<FloatP, 3>;
     using Normal3fP = Normal<FloatP, 3>;

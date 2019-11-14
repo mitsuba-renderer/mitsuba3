@@ -1,7 +1,7 @@
 #include <mitsuba/core/argparser.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(ArgParser) {
+MTS_PY_EXPORT(ArgParser) {
     MTS_PY_CHECK_ALIAS(ArgParser, m) {
         py::class_<ArgParser> argp(m, "ArgParser", D(ArgParser));
 

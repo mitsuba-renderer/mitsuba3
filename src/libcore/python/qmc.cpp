@@ -2,12 +2,10 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(qmc) {
+MTS_PY_EXPORT(qmc) {
     MTS_IMPORT_CORE_TYPES()
-
     // Create dedicated submodule
     auto qmc = m.def_submodule("qmc", "Quasi Monte-Carlo sampling routines");
-
     MTS_PY_CHECK_ALIAS(RadicalInverse, qmc) {
         py::class_<RadicalInverse, Object, ref<RadicalInverse>>(qmc, "RadicalInverse",
                                                                 D(RadicalInverse))
@@ -15,9 +13,9 @@ MTS_PY_EXPORT_VARIANTS(qmc) {
             .def("base", &RadicalInverse::base, D(RadicalInverse, base))
             .def("bases", &RadicalInverse::bases, D(RadicalInverse, bases))
             .def("scramble", &RadicalInverse::scramble, D(RadicalInverse, scramble))
-            .def("eval", vectorize<Float>(&RadicalInverse::eval<FloatP>), "base_index"_a, "index"_a,
+            .def("eval", vectorize<Float>(&RadicalInverse::eval<Float>), "base_index"_a, "index"_a,
                  D(RadicalInverse, eval))
-            .def("eval_scrambled", vectorize<Float>(&RadicalInverse::eval_scrambled<FloatP>),
+            .def("eval_scrambled", vectorize<Float>(&RadicalInverse::eval_scrambled<Float>),
                  "base_index"_a, "index"_a, D(RadicalInverse, eval_scrambled))
             .def("permutation",
                  [](py::object self, uint32_t index) {

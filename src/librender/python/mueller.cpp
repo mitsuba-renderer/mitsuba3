@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/mueller.h>
 
-MTS_PY_EXPORT_VARIANTS(mueller) {
+MTS_PY_EXPORT(mueller) {
     MTS_IMPORT_TYPES()
 
     auto mueller = m.def_submodule("mueller");

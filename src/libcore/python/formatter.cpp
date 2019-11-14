@@ -19,7 +19,7 @@ public:
     }
 };
 
-MTS_PY_EXPORT_VARIANTS(Formatter) {
+MTS_PY_EXPORT(Formatter) {
     MTS_PY_CHECK_ALIAS(PyFormatter, m) {
         MTS_PY_TRAMPOLINE_CLASS(PyFormatter, Formatter, Object)
             .def(py::init<>())

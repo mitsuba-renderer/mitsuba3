@@ -3,10 +3,9 @@
 #include <mitsuba/core/stream.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(Bitmap) {
+MTS_PY_EXPORT(Bitmap) {
     using ScalarFloat = typename Bitmap::Float;
-    using Vector2s = typename Bitmap::Vector2s;
-    using Vector2s = typename Bitmap::Vector2s;
+    using Vector2s    = typename Bitmap::Vector2s;
     using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
     MTS_IMPORT_CORE_TYPES()
 
@@ -17,8 +16,6 @@ MTS_PY_EXPORT_VARIANTS(Bitmap) {
                 D(Bitmap, Bitmap))
 
             .def(py::init([](py::array obj, py::object pixel_format_) {
-                // auto struct_ = py::module::import("mitsuba.core").attr("Struct");
-                // FieldType component_format = struct_.attr("EType")(obj.dtype()).cast<FieldType>();
                 FieldType component_format = obj.dtype().cast<FieldType>();
                 if (obj.ndim() != 2 && obj.ndim() != 3)
                     throw py::type_error("Expected an array of size 2 or 3");

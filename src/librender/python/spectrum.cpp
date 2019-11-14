@@ -2,7 +2,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/spectrum.h>
 
-MTS_PY_EXPORT_VARIANTS(ContinuousSpectrum) {
+MTS_PY_EXPORT(ContinuousSpectrum) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
 

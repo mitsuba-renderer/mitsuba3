@@ -348,7 +348,7 @@ protected:
      * prepare_sampling_table() is first called. The value of \ref
      * m_surface_area is negative until this has taken place.
      */
-    DiscreteDistribution<Float> m_area_distribution;
+    DiscreteDistribution m_area_distribution;
     ScalarFloat m_surface_area = -1.f;
     ScalarFloat m_inv_surface_area = -1.f;
     tbb::spin_mutex m_mutex;

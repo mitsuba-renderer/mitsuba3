@@ -60,7 +60,7 @@ public:
 
 NAMESPACE_END(mitsuba)
 
-MTS_PY_EXPORT_VARIANTS(Thread) {
+MTS_PY_EXPORT(Thread) {
     MTS_PY_CHECK_ALIAS(Thread, m) {
         auto th = py::class_<Thread, Object, ref<Thread>, PyThread>(m, "Thread", D(Thread))
             .def(py::init<const std::string &>(), "name"_a)

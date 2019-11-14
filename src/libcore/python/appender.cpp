@@ -27,7 +27,7 @@ public:
     }
 };
 
-MTS_PY_EXPORT_VARIANTS(Appender) {
+MTS_PY_EXPORT(Appender) {
     MTS_PY_CHECK_ALIAS(PyAppender, m) {
         MTS_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
             .def(py::init<>())

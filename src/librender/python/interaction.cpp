@@ -6,7 +6,7 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 
-MTS_PY_EXPORT_VARIANTS(Interaction) {
+MTS_PY_EXPORT(Interaction) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
 
@@ -27,7 +27,7 @@ MTS_PY_EXPORT_VARIANTS(Interaction) {
     }
 }
 
-MTS_PY_EXPORT_VARIANTS(SurfaceInteraction) {
+MTS_PY_EXPORT(SurfaceInteraction) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Base = typename SurfaceInteraction3f::Base;

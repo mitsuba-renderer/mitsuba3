@@ -30,7 +30,7 @@ py::dtype dtype_for_struct(const Struct *s) {
     return py::dtype(names, formats, offsets, s->size());
 }
 
-MTS_PY_EXPORT_VARIANTS(Struct) {
+MTS_PY_EXPORT(Struct) {
     MTS_PY_CHECK_ALIAS(FieldType, m) {
         py::enum_<FieldType>(m, "FieldType")
             .value("Int8",  FieldType::Int8, D(Struct, FieldType, Int8))

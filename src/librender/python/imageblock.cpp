@@ -2,7 +2,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/render/imageblock.h>
 
-MTS_PY_EXPORT_VARIANTS(ImageBlock) {
+MTS_PY_EXPORT(ImageBlock) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using ImageBlockP = mitsuba::ImageBlock<FloatP, SpectrumP>;

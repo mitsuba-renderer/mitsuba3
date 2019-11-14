@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/bsdf.h>
 
-MTS_PY_EXPORT_VARIANTS(BSDF) {
+MTS_PY_EXPORT(BSDF) {
     using BSDFSample3 = BSDFSample3<Float, Spectrum>;
     using Vector3f = typename BSDFSample3::Vector3f;
     using BSDF  = mitsuba::BSDF<Float, Spectrum>;

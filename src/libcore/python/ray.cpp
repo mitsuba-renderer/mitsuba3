@@ -1,11 +1,9 @@
 #include <mitsuba/core/ray.h>
+#include <mitsuba/render/fwd.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(Ray) {
-    MTS_IMPORT_CORE_TYPES()
-    using Ray3f = Ray<Point3f, Spectrum>;
-    using Wavelength = wavelength_t<Spectrum>;
-
+MTS_PY_EXPORT_STRUCT(Ray) {
+    MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(Ray3f, m) {
         py::class_<Ray3f>(m, "Ray3f", D(Ray3f))
             .def(py::init<>(), "Create an unitialized ray")
@@ -28,7 +26,6 @@ MTS_PY_EXPORT_VARIANTS(Ray) {
             .def_repr(Ray3f);
     }
 
-    using RayDifferential3f = RayDifferential<Point3f, Spectrum>;
     MTS_PY_CHECK_ALIAS(RayDifferential3f, m) {
         py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential3f))
             .def_method(RayDifferential3f, scale_differential)

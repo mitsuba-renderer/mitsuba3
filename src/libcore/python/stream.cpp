@@ -21,7 +21,7 @@
              return py::cast(v);                                               \
          }, D(Stream, write, 2))
 
-MTS_PY_EXPORT_VARIANTS(Stream) {
+MTS_PY_EXPORT(Stream) {
     MTS_PY_CHECK_ALIAS(Stream, m) {
         auto c = MTS_PY_CLASS(Stream, Object)
             .def_method(Stream, close)
@@ -71,14 +71,14 @@ MTS_PY_EXPORT_VARIANTS(Stream) {
 
 #undef DECLARE_RW
 
-MTS_PY_EXPORT_VARIANTS(DummyStream) {
+MTS_PY_EXPORT(DummyStream) {
     MTS_PY_CHECK_ALIAS(DummyStream, m) {
         MTS_PY_CLASS(DummyStream, Stream)
             .def(py::init<>(), D(DummyStream, DummyStream));
     }
 }
 
-MTS_PY_EXPORT_VARIANTS(FileStream) {
+MTS_PY_EXPORT(FileStream) {
     MTS_PY_CHECK_ALIAS(FileStream, m) {
         auto fs = MTS_PY_CLASS(FileStream, Stream)
             .def_method(FileStream, path);
@@ -94,7 +94,7 @@ MTS_PY_EXPORT_VARIANTS(FileStream) {
     }
 }
 
-MTS_PY_EXPORT_VARIANTS(MemoryStream) {
+MTS_PY_EXPORT(MemoryStream) {
     MTS_PY_CHECK_ALIAS(MemoryStream, m) {
         MTS_PY_CLASS(MemoryStream, Stream)
             .def(py::init<size_t>(), D(MemoryStream, MemoryStream),
@@ -104,7 +104,7 @@ MTS_PY_EXPORT_VARIANTS(MemoryStream) {
     }
 }
 
-MTS_PY_EXPORT_VARIANTS(ZStream) {
+MTS_PY_EXPORT(ZStream) {
     MTS_PY_CHECK_ALIAS(ZStream, m) {
         auto c = MTS_PY_CLASS(ZStream, Stream);
 

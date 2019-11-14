@@ -8,7 +8,7 @@
 #  include <enoki/autodiff.h>
 #endif
 
-MTS_PY_EXPORT_VARIANTS(autodiff) {
+MTS_PY_EXPORT(autodiff) {
     ENOKI_MARK_USED(m);
 
 #if defined(MTS_ENABLE_AUTODIFF)

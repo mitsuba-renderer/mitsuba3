@@ -1,12 +1,9 @@
 #include <mitsuba/core/bbox.h>
+#include <mitsuba/render/fwd.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT_VARIANTS(BoundingBox) {
-    MTS_IMPORT_CORE_TYPES()
-    using Point3fP = Point<FloatP, 3>;
-    using BoundingBox3fP = BoundingBox<Point3fP>;
-    using Ray3fP = Ray<Point3fP, SpectrumP>;
-
+MTS_PY_EXPORT_STRUCT(BoundingBox) {
+    MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(BoundingBox3f, m) {
         py::class_<BoundingBox3f>(m, "BoundingBox3f", D(BoundingBox3f))
             .def(py::init<>(), D(BoundingBox3f, BoundingBox3f))
@@ -26,19 +23,19 @@ MTS_PY_EXPORT_VARIANTS(BoundingBox) {
             .def("contains",
                 [](const BoundingBox3f &self, const Point3f &p, bool strict) {
                     return strict ? self.template contains<true>(p)
-                                    : self.template contains<false>(p);
+                                  : self.template contains<false>(p);
                 },
                 D(BoundingBox3f, contains), "p"_a, "strict"_a = false)
             .def("contains",
                 [](const BoundingBox3f &self, const BoundingBox3f &bbox, bool strict) {
                     return strict ? self.template contains<true>(bbox)
-                                    : self.template contains<false>(bbox);
+                                  : self.template contains<false>(bbox);
                 },
                 D(BoundingBox3f, contains, 2), "bbox"_a, "strict"_a = false)
             .def("overlaps",
                 [](const BoundingBox3f &self, const BoundingBox3f &bbox, bool strict) {
                     return strict ? self.template overlaps<true>(bbox)
-                                    : self.template overlaps<false>(bbox);
+                                  : self.template overlaps<false>(bbox);
                 },
                 D(BoundingBox3f, overlaps), "bbox"_a, "strict"_a = false)
             .def("squared_distance",
@@ -62,14 +59,13 @@ MTS_PY_EXPORT_VARIANTS(BoundingBox) {
                 D(BoundingBox3f, expand))
             .def("expand", (void (BoundingBox3f::*)(const BoundingBox3f &)) &BoundingBox3f::expand,
                 D(BoundingBox3f, expand, 2))
-            .def("ray_intersect", vectorize<Float>(&BoundingBox3fP::template ray_intersect<Ray3fP>),
+            .def("ray_intersect", &BoundingBox3f::template ray_intersect<Ray3f>,
                 D(BoundingBox3f, ray_intersect))
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def_static("merge", &BoundingBox3f::merge, D(BoundingBox3f, merge))
             .def_readwrite("min", &BoundingBox3f::min)
             .def_readwrite("max", &BoundingBox3f::max)
-            .def_repr(BoundingBox3f)
-            ;
+            .def_repr(BoundingBox3f);
     }
 }

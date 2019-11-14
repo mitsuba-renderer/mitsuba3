@@ -2,7 +2,7 @@
 
 extern py::object py_cast(Object *o);
 
-MTS_PY_EXPORT_VARIANTS(Object) {
+MTS_PY_EXPORT(Object) {
     MTS_PY_CHECK_ALIAS(Class, m) {
         py::class_<Class>(m, "Class", D(Class));
     }
@@ -29,7 +29,6 @@ MTS_PY_EXPORT_VARIANTS(Object) {
                     l.append(py_cast(o2));
                 return l;
             })
-            .def("__repr__", &Object::to_string, D(Object, to_string))
-            ;
+            .def("__repr__", &Object::to_string, D(Object, to_string));
     }
 }
