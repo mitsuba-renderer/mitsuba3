@@ -5,10 +5,6 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 
-using Index = Shape::Index;
-
-extern py::object py_cast(Object *o);
-
 MTS_PY_EXPORT(ShapeKDTree) {
 #if !defined(MTS_USE_EMBREE)
     MTS_PY_CLASS(ShapeKDTree, Object)
@@ -37,100 +33,39 @@ MTS_PY_EXPORT(ShapeKDTree) {
 MTS_PY_EXPORT(Scene) {
     MTS_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
-
-        // Full intersection
         .def("ray_intersect",
-             py::overload_cast<const Ray3f &, bool>(&Scene::ray_intersect, py::const_),
-             "ray"_a, "unused"_a = true, D(Scene, ray_intersect))
-        .def("ray_intersect",
-             enoki::vectorize_wrapper(
-                py::overload_cast<const Ray3fP &, MaskP>(&Scene::ray_intersect, py::const_)
-             ), "ray"_a, "active"_a = true)
-
-        // Shadow rays
+             vectorize<Float>(&Scene::ray_intersect),
+             "ray"_a, "active"_a = true, D(Scene, ray_intersect))
         .def("ray_test",
-             py::overload_cast<const Ray3f &, bool>(&Scene::ray_test, py::const_),
-             "ray"_a, "unused"_a = true, D(Scene, ray_test))
-        .def("ray_test",
-             enoki::vectorize_wrapper(
-                py::overload_cast<const Ray3fP &, MaskP>(&Scene::ray_test, py::const_)
-             ), "ray"_a, "active"_a = true)
-
-        /// Emitter sampling
-        .def("sample_emitter_direction",
-             py::overload_cast<const Interaction3f &, const Point2f &, bool, bool>(
-                &Scene::sample_emitter_direction, py::const_),
-             "ref"_a, "sample"_a, "test_visibility"_a = true, "unused"_a = true,
-             D(Scene, sample_emitter_direction))
-
-        .def("sample_emitter_direction", enoki::vectorize_wrapper(
-                py::overload_cast<const Interaction3fP &, const Point2fP &, bool, MaskP>(
-                    &Scene::sample_emitter_direction, py::const_)),
-             "ref"_a, "sample"_a, "test_visibility"_a = true, "mask"_a = true)
-
-        .def("pdf_emitter_direction",
-             py::overload_cast<const Interaction3f &, const DirectionSample3f &, bool>(
-                &Scene::pdf_emitter_direction, py::const_),
-             "ref"_a, "ds"_a, "unused"_a = true, D(Scene, pdf_emitter_direction))
-
-        .def("pdf_emitter_direction", enoki::vectorize_wrapper(
-                py::overload_cast<const Interaction3fP &, const DirectionSample3fP &, MaskP>(
-                    &Scene::pdf_emitter_direction, py::const_)),
-             "ref"_a, "ds"_a, "active"_a = true)
-
+             vectorize<Float>(&Scene::ray_test),
+             "ray"_a, "active"_a = true)
 #if !defined(MTS_USE_EMBREE)
-        // Full intersection (brute force, for testing)
         .def("ray_intersect_naive",
-             py::overload_cast<const Ray3f &, bool>(&Scene::ray_intersect_naive, py::const_),
-             "ray"_a, "unused"_a = true)  //, D(Scene, ray_intersect_naive))
-        .def("ray_intersect_naive",
-             enoki::vectorize_wrapper(
-                py::overload_cast<const Ray3fP &, MaskP>(&Scene::ray_intersect_naive, py::const_)
-             ),
+             vectorize<Float>(&Scene::ray_intersect_naive),
              "ray"_a, "active"_a = true)
 #endif
-
-#if defined(MTS_ENABLE_AUTODIFF)
-        .def("ray_intersect",
-             py::overload_cast<const Ray3fD &, MaskD>(&Scene::ray_intersect, py::const_),
-             "ray"_a, "active"_a = true)
-        .def("ray_test",
-             py::overload_cast<const Ray3fD &, MaskD>(&Scene::ray_test, py::const_),
-             "ray"_a, "active"_a = true)
-
         .def("sample_emitter_direction",
-                py::overload_cast<const Interaction3fD &, const Point2fD &, bool, MaskD>(
-                    &Scene::sample_emitter_direction, py::const_),
+             vectorize<Float>(&Scene::sample_emitter_direction),
              "ref"_a, "sample"_a, "test_visibility"_a = true, "mask"_a = true)
-
         .def("pdf_emitter_direction",
-             py::overload_cast<const Interaction3fD &, const DirectionSample3fD &, MaskD>(
-                &Scene::pdf_emitter_direction, py::const_),
-             "ref"_a, "ds"_a, "active"_a = true, D(Scene, pdf_emitter_direction))
-#endif
-
+             vectorize<Float>(&Scene::pdf_emitter_direction),
+             "ref"_a, "ds"_a, "active"_a = true)
         // Accessors
         .def("bbox", &Scene::bbox, D(Scene, bbox))
-        .def("sensor",     py::overload_cast<>(&Scene::sensor),     D(Scene, sensor))
-        .def("sensors",     py::overload_cast<>(&Scene::sensors),     D(Scene, sensors))
+        .def("sensor", py::overload_cast<>(&Scene::sensor), D(Scene, sensor))
+        .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))
         .def_method(Scene, set_current_sensor, "index"_a)
-        .def("emitters",     py::overload_cast<>(&Scene::emitters),     D(Scene, emitters))
+        .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
         .def_method(Scene, environment)
-        .def("film",       py::overload_cast<>(&Scene::film),       D(Scene, film))
-        .def("shapes",     py::overload_cast<>(&Scene::shapes),     D(Scene, shapes))
-        .def("integrator", [](Scene &scene) {
-#define PY_CAST(Name) {                                                        \
-        Name *temp = dynamic_cast<Name *>(o);                                  \
-        if (temp)                                                              \
-            return py::cast(temp);                                             \
-    }
-            Integrator *o = scene.integrator();
-            PY_CAST(PolarizedMonteCarloIntegrator);
-            PY_CAST(MonteCarloIntegrator);
-            PY_CAST(SamplingIntegrator);
-            return py::cast(o);
-
-#undef PY_CAST
-        }, D(Scene, integrator))
+        .def("film", py::overload_cast<>(&Scene::film), D(Scene, film))
+        .def("shapes", py::overload_cast<>(&Scene::shapes), D(Scene, shapes))
+        .def("integrator",
+             [](Scene &scene) {
+                 Integrator *o = scene.integrator();
+                 PY_CAST_VARIANTS(MonteCarloIntegrator);
+                 PY_CAST_VARIANTS(SamplingIntegrator);
+                 return py::cast(o);
+             },
+             D(Scene, integrator))
         .def("__repr__", &Scene::to_string);
 }

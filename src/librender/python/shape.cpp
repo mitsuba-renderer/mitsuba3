@@ -47,10 +47,11 @@ MTS_PY_EXPORT(Shape) {
             .def_method(Shape, primitive_count)
             .def_method(Shape, effective_primitive_count);
     }
-    using Size = typename Mesh::Size;
+
+    using ScalarSize = typename Mesh::ScalarSize;
     MTS_PY_CHECK_ALIAS(Mesh, m) {
         MTS_PY_CLASS(Mesh, Shape)
-            .def(py::init<const std::string &, Struct *, Size, Struct *, Size>(),
+            .def(py::init<const std::string &, Struct *, ScalarSize, Struct *, ScalarSize>(),
                 D(Mesh, Mesh))
             .def_method(Mesh, vertex_struct)
             .def_method(Mesh, face_struct)
@@ -69,6 +70,8 @@ MTS_PY_EXPORT(Shape) {
                 Mesh &m = py::cast<Mesh&>(o);
                 py::dtype dtype = o.attr("face_struct")().attr("dtype")();
                 return py::array(dtype, m.face_count(), m.faces(), o);
-            }, D(Mesh, faces));
+            }, D(Mesh, faces))
+            .def("ray_intersect_triangle", vectorize<Float>(&Mesh::ray_intersect_triangle),
+                "index"_a, "ray"_a, "active"_a = true, D(Mesh, ray_intersect_triangle));
     }
 }

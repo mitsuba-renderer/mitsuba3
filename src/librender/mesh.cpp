@@ -125,7 +125,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
     /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
        by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
     for (ScalarSize i = 0; i < m_face_count; ++i) {
-        using ScalarIndex = scalar_t<Index>;
         const ScalarIndex *idx = (const ScalarIndex *) face(i);
         Assert(idx[0] < m_vertex_count && idx[1] < m_vertex_count && idx[2] < m_vertex_count);
         ScalarPoint3f v[3]{ vertex_position(idx[0]),
@@ -206,12 +205,13 @@ Mesh<Float, Spectrum>::surface_area() const {
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
+    using Index = replace_scalar_t<Float, ScalarIndex>;
     Index face_idx;
     Point2f sample = sample_;
     ensure_table_ready();
     std::tie(face_idx, sample.y()) = m_area_distribution.sample_reuse(sample.y(), active);
 
-    Index3 fi = face_indices(face_idx, active);
+    Array<Index, 3> fi = face_indices(face_idx, active);
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),

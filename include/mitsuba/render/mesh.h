@@ -17,9 +17,6 @@ public:
     MTS_USING_BASE(Shape, m_mesh)
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
-    using Size  = replace_scalar_t<Float, ScalarSize>;
-    using Index = replace_scalar_t<Float, ScalarIndex>;
-    using Index3 = Array<Index, 3>;
 
     using FaceHolder   = std::unique_ptr<uint8_t[]>;
     using VertexHolder = std::unique_ptr<uint8_t[]>;
@@ -79,17 +76,17 @@ public:
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
     MTS_INLINE auto face_indices(Index index, const mask_t<Index> &active = true) const {
-        using Vector3u = Vector<Index, 3>;
+        using Index3 = Array<Index, 3>;
         if constexpr (!is_array_v<Index>) {
-            return load<Vector3u>(face(index));
+            return load<Index3>(face(index));
         } else if constexpr (!is_diff_array_v<Index>) {
             index *= scalar_t<Index>(m_face_size / sizeof(ScalarIndex));
-            return gather<Vector3u, sizeof(ScalarIndex)>(
+            return gather<Index3, sizeof(ScalarIndex)>(
                 m_faces.get(), Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_AUTODIFF)
         else {
-            return gather<Vector3u, sizeof(Index)>(m_faces_d, index, active);
+            return gather<Index3, sizeof(Index)>(m_faces_d, index, active);
         }
 #endif
     }
@@ -97,6 +94,7 @@ public:
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_position(Index index, const mask_t<Index> &active = true) const {
+        using Index3 = Array<Index, 3>;
         using Point3f = Point<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load<Point3f>(vertex(index));
@@ -115,6 +113,7 @@ public:
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_normal(Index index, const mask_t<Index> &active = true) const {
+        using Index3 = Array<Index, 3>;
         using Normal3f = Normal<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Normal3f>(vertex(index) + m_normal_offset);
@@ -226,13 +225,13 @@ public:
      *    barycentric coordinates
      */
     MTS_INLINE std::tuple<Mask, Float, Float, Float>
-    ray_intersect_triangle(const Index &index, const Ray3f &ray,
+    ray_intersect_triangle(const ScalarIndex &index, const Ray3f &ray,
                            identity_t<Mask> active = true) const {
-        auto fi = face_indices(Size(index), active);
+        auto fi = face_indices(index);
 
-        Point3f p0 = vertex_position(fi[0], active),
-                p1 = vertex_position(fi[1], active),
-                p2 = vertex_position(fi[2], active);
+        Point3f p0 = vertex_position(fi[0]),
+                p1 = vertex_position(fi[1]),
+                p2 = vertex_position(fi[2]);
 
         Vector3f e1 = p1 - p0, e2 = p2 - p0;
 
