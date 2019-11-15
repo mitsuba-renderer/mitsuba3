@@ -8,8 +8,7 @@ MTS_PY_EXPORT(rfilter) {
             .value("Repeat", FilterBoundaryCondition::Repeat, D(FilterBoundaryCondition, Repeat))
             .value("Mirror", FilterBoundaryCondition::Mirror, D(FilterBoundaryCondition, Mirror))
             .value("Zero", FilterBoundaryCondition::Zero, D(FilterBoundaryCondition, Zero))
-            .value("One", FilterBoundaryCondition::One, D(FilterBoundaryCondition, One))
-            .export_values();
+            .value("One", FilterBoundaryCondition::One, D(FilterBoundaryCondition, One));
     }
 
     using Resampler = mitsuba::Resampler<float>;

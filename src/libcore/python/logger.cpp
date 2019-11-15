@@ -49,8 +49,7 @@ MTS_PY_EXPORT(Logger) {
             .value("Debug", Debug, D(LogLevel, Debug))
             .value("Info", Info, D(LogLevel, Info))
             .value("Warn", Warn, D(LogLevel, Warn))
-            .value("Error", Error, D(LogLevel, Error))
-            .export_values();
+            .value("Error", Error, D(LogLevel, Error));
     }
 
     m.def("Log", &PyLog, "level"_a, "msg"_a);

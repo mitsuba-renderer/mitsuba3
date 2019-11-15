@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 def test_eval_spline():
     from mitsuba.scalar_rgb.core.spline import eval_spline
@@ -43,9 +44,13 @@ def test_eval_1d_uniform():
 input1 = np.array([0, 0.5, 1,   0.5, 0, 0.5, 1,   0.5])
 input2 = np.array([0, 0.5, 0.8, 0.5, 0, 0.5, 0.8, 0.5])
 def test_eval_1d_uniform_vec():
-    from mitsuba.scalar_rgb.core.spline import eval_1d
-    assert(np.allclose(eval_1d(0, 1, values1, input1), input1))
-    assert(np.allclose(eval_1d(0, 1, values2, input2), input2))
+    try:
+        from mitsuba.packet_rgb.core.spline import eval_1d as eval_1d_p
+    except ImportError:
+        pytest.mark.skip("packet_rgb mode not enabled")
+
+    assert(np.allclose(eval_1d_p(0, 1, values1, input1), input1))
+    assert(np.allclose(eval_1d_p(0, 1, values2, input2), input2))
 
 nodes1 = np.array([0.0, 0.25, 0.5, 0.75, 1])
 nodes2 = np.array([0.0, 0.5,  1.0, 1.5,  2])
@@ -60,11 +65,15 @@ def test_eval_1d_non_uniform():
     assert(np.allclose(eval_1d(nodes2, values2, 2), 1))
 
 def test_eval_1d_non_uniform_vec():
-    from mitsuba.scalar_rgb.core.spline import eval_1d
-    assert(np.allclose(eval_1d(nodes1, values2, input1), input1))
-    assert(np.allclose(eval_1d(nodes1, values2, input2), input2))
-    assert(np.allclose(eval_1d(nodes2, values2, 2*input1), input1))
-    assert(np.allclose(eval_1d(nodes2, values2, 2*input2), input2))
+    try:
+        from mitsuba.packet_rgb.core.spline import eval_1d as eval_1d_p
+    except ImportError:
+        pytest.mark.skip("packet_rgb mode not enabled")
+
+    assert(np.allclose(eval_1d_p(nodes1, values2, input1), input1))
+    assert(np.allclose(eval_1d_p(nodes1, values2, input2), input2))
+    assert(np.allclose(eval_1d_p(nodes2, values2, 2*input1), input1))
+    assert(np.allclose(eval_1d_p(nodes2, values2, 2*input2), input2))
 
 def test_integrate_1d_uniform():
     from mitsuba.scalar_rgb.core.spline import integrate_1d

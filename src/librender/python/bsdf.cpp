@@ -7,8 +7,7 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
     MTS_PY_CHECK_ALIAS(TransportMode, m) {
         py::enum_<TransportMode>(m, "TransportMode", D(TransportMode))
             .value("Radiance", TransportMode::Radiance, D(TransportMode, Radiance))
-            .value("Importance", TransportMode::Importance, D(TransportMode, Importance))
-            .export_values();
+            .value("Importance", TransportMode::Importance, D(TransportMode, Importance));
     }
 
     MTS_PY_CHECK_ALIAS(BSDFFlags, m) {
@@ -33,8 +32,7 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
             .value("Smooth", BSDFFlags::Smooth, D(BSDFFlags, Smooth))
             .value("Delta", BSDFFlags::Delta, D(BSDFFlags, Delta))
             .value("Delta1D", BSDFFlags::Delta1D, D(BSDFFlags, Delta1D))
-            .value("All", BSDFFlags::All, D(BSDFFlags, All))
-            .export_values();
+            .value("All", BSDFFlags::All, D(BSDFFlags, All));
     }
 
     MTS_PY_CHECK_ALIAS(BSDFContext, m) {

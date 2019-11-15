@@ -47,7 +47,7 @@ def check_scene(int_name, integrator, scene_name, is_empty = False):
         assert status, "Rendering ({}) failed".format(variant_name)
         # _save(scene.film(), int_name, suffix='_' + variant_name)
 
-        converted = film.bitmap().convert(Bitmap.PixelFormat::RGBA, Struct.EFloat32, False)
+        converted = film.bitmap().convert(PixelFormat.RGBA, FieldType.Float32, False)
         values    = np.array(converted, copy=False)
         means     = np.mean(values, axis=(0, 1))
         # Very noisy images, so we add a tolerance
@@ -158,7 +158,7 @@ def make_reference_renders():
             film = scene.film()
 
             # Extract per-channel averages
-            converted = film.bitmap().convert(Bitmap.PixelFormat::RGBA, Struct.EFloat32, False)
+            converted = film.bitmap().convert(PixelFormat.RGBA, FieldType.Float32, False)
             values    = np.array(converted, copy=False)
             averages[scene_name][int_name] = np.mean(values, axis=(0,1))
 

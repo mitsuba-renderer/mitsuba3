@@ -74,17 +74,22 @@ def test_tea_float64():
 
 
 def test_tea_vectorized():
-    from mitsuba.scalar_rgb.core import sample_tea_float32, sample_tea_float64
+    try:
+        from mitsuba.packet_rgb.core import sample_tea_float32 as sample_tea_float32_p
+        from mitsuba.packet_rgb.core import sample_tea_float64 as sample_tea_float64_p
+    except ImportError:
+        pytest.mark.skip("packet_rgb mode not enabled")
+
     count = 100
 
-    result = sample_tea_float32(
+    result = sample_tea_float32_p(
         np.full(count, 1, dtype=np.uint32),
         np.arange(count, dtype=np.uint32), 4)
     for i in range(count):
-        assert result[i] == sample_tea_float32(1, i, 4)
+        assert result[i] == sample_tea_float32_p(1, i, 4)
 
-    result = sample_tea_float64(
+    result = sample_tea_float64_p(
         np.full(count, 1, dtype=np.uint32),
         np.arange(count, dtype=np.uint32), 4)
     for i in range(count):
-        assert result[i] == sample_tea_float64(1, i, 4)
+        assert result[i] == sample_tea_float64_p(1, i, 4)

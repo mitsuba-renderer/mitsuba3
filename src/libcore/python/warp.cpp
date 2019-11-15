@@ -214,7 +214,7 @@ MTS_PY_EXPORT(warp) {
     using Marginal2D3 = warp::Marginal2D<Float, 3>;
 
     MTS_PY_CHECK_ALIAS(Marginal2D0, m) {
-        py::class_<Marginal2D0>(m, "Marginal2D0", D(warp, Marginal2D))
+        py::class_<Marginal2D0>(warp, "Marginal2D0", D(warp, Marginal2D))
             .def(py::init([](FloatArray data, bool normalize, bool build_cdf) {
                     if (data.ndim() != 2)
                         throw std::domain_error("data array has incorrect dimension");
@@ -243,7 +243,7 @@ MTS_PY_EXPORT(warp) {
     }
 
     MTS_PY_CHECK_ALIAS(Marginal2D1, m) {
-        py::class_<Marginal2D1>(m, "Marginal2D1")
+        py::class_<Marginal2D1>(warp, "Marginal2D1")
             .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                             bool normalize, bool build_cdf) {
                     if (data.ndim() != 3)
@@ -284,7 +284,7 @@ MTS_PY_EXPORT(warp) {
     }
 
     MTS_PY_CHECK_ALIAS(Marginal2D2, m) {
-        py::class_<Marginal2D2>(m, "Marginal2D2")
+        py::class_<Marginal2D2>(warp, "Marginal2D2")
             .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                             bool normalize, bool build_cdf) {
                     if (data.ndim() != 4)
@@ -327,7 +327,7 @@ MTS_PY_EXPORT(warp) {
     }
 
     MTS_PY_CHECK_ALIAS(Marginal2D3, m) {
-        py::class_<Marginal2D3>(m, "Marginal2D3")
+        py::class_<Marginal2D3>(warp, "Marginal2D3")
             .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                             bool normalize, bool build_cdf) {
                     if (data.ndim() != 5)
@@ -382,7 +382,7 @@ MTS_PY_EXPORT(warp) {
     using Hierarchical2D3 = warp::Hierarchical2D<Float, 3>;
 
     MTS_PY_CHECK_ALIAS(Hierarchical2D0, m) {
-        py::class_<Hierarchical2D0>(m, "Hierarchical2D0", D(warp, Hierarchical2D))
+        py::class_<Hierarchical2D0>(warp, "Hierarchical2D0", D(warp, Hierarchical2D))
             .def(py::init([](FloatArray data, bool normalize, bool build_hierarchy) {
                     if (data.ndim() != 2)
                         throw std::domain_error("data array has incorrect dimension");
@@ -411,7 +411,7 @@ MTS_PY_EXPORT(warp) {
     }
 
     MTS_PY_CHECK_ALIAS(Hierarchical2D1, m) {
-        py::class_<Hierarchical2D1>(m, "Hierarchical2D1")
+        py::class_<Hierarchical2D1>(warp, "Hierarchical2D1")
             .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                             bool normalize, bool build_hierarchy) {
                     if (data.ndim() != 3)
@@ -452,7 +452,7 @@ MTS_PY_EXPORT(warp) {
     }
 
     MTS_PY_CHECK_ALIAS(Hierarchical2D2, m) {
-        py::class_<Hierarchical2D2>(m, "Hierarchical2D2")
+        py::class_<Hierarchical2D2>(warp, "Hierarchical2D2")
             .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                             bool normalize, bool build_hierarchy) {
                     if (data.ndim() != 4)
@@ -495,7 +495,7 @@ MTS_PY_EXPORT(warp) {
     }
 
     MTS_PY_CHECK_ALIAS(Hierarchical2D3, m) {
-        py::class_<Hierarchical2D3>(m, "Hierarchical2D3")
+        py::class_<Hierarchical2D3>(warp, "Hierarchical2D3")
             .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                             bool normalize, bool build_hierarchy) {
                     if (data.ndim() != 5)

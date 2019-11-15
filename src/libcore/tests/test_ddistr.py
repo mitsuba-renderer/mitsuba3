@@ -167,38 +167,64 @@ def test07_negative_append():
         with pytest.raises(RuntimeError):
             d.append(-0.5)
 
-
-def test08_vectorized_getitem():
+def test08_getitem():
     d = _get_example_distribution(False, [0.5, 1.5, 0.0, 1.0, 5.5])
 
     assert d.eval(0) == 0.5
     assert d.eval(4) == 5.5
-    assert np.allclose(d.eval([0, 1]), [0.5, 1.5])
-    assert np.allclose(d.eval([0, 2, 4]), [0.5, 0.0, 5.5])
-    assert np.allclose(d.eval([4, 1, 2, 0]), [5.5, 1.5, 0.0, 0.5])
-    assert np.allclose(d.eval([1, 2, 1, 4, 4, 0]), [1.5, 0.0, 1.5, 5.5, 5.5, 0.5])
 
-def test09_vectorized_sample_pdf():
+####################################################
+### Vectorized tests
+####################################################
+
+def _get_example_distribution_vectorize(normalized, pdf_values = [0.5, 0.3, 0.0, 0.1]):
+    try:
+        from mitsuba.packet_rgb.core import DiscreteDistribution as DiscreteDistributionP
+        d = DiscreteDistributionP(len(pdf_values))
+        for v in pdf_values:
+            d.append(v)
+        if normalized:
+            d.normalize()
+        return d
+    except ImportError:
+        return None
+
+def test09_vectorized_getitem():
+    d = _get_example_distribution_vectorize(False, [0.5, 1.5, 0.0, 1.0, 5.5])
+
+    if d: # == None if packet_rgb mode isn't compiled
+        assert np.allclose(d.eval([0, 1]), [0.5, 1.5])
+        assert np.allclose(d.eval([0, 2, 4]), [0.5, 0.0, 5.5])
+        assert np.allclose(d.eval([4, 1, 2, 0]), [5.5, 1.5, 0.0, 0.5])
+        assert np.allclose(d.eval([1, 2, 1, 4, 4, 0]), [1.5, 0.0, 1.5, 5.5, 5.5, 0.5])
+
+def test10_vectorized_sample_pdf():
     pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
-    d = _get_example_distribution(False, pdf_values)
+    d = _get_example_distribution_vectorize(False, pdf_values)
 
-    assert np.allclose(d.sample_pdf([0.0, 0.49, 1.0]),
-                       ([   2,    3,   5],
-                        [0.25, 0.25, 0.5]))
-    assert np.allclose(d.sample_pdf([0.0, 0.49, 1.0, 0.24, 0.51]),
-                       ([   2,    3,   5,    2,    5],
-                        [0.25, 0.25, 0.5, 0.25, 0.50]))
+    if d: # == None if packet_rgb mode isn't compiled
+        assert np.allclose(d.sample_pdf([0.0, 0.49, 1.0]),
+                        ([   2,    3,   5],
+                            [0.25, 0.25, 0.5]))
+        assert np.allclose(d.sample_pdf([0.0, 0.49, 1.0, 0.24, 0.51]),
+                        ([   2,    3,   5,    2,    5],
+                            [0.25, 0.25, 0.5, 0.25, 0.50]))
+    else:
+        pytest.mark.skip("packet_rgb mode is not enabled")
 
-def test10_vectorized_sample_reuse_pdf():
+def test11_vectorized_sample_reuse_pdf():
     pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
-    d = _get_example_distribution(False, pdf_values)
+    d = _get_example_distribution_vectorize(False, pdf_values)
 
-    assert np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0]),
-                       ([   2,    3,   5],
-                        [0.25, 0.25, 0.5],
-                        [0.00, 0.96, 1.0]))
+    if d: # == None if packet_rgb mode isn't compiled
+        assert np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0]),
+                        ([   2,    3,   5],
+                            [0.25, 0.25, 0.5],
+                            [0.00, 0.96, 1.0]))
 
-    assert np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0, 0.24, 0.51], True),
-                       ([   2,    3,   5,    2,    5],
-                        [0.25, 0.25, 0.5, 0.25, 0.50],
-                        [0.00, 0.96, 1.0, 0.96, 0.02]))
+        assert np.allclose(d.sample_reuse_pdf([0.0, 0.49, 1.0, 0.24, 0.51], True),
+                        ([   2,    3,   5,    2,    5],
+                            [0.25, 0.25, 0.5, 0.25, 0.50],
+                            [0.00, 0.96, 1.0, 0.96, 0.02]))
+    else:
+        pytest.mark.skip("packet_rgb mode is not enabled")

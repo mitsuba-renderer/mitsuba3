@@ -14,9 +14,9 @@ def test01_create_mesh():
         .append("z", float_dtype)
 
     index_struct = Struct() \
-        .append("i0", Struct.EUInt32) \
-        .append("i1", Struct.EUInt32) \
-        .append("i2", Struct.EUInt32)
+        .append("i0", FieldType.UInt32) \
+        .append("i1", FieldType.UInt32) \
+        .append("i2", FieldType.UInt32)
     m = Mesh("MyMesh", vertex_struct, 3, index_struct, 2)
     v = m.vertices()
     v[0] = (0.0, 0.0, 0.0)
@@ -128,9 +128,9 @@ def test04_normal_weighting_scheme():
         .append("nz", float_dtype)
 
     index_struct = Struct() \
-        .append("i0", Struct.EUInt32) \
-        .append("i1", Struct.EUInt32) \
-        .append("i2", Struct.EUInt32)
+        .append("i0", FieldType.UInt32) \
+        .append("i1", FieldType.UInt32) \
+        .append("i2", FieldType.UInt32)
 
     m = Mesh("MyMesh", vertex_struct, 5, index_struct, 2)
     v = m.vertices()

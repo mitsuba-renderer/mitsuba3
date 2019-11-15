@@ -8,8 +8,7 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
     MTS_PY_CHECK_ALIAS(MicrofacetType, m) {
         py::enum_<MicrofacetType>(m, "MicrofacetType", D(MicrofacetType), py::arithmetic())
             .value("Beckmann", MicrofacetType::Beckmann, D(MicrofacetType, Beckmann))
-            .value("GGX",      MicrofacetType::GGX, D(MicrofacetType, GGX))
-            .export_values();
+            .value("GGX",      MicrofacetType::GGX, D(MicrofacetType, GGX));
     }
 
     MTS_PY_CHECK_ALIAS(MicrofacetDistribution, m) {

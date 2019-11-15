@@ -78,10 +78,10 @@ def test03_clear_set_add():
     # which will be developped.
     assert film.bitmap().pixel_format() == Bitmap.EXYZAW
     assert film.bitmap().component_format() == (
-        Struct.EFloat32 if float_dtype == np.float32
-                        else Struct.EFloat64)
+        FieldType.Float32 if float_dtype == np.float32
+                        else FieldType.Float64)
 
-    b = Bitmap(Bitmap.EXYZAW, Struct.EFloat, film.bitmap().size())
+    b = Bitmap(Bitmap.EXYZAW, FieldType.Float, film.bitmap().size())
     n = b.width() * b.height()
     # 0, 1, 2, ...
     ref = np.arange(n).reshape(b.height(), b.width(), 1).astype(
@@ -132,7 +132,7 @@ def test04_develop(file_format, tmpdir):
     film.develop()
 
     # Read back and check contents
-    other = Bitmap(filename).convert(Bitmap.EXYZAW, Struct.EFloat, srgb_gamma=False)
+    other = Bitmap(filename).convert(Bitmap.EXYZAW, FieldType.Float, srgb_gamma=False)
     img   = np.array(other, copy=False)
 
     if file_format == "exr":

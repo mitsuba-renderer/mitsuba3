@@ -19,8 +19,7 @@ MTS_PY_EXPORT(Bitmap) {
             .value("XYZ",   PixelFormat::XYZ,   D(Bitmap, PixelFormat, XYZ))
             .value("XYZA",  PixelFormat::XYZA,  D(Bitmap, PixelFormat, XYZA))
             .value("XYZAW", PixelFormat::XYZAW, D(Bitmap, PixelFormat, XYZAW))
-            .value("MultiChannel", PixelFormat::MultiChannel, D(Bitmap, PixelFormat, MultiChannel))
-            .export_values();
+            .value("MultiChannel", PixelFormat::MultiChannel, D(Bitmap, PixelFormat, MultiChannel));
     }
 
     MTS_PY_CHECK_ALIAS(ImageFileFormat, m) {
@@ -34,8 +33,7 @@ MTS_PY_EXPORT(Bitmap) {
             .value("TGA",     ImageFileFormat::TGA,     D(Bitmap, ImageFileFormat, TGA))
             .value("BMP",     ImageFileFormat::BMP,     D(Bitmap, ImageFileFormat, BMP))
             .value("Unknown", ImageFileFormat::Unknown, D(Bitmap, ImageFileFormat, Unknown))
-            .value("Auto",    ImageFileFormat::Auto,    D(Bitmap, ImageFileFormat, Auto))
-            .export_values();
+            .value("Auto",    ImageFileFormat::Auto,    D(Bitmap, ImageFileFormat, Auto));
     }
 
     MTS_PY_CHECK_ALIAS(Bitmap, m) {

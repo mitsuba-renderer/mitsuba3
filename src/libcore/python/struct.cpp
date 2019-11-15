@@ -33,19 +33,18 @@ py::dtype dtype_for_struct(const Struct *s) {
 MTS_PY_EXPORT(Struct) {
     MTS_PY_CHECK_ALIAS(FieldType, m) {
         py::enum_<FieldType>(m, "FieldType")
-            .value("Int8",  FieldType::Int8, D(Struct, FieldType, Int8))
-            .value("UInt8", FieldType::UInt8, D(Struct, FieldType, UInt8))
-            .value("Int16",  FieldType::Int16, D(Struct, FieldType, Int16))
-            .value("UInt16", FieldType::UInt16, D(Struct, FieldType, UInt16))
-            .value("Int32",  FieldType::Int32, D(Struct, FieldType, Int32))
-            .value("UInt32", FieldType::UInt32, D(Struct, FieldType, UInt32))
-            .value("Int64",  FieldType::Int64, D(Struct, FieldType, Int64))
-            .value("UInt64", FieldType::UInt64, D(Struct, FieldType, UInt64))
+            .value("Int8",    FieldType::Int8,    D(Struct, FieldType, Int8))
+            .value("UInt8",   FieldType::UInt8,   D(Struct, FieldType, UInt8))
+            .value("Int16",   FieldType::Int16,   D(Struct, FieldType, Int16))
+            .value("UInt16",  FieldType::UInt16,  D(Struct, FieldType, UInt16))
+            .value("Int32",   FieldType::Int32,   D(Struct, FieldType, Int32))
+            .value("UInt32",  FieldType::UInt32,  D(Struct, FieldType, UInt32))
+            .value("Int64",   FieldType::Int64,   D(Struct, FieldType, Int64))
+            .value("UInt64",  FieldType::UInt64,  D(Struct, FieldType, UInt64))
             .value("Float16", FieldType::Float16, D(Struct, FieldType, Float16))
             .value("Float32", FieldType::Float32, D(Struct, FieldType, Float32))
             .value("Float64", FieldType::Float64, D(Struct, FieldType, Float64))
             .value("Invalid", FieldType::Invalid, D(Struct, FieldType, Invalid))
-            .export_values()
             .def(py::init([](py::dtype dt) {
                 FieldType value = FieldType::Int8;
                 if (dt.kind() == 'i') {
@@ -87,18 +86,17 @@ MTS_PY_EXPORT(Struct) {
             .value("BigEndian", FieldByteOrder::BigEndian,
                 D(Struct, FieldByteOrder, BigEndian))
             .value("HostByteOrder", FieldByteOrder::HostByteOrder,
-                D(Struct, FieldByteOrder, HostByteOrder))
-            .export_values();
+                D(Struct, FieldByteOrder, HostByteOrder));
     }
 
     MTS_PY_CHECK_ALIAS(FieldFlags, m) {
         py::enum_<FieldFlags>(m, "FieldFlags", py::arithmetic())
             .value("Normalized", FieldFlags::Normalized, D(Struct, FieldFlags, Normalized))
-            .value("Gamma", FieldFlags::Gamma, D(Struct, FieldFlags, Gamma))
-            .value("Weight", FieldFlags::Weight, D(Struct, FieldFlags, Weight))
-            .value("Assert", FieldFlags::Assert, D(Struct, FieldFlags, Assert))
-            .value("Default", FieldFlags::Default, D(Struct, FieldFlags, Default))
-            .export_values();
+            .value("Gamma",      FieldFlags::Gamma,   D(Struct, FieldFlags, Gamma))
+            .value("Weight",     FieldFlags::Weight,  D(Struct, FieldFlags, Weight))
+            .value("Assert",     FieldFlags::Assert,  D(Struct, FieldFlags, Assert))
+            .value("Default",    FieldFlags::Default, D(Struct, FieldFlags, Default))
+            .def(py::self | py::self);
     }
 
     MTS_PY_CHECK_ALIAS(Struct, m) {
@@ -109,7 +107,7 @@ MTS_PY_EXPORT(Struct) {
                 D(Struct, Struct))
             .def("append",
                 (Struct &(Struct::*)(const std::string&, FieldType, FieldFlags, double)) &Struct::append,
-                "name"_a, "type"_a, "flags"_a = 0, "default"_a = 0.0,
+                "name"_a, "type"_a, "flags"_a = FieldFlags::None, "default"_a = 0.0,
                 D(Struct, append), py::return_value_policy::reference)
             .def("field", py::overload_cast<const std::string &>(&Struct::field), D(Struct, field),
                 py::return_value_policy::reference_internal)

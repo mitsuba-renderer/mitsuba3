@@ -1,7 +1,8 @@
-from mitsuba.scalar_rgb.core import RadicalInverse
+from mitsuba.scalar_rgb.core.qmc import RadicalInverse
 from mitsuba.scalar_rgb.core import PacketSize
 from mitsuba.scalar_rgb.core.math import OneMinusEpsilon
 import numpy as np
+import pytest
 
 
 def r_inv(divisor, index):
@@ -46,7 +47,7 @@ def test01_radical_inverse():
         for i in range(10):
             assert np.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
 
-
+@pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
 def test02_radical_inverse_vectorized():
     v = RadicalInverse()
     for index, prime in enumerate(gen_primes()):
@@ -89,7 +90,7 @@ def test04_scrambled_radical_inverse():
     for i in range(len(values_scrambled)):
         assert(p.eval_scrambled(0, i) == values_scrambled[i])
 
-
+@pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
 def test02_radical_inverse_vectorized():
     v = RadicalInverse()
     for index in range(1024):

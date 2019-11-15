@@ -45,11 +45,18 @@ def test03_round_to_power_of_two():
     assert round_to_power_of_two(7) == 8
     assert round_to_power_of_two(8) == 8
 
+
 def test04_solve_quadratic():
     assert np.allclose(solve_quadratic(1, 4, -5), (True, -5, 1))
-    assert np.allclose(solve_quadratic([1], [4], [-5]), ([True], [-5], [1]))
     assert np.allclose(solve_quadratic(0, 5, -10), (True, 2, 2))
-    assert np.allclose(solve_quadratic([0], [5], [-10]), ([True], [2], [2]))
+
+    try:
+        from mitsuba.packet_rgb.core.math import solve_quadratic as solve_quadratic_p
+    except ImportError:
+        pytest.mark.skip("packet_rgb mode not enabled")
+
+    assert np.allclose(solve_quadratic_p([1], [4], [-5]), ([True], [-5], [1]))
+    assert np.allclose(solve_quadratic_p([0], [5], [-10]), ([True], [2], [2]))
 
 
 def test05_legendre_p():

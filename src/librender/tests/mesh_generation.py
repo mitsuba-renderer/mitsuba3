@@ -11,9 +11,9 @@ vertex_struct = Struct() \
 vdt = vertex_struct.dtype()
 
 index_struct = Struct() \
-    .append("i0", Struct.EUInt32) \
-    .append("i1", Struct.EUInt32) \
-    .append("i2", Struct.EUInt32)
+    .append("i0", FieldType.UInt32) \
+    .append("i1", FieldType.UInt32) \
+    .append("i2", FieldType.UInt32)
 idt = vertex_struct.dtype()
 
 

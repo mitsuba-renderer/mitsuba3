@@ -1,4 +1,4 @@
-from mitsuba.scalar_rgb.core import Struct, StructConverter
+from mitsuba.scalar_rgb.core import Struct, StructConverter, FieldType, FieldByteOrder, FieldFlags
 import struct
 import numpy as np
 import pytest
@@ -8,17 +8,17 @@ import sys
 
 # List of supported conversions
 supported_types = [
-    ('b', Struct.EInt8),
-    ('B', Struct.EUInt8),
-    ('h', Struct.EInt16),
-    ('H', Struct.EUInt16),
-    ('i', Struct.EInt32),
-    ('I', Struct.EUInt32),
-    ('q', Struct.EInt64),
-    ('Q', Struct.EUInt64),
-    ('e', Struct.EFloat16),
-    ('f', Struct.EFloat32),
-    ('d', Struct.EFloat64)
+    ('b', FieldType.Int8),
+    ('B', FieldType.UInt8),
+    ('h', FieldType.Int16),
+    ('H', FieldType.UInt16),
+    ('i', FieldType.Int32),
+    ('I', FieldType.UInt32),
+    ('q', FieldType.Int64),
+    ('Q', FieldType.UInt64),
+    ('e', FieldType.Float16),
+    ('f', FieldType.Float32),
+    ('d', FieldType.Float64)
 ]
 
 
@@ -61,17 +61,17 @@ def test01_basics():
     assert s.alignment() == 1
     assert s.size() == 0
 
-    s.append('float_val', Struct.EFloat32)
+    s.append('float_val', FieldType.Float32)
     assert s.field_count() == 1
     assert s.alignment() == 4
     assert s.size() == 4
 
-    s.append('byte_val', Struct.EUInt8)
+    s.append('byte_val', FieldType.UInt8)
     assert s.field_count() == 2
     assert s.alignment() == 4
     assert s.size() == 8
 
-    s.append('half_val', Struct.EFloat16)
+    s.append('half_val', FieldType.Float16)
     assert s.field_count() == 3
     assert s.alignment() == 4
     assert s.size() == 8
@@ -80,17 +80,17 @@ def test01_basics():
     assert s[0].name == 'float_val'
     assert s[0].offset == 0
     assert s[0].size == 4
-    assert s[0].type == Struct.EFloat32
+    assert s[0].type == FieldType.Float32
 
     assert s[1].name == 'byte_val'
     assert s[1].offset == 4
     assert s[1].size == 1
-    assert s[1].type == Struct.EUInt8
+    assert s[1].type == FieldType.UInt8
 
     assert s[2].name == 'half_val'
     assert s[2].offset == 6
     assert s[2].size == 2
-    assert s[2].type == Struct.EFloat16
+    assert s[2].type == FieldType.Float16
 
 
 @pytest.mark.parametrize('param', supported_types)
@@ -123,15 +123,15 @@ def test03_convert(param):
                         '@' + p2[0] * len(values), values)
 
     # LE -> BE
-    s1 = Struct(byte_order=Struct.EBigEndian).append('val', p1[1])
-    s2 = Struct(byte_order=Struct.ELittleEndian).append('val', p2[1])
+    s1 = Struct(byte_order=FieldByteOrder.BigEndian).append('val', p1[1])
+    s2 = Struct(byte_order=FieldByteOrder.LittleEndian).append('val', p2[1])
     s = StructConverter(s1, s2)
     check_conversion(s, '>' + p1[0] * len(values),
                         '<' + p2[0] * len(values), values)
 
     # BE -> LE
-    s1 = Struct(byte_order=Struct.ELittleEndian).append('val', p1[1])
-    s2 = Struct(byte_order=Struct.EBigEndian).append('val', p2[1])
+    s1 = Struct(byte_order=FieldByteOrder.LittleEndian).append('val', p1[1])
+    s2 = Struct(byte_order=FieldByteOrder.BigEndian).append('val', p2[1])
     s = StructConverter(s1, s2)
     check_conversion(s, '<' + p1[0] * len(values),
                         '>' + p2[0] * len(values), values)
@@ -142,7 +142,7 @@ def test03_missing_field(param):
     s1 = Struct().append('val1', param[1]) \
                  .append('val3', param[1])
     s2 = Struct().append('val1', param[1]) \
-                 .append('val2', param[1], Struct.EDefault, 123) \
+                 .append('val2', param[1], FieldFlags.Default, 123) \
                  .append('val3', param[1])
     s = StructConverter(s1, s2)
 
@@ -159,16 +159,16 @@ def test03_missing_field(param):
 
 
 def test04_missing_field_error():
-    s1 = Struct().append('val1', Struct.EUInt32)
-    s2 = Struct().append('val2', Struct.EUInt32)
+    s1 = Struct().append('val1', FieldType.UInt32)
+    s2 = Struct().append('val2', FieldType.UInt32)
     with pytest.raises(RuntimeError, match='Unable to find field "val2"'):
         s = StructConverter(s1, s2)
         check_conversion(s, '@I', '@I', [1], [1])
 
 
 def test05_round_and_saturation():
-    s1 = Struct().append('val', Struct.EFloat32)
-    s2 = Struct().append('val', Struct.EInt8)
+    s1 = Struct().append('val', FieldType.Float32)
+    s2 = Struct().append('val', FieldType.Int8)
     s = StructConverter(s1, s2)
     values = [-0.55, -0.45, 0, 0.45, 0.55, 127, 128, -127, -200]
     check_conversion(s, '@fffffffff', '@bbbbbbbbb', values,
@@ -176,8 +176,8 @@ def test05_round_and_saturation():
 
 
 def test06_round_and_saturation_normalized():
-    s1 = Struct().append('val', Struct.EFloat32)
-    s2 = Struct().append('val', Struct.EInt8, Struct.ENormalized)
+    s1 = Struct().append('val', FieldType.Float32)
+    s2 = Struct().append('val', FieldType.Int8, FieldFlags.Normalized)
     s = StructConverter(s1, s2)
     f = 1.0 / 127.0
     values = [-0.55 * f, -0.45 * f, 0, 0.45 * f, 0.55 * f, 1, 2, -1, -2]
@@ -187,8 +187,8 @@ def test06_round_and_saturation_normalized():
 
 @pytest.mark.parametrize('param', supported_types)
 def test07_roundtrip_normalization(param):
-    s1 = Struct().append('val', param[1], Struct.ENormalized)
-    s2 = Struct().append('val', Struct.EFloat32)
+    s1 = Struct().append('val', param[1], FieldFlags.Normalized)
+    s2 = Struct().append('val', FieldType.Float32)
     s = StructConverter(s1, s2)
     max_range = 1.0
     if Struct.is_integer(param[1]):
@@ -207,12 +207,12 @@ def test07_roundtrip_normalization(param):
 def test08_roundtrip_normalization_int2int(param):
     if Struct.is_float(param[1]):
         return
-    s1_type = Struct.EInt8 if Struct.is_signed(param[1]) else Struct.EUInt8
+    s1_type = FieldType.Int8 if Struct.is_signed(param[1]) else FieldType.UInt8
     s1_dtype = 'b' if Struct.is_signed(param[1]) else 'B'
     s1_range = Struct.range(s1_type)
     s2_range = Struct.range(param[1])
-    s1 = Struct().append('val', s1_type, Struct.ENormalized)
-    s2 = Struct().append('val', param[1], Struct.ENormalized)
+    s1 = Struct().append('val', s1_type, FieldFlags.Normalized)
+    s2 = Struct().append('val', param[1], FieldFlags.Normalized)
     s = StructConverter(s1, s2)
     values_in = list(range(int(s1_range[0]), int(s1_range[1] + 1)))
     values_out = np.array(values_in, dtype=np.float64)
@@ -228,9 +228,9 @@ def test08_roundtrip_normalization_int2int(param):
 
 def test09_gamma_1():
     s = StructConverter(
-        Struct().append('v', Struct.EUInt8,
-                        Struct.ENormalized | Struct.EGamma),
-        Struct().append('v', Struct.EFloat32)
+        Struct().append('v', FieldType.UInt8,
+                        FieldFlags.Normalized | FieldFlags.Gamma),
+        Struct().append('v', FieldType.Float32)
     )
 
     src_data = list(range(256))
@@ -242,9 +242,9 @@ def test09_gamma_1():
 
 def test10_gamma_2():
     s = StructConverter(
-        Struct().append('v', Struct.EFloat32),
-        Struct().append('v', Struct.EUInt8,
-                        Struct.ENormalized | Struct.EGamma)
+        Struct().append('v', FieldType.Float32),
+        Struct().append('v', FieldType.UInt8,
+                        FieldFlags.Normalized | FieldFlags.Gamma)
     )
 
     src_data = list(np.linspace(0, 1, 256))
@@ -258,7 +258,7 @@ def test10_gamma_2():
 def test11_assert_value(param):
     s = StructConverter(
         Struct().append('v', param[1], default=10,
-                        flags=int(Struct.EAssert)),
+                        flags=FieldFlags.Assert),
         Struct().append('v', param[1])
     )
     check_conversion(s, '@' + param[0], '@' + param[0], (10,), (10,))
@@ -267,7 +267,7 @@ def test11_assert_value(param):
 
     s = StructConverter(
         Struct().append('v1', param[1], default=10,
-                        flags=int(Struct.EAssert))
+                        flags=FieldFlags.Assert)
                 .append('v2', param[1]),
         Struct().append('v2', param[1])
     )
@@ -280,11 +280,11 @@ def test11_assert_value(param):
 
 def test12_blend():
     src = Struct()
-    src.append('a', Struct.EFloat32)
-    src.append('b', Struct.EFloat32)
+    src.append('a', FieldType.Float32)
+    src.append('b', FieldType.Float32)
 
     target = Struct()
-    target.append('v', Struct.EFloat32)
+    target.append('v', FieldType.Float32)
     target.field('v').blend = [(3.0, 'a'), (4.0, 'b')]
 
     s = StructConverter(
@@ -296,11 +296,11 @@ def test12_blend():
                      (3.0 + 8.0,))
 
     src = Struct()
-    src.append('a', Struct.EUInt8, Struct.ENormalized)
-    src.append('b', Struct.EUInt8, Struct.ENormalized)
+    src.append('a', FieldType.UInt8, FieldFlags.Normalized)
+    src.append('b', FieldType.UInt8, FieldFlags.Normalized)
 
     target = Struct()
-    target.append('v', Struct.EFloat32)
+    target.append('v', FieldType.Float32)
     target.field('v').blend = [(3.0, 'a'), (4.0, 'b')]
 
     s = StructConverter(
@@ -325,11 +325,11 @@ def test13_blend_gamma():
         return ((value + 0.055) * (1.0 / 1.055)) ** 2.4
 
     src = Struct()
-    src.append('a', Struct.EUInt8, Struct.ENormalized | Struct.EGamma)
-    src.append('b', Struct.EUInt8, Struct.ENormalized | Struct.EGamma)
+    src.append('a', FieldType.UInt8, FieldFlags.Normalized | FieldFlags.Gamma)
+    src.append('b', FieldType.UInt8, FieldFlags.Normalized | FieldFlags.Gamma)
 
     target = Struct()
-    target.append('v', Struct.EUInt8, Struct.ENormalized | Struct.EGamma)
+    target.append('v', FieldType.UInt8, FieldFlags.Normalized | FieldFlags.Gamma)
     target.field('v').blend = [(1, 'a'), (1, 'b')]
 
     s = StructConverter(src, target)
@@ -342,12 +342,12 @@ def test13_blend_gamma():
 @pytest.mark.parametrize('param', supported_types)
 def test14_weight(param):
     src = Struct() \
-        .append('value1', param[1], Struct.ENormalized) \
-        .append('value2', param[1], Struct.ENormalized) \
-        .append('weight', param[1], Struct.ENormalized | Struct.EWeight)
+        .append('value1', param[1], FieldFlags.Normalized) \
+        .append('value2', param[1], FieldFlags.Normalized) \
+        .append('weight', param[1], FieldFlags.Normalized | FieldFlags.Weight)
 
-    target = Struct().append('value1', Struct.EFloat32) \
-                     .append('value2', Struct.EFloat32)
+    target = Struct().append('value1', FieldType.Float32) \
+                     .append('value2', FieldType.Float32)
 
     s = StructConverter(src, src)
     check_conversion(s, '@' + param[0] * 3,
@@ -361,13 +361,13 @@ def test14_weight(param):
 
 
 def test15_test_dither():
-    from mitsuba.scalar_rgb.core import Bitmap
+    from mitsuba.scalar_rgb.core import Bitmap, PixelFormat
     import numpy.linalg as la
 
-    b = Bitmap(Bitmap.EY, Struct.EFloat32, [10, 256])
+    b = Bitmap(PixelFormat.Y, FieldType.Float32, [10, 256])
     value = np.linspace(0, 1 / 255.0, 10)
     np.array(b, copy=False)[:, :, 0] = np.tile(value, (256, 1))
-    b = b.convert(Bitmap.EY, Struct.EUInt8, False)
-    b = b.convert(Bitmap.EY, Struct.EFloat32, False)
+    b = b.convert(PixelFormat.Y, FieldType.UInt8, False)
+    b = b.convert(PixelFormat.Y, FieldType.Float32, False)
     err = la.norm(np.mean(np.array(b, copy=False), axis=(0, 2)) - value)
     assert(err < 5e-4)
