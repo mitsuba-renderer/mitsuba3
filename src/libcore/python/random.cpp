@@ -3,14 +3,9 @@
 
 #define DE(...) DOC(enoki, ##__VA_ARGS__)
 
-MTS_PY_EXPORT(random) {
+MTS_PY_EXPORT_STRUCT(random) {
     MTS_IMPORT_CORE_TYPES()
-
-// TODO
-#if 0
     using PCG32 = mitsuba::PCG32<UInt32>;
-    using UInt32P = replace_scalar_t<FloatP, ScalarUInt32>;
-
     MTS_PY_CHECK_ALIAS(PCG32, m) {
         auto pcg32 = py::class_<PCG32>(m, "PCG32", D(PCG32))
             .def(py::init<UInt64, UInt64>(),
@@ -21,7 +16,7 @@ MTS_PY_EXPORT(random) {
             .def("next_uint32", (UInt32 (PCG32::*)()) &PCG32::next_uint32, D(PCG32, next_uint32))
             // TODO
             // .def("next_uint32", [](PCG32 &rng, const std::vector<size_t> &shape) {
-            //     py::array_t<UInt32> result(shape);
+            //     py::array_t<ScalarUInt32> result(shape);
             //     for (py::ssize_t i = 0; i < result.size(); ++i)
             //         result.mutable_data()[i] = rng.next_uint32();
             //     return result;
@@ -88,8 +83,10 @@ MTS_PY_EXPORT(random) {
                     return p.attr("next_float64")(*args, **kwargs);
             });
     }
-#endif
+}
 
+MTS_PY_EXPORT(sample_tea) {
+    MTS_IMPORT_CORE_TYPES()
     m.def("sample_tea_float32",
           vectorize<Float>(sample_tea_float32<UInt32>),
           "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float32));

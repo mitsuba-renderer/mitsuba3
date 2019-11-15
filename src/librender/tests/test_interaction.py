@@ -2,7 +2,7 @@ import mitsuba
 import numpy as np
 
 from mitsuba.render import SurfaceInteraction3f
-from mitsuba.core   import Frame3f, Ray3f, RayDifferential3f
+from mitsuba.scalar_rgb.core   import Frame3f, Ray3f, RayDifferential3f
 
 def test01_intersection_construction():
     si = SurfaceInteraction3f()

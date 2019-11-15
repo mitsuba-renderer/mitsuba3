@@ -1,5 +1,5 @@
-from mitsuba.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, PCG32)
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, PCG32, PixelFormat, FieldType)
+from mitsuba.scalar_rgb.core.xml import load_string
 import numpy as np
 import os
 
@@ -10,7 +10,7 @@ def find_resource(fname):
         if os.path.exists(full):
             return full
         if path == '' or path == '/':
-            raise Exception("find_resource(): could not find \"%s\"" % fname);
+            raise Exception("find_resource(): could not find \"%s\"" % fname)
         path = os.path.dirname(path)
 
 
@@ -18,7 +18,7 @@ def test_read_convert_yc(tmpdir):
     # Tests reading & upsampling a luminance/chroma image
     b = Bitmap(find_resource('resources/data/tests/bitmap/XYZ_YC.exr'))
     # Tests float16 XYZ -> float32 RGBA conversion
-    b = b.convert(Bitmap.PixelFormat::RGBA, Struct.EFloat32, False)
+    b = b.convert(PixelFormat.RGBA, FieldType.Float32, False)
     ref = [ 0.36595437, 0.27774358, 0.11499051, 1.]
     # Tests automatic Bitmap->NumPy conversion
     assert np.allclose(np.mean(b, axis=(0, 1)), ref)
@@ -34,7 +34,7 @@ def test_read_convert_yc(tmpdir):
 
 def test_read_write_complex_exr(tmpdir):
     # Tests reading and writing of complex multi-channel images with custom properties
-    b1 = Bitmap(Bitmap.EMultiChannel, Struct.EFloat32, [4, 5], 6)
+    b1 = Bitmap(Bitmap.EMultiChannel, FieldType.Float32, [4, 5], 6)
     a = b1.struct_()
     for i in range(6):
         a[i].name = "my_ch_%i" % i
@@ -71,10 +71,10 @@ def test_read_write_complex_exr(tmpdir):
 
 def test_convert_rgb_y(tmpdir):
     # Tests RGBA(float64) -> Y (float32) conversion
-    b1 = Bitmap(Bitmap.PixelFormat::RGBA, Struct.EFloat64, [3, 1])
+    b1 = Bitmap(PixelFormat.RGBA, FieldType.Float64, [3, 1])
     b2 = np.array(b1, copy=False)
     b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
-    b3 = np.array(b1.convert(Bitmap.EY, Struct.EFloat32, False)).ravel()
+    b3 = np.array(b1.convert(PixelFormat.Y, FieldType.Float32, False)).ravel()
     assert np.allclose(b3, [0.212671, 0.715160, 0.072169])
 
 
@@ -85,30 +85,30 @@ def test_convert_rgb_y_gamma(tmpdir):
         return 1.055 * (value ** (1.0/2.4)) - 0.055
 
     # Tests RGBA(float64) -> Y (uint8_t, linear) conversion
-    b1 = Bitmap(Bitmap.PixelFormat::RGBA, Struct.EFloat64, [3, 1])
+    b1 = Bitmap(PixelFormat.RGBA, FieldType.Float64, [3, 1])
     b2 = np.array(b1, copy=False)
     b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
-    b3 = np.array(b1.convert(Bitmap.EY, Struct.EUInt8, False)).ravel()
+    b3 = np.array(b1.convert(PixelFormat.Y, FieldType.UInt8, False)).ravel()
     assert np.allclose(b3, [0.212671*255, 0.715160*255, 0.072169*255], atol=1)
 
     # Tests RGBA(float64) -> Y (uint8_t, gamma) conversion
-    b1 = Bitmap(Bitmap.PixelFormat::RGBA, Struct.EFloat64, [3, 1])
+    b1 = Bitmap(PixelFormat.RGBA, FieldType.Float64, [3, 1])
     b2 = np.array(b1, copy=False)
     b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
-    b3 = np.array(b1.convert(Bitmap.EY, Struct.EUInt8, True)).ravel()
+    b3 = np.array(b1.convert(PixelFormat.Y, FieldType.UInt8, True)).ravel()
     assert np.allclose(b3, [to_srgb(0.212671)*255, to_srgb(0.715160)*255, to_srgb(0.072169)*255], atol=1)
 
 def test_read_write_jpeg(tmpdir):
     tmp_file = os.path.join(str(tmpdir), "out.jpg")
 
-    b = Bitmap(Bitmap.EY, Struct.EUInt8, [10, 10])
+    b = Bitmap(PixelFormat.Y, FieldType.UInt8, [10, 10])
     ref = np.uint8(PCG32().next_float((10, 10))*255)
     np.array(b, copy=False)[:] = ref[..., np.newaxis]
     b.write(tmp_file, quality=50)
     b2 = Bitmap(tmp_file)
     assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) / (10*10*255) < 0.07
 
-    b = Bitmap(Bitmap.ERGB, Struct.EUInt8, [10, 10])
+    b = Bitmap(PixelFormat.RGB, FieldType.UInt8, [10, 10])
     ref = np.uint8(PCG32().next_float((10, 10, 3))*255)
     np.array(b, copy=False)[:] = ref
     b.write(tmp_file, quality=100)
@@ -120,14 +120,14 @@ def test_read_write_jpeg(tmpdir):
 def test_read_write_png(tmpdir):
     tmp_file = os.path.join(str(tmpdir), "out.png")
 
-    b = Bitmap(Bitmap.EY, Struct.EUInt8, [10, 10])
+    b = Bitmap(PixelFormat.Y, FieldType.UInt8, [10, 10])
     ref = np.uint8(PCG32().next_float((10, 10))*255)
     np.array(b, copy=False)[:] = ref[..., np.newaxis]
     b.write(tmp_file)
     b2 = Bitmap(tmp_file)
     assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) == 0
 
-    b = Bitmap(Bitmap.PixelFormat::RGBA, Struct.EUInt8, [10, 10])
+    b = Bitmap(PixelFormat.RGBA, FieldType.UInt8, [10, 10])
     ref = np.uint8(PCG32().next_float((10, 10, 4))*255)
     np.array(b, copy=False)[:] = ref
     b.write(tmp_file)
@@ -137,7 +137,7 @@ def test_read_write_png(tmpdir):
     os.remove(tmp_file)
 
 def test_read_write_hdr(tmpdir):
-    b = Bitmap(Bitmap.ERGB, Struct.EFloat32, [10, 20])
+    b = Bitmap(PixelFormat.RGB, FieldType.Float32, [10, 20])
     ref = PCG32().next_float32((20, 10, 3))
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.hdr")
@@ -147,7 +147,7 @@ def test_read_write_hdr(tmpdir):
     os.remove(tmp_file)
 
 def test_read_write_pfm(tmpdir):
-    b = Bitmap(Bitmap.ERGB, Struct.EFloat32, [10, 20])
+    b = Bitmap(PixelFormat.RGB, FieldType.Float32, [10, 20])
     ref = np.float32(PCG32().next_float((20, 10, 3)))
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.pfm")
@@ -157,7 +157,7 @@ def test_read_write_pfm(tmpdir):
     os.remove(tmp_file)
 
 def test_read_write_ppm(tmpdir):
-    b = Bitmap(Bitmap.ERGB, Struct.EUInt8, [10, 20])
+    b = Bitmap(PixelFormat.RGB, FieldType.UInt8, [10, 20])
     ref = np.uint8(PCG32().next_float((20, 10, 3))*255)
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.ppm")
@@ -178,12 +178,12 @@ def test_read_tga():
 
 def test_accumulate():
     # ----- Accumulate the whole bitmap
-    b1 = Bitmap(Bitmap.ERGB, Struct.EUInt8, [10, 10])
+    b1 = Bitmap(PixelFormat.RGB, FieldType.UInt8, [10, 10])
     n = b1.height() * b1.width()
     # 0, 1, 2, ..., 99
     np.array(b1, copy=False)[:] = np.arange(n).reshape(b1.height(), b1.width(), 1)
 
-    b2 = Bitmap(Bitmap.ERGB, Struct.EUInt8, [10, 10])
+    b2 = Bitmap(PixelFormat.RGB, FieldType.UInt8, [10, 10])
     # 100, 99, ..., 1
     np.array(b2, copy=False)[:] = np.arange(n, 0, -1).reshape(
         b2.height(), b2.width(), 1)

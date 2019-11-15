@@ -1,4 +1,4 @@
-from mitsuba.core import Frame3f
+from mitsuba.scalar_rgb.core import Frame3f
 import numpy as np
 
 

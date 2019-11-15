@@ -1,5 +1,5 @@
-from mitsuba.core import Transform4f, Transform4fX, AnimatedTransform
-from mitsuba.core import PCG32
+from mitsuba.scalar_rgb.core import Transform4f, Transform4fX, AnimatedTransform
+from mitsuba.scalar_rgb.core import PCG32
 import numpy as np
 import numpy.linalg as la
 import pytest

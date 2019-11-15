@@ -1,4 +1,4 @@
-from mitsuba.core import BoundingSphere3f as BSphere
+from mitsuba.scalar_rgb.core import BoundingSphere3f as BSphere
 import numpy as np
 
 

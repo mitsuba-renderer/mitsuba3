@@ -2,9 +2,9 @@ import numpy as np
 import os
 import pytest
 
-from mitsuba.core import warp
-from mitsuba.core.math import Pi
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import warp
+from mitsuba.scalar_rgb.core.math import Pi
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import EMeasure, PositionSample3f, Interaction3f
 from mitsuba.test.util import fresolver_append_path
 
@@ -63,7 +63,7 @@ def test02_area_sample_direction():
 
 def test03_area_sample_ray():
     # TODO: test vectorized variant
-    from mitsuba.core import MTS_WAVELENGTH_SAMPLES, Frame3f
+    from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES, Frame3f
     shape = example_shape()
     e = shape.emitter()
 

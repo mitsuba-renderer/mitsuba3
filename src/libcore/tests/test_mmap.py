@@ -1,4 +1,4 @@
-from mitsuba.core import MemoryMappedFile
+from mitsuba.scalar_rgb.core import MemoryMappedFile
 import numpy as np
 import os
 

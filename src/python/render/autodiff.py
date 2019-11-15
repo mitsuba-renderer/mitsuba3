@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from mitsuba.core import Bitmap
+from mitsuba.scalar_rgb.core import Bitmap
 from mitsuba.render import (DifferentiableParameters, RadianceSample3fD,
                             ImageBlock)
 
@@ -274,7 +274,7 @@ def render_block(scene, spp=None):
 
 
 def render(scene, spp, pixel_format):
-    supported_formats = [Bitmap.EY, Bitmap.EXYZ, Bitmap.ERGB]
+    supported_formats = [Bitmap.EY, Bitmap.EXYZ, PixelFormat.RGB]
 
     # Assume that the block has format XYZAW
     block = render_block(scene, spp)
@@ -287,7 +287,7 @@ def render(scene, spp, pixel_format):
         return Y
     elif pixel_format == Bitmap.EXYZ:
         return Vector3fD(X, Y, Z)
-    elif pixel_format == Bitmap.ERGB:
+    elif pixel_format == PixelFormat.RGB:
         return Vector3fD(
              3.240479 * X + -1.537150 * Y + -0.498535 * Z,
             -0.969256 * X +  1.875991 * Y +  0.041556 * Z,

@@ -1,4 +1,4 @@
-from mitsuba.core import ArgParser
+from mitsuba.scalar_rgb.core import ArgParser
 import pytest
 
 

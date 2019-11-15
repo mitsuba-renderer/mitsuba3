@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from mitsuba.core import MTS_WAVELENGTH_SAMPLES
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import BSDF, BSDFContext, SurfaceInteraction3f, \
                            EImportance, ERadiance
 

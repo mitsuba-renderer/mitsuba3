@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 import mitsuba
-from mitsuba.core      import Ray3f, Ray3fX
-from mitsuba.core.xml  import load_string
+from mitsuba.scalar_rgb.core      import Ray3f, Ray3fX
+from mitsuba.scalar_rgb.core.xml  import load_string
 
 UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
 

@@ -1,9 +1,9 @@
 import numpy as np
 
 import mitsuba
-from mitsuba.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, \
+from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, \
                          MTS_WAVELENGTH_SAMPLES
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core.xml import load_string
 
 
 def test01_cie1931():
@@ -74,7 +74,7 @@ def test06_srgb_d65():
 def test07_sample_rgb_spectrum():
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
-    from mitsuba.core import sample_rgb_spectrum, pdf_rgb_spectrum
+    from mitsuba.scalar_rgb.core import sample_rgb_spectrum, pdf_rgb_spectrum
 
     def spot_check(sample, expected_wav, expected_weight):
         wav, weight = sample_rgb_spectrum(sample)

@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from mitsuba.core import warp
-from mitsuba.core.math import InvFourPi, Epsilon
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import warp
+from mitsuba.scalar_rgb.core.math import InvFourPi, Epsilon
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import ContinuousSpectrum, PositionSample3f, Interaction3f
 
 

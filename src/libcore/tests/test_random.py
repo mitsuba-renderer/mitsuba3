@@ -2,7 +2,7 @@ import numpy as np
 
 
 def test_pcg32():
-    from mitsuba.core import PCG32
+    from mitsuba.scalar_rgb.core import PCG32
 
     values_32bit = [0xa15c02b7, 0x7b47f409, 0xba1d3330, 0x83d2f293,
                     0xbfa4784b, 0xcbed606e]
@@ -48,7 +48,7 @@ def test_pcg32():
 
 
 def test_tea_float32():
-    from mitsuba.core import sample_tea_float32
+    from mitsuba.scalar_rgb.core import sample_tea_float32
 
     assert sample_tea_float32(1, 1, 4) == 0.5424730777740479
     assert sample_tea_float32(1, 2, 4) == 0.5079904794692993
@@ -61,7 +61,7 @@ def test_tea_float32():
 
 
 def test_tea_float64():
-    from mitsuba.core import sample_tea_float64
+    from mitsuba.scalar_rgb.core import sample_tea_float64
 
     assert sample_tea_float64(1, 1, 4) == 0.5424730799533735
     assert sample_tea_float64(1, 2, 4) == 0.5079905082233922
@@ -74,7 +74,7 @@ def test_tea_float64():
 
 
 def test_tea_vectorized():
-    from mitsuba.core import sample_tea_float32, sample_tea_float64
+    from mitsuba.scalar_rgb.core import sample_tea_float32, sample_tea_float64
     count = 100
 
     result = sample_tea_float32(

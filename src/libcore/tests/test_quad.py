@@ -1,4 +1,4 @@
-from mitsuba.core.quad import *
+from mitsuba.scalar_rgb.core.quad import *
 import numpy as np
 
 def test01_gauss_lobatto():

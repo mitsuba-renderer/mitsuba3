@@ -12,9 +12,9 @@ from nanogui import (Color, Screen, Window, Widget, GroupLayout, BoxLayout,
 
 from nanogui import glfw, icons
 from nanogui import nanovg as nvg
-from mitsuba.core import PCG32, float_dtype, Bitmap, RadicalInverse
-from mitsuba.core.chi2 import ChiSquareTest, SphericalDomain
-from mitsuba.core.warp.distr import DISTRIBUTIONS
+from mitsuba.scalar_rgb.core import PCG32, float_dtype, Bitmap, RadicalInverse
+from mitsuba.scalar_rgb.core.chi2 import ChiSquareTest, SphericalDomain
+from mitsuba.scalar_rgb.core.warp.distr import DISTRIBUTIONS
 from mitsuba.ui import Texture
 
 

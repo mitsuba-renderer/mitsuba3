@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pytest
 
-from mitsuba.core import Stream, DummyStream, FileStream, \
+from mitsuba.scalar_rgb.core import Stream, DummyStream, FileStream, \
                          MemoryStream, ZStream
 from mitsuba.test.util import tmpfile, make_tmpfile
 

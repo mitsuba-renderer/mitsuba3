@@ -1,4 +1,4 @@
-from mitsuba.core import Thread, FileResolver, Struct, float_dtype, Properties
+from mitsuba.scalar_rgb.core import Thread, FileResolver, Struct, float_dtype, Properties
 from mitsuba.render import ShapeKDTree, Mesh
 
 import numpy as np

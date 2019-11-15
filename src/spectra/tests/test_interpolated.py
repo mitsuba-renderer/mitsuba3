@@ -1,4 +1,4 @@
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core.xml import load_string
 
 def test01_interpolation():
     s = load_string('''

@@ -1,4 +1,4 @@
-from mitsuba.core import Thread, Appender, Formatter, Log, Info
+from mitsuba.scalar_rgb.core import Thread, Appender, Formatter, Log, Info
 
 
 def test01_custom():

@@ -3,10 +3,10 @@ import numpy as np
 import os
 import pytest
 
-from mitsuba.core import Bitmap, Struct, ReconstructionFilter, float_dtype
-from mitsuba.core import cie1931_xyz, \
+from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, float_dtype
+from mitsuba.scalar_rgb.core import cie1931_xyz, \
                          MTS_WAVELENGTH_SAMPLES as N_SAMPLES
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import ImageBlock
 
 

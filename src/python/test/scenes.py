@@ -1,6 +1,6 @@
 """Test fixtures containing common scenes."""
 import pytest
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.test.util import fresolver_append_path
 
 

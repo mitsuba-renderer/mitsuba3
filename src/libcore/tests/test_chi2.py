@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
-from mitsuba.core.chi2 import ChiSquareTest
-from mitsuba.core.warp.distr import DISTRIBUTIONS
+from mitsuba.scalar_rgb.core.chi2 import ChiSquareTest
+from mitsuba.scalar_rgb.core.warp.distr import DISTRIBUTIONS
 from mitsuba.test.util import fresolver_append_path
 import pytest
 

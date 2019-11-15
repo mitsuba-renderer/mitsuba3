@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 
 import mitsuba
-from mitsuba.core import MTS_WAVELENGTH_SAMPLES, MTS_WAVELENGTH_MIN, \
+from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES, MTS_WAVELENGTH_MIN, \
                          MTS_WAVELENGTH_MAX, Properties, BoundingBox3f
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import Texture3D, Interaction3f, Interaction3fX
 from mitsuba.test.util import tmpfile
 
@@ -285,7 +285,7 @@ def test06_autodiff_constant3d():
 @pytest.mark.parametrize('side', [2])
 def test07_autodiff_grid3d(side):
     from enoki import FloatD, hsum
-    from mitsuba.core import float_dtype
+    from mitsuba.scalar_rgb.core import float_dtype
     from mitsuba.render.autodiff import get_differentiable_parameters
 
     size = side ** 3
@@ -337,7 +337,7 @@ def test07_autodiff_grid3d(side):
 def test08_autodiff_grid3d_multigrid():
     """Tests the ability of Grid3D to handle data updates with doubled resolution."""
     from enoki import FloatD, Vector4fD, Vector3fD
-    from mitsuba.core import float_dtype
+    from mitsuba.scalar_rgb.core import float_dtype
     from mitsuba.render import Interaction3fD
     from mitsuba.render.autodiff import get_differentiable_parameters
 

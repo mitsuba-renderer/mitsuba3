@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from mitsuba.core import Struct, float_dtype
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import Struct, float_dtype
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import Mesh
 from mitsuba.test.util import fresolver_append_path
 

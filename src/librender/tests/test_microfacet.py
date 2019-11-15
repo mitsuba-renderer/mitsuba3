@@ -1,6 +1,6 @@
 import numpy as np
 
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import MicrofacetDistribution
 
 

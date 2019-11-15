@@ -1,4 +1,4 @@
-from mitsuba.core import util, Bitmap, ThreadEnvironment, \
+from mitsuba.scalar_rgb.core import util, Bitmap, ThreadEnvironment, \
     ScopedSetThreadEnvironment, Thread, Info
 from threading import Thread as PyThread, Semaphore
 import sys
@@ -13,7 +13,7 @@ def tonemap(fname):
     with ScopedSetThreadEnvironment(te):
         try:
             img_in = Bitmap(fname)
-            img_out = img_in.convert(Bitmap.ERGB, Bitmap.EUInt8, True)
+            img_out = img_in.convert(PixelFormat.RGB, Bitmap.EUInt8, True)
             fname_out = fname.replace('exr', 'png')
             img_out.write(fname_out)
         except Exception as e:

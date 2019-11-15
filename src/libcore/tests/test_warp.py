@@ -35,7 +35,7 @@ def check_inverse(func, inverse):
 
 
 def test_square_to_uniform_disk():
-    from mitsuba.core.warp import square_to_uniform_disk, \
+    from mitsuba.scalar_rgb.core.warp import square_to_uniform_disk, \
                                   uniform_disk_to_square, \
                                   square_to_uniform_disk_pdf
 
@@ -49,7 +49,7 @@ def test_square_to_uniform_disk():
 
 
 def test_square_to_uniform_disk_concentric():
-    from mitsuba.core.warp import square_to_uniform_disk_concentric, \
+    from mitsuba.scalar_rgb.core.warp import square_to_uniform_disk_concentric, \
                                   square_to_uniform_disk_pdf, \
                                   uniform_disk_to_square_concentric
     from math import sqrt
@@ -62,7 +62,7 @@ def test_square_to_uniform_disk_concentric():
 
 
 def test_square_to_uniform_triangle():
-    from mitsuba.core.warp import square_to_uniform_triangle, \
+    from mitsuba.scalar_rgb.core.warp import square_to_uniform_triangle, \
                                   square_to_uniform_triangle_pdf, \
                                   uniform_triangle_to_square
     assert(np.allclose(square_to_uniform_triangle([0, 0]),   [0, 0]))
@@ -77,21 +77,21 @@ def test_square_to_uniform_triangle():
 
 
 def test_interval_to_tent():
-    from mitsuba.core.warp import interval_to_tent
+    from mitsuba.scalar_rgb.core.warp import interval_to_tent
     assert(np.allclose(interval_to_tent(0.5), 0))
     assert(np.allclose(interval_to_tent(0),   -1))
     assert(np.allclose(interval_to_tent(1),   1))
 
 
 def test_interval_to_nonuniform_tent():
-    from mitsuba.core.warp import interval_to_nonuniform_tent
+    from mitsuba.scalar_rgb.core.warp import interval_to_nonuniform_tent
     assert(np.allclose(interval_to_nonuniform_tent(0, 0.5, 1, 0.499), 0.499, atol=1e-3))
     assert(np.allclose(interval_to_nonuniform_tent(0, 0.5, 1, 0), 0))
     assert(np.allclose(interval_to_nonuniform_tent(0, 0.5, 1, 0.5), 1))
 
 
 def test_square_to_tent():
-    from mitsuba.core.warp import square_to_tent, \
+    from mitsuba.scalar_rgb.core.warp import square_to_tent, \
                                   square_to_tent_pdf, \
                                   tent_to_square
     assert(np.allclose(square_to_tent([0.5, 0.5]), [0, 0]))
@@ -103,7 +103,7 @@ def test_square_to_tent():
 
 
 def test_square_to_uniform_sphere_vec():
-    from mitsuba.core.warp import square_to_uniform_sphere, \
+    from mitsuba.scalar_rgb.core.warp import square_to_uniform_sphere, \
                                   square_to_uniform_sphere_pdf, \
                                   uniform_sphere_to_square
 
@@ -116,7 +116,7 @@ def test_square_to_uniform_sphere_vec():
 
 
 def test_square_to_uniform_hemisphere():
-    from mitsuba.core.warp import square_to_uniform_hemisphere, \
+    from mitsuba.scalar_rgb.core.warp import square_to_uniform_hemisphere, \
                                   square_to_uniform_hemisphere_pdf, \
                                   uniform_hemisphere_to_square
 
@@ -128,7 +128,7 @@ def test_square_to_uniform_hemisphere():
 
 
 def test_square_to_cosine_hemisphere():
-    from mitsuba.core.warp import square_to_cosine_hemisphere, \
+    from mitsuba.scalar_rgb.core.warp import square_to_cosine_hemisphere, \
                                   square_to_cosine_hemisphere_pdf, \
                                   cosine_hemisphere_to_square
 
@@ -140,7 +140,7 @@ def test_square_to_cosine_hemisphere():
 
 
 def test_square_to_uniform_cone():
-    from mitsuba.core.warp import square_to_uniform_cone, \
+    from mitsuba.scalar_rgb.core.warp import square_to_uniform_cone, \
                                   square_to_uniform_cone_pdf, \
                                   uniform_cone_to_square
 
@@ -157,7 +157,7 @@ def test_square_to_uniform_cone():
 
 
 def test_square_to_beckmann():
-    from mitsuba.core.warp import square_to_beckmann, \
+    from mitsuba.scalar_rgb.core.warp import square_to_beckmann, \
                                   square_to_beckmann_pdf, \
                                   beckmann_to_square
 
@@ -170,7 +170,7 @@ def test_square_to_beckmann():
 
 
 def test_square_to_von_mises_fisher():
-    from mitsuba.core.warp import square_to_von_mises_fisher, \
+    from mitsuba.scalar_rgb.core.warp import square_to_von_mises_fisher, \
                                   square_to_von_mises_fisher_pdf, \
                                   von_mises_fisher_to_square
 
@@ -183,21 +183,21 @@ def test_square_to_von_mises_fisher():
 
 
 def test_square_to_std_normal_pdf():
-    from mitsuba.core.warp import square_to_std_normal_pdf
+    from mitsuba.scalar_rgb.core.warp import square_to_std_normal_pdf
     assert(np.allclose(square_to_std_normal_pdf([0, 0]),   0.16, atol=1e-2))
     assert(np.allclose(square_to_std_normal_pdf([0, 0.8]), 0.12, atol=1e-2))
     assert(np.allclose(square_to_std_normal_pdf([0.8, 0]), 0.12, atol=1e-2))
 
 
 def test_square_to_std_normal():
-    from mitsuba.core.warp import square_to_std_normal
+    from mitsuba.scalar_rgb.core.warp import square_to_std_normal
     assert(np.allclose(square_to_std_normal([0, 0]), [0, 0]))
     assert(np.allclose(square_to_std_normal([0, 1]), [0, 0]))
     assert(np.allclose(square_to_std_normal([0.39346, 0]), [1, 0], atol=1e-3))
 
 
 def test_hierarchical_warp():
-    from mitsuba.core.warp import Hierarchical2D0
+    from mitsuba.scalar_rgb.core.warp import Hierarchical2D0
     np.random.seed(0)
     data = np.random.rand(7, 3)
     distr = Hierarchical2D0(data)
@@ -208,7 +208,7 @@ def test_hierarchical_warp():
 
 
 def test_marginal_warp():
-    from mitsuba.core.warp import Marginal2D0
+    from mitsuba.scalar_rgb.core.warp import Marginal2D0
     np.random.seed(0)
     data = np.random.rand(7, 3)
     distr = Marginal2D0(data)

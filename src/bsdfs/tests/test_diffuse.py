@@ -1,8 +1,8 @@
 import numpy as np
 
-from mitsuba.core import Frame3f, MTS_WAVELENGTH_SAMPLES
-from mitsuba.core.math import Pi
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import Frame3f, MTS_WAVELENGTH_SAMPLES
+from mitsuba.scalar_rgb.core.math import Pi
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import BSDF, BSDFContext, SurfaceInteraction3f
 
 

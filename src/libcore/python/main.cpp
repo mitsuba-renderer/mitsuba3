@@ -13,6 +13,7 @@ MTS_PY_DECLARE(filesystem);
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(autodiff);
 MTS_PY_DECLARE(random);
+MTS_PY_DECLARE(sample_tea);
 MTS_PY_DECLARE(util);
 MTS_PY_DECLARE(math);
 MTS_PY_DECLARE(xml);
@@ -88,14 +89,6 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     // Define submodules of `mitsuba.mode.core`
     MTS_PY_DEF_SUBMODULE(core)
 
-// TODO should add this for all the different variants
-// #if defined(SINGLE_PRECISION)
-    m.attr("float_dtype") = py::dtype("f");
-// #else
-//     m.attr("float_dtype")   = py::dtype("d");
-// #endif
-//     m.attr("PacketSize") = py::cast(PacketSize);
-
     Jit::static_initialization();
     Class::static_initialization();
     Thread::static_initialization();
@@ -107,6 +100,7 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     MTS_PY_IMPORT(atomic);
     MTS_PY_IMPORT(autodiff);
     MTS_PY_IMPORT(random);
+    MTS_PY_IMPORT(sample_tea);
     MTS_PY_IMPORT(util);
     MTS_PY_IMPORT(math);
     MTS_PY_IMPORT(xml);

@@ -1,4 +1,4 @@
-from mitsuba.core import Properties as Prop
+from mitsuba.scalar_rgb.core import Properties as Prop
 import numpy as np
 
 
@@ -132,7 +132,7 @@ def test07_printing():
 
 def test08_animated_transforms():
     """An AnimatedTransform can be built from a given Transform."""
-    from mitsuba.core import Transform4f, AnimatedTransform
+    from mitsuba.scalar_rgb.core import Transform4f, AnimatedTransform
 
     p = Prop()
     p["trafo"] = Transform4f.translate([1, 2, 3])

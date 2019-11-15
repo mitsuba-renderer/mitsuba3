@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from mitsuba.core import PCG32, float_dtype
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import PCG32, float_dtype
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import Sampler
 
 @pytest.fixture(scope="module")

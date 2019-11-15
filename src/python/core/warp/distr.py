@@ -32,15 +32,15 @@ print("TODO: re-enable distr.py")
 # from __future__ import division
 
 # import mitsuba
-# from mitsuba.core import warp, float_dtype
-# from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
-# from mitsuba.core.chi2 import (
+# from mitsuba.scalar_rgb.core import warp, float_dtype
+# from mitsuba.scalar_rgb.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
+# from mitsuba.scalar_rgb.core.chi2 import (
 #     SpectrumAdapter, BSDFAdapter, MicrofacetAdapter,
 #     InteractiveBSDFAdapter, EnvironmentAdapter)
 # from mitsuba.render import MicrofacetDistribution
-# from mitsuba.core import Bitmap, Thread
-# from mitsuba.core.warp import Hierarchical2D0, Hierarchical2D2
-# from mitsuba.core.warp import Marginal2D0, Marginal2D2
+# from mitsuba.scalar_rgb.core import Bitmap, Thread
+# from mitsuba.scalar_rgb.core.warp import Hierarchical2D0, Hierarchical2D2
+# from mitsuba.scalar_rgb.core.warp import Marginal2D0, Marginal2D2
 # from mitsuba.test.util import fresolver_append_path
 # import numpy as np
 

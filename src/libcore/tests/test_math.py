@@ -1,14 +1,14 @@
 import numpy as np
 
-from mitsuba.core.math import find_interval
-from mitsuba.core.math import is_power_of_two
-from mitsuba.core.math import legendre_p
-from mitsuba.core.math import legendre_pd
-from mitsuba.core.math import legendre_pd_diff
-from mitsuba.core.math import log2i
-from mitsuba.core.math import round_to_power_of_two
-from mitsuba.core.math import solve_quadratic
-from mitsuba.core import PCG32
+from mitsuba.scalar_rgb.core.math import find_interval
+from mitsuba.scalar_rgb.core.math import is_power_of_two
+from mitsuba.scalar_rgb.core.math import legendre_p
+from mitsuba.scalar_rgb.core.math import legendre_pd
+from mitsuba.scalar_rgb.core.math import legendre_pd_diff
+from mitsuba.scalar_rgb.core.math import log2i
+from mitsuba.scalar_rgb.core.math import round_to_power_of_two
+from mitsuba.scalar_rgb.core.math import solve_quadratic
+from mitsuba.scalar_rgb.core import PCG32
 
 
 def test01_log2i():
@@ -128,7 +128,7 @@ def test10_find_interval_bruteforce():
 
 
 def test10_morton2():
-    from mitsuba.core.math import morton_encode2, morton_decode2
+    from mitsuba.scalar_rgb.core.math import morton_encode2, morton_decode2
     v0 = [123, 456]
     v1 = morton_encode2(v0)
     v2 = morton_decode2(v1)
@@ -136,7 +136,7 @@ def test10_morton2():
 
 
 def test11_morton3():
-    from mitsuba.core.math import morton_encode3, morton_decode3
+    from mitsuba.scalar_rgb.core.math import morton_encode3, morton_decode3
     v0 = [123, 456, 789]
     v1 = morton_encode3(v0)
     v2 = morton_decode3(v1)

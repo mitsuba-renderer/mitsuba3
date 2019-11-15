@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
  * additional Python-only method \c create(), which works as follows:
  *
  * \code
- * from mitsuba.core import *
+ * from mitsuba.scalar_rgb.core import *
  *
  * pmgr = PluginManager.instance()
  * camera = pmgr.create({

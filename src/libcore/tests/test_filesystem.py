@@ -1,8 +1,8 @@
 import platform
 import re
 
-from mitsuba.core import filesystem as fs
-from mitsuba.core.filesystem import preferred_separator as sep
+from mitsuba.scalar_rgb.core import filesystem as fs
+from mitsuba.scalar_rgb.core.filesystem import preferred_separator as sep
 
 path_here_relative = fs.path("." + sep)
 path_here = fs.current_path()

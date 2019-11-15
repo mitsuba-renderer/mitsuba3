@@ -1,6 +1,6 @@
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render import Scene
-from mitsuba.core import Thread, Warn
+from mitsuba.scalar_rgb.core import Thread, Warn
 import pytest
 
 

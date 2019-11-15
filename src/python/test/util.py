@@ -8,7 +8,7 @@ from functools import wraps
 from inspect import getframeinfo, stack
 
 import pytest
-from mitsuba.core import Thread, FileResolver
+from mitsuba.scalar_rgb.core import Thread, FileResolver
 
 
 def fresolver_append_path(func):

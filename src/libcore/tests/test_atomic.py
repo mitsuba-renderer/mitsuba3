@@ -1,4 +1,4 @@
-from mitsuba.core import AtomicFloat
+from mitsuba.scalar_rgb.core import AtomicFloat
 from threading import Thread
 
 

@@ -1,4 +1,4 @@
-from mitsuba.core import BoundingBox3f as BBox
+from mitsuba.scalar_rgb.core import BoundingBox3f as BBox
 import numpy as np
 
 

@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from mitsuba import DEBUG as is_debug
-from mitsuba.core import DiscreteDistribution
+from mitsuba.scalar_rgb.core import DiscreteDistribution
 
 eps = 1e-6
 def approx(v):

@@ -3597,7 +3597,7 @@ dynamically building scenes from Python, this class has an additional
 Python-only method ``create``(), which works as follows:
 
 ```
-from mitsuba.core import *
+from mitsuba.scalar_rgb.core import *
 
 pmgr = PluginManager.instance()
 camera = pmgr.create({

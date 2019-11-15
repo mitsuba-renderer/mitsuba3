@@ -1,5 +1,5 @@
-from mitsuba.core.xml import load_string
-from mitsuba.core import float_dtype
+from mitsuba.scalar_rgb.core.xml import load_string
+from mitsuba.scalar_rgb.core import float_dtype
 from pytest import approx
 import numpy as np
 
@@ -41,7 +41,7 @@ def test06_tent():
     assert f.eval(1.1) == 0 and f.eval_discretized(1.1) == 0
 
 def test07_resampler_box():
-    from mitsuba.core import Resampler
+    from mitsuba.scalar_rgb.core import Resampler
     f = load_string("""
         <rfilter version='2.0.0' type='box'>
             <float name='radius' value='0.5'/>
@@ -64,7 +64,7 @@ def test07_resampler_box():
     assert np.all(b == [0.125, 0.5, 0.875])
 
 def test08_resampler_boundary_conditions():
-    from mitsuba.core import Resampler
+    from mitsuba.scalar_rgb.core import Resampler
 
     # Use a slightly larger filter
     f = load_string("""
@@ -98,7 +98,7 @@ def test09_resampler_filter_only():
     def G(x):
         return np.exp(-2.0*x*x) - np.exp(-8.0)
 
-    from mitsuba.core import Resampler
+    from mitsuba.scalar_rgb.core import Resampler
     f = load_string("""
         <rfilter version='2.0.0' type='gaussian'/>
     """)

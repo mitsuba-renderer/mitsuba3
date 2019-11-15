@@ -1,5 +1,5 @@
-from mitsuba.core import coordinate_system
-from mitsuba.core.warp import square_to_uniform_sphere
+from mitsuba.scalar_rgb.core import coordinate_system
+from mitsuba.scalar_rgb.core.warp import square_to_uniform_sphere
 import numpy as np
 
 def branchless_onb(n):

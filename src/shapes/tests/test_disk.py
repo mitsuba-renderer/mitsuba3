@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 
 import mitsuba
-from mitsuba.core      import Ray3f
-from mitsuba.core.xml  import load_string
-from mitsuba.core.math import Pi
-from mitsuba.core      import MTS_WAVELENGTH_SAMPLES
+from mitsuba.scalar_rgb.core      import Ray3f
+from mitsuba.scalar_rgb.core.xml  import load_string
+from mitsuba.scalar_rgb.core.math import Pi
+from mitsuba.scalar_rgb.core      import MTS_WAVELENGTH_SAMPLES
 
 UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
 

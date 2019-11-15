@@ -1,6 +1,6 @@
-from mitsuba.core import RadicalInverse
-from mitsuba.core import PacketSize
-from mitsuba.core.math import OneMinusEpsilon
+from mitsuba.scalar_rgb.core import RadicalInverse
+from mitsuba.scalar_rgb.core import PacketSize
+from mitsuba.scalar_rgb.core.math import OneMinusEpsilon
 import numpy as np
 
 

@@ -1,4 +1,4 @@
-from mitsuba.core import Struct, StructConverter
+from mitsuba.scalar_rgb.core import Struct, StructConverter
 import struct
 import numpy as np
 import pytest
@@ -361,7 +361,7 @@ def test14_weight(param):
 
 
 def test15_test_dither():
-    from mitsuba.core import Bitmap
+    from mitsuba.scalar_rgb.core import Bitmap
     import numpy.linalg as la
 
     b = Bitmap(Bitmap.EY, Struct.EFloat32, [10, 256])

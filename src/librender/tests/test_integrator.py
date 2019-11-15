@@ -5,7 +5,7 @@ import os
 import pytest
 
 import mitsuba
-from mitsuba.core import Bitmap, Struct
+from mitsuba.scalar_rgb.core import Bitmap, Struct
 from mitsuba.test.scenes import SCENES, make_integrator
 
 

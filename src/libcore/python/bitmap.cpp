@@ -9,6 +9,35 @@ MTS_PY_EXPORT(Bitmap) {
     using Vector2s    = typename Bitmap::Vector2s;
     using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
 
+    MTS_PY_CHECK_ALIAS(PixelFormat, m) {
+        py::enum_<PixelFormat>(m, "PixelFormat", D(Bitmap, PixelFormat))
+            .value("Y", PixelFormat::Y, D(Bitmap, PixelFormat, Y))
+            .value("YA", PixelFormat::YA, D(Bitmap, PixelFormat, YA))
+            .value("RGB", PixelFormat::RGB, D(Bitmap, PixelFormat, RGB))
+            .value("RGBA", PixelFormat::RGBA, D(Bitmap, PixelFormat, RGBA))
+            .value("RGBAW", PixelFormat::RGBAW, D(Bitmap, PixelFormat, RGBAW))
+            .value("XYZ", PixelFormat::XYZ, D(Bitmap, PixelFormat, XYZ))
+            .value("XYZA", PixelFormat::XYZA, D(Bitmap, PixelFormat, XYZA))
+            .value("XYZAW", PixelFormat::XYZAW, D(Bitmap, PixelFormat, XYZAW))
+            .value("MultiChannel", PixelFormat::MultiChannel, D(Bitmap, PixelFormat, MultiChannel))
+            .export_values();
+    }
+
+    MTS_PY_CHECK_ALIAS(ImageFileFormat, m) {
+        py::enum_<ImageFileFormat>(m, "ImageFileFormat", D(Bitmap, ImageFileFormat))
+            .value("PNG", ImageFileFormat::PNG, D(Bitmap, ImageFileFormat, PNG))
+            .value("OpenEXR", ImageFileFormat::OpenEXR, D(Bitmap, ImageFileFormat, OpenEXR))
+            .value("RGBE", ImageFileFormat::RGBE, D(Bitmap, ImageFileFormat, RGBE))
+            .value("PFM", ImageFileFormat::PFM, D(Bitmap, ImageFileFormat, PFM))
+            .value("PPM", ImageFileFormat::PPM, D(Bitmap, ImageFileFormat, PPM))
+            .value("JPEG", ImageFileFormat::JPEG, D(Bitmap, ImageFileFormat, JPEG))
+            .value("TGA", ImageFileFormat::TGA, D(Bitmap, ImageFileFormat, TGA))
+            .value("BMP", ImageFileFormat::BMP, D(Bitmap, ImageFileFormat, BMP))
+            .value("Unknown", ImageFileFormat::Unknown, D(Bitmap, ImageFileFormat, Unknown))
+            .value("Auto", ImageFileFormat::Auto, D(Bitmap, ImageFileFormat, Auto))
+            .export_values();
+    }
+
     MTS_PY_CHECK_ALIAS(Bitmap, m) {
         auto bitmap = MTS_PY_CLASS(Bitmap, Object)
             .def(py::init<PixelFormat, FieldType, const Vector2s &, size_t>(),
@@ -99,99 +128,73 @@ MTS_PY_EXPORT(Bitmap) {
             .def("struct_", &Bitmap::struct_, D(Bitmap, struct))
             .def(py::self == py::self)
             .def(py::self != py::self);
+    auto fieldtype_ = m.attr("FieldType");
+    bitmap.attr("UInt8")   = fieldtype_.attr("UInt8");
+    bitmap.attr("Int8")    = fieldtype_.attr("Int8");
+    bitmap.attr("UInt16")  = fieldtype_.attr("UInt16");
+    bitmap.attr("Int16")   = fieldtype_.attr("Int16");
+    bitmap.attr("UInt32")  = fieldtype_.attr("UInt32");
+    bitmap.attr("Int32")   = fieldtype_.attr("Int32");
+    bitmap.attr("UInt64")  = fieldtype_.attr("UInt64");
+    bitmap.attr("Int64")   = fieldtype_.attr("Int64");
+    bitmap.attr("Float16") = fieldtype_.attr("Float16");
+    bitmap.attr("Float32") = fieldtype_.attr("Float32");
+    bitmap.attr("Float64") = fieldtype_.attr("Float64");
+    bitmap.attr("Invalid") = fieldtype_.attr("Invalid");
 
-        py::enum_<PixelFormat>(bitmap, "PixelFormat", D(Bitmap, PixelFormat))
-            .value("Y", PixelFormat::Y, D(Bitmap, PixelFormat, Y))
-            .value("YA", PixelFormat::YA, D(Bitmap, PixelFormat, YA))
-            .value("RGB", PixelFormat::RGB, D(Bitmap, PixelFormat, RGB))
-            .value("RGBA", PixelFormat::RGBA, D(Bitmap, PixelFormat, RGBA))
-            .value("RGBAW", PixelFormat::RGBAW, D(Bitmap, PixelFormat, RGBAW))
-            .value("XYZ", PixelFormat::XYZ, D(Bitmap, PixelFormat, XYZ))
-            .value("XYZA", PixelFormat::XYZA, D(Bitmap, PixelFormat, XYZA))
-            .value("XYZAW", PixelFormat::XYZAW, D(Bitmap, PixelFormat, XYZAW))
-            .value("MultiChannel", PixelFormat::MultiChannel, D(Bitmap, PixelFormat, MultiChannel))
-            .export_values();
+    bitmap.def(py::init<const fs::path &, ImageFileFormat>(), "path"_a,
+            "format"_a = ImageFileFormat::Auto,
+            py::call_guard<py::gil_scoped_release>())
+        .def(py::init<Stream *, ImageFileFormat>(), "stream"_a,
+            "format"_a = ImageFileFormat::Auto,
+            py::call_guard<py::gil_scoped_release>())
+        .def("write",
+            py::overload_cast<Stream *, ImageFileFormat, int>(
+                &Bitmap::write, py::const_),
+            "stream"_a, "format"_a = ImageFileFormat::Auto, "quality"_a = -1,
+            D(Bitmap, write), py::call_guard<py::gil_scoped_release>())
+        .def("write",
+            py::overload_cast<const fs::path &, ImageFileFormat, int>(
+                &Bitmap::write, py::const_),
+            "path"_a, "format"_a = ImageFileFormat::Auto, "quality"_a = -1,
+            D(Bitmap, write, 2), py::call_guard<py::gil_scoped_release>())
+        .def("split", &Bitmap::split, D(Bitmap, split))
+        .def_static("detect_file_format", &Bitmap::detect_file_format, D(Bitmap, detect_file_format))
+        .def_property_readonly("__array_interface__", [](Bitmap &bitmap) -> py::object {
+            if (bitmap.struct_()->size() == 0)
+                return py::none();
+            auto field = bitmap.struct_()->operator[](0);
+            py::dict result;
+            result["shape"] = py::make_tuple(bitmap.height(), bitmap.width(),
+                                            bitmap.channel_count());
 
-        py::enum_<ImageFileFormat>(bitmap, "ImageFileFormat", D(Bitmap, ImageFileFormat))
-            .value("PNG", ImageFileFormat::PNG, D(Bitmap, ImageFileFormat, PNG))
-            .value("OpenEXR", ImageFileFormat::OpenEXR, D(Bitmap, ImageFileFormat, OpenEXR))
-            .value("RGBE", ImageFileFormat::RGBE, D(Bitmap, ImageFileFormat, RGBE))
-            .value("PFM", ImageFileFormat::PFM, D(Bitmap, ImageFileFormat, PFM))
-            .value("PPM", ImageFileFormat::PPM, D(Bitmap, ImageFileFormat, PPM))
-            .value("JPEG", ImageFileFormat::JPEG, D(Bitmap, ImageFileFormat, JPEG))
-            .value("TGA", ImageFileFormat::TGA, D(Bitmap, ImageFileFormat, TGA))
-            .value("BMP", ImageFileFormat::BMP, D(Bitmap, ImageFileFormat, BMP))
-            .value("Unknown", ImageFileFormat::Unknown, D(Bitmap, ImageFileFormat, Unknown))
-            .value("Auto", ImageFileFormat::Auto, D(Bitmap, ImageFileFormat, Auto))
-            .export_values();
+            std::string code(3, '\0');
+            #if defined(LITTLE_ENDIAN)
+                code[0] = '<';
+            #else
+                code[0] = '>';
+            #endif
 
-        auto fieldtype_ = m.attr("FieldType");
-        bitmap.attr("UInt8")   = fieldtype_.attr("UInt8");
-        bitmap.attr("Int8")    = fieldtype_.attr("Int8");
-        bitmap.attr("UInt16")  = fieldtype_.attr("UInt16");
-        bitmap.attr("Int16")   = fieldtype_.attr("Int16");
-        bitmap.attr("UInt32")  = fieldtype_.attr("UInt32");
-        bitmap.attr("Int32")   = fieldtype_.attr("Int32");
-        bitmap.attr("UInt64")  = fieldtype_.attr("UInt64");
-        bitmap.attr("Int64")   = fieldtype_.attr("Int64");
-        bitmap.attr("Float16") = fieldtype_.attr("Float16");
-        bitmap.attr("Float32") = fieldtype_.attr("Float32");
-        bitmap.attr("Float64") = fieldtype_.attr("Float64");
-        bitmap.attr("Invalid") = fieldtype_.attr("Invalid");
+            if (field.is_integer()) {
+                if (field.is_signed())
+                    code[1] = 'i';
+                else
+                    code[1] = 'u';
+            } else if (field.is_float()) {
+                code[1] = 'f';
+            } else {
+                Throw("Internal error: unknown component type!");
+            }
 
-        bitmap.def(py::init<const fs::path &, ImageFileFormat>(), "path"_a,
-                "format"_a = ImageFileFormat::Auto,
-                py::call_guard<py::gil_scoped_release>())
-            .def(py::init<Stream *, ImageFileFormat>(), "stream"_a,
-                "format"_a = ImageFileFormat::Auto,
-                py::call_guard<py::gil_scoped_release>())
-            .def("write",
-                py::overload_cast<Stream *, ImageFileFormat, int>(
-                    &Bitmap::write, py::const_),
-                "stream"_a, "format"_a = ImageFileFormat::Auto, "quality"_a = -1,
-                D(Bitmap, write), py::call_guard<py::gil_scoped_release>())
-            .def("write",
-                py::overload_cast<const fs::path &, ImageFileFormat, int>(
-                    &Bitmap::write, py::const_),
-                "path"_a, "format"_a = ImageFileFormat::Auto, "quality"_a = -1,
-                D(Bitmap, write, 2), py::call_guard<py::gil_scoped_release>())
-            .def("split", &Bitmap::split, D(Bitmap, split))
-            .def_static("detect_file_format", &Bitmap::detect_file_format, D(Bitmap, detect_file_format))
-            .def_property_readonly("__array_interface__", [](Bitmap &bitmap) -> py::object {
-                if (bitmap.struct_()->size() == 0)
-                    return py::none();
-                auto field = bitmap.struct_()->operator[](0);
-                py::dict result;
-                result["shape"] = py::make_tuple(bitmap.height(), bitmap.width(),
-                                                bitmap.channel_count());
-
-                std::string code(3, '\0');
-                #if defined(LITTLE_ENDIAN)
-                    code[0] = '<';
-                #else
-                    code[0] = '>';
-                #endif
-
-                if (field.is_integer()) {
-                    if (field.is_signed())
-                        code[1] = 'i';
-                    else
-                        code[1] = 'u';
-                } else if (field.is_float()) {
-                    code[1] = 'f';
-                } else {
-                    Throw("Internal error: unknown component type!");
-                }
-
-                code[2] = (char) ('0' + field.size);
-                #if PY_MAJOR_VERSION > 3
-                    result["typestr"] = code;
-                #else
-                    result["typestr"] = py::bytes(code);
-                #endif
-                result["data"] = py::make_tuple(size_t(bitmap.uint8_data()), false);
-                result["version"] = 3;
-                return py::object(result);
-            });
+            code[2] = (char) ('0' + field.size);
+            #if PY_MAJOR_VERSION > 3
+                result["typestr"] = code;
+            #else
+                result["typestr"] = py::bytes(code);
+            #endif
+            result["data"] = py::make_tuple(size_t(bitmap.uint8_data()), false);
+            result["version"] = 3;
+            return py::object(result);
+        });
     }
 }

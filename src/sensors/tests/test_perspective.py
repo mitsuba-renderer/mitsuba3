@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from mitsuba.core import BoundingBox3f
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import BoundingBox3f
+from mitsuba.scalar_rgb.core.xml import load_string
 from pytest import approx
 
 def test01_create():

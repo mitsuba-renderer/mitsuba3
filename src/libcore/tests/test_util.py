@@ -1,4 +1,4 @@
-from mitsuba.core.util import time_string, mem_string
+from mitsuba.scalar_rgb.core.util import time_string, mem_string
 import sys
 
 

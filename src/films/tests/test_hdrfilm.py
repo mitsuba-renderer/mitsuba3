@@ -2,8 +2,8 @@ import numpy as np
 import os
 import pytest
 
-from mitsuba.core import (Bitmap, Struct, ReconstructionFilter, float_dtype)
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import (Bitmap, Struct, ReconstructionFilter, float_dtype)
+from mitsuba.scalar_rgb.core.xml import load_string
 
 
 def test01_construct():

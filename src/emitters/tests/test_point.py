@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from mitsuba.core.math import Pi
-from mitsuba.core.xml import load_string
-from mitsuba.core import warp
+from mitsuba.scalar_rgb.core.math import Pi
+from mitsuba.scalar_rgb.core.xml import load_string
+from mitsuba.scalar_rgb.core import warp
 from mitsuba.render import EMeasure
 from mitsuba.render import Interaction3f
 

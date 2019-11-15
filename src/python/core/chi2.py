@@ -3,8 +3,8 @@
 from __future__ import division
 import numpy as np
 import mitsuba
-from mitsuba.core import float_dtype, PCG32
-from mitsuba.core.xml import load_string
+from mitsuba.scalar_rgb.core import float_dtype, PCG32
+from mitsuba.scalar_rgb.core.xml import load_string
 
 
 class ChiSquareTest(object):
@@ -460,7 +460,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
         Incoming direction, in local coordinates.
     """
 
-    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
+    from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
     from mitsuba.render import BSDFContext, SurfaceInteraction3fX
 
     def make_context(n):
@@ -502,7 +502,7 @@ def InteractiveBSDFAdapter(bsdf_type, extra):
     """
 
     from mitsuba.render import BSDFContext, SurfaceInteraction3fX
-    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
+    from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
 
     def make_context(n, theta, phi):
         theta *= np.pi / 180
