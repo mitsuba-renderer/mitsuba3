@@ -9,7 +9,7 @@ template <typename Float, typename Spectrum>
 class IndependentSampler final : public Sampler<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(IndependentSampler, Sampler)
-    MTS_USINB_BASE(Sampler, m_sample_count)
+    MTS_USING_BASE(Sampler, m_sample_count)
     MTS_IMPORT_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
 
@@ -28,7 +28,7 @@ public:
 
     /// Seeds the RNG with the specified size, if applicable
     void seed(UInt64 seed_value) override {
-        if (m_rng.empty())
+        if (!m_rng)
             m_rng = std::make_unique<PCG32>();
 
         if constexpr (is_dynamic_array_v<Float>) {

@@ -14,7 +14,7 @@ template <typename Float, typename Spectrum>
 Sampler<Float, Spectrum>::~Sampler() { }
 
 template <typename Float, typename Spectrum>
-void Sampler<Float, Spectrum>::seed(size_t, size_t) { NotImplementedError("seed"); }
+void Sampler<Float, Spectrum>::seed(UInt64) { NotImplementedError("seed"); }
 
 template <typename Float, typename Spectrum>
 Float Sampler<Float, Spectrum>::next_1d(Mask) { NotImplementedError("next_1d"); }

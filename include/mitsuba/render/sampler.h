@@ -33,7 +33,7 @@ public:
      * \param size
      *     Number of random variates to be produced (only applies to the dynamic-size implementations)
      */
-    virtual void seed(size_t seed_value, size_t size = array_size_v<Float>);
+    virtual void seed(UInt64 seed_value);
 
     /// Retrieve the next component value from the current sample
     virtual Float next_1d(Mask active = true);
