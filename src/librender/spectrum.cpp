@@ -65,18 +65,18 @@ Spectrum ContinuousSpectrum<Float, Spectrum>::pdf(const SurfaceInteraction3f &si
 
 template <typename Float, typename Spectrum>
 ref<ContinuousSpectrum<Float, Spectrum>> ContinuousSpectrum<Float, Spectrum>::D65(ScalarFloat scale) {
-    if constexpr (is_monochrome_v<Spectrum>) {
-        Properties props("uniform");
-        // Should output 1 by default.
-        props.set_float("value", scale / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
-        auto obj = PluginManager::instance()->create_object<ContinuousSpectrum>(props);
-        return (ContinuousSpectrum *) (obj.get());
-    } else {
+    if constexpr (is_spectral_v<Spectrum>) {
         Properties props("d65");
         props.set_float("value", scale);
         auto obj =
             PluginManager::instance()->create_object<ContinuousSpectrum>(props);
         return (ContinuousSpectrum *) (obj->expand()[0].get());
+    } else {
+        Properties props("uniform");
+        // Should output 1 by default.
+        props.set_float("value", scale / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
+        auto obj = PluginManager::instance()->create_object<ContinuousSpectrum>(props);
+        return (ContinuousSpectrum *) (obj.get());
     }
 }
 

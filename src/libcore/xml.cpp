@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include <mitsuba/core/class.h>
+#include <mitsuba/core/config.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/logger.h>
@@ -36,7 +37,7 @@ NAMESPACE_BEGIN(xml)
 using Float = float;
 MTS_IMPORT_CORE_TYPES()
 
-/* Set of supported XML tags */
+/// Set of supported XML tags
 enum ETag {
     EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ERGB,
     EColor, ETransform, ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject,
@@ -229,12 +230,43 @@ struct XMLObject {
     tbb::spin_mutex mutex;
 };
 
-struct XMLParseContext {
+enum class ColorMode : uint32_t {
+    Monochrome = 0,
+    RGB,
+    Spectral
+};
+
+template <typename Float, typename Spectrum>
+ColorMode variant_to_color_mode() {
+    if constexpr (is_monochrome_v<Spectrum>)
+        return ColorMode::Monochrome;
+    else if constexpr (is_rgb_v<Spectrum>)
+        return ColorMode::RGB;
+    else if constexpr (is_spectral_v<Spectrum>)
+        return ColorMode::Spectral;
+    else {
+        Throw("Should never happen");
+        // static_assert(false);
+    }
+}
+
+class XMLParseContext {
+public:
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
-    std::string variant;
+    ColorMode color_mode;
+
+    const std::string &variant() const { return m_variant; }
+    void set_variant(const std::string &variant) {
+        m_variant = variant;
+        color_mode = MTS_ROUTE_MODE(variant, variant_to_color_mode);
+    }
+
+protected:
+    std::string m_variant;
 };
+
 
 /// Helper function to check if attributes are fully specified
 static void check_attributes(XMLSource &src, const pugi::xml_node &node,
@@ -409,7 +441,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         ETag tag = it->second;
 
         if (node.attribute("type") && tag != EObject
-            && tag_class->find(Class::construct_key(node.name(), ctx.variant)) != tag_class->end())
+            && tag_class->find(Class::construct_key(node.name(), ctx.variant())) != tag_class->end())
             tag = EObject;
 
         /* Perform some safety checks to make sure that the XML tree really makes sense */
@@ -494,10 +526,10 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
                             node_name, id, src.offset(it_inst->second.location));
 
-                    auto it2 = tag_class->find(Class::construct_key(node_name, ctx.variant));
+                    auto it2 = tag_class->find(Class::construct_key(node_name, ctx.variant()));
                     if (it2 == tag_class->end())
                         src.throw_error(node, "could not retrieve class object for "
-                                       "tag \"%s\" and variant \"%s\"", node_name, ctx.variant);
+                                       "tag \"%s\" and variant \"%s\"", node_name, ctx.variant());
 
                     size_t arg_counter_nested = 0;
                     for (pugi::xml_node &ch: node.children()) {
@@ -687,6 +719,9 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                     detail::stof(tokens[1]),
                                     detail::stof(tokens[2]));
 
+                        if (ctx.color_mode == ColorMode::Monochrome)
+                            col = luminance(col);
+
                         props.set_color(node.attribute("name").value(), col);
                     } catch (...) {
                         src.throw_error(node, "could not parse color \"%s\"", node.attribute("value").value());
@@ -706,6 +741,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")", node.attribute("value").value());
 
                     Properties props2(within_emitter ? "srgb_d65" : "srgb");
+                    props2.set_bool("within_emitter", within_emitter);
                     Color3f col;
                     try {
                         col = Color3f(detail::stof(tokens[0]),
@@ -719,8 +755,17 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     if (!within_emitter && any(col < 0 || col > 1))
                         src.throw_error(node, "invalid RGB reflectance value, must be in the range [0, 1]!");
 
+                    if (ctx.color_mode == ColorMode::Monochrome) {
+                        // Replace sRGB spectrum by a constant value (no D65 either).
+                        ScalarFloat lum = luminance(props2.color("color"));
+                        props2 = Properties("uniform");
+                        props2.set_float("value", lum);
+                    } else if (ctx.color_mode == ColorMode::RGB) {
+                        // Even inside of emitter, we never use D65 in RGB mode.
+                        props2.set_plugin_name("srgb");
+                    }
                     ref<Object> obj = PluginManager::instance()->create_object(
-                        props2, Class::for_name("spectrum", ctx.variant));
+                        props2, Class::for_name("spectrum", ctx.variant()));
                     props.set_object(node.attribute("name").value(), obj);
                 }
                 break;
@@ -730,21 +775,32 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
                     if (tokens.size() == 1) {
-                        Properties props2(within_emitter ? "d65" : "uniform");
+                        Properties props2("uniform");
+                        ScalarFloat value;
                         try {
-                            props2.set_float("value", detail::stof(tokens[0]));
+                            value = detail::stof(tokens[0]);
                         } catch (...) {
                             src.throw_error(node, "could not parse constant spectrum \"%s\"", tokens[0]);
                         }
 
+                        if (ctx.color_mode == ColorMode::Spectral && within_emitter)
+                            props2.set_plugin_name("d65");
+                        else if (ctx.color_mode == ColorMode::Monochrome)
+                            value /= MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN;
+                        props2.set_float("value", value);
+
                         ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("spectrum", ctx.variant));
+                            props2, Class::for_name("spectrum", ctx.variant()));
                         auto expanded   = obj->expand();
                         if (expanded.size() == 1)
                             obj = expanded[0];
                         props.set_object(node.attribute("name").value(), obj);
 
                     } else {
+                        if (ctx.color_mode == ColorMode::RGB)
+                            Throw("Not implemented yet: wav:value spectrum specification in RGB "
+                                  "mode");
+
                         /* Parse wavelength:value pairs, where wavelengths are
                            expected to be specified in increasing order.
                            Automatically detect whether wavelengths are regularly
@@ -798,7 +854,35 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_long("size", wavelengths.size());
                         props2.set_pointer("values", values.data());
                         ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("spectrum", ctx.variant));
+                            props2, Class::for_name("spectrum", ctx.variant()));
+
+                        if (ctx.color_mode == ColorMode::Monochrome) {
+                            /* Monochrome mode: replace by the equivalent uniform spectrum by
+                             * pre-integrating against the CIE Y matching curve. */
+#if 0
+                            auto *spectrum = (ContinuousSpectrum *) obj.get();
+                            double average  = 0;
+
+                            for (Color1f wav = MTS_WAVELENGTH_MIN; all(wav <= MTS_WAVELENGTH_MAX);
+                             wav += 1.f) {
+                                Color1f Yw = cie1931_y(wav);
+                                average += (Yw * spectrum->eval(wav)).x();
+                            }
+                            if (within_emitter)
+                                average /= MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN;
+                            else
+                                // Divide by the integral of the CIE y matching curve
+                                average *= 0.0093583;
+
+                            props2 = Properties("uniform");
+                            props2.set_float("value", average);
+                            obj = PluginManager::instance()->create_object(
+                                props2, Class::for_name("spectrum", ctx.variant()));
+#else
+                            Throw("Not implemented yet: interpolated spectrum conversion in "
+                                  "Monochrome mode");
+#endif
+                        }
 
                         props.set_object(node.attribute("name").value(), obj);
                     }
@@ -1002,7 +1086,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
 
     pugi::xml_node root = doc.document_element();
     detail::XMLParseContext ctx;
-    ctx.variant = variant;
+    ctx.set_variant(variant);
     Properties prop;
     size_t arg_counter; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
@@ -1036,7 +1120,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
     pugi::xml_node root = doc.document_element();
 
     detail::XMLParseContext ctx;
-    ctx.variant = variant;
+    ctx.set_variant(variant);
     Properties prop;
     size_t arg_counter = 0; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,

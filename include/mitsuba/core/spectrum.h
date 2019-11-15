@@ -219,6 +219,7 @@ Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
     return fmadd(w0, v0, w1 * v1) & active;
 }
 
+/// Spectral responses to XYZ.
 template <typename Spectrum, typename Value = value_t<Spectrum>>
 Array<Value, 3> to_xyz(const Spectrum &value, const Spectrum &wavelengths,
                        mask_t<Value> active = true) {
@@ -226,6 +227,20 @@ Array<Value, 3> to_xyz(const Spectrum &value, const Spectrum &wavelengths,
     return Array<Value, 3>(enoki::mean(XYZw.x() * value),
                            enoki::mean(XYZw.y() * value),
                            enoki::mean(XYZw.z() * value));
+}
+
+/// RGB to XYZ color conversion.
+template <typename Spectrum, typename Value = value_t<Spectrum>>
+Array<Value, 3> rgb_to_xyz(const Spectrum &rgb, mask_t<Value> /*active*/ = true) {
+    using ScalarMatrix3f = enoki::Matrix<scalar_t<Value>, 3>;
+    static_assert(Spectrum::Size == 3);
+    // sRGB to XYZ conversion matrix.
+    // Source: http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+    const ScalarMatrix3f M(0.4124564f, 0.3575761f, 0.1804375f,
+                           0.2126729f, 0.7151522f, 0.0721750f,
+                           0.0193339f, 0.1191920f, 0.9503041f);
+    // Vector<Value, 3> rgb(value.x(), value.y(), value.z());
+    return M * rgb;
 }
 
 template <typename Spectrum>

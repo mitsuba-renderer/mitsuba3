@@ -140,7 +140,9 @@ public:
         if constexpr (is_monochrome_v<Spectrum>) {
             std::tie(wavelengths, spec_weight) = sample_uniform_spectrum(wav_sample);
         } else if constexpr (is_rgb_v<Spectrum>) {
-            NotImplementedError("Sampling rays in RGB mode");
+            // Note: wavelengths should not be used when rendering in RGB mode.
+            wavelengths = std::numeric_limits<ScalarFloat>::quiet_NaN();
+            spec_weight = 1.f;
         } else {
             std::tie(wavelengths, spec_weight) = sample_rgb_spectrum(wav_sample);
         }
@@ -178,7 +180,9 @@ public:
         if constexpr (is_monochrome_v<Spectrum>) {
             std::tie(wavelengths, spec_weight) = sample_uniform_spectrum(wav_sample);
         } else if constexpr (is_rgb_v<Spectrum>) {
-            NotImplementedError("Sampling rays in RGB mode");
+            // Note: wavelengths should not be used when rendering in RGB mode.
+            wavelengths = std::numeric_limits<ScalarFloat>::quiet_NaN();
+            spec_weight = 1.f;
         } else {
             std::tie(wavelengths, spec_weight) = sample_rgb_spectrum(wav_sample);
         }

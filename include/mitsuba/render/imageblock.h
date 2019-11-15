@@ -112,14 +112,17 @@ public:
         Assert(m_bitmap->pixel_format() == PixelFormat::XYZAW,
                "This `put` variant requires XYZAW internal storage format.");
 
+        Array<Float, 3> xyz;
         if constexpr (is_monochrome_v<Spectrum>) {
-            Array<Float, 5> values(value.x(), value.x(), value.x(), alpha, 1.0f);
-            return put(pos, values.data(), active);
+            xyz = depolarize(value).x();
+        } else if constexpr (is_rgb_v<Spectrum>) {
+            xyz = rgb_to_xyz(depolarize(value), active);
         } else {
-            auto xyz = to_xyz(depolarize(value), wavelengths, active);
-            Array<Float, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.0f);
-            return put(pos, values.data(), active);
+            static_assert(is_spectral_v<Spectrum>);
+            xyz = to_xyz(depolarize(value), wavelengths, active);
         }
+        Array<Float, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.0f);
+        return put(pos, values.data(), active);
     }
 
     /**

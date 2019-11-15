@@ -13,6 +13,9 @@ public:
     MTS_IMPORT_TYPES()
 
     SRGBEmitterSpectrum(const Properties &props) {
+        if constexpr (is_rgb_v<Spectrum>)
+            Throw("SRGBEmitterSpectrum being used in RGB mode. An SRGBSpectrum should "
+                  " most likely be used instead");
         if (props.has_property("scale") && props.has_property("value"))
             Throw("Cannot specify both 'scale' and 'value'.");
 

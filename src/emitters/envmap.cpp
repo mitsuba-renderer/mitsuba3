@@ -38,21 +38,32 @@ public:
         ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data(),
               *lum_ptr = (ScalarFloat *) luminance.get();
 
+        // TODO: avoid having this code duplicated over BitmapTexture
         for (size_t y = 0; y < m_bitmap->size().y(); ++y) {
             ScalarFloat sin_theta =
                 std::sin(y / ScalarFloat(m_bitmap->size().y() - 1) * math::Pi<ScalarFloat>);
 
             for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
+                // We potentially overwrite the pixel value with the spectral
+                // upsampling coefficients.
                 ScalarColor3f rgb = load_unaligned<ScalarVector3f>(ptr);
-                ScalarFloat scale = hmax(rgb) * 2.f;
-                ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
+                ScalarFloat lum   = mitsuba::luminance(rgb);
 
-                // Fetch spectral fit for given sRGB color value
-                ScalarVector4f coeff =
-                    concat(static_cast<Array<ScalarFloat, 3>>(srgb_model_fetch(rgb_norm)), scale);
+                ScalarVector4f coeff;
+                if constexpr (is_monochrome_v<Spectrum>) {
+                    coeff = ScalarVector4f(lum, lum, lum, 1.f);
+                } else if constexpr (is_rgb_v<Spectrum>) {
+                    coeff = concat(rgb, 1.f);
+                } else {
+                    static_assert(is_spectral_v<Spectrum>);
+                    // Fetch spectral fit for given sRGB color value
+                    ScalarFloat scale      = hmax(rgb) * 2.f;
+                    ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
+                    coeff = concat(static_cast<Array<ScalarFloat, 3>>(srgb_model_fetch(rgb_norm)),
+                                   scale);
+                }
 
-                // Overwrite the pixel value with the coefficients
-                *lum_ptr++ = mitsuba::luminance(rgb) * sin_theta;
+                *lum_ptr++ = lum * sin_theta;
                 store_unaligned(ptr, coeff);
                 ptr += 4;
             }
@@ -194,18 +205,31 @@ protected:
             v11 = gather<Vector4f>(ptr + width + 4, index, active);
         }
 
-        Spectrum s00 = srgb_model_eval<Spectrum>(head<3>(v00), wavelengths),
-                 s10 = srgb_model_eval<Spectrum>(head<3>(v10), wavelengths),
-                 s01 = srgb_model_eval<Spectrum>(head<3>(v01), wavelengths),
-                 s11 = srgb_model_eval<Spectrum>(head<3>(v11), wavelengths),
-                 s0  = fmadd(w0.x(), s00, w1.x() * s10),
-                 s1  = fmadd(w0.x(), s01, w1.x() * s11),
-                 f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w()),
-                 f1  = fmadd(w0.x(), v01.w(), w1.x() * v11.w()),
-                 s   = fmadd(w0.y(), s0, w1.y() * s1),
-                 f   = fmadd(w0.y(), f0, w1.y() * f1);
+        if constexpr (is_monochrome_v<Spectrum>) {
+            // Only one channel is enough here
+            Spectrum v0 = fmadd(w0.x(), v00.x(), w1.x() * v10.x()),
+                     v1 = fmadd(w0.x(), v01.x(), w1.x() * v11.x());
+            return fmadd(w0.y(), v0, w1.y() * v1);
+        } else if constexpr (is_rgb_v<Spectrum>) {
+            // No need for spectral conversion, we directly read-off the RGB values
+            Spectrum v0 = fmadd(w0.x(), head<3>(v00), w1.x() * head<3>(v10)),
+                     v1 = fmadd(w0.x(), head<3>(v01), w1.x() * head<3>(v11));
+            return fmadd(w0.y(), v0, w1.y() * v1);
+        } else {
+            static_assert(is_spectral_v<Spectrum>);
+            Spectrum s00 = srgb_model_eval<Spectrum>(head<3>(v00), wavelengths),
+                     s10 = srgb_model_eval<Spectrum>(head<3>(v10), wavelengths),
+                     s01 = srgb_model_eval<Spectrum>(head<3>(v01), wavelengths),
+                     s11 = srgb_model_eval<Spectrum>(head<3>(v11), wavelengths),
+                     s0  = fmadd(w0.x(), s00, w1.x() * s10),
+                     s1  = fmadd(w0.x(), s01, w1.x() * s11),
+                     f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w()),
+                     f1  = fmadd(w0.x(), v01.w(), w1.x() * v11.w()),
+                     s   = fmadd(w0.y(), s0, w1.y() * s1),
+                     f   = fmadd(w0.y(), f0, w1.y() * f1);
 
-        return s * f * m_d65->eval(wavelengths, active) * m_scale;
+            return s * f * m_d65->eval(wavelengths, active) * m_scale;
+        }
     }
 
 protected:

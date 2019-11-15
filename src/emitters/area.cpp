@@ -36,14 +36,14 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2, const Point2f &sample3,
                                           Mask active) const override {
-        /* 1. Sample spectrum */
+        // 1. Sample spectrum
         auto [wavelengths, spec_weight] = m_radiance->sample(
             math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
 
-        /* 2. Sample spatial component */
+        // 2. Sample spatial component
         PositionSample3f ps = m_shape->sample_position(time, sample2, active);
 
-        /* 3. Sample directional component */
+        // 3. Sample directional component
         auto local = warp::square_to_cosine_hemisphere(sample3);
 
         return std::make_pair(
