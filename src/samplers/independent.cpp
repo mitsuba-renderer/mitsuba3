@@ -9,73 +9,49 @@ template <typename Float, typename Spectrum>
 class IndependentSampler final : public Sampler<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(IndependentSampler, Sampler)
-    MTS_USING_BASE(Sampler, m_sample_count)
+    MTS_USINB_BASE(Sampler, m_sample_count)
     MTS_IMPORT_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
 
-    IndependentSampler() : Base(Properties()), m_seed_value(0) {
-        // Can't seed yet on the GPU because we don't know yet how many
-        // entries will be needed.
-        if (!is_diff_array_v<Float>)
-            seed(m_seed_value);
-    }
-    IndependentSampler(const Properties &props) : Base(props), m_seed_value(0) {
-        if (!is_diff_array_v<Float>)
-            seed(m_seed_value);
+    IndependentSampler(const Properties &props = Properties()) : Base(props) {
+        /* Can't seed yet on the GPU because we don't know yet
+           how many entries will be needed. */
+        if (!is_dynamic_array_v<Float>)
+            seed(0);
     }
 
     ref<Base> clone() override {
         IndependentSampler *sampler = new IndependentSampler();
-
-        // TODO is this the right thing to do?
-        if constexpr (is_array_v<Float>)
-            sampler->seed(m_rng->next_uint64()[0]);
-        else
-            sampler->seed(m_rng->next_uint64());
-
         sampler->m_sample_count = m_sample_count;
         return sampler;
     }
 
     /// Seeds the RNG with the specified size, if applicable
-    void seed(size_t seed_value, size_t size = array_size_v<Float>) override {
-        m_seed_value = seed_value;
-        m_rng        = std::make_unique<PCG32>();
+    void seed(UInt64 seed_value) override {
+        if (m_rng.empty())
+            m_rng = std::make_unique<PCG32>();
 
-        if constexpr (is_diff_array_v<Float>) {
-            UInt64 idx = arange<UInt64>(size),
-                   seed_value_c = (uint64_t) seed_value;
-            m_rng->seed(sample_tea_64(detach(seed_value_c), detach(idx)),
-                        sample_tea_64(detach(idx), detach(seed_value_c)));
-
-        } else if constexpr (is_array_v<Float>) {
-            if (size != array_size_v<Float>)
-                Throw("Invalid size %d for packet sampler, expected %d", size, array_size_v<Float>);
-
-            m_rng->seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64>());
+        if constexpr (is_dynamic_array_v<Float>) {
+            UInt64 idx = arange<UInt64>(seed_value.size());
+            m_rng->seed(sample_tea_64(seed_value, idx),
+                        sample_tea_64(idx, seed_value));
         } else {
-            if (size != 1)
-                Throw("Invalid size %d for scalar sampler, expected 1", size);
-            m_rng->seed(seed_value, PCG32_DEFAULT_STREAM);
+            m_rng->seed(seed_value, PCG32_DEFAULT_STREAM + arange<UInt64>());
         }
     }
 
     Float next_1d(Mask active = true) override {
-        if constexpr (is_diff_array_v<Float>) {
-            if (!m_rng) {
-                // We couldn't seed the RNG before because we didn't know
-                // the number of entries we would need. Do it now.
-                seed(m_seed_value, active.size());
-            } else if (active.size() != 1 && active.size() != m_rng->size()) {
-                Throw("next_float(): Requested sample array has incorrect shape %d, expected %d.", active.size(), m_rng->size());
-            }
+        if constexpr (is_dynamic_array_v<Float>) {
+            if (m_rng == nullptr)
+                Throw("Sampler::seed() must be invoked before using this sampler!");
+            if (active.size() != m_rng->state.size())
+                Throw("Invalid mask size (%d), expected %d", active.size(), m_rng->state.size());
         }
 
-        if constexpr (is_double_v<scalar_t<Float>>) {
-            return m_rng->next_float64(detach(active));
-        } else {
-            return m_rng->next_float32(detach(active));
-        }
+        if constexpr (is_double_v<ScalarFloat>)
+            return m_rng->next_float64(active);
+        else
+            return m_rng->next_float32(active);
     }
 
     Point2f next_2d(Mask active = true) override {
@@ -94,7 +70,6 @@ public:
 
 protected:
     std::unique_ptr<PCG32> m_rng;
-    size_t m_seed_value;
 };
 
 MTS_IMPLEMENT_PLUGIN(IndependentSampler, "Independent Sampler");
