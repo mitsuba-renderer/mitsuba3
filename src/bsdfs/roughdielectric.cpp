@@ -16,7 +16,7 @@ class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughDielectric, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
 
     RoughDielectric(const Properties &props) : Base(props) {
         m_specular_reflectance   = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
@@ -35,7 +35,7 @@ public:
         m_eta = int_ior / ext_ior;
         m_inv_eta = ext_ior / int_ior;
 
-        MicrofacetDistribution<ScalarFloat> distr(props);
+        mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
         m_alpha_u = distr.alpha_u();
@@ -64,12 +64,12 @@ public:
         active &= neq(cos_theta_i, 0.f);
 
         /* Construct the microfacet distribution matching the roughness values at the current surface position. */
-        MicrofacetDistribution<Float> distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
 
         /* Trick by Walter et al.: slightly scale the roughness values to
            reduce importance sampling weights. Not needed for the
            Heitz and D'Eon sampling technique. */
-        MicrofacetDistribution<Float> sample_distr(distr);
+        MicrofacetDistribution sample_distr(distr);
         if (unlikely(!m_sample_visible))
             sample_distr.scale_alpha(1.2f - .2f * sqrt(abs(cos_theta_i)));
 
@@ -180,7 +180,7 @@ public:
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution<Float> distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
 
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(m);
@@ -253,7 +253,7 @@ public:
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution<Float> sample_distr(
+        MicrofacetDistribution sample_distr(
             m_type,
             m_alpha_u,
             m_alpha_v,

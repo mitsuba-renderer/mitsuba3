@@ -12,18 +12,19 @@ MTS_PY_EXPORT(xml) {
     xml.def(
         "load_file",
         [](const std::string &name, const xml::ParameterList &param,
-           const std::string & variant, bool update_scene) {
+           bool update_scene) {
             py::gil_scoped_release release;
-            return py_cast(xml::load_file(name, variant, param, update_scene));
+            return py_cast(xml::load_file(name, mitsuba::detail::get_variant<Float, Spectrum>(),
+                                          param, update_scene));
         },
-        "path"_a, "variant"_a = "", "parameters"_a = py::list(),
-        "update_scene"_a = false, D(xml, load_file));
+        "path"_a, "parameters"_a = py::list(), "update_scene"_a = false, D(xml, load_file));
 
     xml.def(
         "load_string",
-        [](const std::string &name, const xml::ParameterList &param, const std::string & variant) {
+        [](const std::string &name, const xml::ParameterList &param) {
             py::gil_scoped_release release;
-            return py_cast(xml::load_string(name, variant, param));
+            return py_cast(
+                xml::load_string(name, mitsuba::detail::get_variant<Float, Spectrum>(), param));
         },
-        "string"_a, "variant"_a = "", "parameters"_a = py::list(), D(xml, load_string));
+        "string"_a, "parameters"_a = py::list(), D(xml, load_string));
 }

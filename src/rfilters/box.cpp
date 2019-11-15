@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * It is included mainly for completeness, though some rare situations
  * may warrant its use.
  */
-template <typename Float, typename Spectrum = void>
+template <typename Float, typename Spectrum>
 class BoxFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(BoxFilter, ReconstructionFilter)

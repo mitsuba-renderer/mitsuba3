@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
  * to match the Catmull-Rom spline. It usually does a better job at at preserving sharp
  * features at the cost of more ringing.
  */
-template <typename Float, typename Spectrum = void>
+template <typename Float, typename Spectrum>
 class CatmullRomFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(CatmullRomFilter, ReconstructionFilter)

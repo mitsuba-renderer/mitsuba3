@@ -18,7 +18,7 @@ class RoughPlastic final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughPlastic, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
 
     RoughPlastic(const Properties &props) : Base(props) {
         /// Specifies the internal index of refraction at the interface
@@ -46,7 +46,7 @@ public:
 
         m_nonlinear = props.bool_("nonlinear", false);
 
-        MicrofacetDistribution<ScalarFloat> distr(props);
+        mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
 
@@ -60,7 +60,7 @@ public:
             using FloatP    = Packet<ScalarFloat>;
             using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
 
-            MicrofacetDistribution<FloatP> distr_p(m_type, m_alpha);
+            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr_p(m_type, m_alpha);
             Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
             for (size_t i = 0; i < slices(wi); ++i) {
                 ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
@@ -109,7 +109,7 @@ public:
         bs.eta = 1.f;
 
         if (any_or<true>(sample_specular)) {
-            MicrofacetDistribution<Float> distr(m_type, m_alpha, m_sample_visible);
+            MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
             Normal3f m = std::get<0>(distr.sample(si.wi, sample2));
 
             masked(bs.wo, sample_specular) = reflect(si.wi, m);
@@ -140,7 +140,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        MicrofacetDistribution<Float> distr(m_type, m_alpha, m_sample_visible);
+        MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
 
         Spectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
@@ -226,7 +226,7 @@ public:
 
         Vector3f H = normalize(wo + si.wi);
 
-        MicrofacetDistribution<Float> distr(m_type, m_alpha, m_sample_visible);
+        MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
         Float result = 0.f;
         if (m_sample_visible)
             result = distr.eval(H) * distr.smith_g1(si.wi, H) /

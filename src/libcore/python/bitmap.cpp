@@ -11,13 +11,13 @@ MTS_PY_EXPORT(Bitmap) {
 
     MTS_PY_CHECK_ALIAS(PixelFormat, m) {
         py::enum_<PixelFormat>(m, "PixelFormat", D(Bitmap, PixelFormat))
-            .value("Y", PixelFormat::Y, D(Bitmap, PixelFormat, Y))
-            .value("YA", PixelFormat::YA, D(Bitmap, PixelFormat, YA))
-            .value("RGB", PixelFormat::RGB, D(Bitmap, PixelFormat, RGB))
-            .value("RGBA", PixelFormat::RGBA, D(Bitmap, PixelFormat, RGBA))
+            .value("Y",     PixelFormat::Y,     D(Bitmap, PixelFormat, Y))
+            .value("YA",    PixelFormat::YA,    D(Bitmap, PixelFormat, YA))
+            .value("RGB",   PixelFormat::RGB,   D(Bitmap, PixelFormat, RGB))
+            .value("RGBA",  PixelFormat::RGBA,  D(Bitmap, PixelFormat, RGBA))
             .value("RGBAW", PixelFormat::RGBAW, D(Bitmap, PixelFormat, RGBAW))
-            .value("XYZ", PixelFormat::XYZ, D(Bitmap, PixelFormat, XYZ))
-            .value("XYZA", PixelFormat::XYZA, D(Bitmap, PixelFormat, XYZA))
+            .value("XYZ",   PixelFormat::XYZ,   D(Bitmap, PixelFormat, XYZ))
+            .value("XYZA",  PixelFormat::XYZA,  D(Bitmap, PixelFormat, XYZA))
             .value("XYZAW", PixelFormat::XYZAW, D(Bitmap, PixelFormat, XYZAW))
             .value("MultiChannel", PixelFormat::MultiChannel, D(Bitmap, PixelFormat, MultiChannel))
             .export_values();
@@ -25,16 +25,16 @@ MTS_PY_EXPORT(Bitmap) {
 
     MTS_PY_CHECK_ALIAS(ImageFileFormat, m) {
         py::enum_<ImageFileFormat>(m, "ImageFileFormat", D(Bitmap, ImageFileFormat))
-            .value("PNG", ImageFileFormat::PNG, D(Bitmap, ImageFileFormat, PNG))
+            .value("PNG",     ImageFileFormat::PNG,     D(Bitmap, ImageFileFormat, PNG))
             .value("OpenEXR", ImageFileFormat::OpenEXR, D(Bitmap, ImageFileFormat, OpenEXR))
-            .value("RGBE", ImageFileFormat::RGBE, D(Bitmap, ImageFileFormat, RGBE))
-            .value("PFM", ImageFileFormat::PFM, D(Bitmap, ImageFileFormat, PFM))
-            .value("PPM", ImageFileFormat::PPM, D(Bitmap, ImageFileFormat, PPM))
-            .value("JPEG", ImageFileFormat::JPEG, D(Bitmap, ImageFileFormat, JPEG))
-            .value("TGA", ImageFileFormat::TGA, D(Bitmap, ImageFileFormat, TGA))
-            .value("BMP", ImageFileFormat::BMP, D(Bitmap, ImageFileFormat, BMP))
+            .value("RGBE",    ImageFileFormat::RGBE,    D(Bitmap, ImageFileFormat, RGBE))
+            .value("PFM",     ImageFileFormat::PFM,     D(Bitmap, ImageFileFormat, PFM))
+            .value("PPM",     ImageFileFormat::PPM,     D(Bitmap, ImageFileFormat, PPM))
+            .value("JPEG",    ImageFileFormat::JPEG,    D(Bitmap, ImageFileFormat, JPEG))
+            .value("TGA",     ImageFileFormat::TGA,     D(Bitmap, ImageFileFormat, TGA))
+            .value("BMP",     ImageFileFormat::BMP,     D(Bitmap, ImageFileFormat, BMP))
             .value("Unknown", ImageFileFormat::Unknown, D(Bitmap, ImageFileFormat, Unknown))
-            .value("Auto", ImageFileFormat::Auto, D(Bitmap, ImageFileFormat, Auto))
+            .value("Auto",    ImageFileFormat::Auto,    D(Bitmap, ImageFileFormat, Auto))
             .export_values();
     }
 

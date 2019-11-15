@@ -1,4 +1,4 @@
-from mitsuba.scalar_rgb.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, PCG32, PixelFormat, FieldType)
+from mitsuba.scalar_rgb.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, PCG32, PixelFormat, FieldType, FilterBoundaryCondition)
 from mitsuba.scalar_rgb.core.xml import load_string
 import numpy as np
 import os
@@ -25,7 +25,7 @@ def test_read_convert_yc(tmpdir):
     tmp_file = os.path.join(str(tmpdir), "out.exr")
     # Tests bitmap resampling filters
     rfilter = load_string("<rfilter version='2.0.0' type='box'/>")
-    b = b.resample([1, 1], rfilter, (ReconstructionFilter.EZero, ReconstructionFilter.EZero))
+    b = b.resample([1, 1], rfilter, (FilterBoundaryCondition.Zero, FilterBoundaryCondition.Zero))
     # Tests OpenEXR bitmap writing
     b.write(tmp_file)
     b = Bitmap(tmp_file)
@@ -34,7 +34,7 @@ def test_read_convert_yc(tmpdir):
 
 def test_read_write_complex_exr(tmpdir):
     # Tests reading and writing of complex multi-channel images with custom properties
-    b1 = Bitmap(Bitmap.EMultiChannel, FieldType.Float32, [4, 5], 6)
+    b1 = Bitmap(PixelFormat.MultiChannel, FieldType.Float32, [4, 5], 6)
     a = b1.struct_()
     for i in range(6):
         a[i].name = "my_ch_%i" % i

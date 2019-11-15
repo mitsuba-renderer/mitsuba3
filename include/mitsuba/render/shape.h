@@ -12,7 +12,6 @@ NAMESPACE_BEGIN(mitsuba)
  * computing ray intersections, and bounding shapes within ray intersection
  * acceleration data structures.
  */
-// class MTS_EXPORT_RENDER Shape : public DifferentiableObject {
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:

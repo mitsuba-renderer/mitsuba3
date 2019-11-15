@@ -103,6 +103,7 @@ protected:
 template <typename Scalar_> struct Resampler {
     using Scalar = Scalar_;
     using Float = float;
+    using ReconstructionFilter = ReconstructionFilter<Float, Color<Float, 3>>;
 
     /**
      * \brief Create a new Resampler object that transforms between the specified resolutions
@@ -116,7 +117,7 @@ template <typename Scalar_> struct Resampler {
      * \param target_res
      *      Desired target resolution
      */
-    Resampler(const ReconstructionFilter<Float, void> *rfilter,
+    Resampler(const ReconstructionFilter *rfilter,
               uint32_t source_res, uint32_t target_res)
         : m_source_res(source_res), m_target_res(target_res) {
         if (source_res == 0 || target_res == 0)

@@ -13,14 +13,14 @@ class RoughConductor final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughConductor, BSDF);
     MTS_USING_BASE(BSDF, Base, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
     using UnpolarizedSpectrum = depolarized_t<Spectrum>;
 
     RoughConductor(const Properties &props) : Base(props) {
         m_eta = props.spectrum<ContinuousSpectrum>("eta", 0.f);
         m_k   = props.spectrum<ContinuousSpectrum>("k", 1.f);
 
-        MicrofacetDistribution<ScalarFloat> distr(props);
+        mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
 
@@ -47,7 +47,7 @@ public:
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution<Float> distr(m_type, m_alpha_u, m_alpha_v,
+        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v,
                                             m_sample_visible);
 
         // Sample M, the microfacet normal
@@ -99,7 +99,7 @@ public:
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution<Float> distr(m_type, m_alpha_u, m_alpha_v,
+        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v,
                                             m_sample_visible);
 
         // Evaluate the microfacet normal distribution
@@ -138,8 +138,7 @@ public:
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution<Float> distr(m_type, m_alpha_u, m_alpha_v,
-                                            m_sample_visible);
+        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
 
         Float result;
         if (likely(m_sample_visible))

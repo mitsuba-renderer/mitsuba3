@@ -60,7 +60,7 @@ MTS_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
  *    "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals"
  *     by Eric Heitz
  */
-template <typename Float, typename Spectrum = void>
+template <typename Float, typename Spectrum>
 class MicrofacetDistribution {
 public:
     MTS_IMPORT_TYPES()
@@ -430,7 +430,7 @@ protected:
     bool  m_sample_visible;
 };
 
-template <typename Float, typename Spectrum = void>
+template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, Spectrum> &md) {
     os << "MicrofacetDistribution[" << std::endl
        << "  type = ";
@@ -446,8 +446,8 @@ std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, S
     return os;
 }
 
-template <typename FloatP>
-DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP> &distr,
+template <typename FloatP, typename Spectrum>
+DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spectrum> &distr,
                                       const Vector<DynamicArray<FloatP>, 3> &wi_,
                                       scalar_t<FloatP> eta) {
     using Float     = scalar_t<FloatP>;

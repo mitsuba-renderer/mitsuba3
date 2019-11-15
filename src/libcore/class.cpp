@@ -67,7 +67,7 @@ void Class::initialize_once(Class *class_) {
         } else {
             std::cerr << "Critical error during the static RTTI initialization: " << std::endl
                 << "Could not locate the base class '" << key_base << "' while initializing '"
-                << class_->name() << "'!" << std::endl;
+                << class_->name() << "' (" << class_->variant() << ")" << "'!" << std::endl;
             abort();
         }
     }

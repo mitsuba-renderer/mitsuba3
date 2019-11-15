@@ -164,10 +164,10 @@ class MTS_EXPORT_CORE Bitmap : public Object {
 public:
     MTS_DECLARE_CLASS(Bitmap, Object)
 
-    using Float                = float;
+    using Float = float;
     MTS_IMPORT_CORE_TYPES()
     using Vector2s = Vector<size_t, 2>;
-    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, void>;
+    using ReconstructionFilter = ReconstructionFilter<Float, Color<Float, 3>>;
 
     /// FieldType of the floating-point per-pixel components
     static constexpr FieldType FloatFieldType = struct_type_v<Float>;
@@ -388,10 +388,9 @@ public:
                   const ReconstructionFilter *rfilter = nullptr,
                   const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
                       { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
-                  const std::pair<Float, Float> &bound = kDefaultBounds,
+                  const std::pair<Float, Float> &bound =
+                  { -math::Infinity<Float>, math::Infinity<Float> },
                   Bitmap *temp = nullptr) const;
-    static constexpr std::pair<Float, Float> kDefaultBounds = { -math::Infinity<Float>,
-                                                                 math::Infinity<Float> };
 
     /**
      * \brief Up- or down-sample this image to a different resolution
@@ -424,7 +423,8 @@ public:
                          const ReconstructionFilter *rfilter = nullptr,
                          const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
                              { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
-                         const std::pair<Float, Float> &bound = kDefaultBounds) const;
+                         const std::pair<Float, Float> &bound =
+                             { -math::Infinity<Float>, math::Infinity<Float> }) const;
 
     /**
      * \brief Convert the bitmap into another pixel and/or component format

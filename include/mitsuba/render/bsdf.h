@@ -303,7 +303,6 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * \sa BSDFSample3
  */
 template <typename Float, typename Spectrum>
-// class MTS_EXPORT_RENDER BSDF : public DifferentiableObject {
 class MTS_EXPORT_RENDER BSDF : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(BSDF, Object, "bsdf")

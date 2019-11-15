@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * When no reconstruction filter is explicitly requested, this is the default
  * choice in Mitsuba.
  */
-template <typename Float, typename Spectrum = void>
+template <typename Float, typename Spectrum>
 class GaussianFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)

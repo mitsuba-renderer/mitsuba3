@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
  * otherwise, negative-lobed filters may be preferable (e.g. Mitchell-Netravali
  * or Lanczos Sinc)
  */
-template <typename Float, typename Spectrum = void>
+template <typename Float, typename Spectrum>
 class TentFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(TentFilter, ReconstructionFilter)

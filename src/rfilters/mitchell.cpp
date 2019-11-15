@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * D. Mitchell, A. Netravali, Reconstruction filters for computer graphics,
  * Proceedings of SIGGRAPH 88, Computer Graphics 22(4), pp. 221-228, 1988.
  */
-template <typename Float, typename Spectrum = void>
+template <typename Float, typename Spectrum>
 class MitchellNetravaliFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(MitchellNetravaliFilter, ReconstructionFilter)

@@ -7,7 +7,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-class DifferentiableObject;
 class DifferentiableParameters;
 struct BSDFContext;
 template <typename Float, typename Spectrum> class BSDF;

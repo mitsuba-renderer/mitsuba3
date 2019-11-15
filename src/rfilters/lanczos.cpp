@@ -12,10 +12,10 @@ NAMESPACE_BEGIN(mitsuba)
  * bright objects with sharp edges (a directly visible light source will for
  * instance have black fringing artifacts around it).
  */
-template <typename Float, typename Spectrum = void>
+template <typename Float, typename Spectrum>
 class LanczosSincFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS(LanczosSincFilter, ReconstructionFilter)
+    MTS_DECLARE_CLASS_VARIANT(LanczosSincFilter, ReconstructionFilter)
     MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
     MTS_IMPORT_TYPES()
 

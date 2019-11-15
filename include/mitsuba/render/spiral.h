@@ -26,8 +26,7 @@ class MTS_EXPORT_RENDER Spiral : public Object {
 public:
     MTS_DECLARE_CLASS(Spiral, Object)
     using Float = float;
-    using Spectrum = void;
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_CORE_TYPES()
 
     /// Create a new spiral generator for the given size, offset into a larger frame, and block size
     Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes = 1);

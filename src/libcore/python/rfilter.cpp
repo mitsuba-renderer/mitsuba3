@@ -15,7 +15,7 @@ MTS_PY_EXPORT(rfilter) {
     using Resampler = mitsuba::Resampler<float>;
     MTS_PY_CHECK_ALIAS(Resampler, m) {
         py::class_<Resampler>(m, "Resampler", D(Resampler))
-            .def(py::init<const ReconstructionFilter<float, void> *, uint32_t, uint32_t>(),
+            .def(py::init<const ReconstructionFilter<float, Color<float, 3>> *, uint32_t, uint32_t>(),
                 "rfilter"_a, "source_res"_a, "target_res"_a,
                 D(Resampler, Resampler))
             .def_method(Resampler, source_resolution)

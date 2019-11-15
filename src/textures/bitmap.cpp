@@ -38,9 +38,7 @@ public:
         ScalarFloat upscale = props.float_("upscale", 1.f);
         if (upscale != 1.f) {
             using ScalarVector2s = Vector<size_t, 2>;
-            // TODO shouldn't we pass Spectrum as template params?
-            using ReconstructionFilter =
-                mitsuba::ReconstructionFilter<typename Bitmap::Float, void>;
+            using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
 
             ScalarVector2s old_size = m_bitmap->size(),
                            new_size = upscale * old_size;
