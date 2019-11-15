@@ -32,7 +32,7 @@ Class::Class(const std::string &name, const std::string &parent, const std::stri
     if (!m_alias.empty())
         (*__classes)[construct_key(m_alias, variant)] = this;
 
-    // Also register new abstract classes with the XML parser
+    // Register classes that declare an alias for use in the XML parser
     if (!alias.empty())
         xml::detail::register_class(this);
 }

@@ -34,10 +34,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
-using Float = float;
-MTS_IMPORT_CORE_TYPES()
-
-/// Set of supported XML tags
+/* Set of supported XML tags */
 enum ETag {
     EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ERGB,
     EColor, ETransform, ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject,
@@ -84,6 +81,9 @@ struct Version {
 
 NAMESPACE_BEGIN(detail)
 
+using Float = float;
+MTS_IMPORT_CORE_TYPES()
+
 /// Throws if non-whitespace characters are found after the given index.
 void check_whitespace_only(const std::string &s, size_t offset) {
     for (size_t i = offset; i < s.size(); ++i) {
@@ -108,7 +108,7 @@ inline int64_t stoll(const std::string &s) {
 }
 
 
-static std::unordered_map<std::string, ETag> *tags = nullptr;
+static std::unordered_map<std::string, Tag> *tags = nullptr;
 static std::unordered_map<std::string /* e.g. bsdf.scalar-rgb */,
                           const Class *> *tag_class = nullptr;
 
@@ -118,29 +118,29 @@ void register_class(const Class *class_) {
         throw std::runtime_error("XML::register_class called with nullptr");
 
     if (!tags) {
-        tags = new std::unordered_map<std::string, ETag>();
+        tags = new std::unordered_map<std::string, Tag>();
         tag_class = new std::unordered_map<std::string, const Class *>();
 
         // Create an initial mapping of tag names to IDs
-        (*tags)["boolean"]    = EBoolean;
-        (*tags)["integer"]    = EInteger;
-        (*tags)["float"]      = EFloat;
-        (*tags)["string"]     = EString;
-        (*tags)["point"]      = EPoint;
-        (*tags)["vector"]     = EVector;
-        (*tags)["transform"]  = ETransform;
-        (*tags)["translate"]  = ETranslate;
-        (*tags)["matrix"]     = EMatrix;
-        (*tags)["rotate"]     = ERotate;
-        (*tags)["scale"]      = EScale;
-        (*tags)["lookat"]     = ELookAt;
-        (*tags)["ref"]        = ENamedReference;
-        (*tags)["spectrum"]   = ESpectrum;
-        (*tags)["rgb"]        = ERGB;
-        (*tags)["color"]      = EColor;
-        (*tags)["include"]    = EInclude;
-        (*tags)["alias"]      = EAlias;
-        (*tags)["default"]    = EDefault;
+        (*tags)["boolean"]    = Tag::Boolean;
+        (*tags)["integer"]    = Tag::Integer;
+        (*tags)["float"]      = Tag::Float;
+        (*tags)["string"]     = Tag::String;
+        (*tags)["point"]      = Tag::Point;
+        (*tags)["vector"]     = Tag::Vector;
+        (*tags)["transform"]  = Tag::Transform;
+        (*tags)["translate"]  = Tag::Translate;
+        (*tags)["matrix"]     = Tag::Matrix;
+        (*tags)["rotate"]     = Tag::Rotate;
+        (*tags)["scale"]      = Tag::Scale;
+        (*tags)["lookat"]     = Tag::LookAt;
+        (*tags)["ref"]        = Tag::NamedReference;
+        (*tags)["spectrum"]   = Tag::Spectrum;
+        (*tags)["rgb"]        = Tag::RGB;
+        (*tags)["color"]      = Tag::Color;
+        (*tags)["include"]    = Tag::Include;
+        (*tags)["alias"]      = Tag::Alias;
+        (*tags)["default"]    = Tag::Default;
     }
 
     // Register the new class as an object tag
@@ -148,12 +148,12 @@ void register_class(const Class *class_) {
     auto tag_key = Class::construct_key(tag_name, class_->variant());
     auto it = tags->find(tag_name);
     if (it == tags->end())
-        (*tags)[tag_name] = EObject;
+        (*tags)[tag_name] = Tag::Object;
     (*tag_class)[tag_key] = class_;
 
     if (tag_name == "spectrum") {
         // A texture is a kind of ContinuousSpectrum
-        (*tags)["texture"] = EObject;
+        (*tags)["texture"] = Tag::Object;
         (*tag_class)[Class::construct_key("texture", class_->variant())] = class_;
     }
 }
@@ -412,7 +412,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
 
 static std::pair<std::string, std::string>
 parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
-         ETag parent_tag, Properties &props, ParameterList &param,
+         Tag parent_tag, Properties &props, ParameterList &param,
          size_t &arg_counter, int depth, bool within_emitter = false) {
     try {
         if (!param.empty()) {
@@ -438,20 +438,20 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         if (it == tags->end())
             src.throw_error(node, "unexpected tag \"%s\"", node.name());
 
-        ETag tag = it->second;
+        Tag tag = it->second;
 
-        if (node.attribute("type") && tag != EObject
-            && tag_class->find(Class::construct_key(node.name(), ctx.variant())) != tag_class->end())
-            tag = EObject;
+        if (node.attribute("type") && tag != Tag::Object
+            && tag_class->find(Class::construct_key(node.name(), ctx.variant)) != tag_class->end())
+            tag = Tag::Object;
 
         /* Perform some safety checks to make sure that the XML tree really makes sense */
-        bool has_parent              = parent_tag != EInvalid;
-        bool parent_is_object        = has_parent && parent_tag == EObject;
-        bool current_is_object       = tag == EObject;
-        bool parent_is_transform     = parent_tag == ETransform;
-        bool current_is_transform_op = tag == ETranslate || tag == ERotate ||
-                                       tag == EScale || tag == ELookAt ||
-                                       tag == EMatrix;
+        bool has_parent              = parent_tag != Tag::Invalid;
+        bool parent_is_object        = has_parent && parent_tag == Tag::Object;
+        bool current_is_object       = tag == Tag::Object;
+        bool parent_is_transform     = parent_tag == Tag::Transform;
+        bool current_is_transform_op = tag == Tag::Translate || tag == Tag::Rotate ||
+                                       tag == Tag::Scale || tag == Tag::LookAt ||
+                                       tag == Tag::Matrix;
 
         if (!has_parent && !current_is_object)
             src.throw_error(node, "root element \"%s\" must be an object", node.name());
@@ -484,7 +484,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
         if (std::string(node.name()) == "scene") {
             node.append_attribute("type") = "scene";
-        } else if (tag == ETransform) {
+        } else if (tag == Tag::Transform) {
             ctx.transform = Transform4f();
         }
 
@@ -495,7 +495,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     node, "invalid parameter name \"%s\" in element \"%s\": leading "
                           "underscores are reserved for internal identifiers.",
                     name, node.name());
-        } else if (current_is_object || tag == ENamedReference) {
+        } else if (current_is_object || tag == Tag::NamedReference) {
             node.append_attribute("name") = tfm::format("_arg_%i", arg_counter++).c_str();
         }
 
@@ -511,7 +511,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         }
 
         switch (tag) {
-            case EObject: {
+            case Tag::Object: {
                     check_attributes(src, node, { "type", "id", "name" });
                     std::string id        = node.attribute("id").value(),
                                 name      = node.attribute("name").value(),
@@ -551,7 +551,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case ENamedReference: {
+            case Tag::NamedReference: {
                     check_attributes(src, node, { "name", "id" });
                     auto id = node.attribute("id").value();
                     auto name = node.attribute("name").value();
@@ -559,7 +559,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EAlias: {
+            case Tag::Alias: {
                     check_attributes(src, node, { "id", "as" });
                     auto alias_src = node.attribute("id").value();
                     auto alias_dst = node.attribute("as").value();
@@ -581,7 +581,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EDefault: {
+            case Tag::Default: {
                     check_attributes(src, node, { "name", "value" });
                     std::string name = node.attribute("name").value();
                     std::string value = node.attribute("value").value();
@@ -598,7 +598,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EInclude: {
+            case Tag::Include: {
                     check_attributes(src, node, { "filename" });
                     ref<FileResolver> fs = Thread::thread()->file_resolver();
                     fs::path filename = fs->resolve(node.attribute("filename").value());
@@ -643,13 +643,13 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EString: {
+            case Tag::String: {
                     check_attributes(src, node, { "name", "value" });
                     props.set_string(node.attribute("name").value(), node.attribute("value").value());
                 }
                 break;
 
-            case EFloat: {
+            case Tag::Float: {
                     check_attributes(src, node, { "name", "value" });
                     std::string value = node.attribute("value").value();
                     Float value_float;
@@ -662,7 +662,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EInteger: {
+            case Tag::Integer: {
                     check_attributes(src, node, { "name", "value" });
                     std::string value = node.attribute("value").value();
                     int64_t value_long;
@@ -675,7 +675,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EBoolean: {
+            case Tag::Boolean: {
                     check_attributes(src, node, { "name", "value" });
                     std::string value = string::to_lower(node.attribute("value").value());
                     bool result = false;
@@ -691,7 +691,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EVector: {
+            case Tag::Vector: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "name", "x", "y", "z" });
                     props.set_vector3f(node.attribute("name").value(),
@@ -699,7 +699,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EPoint: {
+            case Tag::Point: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "name", "x", "y", "z" });
                     props.set_point3f(node.attribute("name").value(),
@@ -707,7 +707,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EColor : {
+            case Tag::Color : {
                     check_attributes(src, node, { "name", "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
@@ -729,7 +729,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case ERGB : {
+            case Tag::RGB : {
                     check_attributes(src, node, { "name", "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
@@ -770,7 +770,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case ESpectrum: {
+            case Tag::Spectrum: {
                     check_attributes(src, node, { "name", "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
@@ -813,9 +813,9 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         /* Values are scaled so that integrating the
                            spectrum against the CIE curves and converting
                            to sRGB yields (1, 1, 1) for D65. See D65Spectrum. */
-                        Float unit_conversion = 1.0f;
+                        Float unit_conversion = 1.f;
                         if (within_emitter)
-                            unit_conversion = 100.0f / 10568.0f;
+                            unit_conversion = 100.f / 10568.f;
 
                         for (const std::string &token : tokens) {
                             std::vector<std::string> pair = string::tokenize(token, ":");
@@ -889,13 +889,13 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case ETransform: {
+            case Tag::Transform: {
                     check_attributes(src, node, { "name" });
                     ctx.transform = Transform4f();
                 }
                 break;
 
-            case ERotate: {
+            case Tag::Rotate: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "angle", "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node);
@@ -910,7 +910,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case ETranslate: {
+            case Tag::Translate: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node);
@@ -918,7 +918,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EScale: {
+            case Tag::Scale: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node, 1.f);
@@ -926,7 +926,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case ELookAt: {
+            case Tag::LookAt: {
                     check_attributes(src, node, { "origin", "target", "up" });
 
                     Point3f origin = parse_named_vector(src, node, "origin");
@@ -940,7 +940,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                 }
                 break;
 
-            case EMatrix: {
+            case Tag::Matrix: {
                     check_attributes(src, node, { "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
                     if (tokens.size() != 16)
@@ -965,7 +965,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         for (pugi::xml_node &ch: node.children())
             parse_xml(src, ctx, ch, tag, props, param, arg_counter, depth + 1);
 
-        if (tag == ETransform)
+        if (tag == Tag::Transform)
             props.set_transform(node.attribute("name").value(), ctx.transform);
     } catch (const std::exception &e) {
         if (strstr(e.what(), "Error while loading") == nullptr)
@@ -1089,7 +1089,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
     ctx.set_variant(variant);
     Properties prop;
     size_t arg_counter; /* Unused */
-    auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
+    auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
                                       param, arg_counter, 0).second;
     return detail::instantiate_node(ctx, scene_id);
 }
@@ -1123,7 +1123,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
     ctx.set_variant(variant);
     Properties prop;
     size_t arg_counter = 0; /* Unused */
-    auto scene_id = detail::parse_xml(src, ctx, root, EInvalid, prop,
+    auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
                                       param, arg_counter, 0).second;
 
     if (src.modified && write_update) {

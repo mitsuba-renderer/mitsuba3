@@ -32,8 +32,9 @@ Options:
     -m, --mode
         Rendering mode. Defines a combination of floating point
         and color types.
-        Default mode:
-            )" MTS_DEFAULT_MODE R"(
+
+        Default: )" MTS_DEFAULT_MODE R"(
+
         Available modes:
 )"
 MTS_CONFIGURATIONS_INDENTED

@@ -78,7 +78,8 @@ public:
     bool derives_from(const Class *class_) const;
 
     /// Look up a class by its name
-    static const Class *for_name(const std::string &name, const std::string &variant = "");
+    static const Class *for_name(const std::string &name,
+                                 const std::string &variant = "");
 
     /**
      * \brief Generate an instance of this class
