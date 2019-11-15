@@ -153,4 +153,43 @@ struct function_traits<
 //! @}
 // =============================================================
 
+NAMESPACE_BEGIN(detail)
+
+/// Type trait to strip away dynamic/masking-related type wrappers
+template <typename T> struct underlying {
+    using type = expr_t<T>;
+};
+
+template <typename T> struct underlying<enoki::DynamicArray<T>> {
+    using type = typename underlying<T>::type;
+};
+
+template <> struct underlying<void> {
+    using type = void;
+};
+
+template <typename T> struct underlying<enoki::DynamicArrayReference<T>> {
+    using type = typename underlying<T>::type;
+};
+
+template <typename T> struct underlying<enoki::detail::MaskedArray<T>> {
+    using type = typename underlying<T>::type;
+};
+
+template <typename T, size_t Size> struct underlying<Color<T, Size>> {
+    using type = Color<typename underlying<T>::type, Size>;
+};
+
+template <typename T, size_t Size> struct underlying<Spectrum<T, Size>> {
+    using type = Spectrum<typename underlying<T>::type, Size>;
+};
+
+template <typename T> struct underlying<MuellerMatrix<T>> {
+    using type = MuellerMatrix<typename underlying<T>::type>;
+};
+
+NAMESPACE_END(detail)
+
+template <typename T> using underlying_t = typename detail::underlying<T>::type;
+
 NAMESPACE_END(mitsuba)

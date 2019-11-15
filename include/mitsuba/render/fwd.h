@@ -55,8 +55,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using BSDFSample3f           = BSDFSample3<Float, Spectrum>;
 
     /// Strip away any masking-related wrappers from 'Float' and 'Spectrum'
-    using FloatU                 = unmask_t<Float>;
-    using SpectrumU              = unmask_t<Spectrum>;
+    using FloatU                 = underlying_t<Float>;
+    using SpectrumU              = underlying_t<Spectrum>;
 
     using Scene                  = mitsuba::Scene<FloatU, SpectrumU>;
     using Sampler                = mitsuba::Sampler<FloatU, SpectrumU>;
