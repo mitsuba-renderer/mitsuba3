@@ -17,10 +17,18 @@ static std::map<std::string, Class *> *__classes;
 bool Class::m_is_initialized = false;
 const Class *m_class = nullptr;
 
+/// Construct a key for use in the __classes hash table
+inline std::string key(const std::string &name, const std::string &variant) {
+    if (variant.empty())
+        return name;
+    else
+        return name + "." + variant;
+}
+
 Class::Class(const std::string &name, const std::string &parent, const std::string &variant,
              ConstructFunctor constr, UnserializeFunctor unser, const std::string &alias)
-    : m_name(name), m_parent_name(parent), m_variant(variant), m_alias(alias), m_constr(constr),
-      m_unser(unser) {
+    : m_name(name), m_parent_name(parent), m_variant(variant), m_alias(alias),
+      m_constructor(constr), m_unserialize(unser) {
 
     if (m_alias.empty())
         m_alias = name;
@@ -28,9 +36,7 @@ Class::Class(const std::string &name, const std::string &parent, const std::stri
     if (!__classes)
         __classes = new std::map<std::string, Class *>();
 
-    (*__classes)[construct_key(name, variant)] = this;
-    if (!m_alias.empty())
-        (*__classes)[construct_key(m_alias, variant)] = this;
+    (*__classes)[key(name, variant)] = this;
 
     // Register classes that declare an alias for use in the XML parser
     if (!alias.empty())
@@ -38,11 +44,9 @@ Class::Class(const std::string &name, const std::string &parent, const std::stri
 }
 
 const Class *Class::for_name(const std::string &name, const std::string &variant) {
-    const std::string &key = construct_key(name, variant);
-    auto it = __classes->find(key);
+    auto it = __classes->find(key(name, variant));
     if (it != __classes->end())
         return it->second;
-
     return nullptr;
 }
 
@@ -59,32 +63,42 @@ bool Class::derives_from(const Class *arg) const {
 }
 
 void Class::initialize_once(Class *class_) {
-    const std::string &key_base = construct_key(class_->m_parent_name, class_->variant());
+    std::string key_generic = class_->m_parent_name;
+    if (key_generic.empty())
+        return;
 
-    if (!key_base.empty()) {
-        if (__classes->find(key_base) != __classes->end()) {
-            class_->m_parent = (*__classes)[key_base];
-        } else {
-            std::cerr << "Critical error during the static RTTI initialization: " << std::endl
-                << "Could not locate the base class '" << key_base << "' while initializing '"
-                << class_->name() << "' (" << class_->variant() << ")" << "'!" << std::endl;
-            abort();
+    if (!class_->variant().empty()) {
+        std::string key_variant = key_generic + "." + class_->variant();
+        auto it = __classes->find(key_variant);
+        if (it != __classes->end()) {
+            class_->m_parent = it->second;
+            return;
         }
     }
+
+    auto it = __classes->find(key_generic);
+    if (it != __classes->end()) {
+        class_->m_parent = it->second;
+        return;
+    }
+
+    std::cerr << "Critical error during the static RTTI initialization: " << std::endl
+              << "Could not locate the base class '" << key_generic << "' while initializing '"
+              << class_->name() << "'!" << std::endl;
 }
 
 ref<Object> Class::construct(const Properties &props) const {
-    if (!m_constr)
+    if (!m_constructor)
         Throw("RTTI error: Attempted to construct a "
               "non-constructible class (%s)!", name());
-    return m_constr(props);
+    return m_constructor(props);
 }
 
 ref<Object> Class::unserialize(Stream *stream) const {
-    if (!m_unser)
+    if (!m_unserialize)
         Throw("RTTI error: Attempted to construct a "
               "class lacking a unserialization constructor (%s)!", name());
-    return m_unser(stream);
+    return m_unserialize(stream);
 }
 
 void Class::static_initialization() {
@@ -94,20 +108,15 @@ void Class::static_initialization() {
 }
 
 void Class::static_shutdown() {
-    for (auto &pair : *__classes)
+    if (!m_is_initialized)
+        return;
+    for (auto &pair : *__classes) {
         delete pair.second;
+    }
     delete __classes;
     __classes = nullptr;
     m_is_initialized = false;
     xml::detail::cleanup();
-}
-
-std::string Class::construct_key(const std::string &name, const std::string &variant)
-{
-    if (variant.empty() || name == "Object")
-        return name;
-    else
-        return name + "." + variant;
 }
 
 NAMESPACE_END(mitsuba)

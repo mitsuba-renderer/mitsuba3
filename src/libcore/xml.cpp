@@ -34,11 +34,11 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
-/* Set of supported XML tags */
-enum ETag {
-    EBoolean, EInteger, EFloat, EString, EPoint, EVector, ESpectrum, ERGB,
-    EColor, ETransform, ETranslate, EMatrix, ERotate, EScale, ELookAt, EObject,
-    ENamedReference, EInclude, EAlias, EDefault, EInvalid
+// Set of supported XML tags
+enum class Tag {
+    Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
+    Color, Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
+    NamedReference, Include, Alias, Default, Invalid
 };
 
 struct Version {
@@ -109,8 +109,12 @@ inline int64_t stoll(const std::string &s) {
 
 
 static std::unordered_map<std::string, Tag> *tags = nullptr;
-static std::unordered_map<std::string /* e.g. bsdf.scalar-rgb */,
+static std::unordered_map<std::string /* e.g. bsdf.scalar_rgb */,
                           const Class *> *tag_class = nullptr;
+
+inline std::string class_key(const std::string &name, const std::string &variant) {
+    return name + "." + variant;
+}
 
 // Called by Class::Class()
 void register_class(const Class *class_) {
@@ -144,17 +148,17 @@ void register_class(const Class *class_) {
     }
 
     // Register the new class as an object tag
-    auto tag_name = class_->alias();
-    auto tag_key = Class::construct_key(tag_name, class_->variant());
-    auto it = tags->find(tag_name);
-    if (it == tags->end())
-        (*tags)[tag_name] = Tag::Object;
-    (*tag_class)[tag_key] = class_;
+    const std::string &alias = class_->alias();
+    std::cout << "Registering type " << alias << " " << class_->variant() << std::endl;
 
-    if (tag_name == "spectrum") {
+    if (tags->find(alias) == tags->end())
+        (*tags)[alias] = Tag::Object;
+    (*tag_class)[class_key(alias, class_->variant())] = class_;
+
+    if (alias == "spectrum") {
         // A texture is a kind of ContinuousSpectrum
         (*tags)["texture"] = Tag::Object;
-        (*tag_class)[Class::construct_key("texture", class_->variant())] = class_;
+        (*tag_class)[class_key("texture", class_->variant())] = class_;
     }
 }
 
@@ -441,7 +445,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         Tag tag = it->second;
 
         if (node.attribute("type") && tag != Tag::Object
-            && tag_class->find(Class::construct_key(node.name(), ctx.variant)) != tag_class->end())
+            && tag_class->find(class_key(node.name(), ctx.variant())) != tag_class->end())
             tag = Tag::Object;
 
         /* Perform some safety checks to make sure that the XML tree really makes sense */
@@ -526,7 +530,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
                             node_name, id, src.offset(it_inst->second.location));
 
-                    auto it2 = tag_class->find(Class::construct_key(node_name, ctx.variant()));
+                    auto it2 = tag_class->find(class_key(node_name, ctx.variant()));
                     if (it2 == tag_class->end())
                         src.throw_error(node, "could not retrieve class object for "
                                        "tag \"%s\" and variant \"%s\"", node_name, ctx.variant());
@@ -765,7 +769,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_plugin_name("srgb");
                     }
                     ref<Object> obj = PluginManager::instance()->create_object(
-                        props2, Class::for_name("spectrum", ctx.variant()));
+                        props2, Class::for_name("ContinuousSpectrum", ctx.variant()));
                     props.set_object(node.attribute("name").value(), obj);
                 }
                 break;
@@ -790,7 +794,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_float("value", value);
 
                         ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("spectrum", ctx.variant()));
+                            props2, Class::for_name("ContinuousSpectrum", ctx.variant()));
                         auto expanded   = obj->expand();
                         if (expanded.size() == 1)
                             obj = expanded[0];
@@ -854,7 +858,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_long("size", wavelengths.size());
                         props2.set_pointer("values", values.data());
                         ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("spectrum", ctx.variant()));
+                            props2, Class::for_name("ContinuousSpectrum", ctx.variant()));
 
                         if (ctx.color_mode == ColorMode::Monochrome) {
                             /* Monochrome mode: replace by the equivalent uniform spectrum by

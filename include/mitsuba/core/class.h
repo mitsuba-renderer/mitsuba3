@@ -54,20 +54,20 @@ public:
           UnserializeFunctor unser = nullptr,
           const std::string &alias = "");
 
-    /// Return the name of the represented class
+    /// Return the name of the class
     const std::string &name() const { return m_name; }
 
-    /// Return the variant of the represented class
+    /// Return the variant of the class
     const std::string &variant() const { return m_variant; }
 
-    /// Return the scene description-specific alias
+    /// Return the scene description-specific alias, if applicable
     const std::string &alias() const { return m_alias; }
 
     /// Does the class support instantiation over RTTI?
-    bool is_constructible() const { return m_constr != nullptr; }
+    bool is_constructible() const { return m_constructor != nullptr; }
 
     /// Does the class support serialization?
-    bool is_serializable() const { return m_unser != nullptr; }
+    bool is_serializable() const { return m_unserialize != nullptr; }
 
     /** \brief Return the Class object associated with the parent
      * class of nullptr if it does not have one.
@@ -107,20 +107,17 @@ public:
 
     /// Free the memory taken by static_initialization()
     static void static_shutdown();
-
-
-    static std::string construct_key(const std::string &name, const std::string &variant);
-
 private:
     /** \brief Initialize a class - called by
      * static_initialization()
      */
     static void initialize_once(Class *class_);
+
 private:
     std::string m_name, m_parent_name, m_variant, m_alias;
     Class *m_parent;
-    ConstructFunctor m_constr;
-    UnserializeFunctor m_unser;
+    ConstructFunctor m_constructor;
+    UnserializeFunctor m_unserialize;
     static bool m_is_initialized;
 };
 

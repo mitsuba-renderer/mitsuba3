@@ -54,13 +54,13 @@
 
 
 #define MTS_EXTERN_STRUCT_FLOAT(Name)                                       \
-    extern template struct MTS_EXPORT Name<float>;                          \
     extern template struct MTS_EXPORT Name<Packet<float>>;                  \
+    extern template struct MTS_EXPORT Name<float>;                          \
 
 
 #define MTS_EXTERN_CLASS_FLOAT(Name)                                        \
-    extern template class MTS_EXPORT Name<float>;                           \
     extern template class MTS_EXPORT Name<Packet<float>>;                   \
+    extern template class MTS_EXPORT Name<float>;                           \
 
 
 #define MTS_IMPLEMENT_PLUGIN(Name, Descr)                                   \
